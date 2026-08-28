@@ -20,6 +20,14 @@ gh run watch <run-id> --exit-status
 
 Antes de publicar uma alteração, execute localmente as verificações possíveis. O workflow do Pull Request comprova os contratos estáticos e executa a matriz física dedicada das migrações críticas que possuam fixture MySQL 5.7 versionada; os demais changelogs ainda exigem o runner físico específico quando indicado na homologação.
 
+A separação de responsabilidade entre Atena, Têmis e Hermes possui fixture própria e valida
+incremento dinâmico de `agent_version`, processo de comunicação v5, cadeia de valor v7 e reaplicação
+sem duplicidade:
+
+```bash
+bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh
+```
+
 ## DDL e backfill retomáveis
 
 No MySQL 5.7, operações DDL podem permanecer aplicadas mesmo quando o processo é interrompido antes de o Liquibase registrar o changeset. Por isso, a criação de tabela e o backfill devem ficar em changesets separados. A criação deve aceitar retomada somente quando o schema esperado já existir, e o backfill deve ser idempotente, ignorando registros já materializados sem mascarar divergência estrutural. Quando um changeset já puder ter sido concluído em outro ambiente, preserve também o checksum anterior de forma explícita e teste essa compatibilidade.

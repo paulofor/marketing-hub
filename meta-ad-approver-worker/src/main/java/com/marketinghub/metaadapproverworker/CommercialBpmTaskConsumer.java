@@ -80,7 +80,7 @@ public class CommercialBpmTaskConsumer {
       if (task == null) return;
       execution = execute(task);
       JsonNode result = execution.result();
-      validate(result);
+      validate(result, processCode(task), strategicContractHash(task));
       if ("APPROVED".equals(result.path("decision").asText()))
         report(task, result, execution.usage());
       else block(task, result, execution.usage());
@@ -127,6 +127,7 @@ public class CommercialBpmTaskConsumer {
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
     try {
+      String resolvedPrompt = prompt(task);
       List<String> command =
           new ArrayList<>(
               List.of(
@@ -154,7 +155,7 @@ public class CommercialBpmTaskConsumer {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(prompt(task).getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(40, TimeUnit.MINUTES)) {
         process.destroyForcibly();
@@ -246,6 +247,14 @@ public class CommercialBpmTaskConsumer {
     if ("pde-construction-approval".equals(processCode(task))) {
       promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
     } else if ("pde-communication-sales-journey".equals(processCode(task))) {
+      JsonNode processContext =
+          json.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
+      JsonNode marketContract = processContext.path("marketStrategicContract");
+      if (!isReadyMarketStrategicContract(marketContract)) {
+        throw new IllegalStateException(
+            "Atena precisa produzir um Contrato Estratégico de Mercado v2 pronto antes de Têmis criar a comunicação.");
+      }
+      promptContext.put("marketStrategicContract", json.convertValue(marketContract, Object.class));
       promptContext.put(
           "versionedArtifactEvidence", pdeArtifactLoader.loadCommunicationContracts());
     } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
@@ -257,10 +266,22 @@ public class CommercialBpmTaskConsumer {
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
   }
 
+  /** Valida versão, estado, fronteira e SHA-256 antes de qualquer chamada ao modelo de Têmis. */
+  static boolean isReadyMarketStrategicContract(JsonNode marketContract) {
+    return "AVAILABLE".equals(marketContract.path("availability").asText())
+        && "MARKET_STRATEGY_V2".equals(marketContract.path("contractVersion").asText())
+        && marketContract.path("contentHash").asText().matches("[0-9a-f]{64}")
+        && "MARKET_STRATEGY_V2"
+            .equals(marketContract.path("contract").path("contractVersion").asText())
+        && "READY_FOR_OPERATION".equals(marketContract.path("contract").path("status").asText())
+        && "ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
+            .equals(marketContract.path("contract").path("operatorBoundary").asText());
+  }
+
   /** Seleciona o prompt versionado específico do gate avaliado. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-review.md";
+      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-translation-v2.md";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
@@ -272,7 +293,8 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o schema versionado específico do gate avaliado. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-review-schema.json";
+      case "pde-communication-sales-journey" ->
+          "prompts/bpm/pde-communication-translation-v2-schema.json";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";
@@ -287,8 +309,25 @@ public class CommercialBpmTaskConsumer {
     return value == null ? "" : value.toString();
   }
 
+  /** Recupera o hash recebido por Têmis para validar a mesma identidade na resposta. */
+  private String strategicContractHash(Map<String, Object> task) throws IOException {
+    if (!"pde-communication-sales-journey".equals(processCode(task))) return null;
+    JsonNode processContext =
+        json.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
+    String hash = processContext.path("marketStrategicContract").path("contentHash").asText();
+    if (!hash.matches("[0-9a-f]{64}")) {
+      throw new IllegalArgumentException("Tarefa de Têmis sem hash estratégico íntegro de Atena.");
+    }
+    return hash;
+  }
+
   /** Exige decisão, evidências e nota de preço coerente quando o contrato a declarar. */
   static void validate(JsonNode result) {
+    validate(result, null, null);
+  }
+
+  /** Exige que a tradução devolva a mesma identidade estratégica recebida da Atena. */
+  static void validate(JsonNode result, String processCode, String expectedStrategicHash) {
     if (!List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())) {
       throw new IllegalArgumentException("Gate de Têmis sem decisão válida");
     }
@@ -301,6 +340,22 @@ public class CommercialBpmTaskConsumer {
         && result.has("priceClarityScore")
         && result.path("priceClarityScore").asInt() < 80) {
       throw new IllegalArgumentException("Gate de Têmis aprovou preço com nota inferior a 80/100");
+    }
+    if ("pde-communication-sales-journey".equals(processCode)
+        && (result.path("strategicContractReference").isMissingNode()
+            || result.path("strategicContractReference").path("contentHash").asText().length() != 64
+            || !result
+                .path("strategicContractReference")
+                .path("contentHash")
+                .asText()
+                .equals(expectedStrategicHash)
+            || !result.path("strategicContractReference").path("strategyPreserved").asBoolean()
+            || result.path("communicationAlternatives").size() != 3
+            || result.path("communicationContract").path("creativeBrief").asText().isBlank()
+            || (result.path("strategicContractReference").path("revisionRequired").asBoolean()
+                && "APPROVED".equals(result.path("decision").asText())))) {
+      throw new IllegalArgumentException(
+          "Contrato de comunicação de Têmis não preserva a estratégia de Atena");
     }
   }
 

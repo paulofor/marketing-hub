@@ -57,6 +57,7 @@ public class AgentTaskService {
   private final ObjectMapper objectMapper;
   private final OpenAiPricingService pricingService;
   private final Clock clock;
+  private final MarketStrategicContextProvider marketStrategicContextProvider;
 
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
@@ -68,7 +69,8 @@ public class AgentTaskService {
       BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
       BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper,
-      OpenAiPricingService pricingService) {
+      OpenAiPricingService pricingService,
+      MarketStrategicContextProvider marketStrategicContextProvider) {
     this(
         repository,
         activityInstanceRepository,
@@ -78,7 +80,8 @@ public class AgentTaskService {
         executionResourceRepository,
         objectMapper,
         pricingService,
-        Clock.systemUTC());
+        Clock.systemUTC(),
+        marketStrategicContextProvider);
   }
 
   /** Permite testes determinísticos do histórico temporal. */
@@ -97,7 +100,8 @@ public class AgentTaskService {
         null,
         objectMapper,
         null,
-        clock);
+        clock,
+        MarketStrategicContextProvider.empty());
   }
 
   /** Permite testes determinísticos do custo calculado pelo catálogo. */
@@ -117,7 +121,8 @@ public class AgentTaskService {
         null,
         objectMapper,
         pricingService,
-        clock);
+        clock,
+        MarketStrategicContextProvider.empty());
   }
 
   /** Permite testar recursos especializados e custo com todas as fontes de verdade explícitas. */
@@ -138,7 +143,8 @@ public class AgentTaskService {
         executionResourceRepository,
         objectMapper,
         pricingService,
-        clock);
+        clock,
+        MarketStrategicContextProvider.empty());
   }
 
   /** Permite testar o vínculo explícito entre atividade, instância e tarefas. */
@@ -152,6 +158,31 @@ public class AgentTaskService {
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService,
       Clock clock) {
+    this(
+        repository,
+        activityInstanceRepository,
+        agentRepository,
+        processRepository,
+        activityDefinitionRepository,
+        executionResourceRepository,
+        objectMapper,
+        pricingService,
+        clock,
+        MarketStrategicContextProvider.empty());
+  }
+
+  /** Permite testar o contexto estratégico com todas as fontes explicitamente controladas. */
+  AgentTaskService(
+      AgentTaskRepository repository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      ObjectMapper objectMapper,
+      OpenAiPricingService pricingService,
+      Clock clock,
+      MarketStrategicContextProvider marketStrategicContextProvider) {
     this.repository = repository;
     this.activityInstanceRepository = activityInstanceRepository;
     this.agentRepository = agentRepository;
@@ -161,6 +192,7 @@ public class AgentTaskService {
     this.objectMapper = objectMapper;
     this.pricingService = pricingService;
     this.clock = clock;
+    this.marketStrategicContextProvider = marketStrategicContextProvider;
   }
 
   /** Abre uma solicitação humana na caixa do agente informado. */
@@ -1522,6 +1554,7 @@ public class AgentTaskService {
                 sibling -> {
                   Map<String, Object> context = new java.util.LinkedHashMap<>();
                   context.put("taskId", sibling.getId());
+                  context.put("agentKey", sibling.getAssignedAgent().getAgentKey());
                   context.put("activityId", sibling.getProcessActivityId());
                   context.put("activityName", sibling.getProcessActivityName());
                   context.put("resultJson", sibling.getResultJson());
@@ -1531,7 +1564,12 @@ public class AgentTaskService {
                 })
             .toList();
     try {
-      return objectMapper.writeValueAsString(Map.of("completedActivities", completedActivities));
+      Map<String, Object> context = new java.util.LinkedHashMap<>();
+      context.put("completedActivities", completedActivities);
+      marketStrategicContextProvider
+          .resolve(task.getSourceReference())
+          .ifPresent(contract -> context.put("marketStrategicContract", contract));
+      return objectMapper.writeValueAsString(context);
     } catch (Exception ex) {
       log.error(
           "Falha ao consolidar contexto do processo. taskId={} processDefinitionId={} sourceReference={}",

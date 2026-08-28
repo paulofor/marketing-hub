@@ -149,16 +149,31 @@ elas não são memória promovida, não alteram código automaticamente e não a
 agente. Implementação, publicação, gasto ou mudança comercial continuam sujeitos aos gates e às
 aprovações já definidos neste cânone.
 
+## Fronteira Atena, Têmis e Hermes
+
+Por decisão de 2026-08-28, agentes não podem compartilhar autoria sobre a mesma decisão comercial:
+
+- Atena é a única autora de estratégia de mercado, desejo, comportamento, concorrência,
+  posicionamento, tese de oferta, portfólio e hipótese;
+- Têmis traduz a estratégia vigente em comunicação e prova, sem mudar sua substância;
+- Hermes opera distribuição, instrumentação, funil e otimização, sem redefinir estratégia;
+- eventos que invalidem estratégia geram solicitação auditável de nova análise da Atena.
+
+O contexto de qualquer tarefa desses fluxos deve carregar a execução, versão e SHA-256 do Contrato
+Estratégico de Mercado. Ausência ou evidência insuficiente bloqueia antes de consumo desnecessário do
+modelo. Campos do experimento não servem como fallback de autoria estratégica.
+
 ## Migração do Operador de Crescimento
 
-O Operador usa a chave `growth-operator`, versão inicial `1`, modelo `gpt-5.6-sol` e execução
-orientada a eventos. Toda nova execução deve apontar para a `agent_version` ativa no momento em
-que foi criada, preservando qual contrato fundamentou a decisão.
+O Operador usa a chave `growth-operator`, contrato comportamental v2, modelo `gpt-5.6-sol` e
+execução orientada a eventos. A migração cria a próxima `agent_version` disponível, sem reutilizar
+números históricos. Toda nova execução deve apontar para a versão ativa no momento em que foi criada,
+preservando qual contrato fundamentou a decisão.
 
 O prompt e o schema canônicos são:
 
-- `growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md`
-- `growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json`
+- `growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md`
+- `growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis-schema.json`
 
 ## Arquitetura obrigatória dos agentes
 

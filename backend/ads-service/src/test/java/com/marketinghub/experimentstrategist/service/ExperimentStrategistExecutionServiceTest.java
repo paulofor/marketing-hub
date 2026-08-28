@@ -257,6 +257,100 @@ class ExperimentStrategistExecutionServiceTest {
         .hasMessageContaining("Cota diária segura");
   }
 
+  /** Rejeita callback de pesquisa que tente concluir sem o contrato estratégico v2. */
+  @Test
+  void rejectsResearchCompletionWithoutMarketStrategicContract() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(7L);
+    ExperimentStrategistExecution execution = execution(12L, plan);
+    when(repository.findById(12L)).thenReturn(Optional.of(execution));
+    ExperimentStrategistExecutionService service =
+        new ExperimentStrategistExecutionService(
+            repository,
+            mock(ExperimentStrategistBehavioralSnapshotRepository.class),
+            mock(CommercialPlanService.class),
+            mock(ExperimentStrategistContextService.class),
+            new ObjectMapper());
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.complete(
+                    12L,
+                    new ExperimentStrategistExecutionService.CompleteRequest(
+                        "[{},{},{}]",
+                        "{\"recommendation\":{}}",
+                        "[{\"url\":\"a\"},{\"url\":\"b\"}]",
+                        "{}",
+                        "gpt-5.6-sol",
+                        null)))
+        .hasMessageContaining("Contrato Estratégico de Mercado v2 inválido");
+  }
+
+  /** Conclui Atena somente quando duas classes independentes sustentam o contrato v2. */
+  @Test
+  void completesResearchWithIndependentEvidenceClasses() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(7L);
+    ExperimentStrategistExecution execution = execution(12L, plan);
+    when(repository.findById(12L)).thenReturn(Optional.of(execution));
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    ExperimentStrategistExecutionService service = service(repository);
+
+    var result = service.complete(12L, validCompletionRequest("CUSTOMER_LANGUAGE", "PAID_OFFER"));
+
+    assertThat(result.status()).isEqualTo(ExperimentStrategistExecutionStatus.COMPLETED);
+    verify(repository).save(execution);
+  }
+
+  /** Rejeita fontes duplicadas que aparentariam corroborar a estratégia sem independência real. */
+  @Test
+  void rejectsResearchWithoutIndependentEvidenceClasses() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(7L);
+    ExperimentStrategistExecution execution = execution(12L, plan);
+    when(repository.findById(12L)).thenReturn(Optional.of(execution));
+    ExperimentStrategistExecutionService service = service(repository);
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.complete(12L, validCompletionRequest("PAID_OFFER", "PAID_OFFER")))
+        .hasMessageContaining("Contrato Estratégico de Mercado v2 inválido");
+  }
+
+  /** Monta o serviço isolado usado pelos contratos de conclusão estratégica. */
+  private ExperimentStrategistExecutionService service(
+      ExperimentStrategistExecutionRepository repository) {
+    return new ExperimentStrategistExecutionService(
+        repository,
+        mock(ExperimentStrategistBehavioralSnapshotRepository.class),
+        mock(CommercialPlanService.class),
+        mock(ExperimentStrategistContextService.class),
+        new ObjectMapper());
+  }
+
+  /** Monta um callback v2 mínimo com as classes de evidência explicitamente informadas. */
+  private ExperimentStrategistExecutionService.CompleteRequest validCompletionRequest(
+      String firstEvidenceClass, String secondEvidenceClass) {
+    return new ExperimentStrategistExecutionService.CompleteRequest(
+        "[{},{},{}]",
+        "{\"marketStrategicContract\":{\"contractVersion\":\"MARKET_STRATEGY_V2\","
+            + "\"status\":\"READY_FOR_OPERATION\",\"evidenceReferences\":[\"source-1\",\"source-2\"],"
+            + "\"operatorBoundary\":\"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH\"}}",
+        "[{\"url\":\"https://source-1.example\",\"evidenceClass\":\""
+            + firstEvidenceClass
+            + "\"},{\"url\":\"https://source-2.example\",\"evidenceClass\":\""
+            + secondEvidenceClass
+            + "\"}]",
+        "{}",
+        "gpt-5.6-sol",
+        null);
+  }
+
   /** Cria uma execução mínima para cenários de lease. */
   private ExperimentStrategistExecution execution(Long id, CommercialPlan plan) {
     ExperimentStrategistExecution value = new ExperimentStrategistExecution();

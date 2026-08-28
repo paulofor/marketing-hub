@@ -1,0 +1,242 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-boundaries-v2-1-agent-contracts
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET name = 'Estrategista-Chefe de Mercado',
+                  current_version = current_version + 1,
+                  description = 'Define estratégia geral de mercado, desejo, comportamento, concorrência, posicionamento, tese de oferta, portfólio e hipóteses de teste.',
+                  business_objective = 'Escolher o que vender, para quem, por que será desejado e como posicionar com evidências.',
+                  success_metrics = 'Contratos estratégicos operáveis que originam testes válidos e vendas entregues, sem contar recomendação como resultado.',
+                  responsibility_contract = 'Produzir o Contrato Estratégico de Mercado versionado com segmento, problema, desejo, alternativas concorrentes, lacuna, posicionamento, tese de oferta, hipótese e métricas. Não operar distribuição, campanha, instrumentação ou avanço.',
+                  orchestrator_policy = 'É a única autora da estratégia. Quando eventos invalidarem mercado, desejo, oferta ou posicionamento, recebe solicitação de revisão de Hermes e cria nova execução auditável.',
+                  analysis_policy = 'Pesquisar clientes, comportamento observável, concorrência, posicionamento, portfólio e três alternativas; separar fato, inferência, hipótese e lacuna.',
+                  offering_policy = 'Entregar Contrato Estratégico de Mercado v2 com hash, evidências e critérios; nunca executar a recomendação.',
+                  prompt_contract_path = 'experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research.md',
+                  schema_contract_path = 'experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research-schema.json'
+              WHERE agent_key = 'experiment-strategist';
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, a.current_version,
+                CONCAT('{"agentKey":"experiment-strategist","version":', a.current_version,
+                  ',"status":"', a.status,
+                  '","model":"', COALESCE(a.model_name, ''),
+                  '","authority":"READ_ONLY_RESEARCH","responsibility":"ATENA_DEFINES_MARKET_STRATEGY","prompt":"',
+                  a.prompt_contract_path, '","schema":"', a.schema_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = a.current_version
+              WHERE a.agent_key = 'experiment-strategist' AND av.id IS NULL;
+
+              UPDATE agent
+              SET current_version = current_version + 1,
+                  description = 'Opera distribuição, instrumentação, funil, gargalos e otimização a partir da estratégia imutável de Atena.',
+                  business_objective = 'Levar a estratégia aprovada ao mercado, medir eventos reais e otimizar a execução até vendas entregues.',
+                  success_metrics = 'Instrumentação íntegra, gargalos resolvidos e decisões baseadas em vendas, receita, entrega e satisfação comprovadas.',
+                  responsibility_contract = 'Receber o Contrato Estratégico de Mercado de Atena e operar distribuição, atribuição, eventos, leitura do funil, experimentos operacionais e critérios de continuar, ajustar ou parar. Não redefinir público, problema, desejo, posicionamento, oferta ou preço.',
+                  orchestrator_policy = 'Sem contrato estratégico v2 pronto, bloqueia antes do modelo. Quando eventos contradisserem estratégia, solicita nova análise de Atena em vez de reescrevê-la.',
+                  analysis_policy = 'Localizar a primeira quebra do funil, separar fatos de inferências, comparar três alternativas operacionais e confirmar a causa no histórico.',
+                  offering_policy = 'Entregar diagnóstico e contrato operacional de crescimento com versão e hash da estratégia preservados.',
+                  prompt_contract_path = 'growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md',
+                  schema_contract_path = 'growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis-schema.json'
+              WHERE agent_key = 'growth-operator';
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, a.current_version,
+                CONCAT('{"agentKey":"growth-operator","version":', a.current_version,
+                  ',"status":"', a.status,
+                  '","model":"', COALESCE(a.model_name, ''),
+                  '","authority":"READ_ONLY_GROWTH_OPERATION","responsibility":"HERMES_OPERATES_GROWTH","prompt":"',
+                  a.prompt_contract_path, '","schema":"', a.schema_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = a.current_version
+              WHERE a.agent_key = 'growth-operator' AND av.id IS NULL;
+
+              UPDATE agent
+              SET current_version = current_version + 1,
+                  description = 'Traduz estratégia aprovada em comunicação e revisa criativos de forma independente, sem redefinir mercado ou operar crescimento.',
+                  business_objective = 'Transformar posicionamento e oferta aprovados em comunicação desejável, verdadeira e coerente até a entrega.',
+                  responsibility_contract = 'Traduzir o Contrato Estratégico de Mercado de Atena em mensagem, prova, limites, CTA, apresentação de preço e briefings; criar e revisar ativos em papéis separados. Não redefinir estratégia, preço, distribuição ou instrumentação.'
+              WHERE agent_key = 'meta-ad-approver';
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, a.current_version,
+                CONCAT('{"agentKey":"meta-ad-approver","version":', a.current_version,
+                  ',"status":"', a.status,
+                  '","responsibility":"TEMIS_TRANSLATES_STRATEGY_INTO_COMMUNICATION","communicationPrompt":"meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2.md"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = a.current_version
+              WHERE a.agent_key = 'meta-ad-approver' AND av.id IS NULL;
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-boundaries-v2-2-communication-process
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT
+                'pde-communication-sales-journey',
+                'Comunicação e jornada de venda do PDE',
+                'Traduzir a estratégia de Atena em comunicação e operação mensurável, sem duplicar autoria entre agentes.',
+                'Têmis e Hermes, com fronteiras independentes',
+                'PDE aprovado, Contrato Estratégico de Mercado v2 pronto e Plano Comercial vigente.',
+                'Mensagem e operação congeladas separadamente, prontas para materialização e homologação sem ativar mídia.',
+                5,
+                'PUBLISHED',
+                'market-strategy-v2 / communication-translation-v2 / growth-operation-v2',
+                'VALUE_PROCESS',
+                NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Estratégia e PDE aprovados","owner":"Backend","description":"O contrato de Atena, o produto e o plano orientam a jornada."},{"id":"contract","type":"TASK","label":"Congelar comunicação e operação de crescimento","owner":"Têmis e Hermes","description":"Têmis traduz estratégia em mensagem; Hermes define distribuição, atribuição e eventos sem redefinir estratégia.","responsibleAgentKeys":["meta-ad-approver","growth-operator"]},{"id":"creatives","type":"TASK","label":"Executar criação e aprovação de criativos","owner":"Backend","description":"Delega produção e aprovação das peças ao subprocesso canônico.","subprocessCode":"creative-production-approval"},{"id":"destination","type":"TASK","label":"Executar geração do destino de venda","owner":"Backend","description":"Delega landing ou microexperiência ao subprocesso canônico.","subprocessCode":"landing-page-generation"},{"id":"integration","type":"TASK","label":"Integrar canal, checkout, acesso e eventos","owner":"Backend","description":"Conecta versões aprovadas e preserva atribuição até compra, entrega e primeiro uso."},{"id":"gate","type":"GATEWAY","label":"Jornada integrada sem lacunas?","owner":"Backend","description":"Exige estratégia preservada, message match, rastreabilidade e contratos operacionais completos."},{"id":"end","type":"END","label":"Comunicação pronta para homologação","owner":"Backend","description":"A jornada fica pronta sem publicação, contato ou gasto."}],"flows":[{"from":"start","to":"contract"},{"from":"contract","to":"creatives"},{"from":"creatives","to":"destination"},{"from":"destination","to":"integration"},{"from":"integration","to":"gate"},{"from":"gate","to":"end"}]}' ,
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-communication-sales-journey' AND version_number = 5
+              );
+
+              UPDATE business_process_definition
+              SET status = 'RETIRED'
+              WHERE process_code = 'pde-communication-sales-journey'
+                AND status = 'PUBLISHED'
+                AND version_number <> 5;
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-boundaries-v2-3-activity-definitions
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id, activity.activity_id, activity.name, activity.objective,
+                activity.owner_name, NULL, activity.subprocess_code, activity.definition_json,
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT 'contract' AS activity_id,
+                  'Congelar comunicação e operação de crescimento' AS name,
+                  'Têmis traduz estratégia em mensagem; Hermes define distribuição, atribuição e eventos sem redefinir estratégia.' AS objective,
+                  'Têmis e Hermes' AS owner_name,
+                  NULL AS subprocess_code,
+                  '{"id":"contract","type":"TASK","label":"Congelar comunicação e operação de crescimento","owner":"Têmis e Hermes","description":"Têmis traduz estratégia em mensagem; Hermes define distribuição, atribuição e eventos sem redefinir estratégia.","responsibleAgentKeys":["meta-ad-approver","growth-operator"]}' AS definition_json
+                UNION ALL SELECT 'creatives', 'Executar criação e aprovação de criativos',
+                  'Delega produção e aprovação das peças ao subprocesso canônico.', 'Backend',
+                  'creative-production-approval',
+                  '{"id":"creatives","type":"TASK","label":"Executar criação e aprovação de criativos","owner":"Backend","description":"Delega produção e aprovação das peças ao subprocesso canônico.","subprocessCode":"creative-production-approval"}'
+                UNION ALL SELECT 'destination', 'Executar geração do destino de venda',
+                  'Delega landing ou microexperiência ao subprocesso canônico.', 'Backend',
+                  'landing-page-generation',
+                  '{"id":"destination","type":"TASK","label":"Executar geração do destino de venda","owner":"Backend","description":"Delega landing ou microexperiência ao subprocesso canônico.","subprocessCode":"landing-page-generation"}'
+                UNION ALL SELECT 'integration', 'Integrar canal, checkout, acesso e eventos',
+                  'Conecta versões aprovadas e preserva atribuição até compra, entrega e primeiro uso.',
+                  'Backend', NULL,
+                  '{"id":"integration","type":"TASK","label":"Integrar canal, checkout, acesso e eventos","owner":"Backend","description":"Conecta versões aprovadas e preserva atribuição até compra, entrega e primeiro uso."}'
+              ) activity
+              LEFT JOIN business_process_activity_definition existing
+                ON existing.process_definition_id = process.id
+               AND existing.activity_id = activity.activity_id
+              WHERE process.process_code = 'pde-communication-sales-journey'
+                AND process.version_number = 5
+                AND existing.id IS NULL;
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-boundaries-v2-4-chain-v7
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric,
+                 version_number, status, created_at, published_at)
+              SELECT
+                'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar estratégia comprovada em produto vendido e entregue, com agentes especializados e sem sobreposição.',
+                'PDE vendido e entregue com satisfação, com estratégia, comunicação e operação auditáveis.',
+                'Tempo até venda entregue com satisfação',
+                7,
+                'PUBLISHED',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_chain_definition
+                WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 7
+              );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, process_item.sequence_number,
+                process_item.value_contribution, UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN (
+                SELECT 1 AS sequence_number, 'pde-opportunity-discovery' AS process_code,
+                  'Escolhe uma oportunidade comprovada sem duplicar pesquisa posterior.' AS value_contribution
+                UNION ALL SELECT 2, 'pde-commercial-plan-offer',
+                  'Consolida o plano econômico e de produto sob a estratégia vigente.'
+                UNION ALL SELECT 3, 'pde-construction-approval',
+                  'Constrói e aprova o produto completo como única autoridade de materialização.'
+                UNION ALL SELECT 4, 'pde-communication-sales-journey',
+                  'Separa tradução de comunicação e operação de crescimento sob o contrato de Atena.'
+                UNION ALL SELECT 5, 'pde-commercial-homologation-activation',
+                  'Decide ativação uma vez, reutilizando o preflight técnico.'
+                UNION ALL SELECT 6, 'pde-sales-delivery-learning',
+                  'Consolida otimização e entrega em decisão por vendas satisfatórias.'
+              ) process_item
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = process_item.process_code
+               AND process_definition.status = 'PUBLISHED'
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = process_item.sequence_number
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 7
+                AND existing_item.id IS NULL;
+
+              UPDATE business_process_chain_definition
+              SET status = 'RETIRED'
+              WHERE chain_code = 'pde-value-creation-delivery'
+                AND status = 'PUBLISHED'
+                AND version_number <> 7;

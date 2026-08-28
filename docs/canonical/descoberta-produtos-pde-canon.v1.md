@@ -218,9 +218,10 @@ Cada candidata deve registrar uma cena de compra estruturada com:
 - alternativa gratuita mais forte, incluindo Google, ChatGPT, planilha, amigo ou conteudo;
 - vantagem funcional que o prototipo pretende demonstrar sobre essa alternativa.
 
-Depois da pesquisa e antes do score final, Dedalo pode materializar um prototipo privado, limitado e
-sem publicacao; Hermes define a jornada atribuivel; Psique revisa valor e esforco; Temis revisa
-promessa, seguranca e comunicacao. Os criterios de sucesso devem ser declarados antes do primeiro
+Depois da pesquisa e antes do score final, Atena congela a estratégia de mercado da candidata;
+Dedalo pode materializar um prototipo privado, limitado e sem publicacao; Temis traduz a estratégia
+em comunicação; Hermes define somente distribuição, atribuição e mensuração; Psique revisa valor e
+esforco. Os criterios de sucesso devem ser declarados antes do primeiro
 uso e preservar denominadores para, no minimo, inicio da experiencia, chegada ao microvalor,
 preferencia sobre a alternativa gratuita e inicio de checkout. O checkout do prototipo nao realiza
 pagamento e seus eventos devem usar marcador explicito de teste ou validacao privada.

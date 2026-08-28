@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,21 @@ public class GrowthOperatorBpmRunner {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBpmRunner.class);
   private static final String EXPERIMENT_PROCESS = "operacao-otimizacao-experimento";
   private static final String COMMUNICATION_PROCESS = "pde-communication-sales-journey";
+  private static final Set<String> FORBIDDEN_STRATEGIC_FIELDS =
+      Set.of(
+          "audience",
+          "segment",
+          "buyer",
+          "pain",
+          "problem",
+          "desiredOutcome",
+          "promise",
+          "mechanism",
+          "positioning",
+          "offerFraming",
+          "offerThesis",
+          "priceDecision",
+          "approvedPriceBrl");
   private final WorkerProperties properties;
   private final ObjectMapper json;
 
@@ -36,6 +53,7 @@ public class GrowthOperatorBpmRunner {
   public BpmExecution run(Map<String, Object> task) throws IOException, InterruptedException {
     String processCode = processCode(task);
     ExecutionScope scope = executionScope(task);
+    String expectedStrategicHash = strategicContractHash(task);
     Path answer = Files.createTempFile("hermes-bpm-result-", ".json");
     Path processLog = Files.createTempFile("hermes-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode), ".json");
@@ -75,7 +93,7 @@ public class GrowthOperatorBpmRunner {
       }
       try {
         JsonNode result = json.readTree(Files.readString(answer));
-        validate(result, processCode);
+        validate(result, processCode, expectedStrategicHash);
         return new BpmExecution(result, usage, extractToolUsage(processLog));
       } catch (IOException | RuntimeException ex) {
         log.error(
@@ -95,6 +113,16 @@ public class GrowthOperatorBpmRunner {
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcpServer);
     }
+  }
+
+  /** Extrai a identidade estratégica recebida para impedir que o modelo devolva outro contrato. */
+  private String strategicContractHash(Map<String, Object> task) {
+    JsonNode contract = json.valueToTree(task.get("marketStrategicContract"));
+    String hash = contract.path("contentHash").asText();
+    if (!hash.matches("[0-9a-f]{64}")) {
+      throw new IllegalArgumentException("Tarefa de Hermes sem hash estratégico íntegro de Atena.");
+    }
+    return hash;
   }
 
   /** Monta o comando Codex em sandbox somente leitura e telemetria JSONL. */
@@ -175,8 +203,8 @@ public class GrowthOperatorBpmRunner {
   /** Seleciona o prompt versionado específico da responsabilidade executada. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case COMMUNICATION_PROCESS -> "prompts/bpm/v1/pde-communication-contract.md";
-      case EXPERIMENT_PROCESS -> "prompts/bpm/v1/experiment-optimization.md";
+      case COMMUNICATION_PROCESS -> "prompts/bpm/v2/pde-growth-operation-contract.md";
+      case EXPERIMENT_PROCESS -> "prompts/bpm/v2/experiment-optimization.md";
       default -> throw new IllegalArgumentException("Processo BPM não suportado por Hermes.");
     };
   }
@@ -184,14 +212,19 @@ public class GrowthOperatorBpmRunner {
   /** Seleciona o schema versionado específico da responsabilidade executada. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case COMMUNICATION_PROCESS -> "prompts/bpm/v1/pde-communication-contract-schema.json";
-      case EXPERIMENT_PROCESS -> "prompts/bpm/v1/experiment-optimization-schema.json";
+      case COMMUNICATION_PROCESS -> "prompts/bpm/v2/pde-growth-operation-contract-schema.json";
+      case EXPERIMENT_PROCESS -> "prompts/bpm/v2/experiment-optimization-schema.json";
       default -> throw new IllegalArgumentException("Processo BPM não suportado por Hermes.");
     };
   }
 
   /** Exige decisão funcional, alternativas e critérios de governança do processo. */
   static void validate(JsonNode result, String processCode) {
+    validate(result, processCode, null);
+  }
+
+  /** Confirma que a saída preserva exatamente a identidade estratégica recebida. */
+  static void validate(JsonNode result, String processCode, String expectedStrategicHash) {
     if (!List.of("COMPLETED", "BLOCKED").contains(result.path("executionStatus").asText())
         || result.path("alternatives").size() != 3
         || result.path("observedFacts").isEmpty()
@@ -202,17 +235,51 @@ public class GrowthOperatorBpmRunner {
         || result.path("recommendedAction").asText().isBlank()) {
       throw new IllegalArgumentException("Parecer BPM de Hermes incompleto.");
     }
-    if (COMMUNICATION_PROCESS.equals(processCode)
-        && (result.path("communicationContract").isMissingNode()
-            || result.path("priceDecision").isMissingNode()
-            || result.path("priceDecision").path("billingModel").asText().isBlank()
-            || result.path("priceDecision").path("billingDescription").asText().isBlank()
-            || result.path("communicationContract").path("includedItems").isEmpty()
-            || result.path("communicationContract").path("excludedItems").isEmpty()
-            || result.path("communicationContract").path("eventContracts").size() < 5
-            || result.path("communicationContract").path("refundGuardrail").asText().isBlank())) {
-      throw new IllegalArgumentException("Contrato de comunicação do PDE incompleto.");
+    if (expectedStrategicHash != null
+        && !expectedStrategicHash.equals(
+            result.path("strategicContractReference").path("contentHash").asText())) {
+      throw new IllegalArgumentException(
+          "Parecer de Hermes não preserva o hash do contrato estratégico de Atena.");
     }
+    if (COMMUNICATION_PROCESS.equals(processCode)
+        && (result.path("strategicContractReference").isMissingNode()
+            || !result.path("strategicContractReference").path("strategyPreserved").asBoolean()
+            || result.path("strategicContractReference").path("contentHash").asText().length() != 64
+            || result.path("growthOperationContract").isMissingNode()
+            || result.path("growthOperationContract").path("eventContracts").size() < 5
+            || result.path("growthOperationContract").path("attributionPlan").asText().isBlank()
+            || result.path("growthOperationContract").path("instrumentationGate").asText().isBlank()
+            || containsForbiddenStrategicField(result)
+            || (result.path("strategicContractReference").path("revisionRequired").asBoolean()
+                && "COMPLETED".equals(result.path("executionStatus").asText())))) {
+      throw new IllegalArgumentException("Contrato operacional de crescimento do PDE incompleto.");
+    }
+    if (EXPERIMENT_PROCESS.equals(processCode)
+        && (result.path("strategicContractReference").isMissingNode()
+            || !result.path("strategicContractReference").path("strategyPreserved").asBoolean()
+            || result.path("strategicContractReference").path("contentHash").asText().length() != 64
+            || containsForbiddenStrategicField(result)
+            || (result.path("strategicContractReference").path("revisionRequired").asBoolean()
+                && "COMPLETED".equals(result.path("executionStatus").asText())))) {
+      throw new IllegalArgumentException(
+          "Otimização de Hermes não preserva o contrato estratégico de Atena.");
+    }
+  }
+
+  /** Rejeita autoria estratégica escondida em qualquer nível da saída de Hermes. */
+  private static boolean containsForbiddenStrategicField(JsonNode node) {
+    if (node.isArray()) {
+      for (JsonNode child : node) if (containsForbiddenStrategicField(child)) return true;
+      return false;
+    }
+    if (!node.isObject()) return false;
+    Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+    while (fields.hasNext()) {
+      Map.Entry<String, JsonNode> field = fields.next();
+      if (FORBIDDEN_STRATEGIC_FIELDS.contains(field.getKey())
+          || containsForbiddenStrategicField(field.getValue())) return true;
+    }
+    return false;
   }
 
   /** Lê o processo congelado da tarefa. */

@@ -1,5 +1,16 @@
 # Planejamento Comercial Canonico v1
 
+## Fronteira estratégica e operacional dos agentes
+
+Por decisão de 2026-08-28, Atena define mercado, desejo, comportamento, concorrência,
+posicionamento, tese de oferta, portfólio e hipóteses no Contrato Estratégico de Mercado v2. Têmis
+traduz esse contrato em comunicação sem alterar sua substância. Hermes recebe a mesma versão/hash e
+define somente distribuição, instrumentação, atribuição, funil e otimização. Plutus governa a
+economia; Dédalo materializa; Psique valida a resposta humana.
+
+Nenhuma etapa posterior pode reconstruir estratégia a partir de campos operacionais. Evidência real
+que invalide a tese retorna para nova execução de Atena; não autoriza Hermes ou Têmis a reescrevê-la.
+
 ## Objetivo
 
 O planejamento comercial do Marketing Hub deve transformar objetivos de venda em metas mensais e semanais mensuraveis, conectando produto, experimento, campanha, funil, custo e receita.

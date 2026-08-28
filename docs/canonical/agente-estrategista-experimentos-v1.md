@@ -2,7 +2,28 @@
 
 ## Responsabilidade
 
-Transformar sinais reais de sessões, funil, aprendizados e formatos de produto em três alternativas pesquisadas de experimento. O agente compara o portfólio e recomenda qual hipótese testar depois; o Operador de Crescimento prioriza e acompanha a execução de cada experimento; o usuário autoriza publicação, preço, gasto e comunicação.
+Atuar como Estrategista-Chefe de Mercado: transformar sinais reais, pesquisa de clientes,
+comportamento observável, concorrência e portfólio em uma decisão sobre o que vender, para quem, por
+que será desejado e como posicionar. Atena compara exatamente três alternativas e congela a escolhida
+em um Contrato Estratégico de Mercado; Hermes opera distribuição, instrumentação e otimização sem
+redefinir essa estratégia; o usuário mantém as aprovações de publicação, preço, gasto e comunicação.
+
+## Contrato Estratégico de Mercado v2
+
+Por decisão de 2026-08-28, Atena é a única autora de segmento, comprador, problema, desejo,
+comportamento, concorrência, lacuna, posicionamento, tese de oferta e hipótese causal. Cada pesquisa
+`READ_ONLY_RESEARCH` deve produzir `marketStrategicContract` com versão
+`MARKET_STRATEGY_V2`, status, evidências, métrica e critérios de continuar, ajustar e parar.
+
+O backend preserva a execução autora, o conteúdo e seu SHA-256. O contrato fica disponível às
+tarefas posteriores como contexto persistido; parecer histórico v1 sem esse artefato é explicitamente
+`MISSING`, nunca completado a partir dos campos do experimento. `READY_FOR_OPERATION` exige ao menos
+duas classes independentes de evidência; caso contrário, o status é `INSUFFICIENT_EVIDENCE`.
+
+Plutus ou o plano humano aprovado governam preço e economia. Têmis traduz a estratégia em mensagem.
+Dédalo materializa o produto e as superfícies. Psique valida a resposta humana. Hermes mede e opera o
+crescimento. Se eventos posteriores contradisserem uma decisão estratégica, Hermes bloqueia a
+operação e solicita uma nova execução de Atena em vez de reescrever o contrato.
 
 ## Fontes de verdade
 
@@ -103,7 +124,9 @@ O usuário solicita a pesquisa no painel do planejamento comercial. O backend co
 
 O schema enviado ao Structured Outputs deve declarar `type` em todas as propriedades, inclusive quando também usar `const`. O deploy só considera o worker pronto quando, além do container e da autenticação Codex, o endpoint operacional publicado na porta 8096 responder `UP`; esse endpoint é a origem canônica dos logs consultados pelo MCP. A verificação de prontidão deve medir e registrar esses três requisitos separadamente em cada tentativa, tolerar espaços válidos no JSON do Actuator e oferecer uma janela mínima de dois minutos antes de declarar falha.
 
-O frontend exibe status, pergunta, exatamente três alternativas, recomendação, hipótese, métrica, critérios de continuar, ajustar e parar, fontes públicas e diagnóstico técnico quando houver falha. O histórico não depende dos logs do worker.
+O frontend exibe status, pergunta, exatamente três alternativas, Contrato Estratégico de Mercado,
+recomendação, hipótese, métrica, critérios de continuar, ajustar e parar, fontes públicas e
+diagnóstico técnico quando houver falha. O histórico não depende dos logs do worker.
 
 O timeout padrão do Codex é de 40 minutos. O worker processa no máximo uma pesquisa por ciclo e nunca avança experimento, publica ativo ou executa a recomendação.
 

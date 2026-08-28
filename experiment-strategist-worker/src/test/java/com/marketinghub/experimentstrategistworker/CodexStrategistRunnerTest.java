@@ -56,10 +56,10 @@ class CodexStrategistRunnerTest {
     String dockerfile = Files.readString(Path.of("Dockerfile"));
     String prompt =
         Files.readString(
-            Path.of("src/main/resources/prompts/experiment-strategist/v1/research.md"));
+            Path.of("src/main/resources/prompts/experiment-strategist/v2/research.md"));
     String schema =
         Files.readString(
-            Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json"));
+            Path.of("src/main/resources/prompts/experiment-strategist/v2/research-schema.json"));
 
     assertThat(dockerfile)
         .contains("FROM node:20-bookworm-slim AS node-runtime")
@@ -73,19 +73,17 @@ class CodexStrategistRunnerTest {
         .contains("duas classes independentes de evidência")
         .contains("mapa comparativo dos concorrentes")
         .contains("linguagem literal pública de clientes")
-        .contains("o mercado oferece X, mas o cliente ainda precisa fazer Y")
-        .contains("snapshots: PAGE, SOURCE e DEVICE")
-        .contains("Nunca solicite gravação");
+        .contains("snapshots PAGE, SOURCE e DEVICE")
+        .contains("Hermes não pode redefinir sua estratégia");
     assertThat(schema)
         .contains("marketIntelligence", "customerLanguage", "competitors", "customerEffort")
         .contains(
             "evidenceClass",
-            "statementType",
             "portfolioAssessment",
             "winnerProductId",
             "operatorBoundary",
             "positioning",
-            "memoryOutcome");
+            "marketStrategicContract");
     assertThat(schema).contains("behavioralAssessment", "AGGREGATE_ONLY_NO_INDIVIDUAL_PROFILING");
   }
 
@@ -95,7 +93,7 @@ class CodexStrategistRunnerTest {
     var schema =
         new ObjectMapper()
             .readTree(
-                Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json")
+                Path.of("src/main/resources/prompts/experiment-strategist/v2/research-schema.json")
                     .toFile());
 
     var approval =
@@ -114,16 +112,16 @@ class CodexStrategistRunnerTest {
   void requiresAuditablePortfolioAssessment() throws Exception {
     String prompt =
         Files.readString(
-            Path.of("src/main/resources/prompts/experiment-strategist/v1/research.md"));
+            Path.of("src/main/resources/prompts/experiment-strategist/v2/research.md"));
     var schema =
         new ObjectMapper()
             .readTree(
-                Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json")
+                Path.of("src/main/resources/prompts/experiment-strategist/v2/research-schema.json")
                     .toFile());
 
     assertThat(prompt)
-        .contains("Sem venda aprovada e entrega satisfatória")
-        .contains("não inicie, pause, avance ou encerre experimento");
+        .contains("Sem venda e entrega, não declare vencedor")
+        .contains("não inicia, pausa, avança ou encerra experimento");
     assertThat(schema.path("required"))
         .anyMatch(value -> value.asText().equals("portfolioAssessment"));
     assertThat(
@@ -135,6 +133,24 @@ class CodexStrategistRunnerTest {
                 .path("const")
                 .asText())
         .isEqualTo("STRATEGIST_RECOMMENDS_OPERATOR_EXECUTES");
+  }
+
+  /** Exige a autoria única de Atena e a fronteira imutável consumida por Hermes. */
+  @Test
+  void requiresVersionedMarketStrategicContract() throws Exception {
+    var schema =
+        new ObjectMapper()
+            .readTree(
+                Path.of("src/main/resources/prompts/experiment-strategist/v2/research-schema.json")
+                    .toFile());
+    var contract = schema.path("properties").path("marketStrategicContract");
+
+    assertThat(schema.path("required"))
+        .anyMatch(value -> value.asText().equals("marketStrategicContract"));
+    assertThat(contract.path("properties").path("contractVersion").path("const").asText())
+        .isEqualTo("MARKET_STRATEGY_V2");
+    assertThat(contract.path("properties").path("operatorBoundary").path("const").asText())
+        .isEqualTo("ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH");
   }
 
   /** Protege a proposta estratégica que antecede a validação financeira de Plutus. */

@@ -53,7 +53,7 @@ class GrowthOperatorBpmRunnerTest {
     assertThat(scope.reference()).isEqualTo("commercial-plan:4@v2");
   }
 
-  /** Bloqueia contrato sem cobrança, itens, eventos correlacionados e regra de reembolso. */
+  /** Bloqueia contrato sem referência estratégica, atribuição e eventos correlacionados. */
   @Test
   void shouldRejectIncompletePdeCommunicationContract() throws Exception {
     var incomplete =
@@ -66,8 +66,8 @@ class GrowthOperatorBpmRunnerTest {
                   "observedFacts":["Produto aprovado"],
                   "alternatives":[{"name":"A"},{"name":"B"},{"name":"C"}],
                   "selectedAlternative":"A",
-                  "priceDecision":{},
-                  "communicationContract":{},
+                  "strategicContractReference":{},
+                  "growthOperationContract":{},
                   "expectedMetric":"Três vendas",
                   "continueCriteria":"Entrega íntegra",
                   "adjustCriteria":"Sem checkout",
@@ -79,7 +79,7 @@ class GrowthOperatorBpmRunnerTest {
     assertThatThrownBy(
             () -> GrowthOperatorBpmRunner.validate(incomplete, "pde-communication-sales-journey"))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Contrato de comunicação");
+        .hasMessageContaining("Contrato operacional");
   }
 
   /** Mantém o Codex em sandbox somente leitura com saída estruturada e MCP local. */
@@ -188,7 +188,7 @@ class GrowthOperatorBpmRunnerTest {
             shift
           done
           cat >/dev/null
-          printf '%s' '{"executionStatus":"BLOCKED","activityOutcome":"Instrumentação ainda sem amostra comercial válida.","observedFacts":["Meta com zero impressões"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":["Primeira impressão"],"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","expectedMetric":"Primeira impressão real","continueCriteria":"Eventos íntegros","adjustCriteria":"Divergência persistente","stopCriteria":"Gasto sem evento","recommendedAction":"Aguardar exposição e preservar a configuração atual."}' > "$answer"
+          printf '%s' '{"executionStatus":"BLOCKED","activityOutcome":"Instrumentação ainda sem amostra comercial válida.","observedFacts":["Meta com zero impressões"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":["Primeira impressão"],"strategicContractReference":{"strategistExecutionId":41,"contractVersion":"MARKET_STRATEGY_V2","contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false,"revisionReason":null},"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","expectedMetric":"Primeira impressão real","continueCriteria":"Eventos íntegros","adjustCriteria":"Divergência persistente","stopCriteria":"Gasto sem evento","recommendedAction":"Aguardar exposição e preservar a configuração atual."}' > "$answer"
           printf '%s\n' '{"usage":{"input_tokens":90,"cached_input_tokens":10,"output_tokens":25}}'
           """,
           StandardCharsets.UTF_8);
@@ -203,7 +203,11 @@ class GrowthOperatorBpmRunnerTest {
                       "taskId", 1,
                       "activityId", "task-1",
                       "processCode", "operacao-otimizacao-experimento",
-                      "sourceReference", "experiment:88"));
+                      "sourceReference", "experiment:88",
+                      "marketStrategicContract",
+                          Map.of(
+                              "contentHash",
+                              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")));
 
       assertThat(execution.result().path("executionStatus").asText()).isEqualTo("BLOCKED");
       assertThat(execution.usage())
@@ -233,7 +237,7 @@ class GrowthOperatorBpmRunnerTest {
             shift
           done
           cat >/dev/null
-          printf '%s' '{"executionStatus":"COMPLETED","activityOutcome":"Contrato comercial pronto para subprocessos.","observedFacts":["Produto aprovado"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":[],"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","priceDecision":{"approvedPriceBrl":349,"billingModel":"ONE_TIME","billingDescription":"Pagamento único, sem recorrência.","decision":"KEEP","rationale":"Preço de implantação personalizada.","marketReference":"Bibliotecas genéricas são mais baratas.","marginGuardrail":"Margem positiva","comprehensionTest":"Testar entendimento antes de desconto."},"communicationContract":{"audience":"Prestadores locais","pain":"Demora no atendimento","promise":"Atendimento pronto","mechanism":"Personalização assistida","offerFraming":"Implantação em 48 horas","includedItems":["Respostas personalizadas"],"excludedItems":["Automação"],"proof":["Materiais reais"],"limitations":["Sem garantia"],"primaryChannel":"Abordagem individual","creativeBrief":"Demonstrar antes e depois sem promessa falsa.","destinationBrief":"Explicar entrega e responder objeções prioritárias.","primaryCta":"Quero meu atendimento pronto","checkoutAndAccess":"Checkout único e acesso por link mágico.","events":["visit","cta","checkout","purchase"],"eventContracts":[{"eventName":"PURCHASE_COMPLETED","trigger":"Pagamento aprovado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Venda real"},{"eventName":"ACCESS_RELEASED","trigger":"Acesso liberado","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Acesso real"},{"eventName":"DELIVERY_COMPLETED","trigger":"Entrega concluída","requiredMetadata":["missionId"],"correlationKeys":["missionId"],"authoritativeSource":"PDE","commercialMeaning":"Entrega real"},{"eventName":"FIRST_USE","trigger":"Primeiro uso","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Uso real"},{"eventName":"REFUND_CONFIRMED","trigger":"Reembolso confirmado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Receita revertida"}],"refundGuardrail":"Qualquer reembolso pausa a primeira coorte.","samplePlan":"Quinze contatos qualificados consentidos.","testTrafficSegregation":"mh_test"},"expectedMetric":"Três vendas","continueCriteria":"Compromisso comercial","adjustCriteria":"Sem checkout","stopCriteria":"Sem entrega","recommendedAction":"Produzir criativo e destino nos subprocessos."}' > "$answer"
+          printf '%s' '{"executionStatus":"COMPLETED","activityOutcome":"Contrato operacional pronto para homologação.","observedFacts":["Canal autorizado no plano"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":[],"strategicContractReference":{"strategistExecutionId":41,"contractVersion":"MARKET_STRATEGY_V2","contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false,"revisionReason":null},"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","growthOperationContract":{"selectedDistributionRoute":"Abordagem individual consentida","channelExecutionBoundary":"Sem contato ou mídia antes de aprovação humana","funnelStages":["visita","checkout","compra"],"attributionPlan":"Correlacionar origem, versão e pagamento aprovado.","eventContracts":[{"eventName":"PURCHASE_COMPLETED","trigger":"Pagamento aprovado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Venda real"},{"eventName":"ACCESS_RELEASED","trigger":"Acesso liberado","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Acesso real"},{"eventName":"DELIVERY_COMPLETED","trigger":"Entrega concluída","requiredMetadata":["missionId"],"correlationKeys":["missionId"],"authoritativeSource":"PDE","commercialMeaning":"Entrega real"},{"eventName":"FIRST_USE","trigger":"Primeiro uso","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Uso real"},{"eventName":"REFUND_CONFIRMED","trigger":"Reembolso confirmado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Receita revertida"}],"instrumentationGate":"Todos os eventos canônicos persistidos e correlacionados.","checkoutAndAccessVerification":"Validar checkout e acesso no preflight segregado.","samplePlan":"Quinze contatos qualificados após autorização.","testTrafficSegregation":"mh_test","refundGuardrail":"Qualquer reembolso pausa a primeira coorte.","consentAndPrivacy":"Somente contato consentido e dados mínimos.","humanApprovalGates":["contato","mídia","gasto"]},"expectedMetric":"Três vendas","continueCriteria":"Compromisso comercial","adjustCriteria":"Sem checkout","stopCriteria":"Sem entrega","recommendedAction":"Homologar instrumentação antes de ativar distribuição."}' > "$answer"
           printf '%s\n' '{"usage":{"input_tokens":110,"cached_input_tokens":20,"output_tokens":35}}'
           """,
           StandardCharsets.UTF_8);
@@ -248,10 +252,19 @@ class GrowthOperatorBpmRunnerTest {
                       "taskId", 2,
                       "activityId", "contract",
                       "processCode", "pde-communication-sales-journey",
-                      "sourceReference", "commercial-plan:4@v2"));
+                      "sourceReference", "commercial-plan:4@v2",
+                      "marketStrategicContract",
+                          Map.of(
+                              "contentHash",
+                              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")));
 
-      assertThat(execution.result().path("priceDecision").path("approvedPriceBrl").asInt())
-          .isEqualTo(349);
+      assertThat(
+              execution
+                  .result()
+                  .path("growthOperationContract")
+                  .path("selectedDistributionRoute")
+                  .asText())
+          .contains("Abordagem individual");
       assertThat(execution.usage())
           .isEqualTo(new GrowthOperatorBpmRunner.TokenUsage(110L, 20L, 35L));
     } finally {
@@ -262,8 +275,8 @@ class GrowthOperatorBpmRunnerTest {
   /** Protege gates comerciais, três alternativas e memória ligada à ferramenta. */
   @Test
   void shouldVersionExperimentOptimizationContract() throws Exception {
-    String prompt = read("prompts/bpm/v1/experiment-optimization.md");
-    String schema = read("prompts/bpm/v1/experiment-optimization-schema.json");
+    String prompt = read("prompts/bpm/v2/experiment-optimization.md");
+    String schema = read("prompts/bpm/v2/experiment-optimization-schema.json");
     String mcp = read("mcp/marketing-hub-readonly.mjs");
 
     assertThat(prompt)
@@ -276,10 +289,15 @@ class GrowthOperatorBpmRunnerTest {
             "Orçamento global ou diário maior não",
             "substitui nem revoga essa trava",
             "exatamente três alternativas",
-            "NaN",
-            "justInTimeMemory",
-            "appliesToTool");
-    assertThat(schema).contains("executionStatus", "COMPLETED", "BLOCKED", "selectedAlternative");
+            "marketStrategicContract",
+            "Não proponha uma nova estratégia");
+    assertThat(schema)
+        .contains(
+            "executionStatus",
+            "COMPLETED",
+            "BLOCKED",
+            "selectedAlternative",
+            "strategicContractReference");
     assertThat(mcp)
         .contains(
             "MCP_EXPERIMENT_ID",
@@ -293,37 +311,86 @@ class GrowthOperatorBpmRunnerTest {
             "destructiveHint: false");
   }
 
-  /** Protege preço, jornada, mensuração e ausência de efeitos externos no contrato do PDE. */
+  /** Protege mensuração e impede autoria estratégica no contrato operacional do PDE. */
   @Test
   void shouldVersionPdeCommunicationContract() throws Exception {
-    String prompt = read("prompts/bpm/v1/pde-communication-contract.md");
-    String schema = read("prompts/bpm/v1/pde-communication-contract-schema.json");
+    String prompt = read("prompts/bpm/v2/pde-growth-operation-contract.md");
+    String schema = read("prompts/bpm/v2/pde-growth-operation-contract-schema.json");
 
     assertThat(prompt)
         .contains(
             "exatamente três alternativas",
-            "biblioteca genérica",
-            "implantação personalizada",
-            "não ativa mídia",
-            "tráfego de teste segregado",
-            "billingModel",
+            "Têmis transforma a estratégia",
+            "não devolva campos",
+            "instrumentação",
             "eventContracts",
-            "regra absoluta de reembolso",
-            "não duplique a homologação técnica");
+            "não execute o preflight");
     assertThat(schema)
         .contains(
-            "priceDecision",
-            "billingModel",
-            "communicationContract",
-            "checkoutAndAccess",
+            "strategicContractReference",
+            "growthOperationContract",
+            "attributionPlan",
+            "checkoutAndAccessVerification",
             "eventContracts",
             "refundGuardrail",
             "continueCriteria",
             "stopCriteria");
     assertThat(GrowthOperatorBpmRunner.promptResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/v1/pde-communication-contract.md");
+        .isEqualTo("prompts/bpm/v2/pde-growth-operation-contract.md");
     assertThat(GrowthOperatorBpmRunner.schemaResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/v1/pde-communication-contract-schema.json");
+        .isEqualTo("prompts/bpm/v2/pde-growth-operation-contract-schema.json");
+  }
+
+  /** Rejeita qualquer tentativa de Hermes devolver campos estratégicos. */
+  @Test
+  void shouldRejectStrategicRedefinitionByHermes() throws Exception {
+    var result =
+        new ObjectMapper()
+            .readTree(
+                """
+                {
+                  "executionStatus":"COMPLETED",
+                  "activityOutcome":"Otimização pronta com estratégia alterada indevidamente.",
+                  "observedFacts":["Funil consultado"],
+                  "inferences":[],"contradictoryEvidence":[],"evidenceGaps":[],
+                  "strategicContractReference":{"strategistExecutionId":41,"contractVersion":"MARKET_STRATEGY_V2","contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false,"revisionReason":null},
+                  "alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],
+                  "selectedAlternative":"A",
+                  "positioning":"Novo posicionamento criado por Hermes",
+                  "expectedMetric":"Venda","continueCriteria":"Uma venda","adjustCriteria":"Sem venda","stopCriteria":"Risco","recommendedAction":"Executar teste operacional autorizado."
+                }
+                """);
+
+    assertThatThrownBy(
+            () -> GrowthOperatorBpmRunner.validate(result, "operacao-otimizacao-experimento"))
+        .hasMessageContaining("não preserva");
+  }
+
+  /** Rejeita resposta que troque silenciosamente a identidade do contrato de Atena. */
+  @Test
+  void shouldRejectDifferentAtenaContractHash() throws Exception {
+    var result =
+        new ObjectMapper()
+            .readTree(
+                """
+                {
+                  "executionStatus":"BLOCKED",
+                  "activityOutcome":"Estratégia preservada, mas instrumentação ausente.",
+                  "observedFacts":["Sem eventos"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":["Eventos"],
+                  "strategicContractReference":{"strategistExecutionId":41,"contractVersion":"MARKET_STRATEGY_V2","contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false,"revisionReason":null},
+                  "alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],
+                  "selectedAlternative":"A",
+                  "expectedMetric":"Evento real","continueCriteria":"Evento íntegro","adjustCriteria":"Sem evento","stopCriteria":"Falha","recommendedAction":"Corrigir instrumentação."
+                }
+                """);
+
+    assertThatThrownBy(
+            () ->
+                GrowthOperatorBpmRunner.validate(
+                    result,
+                    "operacao-otimizacao-experimento",
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+        .hasMessageContaining("hash", "Atena");
   }
 
   /** Lê integralmente um recurso usado pelo contrato. */

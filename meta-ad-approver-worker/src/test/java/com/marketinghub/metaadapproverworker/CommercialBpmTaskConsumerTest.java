@@ -83,30 +83,117 @@ class CommercialBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/pde-deliverables-review-schema.json");
   }
 
-  /** Seleciona a revisão independente de comunicação sem reutilizar prompt de landing. */
+  /** Seleciona a tradução estratégica em comunicação sem reutilizar prompt de landing. */
   @Test
   void selectsVersionedPdeCommunicationContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.promptResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/pde-communication-review.md");
+        .isEqualTo("prompts/bpm/pde-communication-translation-v2.md");
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.schemaResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/pde-communication-review-schema.json");
+        .isEqualTo("prompts/bpm/pde-communication-translation-v2-schema.json");
 
-    String prompt = read("prompts/bpm/pde-communication-review.md");
-    String schema = read("prompts/bpm/pde-communication-review-schema.json");
+    String prompt = read("prompts/bpm/pde-communication-translation-v2.md");
+    String schema = read("prompts/bpm/pde-communication-translation-v2-schema.json");
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
-            "preço compreensível",
-            "tráfego de teste segregado",
-            "autorize mídia",
-            "compra, acesso, entrega, primeiro uso/aplicação e reembolso",
-            "Não crie subagente, worktree ou ambiente auxiliar",
-            "Não repita o preflight técnico do processo posterior",
-            "80–100",
-            "não reduz automaticamente");
+            "transformar a estratégia aprovada de Atena",
+            "não redefine mercado",
+            "exatamente três traduções",
+            "Hermes produz separadamente distribuição",
+            "não altera preço",
+            "80–100");
     org.assertj.core.api.Assertions.assertThat(schema)
-        .contains("priceClarityScore", "commercialRationale", "requiredChanges");
+        .contains(
+            "strategicContractReference",
+            "communicationAlternatives",
+            "communicationContract",
+            "priceClarityScore",
+            "commercialRationale",
+            "requiredChanges");
+  }
+
+  /** Rejeita aprovação que indique necessidade de mudar a estratégia de Atena. */
+  @Test
+  void rejectsCommunicationApprovalThatRequiresStrategicRevision() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"APPROVED",
+              "commercialRationale":"Mensagem aparentemente pronta.",
+              "strategicContractReference":{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":true},
+              "communicationAlternatives":[{},{},{}],
+              "communicationContract":{"creativeBrief":"Briefing completo para o criativo."},
+              "priceClarityScore":90,
+              "evidence":["Contrato consultado"],
+              "requiredChanges":[]
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                CommercialBpmTaskConsumer.validate(
+                    result,
+                    "pde-communication-sales-journey",
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        .hasMessageContaining("não preserva a estratégia");
+  }
+
+  /** Rejeita tradução que devolva identidade diferente da estratégia recebida. */
+  @Test
+  void rejectsDifferentAtenaContractHash() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"ADJUST",
+              "commercialRationale":"Mensagem precisa de ajuste.",
+              "strategicContractReference":{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false},
+              "communicationAlternatives":[{},{},{}],
+              "communicationContract":{"creativeBrief":"Briefing completo para o criativo."},
+              "priceClarityScore":90,
+              "evidence":["Contrato consultado"],
+              "requiredChanges":["Ajustar prova"]
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                CommercialBpmTaskConsumer.validate(
+                    result,
+                    "pde-communication-sales-journey",
+                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+        .hasMessageContaining("não preserva a estratégia");
+  }
+
+  /** Exige contrato íntegro antes de Têmis consumir o modelo para traduzir a estratégia. */
+  @Test
+  void validatesMarketStrategyBeforeCommunicationModel() throws Exception {
+    var valid =
+        json.readTree(
+            """
+            {
+              "availability":"AVAILABLE",
+              "contractVersion":"MARKET_STRATEGY_V2",
+              "contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "contract":{
+                "contractVersion":"MARKET_STRATEGY_V2",
+                "status":"READY_FOR_OPERATION",
+                "operatorBoundary":"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
+              }
+            }
+            """);
+    var malformedHash = valid.deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) malformedHash)
+        .put("contentHash", "z".repeat(64));
+
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.isReadyMarketStrategicContract(valid))
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.isReadyMarketStrategicContract(malformedHash))
+        .isFalse();
   }
 
   /** Seleciona o gate independente que antecede o preflight e a autorização humana. */

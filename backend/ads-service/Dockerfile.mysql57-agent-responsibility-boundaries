@@ -1,0 +1,3 @@
+FROM mysql:5.7
+
+COPY src/test/resources/liquibase-mysql57/agent-responsibility-boundaries-v2-baseline.sql /docker-entrypoint-initdb.d/001-baseline.sql

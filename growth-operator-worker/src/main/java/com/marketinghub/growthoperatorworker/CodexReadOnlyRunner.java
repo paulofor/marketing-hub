@@ -3,6 +3,7 @@ package com.marketinghub.growthoperatorworker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,7 +11,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: executar o Codex com sandbox somente leitura e saida JSON validada. */
 @Component
 public class CodexReadOnlyRunner {
+  private static final Logger log = LoggerFactory.getLogger(CodexReadOnlyRunner.class);
   private final WorkerProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
@@ -38,6 +43,8 @@ public class CodexReadOnlyRunner {
 
   /** Executa diagnóstico efêmero com memória correlacionada e repositório somente leitura. */
   public Map<String, Object> run(GrowthOperatorJob job) throws IOException, InterruptedException {
+    Optional<Map<String, Object>> strategicGate = strategicContractGate(job);
+    if (strategicGate.isPresent()) return strategicGate.get();
     Path output = Files.createTempFile("growth-operator-", ".json");
     Path processOutput = Files.createTempFile("growth-operator-process-", ".log");
     Path mcpServer = materializeMcpServer();
@@ -76,13 +83,13 @@ public class CodexReadOnlyRunner {
         }
         String rawResponse = Files.readString(output);
         JsonNode result = objectMapper.readTree(rawResponse);
-        validateResult(result);
+        validateResult(result, strategicContractHash(job));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(
             "alternativesJson", objectMapper.writeValueAsString(result.get("alternatives")));
         payload.put("diagnosisJson", objectMapper.writeValueAsString(result.get("diagnosis")));
         payload.put("rawModelResponse", rawResponse);
-        payload.put("toolUsageJson", extractToolUsage(processLog));
+        payload.put("toolUsageJson", extractToolUsage(processLog, job.id()));
         payload.put("recommendedDecision", result.get("decision").asText());
         payload.put("recommendedAction", result.get("recommendedAction").asText());
         payload.put("dailyReport", result.get("dailyReport").asText());
@@ -103,8 +110,162 @@ public class CodexReadOnlyRunner {
     }
   }
 
+  /** Bloqueia sem custo quando Atena ainda não entregou uma estratégia íntegra e operável. */
+  Optional<Map<String, Object>> strategicContractGate(GrowthOperatorJob job) throws IOException {
+    String reason = "Atena ainda não entregou o Contrato Estratégico de Mercado v2.";
+    String availability = "MISSING";
+    String contractVersion = null;
+    String contentHash = null;
+    try {
+      JsonNode wrapper =
+          objectMapper.readTree(job.evidenceSnapshot()).path("marketStrategicContract");
+      JsonNode contract = wrapper.path("contract");
+      contractVersion = textOrNull(wrapper.path("contractVersion").asText());
+      String candidateHash = wrapper.path("contentHash").asText();
+      contentHash = candidateHash.matches("[0-9a-f]{64}") ? candidateHash : null;
+      if ("INSUFFICIENT_EVIDENCE".equals(contract.path("status").asText())) {
+        availability = "INSUFFICIENT_EVIDENCE";
+      }
+      boolean ready =
+          "AVAILABLE".equals(wrapper.path("availability").asText())
+              && "MARKET_STRATEGY_V2".equals(wrapper.path("contractVersion").asText())
+              && wrapper.path("contentHash").asText().matches("[0-9a-f]{64}")
+              && "MARKET_STRATEGY_V2".equals(contract.path("contractVersion").asText())
+              && "READY_FOR_OPERATION".equals(contract.path("status").asText())
+              && "ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
+                  .equals(contract.path("operatorBoundary").asText());
+      if (ready) return Optional.empty();
+      if (wrapper.hasNonNull("reason") && !wrapper.path("reason").asText().isBlank()) {
+        reason = wrapper.path("reason").asText();
+      }
+    } catch (com.fasterxml.jackson.core.JsonProcessingException | RuntimeException ex) {
+      log.warn(
+          "Snapshot estratégico ilegível no diagnóstico de Hermes; jobId={}, commercialPlanId={}",
+          job.id(),
+          job.commercialPlanId(),
+          ex);
+      reason = "O snapshot não contém um contrato estratégico legível de Atena.";
+    }
+
+    List<Map<String, Object>> alternatives =
+        List.of(
+            Map.of(
+                "name",
+                "Operar sem estratégia",
+                "benefit",
+                "Nenhum benefício confiável",
+                "risk",
+                "Hermes redefiniria mercado e oferta",
+                "effort",
+                "Baixo",
+                "fit",
+                "Rejeitada"),
+            Map.of(
+                "name",
+                "Inferir estratégia de campos antigos",
+                "benefit",
+                "Evita uma nova pesquisa",
+                "risk",
+                "Produz autoria falsa e contexto não auditável",
+                "effort",
+                "Médio",
+                "fit",
+                "Rejeitada"),
+            Map.of(
+                "name",
+                "Solicitar nova análise de Atena",
+                "benefit",
+                "Restaura estratégia versionada e evidenciada",
+                "risk",
+                "Adia a otimização até a conclusão",
+                "effort",
+                "Médio",
+                "fit",
+                "Selecionada"));
+    Map<String, Object> strategicAssessment = new LinkedHashMap<>();
+    strategicAssessment.put("availability", availability);
+    strategicAssessment.put("contractVersion", contractVersion);
+    strategicAssessment.put("contentHash", contentHash);
+    strategicAssessment.put("strategyPreserved", true);
+    strategicAssessment.put("revisionRequired", true);
+    strategicAssessment.put("revisionReason", reason);
+    Map<String, Object> decisionAudit =
+        Map.of(
+            "observedFacts", List.of(reason),
+            "inferences", List.of(),
+            "contradictoryEvidence", List.of(),
+            "evidenceGaps", List.of("Contrato estratégico v2 operável de Atena."),
+            "changeDecisionIf", List.of("Atena concluir contrato v2 READY_FOR_OPERATION íntegro."),
+            "confidence", "HIGH",
+            "verificationSummary",
+                "O gate verificou versão, status, fronteira e SHA-256 antes de abrir o modelo.");
+    Map<String, Object> diagnosis =
+        Map.of(
+            "rootCause",
+            "Contrato Estratégico de Mercado ausente ou não operável.",
+            "evidence",
+            List.of(reason),
+            "expectedMetric",
+            "Contrato MARKET_STRATEGY_V2 íntegro e READY_FOR_OPERATION.",
+            "continueCriteria",
+            "Continuar somente após Atena concluir o contrato estratégico operável.",
+            "adjustCriteria",
+            "Solicitar revisão de Atena enquanto houver ausência, insuficiência ou divergência.",
+            "stopCriteria",
+            "Manter Hermes bloqueado diante de contrato inválido ou não operável.",
+            "decisionAudit",
+            decisionAudit);
+    String recommendedAction =
+        "Solicitar nova análise estratégica à Atena antes de Hermes operar crescimento.";
+    Map<String, Object> raw = new LinkedHashMap<>();
+    raw.put("strategicContractAssessment", strategicAssessment);
+    raw.put("alternatives", alternatives);
+    raw.put("diagnosis", diagnosis);
+    raw.put("decision", "ADJUST");
+    raw.put("recommendedAction", recommendedAction);
+    raw.put(
+        "dailyReport",
+        "Hermes preservou a fronteira estratégica e aguarda um contrato v2 operável de Atena.");
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("alternativesJson", objectMapper.writeValueAsString(alternatives));
+    payload.put("diagnosisJson", objectMapper.writeValueAsString(diagnosis));
+    payload.put("rawModelResponse", objectMapper.writeValueAsString(raw));
+    payload.put("toolUsageJson", "[]");
+    payload.put("recommendedDecision", "ADJUST");
+    payload.put("recommendedAction", recommendedAction);
+    payload.put(
+        "dailyReport",
+        "Hermes preservou a fronteira estratégica e aguarda um contrato v2 operável de Atena.");
+    payload.put("model", "market-strategy-contract-gate-v2");
+    payload.put("inputTokens", 0L);
+    payload.put("outputTokens", 0L);
+    payload.put("estimatedCost", BigDecimal.ZERO);
+    return Optional.of(Map.copyOf(payload));
+  }
+
+  /**
+   * Converte texto vazio em ausência explícita para manter o diagnóstico compatível com o schema.
+   */
+  private String textOrNull(String value) {
+    return hasText(value) ? value : null;
+  }
+
+  /** Recupera o hash íntegro já aprovado pelo gate para comparar a resposta do modelo. */
+  private String strategicContractHash(GrowthOperatorJob job) throws IOException {
+    String hash =
+        objectMapper
+            .readTree(job.evidenceSnapshot())
+            .path("marketStrategicContract")
+            .path("contentHash")
+            .asText();
+    if (!hash.matches("[0-9a-f]{64}")) {
+      throw new IllegalArgumentException("Diagnóstico de Hermes sem hash estratégico de Atena.");
+    }
+    return hash;
+  }
+
   /** Extrai das linhas de auditoria MCP quais ferramentas fundamentaram a execucao. */
-  private String extractToolUsage(String processLog) throws IOException {
+  private String extractToolUsage(String processLog, Long jobId) throws IOException {
     List<JsonNode> calls = new ArrayList<>();
     for (String line : processLog.lines().toList()) {
       if (!line.startsWith("{") || !line.contains("\"tool\"")) {
@@ -115,8 +276,8 @@ public class CodexReadOnlyRunner {
         if (candidate.hasNonNull("tool") && candidate.hasNonNull("status")) {
           calls.add(candidate);
         }
-      } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
-        // Linhas normais do Codex nao fazem parte da auditoria estruturada do MCP.
+      } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+        log.debug("Linha candidata à auditoria MCP não contém JSON válido; jobId={}", jobId, ex);
       }
     }
     return objectMapper.writeValueAsString(calls);
@@ -170,7 +331,7 @@ public class CodexReadOnlyRunner {
 
   /** Resolve o prompt versionado com o contexto congelado pelo backend. */
   private String buildPrompt(GrowthOperatorJob job) throws IOException {
-    String template = readResource("prompts/growth-operator/v1/diagnosis.md");
+    String template = readResource("prompts/growth-operator/v2/diagnosis.md");
     return template
         .replace("{{OBJECTIVE}}", text(job.objective()))
         .replace("{{BLOCKER}}", text(job.blocker()))
@@ -182,7 +343,7 @@ public class CodexReadOnlyRunner {
   /** Materializa o schema do classpath fora do repositorio para uso pelo CLI. */
   private Path materializeSchema() throws IOException {
     Path schema = Files.createTempFile("growth-operator-schema-", ".json");
-    Files.writeString(schema, readResource("prompts/growth-operator/v1/diagnosis-schema.json"));
+    Files.writeString(schema, readResource("prompts/growth-operator/v2/diagnosis-schema.json"));
     schema.toFile().deleteOnExit();
     return schema;
   }
@@ -194,16 +355,27 @@ public class CodexReadOnlyRunner {
     }
   }
 
-  /** Rejeita qualquer resposta que nao preserve o contrato minimo de decisao. */
-  private void validateResult(JsonNode result) {
+  /** Rejeita qualquer resposta que não preserve o contrato e a identidade estratégica recebidos. */
+  void validateResult(JsonNode result, String expectedStrategicHash) {
     if (!result.has("alternatives")
         || result.get("alternatives").size() != 3
+        || !result.hasNonNull("strategicContractAssessment")
+        || !"AVAILABLE"
+            .equals(result.get("strategicContractAssessment").path("availability").asText())
+        || !"MARKET_STRATEGY_V2"
+            .equals(result.get("strategicContractAssessment").path("contractVersion").asText())
+        || !expectedStrategicHash.equals(
+            result.get("strategicContractAssessment").path("contentHash").asText())
+        || !result.get("strategicContractAssessment").hasNonNull("strategyPreserved")
+        || !result.get("strategicContractAssessment").path("strategyPreserved").asBoolean()
         || !result.hasNonNull("diagnosis")
         || !result.get("diagnosis").hasNonNull("decisionAudit")
         || !result.hasNonNull("decision")
         || !result.hasNonNull("recommendedAction")
-        || !result.hasNonNull("dailyReport")) {
-      throw new IllegalArgumentException("Resposta Codex fora do contrato de diagnostico v1.");
+        || !result.hasNonNull("dailyReport")
+        || (result.get("strategicContractAssessment").path("revisionRequired").asBoolean()
+            && "CONTINUE".equals(result.path("decision").asText()))) {
+      throw new IllegalArgumentException("Resposta Codex fora do contrato de diagnóstico v2.");
     }
   }
 

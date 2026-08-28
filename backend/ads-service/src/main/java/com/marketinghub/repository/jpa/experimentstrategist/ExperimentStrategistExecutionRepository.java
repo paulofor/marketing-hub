@@ -22,6 +22,11 @@ public interface ExperimentStrategistExecutionRepository
   Optional<ExperimentStrategistExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(
       Long planId);
 
+  /** Busca a última estratégia concluída no modo autoritativo de pesquisa. */
+  Optional<ExperimentStrategistExecution>
+      findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
+          Long planId, ExperimentStrategistExecutionStatus status, String authorityMode);
+
   /** Reserva a pesquisa pendente mais antiga com bloqueio transacional. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<ExperimentStrategistExecution> findByStatusOrderByCreatedAtAsc(

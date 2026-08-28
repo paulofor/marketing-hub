@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1822,6 +1823,60 @@ class AgentTaskServiceTest {
             .orElseThrow();
 
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
+  }
+
+  /** Injeta a mesma estratégia de Atena nas tarefas de comunicação e operação do plano. */
+  @Test
+  void exposesMarketStrategicContractInPendingContext() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent hermes = agent(3L, "growth-operator", "Hermes");
+    BusinessProcessDefinition process = process("PUBLISHED", "Hermes");
+    process.setProcessCode("pde-communication-sales-journey");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"contract\",\"type\":\"TASK\"}],\"flows\":[]}");
+    AgentTask task = processTask(34L, hermes, process, "contract", "PENDING");
+    when(agents.findByAgentKey("growth-operator")).thenReturn(Optional.of(hermes));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "growth-operator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "growth-operator", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(task));
+    MarketStrategicContextProvider provider =
+        sourceReference ->
+            Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "contractVersion",
+                    "MARKET_STRATEGY_V2",
+                    "contentHash",
+                    "a".repeat(64)));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            null,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            null,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.systemUTC(),
+            provider);
+
+    AgentTaskPendingResponse pending =
+        service
+            .claimEligibleProcessTask(
+                "growth-operator", "pde-communication-sales-journey", "contract")
+            .orElseThrow();
+
+    assertThat(pending.processContextJson())
+        .contains("marketStrategicContract", "MARKET_STRATEGY_V2", "contentHash");
   }
 
   /** Envia somente a correção mais recente do mesmo responsável e atividade ao próximo agente. */

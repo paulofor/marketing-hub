@@ -3,6 +3,20 @@
 > Documento auxiliar de prevenção de recorrência.
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
+
+## LOOP-AGENTES-ESTRATEGIA-OPERACAO-SOBREPOSTAS — operador redefine a tese que deveria executar
+
+- **Data:** 2026-08-28.
+- **Sintoma:** Atena pesquisava clientes, concorrência, lacuna e posicionamento, mas Hermes voltava a
+  definir público, dor, promessa, mecanismo, oferta e preço no contrato seguinte.
+- **Causa-raiz confirmada:** o parecer de Atena não materializava um contrato estratégico formal;
+  campos do experimento eram tratados como estratégia e o schema do Hermes exigia nova autoria dos
+  mesmos elementos.
+- **Correção sistêmica:** Atena v2 produz Contrato Estratégico de Mercado com execução, versão e hash;
+  o backend injeta o artefato nas tarefas; Têmis traduz comunicação e Hermes retorna somente contrato
+  operacional. Contrato ausente bloqueia antes do modelo e contradição real volta para Atena.
+- **Prevenção:** schemas proíbem sobreposição, validators rejeitam campos estratégicos na saída do
+  Hermes e testes ponta a ponta comprovam autoria, consumo, revisão e segregação por plano.
 >
 > Fonte inicial: análise do histórico `docs/registros/experimentos.md` em 2026-06-17.
 >

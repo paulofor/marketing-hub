@@ -3,6 +3,7 @@ package com.marketinghub.growthoperator.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.MarketStrategicContextProvider;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
@@ -44,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -125,7 +127,34 @@ public class GrowthOperatorService {
   private final ExperimentVideoPerformanceDashboardService videoPerformanceService;
   private final ExperimentService experimentService;
   private final ObjectMapper objectMapper;
+  private final MarketStrategicContextProvider marketStrategicContextProvider;
 
+  /** Configura o diagnóstico com o contrato estratégico persistido produzido por Atena. */
+  @Autowired
+  public GrowthOperatorService(
+      GrowthOperatorExecutionRepository repository,
+      GrowthOperatorTaskRepository taskRepository,
+      CommercialPlanService commercialPlanService,
+      CommercialPlanWeekObjectiveRepository weekObjectiveRepository,
+      ExperimentFunnelService experimentFunnelService,
+      VideoProjectRepository videoProjectRepository,
+      ExperimentVideoPerformanceDashboardService videoPerformanceService,
+      ExperimentService experimentService,
+      ObjectMapper objectMapper,
+      MarketStrategicContextProvider marketStrategicContextProvider) {
+    this.repository = repository;
+    this.taskRepository = taskRepository;
+    this.commercialPlanService = commercialPlanService;
+    this.weekObjectiveRepository = weekObjectiveRepository;
+    this.experimentFunnelService = experimentFunnelService;
+    this.videoProjectRepository = videoProjectRepository;
+    this.videoPerformanceService = videoPerformanceService;
+    this.experimentService = experimentService;
+    this.objectMapper = objectMapper;
+    this.marketStrategicContextProvider = marketStrategicContextProvider;
+  }
+
+  /** Mantém a construção direta de testes que não exercitam a fronteira Atena–Hermes. */
   public GrowthOperatorService(
       GrowthOperatorExecutionRepository repository,
       GrowthOperatorTaskRepository taskRepository,
@@ -136,15 +165,17 @@ public class GrowthOperatorService {
       ExperimentVideoPerformanceDashboardService videoPerformanceService,
       ExperimentService experimentService,
       ObjectMapper objectMapper) {
-    this.repository = repository;
-    this.taskRepository = taskRepository;
-    this.commercialPlanService = commercialPlanService;
-    this.weekObjectiveRepository = weekObjectiveRepository;
-    this.experimentFunnelService = experimentFunnelService;
-    this.videoProjectRepository = videoProjectRepository;
-    this.videoPerformanceService = videoPerformanceService;
-    this.experimentService = experimentService;
-    this.objectMapper = objectMapper;
+    this(
+        repository,
+        taskRepository,
+        commercialPlanService,
+        weekObjectiveRepository,
+        experimentFunnelService,
+        videoProjectRepository,
+        videoPerformanceService,
+        experimentService,
+        objectMapper,
+        MarketStrategicContextProvider.empty());
   }
 
   /** Pausa o experimento somente quando o backend comprova o primeiro gate sem receita. */
@@ -607,11 +638,23 @@ public class GrowthOperatorService {
     snapshot.put("deadline", plan.getDeadline());
     snapshot.put("currentWeek", buildCurrentWeekContext(plan, executionWeekNumber));
     snapshot.put("spendGovernance", buildSpendGovernance(plan));
+    snapshot.put(
+        "marketStrategicContract",
+        marketStrategicContextProvider
+            .resolve("commercial-plan:" + plan.getId())
+            .orElse(
+                Map.of(
+                    "availability",
+                    "MISSING",
+                    "sourceAgent",
+                    "ATENA",
+                    "reason",
+                    "Contrato estratégico não disponível para o diagnóstico.")));
     if (plan.getExperiment() != null) {
       Long experimentId = plan.getExperiment().getId();
       snapshot.put("experimentId", experimentId);
       snapshot.put(
-          "experimentStrategicContract", buildExperimentStrategicContract(plan.getExperiment()));
+          "experimentExecutionContract", buildExperimentExecutionContract(plan.getExperiment()));
       snapshot.put("sessionIntelligence", sessionIntelligence(plan.getId(), SESSION_EVENT_LIMIT));
       snapshot.put("videoStrategyIntelligence", videoStrategyIntelligence(plan.getId()));
     } else {
@@ -629,8 +672,8 @@ public class GrowthOperatorService {
     }
   }
 
-  /** Congela o contrato estrategico canonico do experimento para orientar e auditar a decisao. */
-  private Map<String, Object> buildExperimentStrategicContract(Experiment experiment) {
+  /** Congela os parâmetros operacionais do experimento sem transformá-los em autoria estratégica. */
+  private Map<String, Object> buildExperimentExecutionContract(Experiment experiment) {
     LinkedHashMap<String, Object> contract = new LinkedHashMap<>();
     contract.put("source", "EXPERIMENT");
     contract.put("experimentId", experiment.getId());

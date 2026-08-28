@@ -7,6 +7,16 @@
       "agentKey": "growth-operator",
       "sections": [
         {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Hermes opera crescimento sem criar ou reescrever estratégia.",
+          "items": [
+            { "key": "owns", "label": "Hermes decide", "value": "distribuição · instrumentação · atribuição · funil · gargalo · otimização", "description": "Opera a estratégia vigente e decide continuar, ajustar, parar ou aguardar aprovação.", "sourceReference": "docs/canonical/growth-operator-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "Contrato Estratégico de Mercado v2 de Atena · versão · SHA-256", "description": "Contrato ausente ou insuficiente bloqueia antes do modelo.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/experimentstrategist/service/ExperimentStrategistMarketContractProvider.java" },
+            { "key": "forbidden", "label": "Hermes não decide", "value": "mercado · público · desejo · posicionamento · tese de oferta · preço", "description": "Contradição por eventos reais retorna para nova análise de Atena.", "sourceReference": "growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md" }
+          ]
+        },
+        {
           "code": "executor",
           "title": "Executor e implantação",
           "description": "Unidade responsável por executar Hermes de forma independente.",
@@ -149,14 +159,20 @@
       ],
       "artifacts": [
         { "artifactType": "MCP_SERVER", "name": "MCP do Operador de Crescimento", "version": "v1", "path": "growth-operator-worker/src/main/resources/mcp/marketing-hub-readonly.mjs", "description": "Ferramentas oficiais de leitura, memória e callbacks permitidos." },
-        { "artifactType": "PROMPT", "name": "Diagnóstico comercial", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md", "description": "Prompt operacional principal." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do diagnóstico comercial", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json", "description": "Contrato estruturado de saída." },
+        { "artifactType": "PROMPT", "name": "Diagnóstico comercial histórico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md", "description": "Versão histórica anterior à fronteira formal com Atena." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico do diagnóstico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json", "description": "Contrato histórico preservado para auditoria." },
+        { "artifactType": "PROMPT", "name": "Diagnóstico operacional", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md", "description": "Prompt ativo que preserva a estratégia de Atena." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do diagnóstico operacional", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis-schema.json", "description": "Exige avaliação da versão e hash estratégicos." },
         { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Revisão comercial independente de uma oportunidade." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato estruturado da revisão." },
-        { "artifactType": "PROMPT", "name": "Otimização de experimento BPM", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization.md", "description": "Diagnóstico e próxima ação do experimento." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de otimização de experimento", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization-schema.json", "description": "Contrato estruturado da otimização." },
-        { "artifactType": "PROMPT", "name": "Contrato de comunicação PDE", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract.md", "description": "Contrato comercial de comunicação do PDE." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do contrato de comunicação PDE", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract-schema.json", "description": "Saída estruturada do contrato." },
+        { "artifactType": "PROMPT", "name": "Otimização de experimento histórica", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization.md", "description": "Versão histórica sem referência estratégica formal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico de otimização", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Otimização de experimento", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/experiment-optimization.md", "description": "Opera o experimento sem redefinir estratégia." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de otimização de experimento", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/experiment-optimization-schema.json", "description": "Exige referência imutável ao contrato de Atena." },
+        { "artifactType": "PROMPT", "name": "Contrato de comunicação histórico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract.md", "description": "Versão histórica que acumulava decisões estratégicas." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de comunicação histórico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Contrato operacional de crescimento PDE", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/pde-growth-operation-contract.md", "description": "Distribuição, atribuição, eventos e gates sem autoria estratégica." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema operacional de crescimento PDE", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/pde-growth-operation-contract-schema.json", "description": "Bloqueia campos estratégicos na saída de Hermes." },
         { "artifactType": "PROMPT", "name": "Controle de distribuição comercial", "version": "v4", "path": "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control.md", "description": "Gate de distribuição do plano comercial." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do controle de distribuição", "version": "v4", "path": "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control-schema.json", "description": "Contrato do gate de distribuição." },
         { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "growth-operator-worker/src/main/resources/application.yml", "description": "Modelo, raciocínio, timeout e observabilidade." },
@@ -369,6 +385,16 @@
       "agentKey": "experiment-strategist",
       "sections": [
         {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Atena é a única autora da estratégia geral de mercado.",
+          "items": [
+            { "key": "owns", "label": "Atena decide", "value": "mercado · desejos · comportamento · concorrência · posicionamento · oferta · portfólio · hipóteses", "description": "Decide o que vender, para quem, por que será desejado e como posicionar.", "sourceReference": "docs/canonical/agente-estrategista-experimentos-v1.md" },
+            { "key": "output", "label": "Saída canônica", "value": "Contrato Estratégico de Mercado v2", "description": "Artefato imutável com execução autora, versão, evidências e SHA-256.", "sourceReference": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research-schema.json" },
+            { "key": "forbidden", "label": "Atena não opera", "value": "distribuição · instrumentação · campanha · avanço · publicação · gasto", "description": "A execução operacional pertence a Hermes e aos gates do backend.", "sourceReference": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research.md" }
+          ]
+        },
+        {
           "code": "executor",
           "title": "Executor e implantação",
           "description": "Unidade responsável por executar Atena.",
@@ -429,8 +455,10 @@
         { "artifactType": "MCP_SERVER", "name": "MCP do Estrategista", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/mcp/experiment-strategist.mjs", "description": "Contexto e memória da estratégia." },
         { "artifactType": "MCP_SERVER", "name": "MCP agregado do Clarity", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/mcp/clarity-aggregate.mjs", "description": "Métricas agregadas opcionais, sem dados crus desnecessários." },
         { "artifactType": "BEHAVIOR_LIBRARY", "name": "Biblioteca de ciência comportamental", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/behavioral-science/v1/library.md", "description": "Princípios comportamentais injetados nas decisões estratégicas de Atena." },
-        { "artifactType": "PROMPT", "name": "Pesquisa estratégica", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research.md", "description": "Prompt operacional principal." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da pesquisa estratégica", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research-schema.json", "description": "Contrato da pesquisa." },
+        { "artifactType": "PROMPT", "name": "Pesquisa estratégica histórica", "version": "v1-historical", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research.md", "description": "Versão histórica sem Contrato Estratégico de Mercado formal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema estratégico histórico", "version": "v1-historical", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Estratégia geral de mercado", "version": "v2", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research.md", "description": "Prompt ativo da Estrategista-Chefe de Mercado." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Contrato Estratégico de Mercado", "version": "v2", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research-schema.json", "description": "Congela a estratégia consumida pelos demais agentes." },
         { "artifactType": "PROMPT", "name": "Premissas comerciais", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions.md", "description": "Proposta auditável de premissas." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema das premissas comerciais", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions-schema.json", "description": "Contrato das premissas." },
         { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Revisão estratégica de oportunidade." },
@@ -443,6 +471,15 @@
     {
       "agentKey": "meta-ad-approver",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade de comunicação",
+          "description": "Têmis traduz estratégia em mensagem e mantém revisão independente dos ativos.",
+          "items": [
+            { "key": "owns", "label": "Têmis decide", "value": "tradução de mensagem · prova · limites · CTA · briefings · coerência", "description": "Transforma o contrato de Atena em comunicação sem mudar sua substância.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2.md" },
+            { "key": "forbidden", "label": "Têmis não decide", "value": "mercado · posicionamento · preço · distribuição · instrumentação", "description": "Estratégia retorna para Atena; operação pertence a Hermes.", "sourceReference": "docs/canonical/agent-governance-canon.v1.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",
@@ -511,8 +548,10 @@
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de landing", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/landing-commercial-review-schema.json", "description": "Contrato do gate." },
         { "artifactType": "PROMPT", "name": "Homologação comercial independente PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review.md", "description": "Revisão independente da ativação comercial." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da homologação independente", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review-schema.json", "description": "Contrato da homologação." },
-        { "artifactType": "PROMPT", "name": "Revisão da comunicação PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review.md", "description": "Revisão ética e comercial da comunicação." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da comunicação PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão da comunicação histórica", "version": "bpm-v1-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review.md", "description": "Versão histórica somente revisora." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da comunicação", "version": "bpm-v1-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Tradução estratégica em comunicação", "version": "bpm-v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2.md", "description": "Transforma a estratégia de Atena em mensagem, prova, CTA e briefings." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da tradução em comunicação", "version": "bpm-v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2-schema.json", "description": "Exige três traduções e preservação da versão/hash estratégicos." },
         { "artifactType": "PROMPT", "name": "Revisão de entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review.md", "description": "Revisão do produto entregue." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema dos entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review-schema.json", "description": "Contrato da revisão." },
         { "artifactType": "PROMPT", "name": "Produção do estúdio de imagens", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md", "description": "Instrução do papel produtor." },

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +26,7 @@ class GrowthOperatorBpmTaskConsumerTest {
     WorkerProperties properties = properties();
     Map<String, Object> task = task(88L);
     when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
-    when(runner.run(task))
+    when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
                 result("COMPLETED"),
@@ -53,7 +54,7 @@ class GrowthOperatorBpmTaskConsumerTest {
     GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
     Map<String, Object> task = task(89L);
     when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
-    when(runner.run(task))
+    when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
                 result("BLOCKED"), GrowthOperatorBpmRunner.TokenUsage.empty(), List.of()));
@@ -74,7 +75,7 @@ class GrowthOperatorBpmTaskConsumerTest {
     GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
     Map<String, Object> task = task(90L);
     when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
-    when(runner.run(task))
+    when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
                 result("COMPLETED"), GrowthOperatorBpmRunner.TokenUsage.empty(), List.of()));
@@ -95,9 +96,10 @@ class GrowthOperatorBpmTaskConsumerTest {
             "taskId", 91L,
             "activityId", "contract",
             "sourceReference", "commercial-plan:4@v2",
-            "processCode", "pde-communication-sales-journey");
+            "processCode", "pde-communication-sales-journey",
+            "processContextJson", marketContext());
     when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
-    when(runner.run(task))
+    when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
                 result("COMPLETED"), GrowthOperatorBpmRunner.TokenUsage.empty(), List.of()));
@@ -108,7 +110,52 @@ class GrowthOperatorBpmTaskConsumerTest {
     ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
     verify(backend).completeBpmTask(eq(91L), payload.capture());
     assertThat(payload.getValue().get("evidenceJson").toString())
-        .contains("commercial-plan:4@v2", "externalSideEffects");
+        .contains(
+            "commercial-plan:4@v2", "externalSideEffects", "MARKET_STRATEGY_V2", "contentHash");
+  }
+
+  /** Bloqueia sem custo de modelo quando Atena ainda não entregou estratégia operável. */
+  @Test
+  void shouldBlockBeforeModelWhenMarketStrategyIsMissing() throws Exception {
+    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
+    GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 92L,
+            "activityId", "contract",
+            "sourceReference", "commercial-plan:4@v2",
+            "processCode", "pde-communication-sales-journey",
+            "processContextJson", "{\"marketStrategicContract\":{\"availability\":\"MISSING\"}}");
+    when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
+
+    new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
+    verify(runner, never()).run(any());
+    verify(backend).failBpmTask(eq(92L), payload.capture());
+    assertThat(payload.getValue().get("error").toString()).contains("Atena precisa produzir", "v2");
+    assertThat(payload.getValue()).doesNotContainKey("modelUsages");
+  }
+
+  /** Bloqueia antes do modelo quando o identificador estratégico não é um SHA-256 válido. */
+  @Test
+  void shouldBlockBeforeModelWhenMarketStrategyHashIsMalformed() throws Exception {
+    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
+    GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 93L,
+            "activityId", "contract",
+            "sourceReference", "commercial-plan:4@v2",
+            "processCode", "pde-communication-sales-journey",
+            "processContextJson", marketContext().replace("a".repeat(64), "z".repeat(64)));
+    when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
+
+    new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
+
+    verify(runner, never()).run(any());
+    verify(backend).failBpmTask(eq(93L), any());
   }
 
   /** Cria uma resposta mínima válida para exercitar os callbacks. */
@@ -144,7 +191,19 @@ class GrowthOperatorBpmTaskConsumerTest {
         "taskId", id,
         "activityId", "task-1",
         "sourceReference", "experiment:88",
-        "processCode", "operacao-otimizacao-experimento");
+        "processCode", "operacao-otimizacao-experimento",
+        "processContextJson", marketContext());
+  }
+
+  /** Monta o contrato estratégico congelado usado pelos testes do consumidor. */
+  private String marketContext() {
+    return "{\"marketStrategicContract\":{\"availability\":\"AVAILABLE\","
+        + "\"sourceAgent\":\"ATENA\",\"strategistExecutionId\":41,"
+        + "\"contractVersion\":\"MARKET_STRATEGY_V2\","
+        + "\"contentHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\","
+        + "\"contract\":{\"contractVersion\":\"MARKET_STRATEGY_V2\","
+        + "\"status\":\"READY_FOR_OPERATION\","
+        + "\"operatorBoundary\":\"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH\"}}}";
   }
 
   /** Configura modelo e URLs usados na evidência. */

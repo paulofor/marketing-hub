@@ -97,7 +97,7 @@ class CustomerAgentServiceTest {
 
   /** Impede que uma nova avaliação sem versão volte ao comportamento plenamente racional. */
   @Test
-  void shouldDefaultMissingSimulationVersionToBehavioralVersionTwo() {
+  void shouldDefaultMissingSimulationVersionToBehavioralVersionThree() {
     CustomerPersonaRepository personas = mock(CustomerPersonaRepository.class);
     CustomerAgentEvaluationRepository evaluations = mock(CustomerAgentEvaluationRepository.class);
     CustomerPersona persona = new CustomerPersona();
@@ -117,7 +117,7 @@ class CustomerAgentServiceTest {
         service.start(
             new CustomerAgentContracts.StartEvaluationRequest(4L, "PAGE", "https://x.test", null));
 
-    assertThat(response.simulationVersion()).isEqualTo("BEHAVIORAL_V2");
+    assertThat(response.simulationVersion()).isEqualTo("BEHAVIORAL_V3");
   }
 
   /** Aceita a versão afetiva e social sem reinterpretá-la como o simulador legado. */
@@ -144,6 +144,32 @@ class CustomerAgentServiceTest {
                 4L, "PAGE", "https://x.test", "BEHAVIORAL_V2"));
 
     assertThat(response.simulationVersion()).isEqualTo("BEHAVIORAL_V2");
+  }
+
+  /** Aceita a versão sensorial atual sem apagar a compatibilidade das versões anteriores. */
+  @Test
+  void shouldAcceptBehavioralVersionThree() {
+    CustomerPersonaRepository personas = mock(CustomerPersonaRepository.class);
+    CustomerAgentEvaluationRepository evaluations = mock(CustomerAgentEvaluationRepository.class);
+    CustomerPersona persona = new CustomerPersona();
+    persona.setId(4L);
+    persona.setName("Nail designer");
+    when(personas.findById(4L)).thenReturn(Optional.of(persona));
+    when(evaluations.save(any(CustomerAgentEvaluation.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    var service =
+        new CustomerAgentService(
+            personas,
+            evaluations,
+            mock(CustomerDigitalObservationRepository.class),
+            mock(CustomerAgentMotivationService.class));
+
+    var response =
+        service.start(
+            new CustomerAgentContracts.StartEvaluationRequest(
+                4L, "PAGE", "https://x.test", "BEHAVIORAL_V3"));
+
+    assertThat(response.simulationVersion()).isEqualTo("BEHAVIORAL_V3");
   }
 
   /** Entrega ao MCP exatamente a avaliacao reservada, incluindo persona e ativo congelados. */

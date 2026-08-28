@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  ArrowLeft,
   Bot,
   CheckCircle2,
   CircleDollarSign,
@@ -8,8 +7,10 @@ import {
   ClipboardList,
   Clock3,
   ListChecks,
+  ListTree,
   Loader2,
   PlayCircle,
+  Target,
   Workflow,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
@@ -170,12 +171,22 @@ export default function ProductProcessActivityExecutionsPage() {
           </p>
         </div>
         <div className="product-process-activity-executions__actions">
+          {data?.commercialPlanId ? (
+            <Link
+              className="btn btn-primary"
+              to={`/planning/${data.commercialPlanId}`}
+              title={data.commercialPlanName || "Plano comercial do produto"}
+            >
+              <Target size={17} aria-hidden="true" />
+              Plano comercial
+            </Link>
+          ) : null}
           <Link
             className="btn btn-outline-secondary"
             to={`/products/${productId}/value-chain-history`}
           >
-            <ArrowLeft size={17} aria-hidden="true" />
-            Voltar ao histórico
+            <ListTree size={17} aria-hidden="true" />
+            Histórico de atividades
           </Link>
           <Link
             className="btn btn-outline-primary"

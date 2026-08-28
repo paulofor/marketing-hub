@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,7 @@ public class CommercialPlanJourneyHomologationService {
   private final BusinessProcessActivityDefinitionRepository activityDefinitionRepository;
   private final AgentTaskRepository taskRepository;
   private final AgentTaskActivityCoverageRepository activityCoverageRepository;
+  private final CommercialPlanLandingReviewResumeService reviewResumeService;
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
 
@@ -50,6 +52,7 @@ public class CommercialPlanJourneyHomologationService {
       BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
       AgentTaskRepository taskRepository,
       AgentTaskActivityCoverageRepository activityCoverageRepository,
+      CommercialPlanLandingReviewResumeService reviewResumeService,
       AgentTaskService agentTaskService,
       ObjectMapper objectMapper) {
     this.commercialPlanService = commercialPlanService;
@@ -58,11 +61,12 @@ public class CommercialPlanJourneyHomologationService {
     this.activityDefinitionRepository = activityDefinitionRepository;
     this.taskRepository = taskRepository;
     this.activityCoverageRepository = activityCoverageRepository;
+    this.reviewResumeService = reviewResumeService;
     this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
   }
 
-  /** Abre Dédalo, Psique e Têmis na mesma instância BPM, sem publicar landing ou liberar mídia. */
+  /** Inicia a jornada ou retoma somente os revisores quando a landing aprovada continua íntegra. */
   @Transactional
   public CommercialPlanJourneyHomologationDto request(Long planId, Long experimentId) {
     commercialPlanService.requireExperiment(planId, experimentId);
@@ -70,9 +74,41 @@ public class CommercialPlanJourneyHomologationService {
     Instant requestedAt = Instant.now();
     BusinessProcessDefinition process = publishedLandingProcess();
     int planVersion = versionService.current(planId).versionNumber();
-    JourneyExecution journeyExecution =
-        journeySourceReference(
-            "commercial-plan:" + planId + "@v" + planVersion + ":journey", process.getId());
+    String baseReference = "commercial-plan:" + planId + "@v" + planVersion + ":journey";
+    JourneyExecution currentJourney = journeySourceReference(baseReference, process.getId());
+    if (currentJourney.reviewResumeActive()) {
+      return new CommercialPlanJourneyHomologationDto(
+          planId, experimentId, "REVIEW_RESUMED", requestedAt.toString());
+    }
+    Optional<String> approvedResume =
+        currentJourney.blocked()
+            ? reviewResumeService.buildResumeBrief(
+                plan.getId(),
+                experimentId,
+                currentJourney.attemptNumber(),
+                currentJourney.previousAttemptBlocks(),
+                currentJourney.currentTasks())
+            : Optional.empty();
+    if (approvedResume.isPresent()) {
+      String reviewBrief = approvedResume.get();
+      retryReviewTask(
+          "customer-agent",
+          "customer",
+          "Experimento #" + experimentId + " · revalidar percepção da cliente",
+          reviewBrief,
+          currentJourney.sourceReference(),
+          process);
+      retryReviewTask(
+          "meta-ad-approver",
+          "commercial",
+          "Experimento #" + experimentId + " · revisar coerência comercial da landing",
+          reviewBrief,
+          currentJourney.sourceReference(),
+          process);
+      return new CommercialPlanJourneyHomologationDto(
+          planId, experimentId, "REVIEW_RESUMED", requestedAt.toString());
+    }
+    JourneyExecution journeyExecution = nextFullJourney(baseReference, currentJourney);
     String sourceReference = journeyExecution.sourceReference();
     String auditBrief = buildAuditBrief(plan, experimentId, journeyExecution);
     AgentTaskResponse compoundLandingTask =
@@ -102,7 +138,7 @@ public class CommercialPlanJourneyHomologationService {
         planId, experimentId, "INICIADO", requestedAt.toString());
   }
 
-  /** Reutiliza a execução ativa e abre outra tentativa completa depois de um bloqueio funcional. */
+  /** Localiza a tentativa mais recente e ignora bloqueios substituídos por tarefas posteriores. */
   private JourneyExecution journeySourceReference(String baseReference, Long processDefinitionId) {
     Map<Integer, List<AgentTask>> tasksByAttempt =
         taskRepository
@@ -116,18 +152,43 @@ public class CommercialPlanJourneyHomologationService {
             .collect(
                 java.util.stream.Collectors.groupingBy(
                     task -> attemptNumber(baseReference, task.getSourceReference())));
-    if (tasksByAttempt.isEmpty()) return new JourneyExecution(baseReference, 1, List.of());
-    int latestAttempt = tasksByAttempt.keySet().stream().max(Comparator.naturalOrder()).orElse(1);
-    List<AgentTask> latestTasks = tasksByAttempt.get(latestAttempt);
-    boolean blocked = latestTasks.stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()));
-    if (!blocked) {
-      return new JourneyExecution(
-          executionReference(baseReference, latestAttempt), latestAttempt, List.of());
+    if (tasksByAttempt.isEmpty()) {
+      return new JourneyExecution(baseReference, 1, List.of(), List.of(), false);
     }
+    int latestAttempt = tasksByAttempt.keySet().stream().max(Comparator.naturalOrder()).orElse(1);
+    List<AgentTask> latestTasks = currentTasks(tasksByAttempt.get(latestAttempt));
+    boolean blocked = latestTasks.stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()));
     return new JourneyExecution(
-        executionReference(baseReference, latestAttempt + 1),
-        latestAttempt + 1,
-        blockedEvidence(latestTasks));
+        executionReference(baseReference, latestAttempt),
+        latestAttempt,
+        blocked ? blockedEvidence(latestTasks) : List.of(),
+        latestTasks,
+        blocked);
+  }
+
+  /** Avança o número somente quando um bloqueio exige reconstrução real pelo Dédalo. */
+  private JourneyExecution nextFullJourney(String baseReference, JourneyExecution currentJourney) {
+    if (!currentJourney.blocked()) return currentJourney;
+    int nextAttempt = currentJourney.attemptNumber() + 1;
+    return new JourneyExecution(
+        executionReference(baseReference, nextAttempt),
+        nextAttempt,
+        currentJourney.previousAttemptBlocks(),
+        List.of(),
+        false);
+  }
+
+  /** Mantém somente a tentativa mais nova de cada agente em cada atividade. */
+  private List<AgentTask> currentTasks(List<AgentTask> tasks) {
+    Map<String, AgentTask> latest = new LinkedHashMap<>();
+    tasks.stream()
+        .sorted(Comparator.comparing(AgentTask::getId, Comparator.nullsFirst(Long::compareTo)))
+        .forEach(
+            task ->
+                latest.put(
+                    task.getAssignedAgent().getAgentKey() + ":" + task.getProcessActivityId(),
+                    task));
+    return List.copyOf(latest.values());
   }
 
   /**
@@ -192,6 +253,28 @@ public class CommercialPlanJourneyHomologationService {
       String sourceReference,
       BusinessProcessDefinition process) {
     return agentTaskService.createByHumanIfAbsent(
+        new CreateAgentTaskRequest(
+            agentKey,
+            "Operador do Marketing Hub",
+            title,
+            description,
+            "HIGH",
+            sourceReference,
+            process.getId(),
+            activityId,
+            false,
+            null));
+  }
+
+  /** Abre uma tentativa nova para bloqueio e atualiza o snapshot de uma revisão ainda pendente. */
+  private AgentTaskResponse retryReviewTask(
+      String agentKey,
+      String activityId,
+      String title,
+      String description,
+      String sourceReference,
+      BusinessProcessDefinition process) {
+    return agentTaskService.retryBlockedByHumanOrRefreshPending(
         new CreateAgentTaskRequest(
             agentKey,
             "Operador do Marketing Hub",
@@ -280,5 +363,19 @@ public class CommercialPlanJourneyHomologationService {
 
   /** Identifica uma execução idempotente e o aprendizado funcional herdado do bloqueio anterior. */
   private record JourneyExecution(
-      String sourceReference, int attemptNumber, List<Map<String, Object>> previousAttemptBlocks) {}
+      String sourceReference,
+      int attemptNumber,
+      List<Map<String, Object>> previousAttemptBlocks,
+      List<AgentTask> currentTasks,
+      boolean blocked) {
+    /** Reconhece a retomada já aberta e mantém o comando idempotente durante os pareceres. */
+    private boolean reviewResumeActive() {
+      return currentTasks.stream()
+          .map(AgentTask::getDescription)
+          .filter(java.util.Objects::nonNull)
+          .anyMatch(
+              description ->
+                  description.contains("REUSE_APPROVED_LANDING_WITH_FRESH_CANONICAL_EVIDENCE"));
+    }
+  }
 }

@@ -1,0 +1,128 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "assessment", "initialState", "affectiveImpulse", "motivationalDynamics", "noveltyFamiliarity", "relationalValue", "sensoryExperience", "competingGoals", "mentalTransitions", "actionProbabilities", "memoryRecall", "postHocRationalization", "ethicalBoundary", "hypotheses", "baselineComparison", "sources"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["APROVAR_TESTE", "AJUSTAR", "REPROVAR"]},
+    "assessment": {"type": "string", "minLength": 1},
+    "initialState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attention", "urgency", "categoryFamiliarity", "currentNeed", "initialTrust", "financialConstraint", "socialContext", "evidenceBoundary"],
+      "properties": {
+        "attention": {"type": "integer", "minimum": 0, "maximum": 5},
+        "urgency": {"type": "integer", "minimum": 0, "maximum": 5},
+        "categoryFamiliarity": {"type": "integer", "minimum": 0, "maximum": 5},
+        "currentNeed": {"type": "integer", "minimum": 0, "maximum": 5},
+        "initialTrust": {"type": "integer", "minimum": 0, "maximum": 5},
+        "financialConstraint": {"type": "integer", "minimum": 0, "maximum": 5},
+        "socialContext": {"type": "string"},
+        "evidenceBoundary": {"type": "string"}
+      }
+    },
+    "affectiveImpulse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valence", "immediateFeeling", "actionImpulse", "evidence"],
+      "properties": {
+        "valence": {"type": "string", "enum": ["PLEASANT", "UNPLEASANT", "AMBIVALENT"]},
+        "immediateFeeling": {"type": "string"},
+        "actionImpulse": {"type": "string"},
+        "evidence": {"type": "string"}
+      }
+    },
+    "motivationalDynamics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["painAvoidance", "pleasureSeeking", "effortAversion", "lossAversion", "riskFeeling", "noveltySeeking", "familiaritySeeking", "socialApproval", "autonomy", "anticipatedRegret", "dominantTension", "evidence"],
+      "properties": {
+        "painAvoidance": {"type": "integer", "minimum": 0, "maximum": 5},
+        "pleasureSeeking": {"type": "integer", "minimum": 0, "maximum": 5},
+        "effortAversion": {"type": "integer", "minimum": 0, "maximum": 5},
+        "lossAversion": {"type": "integer", "minimum": 0, "maximum": 5},
+        "riskFeeling": {"type": "integer", "minimum": 0, "maximum": 5},
+        "noveltySeeking": {"type": "integer", "minimum": 0, "maximum": 5},
+        "familiaritySeeking": {"type": "integer", "minimum": 0, "maximum": 5},
+        "socialApproval": {"type": "integer", "minimum": 0, "maximum": 5},
+        "autonomy": {"type": "integer", "minimum": 0, "maximum": 5},
+        "anticipatedRegret": {"type": "integer", "minimum": 0, "maximum": 5},
+        "dominantTension": {"type": "string"},
+        "evidence": {"type": "string"}
+      }
+    },
+    "noveltyFamiliarity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["noveltyAppeal", "familiaritySafety", "perceivedRisk", "balance", "evidence"],
+      "properties": {
+        "noveltyAppeal": {"type": "integer", "minimum": 0, "maximum": 5},
+        "familiaritySafety": {"type": "integer", "minimum": 0, "maximum": 5},
+        "perceivedRisk": {"type": "integer", "minimum": 0, "maximum": 5},
+        "balance": {"type": "string", "enum": ["TOO_FAMILIAR", "SAFE_SURPRISE", "TOO_UNFAMILIAR"]},
+        "evidence": {"type": "string"}
+      }
+    },
+    "relationalValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["foundationalNeed", "situationalActivation", "desiredRecognition", "loveAndBelongingMeaning", "rejectionConcern", "evidence"],
+      "properties": {
+        "foundationalNeed": {"type": "string", "enum": ["FOUNDATIONAL"]},
+        "situationalActivation": {"type": "integer", "minimum": 0, "maximum": 5},
+        "desiredRecognition": {"type": "string"},
+        "loveAndBelongingMeaning": {"type": "string"},
+        "rejectionConcern": {"type": "string"},
+        "evidence": {"type": "string"}
+      }
+    },
+    "sensoryExperience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceAvailable", "availableModalities", "pleasureByModality", "processingFluency", "sensoryCongruence", "overloadRisk", "embodiedAnticipation", "dominantCue", "evidenceBoundary"],
+      "properties": {
+        "evidenceAvailable": {"type": "boolean"},
+        "availableModalities": {"type": "array", "items": {"type": "string", "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]}},
+        "pleasureByModality": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["modality", "pleasureScore", "evidence"],
+            "properties": {
+              "modality": {"type": "string", "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]},
+              "pleasureScore": {"type": "integer", "minimum": 0, "maximum": 5},
+              "evidence": {"type": "string"}
+            }
+          }
+        },
+        "processingFluency": {"type": "integer", "minimum": 0, "maximum": 5},
+        "sensoryCongruence": {"type": "integer", "minimum": 0, "maximum": 5},
+        "overloadRisk": {"type": "integer", "minimum": 0, "maximum": 5},
+        "embodiedAnticipation": {"type": "string"},
+        "dominantCue": {"type": "string"},
+        "evidenceBoundary": {"type": "string"}
+      }
+    },
+    "competingGoals": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["goal", "weight", "evidence"], "properties": {"goal": {"type": "string"}, "weight": {"type": "integer", "minimum": 0, "maximum": 5}, "evidence": {"type": "string"}}}},
+    "mentalTransitions": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["from", "to", "trigger", "friction", "probability"], "properties": {"from": {"type": "string"}, "to": {"type": "string"}, "trigger": {"type": "string"}, "friction": {"type": "string"}, "probability": {"type": "integer", "minimum": 0, "maximum": 100}}}},
+    "actionProbabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ignore", "explore", "startAction", "abandon", "checkout", "purchase"],
+      "properties": {
+        "ignore": {"type": "integer", "minimum": 0, "maximum": 100},
+        "explore": {"type": "integer", "minimum": 0, "maximum": 100},
+        "startAction": {"type": "integer", "minimum": 0, "maximum": 100},
+        "abandon": {"type": "integer", "minimum": 0, "maximum": 100},
+        "checkout": {"type": "integer", "minimum": 0, "maximum": 100},
+        "purchase": {"type": "integer", "minimum": 0, "maximum": 100}
+      }
+    },
+    "memoryRecall": {"type": "object", "additionalProperties": false, "required": ["remembered", "confused", "forgotten"], "properties": {"remembered": {"type": "array", "items": {"type": "string"}}, "confused": {"type": "array", "items": {"type": "string"}}, "forgotten": {"type": "array", "items": {"type": "string"}}}},
+    "postHocRationalization": {"type": "object", "additionalProperties": false, "required": ["likelyJustification", "conflictWithImpulse", "evidence"], "properties": {"likelyJustification": {"type": "string"}, "conflictWithImpulse": {"type": "string"}, "evidence": {"type": "string"}}},
+    "ethicalBoundary": {"type": "object", "additionalProperties": false, "required": ["exploitationRisk", "safeguard"], "properties": {"exploitationRisk": {"type": "string", "enum": ["NONE", "LOW", "MEDIUM", "HIGH"]}, "safeguard": {"type": "string"}}},
+    "hypotheses": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["statement", "evidence", "confidence"], "properties": {"statement": {"type": "string"}, "evidence": {"type": "string"}, "confidence": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]}}}},
+    "baselineComparison": {"type": "object", "additionalProperties": false, "required": ["baselineDecision", "agreements", "divergences", "predictiveGainHypothesis", "verdict"], "properties": {"baselineDecision": {"type": "string"}, "agreements": {"type": "array", "items": {"type": "string"}}, "divergences": {"type": "array", "items": {"type": "string"}}, "predictiveGainHypothesis": {"type": "string"}, "verdict": {"type": "string", "enum": ["CONTINUE_TESTING", "ADJUST_MODEL", "NO_EXPECTED_GAIN"]}}},
+    "sources": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["url", "title", "accessedAt", "collectionMethod", "learning"], "properties": {"url": {"type": "string"}, "title": {"type": "string"}, "accessedAt": {"type": "string"}, "collectionMethod": {"type": "string", "enum": ["WEB_SEARCH", "PLAYWRIGHT", "PUBLIC_API"]}, "learning": {"type": "string"}}}}
+  }
+}

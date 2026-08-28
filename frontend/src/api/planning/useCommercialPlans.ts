@@ -585,7 +585,7 @@ export function useCommercialPlanAgentActivity(planId?: number | null) {
   });
 }
 
-/** Solicita a homologação integral da jornada pelo agente Dédalo. */
+/** Inicia a homologação ou retoma os revisores sem reconstruir uma landing ainda aprovada. */
 export function useRequestCommercialPlanJourneyHomologation(
   planId?: number | null,
 ) {

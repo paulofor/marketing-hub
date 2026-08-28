@@ -55,6 +55,76 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Cria nova tentativa para o revisor bloqueado sem duplicar outra tarefa ainda pendente. */
+  @Test
+  void retriesBlockedHumanReviewAndRefreshesPendingContext() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Montar HTML\","
+            + "\"owner\":\"Psique\"},{\"id\":\"customer\",\"type\":\"TASK\","
+            + "\"label\":\"Avaliar percepção\",\"owner\":\"Psique\"}]}");
+    AgentTask blocked = processTask(601L, psique, process, "customer", "BLOCKED");
+    blocked.setSourceReference("commercial-plan:4@v3:journey");
+    AtomicReference<AgentTask> saved = new AtomicReference<>();
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3:journey"))
+        .thenReturn(List.of(blocked));
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              if (task.getId() == null) task.setId(602L);
+              saved.set(task);
+              return task;
+            });
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+    CreateAgentTaskRequest request =
+        new CreateAgentTaskRequest(
+            "customer-agent",
+            "Operador",
+            "Retomar avaliação",
+            "Snapshot canônico atualizado.",
+            "HIGH",
+            "commercial-plan:4@v3:journey",
+            9L,
+            "customer",
+            false,
+            null);
+
+    AgentTaskResponse retry = service.retryBlockedByHumanOrRefreshPending(request);
+
+    assertThat(retry.id()).isEqualTo(602L);
+    assertThat(retry.status()).isEqualTo("PENDING");
+    assertThat(saved.get().getDescription()).isEqualTo("Snapshot canônico atualizado.");
+
+    AgentTask pending = saved.get();
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3:journey"))
+        .thenReturn(List.of(blocked, pending));
+    request =
+        new CreateAgentTaskRequest(
+            "customer-agent",
+            "Operador",
+            "Retomar avaliação",
+            "Snapshot canônico mais recente.",
+            "HIGH",
+            "commercial-plan:4@v3:journey",
+            9L,
+            "customer",
+            false,
+            null);
+
+    AgentTaskResponse reused = service.retryBlockedByHumanOrRefreshPending(request);
+
+    assertThat(reused.id()).isEqualTo(602L);
+    assertThat(saved.get().getDescription()).isEqualTo("Snapshot canônico mais recente.");
+  }
+
   /** Persiste atividade, instância e tentativas como níveis distintos do mesmo trabalho. */
   @Test
   void persistsActivityInstanceAndGroupsItsAttempts() {

@@ -43,11 +43,12 @@ humano observado, nunca pela quantidade ou eloquência dos relatórios.
 
 ## Simulador comportamental v1
 
-Cada avaliação declara `BASELINE_V1`, `BEHAVIORAL_V1` ou `BEHAVIORAL_V2`. Registros legados mantêm
-sua versão original, mas toda nova avaliação sem versão explícita usa `BEHAVIORAL_V2` para impedir
-o retorno silencioso ao comportamento plenamente racional. O modo comportamental sempre executa
-primeiro o baseline com a mesma persona e ativo; em seguida produz uma segunda avaliação separada,
-sem sobrescrever ou reinterpretar o resultado original.
+Cada avaliação declara `BASELINE_V1`, `BEHAVIORAL_V1`, `BEHAVIORAL_V2` ou `BEHAVIORAL_V3`.
+Registros legados mantêm sua versão original, mas toda nova avaliação sem versão explícita usa
+`BEHAVIORAL_V3` para impedir o retorno silencioso ao comportamento plenamente racional e para
+preservar a dimensão sensorial. O modo comportamental sempre executa primeiro o baseline com a
+mesma persona e ativo; em seguida produz uma segunda avaliação separada, sem sobrescrever ou
+reinterpretar o resultado original.
 
 O `BEHAVIORAL_V1` deve modelar estado anterior à exposição, memória contextual limitada às
 evidências fornecidas, objetivos concorrentes, atenção limitada, transições mentais progressivas,
@@ -109,6 +110,46 @@ rejeição, insegurança, humilhação, engano ou dependência emocional.
 - Kool et al., evitação de demanda cognitiva (2010): https://doi.org/10.1037/a0020198
 - Loewenstein et al., risco como sentimento (2001):
   https://doi.org/10.1037/0033-2909.127.2.267
+
+## Simulador humano afetivo, social e sensorial v3
+
+`BEHAVIORAL_V3` é o modo recomendado e padrão para novas avaliações. Ele preserva integralmente os
+motores afetivos e sociais do v2 e acrescenta um contrato sensorial explícito, sem reescrever
+resultados históricos. Os fluxos atuais de avaliação de ativo, observação mobile, oportunidade e
+atividades BPM de landing, criativo, experiência e homologação comercial devem usar o mesmo
+`behavioral-core-v3.md` e schemas compatíveis.
+
+Antes de avaliar prazer, Psique deve declarar se existe evidência sensorial e quais modalidades
+estão realmente disponíveis: `VISUAL`, `AUDIO`, `MOTION` ou `TACTILE_IMAGERY`. Aroma, sabor,
+textura, áudio, movimento ou resposta corporal não podem ser inventados a partir de texto ou de
+uma imagem estática. Quando não houver evidência, `evidenceAvailable` deve ser falso, as listas
+devem ficar vazias, os escores devem ser zero e a indisponibilidade deve ser explicada.
+
+Quando houver evidência, `sensoryExperience` deve registrar:
+
+- prazer de zero a cinco para cada modalidade declarada, com evidência específica;
+- fluidez perceptiva de zero a cinco, de muito difícil a imediata;
+- congruência sensorial de zero a cinco entre forma, produto, promessa, público e canal;
+- risco de sobrecarga de zero a cinco, de confortável a intolerável;
+- antecipação corporal plausível, pista sensorial dominante e fronteira da evidência.
+
+A estética não é propriedade universal do ativo. Psique deve separar gosto provável, condicionado
+por persona, cultura, contexto, dispositivo e objetivo, de legibilidade e acessibilidade
+observáveis. Os escores são previsões simuladas, nunca conversão, satisfação ou preferência humana
+confirmada. O validador do worker deve rejeitar modalidade duplicada, modalidade sem avaliação de
+prazer, nota fora da escala e qualquer nota atribuída quando a evidência foi declarada ausente.
+
+O detalhe do agente deve expor a constituição humana e sensorial em linguagem legível — direção
+fundamental, afeto inicial, modalidades, dimensões, escalas, novidade segura, valor relacional,
+fronteira da evidência e limite ético. Exibir apenas nome e caminho dos arquivos não atende ao
+contrato de transparência do harness; prompts e schemas versionados continuam listados como fontes.
+
+### Base científica complementar
+
+- Reber, Schwarz e Winkielman, fluidez e prazer estético (2004):
+  https://doi.org/10.1207/S15327957PSPR0804_3
+- Krishna, Elder e Caldara, congruência multissensorial e experiência estética (2010):
+  https://doi.org/10.1016/j.jcps.2010.06.010
 
 ## Experiência Digital Observacional
 

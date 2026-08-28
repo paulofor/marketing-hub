@@ -51,7 +51,7 @@ class CodexObservationAnalyzerTest {
         new ObjectMapper()
             .readTree(
                 java.nio.file.Path.of(
-                        "src/main/resources/prompts/customer-agent/v1/digital-observation-schema.json")
+                        "src/main/resources/prompts/customer-agent/v2/digital-observation-schema.json")
                     .toFile());
 
     assertStrictObjects(schema);
@@ -62,6 +62,7 @@ class CodexObservationAnalyzerTest {
             "noveltyAndFamiliarity",
             "riskAndLoss",
             "relationalValue",
+            "sensoryExperience",
             "postHocRationalization");
   }
 

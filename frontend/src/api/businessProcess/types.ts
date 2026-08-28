@@ -181,6 +181,8 @@ export type ProductProcessActivityExecutionHistory = {
   productId: number;
   productName?: string;
   productInternalName?: string;
+  commercialPlanId?: number;
+  commercialPlanName?: string;
   selectedProcessDefinitionId: number;
   processCode: string;
   processName: string;

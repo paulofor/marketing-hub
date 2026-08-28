@@ -1,9 +1,13 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "customerPerspective", "behavioralResponse", "evidence", "requiredChanges"],
+  "required": ["decision", "remediationTarget", "customerPerspective", "behavioralResponse", "evidence", "requiredChanges"],
   "properties": {
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "remediationTarget": {
+      "type": "string",
+      "enum": ["NONE", "EVIDENCE_TRANSPORT", "LANDING_CONTENT", "CANONICAL_CONTRACT", "OTHER"]
+    },
     "customerPerspective": {"type": "string", "minLength": 1},
     "behavioralResponse": {
       "type": "object",

@@ -73,6 +73,15 @@
   técnica antes de concluir Dédalo. Um backfill idempotente cobre todas as aprovações históricas
   correlacionadas por `agent-task:<id>`, sem ids específicos, e testes impedem voltar a inferir o
   estado apenas na leitura da tela ou criar tarefa artificial para o Quality Review.
+- **Fechamento da retomada em 2026-08-28:** o comando de nova homologação tratava qualquer bloqueio
+  de Psique como necessidade de reconstruir toda a landing. No Rigel, o HTML continuava idêntico ao
+  artefato aprovado em 90/100 e somente o snapshot anterior havia perdido o checkout canônico.
+  O backend agora compara o SHA-256 atual com a auditoria do Quality Review, exige checkout e pacote
+  criativo canônicos válidos e, quando o bloqueio é exclusivamente `EVIDENCE_TRANSPORT`, abre nova
+  tentativa apenas para Psique e atualiza a tarefa ainda pendente de Têmis na mesma ocorrência BPM.
+  Dédalo só recebe nova tarefa quando HTML, copy ou ativos realmente precisam mudar. O contrato de
+  Psique passa a classificar a causa entre transporte de evidência, conteúdo da landing, contrato
+  canônico e outras causas; testes impedem reescrever o histórico ou duplicar revisões pendentes.
 
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 
@@ -870,6 +879,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - em 2026-08-06, o workflow ainda rejeitou 23 respostas saudáveis `{"status":"UP"}` porque as aspas do regex foram consumidas pela camada de quoting do comando SSH. A verificação passou a buscar os marcadores estáveis `status` e `UP`, sem depender das aspas literais do JSON no shell remoto.
   - em 2026-08-09, o Aprovador Meta iniciou saudável e autenticado, mas o deploy falhou porque a observabilidade dedicada moveu o health check para `/ops-meta-ad-approver-observability-v1/health` enquanto o workflow continuou consultando `/actuator/health`. Um teste de contrato agora exige que a rota de prontidão do workflow acompanhe o `base-path` versionado do agente.
   - no mesmo ciclo, a correção comercial do criativo 280 falhou no callback porque `creative.primary_text` ainda era `VARCHAR(255)`, menor que a copy válida produzida pelo fluxo. O contrato canônico passou a preservar o texto integral em `LONGTEXT`, alinhado explicitamente na entidade JPA e no changelog MySQL 5.7.
+  - em 2026-08-28, o núcleo v2 de Psique mencionava prazer genericamente, mas não possuía
+    dimensões sensoriais no schema e o detalhe do agente mostrava somente referências de arquivos.
+    O `BEHAVIORAL_V3` passa a versionar evidência disponível, modalidades, prazer por modalidade,
+    fluidez, congruência, sobrecarga, antecipação corporal e fronteira da prova em avaliações,
+    observações, oportunidades e BPM. Um validador determinístico rejeita notas sem estímulo,
+    modalidades duplicadas e contratos incompletos; testes percorrem todos os schemas sensoriais,
+    exigem objetos estritos e proíbem `oneOf`, `anyOf`, `allOf` e `uniqueItems`. O harness apresenta
+    os princípios de forma legível e preserva v2 somente para histórico.
 
 ## LOOP-GL-ARCHITECTURE-STAGES — Arquitetura por etapas do GeraLanding
 

@@ -203,6 +203,44 @@ public class AgentTaskService {
         .orElseGet(() -> createByHuman(request));
   }
 
+  /** Abre nova tentativa após bloqueio e atualiza o contexto de trabalho ainda não reservado. */
+  @Transactional
+  public AgentTaskResponse retryBlockedByHumanOrRefreshPending(CreateAgentTaskRequest request) {
+    String sourceReference = trimToNull(request.sourceReference());
+    if (sourceReference == null) {
+      throw new IllegalArgumentException("Retentativa idempotente exige referência de origem.");
+    }
+    Optional<AgentTask> latest =
+        repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference).stream()
+            .filter(
+                task ->
+                    task.getAssignedAgent().getAgentKey().equals(request.assignedAgentKey().trim()))
+            .filter(
+                task ->
+                    task.getProcessDefinition() != null
+                        && task.getProcessDefinition()
+                            .getId()
+                            .equals(request.processDefinitionId()))
+            .filter(
+                task -> Objects.equals(task.getProcessActivityId(), request.processActivityId()))
+            .filter(task -> !"CANCELLED".equals(task.getStatus()))
+            .max(
+                java.util.Comparator.comparing(
+                    AgentTask::getId, java.util.Comparator.nullsFirst(Long::compareTo)));
+    if (latest.isEmpty() || "BLOCKED".equals(latest.get().getStatus())) {
+      return createByHuman(request);
+    }
+    AgentTask task = latest.get();
+    if ("PENDING".equals(task.getStatus())) {
+      task.setTitle(request.title().trim());
+      task.setDescription(request.description().trim());
+      task.setPriority(request.priority());
+      task.setUpdatedAt(Instant.now(clock));
+      task = repository.save(task);
+    }
+    return response(task);
+  }
+
   /** Importa uma execução já validada, preservando resultado, evidência e consumo reais. */
   @Transactional
   public AgentTaskResponse recordImportedCompletedTask(ImportedCompletedAgentTask importedTask) {

@@ -1050,7 +1050,7 @@ function CommercialPlanBlockersPanel({
                   disabled={executing}
                   onClick={onExecute}
                 >
-                  {executing ? "Acionando Dédalo..." : "Acionar Dédalo"}
+                  {executing ? "Preparando retomada..." : "Retomar homologação"}
                 </button>
               ) : null}
             </article>
@@ -3587,8 +3587,8 @@ function CommercialPlanDetailPage({
                     }
                   >
                     {requestJourneyHomologation.isPending
-                      ? "Solicitando homologação..."
-                      : "Homologar jornada com Dédalo"}
+                      ? "Preparando homologação..."
+                      : "Homologar ou retomar jornada"}
                   </button>
                   <small className="text-body-secondary">
                     Usa dados segregados com mh_test=1 e não autoriza
@@ -3605,8 +3605,10 @@ function CommercialPlanDetailPage({
                   </small>
                   {requestJourneyHomologation.isSuccess ? (
                     <span className="text-success" role="status">
-                      Homologação enfileirada para o experimento #
-                      {requestJourneyHomologation.data.experimentId}.
+                      {requestJourneyHomologation.data.status ===
+                      "REVIEW_RESUMED"
+                        ? "Landing aprovada reutilizada; Psique e Têmis foram retomadas sem reconstruir a página."
+                        : `Homologação enfileirada para o experimento #${requestJourneyHomologation.data.experimentId}.`}
                     </span>
                   ) : null}
                   {requestJourneyHomologation.isError ? (

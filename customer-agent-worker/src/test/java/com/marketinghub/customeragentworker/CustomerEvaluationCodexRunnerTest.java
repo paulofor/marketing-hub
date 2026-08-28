@@ -141,6 +141,63 @@ class CustomerEvaluationCodexRunnerTest {
         .contains("Não recomende explorar vergonha");
   }
 
+  /** Protege a versão sensorial como contrato novo sem sobrescrever a avaliação humana v2. */
+  @Test
+  void shouldRequireEvidenceBoundedSensoryExperienceInBehavioralVersionThree() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/customer-agent/behavioral-v3/evaluation.md"));
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/customer-agent/behavioral-v3/evaluation-schema.json"));
+    String core =
+        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v3.md"));
+
+    assertThat(prompt)
+        .contains("{{PSIQUE_BEHAVIORAL_CORE_V3}}")
+        .contains("sensoryExperience")
+        .contains("evidenceAvailable: false");
+    assertThat(schema)
+        .contains(
+            "sensoryExperience",
+            "availableModalities",
+            "pleasureByModality",
+            "processingFluency",
+            "sensoryCongruence",
+            "overloadRisk");
+    assertThat(core)
+        .contains("prazer sensorial")
+        .contains("Não trate estética como propriedade universal")
+        .contains("Se não houver evidência sensorial");
+  }
+
+  /** Rejeita uma resposta v3 que tente omitir o contrato sensorial obrigatório. */
+  @Test
+  void shouldRejectBehavioralVersionThreeWithoutSensoryExperience() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    CustomerEvaluationCodexRunner runner =
+        new CustomerEvaluationCodexRunner(
+            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
+    var result =
+        mapper.readTree(
+            """
+            {
+              "decision":"AJUSTAR","assessment":"teste","hypotheses":[],"sources":[],
+              "initialState":{},"mentalTransitions":[],"memoryRecall":{},
+              "baselineComparison":{},
+              "actionProbabilities":{"ignore":20,"explore":20,"startAction":20,"abandon":20,"checkout":10,"purchase":10},
+              "affectiveImpulse":{},"motivationalDynamics":{},"noveltyFamiliarity":{},
+              "relationalValue":{"foundationalNeed":"FOUNDATIONAL"},
+              "postHocRationalization":{},"ethicalBoundary":{}
+            }
+            """);
+
+    assertThatThrownBy(() -> runner.validateBehavioral(result, "BEHAVIORAL_V3"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("sensorial");
+  }
+
   /**
    * Rejeita uma distribuição probabilística que aparenta precisão sem fechar o universo de ações.
    */

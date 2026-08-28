@@ -1,11 +1,16 @@
 package com.marketinghub.agentdetail.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agentdetail.service.getDetail.AgentBehaviorFileResponse;
 import com.marketinghub.agentdetail.service.getDetail.AgentHarnessArtifactResponse;
 import com.marketinghub.agentdetail.service.getDetail.AgentHarnessResponse;
 import com.marketinghub.agentdetail.service.getDetail.AgentHarnessSectionResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +25,16 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class AgentHarnessCatalog {
-  static final String MANIFEST_PATH = "agent-harness/agent-harness-v1.json";
+  static final String MANIFEST_PATH = "agent-harness/agent-harness-v2.json";
+  static final String BEHAVIOR_FILES_ROOT = "agent-behavior-files/";
   private static final Set<String> REQUIRED_SECTIONS =
       Set.of("executor", "runtime", "orchestration", "memory", "security", "observability");
+  private static final Set<String> BEHAVIOR_ARTIFACT_TYPES =
+      Set.of("PROMPT", "OUTPUT_SCHEMA", "BEHAVIOR_LIBRARY");
 
   private final HarnessCatalogDocument document;
   private final Map<String, HarnessAgentDefinition> definitionsByAgentKey;
+  private final Map<String, List<AgentBehaviorFileResponse>> behaviorFilesByAgentKey;
 
   /**
    * Carrega o catálogo do classpath e interrompe o bootstrap quando o contrato estiver inválido.
@@ -33,6 +42,7 @@ public class AgentHarnessCatalog {
   public AgentHarnessCatalog(ObjectMapper objectMapper) {
     this.document = load(objectMapper);
     this.definitionsByAgentKey = indexAndValidate(document);
+    this.behaviorFilesByAgentKey = loadBehaviorFiles(definitionsByAgentKey);
   }
 
   /**
@@ -50,7 +60,8 @@ public class AgentHarnessCatalog {
         document.sourceReference(),
         document.sensitiveValuesPolicy(),
         List.copyOf(definition.sections()),
-        List.copyOf(definition.artifacts()));
+        List.copyOf(definition.artifacts()),
+        behaviorFilesByAgentKey.get(definition.agentKey()));
   }
 
   /** Lê o manifesto imutável empacotado com o backend. */
@@ -116,6 +127,45 @@ public class AgentHarnessCatalog {
     if (!hasPrompt || !hasSchema) {
       throw new IllegalStateException(
           "Harness do agente " + agent.agentKey() + " precisa registrar prompt e schema.");
+    }
+  }
+
+  /** Carrega na inicialização todas as fontes comportamentais declaradas para cada agente. */
+  private Map<String, List<AgentBehaviorFileResponse>> loadBehaviorFiles(
+      Map<String, HarnessAgentDefinition> definitions) {
+    Map<String, List<AgentBehaviorFileResponse>> behaviorFiles = new LinkedHashMap<>();
+    definitions.forEach(
+        (agentKey, definition) ->
+            behaviorFiles.put(
+                agentKey,
+                definition.artifacts().stream()
+                    .filter(artifact -> BEHAVIOR_ARTIFACT_TYPES.contains(artifact.artifactType()))
+                    .map(this::loadBehaviorFile)
+                    .toList()));
+    return Map.copyOf(behaviorFiles);
+  }
+
+  /** Lê o conteúdo empacotado e calcula a identidade exata de uma fonte comportamental. */
+  private AgentBehaviorFileResponse loadBehaviorFile(AgentHarnessArtifactResponse artifact) {
+    String resourcePath = BEHAVIOR_FILES_ROOT + artifact.path();
+    try (InputStream input = new ClassPathResource(resourcePath).getInputStream()) {
+      byte[] bytes = input.readAllBytes();
+      return new AgentBehaviorFileResponse(
+          artifact.artifactType(),
+          artifact.name(),
+          artifact.version(),
+          artifact.path(),
+          artifact.description(),
+          artifact.path().endsWith(".json") ? "application/json" : "text/markdown",
+          HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)),
+          new String(bytes, StandardCharsets.UTF_8));
+    } catch (IOException | NoSuchAlgorithmException ex) {
+      log.error(
+          "agent-behavior-file-load-failed path={} operation=load-agent-behavior-file",
+          artifact.path(),
+          ex);
+      throw new IllegalStateException(
+          "Não foi possível carregar o arquivo de comportamento " + artifact.path() + ".", ex);
     }
   }
 

@@ -88,6 +88,17 @@ export interface AgentHarnessArtifact {
   description: string;
 }
 
+export interface AgentBehaviorFile {
+  behaviorType: "PROMPT" | "OUTPUT_SCHEMA" | "BEHAVIOR_LIBRARY";
+  name: string;
+  version: string;
+  path: string;
+  description: string;
+  mediaType: "text/markdown" | "application/json";
+  sha256: string;
+  content: string;
+}
+
 export interface AgentHarness {
   status: "COMPLETE" | "NOT_REGISTERED";
   contractVersion: string;
@@ -95,6 +106,7 @@ export interface AgentHarness {
   sensitiveValuesPolicy: string;
   sections: AgentHarnessSection[];
   artifacts: AgentHarnessArtifact[];
+  behaviorFiles: AgentBehaviorFile[];
 }
 
 export interface AgentDetail extends Agent {

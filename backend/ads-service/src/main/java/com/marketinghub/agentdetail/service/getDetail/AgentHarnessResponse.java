@@ -9,7 +9,8 @@ public record AgentHarnessResponse(
     String sourceReference,
     String sensitiveValuesPolicy,
     List<AgentHarnessSectionResponse> sections,
-    List<AgentHarnessArtifactResponse> artifacts) {
+    List<AgentHarnessArtifactResponse> artifacts,
+    List<AgentBehaviorFileResponse> behaviorFiles) {
 
   /** Representa explicitamente um agente ainda sem manifesto de harness cadastrado. */
   public static AgentHarnessResponse notRegistered(
@@ -19,6 +20,7 @@ public record AgentHarnessResponse(
         contractVersion,
         sourceReference,
         sensitiveValuesPolicy,
+        List.of(),
         List.of(),
         List.of());
   }

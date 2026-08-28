@@ -59,9 +59,12 @@ class AgentDetailServiceTest {
         .extracting("resourceCode")
         .containsExactly("argos-market-radar");
     assertThat(detail.harness().status()).isEqualTo("COMPLETE");
-    assertThat(detail.harness().contractVersion()).isEqualTo("agent-harness-v1");
+    assertThat(detail.harness().contractVersion()).isEqualTo("agent-harness-v2");
     assertThat(detail.harness().sections()).extracting("code").contains("runtime", "orchestration");
     assertThat(detail.harness().artifacts())
+        .extracting("path")
+        .contains("product-discovery-worker/prompts/productdiscovery.v1/plan/system.md");
+    assertThat(detail.harness().behaviorFiles())
         .extracting("path")
         .contains("product-discovery-worker/prompts/productdiscovery.v1/plan/system.md");
     assertThat(detail.lastContractChangeAt()).isEqualTo(Instant.parse("2026-08-27T11:00:00Z"));

@@ -131,6 +131,8 @@ class BusinessProcessActivityExecutionControllerTest {
                 9L,
                 "Kit WhatsApp Pronto",
                 "Rigel",
+                4L,
+                "Plano comercial do Rigel",
                 18L,
                 "landing-page-generation",
                 "Geração de landing page",
@@ -161,6 +163,8 @@ class BusinessProcessActivityExecutionControllerTest {
         .perform(get("/api/business-processes/18/products/9/activity-executions"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.productInternalName").value("Rigel"))
+        .andExpect(jsonPath("$.commercialPlanId").value(4))
+        .andExpect(jsonPath("$.commercialPlanName").value("Plano comercial do Rigel"))
         .andExpect(jsonPath("$.processName").value("Geração de landing page"))
         .andExpect(jsonPath("$.operationalState").value("BLOCKED"))
         .andExpect(jsonPath("$.completedActivityCount").value(4))

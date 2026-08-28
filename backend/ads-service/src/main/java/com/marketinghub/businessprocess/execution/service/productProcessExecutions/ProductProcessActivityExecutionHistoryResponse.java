@@ -11,6 +11,8 @@ public record ProductProcessActivityExecutionHistoryResponse(
     Long productId,
     String productName,
     String productInternalName,
+    Long commercialPlanId,
+    String commercialPlanName,
     Long selectedProcessDefinitionId,
     String processCode,
     String processName,

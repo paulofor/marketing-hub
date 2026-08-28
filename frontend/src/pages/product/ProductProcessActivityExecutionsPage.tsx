@@ -10,6 +10,7 @@ import {
   ListChecks,
   Loader2,
   PlayCircle,
+  Target,
   Workflow,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
@@ -170,6 +171,16 @@ export default function ProductProcessActivityExecutionsPage() {
           </p>
         </div>
         <div className="product-process-activity-executions__actions">
+          {data?.commercialPlanId ? (
+            <Link
+              className="btn btn-primary"
+              to={`/planning/${data.commercialPlanId}`}
+              title={data.commercialPlanName || "Plano comercial do produto"}
+            >
+              <Target size={17} aria-hidden="true" />
+              Abrir plano comercial
+            </Link>
+          ) : null}
           <Link
             className="btn btn-outline-secondary"
             to={`/products/${productId}/value-chain-history`}

@@ -154,6 +154,8 @@ const history = {
   productId: 9,
   productName: "Kit WhatsApp Pronto",
   productInternalName: "Rigel",
+  commercialPlanId: 4,
+  commercialPlanName: "Plano comercial do Rigel",
   selectedProcessDefinitionId: 18,
   processCode: "landing-page-generation",
   processName: "Geração de landing page",
@@ -248,6 +250,9 @@ try {
     await expect(
       page.getByRole("heading", { name: "Rigel · Geração de landing page" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Abrir plano comercial" }),
+    ).toHaveAttribute("href", "/planning/4");
     const processNames = page.locator(".product-process-entity-name--process");
     await expect(processNames).toHaveCount(1);
     await expect(processNames.locator(".lucide-workflow")).toBeVisible();

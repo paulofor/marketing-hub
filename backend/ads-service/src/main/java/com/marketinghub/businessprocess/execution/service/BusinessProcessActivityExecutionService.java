@@ -242,10 +242,13 @@ public class BusinessProcessActivityExecutionService {
             !Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()));
     ProductProcessSituation situation = processSituation(activities);
     BigDecimal knownCost = knownEstimatedCost(tasks);
+    CommercialPlan commercialPlan = currentCommercialPlan(productPlans, currentExecutionReference);
     return new ProductProcessActivityExecutionHistoryResponse(
         product.getId(),
         product.getName(),
         product.getInternalName(),
+        commercialPlan == null ? null : commercialPlan.getId(),
+        commercialPlan == null ? null : commercialPlan.getName(),
         selectedProcess.getId(),
         selectedProcess.getProcessCode(),
         selectedProcess.getName(),
@@ -268,6 +271,25 @@ public class BusinessProcessActivityExecutionService {
         knownCost,
         costCoverage(tasks),
         activities);
+  }
+
+  /**
+   * Resolve o plano comercial do ciclo atual e usa o plano mais recente do produto como fallback.
+   */
+  private CommercialPlan currentCommercialPlan(
+      List<CommercialPlan> productPlans, String currentExecutionReference) {
+    if (currentExecutionReference != null) {
+      Matcher matcher = COMMERCIAL_PLAN_REFERENCE.matcher(currentExecutionReference);
+      if (matcher.matches()) {
+        String referencedPlanId = matcher.group(1);
+        Optional<CommercialPlan> referencedPlan =
+            productPlans.stream()
+                .filter(plan -> String.valueOf(plan.getId()).equals(referencedPlanId))
+                .findFirst();
+        if (referencedPlan.isPresent()) return referencedPlan.get();
+      }
+    }
+    return productPlans.stream().findFirst().orElse(null);
   }
 
   /** Abre atomicamente todas as tarefas responsáveis pela atividade atual do produto. */

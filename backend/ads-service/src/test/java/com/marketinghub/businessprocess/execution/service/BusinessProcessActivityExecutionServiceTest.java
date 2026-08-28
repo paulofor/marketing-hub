@@ -183,7 +183,11 @@ class BusinessProcessActivityExecutionServiceTest {
     when(products.findById(9L)).thenReturn(Optional.of(rigel));
     CommercialPlan plan = new CommercialPlan();
     plan.setId(4L);
-    when(commercialPlans.findByProductId(9L)).thenReturn(List.of(plan));
+    plan.setName("Plano comercial do Rigel");
+    CommercialPlan newerPlan = new CommercialPlan();
+    newerPlan.setId(5L);
+    newerPlan.setName("Próximo plano do Rigel");
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of(newerPlan, plan));
 
     BusinessProcessActivityDefinition select =
         activity(119L, landing, "select", "Selecionar provas");
@@ -253,6 +257,8 @@ class BusinessProcessActivityExecutionServiceTest {
     var result = productService.productProcessExecutions(18L, 9L);
 
     assertThat(result.productInternalName()).isEqualTo("Rigel");
+    assertThat(result.commercialPlanId()).isEqualTo(4L);
+    assertThat(result.commercialPlanName()).isEqualTo("Plano comercial do Rigel");
     assertThat(result.processName()).isEqualTo("Geração de landing page");
     assertThat(result.currentExecutionReference()).isEqualTo("commercial-plan:4@v3:journey");
     assertThat(result.operationalState()).isEqualTo("BLOCKED");

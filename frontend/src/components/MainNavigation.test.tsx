@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import MainNavigation from "./MainNavigation";
@@ -28,6 +28,31 @@ describe("MainNavigation", () => {
         name: "Ir para a página inicial do Marketing Hub",
       }),
     ).toHaveAttribute("href", "/");
+  });
+
+  it("prioriza a gestão de produto e de agentes no início do menu", () => {
+    render(
+      <MemoryRouter>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    const navigation = screen.getByRole("navigation", {
+      name: "Navegação principal",
+    });
+    const priorityLinks = within(navigation).getAllByRole("link").slice(0, 2);
+
+    expect(priorityLinks).toHaveLength(2);
+    expect(priorityLinks[0]).toHaveAccessibleName("Gestão de Produto");
+    expect(priorityLinks[0]).toHaveAttribute("href", "/products");
+    expect(priorityLinks[1]).toHaveAccessibleName("Gestão de Agentes");
+    expect(priorityLinks[1]).toHaveAttribute("href", "/agents");
+    expect(
+      within(navigation).getAllByRole("link", { name: "Gestão de Produto" }),
+    ).toHaveLength(1);
+    expect(
+      within(navigation).getAllByRole("link", { name: "Gestão de Agentes" }),
+    ).toHaveLength(1);
   });
 
   it("oferece acesso direto ao dossiê de oportunidades", () => {

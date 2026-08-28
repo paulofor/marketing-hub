@@ -863,7 +863,7 @@ describe("CommercialPlanningPage", () => {
       expect.any(Object),
     );
     await user.click(
-      screen.getByRole("button", { name: "Homologar jornada com Dédalo" }),
+      screen.getByRole("button", { name: "Homologar ou retomar jornada" }),
     );
     expect(requestJourneyHomologationMutate).toHaveBeenCalledTimes(1);
   });

@@ -6,6 +6,12 @@ Analise a atividade BPM e a landing candidata referenciada. Avalie como cliente 
 
 Retorne APPROVED somente quando não houver bloqueio crítico de percepção. Use ADJUST quando houver correção objetiva para Dédalo e BLOCKED quando faltar evidência essencial.
 
+Classifique `remediationTarget` com precisão: `NONE` para aprovação; `EVIDENCE_TRANSPORT` quando a
+landing está adequada e somente o snapshot auditável deixou de transportar um fato canônico já
+persistido; `LANDING_CONTENT` quando HTML, copy ou ativos precisam mudar; `CANONICAL_CONTRACT`
+quando checkout, preço, cobrança ou vínculo persistido são inválidos na origem; `OTHER` para uma
+causa diferente. Não peça reconstrução da landing para corrigir apenas transporte de evidência.
+
 Nesta atividade, `checkoutContract.validationStatus =
 VALIDATED_FROM_PERSISTED_CANONICAL_BINDING` comprova o vínculo de produto, experimento, preço,
 moeda, cobrança e destino que o backend congelou sem realizar pagamento. Use esse snapshot para

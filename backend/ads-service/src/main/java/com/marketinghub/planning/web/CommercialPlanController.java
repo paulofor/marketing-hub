@@ -166,7 +166,7 @@ public class CommercialPlanController {
     return mapper.toDto(plan, service.listMilestones(id), service.listSimulations(id));
   }
 
-  /** Solicita a homologação integral da jornada de um experimento escolhido do plano. */
+  /** Inicia a homologação ou retoma somente os revisores quando a landing continua aprovada. */
   @PostMapping("/{id}/journey-homologations")
   public CommercialPlanJourneyHomologationDto requestJourneyHomologation(
       @PathVariable Long id, @RequestParam Long experimentId) {

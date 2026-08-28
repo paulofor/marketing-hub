@@ -73,6 +73,15 @@
   técnica antes de concluir Dédalo. Um backfill idempotente cobre todas as aprovações históricas
   correlacionadas por `agent-task:<id>`, sem ids específicos, e testes impedem voltar a inferir o
   estado apenas na leitura da tela ou criar tarefa artificial para o Quality Review.
+- **Fechamento da retomada em 2026-08-28:** o comando de nova homologação tratava qualquer bloqueio
+  de Psique como necessidade de reconstruir toda a landing. No Rigel, o HTML continuava idêntico ao
+  artefato aprovado em 90/100 e somente o snapshot anterior havia perdido o checkout canônico.
+  O backend agora compara o SHA-256 atual com a auditoria do Quality Review, exige checkout e pacote
+  criativo canônicos válidos e, quando o bloqueio é exclusivamente `EVIDENCE_TRANSPORT`, abre nova
+  tentativa apenas para Psique e atualiza a tarefa ainda pendente de Têmis na mesma ocorrência BPM.
+  Dédalo só recebe nova tarefa quando HTML, copy ou ativos realmente precisam mudar. O contrato de
+  Psique passa a classificar a causa entre transporte de evidência, conteúdo da landing, contrato
+  canônico e outras causas; testes impedem reescrever o histórico ou duplicar revisões pendentes.
 
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 

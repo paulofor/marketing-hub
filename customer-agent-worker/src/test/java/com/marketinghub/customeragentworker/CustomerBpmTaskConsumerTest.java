@@ -128,10 +128,17 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(normalizedPrompt)
         .contains(
             "VALIDATED_FROM_PERSISTED_CANONICAL_BINDING",
+            "EVIDENCE_TRANSPORT",
+            "Não peça reconstrução da landing",
             "Não bloqueie apenas porque a tela do provedor externo não pôde ser aberta",
             "Integração de canal, checkout, acesso e eventos",
             "approvedCreativeEvidence.status",
             "adCopy` ou `adImageBriefing` legados");
+    String schema =
+        Files.readString(
+            Path.of("src/main/resources/prompts/bpm/landing-customer-review-schema.json"));
+    org.assertj.core.api.Assertions.assertThat(schema)
+        .contains("remediationTarget", "LANDING_CONTENT", "CANONICAL_CONTRACT");
   }
 
   /** Exige Flex no gate de IA para manter custo e contrato operacional auditáveis. */

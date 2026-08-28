@@ -85,6 +85,7 @@ public class ExperimentReadinessService {
   private final ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
   private final CommercialPlanLandingAssetService landingAssetService;
   private final ExperimentDirectPdeActivationService directPdeActivationService;
+  private final IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService;
 
   /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
   public ExperimentReadinessService(
@@ -97,7 +98,8 @@ public class ExperimentReadinessService {
       ExperimentSalesPageAbTestService salesPageAbTestService,
       ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository,
       CommercialPlanLandingAssetService landingAssetService,
-      ExperimentDirectPdeActivationService directPdeActivationService) {
+      ExperimentDirectPdeActivationService directPdeActivationService,
+      IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService) {
     this.experimentService = experimentService;
     this.creativeRepository = creativeRepository;
     this.targetingSelectionRepository = targetingSelectionRepository;
@@ -108,6 +110,7 @@ public class ExperimentReadinessService {
     this.salesPageTypeSelectionRepository = salesPageTypeSelectionRepository;
     this.landingAssetService = landingAssetService;
     this.directPdeActivationService = directPdeActivationService;
+    this.integratedPdeJourneyEvidenceService = integratedPdeJourneyEvidenceService;
   }
 
   /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -156,9 +159,11 @@ public class ExperimentReadinessService {
                         : experiment.getHtmlGeraLanding());
     int requiredApprovedLandingAssets = landingAssetService.requiredReferenceCount(experimentId);
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
-    boolean commercialMaterialReady = hasCreatives || directPdeReady;
+    boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
+    boolean commercialMaterialReady = hasCreatives || directPdeReady || integratedPdeReady;
     boolean landingAssetLineageReady =
         directPdeReady
+            || integratedPdeReady
             || landingAssetService.hasRequiredApprovedAssetReferences(
                 experimentId, currentLandingHtml);
 
@@ -200,7 +205,7 @@ public class ExperimentReadinessService {
               "Finalize a geração, revise o vídeo e aprove o ativo antes de liberar tráfego.",
               List.of()));
     }
-    if (requiresSalesPageAbTest && !hasReadySalesPageAbTest) {
+    if (requiresSalesPageAbTest && !integratedPdeReady && !hasReadySalesPageAbTest) {
       issues.add(
           new ExperimentReadinessIssueDto(
               ExperimentReadinessIssueType.SALES_PAGE_AB_TEST,
@@ -219,7 +224,7 @@ public class ExperimentReadinessService {
               List.copyOf(missingTypes)));
     }
 
-    if (purchaseIntent && !hasCommercialContract) {
+    if (purchaseIntent && !integratedPdeReady && !hasCommercialContract) {
       issues.add(
           new ExperimentReadinessIssueDto(
               ExperimentReadinessIssueType.GERA_SALES_PAGE,
@@ -229,6 +234,7 @@ public class ExperimentReadinessService {
               List.of()));
     }
     if (purchaseIntent
+        && !integratedPdeReady
         && hasCommercialContract
         && (!hasGeraSalesPagePipeline || salesPagePublication.isEmpty())) {
       issues.add(
@@ -250,6 +256,7 @@ public class ExperimentReadinessService {
               List.of()));
     }
     if (purchaseIntent
+        && !integratedPdeReady
         && hasCommercialContract
         && salesPagePublication.isPresent()
         && !campaignDestinationPolicy.hasAdDestinationPointingToSalesPage(
@@ -273,6 +280,7 @@ public class ExperimentReadinessService {
               List.of()));
     }
     if (purchaseIntent
+        && !integratedPdeReady
         && hasCommercialContract
         && salesPagePublication.isPresent()
         && !campaignDestinationPolicy.hasRequiredSalesPageAnalyticsCollectors(
@@ -307,6 +315,7 @@ public class ExperimentReadinessService {
     if (!purchaseIntent
         && !pdeMembershipFunnel
         && !personalizedSampleProductAi
+        && !integratedPdeReady
         && !hasGeraLandingPipeline) {
       issues.add(
           new ExperimentReadinessIssueDto(
@@ -318,20 +327,26 @@ public class ExperimentReadinessService {
     }
 
     boolean landingReady =
-        hasLandingReadyForRunning(
-                purchaseIntent,
-                pdeMembershipFunnel,
-                personalizedSampleProductAi,
-                hasGeraLandingPipeline,
-                hasGeraSalesPagePipeline,
-                salesPagePublication)
+        (integratedPdeReady
+                || hasLandingReadyForRunning(
+                    purchaseIntent,
+                    pdeMembershipFunnel,
+                    personalizedSampleProductAi,
+                    hasGeraLandingPipeline,
+                    hasGeraSalesPagePipeline,
+                    salesPagePublication))
             && landingAssetLineageReady;
     boolean checkoutReady =
-        hasCheckoutReadyForRunning(
-            purchaseIntent, pdeMembershipFunnel, salesPagePublication, hasPdeMembershipDestination);
+        integratedPdeReady
+            || hasCheckoutReadyForRunning(
+                purchaseIntent,
+                pdeMembershipFunnel,
+                salesPagePublication,
+                hasPdeMembershipDestination);
     boolean instrumentationReady =
-        hasInstrumentationReadyForRunning(
-            purchaseIntent, pdeMembershipFunnel, salesPagePublication);
+        integratedPdeReady
+            || hasInstrumentationReadyForRunning(
+                purchaseIntent, pdeMembershipFunnel, salesPagePublication);
     boolean blockingStagesCompleted = hasNoBlockingStageIssue(issues);
     List<ExperimentRunningGateRequirementDto> runningGateRequirements =
         List.of(
@@ -345,16 +360,22 @@ public class ExperimentReadinessService {
                 "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
             runningRequirement(
                 "CREATIVE_APPROVED",
-                directPdeReady ? "Material da abordagem pronto" : "Criativo aprovado",
+                integratedPdeReady
+                    ? "Jornada PDE integrada"
+                    : directPdeReady ? "Material da abordagem pronto" : "Criativo aprovado",
                 commercialMaterialReady,
-                directPdeReady
-                    ? "O run produtivo homologou a microexperiência e os materiais da abordagem individual."
-                    : hasCreatives
-                        ? creativeCount + " criativo(s) publicável(is)."
-                        : "Nenhum criativo publicável foi aprovado.",
-                directPdeActivationService.appliesTo(experiment)
-                    ? "Conclua o preflight produtivo e registre a homologação da abordagem individual."
-                    : "Aprove ao menos um criativo com mídia e copy válidas."),
+                integratedPdeReady
+                    ? "O processo comercial comprovou comunicação, criativos e destino na jornada PDE integrada."
+                    : directPdeReady
+                        ? "O run produtivo homologou a microexperiência e os materiais da abordagem individual."
+                        : hasCreatives
+                            ? creativeCount + " criativo(s) publicável(is)."
+                            : "Nenhum criativo publicável foi aprovado.",
+                integratedPdeJourneyEvidenceService.appliesTo(experiment)
+                    ? "Conclua a integração de canal, checkout, acesso e eventos no processo comercial."
+                    : directPdeActivationService.appliesTo(experiment)
+                        ? "Conclua o preflight produtivo e registre a homologação da abordagem individual."
+                        : "Aprove ao menos um criativo com mídia e copy válidas."),
             runningRequirement(
                 "CHECKOUT_READY",
                 "Checkout configurado",
@@ -475,10 +496,11 @@ public class ExperimentReadinessService {
   /** Lista as configurações faltantes que bloqueiam publicação de campanha. */
   public List<String> computeMissingConfiguration(Experiment experiment) {
     List<String> missing = new ArrayList<>();
-    if (!hasApprovedCreative(experiment)) {
+    boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
+    if (!integratedPdeReady && !hasApprovedCreative(experiment)) {
       missing.add("creativeApproval");
     }
-    if (!hasApprovedLandingDestination(experiment)) {
+    if (!integratedPdeReady && !hasApprovedLandingDestination(experiment)) {
       missing.add("landingDestination");
     }
     Optional<GeraSalesPagePublicationAudit> publication =
@@ -491,10 +513,14 @@ public class ExperimentReadinessService {
                     StringUtils.hasText(experiment.getLandingPageHtml())
                         ? experiment.getLandingPageHtml()
                         : experiment.getHtmlGeraLanding());
-    if (!landingAssetService.hasRequiredApprovedAssetReferences(experiment.getId(), landingHtml)) {
+    if (!integratedPdeReady
+        && !landingAssetService.hasRequiredApprovedAssetReferences(
+            experiment.getId(), landingHtml)) {
       missing.add("landingApprovedProductEvidence");
     }
-    missing.addAll(campaignDestinationPolicy.missingConfiguration(experiment));
+    if (!integratedPdeReady) {
+      missing.addAll(campaignDestinationPolicy.missingConfiguration(experiment));
+    }
     if (requiresMetaTargeting(experiment)
         && isLowTicketProduct(experiment)
         && !hasFacebookPixel(experiment)) {
@@ -508,6 +534,7 @@ public class ExperimentReadinessService {
       missing.add("experimentVideoAsset");
     }
     if (campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment)
+        && !integratedPdeReady
         && !salesPageAbTestService.hasReadyActiveTest(experiment.getId())) {
       missing.add("salesPageAbTest");
     }

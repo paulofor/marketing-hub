@@ -95,6 +95,9 @@ aliases explícitos do fluxo, preservando uma única execução para a mesma ref
 - O diagrama é persistido como grafo estruturado, não como imagem ou XML livre.
 - Todo grafo precisa de exatamente um evento inicial, um final e fluxos entre elementos existentes.
 - A tela renderiza o grafo persistido pelo backend e não infere status ou regra de negócio.
+- As superfícies de processo identificam nomes de processo e subprocesso com o ícone canônico de
+  fluxo, e nomes de atividades `TASK` com o ícone canônico de atividade. Texto e ícone devem aparecer
+  juntos para manter clareza, acessibilidade e distinção consistente entre os dois níveis.
 - Publicar uma definição não publica landing, campanha, oferta ou conteúdo e não autoriza gasto.
 
 ## Commits por produto e processo

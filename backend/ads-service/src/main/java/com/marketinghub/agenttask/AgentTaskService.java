@@ -773,6 +773,9 @@ public class AgentTaskService {
     }
     Instant now = Instant.now(clock);
     task.setStatus(next);
+    if ("IN_PROGRESS".equals(next) && task.getReceivedAt() == null) {
+      task.setReceivedAt(now);
+    }
     if ("COMPLETED".equals(next) && task.getDeliveredAt() == null) {
       task.setDeliveredAt(now);
     }

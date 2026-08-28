@@ -15,7 +15,7 @@ services:
       CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
       GROWTH_OPERATOR_CODEX_TIMEOUT: ${GROWTH_OPERATOR_CODEX_TIMEOUT:-PT40M}
       AGENT_HEALTH_KEY: growth-operator
-      AGENT_HEALTH_VERSION: "4"
+      AGENT_HEALTH_VERSION: "6"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/operator/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh

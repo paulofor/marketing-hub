@@ -405,6 +405,16 @@ teste, persistência, correlação, retomada e falhas pertence exclusivamente à
 comercial. Comunicação deve registrar essas verificações como próximo gate, sem duplicá-las nem
 bloquear seu próprio contrato apenas porque a homologação posterior ainda não foi executada.
 
+A atividade backend `Integrar canal, checkout, acesso e eventos` deve ser acionável pela tela do
+processo e validar a superfície corrente, nunca uma aprovação antiga. Ela exige health público,
+oferta atribuída com checkout HTTPS e contrato de integração na mesma versão do PDE. Esse contrato
+declara rotas de eventos, analytics, login, workspace e conclusão de entrega, catálogo mínimo de
+eventos, chaves de correlação, fonte persistida e segregação de tráfego de QA. Cada tentativa deve
+persistir ocorrência, estado, causa de bloqueio, evidência estruturada e custo conhecido zero. Só a
+conclusão funcional atualiza a URL do experimento e move o produto para Homologação e ativação;
+falha permanece `BLOCKED` e pode ser revalidada sem apagar o histórico. Essa atividade não executa
+pagamento de teste, não publica, não ativa campanha e não autoriza gasto.
+
 **Gate para avançar:** a cliente deve reconhecer para quem é, entender o benefício, encontrar resposta
 para as dúvidas prioritárias, verificar o produto real, saber o próximo passo e chegar à compra sem
 ruptura de mensagem. Canal, creator, variante e versão devem permanecer atribuíveis até venda e

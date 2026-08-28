@@ -15,7 +15,7 @@ services:
       LOG_FILE_NAME: /tmp/experiment-strategist-worker.log
       EXPERIMENT_STRATEGIST_MCP_URL: ${EXPERIMENT_STRATEGIST_MCP_URL:-http://backend:8000}
       AGENT_HEALTH_KEY: experiment-strategist
-      AGENT_HEALTH_VERSION: "3"
+      AGENT_HEALTH_VERSION: "5"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/strategist/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh

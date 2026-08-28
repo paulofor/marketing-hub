@@ -238,8 +238,11 @@ public class CommunicationAgentCodexRunner {
       }
       if (!"AVAILABLE".equals(communication.path("availability").asText())
           || !"READY".equals(communication.path("inputReadiness").asText())) {
+        String missing = missingPredecessors(communication);
         throw new IllegalArgumentException(
-            "Íris exige economia, PDE e provas predecessoras concluídas antes da execução.");
+            missing.isBlank()
+                ? "Íris exige economia, PDE e provas predecessoras concluídas antes da execução."
+                : "Íris aguarda estes predecessores: " + missing + ".");
       }
       String processCode = String.valueOf(task.getOrDefault("processCode", ""));
       if ("landing-page-generation".equals(processCode)
@@ -248,8 +251,26 @@ public class CommunicationAgentCodexRunner {
             "Íris exige prova visual aprovada e rastreável antes de materializar a landing.");
       }
     } catch (IOException ex) {
+      log.error(
+          "Contexto congelado inválido para Íris. taskId={} sourceReference={}",
+          task.get("taskId"),
+          task.get("sourceReference"),
+          ex);
       throw new IllegalArgumentException("Contexto congelado de Íris não contém JSON válido.", ex);
     }
+  }
+
+  /** Expõe no bloqueio os contratos exatos que o backend marcou como ausentes. */
+  private static String missingPredecessors(JsonNode communication) {
+    if (!communication.path("missingRequiredPredecessors").isArray()) return "";
+    List<String> missing = new ArrayList<>();
+    communication
+        .path("missingRequiredPredecessors")
+        .forEach(
+            value -> {
+              if (!value.asText().isBlank()) missing.add(value.asText());
+            });
+    return String.join("; ", missing);
   }
 
   /** Valida a materialização mínima específica de cada atividade. */
@@ -297,6 +318,11 @@ public class CommunicationAgentCodexRunner {
       }
       return hash;
     } catch (IOException ex) {
+      log.error(
+          "Contrato estratégico inválido para Íris. taskId={} sourceReference={}",
+          task.get("taskId"),
+          task.get("sourceReference"),
+          ex);
       throw new IllegalArgumentException(
           "Contexto estratégico de Íris não contém JSON válido.", ex);
     }

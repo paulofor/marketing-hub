@@ -14,6 +14,7 @@ import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.experiment.dto.ExperimentRunningGateRequirementDto;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -63,6 +64,7 @@ class ExperimentReadinessServiceTest {
   @Mock private ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
   @Mock private CommercialPlanLandingAssetService landingAssetService;
   @Mock private ExperimentDirectPdeActivationService directPdeActivationService;
+  @Mock private IntegratedPdeJourneyEvidenceService integratedPdeJourneyEvidenceService;
 
   private ExperimentReadinessService service;
 
@@ -82,7 +84,8 @@ class ExperimentReadinessServiceTest {
             salesPageAbTestService,
             salesPageTypeSelectionRepository,
             landingAssetService,
-            directPdeActivationService);
+            directPdeActivationService,
+            integratedPdeJourneyEvidenceService);
     lenient()
         .when(
             landingAssetService.hasRequiredApprovedAssetReferences(
@@ -95,6 +98,11 @@ class ExperimentReadinessServiceTest {
     lenient()
         .when(
             directPdeActivationService.appliesTo(
+                org.mockito.ArgumentMatchers.any(Experiment.class)))
+        .thenReturn(false);
+    lenient()
+        .when(
+            integratedPdeJourneyEvidenceService.appliesTo(
                 org.mockito.ArgumentMatchers.any(Experiment.class)))
         .thenReturn(false);
   }
@@ -727,6 +735,37 @@ class ExperimentReadinessServiceTest {
               assertThat(requirement.ready()).isTrue();
               assertThat(requirement.title()).isEqualTo("Material da abordagem pronto");
             });
+  }
+
+  /** Libera o Rigel pelo gate BPM integrado sem exigir o pipeline legado de página de venda. */
+  @Test
+  void shouldUseIntegratedPdeJourneyForRigelReadiness() {
+    Long experimentId = 89L;
+    Experiment experiment = buildExperiment(experimentId, 79L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setProduct(Product.builder().id(9L).slug("kit-whatsapp-pronto").build());
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(0L);
+    when(integratedPdeJourneyEvidenceService.appliesTo(experiment)).thenReturn(true);
+    when(integratedPdeJourneyEvidenceService.isReady(experiment)).thenReturn(true);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.hasCreatives()).isFalse();
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(summary.runningGateRequirements())
+        .allMatch(ExperimentRunningGateRequirementDto::ready)
+        .filteredOn(requirement -> requirement.code().equals("CREATIVE_APPROVED"))
+        .singleElement()
+        .satisfies(
+            requirement -> assertThat(requirement.title()).isEqualTo("Jornada PDE integrada"));
+    assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
   }
 
   @Test

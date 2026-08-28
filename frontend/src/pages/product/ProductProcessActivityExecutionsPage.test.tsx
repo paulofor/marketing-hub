@@ -265,14 +265,14 @@ describe("ProductProcessActivityExecutionsPage", () => {
       }),
     ).toBeInTheDocument();
     const processNames = document.querySelectorAll(
-      ".product-process-entity-name--process",
+      ".business-process-entity-name--process",
     );
     expect(processNames).toHaveLength(1);
     expect(
       processNames[0].querySelector(".lucide-workflow"),
     ).toBeInTheDocument();
     const activityNames = document.querySelectorAll(
-      ".product-process-entity-name--activity",
+      ".business-process-entity-name--activity",
     );
     expect(activityNames).toHaveLength(17);
     activityNames.forEach((activityName) => {
@@ -477,6 +477,139 @@ describe("ProductProcessActivityExecutionsPage", () => {
     );
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Todas as tarefas responsáveis foram abertas",
+    );
+  });
+
+  it("offers an explicit retry after the missing predecessor is completed", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...history,
+        selectedProcessDefinitionId: 63,
+        processCode: "pde-communication-sales-journey",
+        processName: "Comunicação e jornada de venda do PDE",
+        selectedProcessVersionNumber: 7,
+        selectedActivityCount: 1,
+        completedActivityCount: 0,
+        remainingActivityCount: 1,
+        blockedActivityCount: 1,
+        currentActivityId: "communicationContract",
+        currentActivityName: "Materializar contrato de comunicação",
+        currentActivityState: "BLOCKED",
+        activities: [
+          {
+            ...history.activities[0],
+            activityDefinitionId: 201,
+            activityId: "communicationContract",
+            activityName: "Materializar contrato de comunicação",
+            activityOwnerName: "Íris",
+            operationalState: "BLOCKED",
+            objectiveAchieved: false,
+            stateEvidence: "DIRECT",
+            stateReason: "A tentativa anterior foi bloqueada.",
+            taskCount: 1,
+            tasks: [
+              {
+                ...psiqueTask,
+                taskId: 252,
+                assignedAgentKey: "communication-director",
+                assignedAgentNickname: "Íris",
+              },
+            ],
+            executionRequestAvailable: true,
+            executionRequestReason:
+              "Estratégia, economia, PDE e provas estão prontos para Íris.",
+          },
+        ],
+      },
+    });
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        processDefinitionId: 63,
+        productId: 9,
+        activityId: "communicationContract",
+        sourceReference: "experiment:89",
+        tasks: [{ id: 253 }],
+      },
+    });
+
+    renderPage("/products/9/value-chain-history/processes/63/activities");
+
+    const button = await screen.findByRole("button", {
+      name: "Tentar novamente",
+    });
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/business-processes/63/products/9/activities/communicationContract/execution-requests",
+      ),
+    );
+  });
+
+  it("validates a backend-owned integration and shows the persisted result", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...history,
+        selectedProcessDefinitionId: 55,
+        processCode: "pde-communication-sales-journey",
+        processName: "Comunicação e jornada de venda do PDE",
+        selectedProcessVersionNumber: 6,
+        selectedActivityCount: 1,
+        completedActivityCount: 0,
+        remainingActivityCount: 1,
+        blockedActivityCount: 0,
+        operationalState: "NOT_STARTED",
+        currentActivityId: "integration",
+        currentActivityName: "Integrar canal, checkout, acesso e eventos",
+        currentActivityState: "NOT_STARTED",
+        activities: [
+          {
+            ...history.activities[0],
+            activityDefinitionId: 175,
+            activityId: "integration",
+            activityName: "Integrar canal, checkout, acesso e eventos",
+            activityOwnerName: "Marketing Hub",
+            operationalState: "NOT_STARTED",
+            objectiveAchieved: false,
+            stateEvidence: "NOT_RECORDED",
+            stateReason:
+              "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+            taskCount: 0,
+            tasks: [],
+            executionRequestAvailable: true,
+            executionRequestReason:
+              "Comunicação, criativos e destino estão aprovados.",
+          },
+        ],
+      },
+    });
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        processDefinitionId: 55,
+        productId: 9,
+        activityId: "integration",
+        sourceReference: "commercial-plan:4@v3:journey",
+        tasks: [],
+        operationalState: "COMPLETED",
+        objectiveAchieved: true,
+        message:
+          "Canal, checkout, acesso e eventos foram preparados. O Rigel avançou para Homologação e ativação comercial.",
+      },
+    });
+
+    renderPage("/products/9/value-chain-history/processes/55/activities");
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Validar integração" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/business-processes/55/products/9/activities/integration/execution-requests",
+      ),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "O Rigel avançou para Homologação e ativação comercial",
     );
   });
 

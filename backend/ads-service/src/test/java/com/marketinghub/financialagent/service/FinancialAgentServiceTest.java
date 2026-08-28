@@ -2,13 +2,17 @@ package com.marketinghub.financialagent.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CompleteAgentTaskRequest;
+import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
@@ -21,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: proteger a conciliacao honesta das fontes financeiras do planejamento. */
 class FinancialAgentServiceTest {
@@ -193,5 +198,116 @@ class FinancialAgentServiceTest {
         .contains("nao comprova custo real zero");
     assertThat(snapshot.at("/studioProviderEfficiency/0/provider").asText()).isEqualTo("RUNWAY");
     assertThat(snapshot.at("/studioProviderEfficiency/0/approvedAssets").asInt()).isEqualTo(2);
+  }
+
+  /** Conclui a tarefa correlacionada com resultado, evidência, prompt e tokens reais. */
+  @Test
+  void deveAuditarConclusaoNaTarefaDePlutus() throws Exception {
+    FinancialAgentExecutionRepository repository = mock(FinancialAgentExecutionRepository.class);
+    AgentTaskService taskService = mock(AgentTaskService.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(4L);
+    FinancialAgentExecution execution = runningExecution(27L, 253L, plan);
+    when(repository.findById(27L)).thenReturn(Optional.of(execution));
+    when(repository.save(any(FinancialAgentExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    FinancialAgentService service =
+        new FinancialAgentService(
+            repository,
+            mock(CommercialPlanService.class),
+            objectMapper,
+            mock(StudioCostLedgerService.class),
+            null,
+            taskService);
+
+    FinancialAgentExecutionResponse response =
+        service.complete(
+            27L,
+            new CompleteFinancialAgentRequest(
+                "{\"decision\":\"BLOCKED_BY_MISSING_SOURCE\"}",
+                "Sem tráfego real para estimar CAC.",
+                "{\"decision\":\"BLOCKED_BY_MISSING_SOURCE\"}",
+                "gpt-5.6-sol",
+                null,
+                "prompt exato",
+                "high",
+                "default",
+                "STANDARD",
+                "Flex não anunciado pelo catálogo Codex OAuth.",
+                100L,
+                20L,
+                30L));
+
+    ArgumentCaptor<CompleteAgentTaskRequest> callback =
+        ArgumentCaptor.forClass(CompleteAgentTaskRequest.class);
+    verify(taskService)
+        .completeClaimedProcessTask(eq("financial-agent"), eq(253L), callback.capture());
+    assertThat(response.status()).isEqualTo(FinancialAgentExecutionStatus.COMPLETED);
+    assertThat(callback.getValue().resultJson()).contains("BLOCKED_BY_MISSING_SOURCE");
+    assertThat(
+            objectMapper.readTree(callback.getValue().evidenceJson()).get("artifactType").asText())
+        .isEqualTo("FINANCIAL_AGENT_EXECUTION");
+    assertThat(callback.getValue().evidenceJson())
+        .contains("financial_agent_execution:27:raw_model_response")
+        .doesNotContain("\\\"decision\\\"");
+    assertThat(callback.getValue().modelUsages()).hasSize(1);
+    assertThat(callback.getValue().modelUsages().getFirst().serviceTier()).isEqualTo("STANDARD");
+    assertThat(callback.getValue().modelUsages().getFirst().inputTokens()).isEqualTo(100L);
+    assertThat(callback.getValue().executionAudit().promptSent()).isEqualTo("prompt exato");
+  }
+
+  /**
+   * Bloqueia a tarefa correlacionada preservando causa, execução e ausência de efeitos externos.
+   */
+  @Test
+  void deveAuditarFalhaNaTarefaDePlutus() throws Exception {
+    FinancialAgentExecutionRepository repository = mock(FinancialAgentExecutionRepository.class);
+    AgentTaskService taskService = mock(AgentTaskService.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(4L);
+    FinancialAgentExecution execution = runningExecution(28L, 254L, plan);
+    when(repository.findById(28L)).thenReturn(Optional.of(execution));
+    when(repository.save(any(FinancialAgentExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    FinancialAgentService service =
+        new FinancialAgentService(
+            repository,
+            mock(CommercialPlanService.class),
+            objectMapper,
+            mock(StudioCostLedgerService.class),
+            null,
+            taskService);
+
+    FinancialAgentExecutionResponse response =
+        service.fail(28L, new FailFinancialAgentRequest("MCP indisponível"));
+
+    ArgumentCaptor<FailAgentTaskRequest> callback =
+        ArgumentCaptor.forClass(FailAgentTaskRequest.class);
+    verify(taskService).failClaimedProcessTask(eq("financial-agent"), eq(254L), callback.capture());
+    assertThat(response.status()).isEqualTo(FinancialAgentExecutionStatus.FAILED);
+    assertThat(callback.getValue().error()).isEqualTo("MCP indisponível");
+    assertThat(
+            objectMapper
+                .readTree(callback.getValue().evidenceJson())
+                .get("externalSideEffects")
+                .asBoolean())
+        .isFalse();
+    assertThat(callback.getValue().resultJson()).contains("\"status\":\"FAILED\"");
+  }
+
+  /** Cria uma execução financeira em processamento para os testes de callback. */
+  private FinancialAgentExecution runningExecution(
+      Long executionId, Long taskId, CommercialPlan plan) {
+    FinancialAgentExecution execution = new FinancialAgentExecution();
+    execution.setId(executionId);
+    execution.setAgentTaskId(taskId);
+    execution.setCommercialPlan(plan);
+    execution.setCommercialPlanVersion(3);
+    execution.setAuthorityMode("READ_ONLY_REVENUE_PROJECTION");
+    execution.setFinancialSnapshot("{\"planId\":4}");
+    execution.setStatus(FinancialAgentExecutionStatus.RUNNING);
+    return execution;
   }
 }

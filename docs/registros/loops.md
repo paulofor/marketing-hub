@@ -4,6 +4,42 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-PLUTUS-HEALTH-VERSION-DRIFT — worker vigente permanece bloqueado após o rebuild
+
+- **Data:** 2026-08-28.
+- **Sintoma:** a projeção econômica #27 do Rigel permaneceu pendente; o rebuild do Plutus concluiu,
+  mas o gate pós-deploy informou versão implantada 3 quando o backend já exigia a versão 4, com
+  referência de build `local`.
+- **Causa-raiz confirmada:** a nova matriz de responsabilidades incrementou a versão canônica de
+  Plutus no backend, porém o Compose manteve `AGENT_HEALTH_VERSION=3`; o workflow também não
+  injetava o SHA do commit em `AGENT_BUILD_REFERENCE`. O container novo ficou indistinguível de uma
+  build local e foi corretamente bloqueado pelo monitor.
+- **Correção sistêmica:** o worker passa a reportar a versão 4 e o workflow injeta o SHA imutável da
+  implantação. A tarefa pendente é preservada e pode ser retomada sem recriação nem perda de
+  auditoria.
+- **Prevenção:** teste de contrato do Plutus exige concordância da versão de saúde e presença da
+  referência de build no workflow; o cânone proíbe `local` em produção.
+
+## LOOP-PLUTUS-EXECUCAO-FORA-DA-AUDITORIA-TAREFA — parecer termina sem evidências no BPM
+
+- **Data:** 2026-08-28.
+- **Sintoma:** a projeção econômica #27 do Rigel terminou como `COMPLETED`, mas a tarefa #253
+  recebeu apenas status e data de entrega; início, resultado funcional, evidências, prompt, modelo e
+  tokens permaneceram ausentes. O runtime também declarou a memória especializada indisponível,
+  embora o MCP versionado expusesse as ferramentas esperadas.
+- **Causa-raiz confirmada pelo histórico:** as sete projeções anteriores encerraram pelo mesmo
+  callback simplificado de status. O `FinancialAgentService` nunca usava o contrato completo de
+  conclusão da tarefa e o comando Codex não repassava `MCP_BACKEND_URL` e `MCP_EXECUTION_ID` ao
+  processo MCP filho. A execução manual do mesmo MCP com essas variáveis retornou suas ferramentas e
+  memória, descartando indisponibilidade do backend ou do script.
+- **Correção sistêmica:** Plutus reporta resultado, evidência, prompt, modelo, esforço, tier e tokens
+  realmente informados pelo JSONL; o MCP recebe somente as duas variáveis permitidas. O backend
+  conclui ou bloqueia a tarefa pelo callback auditável, marca recebimento no início e reconcilia as
+  execuções históricas por `UPDATE JOIN`, sem repetir modelo e sem fabricar tokens ou custo.
+- **Prevenção:** testes de worker protegem comando, ambiente MCP e leitura de tokens; testes do
+  backend protegem ciclo de vida e callback completo; changelog e matriz física MySQL 5.7 protegem
+  evidência estruturada, preservação de dados existentes e reaplicação idempotente.
+
 ## LOOP-AGENTES-ESTRATEGIA-OPERACAO-SOBREPOSTAS — operador redefine a tese que deveria executar
 
 - **Data:** 2026-08-28.
@@ -721,6 +757,13 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   workflow PDE passa apenas a localizar o proxy já publicado, conectá-lo à rede compartilhada e
   recarregar sua configuração. Um teste de contrato bloqueia acesso ao diretório ou Compose do
   serviço de pagamentos pelo deploy PDE.
+- **Recorrência fechada localmente em 2026-08-28:** o proxy HTTPS existente havia sido encerrado
+  de forma limpa e a política `unless-stopped` preservou o estado manualmente parado. O deploy PDE
+  encontrava o container, tentava apenas enviar `HUP` e podia terminar sem restaurar as portas
+  80/443, deixando a landing do Rigel inacessível apesar de frontend e backend saudáveis. O
+  workflow agora inicia o proxy conhecido quando estiver parado, conecta-o à rede e só então
+  recarrega a configuração; o teste de isolamento exige explicitamente essa recuperação sem
+  recriar o Compose ou acessar segredos do serviço de pagamentos.
 
 ---
 
@@ -2166,6 +2209,24 @@ Use este checklist quando o problema estiver em algum loop acima:
   `communication-director`, novas produções aceitam apenas `LANDING`, `ADS` e `SOCIAL` com prova
   aprovada e Têmis ficou sem segredo de produção. Testes no backend e no executor bloqueiam
   `DELIVERY` antes de qualquer request externo.
+
+## LOOP-BPM-UI-WORKER-READINESS-DIVERGENTE — tela libera tarefa que o agente bloqueia
+
+- **Data:** 2026-08-28.
+- **Sintoma:** a tela do processo 7 do Rigel ofereceu `Materializar contrato de comunicação`, criou
+  a tarefa #252 para Íris e o worker a bloqueou antes do modelo por ausência de parecer econômico
+  atual de Plutus.
+- **Causa-raiz confirmada pelo histórico:** a tela validava apenas predecessoras internas do
+  processo de comunicação, enquanto o worker validava também estratégia, economia, PDE e provas de
+  processos anteriores. Além disso, o parecer financeiro canônico é persistido em
+  `financial_agent_execution`, mas o contexto de Íris procurava somente tarefas BPM genéricas.
+- **Correção sistêmica:** atividades de agente podem registrar um gate de prontidão compartilhado;
+  Íris consulta o mesmo contexto na listagem e no comando, e sua entrada reconhece apenas projeção
+  financeira concluída na versão comercial vigente. Depois da conclusão de Plutus, uma tentativa
+  bloqueada pode ser reaberta sem apagar a falha anterior.
+- **Prevenção:** testes de contrato cobrem bloqueio antes do custo, motivo exato, recusa de tarefa
+  financeira genérica, recusa de versão antiga, evidência financeira estruturada e retentativa pela
+  tela. Nenhuma atividade pode ter um gate mais permissivo na UI do que no worker.
 
 ## LOOP-PDE-ATIVACAO-DIRETA-ESTADOS-DIVERGENTES — preflight aprovado sem avanço comercial
 

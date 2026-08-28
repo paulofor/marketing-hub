@@ -175,6 +175,9 @@ export type ProductProcessActivityExecutionRequest = {
   activityId: string;
   sourceReference: string;
   tasks: unknown[];
+  operationalState: ProductProcessActivityExecutionGroup["operationalState"];
+  objectiveAchieved: boolean;
+  message: string;
 };
 
 export type ProductProcessActivityExecutionHistory = {

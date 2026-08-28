@@ -66,6 +66,13 @@ Todo PDE produzido para campanha deve publicar seu proprio
 - `requiredTexts` com headline, bloco principal e CTA;
 - `forbiddenTexts` com mensagens de erro que nunca podem aparecer para a cliente.
 
+Produtos comerciais também declaram `commercialOfferPath` e `integrationContractPath`. O segundo
+deve responder com a mesma versão da experiência e expor as rotas implementadas de eventos,
+analytics, login, workspace e conclusão, além do catálogo de eventos, correlações, fonte persistida
+e política de segregação de QA. O contrato está documentado em
+`docs/swagger/pde-platform-swagger.yaml` e prepara o processo 4; pagamento de teste e comprovação
+ponta a ponta continuam pertencendo ao processo 5.
+
 Em validacoes pontuais, o pipeline tambem aceita override por ambiente:
 `PDE_PUBLIC_HEALTH_PRODUCT_SLUG`, `PDE_PUBLIC_HEALTH_PATH`,
 `PDE_PUBLIC_HEALTH_REQUIRED_TEXTS` e `PDE_PUBLIC_HEALTH_FORBIDDEN_TEXTS`.

@@ -7,7 +7,7 @@ apollo:
     repository-path: ${MARKETING_HUB_REPOSITORY:/app}
     agent-key: ${AGENT_HEALTH_KEY:videomaker}
   executor-health:
-    deployed-version: ${AGENT_HEALTH_VERSION:2}
+    deployed-version: ${AGENT_HEALTH_VERSION:3}
     build-reference: ${AGENT_BUILD_REFERENCE:local}
 
 video:

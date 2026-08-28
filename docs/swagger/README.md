@@ -25,6 +25,7 @@ Esta pasta é o local único para contratos Swagger/OpenAPI do Marketing Hub.
 - `docs/swagger/oprm-backend-integration-openapi.v1.yaml` — integração OPRM ↔ backend.
 - `docs/swagger/oprm-backend-required-endpoints.swagger.yaml` — endpoints obrigatórios do backend para OPRM.
 - `docs/swagger/oprm-nichocnae-swagger.yaml` — pipeline OPRM Nicho CNAE.
+- `docs/swagger/pde-platform-swagger.yaml` — contratos públicos de integração da jornada PDE.
 - `docs/swagger/video-studio-swagger.yaml` — estúdio administrativo para criação e edição de projetos de vídeo.
 
 ## Publicação dinâmica pelo backend Spring Boot

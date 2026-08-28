@@ -13,7 +13,7 @@ services:
       CUSTOMER_AGENT_MCP_URL: ${CUSTOMER_AGENT_MCP_URL:-http://host.docker.internal}
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
       AGENT_HEALTH_KEY: customer-agent
-      AGENT_HEALTH_VERSION: "3"
+      AGENT_HEALTH_VERSION: "4"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/operator/.codex
       CUSTOMER_AGENT_CODEX_EXECUTABLE: /workspace/scripts/codex-oauth-session-safe.sh

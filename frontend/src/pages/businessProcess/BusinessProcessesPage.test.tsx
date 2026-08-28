@@ -156,6 +156,31 @@ describe("BusinessProcessesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Responsável: Psique")).toBeInTheDocument();
     expect(screen.getByText("3 etapas · 0 gates")).toBeInTheDocument();
+    const selectedProcessName = document.querySelector(
+      ".business-process-detail-title .business-process-entity-name--process",
+    );
+    expect(selectedProcessName).toBeInTheDocument();
+    expect(
+      selectedProcessName?.querySelector(".lucide-workflow"),
+    ).toBeInTheDocument();
+    expect(
+      selectedProcessName?.querySelector(".lucide-clipboard-list"),
+    ).not.toBeInTheDocument();
+    const activityNames = document.querySelectorAll(
+      ".process-node--task .business-process-entity-name--activity",
+    );
+    expect(activityNames).toHaveLength(1);
+    expect(
+      activityNames[0].querySelector(".lucide-clipboard-list"),
+    ).toBeInTheDocument();
+    expect(
+      activityNames[0].querySelector(".lucide-workflow"),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector(
+        ".process-node--start .business-process-entity-name--activity, .process-node--end .business-process-entity-name--activity",
+      ),
+    ).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Criar versão editável" }),
     );

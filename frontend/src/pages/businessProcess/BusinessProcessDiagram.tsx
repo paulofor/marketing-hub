@@ -4,6 +4,7 @@ import type {
   ProcessDiagram,
   ProcessNode,
 } from "../../api/businessProcess/types";
+import BusinessProcessEntityName from "../../components/BusinessProcessEntityName";
 import { Link } from "react-router-dom";
 import "./BusinessProcessesPage.css";
 
@@ -56,7 +57,16 @@ export default function BusinessProcessDiagram({
               className={`process-node process-node--${node.type.toLowerCase()}`}
             >
               <span className="process-node__type">{label[node.type]}</span>
-              <h3>{node.label}</h3>
+              <h3>
+                {node.type === "TASK" ? (
+                  <BusinessProcessEntityName
+                    kind="activity"
+                    name={node.label}
+                  />
+                ) : (
+                  node.label
+                )}
+              </h3>
               {node.owner ? (
                 <div className="process-node__owner">
                   Responsável: {node.owner}
@@ -88,7 +98,11 @@ export default function BusinessProcessDiagram({
                       to={`/business-processes?processId=${subprocess.id}`}
                       aria-label={`Abrir subprocesso ${subprocess.name}`}
                     >
-                      {subprocess.name} · v{subprocess.versionNumber} →
+                      <BusinessProcessEntityName
+                        kind="process"
+                        name={`${subprocess.name} · v${subprocess.versionNumber} →`}
+                        iconSize={16}
+                      />
                     </Link>
                   ) : (
                     <strong>{node.subprocessCode}</strong>

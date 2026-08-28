@@ -372,11 +372,15 @@ class PdeProductionSlotServiceTest {
     HttpResponse<String> contractResponse =
         response(
             200,
-            "{\"slug\":\"kit-whatsapp-pronto\",\"healthPath\":\"/\",\"commercialOfferPath\":\"/api/pde/products/kit-whatsapp-pronto/commercial-offer\",\"requiredTexts\":[\"Quero meu atendimento sob medida\"]}");
+            "{\"slug\":\"kit-whatsapp-pronto\",\"healthPath\":\"/\",\"commercialOfferPath\":\"/api/pde/products/kit-whatsapp-pronto/commercial-offer\",\"integrationContractPath\":\"/api/pde/products/kit-whatsapp-pronto/integration-contract\",\"requiredTexts\":[\"Quero meu atendimento sob medida\"]}");
     HttpResponse<String> offerResponse =
         response(
             200,
             "{\"productSlug\":\"kit-whatsapp-pronto\",\"experimentId\":89,\"priceBrl\":349,\"promise\":\"Implantação personalizada em até 48 horas\",\"primaryCta\":\"Quero meu atendimento sob medida\",\"checkoutUrl\":\"https://pay.example/kit\",\"supplierDisplayName\":\"Digicom Digital\",\"supplierRegistrationNumber\":\"00.000.000/0001-00\",\"supportEmail\":\"teste@sandbox.local\",\"termsUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/terms\",\"privacyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/privacy\",\"refundPolicyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy\"}");
+    HttpResponse<String> integrationResponse =
+        response(
+            200,
+            "{\"productSlug\":\"kit-whatsapp-pronto\",\"experienceVersion\":\"kit-whatsapp-pronto-pde-v1\",\"contractVersion\":\"PDE_COMMERCIAL_JOURNEY_EVENTS_V1\",\"eventsPath\":\"/api/pde/access/events\",\"analyticsSummaryPath\":\"/api/pde/access/analytics/{productSlug}/summary\",\"loginPath\":\"/api/pde/access/login-link\",\"workspacePathTemplate\":\"/api/pde/access/{token}/workspace\",\"missionCompletionPathTemplate\":\"/api/pde/access/{token}/missions/{missionId}/complete\",\"requiredEventTypes\":[\"PAGE_VIEW\",\"VALUE_MOMENT\",\"CTA_VIEWED\",\"CHECKOUT_STARTED\",\"PURCHASE_COMPLETED\",\"ACCESS_RELEASED\",\"MISSION_COMPLETED\",\"FIRST_USE\",\"REFUND_CONFIRMED\"],\"correlationKeys\":[\"eventId\",\"productSlug\",\"experienceVersion\",\"sessionId\",\"visitorId\",\"accessToken\"],\"sourceOfTruth\":\"pde_funnel_event\",\"testTrafficPolicy\":\"trafficQuality=INTERNAL_QA\"}");
     HttpResponse<String> pageResponse =
         response(
             200,
@@ -386,6 +390,7 @@ class PdeProductionSlotServiceTest {
     org.mockito.Mockito.doReturn(healthResponse)
         .doReturn(contractResponse)
         .doReturn(offerResponse)
+        .doReturn(integrationResponse)
         .doReturn(pageResponse)
         .doReturn(scriptResponse)
         .when(httpClient)
@@ -399,7 +404,54 @@ class PdeProductionSlotServiceTest {
 
     assertThat(response.validationStatus()).isEqualTo("OK");
     assertThat(response.validationSummary()).isEqualTo("URL produtiva validada");
-    org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.times(5))
+    org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.times(6))
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+  }
+
+  /**
+   * Deve bloquear PDE comercial que anuncia checkout sem declarar o contrato de eventos e acesso.
+   */
+  @Test
+  void rejectsCommercialPdeWithoutJourneyIntegrationContractPath() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(7L)
+            .slotCode("v1")
+            .productSlug("kit-whatsapp-pronto")
+            .domain("kit-whatsapp-pronto.digicomdigital.com.br")
+            .publicUrl("https://kit-whatsapp-pronto.digicomdigital.com.br")
+            .experienceVersion("kit-whatsapp-pronto-pde-v1")
+            .targetEnvironment("production-v1")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .sourceExperimentId(89L)
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("kit-whatsapp-pronto", "v1"))
+        .thenReturn(Optional.of(slot));
+    HttpResponse<String> healthResponse = response(200, "{\"status\":\"UP\"}");
+    HttpResponse<String> contractResponse =
+        response(
+            200,
+            "{\"slug\":\"kit-whatsapp-pronto\",\"healthPath\":\"/\",\"commercialOfferPath\":\"/api/pde/products/kit-whatsapp-pronto/commercial-offer\",\"requiredTexts\":[\"CTA\"]}");
+    org.mockito.Mockito.doReturn(healthResponse)
+        .doReturn(contractResponse)
+        .when(httpClient)
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.validateProductionSlot("kit-whatsapp-pronto", "v1");
+
+    assertThat(response.validationStatus()).isEqualTo("FAILED");
+    assertThat(response.validationSummary())
+        .isEqualTo("Contrato público não declara integração da jornada");
+    org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.times(2))
         .send(
             org.mockito.ArgumentMatchers.any(HttpRequest.class),
             org.mockito.ArgumentMatchers.any());

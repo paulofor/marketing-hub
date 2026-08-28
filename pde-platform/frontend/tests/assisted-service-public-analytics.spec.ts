@@ -78,6 +78,10 @@ test("segrega eventos de homologação mesmo no build público", async ({
   });
 
   await page.goto("/?mh_test=1");
+  await page
+    .getByTestId("commercial-offer")
+    .getByRole("link", { name: "Quero meu atendimento sob medida" })
+    .scrollIntoViewIfNeeded();
   await page.getByLabel("Qual serviço você oferece?").fill("manicure");
   await page.getByRole("button", { name: "Gerar minha amostra" }).click();
   const policyPagePromise = page.waitForEvent("popup");
@@ -94,6 +98,7 @@ test("segrega eventos de homologação mesmo no build público", async ({
     .toEqual(
       expect.arrayContaining([
         "PAGE_VIEW",
+        "CTA_VIEWED",
         "TASTING_STARTED",
         "VALUE_MOMENT",
         "PAYWALL_VIEWED",

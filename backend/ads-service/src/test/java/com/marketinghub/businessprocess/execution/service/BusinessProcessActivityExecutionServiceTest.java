@@ -15,6 +15,11 @@ import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadiness;
+import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadinessProvider;
+import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutionResult;
+import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
+import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
@@ -352,7 +357,13 @@ class BusinessProcessActivityExecutionServiceTest {
     when(processes.findById(45L)).thenReturn(Optional.of(process));
     when(products.findById(4L)).thenReturn(Optional.of(vega));
     when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(4L)).thenReturn(List.of(experiment));
-    when(agentTasks.createByHumanIfAbsent(any(CreateAgentTaskRequest.class)))
+    BusinessProcessActivityDefinition pdeGate =
+        activity(151L, process, "pdeGate", "Validar fatos, controle e valor do PDE");
+    pdeGate.setDefinitionJson(
+        "{\"responsibleAgentKeys\":[\"customer-agent\",\"meta-ad-approver\"]}");
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(45L, "pdeGate"))
+        .thenReturn(Optional.of(pdeGate));
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
         .thenReturn(mock(AgentTaskResponse.class));
 
     var result = executionService.requestProductActivityExecution(45L, 4L, "pdeGate");
@@ -361,7 +372,7 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(result.tasks()).hasSize(2);
     ArgumentCaptor<CreateAgentTaskRequest> requests =
         ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
-    verify(agentTasks, times(2)).createByHumanIfAbsent(requests.capture());
+    verify(agentTasks, times(2)).retryBlockedByHumanOrRefreshPending(requests.capture());
     assertThat(requests.getAllValues())
         .extracting(CreateAgentTaskRequest::assignedAgentKey)
         .containsExactly("customer-agent", "meta-ad-approver");
@@ -373,6 +384,200 @@ class BusinessProcessActivityExecutionServiceTest {
               assertThat(request.processActivityId()).isEqualTo("pdeGate");
               assertThat(request.title()).contains("Vega");
             });
+  }
+
+  /** Executa uma atividade determinística no backend e preserva a referência do ciclo atual. */
+  @Test
+  void requestsBackendOwnedProductActivityWithoutCreatingAgentTask() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    BackendProductProcessActivityExecutor backendExecutor =
+        mock(BackendProductProcessActivityExecutor.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper(),
+            List.of(backendExecutor),
+            List.of());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(55L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-communication-sales-journey");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"integration\",\"type\":\"TASK\","
+            + "\"label\":\"Integrar canal, checkout, acesso e eventos\","
+            + "\"description\":\"Preparar a jornada.\"}]}");
+    BusinessProcessActivityDefinition integration =
+        activity(175L, process, "integration", "Integrar canal, checkout, acesso e eventos");
+    integration.setDefinitionJson("{\"responsibleAgentKeys\":[]}");
+    Product rigel = Product.builder().id(9L).internalName("Rigel").build();
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setProduct(rigel);
+    AgentTask previous = executionTask(248L);
+    previous.setProcessDefinition(process);
+    previous.setSourceReference("commercial-plan:4@v3:journey");
+    when(processes.findById(55L)).thenReturn(Optional.of(process));
+    when(products.findById(9L)).thenReturn(Optional.of(rigel));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(55L, "integration"))
+        .thenReturn(Optional.of(integration));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+        .thenReturn(List.of());
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(4L);
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of(plan));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+        .thenReturn(List.of(previous));
+    when(backendExecutor.supports(process, integration)).thenReturn(true);
+    when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(new BackendProductProcessActivityReadiness(true, "Pronta."));
+    when(backendExecutor.execute(process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(
+            new BackendProductProcessActivityExecutionResult(
+                "commercial-plan:4@v3:journey", "COMPLETED", true, "Integração concluída."));
+
+    var result = executionService.requestProductActivityExecution(55L, 9L, "integration");
+
+    assertThat(result.sourceReference()).isEqualTo("commercial-plan:4@v3:journey");
+    assertThat(result.operationalState()).isEqualTo("COMPLETED");
+    assertThat(result.objectiveAchieved()).isTrue();
+    assertThat(result.message()).isEqualTo("Integração concluída.");
+    assertThat(result.tasks()).isEmpty();
+    verifyNoInteractions(agentTasks);
+  }
+
+  /**
+   * Mantém Íris bloqueada na tela até Plutus concluir e permite nova tentativa sem apagar a falha.
+   */
+  @Test
+  void alignsIrisButtonWithCrossProcessReadinessAndAllowsBlockedRetry() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    AgentProductProcessActivityReadinessProvider readinessProvider =
+        mock(AgentProductProcessActivityReadinessProvider.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper(),
+            List.of(),
+            List.of(readinessProvider));
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(63L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-communication-sales-journey");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"communicationContract\",\"type\":\"TASK\","
+            + "\"label\":\"Materializar contrato de comunicação\","
+            + "\"description\":\"Transformar estratégia e produto em comunicação.\","
+            + "\"responsibleAgentKeys\":[\"communication-director\"]}]}");
+    BusinessProcessActivityDefinition communicationContract =
+        activity(201L, process, "communicationContract", "Materializar contrato de comunicação");
+    communicationContract.setDefinitionJson(
+        "{\"responsibleAgentKeys\":[\"communication-director\"]}");
+    Product rigel = Product.builder().id(9L).internalName("Rigel").build();
+    rigel.setAutomaticExecutionEnabled(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setProduct(rigel);
+    CommercialPlan plan = CommercialPlan.builder().id(4L).name("Agenda Cheia").build();
+    AgentTask blockedTask = executionTask(252L);
+    blockedTask.setProcessDefinition(process);
+    blockedTask.setProcessActivityId("communicationContract");
+    blockedTask.setProcessActivityName("Materializar contrato de comunicação");
+    blockedTask.setSourceReference("experiment:89");
+    blockedTask.setStatus("BLOCKED");
+    blockedTask.setAssignedAgent(
+        Agent.builder().agentKey("communication-director").nickname("Íris").build());
+    BusinessProcessActivityInstance blockedInstance =
+        activityInstance(
+            138L,
+            communicationContract,
+            "BLOCKED",
+            false,
+            "Parecer econômico ausente.",
+            blockedTask.getUpdatedAt());
+    blockedInstance.setSourceReference("experiment:89");
+    blockedTask.setActivityInstance(blockedInstance);
+    when(processes.findById(63L)).thenReturn(Optional.of(process));
+    when(products.findById(9L)).thenReturn(Optional.of(rigel));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of(plan));
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(63L))
+        .thenReturn(List.of(communicationContract));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(63L, "communicationContract"))
+        .thenReturn(Optional.of(communicationContract));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+        .thenReturn(List.of(blockedTask));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-communication-sales-journey", "experiment:89"))
+        .thenReturn(List.of(blockedInstance));
+    when(readinessProvider.supports(any(), any())).thenReturn(true);
+    when(readinessProvider.readiness(any(), any(), any(), eq("experiment:89")))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                false, "Antes de executar Íris, conclua Plutus."));
+
+    var blocked = executionService.productProcessExecutions(63L, 9L);
+
+    verify(readinessProvider).supports(any(), any());
+    verify(readinessProvider).readiness(any(), any(), any(), eq("experiment:89"));
+    assertThat(blocked.activities().getFirst().executionRequestAvailable()).isFalse();
+    assertThat(blocked.activities().getFirst().executionRequestReason()).contains("Plutus");
+    assertThatThrownBy(
+            () ->
+                executionService.requestProductActivityExecution(63L, 9L, "communicationContract"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Plutus");
+    verifyNoInteractions(agentTasks);
+
+    when(readinessProvider.readiness(any(), any(), any(), eq("experiment:89")))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                true, "Estratégia, economia, PDE e provas estão prontos para Íris."));
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var ready = executionService.productProcessExecutions(63L, 9L);
+    var request =
+        executionService.requestProductActivityExecution(63L, 9L, "communicationContract");
+
+    assertThat(ready.activities().getFirst().executionRequestAvailable()).isTrue();
+    assertThat(request.tasks()).hasSize(1);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class));
   }
 
   /** Impede novas tarefas quando o produto está administrativamente em STOP. */

@@ -21,4 +21,16 @@ class WorkerObservabilityContractTest {
     assertThat(application).contains("name: ${LOG_FILE_NAME:/tmp/financial-agent-worker.log}");
     assertThat(compose).contains("${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095");
   }
+
+  /** Garante que a prontidão publique a versão vigente e a build imutável do deploy. */
+  @Test
+  void shouldReportCurrentAgentVersionAndDeploymentBuild() throws IOException {
+    String compose = Files.readString(Path.of("docker-compose.yml"));
+    String workflow =
+        Files.readString(Path.of("../.github/workflows/financial-agent-worker-ci.yml"));
+
+    assertThat(compose).contains("AGENT_HEALTH_VERSION: \"4\"");
+    assertThat(compose).contains("AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}");
+    assertThat(workflow).contains("AGENT_BUILD_REFERENCE='${GITHUB_SHA}'");
+  }
 }

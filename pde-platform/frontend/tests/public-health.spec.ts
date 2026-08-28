@@ -4,6 +4,7 @@ type PublicHealthContract = {
   slug?: string;
   healthPath?: string;
   commercialOfferPath?: string;
+  integrationContractPath?: string;
   requiredTexts?: string[];
   forbiddenTexts?: string[];
 };
@@ -40,10 +41,23 @@ type PublicCommercialOffer = {
   checkoutUrl?: string;
 };
 
+type PublicJourneyIntegration = {
+  productSlug?: string;
+  experienceVersion?: string;
+  contractVersion?: string;
+  eventsPath?: string;
+  loginPath?: string;
+  requiredEventTypes?: string[];
+  correlationKeys?: string[];
+  sourceOfTruth?: string;
+  testTrafficPolicy?: string;
+};
+
 const defaultContract: Required<PublicHealthContract> = {
   slug: "metodo-musa-7-dias",
   healthPath: "/",
   commercialOfferPath: "",
+  integrationContractPath: "",
   requiredTexts: ["Seu primeiro ajuste MUSA"],
   forbiddenTexts: [
     "Application error",
@@ -87,6 +101,9 @@ async function loadContract(request: APIRequestContext) {
       defaultContract.healthPath,
     commercialOfferPath:
       fileContract.commercialOfferPath || defaultContract.commercialOfferPath,
+    integrationContractPath:
+      fileContract.integrationContractPath ||
+      defaultContract.integrationContractPath,
     requiredTexts:
       envRequiredTexts.length > 0
         ? envRequiredTexts
@@ -96,6 +113,21 @@ async function loadContract(request: APIRequestContext) {
         ? envForbiddenTexts
         : fileContract.forbiddenTexts || defaultContract.forbiddenTexts,
   };
+}
+
+async function loadJourneyIntegration(
+  request: APIRequestContext,
+  integrationContractPath: string,
+) {
+  if (!integrationContractPath) {
+    return null;
+  }
+  const response = await request.get(integrationContractPath);
+  expect(
+    response.ok(),
+    `Contrato de integracao indisponivel: ${integrationContractPath}`,
+  ).toBeTruthy();
+  return (await response.json()) as PublicJourneyIntegration;
 }
 
 async function loadCommercialOffer(
@@ -245,6 +277,42 @@ test("health publico renderiza app, javascript e texto comercial", async ({
     request,
     contract.commercialOfferPath,
   );
+  const journeyIntegration = await loadJourneyIntegration(
+    request,
+    contract.integrationContractPath,
+  );
+  if (journeyIntegration) {
+    expect(journeyIntegration.productSlug).toBe(contract.slug);
+    expect(journeyIntegration.experienceVersion).toBe(
+      diagnostics.experienceVersion,
+    );
+    expect(journeyIntegration.contractVersion).toBe(
+      "PDE_COMMERCIAL_JOURNEY_EVENTS_V1",
+    );
+    expect(journeyIntegration.eventsPath).toBe("/api/pde/access/events");
+    expect(journeyIntegration.loginPath).toBe("/api/pde/access/login-link");
+    expect(journeyIntegration.requiredEventTypes).toEqual(
+      expect.arrayContaining([
+        "PAGE_VIEW",
+        "CHECKOUT_STARTED",
+        "PURCHASE_COMPLETED",
+        "ACCESS_RELEASED",
+        "FIRST_USE",
+      ]),
+    );
+    expect(journeyIntegration.correlationKeys).toEqual(
+      expect.arrayContaining([
+        "eventId",
+        "productSlug",
+        "experienceVersion",
+        "sessionId",
+        "visitorId",
+        "accessToken",
+      ]),
+    );
+    expect(journeyIntegration.sourceOfTruth).toBe("pde_funnel_event");
+    expect(journeyIntegration.testTrafficPolicy).toContain("INTERNAL_QA");
+  }
   const staticRequiredTexts = removeMutableFallbackTexts(
     contract.requiredTexts,
     publishedFirstFoldTexts,

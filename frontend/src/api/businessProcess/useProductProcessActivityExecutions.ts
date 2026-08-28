@@ -51,6 +51,9 @@ export function useRequestProductProcessActivityExecution(
           "activity-executions",
         ],
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["products", "value-chain-positions"],
+      });
     },
   });
 }

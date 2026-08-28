@@ -9,12 +9,15 @@ import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.financialagent.FinancialAgentExecution;
+import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.time.Instant;
 import java.util.List;
@@ -28,8 +31,7 @@ class IrisCommunicationMaterializationContextProviderTest {
   /** Consolida plano, produto, provas e predecessores da mesma versão com hash auditável. */
   @Test
   void shouldResolveReadyVersionedJourneyContext() {
-    Fixture fixture =
-        fixture(List.of(task(11L, "financial-agent"), task(12L, "landing-generator")));
+    Fixture fixture = fixture(List.of(task(12L, "landing-generator")), true);
 
     Map<String, Object> context =
         fixture.provider().resolve("commercial-plan:1@v2:journey:attempt-1").orElseThrow();
@@ -44,7 +46,7 @@ class IrisCommunicationMaterializationContextProviderTest {
         .containsEntry("externalMediaSpendAuthorized", false);
     assertThat(context.get("commercialPlanSnapshotHash").toString()).matches("[0-9a-f]{64}");
     assertThat(context.get("approvedUpstreamArtifacts").toString())
-        .contains("financial-agent", "landing-generator")
+        .contains("FINANCIAL_AGENT_EXECUTION", "financial-agent", "landing-generator")
         .doesNotContain("another-plan");
     assertThat(context.get("approvedLandingAssets").toString()).contains("assetUrl");
     assertThat(context.get("product").toString())
@@ -55,7 +57,7 @@ class IrisCommunicationMaterializationContextProviderTest {
   /** Expõe lacunas de Plutus e Dédalo sem completar o contrato com dados inferidos. */
   @Test
   void shouldBlockWhenRequiredPredecessorsAreMissing() {
-    Fixture fixture = fixture(List.of(task(11L, "experiment-strategist")));
+    Fixture fixture = fixture(List.of(task(11L, "experiment-strategist")), false);
 
     Map<String, Object> context =
         fixture.provider().resolve("commercial-plan:1@v2:journey").orElseThrow();
@@ -64,11 +66,25 @@ class IrisCommunicationMaterializationContextProviderTest {
     assertThat(context.get("missingRequiredPredecessors").toString()).contains("Plutus", "Dédalo");
   }
 
+  /** Não aceita tarefa financeira genérica sem a execução canônica e versionada de Plutus. */
+  @Test
+  void shouldRejectGenericFinancialTaskAsEconomicEvidence() {
+    Fixture fixture =
+        fixture(List.of(task(11L, "financial-agent"), task(12L, "landing-generator")), false);
+
+    Map<String, Object> context =
+        fixture.provider().resolve("commercial-plan:1@v2:journey").orElseThrow();
+
+    assertThat(context).containsEntry("inputReadiness", "BLOCKED");
+    assertThat(context.get("missingRequiredPredecessors").toString())
+        .contains("Plutus")
+        .doesNotContain("Dédalo");
+  }
+
   /** Recusa silenciosamente outra versão do plano e não mistura seu snapshot. */
   @Test
   void shouldRejectDifferentRequestedPlanVersion() {
-    Fixture fixture =
-        fixture(List.of(task(11L, "financial-agent"), task(12L, "landing-generator")));
+    Fixture fixture = fixture(List.of(task(12L, "landing-generator")), true);
 
     Map<String, Object> context =
         fixture.provider().resolve("commercial-plan:1@v3:journey").orElseThrow();
@@ -82,8 +98,7 @@ class IrisCommunicationMaterializationContextProviderTest {
   /** Resolve o experimento somente quando ele pertence ao plano comercial encontrado. */
   @Test
   void shouldResolveOwnedExperimentReference() {
-    Fixture fixture =
-        fixture(List.of(task(11L, "financial-agent"), task(12L, "landing-generator")));
+    Fixture fixture = fixture(List.of(task(12L, "landing-generator")), true);
     when(fixture.plans().findByExperimentReference(88L)).thenReturn(List.of(fixture.plan()));
 
     Map<String, Object> context = fixture.provider().resolve("experiment:88").orElseThrow();
@@ -94,11 +109,13 @@ class IrisCommunicationMaterializationContextProviderTest {
   }
 
   /** Monta as dependências e entidades mínimas de um plano Rigel segregado. */
-  private Fixture fixture(List<AgentTask> upstream) {
+  private Fixture fixture(List<AgentTask> upstream, boolean financialReady) {
     CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
     CommercialPlanVersionService versions = mock(CommercialPlanVersionService.class);
     CommercialPlanLandingAssetService assets = mock(CommercialPlanLandingAssetService.class);
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    FinancialAgentExecutionRepository financialExecutions =
+        mock(FinancialAgentExecutionRepository.class);
     Product product =
         Product.builder()
             .id(7L)
@@ -142,9 +159,11 @@ class IrisCommunicationMaterializationContextProviderTest {
         .thenReturn(upstream);
     when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
         .thenReturn(List.of());
+    when(financialExecutions.findByCommercialPlanIdOrderByCreatedAtDesc(1L))
+        .thenReturn(financialReady ? List.of(financialExecution(plan)) : List.of());
     IrisCommunicationMaterializationContextProvider provider =
         new IrisCommunicationMaterializationContextProvider(
-            plans, versions, assets, tasks, new ObjectMapper());
+            plans, versions, assets, tasks, financialExecutions, new ObjectMapper());
     return new Fixture(provider, plans, plan);
   }
 
@@ -161,6 +180,21 @@ class IrisCommunicationMaterializationContextProviderTest {
     task.setResultJson("{\"status\":\"APPROVED\"}");
     task.setEvidenceJson("{\"source\":\"test\"}");
     return task;
+  }
+
+  /** Cria um parecer de Plutus concluído na mesma versão comercial usada por Íris. */
+  private FinancialAgentExecution financialExecution(CommercialPlan plan) {
+    FinancialAgentExecution execution = new FinancialAgentExecution();
+    execution.setId(21L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(FinancialAgentExecutionStatus.COMPLETED);
+    execution.setAuthorityMode("READ_ONLY_REVENUE_PROJECTION");
+    execution.setCommercialPlanVersion(2);
+    execution.setFinancialSnapshot("{\"planId\":1,\"version\":2}");
+    execution.setReconciliationJson("{\"executiveSummary\":\"Economia válida.\"}");
+    execution.setDailyReport("Margem e limites revisados por Plutus.");
+    execution.setFinishedAt(Instant.now());
+    return execution;
   }
 
   /** Agrupa o provedor e os mocks necessários para variar a origem do contexto. */

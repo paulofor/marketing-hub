@@ -5,13 +5,15 @@ services:
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
       CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
+      CODEX_SERVICE_TIER: ${CODEX_SERVICE_TIER:-default}
       FINANCIAL_AGENT_CODEX_TIMEOUT: ${FINANCIAL_AGENT_CODEX_TIMEOUT:-PT40M}
       COMMERCIAL_PLAN_ID: ${COMMERCIAL_PLAN_ID:-2}
       MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
       LOG_FILE_NAME: /tmp/financial-agent-worker.log
       FINANCIAL_AGENT_MCP_URL: ${FINANCIAL_AGENT_MCP_URL:-http://backend:8000}
       AGENT_HEALTH_KEY: financial-agent
-      AGENT_HEALTH_VERSION: "3"
+      AGENT_HEALTH_VERSION: "4"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/financial-agent/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh

@@ -10,6 +10,11 @@ import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadiness;
+import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadinessProvider;
+import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutionResult;
+import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
+import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
@@ -75,6 +80,8 @@ public class BusinessProcessActivityExecutionService {
   private final ExperimentRepository experimentRepository;
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
+  private final List<BackendProductProcessActivityExecutor> backendActivityExecutors;
+  private final List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders;
 
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
@@ -89,7 +96,9 @@ public class BusinessProcessActivityExecutionService {
       ProductRepository productRepository,
       ExperimentRepository experimentRepository,
       AgentTaskService agentTaskService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      List<BackendProductProcessActivityExecutor> backendActivityExecutors,
+      List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders) {
     this.processRepository = processRepository;
     this.activityDefinitionRepository = activityDefinitionRepository;
     this.taskRepository = taskRepository;
@@ -101,6 +110,37 @@ public class BusinessProcessActivityExecutionService {
     this.experimentRepository = experimentRepository;
     this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
+    this.backendActivityExecutors = List.copyOf(backendActivityExecutors);
+    this.agentActivityReadinessProviders = List.copyOf(agentActivityReadinessProviders);
+  }
+
+  /** Mantém compatibilidade dos testes que não exercitam atividades determinísticas do backend. */
+  BusinessProcessActivityExecutionService(
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
+      AgentTaskRepository taskRepository,
+      AgentTaskActivityCoverageRepository activityCoverageRepository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
+      CommercialPlanRepository commercialPlanRepository,
+      GeraLandingStageExecutionRepository landingExecutionRepository,
+      ProductRepository productRepository,
+      ExperimentRepository experimentRepository,
+      AgentTaskService agentTaskService,
+      ObjectMapper objectMapper) {
+    this(
+        processRepository,
+        activityDefinitionRepository,
+        taskRepository,
+        activityCoverageRepository,
+        activityInstanceRepository,
+        commercialPlanRepository,
+        landingExecutionRepository,
+        productRepository,
+        experimentRepository,
+        agentTaskService,
+        objectMapper,
+        List.of(),
+        List.of());
   }
 
   /** Permite testes unitários sem carregar o catálogo comercial. */
@@ -227,6 +267,13 @@ public class BusinessProcessActivityExecutionService {
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
     String currentExecutionReference = currentExecutionReference(tasks, instances);
+    String readinessSourceReference =
+        currentExecutionReference == null
+            ? productExperiments.stream()
+                .findFirst()
+                .map(experiment -> "experiment:" + experiment.getId())
+                .orElse(null)
+            : currentExecutionReference;
     Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId =
         currentInstancesByActivityId(selectedProcess.getId(), currentExecutionReference, instances);
     List<ProductProcessActivityExecutionGroupResponse> activities =
@@ -237,7 +284,9 @@ public class BusinessProcessActivityExecutionService {
             historicalActivityNames,
             taskResponses,
             currentExecutionReference,
+            readinessSourceReference,
             currentInstancesByActivityId,
+            product,
             !productExperiments.isEmpty(),
             !Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()));
     ProductProcessSituation situation = processSituation(activities);
@@ -310,21 +359,70 @@ public class BusinessProcessActivityExecutionService {
           HttpStatus.CONFLICT, "O produto está em STOP e não pode iniciar novas atividades.");
     }
     JsonNode activity = requireTaskActivity(process, activityId);
-    List<String> responsibleAgentKeys = responsibleAgentKeys(activity);
-    if (responsibleAgentKeys.isEmpty()) {
+    String normalizedActivityId = activity.path("id").asText();
+    BusinessProcessActivityDefinition activityDefinition =
+        activityDefinitionRepository
+            .findByProcessDefinitionIdAndActivityId(process.getId(), normalizedActivityId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "A atividade publicada não possui definição operacional persistida."));
+    List<String> responsibleAgentKeys = responsibleAgentKeys(activityDefinition);
+    Optional<BackendProductProcessActivityExecutor> backendExecutor =
+        backendActivityExecutor(process, activityDefinition);
+    if (responsibleAgentKeys.isEmpty() && backendExecutor.isEmpty()) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "A atividade não possui executores automáticos configurados.");
     }
+    List<Experiment> productExperiments = productExperiments(productId);
     Experiment experiment = latestProductExperiment(productId);
-    String sourceReference = "experiment:" + experiment.getId();
-    String normalizedActivityId = activity.path("id").asText();
+    List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
+    List<AgentTask> processTasks =
+        productProcessTasks(productPlans, productExperiments, process.getProcessCode());
+    List<BusinessProcessActivityInstance> processInstances =
+        productProcessActivityInstances(productPlans, productExperiments, process.getProcessCode());
+    String currentSourceReference = currentExecutionReference(processTasks, processInstances);
+    String sourceReference =
+        currentSourceReference == null
+            ? "experiment:" + experiment.getId()
+            : currentSourceReference;
+    if (backendExecutor.isPresent()) {
+      BackendProductProcessActivityReadiness readiness =
+          backendExecutor.get().readiness(process, activityDefinition, product, sourceReference);
+      if (!readiness.ready()) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, readiness.reason());
+      }
+      BackendProductProcessActivityExecutionResult result =
+          backendExecutor.get().execute(process, activityDefinition, product, sourceReference);
+      return new ProductProcessActivityExecutionRequestResponse(
+          process.getId(),
+          product.getId(),
+          normalizedActivityId,
+          result.sourceReference(),
+          List.of(),
+          result.operationalState(),
+          result.objectiveAchieved(),
+          result.message());
+    }
+    Optional<AgentProductProcessActivityReadinessProvider> agentReadinessProvider =
+        agentActivityReadinessProvider(process, activityDefinition);
+    AgentProductProcessActivityReadiness agentReadiness =
+        agentReadinessProvider
+            .map(
+                provider ->
+                    provider.readiness(process, activityDefinition, product, sourceReference))
+            .orElse(null);
+    if (agentReadiness != null && !agentReadiness.ready()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, agentReadiness.reason());
+    }
     String activityName = activity.path("label").asText(normalizedActivityId);
     String objective = activity.path("description").asText(activityName);
     List<AgentTaskResponse> requestedTasks =
         responsibleAgentKeys.stream()
             .map(
                 agentKey ->
-                    agentTaskService.createByHumanIfAbsent(
+                    agentTaskService.retryBlockedByHumanOrRefreshPending(
                         new CreateAgentTaskRequest(
                             agentKey,
                             "Operador do Marketing Hub",
@@ -413,17 +511,28 @@ public class BusinessProcessActivityExecutionService {
       BusinessProcessDefinition process,
       String operationalState,
       List<String> responsibleAgents,
+      boolean hasBackendExecutor,
+      BackendProductProcessActivityReadiness backendReadiness,
+      boolean hasAgentReadinessProvider,
+      AgentProductProcessActivityReadiness agentReadiness,
       boolean hasProductExperiment,
       boolean productExecutionEnabled) {
     if (definition == null) return "Atividade histórica sem comando operacional.";
     if (!"PUBLISHED".equals(process.getStatus())) {
       return "Somente a versão publicada pode receber novas execuções.";
     }
-    if (!"NOT_STARTED".equals(operationalState)) {
+    if ("COMPLETED".equals(operationalState)) {
+      return "O objetivo da atividade já foi atingido neste ciclo.";
+    }
+    if (hasBackendExecutor
+        && !"NOT_STARTED".equals(operationalState)
+        && !"BLOCKED".equals(operationalState)) {
       return "A atividade já possui execução registrada neste ciclo.";
     }
-    if (responsibleAgents.isEmpty()) {
-      return "A atividade não possui executores automáticos configurados.";
+    if (!hasBackendExecutor
+        && !"NOT_STARTED".equals(operationalState)
+        && !(hasAgentReadinessProvider && "BLOCKED".equals(operationalState))) {
+      return "A atividade já possui execução registrada neste ciclo.";
     }
     if (!hasProductExperiment) {
       return "O produto ainda não possui experimento para contextualizar a execução.";
@@ -431,7 +540,52 @@ public class BusinessProcessActivityExecutionService {
     if (!productExecutionEnabled) {
       return "O produto está em STOP e não pode iniciar novas atividades.";
     }
+    if (hasBackendExecutor && backendReadiness != null) {
+      return backendReadiness.reason();
+    }
+    if (hasAgentReadinessProvider && agentReadiness != null) {
+      return agentReadiness.reason();
+    }
+    if (responsibleAgents.isEmpty()) {
+      return "A atividade não possui executores automáticos configurados.";
+    }
     return "A atividade está pronta para abrir todas as tarefas responsáveis.";
+  }
+
+  /** Localiza o único executor backend compatível com a atividade publicada. */
+  private Optional<BackendProductProcessActivityExecutor> backendActivityExecutor(
+      BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
+    List<BackendProductProcessActivityExecutor> compatible =
+        backendActivityExecutors.stream()
+            .filter(executor -> executor.supports(process, activityDefinition))
+            .toList();
+    if (compatible.size() > 1) {
+      throw new IllegalStateException(
+          "Mais de um executor backend atende à atividade "
+              + activityDefinition.getActivityId()
+              + " do processo "
+              + process.getProcessCode()
+              + ".");
+    }
+    return compatible.stream().findFirst();
+  }
+
+  /** Localiza o único gate de prontidão compatível com a atividade atribuída a agente. */
+  private Optional<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProvider(
+      BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
+    List<AgentProductProcessActivityReadinessProvider> compatible =
+        agentActivityReadinessProviders.stream()
+            .filter(provider -> provider.supports(process, activityDefinition))
+            .toList();
+    if (compatible.size() > 1) {
+      throw new IllegalStateException(
+          "Mais de um gate de agente atende à atividade "
+              + activityDefinition.getActivityId()
+              + " do processo "
+              + process.getProcessCode()
+              + ".");
+    }
+    return compatible.stream().findFirst();
   }
 
   /** Busca tarefas dos planos e experimentos do produto sem misturar outro processo. */
@@ -541,7 +695,9 @@ public class BusinessProcessActivityExecutionService {
       Map<String, String> historicalActivityNames,
       Map<Long, BusinessProcessActivityExecutionResponse> taskResponses,
       String currentExecutionReference,
+      String readinessSourceReference,
       Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId,
+      Product product,
       boolean hasProductExperiment,
       boolean productExecutionEnabled) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new java.util.ArrayList<>();
@@ -564,19 +720,57 @@ public class BusinessProcessActivityExecutionService {
               currentInstancesByActivityId.getOrDefault(entry.getKey(), List.of()));
       List<String> responsibleAgents =
           definition == null ? List.of() : responsibleAgentKeys(definition);
+      Optional<BackendProductProcessActivityExecutor> backendExecutor =
+          definition == null
+              ? Optional.empty()
+              : backendActivityExecutor(selectedProcess, definition);
+      BackendProductProcessActivityReadiness backendReadiness =
+          backendExecutor
+              .map(
+                  executor ->
+                      executor.readiness(
+                          selectedProcess, definition, product, currentExecutionReference))
+              .orElse(null);
+      Optional<AgentProductProcessActivityReadinessProvider> agentReadinessProvider =
+          definition == null
+              ? Optional.empty()
+              : agentActivityReadinessProvider(selectedProcess, definition);
+      AgentProductProcessActivityReadiness agentReadiness =
+          agentReadinessProvider
+              .map(
+                  provider ->
+                      provider.readiness(
+                          selectedProcess, definition, product, readinessSourceReference))
+              .orElse(null);
+      boolean backendStateAllowsRequest =
+          "NOT_STARTED".equals(situation.operationalState())
+              || "BLOCKED".equals(situation.operationalState());
+      boolean agentStateAllowsRequest =
+          "NOT_STARTED".equals(situation.operationalState())
+              || (agentReadinessProvider.isPresent()
+                  && "BLOCKED".equals(situation.operationalState()));
       boolean executionRequestAvailable =
           definition != null
               && "PUBLISHED".equals(selectedProcess.getStatus())
-              && "NOT_STARTED".equals(situation.operationalState())
-              && !responsibleAgents.isEmpty()
               && hasProductExperiment
-              && productExecutionEnabled;
+              && productExecutionEnabled
+              && ((!responsibleAgents.isEmpty()
+                      && agentStateAllowsRequest
+                      && (agentReadiness == null || agentReadiness.ready()))
+                  || (backendExecutor.isPresent()
+                      && backendStateAllowsRequest
+                      && backendReadiness != null
+                      && backendReadiness.ready()));
       String executionRequestReason =
           executionRequestReason(
               definition,
               selectedProcess,
               situation.operationalState(),
               responsibleAgents,
+              backendExecutor.isPresent(),
+              backendReadiness,
+              agentReadinessProvider.isPresent(),
+              agentReadiness,
               hasProductExperiment,
               productExecutionEnabled);
       String activityName =

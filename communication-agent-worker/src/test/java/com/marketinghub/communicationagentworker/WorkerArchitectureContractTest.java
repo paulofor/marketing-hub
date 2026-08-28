@@ -13,6 +13,7 @@ class WorkerArchitectureContractTest {
   @Test
   void shouldExposeVersionedObservability() throws Exception {
     String application = Files.readString(Path.of("src/main/resources/application.yml"));
+    String compose = Files.readString(Path.of("docker-compose.yml"));
     String workflow =
         Files.readString(Path.of("../.github/workflows/communication-agent-worker-ci.yml"));
 
@@ -25,7 +26,12 @@ class WorkerArchitectureContractTest {
     assertThat(workflow)
         .contains(
             "http://127.0.0.1:8101/ops-communication-agent-observability-v1/health",
-            "http://127.0.0.1:8101/ops-communication-agent-observability-v1/logfile");
+            "http://127.0.0.1:8101/ops-communication-agent-observability-v1/logfile",
+            "AGENT_BUILD_REFERENCE='${GITHUB_SHA}'");
+    assertThat(compose)
+        .contains(
+            "AGENT_HEALTH_VERSION: \"1\"",
+            "AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}");
   }
 
   /** Impede banco, host network, privilégio e sessão Codex compartilhada. */

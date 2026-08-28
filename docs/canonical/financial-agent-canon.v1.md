@@ -24,6 +24,13 @@ O Agente Financeiro reconcilia diariamente custos e receitas do Marketing Hub po
 
 Cada execução persiste o snapshot recebido, totais reconciliados, cobertura das fontes, divergências, decisão, resposta bruta, modelo, custo da execução, falha e relatório diário com data e hora.
 
+Quando uma execução estiver vinculada a `agent_task`, a mesma tentativa deve registrar `receivedAt`,
+`deliveredAt` quando concluída, resultado JSON funcional sem dupla serialização, evidência estruturada
+com referência e SHA-256 do snapshot e da resposta bruta, modelo, esforço, prompt final, tier
+solicitado e efetivo, justificativa de exceção ao Flex, tokens e custo quando realmente informados.
+Ausência de telemetria histórica deve permanecer `NOT_REPORTED`; é proibido convertê-la em zero. Uma
+falha deve bloquear a tarefa com causa e evidência da execução, sem registrar entrega ou sucesso.
+
 O snapshot expõe separadamente o custo conhecido do Estúdio em USD e a razão de tentativas com custo conhecido, sem conversão cambial implícita.
 
 O snapshot também expõe custo e cobertura do Estúdio sem atribuição comercial. Esses valores não devem ser somados automaticamente ao planejamento em análise, pois isso contaminaria outro produto; devem aparecer como divergência bloqueante até que produto, plano e experimento corretos sejam vinculados.
@@ -43,6 +50,15 @@ O worker deve persistir logs em arquivo e publicar somente a leitura pelo endpoi
 O MCP deve expor o diagnóstico somente leitura `studio_ledger_coverage`, comparando as fontes canônicas de tentativas com o ledger por origem, tipo de ativo e provedor. O resultado deve destacar tentativas sem ledger, custo desconhecido e atribuição comercial ausente; nenhuma dessas lacunas pode ser apresentada como custo zero.
 
 Toda execução do Codex no Agente Financeiro deve usar limite operacional padrão de 40 minutos, configurável por ambiente, encerrando e registrando como falha qualquer processo que ultrapasse esse prazo.
+
+O processo MCP filho deve receber explicitamente, pela lista `env_vars` do comando Codex, somente
+`MCP_BACKEND_URL` e `MCP_EXECUTION_ID`. A presença das ferramentas de memória no script não basta:
+uma ausência recorrente deve ser diagnosticada pelo comando e pelo ambiente efetivamente herdado.
+
+Enquanto o catálogo do Codex OAuth não anunciar o tier Flex para o modelo do harness, Plutus usa
+`service_tier=default` como exceção funcional explícita. A execução deve persistir o tier solicitado,
+o tier efetivo `STANDARD` e a justificativa; a exceção não autoriza omitir modelo, prompt ou tokens
+quando o runtime os fornecer.
 
 O agente deve permanecer cadastrado no catálogo canônico com a chave `financial-agent`, contrato versionado, modelo ativo e autoridade somente leitura.
 

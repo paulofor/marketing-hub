@@ -42,6 +42,7 @@ if [ "$PRODUCT_SLUG" != "metodo-musa-7-dias" ]; then
   "slug": "$(json_escape "$PRODUCT_SLUG")",
   "healthPath": "/",
   "commercialOfferPath": "/api/pde/products/$(json_escape "$PRODUCT_SLUG")/commercial-offer",
+  "integrationContractPath": "/api/pde/products/$(json_escape "$PRODUCT_SLUG")/integration-contract",
   "requiredTexts": ["$(json_escape "$HEALTH_REQUIRED_TEXT")"],
   "requiredHlsStreams": [],
   "forbiddenTexts": [

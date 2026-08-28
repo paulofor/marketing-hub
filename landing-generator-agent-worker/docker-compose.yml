@@ -15,7 +15,7 @@ services:
       LANDING_GENERATOR_CODEX_TIMEOUT: ${LANDING_GENERATOR_CODEX_TIMEOUT:-PT40M}
       LOG_FILE_NAME: /tmp/landing-generator-agent-worker.log
       AGENT_HEALTH_KEY: landing-generator
-      AGENT_HEALTH_VERSION: "2"
+      AGENT_HEALTH_VERSION: "4"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/landingagent/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh

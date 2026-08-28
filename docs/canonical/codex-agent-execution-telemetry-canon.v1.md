@@ -39,6 +39,11 @@ Versão divergente, backend inacessível ou autenticação inválida deve aparec
 causa acionável. O request interno canônico é
 `POST /api/internal/agents/executor-health`.
 
+A versão reportada pelo Compose de cada executor deve acompanhar a versão corrente do agente
+ativada pelo backend. Em implantação, `buildReference` deve receber o SHA imutável do commit pelo
+workflow; o fallback `local` é permitido somente em desenvolvimento. Teste de contrato no próprio
+worker deve bloquear divergência de versão e deploy sem referência auditável de build.
+
 ## Critério operacional
 
 Continuar quando heartbeat e saída avançarem; investigar quando o processo estiver vivo sem mudança de saída; considerar a execução presa quando o backend marcar `stale=true`. Ao recuperar uma lease presa, reutilizar a entrada congelada e preservar a correlação; após uma segunda expiração, parar e expor a dificuldade para decisão externa.

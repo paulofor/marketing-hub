@@ -131,6 +131,8 @@ class CustomerBpmTaskConsumerTest {
                 "src/main/resources/prompts/bpm/v2/pde-commercial-homologation-customer-review.md"));
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "taskTarget",
+            "UPDATED_CANDIDATE",
             "fronteira externa esperada",
             "Use `ADJUST` somente para defeito corrigível na candidata local",
             "todos os itens de `gateChecks` em `PASS`");
@@ -236,7 +238,13 @@ class CustomerBpmTaskConsumerTest {
         CustomerBpmTaskConsumer.evidenceFields(
             "Psique",
             "gpt-5.6-sol",
-            Map.of("sourceReference", "experiment:88", "activityId", "customer"));
+            Map.of(
+                "sourceReference",
+                "experiment:88",
+                "activityId",
+                "customer",
+                "taskTarget",
+                Map.of("productId", 9L, "productSlug", "kit-whatsapp-pronto")));
 
     org.assertj.core.api.Assertions.assertThat(evidence)
         .containsEntry("sourceReference", "experiment:88")
@@ -245,6 +253,7 @@ class CustomerBpmTaskConsumerTest {
         .containsEntry("externalSideEffects", false)
         .containsEntry("requestedServiceTier", "FLEX")
         .containsEntry("effectiveServiceTier", "STANDARD")
+        .containsKey("taskTarget")
         .containsKey("serviceTierException");
   }
 }

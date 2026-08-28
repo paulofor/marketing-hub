@@ -22,5 +22,6 @@ COPY agent-health-report.mjs /app/agent-health-report.mjs
 COPY --from=build /build/src/main/resources/prompts /app/prompts
 COPY --from=build /build/src/main/resources/browser /app/browser
 COPY --from=build /build/src/main/resources/mcp /app/mcp
+COPY review-evidence /app/commercial-evidence
 USER operator
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

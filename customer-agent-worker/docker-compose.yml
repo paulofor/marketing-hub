@@ -11,6 +11,7 @@ services:
       CUSTOMER_AGENT_OBSERVATION_POLL_MS: ${CUSTOMER_AGENT_OBSERVATION_POLL_MS:-60000}
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
       CUSTOMER_AGENT_MCP_URL: ${CUSTOMER_AGENT_MCP_URL:-http://host.docker.internal}
+      CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
       AGENT_HEALTH_KEY: customer-agent
       AGENT_HEALTH_VERSION: "4"

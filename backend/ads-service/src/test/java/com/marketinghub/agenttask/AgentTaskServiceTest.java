@@ -1205,6 +1205,52 @@ class AgentTaskServiceTest {
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
   }
 
+  /** Entrega ao executor a identidade comercial resolvida pelo backend para a tarefa reservada. */
+  @Test
+  void includesTypedCommercialTargetInPendingContract() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    AgentTask task = processTask(254L, psique, process, "html", "PENDING");
+    task.setSourceReference("experiment:89");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskTargetResponse expectedTarget =
+        new AgentTaskTargetResponse(
+            "experiment:89",
+            89L,
+            9L,
+            "kit-whatsapp-pronto",
+            "Kit WhatsApp Pronto",
+            "Rigel",
+            "kit-whatsapp-pronto-pde-v2",
+            null,
+            "https://checkout.example/rigel",
+            new BigDecimal("349.00"));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            null,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            null,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.systemUTC(),
+            MarketStrategicContextProvider.empty(),
+            sourceReference -> Optional.of(expectedTarget));
+
+    AgentTaskPendingResponse pending =
+        service.claimEligibleProcessTask("customer-agent").orElseThrow();
+
+    assertThat(pending.taskTarget()).isEqualTo(expectedTarget);
+  }
+
   /** Reserva idempotentemente a tarefa exata correlacionada por um ciclo técnico do backend. */
   @Test
   void claimsExactLinkedProcessTask() {

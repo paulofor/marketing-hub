@@ -5,9 +5,15 @@ on:
     branches: [main]
     paths:
       - meta-ad-approver-worker/**
-      - pde-platform/contracts/**
-      - pde-platform/frontend/public/materials/**
+      - customer-agent-worker/src/**
+      - pde-platform/**
+      - backend/ads-service/src/main/resources/db/changelog/**
+      - backend/ads-service/src/test/java/com/marketinghub/pde/**
+      - docs/homologacao/**
+      - docs/registros/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
+      - scripts/build-commercial-review-evidence.mjs
+      - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/validate-premium-agents.sh
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
@@ -18,9 +24,15 @@ on:
       - ai-worker/src/main/java/com/marketinghub/worker/creativereview/**
       - ai-worker/src/test/java/com/marketinghub/worker/architecture/MetaAdApproverIsolationTest.java
       - docs/canonical/**
-      - pde-platform/contracts/**
-      - pde-platform/frontend/public/materials/**
+      - customer-agent-worker/src/**
+      - pde-platform/**
+      - backend/ads-service/src/main/resources/db/changelog/**
+      - backend/ads-service/src/test/java/com/marketinghub/pde/**
+      - docs/homologacao/**
+      - docs/registros/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
+      - scripts/build-commercial-review-evidence.mjs
+      - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/validate-premium-agents.sh
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
@@ -58,6 +70,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: meta-ad-approver-worker/package-lock.json
+      - name: Build immutable commercial evidence
+        run: node scripts/build-commercial-review-evidence.mjs . meta-ad-approver-worker/review-evidence
       - name: Validate Java and architecture
         working-directory: meta-ad-approver-worker
         run: mvn -B verify
@@ -85,6 +99,11 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build immutable commercial evidence
+        run: node scripts/build-commercial-review-evidence.mjs . meta-ad-approver-worker/review-evidence
       - name: Add agent VPS SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -156,6 +175,7 @@ jobs:
                    && curl -fsS http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && docker compose exec -T iris-image-studio sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test ! -e /run/secrets/openai_api_key' \
+                   && docker compose exec -T meta-ad-approver-worker sh -c 'test -s /app/commercial-evidence/commercial-review-bundle-index-v1.json' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -x /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -s /workspace/marketing-hub/pde-platform/contracts/kit-whatsapp-pronto-v1.json && test -s /workspace/marketing-hub/pde-platform/contracts/commercial-journey-event-contract-v1.json && test -s /workspace/marketing-hub/pde-platform/frontend/public/materials/kit-whatsapp-v1/01-comece-aqui.md' \
                    && docker compose exec -T meta-ad-approver-worker node /app/agent-health-report.mjs \

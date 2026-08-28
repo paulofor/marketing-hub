@@ -50,6 +50,21 @@ Uma atividade de agente possui exatamente uma `responsibleAgentKey` e um
 `responsibilityDomain` compatível. Revisões de Psique e Têmis nunca são coautoradas: o backend exige
 as duas atividades independentes quando ambas forem aplicáveis.
 
+## Identidade e evidência das revisões
+
+- toda tarefa ligada a `experiment:<id>` ou `product:<id>` entrega um `taskTarget` tipado pelo
+  backend, com produto, slug e versão funcional resolvidos nas fontes canônicas;
+- o executor deve selecionar manifesto e provas exclusivamente por essa identidade; título, nome
+  do agente e varredura global do diretório não podem decidir qual PDE será revisado;
+- Psique e Têmis recebem um pacote imutável de evidências produzido no mesmo checkout da imagem do
+  worker, com índice SHA-256 próprio. Divergência entre o índice e o conteúdo do pacote bloqueia a
+  execução como falha técnica;
+- o SHA declarado no manifesto representa a candidata homologada anteriormente. Quando o arquivo
+  atual do pacote mudou, ele é marcado como `UPDATED_CANDIDATE` e deve ser examinado novamente, em
+  vez de ser confundido com corrupção ou de reutilizar o parecer anterior;
+- manifesto ausente, identidade incompleta, mais de um manifesto vigente ou tentativa de misturar
+  produtos bloqueiam antes de consumir modelo e ficam registrados no histórico da tarefa.
+
 ## Estados consolidados
 
 - `WAITING_FOR_AGENTS`: existe parecer ausente ou em processamento.

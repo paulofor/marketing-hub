@@ -2243,3 +2243,23 @@ Use este checklist quando o problema estiver em algum loop acima:
   transação, com histórico auditável e botão exclusivo na tela.
 - **Prevenção:** testes bloqueiam ativação sem `READY_TO_PUBLISH`, comprovam que não é necessário
   inventar criativo Meta e exigem rollback integral diante de qualquer falha de persistência.
+
+## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
+
+- **Data:** 2026-08-28.
+- **Sintoma:** as tarefas #254 do Rigel e #256 da Vega foram bloqueadas antes do parecer de Psique
+  com `SHA-256 divergente` em `pde-platform/frontend/src/App.tsx`, embora esse arquivo não pertença
+  às provas declaradas pelo Rigel.
+- **Causa-raiz confirmada:** Psique e Têmis varriam globalmente todos os manifestos de homologação,
+  sem receber a identidade tipada do produto. Os containers liam ainda um checkout compartilhado e
+  mutável na VPS; assim, o manifesto de uma versão podia ser comparado ao arquivo de outra versão e
+  qualquer PDE com prova antiga interrompia todos os demais.
+- **Correção sistêmica:** o backend agora entrega `taskTarget` com experimento, produto, slug e
+  versão funcional. Cada revisor seleciona somente o manifesto correspondente. As provas são
+  congeladas dentro da imagem por um índice SHA-256 gerado no mesmo checkout; alteração legítima
+  desde a homologação anterior vira `UPDATED_CANDIDATE` e exige novo parecer, enquanto divergência
+  dentro do pacote imutável continua sendo falha técnica.
+- **Prevenção:** testes cruzados usam Rigel e Vega simultaneamente, incluem um manifesto alheio com
+  arquivo ausente e comprovam que não há mistura. Testes adicionais bloqueiam alvo ausente ou
+  ambíguo, corrupção posterior ao build e ausência do índice na imagem implantada. Os workflows de
+  ambos os revisores são acionados quando contratos ou provas versionadas mudam.

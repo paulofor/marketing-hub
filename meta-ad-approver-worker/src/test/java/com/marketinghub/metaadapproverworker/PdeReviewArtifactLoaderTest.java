@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -73,7 +74,7 @@ class PdeReviewArtifactLoaderTest {
             });
   }
 
-  /** Impede que Têmis use um parecer anterior depois de qualquer prova ter sido alterada. */
+  /** Impede que contratos gerais silenciem uma alteração em prova executável declarada. */
   @Test
   void rejectsHomologationManifestWithStaleEvidenceHash() throws Exception {
     Path contracts = tempDir.resolve("pde-platform/contracts");
@@ -137,17 +138,183 @@ class PdeReviewArtifactLoaderTest {
     Files.writeString(
         manifest,
         """
-        {"homologationEvidence":[{"path":"pde-platform/frontend/tests/product-journey.spec.ts","sha256":"%s"}]}
+        {
+          "contractVersion":"product-commercial-homologation.v1",
+          "product":{"id":9,"slug":"produto-a","experienceVersion":"produto-a-v1"},
+          "homologationEvidence":[{"path":"pde-platform/frontend/tests/product-journey.spec.ts","sha256":"%s"}]
+        }
         """
             .formatted(hash));
+    Files.writeString(
+        manifest.getParent().resolve("unrelated-commercial-homologation-v1.json"),
+        """
+        {
+          "contractVersion":"unrelated-commercial-homologation.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "homologationEvidence":[{"path":"arquivo-ausente.txt","sha256":"%s"}]
+        }
+        """
+            .formatted("0".repeat(64)));
 
     var evidence =
-        new PdeReviewArtifactLoader(tempDir.toString()).loadCommercialHomologationEvidence();
+        new PdeReviewArtifactLoader(tempDir.toString())
+            .loadCommercialHomologationEvidence(
+                Map.of(
+                    "experimentId",
+                    89L,
+                    "productId",
+                    9L,
+                    "productSlug",
+                    "produto-a",
+                    "experienceVersion",
+                    "produto-a-v1"));
 
     assertThat(evidence)
         .extracting(item -> item.get("path"))
         .containsExactly(
             "pde-platform/contracts/product-commercial-homologation-v1.json",
-            "pde-platform/frontend/tests/product-journey.spec.ts");
+            "pde-platform/frontend/tests/product-journey.spec.ts")
+        .doesNotContain("arquivo-ausente.txt");
+    assertThat(evidence.get(1))
+        .containsEntry("baselineIntegrity", "MATCH")
+        .containsEntry("bundleIntegrity", "LOCAL_SOURCE");
+  }
+
+  /** Entrega a candidata modificada para nova revisão em vez de reutilizar parecer antigo. */
+  @Test
+  void marksChangedBaselineAsUpdatedCandidate() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/src/App.tsx");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "candidata atual");
+    Path manifest =
+        tempDir.resolve("pde-platform/contracts/product-commercial-homologation-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"product-commercial-homologation.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "homologationEvidence":[{"path":"pde-platform/frontend/src/App.tsx","sha256":"%s"}]
+        }
+        """
+            .formatted("0".repeat(64)));
+
+    var evidence =
+        new PdeReviewArtifactLoader(tempDir.toString())
+            .loadCommercialHomologationEvidence(
+                Map.of(
+                    "experimentId",
+                    90L,
+                    "productId",
+                    4L,
+                    "productSlug",
+                    "produto-b",
+                    "experienceVersion",
+                    "produto-b-v1"));
+
+    assertThat(evidence.get(1))
+        .containsEntry("baselineIntegrity", "UPDATED_CANDIDATE")
+        .containsEntry("content", "candidata atual");
+  }
+
+  /** Bloqueia alteração posterior ao pacote imutável entregue ao container de Têmis. */
+  @Test
+  void rejectsEvidenceThatDiffersFromBundleIndex() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/src/App.tsx");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "arquivo alterado depois do build");
+    Path manifest =
+        tempDir.resolve("pde-platform/contracts/product-commercial-homologation-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"product-commercial-homologation.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "homologationEvidence":[{"path":"pde-platform/frontend/src/App.tsx","sha256":"%s"}]
+        }
+        """
+            .formatted("0".repeat(64)));
+    String manifestHash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(manifest)));
+    Files.writeString(
+        tempDir.resolve("commercial-review-bundle-index-v1.json"),
+        """
+        {
+          "bundleVersion":"pde-commercial-review-evidence-v1",
+          "files":[
+            {"path":"pde-platform/contracts/product-commercial-homologation-v1.json","sha256":"%s"},
+            {"path":"pde-platform/frontend/src/App.tsx","sha256":"%s"}
+          ]
+        }
+        """
+            .formatted(manifestHash, "f".repeat(64)));
+    var loader = new PdeReviewArtifactLoader(tempDir.toString());
+
+    assertThatThrownBy(
+            () ->
+                loader.loadCommercialHomologationEvidence(
+                    Map.of(
+                        "experimentId",
+                        90L,
+                        "productId",
+                        4L,
+                        "productSlug",
+                        "produto-b",
+                        "experienceVersion",
+                        "produto-b-v1")))
+        .isInstanceOf(IOException.class)
+        .hasMessageContaining("pacote comercial")
+        .hasMessageContaining("App.tsx");
+  }
+
+  /** Confirma no repositório real que Têmis não mistura provas comerciais entre PDEs. */
+  @Test
+  void segregatesCurrentRepositoryEvidenceByProduct() throws Exception {
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    Path repository =
+        moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
+            ? moduleDirectory.getParent()
+            : moduleDirectory;
+    var loader = new PdeReviewArtifactLoader(repository.toString());
+
+    var rigel =
+        loader.loadCommercialHomologationEvidence(
+            Map.of(
+                "experimentId",
+                89L,
+                "productId",
+                9L,
+                "productSlug",
+                "kit-whatsapp-pronto",
+                "experienceVersion",
+                "kit-whatsapp-pronto-pde-v2"));
+    var vega =
+        loader.loadCommercialHomologationEvidence(
+            Map.of(
+                "experimentId",
+                90L,
+                "productId",
+                4L,
+                "productSlug",
+                "metodo-musa-7-dias",
+                "experienceVersion",
+                "musa-pde-entry-v7-espelho-antes-de-sair"));
+
+    assertThat(rigel)
+        .extracting(item -> item.get("path"))
+        .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json")
+        .doesNotContain(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
+            "pde-platform/frontend/src/App.tsx");
+    assertThat(vega)
+        .extracting(item -> item.get("path"))
+        .contains(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
+            "pde-platform/frontend/src/App.tsx")
+        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json");
   }
 }

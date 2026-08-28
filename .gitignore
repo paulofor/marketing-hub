@@ -50,6 +50,8 @@ local/
 /artifacts/
 /deploy/local-validation/pde-opportunity/artifacts/
 /codex-cache/
+/customer-agent-worker/review-evidence/
+/meta-ad-approver-worker/review-evidence/
 
 # Chaves SSH e identidades locais nunca devem ser versionadas
 /.codex-ssh/

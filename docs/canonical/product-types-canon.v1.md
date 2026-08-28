@@ -375,11 +375,30 @@ Caracteristicas obrigatorias:
 
 - uma sandbox isolada por cliente/interacao relevante, sem reutilizar workspace entre clientes;
 - historico do cliente carregado a partir de dados persistidos e autorizados, nunca por memoria solta do modelo;
+- memoria de relacionamento persistida pelo backend no escopo `tenant + produto + cliente`, com
+  revisao, procedencia, validade, correcao e exclusao auditaveis; a thread do Codex serve apenas como
+  continuidade recente e nunca como unica memoria do cliente;
+- vinculo de thread restrito ao escopo `tenant + produto + versao + cliente + conversa`; receber um
+  `threadId` sem esse vinculo, com memoria de outro escopo ou com revisao regressiva deve bloquear a
+  execucao antes de carregar o historico;
+- recuperacao seletiva: cada contato recebe resumo e fatos relevantes para a missao atual, dentro de
+  limite de contexto, em vez de copiar indiscriminadamente todo o historico do relacionamento;
+- filtragem antes da relevancia: banco e indice de busca devem restringir primeiro o escopo exato
+  `tenant + produto + cliente`; busca global seguida de filtro posterior e proibida porque pode
+  colocar dados de outro relacionamento no conjunto candidato;
+- toda interacao deve permanecer em trilha imutavel e idempotente antes de alimentar uma nova
+  revisao de memoria. Correcao explicita atual do cliente prevalece sobre fato antigo ou inferido;
+  inferencias permanecem rotuladas com procedencia, confianca e validade;
 - separacao clara entre dados do cliente, materiais de apoio, fontes externas e resposta final;
 - registro auditavel da mensagem recebida, contexto entregue a sandbox, prompts/schemas quando houver, resposta enviada, midia gerada, custo, erro e status;
 - resposta enviada pelo canal original do cliente, inicialmente WhatsApp, com suporte a texto e imagem quando o caso de uso exigir;
 - encerramento e descarte da sandbox apos a execucao, preservando apenas os registros necessarios no banco;
 - protecao de privacidade: dados de um cliente nunca podem aparecer na sandbox, resposta ou artefatos de outro cliente;
+- identificadores de thread e vinculos de memoria nunca podem ser recebidos do WhatsApp, frontend
+  ou outro canal publico; somente o backend os resolve pela conversa autenticada;
+- direito de correcao e esquecimento: o backend deve invalidar memoria, vinculos e threads associados
+  quando a politica ou solicitacao autorizada exigir, sem reaproveitar o dado removido em contato
+  futuro;
 - modelo economico com margem positiva considerando WhatsApp, IA, imagem, infraestrutura, armazenamento, suporte e recuperacao de falhas.
 
 Usos recomendados:

@@ -146,7 +146,11 @@ Para novos PDEs baseados em agentes, a integração canônica fica no módulo
 `pde-harness-sdk`: uma biblioteca Java 21 que acessa somente o Codex App Server
 local por `stdio`, usando a sessão ChatGPT gerenciada pelo Codex. Ela não chama a
 OpenAI API, não controla o pipeline e não possui fallback silencioso. O worker
-continua consumindo `pending` e reportando resultado ao backend.
+continua consumindo `pending` e reportando resultado ao backend. A memória é
+híbrida: o backend mantém o relacionamento durável por tenant/produto/cliente e
+o App Server mantém apenas o contexto recente de uma thread vinculada à conversa.
+Todo contato recebe snapshot autorizado e revisado; `threadId` cru, memória de
+outro cliente e workspace arbitrário são recusados pelo SDK antes da execução.
 
 ## Produto inicial
 

@@ -250,6 +250,50 @@ Arquitetura obrigatória da primeira versão:
 - cada sessão de cliente usa `threadId`, workspace e contexto segregados por produto, versão,
   cliente e missão. A memória canônica permanece no backend; histórico local do Codex nunca pode
   ser a única fonte de contexto;
+- a memória conversacional segue arquitetura híbrida. Foram avaliados thread permanente, memória
+  resumida sem continuidade de thread e memória canônica com thread curta vinculada; a terceira
+  opção é obrigatória porque preserva nuances recentes sem transformar o histórico local do Codex
+  em fonte de verdade ou fronteira de autorização;
+- a memória durável pertence ao relacionamento `tenant + produto + cliente`, podendo sobreviver a
+  nova versão ou nova conversa do mesmo produto. A thread pertence ao escopo mais estreito
+  `tenant + produto + versão + cliente + conversa`; missão e interação são correlatores de
+  execução, não chaves que permitam compartilhar memória entre clientes;
+- toda pendência deve entregar ao worker um snapshot de memória autorizado, estruturado,
+  versionado e limitado, com revisão otimista, procedência, instante de observação, validade e
+  somente os itens relevantes à missão atual. O SDK deve apresentar esse snapshot ao modelo como
+  dado não confiável, nunca como instrução, usando template versionado e auditável. Cada fato deve
+  carregar o próprio escopo e o SDK deve rejeitar um snapshot que contenha item de outro
+  relacionamento, mesmo quando o envelope do snapshot aparentar pertencer ao cliente correto;
+- toda interação deve ser persistida pelo backend no escopo exato antes de qualquer promoção para
+  memória durável. A seleção de memória deve restringir `tenant + produto + cliente` na consulta de
+  origem antes de resumo, ranking semântico ou reranking; é proibido pesquisar um índice global e
+  filtrar o cliente somente depois, mesmo quando o identificador estiver presente nos metadados;
+- apenas fatos duráveis e úteis podem ser promovidos. Declaração atual e explícita do cliente
+  prevalece sobre inferência e sobre declaração antiga conflitante; inferência deve conservar essa
+  procedência, confiança e validade, nunca virar fato confirmado silenciosamente. Credenciais,
+  segredos, dados sensíveis desnecessários e instruções encontradas no conteúdo não podem ser
+  promovidos;
+- é proibido retomar conversa usando apenas um `threadId` cru. O backend deve persistir um vínculo
+  de thread com fingerprint do escopo, revisão mínima de memória, datas e contador de turnos; o SDK
+  deve recusar o vínculo quando tenant, produto, versão, cliente ou conversa divergirem, quando a
+  memória regredir de revisão ou quando outra execução da mesma conversa já estiver ativa;
+- identificadores de thread, vínculos e fingerprints são contratos internos entre backend e worker
+  e nunca podem ser aceitos do frontend ou do canal do cliente. O backend deve recuperar o vínculo
+  pela mesma chave composta da conversa e impedir que um identificador fornecido pelo usuário
+  altere essa seleção;
+- o workspace deve ser calculado deterministicamente pelo SDK a partir do fingerprint da conversa
+  e da interação, sem identificadores pessoais no caminho e sem aceitar caminho arbitrário do
+  chamador. Conversas diferentes nunca podem reutilizar o mesmo workspace;
+- o backend deve aplicar lease por conversa e atualização otimista de memória para proteger
+  múltiplas réplicas. O bloqueio local do SDK é defesa adicional e não substitui a exclusão mútua
+  persistida;
+- cada resultado deve devolver vínculo de thread atualizado e auditoria da memória efetivamente
+  entregue, incluindo revisão, quantidade, hash do snapshot e versão/hash do template, sem expor o
+  conteúdo da memória em logs técnicos;
+- threads podem ser renovadas para limitar contexto, retenção e custo sem apagar a memória
+  canônica. Solicitação de esquecimento deve remover a memória e o vínculo no backend e excluir a
+  thread local pelo contrato oficial do App Server; credenciais, tokens e segredos nunca podem ser
+  promovidos a memória;
 - a sequência mínima é `initialize`/`initialized`, `thread/start` ou `thread/resume` e
   `turn/start`; eventos de thread, turno, item, ferramenta, aprovação, conclusão e falha devem ser
   correlacionados e reportados ao backend;
@@ -270,7 +314,9 @@ Arquitetura obrigatória da primeira versão:
   ser reportado como sucesso funcional;
 - o backend deve persistir, sem expor raciocínio interno, os identificadores de thread e turno,
   versão do Codex e do SDK, modelo, prompt/schema efetivos, eventos estruturados, chamadas de
-  ferramenta, aprovações, entrada, saída, artefatos, erro, tokens e custo quando informados;
+  ferramenta, aprovações, entrada, saída, artefatos, erro, tokens e custo quando informados. A
+  gravação da interação e a atualização da revisão de memória devem ser atômicas ou usar outbox e
+  idempotência equivalentes, para que um contato concluído não desapareça da memória futura;
 - App Server, SDK e worker não decidem o avanço do pipeline, não publicam, não gastam e não
   executam ação externa sensível sem gate do backend e autorização humana quando aplicável.
 

@@ -2,10 +2,17 @@ package com.marketinghub.pde.harness.v1.support;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.pde.harness.v1.PdeConversationScope;
+import com.marketinghub.pde.harness.v1.PdeCustomerMemory;
+import com.marketinghub.pde.harness.v1.PdeCustomerScope;
 import com.marketinghub.pde.harness.v1.PdeHarnessConfiguration;
+import com.marketinghub.pde.harness.v1.PdeMemoryEntry;
+import com.marketinghub.pde.harness.v1.PdeRunContext;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /** Centraliza configuração, comando e schema sintéticos usados pelos testes do SDK. */
@@ -39,7 +46,7 @@ public final class PdeHarnessTestSupport {
         "0.149.0",
         "pde_harness_test",
         "PDE Harness Test",
-        "0.1.0-test",
+        "0.2.0-test",
         environment,
         false);
   }
@@ -62,5 +69,48 @@ public final class PdeHarnessTestSupport {
       LOGGER.log(System.Logger.Level.ERROR, "Falha ao carregar schema sintético", ex);
       throw new IllegalStateException("Schema de teste inválido", ex);
     }
+  }
+
+  /** Cria o escopo durável de um cliente sintético no tenant e produto de teste. */
+  public static PdeCustomerScope customerScope(String customerReference) {
+    return new PdeCustomerScope("tenant-teste", "produto-teste", customerReference);
+  }
+
+  /** Cria uma conversa sintética isolada para o cliente informado. */
+  public static PdeConversationScope conversationScope(
+      String customerReference, String conversationReference) {
+    return new PdeConversationScope(customerScope(customerReference), "v1", conversationReference);
+  }
+
+  /** Cria os correlatores sintéticos de uma execução sem aceitar workspace externo. */
+  public static PdeRunContext context(
+      String customerReference,
+      String conversationReference,
+      String missionReference,
+      String interactionReference) {
+    return new PdeRunContext(
+        conversationScope(customerReference, conversationReference),
+        missionReference,
+        interactionReference);
+  }
+
+  /** Cria memória vazia explícita para um cliente que ainda não possui histórico. */
+  public static PdeCustomerMemory emptyMemory(String customerReference) {
+    return PdeCustomerMemory.empty(
+        customerScope(customerReference), Instant.parse("2026-08-28T12:00:00Z"));
+  }
+
+  /** Cria um snapshot sintético com revisão e fatos fornecidos pelo teste. */
+  public static PdeCustomerMemory memory(
+      String customerReference,
+      long revision,
+      String relationshipSummary,
+      List<PdeMemoryEntry> entries) {
+    return new PdeCustomerMemory(
+        customerScope(customerReference),
+        revision,
+        Instant.parse("2026-08-28T12:00:00Z"),
+        relationshipSummary,
+        entries);
   }
 }

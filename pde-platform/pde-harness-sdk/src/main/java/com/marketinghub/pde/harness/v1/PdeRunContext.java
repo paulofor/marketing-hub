@@ -1,23 +1,26 @@
 package com.marketinghub.pde.harness.v1;
 
-import java.nio.file.Path;
 import java.util.Objects;
 
-/** Identifica e segrega o produto, cliente, missão e workspace de uma execução PDE. */
+/** Identifica conversa, missão e interação sem permitir escolha arbitrária de workspace. */
 public record PdeRunContext(
-    String productCode,
-    String productVersion,
-    String customerReference,
-    String missionReference,
-    Path workspace) {
+    PdeConversationScope conversationScope, String missionReference, String interactionReference) {
 
-  /** Valida os correlatores mínimos e normaliza o caminho da execução. */
+  /** Valida os correlatores usados pelo backend para lease, memória e auditoria. */
   public PdeRunContext {
-    productCode = requireText(productCode, "productCode");
-    productVersion = requireText(productVersion, "productVersion");
-    customerReference = requireText(customerReference, "customerReference");
+    conversationScope = Objects.requireNonNull(conversationScope, "conversationScope");
     missionReference = requireText(missionReference, "missionReference");
-    workspace = Objects.requireNonNull(workspace, "workspace").toAbsolutePath().normalize();
+    interactionReference = requireText(interactionReference, "interactionReference");
+  }
+
+  /** Expõe o escopo durável de memória derivado da conversa. */
+  public PdeCustomerScope customerScope() {
+    return conversationScope.customerScope();
+  }
+
+  /** Expõe o produto para logs operacionais sem repetir a estrutura de escopo. */
+  public String productCode() {
+    return customerScope().productCode();
   }
 
   /** Valida um correlator textual obrigatório sem aceitar espaços vazios. */

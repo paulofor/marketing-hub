@@ -6,8 +6,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.pde.harness.v1.internal.CodexVersionVerifier;
 import com.marketinghub.pde.harness.v1.internal.PdeHashing;
+import com.marketinghub.pde.harness.v1.internal.PdeMemoryContextRenderer;
+import com.marketinghub.pde.harness.v1.internal.PdeMemoryPolicy;
 import com.marketinghub.pde.harness.v1.internal.PdeOutputSchemaPolicy;
 import com.marketinghub.pde.harness.v1.internal.PdeProtocolContract;
+import com.marketinghub.pde.harness.v1.internal.PdeRenderedMemory;
 import com.marketinghub.pde.harness.v1.internal.PdeStructuredOutputValidator;
 import com.marketinghub.pde.harness.v1.internal.PdeTurnCollector;
 import com.marketinghub.pde.harness.v1.internal.PdeTurnOutcome;
@@ -16,8 +19,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Oferece a fachada Java do PDE Harness para executar um agente sem assumir a orquestração do
@@ -31,7 +38,10 @@ public final class PdeHarnessSdk implements AutoCloseable {
   private final PdeProtocolContract protocolContract;
   private final CodexVersionVerifier versionVerifier;
   private final PdeStructuredOutputValidator structuredOutputValidator;
+  private final PdeMemoryContextRenderer memoryContextRenderer;
   private final CodexAppServerClient client;
+  private final ConcurrentMap<String, Boolean> activeConversations = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, String> threadScopes = new ConcurrentHashMap<>();
 
   private volatile PdeHarnessHealth health;
 
@@ -42,6 +52,7 @@ public final class PdeHarnessSdk implements AutoCloseable {
     this.protocolContract = new PdeProtocolContract(mapper);
     this.versionVerifier = new CodexVersionVerifier();
     this.structuredOutputValidator = new PdeStructuredOutputValidator(mapper);
+    this.memoryContextRenderer = new PdeMemoryContextRenderer();
     this.client = new CodexAppServerClient(configuration, mapper);
   }
 
@@ -77,13 +88,84 @@ public final class PdeHarnessSdk implements AutoCloseable {
   public PdeAgentRunResult execute(PdeAgentRunRequest request, PdeExecutionObserver observer) {
     Objects.requireNonNull(request, "request");
     Objects.requireNonNull(observer, "observer");
+    PdeMemoryPolicy.validate(request);
     PdeOutputSchemaPolicy.validate(request.outputSchema());
-    Path workspace = validateWorkspace(request.context().workspace());
-    start();
+    String conversationFingerprint = request.context().conversationScope().fingerprint();
+    acquireConversation(conversationFingerprint);
+    try {
+      return executeExclusively(request, observer, conversationFingerprint);
+    } finally {
+      activeConversations.remove(conversationFingerprint);
+    }
+  }
+
+  /** Exclui a thread local após o backend autorizar e remover sua memória e vínculo canônicos. */
+  public void forgetThread(PdeConversationScope scope, PdeThreadBinding binding) {
+    Objects.requireNonNull(scope, "scope");
+    Objects.requireNonNull(binding, "binding");
+    if (!binding.belongsTo(scope)) {
+      throw new PdeHarnessException(
+          PdeHarnessFailureCategory.ISOLATION_VIOLATION,
+          "Vínculo de thread não pertence à conversa autorizada para esquecimento");
+    }
+    String conversationFingerprint = scope.fingerprint();
+    acquireConversation(conversationFingerprint);
+    try {
+      validateRuntimeThreadScope(binding.threadId(), conversationFingerprint);
+      if (!binding.ephemeral()) {
+        start();
+        ObjectNode params = mapper.createObjectNode();
+        params.put("threadId", binding.threadId());
+        client.request("thread/delete", params);
+      }
+      threadScopes.remove(binding.threadId(), conversationFingerprint);
+    } finally {
+      activeConversations.remove(conversationFingerprint);
+    }
+  }
+
+  /** Executa o turno sob exclusão mútua local para uma única conversa. */
+  private PdeAgentRunResult executeExclusively(
+      PdeAgentRunRequest request, PdeExecutionObserver observer, String conversationFingerprint) {
+    Path workspace = validateWorkspace(configuration.workspaceFor(request.context()));
+    RuntimeException executionFailure = null;
+    try {
+      return executeInWorkspace(request, observer, conversationFingerprint, workspace);
+    } catch (RuntimeException ex) {
+      executionFailure = ex;
+      LOGGER.log(
+          System.Logger.Level.ERROR,
+          "Execução PDE encerrada com falha; produto="
+              + request.context().productCode()
+              + ", missão="
+              + request.context().missionReference()
+              + ", interação="
+              + request.context().interactionReference(),
+          ex);
+      throw ex;
+    } finally {
+      deleteWorkspace(workspace, executionFailure);
+    }
+  }
+
+  /** Executa o protocolo dentro do workspace efêmero já validado para a interação. */
+  private PdeAgentRunResult executeInWorkspace(
+      PdeAgentRunRequest request,
+      PdeExecutionObserver observer,
+      String conversationFingerprint,
+      Path workspace) {
     Instant startedAt = Instant.now();
+    PdeRenderedMemory renderedMemory = memoryContextRenderer.render(request.memory(), startedAt);
+    if (request.existingThreadBinding() != null) {
+      validateRuntimeThreadScope(
+          request.existingThreadBinding().threadId(), conversationFingerprint);
+    }
+    start();
 
     JsonNode threadResponse = openThread(request, workspace);
     String threadId = requireIdentifier(threadResponse, "thread", "thread/start ou thread/resume");
+    requireExpectedThread(request, threadId);
+    validateRuntimeThreadScope(threadId, conversationFingerprint);
     PdeTurnCollector collector = new PdeTurnCollector(threadId, observer);
     collector.recordThreadReady(threadResponse);
 
@@ -92,6 +174,9 @@ public final class PdeHarnessSdk implements AutoCloseable {
       ObjectNode turnParams = mapper.createObjectNode();
       turnParams.put("threadId", threadId);
       ArrayNode input = turnParams.putArray("input");
+      ObjectNode memory = input.addObject();
+      memory.put("type", "text");
+      memory.put("text", renderedMemory.contextText());
       ObjectNode text = input.addObject();
       text.put("type", "text");
       text.put("text", request.prompt());
@@ -126,24 +211,36 @@ public final class PdeHarnessSdk implements AutoCloseable {
           status == PdeRunStatus.COMPLETED
               ? structuredOutputValidator.validate(outcome.output(), request.outputSchema())
               : null;
+      Instant finishedAt = Instant.now();
+      PdeThreadBinding threadBinding =
+          updatedThreadBinding(request, threadId, conversationFingerprint, startedAt, finishedAt);
       return new PdeAgentRunResult(
           request.context(),
           threadId,
+          threadBinding,
           outcome.turnId(),
           status,
           outcome.output(),
           structuredOutput,
           outcome.errorMessage(),
           startedAt,
-          Instant.now(),
+          finishedAt,
           outcome.events(),
           outcome.tokenUsage(),
+          renderedMemory.audit(),
           protocolContract.codexVersion(),
           configuration.sdkVersion(),
           request.model(),
           request.promptVersion(),
           request.outputSchemaVersion(),
           PdeHashing.sha256(request.prompt()),
+          PdeHashing.sha256(
+              renderedMemory.contextText().length()
+                  + ":"
+                  + renderedMemory.contextText()
+                  + request.prompt().length()
+                  + ":"
+                  + request.prompt()),
           PdeHashing.sha256(mapper, request.outputSchema()));
     } finally {
       closeListener(listenerRegistration, threadId, collector.turnId());
@@ -159,6 +256,8 @@ public final class PdeHarnessSdk implements AutoCloseable {
   @Override
   public void close() {
     client.close();
+    activeConversations.clear();
+    threadScopes.clear();
     health = null;
   }
 
@@ -169,12 +268,59 @@ public final class PdeHarnessSdk implements AutoCloseable {
     params.put("cwd", workspace.toString());
     params.put("approvalPolicy", "never");
     params.put("sandbox", "read-only");
-    if (request.existingThreadId() == null) {
+    if (request.existingThreadBinding() == null) {
       params.put("ephemeral", request.ephemeralThread());
       return client.request("thread/start", params);
     }
-    params.put("threadId", request.existingThreadId());
+    params.put("threadId", request.existingThreadBinding().threadId());
     return client.request("thread/resume", params);
+  }
+
+  /** Impede duas execuções locais simultâneas de lerem a mesma revisão de conversa. */
+  private void acquireConversation(String conversationFingerprint) {
+    if (activeConversations.putIfAbsent(conversationFingerprint, Boolean.TRUE) != null) {
+      throw new PdeHarnessException(
+          PdeHarnessFailureCategory.CONVERSATION_BUSY,
+          "Já existe uma execução ativa para esta conversa");
+    }
+  }
+
+  /** Mantém uma defesa local contra reutilização da mesma thread por outro escopo. */
+  private void validateRuntimeThreadScope(String threadId, String conversationFingerprint) {
+    String existing = threadScopes.putIfAbsent(threadId, conversationFingerprint);
+    if (existing != null && !existing.equals(conversationFingerprint)) {
+      throw new PdeHarnessException(
+          PdeHarnessFailureCategory.ISOLATION_VIOLATION,
+          "Thread já está vinculada a outra conversa neste processo");
+    }
+  }
+
+  /** Confirma que o App Server retomou exatamente a thread autorizada pelo backend. */
+  private void requireExpectedThread(PdeAgentRunRequest request, String returnedThreadId) {
+    if (request.existingThreadBinding() != null
+        && !request.existingThreadBinding().threadId().equals(returnedThreadId)) {
+      throw new PdeHarnessException(
+          PdeHarnessFailureCategory.PROTOCOL_INCOMPATIBLE,
+          "App Server retomou thread diferente da autorizada");
+    }
+  }
+
+  /** Atualiza o vínculo persistível sem transformar a thread em memória canônica. */
+  private PdeThreadBinding updatedThreadBinding(
+      PdeAgentRunRequest request,
+      String threadId,
+      String conversationFingerprint,
+      Instant startedAt,
+      Instant finishedAt) {
+    PdeThreadBinding previous = request.existingThreadBinding();
+    return new PdeThreadBinding(
+        threadId,
+        conversationFingerprint,
+        request.memory().revision(),
+        previous == null ? 1 : previous.completedTurns() + 1,
+        previous == null && request.ephemeralThread(),
+        previous == null ? startedAt : previous.createdAt(),
+        finishedAt);
   }
 
   /** Interrompe o turno conhecido após timeout sem iniciar retentativa automática. */
@@ -233,6 +379,34 @@ public final class PdeHarnessSdk implements AutoCloseable {
           PdeHarnessFailureCategory.CONFIGURATION,
           "Não foi possível preparar o workspace segregado",
           ex);
+    }
+  }
+
+  /** Remove somente o workspace derivado da interação e preserva a causa original quando houver. */
+  private void deleteWorkspace(Path workspace, RuntimeException executionFailure) {
+    if (!Files.exists(workspace)) {
+      return;
+    }
+    try (var paths = Files.walk(workspace)) {
+      List<Path> deletionOrder = paths.sorted(Comparator.reverseOrder()).toList();
+      for (Path path : deletionOrder) {
+        Files.deleteIfExists(path);
+      }
+    } catch (IOException ex) {
+      LOGGER.log(
+          System.Logger.Level.ERROR,
+          "Falha ao descartar workspace PDE segregado; workspace=" + workspace,
+          ex);
+      PdeHarnessException cleanupFailure =
+          new PdeHarnessException(
+              PdeHarnessFailureCategory.ISOLATION_VIOLATION,
+              "Não foi possível descartar o workspace segregado da interação",
+              ex);
+      if (executionFailure != null) {
+        executionFailure.addSuppressed(cleanupFailure);
+        return;
+      }
+      throw cleanupFailure;
     }
   }
 

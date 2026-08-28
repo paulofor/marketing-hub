@@ -69,14 +69,16 @@ class PdeProtocolContractTest {
         collectMethods(bundle.path("definitions").path("ServerNotification").path("oneOf"));
 
     assertEquals(
-        Set.of("thread/start", "thread/resume", "turn/start", "turn/interrupt"),
+        Set.of("thread/start", "thread/resume", "thread/delete", "turn/start", "turn/interrupt"),
         intersection(
             clientMethods,
-            Set.of("thread/start", "thread/resume", "turn/start", "turn/interrupt")));
+            Set.of(
+                "thread/start", "thread/resume", "thread/delete", "turn/start", "turn/interrupt")));
     assertEquals(
         Set.of(
             "item/agentMessage/delta",
             "item/completed",
+            "thread/deleted",
             "thread/tokenUsage/updated",
             "turn/completed"),
         intersection(
@@ -84,6 +86,7 @@ class PdeProtocolContractTest {
             Set.of(
                 "item/agentMessage/delta",
                 "item/completed",
+                "thread/deleted",
                 "thread/tokenUsage/updated",
                 "turn/completed")));
   }

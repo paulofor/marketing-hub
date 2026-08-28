@@ -9,6 +9,7 @@ import java.util.Objects;
 public record PdeAgentRunResult(
     PdeRunContext context,
     String threadId,
+    PdeThreadBinding threadBinding,
     String turnId,
     PdeRunStatus status,
     String output,
@@ -18,18 +19,24 @@ public record PdeAgentRunResult(
     Instant finishedAt,
     List<PdeHarnessEvent> events,
     JsonNode tokenUsage,
+    PdeMemoryAudit memoryAudit,
     String codexVersion,
     String sdkVersion,
     String model,
     String promptVersion,
     String outputSchemaVersion,
     String promptSha256,
+    String effectiveInputSha256,
     String outputSchemaSha256) {
 
   /** Congela listas e payloads para preservar a evidência exata devolvida ao worker. */
   public PdeAgentRunResult {
     context = Objects.requireNonNull(context, "context");
     threadId = Objects.requireNonNull(threadId, "threadId");
+    threadBinding = Objects.requireNonNull(threadBinding, "threadBinding");
+    if (!threadId.equals(threadBinding.threadId())) {
+      throw new IllegalArgumentException("threadId diverge do vínculo retornado");
+    }
     turnId = Objects.requireNonNull(turnId, "turnId");
     status = Objects.requireNonNull(status, "status");
     structuredOutput = structuredOutput == null ? null : structuredOutput.deepCopy();
@@ -37,12 +44,14 @@ public record PdeAgentRunResult(
     finishedAt = Objects.requireNonNull(finishedAt, "finishedAt");
     events = List.copyOf(Objects.requireNonNull(events, "events"));
     tokenUsage = tokenUsage == null ? null : tokenUsage.deepCopy();
+    memoryAudit = Objects.requireNonNull(memoryAudit, "memoryAudit");
     codexVersion = Objects.requireNonNull(codexVersion, "codexVersion");
     sdkVersion = Objects.requireNonNull(sdkVersion, "sdkVersion");
     model = Objects.requireNonNull(model, "model");
     promptVersion = Objects.requireNonNull(promptVersion, "promptVersion");
     outputSchemaVersion = Objects.requireNonNull(outputSchemaVersion, "outputSchemaVersion");
     promptSha256 = Objects.requireNonNull(promptSha256, "promptSha256");
+    effectiveInputSha256 = Objects.requireNonNull(effectiveInputSha256, "effectiveInputSha256");
     outputSchemaSha256 = Objects.requireNonNull(outputSchemaSha256, "outputSchemaSha256");
   }
 

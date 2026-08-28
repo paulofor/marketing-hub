@@ -1,5 +1,6 @@
 package com.marketinghub.pde.harness.v1;
 
+import com.marketinghub.pde.harness.v1.internal.PdeHashing;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -61,9 +62,30 @@ public record PdeHarnessConfiguration(
         "0.149.0",
         "marketing_hub_pde_harness",
         "Marketing Hub PDE Harness",
-        "0.1.0",
+        "0.2.0",
         Map.of(),
         true);
+  }
+
+  /** Deriva um workspace sem PII a partir da conversa, missão e interação autorizadas. */
+  public Path workspaceFor(PdeRunContext context) {
+    Objects.requireNonNull(context, "context");
+    String executionFingerprint =
+        PdeHashing.sha256(
+            context.missionReference().length()
+                + ":"
+                + context.missionReference()
+                + "\n"
+                + context.interactionReference().length()
+                + ":"
+                + context.interactionReference());
+    return workspaceRoot
+        .resolve("conversations")
+        .resolve(context.conversationScope().fingerprint())
+        .resolve("interactions")
+        .resolve(executionFingerprint)
+        .toAbsolutePath()
+        .normalize();
   }
 
   /** Informa se uma variável de ambiente criaria acesso direto proibido à OpenAI API. */

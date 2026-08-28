@@ -57,6 +57,7 @@ public final class FakeCodexAppServerMain {
       case "initialized" -> initialized();
       case "thread/start" -> startThread(message);
       case "thread/resume" -> resumeThread(message);
+      case "thread/delete" -> deleteThread(message);
       case "turn/start" -> startTurn(message);
       case "turn/interrupt" -> interruptTurn(message);
       case "test/outOfOrderA" ->
@@ -101,6 +102,13 @@ public final class FakeCodexAppServerMain {
     sendResult(message, threadResponse(threadId));
   }
 
+  /** Confirma a exclusão solicitada e emite a notificação oficial correspondente. */
+  private static void deleteThread(JsonNode message) throws Exception {
+    String threadId = message.path("params").path("threadId").asText();
+    sendResult(message, MAPPER.createObjectNode());
+    sendNotification("thread/deleted", MAPPER.createObjectNode().put("threadId", threadId));
+  }
+
   /** Inicia um turno e emite deltas, uso e conclusão de forma assíncrona. */
   private static void startTurn(JsonNode message) throws Exception {
     String threadId = message.path("params").path("threadId").asText();
@@ -118,18 +126,36 @@ public final class FakeCodexAppServerMain {
           threadId, turnId, "failed", "Unauthorized: ChatGPT login required", 20);
       return;
     }
-    String prompt = message.path("params").path("input").path(0).path("text").asText();
+    JsonNode input = message.path("params").path("input");
+    String memoryContext = input.path(0).path("text").asText();
+    String prompt = input.path(input.size() - 1).path("text").asText();
     String output =
         switch (mode()) {
           case "invalid-output" -> "{json-invalido";
           case "schema-mismatch" -> "{\"campoInesperado\":true}";
-          default -> "{\"message\":\"Resposta para " + prompt + "\"}";
+          case "memory-aware" -> memoryAwareOutput(prompt, memoryContext);
+          default -> responseOutput("Resposta para " + prompt);
         };
     SCHEDULER.schedule(
         () -> sendUnchecked(agentDelta(threadId, turnId, output)), 10, TimeUnit.MILLISECONDS);
     SCHEDULER.schedule(
         () -> sendUnchecked(tokenUsage(threadId, turnId)), 20, TimeUnit.MILLISECONDS);
-    scheduleTurnCompletion(threadId, turnId, "completed", null, 30);
+    long completionDelay = "slow-completion".equals(mode()) ? 350 : 30;
+    scheduleTurnCompletion(threadId, turnId, "completed", null, completionDelay);
+  }
+
+  /** Devolve um sinal simples para comprovar que a memória correta chegou ao turno. */
+  private static String memoryAwareOutput(String prompt, String memoryContext) throws Exception {
+    String signal =
+        memoryContext.contains("prefere azul")
+            ? "azul"
+            : memoryContext.contains("prefere verde") ? "verde" : "sem-memoria";
+    return responseOutput("Resposta para " + prompt + " com memória " + signal);
+  }
+
+  /** Serializa a saída sintética sem concatenar texto não escapado em JSON. */
+  private static String responseOutput(String message) throws Exception {
+    return MAPPER.writeValueAsString(MAPPER.createObjectNode().put("message", message));
   }
 
   /** Confirma a interrupção pedida pelo SDK após timeout. */

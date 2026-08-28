@@ -2,12 +2,14 @@ package com.marketinghub.pde.harness.v1;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.pde.harness.v1.support.PdeHarnessTestSupport;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ class PdeHarnessConfigurationTest {
     assertEquals("codex", configuration.codexCommand());
     assertEquals(List.of("app-server", "--listen", "stdio://"), configuration.codexArguments());
     assertEquals("0.149.0", configuration.expectedCodexVersion());
+    assertEquals("0.2.0", configuration.sdkVersion());
   }
 
   /** Rejeita chave direta mesmo quando ela aparece apenas como override do processo filho. */
@@ -54,20 +57,24 @@ class PdeHarnessConfigurationTest {
   @Test
   void rejectsResumeOfEphemeralThread() {
     PdeRunContext context =
-        new PdeRunContext(
-            "produto", "v1", "cliente", "missao", temporaryDirectory.resolve("workspaces/cliente"));
+        PdeHarnessTestSupport.context("cliente", "conversa", "missao", "interacao");
+    Instant now = Instant.parse("2026-08-28T12:00:00Z");
+    PdeThreadBinding binding =
+        new PdeThreadBinding(
+            "thread-1", context.conversationScope().fingerprint(), 0, 1, true, now, now);
 
     assertThrows(
         IllegalArgumentException.class,
         () ->
             new PdeAgentRunRequest(
                 context,
+                PdeHarnessTestSupport.emptyMemory("cliente"),
                 "gpt-test",
                 "prompt",
                 "v1",
                 PdeHarnessTestSupport.validOutputSchema(),
                 "v1",
-                "thread-1",
+                binding,
                 true));
   }
 
@@ -75,11 +82,11 @@ class PdeHarnessConfigurationTest {
   @Test
   void protectsRequestSchemaFromExternalMutation() {
     PdeRunContext context =
-        new PdeRunContext(
-            "produto", "v1", "cliente", "missao", temporaryDirectory.resolve("workspaces/cliente"));
+        PdeHarnessTestSupport.context("cliente", "conversa", "missao", "interacao");
     PdeAgentRunRequest request =
         PdeAgentRunRequest.newThread(
             context,
+            PdeHarnessTestSupport.emptyMemory("cliente"),
             "gpt-test",
             "prompt",
             "v1",
@@ -90,5 +97,23 @@ class PdeHarnessConfigurationTest {
     ((ObjectNode) request.outputSchema()).put("campoMutante", true);
 
     assertFalse(request.outputSchema().has("campoMutante"));
+  }
+
+  /** Deriva workspaces distintos sem inserir identificadores pessoais nos caminhos. */
+  @Test
+  void derivesPrivateWorkspaceForEachConversation() {
+    PdeHarnessConfiguration configuration =
+        PdeHarnessConfiguration.standard(
+            temporaryDirectory.resolve("codex"), temporaryDirectory.resolve("workspaces"));
+    Path customerA =
+        configuration.workspaceFor(
+            PdeHarnessTestSupport.context("cliente-a", "conversa-a", "missao", "interacao"));
+    Path customerB =
+        configuration.workspaceFor(
+            PdeHarnessTestSupport.context("cliente-b", "conversa-b", "missao", "interacao"));
+
+    assertNotEquals(customerA, customerB);
+    assertFalse(customerA.toString().contains("cliente-a"));
+    assertFalse(customerB.toString().contains("cliente-b"));
   }
 }

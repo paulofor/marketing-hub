@@ -55,6 +55,10 @@ O cadastro versionado `config/agents/codex-agent-health-compliance.json` é a fo
 executores que usam Codex. Um novo agente deve entrar nesse cadastro no mesmo conjunto de mudanças
 que cria seu executor. O gate global deve falhar quando faltar o reporter, a ativação periódica, a
 consulta real da autenticação, o endpoint canônico ou quando o intervalo padrão superar 60 segundos.
+Cada entrada também deve declarar `expectedVersion` e os arquivos `versionSources` que materializam
+essa versão no runtime. O runner físico MySQL 5.7 deve comparar o cadastro com `agent.current_version`
+após todos os changelogs de identidade; o gate global deve comparar o mesmo valor com cada Compose ou
+configuração do executor. Divergência em qualquer lado bloqueia antes do deploy.
 
 O health-check não pode compartilhar a única thread usada por autenticação, polling ou trabalho
 longo. Falha ao publicar um heartbeat deve ser registrada com contexto e stack trace, sem encerrar

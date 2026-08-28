@@ -25,7 +25,7 @@ class ApolloExecutorHealthReporterTest {
             assertThat(request.getPath()).isEqualTo("/api/internal/agents/executor-health");
             assertThat(request.getBody().readUtf8())
                     .contains("\"agentKey\":\"videomaker\"")
-                    .contains("\"deployedVersion\":2")
+                    .contains("\"deployedVersion\":3")
                     .contains("\"codexAuthenticated\":true");
         }
     }
@@ -33,7 +33,7 @@ class ApolloExecutorHealthReporterTest {
     /** Simula uma sessão Codex válida sem executar processo externo durante o teste. */
     private static final class AuthenticatedReporter extends ApolloExecutorHealthReporter {
         private AuthenticatedReporter(String backendUrl) {
-            super(backendUrl, "videomaker", 2, "sha-test");
+            super(backendUrl, "videomaker", 3, "sha-test");
         }
 
         /** Informa autenticação válida para isolar o contrato HTTP. */

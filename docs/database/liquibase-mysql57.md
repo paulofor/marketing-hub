@@ -22,7 +22,8 @@ Antes de publicar uma alteração, execute localmente as verificações possíve
 
 A matriz dos nove agentes possui fixture própria e valida incremento dinâmico de `agent_version`,
 onze processos sem coautoria, a inclusão operacional de Íris, gates independentes de Psique e
-Têmis, cadeias de valor v8/v9 e reaplicação sem duplicidade:
+Têmis, cadeias de valor v8/v9, paridade entre `agent.current_version` e as versões declaradas pelos
+executores no contrato canônico de health, além de reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh

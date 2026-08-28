@@ -15,6 +15,28 @@ for (const agent of contract.agents) {
   const reporter = await readFile(path.join(module, agent.reporter), "utf8");
   const activation = await readFile(path.join(module, agent.activation), "utf8");
 
+  assert.ok(
+    Number.isInteger(agent.expectedVersion) && agent.expectedVersion > 0,
+    `${agent.key}: versão esperada ausente ou inválida`,
+  );
+  assert.ok(
+    Array.isArray(agent.versionSources) && agent.versionSources.length > 0,
+    `${agent.key}: fonte da versão implantada ausente`,
+  );
+  for (const versionSource of agent.versionSources) {
+    const versionConfiguration = await readFile(path.join(root, versionSource), "utf8");
+    const version = agent.expectedVersion;
+    const declaresExpectedVersion = [
+      new RegExp(`AGENT_HEALTH_VERSION:\\s*["']${version}["']`),
+      new RegExp(`AGENT_HEALTH_VERSION[^\\n]*:-${version}\\}`),
+      new RegExp(`deployed-version:\\s*\\$\\{AGENT_HEALTH_VERSION:${version}\\}`),
+    ].some((pattern) => pattern.test(versionConfiguration));
+    assert.ok(
+      declaresExpectedVersion,
+      `${agent.key}: ${versionSource} não declara a versão ${version} do contrato canônico`,
+    );
+  }
+
   const checksCodexAuthentication =
     /["']codex["']\s*,\s*\[\s*["']login["']\s*,\s*["']status["']/.test(reporter) ||
     /ProcessBuilder\(\s*"codex"\s*,\s*"login"\s*,\s*"status"\s*\)/.test(reporter) ||

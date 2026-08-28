@@ -9,7 +9,7 @@
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "d2c13adfc45e2b47fd846082356e8e6278e30340245a052ed9ae08ede50621b1"
+      "sha256": "14de8f80a7fcfb19eb888670c47328026c1e44206a68ad17acfbdb19d96c3ee7"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
@@ -17,7 +17,7 @@
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
-      "sha256": "827104147119ac47edf0a6fd72efa19564bcff752fced4d483d50dadb608f052"
+      "sha256": "d771e8a7540711d15c678dec3e0183a1bb692c26725f7b43201207644abea7f8"
     }
   ],
   "executableEvidence": [
@@ -38,7 +38,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
-      "sha256": "f5c248779298c248aaf40229fccd46656557d4cb21b0a2ddf26b820edbd42156",
+      "sha256": "cf8f7bc4c6d3d11a51f8d2f35744a5368946cf73d7ec3eade4cea8b0cea75bcc",
       "proves": [
         "mh_test usa source mh_test mesmo quando VITE_PDE_ENABLE_DEV_ACCESS está desativado",
         "mh_preview com pde_analytics=off não envia telemetria",
@@ -55,7 +55,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/public-health.spec.ts",
-      "sha256": "7962c91752e9ebd883ba84e467b8f824819226727fb41b53e3d53a4592018cd1",
+      "sha256": "b1ef6fa09e0c4b0122507a6f6dca10a59f03c25811c8967a2604f647a21b0284",
       "proves": [
         "o deploy do Kit falha se a degustação não estiver renderizada",
         "oferta, preço, checkout e degustação pertencem à mesma superfície pública",

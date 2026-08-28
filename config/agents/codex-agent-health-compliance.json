@@ -2,14 +2,14 @@
   "contractVersion": "codex-health-v1",
   "maximumHeartbeatSeconds": 60,
   "agents": [
-    {"key":"growth-operator","module":"growth-operator-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"customer-agent","module":"customer-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"financial-agent","module":"financial-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"experiment-strategist","module":"experiment-strategist-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"meta-ad-approver","module":"meta-ad-approver-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"landing-generator","module":"landing-generator-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"communication-director","module":"communication-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml"},
-    {"key":"videomaker","module":"video-management-service","reporter":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","activation":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java"},
-    {"key":"market-radar","module":"product-discovery-worker","reporter":"src/agent-health-reporter.js","activation":"src/worker.js"}
+    {"key":"growth-operator","module":"growth-operator-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":6,"versionSources":["growth-operator-worker/docker-compose.yml"]},
+    {"key":"customer-agent","module":"customer-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["customer-agent-worker/docker-compose.yml"]},
+    {"key":"financial-agent","module":"financial-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["financial-agent-worker/docker-compose.yml"]},
+    {"key":"experiment-strategist","module":"experiment-strategist-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":5,"versionSources":["experiment-strategist-worker/docker-compose.yml"]},
+    {"key":"meta-ad-approver","module":"meta-ad-approver-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["meta-ad-approver-worker/docker-compose.yml"]},
+    {"key":"landing-generator","module":"landing-generator-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["landing-generator-agent-worker/docker-compose.yml"]},
+    {"key":"communication-director","module":"communication-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":1,"versionSources":["communication-agent-worker/docker-compose.yml"]},
+    {"key":"videomaker","module":"video-management-service","reporter":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","activation":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","expectedVersion":3,"versionSources":["video-management-service/src/main/resources/application.yml"]},
+    {"key":"market-radar","module":"product-discovery-worker","reporter":"src/agent-health-reporter.js","activation":"src/worker.js","expectedVersion":3,"versionSources":["product-discovery-worker/docker-compose.yml","product-discovery-worker/docker-compose.deploy.yml"]}
   ]
 }

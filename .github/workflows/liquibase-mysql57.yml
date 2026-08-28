@@ -23,6 +23,8 @@ on:
       - "backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh"
+      - "config/agents/codex-agent-health-compliance.json"
+      - "scripts/test-codex-agent-health-standard.mjs"
       - "scripts/validate-liquibase-mysql57.sh"
       - "scripts/validate-product-process-recovery-mysql57.sh"
       - "scripts/validate-rigel-commercial-slot-mysql57.sh"

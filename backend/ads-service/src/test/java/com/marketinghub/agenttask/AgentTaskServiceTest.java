@@ -733,8 +733,9 @@ class AgentTaskServiceTest {
                 "customer",
                 "{\"decision\":\"APPROVED\"}",
                 "{\"creativePackageId\":\"abc\"}",
-                List.of(
-                    new AgentTaskModelUsageRequest("gpt-5.6-sol", "STANDARD", 100L, 20L, 10L))));
+                List.of(new AgentTaskModelUsageRequest("gpt-5.6-sol", "STANDARD", 100L, 20L, 10L)),
+                new AgentTaskExecutionAuditRequest(
+                    "gpt-5.6-sol", "high", "Prompt integral do parecer importado.")));
 
     assertThat(response.status()).isEqualTo("COMPLETED");
     assertThat(response.resultJson()).contains("APPROVED");
@@ -898,6 +899,45 @@ class AgentTaskServiceTest {
     assertThat(response.deliveredAt()).isNull();
   }
 
+  /** Conclui delegação operacional somente depois de copiar sua auditoria técnica integral. */
+  @Test
+  void completesOperationalDelegationWithExecutionAudit() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task = new AgentTask();
+    task.setId(51L);
+    task.setAssignedAgent(agent(7L, "landing-generator", "Dédalo"));
+    task.setRequestedByType("AGENT");
+    task.setRequestedByName("Backend");
+    task.setTitle("Gerar landing");
+    task.setDescription("Materializar a candidata aprovada.");
+    task.setPriority("HIGH");
+    task.setStatus("IN_PROGRESS");
+    task.setTaskKind("WORK");
+    task.setCreatedAt(Instant.parse("2026-08-29T01:00:00Z"));
+    task.setUpdatedAt(task.getCreatedAt());
+    when(repository.findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+            "landing-generator", "landing-cycle:41"))
+        .thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+
+    service(repository, mock(AgentRepository.class), Clock.systemUTC())
+        .finishOperationalDelegation(
+            "landing-generator",
+            "landing-cycle:41",
+            true,
+            new AgentTaskExecutionAuditRequest(
+                "gpt-5.6-sol", "high", "Prompt integral do ciclo 41."),
+            List.of(new AgentTaskModelUsageRequest("gpt-5.6-sol", "STANDARD", 100L, 20L, 30L)),
+            null);
+
+    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+    assertThat(task.getExecutionMode()).isEqualTo("MODEL");
+    assertThat(task.getExecutionReasoningEffort()).isEqualTo("high");
+    assertThat(task.getExecutionPrompt()).isEqualTo("Prompt integral do ciclo 41.");
+    assertThat(task.getInputTokens()).isEqualTo(100L);
+    assertThat(task.getDeliveredAt()).isNotNull();
+  }
+
   /** Registra a entrega no instante da primeira conclusão da tarefa. */
   @Test
   void recordsResultDeliveryWhenTaskCompletes() {
@@ -1038,6 +1078,16 @@ class AgentTaskServiceTest {
     task.setGateDecisionReason("Evento de checkout ausente.");
     task.setEvidenceJson("{\"accessMode\":\"READ_ONLY\",\"toolUsage\":[\"consultar_funil\"]}");
     task.setResultJson("{\"decision\":\"BLOCKED\"}");
+    task.setBlockerCategory("MISSING_EVIDENCE");
+    task.setBlockerAction("Corrigir a integração do evento de checkout e reiniciar a tarefa.");
+    AgentTaskAuditLink helpLink = new AgentTaskAuditLink();
+    helpLink.setTask(task);
+    helpLink.setLinkType("BLOCKER_HELP");
+    helpLink.setLabel("Abrir histórico do produto");
+    helpLink.setUrl("/products/88/activity-history");
+    helpLink.setDisplayOrder(0);
+    helpLink.setCreatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+    task.getAuditLinks().add(helpLink);
     when(repository.findByStatusInOrderByUpdatedAtDescIdDesc(
             List.of("IN_PROGRESS", "BLOCKED", "PENDING")))
         .thenReturn(List.of(task));
@@ -1091,6 +1141,7 @@ class AgentTaskServiceTest {
             "processo e atividade",
             "limite de autoridade",
             "causa da falha ou bloqueio",
+            "orientação acionável com link",
             "evidências acessadas");
   }
 
@@ -1115,7 +1166,8 @@ class AgentTaskServiceTest {
             .failureAudit();
 
     assertThat(audit.readiness()).isEqualTo("PARTIAL");
-    assertThat(audit.missingEvidence()).containsExactly("evidências em JSON válido");
+    assertThat(audit.missingEvidence())
+        .containsExactly("orientação acionável com link", "evidências em JSON válido");
   }
 
   /** Impede concluir uma tarefa que ainda não foi iniciada. */
@@ -1314,7 +1366,15 @@ class AgentTaskServiceTest {
         service(repository, mock(AgentRepository.class), Clock.fixed(audited, ZoneOffset.UTC));
 
     service.recordClaimedProcessTaskExecutionAudit(
-        "market-radar", 37L, "deterministic-fallback-v1", null, null, null, null, null, false);
+        "market-radar",
+        37L,
+        "deterministic-fallback-v1",
+        null,
+        "{\"source\":\"persisted-context\"}",
+        null,
+        null,
+        null,
+        false);
 
     assertThat(task.getInputTokens()).isZero();
     assertThat(task.getCachedInputTokens()).isZero();
@@ -1662,7 +1722,8 @@ class AgentTaskServiceTest {
     service.completeClaimedProcessTask(
         "landing-generator",
         30L,
-        new CompleteAgentTaskRequest("{\"decision\":\"READY\"}", "{\"htmlVersion\":2}"));
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"READY\"}", "{\"htmlVersion\":2}", null, modelExecutionAudit()));
 
     assertThat(task.getStatus()).isEqualTo("COMPLETED");
     assertThat(task.getDeliveredAt()).isEqualTo(delivered);
@@ -1693,11 +1754,63 @@ class AgentTaskServiceTest {
             "{\"htmlVersion\":2}",
             null,
             new AgentTaskExecutionAuditRequest(
-                "gpt-5.6-sol", "high", "Prompt final enviado ao modelo.")));
+                "gpt-5.6-sol", "high", "\nPrompt final enviado ao modelo.\n")));
 
     assertThat(task.getExecutionModelCode()).isEqualTo("gpt-5.6-sol");
     assertThat(task.getExecutionReasoningEffort()).isEqualTo("high");
-    assertThat(task.getExecutionPrompt()).isEqualTo("Prompt final enviado ao modelo.");
+    assertThat(task.getExecutionPrompt()).isEqualTo("\nPrompt final enviado ao modelo.\n");
+  }
+
+  /** Não declara custo inaplicável quando o modelo foi chamado sem telemetria de tokens. */
+  @Test
+  void keepsModelCostNotReportedWhenUsageIsUnavailable() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    service.completeClaimedProcessTask(
+        "landing-generator",
+        30L,
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"READY\"}", "{\"htmlVersion\":2}", List.of(), modelExecutionAudit()));
+
+    assertThat(task.getExecutionMode()).isEqualTo("MODEL");
+    assertThat(task.getInputTokens()).isNull();
+    assertThat(task.getEstimatedCostUsd()).isNull();
+    assertThat(task.getCostEstimationStatus()).isEqualTo("NOT_REPORTED");
+  }
+
+  /** Impede concluir uma chamada de modelo cuja configuração e entrada não foram preservadas. */
+  @Test
+  void rejectsModelCompletionWithoutIntegralExecutionAudit() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "landing-generator",
+                    30L,
+                    new CompleteAgentTaskRequest("{\"decision\":\"READY\"}", "{}")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("modo de execução auditável");
+    verify(repository, never()).save(any());
   }
 
   /** Persiste tokens e acumula o custo calculado pelo backend em tentativas da mesma tarefa. */
@@ -1737,7 +1850,8 @@ class AgentTaskServiceTest {
         new CompleteAgentTaskRequest(
             "{\"decision\":\"READY\"}",
             "{\"htmlVersion\":2}",
-            List.of(new AgentTaskModelUsageRequest("gpt-test", "FLEX", 900L, 400L, 200L))));
+            List.of(new AgentTaskModelUsageRequest("gpt-test", "FLEX", 900L, 400L, 200L)),
+            modelExecutionAudit()));
 
     assertThat(task.getInputTokens()).isEqualTo(1_000L);
     assertThat(task.getCachedInputTokens()).isEqualTo(420L);
@@ -1778,7 +1892,9 @@ class AgentTaskServiceTest {
             "Ajuste necessário",
             "{\"decision\":\"ADJUST\"}",
             "{\"reviewer\":\"Psique\"}",
-            List.of(new AgentTaskModelUsageRequest("unknown", "FLEX", 500L, 100L, 80L))));
+            List.of(new AgentTaskModelUsageRequest("unknown", "FLEX", 500L, 100L, 80L)),
+            modelExecutionAudit(),
+            null));
 
     assertThat(task.getInputTokens()).isEqualTo(500L);
     assertThat(task.getCachedInputTokens()).isEqualTo(100L);
@@ -1865,11 +1981,116 @@ class AgentTaskServiceTest {
             "customer-agent",
             31L,
             new FailAgentTaskRequest(
-                "Clareza insuficiente", "{\"decision\":\"ADJUST\"}", "{\"reviewer\":\"Psique\"}"));
+                "Clareza insuficiente",
+                "{\"decision\":\"ADJUST\"}",
+                "{\"reviewer\":\"Psique\"}",
+                null,
+                new AgentTaskExecutionAuditRequest(
+                    "MODEL",
+                    "gpt-test",
+                    "high",
+                    "Prompt completo da revisão humana.",
+                    List.of(
+                        new AgentTaskAccessedUrlRequest(
+                            "https://rigel.example.com/jornada",
+                            "Jornada Rigel",
+                            "PLAYWRIGHT",
+                            Instant.parse("2026-08-28T16:15:00Z")))),
+                new AgentTaskBlockerGuidanceRequest(
+                    "FUNCTIONAL_ADJUSTMENT",
+                    "Corrigir a clareza da etapa de entrega e reiniciar a revisão.",
+                    List.of(
+                        new AgentTaskHelpLinkRequest("Abrir experimento", "/experiments/88")))));
 
     assertThat(task.getStatus()).isEqualTo("BLOCKED");
     assertThat(task.getResultJson()).contains("ADJUST");
     assertThat(task.getEvidenceJson()).contains("Psique");
+    assertThat(task.getBlockerAction()).contains("Corrigir a clareza");
+    assertThat(AgentTaskAuditView.accessedUrls(task))
+        .singleElement()
+        .satisfies(
+            link -> {
+              assertThat(link.url()).isEqualTo("https://rigel.example.com/jornada");
+              assertThat(link.accessMethod()).isEqualTo("PLAYWRIGHT");
+            });
+    assertThat(AgentTaskAuditView.blockerGuidance(task).helpLinks())
+        .extracting(AgentTaskAuditLinkResponse::url)
+        .containsExactly("/experiments/88");
+  }
+
+  /** Rejeita URL com credencial para impedir que a auditoria exponha segredo na tela. */
+  @Test
+  void rejectsAccessedUrlWithSensitiveQueryParameter() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "customer-agent",
+                    31L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        null,
+                        new AgentTaskExecutionAuditRequest(
+                            "MODEL",
+                            "gpt-test",
+                            "high",
+                            "Prompt completo.",
+                            List.of(
+                                new AgentTaskAccessedUrlRequest(
+                                    "https://example.com/review?api_key=secret",
+                                    "Fonte",
+                                    "HTTP",
+                                    null))))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("URL de auditoria insegura");
+    verify(repository, never()).save(any());
+  }
+
+  /** Rejeita segredo em link interno para não contornar a proteção dos links externos. */
+  @Test
+  void rejectsInternalHelpLinkWithSensitiveFragment() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.failClaimedProcessTask(
+                    "customer-agent",
+                    31L,
+                    new FailAgentTaskRequest(
+                        "Ajuste necessário",
+                        "{\"decision\":\"ADJUST\"}",
+                        "{}",
+                        null,
+                        modelExecutionAudit(),
+                        new AgentTaskBlockerGuidanceRequest(
+                            "FUNCTIONAL_ADJUSTMENT",
+                            "Corrigir e reiniciar.",
+                            List.of(
+                                new AgentTaskHelpLinkRequest(
+                                    "Abrir tarefa", "/agent-tasks#access_token=secret"))))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("URL de auditoria insegura");
+    verify(repository, never()).save(any());
   }
 
   /** Entrega a Psique as evidências concluídas de Dédalo sem depender de logs técnicos. */
@@ -2155,6 +2376,12 @@ class AgentTaskServiceTest {
         "html",
         false,
         null);
+  }
+
+  /** Cria uma auditoria integral de modelo reutilizada nos callbacks de teste. */
+  private AgentTaskExecutionAuditRequest modelExecutionAudit() {
+    return new AgentTaskExecutionAuditRequest(
+        "MODEL", "gpt-test", "high", "Prompt integral enviado ao modelo.", List.of());
   }
 
   /** Monta o Estúdio de Têmis com instruções entregues ao executor. */

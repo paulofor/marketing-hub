@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createPollLock,
+  failureCallbackPayload,
   researchPlanCallbackPayload,
   withExecutionLease,
 } from "../src/worker.js";
@@ -16,6 +17,22 @@ test("repete o lease vigente em todo callback da descoberta", () => {
     executionLeaseId: "lease-atual",
     decisionSummary: "Pesquisar mais",
     opportunities: [],
+  });
+});
+
+test("propaga a auditoria da tentativa quando Argos bloqueia antes do plano", () => {
+  const error = new Error("Plano dirigido fora do contrato");
+  error.executionAudit = {
+    executionMode: "MODEL",
+    modelCode: "gpt-5.6-sol",
+    reasoningEffort: "high",
+    promptSent: "Prompt integral enviado a Argos.",
+    accessedUrls: [],
+  };
+
+  assert.deepEqual(failureCallbackPayload(error), {
+    errorMessage: "Plano dirigido fora do contrato",
+    executionAudit: error.executionAudit,
   });
 });
 
@@ -35,6 +52,7 @@ test("propaga prompt e tokens reais no callback auditável do plano", () => {
     model: "gpt-5.6-sol",
     mode: "CODEX",
     prompt: "Contexto integral enviado a Argos.",
+    reasoningEffort: "high",
     usage: { inputTokens: 100, cachedInputTokens: 20, outputTokens: 10 },
   });
 
@@ -44,6 +62,7 @@ test("propaga prompt e tokens reais no callback auditável do plano", () => {
     model: "gpt-5.6-sol",
     executionMode: "CODEX",
     promptSent: "Contexto integral enviado a Argos.",
+    reasoningEffort: "high",
     inputTokens: 100,
     cachedInputTokens: 20,
     outputTokens: 10,

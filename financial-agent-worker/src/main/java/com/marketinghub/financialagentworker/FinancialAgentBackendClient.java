@@ -76,6 +76,20 @@ public class FinancialAgentBackendClient {
         .toBodilessEntity();
   }
 
+  /** Persiste prompt e raciocínio antes de iniciar o processo Codex correlacionado à tarefa. */
+  public void recordTaskExecutionAudit(Long taskId, Map<String, Object> payload) {
+    if (taskId == null) return;
+    client
+        .put()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
+            "financial-agent",
+            taskId)
+        .body(payload)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Registra falha tecnica com stack preservada no log do worker. */
   public void fail(Long id, String errorMessage) {
     client

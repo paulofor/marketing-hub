@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTaskBlockerGuidanceRequest;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
+import com.marketinghub.agenttask.AgentTaskHelpLinkRequest;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CompleteAgentTaskRequest;
@@ -98,14 +101,30 @@ public class ProductDiscoveryBpmAuditService {
             completedResult(cycle, opportunities).toString(), evidence(cycle).toString()));
   }
 
-  /** Bloqueia a tarefa BPM com a mesma causa persistida no ciclo técnico rejeitado. */
-  public void fail(ProductDiscoveryCycle cycle) {
+  /** Bloqueia a tarefa BPM preservando a auditoria disponível da tentativa do modelo. */
+  public void fail(
+      ProductDiscoveryCycle cycle, AgentTaskExecutionAuditRequest failedExecutionAudit) {
     Long taskId = ensureClaimed(cycle);
     agentTaskService.failClaimedProcessTask(
         AGENT_KEY,
         taskId,
         new FailAgentTaskRequest(
-            cycle.getErrorMessage(), failedResult(cycle).toString(), evidence(cycle).toString()));
+            cycle.getErrorMessage(),
+            failedResult(cycle).toString(),
+            evidence(cycle).toString(),
+            null,
+            failedExecutionAudit != null ? failedExecutionAudit : prePlanAudit(cycle),
+            new AgentTaskBlockerGuidanceRequest(
+                "TECHNICAL_FAILURE",
+                "Corrija a causa registrada no ciclo de descoberta e reinicie a tarefa de Argos.",
+                List.of(
+                    new AgentTaskHelpLinkRequest("Abrir tarefas dos agentes", "/agent-tasks")))));
+  }
+
+  /** Declara explicitamente quando a falha ocorreu antes de existir um plano executado. */
+  private AgentTaskExecutionAuditRequest prePlanAudit(ProductDiscoveryCycle cycle) {
+    if (StringUtils.hasText(cycle.getResearchPlanModel())) return null;
+    return new AgentTaskExecutionAuditRequest("NOT_STARTED", null, null, null, List.of());
   }
 
   /** Garante que callbacks diretos ou ciclos anteriores também possuam uma tarefa reservada. */

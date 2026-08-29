@@ -1,7 +1,11 @@
 package com.marketinghub.businessprocess.document.service.recentDocuments;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.agenttask.AgentTaskAuditLinkResponse;
+import com.marketinghub.agenttask.AgentTaskVisualEvidenceResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /** Contrato de leitura de um documento produzido por uma execução de atividade BPM. */
 public record BusinessProcessActivityDocumentResponse(
@@ -20,6 +24,11 @@ public record BusinessProcessActivityDocumentResponse(
     Instant startedAt,
     Instant finishedAt,
     String modelCode,
+    String executionMode,
     String reasoningEffort,
     String productInternalName,
-    String promptSent) {}
+    String promptSent,
+    List<AgentTaskAuditLinkResponse> accessedUrls,
+    List<AgentTaskVisualEvidenceResponse> visualEvidence,
+    JsonNode visualAudit,
+    JsonNode purchaseEmotion) {}

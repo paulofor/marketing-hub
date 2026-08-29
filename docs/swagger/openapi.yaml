@@ -417,6 +417,12 @@ paths:
           required: true
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreativeTaskExecutionAudit'
       responses:
         '200':
           description: Experimento atualizado
@@ -431,14 +437,17 @@ paths:
           schema:
             type: integer
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [error, executionAudit]
               properties:
                 error:
                   type: string
+                executionAudit:
+                  $ref: '#/components/schemas/CreativeTaskExecutionAudit'
       responses:
         '200':
           description: Experimento atualizado
@@ -1928,6 +1937,40 @@ components:
         events:
           type: integer
           format: int64
+    CreativeTaskExecutionAudit:
+      type: object
+      required: [executionMode, reasoningEffort]
+      properties:
+        executionMode:
+          type: string
+          enum: [MODEL, DETERMINISTIC, NOT_STARTED]
+        modelCode:
+          type: string
+          maxLength: 128
+        reasoningEffort:
+          type: string
+          maxLength: 32
+        promptSent:
+          type: string
+          description: Prompt completo enviado ao modelo ou entrada integral da execução determinística.
+        accessedUrls:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [url, label, accessMethod]
+            properties:
+              url:
+                type: string
+                format: uri
+              label:
+                type: string
+              accessMethod:
+                type: string
+                enum: [WEB_SEARCH, BROWSER, PLAYWRIGHT, PUBLIC_API, HTTP, HTTP_CLIENT, MCP]
+              accessedAt:
+                type: string
+                format: date-time
     CreateCreativeRequest:
       type: object
       properties:

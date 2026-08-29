@@ -36,5 +36,15 @@ modalidade, fluidez, congruência com a promessa, sobrecarga, antecipação corp
 Não presuma que toda oferta ative igualmente a necessidade relacional nem que gosto estético seja
 universal.
 
+O contexto contém `visualEvidence` produzida antes desta avaliação. Abra cada `localPath`, examine a
+captura `FULL_PAGE` e todas as capturas `FOLD` em ordem. Em `visualAudit`, referencie exatamente os
+identificadores recebidos e registre continuidade da página completa, estética, hierarquia visual,
+legibilidade, emoção evocada e visibilidade do CTA em cada dobra. Se qualquer arquivo não puder ser
+inspecionado ou alguma dobra não for analisada, não aprove a tarefa.
+
+Em `purchaseEmotion`, descreva explicitamente a expectativa de adquirir o produto, a ansiedade que
+antecede a decisão, a tensão entre desejo e receio e a sensação imaginada depois de receber e usar o
+produto. Delimite que se trata de reação simulada, não de venda ou satisfação observada.
+
 Contexto da tarefa:
 {{TASK_CONTEXT}}

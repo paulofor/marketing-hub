@@ -5,8 +5,11 @@ import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 /** Responsabilidade: representar uma solicitação auditável na caixa de entrada de um agente. */
 @Entity
@@ -118,11 +121,30 @@ public class AgentTask {
   @Column(name = "execution_model_code", length = 128)
   private String executionModelCode;
 
+  @Column(name = "execution_mode", length = 24)
+  private String executionMode;
+
   @Column(name = "execution_reasoning_effort", length = 32)
   private String executionReasoningEffort;
 
   @Column(name = "execution_prompt", columnDefinition = "LONGTEXT")
   private String executionPrompt;
+
+  @Column(name = "blocker_category", length = 40)
+  private String blockerCategory;
+
+  @Column(name = "blocker_action", columnDefinition = "LONGTEXT")
+  private String blockerAction;
+
+  @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("displayOrder ASC, id ASC")
+  @BatchSize(size = 100)
+  private List<AgentTaskAuditLink> auditLinks = new ArrayList<>();
+
+  @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("capturedAt ASC, id ASC")
+  @BatchSize(size = 100)
+  private List<AgentTaskVisualEvidence> visualEvidence = new ArrayList<>();
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;

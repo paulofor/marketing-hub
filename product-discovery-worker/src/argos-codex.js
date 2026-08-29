@@ -20,6 +20,12 @@ export async function planDirectedResearch(job, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), "argos-plan-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
+  const model = options.model || process.env.ARGOS_CODEX_MODEL;
+  const reasoningEffort =
+    options.reasoningEffort ||
+    process.env.ARGOS_CODEX_REASONING_EFFORT ||
+    "high";
+  let execution;
   try {
     await writeFile(schema, schemaContract);
     const command =
@@ -38,10 +44,10 @@ export async function planDirectedResearch(job, options = {}) {
       "--color",
       "never",
     ];
-    const model = options.model || process.env.ARGOS_CODEX_MODEL;
+    args.push("--config", `model_reasoning_effort="${reasoningEffort}"`);
     if (model) args.push("--model", model);
     const execute = options.execute || executeCodexWithInput;
-    const execution = await execute(command, args, prompt, {
+    execution = await execute(command, args, prompt, {
       timeoutMs: Number(
         options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000,
       ),
@@ -69,8 +75,19 @@ export async function planDirectedResearch(job, options = {}) {
       model: model || "codex-default",
       mode: "CODEX",
       prompt,
+      reasoningEffort,
       usage: parseCodexUsage(execution?.stdout),
     };
+  } catch (error) {
+    const failure = error instanceof Error ? error : new Error(String(error));
+    failure.executionAudit = {
+      executionMode: "MODEL",
+      modelCode: model || "codex-default",
+      reasoningEffort,
+      promptSent: prompt,
+      accessedUrls: [],
+    };
+    throw failure;
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -260,7 +277,11 @@ export function deterministicPlan(job) {
     rawResponse: JSON.stringify(plan),
     model: "deterministic-fallback-v1",
     mode: "DETERMINISTIC",
-    prompt: null,
+    prompt: JSON.stringify({
+      operation: "PRODUCT_DISCOVERY_RESEARCH_PLAN_V1",
+      input: job,
+    }),
+    reasoningEffort: "NOT_APPLICABLE",
     usage: null,
   };
 }

@@ -39,6 +39,41 @@ export default function AgentTaskFailureAudit({
         <div>
           <strong>Trabalho pretendido:</strong> {audit.intendedWork}
         </div>
+        {audit.blockerGuidance ? (
+          <div className="alert alert-warning mb-0">
+            <strong>O que fazer:</strong>{" "}
+            {audit.blockerGuidance.recommendedAction}
+            <ul className="mb-0 mt-1">
+              {audit.blockerGuidance.helpLinks.map((link) => (
+                <li key={link.url}>
+                  <a href={link.url} target="_blank" rel="noreferrer">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {(audit.accessedUrls ?? []).length > 0 ? (
+          <div>
+            <strong>URLs acessadas:</strong>
+            <ul className="mb-0 text-break">
+              {(audit.accessedUrls ?? []).map((link) => (
+                <li key={`${link.url}-${link.accessedAt ?? ""}`}>
+                  <div>
+                    <a href={link.url} target="_blank" rel="noreferrer">
+                      {link.label}
+                    </a>
+                    {link.accessMethod ? ` · ${link.accessMethod}` : ""}
+                  </div>
+                  <div className="text-body-secondary text-break">
+                    {link.url}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         {context ? (
           <div>
             <strong>Contexto:</strong> {context}

@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.web;
 
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
@@ -36,6 +37,7 @@ import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPro
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.springframework.http.ContentDisposition;
@@ -306,9 +308,10 @@ public class ExperimentController {
 
   /** Marca a geração de criativos como concluída pelo AI Worker. */
   @PostMapping("/{id}/creatives/stage-execution/complete")
-  public ExperimentDto completeCreativeGeneration(@PathVariable Long id) {
+  public ExperimentDto completeCreativeGeneration(
+      @PathVariable Long id, @Valid @RequestBody AgentTaskExecutionAuditRequest executionAudit) {
     ExperimentDto result = mapper.toDto(service.markCreativeGenerationCompleted(id));
-    dedaloCreativeTaskOrchestrationService.completeForExperiment(id);
+    dedaloCreativeTaskOrchestrationService.completeForExperiment(id, executionAudit);
     return result;
   }
 
@@ -319,12 +322,16 @@ public class ExperimentController {
     ExperimentDto result =
         mapper.toDto(
             service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
-    dedaloCreativeTaskOrchestrationService.blockForExperiment(id);
+    dedaloCreativeTaskOrchestrationService.blockForExperiment(
+        id,
+        request != null ? request.error() : null,
+        request != null ? request.executionAudit() : null);
     return result;
   }
 
   /** Payload de falha operacional informado pelo AI Worker. */
-  public record CreativeGenerationFailureRequest(String error) {}
+  public record CreativeGenerationFailureRequest(
+      String error, @Valid AgentTaskExecutionAuditRequest executionAudit) {}
 
   /** Solicita geração de formulários instantâneos para captação de leads. */
   @PatchMapping("/{id}/instant-forms-to-generate")

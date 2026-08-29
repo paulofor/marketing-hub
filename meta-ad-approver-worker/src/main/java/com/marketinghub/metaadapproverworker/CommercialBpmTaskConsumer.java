@@ -45,6 +45,7 @@ public class CommercialBpmTaskConsumer {
   private final ObjectMapper json;
   private final String codex;
   private final String model;
+  private final String reasoningEffort;
   private final String repositoryPath;
   private final PdeReviewArtifactLoader pdeArtifactLoader;
   @Autowired private AutomaticExecutionControl automaticExecution;
@@ -60,6 +61,7 @@ public class CommercialBpmTaskConsumer {
     this.backend = BackendRestClientFactory.create(properties);
     this.codex = codex;
     this.model = model;
+    this.reasoningEffort = properties.requiredReasoningEffort();
     this.repositoryPath = repositoryPath;
     this.pdeArtifactLoader =
         new PdeReviewArtifactLoader(
@@ -81,16 +83,11 @@ public class CommercialBpmTaskConsumer {
       execution = execute(task);
       JsonNode result = execution.result();
       validate(result);
-      if ("APPROVED".equals(result.path("decision").asText()))
-        report(task, result, execution.usage());
-      else block(task, result, execution.usage());
+      if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
+      else block(task, execution);
     } catch (Exception ex) {
       log.error("Falha no gate comercial BPM de Têmis. taskId={}", taskId(task), ex);
-      TokenUsage usage =
-          execution != null
-              ? execution.usage()
-              : ex instanceof BpmExecutionException bpm ? bpm.usage() : null;
-      fail(task, ex, usage);
+      fail(task, ex, execution);
     }
   }
 
@@ -126,8 +123,8 @@ public class CommercialBpmTaskConsumer {
     Path output = Files.createTempFile("temis-bpm-result-", ".json");
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
+    String resolvedPrompt = prompt(task);
     try {
-      String resolvedPrompt = prompt(task);
       List<String> command =
           new ArrayList<>(
               List.of(
@@ -136,6 +133,8 @@ public class CommercialBpmTaskConsumer {
                   "exec",
                   "-c",
                   "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
+                  "--config",
+                  "model_reasoning_effort=\"" + reasoningEffort + "\"",
                   "-",
                   "--skip-git-repo-check",
                   "--sandbox",
@@ -160,23 +159,26 @@ public class CommercialBpmTaskConsumer {
       if (!process.waitFor(40, TimeUnit.MINUTES)) {
         process.destroyForcibly();
         throw new BpmExecutionException(
-            "Timeout do gate BPM de Têmis após 40 minutos.", readTokenUsage(json, processLog));
+            "Timeout do gate BPM de Têmis após 40 minutos.",
+            readTokenUsage(json, processLog),
+            resolvedPrompt);
       }
       TokenUsage usage = readTokenUsage(json, processLog);
       if (process.exitValue() != 0) {
         throw new BpmExecutionException(
-            "Codex encerrou com falha: " + Files.readString(processLog), usage);
+            "Codex encerrou com falha: " + Files.readString(processLog), usage, resolvedPrompt);
       }
       try {
         JsonNode result = json.readTree(Files.readString(output));
-        return new BpmExecution(result, usage);
+        return new BpmExecution(result, usage, resolvedPrompt);
       } catch (IOException ex) {
         log.error(
             "Resposta inválida no gate BPM de Têmis. taskId={} output={}",
             taskId(task),
             output,
             ex);
-        throw new BpmExecutionException("Resposta de Têmis não contém JSON válido.", usage, ex);
+        throw new BpmExecutionException(
+            "Resposta de Têmis não contém JSON válido.", usage, resolvedPrompt, ex);
       }
     } finally {
       Files.deleteIfExists(output);
@@ -186,12 +188,12 @@ public class CommercialBpmTaskConsumer {
   }
 
   /** Persiste a decisão auditável sem publicar landing, campanha ou experimento. */
-  private void report(Map<String, Object> task, JsonNode result, TokenUsage usage)
-      throws IOException {
+  private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
-    body.put("resultJson", json.writeValueAsString(result));
+    body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent()));
     backend
         .post()
         .uri(
@@ -204,16 +206,20 @@ public class CommercialBpmTaskConsumer {
   }
 
   /** Mantém o gate fechado diante de falha técnica ou parecer inválido. */
-  private void fail(Map<String, Object> task, Exception ex, TokenUsage usage) {
+  private void fail(Map<String, Object> task, Exception ex, BpmExecution execution) {
     if (task == null) return;
     try {
+      BpmExecutionException bpm = ex instanceof BpmExecutionException value ? value : null;
+      TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
+      String promptSent =
+          execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
       backend
           .post()
           .uri(
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(failureBody(task, ex.toString(), usage))
+          .body(failureBody(task, ex.toString(), usage, promptSent))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -222,14 +228,16 @@ public class CommercialBpmTaskConsumer {
   }
 
   /** Preserva o parecer funcional e mantém o processo fechado quando o gate reprova. */
-  private void block(Map<String, Object> task, JsonNode result, TokenUsage usage)
-      throws IOException {
+  private void block(Map<String, Object> task, BpmExecution execution) throws IOException {
+    JsonNode result = execution.result();
     String resultJson = json.writeValueAsString(result);
     Map<String, Object> body = new HashMap<>();
     body.put("error", "Têmis bloqueou o avanço: " + result.path("commercialRationale").asText());
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent()));
+    body.put("blockerGuidance", functionalGuidance(task, result));
     backend
         .post()
         .uri(
@@ -347,13 +355,74 @@ public class CommercialBpmTaskConsumer {
   }
 
   /** Monta a falha preservando o consumo ocorrido antes do bloqueio. */
-  private Map<String, Object> failureBody(Map<String, Object> task, String error, TokenUsage usage)
+  private Map<String, Object> failureBody(
+      Map<String, Object> task, String error, TokenUsage usage, String promptSent)
       throws IOException {
     Map<String, Object> body = new HashMap<>();
     body.put("error", error);
     body.put("evidenceJson", evidence(task));
     putModelUsage(body, usage);
+    if (promptSent != null) body.put("executionAudit", executionAudit(promptSent));
+    body.put("blockerGuidance", technicalGuidance(task));
     return body;
+  }
+
+  /** Monta a auditoria integral da chamada efetivamente enviada ao Codex. */
+  private Map<String, Object> executionAudit(String promptSent) {
+    Map<String, Object> audit = new java.util.LinkedHashMap<>();
+    audit.put("executionMode", "MODEL");
+    audit.put("modelCode", model);
+    audit.put("reasoningEffort", reasoningEffort);
+    audit.put("promptSent", promptSent);
+    audit.put("accessedUrls", List.of());
+    return audit;
+  }
+
+  /** Converte a reprovação funcional em uma mudança objetiva e navegável. */
+  private Map<String, Object> functionalGuidance(Map<String, Object> task, JsonNode result) {
+    String action =
+        "Corrija os itens obrigatórios descritos no parecer de Têmis e reinicie a tarefa.";
+    if (result.path("requiredChanges").isArray()) {
+      for (JsonNode change : result.path("requiredChanges")) {
+        String requiredChange =
+            change.isTextual() ? change.asText("").trim() : change.path("action").asText("").trim();
+        if (requiredChange.isBlank()) {
+          requiredChange = change.path("description").asText("").trim();
+        }
+        if (!requiredChange.isBlank()) {
+          action = requiredChange;
+          break;
+        }
+      }
+    }
+    return Map.of(
+        "category",
+        "FUNCTIONAL_ADJUSTMENT",
+        "recommendedAction",
+        action,
+        "helpLinks",
+        helpLinks(task));
+  }
+
+  /** Orienta a recuperação técnica mantendo o gate comercial fechado. */
+  private Map<String, Object> technicalGuidance(Map<String, Object> task) {
+    return Map.of(
+        "category", "TECHNICAL_FAILURE",
+        "recommendedAction",
+            "Verifique a causa técnica registrada, corrija a integração e reinicie a tarefa de Têmis.",
+        "helpLinks", helpLinks(task));
+  }
+
+  /** Oferece a auditoria e, quando disponível, o destino comercial avaliado. */
+  private List<Map<String, String>> helpLinks(Map<String, Object> task) {
+    List<Map<String, String>> links = new ArrayList<>();
+    links.add(Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks"));
+    JsonNode target = json.valueToTree(task.get("taskTarget"));
+    String publicUrl = target.path("publicUrl").asText("").trim();
+    if (publicUrl.startsWith("https://") || publicUrl.startsWith("http://")) {
+      links.add(Map.of("label", "Abrir destino avaliado", "url", publicUrl));
+    }
+    return List.copyOf(links);
   }
 
   /** Preserva o contexto acessado e comprova que Têmis não realizou efeito externo. */
@@ -425,7 +494,7 @@ public class CommercialBpmTaskConsumer {
   private record BpmContract(String processCode, String activityId) {}
 
   /** Preserva o resultado funcional junto do consumo da mesma execução. */
-  record BpmExecution(JsonNode result, TokenUsage usage) {}
+  record BpmExecution(JsonNode result, TokenUsage usage, String promptSent) {}
 
   /** Representa contadores reais cumulativos informados pelo processo Codex. */
   record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
@@ -443,22 +512,31 @@ public class CommercialBpmTaskConsumer {
   /** Preserva tokens mesmo quando a execução técnica termina em falha. */
   private static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
+    private final String promptSent;
 
     /** Cria a falha técnica com a última medição conhecida. */
-    private BpmExecutionException(String message, TokenUsage usage) {
+    private BpmExecutionException(String message, TokenUsage usage, String promptSent) {
       super(message);
       this.usage = usage;
+      this.promptSent = promptSent;
     }
 
     /** Cria a falha técnica mantendo também sua causa original. */
-    private BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
+    private BpmExecutionException(
+        String message, TokenUsage usage, String promptSent, Throwable cause) {
       super(message, cause);
       this.usage = usage;
+      this.promptSent = promptSent;
     }
 
     /** Retorna a medição preservada para o callback de falha. */
     private TokenUsage usage() {
       return usage;
+    }
+
+    /** Retorna o prompt exato preservado antes da falha técnica. */
+    private String promptSent() {
+      return promptSent;
     }
   }
 }

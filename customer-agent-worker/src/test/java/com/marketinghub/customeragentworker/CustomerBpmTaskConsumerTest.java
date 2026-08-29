@@ -12,6 +12,16 @@ import org.junit.jupiter.api.Test;
 class CustomerBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Bloqueia Psique antes de reservar tarefas quando o raciocínio não está configurado. */
+  @Test
+  void rejectsMissingReasoningEffortBeforeModel() {
+    assertThatThrownBy(
+            () ->
+                new CustomerBpmTaskConsumer(
+                    "http://backend:8000", "codex", "gpt-5.6-sol", " ", "/workspace", "", json))
+        .hasMessageContaining("obrigatório para auditar Psique");
+  }
+
   /** Aceita parecer aprovado somente quando há perspectiva e evidência verificável. */
   @Test
   void acceptsCompleteCustomerReview() throws Exception {
@@ -36,6 +46,13 @@ class CustomerBpmTaskConsumerTest {
                   "evidenceBoundary":"Somente screenshot fornecido"
                 }
               },
+              "purchaseEmotion":{
+                "acquisitionExpectation":"Espero ganhar clareza prática para atender melhor",
+                "acquisitionAnxiety":"Receio comprar e receber algo genérico ou trabalhoso",
+                "expectedPostDeliveryFeeling":"Imagino sentir alívio e controle depois de aplicar",
+                "emotionalTension":"Desejo o resultado, mas temo perder tempo e dinheiro",
+                "evidenceBoundary":"Reação simulada pela persona e pelo snapshot, não cliente real"
+              },
               "evidence":["CTA visível"],
               "requiredChanges":[]
             }
@@ -57,7 +74,7 @@ class CustomerBpmTaskConsumerTest {
   void rejectsApprovedReviewWithAdjustedGate() throws Exception {
     var result =
         json.readTree(
-            "{\"decision\":\"APPROVED\",\"customerPerspective\":\"Oferta clara e utilizável\",\"behavioralResponse\":{\"firstImpulse\":\"Curiosidade segura\",\"belongingAdmirationLove\":\"Desejo sem pressão\",\"sensoryExperience\":{\"evidenceAvailable\":false,\"availableModalities\":[],\"pleasureByModality\":[],\"processingFluency\":0,\"sensoryCongruence\":0,\"overloadRisk\":0,\"embodiedAnticipation\":\"Não observável\",\"dominantCue\":\"Não observado\",\"evidenceBoundary\":\"Sem evidência sensorial\"}},\"gateChecks\":[{\"status\":\"ADJUST\"}],\"evidence\":[\"Jornada comprovada\"],\"requiredChanges\":[]}");
+            "{\"decision\":\"APPROVED\",\"customerPerspective\":\"Oferta clara e utilizável\",\"behavioralResponse\":{\"firstImpulse\":\"Curiosidade segura\",\"belongingAdmirationLove\":\"Desejo sem pressão\",\"sensoryExperience\":{\"evidenceAvailable\":false,\"availableModalities\":[],\"pleasureByModality\":[],\"processingFluency\":0,\"sensoryCongruence\":0,\"overloadRisk\":0,\"embodiedAnticipation\":\"Não observável\",\"dominantCue\":\"Não observado\",\"evidenceBoundary\":\"Sem evidência sensorial\"}},\"purchaseEmotion\":{\"acquisitionExpectation\":\"Espero obter o resultado prometido\",\"acquisitionAnxiety\":\"Receio perder dinheiro e tempo\",\"expectedPostDeliveryFeeling\":\"Imagino sentir alívio após aplicar\",\"emotionalTension\":\"Desejo versus receio da compra\",\"evidenceBoundary\":\"Simulação baseada na persona\"},\"gateChecks\":[{\"status\":\"ADJUST\"}],\"evidence\":[\"Jornada comprovada\"],\"requiredChanges\":[]}");
 
     assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
         .isInstanceOf(IllegalArgumentException.class)
@@ -82,6 +99,36 @@ class CustomerBpmTaskConsumerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  /** Rejeita parecer que omite expectativa, ansiedade ou sentimento imaginado pós-entrega. */
+  @Test
+  void rejectsReviewWithoutCompletePurchaseEmotion() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"ADJUST",
+              "customerPerspective":"Oferta clara, mas ainda sem antecipação emocional",
+              "behavioralResponse":{
+                "firstImpulse":"Curiosidade",
+                "belongingAdmirationLove":"Valor relacional sem pressão",
+                "sensoryExperience":{
+                  "evidenceAvailable":false,"availableModalities":[],"pleasureByModality":[],
+                  "processingFluency":0,"sensoryCongruence":0,"overloadRisk":0,
+                  "embodiedAnticipation":"Indisponível","dominantCue":"Indisponível",
+                  "evidenceBoundary":"Sem pixels"
+                }
+              },
+              "purchaseEmotion":{"acquisitionExpectation":"Espero clareza"},
+              "evidence":["Contexto comercial"],
+              "requiredChanges":["Completar emoção"]
+            }
+            """);
+
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("evidências suficientes");
+  }
+
   /** Exige prompt e schema próprios para a percepção do criativo. */
   @Test
   void selectsVersionedCreativeContract() throws Exception {
@@ -94,7 +141,11 @@ class CustomerBpmTaskConsumerTest {
     String prompt =
         Files.readString(Path.of("src/main/resources/prompts/bpm/v2/creative-customer-review.md"));
     org.assertj.core.api.Assertions.assertThat(prompt)
-        .contains("formato e canal declarados", "PRODUCT_PROOF", "dois primeiros segundos")
+        .contains(
+            "formato e canal declarados",
+            "PRODUCT_PROOF",
+            "dois primeiros segundos",
+            "purchaseEmotion")
         .doesNotContain("nail designer", "posts e stories prontos");
   }
 
@@ -135,7 +186,10 @@ class CustomerBpmTaskConsumerTest {
             "UPDATED_CANDIDATE",
             "fronteira externa esperada",
             "Use `ADJUST` somente para defeito corrigível na candidata local",
-            "todos os itens de `gateChecks` em `PASS`");
+            "todos os itens de `gateChecks` em `PASS`",
+            "visualEvidence",
+            "todas as capturas `FOLD`",
+            "purchaseEmotion");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.supportsContract(
                 "pde-commercial-homologation-activation", "humanExperienceReview"))
@@ -161,7 +215,10 @@ class CustomerBpmTaskConsumerTest {
             "Não bloqueie apenas porque a tela do provedor externo não pôde ser aberta",
             "Integração de canal, checkout, acesso e eventos",
             "approvedCreativeEvidence.status",
-            "adCopy` ou `adImageBriefing` legados");
+            "adCopy` ou `adImageBriefing` legados",
+            "cada `localPath`",
+            "visualAudit",
+            "purchaseEmotion");
     String schema =
         Files.readString(
             Path.of("src/main/resources/prompts/bpm/v2/landing-customer-review-schema.json"));
@@ -197,19 +254,102 @@ class CustomerBpmTaskConsumerTest {
             Path.of(
                 "src/main/resources/prompts/bpm/v2/pde-commercial-homologation-customer-review-schema.json"));
 
-    org.assertj.core.api.Assertions.assertThat(core)
+    org.assertj.core.api.Assertions.assertThat(core.replaceAll("\\s+", " "))
         .contains("reação afetiva rápida")
         .contains("faixa de novidade segura")
         .contains("amada")
         .contains("prazer sensorial")
-        .contains("Não recomende explorar vergonha");
+        .contains("Não recomende explorar vergonha")
+        .contains("expectativa ao considerar adquirir")
+        .contains("todas as dobras numeradas");
     org.assertj.core.api.Assertions.assertThat(
             java.util.List.of(creative, landing, pde, commercialHomologation))
         .allSatisfy(
             schema ->
                 org.assertj.core.api.Assertions.assertThat(schema)
                     .contains(
-                        "behavioralResponse", "belongingAdmirationLove", "sensoryExperience"));
+                        "behavioralResponse",
+                        "belongingAdmirationLove",
+                        "sensoryExperience",
+                        "purchaseEmotion"));
+  }
+
+  /** Exige captura por dobra nos processos com tela e preserva criativo no contrato próprio. */
+  @Test
+  void requiresVisualEvidenceOnlyForScreenJourneys() {
+    org.assertj.core.api.Assertions.assertThat(
+            java.util.List.of(
+                "landing-page-generation",
+                "pde-commercial-homologation-activation",
+                "pde-construction-approval"))
+        .allSatisfy(
+            processCode ->
+                org.assertj.core.api.Assertions.assertThat(
+                        CustomerBpmTaskConsumer.requiresVisualAudit(processCode))
+                    .isTrue());
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.requiresVisualAudit("creative-production-approval"))
+        .isFalse();
+  }
+
+  /** Aceita somente quando full-page e cada dobra persistida aparecem uma vez na análise. */
+  @Test
+  void validatesExactVisualCoverageByArtifactId() throws Exception {
+    var visualEvidence =
+        java.util.List.of(
+            visualEvidence(901L, "FULL_PAGE", null),
+            visualEvidence(902L, "FOLD", 1),
+            visualEvidence(903L, "FOLD", 2));
+    var result =
+        json.readTree(
+            """
+            {
+              "visualAudit":{
+                "captureSessionId":"capture-abc",
+                "mobileFirst":true,
+                "fullPageEvidenceIds":[901],
+                "fullPageContinuity":"A página mantém narrativa contínua entre as dobras.",
+                "overallAestheticAssessment":"A composição é consistente e adequada à persona.",
+                "foldAnalyses":[
+                  {"artifactId":902,"deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":1,"aestheticAssessment":"Abertura limpa","visualHierarchy":"Título domina","legibility":"Texto legível","emotionEvoked":"Curiosidade segura","ctaVisibility":"CTA principal visível"},
+                  {"artifactId":903,"deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":2,"aestheticAssessment":"Prova equilibrada","visualHierarchy":"Benefício antes dos detalhes","legibility":"Contraste adequado","emotionEvoked":"Confiança crescente","ctaVisibility":"CTA de continuidade visível"}
+                ]
+              }
+            }
+            """);
+
+    org.assertj.core.api.Assertions.assertThatCode(
+            () -> CustomerBpmTaskConsumer.validateVisualAudit(result, visualEvidence))
+        .doesNotThrowAnyException();
+  }
+
+  /** Bloqueia sucesso quando Psique deixa uma dobra persistida sem análise estética. */
+  @Test
+  void rejectsVisualAuditThatOmitsPersistedFold() throws Exception {
+    var visualEvidence =
+        java.util.List.of(
+            visualEvidence(901L, "FULL_PAGE", null),
+            visualEvidence(902L, "FOLD", 1),
+            visualEvidence(903L, "FOLD", 2));
+    var result =
+        json.readTree(
+            """
+            {
+              "visualAudit":{
+                "captureSessionId":"capture-abc","mobileFirst":true,
+                "fullPageEvidenceIds":[901],
+                "fullPageContinuity":"Jornada contínua entre as dobras.",
+                "overallAestheticAssessment":"Estética coerente com a oferta.",
+                "foldAnalyses":[
+                  {"artifactId":902,"deviceProfile":"IPHONE_15_PRO","pageNumber":1,"foldNumber":1,"aestheticAssessment":"Limpa","visualHierarchy":"Clara","legibility":"Boa","emotionEvoked":"Curiosidade","ctaVisibility":"Visível"}
+                ]
+              }
+            }
+            """);
+
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validateVisualAudit(result, visualEvidence))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("todas as dobras");
   }
 
   /** Lê os contadores cumulativos e a parcela de cache informados pelo Codex. */
@@ -228,6 +368,28 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(usage.inputTokens()).isEqualTo(1200L);
     org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(700L);
     org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(300L);
+    Files.deleteIfExists(output);
+  }
+
+  /** Registra apenas URLs de navegação real e ignora endereços que estavam somente no prompt. */
+  @Test
+  void extractsOnlyActuallyAccessedUrlsFromCodexEvents() throws Exception {
+    Path output = Files.createTempFile("psique-bpm-urls-", ".jsonl");
+    Files.writeString(
+        output,
+        """
+        {"type":"turn.started","prompt":{"publicUrl":"https://nao-acessada.example/produto"}}
+        {"type":"item.started","item":{"id":"item_1","type":"web_search","query":"fonte","action":{"type":"open_page","url":"https://ainda-nao-confirmada.example/artigo"}}}
+        {"type":"item.completed","item":{"id":"item_1","type":"web_search","query":"fonte","action":{"type":"open_page","url":"https://fonte.example/artigo"}}}
+        {"type":"item.completed","item":{"id":"item_2","type":"web_search","query":"checkout","action":{"type":"find_in_page","url":"https://loja.example/checkout","pattern":"comprar"}}}
+        {"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"echo https://inventada.example","aggregated_output":"{\\"requestedUrl\\":\\"https://nao-comprovada.example\\"}","status":"completed"}}
+        """);
+
+    var urls = CustomerBpmTaskConsumer.readAccessedUrls(json, output);
+
+    org.assertj.core.api.Assertions.assertThat(urls)
+        .extracting(value -> value.get("url"))
+        .containsExactly("https://fonte.example/artigo", "https://loja.example/checkout");
     Files.deleteIfExists(output);
   }
 
@@ -255,5 +417,30 @@ class CustomerBpmTaskConsumerTest {
         .containsEntry("effectiveServiceTier", "STANDARD")
         .containsKey("taskTarget")
         .containsKey("serviceTierException");
+  }
+
+  /** Monta uma evidência já persistida no backend para validar o parecer visual. */
+  private BpmVisualEvidenceBackendClient.UploadedVisualEvidence visualEvidence(
+      Long id, String evidenceType, Integer foldNumber) {
+    return new BpmVisualEvidenceBackendClient.UploadedVisualEvidence(
+        id,
+        "capture-abc",
+        evidenceType.toLowerCase() + "-" + id,
+        evidenceType,
+        foldNumber == null ? "Página 1 · visão completa" : "Página 1 · dobra " + foldNumber,
+        "IPHONE_15_PRO",
+        1,
+        foldNumber,
+        393,
+        852,
+        1704,
+        foldNumber == null ? 0 : (foldNumber - 1) * 852,
+        "https://rigel.example/jornada",
+        "https://rigel.example/jornada",
+        "/api/agent-tasks/258/visual-evidence/" + id + "/content",
+        1200L,
+        "a".repeat(64),
+        java.time.Instant.parse("2026-08-29T10:00:00Z"),
+        "/tmp/visual-" + id + ".png");
   }
 }

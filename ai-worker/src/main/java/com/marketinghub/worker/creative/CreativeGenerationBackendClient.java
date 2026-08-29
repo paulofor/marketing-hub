@@ -91,19 +91,21 @@ public class CreativeGenerationBackendClient {
     }
 
     /** Informa ao backend que a geração de criativos foi concluída. */
-    public void markCompleted(Long experimentId) {
+    public void markCompleted(Long experimentId, CreativeTaskExecutionAudit executionAudit) {
         webClient.post()
                 .uri(backendBaseUrl + "/api/experiments/{id}/creatives/stage-execution/complete", experimentId)
+                .bodyValue(executionAudit)
                 .retrieve()
                 .toBodilessEntity()
                 .block(TIMEOUT);
     }
 
     /** Informa ao backend que a geração de criativos falhou com uma mensagem operacional. */
-    public void markFailed(Long experimentId, String error) {
+    public void markFailed(
+            Long experimentId, String error, CreativeTaskExecutionAudit executionAudit) {
         webClient.post()
                 .uri(backendBaseUrl + "/api/experiments/{id}/creatives/stage-execution/fail", experimentId)
-                .bodyValue(new CreativeGenerationFailureRequest(error))
+                .bodyValue(new CreativeGenerationFailureRequest(error, executionAudit))
                 .retrieve()
                 .toBodilessEntity()
                 .block(TIMEOUT);
@@ -131,6 +133,16 @@ public class CreativeGenerationBackendClient {
     }
 
     /** Payload de falha enviado ao backend. */
-    private record CreativeGenerationFailureRequest(String error) {
+    private record CreativeGenerationFailureRequest(
+            String error, CreativeTaskExecutionAudit executionAudit) {
+    }
+
+    /** Transporta modo, modelo, raciocínio e entrada integral da tarefa de Dédalo. */
+    public record CreativeTaskExecutionAudit(
+            String executionMode,
+            String modelCode,
+            String reasoningEffort,
+            String promptSent,
+            List<Object> accessedUrls) {
     }
 }

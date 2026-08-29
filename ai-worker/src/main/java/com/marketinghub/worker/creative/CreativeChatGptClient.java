@@ -66,7 +66,9 @@ public class CreativeChatGptClient {
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
+    private static final String SYSTEM_PROMPT = "Você é um especialista em marketing.";
 
+    /** Configura o cliente OpenAI, o modelo e os limites temporais da geração. */
     public CreativeChatGptClient(WebClient.Builder builder,
                                  ObjectMapper objectMapper,
                                  @Value("${openai.api-key:}") String apiKey,
@@ -114,8 +116,12 @@ public class CreativeChatGptClient {
             return Generation.empty();
         }
         String prompt = buildPrompt(experiment, quantity, correctionContext);
+        ExecutionAudit executionAudit = new ExecutionAudit(
+                model,
+                OpenAiRequestUtils.requiresReasoning(model) ? "medium" : "NOT_APPLICABLE",
+                fullPrompt(prompt));
         List<Map<String, Object>> input = List.of(
-                OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
+                OpenAiRequestUtils.message("system", SYSTEM_PROMPT),
                 OpenAiRequestUtils.message("user", prompt)
         );
 
@@ -130,53 +136,67 @@ public class CreativeChatGptClient {
         Map<String, RequestContext> contexts = new LinkedHashMap<>();
         contexts.put(customId, new RequestContext(experiment, prompt, payload, model));
 
-        log.info("Executando prompt de criativos {} no modo Flex da OpenAI", experiment != null ? experiment.getId() : "sem-id");
-        Map<String, OpenAiResponse> responses = executeFlexRequests(contexts);
-        OpenAiResponse response = responses.get(customId);
-        if (response == null) {
-            log.warn("OpenAI Flex returned no response for experiment {}", experiment != null ? experiment.getId() : "unknown");
-            return Generation.empty();
-        }
-        if (response.hasError()) {
-            throw new RuntimeException("OpenAI error: " + response.errorMessage());
-        }
-        String content = response.firstText();
-        generationRecorder.record(DOMAIN,
-                experiment != null ? String.valueOf(experiment.getId()) : null,
-                prompt,
-                content,
-                model,
-                response.usage());
-        BigDecimal totalCostUsd = OpenAiCostEstimator.estimateUsd(model, response.usage());
-        if (!hasText(content)) {
-            log.warn("ChatGPT returned empty content for experiment {}", experiment != null ? experiment.getId() : "unknown");
-            return Generation.empty(totalCostUsd);
-        }
-        log.info("ChatGPT content: {}", content);
         try {
-            return parseWithCost(content, totalCostUsd);
-        } catch (Exception e) {
-            log.error("Failed to parse ChatGPT response: {}", content, e);
-            try {
-                String unescaped = content.replace("\\\"", "\"");
-                return parseWithCost(unescaped, totalCostUsd);
-            } catch (Exception ex) {
-                log.error("Failed to parse unescaped ChatGPT response: {}", content, ex);
-                throw new RuntimeException("Failed to parse ChatGPT response", ex);
+            log.info("Executando prompt de criativos {} no modo Flex da OpenAI", experiment != null ? experiment.getId() : "sem-id");
+            Map<String, OpenAiResponse> responses = executeFlexRequests(contexts);
+            OpenAiResponse response = responses.get(customId);
+            if (response == null) {
+                log.warn("OpenAI Flex returned no response for experiment {}", experiment != null ? experiment.getId() : "unknown");
+                return Generation.empty(executionAudit);
             }
+            if (response.hasError()) {
+                throw new RuntimeException("OpenAI error: " + response.errorMessage());
+            }
+            String content = response.firstText();
+            generationRecorder.record(DOMAIN,
+                    experiment != null ? String.valueOf(experiment.getId()) : null,
+                    prompt,
+                    content,
+                    model,
+                    response.usage());
+            BigDecimal totalCostUsd = OpenAiCostEstimator.estimateUsd(model, response.usage());
+            if (!hasText(content)) {
+                log.warn("ChatGPT returned empty content for experiment {}", experiment != null ? experiment.getId() : "unknown");
+                return Generation.empty(totalCostUsd, executionAudit);
+            }
+            log.info("ChatGPT content: {}", content);
+            try {
+                return parseWithCost(content, totalCostUsd, executionAudit);
+            } catch (Exception firstParseError) {
+                log.error("Failed to parse ChatGPT response: {}", content, firstParseError);
+                try {
+                    String unescaped = content.replace("\\\"", "\"");
+                    return parseWithCost(unescaped, totalCostUsd, executionAudit);
+                } catch (Exception secondParseError) {
+                    log.error("Failed to parse unescaped ChatGPT response: {}", content, secondParseError);
+                    throw new RuntimeException("Failed to parse ChatGPT response", secondParseError);
+                }
+            }
+        } catch (AuditedCreativeGenerationException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw new AuditedCreativeGenerationException(ex, executionAudit);
         }
     }
 
-    private Generation parseWithCost(String content, BigDecimal totalCostUsd) throws Exception {
+    /** Interpreta a resposta e preserva junto dela a chamada exata que a originou. */
+    private Generation parseWithCost(
+            String content, BigDecimal totalCostUsd, ExecutionAudit executionAudit) throws Exception {
         List<CreateCreativeRequest> parsed = parseContent(content);
         BigDecimal costPerCreative = calculateCostPerCreative(totalCostUsd, parsed.size());
         if (costPerCreative != null) {
             parsed.forEach(req -> applyCostUsd(req, costPerCreative));
         }
         log.info("Parsed creatives: {}", parsed);
-        return new Generation(parsed, totalCostUsd, costPerCreative);
+        return new Generation(parsed, totalCostUsd, costPerCreative, executionAudit);
     }
 
+    /** Reconstrói integralmente as duas mensagens textuais enviadas na mesma requisição. */
+    private String fullPrompt(String userPrompt) {
+        return "SYSTEM:\n" + SYSTEM_PROMPT + "\n\nUSER:\n" + userPrompt;
+    }
+
+    /** Cria a correlação estável da tentativa com o experimento de origem. */
     private String buildCustomId(Experiment experiment) {
         if (experiment != null && experiment.getId() != null) {
             return "experiment-" + experiment.getId();
@@ -204,6 +224,7 @@ public class CreativeChatGptClient {
         return responses;
     }
 
+    /** Divide o custo real da chamada entre os criativos válidos retornados. */
     private BigDecimal calculateCostPerCreative(BigDecimal totalCostUsd, int totalCreatives) {
         if (totalCostUsd == null || totalCreatives <= 0) {
             return null;
@@ -211,6 +232,7 @@ public class CreativeChatGptClient {
         return totalCostUsd.divide(BigDecimal.valueOf(totalCreatives), 4, RoundingMode.HALF_UP);
     }
 
+    /** Aplica custo quando o contrato compartilhado oferece esse campo. */
     private void applyCostUsd(CreateCreativeRequest request, BigDecimal costPerCreative) {
         if (costPerCreative == null || request == null) {
             return;
@@ -275,12 +297,14 @@ public class CreativeChatGptClient {
         }
     }
 
+    /** Resolve os placeholders do complemento de prompt salvo no experimento. */
     private String applyTextPromptTemplate(Experiment experiment, int quantity) {
         Map<String, String> placeholders = buildCommonPlaceholders(experiment);
         placeholders.put("quantity", String.valueOf(quantity));
         return replacePlaceholders(experiment != null ? experiment.getCreativeTextPrompt() : null, placeholders);
     }
 
+    /** Consolida os valores comerciais permitidos no template de copy. */
     private Map<String, String> buildCommonPlaceholders(Experiment experiment) {
         Map<String, String> placeholders = new LinkedHashMap<>();
         placeholders.put("experimentId", experiment != null && experiment.getId() != null ? String.valueOf(experiment.getId()) : "");
@@ -300,6 +324,7 @@ public class CreativeChatGptClient {
         return placeholders;
     }
 
+    /** Substitui tokens conhecidos sem executar template arbitrário. */
     private String replacePlaceholders(String template, Map<String, String> placeholders) {
         if (template == null) {
             return "";
@@ -312,14 +337,17 @@ public class CreativeChatGptClient {
         return result;
     }
 
+    /** Normaliza texto ausente para uso seguro na montagem do prompt. */
     private String safe(String value) {
         return value == null ? "" : value;
     }
 
+    /** Informa se o valor contém texto útil. */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
 
+    /** Mantém apenas duração positiva e usa o limite padrão nos demais casos. */
     private Duration normalizeDuration(Duration candidate, Duration fallback) {
         if (candidate == null || candidate.isNegative() || candidate.isZero()) {
             return fallback;
@@ -327,6 +355,7 @@ public class CreativeChatGptClient {
         return candidate;
     }
 
+    /** Converte a saída estruturada em contratos de criativo prontos para validação. */
     private List<CreateCreativeRequest> parseContent(String content) throws Exception {
         CreativeResponse response = objectMapper.readValue(content, CreativeResponse.class);
         List<CreateCreativeRequest> creatives = response.creatives() == null ? List.of() : response.creatives();
@@ -341,24 +370,70 @@ public class CreativeChatGptClient {
     /** Representa o objeto-raiz exigido pelo formato estruturado da Responses API. */
     private record CreativeResponse(List<CreateCreativeRequest> creatives) {}
 
+    /** Mantém juntos prompt, payload e modelo usados pela mesma correlação. */
     private record RequestContext(Experiment experiment,
                                   String prompt,
                                   Map<String, Object> payload,
                                   String model) {}
 
+    /** Retorna os criativos e a auditoria integral da tentativa que os produziu. */
     public record Generation(List<CreateCreativeRequest> creatives,
                              BigDecimal totalCostUsd,
-                             BigDecimal costPerCreativeUsd) {
+                             BigDecimal costPerCreativeUsd,
+                             ExecutionAudit executionAudit) {
+        /** Imutabiliza a lista para impedir alteração posterior da auditoria. */
         public Generation {
             creatives = creatives == null ? List.of() : List.copyOf(creatives);
         }
 
-        public static Generation empty() {
-            return new Generation(List.of(), null, null);
+        /** Mantém os testes e consumidores antigos que ainda não exercitam a auditoria. */
+        public Generation(
+                List<CreateCreativeRequest> creatives,
+                BigDecimal totalCostUsd,
+                BigDecimal costPerCreativeUsd) {
+            this(creatives, totalCostUsd, costPerCreativeUsd, null);
         }
 
+        /** Representa ausência de chamada quando o provedor ainda não foi acionado. */
+        public static Generation empty() {
+            return new Generation(List.of(), null, null, null);
+        }
+
+        /** Preserva a tentativa de modelo mesmo quando ela não retorna criativos. */
+        public static Generation empty(ExecutionAudit executionAudit) {
+            return new Generation(List.of(), null, null, executionAudit);
+        }
+
+        /** Preserva custo e chamada mesmo quando o conteúdo retornado está vazio. */
         public static Generation empty(BigDecimal totalCostUsd) {
-            return new Generation(List.of(), totalCostUsd, null);
+            return new Generation(List.of(), totalCostUsd, null, null);
+        }
+
+        /** Preserva custo e chamada mesmo quando o conteúdo retornado está vazio. */
+        public static Generation empty(
+                BigDecimal totalCostUsd, ExecutionAudit executionAudit) {
+            return new Generation(List.of(), totalCostUsd, null, executionAudit);
+        }
+    }
+
+    /** Identifica a chamada de modelo auditável feita para gerar a copy. */
+    public record ExecutionAudit(String modelCode, String reasoningEffort, String promptSent) {
+    }
+
+    /** Preserva a auditoria mesmo quando a chamada de modelo termina em exceção. */
+    public static final class AuditedCreativeGenerationException extends RuntimeException {
+        private final ExecutionAudit executionAudit;
+
+        /** Associa a causa técnica à chamada exata que falhou. */
+        public AuditedCreativeGenerationException(
+                RuntimeException cause, ExecutionAudit executionAudit) {
+            super(cause.getMessage(), cause);
+            this.executionAudit = executionAudit;
+        }
+
+        /** Expõe o envelope imutável para o callback de falha do backend. */
+        public ExecutionAudit executionAudit() {
+            return executionAudit;
         }
     }
 }

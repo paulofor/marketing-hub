@@ -67,6 +67,15 @@ public class WorkerProperties {
     this.reasoningEffort = reasoningEffort;
   }
 
+  /** Exige o esforço explícito compartilhado pelo comando e pela auditoria de Hermes. */
+  public String requiredReasoningEffort() {
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      throw new IllegalStateException(
+          "GROWTH_OPERATOR_REASONING_EFFORT é obrigatório para auditar Hermes.");
+    }
+    return reasoningEffort.trim();
+  }
+
   /** Retorna a URL publica usada pelo Codex para consultar o Marketing Hub. */
   public String getMarketingHubUrl() {
     return marketingHubUrl;

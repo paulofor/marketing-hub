@@ -13,4 +13,5 @@ public record ImportedCompletedAgentTask(
     String processActivityId,
     String resultJson,
     String evidenceJson,
-    List<AgentTaskModelUsageRequest> modelUsages) {}
+    List<AgentTaskModelUsageRequest> modelUsages,
+    AgentTaskExecutionAuditRequest executionAudit) {}

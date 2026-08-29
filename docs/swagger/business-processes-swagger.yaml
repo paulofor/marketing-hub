@@ -153,7 +153,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProductProcessActivityExecutionRequest"
         "404": { description: Processo, produto ou atividade não encontrada }
-        "409": { description: Processo, produto, atividade, estado atual ou contexto sem condição de execução }
+        "409":
+          {
+            description: Processo,
+            produto,
+            atividade,
+            estado atual ou contexto sem condição de execução,
+          }
 components:
   parameters:
     ProcessDefinitionId:
@@ -311,7 +317,7 @@ components:
         - assignedAgentKey
         - assignedAgentNickname
         - costEstimationStatus
-        - generatedAt
+        - finishedAt
       properties:
         taskId: { type: integer, format: int64 }
         title: { type: string }
@@ -325,7 +331,30 @@ components:
         outputTokens: { type: integer, format: int64, nullable: true }
         estimatedCostUsd: { type: number, format: decimal, nullable: true }
         costEstimationStatus: { type: string }
-        generatedAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time }
+        modelCode: { type: string, nullable: true }
+        executionMode:
+          {
+            type: string,
+            enum: [MODEL, DETERMINISTIC, NOT_STARTED],
+            nullable: true,
+          }
+        reasoningEffort: { type: string, nullable: true }
+        productInternalName: { type: string, nullable: true }
+        promptSent: { type: string, nullable: true }
+        accessedUrls:
+          type: array
+          items: { $ref: "#/components/schemas/AgentTaskAuditLink" }
+        visualEvidence:
+          type: array
+          items: { $ref: "#/components/schemas/AgentTaskVisualEvidence" }
+        visualAudit:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/PsiqueVisualAudit" }]
+        purchaseEmotion:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/PsiquePurchaseEmotion" }]
     BusinessProcessActivityExecutionHistory:
       type: object
       required:
@@ -389,9 +418,159 @@ components:
         startedAt: { type: string, format: date-time, nullable: true }
         finishedAt: { type: string, format: date-time, nullable: true }
         modelCode: { type: string, nullable: true }
+        executionMode:
+          {
+            type: string,
+            enum: [MODEL, DETERMINISTIC, NOT_STARTED],
+            nullable: true,
+          }
         reasoningEffort: { type: string, nullable: true }
         productInternalName: { type: string, nullable: true }
         promptSent: { type: string, nullable: true }
+        blockerGuidance:
+          type: object
+          nullable: true
+          properties:
+            category:
+              type: string
+              enum:
+                [
+                  FUNCTIONAL_ADJUSTMENT,
+                  MISSING_EVIDENCE,
+                  COMMERCIAL_RISK,
+                  AUTHORIZATION_REQUIRED,
+                  TECHNICAL_FAILURE,
+                ]
+            recommendedAction: { type: string }
+            helpLinks: { type: array, items: { type: object } }
+        accessedUrls:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentTaskAuditLink"
+        visualEvidence:
+          type: array
+          items: { $ref: "#/components/schemas/AgentTaskVisualEvidence" }
+        visualAudit:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/PsiqueVisualAudit" }]
+        purchaseEmotion:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/PsiquePurchaseEmotion" }]
+    AgentTaskAuditLink:
+      type: object
+      required: [label, url]
+      properties:
+        label: { type: string }
+        url: { type: string }
+        accessMethod: { type: string, nullable: true }
+        accessedAt: { type: string, format: date-time, nullable: true }
+    AgentTaskVisualEvidence:
+      type: object
+      required:
+        [
+          id,
+          captureSessionId,
+          evidenceKey,
+          evidenceType,
+          label,
+          deviceProfile,
+          pageNumber,
+          viewportWidth,
+          viewportHeight,
+          pageHeightPx,
+          scrollY,
+          sourceUrl,
+          finalUrl,
+          contentUrl,
+          sizeBytes,
+          sha256,
+          capturedAt,
+        ]
+      properties:
+        id: { type: integer, format: int64 }
+        captureSessionId: { type: string }
+        evidenceKey: { type: string }
+        evidenceType: { type: string, enum: [FULL_PAGE, FOLD] }
+        label: { type: string }
+        deviceProfile:
+          { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440] }
+        pageNumber: { type: integer, minimum: 1 }
+        foldNumber: { type: integer, minimum: 1, nullable: true }
+        viewportWidth: { type: integer, minimum: 1 }
+        viewportHeight: { type: integer, minimum: 1 }
+        pageHeightPx: { type: integer, minimum: 1 }
+        scrollY: { type: integer, minimum: 0 }
+        sourceUrl: { type: string, format: uri }
+        finalUrl: { type: string, format: uri }
+        contentUrl: { type: string }
+        sizeBytes: { type: integer, format: int64, minimum: 1 }
+        sha256: { type: string, minLength: 64, maxLength: 64 }
+        capturedAt: { type: string, format: date-time }
+    PsiqueVisualAudit:
+      type: object
+      required:
+        [
+          captureSessionId,
+          mobileFirst,
+          fullPageEvidenceIds,
+          fullPageContinuity,
+          overallAestheticAssessment,
+          foldAnalyses,
+        ]
+      properties:
+        captureSessionId: { type: string }
+        mobileFirst: { type: boolean, enum: [true] }
+        fullPageEvidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, format: int64 }
+        fullPageContinuity: { type: string }
+        overallAestheticAssessment: { type: string }
+        foldAnalyses:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/PsiqueVisualFoldAnalysis" }
+    PsiqueVisualFoldAnalysis:
+      type: object
+      required:
+        [
+          artifactId,
+          deviceProfile,
+          pageNumber,
+          foldNumber,
+          aestheticAssessment,
+          visualHierarchy,
+          legibility,
+          emotionEvoked,
+          ctaVisibility,
+        ]
+      properties:
+        artifactId: { type: integer, format: int64 }
+        deviceProfile: { type: string, enum: [IPHONE_15_PRO] }
+        pageNumber: { type: integer, minimum: 1 }
+        foldNumber: { type: integer, minimum: 1 }
+        aestheticAssessment: { type: string }
+        visualHierarchy: { type: string }
+        legibility: { type: string }
+        emotionEvoked: { type: string }
+        ctaVisibility: { type: string }
+    PsiquePurchaseEmotion:
+      type: object
+      required:
+        [
+          acquisitionExpectation,
+          acquisitionAnxiety,
+          expectedPostDeliveryFeeling,
+          emotionalTension,
+          evidenceBoundary,
+        ]
+      properties:
+        acquisitionExpectation: { type: string }
+        acquisitionAnxiety: { type: string }
+        expectedPostDeliveryFeeling: { type: string }
+        emotionalTension: { type: string }
+        evidenceBoundary: { type: string }
     ProductProcessActivityExecutionHistory:
       type: object
       required:

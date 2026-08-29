@@ -49,9 +49,15 @@ class BusinessProcessActivityExecutionControllerTest {
             Instant.parse("2026-08-20T21:40:00Z"),
             Instant.parse("2026-08-20T21:41:24Z"),
             "gpt-5.4-mini-2026-03-17",
+            "MODEL",
             "high",
             null,
-            "Comprove a dor.");
+            "Comprove a dor.",
+            null,
+            List.of(),
+            List.of(),
+            null,
+            null);
     when(service.recentExecutions(37L, "evidence"))
         .thenReturn(
             new BusinessProcessActivityExecutionHistoryResponse(
@@ -105,9 +111,15 @@ class BusinessProcessActivityExecutionControllerTest {
             Instant.parse("2026-08-27T03:26:45Z"),
             Instant.parse("2026-08-27T03:35:14Z"),
             "gpt-5.6-sol",
+            "MODEL",
             "high",
             "Rigel",
-            "Construa a landing.");
+            "Construa a landing.",
+            null,
+            List.of(),
+            List.of(),
+            null,
+            null);
     var activity =
         new ProductProcessActivityExecutionGroupResponse(
             119L,

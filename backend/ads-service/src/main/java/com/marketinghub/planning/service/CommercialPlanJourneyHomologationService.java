@@ -63,7 +63,8 @@ public class CommercialPlanJourneyHomologationService {
     Instant requestedAt = Instant.now();
     BusinessProcessDefinition process = publishedLandingProcess();
     int planVersion = versionService.current(planId).versionNumber();
-    String baseReference = "commercial-plan:" + planId + "@v" + planVersion + ":journey";
+    String baseReference =
+        "commercial-plan:" + planId + "@v" + planVersion + ":journey:experiment-" + experimentId;
     JourneyExecution currentJourney = journeySourceReference(baseReference, process.getId());
     if (currentJourney.reviewResumeActive()) {
       return new CommercialPlanJourneyHomologationDto(

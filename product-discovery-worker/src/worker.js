@@ -154,15 +154,21 @@ async function processJob(job) {
     markCycleFailed(healthState, job, error);
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/fail`,
-      withExecutionLease(job, {
-        errorMessage: error.message || "Falha desconhecida na pesquisa PDE",
-      }),
+      withExecutionLease(job, failureCallbackPayload(error)),
     );
     operationalLogger.error(
       `[product-discovery-worker] failed cycle=${job.cycleId}`,
       error,
     );
   }
+}
+
+/** Preserva no bloqueio o prompt e o raciocínio já preparados para a tentativa de Argos. */
+export function failureCallbackPayload(error) {
+  return {
+    errorMessage: error?.message || "Falha desconhecida na pesquisa PDE",
+    ...(error?.executionAudit ? { executionAudit: error.executionAudit } : {}),
+  };
 }
 
 /** Vincula cada callback ao lease entregue pelo backend sem alterar o resultado funcional. */
@@ -178,6 +184,7 @@ export function researchPlanCallbackPayload(directed) {
     model: directed.model,
     executionMode: directed.mode,
     promptSent: directed.prompt,
+    reasoningEffort: directed.reasoningEffort,
     inputTokens: directed.usage?.inputTokens,
     cachedInputTokens: directed.usage?.cachedInputTokens,
     outputTokens: directed.usage?.outputTokens,

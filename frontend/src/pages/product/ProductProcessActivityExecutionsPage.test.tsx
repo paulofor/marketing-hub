@@ -49,6 +49,132 @@ const psiqueTask = {
   comments: "Checkout ausente na evidência.",
   estimatedCostUsd: 0.1895768,
   reasoningEffort: undefined,
+  executionMode: "MODEL",
+  blockerGuidance: {
+    category: "FUNCTIONAL_ADJUSTMENT",
+    recommendedAction:
+      "Vincule a versão comprada ao contrato de acesso e reinicie a tarefa.",
+    helpLinks: [
+      {
+        label: "Abrir experiência revisada",
+        url: "https://rigel.example/jornada",
+      },
+    ],
+  },
+  accessedUrls: [
+    {
+      label: "Landing do Rigel",
+      url: "https://rigel.example/jornada",
+      accessMethod: "BROWSER",
+      accessedAt: "2026-08-28T16:15:48Z",
+    },
+  ],
+  visualEvidence: [
+    {
+      id: 901,
+      captureSessionId: "capture-rigel-258",
+      evidenceKey: "page-1-full",
+      evidenceType: "FULL_PAGE",
+      label: "Página 1 · visão completa",
+      deviceProfile: "IPHONE_15_PRO",
+      pageNumber: 1,
+      viewportWidth: 393,
+      viewportHeight: 852,
+      pageHeightPx: 1704,
+      scrollY: 0,
+      sourceUrl: "https://rigel.example/jornada",
+      finalUrl: "https://rigel.example/jornada",
+      contentUrl: "/api/agent-tasks/244/visual-evidence/901/content",
+      sizeBytes: 240000,
+      sha256: "a".repeat(64),
+      capturedAt: "2026-08-28T16:14:48Z",
+    },
+    {
+      id: 902,
+      captureSessionId: "capture-rigel-258",
+      evidenceKey: "page-1-fold-1",
+      evidenceType: "FOLD",
+      label: "Página 1 · dobra 1",
+      deviceProfile: "IPHONE_15_PRO",
+      pageNumber: 1,
+      foldNumber: 1,
+      viewportWidth: 393,
+      viewportHeight: 852,
+      pageHeightPx: 1704,
+      scrollY: 0,
+      sourceUrl: "https://rigel.example/jornada",
+      finalUrl: "https://rigel.example/jornada",
+      contentUrl: "/api/agent-tasks/244/visual-evidence/902/content",
+      sizeBytes: 120000,
+      sha256: "b".repeat(64),
+      capturedAt: "2026-08-28T16:14:49Z",
+    },
+    {
+      id: 903,
+      captureSessionId: "capture-rigel-258",
+      evidenceKey: "page-1-fold-2",
+      evidenceType: "FOLD",
+      label: "Página 1 · dobra 2",
+      deviceProfile: "IPHONE_15_PRO",
+      pageNumber: 1,
+      foldNumber: 2,
+      viewportWidth: 393,
+      viewportHeight: 852,
+      pageHeightPx: 1704,
+      scrollY: 852,
+      sourceUrl: "https://rigel.example/jornada",
+      finalUrl: "https://rigel.example/jornada",
+      contentUrl: "/api/agent-tasks/244/visual-evidence/903/content",
+      sizeBytes: 118000,
+      sha256: "c".repeat(64),
+      capturedAt: "2026-08-28T16:14:50Z",
+    },
+  ],
+  visualAudit: {
+    captureSessionId: "capture-rigel-258",
+    mobileFirst: true,
+    fullPageEvidenceIds: [901],
+    fullPageContinuity:
+      "A promessa conduz naturalmente para a prova e para a próxima ação.",
+    overallAestheticAssessment:
+      "A composição é leve, coerente e passa profissionalismo sem frieza.",
+    foldAnalyses: [
+      {
+        artifactId: 902,
+        deviceProfile: "IPHONE_15_PRO",
+        pageNumber: 1,
+        foldNumber: 1,
+        aestheticAssessment: "Abertura limpa e acolhedora.",
+        visualHierarchy: "Título e benefício dominam corretamente.",
+        legibility: "Texto e contraste são confortáveis no celular.",
+        emotionEvoked: "Curiosidade com alívio inicial.",
+        ctaVisibility: "CTA principal visível sem pressão.",
+      },
+      {
+        artifactId: 903,
+        deviceProfile: "IPHONE_15_PRO",
+        pageNumber: 1,
+        foldNumber: 2,
+        aestheticAssessment: "Provas bem espaçadas e consistentes.",
+        visualHierarchy: "Demonstração precede os detalhes.",
+        legibility: "Blocos curtos favorecem a leitura.",
+        emotionEvoked: "Confiança crescente.",
+        ctaVisibility: "Próxima ação continua fácil de encontrar.",
+      },
+    ],
+  },
+  purchaseEmotion: {
+    acquisitionExpectation:
+      "Espero organizar o atendimento e responder sem parecer robótica.",
+    acquisitionAnxiety:
+      "Receio receber modelos genéricos que deem mais trabalho do que ajuda.",
+    expectedPostDeliveryFeeling:
+      "Imagino sentir alívio, controle e segurança para atender melhor.",
+    emotionalTension:
+      "Quero ganhar tempo, mas temo pagar por algo difícil de adaptar.",
+    evidenceBoundary:
+      "Reação simulada pela persona e pelos pixels, não satisfação real.",
+  },
 };
 
 const themisTask = {
@@ -310,6 +436,53 @@ describe("ProductProcessActivityExecutionsPage", () => {
       screen.getByText("Execuções sem duplicar tarefas compostas"),
     ).toBeInTheDocument();
     expect(screen.getByText("Cobertura parcial")).toBeInTheDocument();
+    expect(screen.getByText("Avanço bloqueado")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Vincule a versão comprada ao contrato de acesso e reinicie a tarefa.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("URLs acessadas por Psique")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Landing do Rigel" }),
+    ).toHaveAttribute("target", "_blank");
+    expect(
+      screen.getByText("https://rigel.example/jornada"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Antes e depois imaginados pela cliente",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Espero organizar o atendimento e responder sem parecer robótica.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Snapshots mobile e análise por dobra",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByAltText("Snapshot de Psique — Página 1 · dobra 1"),
+    ).toHaveAttribute(
+      "src",
+      "/api/agent-tasks/244/visual-evidence/902/content",
+    );
+    expect(
+      screen.getByRole("link", {
+        name: "Snapshot de Psique — Página 1 · dobra 2",
+      }),
+    ).toHaveAttribute("target", "_blank");
+    expect(
+      screen.getByText("Texto e contraste são confortáveis no celular."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A promessa conduz naturalmente para a prova e para a próxima ação.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         name: "Selecionar provas reais da entrega",

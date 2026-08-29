@@ -52,7 +52,10 @@ class AgentTaskDeferredCompletionTest {
         41L,
         new CompleteAgentTaskRequest(
             "{\"functionalOutput\":{\"landingHtml\":\"<html></html>\"}}",
-            "{\"draftSha256\":\"abc\"}"));
+            "{\"draftSha256\":\"abc\"}",
+            null,
+            new AgentTaskExecutionAuditRequest(
+                "MODEL", "gpt-test", "high", "Prompt integral de materialização.", List.of())));
 
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
     assertThat(task.getDeliveredAt()).isNull();

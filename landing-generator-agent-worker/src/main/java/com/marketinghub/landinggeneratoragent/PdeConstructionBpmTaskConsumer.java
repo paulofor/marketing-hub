@@ -55,9 +55,9 @@ public class PdeConstructionBpmTaskConsumer {
       execution = execute(task);
       validate(execution.result(), activityId(task));
       if ("READY".equals(execution.result().path("decision").asText())) {
-        report(task, execution.result(), execution.usage());
+        report(task, execution);
       } else {
-        block(task, execution.result(), execution.usage());
+        block(task, execution);
       }
     } catch (Exception ex) {
       log.error(
@@ -65,11 +65,7 @@ public class PdeConstructionBpmTaskConsumer {
           taskId(task),
           activityId(task),
           ex);
-      TokenUsage usage =
-          execution != null
-              ? execution.usage()
-              : ex instanceof BpmExecutionException bpm ? bpm.usage() : null;
-      fail(task, ex, usage);
+      fail(task, ex, execution);
     }
   }
 
@@ -97,26 +93,31 @@ public class PdeConstructionBpmTaskConsumer {
     Path output = Files.createTempFile("dedalo-pde-result-", ".json");
     Path processLog = Files.createTempFile("dedalo-pde-process-", ".jsonl");
     Path schema = materialize(schemaResourceFor(activity), ".json");
+    String resolvedPrompt = prompt(task);
     try {
       Process process =
           new ProcessBuilder(command(output, processLog, schema))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(prompt(task).getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
         process.destroyForcibly();
         throw new BpmExecutionException(
-            "Timeout da atividade de construção do PDE.", readTokenUsage(json, processLog));
+            "Timeout da atividade de construção do PDE.",
+            readTokenUsage(json, processLog),
+            resolvedPrompt);
       }
       TokenUsage usage = readTokenUsage(json, processLog);
       if (process.exitValue() != 0) {
         throw new BpmExecutionException(
-            "Codex encerrou a construção do PDE com falha: " + Files.readString(processLog), usage);
+            "Codex encerrou a construção do PDE com falha: " + Files.readString(processLog),
+            usage,
+            resolvedPrompt);
       }
       try {
-        return new BpmExecution(json.readTree(Files.readString(output)), usage);
+        return new BpmExecution(json.readTree(Files.readString(output)), usage, resolvedPrompt);
       } catch (IOException ex) {
         log.error(
             "Resposta inválida na construção do PDE. taskId={} activityId={} output={}",
@@ -124,7 +125,8 @@ public class PdeConstructionBpmTaskConsumer {
             activity,
             output,
             ex);
-        throw new BpmExecutionException("Resposta de Dédalo não contém JSON válido.", usage, ex);
+        throw new BpmExecutionException(
+            "Resposta de Dédalo não contém JSON válido.", usage, resolvedPrompt, ex);
       }
     } finally {
       Files.deleteIfExists(output);
@@ -156,11 +158,9 @@ public class PdeConstructionBpmTaskConsumer {
                 "never",
                 "--config",
                 "approval_policy=\"never\""));
-    if (properties.getReasoningEffort() != null && !properties.getReasoningEffort().isBlank()) {
-      command.addAll(
-          List.of(
-              "--config", "model_reasoning_effort=\"" + properties.getReasoningEffort() + "\""));
-    }
+    command.addAll(
+        List.of(
+            "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
     command.addAll(List.of("--model", properties.getModel()));
     return command;
   }
@@ -172,12 +172,12 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Persiste a saída funcional, a evidência e o custo antes de liberar a atividade seguinte. */
-  private void report(Map<String, Object> task, JsonNode result, TokenUsage usage)
-      throws IOException {
+  private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
-    body.put("resultJson", json.writeValueAsString(result));
+    body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent()));
     backend
         .post()
         .uri(
@@ -190,13 +190,15 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Bloqueia o processo quando Dédalo identifica contrato incompleto ou dependência oculta. */
-  private void block(Map<String, Object> task, JsonNode result, TokenUsage usage)
-      throws IOException {
+  private void block(Map<String, Object> task, BpmExecution execution) throws IOException {
+    JsonNode result = execution.result();
     Map<String, Object> body = new HashMap<>();
     body.put("error", "Dédalo bloqueou a construção: " + result.path("rationale").asText());
     body.put("resultJson", json.writeValueAsString(result));
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent()));
+    body.put("blockerGuidance", functionalGuidance(result));
     backend
         .post()
         .uri(
@@ -209,13 +211,19 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Registra falha técnica preservando contexto e eventual consumo de modelo. */
-  private void fail(Map<String, Object> task, Exception ex, TokenUsage usage) {
+  private void fail(Map<String, Object> task, Exception ex, BpmExecution execution) {
     if (task == null) return;
     try {
+      BpmExecutionException bpm = ex instanceof BpmExecutionException value ? value : null;
+      TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
+      String promptSent =
+          execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
       Map<String, Object> body = new HashMap<>();
       body.put("error", ex.toString());
       body.put("evidenceJson", evidence(task));
       putModelUsage(body, usage);
+      if (promptSent != null) body.put("executionAudit", executionAudit(promptSent));
+      body.put("blockerGuidance", technicalGuidance());
       backend
           .post()
           .uri(
@@ -229,6 +237,46 @@ public class PdeConstructionBpmTaskConsumer {
       log.error(
           "Falha ao registrar bloqueio da construção do PDE. taskId={}", taskId(task), callbackEx);
     }
+  }
+
+  /** Monta a auditoria integral da chamada executada por Dédalo. */
+  private Map<String, Object> executionAudit(String promptSent) {
+    Map<String, Object> audit = new java.util.LinkedHashMap<>();
+    audit.put("executionMode", "MODEL");
+    audit.put("modelCode", properties.getModel());
+    audit.put("reasoningEffort", properties.requiredReasoningEffort());
+    audit.put("promptSent", promptSent);
+    audit.put("accessedUrls", List.of());
+    return audit;
+  }
+
+  /** Expõe a mudança funcional selecionada antes de permitir nova tentativa. */
+  private Map<String, Object> functionalGuidance(JsonNode result) {
+    String action = result.path("selectedApproach").asText("").trim();
+    if (action.isBlank()) {
+      action = "Complete o contrato indicado no parecer de Dédalo e reinicie a tarefa.";
+    }
+    return Map.of(
+        "category",
+        "FUNCTIONAL_ADJUSTMENT",
+        "recommendedAction",
+        action,
+        "helpLinks",
+        List.of(taskAuditLink()));
+  }
+
+  /** Orienta a recuperação da integração sem esconder a causa técnica. */
+  private Map<String, Object> technicalGuidance() {
+    return Map.of(
+        "category", "TECHNICAL_FAILURE",
+        "recommendedAction",
+            "Verifique a causa técnica registrada, corrija a integração e reinicie a tarefa de Dédalo.",
+        "helpLinks", List.of(taskAuditLink()));
+  }
+
+  /** Cria o atalho interno comum para a auditoria da tarefa. */
+  private Map<String, String> taskAuditLink() {
+    return Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks");
   }
 
   /** Declara o contexto acessado e comprova ausência de publicação ou gasto. */
@@ -372,7 +420,7 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Preserva resultado e consumo da mesma execução. */
-  record BpmExecution(JsonNode result, TokenUsage usage) {}
+  record BpmExecution(JsonNode result, TokenUsage usage, String promptSent) {}
 
   /** Representa os contadores reais cumulativos informados pelo Codex. */
   record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
@@ -390,22 +438,31 @@ public class PdeConstructionBpmTaskConsumer {
   /** Preserva tokens mesmo quando a execução termina em falha. */
   private static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
+    private final String promptSent;
 
     /** Cria a falha com a última medição conhecida. */
-    private BpmExecutionException(String message, TokenUsage usage) {
+    private BpmExecutionException(String message, TokenUsage usage, String promptSent) {
       super(message);
       this.usage = usage;
+      this.promptSent = promptSent;
     }
 
     /** Cria a falha preservando também a causa original. */
-    private BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
+    private BpmExecutionException(
+        String message, TokenUsage usage, String promptSent, Throwable cause) {
       super(message, cause);
       this.usage = usage;
+      this.promptSent = promptSent;
     }
 
     /** Retorna a medição preservada para o callback. */
     private TokenUsage usage() {
       return usage;
+    }
+
+    /** Retorna o prompt exato preservado para o callback de falha. */
+    private String promptSent() {
+      return promptSent;
     }
   }
 }

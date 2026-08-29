@@ -1,11 +1,16 @@
 package com.marketinghub.experiment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
+import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.marketinghub.experiment.Experiment;
@@ -17,6 +22,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: comprovar a ponte entre tarefas de Dédalo e a fila de criativos. */
 class DedaloCreativeTaskOrchestrationServiceTest {
@@ -36,7 +42,7 @@ class DedaloCreativeTaskOrchestrationServiceTest {
     Instant now = Instant.parse("2026-08-12T17:00:00Z");
     DedaloCreativeTaskOrchestrationService service =
         new DedaloCreativeTaskOrchestrationService(
-            tasks, experiments, Clock.fixed(now, ZoneOffset.UTC));
+            tasks, experiments, mock(AgentTaskService.class), Clock.fixed(now, ZoneOffset.UTC));
 
     service.reconcilePendingTasks();
     service.reconcilePendingTasks();
@@ -66,7 +72,10 @@ class DedaloCreativeTaskOrchestrationServiceTest {
     when(experiments.findById(88L)).thenReturn(Optional.of(experiment));
     DedaloCreativeTaskOrchestrationService service =
         new DedaloCreativeTaskOrchestrationService(
-            tasks, experiments, Clock.fixed(Instant.parse("2026-08-12T18:40:00Z"), ZoneOffset.UTC));
+            tasks,
+            experiments,
+            mock(AgentTaskService.class),
+            Clock.fixed(Instant.parse("2026-08-12T18:40:00Z"), ZoneOffset.UTC));
 
     service.reconcilePendingTasks();
 
@@ -79,6 +88,7 @@ class DedaloCreativeTaskOrchestrationServiceTest {
   @Test
   void completesTaskAfterCreativeMaterializationCallback() {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    AgentTaskService agentTaskService = mock(AgentTaskService.class);
     AgentTask task = task("IN_PROGRESS", "experiment:88");
     when(tasks.findTopBySourceReferenceOrderByUpdatedAtDescIdDesc("experiment:88"))
         .thenReturn(Optional.of(task));
@@ -86,11 +96,24 @@ class DedaloCreativeTaskOrchestrationServiceTest {
         new DedaloCreativeTaskOrchestrationService(
             tasks,
             mock(ExperimentRepository.class),
+            agentTaskService,
             Clock.fixed(Instant.parse("2026-08-12T17:05:00Z"), ZoneOffset.UTC));
 
-    service.completeForExperiment(88L);
+    AgentTaskExecutionAuditRequest audit =
+        new AgentTaskExecutionAuditRequest(
+            "DETERMINISTIC",
+            "creative-pipeline-ads-v1",
+            "NOT_APPLICABLE",
+            "{\"experimentId\":88}",
+            List.of());
+    service.completeForExperiment(88L, audit);
 
-    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+    ArgumentCaptor<CompleteAgentTaskRequest> callback =
+        ArgumentCaptor.forClass(CompleteAgentTaskRequest.class);
+    verify(agentTaskService)
+        .completeClaimedProcessTask(eq("landing-generator"), eq(41L), callback.capture());
+    assertThat(callback.getValue().executionAudit()).isEqualTo(audit);
+    assertThat(callback.getValue().resultJson()).contains("CREATIVES_MATERIALIZED");
   }
 
   /** Cria tarefa mínima com a identidade canônica de Dédalo. */
@@ -98,6 +121,7 @@ class DedaloCreativeTaskOrchestrationServiceTest {
     Agent dedalo = new Agent();
     dedalo.setAgentKey("landing-generator");
     AgentTask task = new AgentTask();
+    task.setId(41L);
     task.setAssignedAgent(dedalo);
     task.setTaskKind("WORK");
     task.setStatus(status);

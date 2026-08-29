@@ -20,5 +20,10 @@ pixels, movimento e áudio realmente disponíveis, sem inventar modalidade ausen
 visual, fluidez perceptiva, congruência com produto e público e risco de sobrecarga antes de explicar
 racionalmente a peça.
 
+Em `purchaseEmotion`, descreva explicitamente a expectativa de adquirir o produto, a ansiedade que
+antecede a decisão, a tensão entre desejo e receio e a sensação imaginada depois de receber e usar o
+produto. Delimite que se trata de reação simulada a partir da persona e das evidências, não de venda
+ou satisfação observada.
+
 Contexto da tarefa:
 {{TASK_CONTEXT}}

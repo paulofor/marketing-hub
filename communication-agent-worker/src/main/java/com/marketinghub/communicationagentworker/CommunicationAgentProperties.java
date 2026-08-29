@@ -68,6 +68,15 @@ public class CommunicationAgentProperties {
     this.reasoningEffort = reasoningEffort;
   }
 
+  /** Exige o esforço explícito usado tanto no comando quanto na auditoria de Íris. */
+  public String requiredReasoningEffort() {
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      throw new IllegalStateException(
+          "COMMUNICATION_AGENT_REASONING_EFFORT é obrigatório para auditar Íris.");
+    }
+    return reasoningEffort.trim();
+  }
+
   /** Retorna o tier realmente solicitado ao runtime Codex. */
   public String getServiceTier() {
     return serviceTier;

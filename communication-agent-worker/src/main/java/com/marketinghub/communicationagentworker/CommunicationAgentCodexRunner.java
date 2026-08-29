@@ -142,11 +142,9 @@ public class CommunicationAgentCodexRunner {
                 "mcp_servers.iris_communication.args=[\"" + mcp.toAbsolutePath() + "\"]",
                 "--config",
                 "mcp_servers.iris_communication.env_vars=[\"MCP_MARKETING_HUB_URL\",\"MCP_TASK_ID\",\"MCP_SOURCE_REFERENCE\"]"));
-    if (hasText(properties.getReasoningEffort())) {
-      command.addAll(
-          List.of(
-              "--config", "model_reasoning_effort=\"" + properties.getReasoningEffort() + "\""));
-    }
+    command.addAll(
+        List.of(
+            "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
     if (hasText(properties.getModel())) {
       command.addAll(List.of("--model", properties.getModel()));
     }

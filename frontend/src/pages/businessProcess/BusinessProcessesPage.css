@@ -417,6 +417,12 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.psique-visual-evidence__image {
+  width: 100%;
+  max-height: 34rem;
+  object-fit: contain;
+  object-position: top center;
+}
 .business-process-json-viewer {
   border: 1px solid var(--bs-border-color);
   border-radius: 0.5rem;

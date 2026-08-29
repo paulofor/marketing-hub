@@ -6,8 +6,13 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -53,6 +58,108 @@ class ExperimentAgentTaskTargetContextProviderTest {
     assertThat(target.commercialCheckoutUrl()).isEqualTo("https://checkout.example/rigel");
     assertThat(target.unitPriceBrl()).isEqualByComparingTo("349.00");
     assertThat(targetWithStage.productId()).isEqualTo(9L);
+  }
+
+  /** Usa o slot da versão exata no PDE sem trocar a landing usada pelo processo de landing. */
+  @Test
+  void resolvesProcessSpecificPublicUrlWithoutMixingExperienceVersions() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
+    Product product =
+        Product.builder()
+            .id(9L)
+            .slug("kit-whatsapp-pronto")
+            .name("Kit WhatsApp Pronto")
+            .internalName("Rigel")
+            .publicUrl("https://produto-generico.example")
+            .pdeExperienceJson("{\"experienceVersion\":\"kit-whatsapp-pronto-pde-v2\"}")
+            .build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(89L)
+            .product(product)
+            .followUpActionUrl("https://landing-rigel.example")
+            .build();
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .productSlug("kit-whatsapp-pronto")
+            .experienceVersion("kit-whatsapp-pronto-pde-v2")
+            .status(PdeProductionSlotStatus.READY)
+            .publicUrl("https://pde-v2-rigel.example")
+            .build();
+    when(experiments.findById(89L)).thenReturn(Optional.of(experiment));
+    when(slots.findFirstByProductSlugAndExperienceVersionAndStatusInOrderByPublishedAtDesc(
+            "kit-whatsapp-pronto",
+            "kit-whatsapp-pronto-pde-v2",
+            java.util.List.of(PdeProductionSlotStatus.READY, PdeProductionSlotStatus.ACTIVE)))
+        .thenReturn(Optional.of(slot));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(
+            experiments, products, new ObjectMapper(), slots);
+
+    var landing = provider.resolve("experiment:89", "landing-page-generation").orElseThrow();
+    var pde =
+        provider.resolve("experiment:89", "pde-commercial-homologation-activation").orElseThrow();
+
+    assertThat(landing.publicUrl()).isEqualTo("https://landing-rigel.example");
+    assertThat(pde.publicUrl()).isEqualTo("https://pde-v2-rigel.example");
+    assertThat(pde.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+  }
+
+  /** Resolve a landing pelo experimento segregado do plano e recusa vínculo cruzado. */
+  @Test
+  void resolvesCommercialPlanReferenceOnlyForItsDeclaredExperiment() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
+    CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
+    Product product =
+        Product.builder()
+            .id(9L)
+            .slug("kit-whatsapp-pronto")
+            .name("Kit WhatsApp Pronto")
+            .internalName("Rigel")
+            .pdeExperienceJson("{\"experienceVersion\":\"kit-whatsapp-pronto-pde-v2\"}")
+            .build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(89L)
+            .product(product)
+            .followUpActionUrl("https://landing-rigel.example")
+            .build();
+    CommercialPlan plan = CommercialPlan.builder().id(4L).experiment(experiment).build();
+    when(plans.findById(4L)).thenReturn(Optional.of(plan));
+    when(experiments.findById(89L)).thenReturn(Optional.of(experiment));
+    when(experiments.findById(90L))
+        .thenReturn(
+            Optional.of(
+                Experiment.builder()
+                    .id(90L)
+                    .product(Product.builder().id(10L).slug("outro-produto").build())
+                    .build()));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(
+            experiments, products, new ObjectMapper(), slots, plans);
+
+    var target =
+        provider
+            .resolve(
+                "commercial-plan:4@v3:journey:experiment-89:attempt:2", "landing-page-generation")
+            .orElseThrow();
+
+    assertThat(target.experimentId()).isEqualTo(89L);
+    assertThat(target.publicUrl()).isEqualTo("https://landing-rigel.example");
+    assertThat(
+            provider.resolve(
+                "commercial-plan:4@v3:journey:experiment-90", "landing-page-generation"))
+        .isEmpty();
+    assertThat(
+            provider
+                .resolve("commercial-plan:4@v3:journey", "landing-page-generation")
+                .orElseThrow()
+                .experimentId())
+        .isEqualTo(89L);
   }
 
   /** Recusa referência livre ou produto sem versão, pois ambos permitiriam seleção ambígua. */

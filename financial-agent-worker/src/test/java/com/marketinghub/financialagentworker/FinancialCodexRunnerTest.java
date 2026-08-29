@@ -1,6 +1,7 @@
 package com.marketinghub.financialagentworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
@@ -35,6 +36,17 @@ class FinancialCodexRunnerTest {
             "mcp_servers.financial_agent.args=[\"/tmp/financial-agent.mjs\"]",
             "mcp_servers.financial_agent.env_vars=[\"MCP_BACKEND_URL\",\"MCP_EXECUTION_ID\"]");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
+  }
+
+  /** Bloqueia Plutus antes do modelo quando o tipo de raciocínio não está configurado. */
+  @Test
+  void deveRejeitarRaciocinioAusenteAntesDoModelo() {
+    FinancialAgentProperties properties = new FinancialAgentProperties();
+    properties.setReasoningEffort(" ");
+    FinancialCodexRunner runner = new FinancialCodexRunner(properties, new ObjectMapper());
+
+    assertThatThrownBy(() -> runner.buildCommand(Path.of("/tmp/out"), Path.of("/tmp/schema")))
+        .hasMessageContaining("obrigatório para auditar Plutus");
   }
 
   /** Confirma o limite operacional padrão de quarenta minutos. */

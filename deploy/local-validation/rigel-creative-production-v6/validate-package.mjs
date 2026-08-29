@@ -257,6 +257,11 @@ for (const agent of [
     `${agent} nao registrou o modelo versionado`,
   );
   assert(
+    typeof execution.reasoningEffort === "string" &&
+      execution.reasoningEffort.length > 0,
+    `${agent} nao registrou o tipo de raciocinio`,
+  );
+  assert(
     execution.mediaProviderCalled === false,
     `${agent} chamou provider externo de midia`,
   );

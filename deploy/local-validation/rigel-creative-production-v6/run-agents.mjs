@@ -18,6 +18,7 @@ const logs = join(evidence, "agent-logs");
 const requests = join(evidence, "agent-requests");
 const responses = join(evidence, "agent-responses");
 const agentModel = "gpt-5.6-sol";
+const reasoningEffort = "high";
 await mkdir(logs, { recursive: true });
 await mkdir(requests, { recursive: true });
 await mkdir(responses, { recursive: true });
@@ -58,6 +59,8 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
   await writeFile(requestFile, prompt);
   const args = [
     "exec",
+    "--config",
+    `model_reasoning_effort="${reasoningEffort}"`,
     "--model",
     agentModel,
     "-s",
@@ -86,6 +89,7 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
     mode: "LOCAL_READ_ONLY",
     agentModelCalled: true,
     model: agentModel,
+    reasoningEffort,
     mediaProviderCalled: false,
     externalMediaSpendAuthorized: false,
     externalMediaCostUsd: 0,
@@ -189,9 +193,7 @@ if (phase === "reviews") {
       process: "creative-production-approval-v6",
       productContract: contract,
       manifest: JSON.parse(manifestText),
-      deterministicTechnicalVerification: JSON.parse(
-        technicalVerificationText,
-      ),
+      deterministicTechnicalVerification: JSON.parse(technicalVerificationText),
       direction: JSON.parse(directionText),
       apolloStoryboard: JSON.parse(apolloText),
       localVideo: join(artifacts, "rigel-vertical-demo-1080x1920.mp4"),

@@ -681,7 +681,14 @@ class ExperimentControllerTest {
 
     mockMvc
         .perform(
-            post("/api/experiments/{id}/creatives/stage-execution/complete", experiment.getId()))
+            post("/api/experiments/{id}/creatives/stage-execution/complete", experiment.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"executionMode\":\"DETERMINISTIC\","
+                        + "\"modelCode\":\"creative-pipeline-ads-v1\","
+                        + "\"reasoningEffort\":\"NOT_APPLICABLE\","
+                        + "\"promptSent\":\"{\\\"experimentId\\\":88}\","
+                        + "\"accessedUrls\":[]}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.creativeGenerationStatus").value("COMPLETED"))
         .andExpect(jsonPath("$.creativesToGenerate").value(0));

@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-psique-task-visual-evidence-v1-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS agent_task_visual_evidence (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_task_id BIGINT NOT NULL,
+                capture_session_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+                evidence_key VARCHAR(160) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+                evidence_type VARCHAR(24) NOT NULL,
+                device_profile VARCHAR(32) NOT NULL,
+                page_number INT NOT NULL,
+                fold_number INT NULL,
+                viewport_width INT NOT NULL,
+                viewport_height INT NOT NULL,
+                page_height_px INT NOT NULL,
+                scroll_y INT NOT NULL,
+                source_url VARCHAR(2048) NOT NULL,
+                final_url VARCHAR(2048) NOT NULL,
+                object_key VARCHAR(1024) NOT NULL,
+                content_type VARCHAR(100) NOT NULL,
+                size_bytes BIGINT NOT NULL,
+                sha256 CHAR(64) NOT NULL,
+                captured_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_task_visual_evidence_session_key
+                  (agent_task_id, capture_session_id, evidence_key),
+                INDEX idx_task_visual_evidence_task_capture
+                  (agent_task_id, captured_at, id),
+                CONSTRAINT fk_task_visual_evidence_task
+                  FOREIGN KEY (agent_task_id) REFERENCES agent_task(id) ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE agent_task_visual_evidence;

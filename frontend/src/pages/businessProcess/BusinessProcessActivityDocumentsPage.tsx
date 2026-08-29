@@ -11,6 +11,7 @@ import {
   formattedDuration,
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
+import PsiqueTaskAudit from "./PsiqueTaskAudit";
 import "./BusinessProcessesPage.css";
 
 /** Exibe os dez documentos mais recentes de uma atividade, com sua auditoria de execução. */
@@ -123,7 +124,11 @@ export default function BusinessProcessActivityDocumentsPage() {
                       </dd>
                     </div>
                     <div>
-                      <dt>Modelo utilizado</dt>
+                      <dt>Modo de execução</dt>
+                      <dd>{document.executionMode ?? "Não registrado"}</dd>
+                    </div>
+                    <div>
+                      <dt>Modelo ou identificador</dt>
                       <dd>{document.modelCode ?? "Não registrado"}</dd>
                     </div>
                     <div>
@@ -152,8 +157,64 @@ export default function BusinessProcessActivityDocumentsPage() {
                       </dd>
                     </div>
                   </dl>
-                  <h2 className="h6">Prompt enviado ao modelo</h2>
-                  <StructuredExecutionContent value={document.promptSent} />
+                  <h2 className="h6">
+                    {document.executionMode === "DETERMINISTIC"
+                      ? "Entrada integral da execução determinística"
+                      : document.executionMode === "NOT_STARTED"
+                        ? "Modelo não iniciado"
+                        : "Prompt enviado ao modelo"}
+                  </h2>
+                  <StructuredExecutionContent
+                    value={document.promptSent}
+                    emptyText={
+                      document.executionMode === "NOT_STARTED"
+                        ? "A execução foi interrompida antes de enviar um prompt ao modelo."
+                        : "Prompt não registrado nesta execução legada."
+                    }
+                  />
+                  {document.assignedAgentKey === "customer-agent" ||
+                  (document.accessedUrls ?? []).length > 0 ? (
+                    <section aria-label="URLs acessadas pelo agente">
+                      <h2 className="h6 mt-3">
+                        {document.assignedAgentKey === "customer-agent"
+                          ? "URLs acessadas por Psique"
+                          : "URLs acessadas pelo agente"}
+                      </h2>
+                      {(document.accessedUrls ?? []).length > 0 ? (
+                        <ul className="text-break">
+                          {(document.accessedUrls ?? []).map((link) => (
+                            <li key={`${link.url}-${link.accessedAt ?? ""}`}>
+                              <div>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {link.label}
+                                </a>
+                                {link.accessMethod
+                                  ? ` · ${link.accessMethod}`
+                                  : ""}
+                              </div>
+                              <div className="small text-body-secondary text-break">
+                                {link.url}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-body-secondary">
+                          Nenhuma URL foi aberta por Psique nesta execução.
+                        </p>
+                      )}
+                    </section>
+                  ) : null}
+                  <PsiqueTaskAudit
+                    assignedAgentKey={document.assignedAgentKey}
+                    visualEvidence={document.visualEvidence}
+                    visualAudit={document.visualAudit}
+                    purchaseEmotion={document.purchaseEmotion}
+                  />
                   <h2 className="h6">Documento gerado</h2>
                   <StructuredExecutionContent value={document.resultJson} />
                   <details className="mt-3">

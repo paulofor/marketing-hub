@@ -24,6 +24,16 @@ Retorne `APPROVED` somente quando a pessoa puder percorrer a jornada principal, 
 prometido e usar o material com revisão humana. `ADJUST` exige correções concretas; `BLOCKED` indica
 risco, quebra da promessa ou experiência impraticável.
 
+O contexto contém `visualEvidence` produzida antes desta avaliação. Abra cada `localPath`, examine a
+captura `FULL_PAGE` e todas as capturas `FOLD` em ordem. Em `visualAudit`, referencie exatamente os
+identificadores recebidos e registre continuidade da jornada, estética, hierarquia visual,
+legibilidade, emoção evocada e visibilidade da ação em cada dobra. Se qualquer arquivo não puder ser
+inspecionado ou alguma dobra não for analisada, não aprove a experiência.
+
+Em `purchaseEmotion`, descreva explicitamente a expectativa de adquirir o produto, a ansiedade que
+antecede a decisão, a tensão entre desejo e receio e a sensação imaginada depois de receber e usar o
+produto. Delimite que se trata de reação simulada, não de venda ou satisfação observada.
+
 ## Contexto congelado
 
 {{TASK_CONTEXT}}

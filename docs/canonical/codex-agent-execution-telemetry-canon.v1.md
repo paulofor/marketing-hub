@@ -22,9 +22,12 @@ Os painéis dos agentes exibem última atividade, processo ativo, eventos, bytes
 
 A Mesa do Agente deve apresentar separadamente estado do processo, início, último heartbeat,
 quantidade de eventos, bytes produzidos, tipo do último evento e atraso superior a dois minutos.
-Esses sinais comprovam atividade técnica sem expor raciocínio interno, prompts, credenciais ou logs
-brutos. Zero tokens só pode ser apresentado como consumo quando o provedor tiver informado a
-medição; ausência continua explicitamente desconhecida.
+Esses sinais comprovam atividade técnica sem expor raciocínio interno, credenciais ou logs brutos.
+O histórico operacional deve, porém, mostrar o prompt integral efetivamente enviado e o tipo de
+raciocínio configurado (`high`, `xhigh` ou equivalente), segregados pela própria tarefa. O tipo
+configurado não representa nem autoriza expor cadeia de pensamento do modelo. Zero tokens só pode
+ser apresentado como consumo quando o provedor tiver informado a medição; ausência continua
+explicitamente desconhecida.
 
 O monitor administrativo `GET /api/agents/work-monitor` consolida por agente os tokens de entrada e saída das execuções iniciadas no dia comercial (`America/Sao_Paulo`). O contador é recalculado a cada consulta e a tela o atualiza no mesmo polling de 15 segundos do estado operacional. Ausência de telemetria reportada é exibida como zero, sem estimativa local.
 
@@ -47,3 +50,9 @@ worker deve bloquear divergência de versão e deploy sem referência auditável
 ## Critério operacional
 
 Continuar quando heartbeat e saída avançarem; investigar quando o processo estiver vivo sem mudança de saída; considerar a execução presa quando o backend marcar `stale=true`. Ao recuperar uma lease presa, reutilizar a entrada congelada e preservar a correlação; após uma segunda expiração, parar e expor a dificuldade para decisão externa.
+
+Toda nova tarefa terminal, bloqueada ou concluída, deve declarar seu modo de execução. Quando houver
+modelo, modelo efetivo, tipo de raciocínio configurado e prompt integral são obrigatórios. Todo
+bloqueio deve acrescentar categoria, orientação concreta e ao menos um link seguro. URLs realmente
+abertas por Psique devem ser distinguidas de URLs apenas recebidas no contexto e vinculadas somente
+ao `taskId`; parâmetros de credencial não podem ser persistidos nem mostrados.

@@ -3,6 +3,8 @@ package com.marketinghub.businessprocess.document.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskAuditView;
+import com.marketinghub.agenttask.AgentTaskResultView;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.document.service.recentDocuments.BusinessProcessActivityDocumentResponse;
 import com.marketinghub.planning.CommercialPlan;
@@ -150,9 +152,14 @@ public class BusinessProcessActivityDocumentService {
         task.getReceivedAt(),
         task.getDeliveredAt() == null ? task.getUpdatedAt() : task.getDeliveredAt(),
         executionModelCode(task),
+        task.getExecutionMode(),
         executionReasoningEffort(task),
         productInternalName(task),
-        task.getExecutionPrompt());
+        task.getExecutionPrompt(),
+        AgentTaskAuditView.accessedUrls(task),
+        AgentTaskAuditView.visualEvidence(task),
+        AgentTaskResultView.section(task, "visualAudit"),
+        AgentTaskResultView.section(task, "purchaseEmotion"));
   }
 
   /** Recupera a identidade de modelo já registrada em evidências legadas, sem inventar um valor. */

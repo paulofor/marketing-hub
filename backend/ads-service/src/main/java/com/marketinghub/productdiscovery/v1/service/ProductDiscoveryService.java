@@ -863,7 +863,7 @@ public class ProductDiscoveryService {
     clearExecutionLease(cycle);
     dossierResearchSyncService.fail(cycleId);
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
-    bpmAuditService.fail(saved);
+    bpmAuditService.fail(saved, request.executionAudit());
     return toCycleResponse(saved);
   }
 

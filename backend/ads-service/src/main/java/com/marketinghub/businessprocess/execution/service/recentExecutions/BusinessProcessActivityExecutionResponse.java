@@ -1,7 +1,12 @@
 package com.marketinghub.businessprocess.execution.service.recentExecutions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.agenttask.AgentTaskAuditLinkResponse;
+import com.marketinghub.agenttask.AgentTaskBlockerGuidanceResponse;
+import com.marketinghub.agenttask.AgentTaskVisualEvidenceResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /** Responsabilidade: apresentar uma tarefa BPM com sua auditoria operacional e de modelo. */
 public record BusinessProcessActivityExecutionResponse(
@@ -25,6 +30,12 @@ public record BusinessProcessActivityExecutionResponse(
     Instant startedAt,
     Instant finishedAt,
     String modelCode,
+    String executionMode,
     String reasoningEffort,
     String productInternalName,
-    String promptSent) {}
+    String promptSent,
+    AgentTaskBlockerGuidanceResponse blockerGuidance,
+    List<AgentTaskAuditLinkResponse> accessedUrls,
+    List<AgentTaskVisualEvidenceResponse> visualEvidence,
+    JsonNode visualAudit,
+    JsonNode purchaseEmotion) {}

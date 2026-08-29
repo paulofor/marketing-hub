@@ -5,6 +5,7 @@ import {
   formattedDuration,
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
+import PsiqueTaskAudit from "./PsiqueTaskAudit";
 
 type BusinessProcessExecutionCardProps = {
   execution: BusinessProcessActivityExecution;
@@ -19,6 +20,15 @@ export default function BusinessProcessExecutionCard({
   contentHeadingLevel = "h2",
 }: BusinessProcessExecutionCardProps) {
   const ContentHeading = contentHeadingLevel;
+  const promptHeading =
+    execution.executionMode === "DETERMINISTIC"
+      ? "Entrada integral da execução determinística"
+      : execution.executionMode === "NOT_STARTED"
+        ? "Modelo não iniciado"
+        : `Prompt enviado ao modelo por ${execution.assignedAgentNickname}`;
+  const guidance = execution.blockerGuidance;
+  const functionalBlock =
+    guidance != null && guidance.category !== "TECHNICAL_FAILURE";
   return (
     <details className="card business-process-document" open={defaultOpen}>
       <summary className="card-header">
@@ -68,7 +78,11 @@ export default function BusinessProcessExecutionCard({
             </dd>
           </div>
           <div>
-            <dt>Modelo utilizado</dt>
+            <dt>Modo de execução</dt>
+            <dd>{execution.executionMode ?? "Não registrado"}</dd>
+          </div>
+          <div>
+            <dt>Modelo ou identificador</dt>
             <dd>{execution.modelCode ?? "Não registrado"}</dd>
           </div>
           <div>
@@ -94,12 +108,14 @@ export default function BusinessProcessExecutionCard({
           </div>
         </dl>
 
-        <ContentHeading className="h6">
-          Prompt recebido por {execution.assignedAgentNickname}
-        </ContentHeading>
+        <ContentHeading className="h6">{promptHeading}</ContentHeading>
         <StructuredExecutionContent
           value={execution.promptSent}
-          emptyText="Prompt não registrado nesta execução legada."
+          emptyText={
+            execution.executionMode === "NOT_STARTED"
+              ? "A execução foi interrompida antes de enviar um prompt ao modelo."
+              : "Prompt não registrado nesta execução legada."
+          }
         />
 
         <ContentHeading className="h6 mt-3">
@@ -110,12 +126,75 @@ export default function BusinessProcessExecutionCard({
           emptyText="Nenhum comentário registrado."
         />
 
-        {execution.executionError ? (
-          <div className="alert alert-danger mt-3 mb-0">
-            <strong>Falha técnica</strong>
-            <StructuredExecutionContent value={execution.executionError} />
+        {execution.executionError || guidance ? (
+          <div
+            className={`alert ${functionalBlock ? "alert-warning" : "alert-danger"} mt-3 mb-0`}
+          >
+            <strong>
+              {functionalBlock ? "Avanço bloqueado" : "Falha técnica"}
+            </strong>
+            {execution.executionError ? (
+              <StructuredExecutionContent value={execution.executionError} />
+            ) : null}
+            {guidance ? (
+              <div className="mt-2">
+                <strong>O que fazer:</strong> {guidance.recommendedAction}
+                <ul className="mb-0 mt-2">
+                  {guidance.helpLinks.map((link) => (
+                    <li key={link.url}>
+                      <a href={link.url} target="_blank" rel="noreferrer">
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         ) : null}
+
+        {execution.assignedAgentKey === "customer-agent" ||
+        (execution.accessedUrls ?? []).length > 0 ? (
+          <section className="mt-3" aria-label="URLs acessadas pelo agente">
+            <ContentHeading className="h6">
+              {execution.assignedAgentKey === "customer-agent"
+                ? "URLs acessadas por Psique"
+                : "URLs acessadas pelo agente"}
+            </ContentHeading>
+            {(execution.accessedUrls ?? []).length > 0 ? (
+              <ul className="mb-0 text-break">
+                {(execution.accessedUrls ?? []).map((link) => (
+                  <li key={`${link.url}-${link.accessedAt ?? ""}`}>
+                    <div>
+                      <a href={link.url} target="_blank" rel="noreferrer">
+                        {link.label}
+                      </a>
+                      {link.accessMethod ? ` · ${link.accessMethod}` : ""}
+                      {link.accessedAt
+                        ? ` · ${formattedDateTime(link.accessedAt)}`
+                        : ""}
+                    </div>
+                    <div className="small text-body-secondary text-break">
+                      {link.url}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-0 text-body-secondary">
+                Nenhuma URL foi aberta por Psique nesta execução.
+              </p>
+            )}
+          </section>
+        ) : null}
+
+        <PsiqueTaskAudit
+          assignedAgentKey={execution.assignedAgentKey}
+          visualEvidence={execution.visualEvidence}
+          visualAudit={execution.visualAudit}
+          purchaseEmotion={execution.purchaseEmotion}
+          headingLevel={contentHeadingLevel}
+        />
 
         <details className="mt-3">
           <summary className="fw-semibold">Evidências</summary>

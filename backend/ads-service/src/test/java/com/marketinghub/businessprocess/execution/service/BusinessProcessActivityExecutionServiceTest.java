@@ -11,6 +11,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.AgentTaskVisualEvidence;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
@@ -80,6 +81,68 @@ class BusinessProcessActivityExecutionServiceTest {
         .findRecentActivityExecutions(
             eq("pde-opportunity-discovery"), eq("evidence"), pageable.capture());
     assertThat(pageable.getValue().getPageSize()).isEqualTo(10);
+  }
+
+  /** Expõe pixels e interpretação emocional da mesma tentativa para auditoria na tela. */
+  @Test
+  void exposesPsiqueVisualEvidenceAndPurchaseEmotion() {
+    when(processes.findById(37L)).thenReturn(Optional.of(selectedProcess()));
+    AgentTask task = executionTask(258L);
+    task.getAssignedAgent().setAgentKey("customer-agent");
+    task.getAssignedAgent().setNickname("Psique");
+    task.setResultJson(
+        """
+        {
+          "visualAudit":{
+            "captureSessionId":"capture-258","mobileFirst":true,
+            "fullPageEvidenceIds":[901],"fullPageContinuity":"Jornada contínua",
+            "overallAestheticAssessment":"Estética coerente","foldAnalyses":[]
+          },
+          "purchaseEmotion":{
+            "acquisitionExpectation":"Espero ganhar controle",
+            "acquisitionAnxiety":"Receio material genérico",
+            "expectedPostDeliveryFeeling":"Imagino sentir alívio",
+            "emotionalTension":"Desejo versus receio",
+            "evidenceBoundary":"Simulação baseada nas provas"
+          }
+        }
+        """);
+    AgentTaskVisualEvidence fullPage = new AgentTaskVisualEvidence();
+    fullPage.setId(901L);
+    fullPage.setTask(task);
+    fullPage.setCaptureSessionId("capture-258");
+    fullPage.setEvidenceKey("page-1-full");
+    fullPage.setEvidenceType("FULL_PAGE");
+    fullPage.setDeviceProfile("IPHONE_15_PRO");
+    fullPage.setPageNumber(1);
+    fullPage.setViewportWidth(393);
+    fullPage.setViewportHeight(852);
+    fullPage.setPageHeightPx(1704);
+    fullPage.setScrollY(0);
+    fullPage.setSourceUrl("https://rigel.example/jornada");
+    fullPage.setFinalUrl("https://rigel.example/jornada");
+    fullPage.setContentType("image/png");
+    fullPage.setSizeBytes(1200L);
+    fullPage.setSha256("a".repeat(64));
+    fullPage.setCapturedAt(Instant.parse("2026-08-29T10:00:00Z"));
+    task.getVisualEvidence().add(fullPage);
+    when(tasks.findRecentActivityExecutions(
+            eq("pde-opportunity-discovery"), eq("evidence"), any(Pageable.class)))
+        .thenReturn(List.of(task));
+
+    var execution = service.recentExecutions(37L, "evidence").executions().getFirst();
+
+    assertThat(execution.visualEvidence())
+        .singleElement()
+        .satisfies(
+            evidence -> {
+              assertThat(evidence.id()).isEqualTo(901L);
+              assertThat(evidence.contentUrl())
+                  .isEqualTo("/api/agent-tasks/258/visual-evidence/901/content");
+            });
+    assertThat(execution.visualAudit().path("captureSessionId").asText()).isEqualTo("capture-258");
+    assertThat(execution.purchaseEmotion().path("acquisitionAnxiety").asText())
+        .isEqualTo("Receio material genérico");
   }
 
   /** Usa a última atualização como término somente para uma tarefa terminal sem entrega. */

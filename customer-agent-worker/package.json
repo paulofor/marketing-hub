@@ -2,6 +2,9 @@
   "name": "customer-agent-browser-observer",
   "private": true,
   "version": "1.0.0",
+  "scripts": {
+    "test": "node --test src/test/js/*.test.mjs"
+  },
   "dependencies": {
     "playwright-core": "1.54.2"
   }

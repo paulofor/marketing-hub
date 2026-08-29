@@ -12,6 +12,7 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.worker.creative.CreativeGenerationBackendClient.CreativeTaskExecutionAudit;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,7 +41,7 @@ class CreativeGenerationServiceTest {
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+                .thenReturn(generation(List.of(generated)));
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.total()).isEqualTo(1);
@@ -55,7 +56,12 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.anyString());
-        verify(backendClient).markCompleted(49L);
+        ArgumentCaptor<CreativeTaskExecutionAudit> auditCaptor =
+                ArgumentCaptor.forClass(CreativeTaskExecutionAudit.class);
+        verify(backendClient).markCompleted(org.mockito.ArgumentMatchers.eq(49L), auditCaptor.capture());
+        assertThat(auditCaptor.getValue().executionMode()).isEqualTo("MODEL");
+        assertThat(auditCaptor.getValue().reasoningEffort()).isEqualTo("medium");
+        assertThat(auditCaptor.getValue().promptSent()).isEqualTo("Prompt completo de teste");
     }
 
     /** Garante que copy acima dos limites Meta seja bloqueada sem truncamento silencioso. */
@@ -76,12 +82,12 @@ class CreativeGenerationServiceTest {
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+                .thenReturn(generation(List.of(generated)));
         when(textClient.generateCreatives(
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.eq(1),
                 org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres")))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+                .thenReturn(generation(List.of(generated)));
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.failed()).isEqualTo(1);
@@ -93,10 +99,12 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any());
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
-                org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres"));
+                org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres"),
+                org.mockito.ArgumentMatchers.any());
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
-                org.mockito.ArgumentMatchers.contains("(atual:"));
+                org.mockito.ArgumentMatchers.contains("(atual:"),
+                org.mockito.ArgumentMatchers.any());
     }
 
     /** Garante uma reescrita semântica antes de desistir de uma copy inválida. */
@@ -118,12 +126,12 @@ class CreativeGenerationServiceTest {
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(invalid), null, null));
+                .thenReturn(generation(List.of(invalid)));
         when(textClient.generateCreatives(
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.eq(1),
                 org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres")))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(valid), null, null));
+                .thenReturn(generation(List.of(valid)));
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isEqualTo(1);
@@ -154,7 +162,7 @@ class CreativeGenerationServiceTest {
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+                .thenReturn(generation(List.of(generated)));
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isEqualTo(1);
@@ -178,7 +186,7 @@ class CreativeGenerationServiceTest {
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+                .thenReturn(generation(List.of(generated)));
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isZero();
@@ -188,7 +196,8 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.any());
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
-                org.mockito.ArgumentMatchers.contains("entregável visual APPROVED produzido por Têmis"));
+                org.mockito.ArgumentMatchers.contains("entregável visual APPROVED produzido por Têmis"),
+                org.mockito.ArgumentMatchers.any());
     }
 
     /** Cria um experimento pendente mínimo para o cenário de teste. */
@@ -205,6 +214,16 @@ class CreativeGenerationServiceTest {
                 "{\"assets\":[{\"url\":\"/assets/product-deliverable.png\","
                         + "\"label\":\"Kit real do produto\",\"purpose\":\"DELIVERY\"}]}");
         return dto;
+    }
+
+    /** Cria retorno de modelo com auditoria completa para os cenários do worker. */
+    private CreativeChatGptClient.Generation generation(List<CreateCreativeRequest> creatives) {
+        return new CreativeChatGptClient.Generation(
+                creatives,
+                null,
+                null,
+                new CreativeChatGptClient.ExecutionAudit(
+                        "gpt-test", "medium", "Prompt completo de teste"));
     }
 
     /** Repete um texto de base para montar entradas maiores que o contrato persistivel. */

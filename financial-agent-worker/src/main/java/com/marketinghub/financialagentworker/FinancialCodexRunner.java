@@ -25,21 +25,24 @@ public class FinancialCodexRunner {
   private final FinancialAgentProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
+  private final FinancialAgentBackendClient backend;
 
   /** Configura o executor com telemetria auditável. */
   @Autowired
   public FinancialCodexRunner(
       FinancialAgentProperties properties,
       ObjectMapper objectMapper,
-      CodexTelemetryReporter telemetry) {
+      CodexTelemetryReporter telemetry,
+      FinancialAgentBackendClient backend) {
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.telemetry = telemetry;
+    this.backend = backend;
   }
 
   /** Mantém a construção direta usada por testes de contrato do comando. */
   public FinancialCodexRunner(FinancialAgentProperties properties, ObjectMapper objectMapper) {
-    this(properties, objectMapper, null);
+    this(properties, objectMapper, null, null);
   }
 
   /** Executa uma conciliacao efemera sem permitir mutacoes financeiras ou no repositorio. */
@@ -59,6 +62,9 @@ public class FinancialCodexRunner {
     Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
     String prompt = buildPrompt(job);
     try {
+      if (backend != null && job.agentTaskId() != null) {
+        backend.recordTaskExecutionAudit(job.agentTaskId(), executionAudit(prompt));
+      }
       ProcessBuilder builder = new ProcessBuilder(buildCommand(output, schema, mcp));
       builder.redirectErrorStream(true).redirectOutput(processOutput.toFile());
       builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
@@ -99,7 +105,7 @@ public class FinancialCodexRunner {
         payload.put("model", properties.getModel());
         payload.put("estimatedCost", null);
         payload.put("promptSent", prompt);
-        payload.put("reasoningEffort", properties.getReasoningEffort());
+        payload.put("reasoningEffort", properties.requiredReasoningEffort());
         payload.put("requestedServiceTier", configuredServiceTier());
         payload.put("effectiveServiceTier", "STANDARD");
         payload.put("serviceTierExceptionReason", properties.getServiceTierExceptionReason());
@@ -119,6 +125,17 @@ public class FinancialCodexRunner {
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcp);
     }
+  }
+
+  /** Monta o envelope completo que antecede a chamada de modelo vinculada à tarefa BPM. */
+  Map<String, Object> executionAudit(String prompt) {
+    LinkedHashMap<String, Object> audit = new LinkedHashMap<>();
+    audit.put("executionMode", "MODEL");
+    audit.put("modelCode", properties.getModel());
+    audit.put("reasoningEffort", properties.requiredReasoningEffort());
+    audit.put("promptSent", prompt);
+    audit.put("accessedUrls", List.of());
+    return audit;
   }
 
   /** Avalia um teto de vídeo sem movimentar dinheiro e devolve somente a decisão estruturada. */
@@ -225,6 +242,7 @@ public class FinancialCodexRunner {
 
   /** Monta o comando Codex preservando sandbox e repositorio somente leitura. */
   List<String> buildCommand(Path output, Path schema) {
+    String reasoningEffort = properties.requiredReasoningEffort();
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -248,12 +266,7 @@ public class FinancialCodexRunner {
                 "approval_policy=\"never\"",
                 "--config",
                 "service_tier=\"" + configuredServiceTier() + "\""));
-    if (properties.getReasoningEffort() != null && !properties.getReasoningEffort().isBlank()) {
-      command.addAll(
-          List.of(
-              "--config",
-              "model_reasoning_effort=\"" + properties.getReasoningEffort().trim() + "\""));
-    }
+    command.addAll(List.of("--config", "model_reasoning_effort=\"" + reasoningEffort + "\""));
     if (properties.getModel() != null && !properties.getModel().isBlank()) {
       command.add("--model");
       command.add(properties.getModel());

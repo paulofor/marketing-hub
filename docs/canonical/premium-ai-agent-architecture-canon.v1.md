@@ -48,6 +48,19 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
     real de `codex login status`. Confirmação isolada de OAuth não equivale a `READY`: heartbeat
     vencido, backend inacessível, versão divergente ou sessão inválida devem resultar em estado
     bloqueado ou desconhecido com causa explícita no painel.
+16. auditoria terminal universal na tarefa. Toda execução deve declarar `MODEL`, `DETERMINISTIC` ou
+    `NOT_STARTED`. Em `MODEL`, o backend só aceita conclusão ou bloqueio com modelo efetivo, tipo de
+    raciocínio configurado e prompt integral já resolvido; em execução determinística, o raciocínio
+    deve ser explicitamente `NOT_APPLICABLE`, sem fingir chamada de modelo. Ausência não pode ser
+    convertida silenciosamente em valor padrão.
+17. bloqueio acionável. Toda tarefa `BLOCKED` deve persistir categoria, ação concreta recomendada e
+    ao menos um link seguro que ajude a pessoa operadora a corrigir, revisar ou retomar o fluxo. A
+    tela deve distinguir bloqueio funcional de falha técnica e abrir links em nova aba, sem depender
+    de logs para explicar o próximo passo.
+18. fontes navegadas segregadas pela tarefa. URLs realmente abertas por pesquisa, browser ou API
+    devem ser persistidas com método e horário disponíveis, vinculadas somente ao `taskId`. URL
+    meramente recebida no contexto não conta como acesso. Links com credenciais, esquemas inseguros
+    ou dados de outro cliente/produto são proibidos.
 
 ## Prontidão obrigatória da sessão Codex
 

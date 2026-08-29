@@ -130,6 +130,12 @@ public class AgentTask {
   @Column(name = "execution_prompt", columnDefinition = "LONGTEXT")
   private String executionPrompt;
 
+  @Column(name = "execution_agent_prompt", columnDefinition = "LONGTEXT")
+  private String executionAgentPrompt;
+
+  @Column(name = "execution_activity_prompt", columnDefinition = "LONGTEXT")
+  private String executionActivityPrompt;
+
   @Column(name = "blocker_category", length = 40)
   private String blockerCategory;
 

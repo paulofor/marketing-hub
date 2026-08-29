@@ -136,11 +136,25 @@ public class CommunicationAgentTaskConsumer {
               : ex instanceof CommunicationAgentCodexRunner.ExecutionException failure
                   ? failure.promptSent()
                   : null;
+      String agentPromptPart =
+          execution != null
+              ? execution.agentPromptPart()
+              : ex instanceof CommunicationAgentCodexRunner.ExecutionException failure
+                  ? failure.agentPromptPart()
+                  : null;
+      String activityPromptPart =
+          execution != null
+              ? execution.activityPromptPart()
+              : ex instanceof CommunicationAgentCodexRunner.ExecutionException failure
+                  ? failure.activityPromptPart()
+                  : null;
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("error", ex.toString());
       payload.put("evidenceJson", evidence(task, startedAt, Instant.now(), false));
       putUsage(payload, usage);
-      if (prompt != null) payload.put("executionAudit", executionAudit(prompt));
+      if (prompt != null) {
+        payload.put("executionAudit", executionAudit(prompt, agentPromptPart, activityPromptPart));
+      }
       payload.put("blockerGuidance", technicalGuidance());
       backend.fail(taskId(task), payload);
     } catch (Exception callbackEx) {
@@ -157,7 +171,10 @@ public class CommunicationAgentTaskConsumer {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("evidenceJson", evidence(task, startedAt, Instant.now(), true));
     putUsage(payload, execution.usage());
-    payload.put("executionAudit", executionAudit(execution.promptSent()));
+    payload.put(
+        "executionAudit",
+        executionAudit(
+            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
     return payload;
   }
 
@@ -207,13 +224,23 @@ public class CommunicationAgentTaskConsumer {
   }
 
   /** Monta a auditoria imutável do request enviado ao Codex. */
-  private Map<String, Object> executionAudit(String prompt) {
+  private Map<String, Object> executionAudit(
+      String prompt, String agentPromptPart, String activityPromptPart) {
     return Map.of(
-        "executionMode", "MODEL",
-        "modelCode", modelCode(),
-        "reasoningEffort", properties.requiredReasoningEffort(),
-        "promptSent", prompt,
-        "accessedUrls", List.of());
+        "executionMode",
+        "MODEL",
+        "modelCode",
+        modelCode(),
+        "reasoningEffort",
+        properties.requiredReasoningEffort(),
+        "promptSent",
+        prompt,
+        "agentPromptPart",
+        agentPromptPart,
+        "activityPromptPart",
+        activityPromptPart,
+        "accessedUrls",
+        List.of());
   }
 
   /** Expõe a correção funcional recomendada pela própria saída de Íris. */

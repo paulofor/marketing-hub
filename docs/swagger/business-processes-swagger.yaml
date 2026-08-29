@@ -343,6 +343,8 @@ components:
         reasoningEffort: { type: string, nullable: true }
         productInternalName: { type: string, nullable: true }
         promptSent: { type: string, nullable: true }
+        agentPromptPart: { type: string, nullable: true }
+        activityPromptPart: { type: string, nullable: true }
         accessedUrls:
           type: array
           items: { $ref: "#/components/schemas/AgentTaskAuditLink" }
@@ -427,6 +429,8 @@ components:
         reasoningEffort: { type: string, nullable: true }
         productInternalName: { type: string, nullable: true }
         promptSent: { type: string, nullable: true }
+        agentPromptPart: { type: string, nullable: true }
+        activityPromptPart: { type: string, nullable: true }
         blockerGuidance:
           type: object
           nullable: true

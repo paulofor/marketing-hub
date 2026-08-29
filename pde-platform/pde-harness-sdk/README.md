@@ -19,6 +19,8 @@ segregado, auditável e orientado a Produtos Digitais Experienciais.
   histórico;
 - deriva workspaces sem identificadores pessoais, permite apenas uma execução local por conversa e
   descarta o workspace da interação inclusive em falhas;
+- recebe até oito imagens JPEG, PNG ou WebP por turno, valida tamanho, assinatura binária e SHA-256
+  e entrega ao App Server somente uma cópia no workspace efêmero por `localImage`;
 - devolve vínculo de thread atualizado e auditoria da memória por hash, além de oferecer exclusão da
   thread após o backend autorizar o esquecimento;
 - remove chaves da OpenAI do ambiente filho e não possui fallback para API;
@@ -34,6 +36,23 @@ A consulta do backend deve filtrar o armazenamento pelo escopo exato antes de qu
 semântica. `threadId`, vínculo e fingerprint são internos e nunca podem ser aceitos do frontend ou
 do canal do cliente. Uma correção explícita atual do cliente substitui a memória conflitante na
 próxima revisão, enquanto inferências permanecem identificadas por origem, confiança e validade.
+
+## Perfil básico de consultores
+
+O pacote `com.marketinghub.pde.harness.v1.consultant` oferece a base comum para Turmalina (PWA) e
+Fluorita (WhatsApp). Ele associa o canal ao código canônico, compõe um envelope versionado com parte
+do agente, parte da atividade e mensagem atual, carrega o schema de resposta do classpath e devolve
+as três visões do prompt junto ao resultado auditável.
+
+O envelope `consultant-envelope-v2` exige microvalor operacional, personalização baseada em dados
+declarados ou autorizados, incerteza explícita, uma próxima ação e controle proporcional ao risco.
+Ele impede que o perfil comum trate conselho genérico, inferência íntima ou ação externa não
+confirmada como entrega válida; regras específicas continuam pertencendo ao worker do produto.
+
+O perfil não contém a identidade de Amora ou de outro produto concreto. Cada worker especializa
+agente, atividade, schema e regras do domínio, consome `pending` no próprio backend e reporta o
+resultado. O kit React da PWA fica em `pde-platform/frontend/src/consultant-sdk/v1` e nunca chama o
+App Server diretamente.
 
 ## Validação local
 

@@ -1222,6 +1222,8 @@ public class BusinessProcessActivityExecutionService {
         firstPresent(
             task.getExecutionPrompt(),
             technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null)),
+        task.getExecutionAgentPrompt(),
+        task.getExecutionActivityPrompt(),
         AgentTaskAuditView.blockerGuidance(task),
         AgentTaskAuditView.accessedUrls(task),
         AgentTaskAuditView.visualEvidence(task),

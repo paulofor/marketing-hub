@@ -58,7 +58,7 @@ public class GrowthOperatorBpmRunner {
     Path processLog = Files.createTempFile("hermes-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode), ".json");
     Path mcpServer = materialize("mcp/marketing-hub-readonly.mjs", ".mjs");
-    String resolvedPrompt = prompt(task);
+    PromptComposition prompt = promptComposition(task);
     try {
       ProcessBuilder builder =
           new ProcessBuilder(buildCommand(answer, schema, mcpServer))
@@ -70,7 +70,7 @@ public class GrowthOperatorBpmRunner {
       builder.environment().put("MCP_SOURCE_EXECUTION_ID", "bpm-task-" + task.get("taskId"));
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
       Process process = builder.start();
-      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
         process.destroyForcibly();
@@ -81,7 +81,9 @@ public class GrowthOperatorBpmRunner {
                 + " minutos.",
             readTokenUsage(processLog),
             safeToolUsage(processLog, task, scope),
-            resolvedPrompt);
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
       }
       TokenUsage usage = readTokenUsage(processLog);
       if (process.exitValue() != 0) {
@@ -92,12 +94,20 @@ public class GrowthOperatorBpmRunner {
                 + Files.readString(processLog),
             usage,
             safeToolUsage(processLog, task, scope),
-            resolvedPrompt);
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
       }
       try {
         JsonNode result = json.readTree(Files.readString(answer));
         validate(result, processCode, expectedStrategicHash);
-        return new BpmExecution(result, usage, extractToolUsage(processLog), resolvedPrompt);
+        return new BpmExecution(
+            result,
+            usage,
+            extractToolUsage(processLog),
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
       } catch (IOException | RuntimeException ex) {
         log.error(
             "Resposta inválida na atividade BPM de Hermes. taskId={} sourceReference={}",
@@ -108,7 +118,9 @@ public class GrowthOperatorBpmRunner {
             "Resposta BPM de Hermes fora do contrato versionado.",
             usage,
             safeToolUsage(processLog, task, scope),
-            resolvedPrompt,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
             ex);
       }
     } finally {
@@ -169,8 +181,17 @@ public class GrowthOperatorBpmRunner {
 
   /** Resolve o prompt versionado usando o contrato congelado da tarefa. */
   String prompt(Map<String, Object> task) throws IOException {
-    return read(promptResourceFor(processCode(task)))
-        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+    return promptComposition(task).fullPrompt();
+  }
+
+  /** Compõe o núcleo estável de Hermes com a missão resolvida da atividade. */
+  PromptComposition promptComposition(Map<String, Object> task) throws IOException {
+    String agentPromptPart = read("prompts/growth-operator/v2/agent-core.md");
+    String activityPromptPart =
+        read(promptResourceFor(processCode(task)))
+            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+    return new PromptComposition(
+        agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
   /** Extrai o experimento da referência segregada e rejeita qualquer outro escopo. */
@@ -419,12 +440,26 @@ public class GrowthOperatorBpmRunner {
 
   /** Preserva resultado, ferramentas e consumo na mesma execução BPM. */
   public record BpmExecution(
-      JsonNode result, TokenUsage usage, List<JsonNode> toolUsage, String promptSent) {
+      JsonNode result,
+      TokenUsage usage,
+      List<JsonNode> toolUsage,
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart) {
     /** Mantém compatibilidade com testes que não precisam representar o prompt. */
     public BpmExecution(JsonNode result, TokenUsage usage, List<JsonNode> toolUsage) {
-      this(result, usage, toolUsage, null);
+      this(result, usage, toolUsage, null, null, null);
+    }
+
+    /** Mantém compatibilidade com testes que representam somente o prompt integral. */
+    public BpmExecution(
+        JsonNode result, TokenUsage usage, List<JsonNode> toolUsage, String promptSent) {
+      this(result, usage, toolUsage, promptSent, null, null);
     }
   }
+
+  /** Representa as duas partes e a composição exata enviada ao modelo. */
+  record PromptComposition(String fullPrompt, String agentPromptPart, String activityPromptPart) {}
 
   /** Representa o único escopo de dados liberado para uma execução. */
   record ExecutionScope(String environmentName, long id, String reference) {}
@@ -447,29 +482,44 @@ public class GrowthOperatorBpmRunner {
     private final TokenUsage usage;
     private final List<JsonNode> toolUsage;
     private final String promptSent;
+    private final String agentPromptPart;
+    private final String activityPromptPart;
 
     /** Cria a falha com a última medição disponível. */
     BpmExecutionException(String message, TokenUsage usage) {
-      this(message, usage, List.of(), (String) null);
+      this(message, usage, List.of(), null, null, null);
     }
 
     /** Cria a falha com medição e ferramentas já consultadas. */
     BpmExecutionException(String message, TokenUsage usage, List<JsonNode> toolUsage) {
-      this(message, usage, toolUsage, (String) null);
+      this(message, usage, toolUsage, null, null, null);
     }
 
     /** Cria a falha com medição, ferramentas e prompt exato. */
     BpmExecutionException(
         String message, TokenUsage usage, List<JsonNode> toolUsage, String promptSent) {
+      this(message, usage, toolUsage, promptSent, null, null);
+    }
+
+    /** Cria a falha com medição, ferramentas e as duas partes do prompt. */
+    BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        List<JsonNode> toolUsage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart) {
       super(message);
       this.usage = usage;
       this.toolUsage = List.copyOf(toolUsage);
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
     }
 
     /** Cria a falha com medição e causa original. */
     BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
-      this(message, usage, List.of(), null, cause);
+      this(message, usage, List.of(), null, null, null, cause);
     }
 
     /** Cria a falha preservando medição, ferramentas e causa original. */
@@ -485,10 +535,24 @@ public class GrowthOperatorBpmRunner {
         List<JsonNode> toolUsage,
         String promptSent,
         Throwable cause) {
+      this(message, usage, toolUsage, promptSent, null, null, cause);
+    }
+
+    /** Cria a falha preservando também as partes auditáveis do prompt. */
+    BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        List<JsonNode> toolUsage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        Throwable cause) {
       super(message, cause);
       this.usage = usage;
       this.toolUsage = List.copyOf(toolUsage);
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
     }
 
     /** Retorna a medição preservada antes da falha. */
@@ -504,6 +568,16 @@ public class GrowthOperatorBpmRunner {
     /** Retorna o prompt exato preservado antes da interrupção. */
     public String promptSent() {
       return promptSent;
+    }
+
+    /** Retorna o núcleo de Hermes preservado antes da interrupção. */
+    public String agentPromptPart() {
+      return agentPromptPart;
+    }
+
+    /** Retorna a missão da atividade preservada antes da interrupção. */
+    public String activityPromptPart() {
+      return activityPromptPart;
     }
   }
 }

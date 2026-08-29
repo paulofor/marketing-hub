@@ -93,31 +93,40 @@ public class PdeConstructionBpmTaskConsumer {
     Path output = Files.createTempFile("dedalo-pde-result-", ".json");
     Path processLog = Files.createTempFile("dedalo-pde-process-", ".jsonl");
     Path schema = materialize(schemaResourceFor(activity), ".json");
-    String resolvedPrompt = prompt(task);
+    PromptComposition prompt = promptComposition(task);
     try {
       Process process =
           new ProcessBuilder(command(output, processLog, schema))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
         process.destroyForcibly();
         throw new BpmExecutionException(
             "Timeout da atividade de construção do PDE.",
             readTokenUsage(json, processLog),
-            resolvedPrompt);
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
       }
       TokenUsage usage = readTokenUsage(json, processLog);
       if (process.exitValue() != 0) {
         throw new BpmExecutionException(
             "Codex encerrou a construção do PDE com falha: " + Files.readString(processLog),
             usage,
-            resolvedPrompt);
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
       }
       try {
-        return new BpmExecution(json.readTree(Files.readString(output)), usage, resolvedPrompt);
+        return new BpmExecution(
+            json.readTree(Files.readString(output)),
+            usage,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
       } catch (IOException ex) {
         log.error(
             "Resposta inválida na construção do PDE. taskId={} activityId={} output={}",
@@ -126,7 +135,12 @@ public class PdeConstructionBpmTaskConsumer {
             output,
             ex);
         throw new BpmExecutionException(
-            "Resposta de Dédalo não contém JSON válido.", usage, resolvedPrompt, ex);
+            "Resposta de Dédalo não contém JSON válido.",
+            usage,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
+            ex);
       }
     } finally {
       Files.deleteIfExists(output);
@@ -167,8 +181,17 @@ public class PdeConstructionBpmTaskConsumer {
 
   /** Resolve o prompt da atividade com o snapshot imutável recebido do backend. */
   private String prompt(Map<String, Object> task) throws IOException {
-    return read(promptResourceFor(activityId(task)))
-        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+    return promptComposition(task).fullPrompt();
+  }
+
+  /** Compõe o núcleo estável de Dédalo com a missão resolvida da atividade. */
+  private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
+    String agentPromptPart = read("prompts/pde-construction/v1/agent-core.md");
+    String activityPromptPart =
+        read(promptResourceFor(activityId(task)))
+            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+    return new PromptComposition(
+        agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
   /** Persiste a saída funcional, a evidência e o custo antes de liberar a atividade seguinte. */
@@ -177,7 +200,10 @@ public class PdeConstructionBpmTaskConsumer {
     body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task));
     putModelUsage(body, execution.usage());
-    body.put("executionAudit", executionAudit(execution.promptSent()));
+    body.put(
+        "executionAudit",
+        executionAudit(
+            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
     backend
         .post()
         .uri(
@@ -197,7 +223,10 @@ public class PdeConstructionBpmTaskConsumer {
     body.put("resultJson", json.writeValueAsString(result));
     body.put("evidenceJson", evidence(task));
     putModelUsage(body, execution.usage());
-    body.put("executionAudit", executionAudit(execution.promptSent()));
+    body.put(
+        "executionAudit",
+        executionAudit(
+            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
     body.put("blockerGuidance", functionalGuidance(result));
     backend
         .post()
@@ -218,11 +247,21 @@ public class PdeConstructionBpmTaskConsumer {
       TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
       String promptSent =
           execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
+      String agentPromptPart =
+          execution != null
+              ? execution.agentPromptPart()
+              : bpm == null ? null : bpm.agentPromptPart();
+      String activityPromptPart =
+          execution != null
+              ? execution.activityPromptPart()
+              : bpm == null ? null : bpm.activityPromptPart();
       Map<String, Object> body = new HashMap<>();
       body.put("error", ex.toString());
       body.put("evidenceJson", evidence(task));
       putModelUsage(body, usage);
-      if (promptSent != null) body.put("executionAudit", executionAudit(promptSent));
+      if (promptSent != null) {
+        body.put("executionAudit", executionAudit(promptSent, agentPromptPart, activityPromptPart));
+      }
       body.put("blockerGuidance", technicalGuidance());
       backend
           .post()
@@ -240,12 +279,15 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Monta a auditoria integral da chamada executada por Dédalo. */
-  private Map<String, Object> executionAudit(String promptSent) {
+  private Map<String, Object> executionAudit(
+      String promptSent, String agentPromptPart, String activityPromptPart) {
     Map<String, Object> audit = new java.util.LinkedHashMap<>();
     audit.put("executionMode", "MODEL");
     audit.put("modelCode", properties.getModel());
     audit.put("reasoningEffort", properties.requiredReasoningEffort());
     audit.put("promptSent", promptSent);
+    audit.put("agentPromptPart", agentPromptPart);
+    audit.put("activityPromptPart", activityPromptPart);
     audit.put("accessedUrls", List.of());
     return audit;
   }
@@ -420,7 +462,16 @@ public class PdeConstructionBpmTaskConsumer {
   }
 
   /** Preserva resultado e consumo da mesma execução. */
-  record BpmExecution(JsonNode result, TokenUsage usage, String promptSent) {}
+  record BpmExecution(
+      JsonNode result,
+      TokenUsage usage,
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart) {}
+
+  /** Representa as duas partes e a composição exata enviada ao modelo. */
+  private record PromptComposition(
+      String fullPrompt, String agentPromptPart, String activityPromptPart) {}
 
   /** Representa os contadores reais cumulativos informados pelo Codex. */
   record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
@@ -439,20 +490,36 @@ public class PdeConstructionBpmTaskConsumer {
   private static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
     private final String promptSent;
+    private final String agentPromptPart;
+    private final String activityPromptPart;
 
     /** Cria a falha com a última medição conhecida. */
-    private BpmExecutionException(String message, TokenUsage usage, String promptSent) {
+    private BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart) {
       super(message);
       this.usage = usage;
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
     }
 
     /** Cria a falha preservando também a causa original. */
     private BpmExecutionException(
-        String message, TokenUsage usage, String promptSent, Throwable cause) {
+        String message,
+        TokenUsage usage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        Throwable cause) {
       super(message, cause);
       this.usage = usage;
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
     }
 
     /** Retorna a medição preservada para o callback. */
@@ -463,6 +530,16 @@ public class PdeConstructionBpmTaskConsumer {
     /** Retorna o prompt exato preservado para o callback de falha. */
     private String promptSent() {
       return promptSent;
+    }
+
+    /** Retorna o núcleo de Dédalo preservado para o callback de falha. */
+    private String agentPromptPart() {
+      return agentPromptPart;
+    }
+
+    /** Retorna a missão da atividade preservada para o callback de falha. */
+    private String activityPromptPart() {
+      return activityPromptPart;
     }
   }
 }

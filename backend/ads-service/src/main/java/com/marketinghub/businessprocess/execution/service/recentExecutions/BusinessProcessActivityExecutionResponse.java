@@ -34,6 +34,8 @@ public record BusinessProcessActivityExecutionResponse(
     String reasoningEffort,
     String productInternalName,
     String promptSent,
+    String agentPromptPart,
+    String activityPromptPart,
     AgentTaskBlockerGuidanceResponse blockerGuidance,
     List<AgentTaskAuditLinkResponse> accessedUrls,
     List<AgentTaskVisualEvidenceResponse> visualEvidence,

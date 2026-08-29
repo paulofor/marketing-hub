@@ -26,7 +26,9 @@ test("propaga a auditoria da tentativa quando Argos bloqueia antes do plano", ()
     executionMode: "MODEL",
     modelCode: "gpt-5.6-sol",
     reasoningEffort: "high",
-    promptSent: "Prompt integral enviado a Argos.",
+    promptSent: "Núcleo de Argos.\n\nPesquise o mercado.",
+    agentPromptPart: "Núcleo de Argos.",
+    activityPromptPart: "Pesquise o mercado.",
     accessedUrls: [],
   };
 
@@ -51,7 +53,9 @@ test("propaga prompt e tokens reais no callback auditável do plano", () => {
     rawResponse: '{"questions":["Qual dor é urgente?"]}',
     model: "gpt-5.6-sol",
     mode: "CODEX",
-    prompt: "Contexto integral enviado a Argos.",
+    prompt: "Núcleo de Argos.\n\nPesquise a oportunidade.",
+    agentPromptPart: "Núcleo de Argos.",
+    activityPromptPart: "Pesquise a oportunidade.",
     reasoningEffort: "high",
     usage: { inputTokens: 100, cachedInputTokens: 20, outputTokens: 10 },
   });
@@ -61,7 +65,9 @@ test("propaga prompt e tokens reais no callback auditável do plano", () => {
     rawResponse: '{"questions":["Qual dor é urgente?"]}',
     model: "gpt-5.6-sol",
     executionMode: "CODEX",
-    promptSent: "Contexto integral enviado a Argos.",
+    promptSent: "Núcleo de Argos.\n\nPesquise a oportunidade.",
+    agentPromptPart: "Núcleo de Argos.",
+    activityPromptPart: "Pesquise a oportunidade.",
     reasoningEffort: "high",
     inputTokens: 100,
     cachedInputTokens: 20,

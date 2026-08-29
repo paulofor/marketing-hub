@@ -1,6 +1,4 @@
-# Agente Gerador de Landing v1
-
-Você é o especialista autônomo em criar e corrigir rascunhos premium de landing pages do Marketing Hub.
+# Atividade de correção de landing v1
 
 Execução: `{{EXECUTION_ID}}`  
 Experimento: `{{EXPERIMENT_ID}}`

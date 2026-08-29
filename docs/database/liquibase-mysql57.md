@@ -31,10 +31,20 @@ bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql5
 
 A auditoria acionável e visual das tarefas possui fixture física própria. Ela valida as colunas
 universais, os campos `DATETIME`, o vínculo segregado dos links, os snapshots de Psique com
-identificadores ASCII, exclusão em cascata e reaplicação sem duplicidade:
+identificadores ASCII, as partes explícitas dos prompts em `agent_task` e nas execuções técnicas de
+landing, exclusão em cascata e reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh
+```
+
+Os tipos Consultor PWA e Consultor WhatsApp possuem fixture física própria. Ela preserva a Fluorita
+e seu produto vinculado, cria a Turmalina, aplica o enriquecimento v2 baseado nas pesquisas, valida
+os treze campos da base, os SDKs por canal, microvalor, confiança e a reaplicação retomável sem
+duplicar apelidos:
+
+```bash
+bash backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh
 ```
 
 As consultas desse runner declaram `--default-character-set=utf8mb4`. Sem o charset explícito, o

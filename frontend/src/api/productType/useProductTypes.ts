@@ -3,6 +3,38 @@ import axios from "axios";
 
 export type ProductTypeStatus = "PROPOSED" | "ACTIVE" | "RETIRED";
 
+export interface ProductTypeBlueprint {
+  version?: string | null;
+  primaryChannel?: string | null;
+  customerJob?: string | null;
+  valueMechanism?: string | null;
+  experienceFlow?: string | null;
+  requiredInputs?: string | null;
+  expectedOutputs?: string | null;
+  memoryStrategy?: string | null;
+  integrationRequirements?: string | null;
+  safetyGuardrails?: string | null;
+  successMetrics?: string | null;
+  backendSdkModule?: string | null;
+  frontendSdkModule?: string | null;
+}
+
+export interface SaveProductTypeBlueprint {
+  version: string;
+  primaryChannel: string;
+  customerJob: string;
+  valueMechanism: string;
+  experienceFlow: string;
+  requiredInputs: string;
+  expectedOutputs: string;
+  memoryStrategy: string;
+  integrationRequirements: string;
+  safetyGuardrails: string;
+  successMetrics: string;
+  backendSdkModule: string;
+  frontendSdkModule: string;
+}
+
 export interface ProductTypeDefinition {
   id: number;
   code: string;
@@ -11,6 +43,9 @@ export interface ProductTypeDefinition {
   description?: string | null;
   aliases: string[];
   status: ProductTypeStatus;
+  blueprint?: ProductTypeBlueprint | null;
+  constructionReady: boolean;
+  missingBlueprintFields: string[];
   productCount: number;
   createdAt?: string;
   updatedAt?: string;
@@ -23,6 +58,7 @@ export interface SaveProductType {
   description?: string;
   aliases: string[];
   status: ProductTypeStatus;
+  blueprint?: SaveProductTypeBlueprint | null;
 }
 
 export function useProductTypes(includeRetired = false, query = "") {

@@ -293,6 +293,19 @@ final class ApprovedCreativePackageArchive {
         promptBytes != null && promptBytes.length > 0,
         "A execução de " + agent + " não preservou o prompt.");
     String prompt = new String(promptBytes, StandardCharsets.UTF_8);
+    byte[] agentPromptBytes = entries.get(selected.path("agentPromptFile").asText(""));
+    byte[] activityPromptBytes = entries.get(selected.path("activityPromptFile").asText(""));
+    require(
+        agentPromptBytes != null && agentPromptBytes.length > 0,
+        "A execução de " + agent + " não preservou a parte do agente.");
+    require(
+        activityPromptBytes != null && activityPromptBytes.length > 0,
+        "A execução de " + agent + " não preservou a parte da atividade.");
+    String agentPromptPart = new String(agentPromptBytes, StandardCharsets.UTF_8).trim();
+    String activityPromptPart = new String(activityPromptBytes, StandardCharsets.UTF_8).trim();
+    require(
+        prompt.equals(agentPromptPart + "\n\n" + activityPromptPart),
+        "A execução de " + agent + " não preservou a composição exata do prompt.");
     JsonNode usage = selected.path("usage");
     require(
         usage.path("input_tokens").canConvertToLong()
@@ -303,6 +316,8 @@ final class ApprovedCreativePackageArchive {
         selected.path("model").asText(),
         reasoningEffort,
         prompt,
+        agentPromptPart,
+        activityPromptPart,
         usage.path("input_tokens").asLong(),
         usage.path("cached_input_tokens").asLong(0),
         usage.path("output_tokens").asLong());
@@ -314,7 +329,9 @@ final class ApprovedCreativePackageArchive {
         executions.isArray() && !executions.isEmpty(),
         "O ledger de agentes não é uma lista auditável.");
     for (JsonNode execution : executions) {
-      for (String field : List.of("requestFile", "responseFile", "logFile")) {
+      for (String field :
+          List.of(
+              "requestFile", "agentPromptFile", "activityPromptFile", "responseFile", "logFile")) {
         String path = execution.path(field).asText("");
         String hash = execution.path(field + "Sha256").asText("");
         require(
@@ -385,6 +402,8 @@ final class ApprovedCreativePackageArchive {
       String model,
       String reasoningEffort,
       String prompt,
+      String agentPromptPart,
+      String activityPromptPart,
       long inputTokens,
       long cachedInputTokens,
       long outputTokens) {}

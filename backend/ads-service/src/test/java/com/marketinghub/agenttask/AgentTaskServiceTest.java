@@ -735,7 +735,13 @@ class AgentTaskServiceTest {
                 "{\"creativePackageId\":\"abc\"}",
                 List.of(new AgentTaskModelUsageRequest("gpt-5.6-sol", "STANDARD", 100L, 20L, 10L)),
                 new AgentTaskExecutionAuditRequest(
-                    "gpt-5.6-sol", "high", "Prompt integral do parecer importado.")));
+                    "MODEL",
+                    "gpt-5.6-sol",
+                    "high",
+                    "Núcleo de Psique.\n\nAvalie o pacote importado.",
+                    "Núcleo de Psique.",
+                    "Avalie o pacote importado.",
+                    List.of())));
 
     assertThat(response.status()).isEqualTo("COMPLETED");
     assertThat(response.resultJson()).contains("APPROVED");
@@ -926,14 +932,22 @@ class AgentTaskServiceTest {
             "landing-cycle:41",
             true,
             new AgentTaskExecutionAuditRequest(
-                "gpt-5.6-sol", "high", "Prompt integral do ciclo 41."),
+                "MODEL",
+                "gpt-5.6-sol",
+                "high",
+                "Núcleo de Dédalo.\n\nExecute o ciclo 41.",
+                "Núcleo de Dédalo.",
+                "Execute o ciclo 41.",
+                List.of()),
             List.of(new AgentTaskModelUsageRequest("gpt-5.6-sol", "STANDARD", 100L, 20L, 30L)),
             null);
 
     assertThat(task.getStatus()).isEqualTo("COMPLETED");
     assertThat(task.getExecutionMode()).isEqualTo("MODEL");
     assertThat(task.getExecutionReasoningEffort()).isEqualTo("high");
-    assertThat(task.getExecutionPrompt()).isEqualTo("Prompt integral do ciclo 41.");
+    assertThat(task.getExecutionPrompt()).isEqualTo("Núcleo de Dédalo.\n\nExecute o ciclo 41.");
+    assertThat(task.getExecutionAgentPrompt()).isEqualTo("Núcleo de Dédalo.");
+    assertThat(task.getExecutionActivityPrompt()).isEqualTo("Execute o ciclo 41.");
     assertThat(task.getInputTokens()).isEqualTo(100L);
     assertThat(task.getDeliveredAt()).isNotNull();
   }
@@ -1372,6 +1386,8 @@ class AgentTaskServiceTest {
         null,
         "{\"source\":\"persisted-context\"}",
         null,
+        "{\"source\":\"persisted-context\"}",
+        null,
         null,
         null,
         false);
@@ -1406,6 +1422,8 @@ class AgentTaskServiceTest {
                     37L,
                     "gpt-5.6-sol",
                     null,
+                    "Núcleo de Argos.\n\nPrompt real.",
+                    "Núcleo de Argos.",
                     "Prompt real.",
                     100L,
                     null,
@@ -1754,11 +1772,94 @@ class AgentTaskServiceTest {
             "{\"htmlVersion\":2}",
             null,
             new AgentTaskExecutionAuditRequest(
-                "gpt-5.6-sol", "high", "\nPrompt final enviado ao modelo.\n")));
+                "MODEL",
+                "gpt-5.6-sol",
+                "high",
+                "Núcleo de Dédalo.\n\nPrompt final enviado ao modelo.",
+                "Núcleo de Dédalo.",
+                "Prompt final enviado ao modelo.",
+                List.of())));
 
     assertThat(task.getExecutionModelCode()).isEqualTo("gpt-5.6-sol");
     assertThat(task.getExecutionReasoningEffort()).isEqualTo("high");
-    assertThat(task.getExecutionPrompt()).isEqualTo("\nPrompt final enviado ao modelo.\n");
+    assertThat(task.getExecutionPrompt())
+        .isEqualTo("Núcleo de Dédalo.\n\nPrompt final enviado ao modelo.");
+    assertThat(task.getExecutionAgentPrompt()).isEqualTo("Núcleo de Dédalo.");
+    assertThat(task.getExecutionActivityPrompt()).isEqualTo("Prompt final enviado ao modelo.");
+  }
+
+  /**
+   * Rejeita chamada de modelo sem as duas partes explícitas para impedir divisão inferida na tela.
+   */
+  @Test
+  void rejectsModelCompletionWithoutExplicitPromptParts() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "landing-generator",
+                    30L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        null,
+                        new AgentTaskExecutionAuditRequest(
+                            "MODEL",
+                            "gpt-5.6-sol",
+                            "high",
+                            "Núcleo de Dédalo.\n\nConstrua a landing.",
+                            null,
+                            "Construa a landing.",
+                            List.of()))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("parte do agente");
+    verify(repository, never()).save(any());
+  }
+
+  /** Rejeita partes invertidas para comprovar que o prompt integral corresponde ao enviado. */
+  @Test
+  void rejectsPromptPartsOutsideDeclaredOrder() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "landing-generator",
+                    30L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        null,
+                        new AgentTaskExecutionAuditRequest(
+                            "MODEL",
+                            "gpt-5.6-sol",
+                            "high",
+                            "Construa a landing.\n\nNúcleo de Dédalo.",
+                            "Núcleo de Dédalo.",
+                            "Construa a landing.",
+                            List.of()))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("nesta ordem");
+    verify(repository, never()).save(any());
   }
 
   /** Não declara custo inaplicável quando o modelo foi chamado sem telemetria de tokens. */
@@ -1989,7 +2090,9 @@ class AgentTaskServiceTest {
                     "MODEL",
                     "gpt-test",
                     "high",
-                    "Prompt completo da revisão humana.",
+                    "Núcleo de Psique.\n\nRevise a jornada humana.",
+                    "Núcleo de Psique.",
+                    "Revise a jornada humana.",
                     List.of(
                         new AgentTaskAccessedUrlRequest(
                             "https://rigel.example.com/jornada",
@@ -2045,7 +2148,9 @@ class AgentTaskServiceTest {
                             "MODEL",
                             "gpt-test",
                             "high",
-                            "Prompt completo.",
+                            "Núcleo de Psique.\n\nRevise a jornada.",
+                            "Núcleo de Psique.",
+                            "Revise a jornada.",
                             List.of(
                                 new AgentTaskAccessedUrlRequest(
                                     "https://example.com/review?api_key=secret",
@@ -2381,7 +2486,13 @@ class AgentTaskServiceTest {
   /** Cria uma auditoria integral de modelo reutilizada nos callbacks de teste. */
   private AgentTaskExecutionAuditRequest modelExecutionAudit() {
     return new AgentTaskExecutionAuditRequest(
-        "MODEL", "gpt-test", "high", "Prompt integral enviado ao modelo.", List.of());
+        "MODEL",
+        "gpt-test",
+        "high",
+        "Núcleo do agente.\n\nAtividade da tarefa.",
+        "Núcleo do agente.",
+        "Atividade da tarefa.",
+        List.of());
   }
 
   /** Monta o Estúdio de Têmis com instruções entregues ao executor. */

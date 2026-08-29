@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recommendation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "why": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nextQuestion": {
+      "type": ["string", "null"]
+    },
+    "memoryCandidates": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "content": { "type": "string", "minLength": 1 },
+          "sourceEvidence": { "type": "string", "minLength": 1 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "required": ["content", "sourceEvidence", "confidence"]
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "blocked": { "type": "boolean" },
+        "reason": { "type": ["string", "null"] },
+        "userGuidance": { "type": ["string", "null"] },
+        "helpLinks": {
+          "type": "array",
+          "maxItems": 5,
+          "items": { "type": "string", "format": "uri" }
+        }
+      },
+      "required": ["blocked", "reason", "userGuidance", "helpLinks"]
+    }
+  },
+  "required": [
+    "message",
+    "recommendation",
+    "why",
+    "nextQuestion",
+    "memoryCandidates",
+    "blocker"
+  ]
+}

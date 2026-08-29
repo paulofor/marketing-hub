@@ -130,6 +130,8 @@ export interface AgentTask {
   executionMode?: "MODEL" | "DETERMINISTIC" | "NOT_STARTED";
   executionReasoningEffort?: string;
   executionPrompt?: string;
+  executionAgentPrompt?: string;
+  executionActivityPrompt?: string;
   blockerGuidance?: AgentTaskBlockerGuidance;
   accessedUrls?: AgentTaskAuditLink[];
   visualEvidence?: AgentTaskVisualEvidence[];
@@ -179,6 +181,8 @@ export interface ProcessInstanceTask {
   modelCode?: string;
   reasoningEffort?: string;
   promptSent?: string;
+  agentPromptPart?: string;
+  activityPromptPart?: string;
   blockerGuidance?: AgentTaskBlockerGuidance;
   accessedUrls?: AgentTaskAuditLink[];
   visualEvidence?: AgentTaskVisualEvidence[];

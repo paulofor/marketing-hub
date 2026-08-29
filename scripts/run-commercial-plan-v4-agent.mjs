@@ -14,6 +14,8 @@ const MODEL = "gpt-5.6-sol";
 export const CONTRACTS = Object.freeze({
   "experiment-strategist": {
     activities: ["marketStrategy"],
+    agentPrompt:
+      "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/agent-core.md",
     prompt:
       "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md",
     schema:
@@ -21,6 +23,8 @@ export const CONTRACTS = Object.freeze({
   },
   "financial-agent": {
     activities: ["economics"],
+    agentPrompt:
+      "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/agent-core.md",
     prompt:
       "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md",
     schema:
@@ -28,6 +32,8 @@ export const CONTRACTS = Object.freeze({
   },
   "landing-generator": {
     activities: ["productArchitecture"],
+    agentPrompt:
+      "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/agent-core.md",
     prompt:
       "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md",
     schema:
@@ -128,12 +134,19 @@ export function executionTimeout(value) {
 }
 
 /** Monta o registro imutável da chamada final sem expor configuração fora da execução. */
-export function executionAudit(promptSent, reasoningEffort) {
+export function executionAudit(
+  promptSent,
+  agentPromptPart,
+  activityPromptPart,
+  reasoningEffort,
+) {
   return {
     executionMode: "MODEL",
     modelCode: MODEL,
     reasoningEffort,
     promptSent,
+    agentPromptPart,
+    activityPromptPart,
     accessedUrls: [],
   };
 }
@@ -457,13 +470,24 @@ export async function main(argv = process.argv.slice(2)) {
   const outputPath = join(temporary, "result.json");
   const logPath = join(temporary, "codex.jsonl");
   try {
-    const template = await readFile(
+    const agentPromptPart = (
+      await readFile(resolve(REPOSITORY, contract.agentPrompt), "utf8")
+    ).trim();
+    const activityTemplate = await readFile(
       resolve(REPOSITORY, contract.prompt),
       "utf8",
     );
-    const prompt = template.replace("{{TASK_CONTEXT}}", JSON.stringify(task));
+    const activityPromptPart = activityTemplate
+      .replace("{{TASK_CONTEXT}}", JSON.stringify(task))
+      .trim();
+    const prompt = `${agentPromptPart}\n\n${activityPromptPart}`;
     const reasoningEffort = args["reasoning-effort"] || "high";
-    const executionAuditPayload = executionAudit(prompt, reasoningEffort);
+    const executionAuditPayload = executionAudit(
+      prompt,
+      agentPromptPart,
+      activityPromptPart,
+      reasoningEffort,
+    );
     const { result, usage } = await runAuditedModel({
       run: () =>
         runCodex(

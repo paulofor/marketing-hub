@@ -87,7 +87,19 @@ public class GrowthOperatorBpmTaskConsumer {
                 : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
                     ? bpm.promptSent()
                     : null;
-        failCallback(task, ex, usage, toolUsage, promptSent);
+        String agentPromptPart =
+            execution != null
+                ? execution.agentPromptPart()
+                : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
+                    ? bpm.agentPromptPart()
+                    : null;
+        String activityPromptPart =
+            execution != null
+                ? execution.activityPromptPart()
+                : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
+                    ? bpm.activityPromptPart()
+                    : null;
+        failCallback(task, ex, usage, toolUsage, promptSent, agentPromptPart, activityPromptPart);
       }
     }
   }
@@ -139,7 +151,10 @@ public class GrowthOperatorBpmTaskConsumer {
     body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task, execution.toolUsage()));
     putModelUsage(body, execution.usage());
-    body.put("executionAudit", executionAudit(execution.promptSent()));
+    body.put(
+        "executionAudit",
+        executionAudit(
+            execution.promptSent(), execution.agentPromptPart(), execution.activityPromptPart()));
     return body;
   }
 
@@ -159,13 +174,17 @@ public class GrowthOperatorBpmTaskConsumer {
       Exception ex,
       GrowthOperatorBpmRunner.TokenUsage usage,
       List<JsonNode> toolUsage,
-      String promptSent) {
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart) {
     try {
       Map<String, Object> body = new HashMap<>();
       body.put("error", ex.toString());
       body.put("evidenceJson", evidence(task, toolUsage));
       putModelUsage(body, usage);
-      if (promptSent != null) body.put("executionAudit", executionAudit(promptSent));
+      if (promptSent != null) {
+        body.put("executionAudit", executionAudit(promptSent, agentPromptPart, activityPromptPart));
+      }
       body.put("blockerGuidance", technicalGuidance());
       backend.failBpmTask(taskId(task), body);
     } catch (Exception callbackEx) {
@@ -177,12 +196,15 @@ public class GrowthOperatorBpmTaskConsumer {
   }
 
   /** Monta a auditoria integral da chamada executada por Hermes. */
-  private Map<String, Object> executionAudit(String promptSent) {
+  private Map<String, Object> executionAudit(
+      String promptSent, String agentPromptPart, String activityPromptPart) {
     Map<String, Object> audit = new java.util.LinkedHashMap<>();
     audit.put("executionMode", "MODEL");
     audit.put("modelCode", modelCode());
     audit.put("reasoningEffort", properties.requiredReasoningEffort());
     audit.put("promptSent", promptSent);
+    audit.put("agentPromptPart", agentPromptPart);
+    audit.put("activityPromptPart", activityPromptPart);
     audit.put("accessedUrls", List.of());
     return audit;
   }

@@ -385,7 +385,13 @@ public class CommercialPlanVisualAssetService {
                 execution.cachedInputTokens(),
                 execution.outputTokens())),
         new AgentTaskExecutionAuditRequest(
-            execution.model(), execution.reasoningEffort(), execution.prompt()));
+            "MODEL",
+            execution.model(),
+            execution.reasoningEffort(),
+            execution.prompt(),
+            execution.agentPromptPart(),
+            execution.activityPromptPart(),
+            List.of()));
   }
 
   /** Expõe hashes e URLs persistidos, deixando explícita a ausência de publicação ou gasto. */

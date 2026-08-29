@@ -60,13 +60,13 @@ public class CreativeChatGptClient {
     private static final String DOMAIN = "CREATIVE_COPY";
     private static final String RESPONSES_ENDPOINT = "/responses";
     private static final String SERVICE_TIER_FLEX = "flex";
+    private static final String AGENT_PROMPT_PATH = "prompts/creative/agent-core.md";
     private static final String PROMPT_PATH = "prompts/creative/meta-ad-copy.md";
     private static final String SCHEMA_PATH = "prompts/creative/meta-ad-copy-schema.json";
     private static final String SCHEMA_NAME = "meta_ad_copy";
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
-    private static final String SYSTEM_PROMPT = "Você é um especialista em marketing.";
 
     /** Configura o cliente OpenAI, o modelo e os limites temporais da geração. */
     public CreativeChatGptClient(WebClient.Builder builder,
@@ -115,13 +115,16 @@ public class CreativeChatGptClient {
             log.warn("Skipping creative generation for experiment {} because OpenAI API key is missing", experiment != null ? experiment.getId() : "unknown");
             return Generation.empty();
         }
+        String agentPrompt = loadResource(AGENT_PROMPT_PATH).trim();
         String prompt = buildPrompt(experiment, quantity, correctionContext);
         ExecutionAudit executionAudit = new ExecutionAudit(
                 model,
                 OpenAiRequestUtils.requiresReasoning(model) ? "medium" : "NOT_APPLICABLE",
-                fullPrompt(prompt));
+                fullPrompt(agentPrompt, prompt),
+                agentPrompt,
+                prompt);
         List<Map<String, Object>> input = List.of(
-                OpenAiRequestUtils.message("system", SYSTEM_PROMPT),
+                OpenAiRequestUtils.message("system", agentPrompt),
                 OpenAiRequestUtils.message("user", prompt)
         );
 
@@ -192,8 +195,8 @@ public class CreativeChatGptClient {
     }
 
     /** Reconstrói integralmente as duas mensagens textuais enviadas na mesma requisição. */
-    private String fullPrompt(String userPrompt) {
-        return "SYSTEM:\n" + SYSTEM_PROMPT + "\n\nUSER:\n" + userPrompt;
+    private String fullPrompt(String agentPrompt, String activityPrompt) {
+        return "SYSTEM:\n" + agentPrompt + "\n\nUSER:\n" + activityPrompt;
     }
 
     /** Cria a correlação estável da tentativa com o experimento de origem. */
@@ -417,7 +420,12 @@ public class CreativeChatGptClient {
     }
 
     /** Identifica a chamada de modelo auditável feita para gerar a copy. */
-    public record ExecutionAudit(String modelCode, String reasoningEffort, String promptSent) {
+    public record ExecutionAudit(
+            String modelCode,
+            String reasoningEffort,
+            String promptSent,
+            String agentPromptPart,
+            String activityPromptPart) {
     }
 
     /** Preserva a auditoria mesmo quando a chamada de modelo termina em exceção. */

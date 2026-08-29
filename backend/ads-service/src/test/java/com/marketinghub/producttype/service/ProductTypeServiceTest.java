@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.product.Product;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.producttype.ProductTypeStatus;
+import com.marketinghub.producttype.service.catalog.ProductTypeBlueprintData;
 import com.marketinghub.producttype.service.catalog.SaveProductTypeRequest;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
@@ -237,5 +238,119 @@ class ProductTypeServiceTest {
     assertThat(service.list("experiencia guiada", false)).extracting("id").containsExactly(1L);
     assertThat(service.list("opala", false)).extracting("id").containsExactly(1L);
     assertThat(service.list(null, false)).extracting("id").containsExactly(1L);
+  }
+
+  /** Deve ativar Turmalina somente com a base PWA completa e normalizada. */
+  @Test
+  void createActivePwaConsultantWithCompleteBlueprint() {
+    ProductTypeDefinitionRepository repository = mock(ProductTypeDefinitionRepository.class);
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeService service = new ProductTypeService(repository, productRepository);
+    when(repository.findAllByOrderByNameAsc()).thenReturn(List.of());
+    when(repository.save(any(ProductTypeDefinition.class)))
+        .thenAnswer(
+            invocation -> {
+              ProductTypeDefinition saved = invocation.getArgument(0);
+              saved.setId(7L);
+              return saved;
+            });
+
+    var response =
+        service.create(
+            new SaveProductTypeRequest(
+                "AI_PWA_CONSULTANT_PRODUCT",
+                "Consultor PWA com IA",
+                "Turmalina",
+                "Consultoria visual mobile-first.",
+                List.of("Consultor web instalável"),
+                ProductTypeStatus.ACTIVE,
+                completePwaBlueprint(" pwa ", true)));
+
+    assertThat(response.constructionReady()).isTrue();
+    assertThat(response.missingBlueprintFields()).isEmpty();
+    assertThat(response.blueprint().primaryChannel()).isEqualTo("PWA");
+    assertThat(response.blueprint().frontendSdkModule())
+        .isEqualTo("pde-platform/frontend/src/consultant-sdk/v1");
+  }
+
+  /** Deve bloquear uma PWA ativa sem SDK React porque a experiência própria ficaria indefinida. */
+  @Test
+  void rejectActivePwaConsultantWithoutReactSdk() {
+    ProductTypeDefinitionRepository repository = mock(ProductTypeDefinitionRepository.class);
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeService service = new ProductTypeService(repository, productRepository);
+    when(repository.findAllByOrderByNameAsc()).thenReturn(List.of());
+
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new SaveProductTypeRequest(
+                        "AI_PWA_CONSULTANT_PRODUCT",
+                        "Consultor PWA com IA",
+                        "Turmalina",
+                        "Consultoria visual mobile-first.",
+                        List.of(),
+                        ProductTypeStatus.ACTIVE,
+                        completePwaBlueprint("PWA", false))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("SDK React");
+  }
+
+  /** Deve impedir que um formulário vazio apague a base de um tipo que permanece ativo. */
+  @Test
+  void rejectClearingBlueprintFromActiveType() {
+    ProductTypeDefinitionRepository repository = mock(ProductTypeDefinitionRepository.class);
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeService service = new ProductTypeService(repository, productRepository);
+    ProductTypeDefinition type =
+        ProductTypeDefinition.builder()
+            .id(7L)
+            .code("AI_PWA_CONSULTANT_PRODUCT")
+            .name("Consultor PWA com IA")
+            .internalName("Turmalina")
+            .description("Consultoria visual mobile-first.")
+            .aliases(Set.of())
+            .status(ProductTypeStatus.ACTIVE)
+            .blueprintVersion("consultant-pwa-v1")
+            .primaryChannel("PWA")
+            .build();
+    when(repository.findById(7L)).thenReturn(java.util.Optional.of(type));
+    when(repository.findAllByOrderByNameAsc()).thenReturn(List.of(type));
+
+    assertThatThrownBy(
+            () ->
+                service.update(
+                    7L,
+                    new SaveProductTypeRequest(
+                        type.getCode(),
+                        type.getName(),
+                        type.getInternalName(),
+                        type.getDescription(),
+                        List.of(),
+                        ProductTypeStatus.ACTIVE,
+                        new ProductTypeBlueprintData(
+                            null, null, null, null, null, null, null, null, null, null, null, null,
+                            null))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Complete a base de construção");
+  }
+
+  /** Monta todos os contratos obrigatórios de uma base PWA para os cenários do serviço. */
+  private ProductTypeBlueprintData completePwaBlueprint(
+      String primaryChannel, boolean includeReactSdk) {
+    return new ProductTypeBlueprintData(
+        "consultant-pwa-v1",
+        primaryChannel,
+        "Receber orientação no celular.",
+        "Transformar contexto em recomendação.",
+        "Entrar; conversar; refinar; avaliar.",
+        "Cliente, contexto, consentimento e foto opcional.",
+        "Orientação, motivo e próximo passo.",
+        "Memória segregada por cliente.",
+        "Backend PDE, worker Java e App Server.",
+        "Bloquear mistura de clientes e mídia sem consentimento.",
+        "Orientação entregue, utilidade, retorno, venda e margem.",
+        "pde-platform/pde-harness-sdk",
+        includeReactSdk ? "pde-platform/frontend/src/consultant-sdk/v1" : null);
   }
 }

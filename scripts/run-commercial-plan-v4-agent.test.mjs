@@ -60,17 +60,32 @@ test("preserva a última telemetria cumulativa", () => {
 });
 
 test("registra o modelo, o esforço e o prompt final enviados ao Codex", () => {
-  assert.deepEqual(executionAudit("Prompt final", "high"), {
-    executionMode: "MODEL",
-    modelCode: "gpt-5.6-sol",
-    reasoningEffort: "high",
-    promptSent: "Prompt final",
-    accessedUrls: [],
-  });
+  assert.deepEqual(
+    executionAudit(
+      "Núcleo do agente.\n\nAtividade dirigida.",
+      "Núcleo do agente.",
+      "Atividade dirigida.",
+      "high",
+    ),
+    {
+      executionMode: "MODEL",
+      modelCode: "gpt-5.6-sol",
+      reasoningEffort: "high",
+      promptSent: "Núcleo do agente.\n\nAtividade dirigida.",
+      agentPromptPart: "Núcleo do agente.",
+      activityPromptPart: "Atividade dirigida.",
+      accessedUrls: [],
+    },
+  );
 });
 
 test("bloqueia resposta inválida preservando prompt e raciocínio", async () => {
-  const audit = executionAudit("Prompt final integral", "high");
+  const audit = executionAudit(
+    "Núcleo do agente.\n\nPrompt final integral",
+    "Núcleo do agente.",
+    "Prompt final integral",
+    "high",
+  );
   let reported;
 
   await assert.rejects(
@@ -158,6 +173,13 @@ test("atualiza contexto somente com predecessores concluídos da mesma instânci
 });
 
 test("atribui estratégia somente a Atena e arquitetura somente a Dédalo", async () => {
+  const strategyAgentPrompt = await readFile(
+    new URL(
+      "../experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/agent-core.md",
+      import.meta.url,
+    ),
+    "utf8",
+  );
   const strategyPrompt = await readFile(
     new URL(
       "../experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md",
@@ -172,11 +194,19 @@ test("atribui estratégia somente a Atena e arquitetura somente a Dédalo", asyn
     ),
     "utf8",
   );
-  assert.match(strategyPrompt, /única autora da estratégia/);
-  assert.match(strategyPrompt, /Não calcule preço/);
+  const architectureAgentPrompt = await readFile(
+    new URL(
+      "../landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/agent-core.md",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(strategyAgentPrompt, /única autora da estratégia/);
+  assert.match(strategyAgentPrompt, /não calcula preço/);
+  assert.match(strategyPrompt, /Compare exatamente três alternativas/);
   assert.match(
-    architecturePrompt,
-    /não redefina público, desejo, posicionamento/,
+    architectureAgentPrompt,
+    /não redefine mercado, público, posicionamento/,
   );
   assert.match(architecturePrompt, /Audiovisual pertence a Apolo/);
 });

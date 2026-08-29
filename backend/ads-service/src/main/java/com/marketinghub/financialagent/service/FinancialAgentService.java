@@ -417,13 +417,21 @@ public class FinancialAgentService {
   private AgentTaskExecutionAuditRequest executionAudit(CompleteFinancialAgentRequest request) {
     if (!hasText(request.model())
         || !hasText(request.reasoningEffort())
-        || !hasText(request.promptSent())) {
+        || !hasText(request.promptSent())
+        || !hasText(request.agentPromptPart())
+        || !hasText(request.activityPromptPart())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Conclusão financeira exige modelo, tipo de raciocínio e prompt integral.");
+          "Conclusão financeira exige modelo, raciocínio e as duas partes do prompt integral.");
     }
     return new AgentTaskExecutionAuditRequest(
-        request.model().trim(), request.reasoningEffort().trim(), request.promptSent());
+        "MODEL",
+        request.model().trim(),
+        request.reasoningEffort().trim(),
+        request.promptSent(),
+        request.agentPromptPart(),
+        request.activityPromptPart(),
+        List.of());
   }
 
   /** Normaliza o tier efetivo para o vocabulário de precificação do backend. */

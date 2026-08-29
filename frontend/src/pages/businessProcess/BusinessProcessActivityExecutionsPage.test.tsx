@@ -34,9 +34,13 @@ describe("BusinessProcessActivityExecutionsPage", () => {
       startedAt: "2026-08-20T21:40:00Z",
       finishedAt: "2026-08-20T21:41:24Z",
       modelCode: "gpt-5.4-mini-2026-03-17",
+      executionMode: "MODEL",
       reasoningEffort: "high",
       productInternalName: "VEGA-01",
-      promptSent: JSON.stringify({ instruction: "Comprove a dor" }),
+      agentPromptPart: "Você é Argos, investigador comercial.",
+      activityPromptPart: "Comprove a dor desta oportunidade.",
+      promptSent:
+        "Você é Argos, investigador comercial.\n\nComprove a dor desta oportunidade.",
     }));
     vi.mocked(axios.get).mockResolvedValue({
       data: {
@@ -84,11 +88,19 @@ describe("BusinessProcessActivityExecutionsPage", () => {
     expect(screen.getAllByText("VEGA-01")).toHaveLength(10);
     expect(screen.getAllByText("US$ 0.01347240")).toHaveLength(10);
     expect(screen.getAllByText("1min 24s")).toHaveLength(10);
+    expect(screen.getAllByText("Parte do agente")).toHaveLength(10);
+    expect(screen.getAllByText("Parte da atividade")).toHaveLength(10);
     expect(
-      screen.getAllByText("Prompt enviado ao modelo por Argos"),
+      screen.getAllByText("Prompt completo enviado ao modelo por Argos"),
+    ).toHaveLength(10);
+    expect(
+      screen.getAllByText("Você é Argos, investigador comercial."),
+    ).toHaveLength(10);
+    expect(
+      screen.getAllByText("Comprove a dor desta oportunidade."),
     ).toHaveLength(10);
     expect(screen.getAllByText("Comentários de Argos")).toHaveLength(10);
-    expect(screen.getAllByText("Visualizar JSON em árvore")).toHaveLength(30);
+    expect(screen.getAllByText("Visualizar JSON em árvore")).toHaveLength(20);
     expect(screen.getByRole("link", { name: "Voltar ao BPM" })).toHaveAttribute(
       "href",
       "/business-processes/retired?processId=37",
@@ -177,7 +189,11 @@ describe("BusinessProcessActivityExecutionsPage", () => {
             executionMode: "MODEL",
             modelCode: "gpt-5.6-sol",
             reasoningEffort: "high",
-            promptSent: "Prompt integral de homologação do Rigel.",
+            agentPromptPart:
+              "Você é Psique, representante da experiência humana.",
+            activityPromptPart: "Homologue a experiência humana do Rigel.",
+            promptSent:
+              "Você é Psique, representante da experiência humana.\n\nHomologue a experiência humana do Rigel.",
             accessedUrls: [],
             costEstimationStatus: "NOT_REPORTED",
             createdAt: "2026-08-28T16:16:00Z",
@@ -214,7 +230,10 @@ describe("BusinessProcessActivityExecutionsPage", () => {
     expect(screen.getByText("URLs acessadas por Psique")).toBeInTheDocument();
     expect(screen.getByText("high")).toBeInTheDocument();
     expect(
-      screen.getByText("Prompt integral de homologação do Rigel."),
+      screen.getByText("Você é Psique, representante da experiência humana."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Homologue a experiência humana do Rigel."),
     ).toBeInTheDocument();
   });
 });

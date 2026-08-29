@@ -8,7 +8,7 @@ export async function planDirectedResearch(job, options = {}) {
   const enabled =
     String(options.enabled ?? process.env.ARGOS_CODEX_ENABLED) === "true";
   if (!enabled) return deterministicPlan(job);
-  const prompt = await buildPrompt(job);
+  const prompt = await buildPromptComposition(job);
   const schemaContract = await readFile(
     new URL(
       "../prompts/productdiscovery.v1/plan/plan-schema.json",
@@ -47,7 +47,7 @@ export async function planDirectedResearch(job, options = {}) {
     args.push("--config", `model_reasoning_effort="${reasoningEffort}"`);
     if (model) args.push("--model", model);
     const execute = options.execute || executeCodexWithInput;
-    execution = await execute(command, args, prompt, {
+    execution = await execute(command, args, prompt.fullPrompt, {
       timeoutMs: Number(
         options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000,
       ),
@@ -74,7 +74,9 @@ export async function planDirectedResearch(job, options = {}) {
       rawResponse,
       model: model || "codex-default",
       mode: "CODEX",
-      prompt,
+      prompt: prompt.fullPrompt,
+      agentPromptPart: prompt.agentPromptPart,
+      activityPromptPart: prompt.activityPromptPart,
       reasoningEffort,
       usage: parseCodexUsage(execution?.stdout),
     };
@@ -84,7 +86,9 @@ export async function planDirectedResearch(job, options = {}) {
       executionMode: "MODEL",
       modelCode: model || "codex-default",
       reasoningEffort,
-      promptSent: prompt,
+      promptSent: prompt.fullPrompt,
+      agentPromptPart: prompt.agentPromptPart,
+      activityPromptPart: prompt.activityPromptPart,
       accessedUrls: [],
     };
     throw failure;
@@ -324,7 +328,7 @@ export function validatePlan(plan) {
   }
 }
 
-async function buildPrompt(job) {
+async function buildPromptComposition(job) {
   const [systemPrompt, userPrompt] = await Promise.all([
     readFile(
       new URL("../prompts/productdiscovery.v1/plan/system.md", import.meta.url),
@@ -343,7 +347,16 @@ async function buildPrompt(job) {
     commercialConstraints: job.commercialConstraints || "não informadas",
     objective: job.objective || "não informado",
   };
-  return `${systemPrompt.trim()}\n\n${resolvePromptPlaceholders(userPrompt, values).trim()}`;
+  const agentPromptPart = systemPrompt.trim();
+  const activityPromptPart = resolvePromptPlaceholders(
+    userPrompt,
+    values,
+  ).trim();
+  return {
+    fullPrompt: `${agentPromptPart}\n\n${activityPromptPart}`,
+    agentPromptPart,
+    activityPromptPart,
+  };
 }
 
 /** Resolve somente os placeholders conhecidos e preserva o restante como erro visível. */

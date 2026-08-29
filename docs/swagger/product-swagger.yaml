@@ -1056,6 +1056,17 @@ components:
             - PROPOSED
             - ACTIVE
             - RETIRED
+        blueprint:
+          allOf:
+            - $ref: "#/components/schemas/ProductTypeBlueprint"
+          nullable: true
+        constructionReady:
+          type: boolean
+          description: Verdade calculada pelo backend sobre a completude da base de construção.
+        missingBlueprintFields:
+          type: array
+          items:
+            type: string
         productCount:
           type: integer
           format: int64
@@ -1070,8 +1081,6 @@ components:
       required:
         - name
         - internalName
-        - aliases
-        - status
       additionalProperties: false
       properties:
         code:
@@ -1101,6 +1110,55 @@ components:
             - PROPOSED
             - ACTIVE
             - RETIRED
+        blueprint:
+          allOf:
+            - $ref: "#/components/schemas/ProductTypeBlueprint"
+          nullable: true
+          description: Obrigatório e completo ao criar ou ativar tipo; PWA também exige frontendSdkModule.
+    ProductTypeBlueprint:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: string
+          maxLength: 64
+        primaryChannel:
+          type: string
+          maxLength: 64
+        customerJob:
+          type: string
+          maxLength: 5000
+        valueMechanism:
+          type: string
+          maxLength: 5000
+        experienceFlow:
+          type: string
+          maxLength: 5000
+        requiredInputs:
+          type: string
+          maxLength: 5000
+        expectedOutputs:
+          type: string
+          maxLength: 5000
+        memoryStrategy:
+          type: string
+          maxLength: 5000
+        integrationRequirements:
+          type: string
+          maxLength: 5000
+        safetyGuardrails:
+          type: string
+          maxLength: 5000
+        successMetrics:
+          type: string
+          maxLength: 5000
+        backendSdkModule:
+          type: string
+          maxLength: 255
+        frontendSdkModule:
+          type: string
+          maxLength: 255
+          nullable: true
     Product:
       type: object
       properties:

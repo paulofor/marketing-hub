@@ -85,5 +85,5 @@ rodadas completas e consecutivas executaram
 - foram comprovados contato futuro após reinício do SDK, memória e saída distintas por cliente,
   bloqueio de snapshot ou fato cruzado, vínculo de thread por conversa, revisão não regressiva,
   concorrência, validade, neutralização de delimitadores, esquecimento e descarte do workspace;
-- o JAR `0.2.0-SNAPSHOT` foi construído e o Spotless não encontrou divergências;
+- o JAR `0.3.0-SNAPSHOT` foi construído e o Spotless não encontrou divergências;
 - nenhum turno real de modelo, chamada direta à OpenAI API, publicação ou gasto foi acionado.

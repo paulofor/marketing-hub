@@ -11,13 +11,6 @@ public record AgentTaskExecutionAuditRequest(
     @Size(max = 128) String modelCode,
     @Size(max = 32) String reasoningEffort,
     @Size(max = 16_777_215) String promptSent,
-    @Size(max = 50) List<@Valid AgentTaskAccessedUrlRequest> accessedUrls) {
-
-  /**
-   * Mantém compatibilidade tipada com produtores que já enviavam uma chamada de modelo completa.
-   */
-  public AgentTaskExecutionAuditRequest(
-      String modelCode, String reasoningEffort, String promptSent) {
-    this("MODEL", modelCode, reasoningEffort, promptSent, List.of());
-  }
-}
+    @Size(max = 16_777_215) String agentPromptPart,
+    @Size(max = 16_777_215) String activityPromptPart,
+    @Size(max = 50) List<@Valid AgentTaskAccessedUrlRequest> accessedUrls) {}

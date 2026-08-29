@@ -1025,6 +1025,14 @@ components:
         requestJson:
           type: string
           minLength: 1
+        agentPromptPart:
+          type: string
+          nullable: true
+          description: Identidade e limites estáveis do agente enviados nesta execução.
+        activityPromptPart:
+          type: string
+          nullable: true
+          description: Instrução contextual da atividade enviada nesta execução.
         responseJson:
           type: string
           minLength: 1

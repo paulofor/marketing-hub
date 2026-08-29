@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsabilidade: expor o cadastro administrativo de tipos de produto. */
+/**
+ * Responsabilidade: expor o cadastro administrativo e as bases de construção dos tipos de produto.
+ */
 @RestController
 @RequestMapping("/api/product-types")
 public class ProductTypeController {
@@ -39,13 +41,13 @@ public class ProductTypeController {
     return service.get(id);
   }
 
-  /** Cadastra um tipo extensível com codinome e apelidos internos. */
+  /** Cadastra um tipo extensível com mineral, apelidos e base de construção. */
   @PostMapping
   public ProductTypeCatalogItemResponse create(@Valid @RequestBody SaveProductTypeRequest request) {
     return service.create(request);
   }
 
-  /** Atualiza a classificação preservando os produtos e o histórico vinculados. */
+  /** Atualiza classificação e base preservando os produtos e o histórico vinculados. */
   @PutMapping("/{id}")
   public ProductTypeCatalogItemResponse update(
       @PathVariable Long id, @Valid @RequestBody SaveProductTypeRequest request) {

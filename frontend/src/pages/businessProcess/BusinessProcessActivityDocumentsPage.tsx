@@ -11,6 +11,7 @@ import {
   formattedDuration,
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
+import PromptAuditCards from "./PromptAuditCards";
 import PsiqueTaskAudit from "./PsiqueTaskAudit";
 import "./BusinessProcessesPage.css";
 
@@ -157,20 +158,12 @@ export default function BusinessProcessActivityDocumentsPage() {
                       </dd>
                     </div>
                   </dl>
-                  <h2 className="h6">
-                    {document.executionMode === "DETERMINISTIC"
-                      ? "Entrada integral da execução determinística"
-                      : document.executionMode === "NOT_STARTED"
-                        ? "Modelo não iniciado"
-                        : "Prompt enviado ao modelo"}
-                  </h2>
-                  <StructuredExecutionContent
-                    value={document.promptSent}
-                    emptyText={
-                      document.executionMode === "NOT_STARTED"
-                        ? "A execução foi interrompida antes de enviar um prompt ao modelo."
-                        : "Prompt não registrado nesta execução legada."
-                    }
+                  <PromptAuditCards
+                    executionMode={document.executionMode}
+                    agentNickname={document.assignedAgentNickname}
+                    agentPromptPart={document.agentPromptPart}
+                    activityPromptPart={document.activityPromptPart}
+                    promptSent={document.promptSent}
                   />
                   {document.assignedAgentKey === "customer-agent" ||
                   (document.accessedUrls ?? []).length > 0 ? (

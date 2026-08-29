@@ -28,6 +28,8 @@ public record BusinessProcessActivityDocumentResponse(
     String reasoningEffort,
     String productInternalName,
     String promptSent,
+    String agentPromptPart,
+    String activityPromptPart,
     List<AgentTaskAuditLinkResponse> accessedUrls,
     List<AgentTaskVisualEvidenceResponse> visualEvidence,
     JsonNode visualAudit,

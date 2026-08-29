@@ -1,0 +1,93 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-product-type-consultant-research-enrichment-v2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_type_definition
+        - sqlCheck:
+            expectedResult: "13"
+            sql: >-
+              SELECT COUNT(*)
+                FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_type_definition'
+                 AND column_name IN
+                   ('blueprint_version', 'primary_channel', 'customer_job', 'value_mechanism',
+                    'experience_flow', 'required_inputs', 'expected_outputs', 'memory_strategy',
+                    'integration_requirements', 'safety_guardrails', 'success_metrics',
+                    'backend_sdk_module', 'frontend_sdk_module')
+        - sqlCheck:
+            expectedResult: "2"
+            sql: >-
+              SELECT COUNT(*)
+                FROM product_type_definition
+               WHERE code IN
+                 ('AI_SANDBOX_CONVERSATIONAL_PRODUCT', 'AI_PWA_CONSULTANT_PRODUCT')
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_type_definition
+                 SET blueprint_version = 'consultant-whatsapp-v2',
+                     customer_job = 'Em um momento concreto de dúvida, decisão ou acompanhamento, receber no WhatsApp uma primeira orientação útil rapidamente, sem instalar aplicativo, reconstruir o próprio histórico ou aprender a operar uma IA.',
+                     value_mechanism = 'O consultor transforma objetivo e contexto declarados, materiais autorizados e memória revisável em interpretação, uma próxima ação prioritária e acompanhamento. O ciclo contexto, recomendação, ação, feedback e memória reduz esforço a cada novo contato e precisa executar trabalho operacional melhor que uma conversa genérica gratuita.',
+                     experience_flow = 'Opt-in e identificação segura; primeira resposta reafirma marca, origem da conversa, motivo, escopo e opções de parar ou falar com uma pessoa; cliente confirma o objetivo atual; coleta mínima e consentimento contextual; microvalor operacional; recomendação com evidência e confiança; uma próxima ação e o que acontecerá depois; avaliação de utilidade; memória revisada; retorno futuro somente dentro da autorização.',
+                     required_inputs = 'Identidade autenticada; origem da conversa; mensagem atual; momento, objetivo e restrições declarados; foto ou arquivo apenas quando necessário; consentimento de uso e retenção; proveniência de cada dado como declarado, observado, confirmado ou inferido; envelope de permissões; snapshot de memória autorizado pelo backend.',
+                     expected_outputs = 'Reconhecimento breve do contexto sem simular sentimentos humanos; microresultado operacional e auditável, não apenas explicação; recomendação principal; evidência, confiança e limitação; uma próxima ação; consequência e próximo passo esperado; pergunta curta quando faltar contexto; opção de correção, interrupção ou atendimento humano; artefato visual somente quando aumentar valor.',
+                     memory_strategy = 'Memória durável no backend por tenant, produto e cliente, organizada por objetivo, preferência, restrição, decisão, progresso e feedback; declaração explícita atual prevalece; inferências continuam rotuladas e revisáveis; dado íntimo ou sensível só pode orientar personalização quando declarado e autorizado; recuperação filtra o escopo antes da relevância; correção e esquecimento são auditáveis.',
+                     integration_requirements = 'WhatsApp Business Platform ou provedor aprovado; webhook autenticado e idempotente; contexto de confiança da origem; backend PDE; armazenamento privado de mídia; worker Java; PDE Harness SDK com envelope de consultor v2; Codex App Server local por stdio; callbacks e eventos de microvalor, continuidade, receita, custo e controle auditáveis.',
+                     safety_guardrails = 'Bloquear cliente não identificado, origem ambígua, mídia sem consentimento, memória divergente, custo acima do limite, pedido fora do escopo e decisão sensível sem protocolo; não inferir corpo, saúde, finanças ou atributo íntimo sem declaração; não comprar, pagar, publicar, enviar comunicação ou executar ação de alto impacto sem confirmação; oferecer interrupção, correção e escalonamento humano.',
+                     success_metrics = 'Conversa iniciada; contexto de confiança exibido; objetivo confirmado; mídia recebida quando aplicável; microvalor alcançado; tempo até resposta útil; continuidade por três mensagens; utilidade declarada; próxima ação aceita; segunda interação; retorno futuro; compra ou renovação reconciliada; custo e margem por cliente; intervenção humana; correção ou exclusão; opt-out e reclamação.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+
+              UPDATE product_type_definition
+                 SET blueprint_version = 'consultant-pwa-v2',
+                     customer_job = 'Em um momento concreto de dúvida, decisão ou acompanhamento visual, receber uma orientação pessoal e contínua no celular, com comparação e histórico claros, sem instalar aplicativo antes de perceber valor nem aprender a operar uma IA.',
+                     value_mechanism = 'A experiência React transforma contexto declarado, fotos autorizadas e memória revisável em interpretação visual, comparação, uma próxima ação prioritária e acompanhamento. O ciclo contexto, recomendação, ação, feedback e memória reduz esforço futuro e entrega um workflow pronto em vez de um chat genérico.',
+                     experience_flow = 'Link profundo abre a missão prometida; demonstração ou microvalor efêmero usa a menor entrada possível; identificação é pedida quando necessária para salvar, acessar dados privados ou continuar; consentimento contextual antecede mídia e memória; processamento é compreensível; orientação traz evidência e próxima ação; refinamento ou comparação; utilidade; instalação é oferecida somente após valor e com benefício explícito; retorno retoma o estado correto.',
+                     required_inputs = 'Objetivo e momento atuais; identidade autenticada antes de histórico ou dados privados; foto ou arquivo autorizado quando útil; contexto e restrições declarados; consentimento de uso e retenção; capacidades do dispositivo detectadas; proveniência de cada dado como declarado, observado, confirmado ou inferido; envelope de permissões; snapshot de memória autorizado pelo backend.',
+                     expected_outputs = 'Microresultado visual ou operacional auditável; cartão acessível com recomendação principal, evidência, confiança, limitação e uma próxima ação; comparação quando útil; consequência e próximo passo esperado; pergunta curta quando faltar contexto; histórico exclusivo do cliente; controle para corrigir, apagar, interromper ou pedir ajuda; estados claros de processamento, bloqueio e nova tentativa.',
+                     memory_strategy = 'Memória durável no backend por tenant, produto e cliente, organizada por objetivo, preferência, restrição, decisão, progresso e feedback; declaração explícita atual prevalece; inferências continuam rotuladas e revisáveis; dado íntimo ou sensível só pode orientar personalização quando declarado e autorizado; cache local não contém dado sensível; filtragem antecede relevância; correção e esquecimento são auditáveis.',
+                     integration_requirements = 'PWA React em HTTPS; links profundos, manifest e service worker; câmera ou seletor com fallback; modo navegador e instalado mensurados separadamente; backend PDE; armazenamento privado; worker Java; PDE Harness SDK com envelope de consultor v2; Codex App Server local por stdio; callbacks e analytics segregados de QA.',
+                     safety_guardrails = 'Bloquear acesso a dados privados sem autenticação, mídia sem consentimento, arquivo inseguro, memória divergente, orientação sensível sem protocolo e publicação sem eventos; não inferir corpo, saúde, finanças ou atributo íntimo sem declaração; não executar ação de alto impacto sem confirmação; não exigir instalação antes do valor; manter acessibilidade, reversibilidade, ajuda humana e fallback.',
+                     success_metrics = 'Entrada válida; microvalor alcançado; tempo até valor; abandono antes do valor e da identificação; login concluído; foto enviada; orientação entregue; utilidade; refinamento; próxima ação aceita; convite de instalação exibido somente após valor; instalação aceita e uso posterior; retorno D1, D7 e D30; compra ou renovação reconciliada; custo e margem; erro, ajuda, correção e exclusão.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_PWA_CONSULTANT_PRODUCT';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_type_definition
+                 SET blueprint_version = 'consultant-whatsapp-v1',
+                     customer_job = 'Receber orientação pessoal e aplicável no canal que o cliente já usa, sem instalar aplicativo e sem aprender prompts ou configurações de IA.',
+                     value_mechanism = 'Uma identidade de consultor combina contexto atual, fotos autorizadas e memória durável do relacionamento para recomendar o próximo passo com pouco esforço.',
+                     experience_flow = 'Opt-in e identificação segura; mensagem ou foto; confirmação breve do objetivo; análise contextual; orientação curta; pergunta de continuidade; avaliação de utilidade; memória revisada para o próximo contato.',
+                     required_inputs = 'Identidade autenticada do cliente; mensagem atual; foto ou arquivo somente quando necessário; objetivo e ocasião; consentimento de uso e retenção; snapshot de memória autorizado pelo backend.',
+                     expected_outputs = 'Resposta curta e acionável; recomendação principal; justificativa simples; próximo passo; pedido de refinamento quando faltar contexto; artefato visual somente quando aumentar o valor.',
+                     memory_strategy = 'Memória durável no backend por tenant, produto e cliente; thread curta por versão e conversa; filtragem pelo escopo antes da relevância; correção, validade e esquecimento auditáveis; nenhum dado de outro cliente no conjunto candidato.',
+                     integration_requirements = 'WhatsApp Business Platform ou provedor aprovado; webhook autenticado e idempotente; backend PDE; armazenamento privado de mídia; worker Java; PDE Harness SDK; Codex App Server local por stdio; callbacks auditáveis.',
+                     safety_guardrails = 'Bloquear cliente não identificado, mídia sem consentimento, memória divergente, custo acima do limite, pedido fora do escopo e decisão sensível sem protocolo; nunca enviar comunicação em massa ou ação financeira sem autorização.',
+                     success_metrics = 'Conversa iniciada; mídia recebida quando aplicável; primeira orientação entregue; tempo até resposta útil; utilidade declarada; segunda interação; retorno futuro; compra ou renovação; custo e margem por cliente; opt-out e reclamação.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+
+              UPDATE product_type_definition
+                 SET blueprint_version = 'consultant-pwa-v1',
+                     customer_job = 'Receber orientação pessoal, visual e contínua em uma experiência mobile simples, acessível pelo navegador e instalável sem depender de loja de aplicativos.',
+                     value_mechanism = 'Uma interface React reduz o esforço de entrada, organiza fotos e histórico e usa memória durável para transformar contexto atual em uma recomendação clara e personalizada.',
+                     experience_flow = 'Entrada pública de valor; login ou vínculo seguro; consentimento; mensagem ou foto; estado de processamento visível; orientação estruturada; comparação ou refinamento; avaliação de utilidade; retorno pela mesma experiência.',
+                     required_inputs = 'Identidade autenticada; mensagem atual; foto ou arquivo autorizado; objetivo e contexto; consentimento de retenção; capacidades do dispositivo detectadas; snapshot de memória autorizado pelo backend.',
+                     expected_outputs = 'Cartão de orientação acessível; recomendação principal; justificativa; próximo passo; comparação visual quando útil; histórico do próprio cliente; estado claro de processamento, bloqueio e nova tentativa.',
+                     memory_strategy = 'Memória durável no backend por tenant, produto e cliente; thread curta por versão e conversa; cache local sem dados sensíveis; filtragem antes da relevância; correção e esquecimento auditáveis.',
+                     integration_requirements = 'PWA React em HTTPS; manifest e service worker; câmera ou seletor de arquivos com fallback; backend PDE; armazenamento privado; worker Java; PDE Harness SDK; Codex App Server local por stdio; analytics segregado de QA.',
+                     safety_guardrails = 'Bloquear sessão não autenticada para dados privados, mídia sem consentimento, arquivo inseguro, memória divergente, orientação sensível sem protocolo e publicação sem eventos; manter acessibilidade e fallback quando a instalação não for suportada.',
+                     success_metrics = 'Entrada; login concluído; primeira mensagem; foto enviada; orientação entregue; tempo até valor; utilidade; refinamento; instalação opcional; retorno; compra ou renovação; custo e margem por cliente; erro e exclusão.',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_PWA_CONSULTANT_PRODUCT';

@@ -852,6 +852,8 @@ public class AgentTaskService {
         task.getExecutionModelCode(),
         task.getExecutionReasoningEffort(),
         task.getExecutionPrompt(),
+        task.getExecutionAgentPrompt(),
+        task.getExecutionActivityPrompt(),
         AgentTaskAuditView.blockerGuidance(task),
         AgentTaskAuditView.accessedUrls(task),
         AgentTaskAuditView.visualEvidence(task),
@@ -1204,6 +1206,8 @@ public class AgentTaskService {
         task.getExecutionMode(),
         task.getExecutionReasoningEffort(),
         task.getExecutionPrompt(),
+        task.getExecutionAgentPrompt(),
+        task.getExecutionActivityPrompt(),
         AgentTaskAuditView.blockerGuidance(task),
         AgentTaskAuditView.accessedUrls(task),
         AgentTaskAuditView.visualEvidence(task),
@@ -1513,6 +1517,8 @@ public class AgentTaskService {
       String modelCode,
       String reasoningEffort,
       String promptSent,
+      String agentPromptPart,
+      String activityPromptPart,
       Long inputTokens,
       Long cachedInputTokens,
       Long outputTokens,
@@ -1530,6 +1536,13 @@ public class AgentTaskService {
     if (normalizedModel != null) task.setExecutionModelCode(normalizedModel);
     if (normalizedReasoning != null) task.setExecutionReasoningEffort(normalizedReasoning);
     if (normalizedPrompt != null) task.setExecutionPrompt(normalizedPrompt);
+    if (Boolean.TRUE.equals(modelInvocation)) {
+      task.setExecutionAgentPrompt(agentPromptPart);
+      task.setExecutionActivityPrompt(activityPromptPart);
+    } else if (Boolean.FALSE.equals(modelInvocation) && normalizedPrompt != null) {
+      task.setExecutionAgentPrompt(null);
+      task.setExecutionActivityPrompt(normalizedPrompt);
+    }
 
     boolean anyTokenReported =
         inputTokens != null || cachedInputTokens != null || outputTokens != null;
@@ -1960,7 +1973,7 @@ public class AgentTaskService {
     task.setModelUsageUpdatedAt(now);
   }
 
-  /** Preserva modo, modelo, esforço, prompt integral e URLs acessadas na tentativa. */
+  /** Preserva modo, modelo, esforço, partes do prompt integral e URLs acessadas na tentativa. */
   private void applyExecutionAudit(AgentTask task, AgentTaskExecutionAuditRequest audit) {
     if (audit == null) return;
     String mode = normalizedUpper(audit.executionMode());
@@ -1971,10 +1984,18 @@ public class AgentTaskService {
     task.setExecutionModelCode(trimToNull(audit.modelCode()));
     task.setExecutionReasoningEffort(trimToNull(audit.reasoningEffort()));
     task.setExecutionPrompt(audit.promptSent());
+    task.setExecutionAgentPrompt(audit.agentPromptPart());
+    task.setExecutionActivityPrompt(audit.activityPromptPart());
+    if ("DETERMINISTIC".equals(mode) && trimToNull(audit.promptSent()) != null) {
+      task.setExecutionAgentPrompt(null);
+      task.setExecutionActivityPrompt(audit.promptSent());
+    }
     if ("NOT_STARTED".equals(mode)) {
       task.setExecutionModelCode(null);
       task.setExecutionReasoningEffort("NOT_APPLICABLE");
       task.setExecutionPrompt(null);
+      task.setExecutionAgentPrompt(null);
+      task.setExecutionActivityPrompt(null);
     }
     replaceAccessedUrls(task, audit.accessedUrls());
   }
@@ -1989,11 +2010,14 @@ public class AgentTaskService {
     if ("MODEL".equals(mode)
         && (trimToNull(task.getExecutionModelCode()) == null
             || trimToNull(task.getExecutionReasoningEffort()) == null
-            || trimToNull(task.getExecutionPrompt()) == null)) {
+            || trimToNull(task.getExecutionPrompt()) == null
+            || trimToNull(task.getExecutionAgentPrompt()) == null
+            || trimToNull(task.getExecutionActivityPrompt()) == null)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Execução de modelo exige modelo, tipo de raciocínio e prompt integral.");
+          "Execução de modelo exige modelo, tipo de raciocínio, parte do agente, parte da atividade e prompt integral.");
     }
+    if ("MODEL".equals(mode)) validatePromptComposition(task);
     if ("DETERMINISTIC".equals(mode)
         && (!"NOT_APPLICABLE".equals(task.getExecutionReasoningEffort())
             || trimToNull(task.getExecutionModelCode()) == null
@@ -2021,7 +2045,10 @@ public class AgentTaskService {
       task.setExecutionMode("DETERMINISTIC");
       task.setExecutionModelCode(executionIdentifier);
       task.setExecutionReasoningEffort("NOT_APPLICABLE");
-      task.setExecutionPrompt(objectMapper.writeValueAsString(fullInput));
+      String serializedInput = objectMapper.writeValueAsString(fullInput);
+      task.setExecutionPrompt(serializedInput);
+      task.setExecutionAgentPrompt(null);
+      task.setExecutionActivityPrompt(serializedInput);
       task.setInputTokens(0L);
       task.setCachedInputTokens(0L);
       task.setOutputTokens(0L);
@@ -2051,6 +2078,23 @@ public class AgentTaskService {
     task.setExecutionModelCode(null);
     task.setExecutionReasoningEffort("NOT_APPLICABLE");
     task.setExecutionPrompt(null);
+    task.setExecutionAgentPrompt(null);
+    task.setExecutionActivityPrompt(null);
+  }
+
+  /** Confirma que as duas partes declaradas pertencem, na ordem correta, ao prompt enviado. */
+  private void validatePromptComposition(AgentTask task) {
+    String fullPrompt = task.getExecutionPrompt();
+    String agentPrompt = task.getExecutionAgentPrompt();
+    String activityPrompt = task.getExecutionActivityPrompt();
+    int agentStart = fullPrompt.indexOf(agentPrompt);
+    int activityStart =
+        agentStart < 0 ? -1 : fullPrompt.indexOf(activityPrompt, agentStart + agentPrompt.length());
+    if (agentStart < 0 || activityStart < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "As partes do agente e da atividade devem compor, nesta ordem, o prompt integral.");
+    }
   }
 
   /** Persiste orientação explícita ou deriva um fallback acionável sem depender de logs. */

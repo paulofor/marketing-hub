@@ -417,6 +417,18 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.business-process-prompt-audit,
+.business-process-prompt-card,
+.business-process-prompt-card .card-body {
+  min-width: 0;
+}
+.business-process-prompt-card {
+  border-color: var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+.business-process-prompt-card .business-process-document__content {
+  max-height: 24rem;
+}
 .psique-visual-evidence__image {
   width: 100%;
   max-height: 34rem;

@@ -217,10 +217,10 @@ public class CustomerBpmTaskConsumer {
     Path output = Files.createTempFile("psique-bpm-result-", ".json");
     Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
-    String resolvedPrompt = prompt(task, visualEvidence);
+    PromptComposition prompt = promptComposition(task, visualEvidence);
     List<Map<String, Object>> visualAccesses = visualAccessedUrls(visualEvidence);
     try {
-      recordExecutionAudit(task, resolvedPrompt, visualAccesses);
+      recordExecutionAudit(task, prompt, visualAccesses);
       List<String> command =
           new ArrayList<>(
               List.of(
@@ -250,14 +250,16 @@ public class CustomerBpmTaskConsumer {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(40, TimeUnit.MINUTES)) {
         process.destroyForcibly();
         throw new BpmExecutionException(
             "Timeout da atividade BPM de Psique após 40 minutos.",
             readTokenUsage(json, processLog),
-            resolvedPrompt,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
             mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
             visualEvidence);
       }
@@ -266,7 +268,9 @@ public class CustomerBpmTaskConsumer {
         throw new BpmExecutionException(
             "Codex encerrou com falha: " + Files.readString(processLog),
             usage,
-            resolvedPrompt,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
             mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
             visualEvidence);
       }
@@ -275,7 +279,9 @@ public class CustomerBpmTaskConsumer {
         return new BpmExecution(
             result,
             usage,
-            resolvedPrompt,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
             mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
             visualEvidence);
       } catch (IOException ex) {
@@ -287,7 +293,9 @@ public class CustomerBpmTaskConsumer {
         throw new BpmExecutionException(
             "Resposta de Psique não contém JSON válido.",
             usage,
-            resolvedPrompt,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart(),
             mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
             visualEvidence,
             ex);
@@ -305,7 +313,13 @@ public class CustomerBpmTaskConsumer {
     body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
     putModelUsage(body, execution.usage());
-    body.put("executionAudit", executionAudit(execution.promptSent(), execution.accessedUrls()));
+    body.put(
+        "executionAudit",
+        executionAudit(
+            execution.promptSent(),
+            execution.agentPromptPart(),
+            execution.activityPromptPart(),
+            execution.accessedUrls()));
     backend
         .post()
         .uri(
@@ -329,6 +343,14 @@ public class CustomerBpmTaskConsumer {
       TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
       String promptSent =
           execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
+      String agentPromptPart =
+          execution != null
+              ? execution.agentPromptPart()
+              : bpm == null ? null : bpm.agentPromptPart();
+      String activityPromptPart =
+          execution != null
+              ? execution.activityPromptPart()
+              : bpm == null ? null : bpm.activityPromptPart();
       List<Map<String, Object>> urls =
           execution != null
               ? execution.accessedUrls()
@@ -345,7 +367,16 @@ public class CustomerBpmTaskConsumer {
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(failureBody(task, ex, usage, promptSent, urls, visualEvidence))
+          .body(
+              failureBody(
+                  task,
+                  ex,
+                  usage,
+                  promptSent,
+                  agentPromptPart,
+                  activityPromptPart,
+                  urls,
+                  visualEvidence))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -362,7 +393,13 @@ public class CustomerBpmTaskConsumer {
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
     putModelUsage(body, execution.usage());
-    body.put("executionAudit", executionAudit(execution.promptSent(), execution.accessedUrls()));
+    body.put(
+        "executionAudit",
+        executionAudit(
+            execution.promptSent(),
+            execution.agentPromptPart(),
+            execution.activityPromptPart(),
+            execution.accessedUrls()));
     body.put("blockerGuidance", functionalGuidance(task, result));
     backend
         .post()
@@ -380,6 +417,14 @@ public class CustomerBpmTaskConsumer {
       Map<String, Object> task,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
       throws IOException {
+    return promptComposition(task, visualEvidence).fullPrompt();
+  }
+
+  /** Compõe o núcleo sensorial de Psique com a missão e as provas específicas da atividade. */
+  private PromptComposition promptComposition(
+      Map<String, Object> task,
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
+      throws IOException {
     Map<String, Object> promptContext = new HashMap<>(task);
     if (visualEvidence != null && !visualEvidence.isEmpty()) {
       promptContext.put("visualEvidence", visualEvidence);
@@ -391,9 +436,13 @@ public class CustomerBpmTaskConsumer {
           "versionedCommercialHomologationEvidence",
           pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
-    return read(promptResourceFor(processCode(task)))
-        .replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", behavioralCoreV3())
-        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
+    String agentPromptPart = behavioralCoreV3();
+    String activityPromptPart =
+        read(promptResourceFor(processCode(task)))
+            .replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", "")
+            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
+    return new PromptComposition(
+        agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
   /** Lê a constituição comportamental e sensorial usada pelas atividades atuais de Psique. */
@@ -615,14 +664,19 @@ public class CustomerBpmTaskConsumer {
 
   /** Registra prompt, modelo, raciocínio e acessos Playwright antes de iniciar o processo Codex. */
   private void recordExecutionAudit(
-      Map<String, Object> task, String resolvedPrompt, List<Map<String, Object>> accessedUrls) {
+      Map<String, Object> task, PromptComposition prompt, List<Map<String, Object>> accessedUrls) {
     backend
         .put()
         .uri(
             "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
             AGENT_KEY,
             taskId(task))
-        .body(executionAudit(resolvedPrompt, accessedUrls))
+        .body(
+            executionAudit(
+                prompt.fullPrompt(),
+                prompt.agentPromptPart(),
+                prompt.activityPromptPart(),
+                accessedUrls))
         .retrieve()
         .toBodilessEntity();
   }
@@ -675,6 +729,8 @@ public class CustomerBpmTaskConsumer {
       Exception error,
       TokenUsage usage,
       String promptSent,
+      String agentPromptPart,
+      String activityPromptPart,
       List<Map<String, Object>> accessedUrls,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
       throws IOException {
@@ -683,7 +739,9 @@ public class CustomerBpmTaskConsumer {
     body.put("evidenceJson", evidence(task, visualEvidence));
     putModelUsage(body, usage);
     if (promptSent != null) {
-      body.put("executionAudit", executionAudit(promptSent, accessedUrls));
+      body.put(
+          "executionAudit",
+          executionAudit(promptSent, agentPromptPart, activityPromptPart, accessedUrls));
     }
     body.put(
         "blockerGuidance",
@@ -705,12 +763,17 @@ public class CustomerBpmTaskConsumer {
 
   /** Monta a auditoria completa e segregada da chamada efetivamente enviada ao Codex. */
   private Map<String, Object> executionAudit(
-      String promptSent, List<Map<String, Object>> accessedUrls) {
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart,
+      List<Map<String, Object>> accessedUrls) {
     Map<String, Object> audit = new LinkedHashMap<>();
     audit.put("executionMode", "MODEL");
     audit.put("modelCode", model);
     audit.put("reasoningEffort", reasoningEffort);
     audit.put("promptSent", promptSent);
+    audit.put("agentPromptPart", agentPromptPart);
+    audit.put("activityPromptPart", activityPromptPart);
     audit.put("accessedUrls", accessedUrls == null ? List.of() : accessedUrls);
     return audit;
   }
@@ -907,8 +970,14 @@ public class CustomerBpmTaskConsumer {
       JsonNode result,
       TokenUsage usage,
       String promptSent,
+      String agentPromptPart,
+      String activityPromptPart,
       List<Map<String, Object>> accessedUrls,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {}
+
+  /** Representa as duas partes e a composição exata enviada ao modelo. */
+  private record PromptComposition(
+      String fullPrompt, String agentPromptPart, String activityPromptPart) {}
 
   /** Representa contadores reais cumulativos informados pelo processo Codex. */
   record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
@@ -927,6 +996,8 @@ public class CustomerBpmTaskConsumer {
   private static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
     private final String promptSent;
+    private final String agentPromptPart;
+    private final String activityPromptPart;
     private final List<Map<String, Object>> accessedUrls;
     private final List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence;
 
@@ -935,11 +1006,15 @@ public class CustomerBpmTaskConsumer {
         String message,
         TokenUsage usage,
         String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
         List<Map<String, Object>> accessedUrls,
         List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {
       super(message);
       this.usage = usage;
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
       this.accessedUrls = List.copyOf(accessedUrls);
       this.visualEvidence = List.copyOf(visualEvidence);
     }
@@ -949,12 +1024,16 @@ public class CustomerBpmTaskConsumer {
         String message,
         TokenUsage usage,
         String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
         List<Map<String, Object>> accessedUrls,
         List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence,
         Throwable cause) {
       super(message, cause);
       this.usage = usage;
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
       this.accessedUrls = List.copyOf(accessedUrls);
       this.visualEvidence = List.copyOf(visualEvidence);
     }
@@ -967,6 +1046,16 @@ public class CustomerBpmTaskConsumer {
     /** Retorna o prompt exato mesmo quando a chamada termina com falha. */
     private String promptSent() {
       return promptSent;
+    }
+
+    /** Retorna o núcleo comportamental preservado antes da falha. */
+    private String agentPromptPart() {
+      return agentPromptPart;
+    }
+
+    /** Retorna a missão específica preservada antes da falha. */
+    private String activityPromptPart() {
+      return activityPromptPart;
     }
 
     /** Retorna somente as URLs comprovadas pelo log da tentativa interrompida. */

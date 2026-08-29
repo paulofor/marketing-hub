@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Types
-  version: 1.0.0
-  description: Cadastro extensível de classificações e apelidos internos de tipos de produto.
+  version: 1.1.0
+  description: Cadastro extensível de classificações, minerais e bases de construção de tipos de produto.
 paths:
   /api/product-types:
     get:
@@ -45,6 +45,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductType"
+        "400":
+          description: Tipo ativo sem descrição ou sem base de construção completa.
         "409":
           description: Nome, código ou apelido já identifica outro tipo.
   /api/product-types/{id}:
@@ -80,6 +82,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductType"
+        "400":
+          description: Tipo ativado ou base ativa editada sem todos os contratos obrigatórios.
         "409":
           description: Identidade duplicada ou tentativa de trocar código em uso.
 components:
@@ -104,8 +108,11 @@ components:
         - id
         - code
         - name
+        - internalName
         - aliases
         - status
+        - constructionReady
+        - missingBlueprintFields
         - productCount
       properties:
         id:
@@ -117,6 +124,10 @@ components:
         name:
           type: string
           maxLength: 191
+        internalName:
+          type: string
+          maxLength: 191
+          description: Codinome mineral único e estável usado somente na operação interna.
         description:
           type: string
           maxLength: 1000
@@ -128,6 +139,17 @@ components:
             maxLength: 191
         status:
           $ref: "#/components/schemas/ProductTypeStatus"
+        blueprint:
+          allOf:
+            - $ref: "#/components/schemas/ProductTypeBlueprint"
+          nullable: true
+        constructionReady:
+          type: boolean
+          description: Verdade calculada pelo backend sobre a completude da base de construção.
+        missingBlueprintFields:
+          type: array
+          items:
+            type: string
         productCount:
           type: integer
           format: int64
@@ -141,8 +163,7 @@ components:
       type: object
       required:
         - name
-        - aliases
-        - status
+        - internalName
       properties:
         code:
           type: string
@@ -151,6 +172,10 @@ components:
         name:
           type: string
           maxLength: 191
+        internalName:
+          type: string
+          maxLength: 191
+          description: Codinome mineral único e estável.
         description:
           type: string
           maxLength: 1000
@@ -162,3 +187,52 @@ components:
             maxLength: 191
         status:
           $ref: "#/components/schemas/ProductTypeStatus"
+        blueprint:
+          allOf:
+            - $ref: "#/components/schemas/ProductTypeBlueprint"
+          nullable: true
+          description: Obrigatório e completo ao criar ou ativar tipo; PWA também exige frontendSdkModule.
+    ProductTypeBlueprint:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: string
+          maxLength: 64
+        primaryChannel:
+          type: string
+          maxLength: 64
+        customerJob:
+          type: string
+          maxLength: 5000
+        valueMechanism:
+          type: string
+          maxLength: 5000
+        experienceFlow:
+          type: string
+          maxLength: 5000
+        requiredInputs:
+          type: string
+          maxLength: 5000
+        expectedOutputs:
+          type: string
+          maxLength: 5000
+        memoryStrategy:
+          type: string
+          maxLength: 5000
+        integrationRequirements:
+          type: string
+          maxLength: 5000
+        safetyGuardrails:
+          type: string
+          maxLength: 5000
+        successMetrics:
+          type: string
+          maxLength: 5000
+        backendSdkModule:
+          type: string
+          maxLength: 255
+        frontendSdkModule:
+          type: string
+          maxLength: 255
+          nullable: true

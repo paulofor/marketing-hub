@@ -32,6 +32,7 @@ import {
   Megaphone,
   Bot,
   CircleDollarSign,
+  Tags,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -67,6 +68,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/agents",
         label: "Gestão de Agentes",
         icon: Bot,
+      },
+      {
+        to: "/product-types",
+        label: "Tipos de produto",
+        icon: Tags,
       },
     ],
   },

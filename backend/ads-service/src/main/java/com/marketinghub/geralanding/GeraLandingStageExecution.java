@@ -57,6 +57,14 @@ public class GeraLandingStageExecution {
   private String prompt;
 
   @Lob
+  @Column(name = "agent_prompt_part", columnDefinition = "LONGTEXT")
+  private String agentPromptPart;
+
+  @Lob
+  @Column(name = "activity_prompt_part", columnDefinition = "LONGTEXT")
+  private String activityPromptPart;
+
+  @Lob
   @Column(name = "openai_request_body", columnDefinition = "LONGTEXT")
   private String openAiRequestBody;
 

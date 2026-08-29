@@ -44,6 +44,27 @@ docker compose version >/dev/null
 audit_v2_compose up -d --build mysql57-agent-task-actionable-audit-v2
 audit_v2_compose run --rm --build liquibase-agent-task-actionable-audit-v2
 audit_v2_compose run --rm --build liquibase-psique-visual-evidence
+audit_v2_compose run --rm --build liquibase-agent-task-prompt-parts-v1
+
+audit_v2_assert_equal \
+  "partes explícitas dos prompts" \
+  "execution_agent_prompt:longtext:YES|execution_activity_prompt:longtext:YES|agent_prompt_part:longtext:YES|activity_prompt_part:longtext:YES" \
+  "$(audit_v2_db_scalar "SELECT GROUP_CONCAT(value ORDER BY sort_order SEPARATOR '|')
+    FROM (
+      SELECT CONCAT(column_name, ':', column_type, ':', is_nullable) AS value,
+             ordinal_position AS sort_order
+      FROM information_schema.columns
+      WHERE table_schema = 'marketinghub_local'
+        AND table_name = 'agent_task'
+        AND column_name IN ('execution_agent_prompt', 'execution_activity_prompt')
+      UNION ALL
+      SELECT CONCAT(column_name, ':', column_type, ':', is_nullable) AS value,
+             1000 + ordinal_position AS sort_order
+      FROM information_schema.columns
+      WHERE table_schema = 'marketinghub_local'
+        AND table_name = 'gera_landing_stage_execution'
+        AND column_name IN ('agent_prompt_part', 'activity_prompt_part')
+    ) prompt_columns;")"
 
 audit_v2_assert_equal \
   "colunas da auditoria terminal" \
@@ -82,11 +103,13 @@ audit_v2_assert_equal \
 
 audit_v2_assert_equal \
   "dados legados preservados" \
-  "gpt-5.6-sol:NULL:Prompt integral legado da tarefa 258.:NULL:NULL" \
+  "gpt-5.6-sol:NULL:Prompt integral legado da tarefa 258.:NULL:NULL:NULL:NULL" \
   "$(audit_v2_db_scalar "SELECT CONCAT(
       execution_model_code, ':', IFNULL(execution_reasoning_effort, 'NULL'), ':',
       execution_prompt, ':', IFNULL(execution_mode, 'NULL'), ':',
-      IFNULL(blocker_category, 'NULL'))
+      IFNULL(blocker_category, 'NULL'), ':',
+      IFNULL(execution_agent_prompt, 'NULL'), ':',
+      IFNULL(execution_activity_prompt, 'NULL'))
     FROM agent_task WHERE id = 258;")"
 
 audit_v2_assert_equal \
@@ -128,6 +151,9 @@ audit_v2_assert_equal \
 audit_v2_db_execute "UPDATE agent_task
   SET execution_mode = 'MODEL',
       execution_reasoning_effort = 'high',
+      execution_prompt = 'Núcleo de Psique.\n\nAvalie a jornada Rigel.',
+      execution_agent_prompt = 'Núcleo de Psique.',
+      execution_activity_prompt = 'Avalie a jornada Rigel.',
       blocker_category = 'FUNCTIONAL_ADJUSTMENT',
       blocker_action = 'Vincule a versão comprada e reinicie a tarefa.'
   WHERE id = 258;
@@ -202,15 +228,21 @@ fi
 
 audit_v2_compose run --rm liquibase-agent-task-actionable-audit-v2
 audit_v2_compose run --rm liquibase-psique-visual-evidence
+audit_v2_compose run --rm liquibase-agent-task-prompt-parts-v1
 
 audit_v2_assert_equal \
   "reaplicação sem duplicar schema, links ou provas" \
-  "2:1:2:3:20" \
+  "2:1:2:2:2:3:20" \
   "$(audit_v2_db_scalar "SELECT CONCAT(
       (SELECT COUNT(*) FROM DATABASECHANGELOG
         WHERE ID LIKE '2026-08-29-agent-task-actionable-audit-v2-%'), ':',
       (SELECT COUNT(*) FROM DATABASECHANGELOG
         WHERE ID LIKE '2026-08-29-psique-task-visual-evidence-v1-%'), ':',
+      (SELECT COUNT(*) FROM DATABASECHANGELOG
+        WHERE ID LIKE '2026-08-29-agent-task-prompt-parts-v1-%'), ':',
+      (SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = 'marketinghub_local' AND table_name = 'agent_task'
+          AND column_name IN ('execution_agent_prompt', 'execution_activity_prompt')), ':',
       (SELECT COUNT(*) FROM agent_task_audit_link WHERE agent_task_id = 258), ':',
       (SELECT COUNT(*) FROM agent_task_visual_evidence WHERE agent_task_id = 258), ':',
       (SELECT COUNT(*) FROM information_schema.columns

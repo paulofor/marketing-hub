@@ -55,7 +55,13 @@ class AgentTaskDeferredCompletionTest {
             "{\"draftSha256\":\"abc\"}",
             null,
             new AgentTaskExecutionAuditRequest(
-                "MODEL", "gpt-test", "high", "Prompt integral de materialização.", List.of())));
+                "MODEL",
+                "gpt-test",
+                "high",
+                "Núcleo de Íris.\n\nMaterialize a comunicação.",
+                "Núcleo de Íris.",
+                "Materialize a comunicação.",
+                List.of())));
 
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
     assertThat(task.getDeliveredAt()).isNull();

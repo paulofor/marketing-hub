@@ -1953,6 +1953,12 @@ components:
         promptSent:
           type: string
           description: Prompt completo enviado ao modelo ou entrada integral da execução determinística.
+        agentPromptPart:
+          type: string
+          description: Identidade, responsabilidade, princípios e limites estáveis do agente.
+        activityPromptPart:
+          type: string
+          description: Objetivo, contexto, evidências, critérios e saída da atividade concreta.
         accessedUrls:
           type: array
           maxItems: 50

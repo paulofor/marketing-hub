@@ -1,0 +1,3 @@
+FROM mysql:5.7
+
+COPY src/test/resources/liquibase-mysql57/product-type-consultants-v1-baseline.sql /docker-entrypoint-initdb.d/10-product-type-consultants-v1-baseline.sql

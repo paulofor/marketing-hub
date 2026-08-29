@@ -67,6 +67,18 @@ describe("MainNavigation", () => {
     ).toHaveAttribute("href", "/opportunities");
   });
 
+  it("oferece acesso direto ao catálogo de tipos de produto", () => {
+    render(
+      <MemoryRouter>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Tipos de produto" }),
+    ).toHaveAttribute("href", "/product-types");
+  });
+
   it("oferece acesso ao financeiro transversal de provedores de vídeo", () => {
     render(
       <MemoryRouter>

@@ -46,7 +46,7 @@ public final class PdeHarnessTestSupport {
         "0.149.0",
         "pde_harness_test",
         "PDE Harness Test",
-        "0.2.0-test",
+        "0.3.0-test",
         environment,
         false);
   }

@@ -62,7 +62,7 @@ public record PdeHarnessConfiguration(
         "0.149.0",
         "marketing_hub_pde_harness",
         "Marketing Hub PDE Harness",
-        "0.2.0",
+        "0.3.0",
         Map.of(),
         true);
   }

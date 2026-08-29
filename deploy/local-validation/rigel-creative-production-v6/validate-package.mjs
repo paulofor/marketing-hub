@@ -282,6 +282,8 @@ for (const agent of [
   );
   for (const [kind, file] of [
     ["request", execution.requestFile],
+    ["parte do agente", execution.agentPromptFile],
+    ["parte da atividade", execution.activityPromptFile],
     ["response", execution.responseFile],
     ["log", execution.logFile],
   ]) {
@@ -294,6 +296,13 @@ for (const agent of [
   assert(
     execution.requestFile !== execution.responseFile,
     `${agent} misturou request e response na auditoria`,
+  );
+  assert(
+    (await readFile(execution.requestFile, "utf8")) ===
+      `${(await readFile(execution.agentPromptFile, "utf8")).trim()}\n\n${(
+        await readFile(execution.activityPromptFile, "utf8")
+      ).trim()}`,
+    `${agent} nao preservou a composicao exata do prompt`,
   );
 }
 assert(

@@ -156,6 +156,8 @@ public class BusinessProcessActivityDocumentService {
         executionReasoningEffort(task),
         productInternalName(task),
         task.getExecutionPrompt(),
+        task.getExecutionAgentPrompt(),
+        task.getExecutionActivityPrompt(),
         AgentTaskAuditView.accessedUrls(task),
         AgentTaskAuditView.visualEvidence(task),
         AgentTaskResultView.section(task, "visualAudit"),

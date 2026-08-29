@@ -84,6 +84,8 @@ public class ProductDiscoveryBpmAuditService {
         request.model(),
         request.reasoningEffort(),
         request.promptSent(),
+        request.agentPromptPart(),
+        request.activityPromptPart(),
         request.inputTokens(),
         request.cachedInputTokens(),
         request.outputTokens(),
@@ -124,7 +126,8 @@ public class ProductDiscoveryBpmAuditService {
   /** Declara explicitamente quando a falha ocorreu antes de existir um plano executado. */
   private AgentTaskExecutionAuditRequest prePlanAudit(ProductDiscoveryCycle cycle) {
     if (StringUtils.hasText(cycle.getResearchPlanModel())) return null;
-    return new AgentTaskExecutionAuditRequest("NOT_STARTED", null, null, null, List.of());
+    return new AgentTaskExecutionAuditRequest(
+        "NOT_STARTED", null, null, null, null, null, List.of());
   }
 
   /** Garante que callbacks diretos ou ciclos anteriores também possuam uma tarefa reservada. */

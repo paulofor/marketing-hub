@@ -105,6 +105,8 @@ class DedaloCreativeTaskOrchestrationServiceTest {
             "creative-pipeline-ads-v1",
             "NOT_APPLICABLE",
             "{\"experimentId\":88}",
+            null,
+            "{\"experimentId\":88}",
             List.of());
     service.completeForExperiment(88L, audit);
 

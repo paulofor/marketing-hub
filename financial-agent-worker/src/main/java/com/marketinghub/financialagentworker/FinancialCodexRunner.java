@@ -60,7 +60,7 @@ public class FinancialCodexRunner {
                     : "prompts/financial-agent/v1/report-schema.json",
             ".json");
     Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
-    String prompt = buildPrompt(job);
+    PromptComposition prompt = buildPromptComposition(job);
     try {
       if (backend != null && job.agentTaskId() != null) {
         backend.recordTaskExecutionAudit(job.agentTaskId(), executionAudit(prompt));
@@ -70,7 +70,7 @@ public class FinancialCodexRunner {
       builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
       builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
       Process process = builder.start();
-      process.getOutputStream().write(prompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       CodexTelemetryReporter.Session session =
           telemetry == null ? null : telemetry.monitor(job.id(), process, processOutput);
@@ -104,7 +104,9 @@ public class FinancialCodexRunner {
         payload.put("rawModelResponse", raw);
         payload.put("model", properties.getModel());
         payload.put("estimatedCost", null);
-        payload.put("promptSent", prompt);
+        payload.put("promptSent", prompt.fullPrompt());
+        payload.put("agentPromptPart", prompt.agentPromptPart());
+        payload.put("activityPromptPart", prompt.activityPromptPart());
         payload.put("reasoningEffort", properties.requiredReasoningEffort());
         payload.put("requestedServiceTier", configuredServiceTier());
         payload.put("effectiveServiceTier", "STANDARD");
@@ -128,12 +130,14 @@ public class FinancialCodexRunner {
   }
 
   /** Monta o envelope completo que antecede a chamada de modelo vinculada à tarefa BPM. */
-  Map<String, Object> executionAudit(String prompt) {
+  Map<String, Object> executionAudit(PromptComposition prompt) {
     LinkedHashMap<String, Object> audit = new LinkedHashMap<>();
     audit.put("executionMode", "MODEL");
     audit.put("modelCode", properties.getModel());
     audit.put("reasoningEffort", properties.requiredReasoningEffort());
-    audit.put("promptSent", prompt);
+    audit.put("promptSent", prompt.fullPrompt());
+    audit.put("agentPromptPart", prompt.agentPromptPart());
+    audit.put("activityPromptPart", prompt.activityPromptPart());
     audit.put("accessedUrls", List.of());
     return audit;
   }
@@ -334,18 +338,30 @@ public class FinancialCodexRunner {
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */
   private String buildPrompt(FinancialAgentJob job) throws IOException {
+    return buildPromptComposition(job).fullPrompt();
+  }
+
+  /** Compõe o núcleo financeiro estável com o snapshot resolvido da atividade. */
+  PromptComposition buildPromptComposition(FinancialAgentJob job) throws IOException {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(job.authorityMode());
     boolean projection = "READ_ONLY_REVENUE_PROJECTION".equals(job.authorityMode());
-    return read(assumptions
-            ? "prompts/financial-agent/v1/commercial-assumptions.md"
-            : projection
-                ? "prompts/financial-agent/v1/revenue-projection.md"
-                : "prompts/financial-agent/v1/report.md")
-        .replace("{{PLAN_ID}}", String.valueOf(job.commercialPlanId()))
-        .replace("{{PLAN_VERSION}}", String.valueOf(job.commercialPlanVersion()))
-        .replace("{{DECISION_CONTEXT}}", String.valueOf(job.projectionRequest()))
-        .replace("{{FINANCIAL_SNAPSHOT}}", job.financialSnapshot());
+    String agentPromptPart = read("prompts/financial-agent/v1/agent-core.md");
+    String activityPromptPart =
+        read(assumptions
+                ? "prompts/financial-agent/v1/commercial-assumptions.md"
+                : projection
+                    ? "prompts/financial-agent/v1/revenue-projection.md"
+                    : "prompts/financial-agent/v1/report.md")
+            .replace("{{PLAN_ID}}", String.valueOf(job.commercialPlanId()))
+            .replace("{{PLAN_VERSION}}", String.valueOf(job.commercialPlanVersion()))
+            .replace("{{DECISION_CONTEXT}}", String.valueOf(job.projectionRequest()))
+            .replace("{{FINANCIAL_SNAPSHOT}}", job.financialSnapshot());
+    return new PromptComposition(
+        agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
+
+  /** Representa as duas partes e a composição exata enviada ao modelo. */
+  record PromptComposition(String fullPrompt, String agentPromptPart, String activityPromptPart) {}
 
   /** Materializa recurso versionado em diretorio temporario gravavel. */
   private Path materialize(String resource, String suffix) throws IOException {

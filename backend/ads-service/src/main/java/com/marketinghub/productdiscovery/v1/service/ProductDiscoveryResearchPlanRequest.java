@@ -10,6 +10,8 @@ public record ProductDiscoveryResearchPlanRequest(
     @NotBlank String model,
     String executionMode,
     String promptSent,
+    String agentPromptPart,
+    String activityPromptPart,
     String reasoningEffort,
     Long inputTokens,
     Long cachedInputTokens,
@@ -18,6 +20,18 @@ public record ProductDiscoveryResearchPlanRequest(
   /** Mantém compatibilidade com executores anteriores à auditoria BPM persistida. */
   public ProductDiscoveryResearchPlanRequest(
       String executionLeaseId, String planJson, String rawResponse, String model) {
-    this(executionLeaseId, planJson, rawResponse, model, null, null, null, null, null, null);
+    this(
+        executionLeaseId,
+        planJson,
+        rawResponse,
+        model,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 }

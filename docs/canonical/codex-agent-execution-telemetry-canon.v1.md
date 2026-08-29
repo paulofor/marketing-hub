@@ -29,6 +29,15 @@ configurado não representa nem autoriza expor cadeia de pensamento do modelo. Z
 ser apresentado como consumo quando o provedor tiver informado a medição; ausência continua
 explicitamente desconhecida.
 
+Por decisão de 2026-08-29, todo prompt de tarefa com modelo possui duas partes auditáveis e
+versionadas. A **parte do agente** contém identidade, responsabilidade, limites, princípios e
+guardrails reutilizáveis. A **parte da atividade** contém objetivo específico, contexto congelado,
+evidências, critérios e contrato de saída daquela execução. O executor deve persistir as duas partes
+e o prompt integral exatamente enviado; o backend só aceita a terminalização quando ambas aparecem,
+nessa ordem, no prompt integral. A tela mostra três cards separados: `Parte do agente`, `Parte da
+atividade` e `Prompt completo`. Execuções históricas sem a divisão permanecem explicitamente como
+legadas; é proibido reconstruí-las retroativamente.
+
 O monitor administrativo `GET /api/agents/work-monitor` consolida por agente os tokens de entrada e saída das execuções iniciadas no dia comercial (`America/Sao_Paulo`). O contador é recalculado a cada consulta e a tela o atualiza no mesmo polling de 15 segundos do estado operacional. Ausência de telemetria reportada é exibida como zero, sem estimativa local.
 
 O mesmo monitor deve expor a prontidão do executor por uma prova ativa e auditável. Cada
@@ -52,7 +61,8 @@ worker deve bloquear divergência de versão e deploy sem referência auditável
 Continuar quando heartbeat e saída avançarem; investigar quando o processo estiver vivo sem mudança de saída; considerar a execução presa quando o backend marcar `stale=true`. Ao recuperar uma lease presa, reutilizar a entrada congelada e preservar a correlação; após uma segunda expiração, parar e expor a dificuldade para decisão externa.
 
 Toda nova tarefa terminal, bloqueada ou concluída, deve declarar seu modo de execução. Quando houver
-modelo, modelo efetivo, tipo de raciocínio configurado e prompt integral são obrigatórios. Todo
+modelo, modelo efetivo, tipo de raciocínio configurado, parte do agente, parte da atividade e prompt
+integral são obrigatórios. Todo
 bloqueio deve acrescentar categoria, orientação concreta e ao menos um link seguro. URLs realmente
 abertas por Psique devem ser distinguidas de URLs apenas recebidas no contexto e vinculadas somente
 ao `taskId`; parâmetros de credencial não podem ser persistidos nem mostrados.

@@ -22,6 +22,7 @@ import { createRoot } from "react-dom/client";
 import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 import { AssistedServiceApp } from "./AssistedServiceApp";
 import { TransitionPauseExperiment } from "./TransitionPauseExperiment";
+import { ConsultantSdkQaPreview } from "./consultant-sdk/v1/ConsultantSdkQaPreview";
 import {
   fallbackProduct,
   MUSA_V7_EXPERIENCE_VERSION,
@@ -4187,7 +4188,10 @@ const configuredProductSlug = readRuntimeConfigValue(
   import.meta.env.VITE_PDE_PRODUCT_SLUG || "metodo-musa-7-dias",
 );
 root.render(
-  window.location.pathname.startsWith("/transition-pause") ? (
+  import.meta.env.DEV &&
+    window.location.pathname === "/__qa/consultant-sdk-v1" ? (
+    <ConsultantSdkQaPreview />
+  ) : window.location.pathname.startsWith("/transition-pause") ? (
     <TransitionPauseExperiment />
   ) : configuredProductSlug === "metodo-musa-7-dias" ? (
     <App />

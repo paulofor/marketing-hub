@@ -106,6 +106,8 @@ export type BusinessProcessActivityDocument = {
   reasoningEffort?: string;
   productInternalName?: string;
   promptSent?: string;
+  agentPromptPart?: string;
+  activityPromptPart?: string;
   accessedUrls?: AgentTaskAuditLink[];
   visualEvidence?: AgentTaskVisualEvidence[];
   visualAudit?: PsiqueVisualAudit;
@@ -137,6 +139,8 @@ export type BusinessProcessActivityExecution = {
   reasoningEffort?: string;
   productInternalName?: string;
   promptSent?: string;
+  agentPromptPart?: string;
+  activityPromptPart?: string;
   blockerGuidance?: AgentTaskBlockerGuidance;
   accessedUrls?: AgentTaskAuditLink[];
   visualEvidence?: AgentTaskVisualEvidence[];

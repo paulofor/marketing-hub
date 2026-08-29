@@ -237,7 +237,9 @@ class LandingGenerationAgentExecutionServiceTest {
     technicalExecution.setAutonomousCycleId("agent-task:30");
     technicalExecution.setOpenAiModel("gpt-5.6-sol");
     technicalExecution.setExecutionReasoningEffort("high");
-    technicalExecution.setPrompt("Prompt integral de Dédalo");
+    technicalExecution.setAgentPromptPart("Núcleo de Dédalo.");
+    technicalExecution.setActivityPromptPart("Gere a landing aprovada.");
+    technicalExecution.setPrompt("Núcleo de Dédalo.\n\nGere a landing aprovada.");
     when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
     when(repository
             .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
@@ -283,7 +285,12 @@ class LandingGenerationAgentExecutionServiceTest {
             .evidenceJson()
             .contains("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
     assertEquals("high", request.getValue().executionAudit().reasoningEffort());
-    assertEquals("Prompt integral de Dédalo", request.getValue().executionAudit().promptSent());
+    assertEquals("Núcleo de Dédalo.", request.getValue().executionAudit().agentPromptPart());
+    assertEquals(
+        "Gere a landing aprovada.", request.getValue().executionAudit().activityPromptPart());
+    assertEquals(
+        "Núcleo de Dédalo.\n\nGere a landing aprovada.",
+        request.getValue().executionAudit().promptSent());
   }
 
   /** Não deve acumular outra correção quando o mesmo ciclo já possui trabalho ativo. */
@@ -421,10 +428,13 @@ class LandingGenerationAgentExecutionServiceTest {
         "job-apply-failure",
         new LandingAgentResultRequest(
             "{\"decision\":\"generated\"}",
-            "request",
+            "Núcleo de Dédalo.\n\nCorrija a landing.",
+            "Núcleo de Dédalo.",
+            "Corrija a landing.",
             "response",
             "gpt-5.6-sol",
             "high",
+            null,
             null,
             null,
             null,
@@ -454,7 +464,9 @@ class LandingGenerationAgentExecutionServiceTest {
         "job-reasoning-effort",
         new LandingAgentResultRequest(
             "{\"decision\":\"generated\"}",
-            "Prompt enviado ao Dédalo",
+            "Núcleo de Dédalo.\n\nCorrija a landing.",
+            "Núcleo de Dédalo.",
+            "Corrija a landing.",
             "{\"decision\":\"generated\"}",
             "gpt-5.6-sol",
             "high",
@@ -726,7 +738,18 @@ class LandingGenerationAgentExecutionServiceTest {
         .thenReturn(Optional.of(execution));
     LandingAgentResultRequest request =
         new LandingAgentResultRequest(
-            "{}", "request", "{}", "gpt-5.6-sol", "high", null, null, null, null, null);
+            "{}",
+            "Núcleo de Dédalo.\n\nCorrija a landing.",
+            "Núcleo de Dédalo.",
+            "Corrija a landing.",
+            "{}",
+            "gpt-5.6-sol",
+            "high",
+            null,
+            null,
+            null,
+            null,
+            null);
 
     service.complete("job-88", request);
 

@@ -1,43 +1,241 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "remediationTarget", "customerPerspective", "behavioralResponse", "evidence", "requiredChanges"],
+  "required": [
+    "decision",
+    "remediationTarget",
+    "customerPerspective",
+    "behavioralResponse",
+    "purchaseEmotion",
+    "visualAudit",
+    "evidence",
+    "requiredChanges"
+  ],
   "properties": {
-    "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
-    "remediationTarget": {"type": "string", "enum": ["NONE", "EVIDENCE_TRANSPORT", "LANDING_CONTENT", "CANONICAL_CONTRACT", "OTHER"]},
-    "customerPerspective": {"type": "string", "minLength": 1},
+    "decision": { "type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"] },
+    "remediationTarget": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "EVIDENCE_TRANSPORT",
+        "LANDING_CONTENT",
+        "CANONICAL_CONTRACT",
+        "OTHER"
+      ]
+    },
+    "customerPerspective": { "type": "string", "minLength": 1 },
     "behavioralResponse": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["firstImpulse", "pleasureAndEffort", "noveltyAndFamiliarity", "riskAndLoss", "belongingAdmirationLove", "sensoryExperience", "rationalization", "dominantDriver", "evidenceBoundary"],
+      "required": [
+        "firstImpulse",
+        "pleasureAndEffort",
+        "noveltyAndFamiliarity",
+        "riskAndLoss",
+        "belongingAdmirationLove",
+        "sensoryExperience",
+        "rationalization",
+        "dominantDriver",
+        "evidenceBoundary"
+      ],
       "properties": {
-        "firstImpulse": {"type": "string"},
-        "pleasureAndEffort": {"type": "string"},
-        "noveltyAndFamiliarity": {"type": "string"},
-        "riskAndLoss": {"type": "string"},
-        "belongingAdmirationLove": {"type": "string"},
+        "firstImpulse": { "type": "string" },
+        "pleasureAndEffort": { "type": "string" },
+        "noveltyAndFamiliarity": { "type": "string" },
+        "riskAndLoss": { "type": "string" },
+        "belongingAdmirationLove": { "type": "string" },
         "sensoryExperience": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["evidenceAvailable", "availableModalities", "pleasureByModality", "processingFluency", "sensoryCongruence", "overloadRisk", "embodiedAnticipation", "dominantCue", "evidenceBoundary"],
+          "required": [
+            "evidenceAvailable",
+            "availableModalities",
+            "pleasureByModality",
+            "processingFluency",
+            "sensoryCongruence",
+            "overloadRisk",
+            "embodiedAnticipation",
+            "dominantCue",
+            "evidenceBoundary"
+          ],
           "properties": {
-            "evidenceAvailable": {"type": "boolean"},
-            "availableModalities": {"type": "array", "items": {"type": "string", "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]}},
-            "pleasureByModality": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["modality", "pleasureScore", "evidence"], "properties": {"modality": {"type": "string", "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]}, "pleasureScore": {"type": "integer", "minimum": 0, "maximum": 5}, "evidence": {"type": "string"}}}},
-            "processingFluency": {"type": "integer", "minimum": 0, "maximum": 5},
-            "sensoryCongruence": {"type": "integer", "minimum": 0, "maximum": 5},
-            "overloadRisk": {"type": "integer", "minimum": 0, "maximum": 5},
-            "embodiedAnticipation": {"type": "string"},
-            "dominantCue": {"type": "string"},
-            "evidenceBoundary": {"type": "string"}
+            "evidenceAvailable": { "type": "boolean" },
+            "availableModalities": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]
+              }
+            },
+            "pleasureByModality": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["modality", "pleasureScore", "evidence"],
+                "properties": {
+                  "modality": {
+                    "type": "string",
+                    "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]
+                  },
+                  "pleasureScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "evidence": { "type": "string" }
+                }
+              }
+            },
+            "processingFluency": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "sensoryCongruence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "overloadRisk": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "embodiedAnticipation": { "type": "string" },
+            "dominantCue": { "type": "string" },
+            "evidenceBoundary": { "type": "string" }
           }
         },
-        "rationalization": {"type": "string"},
-        "dominantDriver": {"type": "string"},
-        "evidenceBoundary": {"type": "string"}
+        "rationalization": { "type": "string" },
+        "dominantDriver": { "type": "string" },
+        "evidenceBoundary": { "type": "string" }
       }
     },
-    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "requiredChanges": {"type": "array", "items": {"type": "string"}}
+    "purchaseEmotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisitionExpectation",
+        "acquisitionAnxiety",
+        "expectedPostDeliveryFeeling",
+        "emotionalTension",
+        "evidenceBoundary"
+      ],
+      "properties": {
+        "acquisitionExpectation": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "acquisitionAnxiety": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "expectedPostDeliveryFeeling": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "emotionalTension": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "evidenceBoundary": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        }
+      }
+    },
+    "visualAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captureSessionId",
+        "mobileFirst",
+        "fullPageEvidenceIds",
+        "fullPageContinuity",
+        "overallAestheticAssessment",
+        "foldAnalyses"
+      ],
+      "properties": {
+        "captureSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "mobileFirst": { "const": true },
+        "fullPageEvidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "fullPageContinuity": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1000
+        },
+        "overallAestheticAssessment": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1000
+        },
+        "foldAnalyses": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifactId",
+              "deviceProfile",
+              "pageNumber",
+              "foldNumber",
+              "aestheticAssessment",
+              "visualHierarchy",
+              "legibility",
+              "emotionEvoked",
+              "ctaVisibility"
+            ],
+            "properties": {
+              "artifactId": { "type": "integer", "minimum": 1 },
+              "deviceProfile": { "const": "IPHONE_15_PRO" },
+              "pageNumber": { "type": "integer", "minimum": 1 },
+              "foldNumber": { "type": "integer", "minimum": 1 },
+              "aestheticAssessment": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "visualHierarchy": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "legibility": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "emotionEvoked": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "ctaVisibility": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "requiredChanges": { "type": "array", "items": { "type": "string" } }
   }
 }

@@ -1,6 +1,8 @@
 package com.marketinghub.repository.jpa.pde;
 
 import com.marketinghub.pde.PdeProductionSlot;
+import com.marketinghub.pde.PdeProductionSlotStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +19,13 @@ public interface PdeProductionSlotRepository extends JpaRepository<PdeProduction
   /** Busca o contrato de slot mais recente pela versão comercial publicada. */
   Optional<PdeProductionSlot> findFirstByProductSlugAndExperienceVersionOrderByPublishedAtDesc(
       String productSlug, String experienceVersion);
+
+  /** Busca a versão mais recente que ainda pode ser examinada ou receber tráfego. */
+  Optional<PdeProductionSlot>
+      findFirstByProductSlugAndExperienceVersionAndStatusInOrderByPublishedAtDesc(
+          String productSlug,
+          String experienceVersion,
+          Collection<PdeProductionSlotStatus> statuses);
 
   /** Busca um slot produtivo pelo domínio público normalizado. */
   Optional<PdeProductionSlot> findFirstByDomain(String domain);

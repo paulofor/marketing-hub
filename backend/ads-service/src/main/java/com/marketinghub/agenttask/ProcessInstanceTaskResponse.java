@@ -1,5 +1,6 @@
 package com.marketinghub.agenttask;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +24,9 @@ public record ProcessInstanceTaskResponse(
     String promptSent,
     AgentTaskBlockerGuidanceResponse blockerGuidance,
     List<AgentTaskAuditLinkResponse> accessedUrls,
+    List<AgentTaskVisualEvidenceResponse> visualEvidence,
+    JsonNode visualAudit,
+    JsonNode purchaseEmotion,
     Long inputTokens,
     Long cachedInputTokens,
     Long outputTokens,

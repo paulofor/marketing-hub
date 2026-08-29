@@ -2,7 +2,10 @@ package com.marketinghub.agenttask;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /** Responsabilidade: expor as mesas de trabalho dos agentes para a interface administrativa. */
@@ -10,10 +13,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/agent-tasks")
 public class AgentTaskController {
   private final AgentTaskService service;
+  private final AgentTaskVisualEvidenceService visualEvidenceService;
 
   /** Configura o serviço canônico da caixa de entrada. */
-  public AgentTaskController(AgentTaskService service) {
+  public AgentTaskController(
+      AgentTaskService service, AgentTaskVisualEvidenceService visualEvidenceService) {
     this.service = service;
+    this.visualEvidenceService = visualEvidenceService;
   }
 
   /** Lista a caixa de entrada de um único agente. */
@@ -53,5 +59,17 @@ public class AgentTaskController {
   public AgentTaskResponse bindProcess(
       @PathVariable Long taskId, @Valid @RequestBody BindAgentTaskProcessRequest request) {
     return service.bindProcess(taskId, request);
+  }
+
+  /** Entrega um snapshot privado em linha sem expor bucket ou chave de storage. */
+  @GetMapping("/{taskId}/visual-evidence/{evidenceId}/content")
+  public ResponseEntity<byte[]> readVisualEvidence(
+      @PathVariable Long taskId, @PathVariable Long evidenceId) {
+    var content = visualEvidenceService.read(taskId, evidenceId);
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .contentType(MediaType.parseMediaType(content.contentType()))
+        .header("Content-Disposition", "inline")
+        .body(content.bytes());
   }
 }

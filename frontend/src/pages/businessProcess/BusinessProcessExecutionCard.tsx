@@ -5,6 +5,7 @@ import {
   formattedDuration,
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
+import PsiqueTaskAudit from "./PsiqueTaskAudit";
 
 type BusinessProcessExecutionCardProps = {
   execution: BusinessProcessActivityExecution;
@@ -186,6 +187,14 @@ export default function BusinessProcessExecutionCard({
             )}
           </section>
         ) : null}
+
+        <PsiqueTaskAudit
+          assignedAgentKey={execution.assignedAgentKey}
+          visualEvidence={execution.visualEvidence}
+          visualAudit={execution.visualAudit}
+          purchaseEmotion={execution.purchaseEmotion}
+          headingLevel={contentHeadingLevel}
+        />
 
         <details className="mt-3">
           <summary className="fw-semibold">Evidências</summary>

@@ -1,7 +1,9 @@
 package com.marketinghub.businessprocess.execution.service.recentExecutions;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.agenttask.AgentTaskAuditLinkResponse;
 import com.marketinghub.agenttask.AgentTaskBlockerGuidanceResponse;
+import com.marketinghub.agenttask.AgentTaskVisualEvidenceResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -33,4 +35,7 @@ public record BusinessProcessActivityExecutionResponse(
     String productInternalName,
     String promptSent,
     AgentTaskBlockerGuidanceResponse blockerGuidance,
-    List<AgentTaskAuditLinkResponse> accessedUrls) {}
+    List<AgentTaskAuditLinkResponse> accessedUrls,
+    List<AgentTaskVisualEvidenceResponse> visualEvidence,
+    JsonNode visualAudit,
+    JsonNode purchaseEmotion) {}

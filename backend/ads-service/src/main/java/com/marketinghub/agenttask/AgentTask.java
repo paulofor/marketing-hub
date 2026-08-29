@@ -141,6 +141,11 @@ public class AgentTask {
   @BatchSize(size = 100)
   private List<AgentTaskAuditLink> auditLinks = new ArrayList<>();
 
+  @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("capturedAt ASC, id ASC")
+  @BatchSize(size = 100)
+  private List<AgentTaskVisualEvidence> visualEvidence = new ArrayList<>();
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 

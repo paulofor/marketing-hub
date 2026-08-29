@@ -11,6 +11,7 @@ import {
   formattedDuration,
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
+import PsiqueTaskAudit from "./PsiqueTaskAudit";
 import "./BusinessProcessesPage.css";
 
 /** Exibe os dez documentos mais recentes de uma atividade, com sua auditoria de execução. */
@@ -208,6 +209,12 @@ export default function BusinessProcessActivityDocumentsPage() {
                       )}
                     </section>
                   ) : null}
+                  <PsiqueTaskAudit
+                    assignedAgentKey={document.assignedAgentKey}
+                    visualEvidence={document.visualEvidence}
+                    visualAudit={document.visualAudit}
+                    purchaseEmotion={document.purchaseEmotion}
+                  />
                   <h2 className="h6">Documento gerado</h2>
                   <StructuredExecutionContent value={document.resultJson} />
                   <details className="mt-3">

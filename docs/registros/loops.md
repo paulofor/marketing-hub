@@ -21,6 +21,20 @@
 - **Prevenção:** testes de contrato no backend, nos executores e na tela recusam auditoria incompleta,
   orientação ausente, esquema de URL inseguro, mistura entre tarefas e regressão visual em desktop e
   mobile.
+- **Fechamento visual complementar em 2026-08-29:** um parecer sensorial de Psique ainda podia ser
+  produzido a partir de contexto textual ou screenshot não vinculado, sem provar primeira, segunda e
+  demais dobras. Atividades de tela passam a capturar full-page e todas as dobras em mobile antes do
+  modelo, persistir imagens privadas e metadados por tarefa/sessão e exigir análise estética com os
+  mesmos ids. Expectativa de aquisição, ansiedade pré-compra e sentimento imaginado após a entrega
+  também passam a ser campos obrigatórios, explicitamente simulados. Testes bloqueiam captura sem
+  análise, análise sem captura e referência cruzada entre tarefas. A URL deixa de ser genérica:
+  landing resolve o experimento e PDE resolve o slot da versão exata; referências novas de plano
+  carregam `experiment-<id>` para impedir mistura entre experimentos do mesmo plano.
+- **Fechamento do runtime visual em 2026-08-29:** o Chromium completo iniciava `crashpad` e encerrava
+  no container read-only antes de produzir qualquer imagem, embora a captura passasse fora do
+  Docker. Psique passa a usar o headless shell instalado pelo Playwright, compatível com o
+  confinamento do worker. O Action constrói a imagem e abre esse navegador como o usuário não-root
+  do runtime; o contrato recusa a reintrodução do canal Chromium completo.
 
 ## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
 

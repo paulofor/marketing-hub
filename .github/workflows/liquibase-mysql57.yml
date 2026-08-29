@@ -114,7 +114,7 @@ jobs:
         run: bash backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh
 
   validate-agent-task-actionable-audit-v2:
-    name: Validar auditoria acionável universal
+    name: Validar auditoria acionável e visual
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

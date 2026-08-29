@@ -144,6 +144,42 @@ fundamental, afeto inicial, modalidades, dimensões, escalas, novidade segura, v
 fronteira da evidência e limite ético. Exibir apenas nome e caminho dos arquivos não atende ao
 contrato de transparência do harness; prompts e schemas versionados continuam listados como fontes.
 
+### Prova visual por dobra e antecipação da compra
+
+Toda atividade BPM de Psique que avalie uma tela, landing ou jornada digital deve produzir a prova
+visual antes de iniciar o modelo. O mínimo obrigatório por URL é uma captura mobile full-page e
+recortes numerados de todas as dobras no perfil canônico `IPHONE_15_PRO`, começando pela primeira
+dobra e preservando até o final da página. Cada imagem deve ficar em storage privado e carregar, no
+MySQL, tarefa, sessão de captura, URL solicitada e final, dispositivo, viewport, página, dobra,
+posição vertical, SHA-256, tamanho e horário. Falha de captura ou persistência encerra a tentativa
+como `MISSING_EVIDENCE`, sem parecer estético fabricado.
+
+A URL é parte do alvo congelado pelo backend, nunca descoberta livremente pelo worker. Em revisão de
+landing, corresponde à landing do experimento; em construção ou homologação de PDE, corresponde ao
+slot `READY` ou `ACTIVE` da `experienceVersion` exata. Ausência desse vínculo bloqueia a prova em vez
+de reutilizar silenciosamente a URL genérica ou a versão de outro produto. Em cada upload, o backend
+deve comparar a URL solicitada com esse alvo congelado e rejeitar pixels de outro produto, versão ou
+tarefa mesmo quando o arquivo e a sessão pareçam tecnicamente válidos.
+
+Jornadas novas originadas por plano comercial devem incluir o experimento na referência canônica
+(`commercial-plan:<id>@v<versão>:journey:experiment-<id>`). Referências legadas sem esse segmento só
+podem resolver o experimento primário inequívoco do plano; múltiplos vínculos ambíguos não autorizam
+captura nem avaliação.
+
+O prompt deve receber os arquivos locais da mesma sessão e os identificadores já persistidos. A
+saída estruturada deve referenciar cada captura full-page e analisar cada dobra exatamente uma vez,
+registrando estética provável para a persona, hierarquia visual, legibilidade, emoção evocada e
+visibilidade do CTA. O worker rejeita parecer com dobra omitida, duplicada ou pertencente a outra
+tarefa/sessão. A tela administrativa apresenta a galeria, metadados e análises lado a lado para que
+uma pessoa confirme o que Psique realmente observou. Screenshot sem análise e análise sem screenshot
+não satisfazem o gate.
+
+Toda avaliação atual de Psique também deve explicitar a antecipação emocional da compra em campos
+separados: expectativa ao adquirir, ansiedade ou receio antes de decidir, sentimento imaginado após
+receber e usar o produto, tensão entre desejo e risco e fronteira da evidência. Essas declarações são
+hipóteses simuladas condicionadas à persona e ao ativo; nunca contam como venda, satisfação ou
+transformação humana confirmada.
+
 ### Base científica complementar
 
 - Reber, Schwarz e Winkielman, fluidez e prazer estético (2004):
@@ -221,6 +257,7 @@ O bucket dedicado é provisionado pelo template versionado
 `CUSTOMER_AGENT_MEMORY_BUCKET` e `CUSTOMER_AGENT_MEMORY_REGION`; permissões IAM mínimas devem ficar
 restritas a `s3:PutObject` e `s3:GetObject` no prefixo `customer-agent-memory/v1/*` e
 `s3:ListBucket` condicionado ao mesmo prefixo.
+
 # Observabilidade operacional do worker
 
 O `customer-agent-worker` deve persistir seus logs em arquivo e expor somente a leitura pelo endpoint operacional versionado `/ops-customer-agent-observability-v1/customer-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `customer-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar observações, execução do Codex, codecs do navegador e callbacks sem depender apenas do erro resumido persistido no backend.

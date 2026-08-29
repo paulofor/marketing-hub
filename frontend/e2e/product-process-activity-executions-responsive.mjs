@@ -126,6 +126,80 @@ const psiqueTask = {
       accessedAt: "2026-08-28T16:15:48Z",
     },
   ],
+  visualEvidence: [
+    {
+      id: 901,
+      captureSessionId: "capture-rigel-244",
+      evidenceKey: "page-1-full",
+      evidenceType: "FULL_PAGE",
+      label: "Página 1 · visão completa",
+      deviceProfile: "IPHONE_15_PRO",
+      pageNumber: 1,
+      viewportWidth: 393,
+      viewportHeight: 852,
+      pageHeightPx: 1704,
+      scrollY: 0,
+      sourceUrl: "https://rigel.example/jornada",
+      finalUrl: "https://rigel.example/jornada",
+      contentUrl: "/api/agent-tasks/244/visual-evidence/901/content",
+      sizeBytes: 1200,
+      sha256: "a".repeat(64),
+      capturedAt: "2026-08-28T16:15:00Z",
+    },
+    {
+      id: 902,
+      captureSessionId: "capture-rigel-244",
+      evidenceKey: "page-1-fold-1",
+      evidenceType: "FOLD",
+      label: "Página 1 · dobra 1",
+      deviceProfile: "IPHONE_15_PRO",
+      pageNumber: 1,
+      foldNumber: 1,
+      viewportWidth: 393,
+      viewportHeight: 852,
+      pageHeightPx: 1704,
+      scrollY: 0,
+      sourceUrl: "https://rigel.example/jornada",
+      finalUrl: "https://rigel.example/jornada",
+      contentUrl: "/api/agent-tasks/244/visual-evidence/902/content",
+      sizeBytes: 800,
+      sha256: "b".repeat(64),
+      capturedAt: "2026-08-28T16:15:01Z",
+    },
+  ],
+  visualAudit: {
+    captureSessionId: "capture-rigel-244",
+    mobileFirst: true,
+    fullPageEvidenceIds: [901],
+    fullPageContinuity:
+      "A promessa conduz sem ruptura até a demonstração e a ação.",
+    overallAestheticAssessment:
+      "A composição transmite simplicidade, segurança e profissionalismo.",
+    foldAnalyses: [
+      {
+        artifactId: 902,
+        deviceProfile: "IPHONE_15_PRO",
+        pageNumber: 1,
+        foldNumber: 1,
+        aestheticAssessment: "Abertura limpa e acolhedora.",
+        visualHierarchy: "Título e benefício conduzem a leitura.",
+        legibility: "Contraste e tamanho confortáveis no celular.",
+        emotionEvoked: "Curiosidade com alívio.",
+        ctaVisibility: "CTA principal visível sem pressão.",
+      },
+    ],
+  },
+  purchaseEmotion: {
+    acquisitionExpectation:
+      "Espero organizar meu atendimento sem parecer robótica.",
+    acquisitionAnxiety:
+      "Receio receber um material genérico e difícil de adaptar.",
+    expectedPostDeliveryFeeling:
+      "Imagino sentir alívio e controle depois da primeira aplicação.",
+    emotionalTension: "Quero ganhar tempo, mas temo pagar por mais trabalho.",
+    evidenceBoundary:
+      "Simulação baseada na persona e nos pixels, não satisfação real.",
+  },
 };
 
 const themisTask = {
@@ -240,7 +314,15 @@ try {
       (url) => url.pathname.startsWith("/api/"),
       async (route) => {
         const pathname = new URL(route.request().url()).pathname;
-        if (pathname === "/api/products/9") {
+        if (pathname.startsWith("/api/agent-tasks/244/visual-evidence/")) {
+          await route.fulfill({
+            contentType: "image/png",
+            body: Buffer.from(
+              "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+              "base64",
+            ),
+          });
+        } else if (pathname === "/api/products/9") {
           await route.fulfill({ json: product });
         } else if (pathname === "/api/products/value-chain-positions/9") {
           await route.fulfill({ json: position });
@@ -296,7 +378,14 @@ try {
     ).toBeVisible();
     await page.getByText("Visualizar JSON em árvore").first().click();
     await expect(page.getByText("summary:").first()).toBeVisible();
-    await page.getByText(/Tarefa #244/).click();
+    const psiqueCard = page
+      .locator("details.business-process-document")
+      .filter({ hasText: "Tarefa #244" });
+    await expect(psiqueCard).toHaveCount(1);
+    if (!(await psiqueCard.evaluate((details) => details.open))) {
+      await psiqueCard.locator(":scope > summary").click();
+    }
+    await expect(psiqueCard).toHaveAttribute("open", "");
     await expect(page.getByText("Avanço bloqueado")).toBeVisible();
     await expect(
       page.getByText(
@@ -312,6 +401,38 @@ try {
     ).toHaveAttribute("target", "_blank");
     await expect(
       page.getByText("https://rigel.example/jornada?cenario=homologacao"),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Antes e depois imaginados pela cliente",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Espero organizar meu atendimento sem parecer robótica."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Snapshots mobile e análise por dobra",
+      }),
+    ).toBeVisible();
+    const foldSnapshot = psiqueCard.getByAltText(
+      "Snapshot de Psique — Página 1 · dobra 1",
+    );
+    await foldSnapshot.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        foldSnapshot.evaluate(
+          (image) => image.complete && image.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+    await expect(foldSnapshot).toBeVisible();
+    assert.ok(
+      await foldSnapshot.evaluate((image) => image.naturalWidth > 0),
+      `${profileName}: snapshot de Psique não carregou`,
+    );
+    await expect(
+      page.getByText("Contraste e tamanho confortáveis no celular."),
     ).toBeVisible();
     assert.deepEqual(pageErrors, [], `${profileName}: erros JavaScript`);
     const sizes = await page.evaluate(() => ({

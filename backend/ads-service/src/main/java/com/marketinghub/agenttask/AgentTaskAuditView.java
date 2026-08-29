@@ -15,6 +15,21 @@ public final class AgentTaskAuditView {
     return links(task, ACCESSED_URL);
   }
 
+  /** Lista os snapshots privados vinculados exclusivamente à tarefa consultada. */
+  public static List<AgentTaskVisualEvidenceResponse> visualEvidence(AgentTask task) {
+    if (task.getVisualEvidence() == null) return List.of();
+    return task.getVisualEvidence().stream()
+        .sorted(
+            java.util.Comparator.comparing(
+                    AgentTaskVisualEvidence::getCapturedAt,
+                    java.util.Comparator.nullsLast(java.time.Instant::compareTo))
+                .thenComparing(
+                    AgentTaskVisualEvidence::getId,
+                    java.util.Comparator.nullsLast(Long::compareTo)))
+        .map(AgentTaskVisualEvidenceService::response)
+        .toList();
+  }
+
   /** Monta a orientação do bloqueio quando categoria e ação foram persistidas. */
   public static AgentTaskBlockerGuidanceResponse blockerGuidance(AgentTask task) {
     if (task.getBlockerCategory() == null || task.getBlockerAction() == null) return null;

@@ -1,6 +1,9 @@
 import type {
   AgentTaskAuditLink,
   AgentTaskBlockerGuidance,
+  AgentTaskVisualEvidence,
+  PsiquePurchaseEmotion,
+  PsiqueVisualAudit,
 } from "../agentTask/types";
 
 export type ProcessNodeType = "START" | "TASK" | "GATEWAY" | "END";
@@ -104,6 +107,9 @@ export type BusinessProcessActivityDocument = {
   productInternalName?: string;
   promptSent?: string;
   accessedUrls?: AgentTaskAuditLink[];
+  visualEvidence?: AgentTaskVisualEvidence[];
+  visualAudit?: PsiqueVisualAudit;
+  purchaseEmotion?: PsiquePurchaseEmotion;
 };
 
 export type BusinessProcessActivityExecution = {
@@ -133,6 +139,9 @@ export type BusinessProcessActivityExecution = {
   promptSent?: string;
   blockerGuidance?: AgentTaskBlockerGuidance;
   accessedUrls?: AgentTaskAuditLink[];
+  visualEvidence?: AgentTaskVisualEvidence[];
+  visualAudit?: PsiqueVisualAudit;
+  purchaseEmotion?: PsiquePurchaseEmotion;
 };
 
 export type BusinessProcessActivityExecutionHistory = {

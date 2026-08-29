@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.2.0
+  version: 1.3.0
 paths:
   /api/agent-tasks/process-instances:
     get:
@@ -10,26 +10,26 @@ paths:
         - name: sourceReference
           in: query
           required: true
-          schema: {type: string, maxLength: 200}
+          schema: { type: string, maxLength: 200 }
       responses:
-        '200':
+        "200":
           description: Processos agrupados por atividade e ocorrência, preservando cada tarefa como tentativa
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/ProcessInstance'}
+                items: { $ref: "#/components/schemas/ProcessInstance" }
   /api/agent-tasks/active:
     get:
       summary: Lista todas as tarefas que ainda exigem atuação dos agentes
       responses:
-        '200':
+        "200":
           description: Tarefas pendentes, em andamento ou bloqueadas, ordenadas pela atividade mais recente
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/AgentTaskResponse'}
+                items: { $ref: "#/components/schemas/AgentTaskResponse" }
   /api/agent-tasks/agents/{agentKey}:
     get:
       summary: Lista a caixa de entrada de um agente
@@ -37,15 +37,15 @@ paths:
         - name: agentKey
           in: path
           required: true
-          schema: {type: string}
+          schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Tarefas ordenadas da mais recente para a mais antiga
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/AgentTaskResponse'}
+                items: { $ref: "#/components/schemas/AgentTaskResponse" }
   /api/agent-tasks:
     post:
       summary: Abre uma solicitação humana para um agente
@@ -53,9 +53,9 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/HumanTaskRequest'}
+            schema: { $ref: "#/components/schemas/HumanTaskRequest" }
       responses:
-        '201': {description: Tarefa criada}
+        "201": { description: Tarefa criada }
   /api/agent-tasks/{taskId}/status:
     patch:
       summary: Evolui o estado auditável de uma tarefa
@@ -63,7 +63,7 @@ paths:
         - name: taskId
           in: path
           required: true
-          schema: {type: integer, format: int64}
+          schema: { type: integer, format: int64 }
       requestBody:
         required: true
         content:
@@ -76,8 +76,26 @@ paths:
                   type: string
                   enum: [PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED]
       responses:
-        '200': {description: Estado atualizado}
-        '409': {description: Transição inválida}
+        "200": { description: Estado atualizado }
+        "409": { description: Transição inválida }
+  /api/agent-tasks/{taskId}/visual-evidence/{evidenceId}/content:
+    get:
+      summary: Entrega um snapshot privado vinculado à tarefa sem expor storage
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+        - name: evidenceId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Pixels PNG com cache desabilitado e disposição inline
+          headers:
+            Cache-Control: { schema: { type: string }, example: no-store }
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404": { description: Evidência não existe ou pertence a outra tarefa }
   /api/internal/agent-tasks/v1:
     post:
       summary: Permite que um agente delegue uma tarefa a outro agente
@@ -85,46 +103,46 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AgentTaskRequest'}
+            schema: { $ref: "#/components/schemas/AgentTaskRequest" }
       responses:
-        '201': {description: Delegação registrada}
+        "201": { description: Delegação registrada }
   /api/internal/agent-tasks/{agentKey}/stage-executions/pending:
     get:
       summary: Reserva uma atividade compatível com o executor solicitante
       parameters:
-        - $ref: '#/components/parameters/AgentKey'
+        - $ref: "#/components/parameters/AgentKey"
         - name: processCode
           in: query
-          schema: {type: string}
+          schema: { type: string }
         - name: activityId
           in: query
-          schema: {type: string}
+          schema: { type: string }
         - name: executionResourceCode
           in: query
-          schema: {type: string}
+          schema: { type: string }
           description: Obrigatório no executor próprio de atividade especializada; ausente seleciona apenas atividades comuns.
       responses:
-        '200':
+        "200":
           description: Lista vazia ou uma única atividade reservada com o recurso exigido
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/PendingTaskResponse'}
+                items: { $ref: "#/components/schemas/PendingTaskResponse" }
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}:
     get:
       summary: Reexpõe o snapshot da atividade já reservada ao mesmo executor
       parameters:
-        - $ref: '#/components/parameters/AgentKey'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
       responses:
-        '200':
+        "200":
           description: Atividade ativa com contexto, recurso e predecessores congelados
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/PendingTaskResponse'}
-        '404': {description: Tarefa não encontrada}
-        '409': {description: Tarefa não está reservada pelo agente informado}
+              schema: { $ref: "#/components/schemas/PendingTaskResponse" }
+        "404": { description: Tarefa não encontrada }
+        "409": { description: Tarefa não está reservada pelo agente informado }
   /api/internal/agent-tasks/v1/{taskId}/gate-decision:
     post:
       summary: Registra a decisão do gate pelo agente destinatário
@@ -132,16 +150,16 @@ paths:
         - name: taskId
           in: path
           required: true
-          schema: {type: integer, format: int64}
+          schema: { type: integer, format: int64 }
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/GateDecisionRequest'}
+            schema: { $ref: "#/components/schemas/GateDecisionRequest" }
       responses:
-        '200': {description: Gate decidido e tarefa encerrada ou bloqueada}
-        '403': {description: Identidade diferente do agente destinatário}
-        '409': {description: Tarefa comum ou gate já decidido}
+        "200": { description: Gate decidido e tarefa encerrada ou bloqueada }
+        "403": { description: Identidade diferente do agente destinatário }
+        "409": { description: Tarefa comum ou gate já decidido }
   /api/internal/agent-tasks/v1/gates:
     post:
       summary: Permite que um agente abra um gate na mesa do responsável
@@ -149,314 +167,639 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AgentGateRequest'}
+            schema: { $ref: "#/components/schemas/AgentGateRequest" }
       responses:
-        '201': {description: Gate pendente registrado na mesa}
+        "201": { description: Gate pendente registrado na mesa }
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/result:
     post:
       summary: Conclui a atividade e contabiliza o uso de modelos
       parameters:
-        - $ref: '#/components/parameters/AgentKey'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/CompleteTaskRequest'}
+            schema: { $ref: "#/components/schemas/CompleteTaskRequest" }
       responses:
-        '204': {description: Resultado, evidências, tokens e custo estimado persistidos}
-        '409': {description: Tarefa não reservada pelo agente}
+        "204":
+          {
+            description: Resultado,
+            evidências,
+            tokens e custo estimado persistidos,
+          }
+        "409": { description: Tarefa não reservada pelo agente }
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/execution-audit:
     put:
       summary: Preserva a auditoria integral antes ou depois da chamada do executor
       parameters:
-        - $ref: '#/components/parameters/AgentKey'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/ExecutionAudit'}
+            schema: { $ref: "#/components/schemas/ExecutionAudit" }
       responses:
-        '204': {description: Modo, modelo, raciocínio, prompt e URLs persistidos na tentativa}
-        '400': {description: Auditoria incompleta ou URL insegura}
-        '409': {description: Tarefa não reservada pelo agente}
+        "204":
+          {
+            description: Modo,
+            modelo,
+            raciocínio,
+            prompt e URLs persistidos na tentativa,
+          }
+        "400": { description: Auditoria incompleta ou URL insegura }
+        "409": { description: Tarefa não reservada pelo agente }
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/visual-evidence:
+    post:
+      summary: Persiste um snapshot Playwright privado antes do parecer visual
+      parameters:
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                [
+                  captureSessionId,
+                  evidenceKey,
+                  evidenceType,
+                  deviceProfile,
+                  pageNumber,
+                  viewportWidth,
+                  viewportHeight,
+                  pageHeightPx,
+                  scrollY,
+                  sourceUrl,
+                  finalUrl,
+                  capturedAt,
+                  file,
+                ]
+              properties:
+                captureSessionId: { type: string, maxLength: 64 }
+                evidenceKey: { type: string, maxLength: 160 }
+                evidenceType: { type: string, enum: [FULL_PAGE, FOLD] }
+                deviceProfile:
+                  { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440] }
+                pageNumber: { type: integer, minimum: 1 }
+                foldNumber: { type: integer, minimum: 1, nullable: true }
+                viewportWidth: { type: integer, minimum: 1 }
+                viewportHeight: { type: integer, minimum: 1 }
+                pageHeightPx: { type: integer, minimum: 1 }
+                scrollY: { type: integer, minimum: 0 }
+                sourceUrl: { type: string, format: uri }
+                finalUrl: { type: string, format: uri }
+                capturedAt: { type: string, format: date-time }
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: Snapshot identificado, criptografado e correlacionado à tentativa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VisualEvidence" }
+        "400": { description: Metadados, URL ou PNG inválidos }
+        "403": { description: Tarefa pertence a outro agente }
+        "409":
+          {
+            description: Tarefa sem lease ativa ou chave repetida com pixels diferentes,
+          }
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/failure:
     post:
       summary: Bloqueia a atividade preservando resultado parcial e uso de modelos
       parameters:
-        - $ref: '#/components/parameters/AgentKey'
-        - $ref: '#/components/parameters/TaskId'
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/FailTaskRequest'}
+            schema: { $ref: "#/components/schemas/FailTaskRequest" }
       responses:
-        '204': {description: Falha e consumo já realizado persistidos}
-        '409': {description: Tarefa não reservada pelo agente}
+        "204": { description: Falha e consumo já realizado persistidos }
+        "409": { description: Tarefa não reservada pelo agente }
 components:
   parameters:
     AgentKey:
       name: agentKey
       in: path
       required: true
-      schema: {type: string}
+      schema: { type: string }
     TaskId:
       name: taskId
       in: path
       required: true
-      schema: {type: integer, format: int64}
+      schema: { type: integer, format: int64 }
   schemas:
     ProcessInstance:
       type: object
-      required: [processDefinitionId, processCode, processVersionNumber, sourceReference, activities, tasks, supersededLegacyTasks]
+      required:
+        [
+          processDefinitionId,
+          processCode,
+          processVersionNumber,
+          sourceReference,
+          activities,
+          tasks,
+          supersededLegacyTasks,
+        ]
       properties:
-        processDefinitionId: {type: integer, format: int64}
-        processCode: {type: string}
-        processVersionNumber: {type: integer}
-        sourceReference: {type: string}
+        processDefinitionId: { type: integer, format: int64 }
+        processCode: { type: string }
+        processVersionNumber: { type: integer }
+        sourceReference: { type: string }
         activities:
           type: array
-          items: {$ref: '#/components/schemas/ActivityInstance'}
+          items: { $ref: "#/components/schemas/ActivityInstance" }
         tasks:
           type: array
           description: Visão plana mantida para consumidores anteriores.
-          items: {$ref: '#/components/schemas/ProcessInstanceTask'}
+          items: { $ref: "#/components/schemas/ProcessInstanceTask" }
         supersededLegacyTasks:
           type: array
-          items: {$ref: '#/components/schemas/ProcessInstanceTask'}
+          items: { $ref: "#/components/schemas/ProcessInstanceTask" }
     ActivityInstance:
       type: object
-      required: [activityId, activityName, occurrenceNumber, status, operationalState, stateReason, objectiveAchieved, costCoverage, evidenceQuality, tasks]
+      required:
+        [
+          activityId,
+          activityName,
+          occurrenceNumber,
+          status,
+          operationalState,
+          stateReason,
+          objectiveAchieved,
+          costCoverage,
+          evidenceQuality,
+          tasks,
+        ]
       properties:
-        activityInstanceId: {type: integer, format: int64, nullable: true}
-        activityDefinitionId: {type: integer, format: int64, nullable: true}
-        activityId: {type: string}
-        activityName: {type: string}
-        objective: {type: string, nullable: true}
-        occurrenceNumber: {type: integer, minimum: 1}
-        status: {type: string, enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]}
-        operationalState: {$ref: '#/components/schemas/OperationalState'}
-        stateReason: {type: string}
-        executionMode: {type: string, enum: [MODEL, DETERMINISTIC, NOT_STARTED], nullable: true}
-        modelCode: {type: string, nullable: true}
-        reasoningEffort: {type: string, nullable: true}
-        promptSent: {type: string, nullable: true}
+        activityInstanceId: { type: integer, format: int64, nullable: true }
+        activityDefinitionId: { type: integer, format: int64, nullable: true }
+        activityId: { type: string }
+        activityName: { type: string }
+        objective: { type: string, nullable: true }
+        occurrenceNumber: { type: integer, minimum: 1 }
+        status:
+          {
+            type: string,
+            enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED],
+          }
+        operationalState: { $ref: "#/components/schemas/OperationalState" }
+        stateReason: { type: string }
+        executionMode:
+          {
+            type: string,
+            enum: [MODEL, DETERMINISTIC, NOT_STARTED],
+            nullable: true,
+          }
+        modelCode: { type: string, nullable: true }
+        reasoningEffort: { type: string, nullable: true }
+        promptSent: { type: string, nullable: true }
         blockerGuidance:
           nullable: true
-          allOf: [{$ref: '#/components/schemas/BlockerGuidance'}]
+          allOf: [{ $ref: "#/components/schemas/BlockerGuidance" }]
         accessedUrls:
           type: array
-          items: {$ref: '#/components/schemas/AuditLink'}
-        enteredAt: {type: string, format: date-time, nullable: true}
-        exitedAt: {type: string, format: date-time, nullable: true}
-        objectiveAchieved: {type: boolean}
-        knownCostUsd: {type: number, format: decimal, nullable: true}
-        costCoverage: {type: string, enum: [COMPLETE, PARTIAL, NOT_REPORTED]}
-        evidenceQuality: {type: string, enum: [DIRECT, MIXED, BACKFILLED_FROM_TASKS, LEGACY_DERIVED]}
+          items: { $ref: "#/components/schemas/AuditLink" }
+        enteredAt: { type: string, format: date-time, nullable: true }
+        exitedAt: { type: string, format: date-time, nullable: true }
+        objectiveAchieved: { type: boolean }
+        knownCostUsd: { type: number, format: decimal, nullable: true }
+        costCoverage: { type: string, enum: [COMPLETE, PARTIAL, NOT_REPORTED] }
+        evidenceQuality:
+          {
+            type: string,
+            enum: [DIRECT, MIXED, BACKFILLED_FROM_TASKS, LEGACY_DERIVED],
+          }
         tasks:
           type: array
-          items: {$ref: '#/components/schemas/ProcessInstanceTask'}
+          items: { $ref: "#/components/schemas/ProcessInstanceTask" }
     ProcessInstanceTask:
       type: object
-      required: [taskId, attemptNumber, activityName, agentKey, agentNickname, taskStatus, operationalState, stateReason, costEstimationStatus]
+      required:
+        [
+          taskId,
+          attemptNumber,
+          activityName,
+          agentKey,
+          agentNickname,
+          taskStatus,
+          operationalState,
+          stateReason,
+          costEstimationStatus,
+        ]
       properties:
-        taskId: {type: integer, format: int64}
-        activityInstanceId: {type: integer, format: int64, nullable: true}
-        attemptNumber: {type: integer, minimum: 1}
-        activityId: {type: string, nullable: true}
-        activityName: {type: string}
-        agentKey: {type: string}
-        agentNickname: {type: string}
-        taskStatus: {type: string, enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]}
-        operationalState: {$ref: '#/components/schemas/OperationalState'}
-        stateReason: {type: string}
-        estimatedCostUsd: {type: number, format: decimal, nullable: true}
-        costEstimationStatus: {type: string}
-        receivedAt: {type: string, format: date-time, nullable: true}
-        deliveredAt: {type: string, format: date-time, nullable: true}
+        taskId: { type: integer, format: int64 }
+        activityInstanceId: { type: integer, format: int64, nullable: true }
+        attemptNumber: { type: integer, minimum: 1 }
+        activityId: { type: string, nullable: true }
+        activityName: { type: string }
+        agentKey: { type: string }
+        agentNickname: { type: string }
+        taskStatus:
+          {
+            type: string,
+            enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED],
+          }
+        operationalState: { $ref: "#/components/schemas/OperationalState" }
+        stateReason: { type: string }
+        executionMode:
+          {
+            type: string,
+            enum: [MODEL, DETERMINISTIC, NOT_STARTED],
+            nullable: true,
+          }
+        modelCode: { type: string, nullable: true }
+        reasoningEffort: { type: string, nullable: true }
+        promptSent: { type: string, nullable: true }
+        blockerGuidance:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/BlockerGuidance" }]
+        accessedUrls:
+          type: array
+          items: { $ref: "#/components/schemas/AuditLink" }
+        visualEvidence:
+          type: array
+          items: { $ref: "#/components/schemas/VisualEvidence" }
+        visualAudit:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/VisualAudit" }]
+        purchaseEmotion:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/PurchaseEmotion" }]
+        estimatedCostUsd: { type: number, format: decimal, nullable: true }
+        costEstimationStatus: { type: string }
+        receivedAt: { type: string, format: date-time, nullable: true }
+        deliveredAt: { type: string, format: date-time, nullable: true }
     OperationalState:
       type: string
-      enum: [RELEASED, WAITING_PREDECESSOR, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED, SUPERSEDED_LEGACY]
+      enum:
+        [
+          RELEASED,
+          WAITING_PREDECESSOR,
+          IN_PROGRESS,
+          BLOCKED,
+          COMPLETED,
+          CANCELLED,
+          SUPERSEDED_LEGACY,
+        ]
     AgentTaskResponse:
       type: object
       required: [id, assignedAgentKey, title, status, costEstimationStatus]
       properties:
-        id: {type: integer, format: int64}
-        assignedAgentKey: {type: string}
-        title: {type: string}
-        status: {type: string}
-        inputTokens: {type: integer, format: int64, nullable: true}
-        cachedInputTokens: {type: integer, format: int64, nullable: true}
-        outputTokens: {type: integer, format: int64, nullable: true}
-        estimatedCostUsd: {type: number, format: decimal, nullable: true}
+        id: { type: integer, format: int64 }
+        assignedAgentKey: { type: string }
+        title: { type: string }
+        status: { type: string }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        estimatedCostUsd: { type: number, format: decimal, nullable: true }
         costEstimationStatus:
           type: string
-          enum: [NOT_REPORTED, NOT_APPLICABLE, ESTIMATED, PARTIALLY_ESTIMATED, PRICING_UNAVAILABLE]
-        modelUsageUpdatedAt: {type: string, format: date-time, nullable: true}
-        executionModelCode: {type: string, nullable: true}
-        executionMode: {type: string, enum: [MODEL, DETERMINISTIC, NOT_STARTED], nullable: true}
-        executionReasoningEffort: {type: string, nullable: true}
-        executionPrompt: {type: string, nullable: true}
+          enum:
+            [
+              NOT_REPORTED,
+              NOT_APPLICABLE,
+              ESTIMATED,
+              PARTIALLY_ESTIMATED,
+              PRICING_UNAVAILABLE,
+            ]
+        modelUsageUpdatedAt: { type: string, format: date-time, nullable: true }
+        executionModelCode: { type: string, nullable: true }
+        executionMode:
+          {
+            type: string,
+            enum: [MODEL, DETERMINISTIC, NOT_STARTED],
+            nullable: true,
+          }
+        executionReasoningEffort: { type: string, nullable: true }
+        executionPrompt: { type: string, nullable: true }
         blockerGuidance:
           nullable: true
-          allOf: [{$ref: '#/components/schemas/BlockerGuidance'}]
+          allOf: [{ $ref: "#/components/schemas/BlockerGuidance" }]
         accessedUrls:
           type: array
-          items: {$ref: '#/components/schemas/AuditLink'}
+          items: { $ref: "#/components/schemas/AuditLink" }
+        visualEvidence:
+          type: array
+          items: { $ref: "#/components/schemas/VisualEvidence" }
+        visualAudit:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/VisualAudit" }]
+        purchaseEmotion:
+          nullable: true
+          allOf: [{ $ref: "#/components/schemas/PurchaseEmotion" }]
         failureAudit:
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/FailureAudit'
+            - $ref: "#/components/schemas/FailureAudit"
     FailureAudit:
       type: object
       required: [readiness, intendedWork, missingEvidence]
       properties:
-        readiness: {type: string, enum: [COMPLETE, PARTIAL]}
-        intendedWork: {type: string}
-        sourceReference: {type: string, nullable: true}
-        processCode: {type: string, nullable: true}
-        activityId: {type: string, nullable: true}
-        activityName: {type: string, nullable: true}
-        authorityPolicy: {type: string, nullable: true}
-        accessedEvidenceJson: {type: string, nullable: true}
-        producedOutputJson: {type: string, nullable: true}
+        readiness: { type: string, enum: [COMPLETE, PARTIAL] }
+        intendedWork: { type: string }
+        sourceReference: { type: string, nullable: true }
+        processCode: { type: string, nullable: true }
+        activityId: { type: string, nullable: true }
+        activityName: { type: string, nullable: true }
+        authorityPolicy: { type: string, nullable: true }
+        accessedEvidenceJson: { type: string, nullable: true }
+        producedOutputJson: { type: string, nullable: true }
         error:
           type: string
           nullable: true
           description: Erro técnico ou causa funcional que bloqueou a tarefa.
         blockerGuidance:
           nullable: true
-          allOf: [{$ref: '#/components/schemas/BlockerGuidance'}]
+          allOf: [{ $ref: "#/components/schemas/BlockerGuidance" }]
         accessedUrls:
           type: array
-          items: {$ref: '#/components/schemas/AuditLink'}
+          items: { $ref: "#/components/schemas/AuditLink" }
         missingEvidence:
           type: array
-          items: {type: string}
+          items: { type: string }
     PendingTaskResponse:
       type: object
-      required: [taskId, agentKey, processCode, processVersion, activityId, activityName]
+      required:
+        [
+          taskId,
+          agentKey,
+          processCode,
+          processVersion,
+          activityId,
+          activityName,
+        ]
       properties:
-        taskId: {type: integer, format: int64}
-        agentKey: {type: string}
-        processCode: {type: string}
-        processVersion: {type: integer}
-        activityId: {type: string}
-        activityName: {type: string}
+        taskId: { type: integer, format: int64 }
+        agentKey: { type: string }
+        processCode: { type: string }
+        processVersion: { type: integer }
+        activityId: { type: string }
+        activityName: { type: string }
         executionResource:
           nullable: true
           allOf:
-            - $ref: '#/components/schemas/ExecutionResource'
-        processContextJson: {type: string}
+            - $ref: "#/components/schemas/ExecutionResource"
+        processContextJson: { type: string }
     ExecutionResource:
       type: object
-      required: [resourceCode, name, resourceType, executorReference, usageInstructions]
+      required:
+        [resourceCode, name, resourceType, executorReference, usageInstructions]
       properties:
-        resourceCode: {type: string}
-        name: {type: string}
-        resourceType: {type: string}
-        executorReference: {type: string}
-        usageInstructions: {type: string}
+        resourceCode: { type: string }
+        name: { type: string }
+        resourceType: { type: string }
+        executorReference: { type: string }
+        usageInstructions: { type: string }
     ModelUsage:
       type: object
-      required: [modelCode, serviceTier, inputTokens, cachedInputTokens, outputTokens]
+      required:
+        [modelCode, serviceTier, inputTokens, cachedInputTokens, outputTokens]
       properties:
-        modelCode: {type: string, maxLength: 128}
-        serviceTier: {type: string, enum: [STANDARD, FLEX, BATCH]}
-        inputTokens: {type: integer, format: int64, minimum: 0}
+        modelCode: { type: string, maxLength: 128 }
+        serviceTier: { type: string, enum: [STANDARD, FLEX, BATCH] }
+        inputTokens: { type: integer, format: int64, minimum: 0 }
         cachedInputTokens:
           type: integer
           format: int64
           minimum: 0
           description: Parcela de inputTokens atendida pelo cache; não pode exceder a entrada.
-        outputTokens: {type: integer, format: int64, minimum: 0}
+        outputTokens: { type: integer, format: int64, minimum: 0 }
     ExecutionAudit:
       type: object
       required: [executionMode]
       description: Registro imutável da execução. MODEL exige modelo, raciocínio e prompt; DETERMINISTIC exige identificador, entrada integral e NOT_APPLICABLE; NOT_STARTED não aceita dados inventados.
       properties:
-        executionMode: {type: string, enum: [MODEL, DETERMINISTIC, NOT_STARTED]}
-        modelCode: {type: string, maxLength: 128}
-        reasoningEffort: {type: string, maxLength: 32}
-        promptSent: {type: string, description: Prompt final enviado ao modelo, após resolver o contexto.}
+        executionMode:
+          { type: string, enum: [MODEL, DETERMINISTIC, NOT_STARTED] }
+        modelCode: { type: string, maxLength: 128 }
+        reasoningEffort: { type: string, maxLength: 32 }
+        promptSent:
+          {
+            type: string,
+            description: Prompt final enviado ao modelo,
+            após resolver o contexto.,
+          }
         accessedUrls:
           type: array
           maxItems: 50
-          items: {$ref: '#/components/schemas/AccessedUrl'}
+          items: { $ref: "#/components/schemas/AccessedUrl" }
     AccessedUrl:
       type: object
       required: [url, label, accessMethod]
       properties:
-        url: {type: string, format: uri, maxLength: 2048}
-        label: {type: string, maxLength: 200}
-        accessMethod: {type: string, enum: [WEB_SEARCH, BROWSER, PLAYWRIGHT, PUBLIC_API, HTTP, HTTP_CLIENT, MCP]}
-        accessedAt: {type: string, format: date-time, nullable: true}
+        url: { type: string, format: uri, maxLength: 2048 }
+        label: { type: string, maxLength: 200 }
+        accessMethod:
+          {
+            type: string,
+            enum:
+              [
+                WEB_SEARCH,
+                BROWSER,
+                PLAYWRIGHT,
+                PUBLIC_API,
+                HTTP,
+                HTTP_CLIENT,
+                MCP,
+              ],
+          }
+        accessedAt: { type: string, format: date-time, nullable: true }
     AuditLink:
       type: object
       required: [label, url]
       properties:
-        label: {type: string}
-        url: {type: string}
-        accessMethod: {type: string, nullable: true}
-        accessedAt: {type: string, format: date-time, nullable: true}
+        label: { type: string }
+        url: { type: string }
+        accessMethod: { type: string, nullable: true }
+        accessedAt: { type: string, format: date-time, nullable: true }
+    VisualEvidence:
+      type: object
+      required:
+        [
+          id,
+          captureSessionId,
+          evidenceKey,
+          evidenceType,
+          label,
+          deviceProfile,
+          pageNumber,
+          viewportWidth,
+          viewportHeight,
+          pageHeightPx,
+          scrollY,
+          sourceUrl,
+          finalUrl,
+          contentUrl,
+          sizeBytes,
+          sha256,
+          capturedAt,
+        ]
+      properties:
+        id: { type: integer, format: int64 }
+        captureSessionId: { type: string }
+        evidenceKey: { type: string }
+        evidenceType: { type: string, enum: [FULL_PAGE, FOLD] }
+        label: { type: string }
+        deviceProfile:
+          { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440] }
+        pageNumber: { type: integer, minimum: 1 }
+        foldNumber: { type: integer, minimum: 1, nullable: true }
+        viewportWidth: { type: integer, minimum: 1 }
+        viewportHeight: { type: integer, minimum: 1 }
+        pageHeightPx: { type: integer, minimum: 1 }
+        scrollY: { type: integer, minimum: 0 }
+        sourceUrl: { type: string, format: uri }
+        finalUrl: { type: string, format: uri }
+        contentUrl: { type: string }
+        sizeBytes: { type: integer, format: int64, minimum: 1 }
+        sha256: { type: string, minLength: 64, maxLength: 64 }
+        capturedAt: { type: string, format: date-time }
+    VisualAudit:
+      type: object
+      required:
+        [
+          captureSessionId,
+          mobileFirst,
+          fullPageEvidenceIds,
+          fullPageContinuity,
+          overallAestheticAssessment,
+          foldAnalyses,
+        ]
+      properties:
+        captureSessionId: { type: string }
+        mobileFirst: { type: boolean, enum: [true] }
+        fullPageEvidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, format: int64 }
+        fullPageContinuity: { type: string }
+        overallAestheticAssessment: { type: string }
+        foldAnalyses:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/VisualFoldAnalysis" }
+    VisualFoldAnalysis:
+      type: object
+      required:
+        [
+          artifactId,
+          deviceProfile,
+          pageNumber,
+          foldNumber,
+          aestheticAssessment,
+          visualHierarchy,
+          legibility,
+          emotionEvoked,
+          ctaVisibility,
+        ]
+      properties:
+        artifactId: { type: integer, format: int64 }
+        deviceProfile: { type: string, enum: [IPHONE_15_PRO] }
+        pageNumber: { type: integer, minimum: 1 }
+        foldNumber: { type: integer, minimum: 1 }
+        aestheticAssessment: { type: string }
+        visualHierarchy: { type: string }
+        legibility: { type: string }
+        emotionEvoked: { type: string }
+        ctaVisibility: { type: string }
+    PurchaseEmotion:
+      type: object
+      required:
+        [
+          acquisitionExpectation,
+          acquisitionAnxiety,
+          expectedPostDeliveryFeeling,
+          emotionalTension,
+          evidenceBoundary,
+        ]
+      properties:
+        acquisitionExpectation: { type: string }
+        acquisitionAnxiety: { type: string }
+        expectedPostDeliveryFeeling: { type: string }
+        emotionalTension: { type: string }
+        evidenceBoundary: { type: string }
     HelpLink:
       type: object
       required: [label, url]
       properties:
-        label: {type: string, maxLength: 200}
-        url: {type: string, maxLength: 2048}
+        label: { type: string, maxLength: 200 }
+        url: { type: string, maxLength: 2048 }
     BlockerGuidance:
       type: object
       required: [category, recommendedAction, helpLinks]
       properties:
-        category: {type: string, enum: [FUNCTIONAL_ADJUSTMENT, MISSING_EVIDENCE, COMMERCIAL_RISK, AUTHORIZATION_REQUIRED, TECHNICAL_FAILURE]}
-        recommendedAction: {type: string, maxLength: 8000}
+        category:
+          {
+            type: string,
+            enum:
+              [
+                FUNCTIONAL_ADJUSTMENT,
+                MISSING_EVIDENCE,
+                COMMERCIAL_RISK,
+                AUTHORIZATION_REQUIRED,
+                TECHNICAL_FAILURE,
+              ],
+          }
+        recommendedAction: { type: string, maxLength: 8000 }
         helpLinks:
           type: array
           minItems: 1
           maxItems: 10
-          items: {$ref: '#/components/schemas/HelpLink'}
+          items: { $ref: "#/components/schemas/HelpLink" }
     CompleteTaskRequest:
       type: object
       required: [resultJson, evidenceJson, executionAudit]
       properties:
-        resultJson: {type: string}
-        evidenceJson: {type: string}
+        resultJson: { type: string }
+        evidenceJson: { type: string }
         modelUsages:
           type: array
           description: Chamadas feitas durante esta tentativa; vazio significa que a atividade não usou modelo.
-          items: {$ref: '#/components/schemas/ModelUsage'}
+          items: { $ref: "#/components/schemas/ModelUsage" }
         executionAudit:
-          allOf: [{$ref: '#/components/schemas/ExecutionAudit'}]
+          allOf: [{ $ref: "#/components/schemas/ExecutionAudit" }]
     FailTaskRequest:
       type: object
       required: [error]
       properties:
-        error: {type: string}
-        resultJson: {type: string, nullable: true}
-        evidenceJson: {type: string, nullable: true}
+        error: { type: string }
+        resultJson: { type: string, nullable: true }
+        evidenceJson: { type: string, nullable: true }
         modelUsages:
           type: array
-          items: {$ref: '#/components/schemas/ModelUsage'}
+          items: { $ref: "#/components/schemas/ModelUsage" }
         executionAudit:
           nullable: true
-          allOf: [{$ref: '#/components/schemas/ExecutionAudit'}]
+          allOf: [{ $ref: "#/components/schemas/ExecutionAudit" }]
         blockerGuidance:
           nullable: true
           description: Pode ser omitida; o backend ainda deriva uma orientação mínima auditável.
-          allOf: [{$ref: '#/components/schemas/BlockerGuidance'}]
+          allOf: [{ $ref: "#/components/schemas/BlockerGuidance" }]
     HumanTaskRequest:
       type: object
-      required: [assignedAgentKey, requestedByName, title, description, priority, exceptional]
+      required:
+        [
+          assignedAgentKey,
+          requestedByName,
+          title,
+          description,
+          priority,
+          exceptional,
+        ]
       properties:
-        assignedAgentKey: {type: string, maxLength: 100}
-        requestedByName: {type: string, maxLength: 100}
-        title: {type: string, maxLength: 160}
-        description: {type: string}
-        priority: {type: string, enum: [LOW, NORMAL, HIGH, URGENT]}
-        sourceReference: {type: string, maxLength: 200}
+        assignedAgentKey: { type: string, maxLength: 100 }
+        requestedByName: { type: string, maxLength: 100 }
+        title: { type: string, maxLength: 160 }
+        description: { type: string }
+        priority: { type: string, enum: [LOW, NORMAL, HIGH, URGENT] }
+        sourceReference: { type: string, maxLength: 200 }
         # A referência é obrigatória na operação regular para identificar a instância da atividade.
         processDefinitionId:
           type: integer
@@ -475,19 +818,20 @@ components:
           description: Obrigatória quando exceptional=true.
     AgentTaskRequest:
       type: object
-      required: [requestedByAgentKey, assignedAgentKey, title, description, priority]
+      required:
+        [requestedByAgentKey, assignedAgentKey, title, description, priority]
       properties:
-        requestedByAgentKey: {type: string, maxLength: 100}
-        assignedAgentKey: {type: string, maxLength: 100}
-        title: {type: string, maxLength: 160}
-        description: {type: string}
-        priority: {type: string, enum: [LOW, NORMAL, HIGH, URGENT]}
-        sourceReference: {type: string, maxLength: 200}
+        requestedByAgentKey: { type: string, maxLength: 100 }
+        assignedAgentKey: { type: string, maxLength: 100 }
+        title: { type: string, maxLength: 160 }
+        description: { type: string }
+        priority: { type: string, enum: [LOW, NORMAL, HIGH, URGENT] }
+        sourceReference: { type: string, maxLength: 200 }
         processDefinitionId:
           type: integer
           format: int64
           description: Obrigatória junto da atividade quando a delegação for regular.
-        processActivityId: {type: string, maxLength: 100}
+        processActivityId: { type: string, maxLength: 100 }
         exceptional:
           type: boolean
           description: Deve ser true somente quando a demanda estiver fora do catálogo BPM.
@@ -499,13 +843,13 @@ components:
       type: object
       required: [decidedByAgentKey, decision, reason]
       properties:
-        decidedByAgentKey: {type: string, maxLength: 100}
-        decision: {type: string, enum: [APPROVED, REJECTED]}
-        reason: {type: string}
+        decidedByAgentKey: { type: string, maxLength: 100 }
+        decision: { type: string, enum: [APPROVED, REJECTED] }
+        reason: { type: string }
     AgentGateRequest:
       allOf:
-        - $ref: '#/components/schemas/AgentTaskRequest'
+        - $ref: "#/components/schemas/AgentTaskRequest"
         - type: object
           required: [gateCode]
           properties:
-            gateCode: {type: string, maxLength: 100}
+            gateCode: { type: string, maxLength: 100 }

@@ -54,7 +54,10 @@ class BusinessProcessActivityExecutionControllerTest {
             null,
             "Comprove a dor.",
             null,
-            List.of());
+            List.of(),
+            List.of(),
+            null,
+            null);
     when(service.recentExecutions(37L, "evidence"))
         .thenReturn(
             new BusinessProcessActivityExecutionHistoryResponse(
@@ -113,7 +116,10 @@ class BusinessProcessActivityExecutionControllerTest {
             "Rigel",
             "Construa a landing.",
             null,
-            List.of());
+            List.of(),
+            List.of(),
+            null,
+            null);
     var activity =
         new ProductProcessActivityExecutionGroupResponse(
             119L,

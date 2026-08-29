@@ -6,6 +6,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
 import com.marketinghub.agenttask.AgentTaskAuditView;
 import com.marketinghub.agenttask.AgentTaskResponse;
+import com.marketinghub.agenttask.AgentTaskResultView;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
@@ -1222,7 +1223,10 @@ public class BusinessProcessActivityExecutionService {
             task.getExecutionPrompt(),
             technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null)),
         AgentTaskAuditView.blockerGuidance(task),
-        AgentTaskAuditView.accessedUrls(task));
+        AgentTaskAuditView.accessedUrls(task),
+        AgentTaskAuditView.visualEvidence(task),
+        AgentTaskResultView.section(task, "visualAudit"),
+        AgentTaskResultView.section(task, "purchaseEmotion"));
   }
 
   /** Recupera a chamada real de Dédalo correlacionada à tarefa composta, quando existente. */

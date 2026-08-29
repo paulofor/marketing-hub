@@ -93,7 +93,8 @@ class CommercialPlanJourneyHomologationServiceTest {
     assertThat(tasks.getAllValues())
         .allSatisfy(
             task -> {
-              assertThat(task.sourceReference()).isEqualTo("commercial-plan:2@v3:journey");
+              assertThat(task.sourceReference())
+                  .isEqualTo("commercial-plan:2@v3:journey:experiment-88");
               assertThat(task.processDefinitionId()).isEqualTo(18L);
               assertThat(task.title()).contains("Experimento #88");
             });
@@ -128,7 +129,7 @@ class CommercialPlanJourneyHomologationServiceTest {
             "landing-page-generation", "PUBLISHED"))
         .thenReturn(Optional.of(process));
     AgentTask blocked = org.mockito.Mockito.mock(AgentTask.class);
-    when(blocked.getSourceReference()).thenReturn("commercial-plan:2@v3:journey");
+    when(blocked.getSourceReference()).thenReturn("commercial-plan:2@v3:journey:experiment-88");
     when(blocked.getProcessDefinition()).thenReturn(process);
     when(blocked.getAssignedAgent())
         .thenReturn(Agent.builder().id(2L).agentKey("customer-agent").nickname("Psique").build());
@@ -139,7 +140,7 @@ class CommercialPlanJourneyHomologationServiceTest {
         .thenReturn(
             "{\"decision\":\"ADJUST\",\"requiredChanges\":[\"Explicitar uso manual pela cliente\"]}");
     when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-            "commercial-plan:2@v3:journey"))
+            "commercial-plan:2@v3:journey:experiment-88"))
         .thenReturn(java.util.List.of(blocked));
     var service =
         new CommercialPlanJourneyHomologationService(
@@ -158,7 +159,7 @@ class CommercialPlanJourneyHomologationServiceTest {
     verify(agentTaskService, times(6)).createByHumanIfAbsent(tasks.capture());
     assertThat(tasks.getAllValues())
         .extracting(CreateAgentTaskRequest::sourceReference)
-        .containsOnly("commercial-plan:2@v3:journey:attempt:2");
+        .containsOnly("commercial-plan:2@v3:journey:experiment-88:attempt:2");
     assertThat(tasks.getAllValues().getFirst().description())
         .contains(
             "\"journeyAttempt\":2",
@@ -191,7 +192,7 @@ class CommercialPlanJourneyHomologationServiceTest {
         "{\"decision\":\"BLOCKED\",\"requiredChanges\":[\"Persistir checkoutUrl no campo auditável\",\"Fornecer evidência auditável do checkout\"]}");
     AgentTask commercial = task(245L, themis, process, "commercial", "PENDING");
     when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-            "commercial-plan:4@v3:journey"))
+            "commercial-plan:4@v3:journey:experiment-89"))
         .thenReturn(List.of(commercial, customer, landing));
     when(reviewResumeService.buildResumeBrief(
             org.mockito.ArgumentMatchers.eq(4L),
@@ -261,7 +262,7 @@ class CommercialPlanJourneyHomologationServiceTest {
     resumed.setDescription(
         "{\"resumeMode\":\"REUSE_APPROVED_LANDING_WITH_FRESH_CANONICAL_EVIDENCE\"}");
     when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-            "commercial-plan:4@v3:journey"))
+            "commercial-plan:4@v3:journey:experiment-89"))
         .thenReturn(List.of(resumed));
     var service =
         new CommercialPlanJourneyHomologationService(
@@ -295,13 +296,14 @@ class CommercialPlanJourneyHomologationServiceTest {
             "landing-page-generation", "PUBLISHED"))
         .thenReturn(Optional.of(process));
     AgentTask active = org.mockito.Mockito.mock(AgentTask.class);
-    when(active.getSourceReference()).thenReturn("commercial-plan:2@v3:journey:attempt:2");
+    when(active.getSourceReference())
+        .thenReturn("commercial-plan:2@v3:journey:experiment-88:attempt:2");
     when(active.getProcessDefinition()).thenReturn(process);
     when(active.getAssignedAgent())
         .thenReturn(Agent.builder().id(2L).agentKey("customer-agent").nickname("Psique").build());
     when(active.getStatus()).thenReturn("PENDING");
     when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-            "commercial-plan:2@v3:journey"))
+            "commercial-plan:2@v3:journey:experiment-88"))
         .thenReturn(java.util.List.of(active));
     var service =
         new CommercialPlanJourneyHomologationService(
@@ -320,7 +322,7 @@ class CommercialPlanJourneyHomologationServiceTest {
     verify(agentTaskService, times(6)).createByHumanIfAbsent(tasks.capture());
     assertThat(tasks.getAllValues())
         .extracting(CreateAgentTaskRequest::sourceReference)
-        .containsOnly("commercial-plan:2@v3:journey:attempt:2");
+        .containsOnly("commercial-plan:2@v3:journey:experiment-88:attempt:2");
     assertThat(tasks.getAllValues().getFirst().description()).contains("\"journeyAttempt\":2");
   }
 
@@ -332,7 +334,7 @@ class CommercialPlanJourneyHomologationServiceTest {
     task.setAssignedAgent(agent);
     task.setProcessDefinition(process);
     task.setProcessActivityId(activityId);
-    task.setSourceReference("commercial-plan:4@v3:journey");
+    task.setSourceReference("commercial-plan:4@v3:journey:experiment-89");
     task.setStatus(status);
     return task;
   }

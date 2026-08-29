@@ -854,6 +854,9 @@ public class AgentTaskService {
         task.getExecutionPrompt(),
         AgentTaskAuditView.blockerGuidance(task),
         AgentTaskAuditView.accessedUrls(task),
+        AgentTaskAuditView.visualEvidence(task),
+        AgentTaskResultView.section(task, "visualAudit"),
+        AgentTaskResultView.section(task, "purchaseEmotion"),
         task.getInputTokens(),
         task.getCachedInputTokens(),
         task.getOutputTokens(),
@@ -1203,6 +1206,9 @@ public class AgentTaskService {
         task.getExecutionPrompt(),
         AgentTaskAuditView.blockerGuidance(task),
         AgentTaskAuditView.accessedUrls(task),
+        AgentTaskAuditView.visualEvidence(task),
+        AgentTaskResultView.section(task, "visualAudit"),
+        AgentTaskResultView.section(task, "purchaseEmotion"),
         task.getReceivedAt(),
         task.getDeliveredAt(),
         task.getCreatedAt(),
@@ -1654,7 +1660,9 @@ public class AgentTaskService {
         task.getSourceReference(),
         task.getReceivedAt(),
         executionResource(task),
-        taskTargetContextProvider.resolve(task.getSourceReference()).orElse(null),
+        taskTargetContextProvider
+            .resolve(task.getSourceReference(), process.getProcessCode())
+            .orElse(null),
         processContext(task));
   }
 

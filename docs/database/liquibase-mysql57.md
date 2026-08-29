@@ -29,9 +29,9 @@ executores no contrato canônico de health, além de reaplicação sem duplicida
 bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh
 ```
 
-A auditoria acionável das tarefas possui fixture física própria. Ela valida as colunas universais,
-os campos `DATETIME`, o vínculo segregado dos links, exclusão em cascata e reaplicação sem
-duplicidade:
+A auditoria acionável e visual das tarefas possui fixture física própria. Ela valida as colunas
+universais, os campos `DATETIME`, o vínculo segregado dos links, os snapshots de Psique com
+identificadores ASCII, exclusão em cascata e reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh

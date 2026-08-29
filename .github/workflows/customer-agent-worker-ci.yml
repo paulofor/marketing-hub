@@ -66,6 +66,14 @@ jobs:
       - name: Run unit tests
         working-directory: customer-agent-worker
         run: mvn -B test
+      - name: Install Chromium for mobile visual validation
+        working-directory: customer-agent-worker
+        run: |
+          npm ci
+          npx playwright-core install --with-deps chromium
+      - name: Validate real mobile visual capture
+        working-directory: customer-agent-worker
+        run: npm test
       - name: Validate container user contract
         run: bash customer-agent-worker/test-dockerfile-contract.sh
       - name: Validate container build
@@ -74,7 +82,7 @@ jobs:
         run: |
           docker run --rm --entrypoint node marketing-hub/customer-agent-worker:${{ github.sha }} \
             --input-type=module -e \
-            'import { chromium } from "playwright-core"; const browser = await chromium.launch({channel: "chromium", headless: true, args: ["--no-sandbox"]}); console.log(await browser.version()); await browser.close();'
+            'import { chromium } from "playwright-core"; const browser = await chromium.launch({headless: true, args: ["--no-sandbox"]}); console.log(await browser.version()); await browser.close();'
 
   deploy:
     name: Deploy worker

@@ -1,6 +1,8 @@
 package com.marketinghub.businessprocess.document.service.recentDocuments;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.agenttask.AgentTaskAuditLinkResponse;
+import com.marketinghub.agenttask.AgentTaskVisualEvidenceResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -26,4 +28,7 @@ public record BusinessProcessActivityDocumentResponse(
     String reasoningEffort,
     String productInternalName,
     String promptSent,
-    List<AgentTaskAuditLinkResponse> accessedUrls) {}
+    List<AgentTaskAuditLinkResponse> accessedUrls,
+    List<AgentTaskVisualEvidenceResponse> visualEvidence,
+    JsonNode visualAudit,
+    JsonNode purchaseEmotion) {}

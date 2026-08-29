@@ -1038,6 +1038,11 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Regra preventiva**:
   - todo ajuste em prompt deve responder: o schema aceita, a OpenAI aceita, o backend consome, a UI interpreta e o relatório consegue auditar?
   - propriedades que usam `const` também devem declarar `type`; o contrato do Estrategista possui teste específico para impedir nova rejeição `invalid_json_schema`.
+  - em 2026-08-29, a tarefa #263 de Psique capturou e persistiu seis evidências da Rigel, mas a
+    Responses API rejeitou o schema antes do parecer porque `visualAudit.mobileFirst` e
+    `foldAnalyses.deviceProfile` usavam `const` sem `type`. Os três schemas BPM v2 equivalentes
+    passam a declarar os tipos `boolean` e `string`; o teste sensorial percorre recursivamente cada
+    schema e impede qualquer nova constante sem tipo explícito.
   - imagens de agentes com Playwright devem fixar uma distribuição Linux suportada pela versão do navegador; o Estrategista usa `eclipse-temurin:21-jre-noble`, protegido por teste de contrato e build do container no CI, evitando que a tag móvel avance para Ubuntu 26.04 incompatível.
   - a prontidão do deploy de agentes deve registrar separadamente estado do container, autenticação Codex e corpo do health check em cada tentativa; o Estrategista aceita JSON com espaços e aguarda até dois minutos, evitando falso negativo de um comando composto sem evidência do requisito que falhou;
   - em 2026-08-06, o workflow ainda rejeitou 23 respostas saudáveis `{"status":"UP"}` porque as aspas do regex foram consumidas pela camada de quoting do comando SSH. A verificação passou a buscar os marcadores estáveis `status` e `UP`, sem depender das aspas literais do JSON no shell remoto.

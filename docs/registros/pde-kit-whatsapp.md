@@ -400,3 +400,23 @@ apesar de a medição já informar objetivo atingido.
 A correção faz a ocorrência BPM prevalecer, preserva a tentativa bloqueada para auditoria e mostra
 `Integrar canal, checkout, acesso e eventos` logo depois do 4.2. O item é exibido como próximo passo
 do processo 4, sem registrar início, autorizar publicação, antecipar o processo 5 ou gerar gasto.
+
+## Recuperação da evidência visual da homologação
+
+Em 2026-08-29, as tarefas #259 a #262 de Psique bloquearam antes da captura porque o proxy público
+do Kit estava parado. A operação restrita `recover-public-proxy` recuperou o proxy sem build, pull
+ou deploy e revalidou HTTPS, health e contrato PDE. A tentativa #263 então persistiu seis
+screenshots, confirmando que a indisponibilidade havia sido eliminada.
+
+A execução revelou um segundo defeito independente: a Responses API recusou o schema BPM v2 porque
+as constantes `visualAudit.mobileFirst` e `foldAnalyses.deviceProfile` não declaravam `type`. Os
+três contratos visuais v2 de Psique foram alinhados ao Structured Outputs estrito e o teste de
+contrato agora percorre todas as constantes de forma recursiva. Tentativas bloqueadas continuam
+como histórico.
+
+A correção foi validada contra o mesmo `gpt-5.6-sol`, que aceitou o schema e produziu o parecer
+estruturado, e em duas rodadas locais completas e consecutivas. Cada rodada passou por 55 testes
+Java, 2 testes reais de captura Playwright, Spotless, todos os schemas, build da imagem, Chromium
+dentro do container, handshake do provedor, sondas públicas e emulação de iPhone 15 Pro e Pixel 7.
+A imagem produtiva ainda contém o schema anterior; por isso, uma nova tentativa oficial só deve ser
+aberta depois do PR e do deploy do worker, sem apagar a auditoria das tarefas #259 a #263.

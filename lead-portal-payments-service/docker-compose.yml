@@ -71,7 +71,16 @@ services:
       # o docker-compose.deploy.yml monta o diretório real do Let's Encrypt
       # por cima deste caminho, então o certificado válido terá prioridade.
       - ./docker/proxy/certs/dev:/etc/letsencrypt:ro
-    restart: unless-stopped
+    # O proxy e a porta HTTPS são infraestrutura comercial compartilhada. A política
+    # `always` restaura o serviço após reboot mesmo quando ele foi parado antes do
+    # reinício do daemon; `unless-stopped` preservaria a indisponibilidade.
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t -q"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - lead-portal-payments-net
 

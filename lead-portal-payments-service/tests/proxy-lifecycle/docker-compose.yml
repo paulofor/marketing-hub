@@ -1,0 +1,39 @@
+services:
+  lead-portal-payments-service:
+    image: nginx:1.27-alpine
+    networks:
+      - proxy-lifecycle-test
+
+  pde-platform-frontend-kit-whatsapp:
+    image: nginx:1.27-alpine
+    networks:
+      - proxy-lifecycle-test
+
+  proxy:
+    build:
+      context: ../..
+      dockerfile: tests/proxy-lifecycle/Dockerfile
+    depends_on:
+      lead-portal-payments-service:
+        condition: service_started
+      pde-platform-frontend-kit-whatsapp:
+        condition: service_started
+    volumes:
+      - generated-certs:/etc/nginx/certs
+      - empty-letsencrypt:/etc/letsencrypt
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t -q"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 2s
+    networks:
+      - proxy-lifecycle-test
+
+networks:
+  proxy-lifecycle-test:
+
+volumes:
+  generated-certs:
+  empty-letsencrypt:

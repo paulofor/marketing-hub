@@ -14,4 +14,6 @@ public record AgentTaskFailureAuditResponse(
     String accessedEvidenceJson,
     String producedOutputJson,
     String error,
+    AgentTaskBlockerGuidanceResponse blockerGuidance,
+    List<AgentTaskAuditLinkResponse> accessedUrls,
     List<String> missingEvidence) {}

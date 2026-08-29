@@ -389,9 +389,29 @@ components:
         startedAt: { type: string, format: date-time, nullable: true }
         finishedAt: { type: string, format: date-time, nullable: true }
         modelCode: { type: string, nullable: true }
+        executionMode:
+          { type: string, enum: [MODEL, DETERMINISTIC, NOT_STARTED], nullable: true }
         reasoningEffort: { type: string, nullable: true }
         productInternalName: { type: string, nullable: true }
         promptSent: { type: string, nullable: true }
+        blockerGuidance:
+          type: object
+          nullable: true
+          properties:
+            category:
+              type: string
+              enum: [FUNCTIONAL_ADJUSTMENT, MISSING_EVIDENCE, COMMERCIAL_RISK, AUTHORIZATION_REQUIRED, TECHNICAL_FAILURE]
+            recommendedAction: { type: string }
+            helpLinks: { type: array, items: { type: object } }
+        accessedUrls:
+          type: array
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              url: { type: string }
+              accessMethod: { type: string, nullable: true }
+              accessedAt: { type: string, format: date-time, nullable: true }
     ProductProcessActivityExecutionHistory:
       type: object
       required:

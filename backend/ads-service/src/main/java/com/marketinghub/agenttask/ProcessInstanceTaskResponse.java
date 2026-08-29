@@ -2,6 +2,7 @@ package com.marketinghub.agenttask;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /** Responsabilidade: apresentar a situação operacional de uma atividade na instância BPM. */
 public record ProcessInstanceTaskResponse(
@@ -16,6 +17,12 @@ public record ProcessInstanceTaskResponse(
     String operationalState,
     String stateReason,
     AgentTaskFailureAuditResponse failureAudit,
+    String executionMode,
+    String modelCode,
+    String reasoningEffort,
+    String promptSent,
+    AgentTaskBlockerGuidanceResponse blockerGuidance,
+    List<AgentTaskAuditLinkResponse> accessedUrls,
     Long inputTokens,
     Long cachedInputTokens,
     Long outputTokens,

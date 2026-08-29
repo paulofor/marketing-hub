@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CompleteAgentTaskRequest;
@@ -160,7 +161,15 @@ class ProductDiscoveryBpmAuditServiceTest {
     when(agentTaskService.createByHumanIfAbsentAcrossProcessVersions(any(), any()))
         .thenReturn(taskResponse());
 
-    service.fail(cycle);
+    AgentTaskExecutionAuditRequest executionAudit =
+        new AgentTaskExecutionAuditRequest(
+            "MODEL",
+            "gpt-5.6-sol",
+            "high",
+            "Prompt integral cuja resposta foi rejeitada.",
+            List.of());
+
+    service.fail(cycle, executionAudit);
 
     ArgumentCaptor<FailAgentTaskRequest> request =
         ArgumentCaptor.forClass(FailAgentTaskRequest.class);
@@ -171,6 +180,7 @@ class ProductDiscoveryBpmAuditServiceTest {
             request.capture());
     assertThat(request.getValue().error())
         .isEqualTo("Backend rejeitou a conclusão com status 422.");
+    assertThat(request.getValue().executionAudit()).isEqualTo(executionAudit);
     assertThat(
             new ObjectMapper().readTree(request.getValue().resultJson()).path("cycleId").asLong())
         .isEqualTo(37L);

@@ -232,3 +232,14 @@ versionado com `--output-schema`. A resposta funcional deve ser lida exclusivame
 indicado por `--output-last-message`, validada antes do callback e persistida separadamente do log
 operacional. Saída parcial do processo, mensagens de progresso e diagnóstico nunca podem ser
 tratados como parecer concluído.
+
+Nas atividades BPM de Psique, o worker deve configurar explicitamente o tipo de raciocínio, manter o
+prompt integral resolvido e capturar somente URLs cuja abertura foi confirmada por evento estruturado
+do runtime. Na execução Codex atual, isso significa itens terminais `web_search` com ação
+`open_page` ou `find_in_page`; quando uma atividade incorporar a observação Playwright, somente a
+saída estruturada dessa sessão poderá acrescentar seus acessos. Cada acesso deve carregar URL final,
+método e horário quando o runtime os informar. URLs apenas presentes no contexto ou no conjunto
+autorizado não podem ser apresentadas como consultadas. O backend vincula essas fontes ao `taskId`,
+rejeita esquemas inseguros e a tela administrativa as abre em nova aba. Todo parecer bloqueado também
+deve informar ajuste recomendado e links seguros para o artefato ou tela onde a correção pode ser
+realizada.

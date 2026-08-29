@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-29-agent-task-actionable-audit-v2.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-28-financial-agent-task-audit-reconciliation.yaml
       relativeToChangelogFile: true
   - include:

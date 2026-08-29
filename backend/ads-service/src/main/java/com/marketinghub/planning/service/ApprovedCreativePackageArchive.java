@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -98,10 +99,10 @@ final class ApprovedCreativePackageArchive {
           "O pacote declarou provider ou gasto externo de mídia.");
       requireContractFiles(contract, manifest);
 
-      AgentExecution directionExecution = execution(executions, "IRIS");
-      AgentExecution apolloExecution = execution(executions, "APOLLO");
-      AgentExecution psiqueExecution = execution(executions, "PSIQUE");
-      AgentExecution temisExecution = execution(executions, "TEMIS_INDEPENDENT");
+      AgentExecution directionExecution = execution(entries, executions, "IRIS");
+      AgentExecution apolloExecution = execution(entries, executions, "APOLLO");
+      AgentExecution psiqueExecution = execution(entries, executions, "PSIQUE");
+      AgentExecution temisExecution = execution(entries, executions, "TEMIS_INDEPENDENT");
       require(
           new HashSet<>(
                       List.of(
@@ -270,7 +271,7 @@ final class ApprovedCreativePackageArchive {
   }
 
   /** Localiza a última execução íntegra de um agente no ledger local. */
-  private AgentExecution execution(JsonNode executions, String agent) {
+  private AgentExecution execution(Map<String, byte[]> entries, JsonNode executions, String agent) {
     require(executions.isArray(), "O ledger de agentes não é uma lista.");
     JsonNode selected = null;
     for (JsonNode execution : executions) {
@@ -284,6 +285,14 @@ final class ApprovedCreativePackageArchive {
     require(
         "gpt-5.6-sol".equals(selected.path("model").asText()),
         "A execução de " + agent + " usou modelo não homologado.");
+    String reasoningEffort = selected.path("reasoningEffort").asText("").trim();
+    require(!reasoningEffort.isEmpty(), "A execução de " + agent + " não registrou o raciocínio.");
+    String requestFile = selected.path("requestFile").asText("");
+    byte[] promptBytes = entries.get(requestFile);
+    require(
+        promptBytes != null && promptBytes.length > 0,
+        "A execução de " + agent + " não preservou o prompt.");
+    String prompt = new String(promptBytes, StandardCharsets.UTF_8);
     JsonNode usage = selected.path("usage");
     require(
         usage.path("input_tokens").canConvertToLong()
@@ -292,6 +301,8 @@ final class ApprovedCreativePackageArchive {
     return new AgentExecution(
         selected.path("executionId").asText(),
         selected.path("model").asText(),
+        reasoningEffort,
+        prompt,
         usage.path("input_tokens").asLong(),
         usage.path("cached_input_tokens").asLong(0),
         usage.path("output_tokens").asLong());
@@ -372,6 +383,8 @@ final class ApprovedCreativePackageArchive {
   record AgentExecution(
       String executionId,
       String model,
+      String reasoningEffort,
+      String prompt,
       long inputTokens,
       long cachedInputTokens,
       long outputTokens) {}

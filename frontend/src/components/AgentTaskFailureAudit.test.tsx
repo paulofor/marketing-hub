@@ -18,6 +18,21 @@ describe("AgentTaskFailureAudit", () => {
             '{"accessMode":"READ_ONLY","toolUsage":["consultar_funil"]}',
           producedOutputJson: '{"decision":"BLOCKED"}',
           error: "Evento de checkout ausente.",
+          blockerGuidance: {
+            category: "MISSING_EVIDENCE",
+            recommendedAction:
+              "Instale o evento de checkout e reinicie a tarefa.",
+            helpLinks: [
+              { label: "Abrir instrumentação", url: "/experiments/88" },
+            ],
+          },
+          accessedUrls: [
+            {
+              label: "Checkout observado",
+              url: "https://checkout.example/rigel",
+              accessMethod: "BROWSER",
+            },
+          ],
           missingEvidence: [],
         }}
       />,
@@ -27,6 +42,18 @@ describe("AgentTaskFailureAudit", () => {
     expect(screen.getByText(/Validar a instrumentação/)).toBeInTheDocument();
     expect(screen.getByText(/experiment:88/)).toBeInTheDocument();
     expect(screen.getByText(/Evento de checkout ausente/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Instale o evento de checkout/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir instrumentação" }),
+    ).toHaveAttribute("target", "_blank");
+    expect(
+      screen.getByRole("link", { name: "Checkout observado" }),
+    ).toHaveAttribute("href", "https://checkout.example/rigel");
+    expect(
+      screen.getByText("https://checkout.example/rigel"),
+    ).toBeInTheDocument();
   });
 
   it("explicita o que faltou no histórico legado", () => {

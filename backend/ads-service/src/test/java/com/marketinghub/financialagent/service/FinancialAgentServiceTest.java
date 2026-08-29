@@ -294,7 +294,10 @@ class FinancialAgentServiceTest {
                 .get("externalSideEffects")
                 .asBoolean())
         .isFalse();
-    assertThat(callback.getValue().resultJson()).contains("\"status\":\"FAILED\"");
+    assertThat(callback.getValue().resultJson()).isNull();
+    assertThat(callback.getValue().blockerGuidance().category()).isEqualTo("TECHNICAL_FAILURE");
+    assertThat(callback.getValue().blockerGuidance().recommendedAction())
+        .contains("MCP indisponível");
   }
 
   /** Cria uma execução financeira em processamento para os testes de callback. */

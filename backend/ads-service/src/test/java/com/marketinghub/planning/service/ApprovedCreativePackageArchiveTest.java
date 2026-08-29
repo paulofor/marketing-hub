@@ -151,7 +151,7 @@ class ApprovedCreativePackageArchiveTest {
     String template =
         """
         {"executionId":"%s","agent":"%s","exitCode":0,"agentModelCalled":true,
-         "model":"gpt-5.6-sol","usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":10},
+         "model":"gpt-5.6-sol","reasoningEffort":"high","usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":10},
          "requestFile":"audit/%s/request.md","requestFileSha256":"%s",
          "responseFile":"audit/%s/response.json","responseFileSha256":"%s",
          "logFile":"audit/%s/process.jsonl","logFileSha256":"%s"}

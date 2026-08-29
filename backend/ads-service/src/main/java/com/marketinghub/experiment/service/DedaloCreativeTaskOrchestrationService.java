@@ -1,6 +1,12 @@
 package com.marketinghub.experiment.service;
 
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskBlockerGuidanceRequest;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
+import com.marketinghub.agenttask.AgentTaskHelpLinkRequest;
+import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CompleteAgentTaskRequest;
+import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.marketinghub.experiment.Experiment;
@@ -22,20 +28,27 @@ public class DedaloCreativeTaskOrchestrationService {
   private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("^experiment:(\\d+)$");
   private final AgentTaskRepository taskRepository;
   private final ExperimentRepository experimentRepository;
+  private final AgentTaskService agentTaskService;
   private final Clock clock;
 
   /** Configura a orquestração com as fontes de verdade de tarefas e experimentos. */
   @Autowired
   public DedaloCreativeTaskOrchestrationService(
-      AgentTaskRepository taskRepository, ExperimentRepository experimentRepository) {
-    this(taskRepository, experimentRepository, Clock.systemUTC());
+      AgentTaskRepository taskRepository,
+      ExperimentRepository experimentRepository,
+      AgentTaskService agentTaskService) {
+    this(taskRepository, experimentRepository, agentTaskService, Clock.systemUTC());
   }
 
   /** Permite validar transições temporais de forma determinística. */
   DedaloCreativeTaskOrchestrationService(
-      AgentTaskRepository taskRepository, ExperimentRepository experimentRepository, Clock clock) {
+      AgentTaskRepository taskRepository,
+      ExperimentRepository experimentRepository,
+      AgentTaskService agentTaskService,
+      Clock clock) {
     this.taskRepository = taskRepository;
     this.experimentRepository = experimentRepository;
+    this.agentTaskService = agentTaskService;
     this.clock = clock;
   }
 
@@ -52,13 +65,15 @@ public class DedaloCreativeTaskOrchestrationService {
       }
       Experiment experiment = experimentRepository.findById(experimentId).orElse(null);
       if (experiment == null) {
-        block(task);
+        blockMissingExperiment(task, experimentId);
         continue;
       }
       if (shouldRequestCreative(task, experiment)) {
         requestOneCreative(experiment);
         task.setStatus("IN_PROGRESS");
-        task.setUpdatedAt(Instant.now(clock));
+        Instant now = Instant.now(clock);
+        if (task.getReceivedAt() == null) task.setReceivedAt(now);
+        task.setUpdatedAt(now);
       }
     }
   }
@@ -79,14 +94,48 @@ public class DedaloCreativeTaskOrchestrationService {
 
   /** Conclui a tarefa de Dédalo somente após o callback de materialização do executor. */
   @Transactional
-  public void completeForExperiment(Long experimentId) {
-    updateTask(experimentId, "COMPLETED");
+  public void completeForExperiment(
+      Long experimentId, AgentTaskExecutionAuditRequest executionAudit) {
+    activeTask(experimentId)
+        .ifPresent(
+            task ->
+                agentTaskService.completeClaimedProcessTask(
+                    DEDALO_AGENT_KEY,
+                    task.getId(),
+                    new CompleteAgentTaskRequest(
+                        "{\"decision\":\"CREATIVES_MATERIALIZED\",\"experimentId\":"
+                            + experimentId
+                            + "}",
+                        "{\"creativeGenerationStatus\":\"COMPLETED\",\"experimentId\":"
+                            + experimentId
+                            + "}",
+                        null,
+                        executionAudit)));
   }
 
   /** Bloqueia a tarefa quando a materialização falha, preservando a causa no experimento. */
   @Transactional
-  public void blockForExperiment(Long experimentId) {
-    updateTask(experimentId, "BLOCKED");
+  public void blockForExperiment(
+      Long experimentId, String error, AgentTaskExecutionAuditRequest executionAudit) {
+    String normalizedError =
+        error == null || error.isBlank()
+            ? "O executor não informou a causa da falha na geração de criativos."
+            : error.trim();
+    activeTask(experimentId)
+        .ifPresent(
+            task ->
+                agentTaskService.failClaimedProcessTask(
+                    DEDALO_AGENT_KEY,
+                    task.getId(),
+                    new FailAgentTaskRequest(
+                        normalizedError,
+                        null,
+                        "{\"creativeGenerationStatus\":\"FAILED\",\"experimentId\":"
+                            + experimentId
+                            + "}",
+                        null,
+                        executionAudit,
+                        blockerGuidance(experimentId, normalizedError))));
   }
 
   /** Solicita exatamente uma alternativa sem substituir criativos ou histórico existentes. */
@@ -100,25 +149,43 @@ public class DedaloCreativeTaskOrchestrationService {
     experiment.setCreativeGenerationError(null);
   }
 
-  /** Atualiza a tarefa ativa vinculada ao experimento após callback do executor. */
-  private void updateTask(Long experimentId, String status) {
+  /** Localiza somente a tarefa ativa de Dédalo vinculada ao experimento do callback. */
+  private java.util.Optional<AgentTask> activeTask(Long experimentId) {
     String reference = "experiment:" + experimentId;
-    taskRepository
+    return taskRepository
         .findTopBySourceReferenceOrderByUpdatedAtDescIdDesc(reference)
-        .ifPresent(
-            task -> {
-              if (DEDALO_AGENT_KEY.equals(task.getAssignedAgent().getAgentKey())
-                  && "IN_PROGRESS".equals(task.getStatus())) {
-                task.setStatus(status);
-                task.setUpdatedAt(Instant.now(clock));
-              }
-            });
+        .filter(task -> DEDALO_AGENT_KEY.equals(task.getAssignedAgent().getAgentKey()))
+        .filter(task -> "IN_PROGRESS".equals(task.getStatus()));
   }
 
   /** Bloqueia tarefa cuja referência aponta para experimento inexistente. */
-  private void block(AgentTask task) {
-    task.setStatus("BLOCKED");
-    task.setUpdatedAt(Instant.now(clock));
+  private void blockMissingExperiment(AgentTask task, Long experimentId) {
+    Instant now = Instant.now(clock);
+    task.setStatus("IN_PROGRESS");
+    if (task.getReceivedAt() == null) task.setReceivedAt(now);
+    task.setUpdatedAt(now);
+    taskRepository.save(task);
+    String error = "Experimento " + experimentId + " não foi encontrado.";
+    agentTaskService.failClaimedProcessTask(
+        DEDALO_AGENT_KEY,
+        task.getId(),
+        new FailAgentTaskRequest(
+            error,
+            null,
+            "{\"experimentId\":" + experimentId + "}",
+            null,
+            null,
+            blockerGuidance(experimentId, error)));
+  }
+
+  /** Monta uma correção acionável para o histórico e para a retomada da tarefa. */
+  private AgentTaskBlockerGuidanceRequest blockerGuidance(Long experimentId, String error) {
+    return new AgentTaskBlockerGuidanceRequest(
+        "TECHNICAL_FAILURE",
+        "Corrija a geração de criativos e reinicie a tarefa de Dédalo: " + error,
+        List.of(
+            new AgentTaskHelpLinkRequest("Abrir experimento", "/experiments/" + experimentId),
+            new AgentTaskHelpLinkRequest("Abrir tarefas dos agentes", "/agent-tasks")));
   }
 
   /** Extrai o identificador somente da referência canônica, sem inferir pelo texto livre. */

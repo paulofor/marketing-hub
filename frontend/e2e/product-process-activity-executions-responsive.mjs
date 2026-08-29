@@ -91,7 +91,8 @@ const dedaloTask = {
   startedAt: "2026-08-27T03:26:45Z",
   finishedAt: "2026-08-27T03:35:14Z",
   modelCode: "gpt-5.6-sol",
-  reasoningEffort: null,
+  executionMode: "MODEL",
+  reasoningEffort: "high",
   productInternalName: "Rigel",
   promptSent: "Construa a landing com ativos aprovados.",
 };
@@ -105,7 +106,26 @@ const psiqueTask = {
   assignedAgentNickname: "Psique",
   comments: "Checkout ausente na evidência original.",
   estimatedCostUsd: 0.1895768,
-  modelCode: null,
+  promptSent: "Prompt integral de homologação humana do Rigel.",
+  blockerGuidance: {
+    category: "FUNCTIONAL_ADJUSTMENT",
+    recommendedAction:
+      "Vincule a versão comprada ao contrato de acesso e reinicie a tarefa.",
+    helpLinks: [
+      {
+        label: "Abrir experiência revisada",
+        url: "https://rigel.example/jornada",
+      },
+    ],
+  },
+  accessedUrls: [
+    {
+      label: "Jornada do Rigel",
+      url: "https://rigel.example/jornada?cenario=homologacao",
+      accessMethod: "WEB_SEARCH",
+      accessedAt: "2026-08-28T16:15:48Z",
+    },
+  ],
 };
 
 const themisTask = {
@@ -276,6 +296,23 @@ try {
     ).toBeVisible();
     await page.getByText("Visualizar JSON em árvore").first().click();
     await expect(page.getByText("summary:").first()).toBeVisible();
+    await page.getByText(/Tarefa #244/).click();
+    await expect(page.getByText("Avanço bloqueado")).toBeVisible();
+    await expect(
+      page.getByText(
+        "Vincule a versão comprada ao contrato de acesso e reinicie a tarefa.",
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Prompt integral de homologação humana do Rigel."),
+    ).toBeVisible();
+    await expect(page.getByText("URLs acessadas por Psique")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Jornada do Rigel" }),
+    ).toHaveAttribute("target", "_blank");
+    await expect(
+      page.getByText("https://rigel.example/jornada?cenario=homologacao"),
+    ).toBeVisible();
     assert.deepEqual(pageErrors, [], `${profileName}: erros JavaScript`);
     const sizes = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,

@@ -49,6 +49,26 @@ const psiqueTask = {
   comments: "Checkout ausente na evidência.",
   estimatedCostUsd: 0.1895768,
   reasoningEffort: undefined,
+  executionMode: "MODEL",
+  blockerGuidance: {
+    category: "FUNCTIONAL_ADJUSTMENT",
+    recommendedAction:
+      "Vincule a versão comprada ao contrato de acesso e reinicie a tarefa.",
+    helpLinks: [
+      {
+        label: "Abrir experiência revisada",
+        url: "https://rigel.example/jornada",
+      },
+    ],
+  },
+  accessedUrls: [
+    {
+      label: "Landing do Rigel",
+      url: "https://rigel.example/jornada",
+      accessMethod: "BROWSER",
+      accessedAt: "2026-08-28T16:15:48Z",
+    },
+  ],
 };
 
 const themisTask = {
@@ -310,6 +330,19 @@ describe("ProductProcessActivityExecutionsPage", () => {
       screen.getByText("Execuções sem duplicar tarefas compostas"),
     ).toBeInTheDocument();
     expect(screen.getByText("Cobertura parcial")).toBeInTheDocument();
+    expect(screen.getByText("Avanço bloqueado")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Vincule a versão comprada ao contrato de acesso e reinicie a tarefa.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("URLs acessadas por Psique")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Landing do Rigel" }),
+    ).toHaveAttribute("target", "_blank");
+    expect(
+      screen.getByText("https://rigel.example/jornada"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
         name: "Selecionar provas reais da entrega",

@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ public class CustomerBpmTaskConsumer {
   private final ObjectMapper json;
   private final String codex;
   private final String model;
+  private final String reasoningEffort;
   private final String repositoryPath;
   private final PdeExperienceEvidenceLoader pdeExperienceEvidenceLoader;
   @Autowired private AutomaticExecutionControl automaticExecution;
@@ -49,12 +51,14 @@ public class CustomerBpmTaskConsumer {
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String codex,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_REASONING_EFFORT:high}") String reasoningEffort,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,
       @Value("${CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
       ObjectMapper json) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.codex = codex;
     this.model = model;
+    this.reasoningEffort = requiredReasoningEffort(reasoningEffort);
     this.repositoryPath = repositoryPath;
     this.pdeExperienceEvidenceLoader =
         new PdeExperienceEvidenceLoader(
@@ -62,6 +66,15 @@ public class CustomerBpmTaskConsumer {
                 ? repositoryPath
                 : commercialEvidencePath);
     this.json = json;
+  }
+
+  /** Exige o esforço explícito antes de Psique reservar uma tarefa ou iniciar o modelo. */
+  private static String requiredReasoningEffort(String value) {
+    if (value == null || value.isBlank()) {
+      throw new IllegalStateException(
+          "CUSTOMER_AGENT_REASONING_EFFORT é obrigatório para auditar Psique.");
+    }
+    return value.trim();
   }
 
   /** Reserva em PLAY e avalia uma atividade liberada sem escolher a próxima etapa do processo. */
@@ -76,16 +89,11 @@ public class CustomerBpmTaskConsumer {
       execution = execute(task);
       JsonNode result = execution.result();
       validate(result);
-      if ("APPROVED".equals(result.path("decision").asText()))
-        report(task, result, execution.usage());
-      else block(task, result, execution.usage());
+      if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
+      else block(task, execution);
     } catch (Exception ex) {
       log.error("Falha na atividade BPM de Psique. taskId={}", taskId(task), ex);
-      TokenUsage usage =
-          execution != null
-              ? execution.usage()
-              : ex instanceof BpmExecutionException bpm ? bpm.usage() : null;
-      fail(task, ex, usage);
+      fail(task, ex, execution);
     }
   }
 
@@ -121,6 +129,7 @@ public class CustomerBpmTaskConsumer {
     Path output = Files.createTempFile("psique-bpm-result-", ".json");
     Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
+    String resolvedPrompt = prompt(task);
     try {
       List<String> command =
           new ArrayList<>(
@@ -130,6 +139,8 @@ public class CustomerBpmTaskConsumer {
                   "exec",
                   "-c",
                   "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
+                  "--config",
+                  "model_reasoning_effort=\"" + reasoningEffort + "\"",
                   "-",
                   "--skip-git-repo-check",
                   "--sandbox",
@@ -149,29 +160,39 @@ public class CustomerBpmTaskConsumer {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(prompt(task).getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(40, TimeUnit.MINUTES)) {
         process.destroyForcibly();
         throw new BpmExecutionException(
             "Timeout da atividade BPM de Psique após 40 minutos.",
-            readTokenUsage(json, processLog));
+            readTokenUsage(json, processLog),
+            resolvedPrompt,
+            readAccessedUrls(json, processLog));
       }
       TokenUsage usage = readTokenUsage(json, processLog);
       if (process.exitValue() != 0) {
         throw new BpmExecutionException(
-            "Codex encerrou com falha: " + Files.readString(processLog), usage);
+            "Codex encerrou com falha: " + Files.readString(processLog),
+            usage,
+            resolvedPrompt,
+            readAccessedUrls(json, processLog));
       }
       try {
         JsonNode result = json.readTree(Files.readString(output));
-        return new BpmExecution(result, usage);
+        return new BpmExecution(result, usage, resolvedPrompt, readAccessedUrls(json, processLog));
       } catch (IOException ex) {
         log.error(
             "Resposta inválida na atividade BPM de Psique. taskId={} output={}",
             taskId(task),
             output,
             ex);
-        throw new BpmExecutionException("Resposta de Psique não contém JSON válido.", usage, ex);
+        throw new BpmExecutionException(
+            "Resposta de Psique não contém JSON válido.",
+            usage,
+            resolvedPrompt,
+            readAccessedUrls(json, processLog),
+            ex);
       }
     } finally {
       Files.deleteIfExists(output);
@@ -181,12 +202,12 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Persiste o parecer e as evidências na própria atividade BPM. */
-  private void report(Map<String, Object> task, JsonNode result, TokenUsage usage)
-      throws IOException {
+  private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
-    body.put("resultJson", json.writeValueAsString(result));
+    body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent(), execution.accessedUrls()));
     backend
         .post()
         .uri(
@@ -199,16 +220,24 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Mantém o gate fechado quando o parecer não pôde ser produzido ou persistido. */
-  private void fail(Map<String, Object> task, Exception ex, TokenUsage usage) {
+  private void fail(Map<String, Object> task, Exception ex, BpmExecution execution) {
     if (task == null) return;
     try {
+      BpmExecutionException bpm = ex instanceof BpmExecutionException value ? value : null;
+      TokenUsage usage = execution != null ? execution.usage() : bpm == null ? null : bpm.usage();
+      String promptSent =
+          execution != null ? execution.promptSent() : bpm == null ? null : bpm.promptSent();
+      List<Map<String, Object>> urls =
+          execution != null
+              ? execution.accessedUrls()
+              : bpm == null ? List.of() : bpm.accessedUrls();
       backend
           .post()
           .uri(
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(failureBody(task, ex.toString(), usage))
+          .body(failureBody(task, ex.toString(), usage, promptSent, urls))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -217,14 +246,16 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Preserva o parecer funcional e impede avanço quando a cliente exige ajuste. */
-  private void block(Map<String, Object> task, JsonNode result, TokenUsage usage)
-      throws IOException {
+  private void block(Map<String, Object> task, BpmExecution execution) throws IOException {
+    JsonNode result = execution.result();
     String resultJson = json.writeValueAsString(result);
     Map<String, Object> body = new HashMap<>();
     body.put("error", "Psique bloqueou o avanço: " + result.path("customerPerspective").asText());
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task));
-    putModelUsage(body, usage);
+    putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent(), execution.accessedUrls()));
+    body.put("blockerGuidance", functionalGuidance(task, result));
     backend
         .post()
         .uri(
@@ -348,6 +379,46 @@ public class CustomerBpmTaskConsumer {
     return informed ? new TokenUsage(input, cached, outputTokens) : TokenUsage.empty();
   }
 
+  /** Extrai somente URLs de navegação confirmadas pelo item web_search oficial do Codex. */
+  static List<Map<String, Object>> readAccessedUrls(ObjectMapper json, Path output) {
+    if (!Files.exists(output)) return List.of();
+    LinkedHashMap<String, Map<String, Object>> urls = new LinkedHashMap<>();
+    try {
+      for (String line : Files.readAllLines(output)) {
+        if (line.isBlank()) continue;
+        try {
+          collectAccessedUrls(json.readTree(line), urls);
+        } catch (IOException ex) {
+          log.debug("Linha não JSON ignorada nas fontes BPM de Psique. output={}", output, ex);
+        }
+      }
+    } catch (IOException ex) {
+      log.warn("Falha ao ler fontes acessadas por Psique. output={}", output, ex);
+      return List.of();
+    }
+    return List.copyOf(urls.values());
+  }
+
+  /**
+   * Valida o envelope JSONL terminal e registra apenas open_page ou find_in_page com URL literal.
+   */
+  private static void collectAccessedUrls(JsonNode event, Map<String, Map<String, Object>> urls) {
+    if (!"item.completed".equals(event.path("type").asText())) return;
+    JsonNode item = event.path("item");
+    if (!"web_search".equals(item.path("type").asText())) return;
+    JsonNode action = item.path("action");
+    String actionType = action.path("type").asText();
+    if (!List.of("open_page", "find_in_page").contains(actionType)) return;
+    String url = action.path("url").asText("").trim();
+    if (!url.startsWith("https://") && !url.startsWith("http://")) return;
+    urls.putIfAbsent(
+        url,
+        Map.of(
+            "url", url,
+            "label", "Fonte acessada por Psique",
+            "accessMethod", "WEB_SEARCH"));
+  }
+
   /** Lê um contador oficial ou seu alias sem inventar valor ausente. */
   private static Long tokenValue(JsonNode usage, String officialName, String alias) {
     JsonNode value = usage.hasNonNull(officialName) ? usage.get(officialName) : usage.get(alias);
@@ -355,13 +426,86 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Monta a falha preservando o consumo ocorrido antes do bloqueio. */
-  private Map<String, Object> failureBody(Map<String, Object> task, String error, TokenUsage usage)
+  private Map<String, Object> failureBody(
+      Map<String, Object> task,
+      String error,
+      TokenUsage usage,
+      String promptSent,
+      List<Map<String, Object>> accessedUrls)
       throws IOException {
     Map<String, Object> body = new HashMap<>();
     body.put("error", error);
     body.put("evidenceJson", evidence(task));
     putModelUsage(body, usage);
+    if (promptSent != null) {
+      body.put("executionAudit", executionAudit(promptSent, accessedUrls));
+    }
+    body.put("blockerGuidance", technicalGuidance(task));
     return body;
+  }
+
+  /** Monta a auditoria completa e segregada da chamada efetivamente enviada ao Codex. */
+  private Map<String, Object> executionAudit(
+      String promptSent, List<Map<String, Object>> accessedUrls) {
+    Map<String, Object> audit = new LinkedHashMap<>();
+    audit.put("executionMode", "MODEL");
+    audit.put("modelCode", model);
+    audit.put("reasoningEffort", reasoningEffort);
+    audit.put("promptSent", promptSent);
+    audit.put("accessedUrls", accessedUrls == null ? List.of() : accessedUrls);
+    return audit;
+  }
+
+  /** Traduz o parecer funcional de Psique em uma correção objetiva com atalhos seguros. */
+  private Map<String, Object> functionalGuidance(Map<String, Object> task, JsonNode result) {
+    List<String> changes = new ArrayList<>();
+    if (result.path("requiredChanges").isArray()) {
+      result
+          .path("requiredChanges")
+          .forEach(
+              change -> {
+                String action =
+                    change.isTextual()
+                        ? change.asText("").trim()
+                        : change.path("action").asText("").trim();
+                if (action.isBlank()) action = change.path("description").asText("").trim();
+                if (!action.isBlank()) changes.add(action);
+              });
+    }
+    String action =
+        changes.stream()
+            .filter(value -> !value.isBlank())
+            .findFirst()
+            .orElse(
+                "Corrija os gates em ajuste descritos no parecer de Psique e reinicie a tarefa.");
+    return Map.of(
+        "category",
+        "FUNCTIONAL_ADJUSTMENT",
+        "recommendedAction",
+        action,
+        "helpLinks",
+        helpLinks(task));
+  }
+
+  /** Orienta a recuperação técnica sem sugerir aprovação ou publicação automática. */
+  private Map<String, Object> technicalGuidance(Map<String, Object> task) {
+    return Map.of(
+        "category", "TECHNICAL_FAILURE",
+        "recommendedAction",
+            "Verifique a causa técnica registrada, corrija a integração e reinicie a tarefa de Psique.",
+        "helpLinks", helpLinks(task));
+  }
+
+  /** Oferece a tela de tarefas e, quando seguro, a experiência exata revisada. */
+  private List<Map<String, String>> helpLinks(Map<String, Object> task) {
+    List<Map<String, String>> links = new ArrayList<>();
+    links.add(Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks"));
+    JsonNode target = json.valueToTree(task.get("taskTarget"));
+    String publicUrl = target.path("publicUrl").asText("").trim();
+    if (publicUrl.startsWith("https://") || publicUrl.startsWith("http://")) {
+      links.add(Map.of("label", "Abrir experiência revisada", "url", publicUrl));
+    }
+    return List.copyOf(links);
   }
 
   /** Preserva o contexto acessado e comprova que Psique não realizou efeito externo. */
@@ -433,7 +577,11 @@ public class CustomerBpmTaskConsumer {
   private record BpmContract(String processCode, String activityId) {}
 
   /** Preserva o resultado funcional junto do consumo da mesma execução. */
-  record BpmExecution(JsonNode result, TokenUsage usage) {}
+  record BpmExecution(
+      JsonNode result,
+      TokenUsage usage,
+      String promptSent,
+      List<Map<String, Object>> accessedUrls) {}
 
   /** Representa contadores reais cumulativos informados pelo processo Codex. */
   record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
@@ -451,22 +599,47 @@ public class CustomerBpmTaskConsumer {
   /** Preserva tokens mesmo quando a execução técnica termina em falha. */
   private static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
+    private final String promptSent;
+    private final List<Map<String, Object>> accessedUrls;
 
     /** Cria a falha técnica com a última medição conhecida. */
-    private BpmExecutionException(String message, TokenUsage usage) {
+    private BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        String promptSent,
+        List<Map<String, Object>> accessedUrls) {
       super(message);
       this.usage = usage;
+      this.promptSent = promptSent;
+      this.accessedUrls = List.copyOf(accessedUrls);
     }
 
     /** Cria a falha técnica mantendo também sua causa original. */
-    private BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
+    private BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        String promptSent,
+        List<Map<String, Object>> accessedUrls,
+        Throwable cause) {
       super(message, cause);
       this.usage = usage;
+      this.promptSent = promptSent;
+      this.accessedUrls = List.copyOf(accessedUrls);
     }
 
     /** Retorna a medição preservada para o callback de falha. */
     private TokenUsage usage() {
       return usage;
+    }
+
+    /** Retorna o prompt exato mesmo quando a chamada termina com falha. */
+    private String promptSent() {
+      return promptSent;
+    }
+
+    /** Retorna somente as URLs comprovadas pelo log da tentativa interrompida. */
+    private List<Map<String, Object>> accessedUrls() {
+      return accessedUrls;
     }
   }
 }

@@ -647,7 +647,12 @@ public class LandingGenerationAgentExecutionService {
       return;
     }
     agentTaskService.finishOperationalDelegation(
-        "landing-generator", reference, request.error() == null);
+        "landing-generator",
+        reference,
+        request.error() == null,
+        executionAudit(execution),
+        modelUsage(execution),
+        request.error());
   }
 
   /** Recupera a última execução técnica aprovada para propagar sua auditoria à tarefa BPM. */
@@ -682,8 +687,8 @@ public class LandingGenerationAgentExecutionService {
       GeraLandingStageExecution execution) {
     String model = textOrNull(execution.getOpenAiModel());
     String reasoningEffort = textOrNull(execution.getExecutionReasoningEffort());
-    String prompt = textOrNull(execution.getPrompt());
-    if (model == null || reasoningEffort == null || prompt == null) return null;
+    String prompt = execution.getPrompt();
+    if (model == null || reasoningEffort == null || textOrNull(prompt) == null) return null;
     return new com.marketinghub.agenttask.AgentTaskExecutionAuditRequest(
         model, reasoningEffort, prompt);
   }

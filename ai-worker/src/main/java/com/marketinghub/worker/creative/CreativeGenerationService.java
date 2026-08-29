@@ -1,5 +1,7 @@
 package com.marketinghub.worker.creative;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.CreativeGenerationMode;
@@ -8,6 +10,7 @@ import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.worker.creative.pipeline.ExperimentPipelineAdExtractor;
 import com.marketinghub.worker.creative.pipeline.PipelineAdCreativePlan;
+import com.marketinghub.worker.creative.CreativeGenerationBackendClient.CreativeTaskExecutionAudit;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ public class CreativeGenerationService {
     private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
     private final CreativeGenerationBackendClient backendClient;
     private final CreativeChatGptClient textClient;
+    private final ObjectMapper objectMapper;
     private final ExperimentPipelineAdExtractor pipelineExtractor;
     private final LandingCreativeReferenceSelector referenceSelector;
 
@@ -35,10 +39,11 @@ public class CreativeGenerationService {
     public CreativeGenerationService(
             CreativeGenerationBackendClient backendClient,
             CreativeChatGptClient textClient,
-            com.fasterxml.jackson.databind.ObjectMapper objectMapper
+            ObjectMapper objectMapper
     ) {
         this.backendClient = backendClient;
         this.textClient = textClient;
+        this.objectMapper = objectMapper;
         this.pipelineExtractor = new ExperimentPipelineAdExtractor(objectMapper);
         this.referenceSelector = new LandingCreativeReferenceSelector(objectMapper);
     }
@@ -57,7 +62,7 @@ public class CreativeGenerationService {
                 Long experimentId = experiment != null ? experiment.getId() : null;
                 log.error("Falha ao processar geração de criativos. experimentId={}", experimentId, ex);
                 if (experimentId != null) {
-                    backendClient.markFailed(experimentId, rootMessage(ex));
+                    backendClient.markFailed(experimentId, rootMessage(ex), failureAudit(ex));
                 }
             }
         }
@@ -74,18 +79,22 @@ public class CreativeGenerationService {
             return;
         }
         backendClient.markStarted(dto.getId());
-        List<CreateCreativeRequest> creatives = dto.getCreativeGenerationMode() == CreativeGenerationMode.PIPELINE_ADS
+        CreativeBatch batch = dto.getCreativeGenerationMode() == CreativeGenerationMode.PIPELINE_ADS
                 ? generatePipelineCreatives(dto, quantity)
                 : generateDefaultCreatives(dto, quantity);
-        for (CreateCreativeRequest creative : creatives) {
-            backendClient.createCreative(dto.getId(), creative);
+        try {
+            for (CreateCreativeRequest creative : batch.creatives()) {
+                backendClient.createCreative(dto.getId(), creative);
+            }
+            backendClient.markCompleted(dto.getId(), batch.executionAudit());
+        } catch (RuntimeException ex) {
+            throw new AuditedProcessingException(ex, batch.executionAudit());
         }
-        backendClient.markCompleted(dto.getId());
-        log.info("Geração de criativos concluída. experimentId={} total={}", dto.getId(), creatives.size());
+        log.info("Geração de criativos concluída. experimentId={} total={}", dto.getId(), batch.creatives().size());
     }
 
     /** Gera criativos a partir dos pares de texto e briefing já produzidos pelo pipeline do experimento. */
-    private List<CreateCreativeRequest> generatePipelineCreatives(ExperimentDto dto, int quantity) {
+    private CreativeBatch generatePipelineCreatives(ExperimentDto dto, int quantity) {
         Experiment experiment = toExperiment(dto);
         List<LandingCreativeReferenceSelector.ReferenceImage> references =
                 referenceSelector.selectCommercialKit(dto.getCommercialPlanVisualAssets());
@@ -115,11 +124,11 @@ public class CreativeGenerationService {
             request.setStatus(CreativeStatus.DRAFT);
             result.add(request);
         }
-        return result;
+        return new CreativeBatch(result, deterministicAudit(dto));
     }
 
     /** Gera criativos no modo padrão usando texto gerado por IA e imagem por prompt do experimento. */
-    private List<CreateCreativeRequest> generateDefaultCreatives(ExperimentDto dto, int quantity) {
+    private CreativeBatch generateDefaultCreatives(ExperimentDto dto, int quantity) {
         Experiment experiment = toExperiment(dto);
         List<LandingCreativeReferenceSelector.ReferenceImage> references =
                 referenceSelector.selectCommercialKit(dto.getCommercialPlanVisualAssets());
@@ -127,7 +136,8 @@ public class CreativeGenerationService {
             throw new IllegalStateException(
                     "Geração bloqueada: o plano não possui entregável visual APPROVED produzido por Têmis");
         }
-        List<CreateCreativeRequest> creatives = generateAndValidateCopy(experiment, quantity);
+        CreativeBatch batch = generateAndValidateCopy(experiment, quantity);
+        List<CreateCreativeRequest> creatives = batch.creatives();
         for (int index = 0; index < creatives.size(); index++) {
             CreateCreativeRequest creative = creatives.get(index);
             String imageUrl = references.get(index % references.size()).url();
@@ -137,29 +147,77 @@ public class CreativeGenerationService {
                 creative.setStatus(CreativeStatus.DRAFT);
             }
         }
-        return creatives;
+        return new CreativeBatch(creatives, batch.executionAudit());
     }
 
     /** Reexecuta uma vez a criação textual quando o modelo viola o contrato comercial da Meta. */
-    private List<CreateCreativeRequest> generateAndValidateCopy(Experiment experiment, int quantity) {
+    private CreativeBatch generateAndValidateCopy(Experiment experiment, int quantity) {
         IllegalArgumentException lastContractFailure = null;
+        CreativeTaskExecutionAudit latestAudit = null;
         for (int attempt = 1; attempt <= 2; attempt++) {
-            List<CreateCreativeRequest> creatives = (attempt == 1
+            CreativeChatGptClient.Generation generation = attempt == 1
                     ? textClient.generateCreatives(experiment, quantity)
-                    : textClient.generateCreatives(experiment, quantity, lastContractFailure.getMessage()))
-                    .creatives().stream()
+                    : textClient.generateCreatives(experiment, quantity, lastContractFailure.getMessage());
+            latestAudit = modelAudit(generation.executionAudit());
+            List<CreateCreativeRequest> creatives = generation.creatives().stream()
                     .limit(Math.max(1, quantity))
                     .toList();
             try {
                 creatives.forEach(this::normalizeCreativeContract);
-                return creatives;
+                return new CreativeBatch(creatives, latestAudit);
             } catch (IllegalArgumentException ex) {
                 lastContractFailure = ex;
                 log.warn("Copy Meta fora do contrato; solicitando reescrita completa. experimentId={} tentativa={}",
                         experiment.getId(), attempt, ex);
             }
         }
-        throw lastContractFailure;
+        throw new AuditedProcessingException(lastContractFailure, latestAudit);
+    }
+
+    /** Registra a entrada exata do pipeline que reutiliza artefatos sem chamar modelo. */
+    private CreativeTaskExecutionAudit deterministicAudit(ExperimentDto dto) {
+        try {
+            return new CreativeTaskExecutionAudit(
+                    "DETERMINISTIC",
+                    "creative-pipeline-ads-v1",
+                    "NOT_APPLICABLE",
+                    objectMapper.writeValueAsString(dto),
+                    List.of());
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar a entrada determinística de Dédalo. experimentId={}", dto.getId(), ex);
+            throw new IllegalStateException("Não foi possível auditar a entrada do pipeline de criativos", ex);
+        }
+    }
+
+    /** Converte a chamada real de copy no contrato comum de auditoria da tarefa. */
+    private CreativeTaskExecutionAudit modelAudit(CreativeChatGptClient.ExecutionAudit audit) {
+        if (audit == null
+                || !StringUtils.hasText(audit.modelCode())
+                || !StringUtils.hasText(audit.reasoningEffort())
+                || !StringUtils.hasText(audit.promptSent())) {
+            throw new IllegalStateException(
+                    "A geração de copy não informou modelo, raciocínio e prompt integral");
+        }
+        return new CreativeTaskExecutionAudit(
+                "MODEL",
+                audit.modelCode(),
+                audit.reasoningEffort(),
+                audit.promptSent(),
+                List.of());
+    }
+
+    /** Recupera a chamada que falhou ou declara honestamente que o modelo não iniciou. */
+    private CreativeTaskExecutionAudit failureAudit(RuntimeException error) {
+        if (error instanceof AuditedProcessingException audited
+                && audited.executionAudit() != null) {
+            return audited.executionAudit();
+        }
+        if (error instanceof CreativeChatGptClient.AuditedCreativeGenerationException audited
+                && audited.executionAudit() != null) {
+            return modelAudit(audited.executionAudit());
+        }
+        return new CreativeTaskExecutionAudit(
+                "NOT_STARTED", null, "NOT_APPLICABLE", null, List.of());
     }
 
     /** Converte o DTO do backend em entidade mínima para reutilizar os geradores existentes. */
@@ -260,5 +318,27 @@ public class CreativeGenerationService {
 
     /** Resultado resumido do ciclo de geração de criativos. */
     public record ProcessingSummary(int total, int succeeded, int failed) {
+    }
+
+    /** Une os criativos materializados à execução que deve aparecer no histórico. */
+    private record CreativeBatch(
+            List<CreateCreativeRequest> creatives, CreativeTaskExecutionAudit executionAudit) {
+    }
+
+    /** Transporta a auditoria quando a falha ocorre depois que a chamada já foi conhecida. */
+    private static final class AuditedProcessingException extends RuntimeException {
+        private final CreativeTaskExecutionAudit executionAudit;
+
+        /** Preserva causa e auditoria para o callback terminal. */
+        private AuditedProcessingException(
+                RuntimeException cause, CreativeTaskExecutionAudit executionAudit) {
+            super(cause.getMessage(), cause);
+            this.executionAudit = executionAudit;
+        }
+
+        /** Retorna a chamada que antecedeu a falha. */
+        private CreativeTaskExecutionAudit executionAudit() {
+            return executionAudit;
+        }
     }
 }

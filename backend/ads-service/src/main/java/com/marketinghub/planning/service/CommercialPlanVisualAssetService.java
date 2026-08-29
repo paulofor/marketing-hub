@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.agenttask.AgentTaskModelUsageRequest;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.ImportedCompletedAgentTask;
@@ -382,7 +383,9 @@ public class CommercialPlanVisualAssetService {
                 "STANDARD",
                 execution.inputTokens(),
                 execution.cachedInputTokens(),
-                execution.outputTokens())));
+                execution.outputTokens())),
+        new AgentTaskExecutionAuditRequest(
+            execution.model(), execution.reasoningEffort(), execution.prompt()));
   }
 
   /** Expõe hashes e URLs persistidos, deixando explícita a ausência de publicação ou gasto. */

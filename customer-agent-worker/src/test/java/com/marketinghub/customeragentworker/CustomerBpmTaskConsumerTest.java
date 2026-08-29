@@ -12,6 +12,16 @@ import org.junit.jupiter.api.Test;
 class CustomerBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Bloqueia Psique antes de reservar tarefas quando o raciocínio não está configurado. */
+  @Test
+  void rejectsMissingReasoningEffortBeforeModel() {
+    assertThatThrownBy(
+            () ->
+                new CustomerBpmTaskConsumer(
+                    "http://backend:8000", "codex", "gpt-5.6-sol", " ", "/workspace", "", json))
+        .hasMessageContaining("obrigatório para auditar Psique");
+  }
+
   /** Aceita parecer aprovado somente quando há perspectiva e evidência verificável. */
   @Test
   void acceptsCompleteCustomerReview() throws Exception {
@@ -228,6 +238,28 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(usage.inputTokens()).isEqualTo(1200L);
     org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(700L);
     org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(300L);
+    Files.deleteIfExists(output);
+  }
+
+  /** Registra apenas URLs de navegação real e ignora endereços que estavam somente no prompt. */
+  @Test
+  void extractsOnlyActuallyAccessedUrlsFromCodexEvents() throws Exception {
+    Path output = Files.createTempFile("psique-bpm-urls-", ".jsonl");
+    Files.writeString(
+        output,
+        """
+        {"type":"turn.started","prompt":{"publicUrl":"https://nao-acessada.example/produto"}}
+        {"type":"item.started","item":{"id":"item_1","type":"web_search","query":"fonte","action":{"type":"open_page","url":"https://ainda-nao-confirmada.example/artigo"}}}
+        {"type":"item.completed","item":{"id":"item_1","type":"web_search","query":"fonte","action":{"type":"open_page","url":"https://fonte.example/artigo"}}}
+        {"type":"item.completed","item":{"id":"item_2","type":"web_search","query":"checkout","action":{"type":"find_in_page","url":"https://loja.example/checkout","pattern":"comprar"}}}
+        {"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"echo https://inventada.example","aggregated_output":"{\\"requestedUrl\\":\\"https://nao-comprovada.example\\"}","status":"completed"}}
+        """);
+
+    var urls = CustomerBpmTaskConsumer.readAccessedUrls(json, output);
+
+    org.assertj.core.api.Assertions.assertThat(urls)
+        .extracting(value -> value.get("url"))
+        .containsExactly("https://fonte.example/artigo", "https://loja.example/checkout");
     Files.deleteIfExists(output);
   }
 

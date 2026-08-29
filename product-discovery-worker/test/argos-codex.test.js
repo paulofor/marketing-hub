@@ -25,7 +25,8 @@ test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
   assert.equal(result.plan.metaAdRequests[0].publisherPlatform, "INSTAGRAM");
   assert.doesNotMatch(result.rawResponse, /password|senha|token|cookie/i);
   assert.equal(result.mode, "DETERMINISTIC");
-  assert.equal(result.prompt, null);
+  assert.match(result.prompt, /PRODUCT_DISCOVERY_RESEARCH_PLAN_V1/);
+  assert.equal(result.reasoningEffort, "NOT_APPLICABLE");
   assert.equal(result.usage, null);
 });
 
@@ -110,6 +111,40 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   assert.equal(result.model, "modelo-teste");
   assert.equal(result.mode, "CODEX");
   assert.equal(result.prompt, receivedInput);
+  assert.equal(result.reasoningEffort, "high");
+});
+
+test("resposta inválida preserva prompt e raciocínio para o bloqueio auditável", async () => {
+  await assert.rejects(
+    planDirectedResearch(
+      {
+        cycleId: 34,
+        theme: "agenda para profissionais locais",
+        targetAudience: "manicures",
+      },
+      {
+        enabled: true,
+        model: "modelo-teste",
+        reasoningEffort: "high",
+        execute: async (_command, args) => {
+          const outputIndex = args.indexOf("--output-last-message") + 1;
+          await writeFile(args[outputIndex], "{}");
+        },
+      },
+    ),
+    (error) => {
+      assert.match(error.message, /contrato v1/);
+      assert.deepEqual(error.executionAudit, {
+        executionMode: "MODEL",
+        modelCode: "modelo-teste",
+        reasoningEffort: "high",
+        promptSent: error.executionAudit.promptSent,
+        accessedUrls: [],
+      });
+      assert.match(error.executionAudit.promptSent, /ciclo 34/);
+      return true;
+    },
+  );
 });
 
 test("executor fecha explicitamente a entrada padrão do Codex", async () => {

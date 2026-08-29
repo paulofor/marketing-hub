@@ -14,6 +14,9 @@ import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDe
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -47,6 +50,39 @@ public class AgentTaskService {
           "IN_PROGRESS:CANCELLED",
           "BLOCKED:IN_PROGRESS",
           "BLOCKED:CANCELLED");
+  private static final Set<String> EXECUTION_MODES =
+      Set.of("MODEL", "DETERMINISTIC", "NOT_STARTED");
+  private static final Set<String> BLOCKER_CATEGORIES =
+      Set.of(
+          "FUNCTIONAL_ADJUSTMENT",
+          "MISSING_EVIDENCE",
+          "COMMERCIAL_RISK",
+          "AUTHORIZATION_REQUIRED",
+          "TECHNICAL_FAILURE");
+  private static final Set<String> ACCESS_METHODS =
+      Set.of("WEB_SEARCH", "BROWSER", "PLAYWRIGHT", "PUBLIC_API", "HTTP", "HTTP_CLIENT", "MCP");
+  private static final Set<String> SENSITIVE_QUERY_PARAMETERS =
+      Set.of(
+          "accesstoken",
+          "apikey",
+          "auth",
+          "authorization",
+          "code",
+          "credential",
+          "clientsecret",
+          "idtoken",
+          "jwt",
+          "key",
+          "password",
+          "refreshtoken",
+          "secret",
+          "session",
+          "sessionid",
+          "sig",
+          "signature",
+          "token");
+  private static final String ACCESSED_URL_LINK = "ACCESSED_URL";
+  private static final String BLOCKER_HELP_LINK = "BLOCKER_HELP";
 
   private final AgentTaskRepository repository;
   private final BusinessProcessActivityInstanceRepository activityInstanceRepository;
@@ -394,7 +430,9 @@ public class AgentTaskService {
     Instant now = Instant.now(clock);
     task.setResultJson(importedTask.resultJson());
     task.setEvidenceJson(importedTask.evidenceJson());
+    applyExecutionAudit(task, importedTask.executionAudit());
     applyModelUsage(task, importedTask.modelUsages());
+    requireTerminalExecutionAudit(task, true);
     task.setStatus("COMPLETED");
     task.setReceivedAt(now);
     task.setDeliveredAt(now);
@@ -479,10 +517,15 @@ public class AgentTaskService {
         .orElseGet(() -> createByAgent(request));
   }
 
-  /** Sincroniza a tarefa operacional com o resultado efetivo do executor responsável. */
+  /** Sincroniza a delegação operacional com resultado, consumo e auditoria do executor. */
   @Transactional
   public void finishOperationalDelegation(
-      String assignedAgentKey, String sourceReference, boolean successful) {
+      String assignedAgentKey,
+      String sourceReference,
+      boolean successful,
+      AgentTaskExecutionAuditRequest executionAudit,
+      List<AgentTaskModelUsageRequest> modelUsages,
+      String error) {
     repository
         .findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
             assignedAgentKey, sourceReference)
@@ -490,6 +533,21 @@ public class AgentTaskService {
             task -> {
               if (List.of("COMPLETED", "CANCELLED").contains(task.getStatus())) return;
               Instant now = Instant.now(clock);
+              applyExecutionAudit(task, executionAudit);
+              applyModelUsage(task, modelUsages);
+              if (successful) {
+                requireTerminalExecutionAudit(task, true);
+              } else {
+                ensurePreModelFailureAudit(task, null, modelUsages);
+                applyBlockerGuidance(
+                    task,
+                    null,
+                    trimToNull(error) == null
+                        ? "O executor responsável informou que a delegação não foi concluída."
+                        : error,
+                    null);
+                requireTerminalExecutionAudit(task, false);
+              }
               task.setStatus(successful ? "COMPLETED" : "BLOCKED");
               if (successful && task.getDeliveredAt() == null) {
                 task.setDeliveredAt(now);
@@ -531,6 +589,21 @@ public class AgentTaskService {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "O gate já recebeu uma decisão.");
     }
     Instant now = Instant.now(clock);
+    ensureDeterministicCommandAudit(
+        task,
+        "agent-gate-decision-v1",
+        Map.of(
+            "taskId", task.getId(),
+            "gateCode", task.getGateCode(),
+            "decision", request.decision(),
+            "reason", request.reason().trim(),
+            "decidedByAgentKey", request.decidedByAgentKey().trim()));
+    if (!"APPROVED".equals(request.decision())) {
+      applyBlockerGuidance(task, null, request.reason(), null);
+      requireTerminalExecutionAudit(task, false);
+    } else {
+      requireTerminalExecutionAudit(task, true);
+    }
     task.setGateStatus(request.decision());
     task.setGateDecisionReason(request.reason().trim());
     task.setGateDecidedAt(now);
@@ -775,6 +848,12 @@ public class AgentTaskService {
         state,
         reason,
         failureAudit(task),
+        task.getExecutionMode(),
+        task.getExecutionModelCode(),
+        task.getExecutionReasoningEffort(),
+        task.getExecutionPrompt(),
+        AgentTaskAuditView.blockerGuidance(task),
+        AgentTaskAuditView.accessedUrls(task),
         task.getInputTokens(),
         task.getCachedInputTokens(),
         task.getOutputTokens(),
@@ -801,6 +880,22 @@ public class AgentTaskService {
     if (!task.getStatus().equals(next)
         && !ALLOWED_TRANSITIONS.contains(task.getStatus() + ":" + next)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Transição de status inválida.");
+    }
+    if ("COMPLETED".equals(next)) {
+      ensureDeterministicCommandAudit(
+          task,
+          "agent-task-status-command-v1",
+          Map.of(
+              "taskId", task.getId(),
+              "previousStatus", task.getStatus(),
+              "requestedStatus", next,
+              "sourceReference", Objects.toString(task.getSourceReference(), ""),
+              "processActivityId", Objects.toString(task.getProcessActivityId(), "")));
+      requireTerminalExecutionAudit(task, true);
+    } else if ("BLOCKED".equals(next)) {
+      ensurePreModelFailureAudit(task, null, null);
+      applyBlockerGuidance(task, null, task.getExecutionError(), task.getResultJson());
+      requireTerminalExecutionAudit(task, false);
     }
     Instant now = Instant.now(clock);
     task.setStatus(next);
@@ -1103,8 +1198,11 @@ public class AgentTaskService {
         task.getCostEstimationStatus(),
         task.getModelUsageUpdatedAt(),
         task.getExecutionModelCode(),
+        task.getExecutionMode(),
         task.getExecutionReasoningEffort(),
         task.getExecutionPrompt(),
+        AgentTaskAuditView.blockerGuidance(task),
+        AgentTaskAuditView.accessedUrls(task),
         task.getReceivedAt(),
         task.getDeliveredAt(),
         task.getCreatedAt(),
@@ -1130,6 +1228,10 @@ public class AgentTaskService {
     if (processCode == null || activityId == null) missing.add("processo e atividade");
     if (authorityPolicy == null) missing.add("limite de autoridade");
     if (error == null) missing.add("causa da falha ou bloqueio");
+    AgentTaskBlockerGuidanceResponse guidance = AgentTaskAuditView.blockerGuidance(task);
+    if (guidance == null || guidance.helpLinks().isEmpty()) {
+      missing.add("orientação acionável com link");
+    }
     if (evidence == null) {
       missing.add("evidências acessadas");
     } else if (!isValidJson(task.getId(), evidence)) {
@@ -1146,6 +1248,8 @@ public class AgentTaskService {
         evidence,
         trimToNull(task.getResultJson()),
         error,
+        guidance,
+        AgentTaskAuditView.accessedUrls(task),
         List.copyOf(missing));
   }
 
@@ -1410,7 +1514,13 @@ public class AgentTaskService {
     AgentTask task = claimedBy(agentKey, taskId);
     String normalizedModel = trimToNull(modelCode);
     String normalizedReasoning = trimToNull(reasoningEffort);
-    String normalizedPrompt = trimToNull(promptSent);
+    String normalizedPrompt = trimToNull(promptSent) == null ? null : promptSent;
+    if (Boolean.TRUE.equals(modelInvocation)) {
+      task.setExecutionMode("MODEL");
+    } else if (Boolean.FALSE.equals(modelInvocation)) {
+      task.setExecutionMode("DETERMINISTIC");
+      normalizedReasoning = "NOT_APPLICABLE";
+    }
     if (normalizedModel != null) task.setExecutionModelCode(normalizedModel);
     if (normalizedReasoning != null) task.setExecutionReasoningEffort(normalizedReasoning);
     if (normalizedPrompt != null) task.setExecutionPrompt(normalizedPrompt);
@@ -1448,6 +1558,20 @@ public class AgentTaskService {
       task.setCostEstimationStatus("PRICING_UNAVAILABLE");
       task.setModelUsageUpdatedAt(now);
     }
+    if (modelInvocation != null) requireExecutionAuditShape(task, false);
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Persiste o envelope tipado antes ou depois da chamada sem encerrar a tarefa. */
+  @Transactional
+  public void recordClaimedProcessTaskExecutionAudit(
+      String agentKey, Long taskId, AgentTaskExecutionAuditRequest audit) {
+    AgentTask task = claimedBy(agentKey, taskId);
+    applyExecutionAudit(task, audit);
+    requireExecutionAuditShape(task, false);
+    Instant now = Instant.now(clock);
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
     synchronizeActivityInstance(saved, now);
@@ -1650,8 +1774,9 @@ public class AgentTaskService {
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
-    applyModelUsage(task, request.modelUsages());
     applyExecutionAudit(task, request.executionAudit());
+    applyModelUsage(task, request.modelUsages());
+    requireTerminalExecutionAudit(task, true);
     task.setExecutionError(null);
     AgentTaskCompletionHook.CompletionDisposition disposition = applyCompletionHooks(task, request);
     if (AgentTaskCompletionHook.CompletionDisposition.DEFERRED.equals(disposition)) {
@@ -1696,6 +1821,7 @@ public class AgentTaskService {
       String agentKey, Long taskId, String technicalEvidenceJson) {
     AgentTask task = claimedBy(agentKey, taskId);
     Instant now = Instant.now(clock);
+    requireTerminalExecutionAudit(task, true);
     task.setEvidenceJson(mergeEvidence(task.getEvidenceJson(), technicalEvidenceJson));
     task.setExecutionError(null);
     task.setStatus("COMPLETED");
@@ -1713,6 +1839,9 @@ public class AgentTaskService {
     Instant now = Instant.now(clock);
     task.setEvidenceJson(mergeEvidence(task.getEvidenceJson(), technicalEvidenceJson));
     task.setExecutionError(error);
+    ensurePreModelFailureAudit(task, null, null);
+    applyBlockerGuidance(task, null, error, null);
+    requireTerminalExecutionAudit(task, false);
     task.setStatus("BLOCKED");
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
@@ -1750,8 +1879,11 @@ public class AgentTaskService {
     task.setExecutionError(request.error());
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
-    applyModelUsage(task, request.modelUsages());
     applyExecutionAudit(task, request.executionAudit());
+    applyModelUsage(task, request.modelUsages());
+    ensurePreModelFailureAudit(task, request.resultJson(), request.modelUsages());
+    applyBlockerGuidance(task, request.blockerGuidance(), request.error(), request.resultJson());
+    requireTerminalExecutionAudit(task, false);
     task.setStatus("BLOCKED");
     Instant now = Instant.now(clock);
     task.setUpdatedAt(now);
@@ -1764,6 +1896,9 @@ public class AgentTaskService {
     if (usages == null) return;
     Instant now = Instant.now(clock);
     if (usages.isEmpty()) {
+      if ("MODEL".equals(task.getExecutionMode())) {
+        return;
+      }
       if (task.getInputTokens() == null) {
         task.setInputTokens(0L);
         task.setCachedInputTokens(0L);
@@ -1817,12 +1952,327 @@ public class AgentTaskService {
     task.setModelUsageUpdatedAt(now);
   }
 
-  /** Preserva o modelo, o esforço e o prompt exato usados pelo executor na tentativa. */
+  /** Preserva modo, modelo, esforço, prompt integral e URLs acessadas na tentativa. */
   private void applyExecutionAudit(AgentTask task, AgentTaskExecutionAuditRequest audit) {
     if (audit == null) return;
-    task.setExecutionModelCode(audit.modelCode().trim());
-    task.setExecutionReasoningEffort(audit.reasoningEffort().trim());
+    String mode = normalizedUpper(audit.executionMode());
+    if (!EXECUTION_MODES.contains(mode)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Modo de execução inválido.");
+    }
+    task.setExecutionMode(mode);
+    task.setExecutionModelCode(trimToNull(audit.modelCode()));
+    task.setExecutionReasoningEffort(trimToNull(audit.reasoningEffort()));
     task.setExecutionPrompt(audit.promptSent());
+    if ("NOT_STARTED".equals(mode)) {
+      task.setExecutionModelCode(null);
+      task.setExecutionReasoningEffort("NOT_APPLICABLE");
+      task.setExecutionPrompt(null);
+    }
+    replaceAccessedUrls(task, audit.accessedUrls());
+  }
+
+  /** Exige uma auditoria coerente sem transformar ausência em configuração inventada. */
+  private void requireExecutionAuditShape(AgentTask task, boolean terminalCompletion) {
+    String mode = trimToNull(task.getExecutionMode());
+    if (mode == null || !EXECUTION_MODES.contains(mode)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A tarefa exige modo de execução auditável.");
+    }
+    if ("MODEL".equals(mode)
+        && (trimToNull(task.getExecutionModelCode()) == null
+            || trimToNull(task.getExecutionReasoningEffort()) == null
+            || trimToNull(task.getExecutionPrompt()) == null)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Execução de modelo exige modelo, tipo de raciocínio e prompt integral.");
+    }
+    if ("DETERMINISTIC".equals(mode)
+        && (!"NOT_APPLICABLE".equals(task.getExecutionReasoningEffort())
+            || trimToNull(task.getExecutionModelCode()) == null
+            || trimToNull(task.getExecutionPrompt()) == null)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Execução determinística exige identificador, entrada integral e raciocínio não aplicável.");
+    }
+    if (terminalCompletion && "NOT_STARTED".equals(mode)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Tarefa concluída não pode declarar modelo não iniciado.");
+    }
+  }
+
+  /** Aplica a validação terminal comum antes de concluir ou bloquear uma tarefa. */
+  private void requireTerminalExecutionAudit(AgentTask task, boolean completed) {
+    requireExecutionAuditShape(task, completed);
+  }
+
+  /** Registra a entrada integral de um comando sem modelo quando nenhuma auditoria já existe. */
+  private void ensureDeterministicCommandAudit(
+      AgentTask task, String executionIdentifier, Map<String, Object> fullInput) {
+    if (trimToNull(task.getExecutionMode()) != null) return;
+    try {
+      task.setExecutionMode("DETERMINISTIC");
+      task.setExecutionModelCode(executionIdentifier);
+      task.setExecutionReasoningEffort("NOT_APPLICABLE");
+      task.setExecutionPrompt(objectMapper.writeValueAsString(fullInput));
+      task.setInputTokens(0L);
+      task.setCachedInputTokens(0L);
+      task.setOutputTokens(0L);
+      task.setEstimatedCostUsd(BigDecimal.ZERO.setScale(8));
+      task.setCostEstimationStatus("NOT_APPLICABLE");
+      task.setModelUsageUpdatedAt(Instant.now(clock));
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao registrar entrada determinística da tarefa. taskId={} executionIdentifier={}",
+          task.getId(),
+          executionIdentifier,
+          ex);
+      throw new IllegalStateException("Não foi possível auditar o comando determinístico.", ex);
+    }
+  }
+
+  /** Registra explicitamente uma falha anterior ao modelo quando não houve saída nem consumo. */
+  private void ensurePreModelFailureAudit(
+      AgentTask task, String resultJson, List<AgentTaskModelUsageRequest> modelUsages) {
+    if (trimToNull(task.getExecutionMode()) != null) return;
+    if (trimToNull(resultJson) != null || (modelUsages != null && !modelUsages.isEmpty())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Falha após uso do modelo exige prompt e tipo de raciocínio auditados.");
+    }
+    task.setExecutionMode("NOT_STARTED");
+    task.setExecutionModelCode(null);
+    task.setExecutionReasoningEffort("NOT_APPLICABLE");
+    task.setExecutionPrompt(null);
+  }
+
+  /** Persiste orientação explícita ou deriva um fallback acionável sem depender de logs. */
+  private void applyBlockerGuidance(
+      AgentTask task, AgentTaskBlockerGuidanceRequest guidance, String error, String resultJson) {
+    String category =
+        guidance == null
+            ? (trimToNull(resultJson) == null ? "TECHNICAL_FAILURE" : "FUNCTIONAL_ADJUSTMENT")
+            : normalizedUpper(guidance.category());
+    if (!BLOCKER_CATEGORIES.contains(category)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoria de bloqueio inválida.");
+    }
+    String action =
+        guidance == null
+            ? derivedBlockerAction(resultJson, error)
+            : trimToNull(guidance.recommendedAction());
+    if (action == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Bloqueio exige orientação de correção.");
+    }
+    List<AgentTaskHelpLinkRequest> links =
+        guidance == null
+            ? defaultHelpLinks(task)
+            : guidance.helpLinks() == null ? List.of() : guidance.helpLinks();
+    if (links.isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Bloqueio exige ao menos um link de ajuda.");
+    }
+    task.setBlockerCategory(category);
+    task.setBlockerAction(action);
+    replaceHelpLinks(task, links);
+  }
+
+  /** Extrai a mudança pedida pelo parecer e mantém fallback técnico simples. */
+  private String derivedBlockerAction(String resultJson, String error) {
+    if (trimToNull(resultJson) != null) {
+      try {
+        JsonNode result = objectMapper.readTree(resultJson);
+        for (String field : List.of("recommendedAction", "nextAction", "remediation")) {
+          String direct = textValue(result.path(field));
+          if (direct != null) return direct;
+        }
+        JsonNode changes = result.path("requiredChanges");
+        if (changes.isArray() && !changes.isEmpty()) {
+          List<String> actions = new ArrayList<>();
+          for (JsonNode change : changes) {
+            String action =
+                change.isTextual()
+                    ? trimToNull(change.asText())
+                    : firstText(change, "action", "description", "change", "requiredChange");
+            if (action != null) actions.add(action);
+            if (actions.size() == 3) break;
+          }
+          if (!actions.isEmpty())
+            return "Corrija antes de reiniciar: " + String.join("; ", actions);
+        }
+      } catch (Exception ex) {
+        log.warn("Resultado bloqueado não contém JSON legível. error={}", error, ex);
+      }
+    }
+    String cause = trimToNull(error);
+    return cause == null
+        ? "Revise a causa registrada e reinicie a tarefa depois da correção."
+        : "Corrija a causa registrada e reinicie a tarefa: " + cause;
+  }
+
+  /** Monta links seguros mínimos e acrescenta o artefato público quando ele foi congelado. */
+  private List<AgentTaskHelpLinkRequest> defaultHelpLinks(AgentTask task) {
+    List<AgentTaskHelpLinkRequest> links = new ArrayList<>();
+    links.add(new AgentTaskHelpLinkRequest("Abrir tarefas dos agentes", "/agent-tasks"));
+    try {
+      JsonNode evidence =
+          trimToNull(task.getEvidenceJson()) == null
+              ? objectMapper.createObjectNode()
+              : objectMapper.readTree(task.getEvidenceJson());
+      String publicUrl = textValue(evidence.path("taskTarget").path("publicUrl"));
+      if (publicUrl != null) {
+        links.add(new AgentTaskHelpLinkRequest("Abrir experiência revisada", publicUrl));
+      }
+    } catch (Exception ex) {
+      log.debug("Evidência sem alvo navegável na tarefa {}.", task.getId(), ex);
+    }
+    return List.copyOf(links);
+  }
+
+  /** Substitui somente as URLs de acesso, preservando os links de orientação. */
+  private void replaceAccessedUrls(AgentTask task, List<AgentTaskAccessedUrlRequest> accessedUrls) {
+    if (accessedUrls == null) return;
+    task.getAuditLinks().removeIf(link -> ACCESSED_URL_LINK.equals(link.getLinkType()));
+    Map<String, AgentTaskAccessedUrlRequest> unique = new java.util.LinkedHashMap<>();
+    for (AgentTaskAccessedUrlRequest access : accessedUrls) {
+      if (access == null) continue;
+      String url = validatedUrl(access.url(), false);
+      String method = normalizedUpper(access.accessMethod());
+      if (!ACCESS_METHODS.contains(method)) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Método de acesso da URL inválido.");
+      }
+      unique.putIfAbsent(
+          url,
+          new AgentTaskAccessedUrlRequest(
+              url,
+              requiredText(access.label(), "Rótulo da URL acessada"),
+              method,
+              access.accessedAt()));
+    }
+    int order = 0;
+    for (AgentTaskAccessedUrlRequest access : unique.values()) {
+      addAuditLink(
+          task,
+          ACCESSED_URL_LINK,
+          access.label(),
+          access.url(),
+          access.accessMethod(),
+          access.accessedAt(),
+          order++);
+    }
+  }
+
+  /** Substitui os links de ajuda depois de validar protocolo e ausência de credenciais. */
+  private void replaceHelpLinks(AgentTask task, List<AgentTaskHelpLinkRequest> helpLinks) {
+    task.getAuditLinks().removeIf(link -> BLOCKER_HELP_LINK.equals(link.getLinkType()));
+    Map<String, AgentTaskHelpLinkRequest> unique = new java.util.LinkedHashMap<>();
+    for (AgentTaskHelpLinkRequest help : helpLinks) {
+      if (help == null) continue;
+      String url = validatedUrl(help.url(), true);
+      unique.putIfAbsent(
+          url,
+          new AgentTaskHelpLinkRequest(requiredText(help.label(), "Rótulo do link de ajuda"), url));
+    }
+    int order = 0;
+    for (AgentTaskHelpLinkRequest help : unique.values()) {
+      addAuditLink(task, BLOCKER_HELP_LINK, help.label(), help.url(), null, null, order++);
+    }
+  }
+
+  /** Adiciona um link já validado à coleção governada pela tarefa. */
+  private void addAuditLink(
+      AgentTask task,
+      String linkType,
+      String label,
+      String url,
+      String accessMethod,
+      Instant accessedAt,
+      int displayOrder) {
+    AgentTaskAuditLink link = new AgentTaskAuditLink();
+    link.setTask(task);
+    link.setLinkType(linkType);
+    link.setLabel(label);
+    link.setUrl(url);
+    link.setAccessMethod(accessMethod);
+    link.setAccessedAt(accessedAt);
+    link.setDisplayOrder(displayOrder);
+    link.setCreatedAt(Instant.now(clock));
+    task.getAuditLinks().add(link);
+  }
+
+  /** Aceita somente links internos ou HTTP seguros e rejeita parâmetros de credencial. */
+  private String validatedUrl(String value, boolean allowRelative) {
+    String normalized = trimToNull(value);
+    if (normalized == null || normalized.length() > 2048) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "URL de auditoria inválida.");
+    }
+    try {
+      URI uri = URI.create(normalized);
+      if (allowRelative
+          && uri.getScheme() == null
+          && uri.getRawAuthority() == null
+          && uri.getRawPath() != null
+          && uri.getRawPath().startsWith("/")) {
+        requireUrlWithoutCredentials(uri);
+        return uri.toString();
+      }
+      if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+          || trimToNull(uri.getHost()) == null
+          || uri.getUserInfo() != null) {
+        throw new IllegalArgumentException("protocolo, host ou usuário inválido");
+      }
+      requireUrlWithoutCredentials(uri);
+      return uri.toString();
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "URL de auditoria insegura.", ex);
+    }
+  }
+
+  /** Rejeita credenciais em query ou fragmento inclusive quando o link é interno. */
+  private void requireUrlWithoutCredentials(URI uri) {
+    for (String section : new String[] {uri.getRawQuery(), uri.getRawFragment()}) {
+      if (section == null) continue;
+      for (String parameter : section.split("[?&;]")) {
+        String rawName = parameter.split("=", 2)[0];
+        String name =
+            URLDecoder.decode(rawName, StandardCharsets.UTF_8)
+                .trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]", "");
+        if (SENSITIVE_QUERY_PARAMETERS.contains(name)) {
+          throw new IllegalArgumentException("parâmetro sensível");
+        }
+      }
+    }
+  }
+
+  /** Normaliza um valor obrigatório sem alterar seu conteúdo interno. */
+  private String requiredText(String value, String label) {
+    String normalized = trimToNull(value);
+    if (normalized == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " é obrigatório.");
+    }
+    return normalized;
+  }
+
+  /** Normaliza vocabulários contratuais em maiúsculas. */
+  private String normalizedUpper(String value) {
+    String normalized = trimToNull(value);
+    return normalized == null ? null : normalized.toUpperCase(Locale.ROOT);
+  }
+
+  /** Lê o primeiro texto preenchido de uma saída estruturada. */
+  private String firstText(JsonNode node, String... fields) {
+    for (String field : fields) {
+      String value = textValue(node.path(field));
+      if (value != null) return value;
+    }
+    return null;
+  }
+
+  /** Converte somente nós textuais preenchidos em orientação. */
+  private String textValue(JsonNode node) {
+    return node != null && node.isTextual() ? trimToNull(node.asText()) : null;
   }
 
   /** Revalida contadores para chamadas internas que não passam pela validação HTTP. */

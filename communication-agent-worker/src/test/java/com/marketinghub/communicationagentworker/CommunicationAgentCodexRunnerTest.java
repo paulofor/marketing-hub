@@ -37,11 +37,29 @@ class CommunicationAgentCodexRunnerTest {
             "--search",
             "--skip-git-repo-check",
             "approval_policy=\"never\"",
+            "model_reasoning_effort=\"high\"",
             "service_tier=\"default\"")
         .containsSubsequence("--sandbox", "read-only")
         .contains("mcp_servers.iris_communication.command=\"node\"")
         .anyMatch(value -> value.startsWith("mcp_servers.iris_communication.args="));
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
+  }
+
+  /** Bloqueia Íris antes do modelo quando o tipo de raciocínio não está configurado. */
+  @Test
+  void shouldRejectMissingReasoningEffortBeforeModel() {
+    CommunicationAgentProperties properties = properties();
+    properties.setReasoningEffort("  ");
+    CommunicationAgentCodexRunner runner =
+        new CommunicationAgentCodexRunner(properties, json, mock(CodexTelemetryReporter.class));
+
+    assertThatThrownBy(
+            () ->
+                runner.command(
+                    Path.of("/tmp/answer.json"),
+                    Path.of("/tmp/schema.json"),
+                    Path.of("/tmp/communication-agent.mjs")))
+        .hasMessageContaining("obrigatório para auditar Íris");
   }
 
   /** Mantém quarenta minutos como limite local e não como avanço do backend. */

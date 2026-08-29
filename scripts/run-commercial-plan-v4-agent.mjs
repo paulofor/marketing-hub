@@ -14,19 +14,25 @@ const MODEL = "gpt-5.6-sol";
 export const CONTRACTS = Object.freeze({
   "experiment-strategist": {
     activities: ["marketStrategy"],
-    prompt: "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md",
-    schema: "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy-schema.json"
+    prompt:
+      "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md",
+    schema:
+      "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy-schema.json",
   },
   "financial-agent": {
     activities: ["economics"],
-    prompt: "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md",
-    schema: "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics-schema.json"
+    prompt:
+      "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md",
+    schema:
+      "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics-schema.json",
   },
   "landing-generator": {
     activities: ["productArchitecture"],
-    prompt: "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md",
-    schema: "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture-schema.json"
-  }
+    prompt:
+      "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md",
+    schema:
+      "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture-schema.json",
+  },
 });
 
 /** Resolve o contrato versionado sem permitir que um agente consuma responsabilidade alheia. */
@@ -56,32 +62,47 @@ export function parseUsage(jsonLines) {
     const usage = event.usage ?? event.response?.usage;
     if (usage && typeof usage === "object") {
       informed = true;
-      inputTokens = Math.max(inputTokens, Number(usage.input_tokens ?? usage.inputTokens ?? 0));
+      inputTokens = Math.max(
+        inputTokens,
+        Number(usage.input_tokens ?? usage.inputTokens ?? 0),
+      );
       cachedInputTokens = Math.max(
         cachedInputTokens,
         Number(
           usage.cached_input_tokens ??
             usage.cachedInputTokens ??
             usage.input_tokens_details?.cached_tokens ??
-            0
-        )
+            0,
+        ),
       );
-      outputTokens = Math.max(outputTokens, Number(usage.output_tokens ?? usage.outputTokens ?? 0));
+      outputTokens = Math.max(
+        outputTokens,
+        Number(usage.output_tokens ?? usage.outputTokens ?? 0),
+      );
     }
     serviceTier ??= event.service_tier ?? event.response?.service_tier ?? null;
   }
-  return { informed, inputTokens, cachedInputTokens, outputTokens, serviceTier };
+  return {
+    informed,
+    inputTokens,
+    cachedInputTokens,
+    outputTokens,
+    serviceTier,
+  };
 }
 
 /** Exige a decisão e a atividade do contrato antes de persistir qualquer callback. */
 export function validateResult(result, activityId) {
   if (result?.activity !== activityId) {
-    throw new Error(`Resposta declarou atividade ${result?.activity ?? "ausente"}; esperado ${activityId}.`);
+    throw new Error(
+      `Resposta declarou atividade ${result?.activity ?? "ausente"}; esperado ${activityId}.`,
+    );
   }
   if (!["APPROVE", "ADJUST", "REJECT"].includes(result?.decision)) {
     throw new Error("Resposta sem decisão comercial válida.");
   }
-  const compared = result.alternatives ?? result.scenarios ?? result.interpretations;
+  const compared =
+    result.alternatives ?? result.scenarios ?? result.interpretations;
   if (!Array.isArray(compared) || compared.length !== 3) {
     throw new Error("Resposta deve comparar exatamente três alternativas.");
   }
@@ -90,7 +111,8 @@ export function validateResult(result, activityId) {
 /** Recupera o contexto original de uma execução bloqueada para permitir correção auditável. */
 export function taskFromPayload(payload) {
   const task = payload?.task ?? payload;
-  if (!task?.taskId) throw new Error("Arquivo de tarefa sem contexto original.");
+  if (!task?.taskId)
+    throw new Error("Arquivo de tarefa sem contexto original.");
   return task;
 }
 
@@ -98,14 +120,22 @@ export function taskFromPayload(payload) {
 export function executionTimeout(value) {
   const timeoutMs = Number(value ?? 600000);
   if (!Number.isFinite(timeoutMs) || timeoutMs < 1000) {
-    throw new Error("Timeout do agente deve ser um número de pelo menos 1000 ms.");
+    throw new Error(
+      "Timeout do agente deve ser um número de pelo menos 1000 ms.",
+    );
   }
   return timeoutMs;
 }
 
 /** Monta o registro imutável da chamada final sem expor configuração fora da execução. */
 export function executionAudit(promptSent, reasoningEffort) {
-  return { modelCode: MODEL, reasoningEffort, promptSent };
+  return {
+    executionMode: "MODEL",
+    modelCode: MODEL,
+    reasoningEffort,
+    promptSent,
+    accessedUrls: [],
+  };
 }
 
 /** Consolida resultados atuais de todos os agentes ao retomar uma atividade corrigida. */
@@ -114,27 +144,27 @@ export function refreshedProcessContext(taskLists, sourceReference) {
   taskLists
     .flat()
     .filter(
-      task =>
+      (task) =>
         task.sourceReference === sourceReference &&
         task.processCode === PROCESS_CODE &&
-        task.status === "COMPLETED"
+        task.status === "COMPLETED",
     )
     .sort((left, right) => left.id - right.id)
-    .forEach(task =>
+    .forEach((task) =>
       latestByOwnerActivity.set(
         `${task.assignedAgentKey ?? task.assignedAgentId}:${task.processActivityId}`,
-        task
-      )
+        task,
+      ),
     );
   const completedActivities = [...latestByOwnerActivity.values()]
     .sort((left, right) => left.id - right.id)
-    .map(task => ({
+    .map((task) => ({
       taskId: task.id,
       activityId: task.processActivityId,
       activityName: task.processActivityName,
       resultJson: task.resultJson,
       evidenceJson: task.evidenceJson,
-      deliveredAt: task.deliveredAt
+      deliveredAt: task.deliveredAt,
     }));
   return JSON.stringify({ completedActivities });
 }
@@ -142,16 +172,22 @@ export function refreshedProcessContext(taskLists, sourceReference) {
 /** Atualiza o contexto predecessor sem criar uma nova tarefa ou perder a auditoria da tentativa. */
 async function refreshTaskContext(backendUrl, task) {
   const taskLists = await Promise.all(
-    Object.keys(CONTRACTS).map(async agentKey => {
+    Object.keys(CONTRACTS).map(async (agentKey) => {
       const url = new URL(`/api/agent-tasks/agents/${agentKey}`, backendUrl);
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Falha ao atualizar contexto de ${agentKey}: HTTP ${response.status}.`);
+      if (!response.ok)
+        throw new Error(
+          `Falha ao atualizar contexto de ${agentKey}: HTTP ${response.status}.`,
+        );
       return response.json();
-    })
+    }),
   );
   return {
     ...task,
-    processContextJson: refreshedProcessContext(taskLists, task.sourceReference)
+    processContextJson: refreshedProcessContext(
+      taskLists,
+      task.sourceReference,
+    ),
   };
 }
 
@@ -161,7 +197,8 @@ function parseArguments(argv) {
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
     const value = argv[index + 1];
-    if (!key?.startsWith("--") || value == null) throw new Error(`Argumento inválido: ${key ?? "ausente"}`);
+    if (!key?.startsWith("--") || value == null)
+      throw new Error(`Argumento inválido: ${key ?? "ausente"}`);
     values[key.slice(2)] = value;
   }
   for (const required of ["agent-key", "activity-id"]) {
@@ -172,34 +209,67 @@ function parseArguments(argv) {
 
 /** Busca e reserva somente a atividade pedida no endpoint pending canônico. */
 async function claimTask(backendUrl, agentKey, activityId) {
-  const url = new URL(`/api/internal/agent-tasks/${agentKey}/stage-executions/pending`, backendUrl);
+  const url = new URL(
+    `/api/internal/agent-tasks/${agentKey}/stage-executions/pending`,
+    backendUrl,
+  );
   url.searchParams.set("processCode", PROCESS_CODE);
   url.searchParams.set("activityId", activityId);
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`Falha ao reservar tarefa: HTTP ${response.status}.`);
+  if (!response.ok)
+    throw new Error(`Falha ao reservar tarefa: HTTP ${response.status}.`);
   const tasks = await response.json();
-  if (!Array.isArray(tasks) || tasks.length === 0) throw new Error("Nenhuma tarefa elegível encontrada.");
+  if (!Array.isArray(tasks) || tasks.length === 0)
+    throw new Error("Nenhuma tarefa elegível encontrada.");
   return tasks[0];
 }
 
 /** Executa o Codex com filesystem somente leitura, schema obrigatório e telemetria JSONL. */
-async function runCodex(prompt, schemaPath, outputPath, logPath, reasoningEffort, timeoutMs) {
+async function runCodex(
+  prompt,
+  schemaPath,
+  outputPath,
+  logPath,
+  reasoningEffort,
+  timeoutMs,
+) {
   const args = [
-    "--search", "exec", "-", "--ephemeral", "--skip-git-repo-check",
-    "--sandbox", "read-only", "--cd", REPOSITORY,
-    "--output-schema", schemaPath, "--output-last-message", outputPath,
-    "--json", "--color", "never", "--config", 'approval_policy="never"',
-    "--config", `model_reasoning_effort="${reasoningEffort}"`, "--model", MODEL
+    "--search",
+    "exec",
+    "-",
+    "--ephemeral",
+    "--skip-git-repo-check",
+    "--sandbox",
+    "read-only",
+    "--cd",
+    REPOSITORY,
+    "--output-schema",
+    schemaPath,
+    "--output-last-message",
+    outputPath,
+    "--json",
+    "--color",
+    "never",
+    "--config",
+    'approval_policy="never"',
+    "--config",
+    `model_reasoning_effort="${reasoningEffort}"`,
+    "--model",
+    MODEL,
   ];
   const child = spawn(process.env.CODEX_COMMAND || "codex", args, {
     cwd: REPOSITORY,
     env: process.env,
-    stdio: ["pipe", "pipe", "pipe"]
+    stdio: ["pipe", "pipe", "pipe"],
   });
   let log = "";
   let timedOut = false;
-  child.stdout.on("data", chunk => { log += chunk.toString(); });
-  child.stderr.on("data", chunk => { log += chunk.toString(); });
+  child.stdout.on("data", (chunk) => {
+    log += chunk.toString();
+  });
+  child.stderr.on("data", (chunk) => {
+    log += chunk.toString();
+  });
   child.stdin.end(prompt);
   const timeout = setTimeout(() => {
     timedOut = true;
@@ -215,7 +285,7 @@ async function runCodex(prompt, schemaPath, outputPath, logPath, reasoningEffort
     const error = new Error(
       timedOut
         ? `Codex excedeu o limite operacional de ${timeoutMs} ms.`
-        : `Codex encerrou com código ${exitCode}.`
+        : `Codex encerrou com código ${exitCode}.`,
     );
     error.codexLog = log;
     throw error;
@@ -224,10 +294,22 @@ async function runCodex(prompt, schemaPath, outputPath, logPath, reasoningEffort
 }
 
 /** Persiste falha técnica e eventual telemetria parcial para não deixar atividade órfã. */
-async function reportTechnicalFailure(backendUrl, agentKey, task, error, executionAudit) {
+async function reportTechnicalFailure(
+  backendUrl,
+  agentKey,
+  task,
+  error,
+  executionAudit,
+) {
   const usage = parseUsage(error.codexLog ?? "");
   const body = {
     error: error.message,
+    blockerGuidance: {
+      category: "TECHNICAL_FAILURE",
+      recommendedAction:
+        "Corrija a causa técnica registrada e reinicie a tarefa do agente.",
+      helpLinks: [{ label: "Abrir tarefas dos agentes", url: "/agent-tasks" }],
+    },
     evidenceJson: JSON.stringify({
       executionMode: "LOCAL_SANDBOX",
       externalSideEffects: false,
@@ -235,35 +317,69 @@ async function reportTechnicalFailure(backendUrl, agentKey, task, error, executi
       model: MODEL,
       sourceReference: task.sourceReference,
       activityId: task.activityId,
-      technicalFailure: true
-    })
+      technicalFailure: true,
+    }),
   };
   if (executionAudit) body.executionAudit = executionAudit;
   if (usage.informed) {
-    body.modelUsages = [{
-      modelCode: MODEL,
-      serviceTier: usage.serviceTier?.toUpperCase() === "FLEX" ? "FLEX" : "STANDARD",
-      inputTokens: usage.inputTokens,
-      cachedInputTokens: usage.cachedInputTokens,
-      outputTokens: usage.outputTokens
-    }];
+    body.modelUsages = [
+      {
+        modelCode: MODEL,
+        serviceTier:
+          usage.serviceTier?.toUpperCase() === "FLEX" ? "FLEX" : "STANDARD",
+        inputTokens: usage.inputTokens,
+        cachedInputTokens: usage.cachedInputTokens,
+        outputTokens: usage.outputTokens,
+      },
+    ];
   }
   const url = new URL(
     `/api/internal/agent-tasks/${agentKey}/stage-executions/${task.taskId}/failure`,
-    backendUrl
+    backendUrl,
   );
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
-    throw new Error(`Falha ao registrar erro técnico: HTTP ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Falha ao registrar erro técnico: HTTP ${response.status} ${await response.text()}`,
+    );
+  }
+}
+
+/** Valida a resposta e registra qualquer falha posterior à tentativa com a mesma auditoria. */
+export async function runAuditedModel({
+  run,
+  readResult,
+  activityId,
+  reportFailure,
+  executionAuditPayload,
+}) {
+  let log;
+  try {
+    log = await run();
+    const result = JSON.parse(await readResult());
+    validateResult(result, activityId);
+    return { result, usage: parseUsage(log) };
+  } catch (error) {
+    if (!error.codexLog && log) error.codexLog = log;
+    await reportFailure(error, executionAuditPayload);
+    throw error;
   }
 }
 
 /** Envia resultado, evidência e uso medido pela mesma execução ao backend. */
-async function callback(backendUrl, agentKey, task, result, usage, contract, executionAudit) {
+async function callback(
+  backendUrl,
+  agentKey,
+  task,
+  result,
+  usage,
+  contract,
+  executionAudit,
+) {
   const approved = result.decision === "APPROVE";
   const endpoint = approved ? "result" : "failure";
   const evidence = {
@@ -272,38 +388,53 @@ async function callback(backendUrl, agentKey, task, result, usage, contract, exe
     agentKey,
     model: MODEL,
     reportedServiceTier: usage.serviceTier,
-    pricingTierAssumption: usage.serviceTier ? null : "STANDARD_FALLBACK_CLI_DID_NOT_REPORT",
+    pricingTierAssumption: usage.serviceTier
+      ? null
+      : "STANDARD_FALLBACK_CLI_DID_NOT_REPORT",
     promptContract: contract.prompt,
     schemaContract: contract.schema,
     sourceReference: task.sourceReference,
     activityId: task.activityId,
-    sources: result.sources ?? []
+    sources: result.sources ?? [],
   };
   const body = {
     resultJson: JSON.stringify(result),
     evidenceJson: JSON.stringify(evidence),
-    executionAudit
+    executionAudit,
   };
-  if (!approved) body.error = `Agente decidiu ${result.decision}: ${result.rationale}`;
+  if (!approved) {
+    body.error = `Agente decidiu ${result.decision}: ${result.rationale}`;
+    body.blockerGuidance = {
+      category: "FUNCTIONAL_ADJUSTMENT",
+      recommendedAction: result.recommendedAction || result.rationale,
+      helpLinks: [{ label: "Abrir tarefas dos agentes", url: "/agent-tasks" }],
+    };
+  }
   if (usage.informed) {
-    body.modelUsages = [{
-      modelCode: MODEL,
-      serviceTier: usage.serviceTier?.toUpperCase() === "FLEX" ? "FLEX" : "STANDARD",
-      inputTokens: usage.inputTokens,
-      cachedInputTokens: usage.cachedInputTokens,
-      outputTokens: usage.outputTokens
-    }];
+    body.modelUsages = [
+      {
+        modelCode: MODEL,
+        serviceTier:
+          usage.serviceTier?.toUpperCase() === "FLEX" ? "FLEX" : "STANDARD",
+        inputTokens: usage.inputTokens,
+        cachedInputTokens: usage.cachedInputTokens,
+        outputTokens: usage.outputTokens,
+      },
+    ];
   }
   const url = new URL(
     `/api/internal/agent-tasks/${agentKey}/stage-executions/${task.taskId}/${endpoint}`,
-    backendUrl
+    backendUrl,
   );
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(`Callback rejeitado: HTTP ${response.status} ${await response.text()}`);
+  if (!response.ok)
+    throw new Error(
+      `Callback rejeitado: HTTP ${response.status} ${await response.text()}`,
+    );
 }
 
 /** Executa uma atividade e mantém os arquivos resultantes apenas no diretório solicitado. */
@@ -314,7 +445,9 @@ export async function main(argv = process.argv.slice(2)) {
   const contract = resolveContract(agentKey, activityId);
   const backendUrl = args["backend-url"] || "http://191.252.181.168";
   const claimedTask = args["task-file"]
-    ? taskFromPayload(JSON.parse(await readFile(resolve(args["task-file"]), "utf8")))
+    ? taskFromPayload(
+        JSON.parse(await readFile(resolve(args["task-file"]), "utf8")),
+      )
     : await claimTask(backendUrl, agentKey, activityId);
   const task = await refreshTaskContext(backendUrl, claimedTask);
   if (task.processCode !== PROCESS_CODE || task.activityId !== activityId) {
@@ -324,46 +457,63 @@ export async function main(argv = process.argv.slice(2)) {
   const outputPath = join(temporary, "result.json");
   const logPath = join(temporary, "codex.jsonl");
   try {
-    const template = await readFile(resolve(REPOSITORY, contract.prompt), "utf8");
+    const template = await readFile(
+      resolve(REPOSITORY, contract.prompt),
+      "utf8",
+    );
     const prompt = template.replace("{{TASK_CONTEXT}}", JSON.stringify(task));
     const reasoningEffort = args["reasoning-effort"] || "high";
     const executionAuditPayload = executionAudit(prompt, reasoningEffort);
-    let log;
-    try {
-      log = await runCodex(
-        prompt,
-        resolve(REPOSITORY, contract.schema),
-        outputPath,
-        logPath,
-        reasoningEffort,
-        executionTimeout(args["timeout-ms"] || process.env.COMMERCIAL_PLAN_AGENT_TIMEOUT_MS)
-      );
-    } catch (error) {
-      await reportTechnicalFailure(backendUrl, agentKey, task, error, executionAuditPayload);
-      throw error;
-    }
-    const result = JSON.parse(await readFile(outputPath, "utf8"));
-    validateResult(result, activityId);
-    const usage = parseUsage(log);
+    const { result, usage } = await runAuditedModel({
+      run: () =>
+        runCodex(
+          prompt,
+          resolve(REPOSITORY, contract.schema),
+          outputPath,
+          logPath,
+          reasoningEffort,
+          executionTimeout(
+            args["timeout-ms"] || process.env.COMMERCIAL_PLAN_AGENT_TIMEOUT_MS,
+          ),
+        ),
+      readResult: () => readFile(outputPath, "utf8"),
+      activityId,
+      reportFailure: (error, audit) =>
+        reportTechnicalFailure(backendUrl, agentKey, task, error, audit),
+      executionAuditPayload,
+    });
     if (args["result-file"]) {
       await writeFile(
         resolve(args["result-file"]),
         `${JSON.stringify({ task, result, usage }, null, 2)}\n`,
-        "utf8"
+        "utf8",
       );
     }
     if (args["dry-run"] !== "true") {
-      await callback(backendUrl, agentKey, task, result, usage, contract, executionAuditPayload);
+      await callback(
+        backendUrl,
+        agentKey,
+        task,
+        result,
+        usage,
+        contract,
+        executionAuditPayload,
+      );
     }
-    process.stdout.write(`${JSON.stringify({ taskId: task.taskId, activityId, decision: result.decision, usage })}\n`);
+    process.stdout.write(
+      `${JSON.stringify({ taskId: task.taskId, activityId, decision: result.decision, usage })}\n`,
+    );
     return { task, result, usage };
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  main().catch(error => {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  main().catch((error) => {
     process.stderr.write(`${error.stack || error.message}\n`);
     process.exitCode = 1;
   });

@@ -69,6 +69,15 @@ public class FinancialAgentProperties {
     this.reasoningEffort = reasoningEffort;
   }
 
+  /** Exige o esforço explícito compartilhado pelo comando e pela auditoria de Plutus. */
+  public String requiredReasoningEffort() {
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      throw new IllegalStateException(
+          "FINANCIAL_AGENT_REASONING_EFFORT é obrigatório para auditar Plutus.");
+    }
+    return reasoningEffort.trim();
+  }
+
   /** Retorna o tier solicitado ao runtime Codex. */
   public String getServiceTier() {
     return serviceTier;

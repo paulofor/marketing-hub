@@ -4,6 +4,24 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-AGENT-TASK-AUDITORIA-TERMINAL-INCOMPLETA — tarefa bloqueia sem explicar execução ou correção
+
+- **Data:** 2026-08-29.
+- **Sintoma confirmado no banco:** tarefas encerradas de Psique, Têmis, Dédalo, Hermes, Argos,
+  Plutus e Apolo não possuíam prompt e tipo de raciocínio; a #258 também não expunha orientação
+  acionável nem as URLs acessadas. Somente a execução recente de Íris já transportava o trio de
+  auditoria no callback.
+- **Causa-raiz:** o contrato central aceitava `executionAudit` opcional e cada worker decidia quais
+  dados reportar. Bloqueio era salvo como texto de erro e URLs permaneciam no log, no resultado do
+  modelo ou apenas no contexto autorizado, sem distinção entre URL recebida e URL aberta.
+- **Correção sistêmica:** toda nova execução terminal declara modo, modelo/raciocínio/prompt quando
+  houver modelo e todo bloqueio persiste categoria, ação e links. Links e acessos ficam normalizados
+  e segregados por tarefa; Psique coleta somente itens terminais de navegação do `web_search` e,
+  quando uma atividade usar Playwright, somente sua observação estruturada vinculada à tarefa.
+- **Prevenção:** testes de contrato no backend, nos executores e na tela recusam auditoria incompleta,
+  orientação ausente, esquema de URL inseguro, mistura entre tarefas e regressão visual em desktop e
+  mobile.
+
 ## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
 
 - **Data:** 2026-08-28.

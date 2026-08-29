@@ -29,6 +29,14 @@ executores no contrato canônico de health, além de reaplicação sem duplicida
 bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh
 ```
 
+A auditoria acionável das tarefas possui fixture física própria. Ela valida as colunas universais,
+os campos `DATETIME`, o vínculo segregado dos links, exclusão em cascata e reaplicação sem
+duplicidade:
+
+```bash
+bash backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh
+```
+
 As consultas desse runner declaram `--default-character-set=utf8mb4`. Sem o charset explícito, o
 cliente MySQL 5.7 pode não comparar nomes acentuados como `Dédalo` e `Têmis` com o valor UTF-8
 persistido, produzindo falso positivo ou falso negativo na homologação.

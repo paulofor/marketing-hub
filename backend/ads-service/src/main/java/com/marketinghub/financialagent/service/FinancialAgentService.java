@@ -3,7 +3,9 @@ package com.marketinghub.financialagent.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskBlockerGuidanceRequest;
 import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
+import com.marketinghub.agenttask.AgentTaskHelpLinkRequest;
 import com.marketinghub.agenttask.AgentTaskModelUsageRequest;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
@@ -306,7 +308,16 @@ public class FinancialAgentService {
           "financial-agent",
           execution.getAgentTaskId(),
           new FailAgentTaskRequest(
-              error, failureResult(saved, error), failureEvidence(saved, error)));
+              error,
+              null,
+              failureEvidence(saved, error),
+              null,
+              null,
+              new AgentTaskBlockerGuidanceRequest(
+                  "TECHNICAL_FAILURE",
+                  "Corrija a causa técnica e reinicie a tarefa de Plutus: " + error,
+                  List.of(
+                      new AgentTaskHelpLinkRequest("Abrir tarefas dos agentes", "/agent-tasks")))));
     }
     return toResponse(saved);
   }
@@ -402,12 +413,14 @@ public class FinancialAgentService {
             request.outputTokens()));
   }
 
-  /** Preserva modelo, esforço e prompt somente quando o trio foi realmente informado. */
+  /** Exige e preserva modelo, esforço e prompt integral em toda conclusão financeira. */
   private AgentTaskExecutionAuditRequest executionAudit(CompleteFinancialAgentRequest request) {
     if (!hasText(request.model())
         || !hasText(request.reasoningEffort())
         || !hasText(request.promptSent())) {
-      return null;
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Conclusão financeira exige modelo, tipo de raciocínio e prompt integral.");
     }
     return new AgentTaskExecutionAuditRequest(
         request.model().trim(), request.reasoningEffort().trim(), request.promptSent());

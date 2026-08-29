@@ -113,6 +113,7 @@ public class CommunicationAgentTaskConsumer {
     Map<String, Object> payload = basePayload(task, execution, startedAt);
     payload.put("error", error);
     payload.put("resultJson", execution.rawResponse());
+    payload.put("blockerGuidance", functionalGuidance(execution.result()));
     return payload;
   }
 
@@ -134,12 +135,13 @@ public class CommunicationAgentTaskConsumer {
               ? execution.promptSent()
               : ex instanceof CommunicationAgentCodexRunner.ExecutionException failure
                   ? failure.promptSent()
-                  : "Falha antes da montagem do prompt.";
+                  : null;
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("error", ex.toString());
       payload.put("evidenceJson", evidence(task, startedAt, Instant.now(), false));
       putUsage(payload, usage);
-      payload.put("executionAudit", executionAudit(prompt));
+      if (prompt != null) payload.put("executionAudit", executionAudit(prompt));
+      payload.put("blockerGuidance", technicalGuidance());
       backend.fail(taskId(task), payload);
     } catch (Exception callbackEx) {
       log.error(
@@ -207,18 +209,43 @@ public class CommunicationAgentTaskConsumer {
   /** Monta a auditoria imutável do request enviado ao Codex. */
   private Map<String, Object> executionAudit(String prompt) {
     return Map.of(
-        "modelCode",
-        modelCode(),
-        "reasoningEffort",
-        properties.getReasoningEffort(),
-        "requestedServiceTier",
-        "default",
-        "effectiveServiceTier",
-        "STANDARD",
-        "serviceTierExceptionReason",
-        properties.getServiceTierExceptionReason(),
-        "promptSent",
-        prompt);
+        "executionMode", "MODEL",
+        "modelCode", modelCode(),
+        "reasoningEffort", properties.requiredReasoningEffort(),
+        "promptSent", prompt,
+        "accessedUrls", List.of());
+  }
+
+  /** Expõe a correção funcional recomendada pela própria saída de Íris. */
+  private Map<String, Object> functionalGuidance(JsonNode result) {
+    String action = result.path("recommendedAction").asText("").trim();
+    if (action.isBlank()) {
+      action = result.path("nextAction").asText("").trim();
+    }
+    if (action.isBlank()) {
+      action = "Complete as evidências ou o contrato indicados por Íris e reinicie a tarefa.";
+    }
+    return Map.of(
+        "category",
+        "FUNCTIONAL_ADJUSTMENT",
+        "recommendedAction",
+        action,
+        "helpLinks",
+        List.of(taskAuditLink()));
+  }
+
+  /** Orienta a recuperação técnica sem autorizar publicação ou gasto. */
+  private Map<String, Object> technicalGuidance() {
+    return Map.of(
+        "category", "TECHNICAL_FAILURE",
+        "recommendedAction",
+            "Verifique a causa técnica registrada, corrija a integração e reinicie a tarefa de Íris.",
+        "helpLinks", List.of(taskAuditLink()));
+  }
+
+  /** Cria o atalho interno comum para auditar e reiniciar a tarefa. */
+  private Map<String, String> taskAuditLink() {
+    return Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks");
   }
 
   /** Resolve o nome do modelo sem inventar preço local. */

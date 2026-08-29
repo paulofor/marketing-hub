@@ -1,3 +1,8 @@
+import type {
+  AgentTaskAuditLink,
+  AgentTaskBlockerGuidance,
+} from "../agentTask/types";
+
 export type ProcessNodeType = "START" | "TASK" | "GATEWAY" | "END";
 
 export type ProcessNode = {
@@ -94,9 +99,11 @@ export type BusinessProcessActivityDocument = {
   startedAt?: string;
   finishedAt: string;
   modelCode?: string;
+  executionMode?: "MODEL" | "DETERMINISTIC" | "NOT_STARTED";
   reasoningEffort?: string;
   productInternalName?: string;
   promptSent?: string;
+  accessedUrls?: AgentTaskAuditLink[];
 };
 
 export type BusinessProcessActivityExecution = {
@@ -120,9 +127,12 @@ export type BusinessProcessActivityExecution = {
   startedAt?: string;
   finishedAt?: string;
   modelCode?: string;
+  executionMode?: "MODEL" | "DETERMINISTIC" | "NOT_STARTED";
   reasoningEffort?: string;
   productInternalName?: string;
   promptSent?: string;
+  blockerGuidance?: AgentTaskBlockerGuidance;
+  accessedUrls?: AgentTaskAuditLink[];
 };
 
 export type BusinessProcessActivityExecutionHistory = {

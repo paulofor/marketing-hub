@@ -58,6 +58,7 @@ public class GrowthOperatorBpmRunner {
     Path processLog = Files.createTempFile("hermes-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode), ".json");
     Path mcpServer = materialize("mcp/marketing-hub-readonly.mjs", ".mjs");
+    String resolvedPrompt = prompt(task);
     try {
       ProcessBuilder builder =
           new ProcessBuilder(buildCommand(answer, schema, mcpServer))
@@ -69,7 +70,7 @@ public class GrowthOperatorBpmRunner {
       builder.environment().put("MCP_SOURCE_EXECUTION_ID", "bpm-task-" + task.get("taskId"));
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
       Process process = builder.start();
-      process.getOutputStream().write(prompt(task).getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
         process.destroyForcibly();
@@ -79,7 +80,8 @@ public class GrowthOperatorBpmRunner {
                 + properties.getCodexTimeout().toMinutes()
                 + " minutos.",
             readTokenUsage(processLog),
-            safeToolUsage(processLog, task, scope));
+            safeToolUsage(processLog, task, scope),
+            resolvedPrompt);
       }
       TokenUsage usage = readTokenUsage(processLog);
       if (process.exitValue() != 0) {
@@ -89,12 +91,13 @@ public class GrowthOperatorBpmRunner {
                 + ": "
                 + Files.readString(processLog),
             usage,
-            safeToolUsage(processLog, task, scope));
+            safeToolUsage(processLog, task, scope),
+            resolvedPrompt);
       }
       try {
         JsonNode result = json.readTree(Files.readString(answer));
         validate(result, processCode, expectedStrategicHash);
-        return new BpmExecution(result, usage, extractToolUsage(processLog));
+        return new BpmExecution(result, usage, extractToolUsage(processLog), resolvedPrompt);
       } catch (IOException | RuntimeException ex) {
         log.error(
             "Resposta inválida na atividade BPM de Hermes. taskId={} sourceReference={}",
@@ -105,6 +108,7 @@ public class GrowthOperatorBpmRunner {
             "Resposta BPM de Hermes fora do contrato versionado.",
             usage,
             safeToolUsage(processLog, task, scope),
+            resolvedPrompt,
             ex);
       }
     } finally {
@@ -154,11 +158,9 @@ public class GrowthOperatorBpmRunner {
                 "mcp_servers.marketing_hub_readonly.args=[\"" + mcpServer.toAbsolutePath() + "\"]",
                 "--config",
                 "mcp_servers.marketing_hub_readonly.env_vars=[\"MCP_MARKETING_HUB_URL\",\"MCP_COMMERCIAL_PLAN_ID\",\"MCP_EXPERIMENT_ID\",\"MCP_SOURCE_EXECUTION_ID\"]"));
-    if (hasText(properties.getReasoningEffort())) {
-      command.addAll(
-          List.of(
-              "--config", "model_reasoning_effort=\"" + properties.getReasoningEffort() + "\""));
-    }
+    command.addAll(
+        List.of(
+            "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
     if (hasText(properties.getModel())) {
       command.addAll(List.of("--model", properties.getModel()));
     }
@@ -416,7 +418,13 @@ public class GrowthOperatorBpmRunner {
   }
 
   /** Preserva resultado, ferramentas e consumo na mesma execução BPM. */
-  public record BpmExecution(JsonNode result, TokenUsage usage, List<JsonNode> toolUsage) {}
+  public record BpmExecution(
+      JsonNode result, TokenUsage usage, List<JsonNode> toolUsage, String promptSent) {
+    /** Mantém compatibilidade com testes que não precisam representar o prompt. */
+    public BpmExecution(JsonNode result, TokenUsage usage, List<JsonNode> toolUsage) {
+      this(result, usage, toolUsage, null);
+    }
+  }
 
   /** Representa o único escopo de dados liberado para uma execução. */
   record ExecutionScope(String environmentName, long id, String reference) {}
@@ -438,30 +446,49 @@ public class GrowthOperatorBpmRunner {
   public static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
     private final List<JsonNode> toolUsage;
+    private final String promptSent;
 
     /** Cria a falha com a última medição disponível. */
     BpmExecutionException(String message, TokenUsage usage) {
-      this(message, usage, List.of());
+      this(message, usage, List.of(), (String) null);
     }
 
     /** Cria a falha com medição e ferramentas já consultadas. */
     BpmExecutionException(String message, TokenUsage usage, List<JsonNode> toolUsage) {
+      this(message, usage, toolUsage, (String) null);
+    }
+
+    /** Cria a falha com medição, ferramentas e prompt exato. */
+    BpmExecutionException(
+        String message, TokenUsage usage, List<JsonNode> toolUsage, String promptSent) {
       super(message);
       this.usage = usage;
       this.toolUsage = List.copyOf(toolUsage);
+      this.promptSent = promptSent;
     }
 
     /** Cria a falha com medição e causa original. */
     BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
-      this(message, usage, List.of(), cause);
+      this(message, usage, List.of(), null, cause);
     }
 
     /** Cria a falha preservando medição, ferramentas e causa original. */
     BpmExecutionException(
         String message, TokenUsage usage, List<JsonNode> toolUsage, Throwable cause) {
+      this(message, usage, toolUsage, null, cause);
+    }
+
+    /** Cria a falha preservando também o prompt integral enviado. */
+    BpmExecutionException(
+        String message,
+        TokenUsage usage,
+        List<JsonNode> toolUsage,
+        String promptSent,
+        Throwable cause) {
       super(message, cause);
       this.usage = usage;
       this.toolUsage = List.copyOf(toolUsage);
+      this.promptSent = promptSent;
     }
 
     /** Retorna a medição preservada antes da falha. */
@@ -472,6 +499,11 @@ public class GrowthOperatorBpmRunner {
     /** Retorna as ferramentas observadas antes da falha. */
     public List<JsonNode> toolUsage() {
       return toolUsage;
+    }
+
+    /** Retorna o prompt exato preservado antes da interrupção. */
+    public String promptSent() {
+      return promptSent;
     }
   }
 }

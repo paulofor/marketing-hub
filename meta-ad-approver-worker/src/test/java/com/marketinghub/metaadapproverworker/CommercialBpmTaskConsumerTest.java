@@ -14,6 +14,19 @@ import org.springframework.core.io.ClassPathResource;
 class CommercialBpmTaskConsumerTest {
   private final ObjectMapper json = new ObjectMapper();
 
+  /** Bloqueia Têmis antes de reservar tarefas quando o raciocínio não está configurado. */
+  @Test
+  void rejectsMissingReasoningEffortBeforeModel() {
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    properties.setReasoningEffort(" ");
+
+    assertThatThrownBy(
+            () ->
+                new CommercialBpmTaskConsumer(
+                    properties, "codex", "gpt-5.6-sol", "/workspace", "", json))
+        .hasMessageContaining("obrigatório para auditar Têmis");
+  }
+
   /** Aceita gate aprovado somente com justificativa e evidência comercial. */
   @Test
   void acceptsCompleteCommercialReview() throws Exception {

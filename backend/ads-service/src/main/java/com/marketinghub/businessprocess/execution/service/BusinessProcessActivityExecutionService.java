@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.AgentTaskAuditView;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
@@ -1214,11 +1215,14 @@ public class BusinessProcessActivityExecutionService {
         firstPresent(
             executionModelCode(task),
             technicalExecution.map(GeraLandingStageExecution::getOpenAiModel).orElse(null)),
+        task.getExecutionMode(),
         executionReasoningEffort(task, technicalExecution.orElse(null)),
         knownProductInternalName,
         firstPresent(
             task.getExecutionPrompt(),
-            technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null)));
+            technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null)),
+        AgentTaskAuditView.blockerGuidance(task),
+        AgentTaskAuditView.accessedUrls(task));
   }
 
   /** Recupera a chamada real de Dédalo correlacionada à tarefa composta, quando existente. */

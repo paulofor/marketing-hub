@@ -84,7 +84,9 @@ describe("BusinessProcessActivityExecutionsPage", () => {
     expect(screen.getAllByText("VEGA-01")).toHaveLength(10);
     expect(screen.getAllByText("US$ 0.01347240")).toHaveLength(10);
     expect(screen.getAllByText("1min 24s")).toHaveLength(10);
-    expect(screen.getAllByText("Prompt recebido por Argos")).toHaveLength(10);
+    expect(
+      screen.getAllByText("Prompt enviado ao modelo por Argos"),
+    ).toHaveLength(10);
     expect(screen.getAllByText("Comentários de Argos")).toHaveLength(10);
     expect(screen.getAllByText("Visualizar JSON em árvore")).toHaveLength(30);
     expect(screen.getByRole("link", { name: "Voltar ao BPM" })).toHaveAttribute(
@@ -149,5 +151,70 @@ describe("BusinessProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("Não informado")).toHaveLength(3);
     expect(screen.getByText("Pesquisa concluída.")).toBeInTheDocument();
+  });
+
+  it("distingue quando Psique não abriu nenhuma URL durante a execução", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        selectedProcessDefinitionId: 63,
+        processCode: "pde-commercial-homologation-activation",
+        processName: "Homologação e ativação comercial do PDE",
+        selectedProcessVersionNumber: 7,
+        selectedProcessStatus: "PUBLISHED",
+        activityId: "humanExperienceReview",
+        activityName: "Validar experiência humana da jornada",
+        activityOwnerName: "Psique",
+        executions: [
+          {
+            taskId: 258,
+            processDefinitionId: 63,
+            processVersionNumber: 7,
+            title: "Validar experiência humana da jornada · Rigel",
+            status: "BLOCKED",
+            assignedAgentKey: "customer-agent",
+            assignedAgentNickname: "Psique",
+            comments: "A candidata exige ajuste funcional.",
+            executionMode: "MODEL",
+            modelCode: "gpt-5.6-sol",
+            reasoningEffort: "high",
+            promptSent: "Prompt integral de homologação do Rigel.",
+            accessedUrls: [],
+            costEstimationStatus: "NOT_REPORTED",
+            createdAt: "2026-08-28T16:16:00Z",
+          },
+        ],
+      },
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/business-processes/63/activities/humanExperienceReview/executions",
+        ]}
+      >
+        <QueryClientProvider client={client}>
+          <Routes>
+            <Route
+              path="/business-processes/:processDefinitionId/activities/:activityId/executions"
+              element={<BusinessProcessActivityExecutionsPage />}
+            />
+          </Routes>
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText(
+        "Nenhuma URL foi aberta por Psique nesta execução.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("URLs acessadas por Psique")).toBeInTheDocument();
+    expect(screen.getByText("high")).toBeInTheDocument();
+    expect(
+      screen.getByText("Prompt integral de homologação do Rigel."),
+    ).toBeInTheDocument();
   });
 });

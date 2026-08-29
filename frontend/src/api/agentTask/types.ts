@@ -5,6 +5,24 @@ export type AgentTaskStatus =
   | "BLOCKED"
   | "CANCELLED";
 
+export interface AgentTaskAuditLink {
+  label: string;
+  url: string;
+  accessMethod?: string;
+  accessedAt?: string;
+}
+
+export interface AgentTaskBlockerGuidance {
+  category:
+    | "FUNCTIONAL_ADJUSTMENT"
+    | "MISSING_EVIDENCE"
+    | "COMMERCIAL_RISK"
+    | "AUTHORIZATION_REQUIRED"
+    | "TECHNICAL_FAILURE";
+  recommendedAction: string;
+  helpLinks: AgentTaskAuditLink[];
+}
+
 export interface AgentTaskFailureAudit {
   readiness: "COMPLETE" | "PARTIAL";
   intendedWork: string;
@@ -16,6 +34,8 @@ export interface AgentTaskFailureAudit {
   accessedEvidenceJson?: string;
   producedOutputJson?: string;
   error?: string;
+  blockerGuidance?: AgentTaskBlockerGuidance;
+  accessedUrls?: AgentTaskAuditLink[];
   missingEvidence: string[];
 }
 
@@ -60,6 +80,12 @@ export interface AgentTask {
     | "PARTIALLY_ESTIMATED"
     | "PRICING_UNAVAILABLE";
   modelUsageUpdatedAt?: string;
+  executionModelCode?: string;
+  executionMode?: "MODEL" | "DETERMINISTIC" | "NOT_STARTED";
+  executionReasoningEffort?: string;
+  executionPrompt?: string;
+  blockerGuidance?: AgentTaskBlockerGuidance;
+  accessedUrls?: AgentTaskAuditLink[];
   receivedAt?: string;
   deliveredAt?: string;
   createdAt: string;
@@ -100,6 +126,12 @@ export interface ProcessInstanceTask {
   operationalState: ProcessInstanceOperationalState;
   stateReason: string;
   failureAudit?: AgentTaskFailureAudit;
+  executionMode?: "MODEL" | "DETERMINISTIC" | "NOT_STARTED";
+  modelCode?: string;
+  reasoningEffort?: string;
+  promptSent?: string;
+  blockerGuidance?: AgentTaskBlockerGuidance;
+  accessedUrls?: AgentTaskAuditLink[];
   inputTokens?: number;
   cachedInputTokens?: number;
   outputTokens?: number;

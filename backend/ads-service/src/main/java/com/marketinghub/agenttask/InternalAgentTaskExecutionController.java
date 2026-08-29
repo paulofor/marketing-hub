@@ -36,6 +36,16 @@ public class InternalAgentTaskExecutionController {
     return service.claimedProcessTask(agentKey, taskId);
   }
 
+  /** Preserva o prompt resolvido e a configuração antes de qualquer término da tarefa. */
+  @PutMapping("/{taskId}/execution-audit")
+  public ResponseEntity<Void> recordExecutionAudit(
+      @PathVariable String agentKey,
+      @PathVariable Long taskId,
+      @Valid @RequestBody AgentTaskExecutionAuditRequest request) {
+    service.recordClaimedProcessTaskExecutionAudit(agentKey, taskId, request);
+    return ResponseEntity.noContent().build();
+  }
+
   /** Recebe resultado e evidências antes de liberar a atividade seguinte. */
   @PostMapping("/{taskId}/result")
   public ResponseEntity<Void> complete(

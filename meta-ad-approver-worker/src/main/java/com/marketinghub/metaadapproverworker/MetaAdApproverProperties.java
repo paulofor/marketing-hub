@@ -95,6 +95,15 @@ public class MetaAdApproverProperties {
     reasoningEffort = value;
   }
 
+  /** Exige o esforço explícito compartilhado pelo comando e pela auditoria de Têmis. */
+  public String requiredReasoningEffort() {
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      throw new IllegalStateException(
+          "META_AD_APPROVER_REASONING_EFFORT é obrigatório para auditar Têmis.");
+    }
+    return reasoningEffort.trim();
+  }
+
   /** Retorna o timeout da sandbox. */
   public Duration getCodexTimeout() {
     return codexTimeout;

@@ -81,7 +81,13 @@ public class GrowthOperatorBpmTaskConsumer {
                 : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
                     ? bpm.toolUsage()
                     : List.of();
-        failCallback(task, ex, usage, toolUsage);
+        String promptSent =
+            execution != null
+                ? execution.promptSent()
+                : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
+                    ? bpm.promptSent()
+                    : null;
+        failCallback(task, ex, usage, toolUsage, promptSent);
       }
     }
   }
@@ -133,6 +139,7 @@ public class GrowthOperatorBpmTaskConsumer {
     body.put("resultJson", json.writeValueAsString(execution.result()));
     body.put("evidenceJson", evidence(task, execution.toolUsage()));
     putModelUsage(body, execution.usage());
+    body.put("executionAudit", executionAudit(execution.promptSent()));
     return body;
   }
 
@@ -142,6 +149,7 @@ public class GrowthOperatorBpmTaskConsumer {
       throws Exception {
     Map<String, Object> body = payload(task, execution);
     body.put("error", error);
+    body.put("blockerGuidance", functionalGuidance(execution.result()));
     return body;
   }
 
@@ -150,12 +158,15 @@ public class GrowthOperatorBpmTaskConsumer {
       Map<String, Object> task,
       Exception ex,
       GrowthOperatorBpmRunner.TokenUsage usage,
-      List<JsonNode> toolUsage) {
+      List<JsonNode> toolUsage,
+      String promptSent) {
     try {
       Map<String, Object> body = new HashMap<>();
       body.put("error", ex.toString());
       body.put("evidenceJson", evidence(task, toolUsage));
       putModelUsage(body, usage);
+      if (promptSent != null) body.put("executionAudit", executionAudit(promptSent));
+      body.put("blockerGuidance", technicalGuidance());
       backend.failBpmTask(taskId(task), body);
     } catch (Exception callbackEx) {
       log.error(
@@ -163,6 +174,46 @@ public class GrowthOperatorBpmTaskConsumer {
           taskIdOrNull(task),
           callbackEx);
     }
+  }
+
+  /** Monta a auditoria integral da chamada executada por Hermes. */
+  private Map<String, Object> executionAudit(String promptSent) {
+    Map<String, Object> audit = new java.util.LinkedHashMap<>();
+    audit.put("executionMode", "MODEL");
+    audit.put("modelCode", modelCode());
+    audit.put("reasoningEffort", properties.requiredReasoningEffort());
+    audit.put("promptSent", promptSent);
+    audit.put("accessedUrls", List.of());
+    return audit;
+  }
+
+  /** Expõe a ação de crescimento recomendada pelo parecer bloqueado. */
+  private Map<String, Object> functionalGuidance(JsonNode result) {
+    String action = result.path("recommendedAction").asText("").trim();
+    if (action.isBlank()) {
+      action = "Corrija o gargalo descrito por Hermes e reinicie a tarefa de crescimento.";
+    }
+    return Map.of(
+        "category",
+        "FUNCTIONAL_ADJUSTMENT",
+        "recommendedAction",
+        action,
+        "helpLinks",
+        List.of(taskAuditLink()));
+  }
+
+  /** Orienta a recuperação técnica sem executar gasto, publicação ou nova estratégia. */
+  private Map<String, Object> technicalGuidance() {
+    return Map.of(
+        "category", "TECHNICAL_FAILURE",
+        "recommendedAction",
+            "Verifique a causa técnica registrada, corrija a fonte ou integração e reinicie a tarefa de Hermes.",
+        "helpLinks", List.of(taskAuditLink()));
+  }
+
+  /** Cria o link interno comum para auditar e reiniciar a tarefa. */
+  private Map<String, String> taskAuditLink() {
+    return Map.of("label", "Abrir tarefas dos agentes", "url", "/agent-tasks");
   }
 
   /** Serializa a evidência operacional sem misturá-la com o resultado funcional. */

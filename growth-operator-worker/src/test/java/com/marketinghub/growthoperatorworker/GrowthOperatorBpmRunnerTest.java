@@ -99,7 +99,8 @@ class GrowthOperatorBpmRunnerTest {
             "--search",
             "--output-schema",
             "/tmp/schema.json",
-            "approval_policy=\"never\"")
+            "approval_policy=\"never\"",
+            "model_reasoning_effort=\"high\"")
         .doesNotContain("--dangerously-bypass-approvals-and-sandbox");
     assertThat(command)
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
@@ -107,6 +108,22 @@ class GrowthOperatorBpmRunnerTest {
     assertThat(command)
         .contains(
             "mcp_servers.marketing_hub_readonly.env_vars=[\"MCP_MARKETING_HUB_URL\",\"MCP_COMMERCIAL_PLAN_ID\",\"MCP_EXPERIMENT_ID\",\"MCP_SOURCE_EXECUTION_ID\"]");
+  }
+
+  /** Bloqueia Hermes antes do modelo quando o tipo de raciocínio não está configurado. */
+  @Test
+  void shouldRejectMissingReasoningEffortBeforeModel() {
+    WorkerProperties properties = properties();
+    properties.setReasoningEffort(" ");
+    GrowthOperatorBpmRunner runner = new GrowthOperatorBpmRunner(properties, new ObjectMapper());
+
+    assertThatThrownBy(
+            () ->
+                runner.buildCommand(
+                    Path.of("/tmp/answer.json"),
+                    Path.of("/tmp/schema.json"),
+                    Path.of("/tmp/mcp.mjs")))
+        .hasMessageContaining("obrigatório para auditar Hermes");
   }
 
   /** Preserva os últimos contadores cumulativos informados no JSONL do Codex. */

@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
@@ -555,15 +556,18 @@ class ProductDiscoveryServiceTest {
     ProductDiscoveryService service =
         new ProductDiscoveryService(
             cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    AgentTaskExecutionAuditRequest executionAudit =
+        new AgentTaskExecutionAuditRequest(
+            "MODEL", "gpt-5.6-sol", "high", "Prompt integral de Argos.", List.of());
 
     ProductDiscoveryCycleResponse response =
         service.fail(
             24L,
             new ProductDiscoveryFailureRequest(
-                "lease-24", "Backend rejeitou a conclusão com status 422."));
+                "lease-24", "Backend rejeitou a conclusão com status 422.", executionAudit));
 
     assertThat(response.status()).isEqualTo(ProductDiscoveryCycleStatus.FAILED);
-    verify(bpmAuditService).fail(cycle);
+    verify(bpmAuditService).fail(cycle, executionAudit);
   }
 
   /** Deve rejeitar callback atrasado depois que outra tentativa assumiu o ciclo. */

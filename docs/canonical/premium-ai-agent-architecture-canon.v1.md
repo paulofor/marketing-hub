@@ -61,6 +61,10 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
     devem ser persistidas com método e horário disponíveis, vinculadas somente ao `taskId`. URL
     meramente recebida no contexto não conta como acesso. Links com credenciais, esquemas inseguros
     ou dados de outro cliente/produto são proibidos.
+19. composição auditável do prompt. Toda execução `MODEL` deve separar na origem a parte estável do
+    agente da parte resolvida da atividade e preservar também o prompt integral efetivamente enviado.
+    O backend valida presença, ordem e vínculo das três representações antes de aceitar conclusão ou
+    bloqueio. O frontend somente apresenta os campos persistidos e nunca tenta inferir a divisão.
 
 ## Prontidão obrigatória da sessão Codex
 

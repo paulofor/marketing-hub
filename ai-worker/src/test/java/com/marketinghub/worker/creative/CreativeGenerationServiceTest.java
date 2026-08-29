@@ -61,7 +61,10 @@ class CreativeGenerationServiceTest {
         verify(backendClient).markCompleted(org.mockito.ArgumentMatchers.eq(49L), auditCaptor.capture());
         assertThat(auditCaptor.getValue().executionMode()).isEqualTo("MODEL");
         assertThat(auditCaptor.getValue().reasoningEffort()).isEqualTo("medium");
-        assertThat(auditCaptor.getValue().promptSent()).isEqualTo("Prompt completo de teste");
+        assertThat(auditCaptor.getValue().promptSent())
+                .isEqualTo("Núcleo de Dédalo.\n\nGere a copy.");
+        assertThat(auditCaptor.getValue().agentPromptPart()).isEqualTo("Núcleo de Dédalo.");
+        assertThat(auditCaptor.getValue().activityPromptPart()).isEqualTo("Gere a copy.");
     }
 
     /** Garante que copy acima dos limites Meta seja bloqueada sem truncamento silencioso. */
@@ -223,7 +226,11 @@ class CreativeGenerationServiceTest {
                 null,
                 null,
                 new CreativeChatGptClient.ExecutionAudit(
-                        "gpt-test", "medium", "Prompt completo de teste"));
+                        "gpt-test",
+                        "medium",
+                        "Núcleo de Dédalo.\n\nGere a copy.",
+                        "Núcleo de Dédalo.",
+                        "Gere a copy."));
     }
 
     /** Repete um texto de base para montar entradas maiores que o contrato persistivel. */

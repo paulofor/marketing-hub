@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-29-agent-task-prompt-parts-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-29-psique-task-visual-evidence-v1.yaml
       relativeToChangelogFile: true
   - include:

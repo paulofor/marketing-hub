@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-agent-task-prompt-parts-v1-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN execution_agent_prompt LONGTEXT NULL AFTER execution_prompt,
+                ADD COLUMN execution_activity_prompt LONGTEXT NULL AFTER execution_agent_prompt;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                DROP COLUMN execution_activity_prompt,
+                DROP COLUMN execution_agent_prompt;
+  - changeSet:
+      id: 2026-08-29-agent-task-prompt-parts-v1-2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_landing_stage_execution
+                ADD COLUMN agent_prompt_part LONGTEXT NULL AFTER prompt,
+                ADD COLUMN activity_prompt_part LONGTEXT NULL AFTER agent_prompt_part;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_landing_stage_execution
+                DROP COLUMN activity_prompt_part,
+                DROP COLUMN agent_prompt_part;

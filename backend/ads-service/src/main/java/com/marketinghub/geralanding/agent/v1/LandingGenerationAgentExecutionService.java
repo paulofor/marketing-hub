@@ -551,6 +551,8 @@ public class LandingGenerationAgentExecutionService {
       throw new IllegalStateException("Execução do Agente de Landing não está reservada");
     }
     execution.setPrompt(request.requestJson());
+    execution.setAgentPromptPart(request.agentPromptPart());
+    execution.setActivityPromptPart(request.activityPromptPart());
     execution.setOpenAiRequestBody(request.requestJson());
     execution.setOpenAiModel(request.model());
     execution.setExecutionReasoningEffort(request.reasoningEffort().trim());
@@ -688,9 +690,15 @@ public class LandingGenerationAgentExecutionService {
     String model = textOrNull(execution.getOpenAiModel());
     String reasoningEffort = textOrNull(execution.getExecutionReasoningEffort());
     String prompt = execution.getPrompt();
-    if (model == null || reasoningEffort == null || textOrNull(prompt) == null) return null;
+    String agentPromptPart = textOrNull(execution.getAgentPromptPart());
+    String activityPromptPart = textOrNull(execution.getActivityPromptPart());
+    if (model == null
+        || reasoningEffort == null
+        || textOrNull(prompt) == null
+        || agentPromptPart == null
+        || activityPromptPart == null) return null;
     return new com.marketinghub.agenttask.AgentTaskExecutionAuditRequest(
-        model, reasoningEffort, prompt);
+        "MODEL", model, reasoningEffort, prompt, agentPromptPart, activityPromptPart, List.of());
   }
 
   /** Normaliza texto de auditoria sem inventar valores ausentes em execuções históricas. */

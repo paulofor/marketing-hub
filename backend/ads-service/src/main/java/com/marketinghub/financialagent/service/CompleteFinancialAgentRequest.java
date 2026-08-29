@@ -10,6 +10,8 @@ public record CompleteFinancialAgentRequest(
     String model,
     BigDecimal estimatedCost,
     String promptSent,
+    String agentPromptPart,
+    String activityPromptPart,
     String reasoningEffort,
     String requestedServiceTier,
     String effectiveServiceTier,

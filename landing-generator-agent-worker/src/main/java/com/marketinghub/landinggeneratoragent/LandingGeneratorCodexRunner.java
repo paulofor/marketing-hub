@@ -57,7 +57,8 @@ public class LandingGeneratorCodexRunner {
         materialize(
             "prompts/landing-generator/v1/remediation-schema.json", "landing-schema-", ".json");
     Path mcp = requiredMcpScript();
-    String request = buildPrompt(job);
+    PromptComposition prompt = buildPromptComposition(job);
+    String request = prompt.fullPrompt();
     try {
       Process process =
           new ProcessBuilder(command(output, schema, mcp, job))
@@ -86,6 +87,8 @@ public class LandingGeneratorCodexRunner {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("decisionJson", raw);
         result.put("requestJson", request);
+        result.put("agentPromptPart", prompt.agentPromptPart());
+        result.put("activityPromptPart", prompt.activityPromptPart());
         result.put("responseJson", raw);
         result.put("model", properties.getModel());
         result.put("reasoningEffort", properties.requiredReasoningEffort());
@@ -208,12 +211,22 @@ public class LandingGeneratorCodexRunner {
 
   /** Resolve o prompt de decisão sem transportar HTML integral nem auditoria bruta. */
   String buildPrompt(LandingAgentJob job) throws IOException {
-    return read("prompts/landing-generator/v1/remediation.md")
-        .replace("{{EXECUTION_ID}}", job.executionId())
-        .replace("{{EXPERIMENT_ID}}", job.experimentId().toString())
-        .replace(
-            "{{CONTEXT}}",
-            objectMapper.writeValueAsString(promptContextReducer.forPlanning(job.context())));
+    return buildPromptComposition(job).fullPrompt();
+  }
+
+  /** Separa identidade estável e atividade contextual antes de montar o prompt efetivo. */
+  PromptComposition buildPromptComposition(LandingAgentJob job) throws IOException {
+    String agentPrompt = read("prompts/landing-generator/v1/agent-core.md").trim();
+    String activityPrompt =
+        read("prompts/landing-generator/v1/remediation.md")
+            .replace("{{EXECUTION_ID}}", job.executionId())
+            .replace("{{EXPERIMENT_ID}}", job.experimentId().toString())
+            .replace(
+                "{{CONTEXT}}",
+                objectMapper.writeValueAsString(promptContextReducer.forPlanning(job.context())))
+            .trim();
+    return new PromptComposition(
+        agentPrompt + "\n\n" + activityPrompt, agentPrompt, activityPrompt);
   }
 
   /** Bloqueia planos vagos, abordagens indisponíveis, autoaprovação e autonomia sem controle. */
@@ -318,4 +331,7 @@ public class LandingGeneratorCodexRunner {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8);
     }
   }
+
+  /** Preserva as duas partes e o texto exato submetido ao Codex. */
+  record PromptComposition(String fullPrompt, String agentPromptPart, String activityPromptPart) {}
 }

@@ -25,6 +25,11 @@ class ApprovedCreativePackageArchiveTest {
   private static final byte[] FRAME = "frame-revisao".getBytes(StandardCharsets.UTF_8);
   private static final byte[] PREVIEW = "preview-canal".getBytes(StandardCharsets.UTF_8);
   private static final byte[] AUDIT = "auditoria-bruta".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] AGENT_PROMPT = "Núcleo do agente.".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] ACTIVITY_PROMPT =
+      "Atividade do pacote.".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] REQUEST =
+      "Núcleo do agente.\n\nAtividade do pacote.".getBytes(StandardCharsets.UTF_8);
 
   /** Aceita o mesmo contrato, manifesto, mídia e auditoria vinculados por hashes. */
   @Test
@@ -108,7 +113,9 @@ class ApprovedCreativePackageArchiveTest {
         new String[] {
           "direction-execution", "apollo-execution", "psique-execution", "temis-execution"
         }) {
-      entries.put("audit/" + execution + "/request.md", AUDIT);
+      entries.put("audit/" + execution + "/request.md", REQUEST);
+      entries.put("audit/" + execution + "/agent-prompt.md", AGENT_PROMPT);
+      entries.put("audit/" + execution + "/activity-prompt.md", ACTIVITY_PROMPT);
       entries.put("audit/" + execution + "/response.json", AUDIT);
       entries.put("audit/" + execution + "/process.jsonl", AUDIT);
     }
@@ -153,26 +160,76 @@ class ApprovedCreativePackageArchiveTest {
         {"executionId":"%s","agent":"%s","exitCode":0,"agentModelCalled":true,
          "model":"gpt-5.6-sol","reasoningEffort":"high","usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":10},
          "requestFile":"audit/%s/request.md","requestFileSha256":"%s",
+         "agentPromptFile":"audit/%s/agent-prompt.md","agentPromptFileSha256":"%s",
+         "activityPromptFile":"audit/%s/activity-prompt.md","activityPromptFileSha256":"%s",
          "responseFile":"audit/%s/response.json","responseFileSha256":"%s",
          "logFile":"audit/%s/process.jsonl","logFileSha256":"%s"}
         """;
-    String hash = sha256(AUDIT);
+    String requestHash = sha256(REQUEST);
+    String agentPromptHash = sha256(AGENT_PROMPT);
+    String activityPromptHash = sha256(ACTIVITY_PROMPT);
+    String auditHash = sha256(AUDIT);
     return "["
-        + executionJson(template, "direction-execution", "IRIS", hash)
+        + executionJson(
+            template,
+            "direction-execution",
+            "IRIS",
+            requestHash,
+            agentPromptHash,
+            activityPromptHash,
+            auditHash)
         + ","
-        + executionJson(template, "apollo-execution", "APOLLO", hash)
+        + executionJson(
+            template,
+            "apollo-execution",
+            "APOLLO",
+            requestHash,
+            agentPromptHash,
+            activityPromptHash,
+            auditHash)
         + ","
-        + executionJson(template, "psique-execution", "PSIQUE", hash)
+        + executionJson(
+            template,
+            "psique-execution",
+            "PSIQUE",
+            requestHash,
+            agentPromptHash,
+            activityPromptHash,
+            auditHash)
         + ","
-        + executionJson(template, "temis-execution", "TEMIS_INDEPENDENT", hash)
+        + executionJson(
+            template,
+            "temis-execution",
+            "TEMIS_INDEPENDENT",
+            requestHash,
+            agentPromptHash,
+            activityPromptHash,
+            auditHash)
         + "]";
   }
 
-  /** Preenche uma execução do ledger sem ocultar qualquer um dos três artefatos brutos. */
+  /** Preenche uma execução do ledger sem ocultar os prompts e artefatos brutos. */
   private static String executionJson(
-      String template, String executionId, String agent, String hash) {
+      String template,
+      String executionId,
+      String agent,
+      String requestHash,
+      String agentPromptHash,
+      String activityPromptHash,
+      String auditHash) {
     return template.formatted(
-        executionId, agent, executionId, hash, executionId, hash, executionId, hash);
+        executionId,
+        agent,
+        executionId,
+        requestHash,
+        executionId,
+        agentPromptHash,
+        executionId,
+        activityPromptHash,
+        executionId,
+        auditHash,
+        executionId,
+        auditHash);
   }
 
   /** Compacta as entradas em memória para exercitar a mesma leitura usada pelo endpoint. */

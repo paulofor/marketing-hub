@@ -230,7 +230,9 @@ class FinancialAgentServiceTest {
                 "{\"decision\":\"BLOCKED_BY_MISSING_SOURCE\"}",
                 "gpt-5.6-sol",
                 null,
-                "prompt exato",
+                "Núcleo de Plutus.\n\nReconcilie as métricas.",
+                "Núcleo de Plutus.",
+                "Reconcilie as métricas.",
                 "high",
                 "default",
                 "STANDARD",
@@ -254,7 +256,12 @@ class FinancialAgentServiceTest {
     assertThat(callback.getValue().modelUsages()).hasSize(1);
     assertThat(callback.getValue().modelUsages().getFirst().serviceTier()).isEqualTo("STANDARD");
     assertThat(callback.getValue().modelUsages().getFirst().inputTokens()).isEqualTo(100L);
-    assertThat(callback.getValue().executionAudit().promptSent()).isEqualTo("prompt exato");
+    assertThat(callback.getValue().executionAudit().promptSent())
+        .isEqualTo("Núcleo de Plutus.\n\nReconcilie as métricas.");
+    assertThat(callback.getValue().executionAudit().agentPromptPart())
+        .isEqualTo("Núcleo de Plutus.");
+    assertThat(callback.getValue().executionAudit().activityPromptPart())
+        .isEqualTo("Reconcilie as métricas.");
   }
 
   /**

@@ -184,6 +184,10 @@ export function researchPlanCallbackPayload(directed) {
     model: directed.model,
     executionMode: directed.mode,
     promptSent: directed.prompt,
+    agentPromptPart: directed.agentPromptPart,
+    activityPromptPart:
+      directed.activityPromptPart ||
+      (directed.mode === "DETERMINISTIC" ? directed.prompt : undefined),
     reasoningEffort: directed.reasoningEffort,
     inputTokens: directed.usage?.inputTokens,
     cachedInputTokens: directed.usage?.cachedInputTokens,

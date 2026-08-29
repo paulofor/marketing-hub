@@ -558,7 +558,13 @@ class ProductDiscoveryServiceTest {
             cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     AgentTaskExecutionAuditRequest executionAudit =
         new AgentTaskExecutionAuditRequest(
-            "MODEL", "gpt-5.6-sol", "high", "Prompt integral de Argos.", List.of());
+            "MODEL",
+            "gpt-5.6-sol",
+            "high",
+            "Núcleo de Argos.\n\nPesquise a oportunidade.",
+            "Núcleo de Argos.",
+            "Pesquise a oportunidade.",
+            List.of());
 
     ProductDiscoveryCycleResponse response =
         service.fail(

@@ -94,7 +94,10 @@ const dedaloTask = {
   executionMode: "MODEL",
   reasoningEffort: "high",
   productInternalName: "Rigel",
-  promptSent: "Construa a landing com ativos aprovados.",
+  agentPromptPart: "Você é Dédalo, construtor de experiências.",
+  activityPromptPart: "Construa a landing com ativos aprovados.",
+  promptSent:
+    "Você é Dédalo, construtor de experiências.\n\nConstrua a landing com ativos aprovados.",
 };
 
 const psiqueTask = {
@@ -106,7 +109,10 @@ const psiqueTask = {
   assignedAgentNickname: "Psique",
   comments: "Checkout ausente na evidência original.",
   estimatedCostUsd: 0.1895768,
-  promptSent: "Prompt integral de homologação humana do Rigel.",
+  agentPromptPart: "Você é Psique, representante da experiência da cliente.",
+  activityPromptPart: "Homologue a experiência humana do Rigel em mobile.",
+  promptSent:
+    "Você é Psique, representante da experiência da cliente.\n\nHomologue a experiência humana do Rigel em mobile.",
   blockerGuidance: {
     category: "FUNCTIONAL_ADJUSTMENT",
     recommendedAction:
@@ -216,6 +222,8 @@ const themisTask = {
   finishedAt: null,
   modelCode: null,
   promptSent: null,
+  agentPromptPart: null,
+  activityPromptPart: null,
 };
 
 const activityDefinitions = [
@@ -393,7 +401,27 @@ try {
       ),
     ).toBeVisible();
     await expect(
-      page.getByText("Prompt integral de homologação humana do Rigel."),
+      psiqueCard.getByRole("heading", { name: "Parte do agente" }),
+    ).toBeVisible();
+    await expect(
+      psiqueCard.getByRole("heading", { name: "Parte da atividade" }),
+    ).toBeVisible();
+    await expect(
+      psiqueCard.getByRole("heading", {
+        name: "Prompt completo enviado ao modelo por Psique",
+      }),
+    ).toBeVisible();
+    await expect(
+      psiqueCard.getByText(
+        "Você é Psique, representante da experiência da cliente.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      psiqueCard.getByText(
+        "Homologue a experiência humana do Rigel em mobile.",
+        { exact: true },
+      ),
     ).toBeVisible();
     await expect(page.getByText("URLs acessadas por Psique")).toBeVisible();
     await expect(

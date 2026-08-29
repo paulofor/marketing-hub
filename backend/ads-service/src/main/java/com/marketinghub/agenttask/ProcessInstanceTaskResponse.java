@@ -22,6 +22,8 @@ public record ProcessInstanceTaskResponse(
     String modelCode,
     String reasoningEffort,
     String promptSent,
+    String agentPromptPart,
+    String activityPromptPart,
     AgentTaskBlockerGuidanceResponse blockerGuidance,
     List<AgentTaskAuditLinkResponse> accessedUrls,
     List<AgentTaskVisualEvidenceResponse> visualEvidence,

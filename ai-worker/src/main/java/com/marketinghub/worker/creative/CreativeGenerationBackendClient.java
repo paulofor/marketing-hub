@@ -143,6 +143,8 @@ public class CreativeGenerationBackendClient {
             String modelCode,
             String reasoningEffort,
             String promptSent,
+            String agentPromptPart,
+            String activityPromptPart,
             List<Object> accessedUrls) {
     }
 }

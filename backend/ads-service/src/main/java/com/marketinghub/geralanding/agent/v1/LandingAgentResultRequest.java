@@ -8,6 +8,8 @@ import java.math.BigDecimal;
 public record LandingAgentResultRequest(
     @NotBlank String decisionJson,
     @NotBlank String requestJson,
+    String agentPromptPart,
+    String activityPromptPart,
     @NotBlank String responseJson,
     @NotBlank String model,
     @NotBlank @Size(max = 32) String reasoningEffort,
@@ -31,6 +33,8 @@ public record LandingAgentResultRequest(
     this(
         decisionJson,
         requestJson,
+        null,
+        null,
         responseJson,
         model,
         reasoningEffort,

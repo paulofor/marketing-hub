@@ -52,6 +52,8 @@ class BusinessProcessActivityExecutionControllerTest {
             "MODEL",
             "high",
             null,
+            "Núcleo de Argos.\n\nComprove a dor.",
+            "Núcleo de Argos.",
             "Comprove a dor.",
             null,
             List.of(),
@@ -82,7 +84,10 @@ class BusinessProcessActivityExecutionControllerTest {
         .andExpect(jsonPath("$.executions[0].assignedAgentNickname").value("Argos"))
         .andExpect(jsonPath("$.executions[0].modelCode").value("gpt-5.4-mini-2026-03-17"))
         .andExpect(jsonPath("$.executions[0].reasoningEffort").value("high"))
-        .andExpect(jsonPath("$.executions[0].promptSent").value("Comprove a dor."));
+        .andExpect(
+            jsonPath("$.executions[0].promptSent").value("Núcleo de Argos.\n\nComprove a dor."))
+        .andExpect(jsonPath("$.executions[0].agentPromptPart").value("Núcleo de Argos."))
+        .andExpect(jsonPath("$.executions[0].activityPromptPart").value("Comprove a dor."));
   }
 
   /** Expõe atividades e tarefas segregadas pelo produto e processo selecionados. */
@@ -114,6 +119,8 @@ class BusinessProcessActivityExecutionControllerTest {
             "MODEL",
             "high",
             "Rigel",
+            "Núcleo de Dédalo.\n\nConstrua a landing.",
+            "Núcleo de Dédalo.",
             "Construa a landing.",
             null,
             List.of(),

@@ -182,6 +182,8 @@ public class CreativeGenerationService {
                     "creative-pipeline-ads-v1",
                     "NOT_APPLICABLE",
                     objectMapper.writeValueAsString(dto),
+                    null,
+                    objectMapper.writeValueAsString(dto),
                     List.of());
         } catch (JsonProcessingException ex) {
             log.error("Falha ao serializar a entrada determinística de Dédalo. experimentId={}", dto.getId(), ex);
@@ -194,15 +196,19 @@ public class CreativeGenerationService {
         if (audit == null
                 || !StringUtils.hasText(audit.modelCode())
                 || !StringUtils.hasText(audit.reasoningEffort())
-                || !StringUtils.hasText(audit.promptSent())) {
+                || !StringUtils.hasText(audit.promptSent())
+                || !StringUtils.hasText(audit.agentPromptPart())
+                || !StringUtils.hasText(audit.activityPromptPart())) {
             throw new IllegalStateException(
-                    "A geração de copy não informou modelo, raciocínio e prompt integral");
+                    "A geração de copy não informou modelo, raciocínio e as partes do prompt integral");
         }
         return new CreativeTaskExecutionAudit(
                 "MODEL",
                 audit.modelCode(),
                 audit.reasoningEffort(),
                 audit.promptSent(),
+                audit.agentPromptPart(),
+                audit.activityPromptPart(),
                 List.of());
     }
 
@@ -217,7 +223,7 @@ public class CreativeGenerationService {
             return modelAudit(audited.executionAudit());
         }
         return new CreativeTaskExecutionAudit(
-                "NOT_STARTED", null, "NOT_APPLICABLE", null, List.of());
+                "NOT_STARTED", null, "NOT_APPLICABLE", null, null, null, List.of());
     }
 
     /** Converte o DTO do backend em entidade mínima para reutilizar os geradores existentes. */

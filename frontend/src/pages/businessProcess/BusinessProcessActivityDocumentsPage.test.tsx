@@ -55,9 +55,13 @@ describe("BusinessProcessActivityDocumentsPage", () => {
       startedAt: "2026-08-20T21:40:00Z",
       finishedAt: "2026-08-20T21:41:24Z",
       modelCode: "gpt-5.6-sol",
+      executionMode: "MODEL",
       reasoningEffort: "high",
       productInternalName: "RIGEL-01",
-      promptSent: JSON.stringify({ instruction: "Comprove a dor" }),
+      agentPromptPart: "Você é Argos, investigador comercial.",
+      activityPromptPart: "Comprove a dor desta oportunidade.",
+      promptSent:
+        "Você é Argos, investigador comercial.\n\nComprove a dor desta oportunidade.",
     }));
     vi.mocked(axios.get).mockImplementation(
       async (url) =>
@@ -96,9 +100,12 @@ describe("BusinessProcessActivityDocumentsPage", () => {
     expect(screen.getAllByText("gpt-5.6-sol")).toHaveLength(10);
     expect(screen.getAllByText("high")).toHaveLength(10);
     expect(screen.getAllByText("RIGEL-01")).toHaveLength(10);
+    expect(screen.getAllByText("Parte do agente")).toHaveLength(10);
+    expect(screen.getAllByText("Parte da atividade")).toHaveLength(10);
     expect(
-      screen.getAllByText("Visualizar JSON em árvore"),
-    ).toHaveLength(30);
+      screen.getAllByText("Prompt completo enviado ao modelo por Argos"),
+    ).toHaveLength(10);
+    expect(screen.getAllByText("Visualizar JSON em árvore")).toHaveLength(20);
     expect(
       screen.getByRole("heading", {
         name: "Descoberta da oportunidade PDE · Comprovar dor e demanda",
@@ -153,7 +160,7 @@ describe("BusinessProcessActivityDocumentsPage", () => {
               title: "Dossiê de oportunidade",
               assignedAgentKey: "market-radar",
               assignedAgentNickname: "Argos",
-              resultJson: "{\"decision\":\"APPROVE\"}",
+              resultJson: '{"decision":"APPROVE"}',
               costEstimationStatus: "ESTIMATED",
               finishedAt: "2026-08-20T21:41:24Z",
             },
@@ -179,7 +186,9 @@ describe("BusinessProcessActivityDocumentsPage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Dossiê de oportunidade")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Dossiê de oportunidade"),
+    ).toBeInTheDocument();
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-processes/22/documents",
     );

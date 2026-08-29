@@ -5,6 +5,7 @@ import {
   formattedDuration,
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
+import PromptAuditCards from "./PromptAuditCards";
 import PsiqueTaskAudit from "./PsiqueTaskAudit";
 
 type BusinessProcessExecutionCardProps = {
@@ -20,12 +21,6 @@ export default function BusinessProcessExecutionCard({
   contentHeadingLevel = "h2",
 }: BusinessProcessExecutionCardProps) {
   const ContentHeading = contentHeadingLevel;
-  const promptHeading =
-    execution.executionMode === "DETERMINISTIC"
-      ? "Entrada integral da execução determinística"
-      : execution.executionMode === "NOT_STARTED"
-        ? "Modelo não iniciado"
-        : `Prompt enviado ao modelo por ${execution.assignedAgentNickname}`;
   const guidance = execution.blockerGuidance;
   const functionalBlock =
     guidance != null && guidance.category !== "TECHNICAL_FAILURE";
@@ -108,14 +103,13 @@ export default function BusinessProcessExecutionCard({
           </div>
         </dl>
 
-        <ContentHeading className="h6">{promptHeading}</ContentHeading>
-        <StructuredExecutionContent
-          value={execution.promptSent}
-          emptyText={
-            execution.executionMode === "NOT_STARTED"
-              ? "A execução foi interrompida antes de enviar um prompt ao modelo."
-              : "Prompt não registrado nesta execução legada."
-          }
+        <PromptAuditCards
+          executionMode={execution.executionMode}
+          agentNickname={execution.assignedAgentNickname}
+          agentPromptPart={execution.agentPromptPart}
+          activityPromptPart={execution.activityPromptPart}
+          promptSent={execution.promptSent}
+          headingLevel={contentHeadingLevel}
         />
 
         <ContentHeading className="h6 mt-3">

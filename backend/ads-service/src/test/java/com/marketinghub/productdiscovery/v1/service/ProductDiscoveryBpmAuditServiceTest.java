@@ -96,7 +96,9 @@ class ProductDiscoveryBpmAuditServiceTest {
             "{\"questions\":[\"dor\"]}",
             "gpt-5.6-sol",
             "CODEX",
-            "Prompt integral enviado por Argos.",
+            "Núcleo de Argos.\n\nPesquise o mercado.",
+            "Núcleo de Argos.",
+            "Pesquise o mercado.",
             "high",
             100L,
             20L,
@@ -112,7 +114,9 @@ class ProductDiscoveryBpmAuditServiceTest {
             901L,
             "gpt-5.6-sol",
             "high",
-            "Prompt integral enviado por Argos.",
+            "Núcleo de Argos.\n\nPesquise o mercado.",
+            "Núcleo de Argos.",
+            "Pesquise o mercado.",
             100L,
             20L,
             10L,
@@ -166,7 +170,9 @@ class ProductDiscoveryBpmAuditServiceTest {
             "MODEL",
             "gpt-5.6-sol",
             "high",
-            "Prompt integral cuja resposta foi rejeitada.",
+            "Núcleo de Argos.\n\nPesquise o mercado.",
+            "Núcleo de Argos.",
+            "Pesquise o mercado.",
             List.of());
 
     service.fail(cycle, executionAudit);

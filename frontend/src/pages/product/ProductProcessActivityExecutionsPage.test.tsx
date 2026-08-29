@@ -34,9 +34,13 @@ const dedaloTask = {
   startedAt: "2026-08-27T03:26:45Z",
   finishedAt: "2026-08-27T03:35:14Z",
   modelCode: "gpt-5.6-sol",
+  executionMode: "MODEL",
   reasoningEffort: "high",
   productInternalName: "Rigel",
-  promptSent: "Construa a landing com ativos aprovados.",
+  agentPromptPart: "Você é Dédalo, construtor de experiências.",
+  activityPromptPart: "Construa a landing com ativos aprovados.",
+  promptSent:
+    "Você é Dédalo, construtor de experiências.\n\nConstrua a landing com ativos aprovados.",
 };
 
 const psiqueTask = {

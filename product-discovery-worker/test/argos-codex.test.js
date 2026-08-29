@@ -139,9 +139,13 @@ test("resposta inválida preserva prompt e raciocínio para o bloqueio auditáve
         modelCode: "modelo-teste",
         reasoningEffort: "high",
         promptSent: error.executionAudit.promptSent,
+        agentPromptPart: error.executionAudit.agentPromptPart,
+        activityPromptPart: error.executionAudit.activityPromptPart,
         accessedUrls: [],
       });
       assert.match(error.executionAudit.promptSent, /ciclo 34/);
+      assert.match(error.executionAudit.agentPromptPart, /Você é Argos/);
+      assert.match(error.executionAudit.activityPromptPart, /ciclo 34/);
       return true;
     },
   );

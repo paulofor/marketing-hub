@@ -37,7 +37,7 @@ public class CommunicationAgentCodexRunner {
   public Execution run(Map<String, Object> task) throws IOException, InterruptedException {
     Contract contract = contractFor(task);
     validateInput(task);
-    String prompt = prompt(task, contract);
+    PromptComposition prompt = promptComposition(task, contract);
     Path answer = Files.createTempFile("iris-result-", ".json");
     Path processLog = Files.createTempFile("iris-codex-", ".jsonl");
     Path schema = materialize("prompts/iris/v1/output-schema.json", ".json");
@@ -60,7 +60,7 @@ public class CommunicationAgentCodexRunner {
           modelCode(),
           configuredServiceTier());
       Process process = builder.start();
-      process.getOutputStream().write(prompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       try (CodexTelemetryReporter.Session session =
           telemetry.monitor(((Number) task.get("taskId")).longValue(), process, processLog)) {
@@ -71,14 +71,20 @@ public class CommunicationAgentCodexRunner {
               "Timeout da atividade de Íris após "
                   + properties.getCodexTimeout().toMinutes()
                   + " minutos.",
-              prompt,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
               readTokenUsage(processLog));
         }
         TokenUsage usage = readTokenUsage(processLog);
         String rawLog = Files.readString(processLog);
         if (process.exitValue() != 0) {
           throw new ExecutionException(
-              "Codex encerrou com código " + process.exitValue() + ": " + rawLog, prompt, usage);
+              "Codex encerrou com código " + process.exitValue() + ": " + rawLog,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              usage);
         }
         try {
           String rawResponse = Files.readString(answer);
@@ -91,7 +97,13 @@ public class CommunicationAgentCodexRunner {
               task.get("processCode"),
               task.get("activityId"),
               result.path("executionStatus").asText());
-          return new Execution(result, rawResponse, prompt, usage);
+          return new Execution(
+              result,
+              rawResponse,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              usage);
         } catch (IOException | RuntimeException ex) {
           log.error(
               "Resposta inválida de Íris. taskId={} processCode={} activityId={}",
@@ -100,7 +112,12 @@ public class CommunicationAgentCodexRunner {
               task.get("activityId"),
               ex);
           throw new ExecutionException(
-              "Resposta de Íris fora do contrato versionado.", prompt, usage, ex);
+              "Resposta de Íris fora do contrato versionado.",
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart(),
+              usage,
+              ex);
         }
       }
     } finally {
@@ -153,11 +170,19 @@ public class CommunicationAgentCodexRunner {
 
   /** Compõe constituição, instrução da atividade e contexto congelado do backend. */
   String prompt(Map<String, Object> task, Contract contract) throws IOException {
-    return read("prompts/iris/v1/behavioral-core.md")
-        + "\n\n"
-        + read(contract.promptResource())
-        + "\n\nCONTEXTO CONGELADO DA TAREFA:\n"
-        + json.writeValueAsString(task);
+    return promptComposition(task, contract).fullPrompt();
+  }
+
+  /** Separa a constituição reutilizável da missão e do contexto específicos da atividade. */
+  PromptComposition promptComposition(Map<String, Object> task, Contract contract)
+      throws IOException {
+    String agentPromptPart = read("prompts/iris/v1/behavioral-core.md");
+    String activityPromptPart =
+        read(contract.promptResource())
+            + "\n\nCONTEXTO CONGELADO DA TAREFA:\n"
+            + json.writeValueAsString(task);
+    return new PromptComposition(
+        agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
   /** Resolve somente atividades pertencentes ao domínio de comunicação. */
@@ -401,8 +426,17 @@ public class CommunicationAgentCodexRunner {
   /** Representa a especialização de prompt e saída de uma atividade suportada. */
   record Contract(String outputType, String promptResource) {}
 
+  /** Representa as duas partes e a composição exata enviada ao modelo. */
+  record PromptComposition(String fullPrompt, String agentPromptPart, String activityPromptPart) {}
+
   /** Preserva o resultado bruto, o prompt exato e o consumo medido. */
-  record Execution(JsonNode result, String rawResponse, String promptSent, TokenUsage usage) {}
+  record Execution(
+      JsonNode result,
+      String rawResponse,
+      String promptSent,
+      String agentPromptPart,
+      String activityPromptPart,
+      TokenUsage usage) {}
 
   /** Representa os contadores cumulativos realmente observados. */
   record TokenUsage(long inputTokens, long cachedInputTokens, long outputTokens, boolean informed) {
@@ -415,25 +449,52 @@ public class CommunicationAgentCodexRunner {
   /** Preserva prompt e tokens quando a execução não produz uma resposta válida. */
   static class ExecutionException extends RuntimeException {
     private final String promptSent;
+    private final String agentPromptPart;
+    private final String activityPromptPart;
     private final TokenUsage usage;
 
     /** Cria uma falha operacional sem causa aninhada. */
-    ExecutionException(String message, String promptSent, TokenUsage usage) {
+    ExecutionException(
+        String message,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        TokenUsage usage) {
       super(message);
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
       this.usage = usage;
     }
 
     /** Cria uma falha de contrato preservando a exceção original. */
-    ExecutionException(String message, String promptSent, TokenUsage usage, Throwable cause) {
+    ExecutionException(
+        String message,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        TokenUsage usage,
+        Throwable cause) {
       super(message, cause);
       this.promptSent = promptSent;
+      this.agentPromptPart = agentPromptPart;
+      this.activityPromptPart = activityPromptPart;
       this.usage = usage;
     }
 
     /** Retorna o prompt enviado antes da falha. */
     String promptSent() {
       return promptSent;
+    }
+
+    /** Retorna a constituição de Íris usada antes da falha. */
+    String agentPromptPart() {
+      return agentPromptPart;
+    }
+
+    /** Retorna a missão específica usada antes da falha. */
+    String activityPromptPart() {
+      return activityPromptPart;
     }
 
     /** Retorna a telemetria observada antes da falha. */

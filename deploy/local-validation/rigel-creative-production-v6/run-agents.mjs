@@ -50,13 +50,25 @@ function usageFromJsonl(jsonl) {
   return found;
 }
 
-async function runCodex({ agent, prompt, schema, output, images = [] }) {
+async function runCodex({
+  agent,
+  agentPrompt,
+  activityPrompt,
+  schema,
+  output,
+  images = [],
+}) {
   const executionId = randomUUID();
   const executionSlug = `${agent.toLowerCase()}-${executionId}`;
   const requestFile = join(requests, `${executionSlug}.md`);
+  const agentPromptFile = join(requests, `${executionSlug}-agent.md`);
+  const activityPromptFile = join(requests, `${executionSlug}-activity.md`);
   const logFile = join(logs, `${executionSlug}.jsonl`);
   const responseFile = join(responses, `${executionSlug}.json`);
+  const prompt = `${agentPrompt.trim()}\n\n${activityPrompt.trim()}`;
   await writeFile(requestFile, prompt);
+  await writeFile(agentPromptFile, agentPrompt.trim());
+  await writeFile(activityPromptFile, activityPrompt.trim());
   const args = [
     "exec",
     "--config",
@@ -97,6 +109,8 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
     costStatus: "NOT_EXPOSED_BY_CODEX",
     exitCode: result.status,
     requestFile,
+    agentPromptFile,
+    activityPromptFile,
     responseFile,
     logFile,
     usage: usageFromJsonl(log),
@@ -116,7 +130,8 @@ if (phase === "planning") {
   );
   await runCodex({
     agent: "TEMIS_DIRECTION",
-    prompt: directionTemplate.replace("{{CONTRACT}}", contractText),
+    agentPrompt: await read(join(localDir, "temis-agent-core.md")),
+    activityPrompt: directionTemplate.replace("{{CONTRACT}}", contractText),
     schema: join(localDir, "temis-creative-direction-schema.json"),
     output: join(evidence, "temis-creative-direction.json"),
     images: contract.sourceProofs.map((item) => join(proof, item.file)),
@@ -147,7 +162,8 @@ if (phase === "planning") {
   );
   await runCodex({
     agent: "APOLLO",
-    prompt: apolloTemplate.replace("{{CONTEXT}}", apolloContext),
+    agentPrompt: await read(join(localDir, "apollo-agent-core.md")),
+    activityPrompt: apolloTemplate.replace("{{CONTEXT}}", apolloContext),
     schema: join(
       root,
       "video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner-schema.json",
@@ -222,8 +238,9 @@ if (phase === "reviews") {
   );
   await runCodex({
     agent: "PSIQUE",
-    prompt: psiqueTemplate
-      .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCore)
+    agentPrompt: behavioralCore,
+    activityPrompt: psiqueTemplate
+      .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", "")
       .replace("{{TASK_CONTEXT}}", taskContext),
     schema: join(
       root,
@@ -242,7 +259,13 @@ if (phase === "reviews") {
   );
   await runCodex({
     agent: "TEMIS_INDEPENDENT",
-    prompt: temisTemplate.replace(
+    agentPrompt: await read(
+      join(
+        root,
+        "meta-ad-approver-worker/src/main/resources/prompts/temis/v1/agent-core.md",
+      ),
+    ),
+    activityPrompt: temisTemplate.replace(
       "{{TASK_CONTEXT}}",
       `${taskContext}\n\nParecer anterior de Psique:\n${psiqueText}`,
     ),

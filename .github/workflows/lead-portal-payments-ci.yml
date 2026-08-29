@@ -6,10 +6,12 @@ on:
     paths:
       - "lead-portal-payments-service/**"
       - ".github/workflows/lead-portal-payments-ci.yml"
+      - ".github/workflows/recover-public-proxy.yml"
   pull_request:
     paths:
       - "lead-portal-payments-service/**"
       - ".github/workflows/lead-portal-payments-ci.yml"
+      - ".github/workflows/recover-public-proxy.yml"
   workflow_dispatch:
     inputs:
       issue_clubemusa_certificate:
@@ -54,6 +56,8 @@ jobs:
       - name: Run tests
         run: |
           ./scripts/test-public-proxy-lifecycle-contract.sh
+          ./scripts/test-public-proxy-recovery-contract.sh
+          ./scripts/test-public-proxy-recovery-e2e.sh
           mvn -B test
 
   docker:

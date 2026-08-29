@@ -1,0 +1,100 @@
+name: Recover public proxy
+run-name: Recover public proxy · ${{ inputs.request_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_id:
+        description: "UUID auditável criado pelo AI Hub"
+        required: true
+        type: string
+      reason:
+        description: "Motivo operacional auditável"
+        required: true
+        type: string
+      confirmation:
+        description: "Confirmação literal da operação restrita"
+        required: true
+        type: choice
+        options:
+          - RECOVER_PUBLIC_PROXY
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recover-public-proxy
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    name: Recover fixed proxy and validate public contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      DEPLOY_HOST: 163.245.200.7
+      DEPLOY_USER: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate closed recovery request
+        env:
+          REQUEST_ID: ${{ inputs.request_id }}
+          REASON: ${{ inputs.reason }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${REQUEST_ID}" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+            echo "request_id deve ser um UUID válido." >&2
+            exit 1
+          fi
+          if [ "${CONFIRMATION}" != "RECOVER_PUBLIC_PROXY" ]; then
+            echo "Confirmação literal RECOVER_PUBLIC_PROXY é obrigatória." >&2
+            exit 1
+          fi
+          if [ "${#REASON}" -lt 8 ] || [ "${#REASON}" -gt 500 ]; then
+            echo "Motivo deve ter entre 8 e 500 caracteres." >&2
+            exit 1
+          fi
+          if [[ "${REASON}" == *$'\n'* || "${REASON}" == *$'\r'* || "${REASON}" == *$'\t'* ]]; then
+            echo "Motivo não pode conter caracteres de controle." >&2
+            exit 1
+          fi
+          echo "Solicitação de recuperação validada: ${REQUEST_ID}"
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VPS_SSH_KEY}" ]; then
+            echo "Chave SSH do host fixo não configurada no ambiente production." >&2
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o TCPKeepAlive=yes -o ConnectTimeout=30" >> "$GITHUB_ENV"
+
+      - name: Recover fixed public proxy
+        run: |
+          set -euo pipefail
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' \
+            < lead-portal-payments-service/scripts/recover-public-proxy.sh
+
+      - name: Validate HTTPS health and PDE contract
+        env:
+          PUBLIC_URL: https://kit-whatsapp-pronto.digicomdigital.com.br
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent \
+            --retry 12 --retry-delay 5 --retry-connrefused \
+            "${PUBLIC_URL}/" >/dev/null
+          curl --fail --show-error --silent \
+            --retry 12 --retry-delay 5 --retry-connrefused \
+            "${PUBLIC_URL}/healthz" | jq -e '.status == "UP"' >/dev/null
+          curl --fail --show-error --silent \
+            --retry 12 --retry-delay 5 --retry-connrefused \
+            "${PUBLIC_URL}/pde-health-contract.json" \
+            | jq -e '.slug == "kit-whatsapp-pronto"' >/dev/null

@@ -819,6 +819,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   usar `restart: always`, healthcheck, espera de saúde e sonda HTTPS final no workflow que o possui.
   Testes de contrato e Docker encerram o Nginx, exigem reinício automático e revalidam a rota real
   do Kit antes de liberar nova execução de Psique.
+- **Recorrência complementar da tarefa #261 em 2026-08-29:** o PR 5055 foi mesclado, mas o job de
+  deploy era exclusivo de `workflow_dispatch` e ficou `SKIPPED`; logo a nova política nunca foi
+  aplicada ao container parado. As tarefas #259, #260 e #261 repetiram o mesmo erro. O AI Hub já
+  possuía a operação semântica auditável, mas o workflow `recover-public-proxy.yml` configurado por
+  ela ainda não existia no Marketing Hub. O workflow dedicado agora restaura somente o proxy por
+  labels Compose, corrige `restart=always`, aceita recriação apenas com imagem local e bloqueia
+  build, pull, rsync, prune ou troca de imagem. HTTPS, `/healthz` e contrato PDE são gates finais;
+  testes cobrem proxy saudável, parado, ausente, identidade ambígua e Compose ausente.
 
 ---
 

@@ -10,9 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.pde.harness.v1.internal.PdeHashing;
 import com.marketinghub.pde.harness.v1.support.PdeHarnessTestSupport;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -67,6 +72,161 @@ class PdeHarnessSdkTest {
       ((ObjectNode) result.tokenUsage()).put("inputTokens", 999);
       assertEquals("Resposta para cliente-a", result.structuredOutput().path("message").asText());
       assertEquals(12, result.tokenUsage().path("inputTokens").asInt());
+    }
+  }
+
+  /** Copia a imagem validada ao workspace privado e envia somente esse caminho ao App Server. */
+  @Test
+  void executesMultimodalTurnWithMaterializedPrivateImage() throws Exception {
+    byte[] png = syntheticPng();
+    Path source = temporaryDirectory.resolve("foto-cliente.png");
+    Files.write(source, png);
+    PdeRunContext context =
+        PdeHarnessTestSupport.context("cliente-a", "conversa-a", "missao-foto", "interacao-foto");
+    PdeAgentRunRequest request =
+        PdeAgentRunRequest.newThreadWithImages(
+            context,
+            emptyMemory("cliente-a"),
+            "gpt-test",
+            "Analise a foto autorizada.",
+            "prompt-v1",
+            PdeHarnessTestSupport.validOutputSchema(),
+            "schema-v1",
+            List.of(
+                new PdeLocalImageInput("look-atual", source, "image/png", PdeHashing.sha256(png))),
+            false);
+    PdeHarnessConfiguration configuration = configuration("image-aware", Duration.ofSeconds(2));
+
+    try (PdeHarnessSdk sdk = new PdeHarnessSdk(configuration)) {
+      PdeAgentRunResult result = sdk.execute(request);
+
+      assertEquals("imagem-privada-copiada", result.structuredOutput().path("message").asText());
+      assertTrue(Files.exists(source));
+      assertFalse(Files.exists(configuration.workspaceFor(context)));
+    }
+  }
+
+  /** Bloqueia hash divergente antes de iniciar o App Server ou expor a imagem ao turno. */
+  @Test
+  void rejectsImageWithDivergentAuditHash() throws Exception {
+    byte[] png = syntheticPng();
+    Path source = temporaryDirectory.resolve("foto-adulterada.png");
+    Files.write(source, png);
+    PdeAgentRunRequest request =
+        PdeAgentRunRequest.newThreadWithImages(
+            PdeHarnessTestSupport.context(
+                "cliente-a", "conversa-a", "missao-foto", "interacao-hash"),
+            emptyMemory("cliente-a"),
+            "gpt-test",
+            "Analise a foto autorizada.",
+            "prompt-v1",
+            PdeHarnessTestSupport.validOutputSchema(),
+            "schema-v1",
+            List.of(new PdeLocalImageInput("look-atual", source, "image/png", "0".repeat(64))),
+            false);
+
+    try (PdeHarnessSdk sdk = new PdeHarnessSdk(missingCommandConfiguration())) {
+      PdeHarnessException error =
+          assertThrows(PdeHarnessException.class, () -> sdk.execute(request));
+
+      assertEquals(PdeHarnessFailureCategory.INPUT_INVALID, error.category());
+      assertTrue(error.getMessage().contains("Hash da imagem"));
+    }
+  }
+
+  /** Bloqueia arquivo que declara PNG mas não possui a assinatura binária desse formato. */
+  @Test
+  void rejectsImageWhoseContentDoesNotMatchDeclaredMediaType() throws Exception {
+    byte[] content = "conteudo-que-nao-e-imagem".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    Path source = temporaryDirectory.resolve("arquivo-falso.png");
+    Files.write(source, content);
+    PdeAgentRunRequest request =
+        PdeAgentRunRequest.newThreadWithImages(
+            PdeHarnessTestSupport.context(
+                "cliente-a", "conversa-a", "missao-foto", "interacao-tipo"),
+            emptyMemory("cliente-a"),
+            "gpt-test",
+            "Analise a foto autorizada.",
+            "prompt-v1",
+            PdeHarnessTestSupport.validOutputSchema(),
+            "schema-v1",
+            List.of(
+                new PdeLocalImageInput(
+                    "look-atual", source, "image/png", PdeHashing.sha256(content))),
+            false);
+
+    try (PdeHarnessSdk sdk = new PdeHarnessSdk(missingCommandConfiguration())) {
+      PdeHarnessException error =
+          assertThrows(PdeHarnessException.class, () -> sdk.execute(request));
+
+      assertEquals(PdeHarnessFailureCategory.INPUT_INVALID, error.category());
+      assertTrue(error.getMessage().contains("tipo declarado"));
+    }
+  }
+
+  /** Bloqueia mídia acima de quinze megabytes antes de iniciar qualquer processo externo. */
+  @Test
+  void rejectsImageLargerThanPrivateTransportLimit() throws Exception {
+    Path source = temporaryDirectory.resolve("foto-grande.png");
+    try (SeekableByteChannel channel =
+        Files.newByteChannel(source, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+      channel.position(15L * 1024L * 1024L);
+      channel.write(ByteBuffer.wrap(new byte[] {0x01}));
+    }
+    PdeAgentRunRequest request =
+        PdeAgentRunRequest.newThreadWithImages(
+            PdeHarnessTestSupport.context(
+                "cliente-a", "conversa-a", "missao-foto", "interacao-tamanho"),
+            emptyMemory("cliente-a"),
+            "gpt-test",
+            "Analise a foto autorizada.",
+            "prompt-v1",
+            PdeHarnessTestSupport.validOutputSchema(),
+            "schema-v1",
+            List.of(new PdeLocalImageInput("look-atual", source, "image/png", "0".repeat(64))),
+            false);
+
+    try (PdeHarnessSdk sdk = new PdeHarnessSdk(missingCommandConfiguration())) {
+      PdeHarnessException error =
+          assertThrows(PdeHarnessException.class, () -> sdk.execute(request));
+
+      assertEquals(PdeHarnessFailureCategory.INPUT_INVALID, error.category());
+      assertTrue(error.getMessage().contains("tamanho inválido"));
+    }
+  }
+
+  /**
+   * Bloqueia link simbólico para impedir que um caminho trocado exponha arquivo fora da interação.
+   */
+  @Test
+  void rejectsSymbolicLinkAsPrivateImageSource() throws Exception {
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+    byte[] png = syntheticPng();
+    Path source = temporaryDirectory.resolve("foto-real.png");
+    Path link = temporaryDirectory.resolve("foto-link.png");
+    Files.write(source, png);
+    Files.createSymbolicLink(link, source.getFileName());
+    PdeAgentRunRequest request =
+        PdeAgentRunRequest.newThreadWithImages(
+            PdeHarnessTestSupport.context(
+                "cliente-a", "conversa-a", "missao-foto", "interacao-link"),
+            emptyMemory("cliente-a"),
+            "gpt-test",
+            "Analise a foto autorizada.",
+            "prompt-v1",
+            PdeHarnessTestSupport.validOutputSchema(),
+            "schema-v1",
+            List.of(
+                new PdeLocalImageInput("look-atual", link, "image/png", PdeHashing.sha256(png))),
+            false);
+
+    try (PdeHarnessSdk sdk = new PdeHarnessSdk(missingCommandConfiguration())) {
+      PdeHarnessException error =
+          assertThrows(PdeHarnessException.class, () -> sdk.execute(request));
+
+      assertEquals(PdeHarnessFailureCategory.INPUT_INVALID, error.category());
+      assertTrue(error.getMessage().contains("arquivo regular"));
     }
   }
 
@@ -579,5 +739,10 @@ class PdeHarnessSdkTest {
         "test",
         Map.of(),
         false);
+  }
+
+  /** Gera bytes mínimos com assinatura PNG para testar o transporte sem usar imagem real. */
+  private byte[] syntheticPng() {
+    return new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01, 0x02, 0x03};
   }
 }

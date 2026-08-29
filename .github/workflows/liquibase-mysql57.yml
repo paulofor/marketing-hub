@@ -12,6 +12,7 @@ on:
       - "backend/ads-service/Dockerfile.mysql57-financial-agent-task-audit"
       - "backend/ads-service/Dockerfile.mysql57-agent-task-actionable-audit-v2"
       - "backend/ads-service/Dockerfile.mysql57-agent-responsibility-boundaries"
+      - "backend/ads-service/Dockerfile.mysql57-product-type-consultants-v1"
       - "backend/ads-service/Dockerfile.mysql57-rigel-commercial-slot"
       - "backend/ads-service/.dockerignore"
       - "backend/ads-service/docker-compose.product-process-mysql57.yml"
@@ -20,12 +21,14 @@ on:
       - "backend/ads-service/docker-compose.financial-agent-task-audit-mysql57.yml"
       - "backend/ads-service/docker-compose.agent-task-actionable-audit-v2-mysql57.yml"
       - "backend/ads-service/docker-compose.agent-responsibility-boundaries-mysql57.yml"
+      - "backend/ads-service/docker-compose.product-type-consultants-v1-mysql57.yml"
       - "backend/ads-service/docker-compose.rigel-commercial-slot-mysql57.yml"
       - "backend/ads-service/scripts/validate-business-process-activity-instances-mysql57.sh"
       - "backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh"
+      - "backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh"
       - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/IrisCommunicationAgentChangelogTest.java"
       - "config/agents/codex-agent-health-compliance.json"
       - "scripts/test-codex-agent-health-standard.mjs"
@@ -161,3 +164,17 @@ jobs:
 
       - name: Validar migração física no MySQL 5.7
         run: bash scripts/validate-rigel-commercial-slot-mysql57.sh
+
+  validate-product-type-consultants-v1:
+    name: Validar tipos Consultor PWA e WhatsApp
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Validar migração física no MySQL 5.7
+        env:
+          PRODUCT_TYPE_CONSULTANTS_COMPOSE_PROJECT: liquibase-product-type-consultants-${{ github.run_id }}
+        run: bash backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh

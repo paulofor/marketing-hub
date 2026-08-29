@@ -13,6 +13,9 @@ public record ProductTypeCatalogItemResponse(
     String description,
     List<String> aliases,
     ProductTypeStatus status,
+    ProductTypeBlueprintData blueprint,
+    boolean constructionReady,
+    List<String> missingBlueprintFields,
     long productCount,
     Instant createdAt,
     Instant updatedAt) {}

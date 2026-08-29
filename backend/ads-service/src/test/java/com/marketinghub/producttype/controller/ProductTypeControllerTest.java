@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.producttype.service.ProductTypeService;
+import com.marketinghub.producttype.service.catalog.ProductTypeBlueprintData;
 import com.marketinghub.producttype.service.catalog.ProductTypeCatalogItemResponse;
 import com.marketinghub.producttype.service.catalog.SaveProductTypeRequest;
 import java.util.List;
@@ -50,6 +51,9 @@ class ProductTypeControllerTest {
             "Jornada de valor.",
             List.of("Experiência guiada"),
             ProductTypeStatus.ACTIVE,
+            null,
+            false,
+            List.of("Versão da base"),
             4,
             null,
             null);
@@ -98,6 +102,9 @@ class ProductTypeControllerTest {
             request.description(),
             request.aliases(),
             request.status(),
+            null,
+            false,
+            List.of("Versão da base"),
             4,
             null,
             null);
@@ -110,5 +117,63 @@ class ProductTypeControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("ACTIVE"));
+  }
+
+  /** Deve receber e devolver a base detalhada usada para construir um tipo novo. */
+  @Test
+  void createProductTypeWithBlueprint() throws Exception {
+    ProductTypeBlueprintData blueprint = completePwaBlueprint();
+    SaveProductTypeRequest request =
+        new SaveProductTypeRequest(
+            "AI_PWA_CONSULTANT_PRODUCT",
+            "Consultor PWA com IA",
+            "Turmalina",
+            "Consultoria visual mobile-first.",
+            List.of("Consultor PWA"),
+            ProductTypeStatus.ACTIVE,
+            blueprint);
+    var response =
+        new ProductTypeCatalogItemResponse(
+            7L,
+            request.code(),
+            request.name(),
+            request.internalName(),
+            request.description(),
+            request.aliases(),
+            request.status(),
+            blueprint,
+            true,
+            List.of(),
+            0,
+            null,
+            null);
+    when(service.create(any(SaveProductTypeRequest.class))).thenReturn(response);
+
+    mockMvc
+        .perform(
+            post("/api/product-types")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.blueprint.primaryChannel").value("PWA"))
+        .andExpect(jsonPath("$.constructionReady").value(true));
+  }
+
+  /** Monta uma base PWA completa para exercitar o contrato HTTP sem abreviar campos centrais. */
+  private ProductTypeBlueprintData completePwaBlueprint() {
+    return new ProductTypeBlueprintData(
+        "consultant-pwa-v1",
+        "PWA",
+        "Receber orientação no celular.",
+        "Transformar contexto em recomendação.",
+        "Entrar; conversar; refinar; avaliar.",
+        "Cliente, contexto, consentimento e foto opcional.",
+        "Orientação, motivo e próximo passo.",
+        "Memória segregada por cliente.",
+        "Backend PDE, worker Java e App Server.",
+        "Bloquear mistura de clientes e mídia sem consentimento.",
+        "Orientação entregue, utilidade, retorno, venda e margem.",
+        "pde-platform/pde-harness-sdk",
+        "pde-platform/frontend/src/consultant-sdk/v1");
   }
 }

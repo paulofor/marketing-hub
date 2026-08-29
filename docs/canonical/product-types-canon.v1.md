@@ -15,12 +15,18 @@ Os tipos não são um `enum` fechado. O Marketing Hub deve manter um cadastro op
 - `description`: fronteira do mecanismo de valor e quando usar;
 - `aliases`: nomes alternativos usados somente para pesquisa e resolução interna;
 - `status`: `PROPOSED`, `ACTIVE` ou `RETIRED`;
+- `blueprint_version` e `primary_channel`: versão da base reutilizável e canal principal;
+- trabalho do cliente, mecanismo de valor, jornada, entradas, saídas, memória, integrações,
+  proteções e métricas de sucesso;
+- módulos iniciais de SDK Java e React, quando aplicáveis;
 - quantidade de produtos vinculados, calculada pelo backend.
 
 Uma ideia nova pode ser cadastrada como `PROPOSED` sem alterar a classificação de produtos nem
-limitar a exploração. Ela só pode receber produtos quando estiver `ACTIVE`. A ativação exige nome e
-fronteira claros e o registro correspondente neste cânone. Um tipo aposentado permanece ligado aos
-produtos históricos, mas não pode receber novos vínculos.
+limitar a exploração. Ela só pode receber produtos quando estiver `ACTIVE`. A ativação de tipo novo
+exige nome, fronteira e base de construção completos, além do registro correspondente neste cânone.
+O backend calcula e expõe se essa base está pronta e quais campos faltam; o frontend não pode
+simular essa conclusão. Um tipo aposentado permanece ligado aos produtos históricos, mas não pode
+receber novos vínculos.
 
 Apelido não cria outro tipo e nunca substitui o código estável. Pessoas e agentes podem localizar o
 mesmo tipo por código, nome ou apelido, mas devem persistir o identificador canônico. Apelidos de
@@ -38,13 +44,17 @@ Mapa inicial aprovado em 2026-08-23:
 - `LOW_TICKET_DIGITAL_PRODUCT`: Quartzo;
 - `AI_PRODUCT`: Safira;
 - `AI_SANDBOX_CONVERSATIONAL_PRODUCT`: Fluorita;
+- `AI_PWA_CONSULTANT_PRODUCT`: Turmalina;
 - `EXTERNAL_MEMBERS_AREA_PRODUCT`: Ágata;
 - `AI_INTERACTIVE_EDUCATIONAL_EXPERIENCE`: Labradorita.
 
 Formato de entrega, canal, ativo comercial, mecanismo técnico e nome de trabalho do produto não
 devem virar novos tipos quando puderem ser representados pelo tipo vigente, modo comercial,
-subtipo, formato ou apelido. Antes de ativar uma categoria nova, comparar essa fronteira com as
-categorias existentes para evitar fragmentar métricas e aprendizados.
+subtipo, formato ou apelido. A exceção é quando a interface com o cliente muda conjuntamente a
+jornada vendida, aquisição, continuidade, integrações, evidências, proteções e SDK mínimo. Essa é a
+fronteira que separa o consultor PWA do consultor WhatsApp. Antes de ativar qualquer categoria nova,
+comparar esses contratos com as categorias existentes para evitar fragmentar métricas e
+aprendizados.
 
 ## Fontes consolidadas
 
@@ -70,7 +80,8 @@ Tipos canonicos de produto:
 | `PDE` | PDE - Produto Digital Experiencial | Experiência digital orientada a uma transformação observável. | Quando o mecanismo principal é uma jornada interativa de valor, ainda que use outros modos técnicos. |
 | `LOW_TICKET_DIGITAL_PRODUCT` | Produto low-ticket | Compra direta de pacote digital simples. | Para validar dor/oferta com baixo atrito e buscar primeira venda. |
 | `AI_PRODUCT` | Produto IA | Ferramenta, amostra, simulador, asset pack ou entrega personalizada com IA. | Quando a personalizacao ou transformacao por IA aumenta valor percebido. |
-| `AI_SANDBOX_CONVERSATIONAL_PRODUCT` | Produto IA de atendimento personalizado por sandbox | Atendimento ou entrega conversacional personalizada por WhatsApp/canal equivalente. | Quando memoria individual e resposta contextual aumentam conversao, retencao ou ticket. |
+| `AI_SANDBOX_CONVERSATIONAL_PRODUCT` | Consultor WhatsApp com IA | Consultoria contextual no WhatsApp, com texto, imagem e memória individual. | Quando menor atrito, conversa recorrente e resposta no canal já usado aumentam conversão, retenção ou ticket. |
+| `AI_PWA_CONSULTANT_PRODUCT` | Consultor PWA com IA | Consultoria mobile-first instalável, com experiência visual própria, fotos e memória individual. | Quando a entrega precisa de interface rica, histórico, comparação visual e autonomia maiores que o WhatsApp oferece. |
 | `EXTERNAL_MEMBERS_AREA_PRODUCT` | Area de membros externa | Acesso a conteudo, curso, comunidade ou produto protegido apos compra. | Quando a entrega exige login, progresso, acesso recorrente ou controle de assinatura. |
 | `AI_INTERACTIVE_EDUCATIONAL_EXPERIENCE` | Experiencia educacional interativa com IA | Produto educacional em missoes/cenarios/personagens com feedback de IA. | Quando o valor vem de praticar situacoes, tomar decisoes e receber avaliacao. |
 
@@ -86,10 +97,11 @@ Modos comerciais transversais:
 
 Ativos comerciais como video de vendas, avatar, pagina, criativo, amostra, lead magnet, checkout e email nao sao automaticamente tipos de produto. Eles podem virar produto apenas quando forem a entrega comprada pelo cliente. Caso contrario, sao ativos de aquisicao, prova, conversao ou entrega.
 
-Os nomes legados `PDE - Consultor Especialista por WhatsApp` e `Produto low-ticket de posts
-personalizados` são apelidos internos de `AI_SANDBOX_CONVERSATIONAL_PRODUCT` e
-`LOW_TICKET_DIGITAL_PRODUCT`, respectivamente. WhatsApp, personalização e posts descrevem canal,
-modo ou formato; não justificam categorias independentes.
+Os nomes legados `PDE - Consultor Especialista por WhatsApp` e `Produto IA de atendimento
+personalizado por sandbox` são apelidos internos de `AI_SANDBOX_CONVERSATIONAL_PRODUCT`.
+`Produto low-ticket de posts personalizados` é apelido de `LOW_TICKET_DIGITAL_PRODUCT`. Um produto
+web só usa `AI_PWA_CONSULTANT_PRODUCT` quando implementar a jornada rica e a base técnica deste
+cânone; uma landing, formulário ou chat web isolado não cria esse tipo.
 
 ## Regra financeira comum
 
@@ -344,9 +356,70 @@ Quando forem a entrega comprada, devem ser classificados como `AI_PRODUCT` no su
 
 O modulo Avatar Sales Video deve ser tratado como capacidade de ativo/produto audiovisual com regras proprias de evidencia, etica, personagem e publicacao. Ele nao substitui o tipo principal do produto vendido.
 
-## Produto IA de atendimento personalizado por sandbox
+## Consultor PWA com IA — Turmalina
 
-Produto IA de atendimento personalizado por sandbox e um produto conversacional em que o cliente entra pelo WhatsApp, faz uma solicitacao ou continua uma conversa anterior, e recebe uma resposta personalizada com texto, imagem ou ambos. O valor central nao e "conversar com IA"; e receber um atendimento util, contextual e personalizado, com memoria do relacionamento e capacidade de transformar dados do proprio cliente em orientacao, diagnostico, proposta, criativo, plano ou entrega aplicavel.
+O `AI_PWA_CONSULTANT_PRODUCT` é um consultor pessoal mobile-first acessado por URL HTTPS e
+instalável como PWA. Seu valor não é oferecer um chat genérico: é tornar uma capacidade sofisticada
+de IA simples, visual, contínua e orientada ao trabalho concreto do cliente. A interface própria
+permite organizar fotos, comparações, histórico, cartões de orientação e direitos de dados com mais
+clareza que um mensageiro.
+
+Fluxo mínimo:
+
+```text
+Entrada pública com demonstração de valor
+→ login ou vínculo seguro do cliente
+→ consentimento e explicação do uso de dados/mídia
+→ mensagem, contexto e foto opcional
+→ estado de processamento compreensível
+→ orientação estruturada, justificativa e próximo passo
+→ refinamento ou comparação
+→ avaliação de utilidade
+→ memória autorizada para contato futuro
+```
+
+Base obrigatória de construção:
+
+- PWA em React 18, responsiva e acessível, com manifest, service worker, HTTPS e fallback quando
+  instalação, câmera ou recurso do dispositivo não estiver disponível;
+- frontend consumindo somente o backend PDE; navegador nunca acessa Codex App Server, banco ou
+  endpoint de outro módulo;
+- backend PDE como fonte de identidade, acesso, consentimento, memória, pendência, auditoria,
+  métricas, gate e resultado;
+- worker Java usando o perfil de consultores do PDE Harness SDK e Codex App Server local por
+  `stdio`, sem OpenAI API direta;
+- imagens copiadas para workspace efêmero segregado após validação de tipo, tamanho e SHA-256;
+  caminhos originais e conteúdo privado não podem aparecer em prompt, log ou outro cliente;
+- memória durável no escopo `tenant + produto + cliente`, com fatos relevantes filtrados antes do
+  ranking, procedência, confiança, validade, correção e esquecimento; thread apenas para contexto
+  recente da conversa;
+- prompt separado em parte do agente, parte da atividade e mensagem atual, todos versionados e
+  auditáveis junto ao schema e ao prompt completo efetivamente executado;
+- resposta funcional estruturada em mensagem, recomendação, justificativa, próxima pergunta,
+  candidatos de memória e bloqueio com orientação e links seguros.
+
+Entradas mínimas: cliente autenticado, objetivo atual, contexto necessário, consentimento e mídia
+autorizada quando útil. Saídas mínimas: recomendação principal, motivo simples, próximo passo,
+estado de bloqueio e oportunidade clara de refinamento. Um produto específico, como a Amora, deve
+especializar identidade, método, limites e schema no worker, sem alterar o núcleo do SDK.
+
+Métricas mínimas: entrada, login, primeira mensagem, foto enviada, orientação entregue, tempo até
+valor, utilidade declarada, refinamento, instalação opcional, retorno, compra ou renovação, custo,
+margem, erro, reclamação e exclusão. Eventos de QA devem ser segregados e nunca contam como venda.
+
+Use Turmalina quando uma experiência visual própria, histórico navegável, comparação ou interação
+mais rica for parte do valor vendido. Não use para uma landing, formulário, chat web isolado ou
+simples espelho do WhatsApp.
+
+## Consultor WhatsApp com IA — Fluorita
+
+O `AI_SANDBOX_CONVERSATIONAL_PRODUCT`, de nome operacional **Consultor WhatsApp com IA**, é um
+produto conversacional em que o cliente entra pelo WhatsApp, faz uma solicitação ou continua uma
+conversa anterior e recebe resposta personalizada com texto, imagem ou ambos. O valor central não é
+"conversar com IA"; é receber atendimento útil, contextual e personalizado, com memória do
+relacionamento e capacidade de transformar dados do próprio cliente em orientação, diagnóstico,
+proposta, criativo, plano ou entrega aplicável. A evolução do nome preserva o código Fluorita e todo
+produto histórico já vinculado.
 
 Este tipo usa o conceito operacional do exemplo `/exemplos/aih6`: uma solicitacao entra pelo front/backend, o backend cria uma execucao isolada, o Codex App Server disponibiliza uma sandbox para o modelo trabalhar, o modelo usa ferramentas e contexto dentro dessa sandbox, devolve um resultado auditavel e a execucao e encerrada. A diferenca canonica e que, neste produto, a sandbox nao baixa um repositorio para gerar codigo; ela baixa ou recebe os dados de relacionamento daquele cliente, materiais autorizados e fontes complementares necessarias para produzir uma resposta comercial ou operacional personalizada.
 
@@ -504,10 +577,20 @@ Use low-ticket quando o problema pode ser resolvido por um pacote digital estati
 
 Use Produto IA quando o valor principal depende de transformar uma entrada especifica do usuario em uma saida personalizada, com reducao forte de esforco e experiencia simples.
 
-Use Produto IA de atendimento personalizado por sandbox quando o valor principal depende de conversa, memoria individual do cliente, contexto acumulado e resposta personalizada enviada por WhatsApp ou canal conversacional equivalente.
+Use Consultor WhatsApp com IA quando o valor principal depende de conversa, memória individual,
+contexto acumulado e resposta personalizada no canal que o cliente já usa, com o menor atrito de
+entrada possível.
+
+Use Consultor PWA com IA quando o valor depende também de interface visual própria, comparação,
+histórico navegável, instalação opcional, controle de dados e uma jornada self-service mais rica.
 
 Use area de membros externa quando a entrega precisa de acesso protegido, progresso, recorrencia, assinatura, biblioteca, comunidade ou controle pos-compra.
 
 Use experiencia educacional interativa com IA quando o produto vendido for pratica simulada com missoes, personagens, decisoes, consequencias e feedback.
 
-Quando houver duvida, comece por low-ticket generico para validar dor/oferta com menor custo. Evolua para Produto IA quando a personalizacao aumentar claramente a percepcao de valor e a margem continuar viavel. Evolua para atendimento personalizado por sandbox quando o relacionamento individual e a resposta contextual tiverem potencial de aumentar conversao, retencao ou ticket medio de forma mensuravel. Evolua para area de membros ou experiencia educacional quando a venda exigir consumo recorrente, progresso ou treinamento mais profundo.
+Quando houver dúvida, comece por low-ticket genérico para validar dor/oferta com menor custo.
+Evolua para Produto IA quando a personalização aumentar claramente a percepção de valor e a margem
+continuar viável. Entre os consultores, prefira WhatsApp para provar conversa e recorrência com baixo
+atrito; adote PWA quando a experiência visual própria for parte mensurável da entrega. Evolua para
+área de membros ou experiência educacional quando a venda exigir consumo recorrente, progresso ou
+treinamento mais profundo.

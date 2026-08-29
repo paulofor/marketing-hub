@@ -17,8 +17,13 @@ import com.marketinghub.pde.harness.v1.internal.PdeTurnOutcome;
 import com.marketinghub.pde.harness.v1.internal.transport.CodexAppServerClient;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public final class PdeHarnessSdk implements AutoCloseable {
   private static final System.Logger LOGGER = System.getLogger(PdeHarnessSdk.class.getName());
+  private static final long MAX_IMAGE_BYTES = 15L * 1024L * 1024L;
 
   private final PdeHarnessConfiguration configuration;
   private final ObjectMapper mapper;
@@ -156,6 +162,7 @@ public final class PdeHarnessSdk implements AutoCloseable {
       Path workspace) {
     Instant startedAt = Instant.now();
     PdeRenderedMemory renderedMemory = memoryContextRenderer.render(request.memory(), startedAt);
+    List<Path> localImagePaths = materializeLocalImages(request, workspace);
     if (request.existingThreadBinding() != null) {
       validateRuntimeThreadScope(
           request.existingThreadBinding().threadId(), conversationFingerprint);
@@ -177,6 +184,11 @@ public final class PdeHarnessSdk implements AutoCloseable {
       ObjectNode memory = input.addObject();
       memory.put("type", "text");
       memory.put("text", renderedMemory.contextText());
+      for (Path localImagePath : localImagePaths) {
+        ObjectNode image = input.addObject();
+        image.put("type", "localImage");
+        image.put("path", localImagePath.toString());
+      }
       ObjectNode text = input.addObject();
       text.put("type", "text");
       text.put("text", request.prompt());
@@ -234,17 +246,119 @@ public final class PdeHarnessSdk implements AutoCloseable {
           request.promptVersion(),
           request.outputSchemaVersion(),
           PdeHashing.sha256(request.prompt()),
-          PdeHashing.sha256(
-              renderedMemory.contextText().length()
-                  + ":"
-                  + renderedMemory.contextText()
-                  + request.prompt().length()
-                  + ":"
-                  + request.prompt()),
+          effectiveInputSha256(renderedMemory.contextText(), request),
           PdeHashing.sha256(mapper, request.outputSchema()));
     } finally {
       closeListener(listenerRegistration, threadId, collector.turnId());
     }
+  }
+
+  /** Copia imagens validadas para o workspace efêmero sem expor o caminho original ao modelo. */
+  private List<Path> materializeLocalImages(PdeAgentRunRequest request, Path workspace) {
+    if (request.imageInputs().isEmpty()) {
+      return List.of();
+    }
+    Path inputDirectory = workspace.resolve("inputs").normalize();
+    if (!inputDirectory.startsWith(workspace)) {
+      throw new PdeHarnessException(
+          PdeHarnessFailureCategory.ISOLATION_VIOLATION,
+          "Diretório de imagens saiu do workspace segregado");
+    }
+    try {
+      Files.createDirectories(inputDirectory);
+      restrictDirectoryAccess(inputDirectory);
+      List<Path> materialized = new ArrayList<>();
+      for (int index = 0; index < request.imageInputs().size(); index++) {
+        PdeLocalImageInput imageInput = request.imageInputs().get(index);
+        Path source = imageInput.sourcePath();
+        if (Files.isSymbolicLink(source)
+            || !Files.isRegularFile(source, LinkOption.NOFOLLOW_LINKS)) {
+          throw new PdeHarnessException(
+              PdeHarnessFailureCategory.INPUT_INVALID,
+              "Imagem de entrada não é um arquivo regular: " + imageInput.reference());
+        }
+        long size = Files.size(source);
+        if (size <= 0 || size > MAX_IMAGE_BYTES) {
+          throw new PdeHarnessException(
+              PdeHarnessFailureCategory.INPUT_INVALID,
+              "Imagem de entrada possui tamanho inválido: " + imageInput.reference());
+        }
+        byte[] content = Files.readAllBytes(source);
+        try {
+          if (!imageInput.matchesMediaSignature(content)) {
+            throw new PdeHarnessException(
+                PdeHarnessFailureCategory.INPUT_INVALID,
+                "Conteúdo da imagem diverge do tipo declarado: " + imageInput.reference());
+          }
+          String actualSha256 = PdeHashing.sha256(content);
+          if (!actualSha256.equals(imageInput.sha256())) {
+            throw new PdeHarnessException(
+                PdeHarnessFailureCategory.INPUT_INVALID,
+                "Hash da imagem de entrada diverge da auditoria: " + imageInput.reference());
+          }
+          Path target =
+              inputDirectory
+                  .resolve("image-" + (index + 1) + imageInput.safeExtension())
+                  .normalize();
+          if (!target.startsWith(inputDirectory)) {
+            throw new PdeHarnessException(
+                PdeHarnessFailureCategory.ISOLATION_VIOLATION,
+                "Destino da imagem saiu do workspace segregado");
+          }
+          Files.write(target, content);
+          restrictFileAccess(target);
+          materialized.add(target.toRealPath(LinkOption.NOFOLLOW_LINKS));
+        } finally {
+          Arrays.fill(content, (byte) 0);
+        }
+      }
+      return List.copyOf(materialized);
+    } catch (PdeHarnessException ex) {
+      LOGGER.log(
+          System.Logger.Level.ERROR,
+          "Imagem privada rejeitada antes do turno; produto="
+              + request.context().productCode()
+              + ", interação="
+              + request.context().interactionReference(),
+          ex);
+      throw ex;
+    } catch (IOException ex) {
+      LOGGER.log(
+          System.Logger.Level.ERROR,
+          "Falha ao materializar imagem privada; produto="
+              + request.context().productCode()
+              + ", interação="
+              + request.context().interactionReference(),
+          ex);
+      throw new PdeHarnessException(
+          PdeHarnessFailureCategory.INPUT_INVALID,
+          "Não foi possível preparar a imagem privada da interação",
+          ex);
+    }
+  }
+
+  /** Calcula a prova do contexto, prompt e imagens efetivamente autorizados para o turno. */
+  private String effectiveInputSha256(String memoryContext, PdeAgentRunRequest request) {
+    StringBuilder canonical =
+        new StringBuilder()
+            .append(memoryContext.length())
+            .append(':')
+            .append(memoryContext)
+            .append(request.prompt().length())
+            .append(':')
+            .append(request.prompt());
+    for (PdeLocalImageInput imageInput : request.imageInputs()) {
+      canonical
+          .append('\n')
+          .append(imageInput.reference().length())
+          .append(':')
+          .append(imageInput.reference())
+          .append(':')
+          .append(imageInput.mediaType())
+          .append(':')
+          .append(imageInput.sha256());
+    }
+    return PdeHashing.sha256(canonical.toString());
   }
 
   /** Retorna a última prova de prontidão, iniciando o transporte quando necessário. */
@@ -363,7 +477,9 @@ public final class PdeHarnessSdk implements AutoCloseable {
     }
     try {
       Files.createDirectories(configuredRoot);
+      restrictDirectoryAccess(configuredRoot);
       Files.createDirectories(normalized);
+      restrictDirectoryAccess(normalized);
       Path realRoot = configuredRoot.toRealPath();
       Path realWorkspace = normalized.toRealPath();
       if (realWorkspace.equals(realRoot) || !realWorkspace.startsWith(realRoot)) {
@@ -379,6 +495,27 @@ public final class PdeHarnessSdk implements AutoCloseable {
           PdeHarnessFailureCategory.CONFIGURATION,
           "Não foi possível preparar o workspace segregado",
           ex);
+    }
+  }
+
+  /** Restringe um diretório ao usuário do worker quando o filesystem oferece permissões POSIX. */
+  private void restrictDirectoryAccess(Path directory) throws IOException {
+    PosixFileAttributeView attributeView =
+        Files.getFileAttributeView(
+            directory, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+    if (attributeView != null) {
+      Files.setPosixFilePermissions(directory, PosixFilePermissions.fromString("rwx------"));
+    }
+  }
+
+  /**
+   * Restringe uma mídia privada ao usuário do worker quando o filesystem oferece permissões POSIX.
+   */
+  private void restrictFileAccess(Path file) throws IOException {
+    PosixFileAttributeView attributeView =
+        Files.getFileAttributeView(file, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+    if (attributeView != null) {
+      Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-------"));
     }
   }
 

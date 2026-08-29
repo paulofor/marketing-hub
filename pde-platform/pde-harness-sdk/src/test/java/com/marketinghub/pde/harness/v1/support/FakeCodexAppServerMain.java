@@ -8,6 +8,10 @@ import java.io.BufferedWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -134,6 +138,10 @@ public final class FakeCodexAppServerMain {
           case "invalid-output" -> "{json-invalido";
           case "schema-mismatch" -> "{\"campoInesperado\":true}";
           case "memory-aware" -> memoryAwareOutput(prompt, memoryContext);
+          case "image-aware" ->
+              responseOutput(
+                  hasMaterializedImage(input) ? "imagem-privada-copiada" : "imagem-ausente");
+          case "consultant-aware" -> consultantOutput(prompt, input);
           default -> responseOutput("Resposta para " + prompt);
         };
     SCHEDULER.schedule(
@@ -156,6 +164,60 @@ public final class FakeCodexAppServerMain {
   /** Serializa a saída sintética sem concatenar texto não escapado em JSON. */
   private static String responseOutput(String message) throws Exception {
     return MAPPER.writeValueAsString(MAPPER.createObjectNode().put("message", message));
+  }
+
+  /** Confirma que o caminho recebido aponta para a cópia efêmera preparada pelo SDK. */
+  private static boolean hasMaterializedImage(JsonNode input) {
+    for (JsonNode item : input) {
+      if ("localImage".equals(item.path("type").asText())) {
+        String path = item.path("path").asText();
+        Path image = Path.of(path);
+        return path.contains("/inputs/image-")
+            && Files.isRegularFile(image)
+            && hasPrivatePermissions(image, "rw-------")
+            && hasPrivatePermissions(image.getParent(), "rwx------")
+            && hasPrivatePermissions(image.getParent().getParent(), "rwx------");
+      }
+    }
+    return false;
+  }
+
+  /** Confirma permissões privadas quando o filesystem de teste oferece atributos POSIX. */
+  private static boolean hasPrivatePermissions(Path path, String expected) {
+    PosixFileAttributeView attributeView =
+        Files.getFileAttributeView(path, PosixFileAttributeView.class);
+    try {
+      return attributeView == null
+          || Files.getPosixFilePermissions(path).equals(PosixFilePermissions.fromString(expected));
+    } catch (java.io.IOException ex) {
+      LOGGER.log(
+          System.Logger.Level.ERROR,
+          "Falha ao inspecionar permissões da mídia sintética; path=" + path,
+          ex);
+      return false;
+    }
+  }
+
+  /** Devolve o schema completo de consultoria e sinais do envelope e da imagem observados. */
+  private static String consultantOutput(String prompt, JsonNode input) throws Exception {
+    boolean promptPartsPresent =
+        prompt.contains("# Parte do agente")
+            && prompt.contains("# Parte da atividade")
+            && prompt.contains("# Mensagem atual do cliente");
+    ObjectNode result = MAPPER.createObjectNode();
+    result.put("message", "Orientação sintética da consultora.");
+    result.put(
+        "recommendation",
+        hasMaterializedImage(input) ? "Imagem privada recebida." : "Orientação textual recebida.");
+    result.put("why", promptPartsPresent ? "Prompt dividido e auditável." : "Prompt incompleto.");
+    result.putNull("nextQuestion");
+    result.putArray("memoryCandidates");
+    ObjectNode blocker = result.putObject("blocker");
+    blocker.put("blocked", false);
+    blocker.putNull("reason");
+    blocker.putNull("userGuidance");
+    blocker.putArray("helpLinks");
+    return MAPPER.writeValueAsString(result);
   }
 
   /** Confirma a interrupção pedida pelo SDK após timeout. */

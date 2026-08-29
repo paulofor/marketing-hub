@@ -38,6 +38,14 @@ landing, exclusão em cascata e reaplicação sem duplicidade:
 bash backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh
 ```
 
+Os tipos Consultor PWA e Consultor WhatsApp possuem fixture física própria. Ela preserva a Fluorita
+e seu produto vinculado, cria a Turmalina, valida os treze campos da base, os SDKs por canal e a
+reaplicação retomável sem duplicar apelidos:
+
+```bash
+bash backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh
+```
+
 As consultas desse runner declaram `--default-character-set=utf8mb4`. Sem o charset explícito, o
 cliente MySQL 5.7 pode não comparar nomes acentuados como `Dédalo` e `Têmis` com o valor UTF-8
 persistido, produzindo falso positivo ou falso negativo na homologação.

@@ -29,7 +29,7 @@ class PdeHarnessConfigurationTest {
     assertEquals("codex", configuration.codexCommand());
     assertEquals(List.of("app-server", "--listen", "stdio://"), configuration.codexArguments());
     assertEquals("0.149.0", configuration.expectedCodexVersion());
-    assertEquals("0.2.0", configuration.sdkVersion());
+    assertEquals("0.3.0", configuration.sdkVersion());
   }
 
   /** Rejeita chave direta mesmo quando ela aparece apenas como override do processo filho. */

@@ -1,0 +1,235 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-product-type-consultant-blueprints-v1-structure
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_type_definition
+        - sqlCheck:
+            expectedResult: "0"
+            sql: >-
+              SELECT COUNT(*)
+                FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_type_definition'
+                 AND column_name IN
+                   ('blueprint_version', 'primary_channel', 'customer_job', 'value_mechanism',
+                    'experience_flow', 'required_inputs', 'expected_outputs', 'memory_strategy',
+                    'integration_requirements', 'safety_guardrails', 'success_metrics',
+                    'backend_sdk_module', 'frontend_sdk_module')
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_type_definition
+                ADD COLUMN blueprint_version VARCHAR(64) NULL AFTER description,
+                ADD COLUMN primary_channel VARCHAR(64) NULL AFTER blueprint_version,
+                ADD COLUMN customer_job TEXT NULL AFTER primary_channel,
+                ADD COLUMN value_mechanism TEXT NULL AFTER customer_job,
+                ADD COLUMN experience_flow TEXT NULL AFTER value_mechanism,
+                ADD COLUMN required_inputs TEXT NULL AFTER experience_flow,
+                ADD COLUMN expected_outputs TEXT NULL AFTER required_inputs,
+                ADD COLUMN memory_strategy TEXT NULL AFTER expected_outputs,
+                ADD COLUMN integration_requirements TEXT NULL AFTER memory_strategy,
+                ADD COLUMN safety_guardrails TEXT NULL AFTER integration_requirements,
+                ADD COLUMN success_metrics TEXT NULL AFTER safety_guardrails,
+                ADD COLUMN backend_sdk_module VARCHAR(255) NULL AFTER success_metrics,
+                ADD COLUMN frontend_sdk_module VARCHAR(255) NULL AFTER backend_sdk_module;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_type_definition
+                DROP COLUMN frontend_sdk_module,
+                DROP COLUMN backend_sdk_module,
+                DROP COLUMN success_metrics,
+                DROP COLUMN safety_guardrails,
+                DROP COLUMN integration_requirements,
+                DROP COLUMN memory_strategy,
+                DROP COLUMN expected_outputs,
+                DROP COLUMN required_inputs,
+                DROP COLUMN experience_flow,
+                DROP COLUMN value_mechanism,
+                DROP COLUMN customer_job,
+                DROP COLUMN primary_channel,
+                DROP COLUMN blueprint_version;
+
+  - changeSet:
+      id: 2026-08-29-product-type-consultant-blueprints-v1-seed
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_type_definition
+        - tableExists:
+            tableName: product_type_alias
+        - tableExists:
+            tableName: product
+        - sqlCheck:
+            expectedResult: "13"
+            sql: >-
+              SELECT COUNT(*)
+                FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_type_definition'
+                 AND column_name IN
+                   ('blueprint_version', 'primary_channel', 'customer_job', 'value_mechanism',
+                    'experience_flow', 'required_inputs', 'expected_outputs', 'memory_strategy',
+                    'integration_requirements', 'safety_guardrails', 'success_metrics',
+                    'backend_sdk_module', 'frontend_sdk_module')
+        - sqlCheck:
+            expectedResult: "1"
+            sql: >-
+              SELECT COUNT(*) FROM product_type_definition
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_type_definition
+                 SET name = 'Consultor WhatsApp com IA',
+                     internal_name = 'Fluorita',
+                     description = 'Consultoria conversacional com memória individual, entrada por WhatsApp e orientação contextual em texto ou imagem.',
+                     blueprint_version = 'consultant-whatsapp-v1',
+                     primary_channel = 'WHATSAPP',
+                     customer_job = 'Receber orientação pessoal e aplicável no canal que o cliente já usa, sem instalar aplicativo e sem aprender prompts ou configurações de IA.',
+                     value_mechanism = 'Uma identidade de consultor combina contexto atual, fotos autorizadas e memória durável do relacionamento para recomendar o próximo passo com pouco esforço.',
+                     experience_flow = 'Opt-in e identificação segura; mensagem ou foto; confirmação breve do objetivo; análise contextual; orientação curta; pergunta de continuidade; avaliação de utilidade; memória revisada para o próximo contato.',
+                     required_inputs = 'Identidade autenticada do cliente; mensagem atual; foto ou arquivo somente quando necessário; objetivo e ocasião; consentimento de uso e retenção; snapshot de memória autorizado pelo backend.',
+                     expected_outputs = 'Resposta curta e acionável; recomendação principal; justificativa simples; próximo passo; pedido de refinamento quando faltar contexto; artefato visual somente quando aumentar o valor.',
+                     memory_strategy = 'Memória durável no backend por tenant, produto e cliente; thread curta por versão e conversa; filtragem pelo escopo antes da relevância; correção, validade e esquecimento auditáveis; nenhum dado de outro cliente no conjunto candidato.',
+                     integration_requirements = 'WhatsApp Business Platform ou provedor aprovado; webhook autenticado e idempotente; backend PDE; armazenamento privado de mídia; worker Java; PDE Harness SDK; Codex App Server local por stdio; callbacks auditáveis.',
+                     safety_guardrails = 'Bloquear cliente não identificado, mídia sem consentimento, memória divergente, custo acima do limite, pedido fora do escopo e decisão sensível sem protocolo; nunca enviar comunicação em massa ou ação financeira sem autorização.',
+                     success_metrics = 'Conversa iniciada; mídia recebida quando aplicável; primeira orientação entregue; tempo até resposta útil; utilidade declarada; segunda interação; retorno futuro; compra ou renovação; custo e margem por cliente; opt-out e reclamação.',
+                     backend_sdk_module = 'pde-platform/pde-harness-sdk',
+                     frontend_sdk_module = NULL,
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+
+              INSERT INTO product_type_definition
+                (code, name, internal_name, description, status,
+                 blueprint_version, primary_channel, customer_job, value_mechanism,
+                 experience_flow, required_inputs, expected_outputs, memory_strategy,
+                 integration_requirements, safety_guardrails, success_metrics,
+                 backend_sdk_module, frontend_sdk_module, created_at, updated_at)
+              SELECT
+                'AI_PWA_CONSULTANT_PRODUCT',
+                'Consultor PWA com IA',
+                'Turmalina',
+                'Consultoria mobile-first instalável com conversa, fotos, memória individual e experiência visual própria.',
+                'ACTIVE',
+                'consultant-pwa-v1',
+                'PWA',
+                'Receber orientação pessoal, visual e contínua em uma experiência mobile simples, acessível pelo navegador e instalável sem depender de loja de aplicativos.',
+                'Uma interface React reduz o esforço de entrada, organiza fotos e histórico e usa memória durável para transformar contexto atual em uma recomendação clara e personalizada.',
+                'Entrada pública de valor; login ou vínculo seguro; consentimento; mensagem ou foto; estado de processamento visível; orientação estruturada; comparação ou refinamento; avaliação de utilidade; retorno pela mesma experiência.',
+                'Identidade autenticada; mensagem atual; foto ou arquivo autorizado; objetivo e contexto; consentimento de retenção; capacidades do dispositivo detectadas; snapshot de memória autorizado pelo backend.',
+                'Cartão de orientação acessível; recomendação principal; justificativa; próximo passo; comparação visual quando útil; histórico do próprio cliente; estado claro de processamento, bloqueio e nova tentativa.',
+                'Memória durável no backend por tenant, produto e cliente; thread curta por versão e conversa; cache local sem dados sensíveis; filtragem antes da relevância; correção e esquecimento auditáveis.',
+                'PWA React em HTTPS; manifest e service worker; câmera ou seletor de arquivos com fallback; backend PDE; armazenamento privado; worker Java; PDE Harness SDK; Codex App Server local por stdio; analytics segregado de QA.',
+                'Bloquear sessão não autenticada para dados privados, mídia sem consentimento, arquivo inseguro, memória divergente, orientação sensível sem protocolo e publicação sem eventos; manter acessibilidade e fallback quando a instalação não for suportada.',
+                'Entrada; login concluído; primeira mensagem; foto enviada; orientação entregue; tempo até valor; utilidade; refinamento; instalação opcional; retorno; compra ou renovação; custo e margem por cliente; erro e exclusão.',
+                'pde-platform/pde-harness-sdk',
+                'pde-platform/frontend/src/consultant-sdk/v1',
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM product_type_definition
+                 WHERE code = 'AI_PWA_CONSULTANT_PRODUCT'
+              );
+
+              UPDATE product_type_definition
+                 SET name = 'Consultor PWA com IA',
+                     internal_name = 'Turmalina',
+                     description = 'Consultoria mobile-first instalável com conversa, fotos, memória individual e experiência visual própria.',
+                     status = 'ACTIVE',
+                     blueprint_version = 'consultant-pwa-v1',
+                     primary_channel = 'PWA',
+                     customer_job = 'Receber orientação pessoal, visual e contínua em uma experiência mobile simples, acessível pelo navegador e instalável sem depender de loja de aplicativos.',
+                     value_mechanism = 'Uma interface React reduz o esforço de entrada, organiza fotos e histórico e usa memória durável para transformar contexto atual em uma recomendação clara e personalizada.',
+                     experience_flow = 'Entrada pública de valor; login ou vínculo seguro; consentimento; mensagem ou foto; estado de processamento visível; orientação estruturada; comparação ou refinamento; avaliação de utilidade; retorno pela mesma experiência.',
+                     required_inputs = 'Identidade autenticada; mensagem atual; foto ou arquivo autorizado; objetivo e contexto; consentimento de retenção; capacidades do dispositivo detectadas; snapshot de memória autorizado pelo backend.',
+                     expected_outputs = 'Cartão de orientação acessível; recomendação principal; justificativa; próximo passo; comparação visual quando útil; histórico do próprio cliente; estado claro de processamento, bloqueio e nova tentativa.',
+                     memory_strategy = 'Memória durável no backend por tenant, produto e cliente; thread curta por versão e conversa; cache local sem dados sensíveis; filtragem antes da relevância; correção e esquecimento auditáveis.',
+                     integration_requirements = 'PWA React em HTTPS; manifest e service worker; câmera ou seletor de arquivos com fallback; backend PDE; armazenamento privado; worker Java; PDE Harness SDK; Codex App Server local por stdio; analytics segregado de QA.',
+                     safety_guardrails = 'Bloquear sessão não autenticada para dados privados, mídia sem consentimento, arquivo inseguro, memória divergente, orientação sensível sem protocolo e publicação sem eventos; manter acessibilidade e fallback quando a instalação não for suportada.',
+                     success_metrics = 'Entrada; login concluído; primeira mensagem; foto enviada; orientação entregue; tempo até valor; utilidade; refinamento; instalação opcional; retorno; compra ou renovação; custo e margem por cliente; erro e exclusão.',
+                     backend_sdk_module = 'pde-platform/pde-harness-sdk',
+                     frontend_sdk_module = 'pde-platform/frontend/src/consultant-sdk/v1',
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_PWA_CONSULTANT_PRODUCT';
+
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT definition.id, aliases.alias
+                FROM product_type_definition definition
+                JOIN (
+                  SELECT 'AI_SANDBOX_CONVERSATIONAL_PRODUCT' AS code,
+                         'Produto IA de atendimento personalizado por sandbox' AS alias
+                  UNION ALL SELECT 'AI_SANDBOX_CONVERSATIONAL_PRODUCT', 'Consultor WhatsApp'
+                  UNION ALL SELECT 'AI_SANDBOX_CONVERSATIONAL_PRODUCT', 'Consultoria por WhatsApp'
+                  UNION ALL SELECT 'AI_PWA_CONSULTANT_PRODUCT', 'Consultor PWA'
+                  UNION ALL SELECT 'AI_PWA_CONSULTANT_PRODUCT', 'Consultor web instalável'
+                  UNION ALL SELECT 'AI_PWA_CONSULTANT_PRODUCT', 'Consultor mobile com IA'
+                ) aliases ON aliases.code = definition.code
+                LEFT JOIN product_type_alias existing ON existing.alias = aliases.alias
+               WHERE existing.alias IS NULL;
+
+              UPDATE product product_record
+              JOIN product_type_definition definition
+                ON definition.id = product_record.product_type_id
+                 SET product_record.product_type = definition.name
+               WHERE definition.code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT'
+                 AND (product_record.product_type IS NULL
+                      OR product_record.product_type <> definition.name);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE alias_record
+                FROM product_type_alias alias_record
+                JOIN product_type_definition definition
+                  ON definition.id = alias_record.product_type_id
+               WHERE definition.code = 'AI_PWA_CONSULTANT_PRODUCT';
+              DELETE FROM product_type_definition
+               WHERE code = 'AI_PWA_CONSULTANT_PRODUCT';
+              DELETE alias_record
+                FROM product_type_alias alias_record
+                JOIN product_type_definition definition
+                  ON definition.id = alias_record.product_type_id
+               WHERE definition.code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT'
+                 AND alias_record.alias IN
+                   ('Produto IA de atendimento personalizado por sandbox',
+                    'Consultor WhatsApp', 'Consultoria por WhatsApp');
+              UPDATE product_type_definition
+                 SET name = 'Produto IA de atendimento personalizado por sandbox',
+                     description = 'Atendimento conversacional com memória individual, contexto e execução isolada.',
+                     blueprint_version = NULL,
+                     primary_channel = NULL,
+                     customer_job = NULL,
+                     value_mechanism = NULL,
+                     experience_flow = NULL,
+                     required_inputs = NULL,
+                     expected_outputs = NULL,
+                     memory_strategy = NULL,
+                     integration_requirements = NULL,
+                     safety_guardrails = NULL,
+                     success_metrics = NULL,
+                     backend_sdk_module = NULL,
+                     frontend_sdk_module = NULL,
+                     updated_at = CURRENT_TIMESTAMP
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+              UPDATE product product_record
+              JOIN product_type_definition definition
+                ON definition.id = product_record.product_type_id
+                 SET product_record.product_type = definition.name
+               WHERE definition.code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';

@@ -50,6 +50,58 @@ public class ProductTypeDefinition {
   @Column(name = "description", length = 1000)
   private String description;
 
+  /** Versão estável da base de construção usada por pessoas, agentes e SDKs. */
+  @Column(name = "blueprint_version", length = 64)
+  private String blueprintVersion;
+
+  /** Canal principal que define a experiência e o contrato operacional do tipo. */
+  @Column(name = "primary_channel", length = 64)
+  private String primaryChannel;
+
+  /** Trabalho, dor e resultado que o cliente espera resolver com o tipo. */
+  @Column(name = "customer_job", columnDefinition = "TEXT")
+  private String customerJob;
+
+  /** Explicação causal de como o tipo transforma a entrada do cliente em valor. */
+  @Column(name = "value_mechanism", columnDefinition = "TEXT")
+  private String valueMechanism;
+
+  /** Jornada mínima que uma implementação deste tipo precisa oferecer. */
+  @Column(name = "experience_flow", columnDefinition = "TEXT")
+  private String experienceFlow;
+
+  /** Entradas funcionais e consentimentos exigidos antes da execução. */
+  @Column(name = "required_inputs", columnDefinition = "TEXT")
+  private String requiredInputs;
+
+  /** Saídas funcionais que materializam a promessa para o cliente. */
+  @Column(name = "expected_outputs", columnDefinition = "TEXT")
+  private String expectedOutputs;
+
+  /** Estratégia obrigatória de memória, retenção e segregação dos clientes. */
+  @Column(name = "memory_strategy", columnDefinition = "TEXT")
+  private String memoryStrategy;
+
+  /** Integrações mínimas necessárias para construir e operar o tipo. */
+  @Column(name = "integration_requirements", columnDefinition = "TEXT")
+  private String integrationRequirements;
+
+  /** Limites, bloqueios e proteções que impedem uma entrega insegura ou enganosa. */
+  @Column(name = "safety_guardrails", columnDefinition = "TEXT")
+  private String safetyGuardrails;
+
+  /** Eventos e métricas que comprovam uso, valor percebido e viabilidade comercial. */
+  @Column(name = "success_metrics", columnDefinition = "TEXT")
+  private String successMetrics;
+
+  /** Módulo Java reutilizável que inicia a construção técnica deste tipo. */
+  @Column(name = "backend_sdk_module", length = 255)
+  private String backendSdkModule;
+
+  /** Módulo React reutilizável quando o canal possuir experiência web própria. */
+  @Column(name = "frontend_sdk_module", length = 255)
+  private String frontendSdkModule;
+
   /** Apelidos internos aceitos para pesquisa e resolução sem criar outra categoria. */
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "product_type_alias", joinColumns = @JoinColumn(name = "product_type_id"))

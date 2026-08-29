@@ -241,6 +241,15 @@ Arquitetura obrigatória da primeira versão:
   de verdade de acesso, memória funcional, estado, gates, auditoria e próxima etapa;
 - o worker PDE consome exclusivamente o endpoint `pending` e usa o PDE Harness SDK para iniciar ou
   retomar uma execução no Codex App Server;
+- o SDK pode receber texto e imagens locais auditáveis. Cada imagem deve chegar com referência,
+  tipo permitido e SHA-256, ser validada antes do turno e copiada para o workspace efêmero; o App
+  Server recebe somente o caminho da cópia por entrada `localImage`, nunca o caminho original;
+- perfis de produto devem compor o núcleo sem duplicá-lo. O perfil inicial de consultoria mantém
+  separados parte do agente, parte da atividade e mensagem atual, associa o canal ao tipo canônico e
+  devolve essas partes junto ao prompt completo para persistência auditável;
+- Consultor PWA e Consultor WhatsApp compartilham memória, imagem, schema e transporte Java. A PWA
+  acrescenta um kit React injetável que trata texto, foto, estados e acessibilidade, mas não chama o
+  App Server nem controla memória, pendência ou avanço;
 - o PDE Harness SDK deve ser implementado em **Java 21** como biblioteca independente e cliente
   tipado do protocolo, mantendo o mesmo ecossistema do backend transacional e dos principais
   executores do Marketing Hub;

@@ -168,7 +168,7 @@
           "minLength": 1,
           "maxLength": 80
         },
-        "mobileFirst": { "const": true },
+        "mobileFirst": { "type": "boolean", "const": true },
         "fullPageEvidenceIds": {
           "type": "array",
           "minItems": 1,
@@ -203,7 +203,7 @@
             ],
             "properties": {
               "artifactId": { "type": "integer", "minimum": 1 },
-              "deviceProfile": { "const": "IPHONE_15_PRO" },
+              "deviceProfile": { "type": "string", "const": "IPHONE_15_PRO" },
               "pageNumber": { "type": "integer", "minimum": 1 },
               "foldNumber": { "type": "integer", "minimum": 1 },
               "aestheticAssessment": {

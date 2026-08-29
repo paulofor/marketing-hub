@@ -121,6 +121,7 @@ class PsiqueSensoryContractTest {
     for (String resource : SENSORY_SCHEMAS) {
       JsonNode schema = mapper.readTree(Path.of(resource).toFile());
       assertStrictObjects(schema, resource);
+      assertTypedConstants(schema, resource);
       String serialized = schema.toString();
       assertThat(serialized)
           .as("Schema sensorial deve expor o contrato: %s", resource)
@@ -151,5 +152,15 @@ class PsiqueSensoryContractTest {
       }
     }
     node.elements().forEachRemaining(child -> assertStrictObjects(child, resource));
+  }
+
+  /** Exige tipo explícito em toda constante enviada ao Structured Outputs. */
+  private void assertTypedConstants(JsonNode node, String resource) {
+    if (node.isObject() && node.has("const")) {
+      assertThat(node.hasNonNull("type"))
+          .as("Constante deve declarar tipo explícito em %s: %s", resource, node)
+          .isTrue();
+    }
+    node.elements().forEachRemaining(child -> assertTypedConstants(child, resource));
   }
 }

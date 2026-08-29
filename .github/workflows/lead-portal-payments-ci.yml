@@ -52,7 +52,9 @@ jobs:
           java-version: "21"
           cache: maven
       - name: Run tests
-        run: mvn -B test
+        run: |
+          ./scripts/test-public-proxy-lifecycle-contract.sh
+          mvn -B test
 
   docker:
     runs-on: ubuntu-latest
@@ -217,7 +219,7 @@ jobs:
             && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
             && docker compose -f docker-compose.deploy.yml pull \
             && (docker rm -f lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 >/dev/null 2>&1 || true) \
-            && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
+            && docker compose -f docker-compose.deploy.yml up -d --remove-orphans --wait --wait-timeout 120 \
             && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | awk -F= '/^LEAD_PORTAL_PAYMENTS_AUTH_TOKEN=/{print length(\$2); found=1} END{if (!found) print 0}')\" -ge 32 \
             && test \"\$(docker inspect lead-portal-payments-service --format '{{range .Config.Env}}{{println .}}{{end}}' | awk -F= '/^OPENAI_API_KEY=/{print length(\$2); found=1} END{if (!found) print 0}')\" -ge 20 \
             && docker image prune -af"
@@ -268,6 +270,29 @@ jobs:
             && export CERTBOT_INCLUDE_WWW=false \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
             && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
+      - name: Validate public HTTPS proxy
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && proxy_container=\"\$(docker ps --filter publish=443 --filter label=com.docker.compose.service=proxy --format '{{.Names}}' | head -n 1)\" \
+            && test -n \"\${proxy_container}\" \
+            && test \"\$(docker inspect \"\${proxy_container}\" --format '{{.State.Running}}')\" = 'true' \
+            && test \"\$(docker inspect \"\${proxy_container}\" --format '{{.HostConfig.RestartPolicy.Name}}')\" = 'always'"
+          if [ "${{ inputs.issue_digicomdigital_certificate }}" = "true" ]; then
+            public_url="https://www.digicomdigital.com.br"
+          else
+            public_url="https://kit-whatsapp-pronto.digicomdigital.com.br"
+          fi
+          curl --fail --show-error --silent \
+            --retry 12 --retry-delay 10 --retry-connrefused \
+            "${public_url}/" >/dev/null
+          if [ "${{ inputs.issue_digicomdigital_certificate }}" != "true" ]; then
+            curl --fail --show-error --silent \
+              --retry 12 --retry-delay 10 --retry-connrefused \
+              "${public_url}/healthz" | grep -q '"status":"UP"'
+            curl --fail --show-error --silent \
+              --retry 12 --retry-delay 10 --retry-connrefused \
+              "${public_url}/pde-health-contract.json" | grep -q '"slug": "kit-whatsapp-pronto"'
+          fi
       - name: Clean build artifacts from repository
         if: always()
         run: |

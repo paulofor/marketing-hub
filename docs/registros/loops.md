@@ -811,6 +811,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   workflow agora inicia o proxy conhecido quando estiver parado, conecta-o à rede e só então
   recarrega a configuração; o teste de isolamento exige explicitamente essa recuperação sem
   recriar o Compose ou acessar segredos do serviço de pagamentos.
+- **Recorrência fechada localmente em 2026-08-29:** a tarefa #259 de Psique recebeu
+  `ERR_CONNECTION_REFUSED` no domínio correto do Rigel. Banco, porta direta e inventário provaram
+  produto/slot válidos e frontend saudável; o proxy havia encerrado limpo em 26/08 e continuou
+  parado após o reboot porque `unless-stopped` preservou esse estado. Recuperar somente durante um
+  deploy ainda deixava uma janela indefinida sem vendas nem prova visual. O proxy público passa a
+  usar `restart: always`, healthcheck, espera de saúde e sonda HTTPS final no workflow que o possui.
+  Testes de contrato e Docker encerram o Nginx, exigem reinício automático e revalidam a rota real
+  do Kit antes de liberar nova execução de Psique.
 
 ---
 

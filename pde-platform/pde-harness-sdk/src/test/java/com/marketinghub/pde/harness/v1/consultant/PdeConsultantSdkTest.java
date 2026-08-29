@@ -21,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 class PdeConsultantSdkTest {
   @TempDir Path temporaryDirectory;
 
-  /** Executa Turmalina com imagem e preserva as partes auditáveis do prompt. */
+  /** Executa Turmalina com imagem e preserva partes, controle e microvalor auditáveis. */
   @Test
   void executesPwaConsultantWithImageAndPromptParts() throws Exception {
     byte[] png = syntheticPng();
@@ -57,6 +57,11 @@ class PdeConsultantSdkTest {
       assertEquals(promptParts.activityPart(), result.activityPrompt());
       assertTrue(result.completePrompt().contains("# Parte do agente"));
       assertTrue(result.completePrompt().contains("# Parte da atividade"));
+      assertTrue(result.completePrompt().contains("microresultado operacional e verificável"));
+      assertTrue(result.completePrompt().contains("Não deduza corpo, saúde, finanças"));
+      assertTrue(result.completePrompt().contains("Priorize uma próxima ação"));
+      assertTrue(result.completePrompt().contains("o cliente decidir avançar"));
+      assertTrue(result.completePromptVersion().startsWith("consultant-envelope-v2"));
       assertTrue(result.completePromptVersion().contains("amora-agent-v1"));
       assertEquals(
           "Imagem privada recebida.",

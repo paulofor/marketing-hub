@@ -247,6 +247,10 @@ Arquitetura obrigatória da primeira versão:
 - perfis de produto devem compor o núcleo sem duplicá-lo. O perfil inicial de consultoria mantém
   separados parte do agente, parte da atividade e mensagem atual, associa o canal ao tipo canônico e
   devolve essas partes junto ao prompt completo para persistência auditável;
+- o envelope comum de consultoria deve exigir microvalor operacional, personalização apoiada em
+  dados declarados/autorizados, incerteza explícita, uma próxima ação prioritária, explicação do que
+  acontece depois e confirmação antes de ação externa ou de alto impacto. O perfil pode reconhecer
+  brevemente a situação, mas não pode simular sentimento humano nem inferir atributo íntimo;
 - Consultor PWA e Consultor WhatsApp compartilham memória, imagem, schema e transporte Java. A PWA
   acrescenta um kit React injetável que trata texto, foto, estados e acessibilidade, mas não chama o
   App Server nem controla memória, pendência ou avanço;

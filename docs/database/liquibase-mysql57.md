@@ -39,8 +39,9 @@ bash backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57
 ```
 
 Os tipos Consultor PWA e Consultor WhatsApp possuem fixture física própria. Ela preserva a Fluorita
-e seu produto vinculado, cria a Turmalina, valida os treze campos da base, os SDKs por canal e a
-reaplicação retomável sem duplicar apelidos:
+e seu produto vinculado, cria a Turmalina, aplica o enriquecimento v2 baseado nas pesquisas, valida
+os treze campos da base, os SDKs por canal, microvalor, confiança e a reaplicação retomável sem
+duplicar apelidos:
 
 ```bash
 bash backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh

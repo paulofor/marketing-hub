@@ -54,6 +54,9 @@ databaseChangeLog:
       file: changesets/2026-08-29-product-type-consultant-blueprints-v1.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-08-29-product-type-consultant-research-enrichment-v2.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-23-product-internal-identity.yaml
       relativeToChangelogFile: true
   - include:

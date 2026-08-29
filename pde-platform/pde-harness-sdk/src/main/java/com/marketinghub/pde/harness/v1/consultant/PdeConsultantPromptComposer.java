@@ -8,8 +8,8 @@ import java.nio.charset.StandardCharsets;
 
 /** Compõe o envelope versionado sem esconder as partes auditáveis do prompt. */
 final class PdeConsultantPromptComposer {
-  static final String ENVELOPE_VERSION = "consultant-envelope-v1";
-  private static final String RESOURCE = "/prompts/consultant/v1/turn-envelope.md";
+  static final String ENVELOPE_VERSION = "consultant-envelope-v2";
+  private static final String RESOURCE = "/prompts/consultant/v2/turn-envelope.md";
   private static final System.Logger LOGGER =
       System.getLogger(PdeConsultantPromptComposer.class.getName());
 

@@ -4,7 +4,7 @@ set -euo pipefail
 PRODUCT_TYPE_V1_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRODUCT_TYPE_V1_MODULE_DIR="$(cd "${PRODUCT_TYPE_V1_SCRIPT_DIR}/.." && pwd)"
 PRODUCT_TYPE_V1_COMPOSE_FILE="${PRODUCT_TYPE_V1_MODULE_DIR}/docker-compose.product-type-consultants-v1-mysql57.yml"
-PRODUCT_TYPE_V1_COMPOSE_PROJECT="${PRODUCT_TYPE_CONSULTANTS_COMPOSE_PROJECT:-aihub-7e0fbc82-3630-4e7b-b7da-b3db83a19811-870fb7832c}"
+PRODUCT_TYPE_V1_COMPOSE_PROJECT="${PRODUCT_TYPE_CONSULTANTS_COMPOSE_PROJECT:-aihub-195ed4dd-a386-4676-9cf8-0e87e6dd05e0-a970d7a3fd}"
 
 product_type_v1_compose() {
   docker compose -p "${PRODUCT_TYPE_V1_COMPOSE_PROJECT}" -f "${PRODUCT_TYPE_V1_COMPOSE_FILE}" "$@"
@@ -43,11 +43,14 @@ docker version >/dev/null
 docker compose version >/dev/null
 product_type_v1_compose up -d --build mysql57-product-type-consultants-v1
 product_type_v1_compose run --rm --build liquibase-product-type-consultants-v1
+product_type_v1_compose run --rm --build liquibase-product-type-consultants-v2
 
 product_type_v1_db_execute "DELETE FROM DATABASECHANGELOG
   WHERE ID IN ('2026-08-29-product-type-consultant-blueprints-v1-structure',
-               '2026-08-29-product-type-consultant-blueprints-v1-seed');"
+               '2026-08-29-product-type-consultant-blueprints-v1-seed',
+               '2026-08-29-product-type-consultant-research-enrichment-v2');"
 product_type_v1_compose run --rm liquibase-product-type-consultants-v1
+product_type_v1_compose run --rm liquibase-product-type-consultants-v2
 
 product_type_v1_assert_equal \
   "colunas da base de construção" \
@@ -64,7 +67,7 @@ product_type_v1_assert_equal \
 
 product_type_v1_assert_equal \
   "identidades dos consultores" \
-  "AI_PWA_CONSULTANT_PRODUCT:Consultor PWA com IA:Turmalina:PWA:consultant-pwa-v1|AI_SANDBOX_CONVERSATIONAL_PRODUCT:Consultor WhatsApp com IA:Fluorita:WHATSAPP:consultant-whatsapp-v1" \
+  "AI_PWA_CONSULTANT_PRODUCT:Consultor PWA com IA:Turmalina:PWA:consultant-pwa-v2|AI_SANDBOX_CONVERSATIONAL_PRODUCT:Consultor WhatsApp com IA:Fluorita:WHATSAPP:consultant-whatsapp-v2" \
   "$(product_type_v1_db_scalar "SELECT GROUP_CONCAT(
       CONCAT(code, ':', name, ':', internal_name, ':', primary_channel, ':', blueprint_version)
       ORDER BY code SEPARATOR '|')
@@ -91,6 +94,33 @@ product_type_v1_assert_equal \
       AND backend_sdk_module = 'pde-platform/pde-harness-sdk';")"
 
 product_type_v1_assert_equal \
+  "contratos enriquecidos pela pesquisa" \
+  "2" \
+  "$(product_type_v1_db_scalar "SELECT COUNT(*)
+    FROM product_type_definition
+    WHERE code IN ('AI_PWA_CONSULTANT_PRODUCT', 'AI_SANDBOX_CONVERSATIONAL_PRODUCT')
+      AND customer_job LIKE '%momento concreto%'
+      AND value_mechanism LIKE '%próxima ação%'
+      AND experience_flow LIKE '%microvalor%'
+      AND required_inputs LIKE '%proveniência%'
+      AND expected_outputs LIKE '%evidência%'
+      AND memory_strategy LIKE '%inferências%'
+      AND safety_guardrails LIKE '%alto impacto%'
+      AND success_metrics LIKE '%microvalor%';")"
+
+product_type_v1_assert_equal \
+  "confiança do WhatsApp e valor antes da instalação PWA" \
+  "2" \
+  "$(product_type_v1_db_scalar "SELECT
+      (SELECT COUNT(*) FROM product_type_definition
+        WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT'
+          AND experience_flow LIKE '%origem da conversa%')
+      +
+      (SELECT COUNT(*) FROM product_type_definition
+        WHERE code = 'AI_PWA_CONSULTANT_PRODUCT'
+          AND experience_flow LIKE '%instalação é oferecida somente após valor%');")"
+
+product_type_v1_assert_equal \
   "SDK React exclusivo da PWA" \
   "pde-platform/frontend/src/consultant-sdk/v1:NULL" \
   "$(product_type_v1_db_scalar "SELECT CONCAT(
@@ -114,4 +144,4 @@ product_type_v1_assert_equal \
   "$(product_type_v1_db_scalar "SELECT CONCAT(COUNT(*), ':', COUNT(DISTINCT alias))
     FROM product_type_alias;")"
 
-echo "Tipos Consultor PWA/WhatsApp v1 aprovados fisicamente no MySQL 5.7."
+echo "Tipos Consultor PWA/WhatsApp v2 aprovados fisicamente no MySQL 5.7."

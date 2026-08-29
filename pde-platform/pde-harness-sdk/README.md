@@ -44,6 +44,11 @@ Fluorita (WhatsApp). Ele associa o canal ao código canônico, compõe um envelo
 do agente, parte da atividade e mensagem atual, carrega o schema de resposta do classpath e devolve
 as três visões do prompt junto ao resultado auditável.
 
+O envelope `consultant-envelope-v2` exige microvalor operacional, personalização baseada em dados
+declarados ou autorizados, incerteza explícita, uma próxima ação e controle proporcional ao risco.
+Ele impede que o perfil comum trate conselho genérico, inferência íntima ou ação externa não
+confirmada como entrega válida; regras específicas continuam pertencendo ao worker do produto.
+
 O perfil não contém a identidade de Amora ou de outro produto concreto. Cada worker especializa
 agente, atividade, schema e regras do domínio, consome `pending` no próprio backend e reporta o
 resultado. O kit React da PWA fica em `pde-platform/frontend/src/consultant-sdk/v1` e nunca chama o

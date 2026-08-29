@@ -6,26 +6,36 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: proteger a migração e a homologação física dos tipos de consultoria v1. */
+/** Responsabilidade: proteger as migrações e a homologação física dos tipos de consultoria. */
 class ProductTypeConsultantBlueprintChangelogTest {
   private static final String FILE = "2026-08-29-product-type-consultant-blueprints-v1.yaml";
+  private static final String RESEARCH_FILE =
+      "2026-08-29-product-type-consultant-research-enrichment-v2.yaml";
+  private static final String SANDBOX_COMPOSE_PROJECT =
+      "aihub-195ed4dd-a386-4676-9cf8-0e87e6dd05e0-a970d7a3fd";
   private static final Path MASTER =
       Path.of("src/main/resources/db/changelog/db.changelog-master.yaml");
   private static final Path CHANGELOG =
       Path.of("src/main/resources/db/changelog/changesets").resolve(FILE);
+  private static final Path RESEARCH_CHANGELOG =
+      Path.of("src/main/resources/db/changelog/changesets").resolve(RESEARCH_FILE);
 
-  /** Exige o include relativo antes dos dados que podem consumir os novos tipos. */
+  /** Exige includes relativos e mantém o enriquecimento depois da criação das bases. */
   @Test
   void includesConsultantBlueprintMigrationRelatively() throws Exception {
     String master = Files.readString(MASTER);
     int catalog = master.indexOf("2026-08-23-product-type-catalog.yaml");
     int internalIdentity = master.indexOf("2026-08-23-product-type-internal-identity.yaml");
     int include = master.indexOf(FILE);
+    int researchInclude = master.indexOf(RESEARCH_FILE);
 
     assertThat(include).isGreaterThanOrEqualTo(0);
     assertThat(catalog).isBetween(0, internalIdentity - 1);
     assertThat(internalIdentity).isBetween(0, include - 1);
+    assertThat(researchInclude).isGreaterThan(include);
     assertThat(master.substring(include, Math.min(master.length(), include + 180)))
+        .contains("relativeToChangelogFile: true");
+    assertThat(master.substring(researchInclude, Math.min(master.length(), researchInclude + 180)))
         .contains("relativeToChangelogFile: true");
   }
 
@@ -54,9 +64,32 @@ class ProductTypeConsultantBlueprintChangelogTest {
   @Test
   void keepsMysql57SafetyContract() throws Exception {
     String changelog = Files.readString(CHANGELOG);
+    String researchChangelog = Files.readString(RESEARCH_CHANGELOG);
 
     assertThat(changelog).contains("type: mysql", "splitStatements: true", "stripComments: true");
     assertThat(changelog.split(";")).allSatisfy(this::assertNoMysql1093Pattern);
+    assertThat(researchChangelog)
+        .contains("type: mysql", "splitStatements: true", "stripComments: true");
+    assertThat(researchChangelog.split(";")).allSatisfy(this::assertNoMysql1093Pattern);
+  }
+
+  /** Mantém microvalor, confiança, permissão e recorrência nas duas bases versionadas. */
+  @Test
+  void enrichesConsultantsWithResearchBackedContracts() throws Exception {
+    String changelog = Files.readString(RESEARCH_CHANGELOG);
+
+    assertThat(changelog)
+        .contains(
+            "consultant-whatsapp-v2",
+            "consultant-pwa-v2",
+            "momento concreto",
+            "microvalor operacional",
+            "origem da conversa",
+            "proveniência de cada dado",
+            "alto impacto sem confirmação",
+            "instalação é oferecida somente após valor",
+            "retorno D1, D7 e D30");
+    assertThat(changelog).doesNotContain("TIMESTAMP NOT NULL", "CURRENT_TIMESTAMP(6)");
   }
 
   /** Garante que o PR execute a fixture física, a reaplicação e as consultas de preservação. */
@@ -81,11 +114,14 @@ class ProductTypeConsultantBlueprintChangelogTest {
             "AI_SANDBOX_CONVERSATIONAL_PRODUCT",
             "Fluorita",
             "INSERT INTO product (id, product_type, product_type_id)");
-    assertThat(compose).contains(FILE, "mysql57-product-type-consultants-v1");
+    assertThat(compose).contains(FILE, RESEARCH_FILE, "mysql57-product-type-consultants-v1");
     assertThat(runner)
         .contains(
             "DELETE FROM DATABASECHANGELOG",
+            SANDBOX_COMPOSE_PROJECT,
             "colunas da base de construção",
+            "contratos enriquecidos pela pesquisa",
+            "confiança do WhatsApp e valor antes da instalação PWA",
             "produto histórico preservado",
             "apelidos sem duplicação após retomada");
     assertThat(workflow)

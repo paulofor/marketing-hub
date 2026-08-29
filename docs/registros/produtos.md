@@ -1,5 +1,21 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-29 — Consultores enriquecidos pelos comentários e artigos da pesquisa
+
+- Evidência recorrente: pessoas procuram ajuda em momentos concretos, pagam por trabalho
+  operacional que reduz esforço e precisam conferir a evidência e a próxima ação; chat genérico não
+  cria vantagem suficiente sobre alternativas gratuitas.
+- Decisão: Turmalina e Fluorita avançam para bases v2 nos mesmos nove cards editáveis, sem ampliar o
+  schema antes de uso e vendas reais.
+- Fluorita: a primeira resposta explicita marca, origem, motivo, escopo e controle; microvalor,
+  permissão, ajuda humana e continuidade passam a fazer parte do contrato.
+- Turmalina: link e microvalor antecedem instalação ou cadastro pesado; instalação só é sugerida
+  depois de valor e a recorrência é medida em D1, D7 e D30.
+- Proteção: personalização usa dados declarados/autorizados, inferências continuam revisáveis e
+  nenhuma ação de alto impacto acontece sem confirmação.
+- Verdade comercial: artigo, comentário, utilidade ou intenção não são venda; somente pagamento
+  reconciliado entra na métrica de receita.
+
 ## 2026-08-26 — Transição de processo libera o período aberto antes do próximo
 
 - Evidência produtiva: a ativação autorizada da Vega pelo experimento 90 retornou HTTP 500 e foi

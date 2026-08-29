@@ -356,6 +356,54 @@ Quando forem a entrega comprada, devem ser classificados como `AI_PRODUCT` no su
 
 O modulo Avatar Sales Video deve ser tratado como capacidade de ativo/produto audiovisual com regras proprias de evidencia, etica, personagem e publicacao. Ele nao substitui o tipo principal do produto vendido.
 
+## Princípios comuns dos consultores com IA
+
+Os comentários, reclamações e artigos consolidados em `/pesquisas` reforçam que o consultor não
+deve ser definido pelo chat nem pelo modelo. Seu produto é um **workflow vertical de decisão e
+acompanhamento**. Os sinais são insumos de desenho, não prova de venda; receita só existe após
+pagamento reconciliado do próprio produto.
+
+Todo Consultor PWA ou WhatsApp deve seguir estes princípios:
+
+- **momento concreto antes da persona:** declarar qual situação faz a pessoa procurar ajuda agora,
+  o custo do erro ou do esforço e qual decisão precisa ser tomada;
+- **microvalor observável:** entregar rapidamente uma interpretação, comparação, organização ou
+  próxima ação que a pessoa consiga conferir; apenas explicar o tema ou repetir conteúdo gratuito
+  não sustenta um produto pago;
+- **ciclo de relacionamento:** operar `contexto → interpretação → recomendação → ação → feedback →
+  memória revisada`, permitindo que um novo contato comece melhor que o anterior;
+- **personalização autorizada:** perguntar o necessário e distinguir dado declarado, observado,
+  confirmado e inferido. Atributo íntimo ou sensível não pode ser adivinhado a partir de foto,
+  comportamento ou histórico;
+- **controle proporcional ao risco:** pesquisar, organizar e recomendar podem ser automáticos;
+  compra, pagamento, publicação, comunicação externa e outra ação de alto impacto exigem
+  confirmação e caminho de interrupção, correção ou atendimento humano;
+- **certeza do próximo passo:** a orientação deve dizer o que foi entendido, o que recomenda, em
+  qual evidência/confiança se apoia, qual limitação existe e o que acontecerá se a pessoa avançar;
+- **empatia sem personificação enganosa:** reconhecer de forma breve a intenção, o esforço ou a
+  ansiedade da situação, sem afirmar sentimentos humanos, intimidade inexistente ou certeza que a
+  evidência não oferece;
+- **vantagem contra o gratuito:** cada produto concreto precisa declarar qual trabalho executa que
+  ChatGPT, busca, planilha ou comparação manual não resolvem com esforço semelhante;
+- **retenção por utilidade:** retorno, instalação e notificação só são solicitados depois de valor
+  percebido e quando ajudarem a próxima missão, nunca apenas para aumentar presença ou disparos.
+
+Base interna desta decisão:
+
+- `pesquisas/ia-aplicada/2026-08-24-produtos-digitais-tendencias-consumo.md`: usuários pagam pela
+  interpretação e pelo próximo passo, não pelo acesso ao chatbot;
+- `pesquisas/ia-aplicada/2026-08-27-produtos-digitais-tendencias-consumo.md`: memória contextual,
+  recorrência e orientação por objetivo são o ativo central do especialista vertical;
+- `pesquisas/momentos-de-compra-b2c/2026-08-28-momentos-de-compra-b2c.md`: microvalor, estado
+  operacional persistente, evidência auditável e vantagem sobre a alternativa gratuita;
+- `pesquisas/neuromarketing/2026-08-26-0137-neuromarketing.md` e
+  `pesquisas/neuromarketing/2026-08-27-0125-neuromarketing.md`: empatia, reversibilidade,
+  permissão e personalização baseada no que a pessoa escolheu declarar;
+- `pesquisas/neuromarketing/2026-08-29-0139-neuromarketing.md`: contexto de confiança antes de
+  interagir no WhatsApp;
+- `docs/pesquisa-profunda/pesquisa-pde-mobile-entrada-na-vida-do-cliente-brasileiro.md`: URL e
+  microvalor antes de instalação ou cadastro pesado.
+
 ## Consultor PWA com IA — Turmalina
 
 O `AI_PWA_CONSULTANT_PRODUCT` é um consultor pessoal mobile-first acessado por URL HTTPS e
@@ -367,15 +415,18 @@ clareza que um mensageiro.
 Fluxo mínimo:
 
 ```text
-Entrada pública com demonstração de valor
-→ login ou vínculo seguro do cliente
-→ consentimento e explicação do uso de dados/mídia
-→ mensagem, contexto e foto opcional
+Link profundo abre a missão prometida
+→ demonstração ou microvalor efêmero com a menor entrada possível
+→ login ou vínculo seguro quando for necessário salvar, retomar ou acessar dado privado
+→ consentimento contextual para uso de dados, memória e mídia
+→ objetivo, contexto declarado e foto opcional
 → estado de processamento compreensível
-→ orientação estruturada, justificativa e próximo passo
+→ microresultado, evidência, confiança e uma próxima ação
 → refinamento ou comparação
 → avaliação de utilidade
 → memória autorizada para contato futuro
+→ convite de instalação somente após valor e com benefício explícito
+→ retorno na etapa correta da missão
 ```
 
 Base obrigatória de construção:
@@ -395,17 +446,23 @@ Base obrigatória de construção:
   recente da conversa;
 - prompt separado em parte do agente, parte da atividade e mensagem atual, todos versionados e
   auditáveis junto ao schema e ao prompt completo efetivamente executado;
+- envelope do consultor exigindo microvalor operacional, personalização autorizada, incerteza
+  explícita, uma próxima ação prioritária e controle proporcional ao risco;
 - resposta funcional estruturada em mensagem, recomendação, justificativa, próxima pergunta,
-  candidatos de memória e bloqueio com orientação e links seguros.
+  candidatos de memória e bloqueio com orientação e links seguros;
+- eventos segregados por navegador, sistema operacional e modo `browser` ou `standalone/PWA`, com
+  convite de instalação registrado somente depois de microvalor comprovado.
 
 Entradas mínimas: cliente autenticado, objetivo atual, contexto necessário, consentimento e mídia
 autorizada quando útil. Saídas mínimas: recomendação principal, motivo simples, próximo passo,
 estado de bloqueio e oportunidade clara de refinamento. Um produto específico, como a Amora, deve
 especializar identidade, método, limites e schema no worker, sem alterar o núcleo do SDK.
 
-Métricas mínimas: entrada, login, primeira mensagem, foto enviada, orientação entregue, tempo até
-valor, utilidade declarada, refinamento, instalação opcional, retorno, compra ou renovação, custo,
-margem, erro, reclamação e exclusão. Eventos de QA devem ser segregados e nunca contam como venda.
+Métricas mínimas: entrada, microvalor, tempo até valor, abandono antes do valor e da identificação,
+login, primeira mensagem, foto enviada, orientação entregue, utilidade, refinamento, próxima ação
+aceita, convite de instalação após valor, instalação e uso posterior, retorno D1/D7/D30, compra ou
+renovação reconciliada, custo, margem, erro, ajuda, reclamação, correção e exclusão. Eventos de QA
+devem ser segregados e nunca contam como venda.
 
 Use Turmalina quando uma experiência visual própria, histórico navegável, comparação ou interação
 mais rica for parte do valor vendido. Não use para uma landing, formulário, chat web isolado ou
@@ -436,11 +493,15 @@ Fluxo canonico inicial:
 Cliente envia mensagem no WhatsApp
 → provedor WhatsApp entrega evento ao backend
 → backend identifica cliente, conversa, produto e contexto autorizado
+→ primeira resposta reafirma marca, origem, motivo, escopo e opções de parar ou falar com pessoa
+→ cliente confirma o objetivo e as permissões desta interação
 → backend cria uma sandbox exclusiva para aquele cliente/interacao via Codex App Server
 → sandbox recebe historico de interacoes, dados permitidos e materiais auxiliares
-→ modelo analisa, pesquisa quando permitido e produz resposta personalizada
+→ modelo analisa, pesquisa quando permitido e produz microvalor operacional
+→ resposta apresenta evidência/confiança, uma próxima ação e o que acontecerá depois
 → backend envia texto e/ou imagem pelo WhatsApp
-→ backend registra entrada, contexto usado, resposta, custos, status e resultado
+→ backend registra entrada, contexto, permissões, resposta, feedback, custos, status e resultado
+→ memória é revisada somente com fatos úteis e procedência explícita
 → sandbox e descartada
 ```
 
@@ -462,6 +523,14 @@ Caracteristicas obrigatorias:
 - toda interacao deve permanecer em trilha imutavel e idempotente antes de alimentar uma nova
   revisao de memoria. Correcao explicita atual do cliente prevalece sobre fato antigo ou inferido;
   inferencias permanecem rotuladas com procedencia, confianca e validade;
+- a primeira resposta deve incluir contexto de confiança: marca, origem da conversa, motivo,
+  capacidade do consultor, próximo passo e opções de encerrar ou pedir atendimento humano;
+- personalização sensível usa somente dado declarado e autorizado. Quando faltar contexto, o
+  consultor pergunta em vez de inferir corpo, saúde, finanças, identidade ou atributo íntimo;
+- a resposta deve executar microtrabalho verificável, explicitar evidência e confiança, priorizar
+  uma próxima ação e informar o que acontece depois; resposta genérica não conclui a missão;
+- ações de alto impacto carregam envelope de permissão e confirmação; o consultor não compra, paga,
+  publica, envia comunicação externa ou ultrapassa o escopo por conta própria;
 - separacao clara entre dados do cliente, materiais de apoio, fontes externas e resposta final;
 - registro auditavel da mensagem recebida, contexto entregue a sandbox, prompts/schemas quando houver, resposta enviada, midia gerada, custo, erro e status;
 - resposta enviada pelo canal original do cliente, inicialmente WhatsApp, com suporte a texto e imagem quando o caso de uso exigir;
@@ -487,11 +556,14 @@ Este tipo deve ser tratado como produto de alto potencial comercial porque combi
 Metricas minimas:
 
 - taxa de resposta do cliente no WhatsApp;
+- contexto de confiança exibido e objetivo confirmado;
+- microvalor alcançado e continuidade por três ou mais mensagens;
 - tempo ate primeira resposta util;
 - custo medio por atendimento;
-- taxa de clique, agendamento, compra ou proximo passo;
+- taxa de aceite da próxima ação, clique, agendamento, compra ou proximo passo;
 - taxa de reabertura de conversa;
 - satisfacao, reclamacao ou sinal negativo;
+- correção, esquecimento, opt-out e intervenção humana;
 - margem por conversa, por cliente e por oferta;
 - recorrencia de uso quando o produto for vendido como assinatura ou acompanhamento.
 

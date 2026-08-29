@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -216,7 +218,7 @@ class CustomerBpmTaskConsumerTest {
             "Integração de canal, checkout, acesso e eventos",
             "approvedCreativeEvidence.status",
             "adCopy` ou `adImageBriefing` legados",
-            "cada `localPath`",
+            "`localPath` informados",
             "visualAudit",
             "purchaseEmotion");
     String schema =
@@ -233,6 +235,74 @@ class CustomerBpmTaskConsumerTest {
         .isEqualTo("flex");
     org.assertj.core.api.Assertions.assertThat(CustomerBpmTaskConsumer.effectiveServiceTier())
         .isEqualTo("STANDARD");
+  }
+
+  /** Anexa cada captura ao turno sem remover a sandbox somente leitura do agente. */
+  @Test
+  void attachesEveryVisualEvidenceToCodexCommand() throws Exception {
+    Path fullPage = Files.createTempFile("psique-full-page-", ".png");
+    Path fold = Files.createTempFile("psique-fold-", ".png");
+    try {
+      CustomerBpmTaskConsumer consumer =
+          new CustomerBpmTaskConsumer(
+              "http://backend:8000", "codex", "gpt-5.6-sol", "high", "/workspace", "", json);
+
+      List<String> command =
+          consumer.command(
+              Path.of("/tmp/result.json"),
+              Path.of("/tmp/schema.json"),
+              List.of(
+                  visualEvidenceAt(901L, "FULL_PAGE", null, fullPage),
+                  visualEvidenceAt(902L, "FOLD", 1, fold)));
+
+      org.assertj.core.api.Assertions.assertThat(command)
+          .contains("--sandbox", "read-only")
+          .containsSequence("--image", fullPage.toAbsolutePath().toString())
+          .containsSequence("--image", fold.toAbsolutePath().toString());
+      org.assertj.core.api.Assertions.assertThat(command).filteredOn("--image"::equals).hasSize(2);
+    } finally {
+      Files.deleteIfExists(fullPage);
+      Files.deleteIfExists(fold);
+    }
+  }
+
+  /** Impede iniciar Psique quando um anexo persistido já não está disponível localmente. */
+  @Test
+  void rejectsMissingVisualAttachmentBeforeCodexStarts() throws Exception {
+    Path directory = Files.createTempDirectory("psique-missing-attachment-");
+    Path missing = directory.resolve("missing.png");
+    try {
+      CustomerBpmTaskConsumer consumer =
+          new CustomerBpmTaskConsumer(
+              "http://backend:8000", "codex", "gpt-5.6-sol", "high", "/workspace", "", json);
+
+      assertThatThrownBy(
+              () ->
+                  consumer.command(
+                      Path.of("/tmp/result.json"),
+                      Path.of("/tmp/schema.json"),
+                      List.of(visualEvidenceAt(901L, "FOLD", 1, missing))))
+          .isInstanceOf(BpmVisualEvidenceRunner.VisualEvidenceException.class)
+          .hasMessageContaining("não foi encontrado");
+    } finally {
+      Files.deleteIfExists(directory);
+    }
+  }
+
+  /** Exige que prompts visuais usem os anexos sem depender de bubblewrap no container. */
+  @Test
+  void instructsModelToInspectAttachedPixelsWithoutFilesystemTool() throws Exception {
+    String core =
+        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v3.md"));
+    String prompt =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/bpm/v2/pde-commercial-homologation-customer-review.md"));
+
+    org.assertj.core.api.Assertions.assertThat(core.replaceAll("\\s+", " "))
+        .contains("imagem anexada diretamente a este turno", "não tente reabrir o arquivo");
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("anexada diretamente a este", "sem tentar reabrir o", "filesystem");
   }
 
   /** Exige o núcleo afetivo, social e sensorial em todos os contratos BPM atuais. */
@@ -442,5 +512,30 @@ class CustomerBpmTaskConsumerTest {
         "a".repeat(64),
         java.time.Instant.parse("2026-08-29T10:00:00Z"),
         "/tmp/visual-" + id + ".png");
+  }
+
+  /** Monta um snapshot real em disco para validar os argumentos multimodais do comando. */
+  private BpmVisualEvidenceBackendClient.UploadedVisualEvidence visualEvidenceAt(
+      Long id, String evidenceType, Integer foldNumber, Path localPath) {
+    return new BpmVisualEvidenceBackendClient.UploadedVisualEvidence(
+        id,
+        "capture-abc",
+        evidenceType.toLowerCase() + "-" + id,
+        evidenceType,
+        foldNumber == null ? "Página 1 · visão completa" : "Página 1 · dobra " + foldNumber,
+        "IPHONE_15_PRO",
+        1,
+        foldNumber,
+        393,
+        852,
+        1704,
+        foldNumber == null ? 0 : (foldNumber - 1) * 852,
+        "https://rigel.example/jornada",
+        "https://rigel.example/jornada",
+        "/api/agent-tasks/265/visual-evidence/" + id + "/content",
+        1200L,
+        "a".repeat(64),
+        Instant.parse("2026-08-29T10:00:00Z"),
+        localPath.toString());
   }
 }

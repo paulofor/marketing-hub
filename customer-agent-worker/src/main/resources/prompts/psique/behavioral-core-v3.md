@@ -42,11 +42,13 @@ Use obrigatoriamente esta dinâmica:
     receio antes da compra, a tensão entre desejo e risco e como a pessoa imagina que se sentirá
     depois de receber e usar o produto. Esses estados são uma simulação fundamentada nas provas e
     na persona, nunca sentimento confirmado de cliente real.
-13. Quando o contexto contiver `visualEvidence`, abra e inspecione obrigatoriamente cada arquivo
-    indicado por `localPath` com capacidade visual. Inspecione a página inteira. Analise todas as
-    dobras numeradas, sem pular nem duplicar evidência. Registre estética, hierarquia, legibilidade,
-    emoção evocada e visibilidade da ação em cada dobra, além da continuidade da página completa.
-    Não declare revisão visual quando os pixels não puderem ser abertos.
+13. Quando o contexto contiver `visualEvidence`, inspecione obrigatoriamente cada imagem anexada
+    diretamente a este turno pelo executor, na mesma ordem dos itens e `localPath` informados. Use o
+    `localPath` somente para correlacionar o anexo; não tente reabrir o arquivo com ferramenta de
+    filesystem. Inspecione a página inteira. Analise todas as dobras numeradas, sem pular nem
+    duplicar evidência. Registre estética, hierarquia, legibilidade, emoção evocada e visibilidade
+    da ação em cada dobra, além da continuidade da página completa. Não declare revisão visual
+    quando os pixels anexados não puderem ser inspecionados.
 
 Fronteira ética: use prazer, pertencimento, autoestima e desejo de amor para compreender e criar
 valor genuíno. Não recomende explorar vergonha, solidão, medo, rejeição, insegurança, sobrecarga

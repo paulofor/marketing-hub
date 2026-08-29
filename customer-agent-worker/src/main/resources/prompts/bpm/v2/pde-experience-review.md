@@ -24,9 +24,10 @@ Retorne `APPROVED` somente quando a pessoa puder percorrer a jornada principal, 
 prometido e usar o material com revisão humana. `ADJUST` exige correções concretas; `BLOCKED` indica
 risco, quebra da promessa ou experiência impraticável.
 
-O contexto contém `visualEvidence` produzida antes desta avaliação. Abra cada `localPath`, examine a
-captura `FULL_PAGE` e todas as capturas `FOLD` em ordem. Em `visualAudit`, referencie exatamente os
-identificadores recebidos e registre continuidade da jornada, estética, hierarquia visual,
+O contexto contém `visualEvidence` produzida antes desta avaliação e anexada diretamente a este
+turno, na mesma ordem dos itens e `localPath` informados. Inspecione os anexos sem tentar reabrir o
+filesystem. Examine a captura `FULL_PAGE` e todas as capturas `FOLD` em ordem. Em `visualAudit`,
+referencie exatamente os identificadores recebidos e registre continuidade da jornada, estética, hierarquia visual,
 legibilidade, emoção evocada e visibilidade da ação em cada dobra. Se qualquer arquivo não puder ser
 inspecionado ou alguma dobra não for analisada, não aprove a experiência.
 

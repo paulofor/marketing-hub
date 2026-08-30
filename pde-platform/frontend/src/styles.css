@@ -3314,6 +3314,7 @@ h3 {
   --assisted-background: #f7f3eb;
   min-height: 100vh;
   padding: clamp(24px, 5vw, 72px);
+  -webkit-text-size-adjust: 100%;
   background:
     radial-gradient(
       circle at top right,
@@ -3322,6 +3323,7 @@ h3 {
     ),
     var(--assisted-background);
   color: var(--assisted-primary);
+  text-size-adjust: 100%;
 }
 
 .assisted-pde-shell h1,
@@ -3715,6 +3717,10 @@ h3 {
   font-size: clamp(2rem, 4vw, 3.8rem);
   line-height: 1.04;
   letter-spacing: -0.04em;
+}
+
+.assisted-pde-transformation h2 {
+  color: #ffffff;
 }
 
 .assisted-pde-transformation-grid {
@@ -4439,7 +4445,7 @@ h3 {
   .assisted-pde-proof-library,
   .assisted-pde-process,
   .assisted-pde-closing-offer {
-    gap: 20px;
+    gap: 16px;
   }
 
   .assisted-pde-tasting,
@@ -4448,8 +4454,28 @@ h3 {
   .assisted-pde-proof-library,
   .assisted-pde-process,
   .assisted-pde-closing-offer {
-    margin-top: 36px;
+    margin-top: 28px;
+    padding: 16px;
+  }
+
+  .assisted-pde-offer-card {
     padding: 20px;
+  }
+
+  .assisted-pde-offer-card > svg {
+    margin-bottom: 12px;
+  }
+
+  .assisted-pde-price {
+    margin-top: 16px;
+  }
+
+  .assisted-pde-offer-card small {
+    margin-top: 10px;
+  }
+
+  .assisted-pde-trust-grid {
+    margin-top: 22px;
   }
 
   .assisted-pde-entry,
@@ -4469,6 +4495,10 @@ h3 {
   .assisted-pde-transformation-arrow {
     transform: rotate(90deg);
     justify-self: center;
+  }
+
+  .assisted-pde-transformation-grid article {
+    padding: 16px;
   }
 
   .assisted-pde-tasting-options {
@@ -4500,7 +4530,7 @@ h3 {
   .assisted-pde-proof-grid article {
     grid-template-columns: 1fr;
     gap: 12px;
-    padding: 18px;
+    padding: 16px;
   }
 
   .assisted-pde-proof-grid .assisted-pde-proof-step {
@@ -4517,8 +4547,8 @@ h3 {
     display: grid;
     min-height: auto;
     grid-template-columns: 36px minmax(0, 1fr);
-    gap: 12px;
-    padding: 18px;
+    gap: 10px;
+    padding: 16px;
   }
 
   .assisted-pde-process li > span {
@@ -4526,9 +4556,28 @@ h3 {
   }
 
   .assisted-pde-preview {
-    gap: 20px;
-    margin-top: 42px;
-    padding-top: 26px;
+    gap: 14px;
+    margin-top: 32px;
+    padding-top: 20px;
+  }
+
+  .assisted-pde-preview h2 {
+    margin-bottom: 8px;
+    font-size: 1.35rem;
+  }
+
+  .assisted-pde-preview p {
+    margin-bottom: 0;
+    line-height: 1.5;
+  }
+
+  .assisted-pde-preview ul {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .assisted-pde-legal {
+    margin-top: 32px;
   }
 
   .assisted-pde-header {

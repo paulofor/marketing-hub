@@ -51,6 +51,15 @@
   título, empilhar provas e compactar etapas no mobile. O teste Playwright em Desktop Chrome, iPhone
   15 Pro e Pixel 7 agora bloqueia regressão de posição da ação, altura do título, largura útil de
   prova e controles, tamanho de rótulos e altura total da página.
+- **Fechamento de paridade do runtime visual em 2026-08-30:** a tarefa #269 consumiu as 12
+  evidências sem falha técnica e revelou três causas funcionais ainda mascaradas pelo teste local:
+  título de transformação herdando a cor global de `h2`, opção nativa truncada e repetição da oferta
+  numa página de 9.003 px. O teste anterior usava Playwright 1.61.1, enquanto Psique executava
+  Playwright 1.54.2; a mesma página media 7.341 px e 8.039 px, respectivamente, depois da correção.
+  A página passa a declarar contraste mínimo de 4,5:1, medir a largura textual real das opções,
+  reservar 900 px de margem entre o navegador moderno e o limite de 8.500 px de Psique, remover a
+  prova de oferta já repetida em duas superfícies comerciais e validar a imagem final no runtime
+  exato com todas as dobras e zero processos residuais.
 
 ## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
 

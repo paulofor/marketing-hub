@@ -69,7 +69,8 @@ function formatCost(value?: number, coverage?: string) {
 function requestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    { detail?: string; message?: string; error?: string } | undefined;
+    | { detail?: string; message?: string; error?: string }
+    | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -269,6 +270,28 @@ export default function IndependentBusinessProcessExecutionsPage() {
                             })
                           }
                         />
+                      ) : field.controlType === "SELECT" ? (
+                        <select
+                          id={controlId}
+                          className="form-select"
+                          required={field.required}
+                          value={input[field.key] ?? ""}
+                          onChange={(event) =>
+                            setInput({
+                              ...input,
+                              [field.key]: event.target.value,
+                            })
+                          }
+                        >
+                          {!field.required ? (
+                            <option value="">Não informado</option>
+                          ) : null}
+                          {(field.options ?? []).map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       ) : (
                         <input
                           id={controlId}

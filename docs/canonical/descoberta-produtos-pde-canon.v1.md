@@ -399,18 +399,49 @@ continua sendo a fonte detalhada do domínio, mas não pode existir como execuç
 processo. Retroativos devem preservar status e erro reais, identificar a origem do backfill e manter
 como ausentes horários, prompt, tokens ou custos que não tenham sido registrados na execução.
 
-Um ciclo dirigido não pode concluir nem marcar a tarefa do dossiê como concluída com menos
-de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de páginas
-comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto pelos
-marketplaces. A contagem deve deduplicar por referência e domínio, exigir aderência
-semântica e preservar ao menos dois caminhos independentes de confirmação. Dados ausentes
-devem bloquear o ciclo com a lacuna explícita, sem fabricar evidência e sem transformar
+Um ciclo dirigido não pode concluir com oportunidade `APPROVE` nem liberar o dossiê para a etapa
+seguinte com menos de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de
+páginas comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto
+pelos marketplaces. A pesquisa pode encerrar tecnicamente e preservar candidatas factuais como
+`RESEARCH_MORE`, desde que a lacuna permaneça explícita e nenhuma próxima etapa seja liberada. A
+contagem deve deduplicar por referência e domínio, exigir aderência semântica e preservar ao menos
+dois caminhos independentes de confirmação. Dados ausentes não podem ser fabricados nem transformar
 temperatura, score, ranking, anúncio ou página comercial em venda.
 
 O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de
 compra, afiliação, publicação, acesso a credenciais ou ampliação autônoma do limite.
 Enquanto a sessão Codex individual estiver desabilitada, o worker pode usar o plano
 determinístico seguro, sem alterar os gates comerciais.
+
+### Descoberta orientada a público e canal
+
+Por decisão de 2026-08-30, a mesma atividade de Argos aceita dois modos explícitos:
+
+- `VALIDATE_MARKET`: aprofunda um mercado ou dor já informados;
+- `DISCOVER_MARKETS`: parte de uma lente ampla de público, canal, contexto editorial e fontes de
+  referência para encontrar situações de compra e mercados candidatos.
+
+No modo de descoberta, Argos deve pesquisar em camadas independentes: linguagem espontânea da dor,
+comportamento no canal, alternativas gratuitas e pagas, ofertas e preços, reclamações, mecanismo
+científico candidato e inspiração das coleções vivas do repositório. As consultas devem ser curtas,
+atômicas e variadas; copiar o briefing inteiro para todas as fontes não constitui plano dirigido.
+
+Argos pode sugerir de duas a três **candidatas factuais de mercado** quando conseguir vincular cada
+uma a evidências coletadas. Isso não é priorização estratégica: Argos registra pessoa, cena, dor,
+linguagem, alternativas, esforço residual, sinais comerciais, aderência observável ao Instagram,
+fontes e lacunas. Atena continua sendo a única autoridade para escolher mercado prioritário,
+posicionamento, tese de oferta, formato do PDE e canal.
+
+Candidatas com evidência insuficiente podem permanecer visíveis como `RESEARCH_MORE`, para orientar
+a próxima coleta, sem se tornarem oportunidade aprovada. O mínimo de dez ofertas comparáveis, a
+cobertura Meta/Instagram e os demais gates continuam bloqueando `APPROVE`, mas não devem apagar uma
+candidata factual nem transformar falta de maturidade comercial em falha técnica.
+
+O planejamento e a síntese devem usar prompts e schemas versionados. O ciclo deve preservar as duas
+interações: request, resposta bruta, modelo, modo, tokens disponíveis, fontes acessadas e relatório
+estruturado. Toda referência devolvida pelo modelo deve apontar para um identificador de evidência
+realmente coletado; identificador inexistente bloqueia a execução em vez de ser corrigido ou
+ignorado silenciosamente.
 
 O worker de descoberta deve usar API de busca dedicada quando houver chave operacional
 configurada. A ordem preferencial inicial e:

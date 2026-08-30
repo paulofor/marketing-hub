@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:research-library": "node scripts/build-research-library.mjs",
+    "check:research-library": "node scripts/build-research-library.mjs --check",
     "start": "node src/worker.js",
-    "test": "node --test"
+    "test": "npm run check:research-library && node --test"
   },
   "engines": {
     "node": ">=20"

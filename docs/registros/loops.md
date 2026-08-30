@@ -664,14 +664,34 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Causa-raiz confirmada**: o worker materializava candidatos sempre que existia alguma evidência
   pública, mesmo quando o gate obrigatório de marketplace não passava. O backend, por sua vez,
   aplicava o mínimo de dez ofertas também ao resultado canônico vazio.
-- **Correção efetiva**: pesquisa dirigida sem ofertas suficientes passa a retornar zero
-  oportunidades e `RESEARCH_MORE`; o backend aceita esse encerramento honesto e continua
-  bloqueando qualquer candidato não vazio com menos de dez ofertas comparáveis. O filtro final
+- **Correção efetiva**: pesquisa dirigida sem ofertas suficientes pode retornar zero oportunidades
+  ou candidatas factuais em `RESEARCH_MORE`; o backend aceita esse encerramento honesto e continua
+  bloqueando `APPROVE` com menos de dez ofertas comparáveis. O filtro final
   compara palavras completas, ignora modalidade comercial genérica e consolida título e produtor;
   o backend repete a deduplicação, normaliza variações cosméticas e rejeita anúncios antes de
   contar o gate.
 - **Prevenção**: testes de contrato no worker e no backend protegem simultaneamente o resultado
-  vazio válido e a rejeição de candidatos artificiais ou comercialmente subcomprovados.
+  vazio válido, a visibilidade de sinais imaturos e a rejeição de aprovação artificial ou
+  comercialmente subcomprovada.
+
+## LOOP-PRODUCT-DISCOVERY-FALLBACK-GENERICO — Argos repete sugestões sem síntese factual
+
+- **Severidade**: ALTO.
+- **Status**: corrigido localmente em 2026-08-30; aguarda publicação.
+- **Sintoma confirmado no histórico**: os ciclos 40 a 44 registraram
+  `deterministic-fallback-v1`; a coleta rasa alimentava os mesmos três moldes de sugestão e não
+  conseguia explorar mercados a partir do comportamento de pessoas no Instagram.
+- **Causa-raiz confirmada**: o deploy desligava explicitamente o Codex, o prompt de síntese
+  versionado não era chamado, os artigos de `/pesquisas` não entravam na imagem, B2C dependia de
+  palavras incidentais no briefing e os limites de coleta eram insuficientes para comparar lentes
+  distintas.
+- **Correção efetiva**: Argos v4 separa planejamento e síntese factual, usa modo e tipo de comprador
+  explícitos, indexa os Markdown por caminho e hash, aceita fontes editoriais, amplia consultas
+  públicas e só materializa candidatas que citem evidências coletadas. O fallback preserva zero
+  candidatas e declara a degradação. Atena continua como única autora da priorização e da estratégia.
+- **Prevenção**: contratos testam modelo ativo no deploy, índice sincronizado, referências válidas,
+  rejeição de molde genérico, opções da tela, auditoria das duas chamadas e persistência de
+  `RESEARCH_MORE` sem promover evidência insuficiente a aprovação.
 
 ## LOOP-PRODUCT-DISCOVERY-ORPHANED-LEASE — pesquisa interrompida bloqueia a fila
 

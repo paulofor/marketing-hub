@@ -13,6 +13,7 @@ COPY package.json ./
 COPY src ./src
 COPY prompts ./prompts
 COPY scripts ./scripts
+COPY research-library ./research-library
 
 ENV NODE_ENV=production
 

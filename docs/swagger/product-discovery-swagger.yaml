@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Discovery
-  version: 1.0.0
+  version: 1.1.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
@@ -117,6 +117,12 @@ paths:
           name: cycleId
           required: true
           schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductDiscoveryResult"
       responses:
         "200": { description: Pesquisa concluída }
         "409": { description: Lease expirado ou substituído }
@@ -278,13 +284,82 @@ components:
         lastObservedAt: { type: string, format: date-time }
     ProductDiscoveryPendingExecution:
       type: object
-      required: [cycleId, executionLeaseId, executionAttempt]
+      required:
+        [
+          cycleId,
+          pipelineCode,
+          stageCode,
+          theme,
+          country,
+          language,
+          researchMode,
+          marketType,
+          executionLeaseId,
+          executionAttempt,
+        ]
       properties:
         cycleId: { type: integer, format: int64 }
+        pipelineCode: { type: string, enum: [productdiscovery.v1] }
+        stageCode: { type: string, enum: [research] }
         executionLeaseId: { type: string, format: uuid }
         executionAttempt: { type: integer, minimum: 1 }
         theme: { type: string }
         targetAudience: { type: string, nullable: true }
+        country: { type: string }
+        language: { type: string }
+        acquisitionChannel: { type: string, nullable: true }
+        commercialConstraints: { type: string, nullable: true }
+        forbiddenCategories: { type: string, nullable: true }
+        objective: { type: string, nullable: true }
+        researchMode:
+          { type: string, enum: [DISCOVER_MARKETS, VALIDATE_MARKET] }
+        marketType: { type: string, enum: [B2C, B2B, UNSPECIFIED] }
+        referenceSources:
+          type: string
+          nullable: true
+          description: Uma URL editorial pública por linha.
+    ProductDiscoveryResult:
+      type: object
+      required: [executionLeaseId, decisionSummary, opportunities]
+      properties:
+        executionLeaseId: { type: string, format: uuid }
+        decisionSummary: { type: string }
+        opportunities:
+          type: array
+          description: Candidatas factuais; sinais imaturos permanecem RESEARCH_MORE.
+          items: { type: object }
+        evidenceReport:
+          type: object
+          nullable: true
+          description: Cobertura funcional das fontes e gates, separada da auditoria técnica.
+        analysisAudit:
+          $ref: "#/components/schemas/ProductDiscoveryAnalysisAudit"
+    ProductDiscoveryAnalysisAudit:
+      type: object
+      nullable: true
+      required: [rawResponse, model, executionMode]
+      properties:
+        rawResponse: { type: string }
+        model: { type: string, maxLength: 128 }
+        executionMode: { type: string, enum: [MODEL, DETERMINISTIC] }
+        promptSent: { type: string, nullable: true }
+        agentPromptPart: { type: string, nullable: true }
+        activityPromptPart: { type: string, nullable: true }
+        reasoningEffort: { type: string, nullable: true }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        accessedUrls:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required: [url]
+            properties:
+              url: { type: string, format: uri }
+              label: { type: string, nullable: true }
+              accessMethod: { type: string, nullable: true }
+              accessedAt: { type: string, format: date-time, nullable: true }
     ProductDiscoveryLegacyCleanup:
       type: object
       properties:
@@ -378,6 +453,17 @@ components:
           example: pt-BR
         acquisitionChannel:
           type: string
+        researchMode:
+          type: string
+          enum: [DISCOVER_MARKETS, VALIDATE_MARKET]
+          default: VALIDATE_MARKET
+        marketType:
+          type: string
+          enum: [B2C, B2B, UNSPECIFIED]
+          default: UNSPECIFIED
+        referenceSources:
+          type: string
+          description: Uma URL editorial pública por linha.
         commercialConstraints:
           type: string
         forbiddenCategories:

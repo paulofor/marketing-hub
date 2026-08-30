@@ -10,6 +10,6 @@
     {"key":"landing-generator","module":"landing-generator-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":4,"versionSources":["landing-generator-agent-worker/docker-compose.yml"]},
     {"key":"communication-director","module":"communication-agent-worker","reporter":"agent-health-report.mjs","activation":"docker-compose.yml","expectedVersion":1,"versionSources":["communication-agent-worker/docker-compose.yml"]},
     {"key":"videomaker","module":"video-management-service","reporter":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","activation":"src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java","expectedVersion":3,"versionSources":["video-management-service/src/main/resources/application.yml"]},
-    {"key":"market-radar","module":"product-discovery-worker","reporter":"src/agent-health-reporter.js","activation":"src/worker.js","expectedVersion":3,"versionSources":["product-discovery-worker/docker-compose.yml","product-discovery-worker/docker-compose.deploy.yml"]}
+    {"key":"market-radar","module":"product-discovery-worker","reporter":"src/agent-health-reporter.js","activation":"src/worker.js","expectedVersion":4,"versionSources":["product-discovery-worker/docker-compose.yml","product-discovery-worker/docker-compose.deploy.yml"]}
   ]
 }

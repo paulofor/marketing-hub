@@ -92,6 +92,36 @@ public class ProductDiscoveryBpmAuditService {
         modelInvocation(request.executionMode()));
   }
 
+  /** Atualiza a tarefa com a síntese factual, tokens agregados e URLs realmente consultadas. */
+  public void recordAnalysis(
+      ProductDiscoveryCycle cycle, ProductDiscoveryAnalysisAuditRequest request) {
+    Long taskId = ensureClaimed(cycle);
+    Boolean modelInvocation = modelInvocation(request.executionMode());
+    agentTaskService.recordClaimedProcessTaskExecutionAudit(
+        AGENT_KEY,
+        taskId,
+        request.model(),
+        request.reasoningEffort(),
+        request.promptSent(),
+        request.agentPromptPart(),
+        request.activityPromptPart(),
+        request.inputTokens(),
+        request.cachedInputTokens(),
+        request.outputTokens(),
+        modelInvocation);
+    agentTaskService.recordClaimedProcessTaskExecutionAudit(
+        AGENT_KEY,
+        taskId,
+        new AgentTaskExecutionAuditRequest(
+            Boolean.TRUE.equals(modelInvocation) ? "MODEL" : "DETERMINISTIC",
+            request.model(),
+            Boolean.FALSE.equals(modelInvocation) ? "NOT_APPLICABLE" : request.reasoningEffort(),
+            request.promptSent(),
+            request.agentPromptPart(),
+            request.activityPromptPart(),
+            request.accessedUrls() == null ? List.of() : request.accessedUrls()));
+  }
+
   /** Conclui a tarefa BPM com decisão, oportunidades e plano estruturados do ciclo real. */
   public void complete(
       ProductDiscoveryCycle cycle, List<ProductDiscoveryOpportunity> opportunities) {
@@ -205,6 +235,11 @@ public class ProductDiscoveryBpmAuditService {
     result.put("cycleId", cycle.getId());
     result.put("status", cycle.getStatus().name());
     result.put("stageCode", cycle.getStageCode());
+    result.put(
+        "researchMode",
+        cycle.getResearchMode() == null ? "VALIDATE_MARKET" : cycle.getResearchMode().name());
+    result.put(
+        "marketType", cycle.getMarketType() == null ? "UNSPECIFIED" : cycle.getMarketType().name());
     return result;
   }
 
@@ -225,6 +260,20 @@ public class ProductDiscoveryBpmAuditService {
       evidence.set(
           "researchPlanRawResponse",
           parseAuditJson(cycle, "researchPlanRawResponse", cycle.getResearchPlanRawResponse()));
+    }
+    if (StringUtils.hasText(cycle.getResearchAnalysisModel())) {
+      evidence.put("researchAnalysisModel", cycle.getResearchAnalysisModel());
+    }
+    if (StringUtils.hasText(cycle.getResearchAnalysisRawResponse())) {
+      evidence.set(
+          "researchAnalysisRawResponse",
+          parseAuditJson(
+              cycle, "researchAnalysisRawResponse", cycle.getResearchAnalysisRawResponse()));
+    }
+    if (StringUtils.hasText(cycle.getResearchEvidenceReportJson())) {
+      evidence.set(
+          "researchEvidenceReport",
+          parseAuditJson(cycle, "researchEvidenceReport", cycle.getResearchEvidenceReportJson()));
     }
     return evidence;
   }
@@ -248,7 +297,8 @@ public class ProductDiscoveryBpmAuditService {
   /** Distingue chamada real de modelo do fallback determinístico sem inferir modo legado. */
   private Boolean modelInvocation(String executionMode) {
     if (!StringUtils.hasText(executionMode)) return null;
-    if ("CODEX".equalsIgnoreCase(executionMode.trim())) return true;
+    if ("CODEX".equalsIgnoreCase(executionMode.trim())
+        || "MODEL".equalsIgnoreCase(executionMode.trim())) return true;
     if ("DETERMINISTIC".equalsIgnoreCase(executionMode.trim())) return false;
     throw new IllegalArgumentException("Modo de execução do plano de pesquisa não reconhecido.");
   }

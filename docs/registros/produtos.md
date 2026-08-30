@@ -1,5 +1,18 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-30 — Argos amplia a descoberta factual para aquisição pelo Instagram
+
+- Evidência histórica: os ciclos 40 a 44 operaram em fallback determinístico, com pouca cobertura e
+  sugestões genéricas, apesar de existirem artigos e fontes editoriais úteis para abrir novas lentes.
+- Decisão: manter Argos como investigador factual e Atena como estrategista; criar outro agente
+  duplicaria coleta, custo e autoridade sem resolver a falta de evidência.
+- Evolução: a tela passa a declarar descoberta ou validação, B2C/B2B, Instagram e fontes editoriais;
+  o worker cruza web, `/pesquisas`, ofertas e cobertura Meta antes de organizar candidatas distintas.
+- Gate comercial: candidata imatura pode permanecer visível como `RESEARCH_MORE`; aprovação continua
+  exigindo dez ofertas comparáveis e os gates canônicos. Sugestão, anúncio e intenção não são venda.
+- Métrica de liberação: toda candidata deve ligar público, situação, dor, alternativa, esforço,
+  potencial visual e risco apenas a evidências identificadas e auditáveis.
+
 ## 2026-08-29 — Consultores enriquecidos pelos comentários e artigos da pesquisa
 
 - Evidência recorrente: pessoas procuram ajuda em momentos concretos, pagam por trabalho

@@ -1,45 +1,70 @@
 {
   "type": "object",
-  "required": ["decisionSummary", "opportunities"],
+  "additionalProperties": false,
+  "required": ["decisionSummary", "candidates"],
   "properties": {
     "decisionSummary": { "type": "string" },
-    "opportunities": {
+    "candidates": {
       "type": "array",
+      "maxItems": 3,
       "items": {
         "type": "object",
-        "required": ["name", "primaryAudience", "rootPain", "humanValueTerritories", "humanValueEvidence", "readyMadeDeliverable", "minimumCustomerInput", "requiresPromptEngineering", "requiresManualAssembly", "usableWithoutAiKnowledge", "customerStepsToValue", "score", "decision"],
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "primaryAudience",
+          "purchaseSituation",
+          "rootPain",
+          "practicalPain",
+          "emotionalPain",
+          "observedLanguage",
+          "currentAlternatives",
+          "residualEffort",
+          "scaleEvidence",
+          "unmetnessEvidence",
+          "pdeValueBoundary",
+          "instagramFitEvidence",
+          "commercialRisk",
+          "evidenceIds",
+          "maturity"
+        ],
         "properties": {
           "name": { "type": "string" },
           "primaryAudience": { "type": "string" },
+          "purchaseSituation": { "type": "string" },
           "rootPain": { "type": "string" },
-          "humanValueTerritories": {
-            "type": "array",
-            "minItems": 1,
-            "uniqueItems": true,
-            "items": {
-              "type": "string",
-              "enum": ["AFFECTION_AND_BELONGING", "RECOGNITION", "EFFORT_RELIEF"]
-            }
-          },
-          "humanValueEvidence": { "type": "string" },
-          "readyMadeDeliverable": { "type": "string" },
-          "minimumCustomerInput": { "type": "string" },
-          "requiresPromptEngineering": { "type": "boolean" },
-          "requiresManualAssembly": { "type": "boolean" },
-          "usableWithoutAiKnowledge": { "type": "boolean" },
-          "customerStepsToValue": { "type": "integer", "minimum": 1, "maximum": 5 },
           "practicalPain": { "type": "string" },
           "emotionalPain": { "type": "string" },
+          "observedLanguage": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "currentAlternatives": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "residualEffort": { "type": "string" },
           "scaleEvidence": { "type": "string" },
           "unmetnessEvidence": { "type": "string" },
-          "pdeExperience": { "type": "string" },
-          "firstCampaignAngle": { "type": "string" },
+          "pdeValueBoundary": { "type": "string" },
+          "instagramFitEvidence": { "type": "string" },
           "commercialRisk": { "type": "string" },
-          "evidenceJson": { "type": "string" },
-          "score": { "type": "number" },
-          "decision": {
+          "evidenceIds": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "string" }
+          },
+          "maturity": {
             "type": "string",
-            "enum": ["APPROVE", "RESEARCH_MORE", "REJECT", "HUMAN_REVIEW"]
+            "enum": [
+              "SIGNAL",
+              "RESEARCHABLE",
+              "DOSSIER_READY",
+              "HUMAN_REVIEW",
+              "REJECTED"
+            ]
           }
         }
       }

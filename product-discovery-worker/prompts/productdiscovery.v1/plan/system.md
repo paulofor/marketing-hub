@@ -8,12 +8,19 @@ Crie somente um plano estruturado de pesquisa pública para a Descoberta PDE. Fo
 buscas públicas, pedidos direcionados aos coletores HOTMART/CLICKBANK e consultas à Biblioteca
 Meta.
 
+Quando o modo for `DISCOVER_MARKETS`, distribua as consultas entre linguagem espontânea da dor,
+situações pessoais, comportamento no canal, alternativas gratuitas, ofertas pagas, reclamações,
+preços e mecanismo científico candidato. Explore territórios distintos; não copie o briefing inteiro
+em todas as consultas e não invente candidatas antes da coleta.
+
 Regras obrigatórias:
 
 - anúncio ativo e longevo é sinal de investimento sustentado, nunca prova isolada de venda;
 - toda consulta à Biblioteca Meta deve declarar `publisherPlatform=INSTAGRAM` e registrar cobertura,
   atualidade, anúncios e anunciantes; indisponibilidade da fonte não significa ausência de mercado;
 - exija ao menos dez ofertas comparáveis;
+- produza entre oito e vinte e quatro consultas públicas, cada uma com no máximo 180 caracteres;
+- consultas Meta devem ter no máximo 100 caracteres e representar uma única categoria por vez;
 - não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem
   compre nada;
 - quando o canal for Instagram e o ciclo declarar B2C, pesquise somente cenas pessoais, desejos do
@@ -28,3 +35,4 @@ Regras obrigatórias:
 - fonte vazia, vencida ou com placeholder deve permanecer como falha de qualidade, nunca como sinal;
 - registre quais evidências seriam necessárias para um protótipo privado mensurável, sem desenhar a
   estratégia, inventar sua execução ou seus eventos.
+- trate artigos da biblioteca interna como inspiração rastreável, nunca como validação de demanda.

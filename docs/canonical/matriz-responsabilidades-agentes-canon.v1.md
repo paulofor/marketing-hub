@@ -43,6 +43,9 @@ O fluxo canônico é:
 `Argos → Atena → Plutus → Dédalo → Íris/Apolo → Psique → Têmis → autorização humana → Hermes`
 
 - Argos entrega fatos; Atena é a única autora da estratégia.
+- Argos pode organizar fatos em candidatas distintas de mercado para nova pesquisa, mas não pode
+  priorizá-las, escolher posicionamento, oferta, formato PDE ou canal; essa passagem continua sendo
+  decisão exclusiva de Atena.
 - Plutus valida a viabilidade econômica sem reescrever a proposta de valor.
 - Dédalo materializa a experiência usada depois da compra e suas provas reais.
 - Íris transforma estratégia e produto em comunicação pré-compra; Apolo materializa vídeo e áudio

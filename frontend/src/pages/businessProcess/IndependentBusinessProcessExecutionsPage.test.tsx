@@ -22,12 +22,52 @@ const catalog = [
     executionAvailabilityReason: "Pronto para iniciar sem produto.",
     inputFields: [
       {
+        key: "researchMode",
+        label: "O que Argos deve fazer?",
+        controlType: "SELECT",
+        required: true,
+        maxLength: 32,
+        defaultValue: "DISCOVER_MARKETS",
+        helpText: "Descobrir ou validar um mercado.",
+        options: [
+          { value: "DISCOVER_MARKETS", label: "Descobrir mercados candidatos" },
+          { value: "VALIDATE_MARKET", label: "Validar um mercado informado" },
+        ],
+      },
+      {
+        key: "marketType",
+        label: "Tipo de comprador",
+        controlType: "SELECT",
+        required: true,
+        maxLength: 32,
+        defaultValue: "B2C",
+        options: [
+          { value: "B2C", label: "Pessoa física (B2C)" },
+          { value: "B2B", label: "Empresa (B2B)" },
+        ],
+      },
+      {
         key: "theme",
-        label: "Tema ou pergunta de mercado",
+        label: "Público, universo ou mercado de partida",
         controlType: "TEXT",
         required: true,
         maxLength: 191,
         helpText: "Descreva a dor pesquisada.",
+      },
+      {
+        key: "acquisitionChannel",
+        label: "Canal provável de aquisição",
+        controlType: "TEXT",
+        required: false,
+        maxLength: 120,
+        defaultValue: "Instagram",
+      },
+      {
+        key: "referenceSources",
+        label: "Fontes editoriais de referência",
+        controlType: "TEXTAREA",
+        required: false,
+        maxLength: 5000,
       },
       {
         key: "country",
@@ -141,9 +181,18 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(await screen.findByDisplayValue("BR")).toBeInTheDocument();
     expect(screen.getByDisplayValue("pt-BR")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Descobrir mercados candidatos" }),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Pessoa física (B2C)")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Instagram")).toBeInTheDocument();
     await user.type(
-      screen.getByLabelText("Tema ou pergunta de mercado *"),
+      screen.getByLabelText("Público, universo ou mercado de partida *"),
       "agenda vazia para manicures",
+    );
+    await user.type(
+      screen.getByLabelText("Fontes editoriais de referência"),
+      "https://revistamarieclaire.globo.com/",
     );
     await user.click(screen.getByRole("button", { name: "Iniciar processo" }));
 
@@ -154,6 +203,10 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       requestedByName: "Marketing Hub",
       input: {
         theme: "agenda vazia para manicures",
+        researchMode: "DISCOVER_MARKETS",
+        marketType: "B2C",
+        acquisitionChannel: "Instagram",
+        referenceSources: "https://revistamarieclaire.globo.com/",
         country: "BR",
         language: "pt-BR",
       },

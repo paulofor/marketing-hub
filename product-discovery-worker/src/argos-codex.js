@@ -212,8 +212,10 @@ export function parseCodexUsage(stdout) {
 
 /** Produz um plano seguro quando o piloto Codex está desligado ou ainda sem sessão. */
 export function deterministicPlan(job) {
-  const theme = [job.theme, job.targetAudience].filter(Boolean).join(" ");
+  const theme = compactQuery([job.theme, job.targetAudience].filter(Boolean).join(" "));
   const consumerInstagramFocus = requiresConsumerInstagramFocus(job);
+  const discoveryMode = job.researchMode === "DISCOVER_MARKETS";
+  const referenceQueries = referenceSourceQueries(job, theme);
   const plan = {
     questions: consumerInstagramFocus
       ? [
@@ -226,11 +228,17 @@ export function deterministicPlan(job) {
           `Qual evidência mostra busca por afeto, reconhecimento ou alívio de esforço em ${theme}?`,
           `Que resultado pronto elimina prompting, configuração e montagem manual em ${theme}?`,
         ]
-      : [
-          `Quais produtos pagos resolvem ${theme}?`,
-          `Quais promessas, preços e mecanismos se repetem em ${theme}?`,
-          `Quais reclamações revelam uma lacuna explorável em ${theme}?`,
-        ],
+      : discoveryMode
+        ? [
+            `Que situações pessoais recorrentes aparecem em ${theme}?`,
+            `Quais alternativas gratuitas e pagas já são usadas em ${theme}?`,
+            `Onde há esforço residual, urgência e linguagem de compra em ${theme}?`,
+          ]
+        : [
+            `Quais produtos pagos resolvem ${theme}?`,
+            `Quais preços e alternativas se repetem em ${theme}?`,
+            `Quais reclamações revelam uma lacuna explorável em ${theme}?`,
+          ],
     publicQueries: consumerInstagramFocus
       ? [
           `${theme} consumidor preço review reclamação`,
@@ -242,19 +250,29 @@ export function deterministicPlan(job) {
           `${theme} sentir valorizado reconhecido pertencimento relato`,
           `${theme} difícil trabalhoso IA prompt configurar montar reclamação`,
           `${theme} solução pronta para usar resultado imediato`,
+          ...referenceQueries,
         ]
       : [
-          `${theme} preço review reclamação`,
-          `${theme} curso produto digital vale a pena`,
+          `${theme} relato dificuldade reclamação`,
+          `${theme} alternativa grátis preço review`,
+          `${theme} produto serviço assinatura vale a pena`,
+          `${theme} fórum comunidade dúvida recorrente`,
+          `${theme} prazo urgência tentativa frustrada`,
+          `${theme} trabalhoso manual confuso`,
+          `${theme} estudo científico mecanismo`,
           `${theme} anúncio oferta depoimento`,
+          ...referenceQueries,
         ],
     marketplaceRequests: [
-      { marketplace: "HOTMART", query: theme, maxProducts: 10 },
-      { marketplace: "CLICKBANK", query: theme, maxProducts: 10 },
+      { marketplace: "HOTMART", query: compactQuery(theme, 80), maxProducts: 10 },
+      { marketplace: "CLICKBANK", query: compactQuery(theme, 80), maxProducts: 10 },
     ],
     metaAdRequests: [
       {
-        query: consumerInstagramFocus ? `${theme} consumidor` : theme,
+        query: compactQuery(
+          consumerInstagramFocus ? `${theme} consumidor` : theme,
+          100,
+        ),
         country: "BR",
         publisherPlatform: "INSTAGRAM",
         maxAds: 25,
@@ -276,6 +294,9 @@ export function deterministicPlan(job) {
         : []),
     ],
   };
+  plan.publicQueries = [
+    ...new Set(plan.publicQueries.map((query) => compactQuery(query, 180))),
+  ].slice(0, 24);
   return {
     plan,
     rawResponse: JSON.stringify(plan),
@@ -296,7 +317,8 @@ export function validatePlan(plan) {
     !Array.isArray(plan.questions) ||
     plan.questions.length < 3 ||
     !Array.isArray(plan.publicQueries) ||
-    plan.publicQueries.length < 3 ||
+    plan.publicQueries.length < 8 ||
+    plan.publicQueries.length > 24 ||
     !Array.isArray(plan.marketplaceRequests) ||
     plan.marketplaceRequests.length === 0 ||
     !Array.isArray(plan.metaAdRequests) ||
@@ -304,6 +326,13 @@ export function validatePlan(plan) {
     plan.minimumComparableOffers < 10
   ) {
     throw new Error("Plano dirigido de Argos fora do contrato v1");
+  }
+  if (
+    plan.publicQueries.some(
+      (query) => !query || Array.from(query).length > 180,
+    )
+  ) {
+    throw new Error("Consulta pública de Argos deve ser curta e atômica");
   }
   for (const request of plan.marketplaceRequests) {
     if (!["HOTMART", "CLICKBANK"].includes(request.marketplace)) {
@@ -316,6 +345,7 @@ export function validatePlan(plan) {
   for (const request of plan.metaAdRequests) {
     if (
       !request.query ||
+      Array.from(request.query).length > 100 ||
       !request.country ||
       request.publisherPlatform !== "INSTAGRAM" ||
       request.maxAds < 1 ||
@@ -346,6 +376,14 @@ async function buildPromptComposition(job) {
     acquisitionChannel: job.acquisitionChannel || "não informado",
     commercialConstraints: job.commercialConstraints || "não informadas",
     objective: job.objective || "não informado",
+    researchMode: job.researchMode || "VALIDATE_MARKET",
+    marketType: job.marketType || "UNSPECIFIED",
+    referenceSources: job.referenceSources || "não informadas",
+    researchLibraryContext: JSON.stringify(
+      job.researchLibraryContext || { evidence: [], coverage: [] },
+      null,
+      2,
+    ),
   };
   const agentPromptPart = systemPrompt.trim();
   const activityPromptPart = resolvePromptPlaceholders(
@@ -377,8 +415,40 @@ function resolvePromptPlaceholders(template, values) {
 function requiresConsumerInstagramFocus(job) {
   return (
     /instagram/i.test(String(job?.acquisitionChannel || "")) &&
-    /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
-      `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
-    )
+    (job?.marketType === "B2C" ||
+      /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
+        `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
+      ))
   );
+}
+
+/** Reduz briefings longos a uma consulta legível sem cortar a intenção central. */
+function compactQuery(value, maxLength = 140) {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  if (Array.from(normalized).length <= maxLength) return normalized;
+  return Array.from(normalized)
+    .slice(0, maxLength)
+    .join("")
+    .replace(/\s+\S*$/, "")
+    .trim();
+}
+
+/** Converte fontes editoriais declaradas em buscas públicas por domínio, sem raspar área privada. */
+function referenceSourceQueries(job, theme) {
+  return String(job?.referenceSources || "")
+    .split(/[\n,]+/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .flatMap((value) => {
+      try {
+        const domain = new URL(value).hostname.replace(/^www\./, "");
+        return [
+          compactQuery(`site:${domain} ${theme}`, 180),
+          compactQuery(`site:${domain} ${theme} problema desejo tendência`, 180),
+        ];
+      } catch {
+        return [];
+      }
+    })
+    .slice(0, 6);
 }

@@ -38,6 +38,7 @@ CREATE TABLE business_process_activity_definition (
 CREATE TABLE agent (
   id BIGINT NOT NULL AUTO_INCREMENT,
   agent_key VARCHAR(100) NOT NULL,
+  current_version INT NOT NULL DEFAULT 3,
   PRIMARY KEY (id),
   UNIQUE KEY uk_audit_agent_key (agent_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

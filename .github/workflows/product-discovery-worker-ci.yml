@@ -5,11 +5,13 @@ on:
     branches: ["main", "master"]
     paths:
       - "product-discovery-worker/**"
+      - "pesquisas/**"
       - "scripts/test-isolated-agent-codex-auth.sh"
       - ".github/workflows/product-discovery-worker-ci.yml"
   pull_request:
     paths:
       - "product-discovery-worker/**"
+      - "pesquisas/**"
       - "scripts/test-isolated-agent-codex-auth.sh"
       - ".github/workflows/product-discovery-worker-ci.yml"
   workflow_dispatch:
@@ -159,7 +161,7 @@ jobs:
             && export PRODUCT_DISCOVERY_SEARCH_LANGUAGE='pt-br' \
             && export BRAVE_SEARCH_API_KEY_HOST_FILE='/root/infra/brave-token/brave_api_key' \
             && export ARGOS_CODEX_HOME='/root/infra/argos/codex-home' \
-            && export ARGOS_CODEX_ENABLED='false' \
+            && export ARGOS_CODEX_ENABLED='true' \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
             && for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24; do \

@@ -249,6 +249,18 @@ public class IndependentBusinessProcessExecutionService {
         throw invalid(
             "O campo " + field.label() + " aceita até " + field.maxLength() + " caracteres.");
       }
+      if (value != null && field.options() != null && !field.options().isEmpty()) {
+        boolean validOption = false;
+        for (var option : field.options()) {
+          if (option.value().equals(value)) {
+            validOption = true;
+            break;
+          }
+        }
+        if (!validOption) {
+          throw invalid("O campo " + field.label() + " possui uma opção inválida.");
+        }
+      }
       if (value != null && !value.isBlank()) normalized.put(field.key(), value);
     }
     return normalized;

@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.businessprocess.independent.service.IndependentBusinessProcessExecutionHandler;
 import com.marketinghub.businessprocess.independent.service.IndependentBusinessProcessStartedExecution;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputFieldResponse;
+import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputOptionResponse;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryMarketType;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +33,31 @@ public class ProductDiscoveryIndependentBusinessProcessExecutionHandler
   @Override
   public List<IndependentBusinessProcessInputFieldResponse> inputFields() {
     return List.of(
+        selectField(
+            "researchMode",
+            "O que Argos deve fazer?",
+            true,
+            "DISCOVER_MARKETS",
+            "Descobrir parte de público, canal e fontes; validar aprofunda um mercado já escolhido.",
+            List.of(
+                new IndependentBusinessProcessInputOptionResponse(
+                    "DISCOVER_MARKETS", "Descobrir mercados candidatos"),
+                new IndependentBusinessProcessInputOptionResponse(
+                    "VALIDATE_MARKET", "Validar um mercado informado"))),
+        selectField(
+            "marketType",
+            "Tipo de comprador",
+            true,
+            "B2C",
+            "Declare o comprador para Argos aplicar os gates corretos sem inferir pelo texto.",
+            List.of(
+                new IndependentBusinessProcessInputOptionResponse("B2C", "Pessoa física (B2C)"),
+                new IndependentBusinessProcessInputOptionResponse("B2B", "Empresa (B2B)"),
+                new IndependentBusinessProcessInputOptionResponse(
+                    "UNSPECIFIED", "Ainda não definido"))),
         field(
             "theme",
-            "Tema ou pergunta de mercado",
+            "Público, universo ou mercado de partida",
             "TEXT",
             true,
             191,
@@ -52,8 +77,16 @@ public class ProductDiscoveryIndependentBusinessProcessExecutionHandler
             "TEXT",
             false,
             120,
-            null,
+            "Instagram",
             "Ex.: TikTok, Instagram, Google ou WhatsApp."),
+        field(
+            "referenceSources",
+            "Fontes editoriais de referência",
+            "TEXTAREA",
+            false,
+            5000,
+            null,
+            "Uma URL pública por linha, como revista, comunidade ou publicação que represente o público."),
         field(
             "objective",
             "Objetivo comercial da pesquisa",
@@ -96,7 +129,10 @@ public class ProductDiscoveryIndependentBusinessProcessExecutionHandler
                 text(input, "acquisitionChannel"),
                 text(input, "commercialConstraints"),
                 text(input, "forbiddenCategories"),
-                text(input, "objective")));
+                text(input, "objective"),
+                researchMode(input),
+                marketType(input),
+                text(input, "referenceSources")));
     return new IndependentBusinessProcessStartedExecution(
         "product-discovery-cycle:" + cycle.id(), cycle.theme());
   }
@@ -114,9 +150,37 @@ public class ProductDiscoveryIndependentBusinessProcessExecutionHandler
         key, label, controlType, required, maxLength, defaultValue, helpText);
   }
 
+  /** Constrói um campo seletivo cujas opções também serão validadas pelo backend. */
+  private IndependentBusinessProcessInputFieldResponse selectField(
+      String key,
+      String label,
+      boolean required,
+      String defaultValue,
+      String helpText,
+      List<IndependentBusinessProcessInputOptionResponse> options) {
+    return new IndependentBusinessProcessInputFieldResponse(
+        key, label, "SELECT", required, 32, defaultValue, helpText, options);
+  }
+
   /** Lê texto já normalizado pelo serviço genérico sem fabricar valor ausente. */
   private String text(JsonNode input, String key) {
     JsonNode value = input.get(key);
     return value == null || value.isNull() ? null : value.asText();
+  }
+
+  /** Preserva validação dirigida para chamadas antigas que não passaram pela tela dinâmica. */
+  private ProductDiscoveryResearchMode researchMode(JsonNode input) {
+    String value = text(input, "researchMode");
+    return value == null
+        ? ProductDiscoveryResearchMode.VALIDATE_MARKET
+        : ProductDiscoveryResearchMode.valueOf(value);
+  }
+
+  /** Evita inferir consumidor em integrações antigas sem declaração explícita. */
+  private ProductDiscoveryMarketType marketType(JsonNode input) {
+    String value = text(input, "marketType");
+    return value == null
+        ? ProductDiscoveryMarketType.UNSPECIFIED
+        : ProductDiscoveryMarketType.valueOf(value);
   }
 }

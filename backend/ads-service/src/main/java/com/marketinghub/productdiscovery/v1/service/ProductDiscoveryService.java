@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryMarketType;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.time.Duration;
@@ -74,6 +76,15 @@ public class ProductDiscoveryService {
     cycle.setCommercialConstraints(optionalText(request.commercialConstraints()));
     cycle.setForbiddenCategories(optionalText(request.forbiddenCategories()));
     cycle.setObjective(optionalText(request.objective()));
+    cycle.setResearchMode(
+        request.researchMode() == null
+            ? ProductDiscoveryResearchMode.VALIDATE_MARKET
+            : request.researchMode());
+    cycle.setMarketType(
+        request.marketType() == null
+            ? ProductDiscoveryMarketType.UNSPECIFIED
+            : request.marketType());
+    cycle.setReferenceSources(optionalText(request.referenceSources()));
     cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
     cycle.setStageCode(STAGE_CODE);
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
@@ -375,6 +386,7 @@ public class ProductDiscoveryService {
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
     validateExecutionLease(cycle, request.executionLeaseId());
+    recordResearchArtifacts(cycle, request);
     validateMarketplaceEvidenceGate(cycle, request);
     validatePurchaseMomentGate(cycle, request);
     opportunityRepository.deleteAllByCycleId(cycleId);
@@ -404,6 +416,9 @@ public class ProductDiscoveryService {
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
     List<ProductDiscoveryOpportunity> savedOpportunities =
         opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId);
+    if (request.analysisAudit() != null) {
+      bpmAuditService.recordAnalysis(saved, request.analysisAudit());
+    }
     bpmAuditService.complete(saved, savedOpportunities);
     dossierResearchSyncService.synchronize(cycleId, savedOpportunities);
     return getCycle(cycleId);
@@ -414,7 +429,10 @@ public class ProductDiscoveryService {
       ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
     if (!StringUtils.hasText(cycle.getResearchPlanJson())
         || !cycle.getResearchPlanJson().contains("marketplaceRequests")
-        || request.opportunities().isEmpty()) {
+        || request.opportunities().stream()
+            .noneMatch(
+                opportunity ->
+                    opportunity.decision() == ProductDiscoveryOpportunityDecision.APPROVE)) {
       return;
     }
     long comparableOffers =
@@ -804,7 +822,8 @@ public class ProductDiscoveryService {
                 + defaultText(cycle.getTargetAudience(), ""))
             .toLowerCase(Locale.ROOT);
     return acquisitionChannel.contains("instagram")
-        && (consumerContext.contains("b2c")
+        && (cycle.getMarketType() == ProductDiscoveryMarketType.B2C
+            || consumerContext.contains("b2c")
             || consumerContext.contains("consumidor")
             || consumerContext.contains("pessoa física")
             || consumerContext.contains("pessoa fisica"));
@@ -876,6 +895,9 @@ public class ProductDiscoveryService {
         cycle.getCountry(),
         cycle.getLanguage(),
         cycle.getAcquisitionChannel(),
+        cycle.getResearchMode(),
+        cycle.getMarketType(),
+        cycle.getReferenceSources(),
         cycle.getStatus(),
         cycle.getStageCode(),
         cycle.getDecisionSummary(),
@@ -921,6 +943,9 @@ public class ProductDiscoveryService {
         cycle.getCommercialConstraints(),
         cycle.getForbiddenCategories(),
         cycle.getObjective(),
+        cycle.getResearchMode(),
+        cycle.getMarketType(),
+        cycle.getReferenceSources(),
         cycle.getExecutionLeaseId(),
         cycle.getExecutionAttempt());
   }
@@ -939,6 +964,38 @@ public class ProductDiscoveryService {
   private void clearExecutionLease(ProductDiscoveryCycle cycle) {
     cycle.setExecutionLeaseId(null);
     cycle.setLeaseExpiresAt(null);
+  }
+
+  /** Preserva relatório funcional e resposta bruta antes de materializar as candidatas. */
+  private void recordResearchArtifacts(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
+    if (request.evidenceReport() != null) {
+      if (!request.evidenceReport().isObject()) {
+        throw new ResponseStatusException(
+            HttpStatus.UNPROCESSABLE_ENTITY, "Relatório de evidências deve ser um objeto JSON");
+      }
+      cycle.setResearchEvidenceReportJson(request.evidenceReport().toString());
+    }
+    ProductDiscoveryAnalysisAuditRequest audit = request.analysisAudit();
+    if (audit == null) {
+      return;
+    }
+    String rawResponse = requiredText(audit.rawResponse(), "analysisAudit.rawResponse");
+    try {
+      JsonNode parsed = JSON.readTree(rawResponse);
+      if (parsed == null || !parsed.isObject()) {
+        throw new IllegalArgumentException("Resposta não representa objeto JSON");
+      }
+    } catch (Exception ex) {
+      LOGGER.error(
+          "[product-discovery] Resposta bruta inválida na síntese cycleId={} operação=complete",
+          cycle.getId(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "Resposta bruta da síntese de Argos é inválida", ex);
+    }
+    cycle.setResearchAnalysisRawResponse(rawResponse);
+    cycle.setResearchAnalysisModel(requiredText(audit.model(), "analysisAudit.model"));
   }
 
   /** Busca ciclo por id ou responde 404. */

@@ -232,9 +232,9 @@ export const SEARCH_PROVIDERS = {
 };
 
 export function buildSearchQueries(job) {
-  const base = normalizeSearchText(
+  const base = compactSearchBase(normalizeSearchText(
     [job.theme, job.targetAudience].filter(Boolean).join(" "),
-  );
+  ));
   const domainQueries = inferDomainPainQueries(base);
   const genericQueries = CONSUMER_LANGUAGE_TEMPLATES.map((template) =>
     template.replace("{base}", base),
@@ -264,11 +264,16 @@ export function buildSearchQueries(job) {
         ...genericScientificQueries,
       ]
     : genericScientificQueries;
+  const referenceSourceQueries = buildReferenceSourceQueries(
+    job.referenceSources,
+    base,
+  );
 
   return deduplicateQueries([
     ...(Array.isArray(job.directedQueries)
-      ? job.directedQueries.slice(0, 5)
+      ? job.directedQueries.slice(0, 8)
       : []),
+    ...referenceSourceQueries,
     ...instagramB2cQueries,
     ...domainQueries.slice(0, 2),
     ...commercialSignalQueries.slice(0, 2),
@@ -492,7 +497,11 @@ function isPublicComparableOffer(result) {
     /proposta|or[cç]amento|cota[cç][aã]o|precifica[cç][aã]o|pacote de servi[cç]os|follow.?up/.test(
       text,
     );
-  return commercialSignal && productSignal;
+  const broadOfferSignal =
+    /comprar agora|assine|inscreva-se|matr[ií]cula|curso online|programa online|consultoria|mentoria|produto digital/.test(
+      text,
+    ) || /\/(produto|products?|curso|courses?|programa|planos?|pricing|checkout)(\/|$)/.test(path);
+  return commercialSignal && (productSignal || broadOfferSignal);
 }
 
 export function analyzeSearchResults(
@@ -501,7 +510,8 @@ export function analyzeSearchResults(
   marketplaceOffers = null,
   options = {},
 ) {
-  const evidence = results.slice(0, 12).map((result) => ({
+  const evidence = results.map((result, index) => ({
+    evidenceId: result.evidenceId || `P${index + 1}`,
     title: result.title,
     url: result.url,
     snippet: result.snippet,
@@ -608,47 +618,9 @@ export function analyzeSearchResults(
       ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
       : "Nenhum artigo científico candidato foi coletado; o mecanismo não deve ser tratado como validado antes de nova pesquisa científica.";
 
-  const opportunityBlueprints =
-    evidence.length === 0 || !marketplaceGatePassed
-      ? []
-      : [
-          {
-            name: `Diagnóstico de decisão para ${job.theme}`,
-            primaryAudience: job.targetAudience || job.theme,
-            rootPain: `O público não consegue identificar com segurança o próximo passo para resolver ${job.theme}.`,
-            practicalPain:
-              "Excesso de comparação e informação impede uma decisão prática.",
-            emotionalPain:
-              "A indecisão gera insegurança e medo de desperdiçar tempo ou dinheiro.",
-            pdeExperience:
-              "Diagnóstico guiado que classifica a situação e entrega uma decisão priorizada com justificativa.",
-            firstCampaignAngle: `Descubra em poucos minutos qual próximo passo faz sentido para ${job.theme}.`,
-          },
-          {
-            name: `Plano de primeira ação para ${job.theme}`,
-            primaryAudience: job.targetAudience || job.theme,
-            rootPain: `O público entende informações sobre ${job.theme}, mas não consegue transformá-las em ação consistente.`,
-            practicalPain:
-              "Orientações genéricas não viram uma sequência executável na rotina real.",
-            emotionalPain:
-              "A falta de progresso reforça frustração e sensação de incapacidade.",
-            pdeExperience:
-              "Plano curto e adaptativo com uma ação por vez, confirmação de execução e ajuste pela resposta do usuário.",
-            firstCampaignAngle: `Saia da pesquisa e execute hoje a primeira ação segura para ${job.theme}.`,
-          },
-          {
-            name: `Simulador prático para ${job.theme}`,
-            primaryAudience: job.targetAudience || job.theme,
-            rootPain: `O público teme errar ao aplicar uma solução de ${job.theme} sem testar antes.`,
-            practicalPain:
-              "Faltam exemplos personalizados, ensaio e feedback antes da aplicação real.",
-            emotionalPain:
-              "O risco percebido bloqueia a tentativa mesmo quando existe intenção de resolver.",
-            pdeExperience:
-              "Simulação interativa com cenário personalizado, resposta sugerida e feedback imediato.",
-            firstCampaignAngle: `Teste sua próxima decisão sobre ${job.theme} antes de colocá-la em prática.`,
-          },
-        ];
+  const opportunityBlueprints = Array.isArray(options.candidateBlueprints)
+    ? options.candidateBlueprints
+    : [];
   const commercialRisk = !marketplaceGatePassed
     ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
     : !instagramB2cGatePassed
@@ -666,14 +638,28 @@ export function analyzeSearchResults(
                 : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Principal decisão: ${decision}.`,
-    opportunities: opportunityBlueprints.map((blueprint, index) => ({
-      ...blueprint,
-      scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
-      unmetnessEvidence: `${unmetHits} sinais sugerem soluções caras, confusas, demoradas ou incompletas; ${commercialIntentHits} sinais indicam intenção comercial.`,
-      pdeExperience: `${blueprint.pdeExperience} Mecanismo deve respeitar a evidência coletada: ${mechanismEvidence}`,
-      commercialRisk,
+    decisionSummary: `${options.analysisSummary ? `${options.analysisSummary} ` : ""}Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${decision}.`,
+    opportunities: opportunityBlueprints.map((blueprint) => ({
+      name: blueprint.name,
+      primaryAudience: blueprint.primaryAudience,
+      rootPain: blueprint.rootPain,
+      practicalPain: blueprint.practicalPain,
+      emotionalPain: blueprint.emotionalPain,
+      scaleEvidence: blueprint.scaleEvidence,
+      unmetnessEvidence: blueprint.unmetnessEvidence,
+      pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Base científica candidata: ${mechanismEvidence}`,
+      firstCampaignAngle: null,
+      commercialRisk: `${blueprint.commercialRisk} ${commercialRisk}`.trim(),
       evidenceJson: JSON.stringify({
+        candidateEvidence: {
+          purchaseSituation: blueprint.purchaseSituation,
+          observedLanguage: blueprint.observedLanguage,
+          currentAlternatives: blueprint.currentAlternatives,
+          residualEffort: blueprint.residualEffort,
+          instagramFitEvidence: blueprint.instagramFitEvidence,
+          evidenceIds: blueprint.evidenceIds,
+          maturity: blueprint.maturity,
+        },
         publicEvidence: evidence,
         marketplaceOffers: comparableMarketplaceOffers,
         metaAdEvidence,
@@ -687,9 +673,38 @@ export function analyzeSearchResults(
         scientificArticles,
         commercialIntentHits,
       }),
-      score: Math.max(0, score - index * 3),
-      decision,
+      score,
+      decision:
+        blueprint.maturity === "HUMAN_REVIEW"
+          ? "HUMAN_REVIEW"
+          : blueprint.maturity === "REJECTED"
+            ? "REJECT"
+            : decision,
     })),
+    evidenceReport: {
+      researchMode: job.researchMode || "VALIDATE_MARKET",
+      marketType: job.marketType || "UNSPECIFIED",
+      publicEvidence: evidence,
+      marketplaceOffers: comparableMarketplaceOffers,
+      metaAdEvidence,
+      metaCoverage,
+      repositoryEvidence: options.repositoryEvidence || [],
+      repositoryCoverage: options.repositoryCoverage || [],
+      analysisMode: options.analysisMode || "DETERMINISTIC",
+      analysisModel: options.analysisModel || null,
+      sourceMetrics: {
+        independentDomains,
+        painHits,
+        unmetHits,
+        commercialIntentHits,
+        scientificArticleCount: scientificArticles.length,
+      },
+      gates: {
+        marketplaceGatePassed,
+        instagramB2cGatePassed,
+        purchaseMomentStatus: purchaseMomentGate.status,
+      },
+    },
   };
 }
 
@@ -728,6 +743,32 @@ function inferProvider(env = process.env) {
     return SEARCH_PROVIDERS.SERPAPI;
   }
   return SEARCH_PROVIDERS.DUCKDUCKGO;
+}
+
+/** Mantém o tema central curto para que cada template acrescente uma única intenção. */
+function compactSearchBase(value) {
+  const words = String(value || "").split(/\s+/).filter(Boolean);
+  return words.slice(0, 18).join(" ").slice(0, 140).trim();
+}
+
+/** Pesquisa fontes editoriais declaradas por domínio sem acessar área autenticada. */
+function buildReferenceSourceQueries(referenceSources, base) {
+  return String(referenceSources || "")
+    .split(/[\n,]+/)
+    .map((source) => source.trim())
+    .filter(Boolean)
+    .flatMap((source) => {
+      try {
+        const domain = new URL(source).hostname.replace(/^www\./, "");
+        return [
+          `site:${domain} ${base}`,
+          `site:${domain} ${base} desejo problema comportamento`,
+        ];
+      } catch {
+        return [];
+      }
+    })
+    .slice(0, 6);
 }
 
 async function searchQuery(query, config, fetchFn, logger) {
@@ -1092,9 +1133,10 @@ function normalizeSearchText(value) {
 function requiresConsumerInstagramFocus(job) {
   return (
     /instagram/i.test(String(job?.acquisitionChannel || "")) &&
-    /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
-      `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
-    )
+    (job?.marketType === "B2C" ||
+      /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
+        `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
+      ))
   );
 }
 

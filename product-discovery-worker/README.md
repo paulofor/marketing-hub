@@ -6,8 +6,12 @@ Worker operacional da Descoberta de Produtos PDE v1.
 
 - consumir pendências do backend em `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending`;
 - pesquisar sinais públicos sem coletar dados pessoais;
+- operar em `DISCOVER_MARKETS` para organizar até três candidatas factuais ou em
+  `VALIDATE_MARKET` para aprofundar um mercado informado;
 - solicitar ao backend a cobertura persistida da categoria no Instagram, sem receber a credencial Meta;
-- gerar oportunidades PDE com evidências, score e decisão;
+- cruzar busca pública, fontes editoriais fornecidas, artigos versionados de `/pesquisas`,
+  ofertas e cobertura Meta;
+- sintetizar candidatas vinculadas aos identificadores das evidências, sem assumir a estratégia da Atena;
 - reportar sucesso ou falha ao backend.
 
 Cada pendência chega com lease exclusivo. O worker processa uma execução por vez,
@@ -16,6 +20,15 @@ backend recupera o ciclo após vinte minutos; uma tentativa antiga não pode sob
 a retomada.
 
 O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
+
+Argos usa duas chamadas separadas e auditáveis quando o Codex está habilitado: uma planeja as
+consultas e outra organiza somente os fatos coletados. Prompt, resposta bruta, modelo, tokens
+disponíveis e URLs ficam ligados ao ciclo. Se o modelo estiver desligado, o modo determinístico
+preserva a coleta, mas retorna zero candidatas em vez de repetir sugestões genéricas.
+
+A biblioteca interna é gerada deterministicamente por `npm run build:research-library`. O índice
+versionado preserva caminho, hash e trechos dos Markdown de `/pesquisas`; esses artigos inspiram
+lentes de investigação, mas nunca substituem confirmação pública de demanda.
 
 Em ciclos B2C para Instagram, Argos registra no plano uma consulta Meta com país,
 plataforma e termos específicos. O backend cria ou reutiliza o acompanhamento canônico e
@@ -32,10 +45,10 @@ gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 
 - `BACKEND_BASE_URL`: URL do backend principal. Padrão: `http://191.252.181.168`.
 - `PRODUCT_DISCOVERY_POLL_INTERVAL_MS`: intervalo de polling. Padrão: `60000`.
-- `PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS`: máximo total de resultados públicos usados no ciclo. Padrão: `12`.
-- `PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES`: mínimo de consultas diferentes por ciclo antes de encerrar a busca. Padrão: `6`.
-- `PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES`: teto de consultas diferentes por ciclo. Padrão: `14`.
-- `PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY`: máximo de resultados aproveitados por consulta, para evitar que uma única frase domine a evidência. Padrão: `3`.
+- `PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS`: máximo total de resultados públicos usados no ciclo. Padrão: `30`.
+- `PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES`: mínimo de consultas diferentes por ciclo antes de encerrar a busca. Padrão: `10`.
+- `PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES`: teto de consultas diferentes por ciclo. Padrão: `24`.
+- `PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY`: máximo de resultados aproveitados por consulta, para evitar que uma única frase domine a evidência. Padrão: `5`.
 - `PRODUCT_DISCOVERY_HEALTH_HOST`: host do servidor HTTP de health. Padrão: `0.0.0.0`.
 - `PRODUCT_DISCOVERY_HEALTH_PORT`: porta interna do servidor HTTP de health. Padrão: `8080`.
 - `PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT`: porta publicada no host pelo Compose. Padrão: `18081`.
@@ -50,6 +63,10 @@ gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 - `SERPAPI_API_KEY`: chave da SerpAPI.
 - `PRODUCT_DISCOVERY_SEARCH_COUNTRY`: país usado na busca. Padrão: `br`.
 - `PRODUCT_DISCOVERY_SEARCH_LANGUAGE`: idioma usado na busca. Padrão: `pt-br`.
+- `ARGOS_CODEX_ENABLED`: habilita planejamento e síntese factual pelo Codex. Padrão operacional: `true`.
+- `ARGOS_CODEX_MODEL`: modelo das duas fases. Padrão: `gpt-5.6-sol`.
+- `ARGOS_CODEX_REASONING_EFFORT`: esforço registrado para auditoria. Padrão: `high`.
+- `ARGOS_CODEX_TIMEOUT_MS`: timeout individual de cada fase. Padrão: `600000`.
 
 ## Deploy
 
@@ -109,6 +126,7 @@ escala suficiente para decisões comerciais fortes.
 ```bash
 PRODUCT_DISCOVERY_SEARCH_PROVIDER=brave \
 BRAVE_SEARCH_API_KEY=... \
+ARGOS_CODEX_ENABLED=true \
 npm test
 npm start
 ```

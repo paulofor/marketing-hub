@@ -16,6 +16,7 @@ import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.independent.IndependentBusinessProcessExecution;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputFieldResponse;
+import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputOptionResponse;
 import com.marketinghub.businessprocess.independent.service.startExecution.StartIndependentBusinessProcessExecutionRequest;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
@@ -104,6 +105,8 @@ class IndependentBusinessProcessExecutionServiceTest {
     assertThat(result.execution().sourceReference()).isEqualTo("product-discovery-cycle:77");
     assertThat(result.execution().status()).isEqualTo("PENDING");
     assertThat(result.execution().input().path("country").asText()).isEqualTo("BR");
+    assertThat(result.execution().input().path("researchMode").asText())
+        .isEqualTo("DISCOVER_MARKETS");
     assertThat(handler.lastInput.get().path("theme").asText())
         .isEqualTo("agenda vazia para manicures");
     assertThat(handler.starts.get()).isEqualTo(1);
@@ -153,6 +156,28 @@ class IndependentBusinessProcessExecutionServiceTest {
                         mapper.readTree("{\"theme\":\"dor real\",\"productId\":99}"))))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("productId");
+    verify(executions, never()).saveAndFlush(any());
+    assertThat(handler.starts.get()).isZero();
+  }
+
+  /** Rejeita valor fora das opções publicadas antes de criar ciclo ou tarefa. */
+  @Test
+  void rejectsUnknownSelectOption() throws Exception {
+    BusinessProcessDefinition process = process("INDEPENDENT", "PUBLISHED");
+    when(processes.findById(52L)).thenReturn(Optional.of(process));
+    var service = service(List.of(handler));
+
+    assertThatThrownBy(
+            () ->
+                service.start(
+                    new StartIndependentBusinessProcessExecutionRequest(
+                        UUID.randomUUID(),
+                        52L,
+                        "Operação",
+                        mapper.readTree(
+                            "{\"theme\":\"dor real\",\"researchMode\":\"INVENT_MARKET\"}"))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("possui uma opção inválida");
     verify(executions, never()).saveAndFlush(any());
     assertThat(handler.starts.get()).isZero();
   }
@@ -297,12 +322,25 @@ class IndependentBusinessProcessExecutionServiceTest {
       return "pde-opportunity-discovery";
     }
 
-    /** Declara tema e país para exercitar obrigatoriedade e default. */
+    /** Declara tema, modo seletivo e país para exercitar obrigatoriedade e defaults. */
     @Override
     public List<IndependentBusinessProcessInputFieldResponse> inputFields() {
       return List.of(
           new IndependentBusinessProcessInputFieldResponse(
               "theme", "Tema", "TEXT", true, 191, null, null),
+          new IndependentBusinessProcessInputFieldResponse(
+              "researchMode",
+              "Modo",
+              "SELECT",
+              true,
+              32,
+              "DISCOVER_MARKETS",
+              null,
+              List.of(
+                  new IndependentBusinessProcessInputOptionResponse(
+                      "DISCOVER_MARKETS", "Descobrir mercados"),
+                  new IndependentBusinessProcessInputOptionResponse(
+                      "VALIDATE_MARKET", "Validar mercado"))),
           new IndependentBusinessProcessInputFieldResponse(
               "country", "País", "TEXT", true, 16, "BR", null));
     }

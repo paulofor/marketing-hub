@@ -46,6 +46,17 @@ public class ProductDiscoveryCycle {
   private String objective;
 
   @Enumerated(EnumType.STRING)
+  @Column(name = "research_mode", nullable = false, length = 32)
+  private ProductDiscoveryResearchMode researchMode;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "market_type", nullable = false, length = 24)
+  private ProductDiscoveryMarketType marketType;
+
+  @Column(name = "reference_sources", columnDefinition = "LONGTEXT")
+  private String referenceSources;
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 40)
   private ProductDiscoveryCycleStatus status;
 
@@ -76,6 +87,15 @@ public class ProductDiscoveryCycle {
   @Column(name = "research_plan_model", length = 120)
   private String researchPlanModel;
 
+  @Column(name = "research_analysis_raw_response", columnDefinition = "LONGTEXT")
+  private String researchAnalysisRawResponse;
+
+  @Column(name = "research_analysis_model", length = 120)
+  private String researchAnalysisModel;
+
+  @Column(name = "research_evidence_report_json", columnDefinition = "LONGTEXT")
+  private String researchEvidenceReportJson;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -93,6 +113,12 @@ public class ProductDiscoveryCycle {
     }
     if (stageCode == null) {
       stageCode = "research";
+    }
+    if (researchMode == null) {
+      researchMode = ProductDiscoveryResearchMode.VALIDATE_MARKET;
+    }
+    if (marketType == null) {
+      marketType = ProductDiscoveryMarketType.UNSPECIFIED;
     }
   }
 
@@ -190,6 +216,36 @@ public class ProductDiscoveryCycle {
   /** Define o objetivo do ciclo. */
   public void setObjective(String objective) {
     this.objective = objective;
+  }
+
+  /** Retorna se o ciclo descobre candidatas ou valida um mercado informado. */
+  public ProductDiscoveryResearchMode getResearchMode() {
+    return researchMode;
+  }
+
+  /** Define o modo explícito usado por Argos na pesquisa. */
+  public void setResearchMode(ProductDiscoveryResearchMode researchMode) {
+    this.researchMode = researchMode;
+  }
+
+  /** Retorna o tipo de comprador declarado no briefing. */
+  public ProductDiscoveryMarketType getMarketType() {
+    return marketType;
+  }
+
+  /** Define o tipo de comprador sem inferência pelo texto do tema. */
+  public void setMarketType(ProductDiscoveryMarketType marketType) {
+    this.marketType = marketType;
+  }
+
+  /** Retorna as fontes editoriais públicas usadas como contexto de pesquisa. */
+  public String getReferenceSources() {
+    return referenceSources;
+  }
+
+  /** Preserva as fontes editoriais declaradas pelo operador. */
+  public void setReferenceSources(String referenceSources) {
+    this.referenceSources = referenceSources;
   }
 
   /** Retorna o status operacional. */
@@ -290,6 +346,36 @@ public class ProductDiscoveryCycle {
   /** Registra o modelo responsável pelo plano de investigação. */
   public void setResearchPlanModel(String researchPlanModel) {
     this.researchPlanModel = researchPlanModel;
+  }
+
+  /** Retorna a resposta bruta da síntese factual posterior à coleta. */
+  public String getResearchAnalysisRawResponse() {
+    return researchAnalysisRawResponse;
+  }
+
+  /** Preserva a resposta bruta da síntese factual para auditoria. */
+  public void setResearchAnalysisRawResponse(String researchAnalysisRawResponse) {
+    this.researchAnalysisRawResponse = researchAnalysisRawResponse;
+  }
+
+  /** Retorna o modelo responsável pela síntese factual. */
+  public String getResearchAnalysisModel() {
+    return researchAnalysisModel;
+  }
+
+  /** Registra o modelo responsável pela síntese factual. */
+  public void setResearchAnalysisModel(String researchAnalysisModel) {
+    this.researchAnalysisModel = researchAnalysisModel;
+  }
+
+  /** Retorna o relatório consolidado de fontes e gates da coleta. */
+  public String getResearchEvidenceReportJson() {
+    return researchEvidenceReportJson;
+  }
+
+  /** Persiste o relatório estruturado sem serializá-lo dentro do callback JSON. */
+  public void setResearchEvidenceReportJson(String researchEvidenceReportJson) {
+    this.researchEvidenceReportJson = researchEvidenceReportJson;
   }
 
   /** Retorna a data de criação. */

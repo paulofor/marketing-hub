@@ -805,7 +805,7 @@
           "description": "Argos reúne inteligência factual de mercado sem escolher a estratégia.",
           "items": [
             { "key": "owns", "label": "Argos entrega", "value": "demanda · concorrentes · linguagem pública · ofertas observadas · fontes", "description": "Produz dossiê factual rastreável e marca claramente fatos, inferências e lacunas.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
-            { "key": "output", "label": "Saída canônica", "value": "dossiê de evidências de mercado", "description": "Atena consome as evidências para tomar decisões estratégicas.", "sourceReference": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json" },
+            { "key": "output", "label": "Saída canônica", "value": "dossiê factual · até 3 candidatas de pesquisa ligadas às evidências", "description": "Atena consome as candidatas e os fatos para tomar as decisões estratégicas.", "sourceReference": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json" },
             { "key": "forbidden", "label": "Argos não decide", "value": "posicionamento · tese de oferta · formato do PDE · preço · canal", "description": "Recomendação estratégica pertence exclusivamente a Atena.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
           ]
         },
@@ -821,9 +821,9 @@
         {
           "code": "runtime",
           "title": "Runtime do modelo",
-          "description": "Configuração do planejamento de pesquisa de Argos.",
+          "description": "Configuração das fases de planejamento e síntese factual de Argos.",
           "items": [
-            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · modelo configurado por ARGOS_CODEX_MODEL", "description": "Sem modelo explícito, o executor registra codex-default.", "sourceReference": "product-discovery-worker/src/argos-codex.js" },
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · planejamento + síntese factual · modelo configurado por ARGOS_CODEX_MODEL", "description": "As duas respostas brutas permanecem separadas e o fallback não fabrica candidatas.", "sourceReference": "product-discovery-worker/src/argos-research.js" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "A tela preserva a ausência de configuração explícita.", "sourceReference": "product-discovery-worker/src/argos-codex.js" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · 600000 ms · saída máxima 10 MiB", "description": "O planejamento fecha por timeout ou excesso de saída.", "sourceReference": "product-discovery-worker/src/argos-codex.js" }
           ]
@@ -843,8 +843,8 @@
           "title": "Contexto e memória",
           "description": "Fontes dinâmicas e evidências segregadas por ciclo.",
           "items": [
-            { "key": "sources", "label": "Fontes", "value": "web · Gartner · IA aplicada · momentos de compra B2C · Hotmart · radar Meta", "description": "Fonte indisponível não é tratada como ausência de mercado.", "sourceReference": "product-discovery-worker/src/research.js" },
-            { "key": "memory", "label": "Persistência", "value": "Plano, request bruto, fontes e resultado auditável no backend", "description": "O worker não consulta banco diretamente.", "sourceReference": "product-discovery-worker/src/worker.js" }
+            { "key": "sources", "label": "Fontes", "value": "web · fontes editoriais · Markdown de /pesquisas · Hotmart · ClickBank · radar Meta", "description": "Fonte indisponível não é tratada como ausência de mercado; artigo interno exige confirmação pública.", "sourceReference": "product-discovery-worker/src/research-library.js" },
+            { "key": "memory", "label": "Persistência", "value": "Plano · prompts · respostas brutas · URLs · cobertura · tokens · candidatas factuais", "description": "O worker não consulta banco diretamente e a auditoria não contamina a saída funcional.", "sourceReference": "product-discovery-worker/src/worker.js" }
           ]
         },
         {
@@ -852,7 +852,7 @@
           "title": "Segurança e autoridade",
           "description": "Limites da pesquisa e da coleta externa.",
           "items": [
-            { "key": "authority", "label": "Nível de autonomia", "value": "Pesquisa e recomendação · sem publicação, gasto ou criação automática de produto", "description": "Sinais de anúncios e ofertas não contam como venda.", "sourceReference": "docs/canonical/agent-governance-canon.v1.md" },
+            { "key": "authority", "label": "Nível de autonomia", "value": "Pesquisa e organização factual · sem priorização, publicação, gasto ou criação automática de produto", "description": "Sinais de anúncios e ofertas não contam como venda.", "sourceReference": "docs/canonical/agent-governance-canon.v1.md" },
             { "key": "secrets", "label": "Credenciais", "value": "Somente no processo coletor; nunca entram no prompt ou no relatório", "description": "A tela mostra o mecanismo, não o valor da credencial.", "sourceReference": "product-discovery-worker/src/research.js" }
           ]
         },
@@ -873,7 +873,9 @@
         { "artifactType": "PROMPT", "name": "Sistema da pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/system.md", "description": "Regras de coleta, evidência e segurança." },
         { "artifactType": "PROMPT", "name": "Entrada da pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/user.md", "description": "Template do ciclo dirigido." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da resposta de pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json", "description": "Contrato estruturado das evidências." },
-        { "artifactType": "RUNTIME_CONFIG", "name": "Executor Codex de Argos", "version": "v1", "path": "product-discovery-worker/src/argos-codex.js", "description": "Modelo, sandbox, timeout, schema e telemetria." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Planejador Codex de Argos", "version": "v4", "path": "product-discovery-worker/src/argos-codex.js", "description": "Plano, consultas, modelo, sandbox, timeout e telemetria." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Sintetizador factual de Argos", "version": "v4", "path": "product-discovery-worker/src/argos-research.js", "description": "Valida evidências, candidatas, resposta bruta e degradação explícita." },
+        { "artifactType": "KNOWLEDGE_BASE", "name": "Índice das pesquisas internas", "version": "v1", "path": "product-discovery-worker/research-library/index.json", "description": "Caminhos, hashes e trechos versionados dos artigos Markdown." },
         { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "product-discovery-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
         { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/product-discovery-worker-ci.yml", "description": "Testes, build e publicação versionados." }
       ]

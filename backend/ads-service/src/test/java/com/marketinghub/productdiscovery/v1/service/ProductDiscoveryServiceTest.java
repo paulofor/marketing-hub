@@ -7,12 +7,14 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.math.BigDecimal;
@@ -150,6 +152,72 @@ class ProductDiscoveryServiceTest {
     assertThat(cycle.getDecisionSummary()).contains("pesquisar mais");
   }
 
+  /** Preserva candidata factual imatura e a auditoria da síntese sem promovê-la a aprovação. */
+  @Test
+  void persistsResearchMoreCandidateAndAnalysisAudit() throws Exception {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(27L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-27");
+    cycle.setResearchMode(ProductDiscoveryResearchMode.DISCOVER_MARKETS);
+    cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
+    when(cycleRepository.findById(27L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(27L)).thenReturn(List.of());
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Decisão de imagem profissional após retorno ao trabalho",
+            "Mulheres de 40 a 55 anos retomando a carreira",
+            "Insegurança para traduzir a experiência em presença profissional",
+            "Organizar referências e decisões consome tempo",
+            "Receio de parecer desatualizada",
+            "Duas fontes públicas independentes descrevem a mesma situação",
+            "Alternativas existentes ainda exigem montagem manual",
+            "Apenas a fronteira factual de redução do esforço, sem desenhar a oferta",
+            null,
+            "Cobertura Meta e dez ofertas comparáveis ainda ausentes",
+            "{\"marketplaceOffers\":[{\"marketplace\":\"HOTMART\",\"referenceId\":\"1\",\"title\":\"Imagem profissional\"}]}",
+            new BigDecimal("58"),
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+    ProductDiscoveryAnalysisAuditRequest audit =
+        new ProductDiscoveryAnalysisAuditRequest(
+            "{\"decisionSummary\":\"Pesquisar mais\",\"candidates\":[]}",
+            "gpt-5.6-sol",
+            "MODEL",
+            "Prompt completo",
+            "Constituição de Argos",
+            "Contexto factual",
+            "high",
+            120L,
+            20L,
+            35L,
+            List.of());
+    var evidenceReport =
+        new ObjectMapper()
+            .readTree(
+                "{\"researchMode\":\"DISCOVER_MARKETS\",\"sourceCoverage\":{\"publicWeb\":2}}");
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            27L,
+            new ProductDiscoveryResultRequest(
+                "lease-27",
+                "Candidata factual preservada; pesquisa comercial ainda necessária.",
+                List.of(opportunity),
+                evidenceReport,
+                audit));
+
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
+    assertThat(cycle.getResearchAnalysisModel()).isEqualTo("gpt-5.6-sol");
+    assertThat(cycle.getResearchAnalysisRawResponse()).contains("decisionSummary");
+    assertThat(cycle.getResearchEvidenceReportJson()).contains("DISCOVER_MARKETS");
+    verify(opportunityRepository).save(any(ProductDiscoveryOpportunity.class));
+    verify(bpmAuditService).recordAnalysis(cycle, audit);
+  }
+
   /** Deve bloquear a conclusao dirigida quando faltarem dez ofertas reais comparaveis. */
   @Test
   void blocksDirectedResearchWithoutMinimumMarketplaceEvidence() {
@@ -176,7 +244,7 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"marketplaceOffers\":[{\"marketplace\":\"HOTMART\",\"referenceId\":\"1\"}]}",
             new BigDecimal("50"),
-            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+            ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
             () ->
@@ -223,7 +291,7 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"marketplaceOffers\":[" + offers + "]}",
             new BigDecimal("50"),
-            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+            ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
             () ->
@@ -280,7 +348,7 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"marketplaceOffers\":[" + paidOffers + "," + ads + "]}",
             new BigDecimal("50"),
-            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+            ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
             () ->

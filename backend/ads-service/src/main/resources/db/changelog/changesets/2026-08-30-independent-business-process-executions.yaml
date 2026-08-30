@@ -1,0 +1,87 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-30-independent-business-process-executions-1-scope
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: business_process_definition
+              columnName: execution_scope
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE business_process_definition
+                ADD COLUMN execution_scope VARCHAR(32) NOT NULL DEFAULT 'PRODUCT' AFTER process_type;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE business_process_definition DROP COLUMN execution_scope;
+
+  - changeSet:
+      id: 2026-08-30-independent-business-process-executions-2-discovery-scope
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition
+              SET execution_scope = 'INDEPENDENT'
+              WHERE process_code = 'pde-opportunity-discovery'
+                AND execution_scope <> 'INDEPENDENT';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition
+              SET execution_scope = 'PRODUCT'
+              WHERE process_code = 'pde-opportunity-discovery'
+                AND execution_scope = 'INDEPENDENT';
+
+  - changeSet:
+      id: 2026-08-30-independent-business-process-executions-3-execution-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS business_process_independent_execution (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                request_key CHAR(36) NOT NULL,
+                process_definition_id BIGINT NOT NULL,
+                source_reference VARCHAR(200) NULL,
+                display_name VARCHAR(160) NOT NULL,
+                requested_by_name VARCHAR(100) NOT NULL,
+                input_json LONGTEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_business_process_independent_execution_request (request_key),
+                UNIQUE KEY uk_business_process_independent_execution_source (source_reference),
+                INDEX idx_business_process_independent_execution_process (process_definition_id, created_at),
+                CONSTRAINT fk_business_process_independent_execution_process
+                  FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE business_process_independent_execution;

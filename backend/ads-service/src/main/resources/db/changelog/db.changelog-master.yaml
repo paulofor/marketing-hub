@@ -1988,3 +1988,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-28-product-discovery-bpm-audit.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-30-independent-business-process-executions.yaml
+      relativeToChangelogFile: true

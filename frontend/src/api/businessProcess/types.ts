@@ -53,6 +53,7 @@ export type BusinessProcess = {
   status: "DRAFT" | "PUBLISHED" | "RETIRED";
   technicalReference?: string;
   processType?: "VALUE_PROCESS" | "SUBPROCESS";
+  executionScope?: "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT";
   parentProcessCode?: string;
   parentProcessDefinitionId?: number;
   parentProcessName?: string;
@@ -85,6 +86,101 @@ export type CreateBusinessProcess = Omit<
 >;
 
 export type SaveBusinessProcess = CreateBusinessProcess;
+
+export type IndependentBusinessProcessInputField = {
+  key: string;
+  label: string;
+  controlType: "TEXT" | "TEXTAREA";
+  required: boolean;
+  maxLength?: number;
+  defaultValue?: string;
+  helpText?: string;
+};
+
+export type IndependentBusinessProcessCatalogItem = {
+  processDefinitionId: number;
+  processCode: string;
+  name: string;
+  purpose: string;
+  ownerName: string;
+  triggerDescription: string;
+  outcomeDescription: string;
+  versionNumber: number;
+  executionAvailable: boolean;
+  executionAvailabilityReason: string;
+  inputFields: IndependentBusinessProcessInputField[];
+};
+
+export type IndependentBusinessProcessExecutionSummary = {
+  id: number;
+  requestKey: string;
+  processDefinitionId: number;
+  processCode: string;
+  processName: string;
+  processVersionNumber: number;
+  sourceReference: string;
+  displayName: string;
+  requestedByName: string;
+  input: Record<string, string>;
+  status:
+    | "NOT_STARTED"
+    | "PENDING"
+    | "IN_PROGRESS"
+    | "BLOCKED"
+    | "COMPLETED"
+    | "CANCELLED";
+  activityCount: number;
+  completedActivityCount: number;
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  costCoverage: "COMPLETE" | "PARTIAL" | "NOT_REPORTED";
+  latestError?: string;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+};
+
+export type IndependentBusinessProcessTask = {
+  taskId: number;
+  status: string;
+  assignedAgentKey: string;
+  assignedAgentNickname: string;
+  title: string;
+  result?: unknown;
+  evidence?: unknown;
+  executionError?: string;
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  costEstimationStatus: string;
+  modelCode?: string;
+  executionMode?: string;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+};
+
+export type IndependentBusinessProcessActivity = {
+  activityId: string;
+  activityName: string;
+  status: IndependentBusinessProcessExecutionSummary["status"];
+  tasks: IndependentBusinessProcessTask[];
+};
+
+export type IndependentBusinessProcessExecution = {
+  execution: IndependentBusinessProcessExecutionSummary;
+  activities: IndependentBusinessProcessActivity[];
+};
+
+export type StartIndependentBusinessProcessExecution = {
+  requestKey: string;
+  processDefinitionId: number;
+  requestedByName: string;
+  input: Record<string, string>;
+};
 
 export type BusinessProcessActivityDocument = {
   taskId: number;

@@ -125,6 +125,7 @@ public class BusinessProcessDefinitionService {
     value.setStatus("DRAFT");
     value.setTechnicalReference(trimToNull(request.technicalReference()));
     value.setProcessType(request.processType().trim());
+    value.setExecutionScope(request.executionScope().trim());
     value.setParentProcessCode(trimToNull(request.parentProcessCode()));
     value.setDiagramJson(write(request.diagram()));
     value.setCreatedAt(Instant.now(clock));
@@ -370,6 +371,7 @@ public class BusinessProcessDefinitionService {
     value.setOutcomeDescription(request.outcomeDescription().trim());
     value.setTechnicalReference(trimToNull(request.technicalReference()));
     value.setProcessType(request.processType().trim());
+    value.setExecutionScope(request.executionScope().trim());
     value.setParentProcessCode(trimToNull(request.parentProcessCode()));
     value.setDiagramJson(write(request.diagram()));
   }
@@ -463,12 +465,18 @@ public class BusinessProcessDefinitionService {
         value.getParentProcessCode(),
         parent == null ? null : parent.getId(),
         parent == null ? null : parent.getName(),
+        executionScope(value),
         activityResponses(value));
   }
 
   /** Interpreta registros anteriores à classificação como processos de valor. */
   private String processType(BusinessProcessDefinition value) {
     return value.getProcessType() == null ? "VALUE_PROCESS" : value.getProcessType();
+  }
+
+  /** Interpreta registros anteriores à classificação como execuções vinculadas a produto. */
+  private String executionScope(BusinessProcessDefinition value) {
+    return value.getExecutionScope() == null ? "PRODUCT" : value.getExecutionScope();
   }
 
   /** Obtém uma versão existente ou responde 404. */

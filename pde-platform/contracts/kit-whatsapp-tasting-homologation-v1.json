@@ -2,26 +2,30 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-30T01:48:28Z",
+  "verifiedAt": "2026-08-30T02:48:15Z",
   "status": "PASSED",
-  "revalidationReason": "A tarefa produtiva #268 de Psique comprovou o pacote visual com 13 evidências e apontou perda de confiança no mobile: título excessivo, ausência de ação na primeira dobra, provas comprimidas e página longa. A revalidação fecha essas causas com hierarquia responsiva, acesso imediato à amostra, prova legível e limites executáveis de densidade.",
-  "scope": "Degustação determinística, hierarquia de conversão mobile, legibilidade das provas, densidade da página, privacidade, eventos, segregação de QA no build público, fronteira paga e checkout.",
+  "revalidationReason": "A tarefa produtiva #269 de Psique consumiu todas as evidências sem falha técnica e bloqueou a página de 9.003 px por contraste insuficiente no antes/depois, opção truncada no formulário e densidade repetitiva. A revalidação fecha as três causas no mesmo runtime Playwright 1.54.2 do agente, preservando oferta, escopo e checkout.",
+  "scope": "Degustação determinística, contraste WCAG, legibilidade integral dos controles, densidade da página no runtime exato de Psique, privacidade, eventos, segregação de QA no build público, fronteira paga e checkout.",
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "935dd0a3050979d4ab9d1572c76d715d709b23f443dd5e797e20896a86f71770"
+      "sha256": "d7a2119b0e2f8fe3686f5a4209861f5583aa2a6750ea515d73cd2af310646e6b"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
-      "sha256": "6180bf8d1d1d5f8800624f4aa1baedddbf848c6ab4fb20ebb6ed5882db1c5157"
+      "sha256": "7fcdbd0473d031f74b05dc68fe1c26ddb942fb19c551e3016bff7c5ecc41c452"
     },
     {
       "path": "pde-platform/frontend/src/styles.css",
-      "sha256": "f0e23e187db93df71bbc4de4d71f34eb6cf39788ba73771326ccb2a1ecae613e"
+      "sha256": "b4ad06851d4ee30f868cc9c8c714e0cb67a45552496f5ded9c2e13b0e006b1d7"
     },
     {
       "path": "pde-platform/contracts/kit-whatsapp-tasting-v1.json",
-      "sha256": "81967da390a00bd23f3c7ca01fd6bca61e279326588eedf3e34b49af6e134f08"
+      "sha256": "2c93ed30f9ca29660da2face2c8fb9e6f00d1974a60c2fe62971d6323effbd05"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
+      "sha256": "c54e2e2d8854c6ee056679c9cd58f41e8a2f74b5c2cd8364330cc9c8e1fed695"
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
@@ -31,7 +35,7 @@
   "executableEvidence": [
     {
       "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
-      "sha256": "3a91e5dcaa01a0107b4adad858208e1abf115f578d132e6daaedab48b29d1c01",
+      "sha256": "a139fdd639474b0264b5aa460bec6f915e8e1c6aab13b2fc87830485c5c397f5",
       "proves": [
         "as seis combinações de duas situações por três tons materializam respostas distintas",
         "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
@@ -45,7 +49,9 @@
         "o acesso à amostra permanece na primeira dobra de iPhone 15 Pro e Pixel 7",
         "o título mobile preserva tamanho e altura legíveis sem quebra agressiva",
         "cards de prova, campos e opções mantêm largura útil mínima no mobile",
-        "a página respeita limite de densidade e não volta aos 9.961 px observados por Psique"
+        "o rótulo selecionado cabe na largura textual útil do controle",
+        "o título do antes/depois mantém contraste mínimo de 4,5:1",
+        "o navegador moderno respeita 7.600 px para preservar margem de 900 px até o limite de Psique"
       ]
     },
     {
@@ -89,6 +95,29 @@
         "evento fora do contrato continua rejeitado",
         "FIRST_USE de INTERNAL_QA permanece fora das métricas humanas e comerciais"
       ]
+    },
+    {
+      "path": "customer-agent-worker/package.json",
+      "sha256": "bd5b95e3e6b421b861543e4cc19d507493c66174dcd324b31fbcf50b2a6042b4",
+      "proves": [
+        "o runtime visual de Psique permanece fixado no Playwright 1.54.2"
+      ]
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/browser/bpm-visual-evidence.mjs",
+      "sha256": "d83eee42084e09665acc812ed0a92c5f8f7207156b05afeb71b15f721ef7497c",
+      "proves": [
+        "a captura usa o perfil canônico de iPhone 15 Pro e percorre todas as dobras",
+        "a página completa usa escala CSS sem perder as dobras em resolução física"
+      ]
+    },
+    {
+      "path": "customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs",
+      "sha256": "f2797cee6c419243f9fc16bf33ae9e1a012f843040a093102332c83c0b9628e2",
+      "proves": [
+        "o Chromium real captura uma página de 12 dobras dentro da imagem final",
+        "o capturador recusa destinos privados fora do modo de homologação"
+      ]
     }
   ],
   "consecutiveLocalRounds": [
@@ -97,24 +126,32 @@
       "result": "PASSED",
       "publicBuildAnalyticsTests": 5,
       "assistedJourneyTests": 12,
+      "pdeBackendUnitTests": 121,
+      "customerWorkerUnitTests": 62,
+      "customerWorkerBrowserTests": 2,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "responsiveMetrics": {
-        "desktop": { "pageHeightCssPx": 5457, "firstActionBottomCssPx": 400 },
-        "iphone15Pro": {
-          "pageHeightCssPx": 8114,
+        "modernIphone15Pro": {
+          "pageHeightCssPx": 7341,
           "titleHeightCssPx": 141,
-          "firstActionBottomCssPx": 339
+          "firstActionBottomCssPx": 339,
+          "pageHeightLimitCssPx": 7600
         },
-        "pixel7": {
-          "pageHeightCssPx": 7928,
-          "titleHeightCssPx": 148,
-          "firstActionBottomCssPx": 345
+        "psiqueRuntimeIphone15Pro": {
+          "playwrightCoreVersion": "1.54.2",
+          "pageHeightCssPx": 8039,
+          "titleHeightCssPx": 176,
+          "firstActionBottomCssPx": 398,
+          "capturedArtifacts": 11,
+          "capturedFolds": 10,
+          "residualBrowserProcesses": 0
         }
       },
       "infrastructure": [
         "MySQL 5.7 com volume novo",
         "SMTP descartável com topologia nova",
-        "imagem Docker do frontend construída localmente"
+        "imagem Docker do frontend construída localmente",
+        "imagem final do customer-agent-worker com init e pacote comercial verificado"
       ]
     },
     {
@@ -122,24 +159,32 @@
       "result": "PASSED",
       "publicBuildAnalyticsTests": 5,
       "assistedJourneyTests": 12,
+      "pdeBackendUnitTests": 121,
+      "customerWorkerUnitTests": 62,
+      "customerWorkerBrowserTests": 2,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "responsiveMetrics": {
-        "desktop": { "pageHeightCssPx": 5457, "firstActionBottomCssPx": 400 },
-        "iphone15Pro": {
-          "pageHeightCssPx": 8114,
+        "modernIphone15Pro": {
+          "pageHeightCssPx": 7341,
           "titleHeightCssPx": 141,
-          "firstActionBottomCssPx": 339
+          "firstActionBottomCssPx": 339,
+          "pageHeightLimitCssPx": 7600
         },
-        "pixel7": {
-          "pageHeightCssPx": 7928,
-          "titleHeightCssPx": 148,
-          "firstActionBottomCssPx": 345
+        "psiqueRuntimeIphone15Pro": {
+          "playwrightCoreVersion": "1.54.2",
+          "pageHeightCssPx": 8039,
+          "titleHeightCssPx": 176,
+          "firstActionBottomCssPx": 398,
+          "capturedArtifacts": 11,
+          "capturedFolds": 10,
+          "residualBrowserProcesses": 0
         }
       },
       "infrastructure": [
         "MySQL 5.7 com segundo volume novo",
         "SMTP descartável com segunda topologia nova",
-        "imagem Docker do frontend construída localmente"
+        "imagem Docker do frontend construída localmente",
+        "imagem final do customer-agent-worker com init e pacote comercial verificado"
       ]
     }
   ],

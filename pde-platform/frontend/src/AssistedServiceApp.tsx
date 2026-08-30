@@ -814,7 +814,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                 Antes e depois do mecanismo
               </span>
               <h2 id="assisted-transformation-title">
-                Da resposta solta para uma conversa com próximo passo
+                Da resposta solta ao próximo passo
               </h2>
             </div>
             <div className="assisted-pde-transformation-grid">
@@ -854,7 +854,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             <div>
               <span className="assisted-pde-kicker">Escopo sem surpresa</span>
               <h2 id="assisted-scope-title">
-                Saiba o que responder, perguntar e sugerir em seguida
+                Saiba o que responder e perguntar em seguida
               </h2>
               <p>{product.serviceScope.deadlineStartsWhen}</p>
             </div>
@@ -893,7 +893,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                   Demonstração do mecanismo
                 </span>
                 <h2 id="assisted-proof-title">
-                  Uma retomada completa, do orçamento ao encerramento respeitoso
+                  Uma retomada completa, sem insistência
                 </h2>
                 <p>
                   Recorte contínuo de uma entrega demonstrativa: exemplo
@@ -955,7 +955,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             <div>
               <span className="assisted-pde-kicker">Da compra ao uso</span>
               <h2 id="assisted-process-title">
-                Quatro passos, com uma pessoa no controle
+                Quatro passos, com você no controle
               </h2>
             </div>
             <ol>

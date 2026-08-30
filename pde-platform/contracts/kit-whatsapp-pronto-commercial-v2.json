@@ -60,15 +60,6 @@
       ],
       "evidenceLabel": "Interface real · exemplo fictício",
       "source": "kit-whatsapp-tasting-v1:orcamento-sem-resposta:acolhedor"
-    },
-    {
-      "id": "real-offer",
-      "type": "OFFER",
-      "title": "Implantação personalizada e assistida",
-      "content": "R$ 349 em pagamento único, sem recorrência. Você revisa antes de usar; não há bot, disparo em massa ou envio automático.",
-      "items": [],
-      "evidenceLabel": "Oferta canônica do experimento 89",
-      "source": "marketing-hub:commercial-offer:experiment-89"
     }
   ],
   "commercialProcess": [

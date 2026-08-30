@@ -8,6 +8,34 @@ const mailBaseUrl =
 const internalToken =
   process.env.PDE_ASSISTED_INTERNAL_TOKEN ?? "pde-local-internal-test";
 const internalHeaders = { "X-PDE-Internal-Token": internalToken };
+const psiquePageHeightLimit = 8500;
+const crossBrowserRenderingSafetyMargin = 900;
+
+const relativeLuminance = (color: string) => {
+  const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+  if (!channels || channels.length !== 3) {
+    throw new Error(`Cor RGB inválida no contrato visual: ${color}`);
+  }
+  const linearChannels = channels.map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return (
+    linearChannels[0] * 0.2126 +
+    linearChannels[1] * 0.7152 +
+    linearChannels[2] * 0.0722
+  );
+};
+
+const contrastRatio = (foreground: string, background: string) => {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+};
 
 test.beforeEach(async ({ context, page, request }) => {
   await context.route(
@@ -132,6 +160,19 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
       const tastingScenario = document.querySelector(
         "#assisted-tasting-scenario",
       ) as HTMLSelectElement;
+      const transformation = document.querySelector(
+        '[data-testid="assisted-transformation"]',
+      ) as HTMLElement;
+      const transformationHeading = document.querySelector(
+        "#assisted-transformation-title",
+      ) as HTMLElement;
+      const shell = document.querySelector(
+        ".assisted-pde-shell",
+      ) as HTMLElement;
+      const scenarioStyle = window.getComputedStyle(tastingScenario);
+      const canvas = document.createElement("canvas");
+      const canvasContext = canvas.getContext("2d");
+      if (canvasContext) canvasContext.font = scenarioStyle.font;
       return {
         headlineFontSize: Number.parseFloat(
           window.getComputedStyle(headline).fontSize,
@@ -146,6 +187,23 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
             (option) => option.textContent?.trim().length ?? 0,
           ),
         ),
+        widestScenarioLabel: Math.max(
+          ...Array.from(tastingScenario.options).map((option) =>
+            canvasContext
+              ? canvasContext.measureText(option.textContent?.trim() ?? "")
+                  .width
+              : Number.POSITIVE_INFINITY,
+          ),
+        ),
+        transformationHeadingColor:
+          window.getComputedStyle(transformationHeading).color,
+        transformationBackgroundColor:
+          window.getComputedStyle(transformation).backgroundColor,
+        textSizeAdjust:
+          window
+            .getComputedStyle(shell)
+            .getPropertyValue("-webkit-text-size-adjust") ||
+          window.getComputedStyle(shell).getPropertyValue("text-size-adjust"),
         servicePlaceholderLength: tastingService.placeholder.length,
         pageHeight: document.documentElement.scrollHeight,
         viewportHeight: window.innerHeight,
@@ -165,11 +223,23 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     expect(mobileCommercialLayout.tastingControlWidth).toBeGreaterThanOrEqual(
       270,
     );
-    expect(mobileCommercialLayout.longestScenarioLabel).toBeLessThanOrEqual(33);
+    expect(mobileCommercialLayout.longestScenarioLabel).toBeLessThanOrEqual(24);
+    expect(mobileCommercialLayout.widestScenarioLabel).toBeLessThanOrEqual(
+      mobileCommercialLayout.tastingControlWidth - 52,
+    );
+    expect(mobileCommercialLayout.textSizeAdjust).toBe("100%");
+    expect(
+      contrastRatio(
+        mobileCommercialLayout.transformationHeadingColor,
+        mobileCommercialLayout.transformationBackgroundColor,
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
     expect(mobileCommercialLayout.servicePlaceholderLength).toBeLessThanOrEqual(
       30,
     );
-    expect(mobileCommercialLayout.pageHeight).toBeLessThanOrEqual(8500);
+    expect(mobileCommercialLayout.pageHeight).toBeLessThanOrEqual(
+      psiquePageHeightLimit - crossBrowserRenderingSafetyMargin,
+    );
   }
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
@@ -207,7 +277,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     "Primeira aplicação",
   );
   await expect(page.getByTestId("assisted-transformation")).toContainText(
-    "Da resposta solta para uma conversa com próximo passo",
+    "Da resposta solta ao próximo passo",
   );
   await expect(page.getByTestId("assisted-closing-offer")).toContainText(
     "Tenha a próxima mensagem pronta antes de a conversa esfriar",

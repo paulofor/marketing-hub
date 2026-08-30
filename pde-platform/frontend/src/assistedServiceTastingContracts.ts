@@ -43,12 +43,12 @@ const kitWhatsAppTastingV1: AssistedServiceTastingContract = {
   scenarios: [
     {
       id: "orcamento-sem-resposta",
-      label: "Orçamento enviado; cliente sumiu",
+      label: "Orçamento sem resposta",
       context: "Retomar uma conversa sem pressionar nem presumir interesse.",
     },
     {
       id: "pedido-de-preco",
-      label: "Cliente perguntou só o preço",
+      label: "Perguntou apenas o preço",
       context:
         "Responder com clareza e descobrir o contexto mínimo antes do próximo passo.",
     },

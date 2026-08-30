@@ -21,6 +21,10 @@ import com.marketinghub.businessprocess.execution.service.agentactivity.AgentPro
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutionResult;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityExecutionResult;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityExecutor;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
@@ -373,6 +377,165 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(result.activities().get(4).stateEvidence()).isEqualTo("DIRECT");
     assertThat(result.activities().get(0).tasks().getFirst().productInternalName())
         .isEqualTo("Rigel");
+    assertThat(result.activities()).allMatch(activity -> activity.executionControl() != null);
+  }
+
+  /** Expõe o comando backend bloqueado sem quebrar a tela de produto ainda sem experimento. */
+  @Test
+  void explainsBackendActivityWhenProductHasNoExperiment() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    BackendProductProcessActivityExecutor backendExecutor =
+        mock(BackendProductProcessActivityExecutor.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper(),
+            List.of(backendExecutor),
+            List.of());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(56L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-commercial-homologation-activation");
+    BusinessProcessActivityDefinition preflight =
+        activity(589L, process, "preflight", "Executar preflight técnico");
+    preflight.setOwnerName("Backend");
+    Product product = Product.builder().id(9L).internalName("Rigel").build();
+    product.setAutomaticExecutionEnabled(true);
+    when(processes.findById(56L)).thenReturn(Optional.of(process));
+    when(products.findById(9L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(56L))
+        .thenReturn(List.of(preflight));
+    when(backendExecutor.supports(process, preflight)).thenReturn(true);
+
+    var result = executionService.productProcessExecutions(56L, 9L);
+
+    assertThat(result.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.executionControl().executorType()).isEqualTo("BACKEND");
+              assertThat(activity.executionControl().actionAvailable()).isFalse();
+              assertThat(activity.executionControl().availabilityReason())
+                  .contains("não possui experimento");
+            });
+    verify(backendExecutor, never()).readiness(any(), any(), any(), any());
+  }
+
+  /** Projeta e despacha a aprovação humana pelo mesmo contrato canônico da atividade. */
+  @Test
+  void exposesAndExecutesHumanApprovalContract() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    HumanProductProcessActivityExecutor humanExecutor =
+        mock(HumanProductProcessActivityExecutor.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper(),
+            List.of(),
+            List.of(humanExecutor),
+            List.of());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(56L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-commercial-homologation-activation");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"authorization\",\"type\":\"TASK\",\"label\":\"Autorizar ativação\"}]}");
+    BusinessProcessActivityDefinition authorization =
+        activity(590L, process, "authorization", "Autorizar ativação e orçamento");
+    authorization.setOwnerName("Operador humano");
+    Product product = Product.builder().id(9L).internalName("Rigel").build();
+    product.setAutomaticExecutionEnabled(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setProduct(product);
+    ProductProcessActivityExecutionRequest request =
+        new ProductProcessActivityExecutionRequest(
+            "APPROVE",
+            "Paulo Operador",
+            "Gates e teto financeiro foram revisados.",
+            "experiment-run:12",
+            "CONFIRM:pde-commercial-homologation-activation:authorization");
+    HumanProductProcessActivityReadiness readiness =
+        new HumanProductProcessActivityReadiness(
+            true,
+            "Pronta para decisão.",
+            "Autorizar ativação",
+            "Registra uma decisão auditável.",
+            "Confirmar ativação",
+            "Confirmo a ativação dentro do teto.",
+            request.confirmationToken(),
+            "EXPERIMENT_ACTIVATION",
+            89L,
+            List.of());
+    when(processes.findById(56L)).thenReturn(Optional.of(process));
+    when(products.findById(9L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(56L))
+        .thenReturn(List.of(authorization));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(56L, "authorization"))
+        .thenReturn(Optional.of(authorization));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+        .thenReturn(List.of());
+    when(humanExecutor.supports(process, authorization)).thenReturn(true);
+    when(humanExecutor.readiness(process, authorization, product, "experiment:89"))
+        .thenReturn(readiness);
+    when(humanExecutor.execute(process, authorization, product, "experiment:89", request))
+        .thenReturn(
+            new HumanProductProcessActivityExecutionResult(
+                "experiment:89", "COMPLETED", true, "Decisão registrada."));
+
+    var history = executionService.productProcessExecutions(56L, 9L);
+    var result =
+        executionService.requestProductActivityExecution(56L, 9L, "authorization", request);
+
+    assertThat(history.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.executionControl().executorType()).isEqualTo("HUMAN");
+              assertThat(activity.executionControl().interactionType()).isEqualTo("APPROVAL");
+              assertThat(activity.executionControl().actionAvailable()).isTrue();
+            });
+    assertThat(result.operationalState()).isEqualTo("COMPLETED");
+    verify(humanExecutor).execute(process, authorization, product, "experiment:89", request);
+    verifyNoInteractions(agentTasks);
   }
 
   /** Abre Psique e Têmis juntas na mesma ocorrência e referência do experimento do produto. */

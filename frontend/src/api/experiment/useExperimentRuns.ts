@@ -137,9 +137,12 @@ export function useCreateExperimentRun(experimentId?: string | number) {
       return data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: experimentRunsQueryKey(experimentId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: experimentRunsQueryKey(experimentId),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+      ]);
     },
   });
 }
@@ -161,6 +164,7 @@ export function useRunExperimentPreflight(experimentId?: string | number) {
         queryClient.invalidateQueries({
           queryKey: experimentRunPreflightQueryKey(preflight.runId),
         }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
       ]);
     },
   });
@@ -192,6 +196,7 @@ export function useRecordExperimentRunHomologation(
         queryClient.invalidateQueries({
           queryKey: experimentRunPreflightQueryKey(preflight.runId),
         }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
       ]);
     },
   });

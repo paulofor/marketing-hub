@@ -13,6 +13,7 @@ import {
   Target,
   Workflow,
 } from "lucide-react";
+import axios from "axios";
 import { Link, useParams } from "react-router-dom";
 import {
   useProductProcessActivityExecutions,
@@ -23,6 +24,7 @@ import BusinessProcessEntityName from "../../components/BusinessProcessEntityNam
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExecutionCard";
 import "../businessProcess/BusinessProcessesPage.css";
+import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecutionPanel";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -204,8 +206,10 @@ export default function ProductProcessActivityExecutionsPage() {
 
       {requestExecution.isError ? (
         <div className="alert alert-danger" role="alert">
-          Não foi possível iniciar a atividade. Verifique a situação registrada
-          e tente novamente.
+          {axios.isAxiosError(requestExecution.error)
+            ? requestExecution.error.response?.data?.message ||
+              "Não foi possível executar a atividade. Verifique a situação registrada e tente novamente."
+            : "Não foi possível executar a atividade. Verifique a situação registrada e tente novamente."}
         </div>
       ) : null}
 
@@ -419,17 +423,21 @@ export default function ProductProcessActivityExecutionsPage() {
                       {activity.taskCount} tarefa
                       {activity.taskCount === 1 ? "" : "s"}
                     </span>
-                    {activity.executionRequestAvailable ? (
+                    {!activity.executionControl &&
+                    activity.executionRequestAvailable ? (
                       <button
                         className="btn btn-primary btn-sm"
                         type="button"
                         disabled={requestExecution.isPending}
                         onClick={() =>
-                          requestExecution.mutate(activity.activityId)
+                          requestExecution.mutate({
+                            activityId: activity.activityId,
+                          })
                         }
                       >
                         {requestExecution.isPending &&
-                        requestExecution.variables === activity.activityId ? (
+                        requestExecution.variables?.activityId ===
+                          activity.activityId ? (
                           <Loader2
                             className="spinner-border spinner-border-sm"
                             size={16}
@@ -441,7 +449,8 @@ export default function ProductProcessActivityExecutionsPage() {
                           <PlayCircle size={16} aria-hidden="true" />
                         )}
                         {requestExecution.isPending &&
-                        requestExecution.variables === activity.activityId
+                        requestExecution.variables?.activityId ===
+                          activity.activityId
                           ? activity.activityId === "integration"
                             ? "Validando..."
                             : activity.operationalState === "BLOCKED"
@@ -470,11 +479,20 @@ export default function ProductProcessActivityExecutionsPage() {
                 </p>
 
                 {!activity.executionRequestAvailable &&
+                !activity.executionControl &&
                 activity.executionRequestReason ? (
                   <p className="text-body-secondary small mb-3">
                     {activity.executionRequestReason}
                   </p>
                 ) : null}
+
+                <ProductProcessActivityExecutionPanel
+                  activity={activity}
+                  productId={productId}
+                  pending={requestExecution.isPending}
+                  pendingActivityId={requestExecution.variables?.activityId}
+                  onExecute={(command) => requestExecution.mutate(command)}
+                />
 
                 {activity.tasks.length > 0 ? (
                   <div className="d-grid gap-3">

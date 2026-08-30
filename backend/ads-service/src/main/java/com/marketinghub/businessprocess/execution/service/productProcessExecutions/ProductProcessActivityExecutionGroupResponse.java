@@ -23,7 +23,8 @@ public record ProductProcessActivityExecutionGroupResponse(
     int taskCount,
     List<BusinessProcessActivityExecutionResponse> tasks,
     boolean executionRequestAvailable,
-    String executionRequestReason) {
+    String executionRequestReason,
+    ProductProcessActivityExecutionControlResponse executionControl) {
 
   /** Mantém compatibilidade com projeções que ainda não oferecem início pela tela do produto. */
   public ProductProcessActivityExecutionGroupResponse(
@@ -59,6 +60,7 @@ public record ProductProcessActivityExecutionGroupResponse(
         taskCount,
         tasks,
         false,
-        "Esta atividade não possui comando de execução configurado.");
+        "Esta atividade não possui comando de execução configurado.",
+        null);
   }
 }

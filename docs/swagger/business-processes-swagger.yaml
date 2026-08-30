@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.8.0
+  version: 1.9.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades, documentos e execuções independentes no Marketing Hub.
 paths:
   /api/business-processes:
@@ -134,7 +134,7 @@ paths:
         "404": { description: Processo ou produto não encontrado }
   /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests:
     post:
-      summary: Executa a atividade backend ou abre atomicamente suas tarefas responsáveis
+      summary: Executa o comando backend, abre tarefas ou registra uma decisão humana
       parameters:
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId
@@ -145,6 +145,13 @@ paths:
           in: path
           required: true
           schema: { type: string }
+      requestBody:
+        required: false
+        description: Obrigatório somente para atividades de aprovação humana.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductProcessActivityExecutionCommand"
       responses:
         "200":
           description: Resultado operacional persistido ou tarefas criadas na referência corrente
@@ -687,6 +694,7 @@ components:
         - tasks
         - executionRequestAvailable
         - executionRequestReason
+        - executionControl
       properties:
         activityDefinitionId: { type: integer, format: int64, nullable: true }
         activityId: { type: string }
@@ -706,6 +714,68 @@ components:
         executionRequestReason:
           type: string
           description: Explica a disponibilidade, a preservação da tentativa anterior ou o bloqueio do comando.
+        executionControl:
+          $ref: "#/components/schemas/ProductProcessActivityExecutionControl"
+    ProductProcessActivityRequirement:
+      type: object
+      required: [code, title, satisfied, detail, recommendation]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        satisfied: { type: boolean }
+        detail: { type: string }
+        recommendation: { type: string }
+    ProductProcessActivityExecutionControl:
+      type: object
+      required:
+        - executorType
+        - interactionType
+        - description
+        - actionAvailable
+        - availabilityReason
+        - confirmationRequired
+        - requirements
+      properties:
+        executorType:
+          type: string
+          enum: [AGENT, BACKEND, HUMAN, HISTORICAL, UNCONFIGURED]
+        interactionType:
+          type: string
+          enum: [COMMAND, WORKSPACE, APPROVAL, SUBPROCESS, AUTOMATIC, STATUS]
+        actionLabel: { type: string, nullable: true }
+        description: { type: string }
+        actionAvailable: { type: boolean }
+        availabilityReason: { type: string }
+        confirmationRequired: { type: boolean }
+        confirmationTitle: { type: string, nullable: true }
+        confirmationMessage: { type: string, nullable: true }
+        confirmationToken: { type: string, nullable: true }
+        workspaceCode:
+          type: string
+          nullable: true
+          enum: [EXPERIMENT_PREFLIGHT, EXPERIMENT_ACTIVATION]
+        workspaceReferenceId: { type: integer, format: int64, nullable: true }
+        targetProcessDefinitionId:
+          { type: integer, format: int64, nullable: true }
+        requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductProcessActivityRequirement"
+    ProductProcessActivityExecutionCommand:
+      type: object
+      description: Decisão explícita exigida para uma atividade de aprovação humana.
+      required:
+        - decision
+        - operatorName
+        - justification
+        - evidenceReference
+        - confirmationToken
+      properties:
+        decision: { type: string, enum: [APPROVE, REJECT] }
+        operatorName: { type: string, minLength: 3, maxLength: 191 }
+        justification: { type: string, minLength: 10, maxLength: 2000 }
+        evidenceReference: { type: string, minLength: 3, maxLength: 1000 }
+        confirmationToken: { type: string }
     ProductProcessActivityExecutionRequest:
       type: object
       required:

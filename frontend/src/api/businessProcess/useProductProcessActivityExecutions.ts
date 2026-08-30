@@ -2,8 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   ProductProcessActivityExecutionHistory,
+  ProductProcessActivityHumanDecision,
   ProductProcessActivityExecutionRequest,
 } from "./types";
+
+export type ProductProcessActivityExecutionCommand = {
+  activityId: string;
+  decision?: ProductProcessActivityHumanDecision;
+};
 
 /** Consulta as atividades e tarefas auditáveis de um produto no processo selecionado. */
 export function useProductProcessActivityExecutions(
@@ -35,25 +41,39 @@ export function useRequestProductProcessActivityExecution(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (activityId: string) =>
-      (
-        await axios.post<ProductProcessActivityExecutionRequest>(
-          `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests`,
-        )
-      ).data,
+    mutationFn: async ({
+      activityId,
+      decision,
+    }: ProductProcessActivityExecutionCommand) => {
+      const url = `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests`;
+      return decision
+        ? (
+            await axios.post<ProductProcessActivityExecutionRequest>(
+              url,
+              decision,
+            )
+          ).data
+        : (await axios.post<ProductProcessActivityExecutionRequest>(url)).data;
+    },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: [
-          "products",
-          productId,
-          "business-processes",
-          processDefinitionId,
-          "activity-executions",
-        ],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["products", "value-chain-positions"],
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [
+            "products",
+            productId,
+            "business-processes",
+            processDefinitionId,
+            "activity-executions",
+          ],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["products", "value-chain-positions"],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["experiment-runs"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["experiment-run-preflight"],
+        }),
+      ]);
     },
   });
 }

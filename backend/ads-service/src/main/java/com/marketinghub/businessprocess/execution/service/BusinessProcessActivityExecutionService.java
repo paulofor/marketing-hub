@@ -17,10 +17,16 @@ import com.marketinghub.businessprocess.execution.service.agentactivity.AgentPro
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutionResult;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityExecutionResult;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityExecutor;
+import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionControlResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRequirementResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -83,6 +89,7 @@ public class BusinessProcessActivityExecutionService {
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
   private final List<BackendProductProcessActivityExecutor> backendActivityExecutors;
+  private final List<HumanProductProcessActivityExecutor> humanActivityExecutors;
   private final List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders;
 
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
@@ -100,6 +107,7 @@ public class BusinessProcessActivityExecutionService {
       AgentTaskService agentTaskService,
       ObjectMapper objectMapper,
       List<BackendProductProcessActivityExecutor> backendActivityExecutors,
+      List<HumanProductProcessActivityExecutor> humanActivityExecutors,
       List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders) {
     this.processRepository = processRepository;
     this.activityDefinitionRepository = activityDefinitionRepository;
@@ -113,7 +121,40 @@ public class BusinessProcessActivityExecutionService {
     this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
     this.backendActivityExecutors = List.copyOf(backendActivityExecutors);
+    this.humanActivityExecutors = List.copyOf(humanActivityExecutors);
     this.agentActivityReadinessProviders = List.copyOf(agentActivityReadinessProviders);
+  }
+
+  /** Mantém testes que configuram executores backend e gates de agente sem decisão humana. */
+  BusinessProcessActivityExecutionService(
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
+      AgentTaskRepository taskRepository,
+      AgentTaskActivityCoverageRepository activityCoverageRepository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
+      CommercialPlanRepository commercialPlanRepository,
+      GeraLandingStageExecutionRepository landingExecutionRepository,
+      ProductRepository productRepository,
+      ExperimentRepository experimentRepository,
+      AgentTaskService agentTaskService,
+      ObjectMapper objectMapper,
+      List<BackendProductProcessActivityExecutor> backendActivityExecutors,
+      List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders) {
+    this(
+        processRepository,
+        activityDefinitionRepository,
+        taskRepository,
+        activityCoverageRepository,
+        activityInstanceRepository,
+        commercialPlanRepository,
+        landingExecutionRepository,
+        productRepository,
+        experimentRepository,
+        agentTaskService,
+        objectMapper,
+        backendActivityExecutors,
+        List.of(),
+        agentActivityReadinessProviders);
   }
 
   /** Mantém compatibilidade dos testes que não exercitam atividades determinísticas do backend. */
@@ -141,6 +182,7 @@ public class BusinessProcessActivityExecutionService {
         experimentRepository,
         agentTaskService,
         objectMapper,
+        List.of(),
         List.of(),
         List.of());
   }
@@ -343,10 +385,20 @@ public class BusinessProcessActivityExecutionService {
     return productPlans.stream().findFirst().orElse(null);
   }
 
-  /** Inicia a atividade ou abre nova tentativa auditável quando a execução anterior bloqueou. */
+  /** Mantém o contrato sem corpo usado por atividades de agente e comandos backend legados. */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId, Long productId, String activityId) {
+    return requestProductActivityExecution(processDefinitionId, productId, activityId, null);
+  }
+
+  /** Inicia a atividade ou registra uma decisão humana auditável após confirmação explícita. */
+  @Transactional
+  public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
+      Long processDefinitionId,
+      Long productId,
+      String activityId,
+      ProductProcessActivityExecutionRequest request) {
     if (agentTaskService == null || experimentRepository == null) {
       throw new IllegalStateException("Execução de atividade não configurada neste ambiente.");
     }
@@ -373,9 +425,11 @@ public class BusinessProcessActivityExecutionService {
     List<String> responsibleAgentKeys = responsibleAgentKeys(activityDefinition);
     Optional<BackendProductProcessActivityExecutor> backendExecutor =
         backendActivityExecutor(process, activityDefinition);
-    if (responsibleAgentKeys.isEmpty() && backendExecutor.isEmpty()) {
+    Optional<HumanProductProcessActivityExecutor> humanExecutor =
+        humanActivityExecutor(process, activityDefinition);
+    if (responsibleAgentKeys.isEmpty() && backendExecutor.isEmpty() && humanExecutor.isEmpty()) {
       throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "A atividade não possui executores automáticos configurados.");
+          HttpStatus.CONFLICT, "A atividade não possui contrato de execução configurado.");
     }
     List<Experiment> productExperiments = productExperiments(productId);
     Experiment experiment = latestProductExperiment(productId);
@@ -407,6 +461,26 @@ public class BusinessProcessActivityExecutionService {
       }
       BackendProductProcessActivityExecutionResult result =
           backendExecutor.get().execute(process, activityDefinition, product, sourceReference);
+      return new ProductProcessActivityExecutionRequestResponse(
+          process.getId(),
+          product.getId(),
+          normalizedActivityId,
+          result.sourceReference(),
+          List.of(),
+          result.operationalState(),
+          result.objectiveAchieved(),
+          result.message());
+    }
+    if (humanExecutor.isPresent()) {
+      HumanProductProcessActivityReadiness readiness =
+          humanExecutor.get().readiness(process, activityDefinition, product, sourceReference);
+      if (!readiness.ready()) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, readiness.reason());
+      }
+      HumanProductProcessActivityExecutionResult result =
+          humanExecutor
+              .get()
+              .execute(process, activityDefinition, product, sourceReference, request);
       return new ProductProcessActivityExecutionRequestResponse(
           process.getId(),
           product.getId(),
@@ -536,6 +610,8 @@ public class BusinessProcessActivityExecutionService {
       List<String> responsibleAgents,
       boolean hasBackendExecutor,
       BackendProductProcessActivityReadiness backendReadiness,
+      boolean hasHumanExecutor,
+      HumanProductProcessActivityReadiness humanReadiness,
       boolean hasAgentReadinessProvider,
       AgentProductProcessActivityReadiness agentReadiness,
       boolean hasProductExperiment,
@@ -547,14 +623,7 @@ public class BusinessProcessActivityExecutionService {
     if ("COMPLETED".equals(operationalState)) {
       return "O objetivo da atividade já foi atingido neste ciclo.";
     }
-    if (hasBackendExecutor
-        && !"NOT_STARTED".equals(operationalState)
-        && !"BLOCKED".equals(operationalState)) {
-      return "A atividade já possui execução registrada neste ciclo.";
-    }
-    if (!hasBackendExecutor
-        && !"NOT_STARTED".equals(operationalState)
-        && !"BLOCKED".equals(operationalState)) {
+    if (!"NOT_STARTED".equals(operationalState) && !"BLOCKED".equals(operationalState)) {
       return "A atividade já possui execução registrada neste ciclo.";
     }
     if (!hasProductExperiment) {
@@ -566,18 +635,226 @@ public class BusinessProcessActivityExecutionService {
     if (hasBackendExecutor && backendReadiness != null && !backendReadiness.ready()) {
       return backendReadiness.reason();
     }
+    if (hasHumanExecutor && humanReadiness != null && !humanReadiness.ready()) {
+      return humanReadiness.reason();
+    }
     if (hasAgentReadinessProvider && agentReadiness != null && !agentReadiness.ready()) {
       return agentReadiness.reason();
     }
-    if (responsibleAgents.isEmpty() && !hasBackendExecutor) {
-      return "A atividade não possui executores automáticos configurados.";
+    if (responsibleAgents.isEmpty() && !hasBackendExecutor && !hasHumanExecutor) {
+      return "A atividade não possui contrato de execução configurado.";
     }
     if ("BLOCKED".equals(operationalState)) {
       return "A tentativa bloqueada será preservada e uma nova tarefa será aberta.";
     }
     if (hasBackendExecutor && backendReadiness != null) return backendReadiness.reason();
+    if (hasHumanExecutor && humanReadiness != null) return humanReadiness.reason();
     if (hasAgentReadinessProvider && agentReadiness != null) return agentReadiness.reason();
     return "A atividade está pronta para abrir todas as tarefas responsáveis.";
+  }
+
+  /** Monta o comando uniforme de agente, backend, subprocesso ou aprovação humana. */
+  private ProductProcessActivityExecutionControlResponse executionControl(
+      BusinessProcessActivityDefinition definition,
+      BusinessProcessDefinition process,
+      String operationalState,
+      List<String> responsibleAgents,
+      boolean hasBackendExecutor,
+      BackendProductProcessActivityReadiness backendReadiness,
+      boolean hasHumanExecutor,
+      HumanProductProcessActivityReadiness humanReadiness,
+      boolean requestAvailable,
+      String requestReason,
+      boolean hasProductExperiment,
+      boolean productExecutionEnabled) {
+    if (definition == null) {
+      return new ProductProcessActivityExecutionControlResponse(
+          "HISTORICAL",
+          "STATUS",
+          null,
+          "Atividade histórica preservada somente para auditoria.",
+          false,
+          requestReason,
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          List.of());
+    }
+    if (hasHumanExecutor) {
+      if (humanReadiness == null) {
+        return new ProductProcessActivityExecutionControlResponse(
+            "HUMAN",
+            "APPROVAL",
+            "Registrar decisão",
+            "A atividade exige uma decisão humana explícita e auditável.",
+            false,
+            requestReason,
+            true,
+            "Confirmar decisão humana",
+            "Revise objetivo, evidências e impacto antes de decidir.",
+            null,
+            null,
+            null,
+            null,
+            List.of());
+      }
+      List<ProductProcessActivityRequirementResponse> requirements =
+          humanReadiness.requirements().stream()
+              .map(
+                  requirement ->
+                      new ProductProcessActivityRequirementResponse(
+                          requirement.code(),
+                          requirement.title(),
+                          requirement.satisfied(),
+                          requirement.detail(),
+                          requirement.recommendation()))
+              .toList();
+      return new ProductProcessActivityExecutionControlResponse(
+          "HUMAN",
+          "APPROVAL",
+          humanReadiness.actionLabel(),
+          humanReadiness.description(),
+          requestAvailable,
+          requestReason,
+          true,
+          humanReadiness.confirmationTitle(),
+          humanReadiness.confirmationMessage(),
+          humanReadiness.confirmationToken(),
+          humanReadiness.workspaceCode(),
+          humanReadiness.workspaceReferenceId(),
+          null,
+          requirements);
+    }
+    if (hasBackendExecutor) {
+      if (backendReadiness == null) {
+        return new ProductProcessActivityExecutionControlResponse(
+            "BACKEND",
+            "COMMAND",
+            null,
+            "O backend possui um comando determinístico para esta atividade.",
+            false,
+            requestReason,
+            false,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            List.of());
+      }
+      return new ProductProcessActivityExecutionControlResponse(
+          "BACKEND",
+          backendReadiness.workspaceCode() == null ? "COMMAND" : "WORKSPACE",
+          backendReadiness.actionLabel(),
+          backendReadiness.description(),
+          requestAvailable,
+          requestReason,
+          false,
+          null,
+          null,
+          null,
+          backendReadiness.workspaceCode(),
+          backendReadiness.workspaceReferenceId(),
+          null,
+          backendReadiness.requirements());
+    }
+    if (!responsibleAgents.isEmpty()) {
+      return new ProductProcessActivityExecutionControlResponse(
+          "AGENT",
+          "COMMAND",
+          "BLOCKED".equals(operationalState) ? "Reiniciar tarefa" : "Executar atividade",
+          "Abre todas as tarefas responsáveis no mesmo ciclo auditável.",
+          requestAvailable,
+          requestReason,
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          List.of());
+    }
+    Optional<BusinessProcessDefinition> subprocess = publishedSubprocess(definition);
+    if (subprocess.isPresent()) {
+      boolean navigationAvailable =
+          "PUBLISHED".equals(process.getStatus())
+              && hasProductExperiment
+              && productExecutionEnabled
+              && !"COMPLETED".equals(operationalState);
+      String reason =
+          navigationAvailable
+              ? "Abra o subprocesso oficial; ele preserva tarefas, evidências e custos próprios."
+              : requestReason;
+      return new ProductProcessActivityExecutionControlResponse(
+          "BACKEND",
+          "SUBPROCESS",
+          "Abrir subprocesso",
+          "A atividade delega a execução ao subprocesso publicado e será concluída pelo backend a partir do resultado persistido.",
+          navigationAvailable,
+          reason,
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          subprocess.get().getId(),
+          List.of());
+    }
+    if (isBackendOwner(definition)) {
+      return new ProductProcessActivityExecutionControlResponse(
+          "BACKEND",
+          "AUTOMATIC",
+          null,
+          "O backend deve concluir esta atividade a partir do evento ou resultado técnico correspondente.",
+          false,
+          "Nenhum comando manual é seguro para esta atividade; o backend ainda não recebeu o evento conclusivo.",
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          List.of());
+    }
+    return new ProductProcessActivityExecutionControlResponse(
+        "UNCONFIGURED",
+        "STATUS",
+        null,
+        "A definição ainda não declarou uma forma operacional de execução.",
+        false,
+        requestReason,
+        false,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        List.of());
+  }
+
+  /** Resolve a versão publicada do subprocesso sem expor código técnico como ação ao usuário. */
+  private Optional<BusinessProcessDefinition> publishedSubprocess(
+      BusinessProcessActivityDefinition definition) {
+    if (definition.getSubprocessCode() == null || definition.getSubprocessCode().isBlank()) {
+      return Optional.empty();
+    }
+    return processRepository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+        definition.getSubprocessCode(), "PUBLISHED");
+  }
+
+  /** Reconhece responsabilidades explícitas do backend sem delegar inferência ao frontend. */
+  private boolean isBackendOwner(BusinessProcessActivityDefinition definition) {
+    return definition.getOwnerName() != null
+        && definition.getOwnerName().toLowerCase(java.util.Locale.ROOT).contains("backend");
   }
 
   /** Localiza o único executor backend compatível com a atividade publicada. */
@@ -590,6 +867,24 @@ public class BusinessProcessActivityExecutionService {
     if (compatible.size() > 1) {
       throw new IllegalStateException(
           "Mais de um executor backend atende à atividade "
+              + activityDefinition.getActivityId()
+              + " do processo "
+              + process.getProcessCode()
+              + ".");
+    }
+    return compatible.stream().findFirst();
+  }
+
+  /** Localiza a única autoridade humana compatível com a atividade publicada. */
+  private Optional<HumanProductProcessActivityExecutor> humanActivityExecutor(
+      BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
+    List<HumanProductProcessActivityExecutor> compatible =
+        humanActivityExecutors.stream()
+            .filter(executor -> executor.supports(process, activityDefinition))
+            .toList();
+    if (compatible.size() > 1) {
+      throw new IllegalStateException(
+          "Mais de um executor humano atende à atividade "
               + activityDefinition.getActivityId()
               + " do processo "
               + process.getProcessCode()
@@ -754,10 +1049,23 @@ public class BusinessProcessActivityExecutionService {
               : backendActivityExecutor(selectedProcess, definition);
       BackendProductProcessActivityReadiness backendReadiness =
           backendExecutor
+              .filter(ignored -> hasProductExperiment && readinessSourceReference != null)
               .map(
                   executor ->
                       executor.readiness(
-                          selectedProcess, definition, product, currentExecutionReference))
+                          selectedProcess, definition, product, readinessSourceReference))
+              .orElse(null);
+      Optional<HumanProductProcessActivityExecutor> humanExecutor =
+          definition == null
+              ? Optional.empty()
+              : humanActivityExecutor(selectedProcess, definition);
+      HumanProductProcessActivityReadiness humanReadiness =
+          humanExecutor
+              .filter(ignored -> hasProductExperiment && readinessSourceReference != null)
+              .map(
+                  executor ->
+                      executor.readiness(
+                          selectedProcess, definition, product, readinessSourceReference))
               .orElse(null);
       Optional<AgentProductProcessActivityReadinessProvider> agentReadinessProvider =
           definition == null
@@ -776,6 +1084,9 @@ public class BusinessProcessActivityExecutionService {
       boolean agentStateAllowsRequest =
           "NOT_STARTED".equals(situation.operationalState())
               || "BLOCKED".equals(situation.operationalState());
+      boolean humanStateAllowsRequest =
+          "NOT_STARTED".equals(situation.operationalState())
+              || "BLOCKED".equals(situation.operationalState());
       boolean executionRequestAvailable =
           definition != null
               && "PUBLISHED".equals(selectedProcess.getStatus())
@@ -787,7 +1098,11 @@ public class BusinessProcessActivityExecutionService {
                   || (backendExecutor.isPresent()
                       && backendStateAllowsRequest
                       && backendReadiness != null
-                      && backendReadiness.ready()));
+                      && backendReadiness.ready())
+                  || (humanExecutor.isPresent()
+                      && humanStateAllowsRequest
+                      && humanReadiness != null
+                      && humanReadiness.ready()));
       String executionRequestReason =
           executionRequestReason(
               definition,
@@ -796,8 +1111,24 @@ public class BusinessProcessActivityExecutionService {
               responsibleAgents,
               backendExecutor.isPresent(),
               backendReadiness,
+              humanExecutor.isPresent(),
+              humanReadiness,
               agentReadinessProvider.isPresent(),
               agentReadiness,
+              hasProductExperiment,
+              productExecutionEnabled);
+      ProductProcessActivityExecutionControlResponse executionControl =
+          executionControl(
+              definition,
+              selectedProcess,
+              situation.operationalState(),
+              responsibleAgents,
+              backendExecutor.isPresent(),
+              backendReadiness,
+              humanExecutor.isPresent(),
+              humanReadiness,
+              executionRequestAvailable,
+              executionRequestReason,
               hasProductExperiment,
               productExecutionEnabled);
       String activityName =
@@ -824,7 +1155,8 @@ public class BusinessProcessActivityExecutionService {
               executions.size(),
               executions,
               executionRequestAvailable,
-              executionRequestReason));
+              executionRequestReason,
+              executionControl));
     }
     return groups;
   }

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,7 +14,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +48,7 @@ public class CustomerBpmTaskConsumer {
   private final PdeExperienceEvidenceLoader pdeExperienceEvidenceLoader;
   private final BpmVisualEvidenceRunner visualEvidenceRunner;
   private final BpmVisualEvidenceBackendClient visualEvidenceBackendClient;
+  private final CodexProcessSupervisor processSupervisor;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica, o modelo e a sandbox somente leitura de Psique. */
@@ -61,7 +62,8 @@ public class CustomerBpmTaskConsumer {
       @Value("${CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
       ObjectMapper json,
       BpmVisualEvidenceRunner visualEvidenceRunner,
-      BpmVisualEvidenceBackendClient visualEvidenceBackendClient) {
+      BpmVisualEvidenceBackendClient visualEvidenceBackendClient,
+      CodexProcessSupervisor processSupervisor) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.codex = codex;
     this.model = model;
@@ -75,6 +77,7 @@ public class CustomerBpmTaskConsumer {
     this.json = json;
     this.visualEvidenceRunner = visualEvidenceRunner;
     this.visualEvidenceBackendClient = visualEvidenceBackendClient;
+    this.processSupervisor = processSupervisor;
   }
 
   /** Mantém testes de configuração isolados sem iniciar integrações de browser ou backend. */
@@ -95,7 +98,9 @@ public class CustomerBpmTaskConsumer {
         commercialEvidencePath,
         json,
         null,
-        null);
+        null,
+        new CodexProcessSupervisor(
+            Duration.ofMinutes(40), Duration.ofHours(2), Duration.ofSeconds(15)));
   }
 
   /** Exige o esforço explícito antes de Psique reservar uma tarefa ou iniciar o modelo. */
@@ -219,43 +224,21 @@ public class CustomerBpmTaskConsumer {
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
     PromptComposition prompt = promptComposition(task, visualEvidence);
     List<Map<String, Object>> visualAccesses = visualAccessedUrls(visualEvidence);
+    Process process = null;
     try {
       recordExecutionAudit(task, prompt, visualAccesses);
-      List<String> command =
-          new ArrayList<>(
-              List.of(
-                  codex,
-                  "--search",
-                  "exec",
-                  "-c",
-                  "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
-                  "--config",
-                  "model_reasoning_effort=\"" + reasoningEffort + "\"",
-                  "-",
-                  "--skip-git-repo-check",
-                  "--sandbox",
-                  "read-only",
-                  "--cd",
-                  repositoryPath,
-                  "--output-schema",
-                  schema.toString(),
-                  "--output-last-message",
-                  output.toString(),
-                  "--json",
-                  "--color",
-                  "never"));
-      if (model != null && !model.isBlank()) command.addAll(List.of("--model", model));
-      Process process =
-          new ProcessBuilder(command)
+      process =
+          new ProcessBuilder(command(output, schema, visualEvidence))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      if (!process.waitFor(40, TimeUnit.MINUTES)) {
-        process.destroyForcibly();
+      CodexProcessSupervisor.WaitOutcome waitOutcome =
+          processSupervisor.awaitCompletion(process, processLog);
+      if (waitOutcome != CodexProcessSupervisor.WaitOutcome.COMPLETED) {
         throw new BpmExecutionException(
-            "Timeout da atividade BPM de Psique após 40 minutos.",
+            timeoutMessage(waitOutcome),
             readTokenUsage(json, processLog),
             prompt.fullPrompt(),
             prompt.agentPromptPart(),
@@ -301,10 +284,77 @@ public class CustomerBpmTaskConsumer {
             ex);
       }
     } finally {
+      if (process != null && process.isAlive()) processSupervisor.terminateTree(process);
       Files.deleteIfExists(output);
       Files.deleteIfExists(processLog);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /** Monta o comando e entrega cada snapshot como anexo multimodal do próprio turno. */
+  List<String> command(
+      Path output,
+      Path schema,
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {
+    List<String> command =
+        new ArrayList<>(
+            List.of(
+                codex,
+                "--search",
+                "exec",
+                "-c",
+                "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
+                "--config",
+                "model_reasoning_effort=\"" + reasoningEffort + "\"",
+                "-",
+                "--skip-git-repo-check",
+                "--sandbox",
+                "read-only",
+                "--cd",
+                repositoryPath,
+                "--output-schema",
+                schema.toString(),
+                "--output-last-message",
+                output.toString(),
+                "--json",
+                "--color",
+                "never"));
+    if (model != null && !model.isBlank()) command.addAll(List.of("--model", model));
+    if (visualEvidence != null) {
+      for (var evidence : visualEvidence) {
+        command.addAll(List.of("--image", requiredVisualAttachment(evidence).toString()));
+      }
+    }
+    return List.copyOf(command);
+  }
+
+  /**
+   * Exige o arquivo capturado antes de criar uma chamada multimodal que não poderá inspecioná-lo.
+   */
+  private Path requiredVisualAttachment(
+      BpmVisualEvidenceBackendClient.UploadedVisualEvidence evidence) {
+    if (evidence == null || evidence.localPath() == null || evidence.localPath().isBlank()) {
+      throw new BpmVisualEvidenceRunner.VisualEvidenceException(
+          "Snapshot de Psique sem caminho local para anexo multimodal.");
+    }
+    Path path = Path.of(evidence.localPath()).toAbsolutePath().normalize();
+    if (!Files.isRegularFile(path)) {
+      throw new BpmVisualEvidenceRunner.VisualEvidenceException(
+          "Snapshot de Psique não foi encontrado para anexo multimodal: " + path);
+    }
+    return path;
+  }
+
+  /** Explica se Psique parou por inatividade ou pelo teto absoluto de uma execução ativa. */
+  private String timeoutMessage(CodexProcessSupervisor.WaitOutcome waitOutcome) {
+    if (waitOutcome == CodexProcessSupervisor.WaitOutcome.INACTIVITY_TIMEOUT) {
+      return "Timeout da atividade BPM de Psique após "
+          + processSupervisor.inactivityTimeout().toMinutes()
+          + " minutos sem atividade observável.";
+    }
+    return "Teto absoluto da atividade BPM de Psique após "
+        + processSupervisor.absoluteTimeout().toMinutes()
+        + " minutos.";
   }
 
   /** Persiste o parecer e as evidências na própria atividade BPM. */

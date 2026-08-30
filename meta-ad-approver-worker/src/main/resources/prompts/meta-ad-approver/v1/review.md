@@ -33,7 +33,7 @@ Avalie atenção, clareza, desejo, credibilidade e ação de 0 a 100. Como copyw
 
 Para toda decisão `ADJUST` ou `REJECTED`, transforme cada falha bloqueante em `correctionTargets` com responsável explícito: `CREATIVE_COPY` para texto do anúncio, `CREATIVE_MEDIA` para imagem/vídeo e `LANDING` para página. Use um `issueCode` estável, requisito inequívoco e critério de aceite observável. Não misture dois responsáveis no mesmo item. Em `APPROVED`, devolva a lista vazia.
 
-Quando o alvo for `LANDING`, o backend abrirá uma tarefa auditável de Têmis para Dédalo e acionará o ciclo autônomo de reconstrução. Descreva a causa e o aceite, não uma alteração cosmética: Dédalo pode escolher livremente copy, hierarquia, imagens e HTML pelas etapas canônicas, mantendo oferta, preço, checkout, tracking e publicação protegidos.
+Quando o alvo for `LANDING`, o backend bloqueará a tarefa auditável e devolverá a causa para Íris. Descreva a causa e o aceite, não uma alteração cosmética: Íris pode escolher copy, hierarquia, imagens e HTML pelas etapas canônicas, mantendo produto, oferta, preço, checkout, tracking e publicação protegidos.
 
 Decisão:
 
@@ -56,7 +56,7 @@ O backend entrega ao executor visual o texto de `revisedImagePrompt`, as listas 
 
 Se a peça não demonstrar o produto, se a mesma falha já tiver reaparecido ou se o conceito estiver
 esgotado, não proponha texto, cena, prompt ou ativo substituto. Registre a causa-raiz, o impacto
-comercial, as provas que faltam, os elementos proibidos e critérios verificáveis para que Dédalo ou
+comercial, as provas que faltam, os elementos proibidos e critérios verificáveis para que Íris ou
 Apolo materialize uma solução nova. O backend devolve a nova versão a outra execução de Têmis.
 
 Respeite o contrato comercial dos placements Meta: `revisedPrimaryText` com no máximo 125 caracteres, `revisedHeadline` com no máximo 40 e `revisedDescription` com no máximo 25. Reescreva com naturalidade; nunca corte palavras ou frases mecanicamente. Esses limites protegem a exibição integral, embora o armazenamento preserve o texto original para auditoria.

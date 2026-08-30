@@ -23,7 +23,7 @@ import org.mockito.ArgumentCaptor;
 class CreativeGenerationServiceTest {
 
     /**
-     * Garante que o serviço consome a fila, reutiliza a entrega de Têmis e conclui a pendência.
+     * Garante que Íris consome a fila, reutiliza a prova aprovada e conclui a pendência.
      */
     @Test
     void shouldProcessDefaultPendingCreativeGeneration() {
@@ -62,8 +62,8 @@ class CreativeGenerationServiceTest {
         assertThat(auditCaptor.getValue().executionMode()).isEqualTo("MODEL");
         assertThat(auditCaptor.getValue().reasoningEffort()).isEqualTo("medium");
         assertThat(auditCaptor.getValue().promptSent())
-                .isEqualTo("Núcleo de Dédalo.\n\nGere a copy.");
-        assertThat(auditCaptor.getValue().agentPromptPart()).isEqualTo("Núcleo de Dédalo.");
+                .isEqualTo("Núcleo de Íris.\n\nGere a copy.");
+        assertThat(auditCaptor.getValue().agentPromptPart()).isEqualTo("Núcleo de Íris.");
         assertThat(auditCaptor.getValue().activityPromptPart()).isEqualTo("Gere a copy.");
     }
 
@@ -172,7 +172,7 @@ class CreativeGenerationServiceTest {
         verify(backendClient).createCreative(49L, generated);
     }
 
-    /** Garante que o worker não cria criativo sem entregável visual aprovado produzido por Têmis. */
+    /** Garante que Íris não cria criativo sem prova de Dédalo aprovada por Têmis. */
     @Test
     void shouldFailPendingGenerationWhenImageUrlIsEmpty() {
         CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
@@ -199,7 +199,7 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.any());
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
-                org.mockito.ArgumentMatchers.contains("entregável visual APPROVED produzido por Têmis"),
+                org.mockito.ArgumentMatchers.contains("prova visual de Dédalo aprovada por Têmis"),
                 org.mockito.ArgumentMatchers.any());
     }
 
@@ -228,8 +228,8 @@ class CreativeGenerationServiceTest {
                 new CreativeChatGptClient.ExecutionAudit(
                         "gpt-test",
                         "medium",
-                        "Núcleo de Dédalo.\n\nGere a copy.",
-                        "Núcleo de Dédalo.",
+                        "Núcleo de Íris.\n\nGere a copy.",
+                        "Núcleo de Íris.",
                         "Gere a copy."));
     }
 

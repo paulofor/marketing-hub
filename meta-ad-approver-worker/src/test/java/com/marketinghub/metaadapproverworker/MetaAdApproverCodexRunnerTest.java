@@ -211,6 +211,18 @@ class MetaAdApproverCodexRunnerTest {
             "escolher livremente a solução");
   }
 
+  /** Mantém a correção de landing e mídia estática com Íris também no contrato legado. */
+  @Test
+  void assignsLegacyCommunicationCorrectionsToIris() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+
+    assertThat(prompt)
+        .contains("devolverá a causa para Íris")
+        .contains("para que Íris ou")
+        .contains("Apolo materialize uma solução nova")
+        .doesNotContain("para que Dédalo ou");
+  }
+
   /** Bloqueia resposta que tente devolver copy pronta sob o disfarce de parecer. */
   @Test
   void rejectsReplacementContentFromReviewer() throws Exception {

@@ -82,11 +82,6 @@ class LandingGeneratorBackendClientTest {
     server
         .expect(
             requestTo(
-                "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/process-tasks/pending/activation"))
-        .andRespond(withSuccess());
-    server
-        .expect(
-            requestTo(
                 "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/pending?limit=1"))
         .andExpect(header("X-Agent-Build-Reference", "sha-4909"))
         .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
@@ -97,18 +92,13 @@ class LandingGeneratorBackendClientTest {
     server.verify();
   }
 
-  /** Materializa a tarefa BPM antes de reservar sua execução técnica. */
+  /** Não tenta reservar tarefa BPM nova pela fila histórica de landing. */
   @Test
-  void shouldActivateClaimedBpmTaskBeforeTechnicalQueue() {
+  void shouldClaimOnlyExistingTechnicalLandingQueue() {
     RestClient.Builder builder = RestClient.builder();
     MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
     LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
     properties.setBackendUrl("http://backend.test");
-    server
-        .expect(
-            requestTo(
-                "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/process-tasks/pending/activation"))
-        .andRespond(withSuccess());
     server
         .expect(
             requestTo(

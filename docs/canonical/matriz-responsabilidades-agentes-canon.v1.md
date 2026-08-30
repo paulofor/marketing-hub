@@ -80,6 +80,13 @@ O backend valida esse contrato ao criar, atualizar ou publicar processos. Change
 processos devem ser homologados fisicamente no MySQL 5.7 e testar que as versões vigentes não contêm
 coautoria nem domínio incompatível. Versões históricas permanecem imutáveis e auditáveis.
 
+Na operação vigente, Dédalo aceita somente os seis pares de arquitetura, jornada, entregáveis,
+acesso, degustação e personalização definidos no cânone de Íris. Íris aceita somente contrato de
+comunicação, pacote não audiovisual e as quatro atividades da landing. O worker deve testar o par
+completo `processCode/activityId`, porque nomes isolados podem existir em processos de domínios
+diferentes. Filas técnicas legadas não podem criar uma segunda autoridade nem concluir tarefas BPM
+de outro executor.
+
 ## Métrica e critérios
 
 A métrica principal da organização é **tempo até venda entregue com satisfação**, acompanhada de

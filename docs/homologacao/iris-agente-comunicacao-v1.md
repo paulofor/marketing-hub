@@ -51,3 +51,49 @@ econômicos por Plutus, a experiência humana é revisada por Psique, a integrid
 Uma primeira rodada completa sem defeitos conclui a homologação. Se a rodada revelar um defeito e
 houver correção, após a última correção serão executadas duas rodadas locais completas e
 consecutivas sem falha; qualquer novo defeito reinicia a contagem.
+
+## Rehomologação da distribuição executável — 2026-08-30
+
+O banco operacional já publicava seis atividades para Dédalo e seis para Íris, cada uma com um único
+dono e domínio correto. A divergência estava no runtime: uma ponte antiga ainda procurava qualquer
+tarefa de Dédalo para abastecer a fila de criativos, o AI Worker se apresentava como Dédalo, o
+monitor atribuía a produção visual a ele e seu worker implementava apenas três das seis atividades
+atuais de produto. Além disso, o scheduler histórico de landing reservava a próxima tarefa de
+Dédalo sem filtrar processo, podendo capturar um contrato de produto e tratá-lo como landing.
+
+| Caso | Caminho feliz | Falha protegida | Evidência local |
+| --- | --- | --- | --- |
+| Catálogo versus consumidores | todos os 12 pares vigentes possuem um único executor compatível | atividade de Íris em Dédalo ou de Dédalo em Íris é recusada | testes de contratos dos dois workers |
+| Arquitetura | Dédalo executa `productArchitecture` com três alternativas e saída funcional | decisão ou arquitetura ausente bloqueia | schema v5 e validador do consumer |
+| Construção | jornada, entregáveis e acesso continuam executáveis | contexto de outro produto, pacote parcial ou acesso sem falhas previstas bloqueia | prompts genéricos e testes unitários |
+| Degustação | Dédalo entrega microexperiência e artefato real limitado | descrição sem conteúdo, eventos ou segregação de QA bloqueia | prompt/schema `pde-tasting-v1` |
+| Venda e entrega | personalização paga é consultada antes das filas de aquisição | venda, versão, conteúdo, qualidade ou handoff ausente bloqueia | prompt/schema `pde-delivery-v1` |
+| Comunicação | Íris produz copy/criativo/landing e usa prova real de Dédalo | prompt que se identifique como Dédalo falha | contrato do AI Worker e consumer de Íris |
+| Monitor | materialização visual aparece em Íris | Dédalo ou Têmis receber esse trabalho falha | teste do monitor operacional |
+| Compatibilidade | endpoints técnicos de experimento continuam funcionando | callback técnico concluir tarefa BPM alheia é impossível | remoção da ponte genérica e testes do controller |
+| Auditoria | modelo, prompt, resposta, tokens e custo continuam persistidos pelo registrador de IA ou pela tarefa BPM | execução sem identidade ou contrato registrado falha | testes de prompt, callbacks e auditoria |
+| Segregação | referências de produto, venda, processo e atividade vêm do snapshot | contrato homônimo ou contexto cruzado é recusado | resolução pelo par completo e schemas estritos |
+| Interface e dispositivos | nenhuma superfície visual foi alterada | comportamento divergente por navegador não se aplica | marcado como não aplicável nesta mudança de backend/worker |
+| Segurança comercial | testes locais não publicam, enviam comunicação nem alteram preço, campanha ou orçamento | qualquer efeito externo interrompe a rodada | sandbox read-only e dependências simuladas |
+
+Critério da rodada: todos os testes Java relevantes, schemas JSON, contratos canônicos e busca de
+vazamentos de identidade devem passar juntos. Se a primeira rodada revelar defeito, a contagem volta
+a zero e serão exigidas duas rodadas completas consecutivas depois da última correção.
+
+## Resultado local final — 2026-08-30
+
+Após a revisão detectar que uma landing histórica podia ocultar no monitor uma atividade vigente de
+produto, a prioridade foi corrigida e a contagem reiniciada. Duas rodadas completas e consecutivas
+terminaram sem falha. Em cada rodada:
+
+- 551 casos Java foram contabilizados nos seis módulos, com zero falhas, zero erros e três testes
+  condicionais ignorados pelo próprio contrato das suítes;
+- três testes Node do MCP agregado de Atena passaram;
+- os `verify` completos de Dédalo, Íris, AI Worker, Atena e Têmis e os testes relevantes do backend,
+  incluindo ArchUnit, passaram;
+- harness e schemas JSON foram parseados, o diff não apresentou erro e nenhuma referência proibida
+  à ponte genérica, à ativação genérica de landing ou à identidade antiga permaneceu no runtime;
+- nenhum changelog foi alterado, porque a consulta operacional confirmou que os 12 pares vigentes já
+  possuem um único agente correto no banco;
+- interface e navegadores permaneceram não aplicáveis, pois nenhum código visual foi modificado;
+- nenhuma publicação, mensagem, preço, campanha, orçamento, venda ou evento comercial foi produzido.

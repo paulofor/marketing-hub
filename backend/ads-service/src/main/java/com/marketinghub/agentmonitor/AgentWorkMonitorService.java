@@ -38,6 +38,7 @@ public class AgentWorkMonitorService {
   private static final Duration DEDALO_STALE_AFTER = Duration.ofMinutes(45);
   private static final Duration OPPORTUNITY_REVIEW_PENDING_ALERT_AFTER = Duration.ofMinutes(3);
   private static final String DEDALO = "landing-generator";
+  private static final String IRIS = "communication-director";
   private static final String APOLO = "videomaker";
   private static final String PLUTUS = "financial-agent";
   private static final String TEMIS = "meta-ad-approver";
@@ -152,6 +153,7 @@ public class AgentWorkMonitorService {
   private AgentWorkMonitorResponse monitor(Agent agent, DailyTokenSnapshot tokens) {
     AgentWorkMonitorResponse opportunityReview = opportunityReview(agent, tokens);
     if (opportunityReview != null) return opportunityReview;
+    if (IRIS.equals(agent.getAgentKey())) return iris(agent, tokens);
     if (DEDALO.equals(agent.getAgentKey())) return dedalo(agent, tokens);
     if (APOLO.equals(agent.getAgentKey()) || PLUTUS.equals(agent.getAgentKey())) {
       return video(agent, tokens);
@@ -206,26 +208,34 @@ public class AgentWorkMonitorService {
         tokens);
   }
 
-  /** Consolida primeiro a materialização visual e depois a landing mais recente de Dédalo. */
+  /** Consolida a materialização visual comercial sob a identidade de Íris. */
+  private AgentWorkMonitorResponse iris(Agent agent, DailyTokenSnapshot tokens) {
+    AgentWorkMonitorResponse materialization = irisMaterialization(agent, tokens);
+    return materialization != null ? materialization : task(agent, tokens);
+  }
+
+  /**
+   * Prioriza o produto atual de Dédalo e usa a landing antiga somente como histórico operacional.
+   */
   private AgentWorkMonitorResponse dedalo(Agent agent, DailyTokenSnapshot tokens) {
-    AgentWorkMonitorResponse materialization = dedaloMaterialization(agent, tokens);
-    if (materialization != null) return materialization;
+    AgentWorkMonitorResponse currentProduct = task(agent, tokens);
+    if (!"IDLE".equals(currentProduct.workStatus())) return currentProduct;
     return landingRepository
         .findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1")
         .map(execution -> landing(agent, execution, tokens))
-        .orElseGet(() -> task(agent, tokens));
+        .orElse(currentProduct);
   }
 
-  /** Expõe a correção visual como trabalho de Dédalo, nunca da revisora Têmis. */
-  private AgentWorkMonitorResponse dedaloMaterialization(Agent agent, DailyTokenSnapshot tokens) {
-    return creativeRepository.findDedaloOpenMaterializations().stream()
+  /** Expõe a correção visual como trabalho de Íris, nunca do produto ou da revisora Têmis. */
+  private AgentWorkMonitorResponse irisMaterialization(Agent agent, DailyTokenSnapshot tokens) {
+    return creativeRepository.findIrisOpenMaterializations().stream()
         .findFirst()
-        .map(creative -> dedaloMaterialization(agent, creative, tokens))
+        .map(creative -> irisMaterialization(agent, creative, tokens))
         .orElse(null);
   }
 
-  /** Traduz o estado persistido da materialização visual para o monitor de Dédalo. */
-  private AgentWorkMonitorResponse dedaloMaterialization(
+  /** Traduz o estado persistido da materialização visual para o monitor de Íris. */
+  private AgentWorkMonitorResponse irisMaterialization(
       Agent agent, Creative creative, DailyTokenSnapshot tokens) {
     CreativeImprovementStatus status = creative.getAgentImprovementStatus();
     boolean blocked =

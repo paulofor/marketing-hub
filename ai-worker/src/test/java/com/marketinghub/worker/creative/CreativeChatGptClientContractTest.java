@@ -32,6 +32,18 @@ class CreativeChatGptClientContractTest {
         .isEqualTo("array");
   }
 
+  /** Mantém a geração de comunicação sob Íris e preserva Dédalo apenas como origem da prova. */
+  @Test
+  void attributesCreativeCommunicationToIris() throws Exception {
+    String prompt =
+        new ClassPathResource("prompts/creative/agent-core.md")
+            .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(prompt).startsWith("Você é Íris");
+    assertThat(prompt).contains("prova real de Dédalo");
+    assertThat(prompt).doesNotContain("Você é Dédalo");
+  }
+
   /** Desserializa o envelope e aplica o estado inicial canônico em cada copy retornada. */
   @Test
   @SuppressWarnings("unchecked")

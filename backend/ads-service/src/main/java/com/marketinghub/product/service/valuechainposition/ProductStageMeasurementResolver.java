@@ -251,7 +251,7 @@ public class ProductStageMeasurementResolver {
   }
 
   /**
-   * Reconhece a landing aprovada somente quando Dédalo, Quality Review, Psique e Têmis fecharam a
+   * Reconhece a landing aprovada somente quando Íris, Quality Review, Psique e Têmis fecharam a
    * mesma execução; publicação humana permanece fora deste objetivo.
    */
   private Instant approvedLandingAchievedAt(List<AgentTask> matchingTasks) {

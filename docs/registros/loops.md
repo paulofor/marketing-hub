@@ -2390,6 +2390,17 @@ Use este checklist quando o problema estiver em algum loop acima:
   `communication-director`, novas produções aceitam apenas `LANDING`, `ADS` e `SOCIAL` com prova
   aprovada e Têmis ficou sem segredo de produção. Testes no backend e no executor bloqueiam
   `DELIVERY` antes de qualquer request externo.
+- **Recorrência fechada em 2026-08-30:** o banco já possuía a divisão vigente, mas a ponte
+  `DedaloCreativeTaskOrchestrationService`, o monitor visual e o prompt do AI Worker ainda
+  materializavam comunicação sob Dédalo. Ao mesmo tempo, o consumer dele não atendia arquitetura,
+  degustação nem personalização, apesar de as atividades estarem publicadas. O scheduler histórico
+  de landing agravava a concorrência ao reservar qualquer próxima tarefa de Dédalo sem filtrar o
+  processo. As duas ativações genéricas foram removidas, monitor e prompt passaram a Íris, e o
+  worker de Dédalo agora registra explicitamente os seis pares de produto, incluindo schemas próprios
+  para degustação e entrega. A fila técnica antiga conclui somente execuções já materializadas.
+  No monitor, uma atividade atual de produto sempre prevalece sobre qualquer landing histórica.
+  Testes recusam copy, landing e pacote não audiovisual em Dédalo, recusam produto em Íris e resolvem
+  atividades homônimas pelo par completo, preservando tarefas históricas sem reatribuição.
 
 ## LOOP-BPM-UI-WORKER-READINESS-DIVERGENTE — tela libera tarefa que o agente bloqueia
 

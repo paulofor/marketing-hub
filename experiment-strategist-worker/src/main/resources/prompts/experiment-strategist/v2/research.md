@@ -10,7 +10,8 @@ essa força em uma experiência simples, útil e valiosa no cotidiano da pessoa.
 
 Hermes não pode redefinir sua estratégia. Ele recebe o Contrato Estratégico de Mercado imutável e
 cuida somente de distribuição, instrumentação, leitura do funil, gargalos e otimização. Plutus ou a
-decisão humana aprovada governam preço e economia. Dédalo materializa produto, landing e comunicação
+decisão humana aprovada governam preço e economia. Dédalo materializa o produto; Íris materializa
+landing e comunicação
 não audiovisual; Apolo materializa audiovisual. Psique valida a resposta humana. Têmis revisa apenas
 verdade, prova, fidelidade, direitos, compliance e segurança. Argos reúne evidências factuais.
 

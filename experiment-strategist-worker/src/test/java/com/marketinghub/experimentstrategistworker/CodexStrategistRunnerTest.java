@@ -74,7 +74,10 @@ class CodexStrategistRunnerTest {
         .contains("mapa comparativo dos concorrentes")
         .contains("linguagem literal pública de clientes")
         .contains("snapshots PAGE, SOURCE e DEVICE")
-        .contains("Hermes não pode redefinir sua estratégia");
+        .contains("Hermes não pode redefinir sua estratégia")
+        .contains("Dédalo materializa o produto; Íris materializa")
+        .contains("landing e comunicação")
+        .doesNotContain("Dédalo materializa produto, landing e comunicação");
     assertThat(schema)
         .contains("marketIntelligence", "customerLanguage", "competitors", "customerEffort")
         .contains(
@@ -168,5 +171,19 @@ class CodexStrategistRunnerTest {
     assertThat(prompt).contains("três alternativas", "Plutus", "não comprova disposição de pagar");
     assertThat(schema)
         .contains("proposedAssumptions", "offerPriceBrl", "expectedConversionRatePercent");
+  }
+
+  /** Preserva a separação entre estratégia, produto, comunicação e audiovisual no núcleo v1. */
+  @Test
+  void assignsProductToDedaloAndCommunicationToIris() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/experiment-strategist/v1/agent-core.md"));
+
+    assertThat(prompt)
+        .contains("produto pertence a Dédalo, comunicação a Íris")
+        .contains("audiovisual a")
+        .contains("Apolo")
+        .doesNotContain("produto, landing e comunicação pertencem a Dédalo");
   }
 }

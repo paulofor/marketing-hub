@@ -91,3 +91,21 @@ Cada causa foi corrigida antes de reiniciar a matriz.
 Uma rodada local integral sem defeito encerra a homologação. Se qualquer rodada revelar defeito, a
 causa-raiz será corrigida e duas rodadas completas e consecutivas deverão passar depois da última
 correção.
+
+## Revalidação comercial mobile após a tarefa 268
+
+Em 30 de agosto de 2026, a tarefa produtiva 268 comprovou que a captura e o envio multimodal de
+Psique estavam funcionando: 13 evidências foram persistidas e analisadas. O parecer bloqueou a
+experiência por uma causa funcional distinta do runtime: no iPhone, o título ocupava 423 px, a
+primeira ação aparecia somente em 1.438 px, a prova tinha 199 px úteis e a página alcançava 9.961 px.
+
+Foram comparadas três alternativas: reduzir somente a fonte preservava esforço baixo, mas não
+trazia ação nem prova para perto da decisão; redesenhar toda a página aumentava risco e custo sem
+necessidade; tornar a amostra acessível na primeira dobra e compactar responsivamente título, prova
+e etapas corrigia o bloqueio com menor risco. A terceira alternativa foi adotada.
+
+Depois da última correção, duas rodadas locais completas e consecutivas passaram em Desktop Chrome,
+iPhone 15 Pro e Pixel 7. Cada rodada validou 12 jornadas Playwright, 5 contratos do build público,
+MySQL 5.7 e SMTP descartável em topologia nova. No iPhone, o título caiu para 141 px, a ação terminou
+em 339 px e a página em 8.114 px; no Pixel, os valores ficaram em 148 px, 345 px e 7.928 px. Não
+houve request de analytics durante as capturas de QA nem contaminação das métricas comerciais.

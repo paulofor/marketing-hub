@@ -9,7 +9,14 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY package.json ./
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev \
+    && npx playwright-core install --with-deps chromium \
+    && chmod -R a+rX /ms-playwright \
+    && rm -rf /var/lib/apt/lists/* /root/.cache
+
 COPY src ./src
 COPY prompts ./prompts
 COPY scripts ./scripts
@@ -18,5 +25,7 @@ COPY research-library ./research-library
 ENV NODE_ENV=production
 
 EXPOSE 8080
+
+USER node
 
 CMD ["node", "src/worker.js"]

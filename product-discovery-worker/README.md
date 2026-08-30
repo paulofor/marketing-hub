@@ -95,7 +95,8 @@ operacionais recentes sem incluir chaves de API. Quando todas as consultas exter
 falham, o ciclo falha e bloqueia a tarefa; resposta vazia não mascara o provider.
 
 O payload informa o provider ativo, status da chave Brave sem revelar o segredo,
-último polling e último ciclo processado:
+último polling, último ciclo processado e o desfecho mais recente do navegador
+público da Meta:
 
 ```json
 {
@@ -106,9 +107,35 @@ O payload informa o provider ativo, status da chave Brave sem revelar o segredo,
     "keyStatus": "CONFIGURED",
     "keySource": "file"
   },
+  "metaPublicBrowser": {
+    "enabled": true,
+    "engine": "chromium",
+    "lastCollection": null
+  },
   "lastCycleProcessed": null
 }
 ```
+
+## Biblioteca pública da Meta
+
+Em ciclos B2C orientados ao Instagram, o backend prepara e congela uma consulta
+oficial da Biblioteca de Anúncios. Argos abre essa URL em uma sessão Chromium
+efêmera, sem login, cookies persistentes ou credenciais, confirma os filtros
+Brasil, Instagram e anúncios ativos e observa no máximo 12 cards já carregados.
+
+`OBSERVED` e `EMPTY` só são registrados quando a interface confirma os filtros.
+CAPTCHA, login, bloqueio, timeout ou mudança de layout geram
+`FALLBACK_REQUIRED`; a tela administrativa então oferece a sessão humana
+supervisionada. Presença e longevidade de anúncios são sinais de investimento e
+nunca são contabilizadas como vendas.
+
+Variáveis operacionais:
+
+- `ARGOS_META_BROWSER_ENABLED` — habilita a tentativa pública, padrão `true`;
+- `ARGOS_META_BROWSER_MAX_ADS` — limite de cards, padrão `12` e teto `25`;
+- `ARGOS_META_BROWSER_TIMEOUT_MS` — timeout da sessão, padrão `45000`;
+- `ARGOS_META_BROWSER_EXECUTABLE_PATH` — sobrescreve o Chromium empacotado somente
+  quando uma topologia controlada exigir.
 
 ## Provedor recomendado
 

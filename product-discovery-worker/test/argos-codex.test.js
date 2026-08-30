@@ -43,6 +43,19 @@ test("plano bloqueia marketplace e volume não autorizados", () => {
   assert.throws(() => validatePlan(result.plan), /Marketplace não autorizado/);
 });
 
+test("plano limita a Meta a uma investigação canônica por ciclo", () => {
+  const result = deterministicPlan({
+    theme: "guarda-roupa cápsula para mulheres 40+",
+    targetAudience: "mulheres 40+",
+  });
+  result.plan.metaAdRequests.push({
+    ...result.plan.metaAdRequests[0],
+    query: "moda madura",
+  });
+
+  assert.throws(() => validatePlan(result.plan), /contrato v1/);
+});
+
 test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () => {
   const result = deterministicPlan({
     theme: "preparação para entrevista de emprego",

@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityItemResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdBrowserCollectionService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchTrackResponse;
@@ -34,6 +35,7 @@ class ProductDiscoveryControllerTest {
   @Mock private ProductDiscoveryService service;
   @Mock private ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
   @Mock private ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
+  @Mock private ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService;
   @Mock private ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
 
   /** Monta o controller isolado para testar as rotas do módulo. */
@@ -45,8 +47,56 @@ class ProductDiscoveryControllerTest {
                     service,
                     marketplaceEvidenceService,
                     metaAdEvidenceService,
+                    metaAdBrowserCollectionService,
                     supervisedMetaSessionService))
             .build();
+  }
+
+  /** Deve receber o desfecho auditável do Chromium pelo endpoint interno versionado. */
+  @Test
+  void recordsPublicMetaBrowserCollection() throws Exception {
+    when(metaAdBrowserCollectionService.record(
+            org.mockito.ArgumentMatchers.eq(81L), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new ProductDiscoveryMetaAdEvidenceListResponse(
+                81L,
+                "guarda roupa cápsula climatério",
+                "BR",
+                "INSTAGRAM",
+                "OBSERVED",
+                "PUBLIC_BROWSER",
+                91L,
+                "https://www.facebook.com/ads/library/?country=BR&q=guarda+roupa",
+                1,
+                1,
+                1,
+                java.time.Instant.parse("2026-08-30T12:00:02Z"),
+                "Cobertura observada sem inferir vendas.",
+                List.of()));
+
+    mockMvc
+        .perform(
+            post("/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/81/meta-ad-browser-collection")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "executionLeaseId":"lease-81",
+                      "investigationId":91,
+                      "collectorRunId":"argos-browser-81-lease-81",
+                      "searchUrl":"https://www.facebook.com/ads/library/?country=BR&q=guarda+roupa",
+                      "outcome":"EMPTY",
+                      "httpStatus":403,
+                      "platformFilterConfirmed":true,
+                      "pageTitle":"Biblioteca de Anúncios",
+                      "startedAt":"2026-08-30T12:00:00Z",
+                      "finishedAt":"2026-08-30T12:00:02Z",
+                      "observations":[]
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.collectionMode").value("PUBLIC_BROWSER"))
+        .andExpect(jsonPath("$.sourceStatus").value("OBSERVED"));
   }
 
   /** Deve expor o ranking por maturidade comercial para a tela administrativa. */

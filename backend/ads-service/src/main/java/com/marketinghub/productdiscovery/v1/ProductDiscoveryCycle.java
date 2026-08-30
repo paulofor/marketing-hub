@@ -96,6 +96,9 @@ public class ProductDiscoveryCycle {
   @Column(name = "research_evidence_report_json", columnDefinition = "LONGTEXT")
   private String researchEvidenceReportJson;
 
+  @Column(name = "meta_ad_investigation_id")
+  private Long metaAdInvestigationId;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -376,6 +379,16 @@ public class ProductDiscoveryCycle {
   /** Persiste o relatório estruturado sem serializá-lo dentro do callback JSON. */
   public void setResearchEvidenceReportJson(String researchEvidenceReportJson) {
     this.researchEvidenceReportJson = researchEvidenceReportJson;
+  }
+
+  /** Retorna a investigação Meta vinculada de forma estável ao ciclo. */
+  public Long getMetaAdInvestigationId() {
+    return metaAdInvestigationId;
+  }
+
+  /** Vincula a investigação Meta antes da coleta pública do ciclo. */
+  public void setMetaAdInvestigationId(Long metaAdInvestigationId) {
+    this.metaAdInvestigationId = metaAdInvestigationId;
   }
 
   /** Retorna a data de criação. */

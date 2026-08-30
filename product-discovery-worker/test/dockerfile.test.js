@@ -64,3 +64,19 @@ test("empacota a biblioteca factual e mantém o modelo ativo no deploy", () => {
   assert.match(workflow, /- "pesquisas\/\*\*"/);
   assert.match(workflow, /export ARGOS_CODEX_ENABLED='true'/);
 });
+
+test("empacota Chromium como usuário sem privilégios e habilita a coleta limitada", () => {
+  assert.match(dockerfile, /playwright-core install --with-deps chromium/);
+  assert.match(dockerfile, /USER node/);
+  assert.match(localCompose, /init: true/);
+  assert.match(localCompose, /read_only: true/);
+  assert.match(localCompose, /no-new-privileges:true/);
+  for (const compose of [localCompose, deployCompose]) {
+    assert.match(
+      compose,
+      /ARGOS_META_BROWSER_ENABLED: \$\{ARGOS_META_BROWSER_ENABLED:-true\}/,
+      "[ARQUITETURA] Argos deve tentar a Biblioteca pública antes do fallback humano.",
+    );
+    assert.match(compose, /ARGOS_META_BROWSER_MAX_ADS: \$\{ARGOS_META_BROWSER_MAX_ADS:-12\}/);
+  }
+});

@@ -2,6 +2,12 @@ services:
   product-discovery-worker:
     container_name: product-discovery-worker
     build: .
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
     environment:
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.181.168}
       PRODUCT_DISCOVERY_POLL_INTERVAL_MS: ${PRODUCT_DISCOVERY_POLL_INTERVAL_MS:-60000}
@@ -19,6 +25,9 @@ services:
       ARGOS_CODEX_ENABLED: ${ARGOS_CODEX_ENABLED:-true}
       ARGOS_CODEX_MODEL: ${ARGOS_CODEX_MODEL:-gpt-5.6-sol}
       ARGOS_CODEX_COMMAND: ${ARGOS_CODEX_COMMAND:-codex}
+      ARGOS_META_BROWSER_ENABLED: ${ARGOS_META_BROWSER_ENABLED:-true}
+      ARGOS_META_BROWSER_MAX_ADS: ${ARGOS_META_BROWSER_MAX_ADS:-12}
+      ARGOS_META_BROWSER_TIMEOUT_MS: ${ARGOS_META_BROWSER_TIMEOUT_MS:-45000}
       AGENT_HEALTH_KEY: market-radar
       AGENT_HEALTH_VERSION: ${ARGOS_AGENT_VERSION:-4}
       AGENT_BUILD_REFERENCE: ${PRODUCT_DISCOVERY_WORKER_IMAGE:-local}

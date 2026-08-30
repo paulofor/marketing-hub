@@ -7,6 +7,7 @@ export function createHealthState(now = new Date()) {
     lastPollStatus: "NOT_RUN",
     lastPollError: null,
     lastCycleProcessed: null,
+    lastMetaPublicBrowserCollection: null,
   };
 }
 
@@ -39,6 +40,26 @@ export function markCycleCompleted(state, job, report, now = new Date()) {
       ? report.opportunities.length
       : 0,
   };
+  const metaCoverage = Array.isArray(report?.evidenceReport?.metaCoverage)
+    ? report.evidenceReport.metaCoverage
+    : Array.isArray(report?.metaCoverage)
+      ? report.metaCoverage
+      : [];
+  const browserCoverage = metaCoverage.find((item) =>
+    ["PUBLIC_BROWSER", "SUPERVISED"].includes(item?.collectionMode),
+  );
+  if (browserCoverage) {
+    state.lastMetaPublicBrowserCollection = {
+      cycleId: job.cycleId,
+      investigationId: browserCoverage.investigationId ?? null,
+      sourceStatus: browserCoverage.sourceStatus || "UNKNOWN",
+      collectionMode: browserCoverage.collectionMode,
+      adsObserved: Number(browserCoverage.adsObserved || 0),
+      activeAds: Number(browserCoverage.activeAds || 0),
+      advertisersObserved: Number(browserCoverage.advertisersObserved || 0),
+      processedAt: now.toISOString(),
+    };
+  }
 }
 
 export function markCycleFailed(state, job, error, now = new Date()) {
@@ -74,6 +95,13 @@ export function createHealthPayload({
     braveSearch: {
       keyStatus: braveKeyConfigured ? "CONFIGURED" : "MISSING",
       keySource: resolveBraveKeySource(env),
+    },
+    metaPublicBrowser: {
+      enabled:
+        String(env.ARGOS_META_BROWSER_ENABLED ?? "true").toLowerCase() ===
+        "true",
+      engine: "chromium",
+      lastCollection: state.lastMetaPublicBrowserCollection,
     },
     polling: {
       intervalMs: pollIntervalMs,

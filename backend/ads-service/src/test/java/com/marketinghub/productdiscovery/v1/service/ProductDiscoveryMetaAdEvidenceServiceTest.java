@@ -44,6 +44,13 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         new ProductDiscoveryMetaAdEvidenceService(
             jdbcTemplate, investigationService, sessionLinkService, new ObjectMapper());
     when(sessionLinkService.linkedInvestigation(Mockito.anyLong())).thenReturn(Optional.empty());
+    when(sessionLinkService.bindActiveInvestigation(
+            Mockito.anyLong(), Mockito.anyLong(), Mockito.anyString()))
+        .thenAnswer(
+            invocation -> {
+              long investigationId = invocation.getArgument(1);
+              return investigation(investigationId, 0);
+            });
     createSchema();
   }
 
@@ -82,6 +89,8 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     when(investigationService.ensureForProductDiscovery(
             "workspace-001", "treino entrevista emprego", "BR", "INSTAGRAM"))
         .thenReturn(investigation(7L, 3));
+    when(sessionLinkService.bindActiveInvestigation(81L, 7L, "lease-81"))
+        .thenReturn(investigation(7L, 3));
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
@@ -118,6 +127,8 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     when(investigationService.ensureForProductDiscovery(
             "workspace-001", "negociacao salarial carreira", "BR", "INSTAGRAM"))
         .thenReturn(investigation(8L, 1));
+    when(sessionLinkService.bindActiveInvestigation(82L, 8L, "lease-82"))
+        .thenReturn(investigation(8L, 1));
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
@@ -141,6 +152,78 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("dois termos específicos");
     verifyNoInteractions(investigationService);
+  }
+
+  /** Deve rejeitar território divergente antes de congelar a investigação no ciclo. */
+  @Test
+  void validatesInvestigationScopeBeforeBindingItToTheCycle() {
+    when(investigationService.ensureForProductDiscovery(
+            "workspace-001", "viagem solo mulheres", "BR", "INSTAGRAM"))
+        .thenReturn(investigation(19L, 0, "US"));
+
+    assertThatThrownBy(
+            () ->
+                service.requestAndSearch(
+                    89L,
+                    new ProductDiscoveryMetaAdEvidenceRequest(
+                        "lease-89", "viagem solo mulheres", "BR", "INSTAGRAM", 25)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("território e plataforma");
+    Mockito.verify(sessionLinkService, Mockito.never())
+        .bindActiveInvestigation(Mockito.anyLong(), Mockito.anyLong(), Mockito.anyString());
+  }
+
+  /** Deve pedir o Chromium público quando a API comercial brasileira não cobre a consulta. */
+  @Test
+  void requestsPublicBrowserBeforeHumanFallback() {
+    insertInvestigation(9L, "BR");
+    MoisMetaAdDtos.InvestigationResponse investigation = investigation(9L, 0);
+    when(investigationService.ensureForProductDiscovery(
+            "workspace-001", "guarda roupa climatério", "BR", "INSTAGRAM"))
+        .thenReturn(investigation);
+    when(sessionLinkService.bindActiveInvestigation(85L, 9L, "lease-85")).thenReturn(investigation);
+
+    ProductDiscoveryMetaAdEvidenceListResponse response =
+        service.requestAndSearch(
+            85L,
+            new ProductDiscoveryMetaAdEvidenceRequest(
+                "lease-85", "guarda roupa climatério", "BR", "INSTAGRAM", 25));
+
+    assertThat(response.sourceStatus()).isEqualTo("AWAITING_PUBLIC_BROWSER");
+    assertThat(response.collectionMode()).isEqualTo("PUBLIC_BROWSER");
+  }
+
+  /** Deve diferenciar vazio verificado de bloqueio que ainda exige observação humana. */
+  @Test
+  void distinguishesVerifiedEmptyFromBrowserFallback() {
+    insertInvestigation(10L, "BR");
+    MoisMetaAdDtos.InvestigationResponse investigation = investigation(10L, 0);
+    when(investigationService.ensureForProductDiscovery(
+            "workspace-001", "viagem solo mulheres", "BR", "INSTAGRAM"))
+        .thenReturn(investigation);
+    when(sessionLinkService.bindActiveInvestigation(86L, 10L, "lease-86"))
+        .thenReturn(investigation);
+    insertBrowserRun(86L, 10L, "EMPTY", true);
+
+    ProductDiscoveryMetaAdEvidenceListResponse empty =
+        service.requestAndSearch(
+            86L,
+            new ProductDiscoveryMetaAdEvidenceRequest(
+                "lease-86", "viagem solo mulheres", "BR", "INSTAGRAM", 25));
+
+    assertThat(empty.sourceStatus()).isEqualTo("NO_MATCHING_ACTIVE_ADS");
+    assertThat(empty.collectionMode()).isEqualTo("PUBLIC_BROWSER");
+
+    jdbcTemplate.update("DELETE FROM product_discovery_meta_browser_run WHERE cycle_id = 86");
+    insertBrowserRun(86L, 10L, "FALLBACK_REQUIRED", false);
+    ProductDiscoveryMetaAdEvidenceListResponse fallback =
+        service.requestAndSearch(
+            86L,
+            new ProductDiscoveryMetaAdEvidenceRequest(
+                "lease-86", "viagem solo mulheres", "BR", "INSTAGRAM", 25));
+
+    assertThat(fallback.sourceStatus()).isEqualTo("AWAITING_SUPERVISED_OBSERVATION");
+    assertThat(fallback.collectionMode()).isEqualTo("SUPERVISED");
   }
 
   /** Deve restringir a reanálise à investigação anterior mesmo quando o plano muda a consulta. */
@@ -194,6 +277,7 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         now.minusSeconds(1_800));
     MoisMetaAdDtos.InvestigationResponse linked = investigation(7L, 1);
     when(sessionLinkService.linkedInvestigation(84L)).thenReturn(Optional.of(linked));
+    when(sessionLinkService.bindActiveInvestigation(84L, 7L, "lease-84")).thenReturn(linked);
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
@@ -250,6 +334,18 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
           raw_payload_json LONGTEXT
         )
         """);
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE product_discovery_meta_browser_run (
+          id BIGINT AUTO_INCREMENT PRIMARY KEY,
+          cycle_id BIGINT NOT NULL,
+          investigation_id BIGINT NOT NULL,
+          outcome VARCHAR(40) NOT NULL,
+          platform_filter_confirmed TINYINT NOT NULL,
+          result_count INT NOT NULL,
+          finished_at DATETIME NOT NULL
+        )
+        """);
   }
 
   /** Insere uma investigação usada para delimitar o país observado. */
@@ -298,6 +394,22 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         Timestamp.from(observedAt));
   }
 
+  /** Registra um desfecho controlado da navegação para validar a semântica da cobertura. */
+  private void insertBrowserRun(
+      long cycleId, long investigationId, String outcome, boolean filtersConfirmed) {
+    jdbcTemplate.update(
+        """
+        INSERT INTO product_discovery_meta_browser_run
+          (cycle_id, investigation_id, outcome, platform_filter_confirmed, result_count, finished_at)
+        VALUES (?, ?, ?, ?, 0, ?)
+        """,
+        cycleId,
+        investigationId,
+        outcome,
+        filtersConfirmed,
+        Timestamp.from(Instant.now()));
+  }
+
   /** Vincula o snapshot humano exato usado para impedir mistura entre investigações. */
   private void insertSupervisedObservation(
       long id,
@@ -326,12 +438,18 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
 
   /** Monta o contrato do radar devolvido à Descoberta sem depender do banco completo. */
   private MoisMetaAdDtos.InvestigationResponse investigation(long id, int adsObserved) {
+    return investigation(id, adsObserved, "BR");
+  }
+
+  /** Monta uma investigação com território explícito para validar segregação do ciclo. */
+  private MoisMetaAdDtos.InvestigationResponse investigation(
+      long id, int adsObserved, String country) {
     Instant now = Instant.now();
     return new MoisMetaAdDtos.InvestigationResponse(
         id,
         "workspace-001",
         "treino entrevista emprego",
-        "BR",
+        country,
         "INSTAGRAM",
         "ACTIVE_SUPERVISED",
         new MoisMetaAdDtos.CollectionState(

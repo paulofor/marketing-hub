@@ -2,9 +2,11 @@
 
 Executor do Investigador Meta v1 para categorias e territórios aceitos pela API oficial `ads_archive`. Consome pendências elegíveis do backend, envia payloads brutos e reporta conclusão.
 
-Anúncios comerciais gerais do Brasil usam acompanhamento supervisionado no Marketing Hub,
-pois a API oficial limita anúncios que não alcançaram a União Europeia a temas sociais,
-eleições ou política. O coletor nunca raspa a interface pública para contornar esse contrato.
+Anúncios comerciais gerais do Brasil usam primeiro o navegador público limitado do
+Product Discovery Worker e recorrem ao acompanhamento supervisionado no Marketing Hub
+quando a interface exige interação humana. A API oficial limita anúncios que não alcançaram
+a União Europeia a temas sociais, eleições ou política; este coletor nunca raspa a interface
+pública para contornar esse contrato.
 
 Configuração obrigatória:
 
@@ -18,5 +20,6 @@ Antes de reservar qualquer pendência, o coletor faz um preflight real no endpoi
 verificação, sem revelar a credencial.
 
 Sem token ou sem autorização oficial do aplicativo, nenhuma pendência é reservada e
-nenhuma ausência de anúncio é inferida. Para anúncios comerciais do Brasil, a tela do
-Marketing Hub mantém o fluxo oficial supervisionado pela Biblioteca pública.
+nenhuma ausência de anúncio é inferida. Para anúncios comerciais do Brasil, o Product
+Discovery Worker usa uma sessão efêmera sem login e a tela do Marketing Hub mantém o
+fallback supervisionado pela Biblioteca pública.

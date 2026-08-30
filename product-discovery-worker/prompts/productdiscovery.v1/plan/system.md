@@ -20,7 +20,8 @@ Regras obrigatórias:
   atualidade, anúncios e anunciantes; indisponibilidade da fonte não significa ausência de mercado;
 - exija ao menos dez ofertas comparáveis;
 - produza entre oito e vinte e quatro consultas públicas, cada uma com no máximo 180 caracteres;
-- consultas Meta devem ter no máximo 100 caracteres e representar uma única categoria por vez;
+- gere exatamente uma consulta Meta, com no máximo 100 caracteres, representando a categoria ampla
+  do ciclo sem fragmentá-la em investigações concorrentes;
 - não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem
   compre nada;
 - quando o canal for Instagram e o ciclo declarar B2C, pesquise somente cenas pessoais, desejos do

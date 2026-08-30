@@ -1,3 +1,5 @@
+import { collectPublicMetaAdLibrary } from "./meta-ad-library-browser.js";
+
 /** Executa no backend os pedidos dirigidos aos coletores sem acessar credenciais ou bancos. */
 export async function collectMarketplaceEvidence(plan, options = {}) {
   const backendBaseUrl = options.backendBaseUrl;
@@ -74,7 +76,14 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
       });
       continue;
     }
-    const payload = await response.json();
+    let payload = await response.json();
+    if (shouldUsePublicMetaBrowser(payload, options)) {
+      payload = await collectAndPersistPublicMetaEvidence(
+        payload,
+        request,
+        options,
+      );
+    }
     const normalizedAds = normalizeMetaAdEvidence(
       payload,
       request.publisherPlatform,
@@ -108,6 +117,81 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     metaAdEvidence: deduplicateMarketplaceOffers(metaAdEvidence),
     metaCoverage,
   };
+}
+
+/** Decide se a investigação vigente ainda precisa da observação pública do Chromium. */
+export function shouldUsePublicMetaBrowser(payload, options = {}) {
+  const enabled =
+    String(
+      options.metaBrowserEnabled ??
+        process.env.ARGOS_META_BROWSER_ENABLED ??
+        "true",
+    ) === "true";
+  return (
+    enabled &&
+    payload?.sourceStatus === "AWAITING_PUBLIC_BROWSER" &&
+    payload?.collectionMode === "PUBLIC_BROWSER" &&
+    Number.isInteger(payload?.investigationId) &&
+    /^https:\/\/((www|business)\.)?facebook\.com\/ads\/library\//.test(
+      String(payload?.searchUrl || ""),
+    )
+  );
+}
+
+/** Executa uma sessão efêmera e persiste seu desfecho pelo controller do próprio domínio. */
+async function collectAndPersistPublicMetaEvidence(payload, request, options) {
+  const collect = options.collectPublicMetaAds || collectPublicMetaAdLibrary;
+  const result = await collect(
+    {
+      cycleId: options.cycleId,
+      investigationId: payload.investigationId,
+      searchUrl: payload.searchUrl,
+      country: payload.country || request.country,
+      publisherPlatform:
+        payload.publisherPlatform || request.publisherPlatform,
+      maxAds: Math.min(Number(request.maxAds || 25), 25),
+    },
+    {
+      ...(options.metaBrowserOptions || {}),
+      logger: options.logger || console,
+    },
+  );
+  const collectorRunId = `argos-browser-${options.cycleId}-${options.executionLeaseId}`.slice(
+    0,
+    80,
+  );
+  const url = new URL(
+    `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${options.cycleId}/meta-ad-browser-collection`,
+    options.backendBaseUrl,
+  );
+  const response = await (options.fetchFn || fetch)(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      executionLeaseId: options.executionLeaseId,
+      investigationId: payload.investigationId,
+      collectorRunId,
+      searchUrl: payload.searchUrl,
+      outcome: result.outcome,
+      httpStatus: result.httpStatus,
+      platformFilterConfirmed: result.platformFilterConfirmed,
+      pageTitle: result.pageTitle,
+      errorMessage: result.errorMessage,
+      startedAt: result.startedAt,
+      finishedAt: result.finishedAt,
+      observations: result.observations,
+    }),
+  });
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 1000);
+    throw new Error(
+      `Backend recusou a coleta pública Meta do ciclo ${options.cycleId}: HTTP ${response.status}${detail ? ` ${detail}` : ""}`,
+    );
+  }
+  return response.json();
 }
 
 /** Normaliza anuncios Meta como sinais comerciais sem declara-los vendas comprovadas. */

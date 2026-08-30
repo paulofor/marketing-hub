@@ -43,6 +43,18 @@ CREATE TABLE agent (
   UNIQUE KEY uk_audit_agent_key (agent_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE mois_meta_ad_investigation (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  workspace_id VARCHAR(80) NOT NULL,
+  search_terms VARCHAR(500) NOT NULL,
+  country_code VARCHAR(8) NOT NULL DEFAULT 'BR',
+  publisher_platform VARCHAR(32) NOT NULL DEFAULT 'INSTAGRAM',
+  status VARCHAR(32) NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE business_process_activity_instance (
   id BIGINT NOT NULL AUTO_INCREMENT,
   activity_definition_id BIGINT NOT NULL,

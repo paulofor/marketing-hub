@@ -71,6 +71,9 @@ public class ProductDiscoveryMetaAdEvidenceService {
       throw new IllegalStateException(
           "A investigação Meta vinculada não pertence ao território e plataforma do ciclo");
     }
+    investigation =
+        sessionLinkService.bindActiveInvestigation(
+            cycleId, investigation.id(), request.executionLeaseId());
     String query =
         linkedInvestigation
             .map(linked -> normalizedQuery(linked.searchTerms()))
@@ -134,10 +137,11 @@ public class ProductDiscoveryMetaAdEvidenceService {
       boolean linkedSession) {
     int normalizedLimit = Math.max(1, Math.min(limit == null ? 25 : limit, 50));
     List<String> terms = specificTerms(query);
+    BrowserCollectionRun browserRun = latestBrowserRun(cycleId, investigation);
     List<ProductDiscoveryMetaAdEvidenceResponse> items =
         linkedSession
                 && investigation != null
-                && "SUPERVISED".equals(investigation.collection().mode())
+                && !"OFFICIAL_API".equals(investigation.collection().mode())
             ? searchSupervisedItems(investigation, terms, publisherPlatform, normalizedLimit)
             : searchAssetItems(country, publisherPlatform, terms, normalizedLimit, investigation);
     Instant now = Instant.now();
@@ -160,14 +164,16 @@ public class ProductDiscoveryMetaAdEvidenceService {
                 .map(value -> value.trim().toLowerCase(Locale.ROOT))
                 .distinct()
                 .count();
-    String sourceStatus = sourceStatus(investigation, items, activeAds, latestObservationAt, now);
+    String sourceStatus =
+        sourceStatus(investigation, browserRun, items, activeAds, latestObservationAt, now);
+    String collectionMode = collectionMode(investigation, browserRun, items);
     return new ProductDiscoveryMetaAdEvidenceListResponse(
         cycleId,
         query,
         country,
         publisherPlatform,
         sourceStatus,
-        investigation == null ? "PERSISTED_ONLY" : investigation.collection().mode(),
+        collectionMode,
         investigation == null ? null : investigation.id(),
         investigation == null ? null : investigation.collection().searchUrl(),
         items.size(),
@@ -176,6 +182,45 @@ public class ProductDiscoveryMetaAdEvidenceService {
         latestObservationAt,
         interpretation(sourceStatus, items.size(), activeAds, advertisers),
         items);
+  }
+
+  /** Recupera a última tentativa pública do Chromium sem misturar ciclos ou investigações. */
+  private BrowserCollectionRun latestBrowserRun(
+      Long cycleId, MoisMetaAdDtos.InvestigationResponse investigation) {
+    if (cycleId == null || investigation == null) return null;
+    List<BrowserCollectionRun> runs =
+        jdbcTemplate.query(
+            """
+            SELECT outcome, platform_filter_confirmed, result_count, finished_at
+            FROM product_discovery_meta_browser_run
+            WHERE cycle_id = ? AND investigation_id = ?
+            ORDER BY finished_at DESC, id DESC
+            LIMIT 1
+            """,
+            (rs, rowNum) ->
+                new BrowserCollectionRun(
+                    rs.getString("outcome"),
+                    rs.getBoolean("platform_filter_confirmed"),
+                    rs.getInt("result_count"),
+                    rs.getTimestamp("finished_at").toInstant()),
+            cycleId,
+            investigation.id());
+    return runs.isEmpty() ? null : runs.getFirst();
+  }
+
+  /** Expõe se a evidência veio do navegador público, da API ou do fallback supervisionado. */
+  private String collectionMode(
+      MoisMetaAdDtos.InvestigationResponse investigation,
+      BrowserCollectionRun browserRun,
+      List<ProductDiscoveryMetaAdEvidenceResponse> items) {
+    if (investigation == null) return "PERSISTED_ONLY";
+    if ("OFFICIAL_API".equals(investigation.collection().mode())) return "OFFICIAL_API";
+    if (browserRun != null) {
+      return "FALLBACK_REQUIRED".equals(browserRun.outcome()) ? "SUPERVISED" : "PUBLIC_BROWSER";
+    }
+    return items.isEmpty() && investigation.adsObserved() == 0
+        ? "PUBLIC_BROWSER"
+        : investigation.collection().mode();
   }
 
   /** Lê o retrato consolidado quando não existe uma sessão supervisionada vinculada. */
@@ -418,6 +463,7 @@ public class ProductDiscoveryMetaAdEvidenceService {
   /** Distingue ausência observada, falta de coleta, baixa aderência e evidência desatualizada. */
   private String sourceStatus(
       MoisMetaAdDtos.InvestigationResponse investigation,
+      BrowserCollectionRun browserRun,
       List<ProductDiscoveryMetaAdEvidenceResponse> items,
       int activeAds,
       Instant latestObservationAt,
@@ -439,9 +485,20 @@ public class ProductDiscoveryMetaAdEvidenceService {
     if (investigation.adsObserved() > 0) {
       return "NO_RELEVANT_PLATFORM_EVIDENCE";
     }
+    if (browserRun != null) {
+      if ("EMPTY".equals(browserRun.outcome()) && browserRun.platformFilterConfirmed()) {
+        return "NO_MATCHING_ACTIVE_ADS";
+      }
+      if ("FALLBACK_REQUIRED".equals(browserRun.outcome())) {
+        return "AWAITING_SUPERVISED_OBSERVATION";
+      }
+      if ("OBSERVED".equals(browserRun.outcome())) {
+        return "NO_RELEVANT_PLATFORM_EVIDENCE";
+      }
+    }
     return "OFFICIAL_API".equals(investigation.collection().mode())
         ? "AWAITING_OFFICIAL_COLLECTION"
-        : "AWAITING_SUPERVISED_OBSERVATION";
+        : "AWAITING_PUBLIC_BROWSER";
   }
 
   /** Explica as métricas sem converter presença publicitária em venda comprovada. */
@@ -523,4 +580,8 @@ public class ProductDiscoveryMetaAdEvidenceService {
       throw new IllegalStateException("Evidência Meta persistida possui JSON inválido", ex);
     }
   }
+
+  /** Resume o desfecho persistido da navegação pública vinculada ao ciclo. */
+  private record BrowserCollectionRun(
+      String outcome, boolean platformFilterConfirmed, int resultCount, Instant finishedAt) {}
 }

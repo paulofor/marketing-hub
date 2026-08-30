@@ -436,6 +436,13 @@
 - **Correção efetiva local:** o coletor realiza preflight real em `ads_archive` antes de reservar uma pendência, publica diagnóstico sanitizado na saúde e mantém a fila intacta quando a autorização externa não foi concedida. Argos recebe status explícito de espera ou indisponibilidade e nunca converte a falha em ausência de mercado.
 - **Prevenção:** teste de contrato cobre token ausente, rejeição da Meta, token fora da URL, bloqueio da reserva e consulta Instagram normalizada. No Brasil, o caminho permanece supervisionado pela Biblioteca pública, sem scraping ou contorno de controle de acesso.
 - **Recorrência fechada localmente em 2026-08-30:** a execução independente agora materializa a sessão supervisionada na própria tela, abre a consulta pública oficial, registra anúncio, texto, plataforma e payload bruto na investigação exata e só reabre Argos quando existe anúncio atual, ativo e observado no Instagram. A tentativa anterior permanece auditável; o comando humano é idempotente e a investigação não muda mesmo que o novo plano reformule a consulta. Testes de contrato protegem segregação por `investigationId`, bloqueio de evidência Facebook, URL oficial, congelamento durante execução e ausência de campanha, credencial ou conclusão de venda.
+- **Evolução decidida em 2026-08-30:** Argos passa a tentar a mesma consulta por um Chromium
+  efêmero e determinístico antes de solicitar trabalho humano. O browser aceita somente a URL
+  oficial vinculada ao lease, confirma Brasil, Instagram e anúncios ativos, limita volume e
+  persiste o payload bruto. Resultado vazio só é válido quando aparece explicitamente na interface;
+  login, CAPTCHA, bloqueio, timeout, filtro ausente ou mudança de layout retornam à sessão humana.
+  A proteção deve cobrir idempotência, segregação por ciclo/investigação, ausência de cookies e
+  proibição de interpretar anúncios como vendas.
 
 ## LOOP-PRODUCT-AI-PAID-DELIVERY-CONTRACT-DRIFT — Entrega paga sem template ativo
 

@@ -322,7 +322,7 @@ export function validatePlan(plan) {
     !Array.isArray(plan.marketplaceRequests) ||
     plan.marketplaceRequests.length === 0 ||
     !Array.isArray(plan.metaAdRequests) ||
-    plan.metaAdRequests.length === 0 ||
+    plan.metaAdRequests.length !== 1 ||
     plan.minimumComparableOffers < 10
   ) {
     throw new Error("Plano dirigido de Argos fora do contrato v1");

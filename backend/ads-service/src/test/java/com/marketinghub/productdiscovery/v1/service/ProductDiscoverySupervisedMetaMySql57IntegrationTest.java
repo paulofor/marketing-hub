@@ -121,6 +121,7 @@ class ProductDiscoverySupervisedMetaMySql57IntegrationTest {
 
   /** Cria o schema mínimo equivalente aos changelogs canônicos da investigação Meta. */
   private void recreateSchema() {
+    jdbcTemplate.execute("DROP TABLE IF EXISTS product_discovery_meta_browser_run");
     jdbcTemplate.execute("DROP TABLE IF EXISTS mois_meta_ad_observation");
     jdbcTemplate.execute("DROP TABLE IF EXISTS mois_meta_ad_asset");
     jdbcTemplate.execute("DROP TABLE IF EXISTS mois_meta_ad_investigation");
@@ -193,6 +194,21 @@ class ProductDiscoverySupervisedMetaMySql57IntegrationTest {
             FOREIGN KEY (investigation_id) REFERENCES mois_meta_ad_investigation(id),
           CONSTRAINT fk_mois_meta_observation_asset
             FOREIGN KEY (asset_id) REFERENCES mois_meta_ad_asset(id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """);
+    jdbcTemplate.execute(
+        """
+        CREATE TABLE product_discovery_meta_browser_run (
+          id BIGINT NOT NULL AUTO_INCREMENT,
+          cycle_id BIGINT NOT NULL,
+          investigation_id BIGINT NOT NULL,
+          outcome VARCHAR(40) NOT NULL,
+          platform_filter_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+          result_count INT NOT NULL DEFAULT 0,
+          finished_at DATETIME NOT NULL,
+          PRIMARY KEY (id),
+          KEY idx_product_discovery_meta_browser_latest
+            (cycle_id, investigation_id, finished_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """);
   }

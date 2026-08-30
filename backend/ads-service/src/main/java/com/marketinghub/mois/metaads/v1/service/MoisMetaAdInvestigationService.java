@@ -539,12 +539,16 @@ public class MoisMetaAdInvestigationService {
     return publisherPlatforms.stream().map(this::normalizedPublisherPlatform).distinct().toList();
   }
 
-  /** Monta um atalho para a busca pública sem autenticar nem raspar a interface da Meta. */
+  /** Monta a busca pública com país e plataforma explícitos para o navegador limitado de Argos. */
   private String buildPublicSearchUrl(
       String country, String publisherPlatform, String searchTerms) {
     return "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country="
         + URLEncoder.encode(normalizedCountry(country), StandardCharsets.UTF_8)
-        + "&media_type=all&q="
+        + "&is_targeted_country=false&media_type=all&publisher_platforms%5B0%5D="
+        + URLEncoder.encode(
+            normalizedPublisherPlatform(publisherPlatform).toLowerCase(Locale.ROOT),
+            StandardCharsets.UTF_8)
+        + "&q="
         + URLEncoder.encode(searchTerms == null ? "" : searchTerms.trim(), StandardCharsets.UTF_8)
         + "&search_type=keyword_unordered";
   }

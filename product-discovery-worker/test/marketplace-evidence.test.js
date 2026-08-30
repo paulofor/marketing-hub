@@ -158,6 +158,107 @@ test("solicita cobertura Instagram correlacionada e separa anúncios de ofertas"
   assert.equal(evidence.metaCoverage[0].advertisersObserved, 1);
 });
 
+test("executa Chromium quando o backend prepara a sessão e persiste o lote antes da síntese", async () => {
+  const calls = [];
+  const browserCalls = [];
+  const evidence = await collectMarketplaceEvidence(
+    {
+      marketplaceRequests: [],
+      metaAdRequests: [
+        {
+          query: "guarda roupa cápsula climatério",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          maxAds: 12,
+        },
+      ],
+    },
+    {
+      backendBaseUrl: "http://backend.test",
+      cycleId: 144,
+      executionLeaseId: "lease-144",
+      researchContext: "mulheres 40 guarda roupa cápsula climatério",
+      logger: { info() {}, warn() {} },
+      collectPublicMetaAds: async (request) => {
+        browserCalls.push(request);
+        return {
+          outcome: "OBSERVED",
+          httpStatus: 403,
+          platformFilterConfirmed: true,
+          pageTitle: "Biblioteca de Anúncios",
+          errorMessage: null,
+          startedAt: "2026-08-30T12:00:00Z",
+          finishedAt: "2026-08-30T12:00:02Z",
+          observations: [
+            {
+              metaAdId: "meta-144",
+              advertiserName: "Estilo Maduro",
+              active: true,
+              publisherPlatforms: ["INSTAGRAM"],
+              formatTypes: ["VIDEO"],
+              texts: ["Guarda roupa cápsula para o climatério"],
+              destinationUrl: "https://estilo.example/oferta",
+              snapshotUrl:
+                "https://www.facebook.com/ads/library/?id=meta-144",
+              pageActive: true,
+              commercialSignal: true,
+              rawPayload: { source: "META_AD_LIBRARY_PUBLIC_BROWSER" },
+            },
+          ],
+        };
+      },
+      fetchFn: async (url, init) => {
+        calls.push({ path: url.pathname, body: JSON.parse(init.body) });
+        if (url.pathname.endsWith("meta-ad-evidence")) {
+          return jsonResponse({
+            sourceStatus: "AWAITING_PUBLIC_BROWSER",
+            collectionMode: "PUBLIC_BROWSER",
+            investigationId: 91,
+            query: "guarda roupa cápsula climatério",
+            country: "BR",
+            publisherPlatform: "INSTAGRAM",
+            searchUrl:
+              "https://www.facebook.com/ads/library/?country=BR&q=guarda+roupa+capsula",
+            items: [],
+          });
+        }
+        return jsonResponse({
+          sourceStatus: "OBSERVED",
+          collectionMode: "PUBLIC_BROWSER",
+          investigationId: 91,
+          query: "guarda roupa cápsula climatério",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          adsObserved: 1,
+          activeAds: 1,
+          advertisersObserved: 1,
+          searchUrl:
+            "https://www.facebook.com/ads/library/?country=BR&q=guarda+roupa+capsula",
+          items: [
+            {
+              metaAdId: "meta-144",
+              advertiserName: "Estilo Maduro",
+              adTexts: ["Guarda roupa cápsula para o climatério"],
+              publisherPlatforms: ["INSTAGRAM"],
+              snapshotUrl:
+                "https://www.facebook.com/ads/library/?id=meta-144",
+              active: true,
+            },
+          ],
+        });
+      },
+    },
+  );
+
+  assert.equal(browserCalls.length, 1);
+  assert.equal(browserCalls[0].investigationId, 91);
+  assert.match(calls[1].path, /meta-ad-browser-collection$/);
+  assert.equal(calls[1].body.collectorRunId, "argos-browser-144-lease-144");
+  assert.equal(calls[1].body.outcome, "OBSERVED");
+  assert.equal(evidence.metaAdEvidence.length, 1);
+  assert.equal(evidence.metaCoverage[0].collectionMode, "PUBLIC_BROWSER");
+});
+
 test("descarta ofertas que coincidem apenas com termos genéricos do público", () => {
   const offers = filterRelevantOffers(
     [
@@ -240,3 +341,12 @@ test("descarta anúncio observado somente fora do Instagram", () => {
 
   assert.deepEqual(ads, []);
 });
+
+function jsonResponse(payload) {
+  return {
+    ok: true,
+    status: 200,
+    async json() { return payload; },
+    async text() { return JSON.stringify(payload); },
+  };
+}

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdDtos;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdInvestigationService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import java.time.Instant;
 import java.util.List;
@@ -59,6 +60,25 @@ class ProductDiscoveryMetaAdSessionLinkServiceTest {
             cycleRepository, investigationService, new ObjectMapper());
 
     assertThat(service.linkedInvestigation(45L)).isEmpty();
+  }
+
+  /** Deve congelar a investigação somente quando o callback usa o lease ativo. */
+  @Test
+  void bindsInvestigationToActiveLease() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(46L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-46");
+    MoisMetaAdDtos.InvestigationResponse investigation = investigation(73L);
+    when(cycleRepository.findByIdForUpdate(46L)).thenReturn(Optional.of(cycle));
+    when(investigationService.get(73L)).thenReturn(Optional.of(investigation));
+    ProductDiscoveryMetaAdSessionLinkService service =
+        new ProductDiscoveryMetaAdSessionLinkService(
+            cycleRepository, investigationService, new ObjectMapper());
+
+    assertThat(service.bindActiveInvestigation(46L, 73L, "lease-46")).isEqualTo(investigation);
+    assertThat(cycle.getMetaAdInvestigationId()).isEqualTo(73L);
+    org.mockito.Mockito.verify(cycleRepository).save(cycle);
   }
 
   /** Monta a investigação canônica usada pelo vínculo do relatório. */

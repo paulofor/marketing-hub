@@ -271,6 +271,10 @@ coleta. O Product Discovery Worker envia essa solicitacao somente ao endpoint in
 dominio; o backend cria ou reutiliza a investigacao canonica no radar MOIS e devolve evidencias ja
 persistidas, sem expor token, cookie ou controller de outro modulo ao executor.
 
+Cada ciclo possui exatamente uma investigacao Meta e uma consulta ampla da categoria. O plano nao
+pode fragmentar o mesmo ciclo em investigacoes concorrentes, pois isso perderia a correspondencia
+entre consulta, payload bruto e dossie; refinamento posterior deve abrir uma nova tentativa do ciclo.
+
 O dossie deve persistir separadamente:
 
 - status da fonte, modo de coleta e identificador da investigacao;
@@ -290,9 +294,30 @@ score como se fossem compras. Eles medem presenca, variedade, atualidade e inves
 canal. A comprovacao final continua dependendo de eventos atribuidos, checkout e pagamento
 reconciliado do proprio Marketing Hub.
 
-Por decisao de 2026-08-30, quando a cobertura brasileira retornar
-`AWAITING_SUPERVISED_OBSERVATION`, a propria execucao independente deve oferecer uma sessao
-supervisionada da Biblioteca publica da Meta. A sessao deve:
+Por decisao de 2026-08-30, a cobertura comercial brasileira deve tentar primeiro uma observacao
+publica deterministica no Chromium efemero do Product Discovery Worker. O backend prepara e vincula
+a busca oficial; o navegador do executor apenas observa os fatos publicamente visiveis e os reporta
+pelo endpoint interno do proprio dominio. A sessao humana continua obrigatoria como fallback quando
+a fonte exigir interacao, bloquear a automacao ou deixar de expor filtros e fatos verificaveis.
+
+O navegador publico deve:
+
+- aceitar somente a URL oficial preparada pelo backend para a investigacao e o lease vigentes;
+- fixar pais, status ativo e plataforma Instagram na propria URL e confirmar os tres filtros na
+  interface antes de aceitar qualquer card;
+- limitar consultas, tempo e quantidade de anuncios, sem rolagem ou repeticao irrestrita;
+- registrar status HTTP, titulo, duracao, desfecho, ID do anuncio, anunciante, texto visivel,
+  formato, destino, atividade, sinal comercial, instante, URL e payload bruto estruturado;
+- usar contexto efemero, sem storage state, senha, token, login, cookie persistente ou download de
+  lote de criativos;
+- devolver `NO_MATCHING_ACTIVE_ADS` somente quando a propria interface confirmar um resultado
+  vazio com os filtros esperados;
+- devolver `AWAITING_SUPERVISED_OBSERVATION` diante de CAPTCHA, login obrigatorio, bloqueio,
+  timeout, layout desconhecido, filtro ausente ou qualquer ambiguidade;
+- manter anuncio ativo como sinal de presenca e investimento, nunca como compra, venda ou receita.
+
+Quando o navegador devolver `AWAITING_SUPERVISED_OBSERVATION`, a propria execucao independente
+deve oferecer uma sessao supervisionada da Biblioteca publica da Meta. A sessao deve:
 
 - abrir a busca oficial com os termos, pais e plataforma definidos por Argos;
 - aceitar somente URL oficial da Biblioteca e registrar ID do anuncio, anunciante, texto visivel,
@@ -308,10 +333,12 @@ supervisionada da Biblioteca publica da Meta. A sessao deve:
 - bloquear a reanalise enquanto nao existir anuncio atual, ativo e explicitamente distribuido no
   Instagram.
 
-A sessao nao pode automatizar login, raspar a interface, armazenar cookie ou senha, publicar
-anuncio, alterar campanha ou declarar venda. A observacao humana confirma apenas o que estava
-visivel na fonte oficial; atividade, longevidade e linguagem continuam sendo sinais de mercado, nao
-receita comprovada.
+A extracao publica automatizada e a sessao humana nao podem automatizar login, armazenar cookie ou
+senha, contornar CAPTCHA, rate limit, bloqueio ou controle de acesso, publicar anuncio, alterar
+campanha ou declarar venda. A automacao pode estruturar somente os cards publicos carregados pela
+interface oficial no limite do ciclo; a observacao humana confirma apenas o que estava visivel na
+mesma fonte. Atividade, longevidade e linguagem continuam sendo sinais de mercado, nao receita
+comprovada.
 
 ## Caixa de sinais humanos observados
 

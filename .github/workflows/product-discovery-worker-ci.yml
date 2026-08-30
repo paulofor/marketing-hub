@@ -7,19 +7,27 @@ on:
       - "product-discovery-worker/**"
       - "pesquisas/**"
       - "scripts/test-isolated-agent-codex-auth.sh"
+      - "scripts/wait-for-app-deployment.mjs"
+      - "scripts/wait-for-app-deployment.test.mjs"
       - ".github/workflows/product-discovery-worker-ci.yml"
   pull_request:
     paths:
       - "product-discovery-worker/**"
       - "pesquisas/**"
       - "scripts/test-isolated-agent-codex-auth.sh"
+      - "scripts/wait-for-app-deployment.mjs"
+      - "scripts/wait-for-app-deployment.test.mjs"
       - ".github/workflows/product-discovery-worker-ci.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: product-discovery-worker
@@ -30,7 +38,24 @@ jobs:
         with:
           node-version: 20
       - name: Run tests
-        run: npm test
+        run: |
+          npm ci
+          npx playwright-core install --with-deps chromium
+          npm test
+      - name: Validate application deploy coordination
+        working-directory: ${{ github.workspace }}
+        run: node --test scripts/wait-for-app-deployment.test.mjs
+      - name: Validate container build
+        working-directory: ${{ github.workspace }}
+        run: docker build -t marketing-hub/product-discovery-worker:${{ github.sha }} product-discovery-worker
+      - name: Validate bundled Chromium as runtime user
+        working-directory: ${{ github.workspace }}
+        run: |
+          docker run --rm --init --read-only --tmpfs /tmp:size=256m,noexec,nosuid \
+            --security-opt no-new-privileges:true \
+            --entrypoint node marketing-hub/product-discovery-worker:${{ github.sha }} \
+            --input-type=module -e \
+            'import { chromium } from "playwright-core"; const browser = await chromium.launch({headless: true}); console.log(await browser.version()); await browser.close();'
 
   docker:
     runs-on: ubuntu-latest
@@ -91,6 +116,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      actions: read
     env:
       DEPLOY_HOST: 191.252.120.96
       DEPLOY_USER: root
@@ -102,6 +128,13 @@ jobs:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Wait for matching application deployment
+        if: github.event_name == 'push'
+        timeout-minutes: 45
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
+        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
       - name: Configure SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}

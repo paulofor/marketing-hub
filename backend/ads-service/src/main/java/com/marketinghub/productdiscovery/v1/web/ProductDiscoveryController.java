@@ -8,6 +8,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanu
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceOfferListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdBrowserCollectionRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdBrowserCollectionService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
@@ -39,6 +41,7 @@ public class ProductDiscoveryController {
   private final ProductDiscoveryService service;
   private final ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
   private final ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
+  private final ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService;
   private final ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
 
   /** Inicializa o controller com o serviço canônico do módulo. */
@@ -46,10 +49,12 @@ public class ProductDiscoveryController {
       ProductDiscoveryService service,
       ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService,
       ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService,
+      ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService,
       ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService) {
     this.service = service;
     this.marketplaceEvidenceService = marketplaceEvidenceService;
     this.metaAdEvidenceService = metaAdEvidenceService;
+    this.metaAdBrowserCollectionService = metaAdBrowserCollectionService;
     this.supervisedMetaSessionService = supervisedMetaSessionService;
   }
 
@@ -128,6 +133,15 @@ public class ProductDiscoveryController {
       @Valid @RequestBody ProductDiscoveryMetaAdEvidenceRequest request) {
     service.validateActiveExecution(cycleId, request.executionLeaseId());
     return ResponseEntity.ok(metaAdEvidenceService.requestAndSearch(cycleId, request));
+  }
+
+  /** Recebe a observação pública do Chromium vinculada ao lease vigente de Argos. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/meta-ad-browser-collection")
+  public ResponseEntity<ProductDiscoveryMetaAdEvidenceListResponse> recordMetaAdBrowserCollection(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ProductDiscoveryMetaAdBrowserCollectionRequest request) {
+    return ResponseEntity.ok(metaAdBrowserCollectionService.record(cycleId, request));
   }
 
   /** Exibe a sessão supervisionada que complementa a pesquisa brasileira de Argos. */

@@ -107,6 +107,70 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
       name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
     }),
   ).toBeVisible();
+  const previewCta = page.getByTestId("assisted-preview-cta");
+  await expect(previewCta).toHaveAttribute("href", "#assisted-tasting-title");
+  await expect(previewCta).toContainText(
+    "Experimentar uma amostra antes de comprar",
+  );
+  if (testInfo.project.name !== "desktop-chromium") {
+    const mobileCommercialLayout = await page.evaluate(() => {
+      const headline = document.querySelector(
+        ".assisted-pde-copy h1",
+      ) as HTMLElement;
+      const firstAction = document.querySelector(
+        '[data-testid="assisted-preview-cta"]',
+      ) as HTMLElement;
+      const proofCard = document.querySelector(
+        ".assisted-pde-proof-grid article",
+      ) as HTMLElement;
+      const proofContent = document.querySelector(
+        ".assisted-pde-proof-grid article > div",
+      ) as HTMLElement;
+      const tastingService = document.querySelector(
+        "#assisted-tasting-service",
+      ) as HTMLInputElement;
+      const tastingScenario = document.querySelector(
+        "#assisted-tasting-scenario",
+      ) as HTMLSelectElement;
+      return {
+        headlineFontSize: Number.parseFloat(
+          window.getComputedStyle(headline).fontSize,
+        ),
+        headlineHeight: headline.getBoundingClientRect().height,
+        firstActionBottom: firstAction.getBoundingClientRect().bottom,
+        proofColumns: window.getComputedStyle(proofCard).gridTemplateColumns,
+        proofContentWidth: proofContent.getBoundingClientRect().width,
+        tastingControlWidth: tastingScenario.getBoundingClientRect().width,
+        longestScenarioLabel: Math.max(
+          ...Array.from(tastingScenario.options).map(
+            (option) => option.textContent?.trim().length ?? 0,
+          ),
+        ),
+        servicePlaceholderLength: tastingService.placeholder.length,
+        pageHeight: document.documentElement.scrollHeight,
+        viewportHeight: window.innerHeight,
+      };
+    });
+    expect(mobileCommercialLayout.headlineFontSize).toBeLessThanOrEqual(38);
+    expect(mobileCommercialLayout.headlineHeight).toBeLessThanOrEqual(210);
+    expect(mobileCommercialLayout.firstActionBottom).toBeLessThanOrEqual(
+      mobileCommercialLayout.viewportHeight,
+    );
+    expect(
+      mobileCommercialLayout.proofColumns.trim().split(/\s+/),
+    ).toHaveLength(1);
+    expect(mobileCommercialLayout.proofContentWidth).toBeGreaterThanOrEqual(
+      270,
+    );
+    expect(mobileCommercialLayout.tastingControlWidth).toBeGreaterThanOrEqual(
+      270,
+    );
+    expect(mobileCommercialLayout.longestScenarioLabel).toBeLessThanOrEqual(33);
+    expect(mobileCommercialLayout.servicePlaceholderLength).toBeLessThanOrEqual(
+      30,
+    );
+    expect(mobileCommercialLayout.pageHeight).toBeLessThanOrEqual(8500);
+  }
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(

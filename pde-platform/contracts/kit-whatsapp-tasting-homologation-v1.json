@@ -2,18 +2,26 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-28T05:59:27Z",
+  "verifiedAt": "2026-08-30T01:48:28Z",
   "status": "PASSED",
-  "revalidationReason": "Revisão aprovada após retirar nome empresarial completo e endereço da superfície pública, preservar o fornecedor exibido e revalidar integralmente jornada, políticas, analytics e fronteira de checkout.",
-  "scope": "Degustação determinística, privacidade, eventos, segregação de QA no build público, fronteira paga, checkout e experiência responsiva.",
+  "revalidationReason": "A tarefa produtiva #268 de Psique comprovou o pacote visual com 13 evidências e apontou perda de confiança no mobile: título excessivo, ausência de ação na primeira dobra, provas comprimidas e página longa. A revalidação fecha essas causas com hierarquia responsiva, acesso imediato à amostra, prova legível e limites executáveis de densidade.",
+  "scope": "Degustação determinística, hierarquia de conversão mobile, legibilidade das provas, densidade da página, privacidade, eventos, segregação de QA no build público, fronteira paga e checkout.",
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "14de8f80a7fcfb19eb888670c47328026c1e44206a68ad17acfbdb19d96c3ee7"
+      "sha256": "935dd0a3050979d4ab9d1572c76d715d709b23f443dd5e797e20896a86f71770"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
-      "sha256": "6268c42b64dc0da5003516e8f58eeb29fcaa8e267733785355715fa70c1f912d"
+      "sha256": "6180bf8d1d1d5f8800624f4aa1baedddbf848c6ab4fb20ebb6ed5882db1c5157"
+    },
+    {
+      "path": "pde-platform/frontend/src/styles.css",
+      "sha256": "f0e23e187db93df71bbc4de4d71f34eb6cf39788ba73771326ccb2a1ecae613e"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-v1.json",
+      "sha256": "81967da390a00bd23f3c7ca01fd6bca61e279326588eedf3e34b49af6e134f08"
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
@@ -23,7 +31,7 @@
   "executableEvidence": [
     {
       "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
-      "sha256": "896337c5c03263eebaab099e80511d70d10aed321eb1272c3c01ef2c42dfe7a2",
+      "sha256": "3a91e5dcaa01a0107b4adad858208e1abf115f578d132e6daaedab48b29d1c01",
       "proves": [
         "as seis combinações de duas situações por três tons materializam respostas distintas",
         "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
@@ -33,7 +41,18 @@
         "o checkout segregado exibe Kit WhatsApp Pronto, R$ 349, pagamento único, ausência de recorrência e fornecedor",
         "o checkout local declara que nenhuma cobrança adicional é criada",
         "material sem token retorna 403 e acesso INTERNAL_QA vigente recebe o conteúdo",
-        "mh_test e INTERNAL_QA permanecem segregados da amostra humana"
+        "mh_test e INTERNAL_QA permanecem segregados da amostra humana",
+        "o acesso à amostra permanece na primeira dobra de iPhone 15 Pro e Pixel 7",
+        "o título mobile preserva tamanho e altura legíveis sem quebra agressiva",
+        "cards de prova, campos e opções mantêm largura útil mínima no mobile",
+        "a página respeita limite de densidade e não volta aos 9.961 px observados por Psique"
+      ]
+    },
+    {
+      "path": "pde-platform/frontend/tests/capture-rigel-review-evidence.mjs",
+      "sha256": "5b7779e7d557b6a8c43c08e05d2d1b34591bd7edd4e8399706ec278b229f82a2",
+      "proves": [
+        "as evidências de revisão são capturadas com preview e analytics desativado"
       ]
     },
     {
@@ -76,31 +95,51 @@
     {
       "round": 1,
       "result": "PASSED",
-      "metaAdApproverUnitTests": 65,
-      "growthOperatorUnitTests": 30,
-      "pdeBackendUnitTests": 117,
       "publicBuildAnalyticsTests": 5,
       "assistedJourneyTests": 12,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
+      "responsiveMetrics": {
+        "desktop": { "pageHeightCssPx": 5457, "firstActionBottomCssPx": 400 },
+        "iphone15Pro": {
+          "pageHeightCssPx": 8114,
+          "titleHeightCssPx": 141,
+          "firstActionBottomCssPx": 339
+        },
+        "pixel7": {
+          "pageHeightCssPx": 7928,
+          "titleHeightCssPx": 148,
+          "firstActionBottomCssPx": 345
+        }
+      },
       "infrastructure": [
         "MySQL 5.7 com volume novo",
         "SMTP descartável com topologia nova",
-        "imagem Docker versionada"
+        "imagem Docker do frontend construída localmente"
       ]
     },
     {
       "round": 2,
       "result": "PASSED",
-      "metaAdApproverUnitTests": 65,
-      "growthOperatorUnitTests": 30,
-      "pdeBackendUnitTests": 117,
       "publicBuildAnalyticsTests": 5,
       "assistedJourneyTests": 12,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
+      "responsiveMetrics": {
+        "desktop": { "pageHeightCssPx": 5457, "firstActionBottomCssPx": 400 },
+        "iphone15Pro": {
+          "pageHeightCssPx": 8114,
+          "titleHeightCssPx": 141,
+          "firstActionBottomCssPx": 339
+        },
+        "pixel7": {
+          "pageHeightCssPx": 7928,
+          "titleHeightCssPx": 148,
+          "firstActionBottomCssPx": 345
+        }
+      },
       "infrastructure": [
         "MySQL 5.7 com segundo volume novo",
         "SMTP descartável com segunda topologia nova",
-        "imagem Docker versionada"
+        "imagem Docker do frontend construída localmente"
       ]
     }
   ],

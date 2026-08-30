@@ -42,6 +42,15 @@
   também usa `init` para recolher processos órfãos do headless shell. O teste real do navegador foi
   ampliado para uma página de 12 dobras e passa novamente dentro da imagem final, com filesystem
   somente leitura e as mesmas restrições do runtime produtivo.
+- **Fechamento da legibilidade comercial mobile em 2026-08-30:** depois de corrigido o transporte,
+  a tarefa produtiva #268 consumiu 13 evidências e revelou um bloqueio funcional real: no iPhone, o
+  título ocupava 423 px, a primeira ação surgia apenas em 1.438 px e os cards de prova tinham somente
+  199 px úteis numa página de 9.961 px. A causa-raiz era um contrato visual limitado a ausência de
+  overflow e funcionamento da jornada, sem limites para hierarquia da primeira dobra, largura da
+  prova ou densidade vertical. A experiência passa a oferecer a amostra na primeira dobra, reduzir o
+  título, empilhar provas e compactar etapas no mobile. O teste Playwright em Desktop Chrome, iPhone
+  15 Pro e Pixel 7 agora bloqueia regressão de posição da ação, altura do título, largura útil de
+  prova e controles, tamanho de rótulos e altura total da página.
 
 ## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
 

@@ -6,11 +6,7 @@
   "mode": "DETERMINISTIC_INTERACTIVE_DEMO",
   "commercialHypothesis": "Uma amostra aplicável reduz a incerteza sobre a personalização e aumenta o avanço para checkout sem entregar gratuitamente a implantação completa.",
   "input": {
-    "fields": [
-      "genericService",
-      "scenarioId",
-      "toneId"
-    ],
+    "fields": ["genericService", "scenarioId", "toneId"],
     "forbiddenData": [
       "nome de cliente",
       "telefone",
@@ -22,20 +18,16 @@
   "scenarios": [
     {
       "id": "orcamento-sem-resposta",
-      "label": "Enviei o orçamento e a pessoa sumiu",
+      "label": "Orçamento enviado; cliente sumiu",
       "objective": "Retomar uma conversa sem pressionar nem presumir interesse."
     },
     {
       "id": "pedido-de-preco",
-      "label": "A pessoa perguntou somente o preço",
+      "label": "Cliente perguntou só o preço",
       "objective": "Responder com clareza e descobrir o contexto mínimo antes do próximo passo."
     }
   ],
-  "tones": [
-    "acolhedor",
-    "direto",
-    "profissional"
-  ],
+  "tones": ["acolhedor", "direto", "profissional"],
   "outputContract": {
     "initialResponseCount": 1,
     "qualificationQuestionCount": 1,

@@ -594,6 +594,15 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             <h1>
               Retome conversas no WhatsApp sem improvisar a próxima mensagem
             </h1>
+            {commercialOffer && tastingContract ? (
+              <a
+                className="assisted-pde-preview-cta"
+                data-testid="assisted-preview-cta"
+                href="#assisted-tasting-title"
+              >
+                Experimentar uma amostra antes de comprar <ChevronRight />
+              </a>
+            ) : null}
             <p className="assisted-pde-pain">{commercialOffer?.pain}</p>
             <p className="assisted-pde-promise">{publicPromise}</p>
             <div className="assisted-pde-trust-grid">

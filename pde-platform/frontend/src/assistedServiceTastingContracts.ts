@@ -37,19 +37,18 @@ const kitWhatsAppTastingV1: AssistedServiceTastingContract = {
   introduction:
     "Informe apenas o serviço, escolha uma situação e o tom. Você receberá uma resposta, uma pergunta de qualificação e três follow-ups para entender o mecanismo da implantação.",
   serviceLabel: "Qual serviço você oferece?",
-  servicePlaceholder:
-    "Ex.: manicure, instalação de ar-condicionado, fotografia",
+  servicePlaceholder: "Ex.: manicure ou fotografia",
   privacyHint:
     "Não informe nome, telefone nem mensagem real de cliente. A demonstração funciona com uma descrição genérica do serviço.",
   scenarios: [
     {
       id: "orcamento-sem-resposta",
-      label: "Enviei o orçamento e a pessoa sumiu",
+      label: "Orçamento enviado; cliente sumiu",
       context: "Retomar uma conversa sem pressionar nem presumir interesse.",
     },
     {
       id: "pedido-de-preco",
-      label: "A pessoa perguntou somente o preço",
+      label: "Cliente perguntou só o preço",
       context:
         "Responder com clareza e descobrir o contexto mínimo antes do próximo passo.",
     },

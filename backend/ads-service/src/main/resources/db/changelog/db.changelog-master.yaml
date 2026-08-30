@@ -1991,3 +1991,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-30-independent-business-process-executions.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-30-customer-agent-visual-composition-v4.yaml
+      relativeToChangelogFile: true

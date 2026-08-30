@@ -112,7 +112,7 @@ class AgentHarnessCatalogTest {
     var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("customer-agent");
     var core =
         harness.behaviorFiles().stream()
-            .filter(file -> file.path().endsWith("prompts/psique/behavioral-core-v3.md"))
+            .filter(file -> file.path().endsWith("prompts/psique/behavioral-core-v4.md"))
             .findFirst()
             .orElseThrow();
 
@@ -195,7 +195,7 @@ class AgentHarnessCatalogTest {
             .findFirst()
             .orElseThrow();
 
-    assertThat(constitution.title()).isEqualTo("Constituição humana e sensorial");
+    assertThat(constitution.title()).isEqualTo("Constituição humana, sensorial e estética");
     assertThat(constitution.items())
         .extracting("key")
         .contains(
@@ -203,14 +203,16 @@ class AgentHarnessCatalogTest {
             "affective-first",
             "sensory-modalities",
             "sensory-dimensions",
+            "visual-composition",
+            "human-connection",
             "sensory-scale",
             "evidence-boundary",
             "ethical-boundary");
     assertThat(harness.artifacts())
         .extracting("path")
         .contains(
-            "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v3.md",
-            "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v3/evaluation-schema.json");
+            "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v4.md",
+            "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v4/evaluation-schema.json");
   }
 
   /** Mantém explícita a ausência de manifesto para agentes futuros ainda não catalogados. */

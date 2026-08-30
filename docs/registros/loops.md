@@ -2453,3 +2453,20 @@ Use este checklist quando o problema estiver em algum loop acima:
   checksum e SHA-256 do arquivo completo. Um limite preventivo de 900.000 caracteres bloqueia
   regressão antes de abrir o processo do modelo, e o teste monta o prompt real do Rigel sem depender
   de shell ou truncamento silencioso.
+
+## LOOP-PSIQUE-ESTETICA-EM-TEXTO-LIVRE — aprovação não comprova equilíbrio visual
+
+- **Data:** 2026-08-30.
+- **Sintoma:** Psique inspecionava todas as dobras e descrevia hierarquia, legibilidade e emoção,
+  mas podia aprovar uma página tecnicamente correta e visualmente monótona sem demonstrar análise
+  de texto–imagem, variedade, ritmo, cor, tipografia, respiro, novidade ou conexão humana.
+- **Causa-raiz confirmada:** o contrato sensorial v3 deixava composição estética em narrativa livre.
+  Prompt e schema não obrigavam evidência por dimensão nem impediam `APPROVED` com uma deficiência
+  visual reconhecida. O problema era de contrato, não de quantidade fixa de imagens ou pessoas.
+- **Correção sistêmica:** Psique v4 classifica o arquétipo e persiste sete dimensões estéticas,
+  função e adequação da presença humana, padrão mais forte e déficit crítico. Pessoas continuam
+  sendo pistas sociais contextuais, sem cota; Apple, por exemplo, demonstra que foco no produto e
+  paleta contida podem ser adequados a outro objetivo.
+- **Prevenção:** o validador rejeita composição ausente ou incoerente e impede aprovação com
+  qualquer nota aplicável abaixo de 3 ou déficit crítico. Testes cobrem com e sem pessoas, seis
+  schemas estritos, quatro fluxos BPM, observação, simulação, frontend, harness e MySQL 5.7.

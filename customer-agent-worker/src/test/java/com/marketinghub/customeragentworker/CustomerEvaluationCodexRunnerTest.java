@@ -198,6 +198,71 @@ class CustomerEvaluationCodexRunnerTest {
         .hasMessageContaining("sensorial");
   }
 
+  /** Protege a versão estética como evolução auditável sem sobrescrever o contrato sensorial v3. */
+  @Test
+  void shouldRequireContextualVisualCompositionInBehavioralVersionFour() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/customer-agent/behavioral-v4/evaluation.md"));
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/customer-agent/behavioral-v4/evaluation-schema.json"));
+    String core =
+        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v4.md"));
+
+    assertThat(prompt)
+        .contains("{{PSIQUE_BEHAVIORAL_CORE_V4}}")
+        .contains("visualComposition")
+        .contains("equilíbrio", "texto-imagem");
+    assertThat(schema)
+        .contains(
+            "visualComposition",
+            "imageTextBalance",
+            "mediaVariety",
+            "visualRhythm",
+            "colorStrategy",
+            "humanConnection");
+    assertThat(core)
+        .contains("Trate pessoas e rostos como pistas sociais fortes")
+        .contains("Paleta contida pode ser excelente")
+        .contains("APPROVED` exige todas as dimensões estéticas");
+  }
+
+  /** Rejeita v4 quando existe estímulo visual, mas falta sua composição estruturada. */
+  @Test
+  void shouldRejectBehavioralVersionFourWithoutVisualComposition() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    CustomerEvaluationCodexRunner runner =
+        new CustomerEvaluationCodexRunner(
+            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
+    var result =
+        mapper.readTree(
+            """
+            {
+              "decision":"AJUSTAR","assessment":"teste","hypotheses":[],"sources":[],
+              "initialState":{},"mentalTransitions":[],"memoryRecall":{},
+              "baselineComparison":{},
+              "actionProbabilities":{"ignore":20,"explore":20,"startAction":20,"abandon":20,"checkout":10,"purchase":10},
+              "affectiveImpulse":{},"motivationalDynamics":{},"noveltyFamiliarity":{},
+              "relationalValue":{"foundationalNeed":"FOUNDATIONAL"},
+              "postHocRationalization":{},"ethicalBoundary":{},
+              "sensoryExperience":{
+                "evidenceAvailable":true,
+                "availableModalities":["VISUAL"],
+                "pleasureByModality":[{"modality":"VISUAL","pleasureScore":3,"evidence":"Captura disponível"}],
+                "processingFluency":3,"sensoryCongruence":3,"overloadRisk":2,
+                "embodiedAnticipation":"Imagino avançar", "dominantCue":"Imagem principal",
+                "evidenceBoundary":"Somente a captura fornecida"
+              }
+            }
+            """);
+
+    assertThatThrownBy(() -> runner.validateBehavioral(result, "BEHAVIORAL_V4"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Composição visual");
+  }
+
   /**
    * Rejeita uma distribuição probabilística que aparenta precisão sem fechar o universo de ações.
    */

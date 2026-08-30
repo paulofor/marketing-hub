@@ -1,0 +1,548 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observation",
+    "simulatedReaction",
+    "commercialHypothesis",
+    "motivationalVector"
+  ],
+  "properties": {
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sources",
+        "facts"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "simulatedReaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "firstAffectiveImpulse",
+        "pleasureAndEffort",
+        "noveltyAndFamiliarity",
+        "riskAndLoss",
+        "relationalValue",
+        "sensoryExperience",
+        "postHocRationalization",
+        "frictions",
+        "trustSignals",
+        "abandonmentRisk"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "firstAffectiveImpulse": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pleasureAndEffort": {
+          "type": "string",
+          "minLength": 1
+        },
+        "noveltyAndFamiliarity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "riskAndLoss": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relationalValue": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sensoryExperience": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidenceAvailable",
+            "availableModalities",
+            "pleasureByModality",
+            "processingFluency",
+            "sensoryCongruence",
+            "overloadRisk",
+            "embodiedAnticipation",
+            "dominantCue",
+            "evidenceBoundary",
+            "visualComposition"
+          ],
+          "properties": {
+            "evidenceAvailable": {
+              "type": "boolean"
+            },
+            "availableModalities": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "VISUAL",
+                  "AUDIO",
+                  "MOTION",
+                  "TACTILE_IMAGERY"
+                ]
+              }
+            },
+            "pleasureByModality": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "modality",
+                  "pleasureScore",
+                  "evidence"
+                ],
+                "properties": {
+                  "modality": {
+                    "type": "string",
+                    "enum": [
+                      "VISUAL",
+                      "AUDIO",
+                      "MOTION",
+                      "TACTILE_IMAGERY"
+                    ]
+                  },
+                  "pleasureScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "processingFluency": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "sensoryCongruence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "overloadRisk": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "embodiedAnticipation": {
+              "type": "string"
+            },
+            "dominantCue": {
+              "type": "string"
+            },
+            "evidenceBoundary": {
+              "type": "string"
+            },
+            "visualComposition": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "applicable",
+                "archetype",
+                "imageTextBalance",
+                "mediaVariety",
+                "visualRhythm",
+                "colorStrategy",
+                "typographicHierarchy",
+                "densityAndBreathingRoom",
+                "noveltyFamiliarity",
+                "humanConnection",
+                "strongestPattern",
+                "criticalDeficitPresent",
+                "criticalDeficit"
+              ],
+              "properties": {
+                "applicable": {
+                  "type": "boolean"
+                },
+                "archetype": {
+                  "type": "string",
+                  "enum": [
+                    "EDITORIAL_PORTAL",
+                    "PERSUASIVE_LANDING",
+                    "TRANSACTIONAL_DISCOVERY",
+                    "PRODUCT_SHOWCASE",
+                    "APPLICATION",
+                    "SINGLE_CREATIVE",
+                    "OTHER",
+                    "NOT_APPLICABLE"
+                  ]
+                },
+                "imageTextBalance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "mediaVariety": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "visualRhythm": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "colorStrategy": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "typographicHierarchy": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "densityAndBreathingRoom": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "noveltyFamiliarity": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "humanConnection": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "peopleObserved",
+                    "functionalRole",
+                    "appropriatenessScore",
+                    "absenceImpact",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "peopleObserved": {
+                      "type": "boolean"
+                    },
+                    "functionalRole": {
+                      "type": "string",
+                      "enum": [
+                        "NONE",
+                        "CUSTOMER_IDENTIFICATION",
+                        "PRODUCT_IN_USE",
+                        "SOCIAL_PROOF",
+                        "EXPERT_AUTHORITY",
+                        "ASPIRATIONAL_LIFESTYLE",
+                        "DECORATIVE",
+                        "MIXED"
+                      ]
+                    },
+                    "appropriatenessScore": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "absenceImpact": {
+                      "type": "string",
+                      "enum": [
+                        "NONE",
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ]
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "strongestPattern": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 700
+                },
+                "criticalDeficitPresent": {
+                  "type": "boolean"
+                },
+                "criticalDeficit": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 700
+                }
+              }
+            }
+          }
+        },
+        "postHocRationalization": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frictions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trustSignals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "abandonmentRisk": {
+          "type": "string",
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH"
+          ]
+        }
+      }
+    },
+    "commercialHypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verdict",
+        "priorityImprovement",
+        "rationale"
+      ],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "APROVAR_TESTE",
+            "AJUSTAR",
+            "REPROVAR"
+          ]
+        },
+        "priorityImprovement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "motivationalVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "motivationalDirection",
+        "painIntensity",
+        "pleasureIntensity",
+        "fearWeight",
+        "frustrationWeight",
+        "effortWeight",
+        "reliefWeight",
+        "desireWeight",
+        "trustWeight",
+        "belongingWeight",
+        "evidenceStrength",
+        "confidenceScore",
+        "sourceReference",
+        "rationale"
+      ],
+      "properties": {
+        "motivationalDirection": {
+          "type": "string",
+          "enum": [
+            "AWAY_FROM_PAIN",
+            "TOWARD_PLEASURE",
+            "MIXED"
+          ]
+        },
+        "painIntensity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "pleasureIntensity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "fearWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "frustrationWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "effortWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "reliefWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "desireWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "trustWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "belongingWeight": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "evidenceStrength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "confidenceScore": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "sourceReference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

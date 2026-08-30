@@ -74,14 +74,14 @@ public class CustomerDigitalObservationScheduler {
               String.valueOf(job.get("authorizedSourcesJson")), workDirectory);
       String template =
           Files.readString(
-              Path.of("/app/prompts/customer-agent/v2/digital-observation.md"),
+              Path.of("/app/prompts/customer-agent/v3/digital-observation.md"),
               StandardCharsets.UTF_8);
       String prompt =
           template
               .replace(
-                  "{{PSIQUE_BEHAVIORAL_CORE_V3}}",
+                  "{{PSIQUE_BEHAVIORAL_CORE_V4}}",
                   Files.readString(
-                      Path.of("/app/prompts/psique/behavioral-core-v3.md"), StandardCharsets.UTF_8))
+                      Path.of("/app/prompts/psique/behavioral-core-v4.md"), StandardCharsets.UTF_8))
               .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
               .replace("{{OBJECTIVE}}", String.valueOf(job.get("objective")))
               .replace(
@@ -119,10 +119,10 @@ public class CustomerDigitalObservationScheduler {
     }
   }
 
-  /** Rejeita observação que omita a experiência sensorial ou atribua notas sem evidência. */
+  /** Rejeita observação que omita experiência sensorial ou composição estética auditável. */
   static void validateSensoryExperience(Map<String, Object> result, ObjectMapper mapper) {
     JsonNode simulatedReaction = mapper.valueToTree(result.get("simulatedReaction"));
-    PsiqueSensoryContract.validate(simulatedReaction.path("sensoryExperience"));
+    PsiqueVisualCompositionContract.validate(simulatedReaction.path("sensoryExperience"));
   }
 
   /** Envia screenshots ao armazenamento governado, vinculados à persona e observação. */

@@ -25,6 +25,7 @@ public class CustomerAgentService {
   private static final String BEHAVIORAL_V1 = "BEHAVIORAL_V1";
   private static final String BEHAVIORAL_V2 = "BEHAVIORAL_V2";
   private static final String BEHAVIORAL_V3 = "BEHAVIORAL_V3";
+  private static final String BEHAVIORAL_V4 = "BEHAVIORAL_V4";
   private static final long OBSERVATION_LEASE_MINUTES = 15;
   private static final int MAX_EXPIRED_OBSERVATIONS_PER_CLAIM = 20;
   private final CustomerPersonaRepository personas;
@@ -329,13 +330,14 @@ public class CustomerAgentService {
     return "PARCIALMENTE_VALIDADA".equals(value) ? value : "HIPOTESE";
   }
 
-  /** Aceita somente versões implementadas e usa Psique sensorial v3 nas novas avaliações. */
+  /** Aceita somente versões implementadas e usa Psique estética v4 nas novas avaliações. */
   private String normalizeSimulationVersion(String value) {
-    if (blank(value)) return BEHAVIORAL_V3;
+    if (blank(value)) return BEHAVIORAL_V4;
     if (BASELINE_V1.equals(value)
         || BEHAVIORAL_V1.equals(value)
         || BEHAVIORAL_V2.equals(value)
-        || BEHAVIORAL_V3.equals(value)) return value;
+        || BEHAVIORAL_V3.equals(value)
+        || BEHAVIORAL_V4.equals(value)) return value;
     throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST, "Versão de simulação não suportada: " + value);
   }

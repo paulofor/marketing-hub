@@ -43,10 +43,11 @@ humano observado, nunca pela quantidade ou eloquência dos relatórios.
 
 ## Simulador comportamental v1
 
-Cada avaliação declara `BASELINE_V1`, `BEHAVIORAL_V1`, `BEHAVIORAL_V2` ou `BEHAVIORAL_V3`.
+Cada avaliação declara `BASELINE_V1`, `BEHAVIORAL_V1`, `BEHAVIORAL_V2`, `BEHAVIORAL_V3` ou
+`BEHAVIORAL_V4`.
 Registros legados mantêm sua versão original, mas toda nova avaliação sem versão explícita usa
-`BEHAVIORAL_V3` para impedir o retorno silencioso ao comportamento plenamente racional e para
-preservar a dimensão sensorial. O modo comportamental sempre executa primeiro o baseline com a
+`BEHAVIORAL_V4` para impedir o retorno silencioso ao comportamento plenamente racional e para
+preservar as dimensões sensorial e estética. O modo comportamental sempre executa primeiro o baseline com a
 mesma persona e ativo; em seguida produz uma segunda avaliação separada, sem sobrescrever ou
 reinterpretar o resultado original.
 
@@ -113,11 +114,9 @@ rejeição, insegurança, humilhação, engano ou dependência emocional.
 
 ## Simulador humano afetivo, social e sensorial v3
 
-`BEHAVIORAL_V3` é o modo recomendado e padrão para novas avaliações. Ele preserva integralmente os
-motores afetivos e sociais do v2 e acrescenta um contrato sensorial explícito, sem reescrever
-resultados históricos. Os fluxos atuais de avaliação de ativo, observação mobile, oportunidade e
-atividades BPM de landing, criativo, experiência e homologação comercial devem usar o mesmo
-`behavioral-core-v3.md` e schemas compatíveis.
+`BEHAVIORAL_V3` preserva integralmente os motores afetivos e sociais do v2 e acrescenta um contrato
+sensorial explícito, sem reescrever resultados históricos. Ele permanece disponível para replay e
+comparação; novas avaliações usam v4.
 
 Antes de avaliar prazer, Psique deve declarar se existe evidência sensorial e quais modalidades
 estão realmente disponíveis: `VISUAL`, `AUDIO`, `MOTION` ou `TACTILE_IMAGERY`. Aroma, sabor,
@@ -143,6 +142,60 @@ O detalhe do agente deve expor a constituição humana e sensorial em linguagem 
 fundamental, afeto inicial, modalidades, dimensões, escalas, novidade segura, valor relacional,
 fronteira da evidência e limite ético. Exibir apenas nome e caminho dos arquivos não atende ao
 contrato de transparência do harness; prompts e schemas versionados continuam listados como fontes.
+
+## Simulador humano afetivo, social, sensorial e estético v4
+
+Por decisão de 2026-08-30, `BEHAVIORAL_V4` é o modo recomendado e padrão. Ele mantém todo o contrato
+v3 e acrescenta `visualComposition`, porque estética em texto livre não comprovava se Psique havia
+avaliado o equilíbrio que sustenta atenção, compreensão, desejo e confiança.
+
+Foram comparadas três alternativas: criar um agente estético separado, acrescentar somente
+instruções narrativas à Psique v3 ou versionar uma composição estruturada dentro da responsabilidade
+`HUMAN_EXPERIENCE_REVIEW`. A terceira foi adotada. Um novo agente duplicaria decisão, fila, custo e
+latência; instrução sem schema manteria o parecer subjetivo e não impediria recorrência.
+
+Quando `VISUAL` estiver disponível, Psique deve classificar o arquétipo observado e avaliar de zero
+a cinco, sempre com evidência concreta:
+
+- equilíbrio entre texto e imagem, sem impor proporção universal;
+- variedade funcional de mídia — demonstração, uso, resultado, prova, contexto ou emoção — sem
+  premiar decoração repetitiva;
+- ritmo entre densidade, respiro e mudanças de intensidade ao longo da jornada;
+- função da cor na atenção, separação de seções, legibilidade e coerência;
+- hierarquia tipográfica entre título, apoio, corpo, rótulos e ação;
+- densidade e espaço de respiração no dispositivo avaliado;
+- novidade apoiada em padrões familiares do arquétipo;
+- conexão humana: presença, função, adequação e impacto real da ausência.
+
+Pessoas e rostos são pistas sociais relevantes, mas não uma cota. A ausência só pesa quando
+identificação da cliente, demonstração de uso, transformação, prova social, autoridade ou confiança
+humana forem importantes para a promessa. Uma interface, um objeto ou o próprio produto podem ser o
+foco legítimo; fotografia genérica, artificial ou sem função não melhora o gate. Do mesmo modo,
+paleta contida não é falta de cor e variedade não significa ruído.
+
+Em gate produtivo, `APPROVED` exige escore mínimo três em todas as dimensões aplicáveis, adequação da
+conexão humana mínima três e nenhum déficit visual crítico. Escore dois exige `ADJUST`; zero ou um
+leva a `BLOCKED` quando impedir compreensão, confiança ou ação e a `ADJUST` quando a correção for
+localizada. O validador do worker impede aprovação contraditória.
+
+As referências observadas em 2026-08-30 são exemplos de princípios, não templates nem metas de
+proporção: Globo combina alta densidade editorial com hierarquia dominante, imagens recorrentes e
+cores de categoria; Apple usa foco visual, paleta contida e ampla simplificação sem depender de
+pessoas; Airbnb combina padrão familiar de busca, imagens de experiência e cor de ação; Nike usa
+movimento e presença humana contextual para demonstrar aspiração e produto. Psique deve transferir
+o princípio adequado ao arquétipo, nunca copiar identidade, layout, conteúdo ou quantidade de
+elementos desses sites.
+
+Base complementar:
+
+- Tuch et al. (2012), complexidade visual e prototipicidade na primeira impressão:
+  https://doi.org/10.1016/j.ijhcs.2012.06.003
+- Lai et al. (2010), equilíbrio visual em composições de texto e imagem:
+  https://doi.org/10.1016/j.ijhcs.2009.10.001
+- Bindemann et al. (2005), retenção da atenção por faces:
+  https://doi.org/10.3758/BF03206442
+- W3C WAI, contraste, agrupamento, espaçamento e múltiplos viewports:
+  https://www.w3.org/WAI/tips/designing/
 
 ### Prova visual por dobra e antecipação da compra
 

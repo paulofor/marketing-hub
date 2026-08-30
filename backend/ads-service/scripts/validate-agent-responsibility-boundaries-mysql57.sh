@@ -152,21 +152,6 @@ assert_equals \
 compose run --rm --build liquibase-iris-communication-agent
 
 assert_equals \
-  "$(python3 - "${HEALTH_CONTRACT}" <<'PY'
-import json
-import pathlib
-import sys
-
-contract = json.loads(pathlib.Path(sys.argv[1]).read_text())
-print("\n".join(
-    f"{agent['key']}:{agent['expectedVersion']}"
-    for agent in sorted(contract['agents'], key=lambda item: item['key'])
-))
-PY
-)" \
-  "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
-  "as versões implantadas dos nove agentes divergem dos contratos persistidos"
-assert_equals \
   "21" \
   "$(query "SELECT COUNT(*) FROM agent_version")" \
   "as versões auditáveis da Íris e do novo Dédalo não foram criadas"
@@ -222,4 +207,45 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=9")" \
   "a reaplicação da Íris duplicou itens da cadeia"
 
-printf 'Homologação física da matriz dos nove agentes aprovada no MySQL 5.7.\n'
+compose run --rm --build liquibase-customer-agent-visual-composition
+
+assert_equals \
+  "$(python3 - "${HEALTH_CONTRACT}" <<'PY'
+import json
+import pathlib
+import sys
+
+contract = json.loads(pathlib.Path(sys.argv[1]).read_text())
+print("\n".join(
+    f"{agent['key']}:{agent['expectedVersion']}"
+    for agent in sorted(contract['agents'], key=lambda item: item['key'])
+))
+PY
+)" \
+  "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
+  "as versões implantadas dos nove agentes divergem dos contratos persistidos"
+assert_equals \
+  "22" \
+  "$(query "SELECT COUNT(*) FROM agent_version")" \
+  "a versão estética auditável de Psique não foi criada"
+assert_equals \
+  "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v4.md:customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v4/evaluation-schema.json" \
+  "$(query "SELECT CONCAT(prompt_contract_path, ':', schema_contract_path) FROM agent WHERE agent_key='customer-agent'")" \
+  "Psique não aponta para os contratos estéticos v4"
+assert_equals \
+  "V4" \
+  "$(query "SELECT JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.visualCompositionVersion')) FROM agent_version av JOIN agent ON agent.id=av.agent_id WHERE agent.agent_key='customer-agent' AND av.version_number=agent.current_version")" \
+  "a versão auditável de Psique não registra a composição visual v4"
+
+compose run --rm liquibase-customer-agent-visual-composition
+
+assert_equals \
+  "22" \
+  "$(query "SELECT COUNT(*) FROM agent_version")" \
+  "a reaplicação da Psique v4 duplicou versões"
+assert_equals \
+  "5" \
+  "$(query "SELECT current_version FROM agent WHERE agent_key='customer-agent'")" \
+  "a reaplicação da Psique v4 alterou a versão vigente"
+
+printf 'Homologação física da matriz dos nove agentes e da Psique v4 aprovada no MySQL 5.7.\n'

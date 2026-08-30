@@ -2,15 +2,19 @@ package com.marketinghub.productdiscovery.v1.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdDtos;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdInvestigationService;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,40 +33,68 @@ public class ProductDiscoveryMetaAdEvidenceService {
 
   private final JdbcTemplate jdbcTemplate;
   private final MoisMetaAdInvestigationService investigationService;
+  private final ProductDiscoveryMetaAdSessionLinkService sessionLinkService;
   private final ObjectMapper objectMapper;
 
   /** Inicializa a integração do domínio de descoberta com o radar Meta canônico. */
   public ProductDiscoveryMetaAdEvidenceService(
       JdbcTemplate jdbcTemplate,
       MoisMetaAdInvestigationService investigationService,
+      ProductDiscoveryMetaAdSessionLinkService sessionLinkService,
       ObjectMapper objectMapper) {
     this.jdbcTemplate = jdbcTemplate;
     this.investigationService = investigationService;
+    this.sessionLinkService = sessionLinkService;
     this.objectMapper = objectMapper;
   }
 
   /** Cria ou reutiliza o acompanhamento da categoria e devolve sua cobertura atual. */
   public ProductDiscoveryMetaAdEvidenceListResponse requestAndSearch(
       Long cycleId, ProductDiscoveryMetaAdEvidenceRequest request) {
-    String query = normalizedQuery(request.query());
     String country = normalizedCountry(request.country());
     String publisherPlatform = normalizedPublisherPlatform(request.publisherPlatform());
-    if (specificTerms(query).size() < 2) {
+    Optional<MoisMetaAdDtos.InvestigationResponse> linkedInvestigation =
+        sessionLinkService.linkedInvestigation(cycleId);
+    String requestedQuery = normalizedQuery(request.query());
+    if (linkedInvestigation.isEmpty() && specificTerms(requestedQuery).size() < 2) {
       throw new IllegalArgumentException(
           "A consulta Meta deve conter ao menos dois termos específicos da categoria");
     }
     MoisMetaAdDtos.InvestigationResponse investigation =
-        investigationService.ensureForProductDiscovery(
-            WORKSPACE_ID, query, country, publisherPlatform);
+        linkedInvestigation.orElseGet(
+            () ->
+                investigationService.ensureForProductDiscovery(
+                    WORKSPACE_ID, requestedQuery, country, publisherPlatform));
+    if (!WORKSPACE_ID.equals(investigation.workspaceId())
+        || !country.equalsIgnoreCase(investigation.countryCode())
+        || !publisherPlatform.equalsIgnoreCase(investigation.publisherPlatform())) {
+      throw new IllegalStateException(
+          "A investigação Meta vinculada não pertence ao território e plataforma do ciclo");
+    }
+    String query =
+        linkedInvestigation
+            .map(linked -> normalizedQuery(linked.searchTerms()))
+            .orElse(requestedQuery);
+    if (specificTerms(query).size() < 2) {
+      throw new IllegalArgumentException(
+          "A consulta Meta deve conter ao menos dois termos específicos da categoria");
+    }
     log.info(
-        "Product Discovery solicitou evidência Meta cycleId={} investigationId={} country={} publisherPlatform={} query={}",
+        "Product Discovery solicitou evidência Meta cycleId={} investigationId={} linkedSession={} country={} publisherPlatform={} query={}",
         cycleId,
         investigation.id(),
+        linkedInvestigation.isPresent(),
         country,
         publisherPlatform,
         query);
     return searchInternal(
-        cycleId, query, country, publisherPlatform, request.limit(), investigation);
+        cycleId,
+        query,
+        country,
+        publisherPlatform,
+        request.limit(),
+        investigation,
+        linkedInvestigation.isPresent());
   }
 
   /** Pesquisa somente evidências já persistidas, sem criar acompanhamento por efeito de um GET. */
@@ -74,7 +106,21 @@ public class ProductDiscoveryMetaAdEvidenceService {
         normalizedCountry(country),
         normalizedPublisherPlatform(publisherPlatform),
         limit,
-        null);
+        null,
+        false);
+  }
+
+  /** Consulta exclusivamente a investigação exibida na sessão supervisionada do ciclo. */
+  public ProductDiscoveryMetaAdEvidenceListResponse searchInvestigation(
+      Long cycleId, MoisMetaAdDtos.InvestigationResponse investigation, Integer limit) {
+    return searchInternal(
+        cycleId,
+        normalizedQuery(investigation.searchTerms()),
+        normalizedCountry(investigation.countryCode()),
+        normalizedPublisherPlatform(investigation.publisherPlatform()),
+        limit,
+        investigation,
+        true);
   }
 
   /** Filtra país, termos e plataforma antes de calcular a cobertura comercial conservadora. */
@@ -84,81 +130,16 @@ public class ProductDiscoveryMetaAdEvidenceService {
       String country,
       String publisherPlatform,
       Integer limit,
-      MoisMetaAdDtos.InvestigationResponse investigation) {
+      MoisMetaAdDtos.InvestigationResponse investigation,
+      boolean linkedSession) {
     int normalizedLimit = Math.max(1, Math.min(limit == null ? 25 : limit, 50));
     List<String> terms = specificTerms(query);
-    String filter =
-        terms.isEmpty()
-            ? " AND 1 = 0"
-            : " AND ("
-                + String.join(
-                    " OR ",
-                    java.util.Collections.nCopies(
-                        terms.size(),
-                        "LOWER(CONCAT_WS(' ', a.advertiser_name, a.ad_texts_json, a.destination_url)) LIKE ?"))
-                + ")";
-    ArrayList<Object> parameters = new ArrayList<>();
-    parameters.add(country);
-    terms.forEach(term -> parameters.add("%" + term + "%"));
-    parameters.add("%" + publisherPlatform.toLowerCase(Locale.ROOT) + "%");
-    parameters.add(normalizedLimit);
     List<ProductDiscoveryMetaAdEvidenceResponse> items =
-        jdbcTemplate.query(
-            """
-            SELECT a.meta_ad_id, a.advertiser_name, a.ad_texts_json,
-                   a.publisher_platforms_json, a.format_types_json, a.destination_url,
-                   a.snapshot_url, a.ad_status, a.page_active, a.commercial_signal,
-                   a.observation_count, a.first_observed_at, a.last_observed_at
-            FROM mois_meta_ad_asset a
-            WHERE a.workspace_id = 'workspace-001'
-              AND EXISTS (
-                SELECT 1 FROM mois_meta_ad_observation o
-                JOIN mois_meta_ad_investigation i ON i.id = o.investigation_id
-                WHERE o.asset_id = a.id AND i.country_code = ?)
-            """
-                + filter
-                + " AND LOWER(COALESCE(a.publisher_platforms_json, '')) LIKE ?"
-                + " ORDER BY a.page_active DESC, a.last_observed_at DESC LIMIT ?",
-            (rs, rowNum) -> {
-              Instant first = rs.getTimestamp("first_observed_at").toInstant();
-              Instant last = rs.getTimestamp("last_observed_at").toInstant();
-              long longevity = Math.max(0, Duration.between(first, last).toDays());
-              int observations = rs.getInt("observation_count");
-              boolean active =
-                  rs.getBoolean("page_active")
-                      && "ACTIVE".equalsIgnoreCase(rs.getString("ad_status"));
-              boolean commercial = rs.getBoolean("commercial_signal");
-              boolean sustained =
-                  active
-                      && commercial
-                      && observations >= MIN_OBSERVATIONS
-                      && longevity >= MIN_LONGEVITY_DAYS;
-              String confidence = sustained ? "HIGH" : observations >= 2 ? "MEDIUM" : "LOW";
-              return new ProductDiscoveryMetaAdEvidenceResponse(
-                  rs.getString("meta_ad_id"),
-                  rs.getString("advertiser_name"),
-                  stringList(
-                      rs.getString("ad_texts_json"), "ad_texts_json", rs.getString("meta_ad_id")),
-                  stringList(
-                      rs.getString("publisher_platforms_json"),
-                      "publisher_platforms_json",
-                      rs.getString("meta_ad_id")),
-                  stringList(
-                      rs.getString("format_types_json"),
-                      "format_types_json",
-                      rs.getString("meta_ad_id")),
-                  rs.getString("destination_url"),
-                  rs.getString("snapshot_url"),
-                  active,
-                  commercial,
-                  observations,
-                  longevity,
-                  sustained,
-                  confidence,
-                  first,
-                  last);
-            },
-            parameters.toArray());
+        linkedSession
+                && investigation != null
+                && "SUPERVISED".equals(investigation.collection().mode())
+            ? searchSupervisedItems(investigation, terms, publisherPlatform, normalizedLimit)
+            : searchAssetItems(country, publisherPlatform, terms, normalizedLimit, investigation);
     Instant now = Instant.now();
     Instant latestObservationAt =
         items.stream()
@@ -195,6 +176,243 @@ public class ProductDiscoveryMetaAdEvidenceService {
         latestObservationAt,
         interpretation(sourceStatus, items.size(), activeAds, advertisers),
         items);
+  }
+
+  /** Lê o retrato consolidado quando não existe uma sessão supervisionada vinculada. */
+  private List<ProductDiscoveryMetaAdEvidenceResponse> searchAssetItems(
+      String country,
+      String publisherPlatform,
+      List<String> terms,
+      int normalizedLimit,
+      MoisMetaAdDtos.InvestigationResponse investigation) {
+    String filter =
+        terms.isEmpty()
+            ? " AND 1 = 0"
+            : " AND ("
+                + String.join(
+                    " OR ",
+                    java.util.Collections.nCopies(
+                        terms.size(),
+                        "LOWER(CONCAT_WS(' ', a.advertiser_name, a.ad_texts_json, a.destination_url)) LIKE ?"))
+                + ")";
+    ArrayList<Object> parameters = new ArrayList<>();
+    String observationScope;
+    if (investigation == null) {
+      observationScope =
+          """
+              AND EXISTS (
+                SELECT 1 FROM mois_meta_ad_observation o
+                JOIN mois_meta_ad_investigation i ON i.id = o.investigation_id
+                WHERE o.asset_id = a.id AND i.country_code = ?)
+              """;
+      parameters.add(country);
+    } else {
+      observationScope =
+          """
+              AND EXISTS (
+                SELECT 1 FROM mois_meta_ad_observation o
+                JOIN mois_meta_ad_investigation i ON i.id = o.investigation_id
+                WHERE o.asset_id = a.id AND i.id = ? AND i.country_code = ?)
+              """;
+      parameters.add(investigation.id());
+      parameters.add(country);
+    }
+    terms.forEach(term -> parameters.add("%" + term + "%"));
+    parameters.add("%" + publisherPlatform.toLowerCase(Locale.ROOT) + "%");
+    parameters.add(normalizedLimit);
+    return jdbcTemplate.query(
+        """
+        SELECT a.meta_ad_id, a.advertiser_name, a.ad_texts_json,
+               a.publisher_platforms_json, a.format_types_json, a.destination_url,
+               a.snapshot_url, a.ad_status, a.page_active, a.commercial_signal,
+               a.observation_count, a.first_observed_at, a.last_observed_at
+        FROM mois_meta_ad_asset a
+        WHERE a.workspace_id = 'workspace-001'
+        """
+            + observationScope
+            + filter
+            + " AND LOWER(COALESCE(a.publisher_platforms_json, '')) LIKE ?"
+            + " ORDER BY a.page_active DESC, a.last_observed_at DESC LIMIT ?",
+        (rs, rowNum) -> assetEvidence(rs),
+        parameters.toArray());
+  }
+
+  /** Lê o snapshot bruto da investigação exata para não misturar linguagem entre sessões. */
+  private List<ProductDiscoveryMetaAdEvidenceResponse> searchSupervisedItems(
+      MoisMetaAdDtos.InvestigationResponse investigation,
+      List<String> terms,
+      String publisherPlatform,
+      int normalizedLimit) {
+    String rawFilter =
+        terms.isEmpty()
+            ? " AND 1 = 0"
+            : " AND ("
+                + String.join(
+                    " OR ",
+                    java.util.Collections.nCopies(terms.size(), "LOWER(o.raw_payload_json) LIKE ?"))
+                + ")";
+    ArrayList<Object> parameters = new ArrayList<>();
+    parameters.add(investigation.id());
+    parameters.add(investigation.id());
+    terms.forEach(term -> parameters.add("%" + term + "%"));
+    parameters.add(Math.min(250, normalizedLimit * 5));
+    return jdbcTemplate
+        .query(
+            """
+            SELECT a.meta_ad_id, o.raw_payload_json,
+                   stats.observation_count, stats.first_observed_at, stats.last_observed_at
+            FROM mois_meta_ad_asset a
+            JOIN (
+              SELECT asset_id, COUNT(*) observation_count,
+                     MIN(observed_at) first_observed_at, MAX(observed_at) last_observed_at
+              FROM mois_meta_ad_observation
+              WHERE investigation_id = ?
+              GROUP BY asset_id
+            ) stats ON stats.asset_id = a.id
+            JOIN mois_meta_ad_observation o ON o.id = (
+              SELECT latest.id
+              FROM mois_meta_ad_observation latest
+              WHERE latest.investigation_id = ? AND latest.asset_id = a.id
+              ORDER BY latest.observed_at DESC, latest.id DESC
+              LIMIT 1
+            )
+            WHERE a.workspace_id = 'workspace-001'
+            """
+                + rawFilter
+                + " ORDER BY stats.last_observed_at DESC LIMIT ?",
+            (rs, rowNum) -> supervisedEvidence(rs, investigation.id()),
+            parameters.toArray())
+        .stream()
+        .filter(
+            item ->
+                item.publisherPlatforms().stream().anyMatch(publisherPlatform::equalsIgnoreCase))
+        .limit(normalizedLimit)
+        .toList();
+  }
+
+  /** Converte o retrato consolidado do radar no contrato funcional de Argos. */
+  private ProductDiscoveryMetaAdEvidenceResponse assetEvidence(ResultSet rs) throws SQLException {
+    Instant first = rs.getTimestamp("first_observed_at").toInstant();
+    Instant last = rs.getTimestamp("last_observed_at").toInstant();
+    int observations = rs.getInt("observation_count");
+    boolean active =
+        rs.getBoolean("page_active") && "ACTIVE".equalsIgnoreCase(rs.getString("ad_status"));
+    return evidenceResponse(
+        rs.getString("meta_ad_id"),
+        rs.getString("advertiser_name"),
+        stringList(rs.getString("ad_texts_json"), "ad_texts_json", rs.getString("meta_ad_id")),
+        stringList(
+            rs.getString("publisher_platforms_json"),
+            "publisher_platforms_json",
+            rs.getString("meta_ad_id")),
+        stringList(
+            rs.getString("format_types_json"), "format_types_json", rs.getString("meta_ad_id")),
+        rs.getString("destination_url"),
+        rs.getString("snapshot_url"),
+        active,
+        rs.getBoolean("commercial_signal"),
+        observations,
+        first,
+        last);
+  }
+
+  /** Converte o payload bruto supervisionado sem usar o ativo global mutável de outra sessão. */
+  private ProductDiscoveryMetaAdEvidenceResponse supervisedEvidence(
+      ResultSet rs, long investigationId) throws SQLException {
+    String metaAdId = rs.getString("meta_ad_id");
+    JsonNode payload;
+    try {
+      payload = objectMapper.readTree(rs.getString("raw_payload_json"));
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao ler payload supervisionado investigationId={} metaAdId={}",
+          investigationId,
+          metaAdId,
+          ex);
+      throw new IllegalStateException("Payload supervisionado possui JSON inválido", ex);
+    }
+    if (payload == null || !payload.isObject()) {
+      IllegalStateException ex =
+          new IllegalStateException("Payload supervisionado não possui objeto JSON");
+      log.error(
+          "Payload supervisionado inválido investigationId={} metaAdId={}",
+          investigationId,
+          metaAdId,
+          ex);
+      throw ex;
+    }
+    Instant first = rs.getTimestamp("first_observed_at").toInstant();
+    Instant last = rs.getTimestamp("last_observed_at").toInstant();
+    String adText = optionalText(payload, "adText");
+    String formatType = optionalText(payload, "formatType");
+    return evidenceResponse(
+        metaAdId,
+        optionalText(payload, "advertiserName"),
+        adText == null ? List.of() : List.of(adText),
+        stringArray(payload.path("publisherPlatforms")),
+        formatType == null ? List.of() : List.of(formatType),
+        optionalText(payload, "destinationUrl"),
+        optionalText(payload, "adLibraryUrl"),
+        payload.path("pageActive").asBoolean(false),
+        payload.path("commercialSignal").asBoolean(false),
+        rs.getInt("observation_count"),
+        first,
+        last);
+  }
+
+  /** Calcula longevidade e confiança de forma igual para ativos e snapshots supervisionados. */
+  private ProductDiscoveryMetaAdEvidenceResponse evidenceResponse(
+      String metaAdId,
+      String advertiserName,
+      List<String> adTexts,
+      List<String> publisherPlatforms,
+      List<String> formatTypes,
+      String destinationUrl,
+      String snapshotUrl,
+      boolean active,
+      boolean commercial,
+      int observations,
+      Instant first,
+      Instant last) {
+    long longevity = Math.max(0, Duration.between(first, last).toDays());
+    boolean sustained =
+        active && commercial && observations >= MIN_OBSERVATIONS && longevity >= MIN_LONGEVITY_DAYS;
+    String confidence = sustained ? "HIGH" : observations >= 2 ? "MEDIUM" : "LOW";
+    return new ProductDiscoveryMetaAdEvidenceResponse(
+        metaAdId,
+        advertiserName,
+        adTexts,
+        publisherPlatforms,
+        formatTypes,
+        destinationUrl,
+        snapshotUrl,
+        active,
+        commercial,
+        observations,
+        longevity,
+        sustained,
+        confidence,
+        first,
+        last);
+  }
+
+  /** Lê uma lista textual do payload supervisionado sem aceitar valores não textuais. */
+  private List<String> stringArray(JsonNode node) {
+    if (!node.isArray()) return List.of();
+    ArrayList<String> values = new ArrayList<>();
+    node.forEach(
+        item -> {
+          if (item.isTextual() && StringUtils.hasText(item.asText())) {
+            values.add(item.asText().trim());
+          }
+        });
+    return List.copyOf(values);
+  }
+
+  /** Normaliza texto opcional do payload supervisionado. */
+  private String optionalText(JsonNode payload, String field) {
+    String value = payload.path(field).asText(null);
+    return StringUtils.hasText(value) ? value.trim() : null;
   }
 
   /** Distingue ausência observada, falta de coleta, baixa aderência e evidência desatualizada. */

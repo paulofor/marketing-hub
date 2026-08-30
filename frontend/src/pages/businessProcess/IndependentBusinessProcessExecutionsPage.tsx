@@ -19,6 +19,7 @@ import type {
   IndependentBusinessProcessInputField,
 } from "../../api/businessProcess/types";
 import PageTitle from "../../components/PageTitle";
+import ArgosMetaSupervisedSession from "../productDiscovery/ArgosMetaSupervisedSession";
 import "./IndependentBusinessProcessExecutionsPage.css";
 
 const statusLabels: Record<string, string> = {
@@ -69,8 +70,7 @@ function formatCost(value?: number, coverage?: string) {
 function requestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    | { detail?: string; message?: string; error?: string }
-    | undefined;
+    { detail?: string; message?: string; error?: string } | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -426,144 +426,184 @@ function ExecutionDetail({ loading, error, detail }: ExecutionDetailProps) {
   }
   const execution: IndependentBusinessProcessExecutionSummary =
     detail.execution;
+  const supervisedMetaCycleId = findSupervisedMetaCycleId(detail);
   return (
-    <section className="card independent-process-detail">
-      <div className="card-body">
-        <div className="independent-process-detail__header">
-          <div>
-            <span
-              className={`independent-process-status ${statusClass(execution.status)}`}
-            >
-              {statusLabels[execution.status] ?? execution.status}
-            </span>
-            <h2>
-              Execução #{execution.id} · {execution.displayName}
-            </h2>
-            <p>{execution.sourceReference}</p>
+    <>
+      <section className="card independent-process-detail">
+        <div className="card-body">
+          <div className="independent-process-detail__header">
+            <div>
+              <span
+                className={`independent-process-status ${statusClass(execution.status)}`}
+              >
+                {statusLabels[execution.status] ?? execution.status}
+              </span>
+              <h2>
+                Execução #{execution.id} · {execution.displayName}
+              </h2>
+              <p>{execution.sourceReference}</p>
+            </div>
+            {execution.status === "COMPLETED" ? (
+              <CheckCircle2
+                className="text-success"
+                size={32}
+                aria-label="Execução concluída"
+              />
+            ) : execution.status === "BLOCKED" ? (
+              <AlertCircle
+                className="text-danger"
+                size={32}
+                aria-label="Execução bloqueada"
+              />
+            ) : (
+              <Clock3
+                className="text-primary"
+                size={32}
+                aria-label="Execução em andamento"
+              />
+            )}
           </div>
-          {execution.status === "COMPLETED" ? (
-            <CheckCircle2
-              className="text-success"
-              size={32}
-              aria-label="Execução concluída"
-            />
-          ) : execution.status === "BLOCKED" ? (
-            <AlertCircle
-              className="text-danger"
-              size={32}
-              aria-label="Execução bloqueada"
-            />
-          ) : (
-            <Clock3
-              className="text-primary"
-              size={32}
-              aria-label="Execução em andamento"
-            />
-          )}
-        </div>
 
-        {execution.latestError ? (
-          <div className="alert alert-danger">
-            <strong>Causa registrada:</strong> {execution.latestError}
-          </div>
-        ) : null}
+          {execution.latestError ? (
+            <div className="alert alert-danger">
+              <strong>Causa registrada:</strong> {execution.latestError}
+            </div>
+          ) : null}
 
-        <div className="independent-process-metrics">
-          <div>
-            <span>Progresso</span>
-            <strong>
-              {execution.completedActivityCount}/{execution.activityCount}
-            </strong>
+          <div className="independent-process-metrics">
+            <div>
+              <span>Progresso</span>
+              <strong>
+                {execution.completedActivityCount}/{execution.activityCount}
+              </strong>
+            </div>
+            <div>
+              <span>Início</span>
+              <strong>
+                {formatDate(execution.startedAt ?? execution.createdAt)}
+              </strong>
+            </div>
+            <div>
+              <span>Tokens</span>
+              <strong>
+                {execution.inputTokens === undefined &&
+                execution.outputTokens === undefined
+                  ? "Não informado"
+                  : (execution.inputTokens ?? 0) +
+                    (execution.outputTokens ?? 0)}
+              </strong>
+            </div>
+            <div>
+              <span>Custo do modelo</span>
+              <strong>
+                {formatCost(execution.estimatedCostUsd, execution.costCoverage)}
+              </strong>
+            </div>
           </div>
-          <div>
-            <span>Início</span>
-            <strong>
-              {formatDate(execution.startedAt ?? execution.createdAt)}
-            </strong>
-          </div>
-          <div>
-            <span>Tokens</span>
-            <strong>
-              {execution.inputTokens === undefined &&
-              execution.outputTokens === undefined
-                ? "Não informado"
-                : (execution.inputTokens ?? 0) + (execution.outputTokens ?? 0)}
-            </strong>
-          </div>
-          <div>
-            <span>Custo do modelo</span>
-            <strong>
-              {formatCost(execution.estimatedCostUsd, execution.costCoverage)}
-            </strong>
-          </div>
-        </div>
 
-        <details className="independent-process-input">
-          <summary>Ver entrada enviada</summary>
-          <dl>
-            {Object.entries(execution.input).map(([key, value]) => (
-              <div key={key}>
-                <dt>{key}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
-
-        <div className="independent-process-activities">
-          {detail.activities.map((activity) => (
-            <article
-              key={activity.activityId}
-              className="independent-process-activity"
-            >
-              <header>
-                <div>
-                  <span>Atividade</span>
-                  <h3>{activity.activityName}</h3>
+          <details className="independent-process-input">
+            <summary>Ver entrada enviada</summary>
+            <dl>
+              {Object.entries(execution.input).map(([key, value]) => (
+                <div key={key}>
+                  <dt>{key}</dt>
+                  <dd>{value}</dd>
                 </div>
-                <span
-                  className={`independent-process-status ${statusClass(activity.status)}`}
-                >
-                  {statusLabels[activity.status] ?? activity.status}
-                </span>
-              </header>
-              {activity.tasks.map((task) => (
-                <details
-                  key={task.taskId}
-                  className="independent-process-attempt"
-                >
-                  <summary>
-                    Tarefa #{task.taskId} · {task.assignedAgentNickname} ·{" "}
-                    {statusLabels[task.status] ?? task.status}
-                  </summary>
-                  <div className="independent-process-attempt__body">
-                    <p>
-                      <strong>Modelo:</strong>{" "}
-                      {task.modelCode ?? "Não informado"}
-                    </p>
-                    <p>
-                      <strong>Iniciada:</strong> {formatDate(task.startedAt)}
-                    </p>
-                    {task.executionError ? (
-                      <p className="text-danger">
-                        <strong>Erro:</strong> {task.executionError}
-                      </p>
-                    ) : null}
-                    {task.result !== undefined ? (
-                      <JsonPayload label="Resultado" value={task.result} />
-                    ) : null}
-                    {task.evidence !== undefined ? (
-                      <JsonPayload label="Evidências" value={task.evidence} />
-                    ) : null}
-                  </div>
-                </details>
               ))}
-            </article>
-          ))}
+            </dl>
+          </details>
+
+          <div className="independent-process-activities">
+            {detail.activities.map((activity) => (
+              <article
+                key={activity.activityId}
+                className="independent-process-activity"
+              >
+                <header>
+                  <div>
+                    <span>Atividade</span>
+                    <h3>{activity.activityName}</h3>
+                  </div>
+                  <span
+                    className={`independent-process-status ${statusClass(activity.status)}`}
+                  >
+                    {statusLabels[activity.status] ?? activity.status}
+                  </span>
+                </header>
+                {activity.tasks.map((task) => (
+                  <details
+                    key={task.taskId}
+                    className="independent-process-attempt"
+                  >
+                    <summary>
+                      Tarefa #{task.taskId} · {task.assignedAgentNickname} ·{" "}
+                      {statusLabels[task.status] ?? task.status}
+                    </summary>
+                    <div className="independent-process-attempt__body">
+                      <p>
+                        <strong>Modelo:</strong>{" "}
+                        {task.modelCode ?? "Não informado"}
+                      </p>
+                      <p>
+                        <strong>Iniciada:</strong> {formatDate(task.startedAt)}
+                      </p>
+                      {task.executionError ? (
+                        <p className="text-danger">
+                          <strong>Erro:</strong> {task.executionError}
+                        </p>
+                      ) : null}
+                      {task.result !== undefined ? (
+                        <JsonPayload label="Resultado" value={task.result} />
+                      ) : null}
+                      {task.evidence !== undefined ? (
+                        <JsonPayload label="Evidências" value={task.evidence} />
+                      ) : null}
+                    </div>
+                  </details>
+                ))}
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+      {supervisedMetaCycleId !== undefined ? (
+        <ArgosMetaSupervisedSession cycleId={supervisedMetaCycleId} />
+      ) : null}
+    </>
   );
+}
+
+function findSupervisedMetaCycleId(
+  detail: NonNullable<ExecutionDetailProps["detail"]>,
+) {
+  const match = detail.execution.sourceReference.match(
+    /^product-discovery-cycle:(\d+)$/,
+  );
+  if (!match) return undefined;
+  const hasSession = detail.activities.some((activity) =>
+    activity.tasks.some((task) => {
+      const evidence = objectValue(task.evidence);
+      const report = objectValue(evidence?.researchEvidenceReport);
+      const coverages = report?.metaCoverage;
+      return (
+        Array.isArray(coverages) &&
+        coverages.some((coverage) => {
+          const item = objectValue(coverage);
+          return (
+            item?.publisherPlatform === "INSTAGRAM" &&
+            typeof item.investigationId === "number"
+          );
+        })
+      );
+    }),
+  );
+  return hasSession ? Number(match[1]) : undefined;
+}
+
+function objectValue(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function JsonPayload({ label, value }: { label: string; value: unknown }) {

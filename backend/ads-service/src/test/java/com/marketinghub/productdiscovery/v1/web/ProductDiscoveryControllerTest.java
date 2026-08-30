@@ -13,6 +13,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEviden
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchTrackResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,7 @@ class ProductDiscoveryControllerTest {
   @Mock private ProductDiscoveryService service;
   @Mock private ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
   @Mock private ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
+  @Mock private ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
 
   /** Monta o controller isolado para testar as rotas do módulo. */
   @BeforeEach
@@ -39,7 +42,10 @@ class ProductDiscoveryControllerTest {
     mockMvc =
         MockMvcBuilders.standaloneSetup(
                 new ProductDiscoveryController(
-                    service, marketplaceEvidenceService, metaAdEvidenceService))
+                    service,
+                    marketplaceEvidenceService,
+                    metaAdEvidenceService,
+                    supervisedMetaSessionService))
             .build();
   }
 
@@ -127,5 +133,103 @@ class ProductDiscoveryControllerTest {
         .andExpect(jsonPath("$.sourceStatus").value("AWAITING_SUPERVISED_OBSERVATION"));
 
     org.mockito.Mockito.verify(service).validateActiveExecution(81L, "lease-81");
+  }
+
+  /** Deve expor e registrar a sessão oficial sem aceitar uma URL externa à Biblioteca Meta. */
+  @Test
+  void exposesValidatedSupervisedMetaSession() throws Exception {
+    ProductDiscoverySupervisedMetaSessionResponse response = supervisedSessionResponse();
+    when(supervisedMetaSessionService.get(77L)).thenReturn(response);
+    when(supervisedMetaSessionService.observe(
+            org.mockito.ArgumentMatchers.eq(77L), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(get("/api/product-discovery/v1/cycles/77/supervised-meta-session"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.investigationId").value(72))
+        .andExpect(jsonPath("$.publisherPlatform").value("INSTAGRAM"));
+
+    mockMvc
+        .perform(
+            post("/api/product-discovery/v1/cycles/77/supervised-meta-session/observations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "adReference":"ad-72",
+                      "advertiserName":"Marca observada",
+                      "adLibraryUrl":"https://business.facebook.com/ads/library/?id=ad-72",
+                      "adText":"Seu ritual de cinco minutos começa agora.",
+                      "publisherPlatforms":["INSTAGRAM"],
+                      "formatType":"VIDEO",
+                      "pageActive":true,
+                      "commercialSignal":true
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cycleId").value(77));
+
+    mockMvc
+        .perform(
+            post("/api/product-discovery/v1/cycles/77/supervised-meta-session/observations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "adReference":"ad-falso",
+                      "advertiserName":"Origem inválida",
+                      "adLibraryUrl":"https://example.com/anuncio",
+                      "adText":"Texto não auditável.",
+                      "publisherPlatforms":["INSTAGRAM"],
+                      "pageActive":true,
+                      "commercialSignal":false
+                    }
+                    """))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
+            post("/api/product-discovery/v1/cycles/77/supervised-meta-session/observations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "adReference":"ad-futuro",
+                      "advertiserName":"Origem inválida",
+                      "adLibraryUrl":"https://www.facebook.com/ads/library/?id=ad-futuro",
+                      "adText":"Texto ainda não observado.",
+                      "publisherPlatforms":["INSTAGRAM"],
+                      "pageActive":true,
+                      "commercialSignal":false,
+                      "observedAt":"2099-01-01T00:00:00Z"
+                    }
+                    """))
+        .andExpect(status().isBadRequest());
+  }
+
+  /** Monta o contrato resumido usado pela rota administrativa da sessão supervisionada. */
+  private ProductDiscoverySupervisedMetaSessionResponse supervisedSessionResponse() {
+    return new ProductDiscoverySupervisedMetaSessionResponse(
+        77L,
+        72L,
+        "COMPLETED",
+        "autocuidado feminino visual",
+        "BR",
+        "INSTAGRAM",
+        "AWAITING_SUPERVISED_OBSERVATION",
+        "SUPERVISED",
+        "Observação humana na fonte oficial.",
+        "https://www.facebook.com/ads/library/?q=autocuidado",
+        null,
+        0,
+        0,
+        0,
+        null,
+        "Cobertura aguardando observação; isso não significa ausência de mercado.",
+        true,
+        false,
+        "Registre um anúncio atual no Instagram.",
+        List.of());
   }
 }

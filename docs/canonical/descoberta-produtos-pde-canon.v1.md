@@ -290,6 +290,29 @@ score como se fossem compras. Eles medem presenca, variedade, atualidade e inves
 canal. A comprovacao final continua dependendo de eventos atribuidos, checkout e pagamento
 reconciliado do proprio Marketing Hub.
 
+Por decisao de 2026-08-30, quando a cobertura brasileira retornar
+`AWAITING_SUPERVISED_OBSERVATION`, a propria execucao independente deve oferecer uma sessao
+supervisionada da Biblioteca publica da Meta. A sessao deve:
+
+- abrir a busca oficial com os termos, pais e plataforma definidos por Argos;
+- aceitar somente URL oficial da Biblioteca e registrar ID do anuncio, anunciante, texto visivel,
+  formato, plataforma, destino, atividade da pagina e sinal comercial observado;
+- persistir o payload bruto, instante, investigacao e ciclo antes de qualquer normalizacao;
+- rejeitar instante futuro e congelar novos registros enquanto a tentativa reaberta estiver na fila
+  ou em execucao;
+- expor para o operador os anuncios ativos e a linguagem comercial que Argos consumira;
+- manter a tentativa concluida como historico e abrir uma nova tentativa auditavel somente por
+  comando humano explicito de reanalise;
+- reutilizar obrigatoriamente a mesma investigacao na reanalise, mesmo que o novo planejamento
+  formule termos diferentes, impedindo perda ou mistura da evidencia supervisionada;
+- bloquear a reanalise enquanto nao existir anuncio atual, ativo e explicitamente distribuido no
+  Instagram.
+
+A sessao nao pode automatizar login, raspar a interface, armazenar cookie ou senha, publicar
+anuncio, alterar campanha ou declarar venda. A observacao humana confirma apenas o que estava
+visivel na fonte oficial; atividade, longevidade e linguagem continuam sendo sinais de mercado, nao
+receita comprovada.
+
 ## Caixa de sinais humanos observados
 
 O inicio do processo `Descoberta e priorizacao da oportunidade PDE` deve aceitar uma entrada simples

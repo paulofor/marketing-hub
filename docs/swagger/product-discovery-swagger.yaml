@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Discovery
-  version: 1.1.0
+  version: 1.2.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
@@ -30,6 +30,74 @@ paths:
       responses:
         "200":
           description: Plano persistido sem credenciais dos marketplaces
+  /api/product-discovery/v1/cycles/{cycleId}/supervised-meta-session:
+    get:
+      tags: [Product Discovery]
+      summary: Exibe a sessão supervisionada da Biblioteca Meta vinculada ao ciclo
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Busca oficial, cobertura, linguagem observada e prontidão da reanálise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoverySupervisedMetaSession"
+        "404":
+          description: Ciclo ou sessão ainda não materializada
+        "409":
+          description: Ciclo fora do recorte B2C para Instagram
+  /api/product-discovery/v1/cycles/{cycleId}/supervised-meta-session/observations:
+    post:
+      tags: [Product Discovery]
+      summary: Registra uma observação humana da Biblioteca pública da Meta
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductDiscoverySupervisedMetaObservation"
+      responses:
+        "200":
+          description: Observação persistida e sessão recalculada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoverySupervisedMetaSession"
+        "400":
+          description: URL, plataforma ou campos observados inválidos
+        "404":
+          description: Ciclo ou sessão supervisionada não encontrada
+        "409":
+          description: Tentativa em andamento ou investigação fora do modo supervisionado
+  /api/product-discovery/v1/cycles/{cycleId}/supervised-meta-session/resume:
+    post:
+      tags: [Product Discovery]
+      summary: Abre uma nova tentativa de Argos com a mesma investigação supervisionada
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Reanálise enfileirada de forma idempotente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoverySupervisedMetaSession"
+        "409":
+          description: Ainda não existe anúncio atual, ativo e observado no Instagram
+        "404":
+          description: Ciclo ou sessão supervisionada não encontrada
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/plan:
     post:
       tags: [Product Discovery]
@@ -254,6 +322,94 @@ components:
         advertisersObserved: { type: integer, minimum: 0 }
         latestObservationAt: { type: string, format: date-time, nullable: true }
         interpretation: { type: string }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryMetaAdEvidence"
+    ProductDiscoverySupervisedMetaObservation:
+      type: object
+      required:
+        [adReference, advertiserName, adLibraryUrl, adText, publisherPlatforms]
+      properties:
+        adReference: { type: string, maxLength: 120 }
+        advertiserName: { type: string, maxLength: 255 }
+        adLibraryUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          pattern: "^https://((www|business)\\.)?facebook\\.com/ads/library/.*$"
+        adText: { type: string, maxLength: 5000 }
+        publisherPlatforms:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items: { type: string, enum: [INSTAGRAM, FACEBOOK] }
+        formatType: { type: string, maxLength: 80, nullable: true }
+        mediaUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+        destinationUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+        pageActive: { type: boolean }
+        commercialSignal: { type: boolean }
+        observedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Instante presente ou passado; quando omitido, o backend usa o recebimento.
+    ProductDiscoverySupervisedMetaSession:
+      type: object
+      required:
+        - cycleId
+        - investigationId
+        - cycleStatus
+        - query
+        - country
+        - publisherPlatform
+        - sourceStatus
+        - collectionMode
+        - collectionReason
+        - searchUrl
+        - adsObserved
+        - activeAds
+        - advertisersObserved
+        - interpretation
+        - canRegisterObservation
+        - canResume
+        - resumeReason
+        - items
+      properties:
+        cycleId: { type: integer, format: int64 }
+        investigationId: { type: integer, format: int64 }
+        cycleStatus: { type: string }
+        query: { type: string }
+        country: { type: string }
+        publisherPlatform: { type: string, enum: [INSTAGRAM] }
+        sourceStatus:
+          type: string
+          enum:
+            - OBSERVED
+            - STALE
+            - NO_ACTIVE_ADS
+            - NO_RELEVANT_PLATFORM_EVIDENCE
+            - AWAITING_SUPERVISED_OBSERVATION
+        collectionMode: { type: string, enum: [SUPERVISED] }
+        collectionReason: { type: string }
+        searchUrl: { type: string, format: uri }
+        nextObservationAt: { type: string, format: date-time, nullable: true }
+        adsObserved: { type: integer, minimum: 0 }
+        activeAds: { type: integer, minimum: 0 }
+        advertisersObserved: { type: integer, minimum: 0 }
+        latestObservationAt: { type: string, format: date-time, nullable: true }
+        interpretation: { type: string }
+        canRegisterObservation: { type: boolean }
+        canResume: { type: boolean }
+        resumeReason: { type: string }
         items:
           type: array
           items:

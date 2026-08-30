@@ -1446,6 +1446,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - atribuição de custo não pode persistir o mesmo delta por dois caminhos na mesma transação.
 - **Regra preventiva**:
   - nunca usar `experiment.total_cost` isolado como explicação financeira principal; sempre reconciliar por origem auditável ou marcar como legado não reconciliado.
+- **Recorrência fechada em 2026-08-30:** o histórico da cadeia do produto somava apenas tarefas com
+  referência `commercial-plan:<id>@...`, enquanto a própria tela BPM criava corretamente as tarefas
+  da homologação com `experiment:<id>`. As tarefas #254–278 do Rigel tinham processo, tokens e custo
+  auditáveis, mas o card do processo 5 mostrava zero execução. O agregador passa a carregar também
+  as referências exatas dos experimentos pertencentes ao produto, deduplicar por `taskId` e preservar
+  cobertura parcial quando houver tentativa sem custo; teste de contrato impede regressão para zero.
 
 ---
 

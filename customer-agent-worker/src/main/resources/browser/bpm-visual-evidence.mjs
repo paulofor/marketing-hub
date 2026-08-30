@@ -225,6 +225,7 @@ try {
   await page.screenshot({
     path: fullPagePath,
     fullPage: true,
+    scale: "css",
     animations: "disabled",
   });
   artifacts.push({

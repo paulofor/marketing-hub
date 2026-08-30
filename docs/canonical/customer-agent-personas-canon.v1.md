@@ -154,6 +154,12 @@ MySQL, tarefa, sessão de captura, URL solicitada e final, dispositivo, viewport
 posição vertical, SHA-256, tamanho e horário. Falha de captura ou persistência encerra a tentativa
 como `MISSING_EVIDENCE`, sem parecer estético fabricado.
 
+O panorama full-page deve ser rasterizado em escala CSS, independentemente do `deviceScaleFactor`,
+para que páginas longas não ultrapassem a capacidade de bitmap do headless shell. Os recortes de
+dobra permanecem na escala física do perfil canônico e são a fonte de detalhe para legibilidade,
+hierarquia e CTA. O runtime Docker deve usar um processo init que recolha subprocessos órfãos do
+navegador; reiniciar a tarefa não pode acumular processos zumbis.
+
 A URL é parte do alvo congelado pelo backend, nunca descoberta livremente pelo worker. Em revisão de
 landing, corresponde à landing do experimento; em construção ou homologação de PDE, corresponde ao
 slot `READY` ou `ACTIVE` da `experienceVersion` exata. Ausência desse vínculo bloqueia a prova em vez

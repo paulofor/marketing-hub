@@ -17,11 +17,13 @@ visual_capture="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src/main/resources
 test -s "${visual_capture}"
 grep -Fq 'IPHONE_15_PRO' "${visual_capture}"
 grep -Fq 'fullPage: true' "${visual_capture}"
+grep -Fq 'scale: "css"' "${visual_capture}"
 grep -Fq 'evidenceType: "FOLD"' "${visual_capture}"
 
 compose="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/docker-compose.yml"
 grep -Fq 'PLAYWRIGHT_BROWSERS_PATH: /ms-playwright' "${compose}"
 grep -Fq 'CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence' "${compose}"
+grep -Fq 'init: true' "${compose}"
 if grep -Fq 'CHROMIUM_BIN: /usr/bin/chromium' "${compose}"; then
   echo "[ARQUITETURA] O worker não pode apontar para um Chromium ausente da imagem." >&2
   exit 1
@@ -30,6 +32,7 @@ fi
 workflow="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.github/workflows/customer-agent-worker-ci.yml"
 grep -Fq 'Validate bundled Chromium as runtime user' "${workflow}"
 grep -Fq 'Validate real mobile visual capture' "${workflow}"
+grep -Fq 'Validate full capture with bundled Chromium' "${workflow}"
 grep -Fq 'npm test' "${workflow}"
 grep -Fq 'await chromium.launch' "${workflow}"
 if grep -Fq 'channel: "chromium"' "${workflow}"; then

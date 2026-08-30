@@ -35,6 +35,13 @@
   Docker. Psique passa a usar o headless shell instalado pelo Playwright, compatível com o
   confinamento do worker. O Action constrói a imagem e abre esse navegador como o usuário não-root
   do runtime; o contrato recusa a reintrodução do canal Chromium completo.
+- **Fechamento de páginas longas em 2026-08-30:** a tarefa #267 reproduziu no container o erro
+  `Page.captureScreenshot: Unable to capture screenshot` ao tentar rasterizar a página PDE v2 de
+  9.961 px CSS como um bitmap de 1.179 × 29.883 px no DPR 3. A captura full-page passa a usar escala
+  CSS, enquanto cada dobra mantém a resolução física do iPhone para análise detalhada. O Compose
+  também usa `init` para recolher processos órfãos do headless shell. O teste real do navegador foi
+  ampliado para uma página de 12 dobras e passa novamente dentro da imagem final, com filesystem
+  somente leitura e as mesmas restrições do runtime produtivo.
 
 ## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
 

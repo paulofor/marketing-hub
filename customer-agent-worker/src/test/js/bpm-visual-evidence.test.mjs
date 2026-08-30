@@ -7,9 +7,17 @@ import path from "node:path";
 import { once } from "node:events";
 import test from "node:test";
 
-const script = path.resolve(
-  "src/main/resources/browser/bpm-visual-evidence.mjs",
-);
+const script =
+  process.env.CUSTOMER_AGENT_BPM_VISUAL_SCRIPT ??
+  path.resolve("src/main/resources/browser/bpm-visual-evidence.mjs");
+
+/** Lê as dimensões declaradas no IHDR sem depender de biblioteca de imagem. */
+function pngDimensions(pixels) {
+  return {
+    width: pixels.readUInt32BE(16),
+    height: pixels.readUInt32BE(20),
+  };
+}
 
 /** Executa o capturador real e preserva stdout e stderr para diagnóstico do teste. */
 async function runCapture(input, output, evidence, environment = {}) {
@@ -38,16 +46,15 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "psique-visual-"));
   const server = http.createServer((_request, response) => {
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    const sections = Array.from(
+      { length: 12 },
+      (_, index) => `<section><h2>Dobra ${index + 1}</h2><p>Prova visual contínua da jornada.</p></section>`,
+    ).join("");
     response.end(`<!doctype html>
       <html lang="pt-BR"><head><title>Jornada de homologação</title>
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>*{box-sizing:border-box}html,body{margin:0}section{height:852px;padding:48px;font:24px sans-serif}section:nth-child(odd){background:#f6f1ff}a{display:inline-block;padding:18px;background:#5f246e;color:white}</style>
-      </head><body>
-      <section><h1>Agenda Cheia</h1><p>Uma promessa clara para a cliente.</p><a href="#valor">Conhecer o produto</a></section>
-      <section id="valor"><h2>Valor percebido</h2><p>Demonstração concreta da entrega.</p></section>
-      <section><h2>Como funciona</h2><p>Três passos simples e legíveis.</p></section>
-      <section><h2>Próxima ação</h2><button>Quero começar</button></section>
-      </body></html>`);
+      </head><body>${sections}</body></html>`);
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -74,7 +81,7 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
     assert.deepEqual(capture.pages[0].viewport, {
       width: 393,
       height: 852,
-      pageHeight: 3408,
+      pageHeight: 10224,
       scrollWidth: 393,
     });
     const fullPages = capture.artifacts.filter(
@@ -86,12 +93,7 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
     assert.equal(fullPages.length, 1);
     assert.deepEqual(
       folds.map((artifact) => [artifact.foldNumber, artifact.scrollY]),
-      [
-        [1, 0],
-        [2, 852],
-        [3, 1704],
-        [4, 2556],
-      ],
+      Array.from({ length: 12 }, (_, index) => [index + 1, index * 852]),
     );
     for (const artifact of capture.artifacts) {
       const pixels = await fs.readFile(artifact.localPath);
@@ -100,6 +102,16 @@ test("captura página completa e todas as dobras mobile com pixels reais", async
         [137, 80, 78, 71, 13, 10, 26, 10],
       );
     }
+    const fullPagePixels = await fs.readFile(fullPages[0].localPath);
+    const firstFoldPixels = await fs.readFile(folds[0].localPath);
+    assert.deepEqual(pngDimensions(fullPagePixels), {
+      width: 393,
+      height: 10224,
+    });
+    assert.deepEqual(pngDimensions(firstFoldPixels), {
+      width: 1179,
+      height: 2556,
+    });
   } finally {
     server.close();
     await once(server, "close");

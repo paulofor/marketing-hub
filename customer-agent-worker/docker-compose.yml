@@ -1,6 +1,7 @@
 services:
   customer-agent-worker:
     build: .
+    init: true
     restart: unless-stopped
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal}

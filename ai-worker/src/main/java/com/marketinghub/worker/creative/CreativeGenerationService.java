@@ -35,7 +35,7 @@ public class CreativeGenerationService {
     private final ExperimentPipelineAdExtractor pipelineExtractor;
     private final LandingCreativeReferenceSelector referenceSelector;
 
-    /** Inicializa o serviço com backend, texto e seleção dos entregáveis produzidos por Têmis. */
+    /** Inicializa o serviço com backend, copy de Íris e provas produzidas por Dédalo. */
     public CreativeGenerationService(
             CreativeGenerationBackendClient backendClient,
             CreativeChatGptClient textClient,
@@ -100,7 +100,7 @@ public class CreativeGenerationService {
                 referenceSelector.selectCommercialKit(dto.getCommercialPlanVisualAssets());
         if (references.isEmpty()) {
             throw new IllegalStateException(
-                    "Têmis não encontrou exemplos APPROVED no Kit Visual do plano comercial; geração bloqueada antes de consumir tentativa");
+                    "Íris não recebeu prova visual produzida por Dédalo e aprovada por Têmis; geração bloqueada antes de consumir tentativa");
         }
         List<PipelineAdCreativePlan> plans = pipelineExtractor.extract(experiment).stream()
                 .limit(Math.max(1, quantity))
@@ -134,7 +134,7 @@ public class CreativeGenerationService {
                 referenceSelector.selectCommercialKit(dto.getCommercialPlanVisualAssets());
         if (references.isEmpty()) {
             throw new IllegalStateException(
-                    "Geração bloqueada: o plano não possui entregável visual APPROVED produzido por Têmis");
+                    "Geração bloqueada: o plano não possui prova visual de Dédalo aprovada por Têmis");
         }
         CreativeBatch batch = generateAndValidateCopy(experiment, quantity);
         List<CreateCreativeRequest> creatives = batch.creatives();
@@ -186,7 +186,7 @@ public class CreativeGenerationService {
                     objectMapper.writeValueAsString(dto),
                     List.of());
         } catch (JsonProcessingException ex) {
-            log.error("Falha ao serializar a entrada determinística de Dédalo. experimentId={}", dto.getId(), ex);
+            log.error("Falha ao serializar a entrada determinística de Íris. experimentId={}", dto.getId(), ex);
             throw new IllegalStateException("Não foi possível auditar a entrada do pipeline de criativos", ex);
         }
     }

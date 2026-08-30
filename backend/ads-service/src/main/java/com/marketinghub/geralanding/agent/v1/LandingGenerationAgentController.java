@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/** Responsabilidade: expor os contratos internos exclusivos do Agente Gerador de Landing. */
+/** Responsabilidade: expor a fila técnica histórica do antigo Agente Gerador de Landing. */
 @RestController
 @RequestMapping("/api/internal/geralanding/agent/v1/stage-executions")
 public class LandingGenerationAgentController {
@@ -16,7 +16,7 @@ public class LandingGenerationAgentController {
     this.service = service;
   }
 
-  /** Reserva pendências para o executor independente. */
+  /** Reserva somente pendências técnicas já materializadas antes da separação de Íris. */
   @GetMapping("/pending")
   public List<LandingAgentPendingResponse> pending(
       @RequestParam(defaultValue = "1") int limit,
@@ -28,20 +28,6 @@ public class LandingGenerationAgentController {
   @GetMapping("/{executionId}/context")
   public LandingAgentPendingResponse context(@PathVariable String executionId) {
     return service.context(executionId);
-  }
-
-  /** Materializa uma atividade BPM já reservada na fila técnica canônica de Dédalo. */
-  @PostMapping("/process-tasks/{taskId}/activation")
-  public ResponseEntity<Void> activateProcessTask(@PathVariable Long taskId) {
-    service.activateProcessTask(taskId);
-    return ResponseEntity.noContent().build();
-  }
-
-  /** Reserva e materializa atomicamente a próxima atividade BPM liberada para Dédalo. */
-  @PostMapping("/process-tasks/pending/activation")
-  public ResponseEntity<Void> activateNextProcessTask() {
-    service.activateNextProcessTask();
-    return ResponseEntity.noContent().build();
   }
 
   /** Recebe o resultado auditável sem conceder autoridade de publicação ao worker. */

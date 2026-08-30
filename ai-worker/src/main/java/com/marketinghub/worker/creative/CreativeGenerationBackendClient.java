@@ -137,7 +137,7 @@ public class CreativeGenerationBackendClient {
             String error, CreativeTaskExecutionAudit executionAudit) {
     }
 
-    /** Transporta modo, modelo, raciocínio e entrada integral da tarefa de Dédalo. */
+    /** Transporta modo, modelo, raciocínio e entrada integral da execução de Íris. */
     public record CreativeTaskExecutionAudit(
             String executionMode,
             String modelCode,

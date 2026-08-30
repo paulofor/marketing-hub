@@ -21,7 +21,6 @@ import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
-import com.marketinghub.experiment.service.DedaloCreativeTaskOrchestrationService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentCockpitService;
 import com.marketinghub.experiment.service.ExperimentConstructionService;
@@ -66,7 +65,6 @@ public class ExperimentController {
   private final ExperimentConstructionService constructionService;
   private final ExperimentCostReconciliationService costReconciliationService;
   private final ExperimentCockpitService cockpitService;
-  private final DedaloCreativeTaskOrchestrationService dedaloCreativeTaskOrchestrationService;
   private final ExperimentTerminalReconciliationService terminalReconciliationService;
 
   /**
@@ -86,7 +84,6 @@ public class ExperimentController {
       ExperimentConstructionService constructionService,
       ExperimentCostReconciliationService costReconciliationService,
       ExperimentCockpitService cockpitService,
-      DedaloCreativeTaskOrchestrationService dedaloCreativeTaskOrchestrationService,
       ExperimentTerminalReconciliationService terminalReconciliationService) {
     this.service = service;
     this.mapper = mapper;
@@ -100,7 +97,6 @@ public class ExperimentController {
     this.constructionService = constructionService;
     this.costReconciliationService = costReconciliationService;
     this.cockpitService = cockpitService;
-    this.dedaloCreativeTaskOrchestrationService = dedaloCreativeTaskOrchestrationService;
     this.terminalReconciliationService = terminalReconciliationService;
   }
 
@@ -296,7 +292,6 @@ public class ExperimentController {
   @GetMapping("/creatives/stage-executions/pending")
   public List<ExperimentDto> pendingCreativeGeneration(
       @RequestParam(defaultValue = "10") int limit) {
-    dedaloCreativeTaskOrchestrationService.reconcilePendingTasks();
     return service.listPendingCreativeGeneration(limit).stream().map(mapper::toDto).toList();
   }
 
@@ -310,23 +305,15 @@ public class ExperimentController {
   @PostMapping("/{id}/creatives/stage-execution/complete")
   public ExperimentDto completeCreativeGeneration(
       @PathVariable Long id, @Valid @RequestBody AgentTaskExecutionAuditRequest executionAudit) {
-    ExperimentDto result = mapper.toDto(service.markCreativeGenerationCompleted(id));
-    dedaloCreativeTaskOrchestrationService.completeForExperiment(id, executionAudit);
-    return result;
+    return mapper.toDto(service.markCreativeGenerationCompleted(id));
   }
 
   /** Marca a geração de criativos como falha pelo AI Worker. */
   @PostMapping("/{id}/creatives/stage-execution/fail")
   public ExperimentDto failCreativeGeneration(
       @PathVariable Long id, @RequestBody CreativeGenerationFailureRequest request) {
-    ExperimentDto result =
-        mapper.toDto(
-            service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
-    dedaloCreativeTaskOrchestrationService.blockForExperiment(
-        id,
-        request != null ? request.error() : null,
-        request != null ? request.executionAudit() : null);
-    return result;
+    return mapper.toDto(
+        service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
   }
 
   /** Payload de falha operacional informado pelo AI Worker. */

@@ -1446,6 +1446,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - atribuição de custo não pode persistir o mesmo delta por dois caminhos na mesma transação.
 - **Regra preventiva**:
   - nunca usar `experiment.total_cost` isolado como explicação financeira principal; sempre reconciliar por origem auditável ou marcar como legado não reconciliado.
+- **Recorrência fechada em 2026-08-30:** o histórico da cadeia do produto somava apenas tarefas com
+  referência `commercial-plan:<id>@...`, enquanto a própria tela BPM criava corretamente as tarefas
+  da homologação com `experiment:<id>`. As tarefas #254–278 do Rigel tinham processo, tokens e custo
+  auditáveis, mas o card do processo 5 mostrava zero execução. O agregador passa a carregar também
+  as referências exatas dos experimentos pertencentes ao produto, deduplicar por `taskId` e preservar
+  cobertura parcial quando houver tentativa sem custo; teste de contrato impede regressão para zero.
 
 ---
 
@@ -2384,6 +2390,17 @@ Use este checklist quando o problema estiver em algum loop acima:
   `communication-director`, novas produções aceitam apenas `LANDING`, `ADS` e `SOCIAL` com prova
   aprovada e Têmis ficou sem segredo de produção. Testes no backend e no executor bloqueiam
   `DELIVERY` antes de qualquer request externo.
+- **Recorrência fechada em 2026-08-30:** o banco já possuía a divisão vigente, mas a ponte
+  `DedaloCreativeTaskOrchestrationService`, o monitor visual e o prompt do AI Worker ainda
+  materializavam comunicação sob Dédalo. Ao mesmo tempo, o consumer dele não atendia arquitetura,
+  degustação nem personalização, apesar de as atividades estarem publicadas. O scheduler histórico
+  de landing agravava a concorrência ao reservar qualquer próxima tarefa de Dédalo sem filtrar o
+  processo. As duas ativações genéricas foram removidas, monitor e prompt passaram a Íris, e o
+  worker de Dédalo agora registra explicitamente os seis pares de produto, incluindo schemas próprios
+  para degustação e entrega. A fila técnica antiga conclui somente execuções já materializadas.
+  No monitor, uma atividade atual de produto sempre prevalece sobre qualquer landing histórica.
+  Testes recusam copy, landing e pacote não audiovisual em Dédalo, recusam produto em Íris e resolvem
+  atividades homônimas pelo par completo, preservando tarefas históricas sem reatribuição.
 
 ## LOOP-BPM-UI-WORKER-READINESS-DIVERGENTE — tela libera tarefa que o agente bloqueia
 
@@ -2447,3 +2464,20 @@ Use este checklist quando o problema estiver em algum loop acima:
   checksum e SHA-256 do arquivo completo. Um limite preventivo de 900.000 caracteres bloqueia
   regressão antes de abrir o processo do modelo, e o teste monta o prompt real do Rigel sem depender
   de shell ou truncamento silencioso.
+
+## LOOP-PSIQUE-ESTETICA-EM-TEXTO-LIVRE — aprovação não comprova equilíbrio visual
+
+- **Data:** 2026-08-30.
+- **Sintoma:** Psique inspecionava todas as dobras e descrevia hierarquia, legibilidade e emoção,
+  mas podia aprovar uma página tecnicamente correta e visualmente monótona sem demonstrar análise
+  de texto–imagem, variedade, ritmo, cor, tipografia, respiro, novidade ou conexão humana.
+- **Causa-raiz confirmada:** o contrato sensorial v3 deixava composição estética em narrativa livre.
+  Prompt e schema não obrigavam evidência por dimensão nem impediam `APPROVED` com uma deficiência
+  visual reconhecida. O problema era de contrato, não de quantidade fixa de imagens ou pessoas.
+- **Correção sistêmica:** Psique v4 classifica o arquétipo e persiste sete dimensões estéticas,
+  função e adequação da presença humana, padrão mais forte e déficit crítico. Pessoas continuam
+  sendo pistas sociais contextuais, sem cota; Apple, por exemplo, demonstra que foco no produto e
+  paleta contida podem ser adequados a outro objetivo.
+- **Prevenção:** o validador rejeita composição ausente ou incoerente e impede aprovação com
+  qualquer nota aplicável abaixo de 3 ou déficit crítico. Testes cobrem com e sem pessoas, seis
+  schemas estritos, quatro fluxos BPM, observação, simulação, frontend, harness e MySQL 5.7.

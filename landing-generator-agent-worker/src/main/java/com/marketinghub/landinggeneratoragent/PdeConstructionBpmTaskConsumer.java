@@ -24,8 +24,50 @@ import org.springframework.web.client.RestClient;
 public class PdeConstructionBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(PdeConstructionBpmTaskConsumer.class);
   private static final String AGENT_KEY = "landing-generator";
-  private static final String PROCESS_CODE = "pde-construction-approval";
-  private static final List<String> ACTIVITIES = List.of("journey", "deliverables", "access");
+  private static final List<BpmContract> CONTRACTS =
+      List.of(
+          new BpmContract(
+              "venda-entrega-satisfacao-cliente",
+              "materialization",
+              "prompts/pde-delivery/v1/personalization.md",
+              "prompts/pde-delivery/v1/personalization-schema.json",
+              "pde-delivery-v1",
+              "READY"),
+          new BpmContract(
+              "pde-construction-approval",
+              "journey",
+              "prompts/pde-construction/v1/journey.md",
+              "prompts/pde-construction/v1/journey-schema.json",
+              "pde-construction-v1",
+              "READY"),
+          new BpmContract(
+              "pde-construction-approval",
+              "deliverables",
+              "prompts/pde-construction/v1/deliverables.md",
+              "prompts/pde-construction/v1/deliverables-schema.json",
+              "pde-construction-v1",
+              "READY"),
+          new BpmContract(
+              "pde-construction-approval",
+              "access",
+              "prompts/pde-construction/v1/access.md",
+              "prompts/pde-construction/v1/access-schema.json",
+              "pde-construction-v1",
+              "READY"),
+          new BpmContract(
+              "pde-commercial-plan-offer",
+              "productArchitecture",
+              "prompts/pde-commercial-plan/v5/product-architecture.md",
+              "prompts/pde-commercial-plan/v5/product-architecture-schema.json",
+              "pde-commercial-plan-v5",
+              "APPROVE"),
+          new BpmContract(
+              "pde-tasting-proof-of-value",
+              "materialization",
+              "prompts/pde-tasting/v1/materialization.md",
+              "prompts/pde-tasting/v1/materialization-schema.json",
+              "pde-tasting-v1",
+              "READY"));
 
   private final RestClient backend;
   private final ObjectMapper json;
@@ -52,9 +94,10 @@ public class PdeConstructionBpmTaskConsumer {
     try {
       task = claimNext();
       if (task == null) return;
+      BpmContract contract = contractFor(task);
       execution = execute(task);
-      validate(execution.result(), activityId(task));
-      if ("READY".equals(execution.result().path("decision").asText())) {
+      validate(execution.result(), contract);
+      if (contract.successDecision().equals(execution.result().path("decision").asText())) {
         report(task, execution);
       } else {
         block(task, execution);
@@ -69,17 +112,17 @@ public class PdeConstructionBpmTaskConsumer {
     }
   }
 
-  /** Procura jornada, entregáveis e acesso nessa ordem sem consumir outras filas de Dédalo. */
+  /** Prioriza entrega paga e percorre somente os contratos de produto pertencentes a Dédalo. */
   private Map<String, Object> claimNext() {
-    for (String activity : ACTIVITIES) {
+    for (BpmContract contract : CONTRACTS) {
       List<Map<String, Object>> pending =
           backend
               .get()
               .uri(
                   "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
                   AGENT_KEY,
-                  PROCESS_CODE,
-                  activity)
+                  contract.processCode(),
+                  contract.activityId())
               .retrieve()
               .body(new ParameterizedTypeReference<>() {});
       if (pending != null && !pending.isEmpty()) return pending.get(0);
@@ -89,10 +132,10 @@ public class PdeConstructionBpmTaskConsumer {
 
   /** Executa o prompt específico da atividade e preserva os contadores oficiais do Codex. */
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
-    String activity = activityId(task);
+    BpmContract contract = contractFor(task);
     Path output = Files.createTempFile("dedalo-pde-result-", ".json");
     Path processLog = Files.createTempFile("dedalo-pde-process-", ".jsonl");
-    Path schema = materialize(schemaResourceFor(activity), ".json");
+    Path schema = materialize(contract.schemaResource(), ".json");
     PromptComposition prompt = promptComposition(task);
     try {
       Process process =
@@ -131,7 +174,7 @@ public class PdeConstructionBpmTaskConsumer {
         log.error(
             "Resposta inválida na construção do PDE. taskId={} activityId={} output={}",
             taskId(task),
-            activity,
+            contract.activityId(),
             output,
             ex);
         throw new BpmExecutionException(
@@ -186,10 +229,10 @@ public class PdeConstructionBpmTaskConsumer {
 
   /** Compõe o núcleo estável de Dédalo com a missão resolvida da atividade. */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
+    BpmContract contract = contractFor(task);
     String agentPromptPart = read("prompts/pde-construction/v1/agent-core.md");
     String activityPromptPart =
-        read(promptResourceFor(activityId(task)))
-            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+        read(contract.promptResource()).replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
@@ -330,9 +373,11 @@ public class PdeConstructionBpmTaskConsumer {
             "model",
             properties.getModel(),
             "promptVersion",
-            "pde-construction-v1",
+            contractFor(task).promptVersion(),
             "sourceReference",
             String.valueOf(task.get("sourceReference")),
+            "processCode",
+            processCode(task),
             "activityId",
             activityId(task),
             "accessMode",
@@ -341,40 +386,85 @@ public class PdeConstructionBpmTaskConsumer {
             false));
   }
 
-  /** Valida os campos comuns e o conjunto mínimo exigido em cada atividade. */
-  static void validate(JsonNode result, String activity) {
-    if (!List.of("READY", "BLOCKED").contains(result.path("decision").asText())
+  /** Valida o contrato comum e a saída funcional específica da atividade de produto. */
+  static void validate(JsonNode result, BpmContract contract) {
+    String decision = result.path("decision").asText();
+    boolean productArchitecture = "productArchitecture".equals(contract.activityId());
+    List<String> allowedDecisions =
+        productArchitecture ? List.of("APPROVE", "ADJUST", "REJECT") : List.of("READY", "BLOCKED");
+    if (!allowedDecisions.contains(decision)
         || result.path("rationale").asText().isBlank()
-        || result.path("alternatives").size() < 3
+        || result.path("alternatives").size() != 3
         || result.path("selectedApproach").asText().length() < 20
-        || result.path("acceptanceCriteria").isEmpty()) {
+        || (!productArchitecture && result.path("acceptanceCriteria").isEmpty())) {
       throw new IllegalArgumentException("Construção do PDE sem decisão comparada e verificável");
     }
-    if ("journey".equals(activity)
+    if (productArchitecture && !result.path("productArchitecture").isObject()) {
+      throw new IllegalArgumentException("Arquitetura do PDE incompleta");
+    }
+    if ("pde-construction-approval".equals(contract.processCode())
+        && "journey".equals(contract.activityId())
         && (result.path("experienceContract").isMissingNode()
             || result.path("experienceContract").path("stages").size() < 5)) {
       throw new IllegalArgumentException("Jornada do PDE incompleta");
     }
-    if ("deliverables".equals(activity)
+    if ("pde-construction-approval".equals(contract.processCode())
+        && "deliverables".equals(contract.activityId())
         && (result.path("deliveryPackage").isMissingNode()
             || result.path("deliveryPackage").path("assets").size() < 6)) {
       throw new IllegalArgumentException("Pacote do PDE incompleto");
     }
-    if ("access".equals(activity)
+    if ("pde-construction-approval".equals(contract.processCode())
+        && "access".equals(contract.activityId())
         && (result.path("accessContract").isMissingNode()
             || result.path("accessContract").path("errorStates").isEmpty())) {
       throw new IllegalArgumentException("Contrato de acesso do PDE incompleto");
     }
+    if ("pde-tasting-proof-of-value".equals(contract.processCode())
+        && (result.path("tastingExperience").path("steps").size() < 3
+            || result.path("functionalArtifact").path("content").asText().isBlank()
+            || result.path("instrumentationEvents").isEmpty()
+            || result.path("testIsolation").asText().isBlank())) {
+      throw new IllegalArgumentException("Microexperiência de degustação incompleta");
+    }
+    if ("venda-entrega-satisfacao-cliente".equals(contract.processCode())
+        && (result.path("personalizationPackage").path("contractReference").asText().isBlank()
+            || result.path("personalizationPackage").path("deliverables").isEmpty()
+            || result.path("qualityChecks").isEmpty()
+            || !result.path("accessHandoff").isObject())) {
+      throw new IllegalArgumentException("Personalização contratada incompleta");
+    }
   }
 
-  /** Seleciona o prompt imutável correspondente à atividade. */
-  static String promptResourceFor(String activity) {
-    return "prompts/pde-construction/v1/" + activity + ".md";
+  /** Valida uma saída de teste usando o mesmo par processo/atividade consumido em produção. */
+  static void validate(JsonNode result, String processCode, String activityId) {
+    validate(result, contractFor(processCode, activityId));
   }
 
-  /** Seleciona o schema imutável correspondente à atividade. */
-  static String schemaResourceFor(String activity) {
-    return "prompts/pde-construction/v1/" + activity + "-schema.json";
+  /** Informa se o worker possui implementação explícita para o par processo/atividade. */
+  static boolean supportsContract(String processCode, String activityId) {
+    return CONTRACTS.stream()
+        .anyMatch(
+            contract ->
+                contract.processCode().equals(processCode)
+                    && contract.activityId().equals(activityId));
+  }
+
+  /** Expõe a ordem de polling para comprovar que venda paga precede trabalho de aquisição. */
+  static List<String> contractKeysInPollingOrder() {
+    return CONTRACTS.stream()
+        .map(contract -> contract.processCode() + "/" + contract.activityId())
+        .toList();
+  }
+
+  /** Seleciona o prompt imutável pelo contrato completo, inclusive atividades homônimas. */
+  static String promptResourceFor(String processCode, String activityId) {
+    return contractFor(processCode, activityId).promptResource();
+  }
+
+  /** Seleciona o schema imutável pelo contrato completo, inclusive atividades homônimas. */
+  static String schemaResourceFor(String processCode, String activityId) {
+    return contractFor(processCode, activityId).schemaResource();
   }
 
   /** Lê a última medição cumulativa de tokens informada pelo Codex. */
@@ -447,6 +537,32 @@ public class PdeConstructionBpmTaskConsumer {
     return task == null || task.get("activityId") == null ? "" : task.get("activityId").toString();
   }
 
+  /** Extrai o processo declarado pelo backend sem inferir pela origem da tarefa. */
+  private static String processCode(Map<String, Object> task) {
+    return task == null || task.get("processCode") == null
+        ? ""
+        : task.get("processCode").toString();
+  }
+
+  /** Resolve o contrato recebido e recusa qualquer atividade não registrada no worker. */
+  private static BpmContract contractFor(Map<String, Object> task) {
+    return contractFor(processCode(task), activityId(task));
+  }
+
+  /** Resolve o contrato exato para impedir colisão entre atividades chamadas materialization. */
+  private static BpmContract contractFor(String processCode, String activityId) {
+    return CONTRACTS.stream()
+        .filter(
+            contract ->
+                contract.processCode().equals(processCode)
+                    && contract.activityId().equals(activityId))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Contrato de Dédalo não suportado: " + processCode + "/" + activityId));
+  }
+
   /** Materializa temporariamente um schema do classpath. */
   private Path materialize(String resource, String suffix) throws IOException {
     Path path = Files.createTempFile("dedalo-pde-schema-", suffix);
@@ -472,6 +588,15 @@ public class PdeConstructionBpmTaskConsumer {
   /** Representa as duas partes e a composição exata enviada ao modelo. */
   private record PromptComposition(
       String fullPrompt, String agentPromptPart, String activityPromptPart) {}
+
+  /** Define o par BPM e os recursos versionados que Dédalo pode executar. */
+  record BpmContract(
+      String processCode,
+      String activityId,
+      String promptResource,
+      String schemaResource,
+      String promptVersion,
+      String successDecision) {}
 
   /** Representa os contadores reais cumulativos informados pelo Codex. */
   record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {

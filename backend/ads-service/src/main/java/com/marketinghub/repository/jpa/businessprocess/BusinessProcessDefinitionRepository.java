@@ -26,4 +26,8 @@ public interface BusinessProcessDefinitionRepository
   List<BusinessProcessDefinition>
       findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
           String parentProcessCode, String status);
+
+  /** Lista processos publicados por escopos aceitos no cockpit de execução independente. */
+  List<BusinessProcessDefinition> findAllByStatusAndExecutionScopeInOrderByNameAscVersionNumberDesc(
+      String status, List<String> executionScopes);
 }

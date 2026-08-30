@@ -33,6 +33,7 @@ type BusinessProcessForm = {
   versionNumber: number;
   technicalReference: string;
   processType: "VALUE_PROCESS" | "SUBPROCESS";
+  executionScope: "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT";
   parentProcessCode: string;
   activities: string;
 };
@@ -47,6 +48,7 @@ const initial: BusinessProcessForm = {
   versionNumber: 1,
   technicalReference: "",
   processType: "VALUE_PROCESS",
+  executionScope: "PRODUCT",
   parentProcessCode: "",
   activities: "",
 };
@@ -148,6 +150,7 @@ export default function BusinessProcessesPage({
             : selected.versionNumber,
         technicalReference: selected.technicalReference,
         processType: selected.processType ?? "VALUE_PROCESS",
+        executionScope: selected.executionScope ?? "PRODUCT",
         parentProcessCode: selected.parentProcessCode,
         diagram: structuredClone(selected.diagram),
       }
@@ -165,6 +168,7 @@ export default function BusinessProcessesPage({
       versionNumber: form.versionNumber,
       technicalReference: form.technicalReference || undefined,
       processType: form.processType,
+      executionScope: form.executionScope,
       parentProcessCode:
         form.processType === "SUBPROCESS"
           ? form.parentProcessCode || undefined
@@ -276,6 +280,30 @@ export default function BusinessProcessesPage({
               >
                 <option value="VALUE_PROCESS">Processo de valor</option>
                 <option value="SUBPROCESS">Subprocesso</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="execution-scope">
+                Contexto de execução *
+              </label>
+              <select
+                id="execution-scope"
+                className="form-select"
+                required
+                value={form.executionScope}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    executionScope: event.target.value as
+                      "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT",
+                  })
+                }
+              >
+                <option value="PRODUCT">Exige produto</option>
+                <option value="INDEPENDENT">Independente de produto</option>
+                <option value="PRODUCT_OR_INDEPENDENT">
+                  Ambos os contextos
+                </option>
               </select>
             </div>
             {form.processType === "SUBPROCESS" ? (
@@ -642,6 +670,15 @@ export default function BusinessProcessesPage({
                         "SUBPROCESS"
                           ? "SUBPROCESSO"
                           : "PROCESSO DE VALOR"}
+                      </span>
+                      <span className="badge text-bg-light ms-2">
+                        {(selected.executionScope ?? "PRODUCT") ===
+                        "INDEPENDENT"
+                          ? "INDEPENDENTE DE PRODUTO"
+                          : (selected.executionScope ?? "PRODUCT") ===
+                              "PRODUCT_OR_INDEPENDENT"
+                            ? "PRODUTO OU INDEPENDENTE"
+                            : "EXIGE PRODUTO"}
                       </span>
                       <h2 className="h4 mt-2 mb-1 business-process-detail-title">
                         <BusinessProcessEntityName

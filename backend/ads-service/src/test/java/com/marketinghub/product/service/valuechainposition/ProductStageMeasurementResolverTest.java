@@ -8,11 +8,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductProcessPeriod;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductProcessPeriodRepository;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 class ProductStageMeasurementResolverTest {
   private final ProductProcessPeriodRepository periods = mock(ProductProcessPeriodRepository.class);
   private final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
+  private final ExperimentRepository experiments = mock(ExperimentRepository.class);
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
   private final StudioCostLedgerEntryRepository ledger =
       mock(StudioCostLedgerEntryRepository.class);
@@ -34,6 +37,7 @@ class ProductStageMeasurementResolverTest {
       new ProductStageMeasurementResolver(
           periods,
           plans,
+          experiments,
           tasks,
           ledger,
           new ObjectMapper(),
@@ -80,6 +84,71 @@ class ProductStageMeasurementResolverTest {
     assertThat(result.costCoverage()).isEqualTo("PARTIAL");
     assertThat(result.costedExecutionCount()).isEqualTo(2);
     assertThat(result.uncostedExecutionCount()).isEqualTo(1);
+  }
+
+  /** Atribui ao processo as tarefas criadas pela tela com a referência exata do experimento. */
+  @Test
+  void measuresProductExperimentTasksWithoutRewritingTheirAuditReference() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = Experiment.builder().id(89L).product(product).build();
+    BusinessProcessDefinition communication = process(63L, "communication", null);
+    BusinessProcessDefinition homologation = process(56L, "homologation", null);
+    String[] productionCosts = {
+      null,
+      "0.74617600",
+      "0.51437200",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "0.79071280",
+      "0.63887200",
+      null,
+      "0.76046400",
+      "0.85107600",
+      "0.84667600",
+      "0.75569600",
+      "0.85831600",
+      null,
+      "1.01938800",
+      null,
+      "0.92128000",
+      "0.99574400",
+      "0.83103200"
+    };
+    List<AgentTask> productionTasks = new java.util.ArrayList<>();
+    for (int index = 0; index < productionCosts.length; index++) {
+      AgentTask task =
+          task(
+              254L + index,
+              homologation,
+              "2026-08-30T00:00:00Z",
+              productionCosts[index],
+              index == productionCosts.length - 1 ? "COMPLETED" : "BLOCKED");
+      task.setSourceReference("experiment:89");
+      productionTasks.add(task);
+    }
+    when(plans.findByProductId(9L)).thenReturn(List.of());
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+        .thenReturn(productionTasks);
+    when(periods.findByProductIdOrderByEnteredAtAscIdAsc(9L)).thenReturn(List.of());
+    when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
+
+    ProductStageMeasurementResponse result =
+        resolver
+            .resolveProcessMeasurements(
+                product, List.of(item(communication, 4), item(homologation, 5)), communication)
+            .get(1);
+
+    assertThat(result.trackingStatus()).isEqualTo("RECORDED");
+    assertThat(result.entryEvidence()).isEqualTo("FIRST_PROCESS_EXECUTION");
+    assertThat(result.knownEstimatedCostUsd()).isEqualByComparingTo("10.52980480");
+    assertThat(result.costCoverage()).isEqualTo("PARTIAL");
+    assertThat(result.costedExecutionCount()).isEqualTo(13);
+    assertThat(result.uncostedExecutionCount()).isEqualTo(10);
   }
 
   /** Considera a entrada no subprocesso seguinte como saída que comprova o avanço. */

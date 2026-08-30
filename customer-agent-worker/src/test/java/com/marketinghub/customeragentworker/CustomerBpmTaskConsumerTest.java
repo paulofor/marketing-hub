@@ -45,7 +45,21 @@ class CustomerBpmTaskConsumerTest {
                   "overloadRisk":1,
                   "embodiedAnticipation":"Imagino usar o produto sem esforço",
                   "dominantCue":"Demonstração visual do resultado",
-                  "evidenceBoundary":"Somente screenshot fornecido"
+                  "evidenceBoundary":"Somente screenshot fornecido",
+                  "visualComposition":{
+                    "applicable":true,"archetype":"PERSUASIVE_LANDING",
+                    "imageTextBalance":{"score":4,"evidence":"Texto e imagem possuem funções complementares"},
+                    "mediaVariety":{"score":4,"evidence":"Demonstração e prova cumprem funções distintas"},
+                    "visualRhythm":{"score":4,"evidence":"Densidade e respiro alternam ao longo da página"},
+                    "colorStrategy":{"score":4,"evidence":"Cor orienta a atenção para conteúdo e ação"},
+                    "typographicHierarchy":{"score":4,"evidence":"Título, apoio, corpo e ação são distinguíveis"},
+                    "densityAndBreathingRoom":{"score":4,"evidence":"Os blocos permanecem escaneáveis no mobile"},
+                    "noveltyFamiliarity":{"score":4,"evidence":"Padrões familiares sustentam novidade segura"},
+                    "humanConnection":{"peopleObserved":false,"functionalRole":"NONE","appropriatenessScore":4,"absenceImpact":"LOW","evidence":"A demonstração do produto comunica melhor que uma foto genérica"},
+                    "strongestPattern":"A hierarquia conduz a pessoa da promessa até a ação",
+                    "criticalDeficitPresent":false,
+                    "criticalDeficit":"Nenhum déficit visual crítico foi observado"
+                  }
                 }
               },
               "purchaseEmotion":{
@@ -76,7 +90,36 @@ class CustomerBpmTaskConsumerTest {
   void rejectsApprovedReviewWithAdjustedGate() throws Exception {
     var result =
         json.readTree(
-            "{\"decision\":\"APPROVED\",\"customerPerspective\":\"Oferta clara e utilizável\",\"behavioralResponse\":{\"firstImpulse\":\"Curiosidade segura\",\"belongingAdmirationLove\":\"Desejo sem pressão\",\"sensoryExperience\":{\"evidenceAvailable\":false,\"availableModalities\":[],\"pleasureByModality\":[],\"processingFluency\":0,\"sensoryCongruence\":0,\"overloadRisk\":0,\"embodiedAnticipation\":\"Não observável\",\"dominantCue\":\"Não observado\",\"evidenceBoundary\":\"Sem evidência sensorial\"}},\"purchaseEmotion\":{\"acquisitionExpectation\":\"Espero obter o resultado prometido\",\"acquisitionAnxiety\":\"Receio perder dinheiro e tempo\",\"expectedPostDeliveryFeeling\":\"Imagino sentir alívio após aplicar\",\"emotionalTension\":\"Desejo versus receio da compra\",\"evidenceBoundary\":\"Simulação baseada na persona\"},\"gateChecks\":[{\"status\":\"ADJUST\"}],\"evidence\":[\"Jornada comprovada\"],\"requiredChanges\":[]}");
+            """
+            {
+              "decision":"APPROVED","customerPerspective":"Oferta clara e utilizável",
+              "behavioralResponse":{
+                "firstImpulse":"Curiosidade segura","belongingAdmirationLove":"Desejo sem pressão",
+                "sensoryExperience":{
+                  "evidenceAvailable":false,"availableModalities":[],"pleasureByModality":[],
+                  "processingFluency":0,"sensoryCongruence":0,"overloadRisk":0,
+                  "embodiedAnticipation":"Não observável","dominantCue":"Não observado",
+                  "evidenceBoundary":"Sem evidência sensorial",
+                  "visualComposition":{
+                    "applicable":false,"archetype":"NOT_APPLICABLE",
+                    "imageTextBalance":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "mediaVariety":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "visualRhythm":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "colorStrategy":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "typographicHierarchy":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "densityAndBreathingRoom":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "noveltyFamiliarity":{"score":0,"evidence":"Composição visual não está disponível"},
+                    "humanConnection":{"peopleObserved":false,"functionalRole":"NONE","appropriatenessScore":0,"absenceImpact":"NONE","evidence":"Conexão humana visual não está disponível"},
+                    "strongestPattern":"Composição visual não aplicável à evidência recebida",
+                    "criticalDeficitPresent":false,
+                    "criticalDeficit":"Composição visual não aplicável à evidência recebida"
+                  }
+                }
+              },
+              "purchaseEmotion":{"acquisitionExpectation":"Espero obter o resultado prometido","acquisitionAnxiety":"Receio perder dinheiro e tempo","expectedPostDeliveryFeeling":"Imagino sentir alívio após aplicar","emotionalTension":"Desejo versus receio da compra","evidenceBoundary":"Simulação baseada na persona"},
+              "gateChecks":[{"status":"ADJUST"}],"evidence":["Jornada comprovada"],"requiredChanges":[]
+            }
+            """);
 
     assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
         .isInstanceOf(IllegalArgumentException.class)
@@ -136,12 +179,12 @@ class CustomerBpmTaskConsumerTest {
   void selectsVersionedCreativeContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.promptResourceFor("creative-production-approval"))
-        .isEqualTo("prompts/bpm/v2/creative-customer-review.md");
+        .isEqualTo("prompts/bpm/v3/creative-customer-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
-        .isEqualTo("prompts/bpm/v2/creative-customer-review-schema.json");
+        .isEqualTo("prompts/bpm/v3/creative-customer-review-schema.json");
     String prompt =
-        Files.readString(Path.of("src/main/resources/prompts/bpm/v2/creative-customer-review.md"));
+        Files.readString(Path.of("src/main/resources/prompts/bpm/v3/creative-customer-review.md"));
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
             "formato e canal declarados",
@@ -156,10 +199,10 @@ class CustomerBpmTaskConsumerTest {
   void selectsVersionedPdeExperienceContract() {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.promptResourceFor("pde-construction-approval"))
-        .isEqualTo("prompts/bpm/v2/pde-experience-review.md");
+        .isEqualTo("prompts/bpm/v3/pde-experience-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
-        .isEqualTo("prompts/bpm/v2/pde-experience-review-schema.json");
+        .isEqualTo("prompts/bpm/v3/pde-experience-review-schema.json");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.supportsContract(
                 "pde-construction-approval", "humanExperienceReview"))
@@ -174,14 +217,14 @@ class CustomerBpmTaskConsumerTest {
   void selectsVersionedPdeCommercialHomologationContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.promptResourceFor("pde-commercial-homologation-activation"))
-        .isEqualTo("prompts/bpm/v2/pde-commercial-homologation-customer-review.md");
+        .isEqualTo("prompts/bpm/v3/pde-commercial-homologation-customer-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("pde-commercial-homologation-activation"))
-        .isEqualTo("prompts/bpm/v2/pde-commercial-homologation-customer-review-schema.json");
+        .isEqualTo("prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json");
     String prompt =
         Files.readString(
             Path.of(
-                "src/main/resources/prompts/bpm/v2/pde-commercial-homologation-customer-review.md"));
+                "src/main/resources/prompts/bpm/v3/pde-commercial-homologation-customer-review.md"));
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
             "taskTarget",
@@ -206,7 +249,7 @@ class CustomerBpmTaskConsumerTest {
   @Test
   void acceptsCanonicalCheckoutBindingAsLandingEvidence() throws Exception {
     String prompt =
-        Files.readString(Path.of("src/main/resources/prompts/bpm/v2/landing-customer-review.md"));
+        Files.readString(Path.of("src/main/resources/prompts/bpm/v3/landing-customer-review.md"));
     String normalizedPrompt = prompt.replaceAll("\\s+", " ");
 
     org.assertj.core.api.Assertions.assertThat(normalizedPrompt)
@@ -223,7 +266,7 @@ class CustomerBpmTaskConsumerTest {
             "purchaseEmotion");
     String schema =
         Files.readString(
-            Path.of("src/main/resources/prompts/bpm/v2/landing-customer-review-schema.json"));
+            Path.of("src/main/resources/prompts/bpm/v3/landing-customer-review-schema.json"));
     org.assertj.core.api.Assertions.assertThat(schema)
         .contains("remediationTarget", "LANDING_CONTENT", "CANONICAL_CONTRACT");
   }
@@ -293,11 +336,11 @@ class CustomerBpmTaskConsumerTest {
   @Test
   void instructsModelToInspectAttachedPixelsWithoutFilesystemTool() throws Exception {
     String core =
-        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v3.md"));
+        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v4.md"));
     String prompt =
         Files.readString(
             Path.of(
-                "src/main/resources/prompts/bpm/v2/pde-commercial-homologation-customer-review.md"));
+                "src/main/resources/prompts/bpm/v3/pde-commercial-homologation-customer-review.md"));
 
     org.assertj.core.api.Assertions.assertThat(core.replaceAll("\\s+", " "))
         .contains("imagem anexada diretamente a este turno", "não tente reabrir o arquivo");
@@ -305,24 +348,24 @@ class CustomerBpmTaskConsumerTest {
         .contains("anexada diretamente a este", "sem tentar reabrir o", "filesystem");
   }
 
-  /** Exige o núcleo afetivo, social e sensorial em todos os contratos BPM atuais. */
+  /** Exige o núcleo afetivo, social, sensorial e estético em todos os contratos BPM atuais. */
   @Test
   void requiresSharedBehavioralCoreInEveryBpmReview() throws Exception {
     String core =
-        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v3.md"));
+        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v4.md"));
     String creative =
         Files.readString(
-            Path.of("src/main/resources/prompts/bpm/v2/creative-customer-review-schema.json"));
+            Path.of("src/main/resources/prompts/bpm/v3/creative-customer-review-schema.json"));
     String landing =
         Files.readString(
-            Path.of("src/main/resources/prompts/bpm/v2/landing-customer-review-schema.json"));
+            Path.of("src/main/resources/prompts/bpm/v3/landing-customer-review-schema.json"));
     String pde =
         Files.readString(
-            Path.of("src/main/resources/prompts/bpm/v2/pde-experience-review-schema.json"));
+            Path.of("src/main/resources/prompts/bpm/v3/pde-experience-review-schema.json"));
     String commercialHomologation =
         Files.readString(
             Path.of(
-                "src/main/resources/prompts/bpm/v2/pde-commercial-homologation-customer-review-schema.json"));
+                "src/main/resources/prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json"));
 
     org.assertj.core.api.Assertions.assertThat(core.replaceAll("\\s+", " "))
         .contains("reação afetiva rápida")
@@ -331,7 +374,9 @@ class CustomerBpmTaskConsumerTest {
         .contains("prazer sensorial")
         .contains("Não recomende explorar vergonha")
         .contains("expectativa ao considerar adquirir")
-        .contains("todas as dobras numeradas");
+        .contains("todas as dobras numeradas")
+        .contains("Trate pessoas e rostos como pistas sociais fortes")
+        .contains("Paleta contida pode ser excelente");
     org.assertj.core.api.Assertions.assertThat(
             java.util.List.of(creative, landing, pde, commercialHomologation))
         .allSatisfy(
@@ -341,6 +386,8 @@ class CustomerBpmTaskConsumerTest {
                         "behavioralResponse",
                         "belongingAdmirationLove",
                         "sensoryExperience",
+                        "visualComposition",
+                        "humanConnection",
                         "purchaseEmotion"));
   }
 

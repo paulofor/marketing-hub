@@ -1,0 +1,617 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "customerPerspective",
+    "valueScore",
+    "behavioralResponse",
+    "purchaseEmotion",
+    "visualAudit",
+    "journeyChecks",
+    "evidence",
+    "limitations",
+    "requiredChanges"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "APPROVED",
+        "ADJUST",
+        "BLOCKED"
+      ]
+    },
+    "customerPerspective": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 1800
+    },
+    "valueScore": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "behavioralResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "firstImpulse",
+        "dominantEmotion",
+        "safeNovelty",
+        "belongingAdmirationLove",
+        "effortPerception",
+        "sensoryExperience",
+        "trustBoundary"
+      ],
+      "properties": {
+        "firstImpulse": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "dominantEmotion": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "safeNovelty": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "belongingAdmirationLove": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "effortPerception": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "sensoryExperience": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidenceAvailable",
+            "availableModalities",
+            "pleasureByModality",
+            "processingFluency",
+            "sensoryCongruence",
+            "overloadRisk",
+            "embodiedAnticipation",
+            "dominantCue",
+            "evidenceBoundary",
+            "visualComposition"
+          ],
+          "properties": {
+            "evidenceAvailable": {
+              "type": "boolean"
+            },
+            "availableModalities": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "VISUAL",
+                  "AUDIO",
+                  "MOTION",
+                  "TACTILE_IMAGERY"
+                ]
+              }
+            },
+            "pleasureByModality": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "modality",
+                  "pleasureScore",
+                  "evidence"
+                ],
+                "properties": {
+                  "modality": {
+                    "type": "string",
+                    "enum": [
+                      "VISUAL",
+                      "AUDIO",
+                      "MOTION",
+                      "TACTILE_IMAGERY"
+                    ]
+                  },
+                  "pleasureScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "processingFluency": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "sensoryCongruence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "overloadRisk": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "embodiedAnticipation": {
+              "type": "string"
+            },
+            "dominantCue": {
+              "type": "string"
+            },
+            "evidenceBoundary": {
+              "type": "string"
+            },
+            "visualComposition": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "applicable",
+                "archetype",
+                "imageTextBalance",
+                "mediaVariety",
+                "visualRhythm",
+                "colorStrategy",
+                "typographicHierarchy",
+                "densityAndBreathingRoom",
+                "noveltyFamiliarity",
+                "humanConnection",
+                "strongestPattern",
+                "criticalDeficitPresent",
+                "criticalDeficit"
+              ],
+              "properties": {
+                "applicable": {
+                  "type": "boolean"
+                },
+                "archetype": {
+                  "type": "string",
+                  "enum": [
+                    "EDITORIAL_PORTAL",
+                    "PERSUASIVE_LANDING",
+                    "TRANSACTIONAL_DISCOVERY",
+                    "PRODUCT_SHOWCASE",
+                    "APPLICATION",
+                    "SINGLE_CREATIVE",
+                    "OTHER",
+                    "NOT_APPLICABLE"
+                  ]
+                },
+                "imageTextBalance": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "mediaVariety": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "visualRhythm": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "colorStrategy": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "typographicHierarchy": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "densityAndBreathingRoom": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "noveltyFamiliarity": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "score",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "score": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "humanConnection": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "peopleObserved",
+                    "functionalRole",
+                    "appropriatenessScore",
+                    "absenceImpact",
+                    "evidence"
+                  ],
+                  "properties": {
+                    "peopleObserved": {
+                      "type": "boolean"
+                    },
+                    "functionalRole": {
+                      "type": "string",
+                      "enum": [
+                        "NONE",
+                        "CUSTOMER_IDENTIFICATION",
+                        "PRODUCT_IN_USE",
+                        "SOCIAL_PROOF",
+                        "EXPERT_AUTHORITY",
+                        "ASPIRATIONAL_LIFESTYLE",
+                        "DECORATIVE",
+                        "MIXED"
+                      ]
+                    },
+                    "appropriatenessScore": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    "absenceImpact": {
+                      "type": "string",
+                      "enum": [
+                        "NONE",
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ]
+                    },
+                    "evidence": {
+                      "type": "string",
+                      "minLength": 10,
+                      "maxLength": 700
+                    }
+                  }
+                },
+                "strongestPattern": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 700
+                },
+                "criticalDeficitPresent": {
+                  "type": "boolean"
+                },
+                "criticalDeficit": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 700
+                }
+              }
+            }
+          }
+        },
+        "trustBoundary": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        }
+      }
+    },
+    "purchaseEmotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisitionExpectation",
+        "acquisitionAnxiety",
+        "expectedPostDeliveryFeeling",
+        "emotionalTension",
+        "evidenceBoundary"
+      ],
+      "properties": {
+        "acquisitionExpectation": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "acquisitionAnxiety": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "expectedPostDeliveryFeeling": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "emotionalTension": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        },
+        "evidenceBoundary": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 700
+        }
+      }
+    },
+    "visualAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captureSessionId",
+        "mobileFirst",
+        "fullPageEvidenceIds",
+        "fullPageContinuity",
+        "overallAestheticAssessment",
+        "foldAnalyses"
+      ],
+      "properties": {
+        "captureSessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "mobileFirst": {
+          "type": "boolean",
+          "const": true
+        },
+        "fullPageEvidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "fullPageContinuity": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1000
+        },
+        "overallAestheticAssessment": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1000
+        },
+        "foldAnalyses": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifactId",
+              "deviceProfile",
+              "pageNumber",
+              "foldNumber",
+              "aestheticAssessment",
+              "visualHierarchy",
+              "legibility",
+              "emotionEvoked",
+              "ctaVisibility"
+            ],
+            "properties": {
+              "artifactId": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "deviceProfile": {
+                "type": "string",
+                "const": "IPHONE_15_PRO"
+              },
+              "pageNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "foldNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "aestheticAssessment": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "visualHierarchy": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "legibility": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "emotionEvoked": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              },
+              "ctaVisibility": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 700
+              }
+            }
+          }
+        }
+      }
+    },
+    "journeyChecks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage",
+          "status",
+          "customerEvidence",
+          "friction"
+        ],
+        "properties": {
+          "stage": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "ADJUST",
+              "BLOCK"
+            ]
+          },
+          "customerEvidence": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 700
+          },
+          "friction": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 24,
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 700
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 700
+      }
+    },
+    "requiredChanges": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 700
+      }
+    }
+  }
+}

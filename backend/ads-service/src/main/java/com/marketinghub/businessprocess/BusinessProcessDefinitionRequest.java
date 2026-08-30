@@ -15,7 +15,9 @@ public record BusinessProcessDefinitionRequest(
     @Size(max = 200) String technicalReference,
     @NotNull JsonNode diagram,
     @NotBlank @Pattern(regexp = "VALUE_PROCESS|SUBPROCESS") String processType,
-    @Pattern(regexp = "[a-z0-9]+(?:-[a-z0-9]+)*") @Size(max = 100) String parentProcessCode) {
+    @Pattern(regexp = "[a-z0-9]+(?:-[a-z0-9]+)*") @Size(max = 100) String parentProcessCode,
+    @NotBlank @Pattern(regexp = "PRODUCT|INDEPENDENT|PRODUCT_OR_INDEPENDENT")
+        String executionScope) {
 
   /** Preserva compatibilidade dos chamadores internos que criam processos de valor. */
   public BusinessProcessDefinitionRequest(
@@ -39,6 +41,35 @@ public record BusinessProcessDefinitionRequest(
         technicalReference,
         diagram,
         "VALUE_PROCESS",
-        null);
+        null,
+        "PRODUCT");
+  }
+
+  /** Preserva o escopo de produto dos contratos anteriores à execução independente. */
+  public BusinessProcessDefinitionRequest(
+      String processCode,
+      String name,
+      String purpose,
+      String ownerName,
+      String triggerDescription,
+      String outcomeDescription,
+      Integer versionNumber,
+      String technicalReference,
+      JsonNode diagram,
+      String processType,
+      String parentProcessCode) {
+    this(
+        processCode,
+        name,
+        purpose,
+        ownerName,
+        triggerDescription,
+        outcomeDescription,
+        versionNumber,
+        technicalReference,
+        diagram,
+        processType,
+        parentProcessCode,
+        "PRODUCT");
   }
 }

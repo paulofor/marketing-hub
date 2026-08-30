@@ -470,7 +470,7 @@ public class CustomerBpmTaskConsumer {
     return promptComposition(task, visualEvidence).fullPrompt();
   }
 
-  /** Compõe o núcleo sensorial de Psique com a missão e as provas específicas da atividade. */
+  /** Compõe o núcleo sensorial e estético de Psique com a missão e as provas da atividade. */
   private PromptComposition promptComposition(
       Map<String, Object> task,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
@@ -486,39 +486,39 @@ public class CustomerBpmTaskConsumer {
           "versionedCommercialHomologationEvidence",
           pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
-    String agentPromptPart = behavioralCoreV3();
+    String agentPromptPart = behavioralCoreV4();
     String activityPromptPart =
         read(promptResourceFor(processCode(task)))
-            .replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", "")
+            .replace("{{PSIQUE_BEHAVIORAL_CORE_V4}}", "")
             .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
-  /** Lê a constituição comportamental e sensorial usada pelas atividades atuais de Psique. */
-  private String behavioralCoreV3() throws IOException {
-    return read("prompts/psique/behavioral-core-v3.md");
+  /** Lê a constituição comportamental, sensorial e estética das atividades atuais de Psique. */
+  private String behavioralCoreV4() throws IOException {
+    return read("prompts/psique/behavioral-core-v4.md");
   }
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case "creative-production-approval" -> "prompts/bpm/v2/creative-customer-review.md";
+      case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
       case "pde-commercial-homologation-activation" ->
-          "prompts/bpm/v2/pde-commercial-homologation-customer-review.md";
-      case "pde-construction-approval" -> "prompts/bpm/v2/pde-experience-review.md";
-      default -> "prompts/bpm/v2/landing-customer-review.md";
+          "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";
+      case "pde-construction-approval" -> "prompts/bpm/v3/pde-experience-review.md";
+      default -> "prompts/bpm/v3/landing-customer-review.md";
     };
   }
 
   /** Seleciona o schema versionado específico da entidade avaliada. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case "creative-production-approval" -> "prompts/bpm/v2/creative-customer-review-schema.json";
+      case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review-schema.json";
       case "pde-commercial-homologation-activation" ->
-          "prompts/bpm/v2/pde-commercial-homologation-customer-review-schema.json";
-      case "pde-construction-approval" -> "prompts/bpm/v2/pde-experience-review-schema.json";
-      default -> "prompts/bpm/v2/landing-customer-review-schema.json";
+          "prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json";
+      case "pde-construction-approval" -> "prompts/bpm/v3/pde-experience-review-schema.json";
+      default -> "prompts/bpm/v3/landing-customer-review-schema.json";
     };
   }
 
@@ -542,7 +542,11 @@ public class CustomerBpmTaskConsumer {
         || result.path("requiredChanges").isMissingNode()) {
       throw new IllegalArgumentException("Parecer de Psique sem evidências suficientes");
     }
-    PsiqueSensoryContract.validate(result.path("behavioralResponse").path("sensoryExperience"));
+    JsonNode sensoryExperience = result.path("behavioralResponse").path("sensoryExperience");
+    PsiqueVisualCompositionContract.validate(sensoryExperience);
+    if ("APPROVED".equals(result.path("decision").asText())) {
+      PsiqueVisualCompositionContract.requireApprovalThreshold(sensoryExperience);
+    }
     if ("APPROVED".equals(result.path("decision").asText())
         && result.path("gateChecks").isArray()) {
       for (JsonNode gate : result.path("gateChecks")) {

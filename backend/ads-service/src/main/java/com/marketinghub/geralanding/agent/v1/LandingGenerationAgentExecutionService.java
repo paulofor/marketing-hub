@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -29,7 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-/** Responsabilidade: persistir a fila e os callbacks do Agente Gerador de Landing. */
+/**
+ * Responsabilidade: concluir a fila histórica e os callbacks do antigo Agente Gerador de Landing.
+ */
 @Service
 public class LandingGenerationAgentExecutionService {
   private static final Logger log =
@@ -42,8 +42,6 @@ public class LandingGenerationAgentExecutionService {
   private static final String DEPLOY_RECOVERY_POLICY = "RETRY_ON_EXECUTOR_DEPLOY";
   private static final String COMMERCIAL_HOMOLOGATION_SOURCE =
       "COMMERCIAL_PLAN_JOURNEY_HOMOLOGATION";
-  private static final Pattern EXPERIMENT_REFERENCE =
-      Pattern.compile("(?i)experimento\\s*#?\\s*(\\d+)");
   private static final String BPM_TASK_PREFIX = "agent-task:";
   private final GeraLandingStageExecutionRepository repository;
   private final LandingGenerationAgentCoordinator coordinator;
@@ -83,7 +81,7 @@ public class LandingGenerationAgentExecutionService {
     this.approvedCreativeEvidenceService = approvedCreativeEvidenceService;
   }
 
-  /** Converte o parecer independente em trabalho do agente ou conclui a jornada aprovada. */
+  /** Conclui ou retoma apenas ciclos históricos já existentes após o parecer independente. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
   public void onQualityReviewCompleted(LandingQualityReviewedEvent event) {
@@ -117,9 +115,7 @@ public class LandingGenerationAgentExecutionService {
     }
   }
 
-  /**
-   * Consolida a validação técnica no BPM e conclui Dédalo somente após o Quality Review aprovado.
-   */
+  /** Consolida a validação técnica de tarefa histórica de Dédalo após o Quality Review aprovado. */
   private void completeBpmTaskAfterQualityApproval(LandingQualityReviewedEvent event)
       throws com.fasterxml.jackson.core.JsonProcessingException {
     Long taskId = bpmTaskId(event.autonomousCycleId());
@@ -259,7 +255,7 @@ public class LandingGenerationAgentExecutionService {
     return evidence.toString();
   }
 
-  /** Cria uma execução segregada com o parecer que motivou a correção. */
+  /** Cria nova tentativa somente dentro de um ciclo histórico já submetido ao Quality Review. */
   @Transactional
   public void enqueue(Long experimentId, String autonomousCycleId, String qualityReviewJson) {
     if (repository.existsByExperimentIdAndStageCodeAndAutonomousCycleIdAndStatusIn(
@@ -283,113 +279,6 @@ public class LandingGenerationAgentExecutionService {
             .status(PENDING)
             .idJob(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8))
             .build());
-  }
-
-  /** Converte o bloqueio comercial apontado por Têmis em um briefing autônomo para Dédalo. */
-  @Transactional
-  public void enqueueCreativeConvergenceCorrection(
-      Long experimentId,
-      String sourceReference,
-      String issueCode,
-      String correctionBrief,
-      String acceptanceCriterion) {
-    try {
-      Map<String, Object> review = new LinkedHashMap<>();
-      review.put("approvalRecommendation", "REGENERATE_BEFORE_PUBLICATION");
-      review.put("score", 0);
-      review.put("summary", correctionBrief);
-      review.put(
-          "blockingIssues",
-          List.of(
-              Map.of(
-                  "code", issueCode,
-                  "rootCause", correctionBrief,
-                  "impact", "Impede a continuidade verificável entre anúncio e landing.",
-                  "requiredChange", correctionBrief,
-                  "evidence", acceptanceCriterion)));
-      review.put("acceptanceCriteria", List.of(acceptanceCriterion));
-      review.put(
-          "authority",
-          "Dédalo pode reconstruir livremente copy, hierarquia, imagens e HTML pelas etapas canônicas; não pode publicar, alterar oferta, preço, checkout ou tracking.");
-      enqueue(experimentId, sourceReference, objectMapper.writeValueAsString(review));
-    } catch (Exception ex) {
-      log.error(
-          "Falha ao preparar correção de convergência para Dédalo. experimentId={} sourceReference={}",
-          experimentId,
-          sourceReference,
-          ex);
-      throw new IllegalStateException("Briefing de correção da landing inválido", ex);
-    }
-  }
-
-  /** Converte a atividade BPM reservada em uma execução técnica idempotente do GeraLanding. */
-  @Transactional
-  public void activateProcessTask(Long taskId) {
-    activateProcessTask(agentTaskService.claimedProcessTask("landing-generator", taskId));
-  }
-
-  /** Reserva e materializa a próxima atividade de Dédalo na mesma transação do backend. */
-  @Transactional
-  public void activateNextProcessTask() {
-    agentTaskService
-        .claimEligibleProcessTask("landing-generator")
-        .ifPresent(this::activateProcessTask);
-  }
-
-  /** Materializa o snapshot BPM já validado sem criar uma segunda fronteira HTTP. */
-  private void activateProcessTask(com.marketinghub.agenttask.AgentTaskPendingResponse task) {
-    Long taskId = task.taskId();
-    Long experimentId = experimentId(task.title() + "\n" + task.description());
-    if (hasMaterializedBpmAttempt(experimentId, taskId)) {
-      log.info(
-          "Tarefa BPM já foi materializada e aguarda gate ou correção causal. taskId={} experimentId={}",
-          taskId,
-          experimentId);
-      return;
-    }
-    try {
-      Map<String, Object> review = new LinkedHashMap<>();
-      review.put("approvalRecommendation", "REGENERATE_BEFORE_PUBLICATION");
-      review.put("score", 0);
-      review.put("summary", task.description());
-      review.put("blockingIssues", List.of());
-      review.put("acceptanceCriteria", List.of(task.description()));
-      review.put("processCode", task.processCode());
-      review.put("processVersion", task.processVersion());
-      review.put("processActivityId", task.activityId());
-      review.put("processActivityName", task.activityName());
-      review.put("agentTaskId", task.taskId());
-      review.put(
-          "authority",
-          "Dédalo pode reconstruir arquitetura, narrativa, copy, imagens e HTML; não pode publicar, alterar preço, oferta, checkout ou tracking.");
-      enqueue(
-          experimentId, BPM_TASK_PREFIX + task.taskId(), objectMapper.writeValueAsString(review));
-    } catch (Exception ex) {
-      log.error(
-          "Falha ao ativar tarefa BPM de Dédalo. taskId={} experimentId={}",
-          taskId,
-          experimentId,
-          ex);
-      throw new IllegalStateException("Não foi possível ativar a tarefa BPM de Dédalo", ex);
-    }
-  }
-
-  /** Impede que o polling recrie o briefing original enquanto o Quality Review decide o avanço. */
-  private boolean hasMaterializedBpmAttempt(Long experimentId, Long taskId) {
-    return repository
-        .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
-            experimentId, STAGE, BPM_TASK_PREFIX + taskId)
-        .stream()
-        .anyMatch(execution -> !"FALHA".equals(execution.getStatus()));
-  }
-
-  /** Extrai a entidade operacional explicitamente declarada no título ou briefing da tarefa. */
-  private Long experimentId(String taskText) {
-    Matcher matcher = EXPERIMENT_REFERENCE.matcher(taskText == null ? "" : taskText);
-    if (!matcher.find()) {
-      throw new IllegalArgumentException("Tarefa BPM de Dédalo sem experimento explícito");
-    }
-    return Long.parseLong(matcher.group(1));
   }
 
   /** Reserva jobs de forma transacional antes de qualquer consumo do Codex. */

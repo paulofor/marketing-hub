@@ -67,6 +67,18 @@ describe("MainNavigation", () => {
     ).toHaveAttribute("href", "/opportunities");
   });
 
+  it("oferece acesso direto à execução de processos independentes", () => {
+    render(
+      <MemoryRouter>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Executar processos" }),
+    ).toHaveAttribute("href", "/business-process-executions");
+  });
+
   it("oferece acesso direto ao catálogo de tipos de produto", () => {
     render(
       <MemoryRouter>

@@ -49,7 +49,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
             """)
   List<Creative> findTemisOpenReviews(@Param("experimentId") Long experimentId);
 
-  /** Busca materializações visuais abertas para o monitor operacional de Dédalo. */
+  /** Busca materializações visuais abertas para o monitor operacional de Íris. */
   @Query(
       """
             select c from Creative c
@@ -60,7 +60,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
                       com.marketinghub.creative.CreativeImprovementStatus.LIMIT_REACHED)
              order by c.id desc
             """)
-  List<Creative> findDedaloOpenMaterializations();
+  List<Creative> findIrisOpenMaterializations();
 
   /** Verifica se existe criativo do experimento no status informado. */
   boolean existsByExperimentIdAndStatus(Long experimentId, CreativeStatus status);

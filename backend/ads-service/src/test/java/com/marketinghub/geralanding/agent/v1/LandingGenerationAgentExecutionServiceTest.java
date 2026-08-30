@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.agenttask.AgentTaskPendingResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.AutomaticBusinessProcessActivityService;
 import com.marketinghub.experiment.Experiment;
@@ -305,109 +304,6 @@ class LandingGenerationAgentExecutionServiceTest {
             88L,
             "cycle-88",
             "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":78}"));
-
-    verify(repository, never()).save(any(GeraLandingStageExecution.class));
-  }
-
-  /** Deve transformar a causa de Têmis em contexto explícito para a autonomia de Dédalo. */
-  @Test
-  void shouldEnqueueCreativeLandingCorrectionWithProtectedAuthority() {
-    service.enqueueCreativeConvergenceCorrection(
-        88L,
-        "creative-convergence:14:landing",
-        "PRODUCT_PROOF_MISSING",
-        "Mostrar o produto digital real.",
-        "Desktop e mobile comprovam posts, stories e legendas antes do CTA.");
-
-    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
-        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
-    verify(repository).save(execution.capture());
-    assertEquals("creative-convergence:14:landing", execution.getValue().getAutonomousCycleId());
-    assertTrue(execution.getValue().getPromptContent().contains("PRODUCT_PROOF_MISSING"));
-    assertTrue(execution.getValue().getPromptContent().contains("não pode publicar"));
-  }
-
-  /** Deve materializar a tarefa BPM de Dédalo na fila técnica sem perder a correlação. */
-  @Test
-  void shouldActivateClaimedBpmTask() {
-    when(agentTaskService.claimedProcessTask("landing-generator", 30L))
-        .thenReturn(
-            new AgentTaskPendingResponse(
-                30L,
-                "landing-generator",
-                "landing-page-generation",
-                2,
-                "html",
-                "Construir HTML com autonomia",
-                "Experimento 88 — construir landing",
-                "Criar candidata responsiva sem publicar.",
-                "commercial-plan:2@v4",
-                Instant.parse("2026-08-15T05:10:37Z"),
-                "{\"completedActivities\":[]}"));
-
-    service.activateProcessTask(30L);
-
-    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
-        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
-    verify(repository).save(execution.capture());
-    assertEquals(88L, execution.getValue().getExperimentId());
-    assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
-    assertTrue(execution.getValue().getPromptContent().contains("Construir HTML com autonomia"));
-  }
-
-  /** Deve reservar e materializar a atividade BPM em uma única transação do backend. */
-  @Test
-  void shouldClaimAndActivateBpmTaskAtomically() {
-    AgentTaskPendingResponse task =
-        new AgentTaskPendingResponse(
-            30L,
-            "landing-generator",
-            "landing-page-generation",
-            2,
-            "html",
-            "Construir HTML com autonomia",
-            "Experimento 88 — construir landing",
-            "Criar candidata responsiva sem publicar.",
-            "commercial-plan:2@v4",
-            Instant.parse("2026-08-15T05:10:37Z"),
-            "{\"completedActivities\":[]}");
-    when(agentTaskService.claimEligibleProcessTask("landing-generator"))
-        .thenReturn(Optional.of(task));
-
-    service.activateNextProcessTask();
-
-    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
-        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
-    verify(repository).save(execution.capture());
-    assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
-  }
-
-  /** Não deve recriar o briefing original enquanto a entrega concluída aguarda o Quality Review. */
-  @Test
-  void shouldNotRematerializeClaimedBpmTaskAwaitingQualityReview() {
-    AgentTaskPendingResponse task =
-        new AgentTaskPendingResponse(
-            30L,
-            "landing-generator",
-            "landing-page-generation",
-            2,
-            "html",
-            "Construir HTML com autonomia",
-            "Experimento 88 — construir landing",
-            "Criar candidata responsiva sem publicar.",
-            "commercial-plan:2@v4",
-            Instant.parse("2026-08-15T05:10:37Z"),
-            "{\"completedActivities\":[]}");
-    GeraLandingStageExecution completed = execution("completed-before-review", "CONCLUIDO");
-    completed.setAutonomousCycleId("agent-task:30");
-    when(agentTaskService.claimEligibleProcessTask("landing-generator"))
-        .thenReturn(Optional.of(task));
-    when(repository
-            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
-                88L, "landing-generation-agent-v1", "agent-task:30"))
-        .thenReturn(List.of(completed));
-
-    service.activateNextProcessTask();
 
     verify(repository, never()).save(any(GeraLandingStageExecution.class));
   }

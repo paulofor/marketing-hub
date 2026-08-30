@@ -33,6 +33,7 @@ import {
   Bot,
   CircleDollarSign,
   Tags,
+  Play,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -124,6 +125,11 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/product-discovery",
         label: "Descoberta PDE",
         icon: Search,
+      },
+      {
+        to: "/business-process-executions",
+        label: "Executar processos",
+        icon: Play,
       },
       { to: "/market-radar", label: "Radar de oportunidades", icon: Search },
       { to: "/niches", label: "Nichos", icon: nicheIcon },

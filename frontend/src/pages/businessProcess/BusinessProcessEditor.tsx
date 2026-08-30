@@ -166,6 +166,28 @@ export default function BusinessProcessEditor({
             <option value="SUBPROCESS">Subprocesso</option>
           </select>
         </div>
+        <div className="col-md-4">
+          <label className="form-label" htmlFor="editor-execution-scope">
+            Contexto de execução *
+          </label>
+          <select
+            id="editor-execution-scope"
+            className="form-select"
+            required
+            value={value.executionScope ?? "PRODUCT"}
+            onChange={(event) =>
+              setValue({
+                ...value,
+                executionScope: event.target.value as
+                  "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT",
+              })
+            }
+          >
+            <option value="PRODUCT">Exige produto</option>
+            <option value="INDEPENDENT">Independente de produto</option>
+            <option value="PRODUCT_OR_INDEPENDENT">Ambos os contextos</option>
+          </select>
+        </div>
         {(value.processType ?? "VALUE_PROCESS") === "SUBPROCESS" ? (
           <div className="col-md-8">
             <label className="form-label" htmlFor="editor-parent-process">

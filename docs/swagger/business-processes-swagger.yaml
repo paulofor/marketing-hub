@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.7.0
-  description: Cadastro versionado de processos de valor, subprocessos, atividades e documentos no Marketing Hub.
+  version: 1.8.0
+  description: Cadastro versionado de processos de valor, subprocessos, atividades, documentos e execuções independentes no Marketing Hub.
 paths:
   /api/business-processes:
     get:
@@ -160,6 +160,64 @@ paths:
             atividade,
             estado atual ou contexto sem condição de execução,
           }
+  /api/independent-business-process-executions/catalog:
+    get:
+      summary: Lista processos publicados que podem ser iniciados sem produto
+      responses:
+        "200":
+          description: Catálogo operacional com campos declarados pelo backend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IndependentBusinessProcessCatalog"
+  /api/independent-business-process-executions:
+    get:
+      summary: Lista as cinquenta execuções independentes mais recentes
+      responses:
+        "200":
+          description: Estado, progresso, consumo e causa persistida de cada execução
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: "#/components/schemas/IndependentBusinessProcessExecutionSummary"
+    post:
+      summary: Inicia idempotentemente um processo sem vínculo com produto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartIndependentBusinessProcessExecution"
+      responses:
+        "201":
+          description: Entidade técnica e primeira tarefa BPM criadas na mesma transação
+        "400":
+          {
+            description: Entrada incompatível com os campos declarados pelo backend,
+          }
+        "409":
+          {
+            description: Versão,
+            escopo,
+            adaptador ou chave idempotente incompatível,
+          }
+  /api/independent-business-process-executions/{executionId}:
+    get:
+      summary: Detalha atividades e tentativas de uma execução independente
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Resumo consolidado e trilha auditável de tarefas
+        "404": { description: Execução independente não encontrada }
 components:
   parameters:
     ProcessDefinitionId:
@@ -179,6 +237,7 @@ components:
         - outcomeDescription
         - versionNumber
         - processType
+        - executionScope
         - diagram
       properties:
         processCode: { type: string }
@@ -193,6 +252,10 @@ components:
           type: string
           enum: [VALUE_PROCESS, SUBPROCESS]
           description: Classifica a autoridade de negócio ou a capacidade especializada.
+        executionScope:
+          type: string
+          enum: [PRODUCT, INDEPENDENT, PRODUCT_OR_INDEPENDENT]
+          description: Declara se a versão exige produto, aceita execução independente ou ambos.
         parentProcessCode:
           type: string
           nullable: true
@@ -667,3 +730,104 @@ components:
           enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED]
         objectiveAchieved: { type: boolean }
         message: { type: string }
+    IndependentBusinessProcessInputField:
+      type: object
+      required: [key, label, controlType, required]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        controlType: { type: string, enum: [TEXT, TEXTAREA] }
+        required: { type: boolean }
+        maxLength: { type: integer, nullable: true }
+        defaultValue: { type: string, nullable: true }
+        helpText: { type: string, nullable: true }
+    IndependentBusinessProcessCatalog:
+      type: object
+      required:
+        [
+          processDefinitionId,
+          processCode,
+          name,
+          purpose,
+          ownerName,
+          triggerDescription,
+          outcomeDescription,
+          versionNumber,
+          executionAvailable,
+          executionAvailabilityReason,
+          inputFields,
+        ]
+      properties:
+        processDefinitionId: { type: integer, format: int64 }
+        processCode: { type: string }
+        name: { type: string }
+        purpose: { type: string }
+        ownerName: { type: string }
+        triggerDescription: { type: string }
+        outcomeDescription: { type: string }
+        versionNumber: { type: integer }
+        executionAvailable: { type: boolean }
+        executionAvailabilityReason: { type: string }
+        inputFields:
+          type: array
+          items:
+            {
+              $ref: "#/components/schemas/IndependentBusinessProcessInputField",
+            }
+    StartIndependentBusinessProcessExecution:
+      type: object
+      required: [requestKey, processDefinitionId, requestedByName, input]
+      properties:
+        requestKey: { type: string, format: uuid }
+        processDefinitionId: { type: integer, format: int64 }
+        requestedByName: { type: string, maxLength: 100 }
+        input:
+          type: object
+          additionalProperties: { type: string }
+          description: Não admite productId nem experimentId; campos aceitos vêm do catálogo.
+    IndependentBusinessProcessExecutionSummary:
+      type: object
+      required:
+        [
+          id,
+          requestKey,
+          processDefinitionId,
+          processCode,
+          processName,
+          processVersionNumber,
+          sourceReference,
+          displayName,
+          requestedByName,
+          input,
+          status,
+          activityCount,
+          completedActivityCount,
+          costCoverage,
+          createdAt,
+        ]
+      properties:
+        id: { type: integer, format: int64 }
+        requestKey: { type: string, format: uuid }
+        processDefinitionId: { type: integer, format: int64 }
+        processCode: { type: string }
+        processName: { type: string }
+        processVersionNumber: { type: integer }
+        sourceReference: { type: string }
+        displayName: { type: string }
+        requestedByName: { type: string }
+        input: { type: object, additionalProperties: { type: string } }
+        status:
+          type: string
+          enum:
+            [NOT_STARTED, PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]
+        activityCount: { type: integer, minimum: 0 }
+        completedActivityCount: { type: integer, minimum: 0 }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        estimatedCostUsd: { type: number, nullable: true }
+        costCoverage: { type: string, enum: [COMPLETE, PARTIAL, NOT_REPORTED] }
+        latestError: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }

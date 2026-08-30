@@ -52,6 +52,9 @@ public class BusinessProcessDefinition {
   @Column(name = "process_type", nullable = false, length = 20)
   private String processType = "VALUE_PROCESS";
 
+  @Column(name = "execution_scope", nullable = false, length = 32)
+  private String executionScope = "PRODUCT";
+
   @Column(name = "parent_process_code", length = 100)
   private String parentProcessCode;
 

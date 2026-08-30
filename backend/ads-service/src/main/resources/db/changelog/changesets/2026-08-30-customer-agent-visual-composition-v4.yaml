@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-30-customer-agent-visual-composition-v4-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM agent WHERE agent_key = 'customer-agent'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET current_version = current_version + 1,
+                  description = 'Avalia compreensão, reação afetiva, sensorial e estética, prazer, desejo, esforço, confiança e objeções.',
+                  success_metrics = 'Gates humanos auditáveis que localizam defeitos de compreensão, desejo, esforço e composição visual antes da exposição comercial.',
+                  analysis_policy = 'Registrar primeiro impulso e evidência sensorial; avaliar por arquétipo equilíbrio texto-imagem, variedade funcional, ritmo, cor, tipografia, densidade, novidade-familiaridade e conexão humana.',
+                  offering_policy = 'Parecer humano estruturado com evidências, escores estéticos contextuais e mudanças requeridas, sem ativo substituto.',
+                  prompt_contract_path = 'customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v4.md',
+                  schema_contract_path = 'customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v4/evaluation-schema.json'
+              WHERE agent_key = 'customer-agent';
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, a.current_version,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'version', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'authority', 'HUMAN_EXPERIENCE_REVIEW',
+                  'visualCompositionVersion', 'V4',
+                  'prompt', a.prompt_contract_path,
+                  'schema', a.schema_contract_path
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = a.current_version
+              WHERE a.agent_key = 'customer-agent' AND av.id IS NULL;

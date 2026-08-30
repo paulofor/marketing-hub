@@ -38,6 +38,18 @@ class CommunicationAgentTaskConsumerTest {
         .isFalse();
     assertThat(
             CommunicationAgentTaskConsumer.supportsContract(
+                "pde-commercial-plan-offer", "productArchitecture"))
+        .isFalse();
+    assertThat(
+            CommunicationAgentTaskConsumer.supportsContract(
+                "pde-tasting-proof-of-value", "materialization"))
+        .isFalse();
+    assertThat(
+            CommunicationAgentTaskConsumer.supportsContract(
+                "venda-entrega-satisfacao-cliente", "materialization"))
+        .isFalse();
+    assertThat(
+            CommunicationAgentTaskConsumer.supportsContract(
                 "creative-production-approval", "audiovisual"))
         .isFalse();
     assertThat(

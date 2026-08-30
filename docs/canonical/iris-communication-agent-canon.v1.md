@@ -109,6 +109,24 @@ Quando Íris produzir HTML, o callback registra a versão técnica e aguarda o Q
 BPM somente termina após aprovação da mesma versão; reprovação a bloqueia com a causa persistida. A
 retentativa pertence ao backend e nunca chama Dédalo ou outro executor diretamente.
 
+## Mapa operacional exclusivo
+
+Em 2026-08-30 o catálogo vigente foi confrontado com os consumidores, prompts, callbacks e monitor
+operacional. A propriedade executável passa a ser protegida pelo par exato `processCode/activityId`:
+
+| Agente | Atividades vigentes executáveis |
+| --- | --- |
+| Dédalo | `pde-commercial-plan-offer/productArchitecture`; `pde-construction-approval/journey`; `pde-construction-approval/deliverables`; `pde-construction-approval/access`; `pde-tasting-proof-of-value/materialization`; `venda-entrega-satisfacao-cliente/materialization` |
+| Íris | `pde-communication-sales-journey/communicationContract`; `creative-production-approval/nonAudiovisual`; `landing-page-generation/select`; `landing-page-generation/strategy`; `landing-page-generation/compose`; `landing-page-generation/html` |
+
+Atividades homônimas, como `materialization`, nunca são resolvidas apenas pelo nome. Entrega paga tem
+prioridade no polling de Dédalo. A fila antiga de geração de criativos de experimentos não pode
+reservar, concluir ou bloquear tarefas de Dédalo; quando usada por compatibilidade, seu prompt e sua
+auditoria pertencem a Íris. Materialização visual aparece no monitor de Íris. A landing antiga de
+GeraLanding permanece visível sob Dédalo apenas como histórico da versão que ele efetivamente
+executou e nunca prevalece sobre uma atividade atual de produto; nenhuma identidade, resultado ou
+custo já persistido é reescrito.
+
 ## Harness e experiência sensorial
 
 O harness de Íris deve exibir integralmente constituição, prompts, schema, MCP, configuração e

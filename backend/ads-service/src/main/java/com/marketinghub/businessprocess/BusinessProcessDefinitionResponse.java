@@ -23,4 +23,5 @@ public record BusinessProcessDefinitionResponse(
     String parentProcessCode,
     Long parentProcessDefinitionId,
     String parentProcessName,
+    String executionScope,
     List<BusinessProcessActivityDefinitionResponse> activities) {}

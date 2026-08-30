@@ -15,7 +15,7 @@ services:
       CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
       AGENT_HEALTH_KEY: customer-agent
-      AGENT_HEALTH_VERSION: "4"
+      AGENT_HEALTH_VERSION: "5"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/operator/.codex
       CUSTOMER_AGENT_CODEX_EXECUTABLE: /workspace/scripts/codex-oauth-session-safe.sh

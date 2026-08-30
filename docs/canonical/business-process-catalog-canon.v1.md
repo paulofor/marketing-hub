@@ -173,6 +173,40 @@ bloqueada, seu erro, evidências, consumo e custo, e não reabre atividade concl
 tarefa existente e não duplica custo nem execução. O backend expõe a disponibilidade e o motivo; o
 frontend apenas apresenta essa verdade e nunca transforma bloqueio em permissão por inferência.
 
+## Execuções independentes de produto
+
+Cada versão de processo declara explicitamente `executionScope`, sem inferência por nome, posição na
+cadeia, agente responsável ou ausência momentânea de produto:
+
+- `PRODUCT`: a execução exige um produto e usa a superfície da cadeia de valor;
+- `INDEPENDENT`: a execução nasce antes ou fora de qualquer produto e usa uma referência operacional
+  própria;
+- `PRODUCT_OR_INDEPENDENT`: a mesma definição admite os dois contextos, que permanecem segregados em
+  cada execução.
+
+O processo `pde-opportunity-discovery` é `INDEPENDENT`: uma pergunta real de mercado inicia o ciclo,
+e somente uma oportunidade factual aprovada poderá originar produto posteriormente. Vincular produto
+apenas para conseguir disparar Argos inverte a cadeia causal e é proibido.
+
+A tela canônica de início e acompanhamento é `/business-process-executions`. Ela lista somente versões
+publicadas com escopo independente, apresenta os campos de entrada declarados pelo backend e inicia a
+execução por `POST /api/independent-business-process-executions`. A tela não cria tarefas diretamente,
+não escolhe a próxima atividade e não conhece endpoints de workers. O backend seleciona o adaptador
+operacional do processo, persiste a solicitação idempotente, cria a entidade técnica canônica e devolve
+a referência que correlaciona processo, atividades, tarefas, entradas, saídas, evidências e custos.
+
+O catálogo operacional é
+`GET /api/independent-business-process-executions/catalog`; o histórico é
+`GET /api/independent-business-process-executions`; e o detalhe auditável é
+`GET /api/independent-business-process-executions/{executionId}`. Processo sem adaptador backend
+compatível continua visível com a causa da indisponibilidade, mas não pode ser disparado. Repetir o
+mesmo `requestKey` devolve a execução já criada e nunca abre outro ciclo ou duplica consumo de modelo.
+
+Status, progresso e custos exibidos são consolidados pelo backend a partir das instâncias e tarefas
+persistidas. Ausência de medição permanece ausente; execução, aprovação ou documento produzido não é
+venda. A entrada independente não pode conter `productId`, `experimentId` ou associação artificial a
+produto apenas para satisfazer um contrato legado.
+
 ## Recursos especializados por atividade
 
 Uma atividade `TASK` pode declarar opcionalmente `executionResourceCode` quando o agente precisar de

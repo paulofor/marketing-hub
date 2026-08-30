@@ -32,7 +32,7 @@ como nona agente, com executor e contrato próprios. O cânone detalhado está e
 | Dédalo | `landing-generator` | `PDE_CONSTRUCTION` — arquitetura do PDE, experiência funcional, jornada pós-compra, entregáveis, personalização, acesso e prova real do produto | estratégia e economia aprovadas | PDE e provas funcionais versionados | criar comunicação pré-compra, escolher mercado, posicionamento ou preço, aprovar o próprio trabalho ou operar aquisição |
 | Íris | `communication-director` | `COMMUNICATION_MATERIALIZATION` — mensagem, copy, landing, peças estáticas, e-mails, direção sensorial e briefings por canal | estratégia, economia, PDE e provas reais aprovados | pacote de comunicação e superfícies pré-compra versionados | redefinir estratégia, preço ou produto, produzir audiovisual final, revisar o próprio trabalho, publicar ou gastar |
 | Apolo | `videomaker` | `AUDIOVISUAL_PRODUCTION` — roteiro, cenas, áudio, montagem, legendas e entrega técnica de vídeo | estratégia, briefing e provas aprovadas | pacote audiovisual versionado | redefinir estratégia, criar landing, aprovar integridade ou publicar mídia |
-| Psique | `customer-agent` | `HUMAN_EXPERIENCE_REVIEW` — compreensão, reação afetiva e sensorial, prazer, desejo, esforço, confiança e objeções | artefato real e evidências técnicas determinísticas | parecer humano estruturado com evidências e ajustes | inventar fatos de mercado, decidir compliance, alterar preço ou materializar o artefato revisado |
+| Psique | `customer-agent` | `HUMAN_EXPERIENCE_REVIEW` — compreensão, reação afetiva, sensorial e estética, prazer, desejo, esforço, confiança e objeções | artefato real e evidências técnicas determinísticas | parecer humano estruturado com evidências e ajustes | inventar fatos de mercado, decidir compliance, alterar preço ou materializar o artefato revisado |
 | Têmis | `meta-ad-approver` | `COMMERCIAL_INTEGRITY_REVIEW` — verdade, prova, fidelidade à estratégia, direitos, compliance e segurança da comunicação | estratégia, artefato real e relatório técnico | gate independente de integridade com causa e correção requerida | criar copy, imagem, vídeo, landing ou produto; redefinir estratégia; aprovar trabalho produzido sob sua identidade |
 | Hermes | `growth-operator` | `GROWTH_OPERATION` — distribuição, instrumentação, atribuição, funil, gargalo, otimização e decisão de continuar, ajustar ou parar | estratégia imutável, ativos aprovados e eventos reais | contrato operacional e diagnóstico de crescimento | público, problema, desejo, posicionamento, tese de oferta, preço ou construção |
 
@@ -79,6 +79,13 @@ ou permitir que recomendação, tarefa, score, impacto estimado ou PR seja conta
 O backend valida esse contrato ao criar, atualizar ou publicar processos. Changelogs que publicam
 processos devem ser homologados fisicamente no MySQL 5.7 e testar que as versões vigentes não contêm
 coautoria nem domínio incompatível. Versões históricas permanecem imutáveis e auditáveis.
+
+Na operação vigente, Dédalo aceita somente os seis pares de arquitetura, jornada, entregáveis,
+acesso, degustação e personalização definidos no cânone de Íris. Íris aceita somente contrato de
+comunicação, pacote não audiovisual e as quatro atividades da landing. O worker deve testar o par
+completo `processCode/activityId`, porque nomes isolados podem existir em processos de domínios
+diferentes. Filas técnicas legadas não podem criar uma segunda autoridade nem concluir tarefas BPM
+de outro executor.
 
 ## Métrica e critérios
 

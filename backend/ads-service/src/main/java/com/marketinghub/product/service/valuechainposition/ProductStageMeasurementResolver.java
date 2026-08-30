@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductProcessPeriod;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductProcessPeriodRepository;
@@ -46,6 +48,7 @@ public class ProductStageMeasurementResolver {
 
   private final ProductProcessPeriodRepository periodRepository;
   private final CommercialPlanRepository commercialPlanRepository;
+  private final ExperimentRepository experimentRepository;
   private final AgentTaskRepository taskRepository;
   private final StudioCostLedgerEntryRepository studioLedgerRepository;
   private final ObjectMapper objectMapper;
@@ -56,12 +59,14 @@ public class ProductStageMeasurementResolver {
   public ProductStageMeasurementResolver(
       ProductProcessPeriodRepository periodRepository,
       CommercialPlanRepository commercialPlanRepository,
+      ExperimentRepository experimentRepository,
       AgentTaskRepository taskRepository,
       StudioCostLedgerEntryRepository studioLedgerRepository,
       ObjectMapper objectMapper) {
     this(
         periodRepository,
         commercialPlanRepository,
+        experimentRepository,
         taskRepository,
         studioLedgerRepository,
         objectMapper,
@@ -72,12 +77,14 @@ public class ProductStageMeasurementResolver {
   ProductStageMeasurementResolver(
       ProductProcessPeriodRepository periodRepository,
       CommercialPlanRepository commercialPlanRepository,
+      ExperimentRepository experimentRepository,
       AgentTaskRepository taskRepository,
       StudioCostLedgerEntryRepository studioLedgerRepository,
       ObjectMapper objectMapper,
       Clock clock) {
     this.periodRepository = periodRepository;
     this.commercialPlanRepository = commercialPlanRepository;
+    this.experimentRepository = experimentRepository;
     this.taskRepository = taskRepository;
     this.studioLedgerRepository = studioLedgerRepository;
     this.objectMapper = objectMapper;
@@ -244,7 +251,7 @@ public class ProductStageMeasurementResolver {
   }
 
   /**
-   * Reconhece a landing aprovada somente quando Dédalo, Quality Review, Psique e Têmis fecharam a
+   * Reconhece a landing aprovada somente quando Íris, Quality Review, Psique e Têmis fecharam a
    * mesma execução; publicação humana permanece fora deste objetivo.
    */
   private Instant approvedLandingAchievedAt(List<AgentTask> matchingTasks) {
@@ -539,7 +546,7 @@ public class ProductStageMeasurementResolver {
     return uncostedExecutions == 0 ? "COMPLETE" : "PARTIAL";
   }
 
-  /** Carrega uma única vez tarefas e ledger pertencentes aos planos do produto. */
+  /** Carrega tarefas dos planos e experimentos do produto e o ledger financeiro relacionado. */
   private MeasurementContext context(Product product) {
     List<CommercialPlan> plans = commercialPlanRepository.findByProductId(product.getId());
     Map<Long, AgentTask> tasks = new LinkedHashMap<>();
@@ -547,6 +554,12 @@ public class ProductStageMeasurementResolver {
       taskRepository
           .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
               "commercial-plan:" + plan.getId() + "@")
+          .forEach(task -> tasks.put(task.getId(), task));
+    }
+    for (Experiment experiment :
+        experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(product.getId())) {
+      taskRepository
+          .findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:" + experiment.getId())
           .forEach(task -> tasks.put(task.getId(), task));
     }
     Map<Long, StudioCostLedgerEntry> ledger = new LinkedHashMap<>();

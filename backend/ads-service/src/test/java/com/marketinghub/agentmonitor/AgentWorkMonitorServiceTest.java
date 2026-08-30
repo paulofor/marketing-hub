@@ -283,6 +283,54 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.difficulty()).isEqualTo("Timeout registrado");
   }
 
+  /** Impede que uma landing histórica esconda a atividade atual de produto atribuída a Dédalo. */
+  @Test
+  void shouldPrioritizeCurrentDedaloProductTaskOverHistoricalLanding() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent dedalo =
+        Agent.builder()
+            .id(7L)
+            .agentKey("landing-generator")
+            .nickname("Dédalo")
+            .name("Construtor do produto")
+            .build();
+    AgentTask productTask = new AgentTask();
+    productTask.setId(271L);
+    productTask.setStatus("IN_PROGRESS");
+    productTask.setTitle("Materializar a experiência de degustação");
+    productTask.setDescription("Construção funcional do valor antes da compra.");
+    productTask.setSourceReference("product:88");
+    productTask.setUpdatedAt(Instant.parse("2026-08-30T12:00:00Z"));
+    GeraLandingStageExecution historicalLanding =
+        GeraLandingStageExecution.builder()
+            .experimentId(87L)
+            .stageCode("landing-generation-agent-v1")
+            .status("COMPLETED")
+            .completedAt(Instant.parse("2026-08-29T12:00:00Z"))
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
+    when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("landing-generator"))
+        .thenReturn(List.of(productTask));
+    when(landings.findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1"))
+        .thenReturn(Optional.of(historicalLanding));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("WORKING");
+    assertThat(result.currentWork()).isEqualTo("Materializar a experiência de degustação");
+    assertThat(result.taskId()).isEqualTo(271L);
+    assertThat(result.sourceReference()).isEqualTo("product:88");
+  }
+
   /** Traduz falha de autenticação em orientação operacional sem expor o stack trace. */
   @Test
   void shouldExposeAuthenticationFailureAsShortActionableBlocker() {
@@ -500,9 +548,9 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.difficulty()).isNull();
   }
 
-  /** Atribui materialização visual aberta a Dédalo sem contaminar o perfil de Têmis. */
+  /** Atribui materialização visual aberta a Íris sem contaminar Dédalo ou Têmis. */
   @Test
-  void shouldExposeCurrentVisualMaterializationForDedalo() {
+  void shouldExposeCurrentVisualMaterializationForIris() {
     AgentRepository agents = mock(AgentRepository.class);
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
@@ -510,12 +558,12 @@ class AgentWorkMonitorServiceTest {
     CodexAgentExecutionTelemetryRepository telemetry =
         mock(CodexAgentExecutionTelemetryRepository.class);
     CreativeRepository creatives = mock(CreativeRepository.class);
-    Agent dedalo =
+    Agent iris =
         Agent.builder()
-            .id(7L)
-            .agentKey("landing-generator")
-            .nickname("Dédalo")
-            .name("Construtor de PDE")
+            .id(9L)
+            .agentKey("communication-director")
+            .nickname("Íris")
+            .name("Diretora de Comunicação")
             .build();
     Creative creative =
         Creative.builder()
@@ -524,15 +572,15 @@ class AgentWorkMonitorServiceTest {
             .agentReviewedAt(Instant.parse("2026-08-28T10:00:00Z"))
             .agentImprovementStatus(CreativeImprovementStatus.PROCESSING)
             .build();
-    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
-    when(creatives.findDedaloOpenMaterializations()).thenReturn(List.of(creative));
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(iris));
+    when(creatives.findIrisOpenMaterializations()).thenReturn(List.of(creative));
 
     AgentWorkMonitorResponse result =
         new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
             .list()
             .getFirst();
 
-    assertThat(result.agentKey()).isEqualTo("landing-generator");
+    assertThat(result.agentKey()).isEqualTo("communication-director");
     assertThat(result.workStatus()).isEqualTo("WORKING");
     assertThat(result.currentWork()).contains("Materialização visual", "#326");
     assertThat(result.progressDetail()).contains("Produzindo");

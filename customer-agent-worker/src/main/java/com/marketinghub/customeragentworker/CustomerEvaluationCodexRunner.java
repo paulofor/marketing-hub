@@ -26,6 +26,7 @@ public class CustomerEvaluationCodexRunner {
   private static final String BEHAVIORAL_V1 = "BEHAVIORAL_V1";
   private static final String BEHAVIORAL_V2 = "BEHAVIORAL_V2";
   private static final String BEHAVIORAL_V3 = "BEHAVIORAL_V3";
+  private static final String BEHAVIORAL_V4 = "BEHAVIORAL_V4";
   private static final Pattern PUBLIC_URL =
       Pattern.compile("https?://[^\\s]+", Pattern.CASE_INSENSITIVE);
   private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -71,7 +72,8 @@ public class CustomerEvaluationCodexRunner {
       String simulationVersion = String.valueOf(job.get("simulationVersion"));
       if (!BEHAVIORAL_V1.equals(simulationVersion)
           && !BEHAVIORAL_V2.equals(simulationVersion)
-          && !BEHAVIORAL_V3.equals(simulationVersion)) {
+          && !BEHAVIORAL_V3.equals(simulationVersion)
+          && !BEHAVIORAL_V4.equals(simulationVersion)) {
         return baselinePayload(baseline, baselinePrompt);
       }
 
@@ -279,13 +281,19 @@ public class CustomerEvaluationCodexRunner {
             .replace("{{ASSET_TYPE}}", String.valueOf(job.get("assetType")))
             .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")))
             .replace("{{BASELINE_JSON}}", objectMapper.writeValueAsString(baseline));
-    return BEHAVIORAL_V3.equals(simulationVersion)
-        ? prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", behavioralCoreV3())
-        : prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2());
+    if (BEHAVIORAL_V4.equals(simulationVersion)) {
+      return prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V4}}", behavioralCoreV4());
+    }
+    if (BEHAVIORAL_V3.equals(simulationVersion)) {
+      return prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", behavioralCoreV3());
+    }
+    return prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2());
   }
 
   /** Seleciona o prompt imutável correspondente à versão solicitada. */
   private String promptResource(String simulationVersion) {
+    if (BEHAVIORAL_V4.equals(simulationVersion))
+      return "prompts/customer-agent/behavioral-v4/evaluation.md";
     if (BEHAVIORAL_V3.equals(simulationVersion))
       return "prompts/customer-agent/behavioral-v3/evaluation.md";
     if (BEHAVIORAL_V2.equals(simulationVersion))
@@ -295,6 +303,8 @@ public class CustomerEvaluationCodexRunner {
 
   /** Seleciona o schema estrito correspondente à versão solicitada. */
   private String schemaResource(String simulationVersion) {
+    if (BEHAVIORAL_V4.equals(simulationVersion))
+      return "prompts/customer-agent/behavioral-v4/evaluation-schema.json";
     if (BEHAVIORAL_V3.equals(simulationVersion))
       return "prompts/customer-agent/behavioral-v3/evaluation-schema.json";
     if (BEHAVIORAL_V2.equals(simulationVersion))
@@ -310,6 +320,11 @@ public class CustomerEvaluationCodexRunner {
   /** Lê o núcleo sensorial compartilhado pelas novas execuções de Psique v3. */
   private String behavioralCoreV3() throws IOException {
     return read("prompts/psique/behavioral-core-v3.md");
+  }
+
+  /** Lê o núcleo estético compartilhado pelas novas execuções de Psique v4. */
+  private String behavioralCoreV4() throws IOException {
+    return read("prompts/psique/behavioral-core-v4.md");
   }
 
   /** Materializa um recurso do classpath para consumo seguro pelo processo Codex. */
@@ -343,7 +358,7 @@ public class CustomerEvaluationCodexRunner {
     validateBehavioral(result, BEHAVIORAL_V1);
   }
 
-  /** Rejeita simulações v2/v3 que omitam seus motores humanos obrigatórios. */
+  /** Rejeita simulações v2, v3 ou v4 que omitam seus motores humanos obrigatórios. */
   void validateBehavioral(JsonNode result, String simulationVersion) {
     validateBaseline(result);
     if (!result.has("initialState")
@@ -354,7 +369,9 @@ public class CustomerEvaluationCodexRunner {
         || !result.has("baselineComparison")) {
       throw new IllegalArgumentException("Resposta fora do contrato comportamental v1.");
     }
-    if ((BEHAVIORAL_V2.equals(simulationVersion) || BEHAVIORAL_V3.equals(simulationVersion))
+    if ((BEHAVIORAL_V2.equals(simulationVersion)
+            || BEHAVIORAL_V3.equals(simulationVersion)
+            || BEHAVIORAL_V4.equals(simulationVersion))
         && (!result.has("affectiveImpulse")
             || !result.has("motivationalDynamics")
             || !result.has("noveltyFamiliarity")
@@ -367,6 +384,9 @@ public class CustomerEvaluationCodexRunner {
     }
     if (BEHAVIORAL_V3.equals(simulationVersion)) {
       PsiqueSensoryContract.validate(result.path("sensoryExperience"));
+    }
+    if (BEHAVIORAL_V4.equals(simulationVersion)) {
+      PsiqueVisualCompositionContract.validate(result.path("sensoryExperience"));
     }
     int total = 0;
     var probabilities = result.get("actionProbabilities").fields();

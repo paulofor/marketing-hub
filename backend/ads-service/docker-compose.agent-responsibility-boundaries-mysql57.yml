@@ -64,3 +64,16 @@ services:
     depends_on:
       mysql57-agent-responsibility-boundaries:
         condition: service_healthy
+
+  liquibase-customer-agent-visual-composition:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2026-08-30-customer-agent-visual-composition-v4.yaml
+    depends_on:
+      mysql57-agent-responsibility-boundaries:
+        condition: service_healthy

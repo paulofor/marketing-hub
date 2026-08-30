@@ -43,7 +43,7 @@ tags:
   - name: landing-page-publication
     description: Aprovação e publicação da landing final.
   - name: landing-generator-agent
-    description: Executor independente Dédalo para rascunhos premium de landing.
+    description: Executor histórico de Dédalo mantido apenas para concluir rascunhos já materializados antes de Íris.
 paths:
   /api/experiments/{experimentId}/geralanding/wireframe/start:
     post:

@@ -1,6 +1,7 @@
 package com.marketinghub.businessprocess.execution;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,11 +14,14 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Responsabilidade: comprovar o contrato HTTP do histórico recente das atividades BPM. */
@@ -214,5 +218,59 @@ class BusinessProcessActivityExecutionControllerTest {
         .andExpect(jsonPath("$.productId").value(4))
         .andExpect(jsonPath("$.activityId").value("pdeGate"))
         .andExpect(jsonPath("$.sourceReference").value("experiment:90"));
+  }
+
+  /** Recebe a confirmação humana estruturada sem alterar o endpoint canônico da atividade. */
+  @Test
+  void requestsAuditedHumanDecision() throws Exception {
+    var service = mock(BusinessProcessActivityExecutionService.class);
+    when(service.requestProductActivityExecution(
+            org.mockito.ArgumentMatchers.eq(56L),
+            org.mockito.ArgumentMatchers.eq(9L),
+            org.mockito.ArgumentMatchers.eq("authorization"),
+            org.mockito.ArgumentMatchers.any(ProductProcessActivityExecutionRequest.class)))
+        .thenReturn(
+            new ProductProcessActivityExecutionRequestResponse(
+                56L,
+                9L,
+                "authorization",
+                "experiment:89",
+                List.of(),
+                "COMPLETED",
+                true,
+                "Decisão registrada."));
+    var mockMvc =
+        MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(service))
+            .build();
+
+    mockMvc
+        .perform(
+            post("/api/business-processes/56/products/9/activities/authorization/execution-requests")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "decision":"APPROVE",
+                      "operatorName":"Paulo Operador",
+                      "justification":"Gates e teto financeiro revisados.",
+                      "evidenceReference":"experiment-run:12",
+                      "confirmationToken":"CONFIRM:pde-commercial-homologation-activation:authorization"
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.operationalState").value("COMPLETED"))
+        .andExpect(jsonPath("$.objectiveAchieved").value(true));
+
+    ArgumentCaptor<ProductProcessActivityExecutionRequest> request =
+        ArgumentCaptor.forClass(ProductProcessActivityExecutionRequest.class);
+    verify(service)
+        .requestProductActivityExecution(
+            org.mockito.ArgumentMatchers.eq(56L),
+            org.mockito.ArgumentMatchers.eq(9L),
+            org.mockito.ArgumentMatchers.eq("authorization"),
+            request.capture());
+    org.assertj.core.api.Assertions.assertThat(request.getValue().decision()).isEqualTo("APPROVE");
+    org.assertj.core.api.Assertions.assertThat(request.getValue().evidenceReference())
+        .isEqualTo("experiment-run:12");
   }
 }

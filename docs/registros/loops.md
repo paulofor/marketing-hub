@@ -92,6 +92,25 @@
 - **Prevenção:** teste de contrato do Plutus exige concordância da versão de saúde e presença da
   referência de build no workflow; o cânone proíbe `local` em produção.
 
+## LOOP-CUSTOMER-AGENT-BACKEND-DEPLOY-RACE — deploy da Psique termina antes do backend correspondente
+
+- **Data:** 2026-08-30.
+- **Sintoma confirmado no GitHub Actions:** a execução `33317856327` publicou o
+  `customer-agent-worker` v5, mas terminou vermelha após informar primeiro `esperado=4 implantado=5`
+  e depois receber `ECONNREFUSED` do backend. O workflow da aplicação do mesmo commit permaneceu em
+  execução e só concluiu com sucesso depois que a janela de 12 tentativas da Psique já havia acabado.
+- **Causa-raiz confirmada pelo histórico:** os workflows de aplicação e da Psique eram iniciados em
+  paralelo no mesmo push, embora a versão canônica do executor seja persistida pelo deploy do
+  backend. O gate semântico do worker estava correto, mas não existia coordenação entre os dois
+  workflows; aumentar ou repetir apenas a sonda manteria a corrida.
+- **Correção sistêmica:** em pushes da `main`, o deploy da Psique aguarda a conclusão bem-sucedida do
+  workflow oficial `deploy-containers.yml` para o mesmo SHA antes de sincronizar ou reiniciar o
+  worker. Execuções manuais continuam usando o gate semântico contra o backend já publicado. A
+  referência imutável do build também passa a ser o SHA do commit, nunca `local`.
+- **Prevenção:** teste de contrato simula atraso, indisponibilidade transitória, falha e ausência do
+  workflow correspondente; a publicação do worker permanece bloqueada diante de qualquer resultado
+  diferente de sucesso e ainda exige versão vigente, autenticação Codex e health operacional.
+
 ## LOOP-PLUTUS-EXECUCAO-FORA-DA-AUDITORIA-TAREFA — parecer termina sem evidências no BPM
 
 - **Data:** 2026-08-28.

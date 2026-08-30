@@ -173,6 +173,54 @@ bloqueada, seu erro, evidências, consumo e custo, e não reabre atividade concl
 tarefa existente e não duplica custo nem execução. O backend expõe a disponibilidade e o motivo; o
 frontend apenas apresenta essa verdade e nunca transforma bloqueio em permissão por inferência.
 
+### Controle padronizado de execução das atividades
+
+Toda atividade exibida na visão de produto deve receber do backend um `executionControl`, inclusive
+quando ainda não existe comando manual seguro. Esse contrato é a fonte de verdade para responsável,
+tipo de interação, disponibilidade, causa, pré-requisitos, confirmação, área operacional e
+subprocesso de destino. O frontend não identifica execução por nome da atividade, `owner`, código do
+processo ou heurística local.
+
+Os tipos canônicos são:
+
+- `COMMAND`: abre tarefa de agente ou executa comando determinístico do backend pelo endpoint
+  canônico da atividade;
+- `WORKSPACE`: combina o comando backend com uma área operacional oficial, como run e homologação de
+  experimento, sem criar tentativa paralela;
+- `SUBPROCESS`: abre a versão publicada do subprocesso responsável; o backend conclui a atividade pai
+  somente a partir do resultado persistido do filho;
+- `APPROVAL`: coleta decisão humana explícita e auditável;
+- `AUTOMATIC`: explica qual evento técnico o backend aguarda e não fabrica botão manual inseguro;
+- `STATUS`: preserva histórico ou ausência de contrato sem sugerir execução inexistente.
+
+O mesmo `POST
+/api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests`
+continua sendo o único comando mutável da tela. Atividades de agente e backend podem enviar corpo
+vazio. Uma atividade `APPROVAL` deve enviar `decision`, `operatorName`, `justification`,
+`evidenceReference` e o `confirmationToken` específico devolvido pelo backend. A decisão aceita é
+`APPROVE` ou `REJECT`; texto incompleto, confirmação de outra atividade, versão não publicada,
+produto em `STOP`, atividade fora de ordem ou tentativa ativa são rejeitados antes de qualquer
+efeito.
+
+A instância BPM preserva decisão, responsável informado, justificativa, evidência, confirmação e
+data. Aprovação conclui o objetivo; reprovação bloqueia com causa e permite nova ocorrência sem apagar
+a anterior. Quando a aprovação tiver efeito de domínio — ativação, publicação, gasto ou outra mudança
+material — um handler backend específico deve validar os requisitos persistidos e aplicar o efeito na
+mesma transação antes de concluir a instância. Ausência de handler especializado permite somente o
+registro da autorização descrita pela própria atividade; nunca autoriza efeito externo implícito.
+Antes do efeito, o backend reserva e persiste a ocorrência em andamento; a chave única da atividade,
+referência e ocorrência impede duas decisões concorrentes de aplicar o mesmo efeito. Uma referência
+`experiment:<id>` sempre resolve exatamente esse experimento e valida sua pertença ao produto; é
+proibido substituir silenciosamente pelo experimento mais recente.
+
+Na homologação comercial PDE, `preflight` usa o workspace do run produtivo oficial. Criar run,
+executar gates e registrar homologação atualizam automaticamente a instância BPM; um run pendente não
+pode ser reexecutado de forma que apague evidências. `authorization` expõe todos os requisitos de
+`RUNNING`, exige teto financeiro positivo e uma confirmação que informa experimento, amostra e teto.
+A ação não cria campanha paga. Um run concluído por uma superfície anterior pode ser reconciliado
+com a atividade sem reexecutar ou apagar gates. O backend mantém atividades backend sem comando explícito como
+`AUTOMATIC`, mostrando o evento aguardado em vez de permitir conclusão manual sem evidência.
+
 ## Execuções independentes de produto
 
 Cada versão de processo declara explicitamente `executionScope`, sem inferência por nome, posição na

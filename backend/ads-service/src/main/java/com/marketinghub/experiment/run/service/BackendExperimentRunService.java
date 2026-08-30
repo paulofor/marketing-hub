@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,17 +51,35 @@ public class BackendExperimentRunService {
   private final ExperimentRunRepository experimentRunRepository;
   private final ExperimentRunGateResultRepository gateResultRepository;
   private final MoisCommercialDossierPreflightService moisCommercialDossierPreflightService;
+  private final PdeCommercialPreflightActivityProjector preflightActivityProjector;
 
-  /** Inicializa o serviço com os repositórios canônicos de experimento e run. */
+  /** Inicializa o serviço com os repositórios e a projeção canônica do preflight no BPM. */
+  @Autowired
   public BackendExperimentRunService(
       ExperimentRepository experimentRepository,
       ExperimentRunRepository experimentRunRepository,
       ExperimentRunGateResultRepository gateResultRepository,
-      MoisCommercialDossierPreflightService moisCommercialDossierPreflightService) {
+      MoisCommercialDossierPreflightService moisCommercialDossierPreflightService,
+      PdeCommercialPreflightActivityProjector preflightActivityProjector) {
     this.experimentRepository = experimentRepository;
     this.experimentRunRepository = experimentRunRepository;
     this.gateResultRepository = gateResultRepository;
     this.moisCommercialDossierPreflightService = moisCommercialDossierPreflightService;
+    this.preflightActivityProjector = preflightActivityProjector;
+  }
+
+  /** Mantém os testes unitários que não exercitam a projeção no processo comercial. */
+  BackendExperimentRunService(
+      ExperimentRepository experimentRepository,
+      ExperimentRunRepository experimentRunRepository,
+      ExperimentRunGateResultRepository gateResultRepository,
+      MoisCommercialDossierPreflightService moisCommercialDossierPreflightService) {
+    this(
+        experimentRepository,
+        experimentRunRepository,
+        gateResultRepository,
+        moisCommercialDossierPreflightService,
+        null);
   }
 
   /** Cria um novo run sequencial para o experimento sem alterar o status legado do experimento. */
@@ -93,7 +112,9 @@ public class BackendExperimentRunService {
             .requestedAt(now)
             .createdBy(request != null ? request.createdBy() : null)
             .build();
-    return toResponse(experimentRunRepository.save(run));
+    ExperimentRun savedRun = experimentRunRepository.save(run);
+    synchronizePreflightActivity(savedRun, List.of());
+    return toResponse(savedRun);
   }
 
   /** Lista todos os runs de um experimento na ordem em que foram criados. */
@@ -124,6 +145,7 @@ public class BackendExperimentRunService {
         run.getPreflightStartedAt() != null ? run.getPreflightStartedAt() : Instant.now());
     updateRunFromGates(run, savedGates);
     ExperimentRun savedRun = experimentRunRepository.save(run);
+    synchronizePreflightActivity(savedRun, savedGates);
     return toPreflightResponse(savedRun, savedGates);
   }
 
@@ -156,7 +178,28 @@ public class BackendExperimentRunService {
     List<ExperimentRunGateResult> savedGates = gateResultRepository.saveAll(gates);
     updateRunFromGates(run, savedGates);
     ExperimentRun savedRun = experimentRunRepository.save(run);
+    synchronizePreflightActivity(savedRun, savedGates);
     return toPreflightResponse(savedRun, savedGates);
+  }
+
+  /** Projeta o estado técnico no processo do produto quando a integração BPM está disponível. */
+  private void synchronizePreflightActivity(
+      ExperimentRun run, List<ExperimentRunGateResult> gates) {
+    if (preflightActivityProjector != null) {
+      preflightActivityProjector.synchronize(run, gates);
+    }
+  }
+
+  /** Reconcilia um run já existente com a atividade BPM sem recriar gates ou evidências. */
+  @Transactional
+  public void synchronizePreflightActivity(Long runId) {
+    ExperimentRun run =
+        experimentRunRepository
+            .findById(runId)
+            .orElseThrow(() -> new IllegalArgumentException("run not found"));
+    List<ExperimentRunGateResult> gates =
+        gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
+    synchronizePreflightActivity(run, gates);
   }
 
   /** Consulta o último resultado de preflight persistido para o run. */

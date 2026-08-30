@@ -16,6 +16,8 @@ on:
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
+      - scripts/wait-for-app-deployment.mjs
+      - scripts/wait-for-app-deployment.test.mjs
   pull_request:
     paths:
       - customer-agent-worker/**
@@ -30,6 +32,8 @@ on:
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
+      - scripts/wait-for-app-deployment.mjs
+      - scripts/wait-for-app-deployment.test.mjs
   workflow_dispatch:
 
 concurrency:
@@ -38,6 +42,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   VPS_IP: 163.245.202.80
@@ -55,6 +60,8 @@ jobs:
           node-version: 22
       - name: Build immutable commercial evidence
         run: node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
+      - name: Validate application deploy coordination
+        run: node --test scripts/wait-for-app-deployment.test.mjs
       - name: Validate premium agent architecture
         run: bash scripts/validate-premium-agents.sh
       - uses: actions/setup-java@v4
@@ -106,6 +113,13 @@ jobs:
           node-version: 22
       - name: Build immutable commercial evidence
         run: node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
+      - name: Wait for matching application deployment
+        if: github.event_name == 'push'
+        timeout-minutes: 45
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
+        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
       - name: Add agent VPS SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -131,6 +145,7 @@ jobs:
                    CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home \
                    MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
                    CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
+                   AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
             && cd '${REPOSITORY_DIR}/customer-agent-worker' \
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \

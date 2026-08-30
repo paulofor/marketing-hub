@@ -3,12 +3,14 @@ package com.marketinghub.businessprocess.execution.controller;
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,14 +48,18 @@ public class BusinessProcessActivityExecutionController {
     return service.productProcessExecutions(processDefinitionId, productId);
   }
 
-  /** Solicita todas as tarefas responsáveis pela atividade publicada do produto. */
-  @Operation(summary = "Inicia atomicamente a atividade do produto")
+  /** Executa o comando ou registra a decisão humana da atividade publicada do produto. */
+  @Operation(summary = "Inicia ou decide atomicamente a atividade do produto")
   @PostMapping(
       "/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests")
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       @PathVariable Long processDefinitionId,
       @PathVariable Long productId,
-      @PathVariable String activityId) {
-    return service.requestProductActivityExecution(processDefinitionId, productId, activityId);
+      @PathVariable String activityId,
+      @RequestBody(required = false) ProductProcessActivityExecutionRequest request) {
+    return request == null
+        ? service.requestProductActivityExecution(processDefinitionId, productId, activityId)
+        : service.requestProductActivityExecution(
+            processDefinitionId, productId, activityId, request);
   }
 }

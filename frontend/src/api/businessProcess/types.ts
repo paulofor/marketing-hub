@@ -286,6 +286,46 @@ export type ProductProcessActivityExecutionGroup = {
   tasks: BusinessProcessActivityExecution[];
   executionRequestAvailable: boolean;
   executionRequestReason: string;
+  executionControl?: ProductProcessActivityExecutionControl;
+};
+
+export type ProductProcessActivityRequirement = {
+  code: string;
+  title: string;
+  satisfied: boolean;
+  detail: string;
+  recommendation: string;
+};
+
+export type ProductProcessActivityExecutionControl = {
+  executorType: "AGENT" | "BACKEND" | "HUMAN" | "HISTORICAL" | "UNCONFIGURED";
+  interactionType:
+    | "COMMAND"
+    | "WORKSPACE"
+    | "APPROVAL"
+    | "SUBPROCESS"
+    | "AUTOMATIC"
+    | "STATUS";
+  actionLabel?: string;
+  description: string;
+  actionAvailable: boolean;
+  availabilityReason: string;
+  confirmationRequired: boolean;
+  confirmationTitle?: string;
+  confirmationMessage?: string;
+  confirmationToken?: string;
+  workspaceCode?: "EXPERIMENT_PREFLIGHT" | "EXPERIMENT_ACTIVATION";
+  workspaceReferenceId?: number;
+  targetProcessDefinitionId?: number;
+  requirements: ProductProcessActivityRequirement[];
+};
+
+export type ProductProcessActivityHumanDecision = {
+  decision: "APPROVE" | "REJECT";
+  operatorName: string;
+  justification: string;
+  evidenceReference: string;
+  confirmationToken: string;
 };
 
 export type ProductProcessActivityExecutionRequest = {

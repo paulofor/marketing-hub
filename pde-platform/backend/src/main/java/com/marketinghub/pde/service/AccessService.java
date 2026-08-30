@@ -22,6 +22,7 @@ import com.marketinghub.pde.dto.OperationalMissionCompletionRequest.DeliverySect
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.PrivacyActionRequest;
 import com.marketinghub.pde.dto.PrivacyActionResponse;
+import com.marketinghub.pde.dto.SupportRequestResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.model.AccessGrant;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -87,6 +88,7 @@ public class AccessService {
     private final PdeDatabaseMigrationService databaseMigrationService;
     private final PdeMailService mailService;
     private final GoogleIdentityService googleIdentityService;
+    private final RigelPaidEntitlementService rigelPaidEntitlementService;
     private final Set<String> internalExcludedIps;
     private final Map<String, AccessGrant> accessByToken = new ConcurrentHashMap<>();
 
@@ -105,7 +107,8 @@ public class AccessService {
             @Value("${pde.analytics.internal-excluded-ips:}") String internalExcludedIps,
             PdeDatabaseMigrationService databaseMigrationService,
             PdeMailService mailService,
-            GoogleIdentityService googleIdentityService) {
+            GoogleIdentityService googleIdentityService,
+            RigelPaidEntitlementService rigelPaidEntitlementService) {
         this.productCatalogService = productCatalogService;
         this.objectMapper = objectMapper;
         this.storagePath = Path.of(storagePath);
@@ -118,12 +121,45 @@ public class AccessService {
         this.databaseMigrationService = databaseMigrationService;
         this.mailService = mailService;
         this.googleIdentityService = googleIdentityService;
+        this.rigelPaidEntitlementService = rigelPaidEntitlementService;
         this.internalExcludedIps = parseInternalExcludedIps(internalExcludedIps);
         validateJdbcStorageRequirement();
         if (usesJdbcStorage() && databaseMigrationService != null) {
             databaseMigrationService.migrateIfNeeded();
         }
         loadPersistedAccess();
+    }
+
+    /** Mantém a construção explícita legada de testes e cria a guarda financeira pelo mesmo banco. */
+    public AccessService(
+            ProductCatalogService productCatalogService,
+            ObjectMapper objectMapper,
+            String storagePath,
+            String jdbcUrl,
+            String jdbcUsername,
+            String jdbcPassword,
+            boolean requireJdbcStorage,
+            String appBaseUrl,
+            boolean exposeMagicLinkInResponse,
+            String internalExcludedIps,
+            PdeDatabaseMigrationService databaseMigrationService,
+            PdeMailService mailService,
+            GoogleIdentityService googleIdentityService) {
+        this(
+                productCatalogService,
+                objectMapper,
+                storagePath,
+                jdbcUrl,
+                jdbcUsername,
+                jdbcPassword,
+                requireJdbcStorage,
+                appBaseUrl,
+                exposeMagicLinkInResponse,
+                internalExcludedIps,
+                databaseMigrationService,
+                mailService,
+                googleIdentityService,
+                new RigelPaidEntitlementService(jdbcUrl, jdbcUsername, jdbcPassword));
     }
 
     /** Recebe dependências explícitas para testes e inicialização controlada. */
@@ -183,12 +219,57 @@ public class AccessService {
                         ? null
                         : new PdeDatabaseMigrationService(jdbcUrl, jdbcUsername, jdbcPassword),
                 mailService,
-                googleIdentityService);
+                googleIdentityService,
+                new RigelPaidEntitlementService(jdbcUrl, jdbcUsername, jdbcPassword));
     }
 
     /** Recebe dependências para testes locais com persistência em arquivo. */
     public AccessService(ProductCatalogService productCatalogService, ObjectMapper objectMapper, String storagePath) {
         this(productCatalogService, objectMapper, storagePath, "", "", "", false, "http://localhost:5176", true, null, null);
+    }
+
+    /** Recebe a guarda financeira explícita para testes de entitlement sem provedor externo. */
+    AccessService(
+            ProductCatalogService productCatalogService,
+            ObjectMapper objectMapper,
+            String storagePath,
+            RigelPaidEntitlementService rigelPaidEntitlementService) {
+        this(
+                productCatalogService,
+                objectMapper,
+                storagePath,
+                "http://localhost:5176",
+                true,
+                null,
+                null,
+                rigelPaidEntitlementService);
+    }
+
+    /** Recebe e-mail e guarda financeira explícitos para testes controlados de login pago. */
+    AccessService(
+            ProductCatalogService productCatalogService,
+            ObjectMapper objectMapper,
+            String storagePath,
+            String appBaseUrl,
+            boolean exposeMagicLinkInResponse,
+            PdeMailService mailService,
+            GoogleIdentityService googleIdentityService,
+            RigelPaidEntitlementService rigelPaidEntitlementService) {
+        this.productCatalogService = productCatalogService;
+        this.objectMapper = objectMapper;
+        this.storagePath = Path.of(storagePath);
+        this.jdbcUrl = "";
+        this.jdbcUsername = "";
+        this.jdbcPassword = "";
+        this.requireJdbcStorage = false;
+        this.appBaseUrl = appBaseUrl;
+        this.exposeMagicLinkInResponse = exposeMagicLinkInResponse;
+        this.databaseMigrationService = null;
+        this.mailService = mailService;
+        this.googleIdentityService = googleIdentityService;
+        this.rigelPaidEntitlementService = rigelPaidEntitlementService;
+        this.internalExcludedIps = Set.of();
+        loadPersistedAccess();
     }
 
     /** Cria um acesso para um produto existente e retorna a URL da área da cliente. */
@@ -199,6 +280,13 @@ public class AccessService {
     /** Cria ou atualiza um acesso preservando a versão comercial que originou a entrada. */
     public AccessResponse createAccess(
             String productSlug, String email, String source, String experienceVersion) {
+        if (requiresRigelPaidEntitlement(productSlug)) {
+            if (!"INTERNAL_QA".equalsIgnoreCase(source)) {
+                throw new SecurityException(
+                        "O Kit WhatsApp Pronto só libera acesso após pagamento Mercado Pago confirmado");
+            }
+            requireRigelPaidExperienceVersion(experienceVersion);
+        }
         resolveProduct(productSlug, experienceVersion);
         AccessGrant existingGrant = findGrantByEmail(productSlug, email);
         if (existingGrant != null) {
@@ -270,6 +358,10 @@ public class AccessService {
             String paymentStatus,
             String experienceVersion,
             boolean newlyVerifiedPayment) {
+        if (requiresRigelPaidEntitlement(productSlug)) {
+            throw new SecurityException(
+                    "O Kit WhatsApp Pronto exige pagamento confirmado no checkout Mercado Pago publicado");
+        }
         ProductExperienceResponse paidProduct = resolveProduct(productSlug, experienceVersion);
         if (buyerEmail == null || buyerEmail.isBlank()) {
             throw new IllegalArgumentException("Transacao Pepper sem e-mail da compradora");
@@ -351,6 +443,48 @@ public class AccessService {
         return true;
     }
 
+    /** Revoga o grant do Kit após o webhook autoritativo e registra o reembolso uma única vez. */
+    public boolean revokeMercadoPagoPaidAccess(
+            String buyerEmail, String transactionId, String refundStatus) {
+        AccessGrant grant = findGrantByEmail(RigelPaidEntitlementService.PRODUCT_SLUG, buyerEmail);
+        if (grant == null) {
+            return false;
+        }
+        if (RigelPaidEntitlementService.REFUNDED_SOURCE.equals(grant.getSource())) {
+            return false;
+        }
+        if (!RigelPaidEntitlementService.PAID_SOURCE.equals(grant.getSource())) {
+            throw new IllegalArgumentException("Acesso correlacionado não pertence a uma compra Mercado Pago ativa");
+        }
+        var confirmedRefund = rigelPaidEntitlementService.findConfirmedRefund(
+                buyerEmail, transactionId, grant.getToken());
+        if (confirmedRefund.isEmpty()) {
+            return false;
+        }
+        RigelPaidEntitlementService.RefundClaim refund = confirmedRefund.get();
+        Instant refundedAt = refund.confirmedAt();
+        grant.revokePaidAccess(RigelPaidEntitlementService.REFUNDED_SOURCE, refundedAt);
+        persistAccess(grant);
+        Map<String, Object> refundMetadata = new LinkedHashMap<>();
+        refundMetadata.put("paymentId", refund.transactionId());
+        refundMetadata.put("amountBrl", refund.amountBrl());
+        refundMetadata.put("currency", refund.currency());
+        refundMetadata.put("providerStatus", refund.providerStatus());
+        refundMetadata.put("confirmedAt", refund.confirmedAt().toString());
+        refundMetadata.put("reason", refundStatus);
+        refundMetadata.put("idempotencyKey", "refund:" + refund.transactionId());
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "REFUND_CONFIRMED",
+                grant.getToken(),
+                grant.getEmail(),
+                RigelPaidEntitlementService.PAID_SOURCE,
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, refundMetadata)));
+        return true;
+    }
+
     /** Gera ou reutiliza o acesso e envia um link mágico para o e-mail da cliente. */
     public MagicLinkResponse requestMagicLink(String productSlug, String email) {
         return requestMagicLink(productSlug, email, "");
@@ -359,17 +493,26 @@ public class AccessService {
     /** Envia link mágico vinculado à versão comercial que iniciou a degustação. */
     public MagicLinkResponse requestMagicLink(
             String productSlug, String email, String experienceVersion) {
+        if (requiresRigelPaidEntitlement(productSlug)) {
+            return requestExistingMagicLink(productSlug, email);
+        }
         AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK", experienceVersion);
         return sendAccessLink(productSlug, access.email(), access.accessUrl());
     }
 
     /** Envia link mágico apenas quando já existe cadastro para o e-mail informado. */
     public MagicLinkResponse requestExistingMagicLink(String productSlug, String email) {
-        productCatalogService.getProduct(productSlug);
-        AccessGrant grant = findGrantByEmail(productSlug, email);
-        if (grant == null) {
-            throw new IllegalArgumentException("Cadastro da Área MUSA não encontrado para este e-mail");
+        AccessGrant grant;
+        if (requiresRigelPaidEntitlement(productSlug)) {
+            grant = ensureRigelPaidAccess(email);
+        } else {
+            productCatalogService.getProduct(productSlug);
+            grant = findGrantByEmail(productSlug, email);
+            if (grant == null) {
+                throw new IllegalArgumentException("Cadastro da Área MUSA não encontrado para este e-mail");
+            }
         }
+        requirePaidEntitlementIfNeeded(grant);
         recordFunnelEvent(new FunnelEventRequest(
                 productSlug,
                 "LOGIN_COMPLETED",
@@ -381,7 +524,7 @@ public class AccessService {
                     Map.of(
                             "method", "existing_customer_magic_link",
                             "experienceVersion", grant.getExperienceVersion())));
-        return sendAccessLink(productSlug, grant.getEmail(), "/access/" + grant.getToken());
+        return sendAccessLink(productSlug, grant.getEmail(), clientAccessUrl(grant.getToken()));
     }
 
     /** Autentica ou cria acesso da cliente validada pelo Google. */
@@ -390,7 +533,14 @@ public class AccessService {
             throw new IllegalArgumentException("Login com Google ainda não configurado para a Área MUSA");
         }
         String verifiedEmail = googleIdentityService.verifyEmail(idToken);
-        AccessResponse access = createAccess(productSlug, verifiedEmail, "GOOGLE");
+        AccessResponse access;
+        if (requiresRigelPaidEntitlement(productSlug)) {
+            AccessGrant grant = ensureRigelPaidAccess(verifiedEmail);
+            requirePaidEntitlementIfNeeded(grant);
+            access = toAccessResponse(grant);
+        } else {
+            access = createAccess(productSlug, verifiedEmail, "GOOGLE");
+        }
         recordFunnelEvent(new FunnelEventRequest(
                 productSlug,
                 "LOGIN_COMPLETED",
@@ -403,10 +553,16 @@ public class AccessService {
         return access;
     }
 
+    /** Informa se o produto usa a reconciliação legada Pepper ao faltar um acesso local. */
+    public boolean supportsPepperLoginReconciliation(String productSlug) {
+        return MUSA_PRODUCT_SLUG.equals(productSlug);
+    }
+
     /** Registra um evento comercial da jornada PED/MUSA para medição do funil. */
     public FunnelEventResponse recordFunnelEvent(FunnelEventRequest request) {
         ProductExperienceResponse product = productCatalogService.getProduct(request.productSlug());
         String normalizedEventType = normalizeEventType(request.eventType());
+        RigelCommercialEventContract.requireComplete(request, normalizedEventType);
         String eventId = resolveFunnelEventId(request, normalizedEventType, product);
         if (isInternalExcludedIp(request.clientIp())) {
             log.info(
@@ -773,6 +929,7 @@ public class AccessService {
     /** Retorna a área de trabalho da cliente com produto e progresso atuais. */
     public WorkspaceResponse getWorkspace(String token) {
         AccessGrant grant = getGrant(token);
+        requirePaidEntitlementIfNeeded(grant);
         ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         Set<String> completedMissionIds = grant.getCompletedMissionIds();
         int totalMissions = product.missions().size();
@@ -800,6 +957,7 @@ public class AccessService {
             throw new SecurityException("Token de acesso do material não informado");
         }
         AccessGrant grant = getGrant(token);
+        requirePaidEntitlementIfNeeded(grant);
         if (!"ACTIVE".equals(resolveSubscriptionStatus(grant))) {
             throw new SecurityException("Material disponível somente durante o acesso pago vigente");
         }
@@ -808,6 +966,7 @@ public class AccessService {
     /** Marca uma missão da cliente como concluída sem permitir avanço de etapas operacionais. */
     public void completeMission(String token, String missionId) {
         AccessGrant grant = getGrant(token);
+        requirePaidEntitlementIfNeeded(grant);
         ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
         validateMissionAccess(product, grant, missionId);
@@ -815,63 +974,24 @@ public class AccessService {
         validateMissionOrder(product, grant, mission);
         validateCustomerCompletionEvidence(product, grant, mission);
         boolean firstCompletedMission = grant.getCompletedMissionIds().isEmpty();
-        boolean alreadyCompleted = grant.getCompletedMissionIds().contains(missionId);
-        if (alreadyCompleted) {
+        if (grant.getCompletedMissionIds().contains(missionId)) {
             return;
         }
+        Instant completedAt = Instant.now();
         grant.completeMission(missionId);
         persistAccess(grant);
-        if (firstCompletedMission) {
-            recordFunnelEvent(new FunnelEventRequest(
-                    grant.getProductSlug(),
-                    "FIRST_USE",
-                    grant.getToken(),
-                    grant.getEmail(),
-                    grant.getSource(),
-                    "pde-platform",
-                    null,
-                    Map.of(
-                            "activationType", "mission_completion",
-                            "missionId", missionId,
-                            "experienceVersion", grant.getExperienceVersion(),
-                            "idempotencyKey", "first-use")));
+        recordMissionCompleted(grant, missionId, completedAt, "CUSTOMER");
+        boolean assistedDeliveryJourney = usesAssistedDeliveryLifecycle(product);
+        if (assistedDeliveryJourney && "primeira-aplicacao-e-revisao".equals(missionId)) {
+            recordFirstUse(grant, missionId, completedAt);
+        } else if (!assistedDeliveryJourney && firstCompletedMission) {
+            recordLegacyFirstUse(grant, missionId, completedAt);
         }
-        recordFunnelEvent(new FunnelEventRequest(
-                grant.getProductSlug(),
-                "MISSION_COMPLETED",
-                grant.getToken(),
-                grant.getEmail(),
-                grant.getSource(),
-                "pde-platform",
-                null,
-                Map.of(
-                        "missionId", missionId,
-                        "experienceVersion", grant.getExperienceVersion(),
-                        "idempotencyKey", "mission-completed:" + missionId)));
         if (grant.getCompletedMissionIds().size() == product.missions().size()) {
-            Map<String, Object> completionMetadata = Map.of(
-                    "missionId", missionId,
-                    "completedMissions", grant.getCompletedMissionIds().size(),
-                    "experienceVersion", grant.getExperienceVersion(),
-                    "idempotencyKey", "journey-delivered");
-            recordFunnelEvent(new FunnelEventRequest(
-                    grant.getProductSlug(),
-                    "JOURNEY_COMPLETED",
-                    grant.getToken(),
-                    grant.getEmail(),
-                    grant.getSource(),
-                    "pde-platform",
-                    null,
-                    completionMetadata));
-            recordFunnelEvent(new FunnelEventRequest(
-                    grant.getProductSlug(),
-                    "DELIVERY_COMPLETED",
-                    grant.getToken(),
-                    grant.getEmail(),
-                    grant.getSource(),
-                    "pde-platform",
-                    null,
-                    completionMetadata));
+            recordJourneyCompleted(grant, missionId, completedAt);
+            if (!assistedDeliveryJourney) {
+                recordLegacyJourneyDeliveryCompleted(grant, missionId, completedAt);
+            }
         }
     }
 
@@ -884,21 +1004,158 @@ public class AccessService {
     public void completeOperationalMission(
             String token, String missionId, OperationalMissionCompletionRequest request) {
         AccessGrant grant = getGrant(token);
-        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        requirePaidEntitlementIfNeeded(grant);
+        ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
         validateMissionRole(mission, "OPERATION");
         validateMissionOrder(product, grant, mission);
+        if (grant.getCompletedMissionIds().contains(missionId)) {
+            return;
+        }
+        String deliveryVersion = null;
         if (requiresDeliveryArtifact(missionId)) {
             Map<String, String> delivery = validateDeliveryArtifact(mission, request);
             grant.saveMissionInteraction(missionId, delivery);
+            deliveryVersion = delivery.get(DELIVERY_VERSION_KEY);
         }
+        Instant completedAt = Instant.now();
         grant.completeMission(missionId);
         persistAccess(grant);
+        recordMissionCompleted(grant, missionId, completedAt, "OPERATION");
+        if ("entrega-completa-48h".equals(missionId)) {
+            recordAssistedDeliveryCompleted(grant, missionId, deliveryVersion, completedAt);
+        }
+    }
+
+    /** Registra a conclusão de uma missão com correlação temporal e autoridade explícita. */
+    private void recordMissionCompleted(
+            AccessGrant grant, String missionId, Instant completedAt, String completionRole) {
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "MISSION_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, Map.of(
+                        "missionId", missionId,
+                        "completionRole", completionRole,
+                        "completedAt", completedAt.toString(),
+                        "experienceVersion", grant.getExperienceVersion(),
+                        "idempotencyKey", "mission-completed:" + missionId))));
+    }
+
+    /** Registra o primeiro uso somente quando a cliente comprova a primeira aplicação real. */
+    private void recordFirstUse(AccessGrant grant, String missionId, Instant occurredAt) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("activationType", "validated_first_application");
+        metadata.put("missionId", missionId);
+        metadata.put("applicationStatus", "APPLIED");
+        metadata.put("occurredAt", occurredAt.toString());
+        metadata.put("experienceVersion", grant.getExperienceVersion());
+        metadata.put("idempotencyKey", "first-use");
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "FIRST_USE",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, metadata)));
+    }
+
+    /** Preserva a ativação legada para produtos cujo primeiro marco já representa uso de valor. */
+    private void recordLegacyFirstUse(AccessGrant grant, String missionId, Instant occurredAt) {
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "FIRST_USE",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, Map.of(
+                        "activationType", "mission_completion",
+                        "missionId", missionId,
+                        "occurredAt", occurredAt.toString(),
+                        "experienceVersion", grant.getExperienceVersion(),
+                        "idempotencyKey", "first-use"))));
+    }
+
+    /** Registra a entrega assistida no instante em que o artefato completo é persistido pela operação. */
+    private void recordAssistedDeliveryCompleted(
+            AccessGrant grant, String missionId, String deliveryVersion, Instant completedAt) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("missionId", missionId);
+        metadata.put("deliveryVersion", nullToBlank(deliveryVersion));
+        metadata.put("completedAt", completedAt.toString());
+        metadata.put("experienceVersion", grant.getExperienceVersion());
+        metadata.put("idempotencyKey", "delivery-completed:" + missionId);
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "DELIVERY_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, metadata)));
+    }
+
+    /** Registra o encerramento da jornada sem reutilizá-lo como entrega ou primeiro uso. */
+    private void recordJourneyCompleted(AccessGrant grant, String missionId, Instant completedAt) {
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "JOURNEY_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, Map.of(
+                        "missionId", missionId,
+                        "completedMissions", grant.getCompletedMissionIds().size(),
+                        "completedAt", completedAt.toString(),
+                        "experienceVersion", grant.getExperienceVersion(),
+                        "idempotencyKey", "journey-completed"))));
+    }
+
+    /** Preserva a semântica legada de entrega para jornadas que não possuem marco operacional próprio. */
+    private void recordLegacyJourneyDeliveryCompleted(
+            AccessGrant grant, String missionId, Instant completedAt) {
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "DELIVERY_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                RigelCommercialEventContract.enrichAccessMetadata(grant, Map.of(
+                        "missionId", missionId,
+                        "completedAt", completedAt.toString(),
+                        "experienceVersion", grant.getExperienceVersion(),
+                        "idempotencyKey", "journey-delivered"))));
+    }
+
+    /** Identifica jornadas cuja entrega e primeira aplicação possuem marcos comerciais distintos. */
+    private boolean usesAssistedDeliveryLifecycle(ProductExperienceResponse product) {
+        Set<String> missionIds = product.missions().stream()
+                .map(ProductExperienceResponse.MissionDto::id)
+                .collect(java.util.stream.Collectors.toSet());
+        return missionIds.contains("entrega-completa-48h")
+                && missionIds.contains("primeira-aplicacao-e-revisao");
     }
 
     /** Retorna uma entrega individual somente quando o acesso e o marco concluído coincidem. */
     public DeliveryArtifactResponse getDeliveryArtifact(String token, String missionId) {
+        if (token == null || token.isBlank()) {
+            throw new SecurityException("Token de acesso da entrega não informado");
+        }
         AccessGrant grant = getGrant(token);
+        requirePaidEntitlementIfNeeded(grant);
         return toDeliveryArtifactResponses(grant).stream()
                 .filter(artifact -> artifact.missionId().equals(missionId))
                 .findFirst()
@@ -906,16 +1163,17 @@ public class AccessService {
     }
 
     /** Registra uma solicitação rastreável de suporte dentro do mesmo acesso da cliente. */
-    public WorkspaceResponse requestSupport(String token, String message) {
+    public SupportRequestResponse requestSupport(String token, String message) {
         AccessGrant grant = getGrant(token);
         String sanitizedMessage = message == null ? "" : message.trim();
         if (sanitizedMessage.isBlank() || sanitizedMessage.length() > 2000) {
             throw new IllegalArgumentException("Descreva o suporte necessário em até 2.000 caracteres");
         }
+        Instant requestedAt = Instant.now();
         grant.saveMissionInteraction("support", Map.of(
                 "requestText", sanitizedMessage,
                 "requestStatus", "OPEN",
-                "requestedAt", Instant.now().toString()));
+                "requestedAt", requestedAt.toString()));
         persistAccess(grant);
         recordFunnelEvent(new FunnelEventRequest(
                 grant.getProductSlug(),
@@ -926,7 +1184,10 @@ public class AccessService {
                 "pde-platform",
                 null,
                 Map.of("supportType", "CUSTOMER_REQUEST")));
-        return getWorkspace(token);
+        return new SupportRequestResponse(
+                "OPEN",
+                "Pedido de suporte registrado para o e-mail deste acesso",
+                requestedAt.toString());
     }
 
     /** Executa o direito solicitado pela titular e preserva uma trilha mínima sem dado sensível. */
@@ -964,7 +1225,7 @@ public class AccessService {
         return new PrivacyActionResponse(action, "COMPLETED", executedAt.toString(), exportedData);
     }
 
-    /** Anonimiza acessos cujo prazo comercial terminou há mais de 180 dias. */
+    /** Anonimiza acessos vencidos e a telemetria detalhada que ultrapassou 180 dias. */
     public int enforceDataRetention(Instant now) {
         Instant reference = now == null ? Instant.now() : now;
         int anonymized = 0;
@@ -978,6 +1239,13 @@ public class AccessService {
                 anonymized++;
             }
         }
+        int anonymizedTelemetryEvents = new PdeFunnelTelemetryRetentionService(jdbcUrl, jdbcUsername, jdbcPassword)
+                .anonymizeExpiredDetailedTelemetry(reference);
+        log.info(
+                "Retenção PDE aplicada; anonymizedAccesses={}, anonymizedTelemetryEvents={}, reference={}",
+                anonymized,
+                anonymizedTelemetryEvents,
+                reference);
         return anonymized;
     }
 
@@ -1020,7 +1288,7 @@ public class AccessService {
                     session_id = NULL,
                     visitor_id = NULL,
                     metadata_json = NULL
-                WHERE access_token = ? OR normalized_email = ?
+                WHERE access_token IN (?, ?) OR normalized_email = ?
                 """;
         String deleteAccessGrant = "DELETE FROM pde_access_grant WHERE token = ?";
         try (Connection connection = openConnection()) {
@@ -1030,7 +1298,8 @@ public class AccessService {
             executePrivacyStatement(connection, deleteCompletions, token);
             try (PreparedStatement statement = connection.prepareStatement(anonymizeEvents)) {
                 statement.setString(1, token);
-                statement.setString(2, normalizeEmail(email));
+                statement.setString(2, RigelCommercialEventContract.persistedAccessReference(token));
+                statement.setString(3, normalizeEmail(email));
                 statement.executeUpdate();
             }
             executePrivacyStatement(connection, deleteAccessGrant, token);
@@ -1188,7 +1457,7 @@ public class AccessService {
                         answers.get(DELIVERY_VERSION_KEY),
                         answers.get(DELIVERY_CREATED_AT_KEY),
                         content,
-                        "/api/pde/access/" + grant.getToken() + "/deliveries/" + missionId + "/download"));
+                        "/api/pde/access/deliveries/" + missionId + "/download"));
             }
         });
         return deliveries;
@@ -1203,6 +1472,7 @@ public class AccessService {
     /** Salva respostas da cliente para personalizar a missão e medir engajamento real. */
     public void saveMissionInteraction(String token, String missionId, MissionInteractionRequest request) {
         AccessGrant grant = getGrant(token);
+        requirePaidEntitlementIfNeeded(grant);
         ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
         validateMissionAccess(product, grant, missionId);
@@ -1336,7 +1606,12 @@ public class AccessService {
                 grant.getProductSlug(),
                 grant.getEmail(),
                 grant.getSource(),
-                "/access/" + grant.getToken());
+                clientAccessUrl(grant.getToken()));
+    }
+
+    /** Mantém o bearer no fragmento, que não é enviado ao servidor, ao referrer ou ao proxy. */
+    private String clientAccessUrl(String token) {
+        return "/access#access=" + token;
     }
 
     /** Normaliza o e-mail para login e unicidade comercial. */
@@ -1346,7 +1621,8 @@ public class AccessService {
 
     /** Resolve se o acesso atual representa assinatura ativa ou apenas entrada/logon na área. */
     private String resolveSubscriptionStatus(AccessGrant grant) {
-        if ("PEPPER_REFUNDED".equals(grant.getSource())) {
+        if ("PEPPER_REFUNDED".equals(grant.getSource())
+                || RigelPaidEntitlementService.REFUNDED_SOURCE.equals(grant.getSource())) {
             return "REFUNDED";
         }
         if (!isPaidSource(grant.getSource())) {
@@ -1355,6 +1631,70 @@ public class AccessService {
         return grant.getExpiresAt() != null && !grant.getExpiresAt().isAfter(Instant.now())
                 ? "EXPIRED"
                 : "ACTIVE";
+    }
+
+    /** Cria ou recupera o grant do Rigel somente depois de confirmar a compra autoritativa. */
+    private AccessGrant ensureRigelPaidAccess(String email) {
+        AccessGrant existing = findGrantByEmail(RigelPaidEntitlementService.PRODUCT_SLUG, email);
+        if (existing != null && "INTERNAL_QA".equalsIgnoreCase(existing.getSource())) {
+            requireRigelPaidExperienceVersion(existing.getExperienceVersion());
+            return existing;
+        }
+        rigelPaidEntitlementService.requireApprovedPayment(email);
+        boolean newlyActivated = existing == null
+                || !RigelPaidEntitlementService.PAID_SOURCE.equalsIgnoreCase(existing.getSource());
+        AccessGrant grant = existing;
+        if (grant == null) {
+            grant = new AccessGrant(
+                    UUID.randomUUID().toString(),
+                    RigelPaidEntitlementService.PRODUCT_SLUG,
+                    normalizeEmail(email),
+                    "PAYMENT_PENDING",
+                    Instant.now(),
+                    RigelPaidEntitlementService.EXPERIENCE_VERSION,
+                    null,
+                    null);
+            accessByToken.put(grant.getToken(), grant);
+            persistAccess(grant);
+        }
+        RigelPaidEntitlementService.PaidClaim claimed =
+                rigelPaidEntitlementService.claimApprovedPayment(email, grant.getToken());
+        grant.updateExperienceVersion(RigelPaidEntitlementService.EXPERIENCE_VERSION);
+        grant.updateSource(RigelPaidEntitlementService.PAID_SOURCE);
+        grant.activatePaidAccess(claimed.approvedAt(), null);
+        persistAccess(grant);
+        if (newlyActivated) {
+            recordSubscriptionApprovedIfNeeded(
+                    grant,
+                    RigelPaidEntitlementService.PAID_SOURCE,
+                    Map.of(
+                            "paymentId", claimed.transactionId(),
+                            "experimentId", claimed.experimentId(),
+                            "amountBrl", claimed.amountBrl(),
+                            "currency", claimed.currency(),
+                            "approvedAt", claimed.approvedAt().toString(),
+                            "releasedAt", Instant.now().toString(),
+                            "experienceVersion", RigelPaidEntitlementService.EXPERIENCE_VERSION));
+        }
+        return grant;
+    }
+
+    /** Aplica a guarda única de pagamento e versão em todas as fronteiras pagas do Rigel. */
+    private void requirePaidEntitlementIfNeeded(AccessGrant grant) {
+        if (!requiresRigelPaidEntitlement(grant.getProductSlug())) {
+            return;
+        }
+        rigelPaidEntitlementService.requireActiveAccess(grant);
+    }
+
+    /** Identifica o produto assistido que não possui etapa gratuita dentro da workspace. */
+    private boolean requiresRigelPaidEntitlement(String productSlug) {
+        return rigelPaidEntitlementService.supports(productSlug);
+    }
+
+    /** Exige a versão paga congelada para impedir acesso cruzado entre candidatas do Rigel. */
+    private void requireRigelPaidExperienceVersion(String experienceVersion) {
+        rigelPaidEntitlementService.requireExactExperience(experienceVersion);
     }
 
     /** Garante que somente o primeiro dia gratuito fica disponível sem acesso comprado vigente. */
@@ -1391,6 +1731,7 @@ public class AccessService {
     private boolean isPaidSource(String source) {
         return "CHECKOUT".equalsIgnoreCase(source)
                 || "PEPPER".equalsIgnoreCase(source)
+                || RigelPaidEntitlementService.PAID_SOURCE.equalsIgnoreCase(source)
                 || "INTERNAL_QA".equalsIgnoreCase(source);
     }
 
@@ -1441,7 +1782,11 @@ public class AccessService {
         if (mailService != null && mailService.isConfigured()) {
             try {
                 mailService.sendMagicLink(email, absoluteUrl);
-                return new MagicLinkResponse(productSlug, email, "SENT", null);
+                return new MagicLinkResponse(
+                        productSlug,
+                        email,
+                        "SENT",
+                        exposeMagicLinkInResponse ? accessUrl : null);
             } catch (RuntimeException ex) {
                 log.error("Falha ao entregar link mágico PDE; productSlug={}", productSlug, ex);
                 return new MagicLinkResponse(
@@ -1460,7 +1805,9 @@ public class AccessService {
 
     /** Registra compra ou assinatura aprovada quando a origem representa checkout real. */
     private void recordSubscriptionApprovedIfNeeded(AccessGrant grant, String source, Map<String, Object> metadata) {
-        if ("CHECKOUT".equalsIgnoreCase(source) || "PEPPER".equalsIgnoreCase(source)) {
+        if ("CHECKOUT".equalsIgnoreCase(source)
+                || "PEPPER".equalsIgnoreCase(source)
+                || RigelPaidEntitlementService.PAID_SOURCE.equalsIgnoreCase(source)) {
             Map<String, Object> eventMetadata = new LinkedHashMap<>();
             eventMetadata.put("accessSource", source);
             if (metadata != null) {
@@ -1468,6 +1815,7 @@ public class AccessService {
             }
             eventMetadata.put("experienceVersion", grant.getExperienceVersion());
             eventMetadata.put("idempotencyKey", "paid-access-activation");
+            eventMetadata = RigelCommercialEventContract.enrichAccessMetadata(grant, eventMetadata);
             recordFunnelEvent(new FunnelEventRequest(
                     grant.getProductSlug(),
                     "PURCHASE_COMPLETED",
@@ -1502,9 +1850,11 @@ public class AccessService {
     private boolean shouldPromoteToPaidSource(AccessGrant grant, String source) {
         return ("CHECKOUT".equalsIgnoreCase(source)
                         || "PEPPER".equalsIgnoreCase(source)
+                        || RigelPaidEntitlementService.PAID_SOURCE.equalsIgnoreCase(source)
                         || "INTERNAL_QA".equalsIgnoreCase(source))
                 && !"CHECKOUT".equalsIgnoreCase(grant.getSource())
                 && !"PEPPER".equalsIgnoreCase(grant.getSource())
+                && !RigelPaidEntitlementService.PAID_SOURCE.equalsIgnoreCase(grant.getSource())
                 && !"INTERNAL_QA".equalsIgnoreCase(grant.getSource());
     }
 
@@ -2260,7 +2610,10 @@ public class AccessService {
             statement.setString(1, eventId);
             statement.setString(2, request.productSlug());
             statement.setString(3, blankToNull(resolveExperienceVersion(metadata, product)));
-            statement.setString(4, blankToNull(request.accessToken()));
+            statement.setString(
+                    4,
+                    blankToNull(RigelCommercialEventContract.persistedAccessReference(
+                            request.accessToken())));
             statement.setString(5, blankToNull(request.email()));
             statement.setString(6, blankToNull(normalizeEmail(request.email())));
             statement.setString(7, eventType);

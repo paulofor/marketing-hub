@@ -24,6 +24,9 @@ meta-ad-approver:
   model: ${CODEX_MODEL:gpt-5.6-sol}
   reasoning-effort: ${CODEX_REASONING_EFFORT:high}
   codex-timeout: ${META_AD_APPROVER_CODEX_TIMEOUT:PT40M}
+  commercial-model-inactivity-timeout: ${TEMIS_COMMERCIAL_MODEL_INACTIVITY_TIMEOUT:PT10M}
+  commercial-model-absolute-timeout: ${TEMIS_COMMERCIAL_MODEL_ABSOLUTE_TIMEOUT:PT40M}
+  commercial-model-max-attempts: ${TEMIS_COMMERCIAL_MODEL_MAX_ATTEMPTS:2}
   backend-connect-timeout: ${META_AD_APPROVER_BACKEND_CONNECT_TIMEOUT:PT10S}
   backend-read-timeout: ${META_AD_APPROVER_BACKEND_READ_TIMEOUT:PT30S}
   image-studio-backend-read-timeout: ${IRIS_IMAGE_BACKEND_READ_TIMEOUT:${TEMIS_IMAGE_BACKEND_READ_TIMEOUT:PT5M}}

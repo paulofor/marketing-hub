@@ -1,0 +1,15 @@
+{
+  "contractVersion": "kit-whatsapp-production-legal-identity-v1",
+  "productSlug": "kit-whatsapp-pronto",
+  "productId": 9,
+  "experimentId": 89,
+  "experienceVersion": "kit-whatsapp-pronto-pde-v2",
+  "sourceEndpoint": "https://kit-whatsapp-pronto.digicomdigital.com.br/api/pde/products/kit-whatsapp-pronto/commercial-offer",
+  "verifiedAt": "2026-08-30T10:05:00Z",
+  "supplierDisplayName": "Digicom Digital",
+  "supplierRegistrationNumber": "25.215.414/0001-69",
+  "supportEmail": "contato@digicomdigital.com.br",
+  "termsUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
+  "privacyUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
+  "refundPolicyUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy"
+}

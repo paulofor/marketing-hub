@@ -38,3 +38,16 @@ services:
     depends_on:
       mysql57-rigel-commercial-slot:
         condition: service_healthy
+
+  liquibase-rigel-exact-delivery:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-rigel-commercial-slot:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2026-08-30-rigel-exact-delivery-contract-v1.yaml
+    depends_on:
+      mysql57-rigel-commercial-slot:
+        condition: service_healthy

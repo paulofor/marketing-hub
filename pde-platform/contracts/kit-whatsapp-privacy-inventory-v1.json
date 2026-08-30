@@ -1,0 +1,77 @@
+{
+  "contractVersion": "kit-whatsapp-privacy-inventory-v1",
+  "productSlug": "kit-whatsapp-pronto",
+  "experienceVersion": "kit-whatsapp-pronto-pde-v2",
+  "policyPath": "/privacy",
+  "browserEventTopLevelFields": [
+    "productSlug",
+    "eventType",
+    "email",
+    "provider",
+    "source",
+    "pageUrl"
+  ],
+  "browserEventMetadataFields": [
+    "visitorId",
+    "sessionId",
+    "experienceVersion",
+    "layoutKey",
+    "path",
+    "referrerUrl",
+    "deviceType",
+    "viewportWidth",
+    "viewportHeight"
+  ],
+  "backendDerivedFields": [
+    "clientIp",
+    "userAgent"
+  ],
+  "persistedTechnicalColumns": [
+    "page_url",
+    "client_ip",
+    "user_agent",
+    "referrer_url",
+    "session_id",
+    "visitor_id",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "device_type",
+    "screen_width",
+    "screen_height",
+    "viewport_width",
+    "viewport_height",
+    "visible_ms",
+    "section_id",
+    "action_name"
+  ],
+  "publicDisclosureTerms": [
+    "identificadores aleatórios first-party de visitante e sessão",
+    "página e origem da visita",
+    "campanha e parâmetros UTM",
+    "seção, ação e tempo visível",
+    "tipo de dispositivo",
+    "navegador e user-agent",
+    "tamanho de tela e viewport",
+    "IP público",
+    "180 dias",
+    "acesso, correção, exclusão ou anonimização"
+  ],
+  "purposes": [
+    "entregar e dar suporte ao produto contratado",
+    "medir o funil sem contar QA como resultado humano",
+    "diagnosticar falhas e desempenho por dispositivo",
+    "classificar tráfego humano, bot, plataforma ou QA",
+    "proteger acesso, pagamento e operação contra abuso"
+  ],
+  "retention": {
+    "detailedTelemetryDays": 180,
+    "postRetentionPolicy": "ANONYMIZE_TECHNICAL_IDENTIFIERS_AND_KEEP_AGGREGATED_EVENT_FACTS",
+    "activeContractDataPolicy": "KEEP_WHILE_ACCESS_IS_ACTIVE_AND_FOR_APPLICABLE_LEGAL_OR_ACCOUNTING_DUTIES",
+    "earlierDeletionAvailable": true
+  },
+  "bearerPolicy": "NEVER_IN_URL_BODY_REFERRER_TELEMETRY_OR_LOG",
+  "thirdPartyBriefingPolicy": "ANONYMIZED_EXAMPLES_ONLY"
+}

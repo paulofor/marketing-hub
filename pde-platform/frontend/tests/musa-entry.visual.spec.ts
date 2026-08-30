@@ -373,7 +373,10 @@ test("destaca o preco e atribui a versão no checkout da area MUSA", async ({
       return null;
     }) as typeof window.open;
   });
-  await page.route("/api/pde/access/trial-token/workspace", async (route) => {
+  await page.route("/api/pde/access/workspace", async (route) => {
+    expect(route.request().headers()["x-pde-access-token"]).toBe(
+      "trial-token",
+    );
     await route.fulfill({
       json: {
         product,
@@ -389,7 +392,8 @@ test("destaca o preco e atribui a versão no checkout da area MUSA", async ({
     });
   });
 
-  await page.goto("/access/trial-token");
+  await page.goto("/access#access=trial-token");
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/access");
 
   const paywall = page.getByRole("region", {
     name: "Oferta de acesso completo MUSA",
@@ -428,7 +432,7 @@ test("destaca o preco e atribui a versão no checkout da area MUSA", async ({
   await expect.poll(() => trackedPayloads.length).toBeGreaterThanOrEqual(2);
   const serializedTelemetry = JSON.stringify(trackedPayloads);
   expect(serializedTelemetry).not.toContain("trial-token");
-  expect(serializedTelemetry).toContain("/access/:token");
+  expect(serializedTelemetry).toContain("/access");
 });
 
 test("bloqueia video de slides na versao publicada e permite controle sem player para QA", async ({

@@ -48,7 +48,7 @@
     ],
     "salesAccountingRule": "Somente a confirmação autoritativa de pagamento pode contar como venda ou receita; degustação, QA, paywall e início de checkout são sinais intermediários."
   },
-  "paidBoundary": "A degustação cobre uma única situação demonstrativa. A implantação paga inclui briefing, adaptação às regras reais do negócio, 10 a 20 respostas, 5 a 10 perguntas, 3 a 5 follow-ups, regras de escalonamento, guia, checklist, revisão humana e entrega completa.",
+  "paidBoundary": "A degustação cobre uma única situação demonstrativa. A implantação paga inclui briefing, adaptação às regras reais do negócio, 15 respostas, 8 perguntas, 4 follow-ups, regras de escalonamento, guia, checklist, revisão humana e entrega completa.",
   "events": [
     {
       "eventName": "TASTING_STARTED",

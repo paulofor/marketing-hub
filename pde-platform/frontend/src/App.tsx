@@ -23,6 +23,7 @@ import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 import { AssistedServiceApp } from "./AssistedServiceApp";
 import { TransitionPauseExperiment } from "./TransitionPauseExperiment";
 import { ConsultantSdkQaPreview } from "./consultant-sdk/v1/ConsultantSdkQaPreview";
+import { pdeAccessHeaders } from "./pdeAccessAuthorization";
 import {
   fallbackProduct,
   MUSA_V7_EXPERIENCE_VERSION,
@@ -77,6 +78,12 @@ type MagicLinkResponse = {
   email: string;
   deliveryStatus: string;
   accessUrl?: string;
+};
+
+type SupportRequestResponse = {
+  supportStatus: "OPEN";
+  message: string;
+  requestedAt: string;
 };
 
 type PrivacyActionResponse = {
@@ -619,6 +626,48 @@ function sanitizeTrackingUrl(rawUrl: string) {
   }
 }
 
+function accessStorageKey(productSlug: string) {
+  return `pde-access:${productSlug}`;
+}
+
+function accessTokenFromUrl(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl, window.location.origin);
+    const fragmentToken = new URLSearchParams(url.hash.replace(/^#/, "")).get(
+      "access",
+    );
+    const pathToken = url.pathname.match(/^\/access\/([^/]+)\/?$/)?.[1];
+    const queryToken = url.searchParams.get("access");
+    return (
+      fragmentToken ??
+      (pathToken ? decodeURIComponent(pathToken) : queryToken) ??
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
+function clearAccessTokenFromBrowserUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.delete("access");
+  if (/^\/access\/[^/]+\/?$/.test(url.pathname)) {
+    url.pathname = "/access";
+  }
+  window.history.replaceState({}, "", `${url.pathname}${url.search}` || "/");
+}
+
+function restoreAccessToken(productSlug: string) {
+  const locationToken = accessTokenFromUrl(window.location.href);
+  if (locationToken) {
+    window.localStorage.setItem(accessStorageKey(productSlug), locationToken);
+    clearAccessTokenFromBrowserUrl();
+    return locationToken;
+  }
+  return window.localStorage.getItem(accessStorageKey(productSlug)) ?? "";
+}
+
 function isCommercialAnalyticsSuppressed() {
   const params = new URLSearchParams(window.location.search);
   return (
@@ -775,7 +824,9 @@ function App() {
     applyExperienceOverrides(fallbackProduct),
   );
   const [email, setEmail] = useState("");
-  const [accessToken, setAccessToken] = useState("");
+  const [accessToken, setAccessToken] = useState(() =>
+    restoreAccessToken("metodo-musa-7-dias"),
+  );
   const [activeMissionId, setActiveMissionId] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "register">("register");
   const [loading, setLoading] = useState(false);
@@ -919,11 +970,8 @@ function App() {
         },
       });
     }
-    const tokenFromPath =
-      window.location.pathname.match(/^\/access\/([^/]+)/)?.[1] ?? "";
-    if (tokenFromPath) {
-      setAccessToken(tokenFromPath);
-      loadWorkspace(tokenFromPath, true).catch(() =>
+    if (accessToken) {
+      loadWorkspace(accessToken, true).catch(() =>
         setErrorMessage(
           "Não encontramos esse acesso. Confira o link recebido após a compra.",
         ),
@@ -1414,7 +1462,8 @@ function App() {
       }
       const access = await response.json();
       setAccessToken(access.token);
-      window.history.replaceState(null, "", access.accessUrl);
+      window.localStorage.setItem(accessStorageKey(product.slug), access.token);
+      window.history.replaceState(null, "", "/access");
       await loadWorkspace(access.token, true);
     } catch {
       setErrorMessage(
@@ -1426,7 +1475,9 @@ function App() {
   }
 
   async function loadWorkspace(token: string, resetScroll = false) {
-    const response = await fetch(`/api/pde/access/${token}/workspace`);
+    const response = await fetch("/api/pde/access/workspace", {
+      headers: pdeAccessHeaders(token),
+    });
     if (!response.ok) {
       throw new Error("Acesso não encontrado.");
     }
@@ -1764,8 +1815,13 @@ function App() {
   }
 
   function openDevAccess(accessUrl: string) {
-    window.history.replaceState(null, "", accessUrl);
-    const token = accessUrl.split("/access/")[1] ?? "";
+    const token = accessTokenFromUrl(accessUrl);
+    if (!token) {
+      setErrorMessage("O link de acesso recebido é inválido.");
+      return;
+    }
+    window.localStorage.setItem(accessStorageKey(product.slug), token);
+    window.history.replaceState(null, "", "/access");
     setAccessToken(token);
     loadWorkspace(token, true);
   }
@@ -1798,8 +1854,9 @@ function App() {
     setSuccessMessage("");
     try {
       const [response] = await Promise.all([
-        fetch(`/api/pde/access/${accessToken}/missions/${missionId}/complete`, {
+        fetch(`/api/pde/access/missions/${missionId}/complete`, {
           method: "POST",
+          headers: pdeAccessHeaders(accessToken),
         }),
         new Promise((resolve) => window.setTimeout(resolve, 900)),
       ]);
@@ -1853,10 +1910,10 @@ function App() {
     setErrorMessage("");
     try {
       const response = await fetch(
-        `/api/pde/access/${accessToken}/missions/${missionId}/interactions`,
+        `/api/pde/access/missions/${missionId}/interactions`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: pdeAccessHeaders(accessToken, { json: true }),
           body: JSON.stringify({ answers }),
         },
       );
@@ -1921,10 +1978,10 @@ function App() {
     setSuccessMessage("");
     try {
       const response = await fetch(
-        `/api/pde/access/${accessToken}/missions/${missionId}/ai-guidance`,
+        `/api/pde/access/missions/${missionId}/ai-guidance`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: pdeAccessHeaders(accessToken, { json: true }),
           body: JSON.stringify({
             guidanceType: config.guidanceType,
             answers,
@@ -1987,21 +2044,22 @@ function App() {
     setSuccessMessage("");
     try {
       const response = await fetch(
-        `/api/pde/access/${accessToken}/support-requests`,
+        "/api/pde/access/support-requests",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: pdeAccessHeaders(accessToken, { json: true }),
           body: JSON.stringify({ message: supportMessage.trim() }),
         },
       );
       if (!response.ok) {
         throw new Error("Não foi possível registrar o suporte.");
       }
-      const data = (await response.json()) as Workspace;
-      setWorkspace({
-        ...data,
-        product: applyExperienceOverrides(data.product, false),
-      });
+      const support = (await response.json()) as SupportRequestResponse;
+      setWorkspace((current) =>
+        current
+          ? { ...current, supportStatus: support.supportStatus }
+          : current,
+      );
       setSupportMessage("");
       setSuccessMessage(
         "Pedido de suporte registrado no seu acesso. A equipe responderá pelo e-mail usado na MUSA.",
@@ -2033,10 +2091,10 @@ function App() {
     setSuccessMessage("");
     try {
       const response = await fetch(
-        `/api/pde/access/${accessToken}/privacy-requests`,
+        "/api/pde/access/privacy-requests",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: pdeAccessHeaders(accessToken, { json: true }),
           body: JSON.stringify({
             action,
             correctedEmail:
@@ -2077,6 +2135,7 @@ function App() {
       }
       setWorkspace(null);
       setAccessToken("");
+      window.localStorage.removeItem(accessStorageKey(product.slug));
       window.history.replaceState({}, "", "/");
       setPrivacyCompletionMessage(
         "Seus dados de uso e progresso foram excluídos. Registros fiscais permanecem somente pelo prazo legal aplicável.",
@@ -2089,7 +2148,9 @@ function App() {
   }
 
   async function refreshWorkspace() {
-    const response = await fetch(`/api/pde/access/${accessToken}/workspace`);
+    const response = await fetch("/api/pde/access/workspace", {
+      headers: pdeAccessHeaders(accessToken),
+    });
     if (!response.ok) {
       throw new Error("Acesso não encontrado.");
     }
@@ -2108,9 +2169,9 @@ function App() {
       await new Promise((resolve) =>
         window.setTimeout(resolve, attempt === 0 ? 900 : 1800),
       );
-      const response = await fetch(
-        `/api/pde/access/${accessToken}/ai-guidance/${requestId}`,
-      );
+      const response = await fetch(`/api/pde/access/ai-guidance/${requestId}`, {
+        headers: pdeAccessHeaders(accessToken),
+      });
       if (!response.ok) {
         throw new Error("Orientação não encontrada.");
       }

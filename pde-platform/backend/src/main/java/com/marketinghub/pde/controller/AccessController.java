@@ -12,6 +12,7 @@ import com.marketinghub.pde.dto.GoogleAccessRequest;
 import com.marketinghub.pde.dto.MagicLinkResponse;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.SupportRequest;
+import com.marketinghub.pde.dto.SupportRequestResponse;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.PepperSyncRequest;
 import com.marketinghub.pde.dto.PepperSyncResponse;
@@ -77,6 +78,9 @@ public class AccessController {
         try {
             return accessService.requestExistingMagicLink(request.productSlug(), request.email());
         } catch (IllegalArgumentException ex) {
+            if (!accessService.supportsPepperLoginReconciliation(request.productSlug())) {
+                throw ex;
+            }
             log.info(
                     "Magic link PDE sem acesso local, tentando reconciliacao Pepper; productSlug={}",
                     request.productSlug(),
@@ -183,37 +187,38 @@ public class AccessController {
         return pepperTransactionSyncService.syncPaidTransactions(productSlug, search, transactionHash);
     }
 
-    /** Retorna a área de trabalho da cliente autenticada por token de acesso. */
-    @GetMapping("/{token}/workspace")
-    public WorkspaceResponse getWorkspace(@PathVariable("token") String token) {
+    /** Retorna a área de trabalho usando o bearer somente no header protegido. */
+    @GetMapping("/workspace")
+    public WorkspaceResponse getWorkspace(
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token) {
         return accessService.getWorkspace(token);
     }
 
-    /** Marca uma missão como concluída para atualizar o progresso da experiência. */
-    @PostMapping("/{token}/missions/{missionId}/complete")
+    /** Marca uma missão como concluída sem registrar o bearer no caminho HTTP. */
+    @PostMapping("/missions/{missionId}/complete")
     public WorkspaceResponse completeMission(
-            @PathVariable("token") String token,
-            @PathVariable("missionId") String missionId) {
+            @PathVariable("missionId") String missionId,
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token) {
         accessService.completeMission(token, missionId);
         return accessService.getWorkspace(token);
     }
 
-    /** Salva respostas de personalização da cliente em uma missão da experiência. */
-    @PostMapping("/{token}/missions/{missionId}/interactions")
+    /** Salva a personalização mantendo a credencial exclusivamente no header protegido. */
+    @PostMapping("/missions/{missionId}/interactions")
     public WorkspaceResponse saveMissionInteraction(
-            @PathVariable("token") String token,
             @PathVariable("missionId") String missionId,
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token,
             @Valid @RequestBody MissionInteractionRequest request) {
         accessService.saveMissionInteraction(token, missionId, request);
         return accessService.getWorkspace(token);
     }
 
-    /** Baixa o conteúdo personalizado vinculado ao próprio token e marco concluído. */
-    @GetMapping("/{token}/deliveries/{missionId}/download")
+    /** Baixa o conteúdo personalizado usando bearer fora da URL e marco concluído. */
+    @GetMapping("/deliveries/{missionId}/download")
     public ResponseEntity<String> downloadDelivery(
-            @PathVariable("token") String token,
-            @PathVariable("missionId") String missionId) {
-        DeliveryArtifactResponse artifact = accessService.getDeliveryArtifact(token, missionId);
+            @PathVariable("missionId") String missionId,
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String accessToken) {
+        DeliveryArtifactResponse artifact = accessService.getDeliveryArtifact(accessToken, missionId);
         String filename = missionId.replaceAll("[^a-zA-Z0-9-]", "-") + ".md";
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
@@ -221,18 +226,18 @@ public class AccessController {
                 .body(artifact.content());
     }
 
-    /** Registra um pedido de suporte ou revisão sem retirar a cliente da experiência. */
-    @PostMapping("/{token}/support-requests")
-    public WorkspaceResponse requestSupport(
-            @PathVariable("token") String token,
+    /** Registra suporte sem inserir o bearer na URL observável pela infraestrutura. */
+    @PostMapping("/support-requests")
+    public SupportRequestResponse requestSupport(
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token,
             @Valid @RequestBody SupportRequest request) {
         return accessService.requestSupport(token, request.message());
     }
 
-    /** Executa acesso, correção, exclusão ou objeção solicitada pela titular autenticada. */
-    @PostMapping("/{token}/privacy-requests")
+    /** Executa direitos da titular com a credencial restrita ao header protegido. */
+    @PostMapping("/privacy-requests")
     public PrivacyActionResponse requestPrivacyAction(
-            @PathVariable("token") String token,
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token,
             @Valid @RequestBody PrivacyActionRequest request) {
         return accessService.executePrivacyAction(token, request);
     }

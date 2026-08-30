@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.payments.config.MercadoPagoProperties;
 import com.marketinghub.payments.config.PaymentProperties;
 import com.marketinghub.payments.dto.CreateCheckoutRequest;
@@ -71,7 +72,8 @@ class CheckoutServiceTest {
                 paymentProperties,
                 premiumDeliveryService,
                 digitalProductPostPurchaseEmailService,
-                productAiPaidDeliveryBackendClient);
+                productAiPaidDeliveryBackendClient,
+                new PaymentAuditPayloadSanitizer(new ObjectMapper()));
     }
 
     @Test
@@ -426,17 +428,26 @@ class CheckoutServiceTest {
                         "submission_id", "sub-001",
                         "submission_email", "submission@example.com"
                 ),
-                "{\"id\":\"pay-1\"}");
+                "{\"id\":\"pay-1\",\"payer\":{\"email\":\"payer@example.com\"},"
+                        + "\"metadata\":{\"submission_email\":\"submission@example.com\"}}");
 
         when(purchaseRepository.findByMercadoPagoPaymentId("pay-1")).thenReturn(Optional.empty());
         when(purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(1234L)).thenReturn(Optional.empty());
         when(purchaseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        LeadPortalPurchase purchase = checkoutService.updateFromPayment(paymentDetails, paymentDetails.rawPayload());
+        LeadPortalPurchase purchase = checkoutService.updateFromPayment(
+                paymentDetails,
+                "{\"data\":{\"id\":\"pay-1\"},\"buyer_email\":\"submission@example.com\"}");
 
         assertThat(purchase.getPackageId()).isEqualTo(1234L);
         assertThat(purchase.getSubmissionId()).isEqualTo("sub-001");
         assertThat(purchase.getBuyerEmail()).isEqualTo("submission@example.com");
+        assertThat(purchase.getNotificationPayload())
+                .contains("[REDACTED]")
+                .doesNotContain("submission@example.com");
+        assertThat(purchase.getMercadoPagoPaymentPayload())
+                .contains("[REDACTED]")
+                .doesNotContain("payer@example.com", "submission@example.com");
         assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.APPROVED);
         assertThat(purchase.getPaymentApprovedAt()).isEqualTo(approvalDate);
         verify(productAiPaidDeliveryBackendClient).notifyApprovedPurchase(purchase);

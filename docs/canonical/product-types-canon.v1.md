@@ -152,6 +152,10 @@ Eventos operacionais mínimos para esse funil:
 - `ACCESS_RELEASED`: acesso completo liberado após compra ou assinatura aprovada;
 - `FIRST_USE`: primeiro consumo real da experiência, como abrir missão/material ou concluir a primeira missão.
 
+Quando o produto depende de uma entrega operacional anterior ao uso, a regra específica prevalece:
+`DELIVERY_COMPLETED` marca a persistência da entrega material e `FIRST_USE` só pode ocorrer após a
+primeira aplicação comprovada. Briefing inicial não representa primeiro uso nesse tipo de jornada.
+
 O login nao libera acesso completo. Ele libera somente entrada no sistema e consumo da parte inicial gratuita. As partes mais importantes do PDE/MUSA devem exigir compra aprovada. E proibido criar fluxo canonico alternativo em que anuncio leve direto para checkout ou em que qualquer e-mail valido libere toda a experiencia sem pagamento.
 
 A compra aprovada nao deve ser tratada como fim do funil. Para produto recorrente, o sistema

@@ -7,9 +7,9 @@ promessas de venda, placeholders vagos ou linguagem interna de auditoria no mate
 
 ## Contrato quantitativo
 
-- 10–20 respostas organizadas por cenário;
-- 5–10 perguntas de qualificação;
-- 3–5 follow-ups manuais;
+- exatamente 15 respostas organizadas por cenário;
+- exatamente 8 perguntas de qualificação;
+- exatamente 4 follow-ups manuais;
 - regras claras de escalonamento humano;
 - guia breve de uso;
 - checklist de atualização;

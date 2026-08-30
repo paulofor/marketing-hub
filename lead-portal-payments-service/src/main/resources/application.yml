@@ -93,6 +93,14 @@ product-ai:
     enabled: ${PRODUCT_AI_DELIVERY_ENABLED:true}
     backend-base-url: ${PRODUCT_AI_DELIVERY_BACKEND_BASE_URL:http://191.252.181.168}
     approved-purchase-path: ${PRODUCT_AI_DELIVERY_APPROVED_PURCHASE_PATH:/api/internal/product-ai/personalizedsample/v1/paid-delivery/stage-executions/approved-purchase}
+
+pde:
+  entitlement:
+    enabled: ${PDE_ENTITLEMENT_ENABLED:true}
+    backend-base-url: ${PDE_ENTITLEMENT_BACKEND_BASE_URL:http://pde-platform-backend:8096}
+    notification-path: ${PDE_ENTITLEMENT_NOTIFICATION_PATH:/api/internal/pde/mercado-pago/entitlements}
+    internal-token: ${PDE_ENTITLEMENT_INTERNAL_TOKEN:${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:}}
+    product-slug: ${PDE_ENTITLEMENT_PRODUCT_SLUG:kit-whatsapp-pronto}
 ---
 spring:
   config:

@@ -83,6 +83,8 @@ class PdeReviewArtifactLoaderTest {
         contracts.resolve("produto-homologation-v1.json"),
         """
         {
+          "productSlug": "produto-a",
+          "evidenceVersion": "produto-homologation-v1",
           "implementationEvidence": [
             {
               "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
@@ -105,7 +107,58 @@ class PdeReviewArtifactLoaderTest {
         .hasMessageContaining("AssistedServiceApp.tsx");
   }
 
-  /** Confirma que o manifesto versionado do repositório aponta somente para a revisão atual. */
+  /** Preserva manifesto histórico divergente quando a revisão atual comprova o código candidato. */
+  @Test
+  void validatesOnlyLatestHomologationManifestForEachProduct() throws Exception {
+    Path contracts = tempDir.resolve("pde-platform/contracts");
+    Path proof = tempDir.resolve("pde-platform/frontend/src/AssistedServiceApp.tsx");
+    Files.createDirectories(contracts);
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "candidata comercial atual");
+    String currentHash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Files.writeString(
+        contracts.resolve("produto-homologation-v1.json"),
+        """
+        {
+          "evidenceVersion":"produto-homologation-v1",
+          "productSlug":"produto-a",
+          "implementationEvidence":[{"path":"pde-platform/frontend/src/AssistedServiceApp.tsx","sha256":"%s"}]
+        }
+        """
+            .formatted("0".repeat(64)));
+    Files.writeString(
+        contracts.resolve("produto-homologation-v2.json"),
+        """
+        {
+          "evidenceVersion":"produto-homologation-v2",
+          "productSlug":"produto-a",
+          "implementationEvidence":[{"path":"pde-platform/frontend/src/AssistedServiceApp.tsx","sha256":"%s"}]
+        }
+        """
+            .formatted(currentHash));
+    for (String relativePath : PdeReviewArtifactLoader.communicationImplementationEvidencePaths()) {
+      Path artifact = tempDir.resolve(relativePath);
+      Files.createDirectories(artifact.getParent());
+      if (!Files.exists(artifact)) {
+        Files.writeString(artifact, "prova executável de " + relativePath);
+      }
+    }
+
+    var evidence = new PdeReviewArtifactLoader(tempDir.toString()).loadCommunicationContracts();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .contains(
+            "pde-platform/contracts/produto-homologation-v1.json",
+            "pde-platform/contracts/produto-homologation-v2.json");
+  }
+
+  /**
+   * Confirma que o manifesto versionado do repositório aponta para a revisão posterior à tarefa
+   * 272.
+   */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -118,7 +171,9 @@ class PdeReviewArtifactLoaderTest {
 
     assertThat(evidence)
         .extracting(item -> item.get("path"))
-        .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json");
+        .contains(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
   }
 
   /** Entrega à revisão independente somente a prova comercial declarada e íntegra. */
@@ -141,7 +196,12 @@ class PdeReviewArtifactLoaderTest {
         {
           "contractVersion":"product-commercial-homologation.v1",
           "product":{"id":9,"slug":"produto-a","experienceVersion":"produto-a-v1"},
-          "homologationEvidence":[{"path":"pde-platform/frontend/tests/product-journey.spec.ts","sha256":"%s"}]
+          "homologationEvidence":[{
+            "path":"pde-platform/frontend/tests/product-journey.spec.ts",
+            "sha256":"%s",
+            "promptMode":"ATTESTED_REFERENCE",
+            "reviewSummary":"Jornada comercial validada pelo teste específico."
+          }]
         }
         """
             .formatted(hash));
@@ -177,7 +237,10 @@ class PdeReviewArtifactLoaderTest {
         .doesNotContain("arquivo-ausente.txt");
     assertThat(evidence.get(1))
         .containsEntry("baselineIntegrity", "MATCH")
-        .containsEntry("bundleIntegrity", "LOCAL_SOURCE");
+        .containsEntry("bundleIntegrity", "LOCAL_SOURCE")
+        .containsEntry("promptMode", "ATTESTED_REFERENCE")
+        .containsEntry("reviewSummary", "Jornada comercial validada pelo teste específico.")
+        .doesNotContainKey("content");
   }
 
   /** Entrega a candidata modificada para nova revisão em vez de reutilizar parecer antigo. */
@@ -216,6 +279,50 @@ class PdeReviewArtifactLoaderTest {
     assertThat(evidence.get(1))
         .containsEntry("baselineIntegrity", "UPDATED_CANDIDATE")
         .containsEntry("content", "candidata atual");
+  }
+
+  /** Impede que a compactação esconda conteúdo sem uma síntese explícita e auditável. */
+  @Test
+  void rejectsAttestedReferenceWithoutReviewSummary() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/src/App.tsx");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "conteúdo amplo");
+    String hash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Path manifest =
+        tempDir.resolve("pde-platform/contracts/product-commercial-homologation-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"product-commercial-homologation.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "homologationEvidence":[{
+            "path":"pde-platform/frontend/src/App.tsx",
+            "sha256":"%s",
+            "promptMode":"ATTESTED_REFERENCE"
+          }]
+        }
+        """
+            .formatted(hash));
+
+    assertThatThrownBy(
+            () ->
+                new PdeReviewArtifactLoader(tempDir.toString())
+                    .loadCommercialHomologationEvidence(
+                        Map.of(
+                            "experimentId",
+                            90L,
+                            "productId",
+                            4L,
+                            "productSlug",
+                            "produto-b",
+                            "experienceVersion",
+                            "produto-b-v1")))
+        .isInstanceOf(IOException.class)
+        .hasMessageContaining("sem resumo verificável");
   }
 
   /** Bloqueia alteração posterior ao pacote imutável entregue ao container de Têmis. */
@@ -306,15 +413,17 @@ class PdeReviewArtifactLoaderTest {
 
     assertThat(rigel)
         .extracting(item -> item.get("path"))
-        .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json")
-        .doesNotContain(
-            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
-            "pde-platform/frontend/src/App.tsx");
+        .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
+        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json")
+        .doesNotContain("pde-platform/contracts/musa-v7-commercial-homologation-v1.json");
     assertThat(vega)
         .extracting(item -> item.get("path"))
         .contains(
             "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
             "pde-platform/frontend/src/App.tsx")
-        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json");
+        .doesNotContain(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
   }
 }

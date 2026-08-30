@@ -25,6 +25,7 @@ services:
       PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:?PDE_ACCESS_JDBC_USERNAME is required for PDE production analytics}
       PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:?PDE_ACCESS_JDBC_PASSWORD is required for PDE production analytics}
       PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?PDE_INTERNAL_API_TOKEN is required for PDE internal operations}
+      PDE_MERCADO_PAGO_INTERNAL_TOKEN: ${PDE_MERCADO_PAGO_INTERNAL_TOKEN:?PDE_MERCADO_PAGO_INTERNAL_TOKEN is required for paid entitlement ingestion}
       PDE_INTERNAL_QA_ENABLED: "false"
       PDE_APP_BASE_URL: ${PDE_APP_BASE_URL:-https://v5.clubemusa.com.br}
       PDE_PEPPER_API_TOKEN: ${PDE_PEPPER_API_TOKEN:?PDE_PEPPER_API_TOKEN is required for Pepper paid transaction sync}

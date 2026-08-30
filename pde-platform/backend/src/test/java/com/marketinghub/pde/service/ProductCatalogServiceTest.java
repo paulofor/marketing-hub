@@ -117,17 +117,26 @@ class ProductCatalogServiceTest {
                           "experienceVersion":"kit-whatsapp-pronto-pde-v2",
                           "layoutKey":"assisted-service-v2",
                           "promise":"Promessa canônica",
-                          "serviceScope":{"includedItems":["10 a 20 respostas"],"excludedItems":["bot"],"deadlineStartsWhen":"Após briefing completo"},
+                          "serviceScope":{"includedItems":["10 a 20 respostas","5 a 10 perguntas","3 a 5 follow-ups"],"excludedItems":["bot"],"deadlineStartsWhen":"Após briefing completo"},
                           "publicProofs":[{"id":"sample-response","type":"RESPONSE","title":"Resposta","content":"Prova fiel","items":[],"evidenceLabel":"Interface real","source":"tasting-v1"}],
                           "commercialProcess":[{"order":1,"title":"Briefing","description":"Entrada guiada","timing":"Após pagamento"}],
                           "commercialBinding":{"experimentId":89,"primaryCta":"Quero meu atendimento sob medida","priceBrl":349,"billingModel":"ONE_TIME"},
-                          "missions":[],"supportMaterials":[]
+                          "missions":[{
+                            "id":"entrega-completa-48h","day":5,"title":"Entrega completa","principle":"Valor material","action":"Entregar","evidence":"Kit","visualCue":"Revisar","completionRole":"OPERATION",
+                            "deliveryContract":{"sections":[
+                              {"id":"responses","title":"Respostas","minItems":10,"maxItems":20},
+                              {"id":"qualificationQuestions","title":"Perguntas","minItems":5,"maxItems":10},
+                              {"id":"followUps","title":"Follow-ups","minItems":3,"maxItems":5}
+                            ]}
+                          }],"supportMaterials":[]
                         }
                         """, MediaType.APPLICATION_JSON));
 
         var product = service.getPublicProductForRequest("kit-whatsapp-pronto", "", "", "");
 
-        assertThat(product.serviceScope().includedItems()).containsExactly("10 a 20 respostas");
+        assertThat(product.serviceScope().includedItems())
+                .contains("15 respostas personalizadas", "8 perguntas de qualificação", "4 follow-ups manuais")
+                .doesNotContain("10 a 20 respostas", "5 a 10 perguntas", "3 a 5 follow-ups");
         assertThat(product.publicProofs()).singleElement().satisfies(proof ->
                 assertThat(proof.source()).isEqualTo("tasting-v1"));
         assertThat(product.commercialProcess()).singleElement().satisfies(step ->

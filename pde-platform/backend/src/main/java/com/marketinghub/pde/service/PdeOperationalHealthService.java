@@ -198,11 +198,11 @@ public class PdeOperationalHealthService {
         if (requestUri.startsWith("/api/pde/public/presence-diagnostic/")) {
             return "/api/pde/public/presence-diagnostic/{requestId}";
         }
-        if (requestUri.matches("^/api/pde/access/[^/]+/ai-guidance/[^/]+$")) {
-            return "/api/pde/access/{token}/ai-guidance/{requestId}";
+        if (requestUri.matches("^/api/pde/access/ai-guidance/[^/]+$")) {
+            return "/api/pde/access/ai-guidance/{requestId}";
         }
-        if (requestUri.matches("^/api/pde/access/[^/]+/missions/[^/]+/ai-guidance$")) {
-            return "/api/pde/access/{token}/missions/{missionId}/ai-guidance";
+        if (requestUri.matches("^/api/pde/access/missions/[^/]+/ai-guidance$")) {
+            return "/api/pde/access/missions/{missionId}/ai-guidance";
         }
         return requestUri;
     }

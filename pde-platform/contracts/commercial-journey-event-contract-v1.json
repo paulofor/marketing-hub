@@ -2,6 +2,7 @@
   "contractVersion": "commercial-journey-event-contract-v1",
   "purpose": "Correlacionar venda, acesso, entrega, primeiro uso e reembolso sem contar intenção ou tráfego de teste como receita.",
   "activationRule": "A homologação comercial deve bloquear a ativação enquanto algum evento obrigatório não possuir fonte persistida e correlação comprovada.",
+  "credentialPolicy": "O bearer de acesso nunca integra URL, log, telemetria ou metadado persistido. Rotas autenticadas usam X-PDE-Access-Token e eventos usam somente accessReferenceHash SHA-256.",
   "events": [
     {
       "eventName": "PURCHASE_COMPLETED",
@@ -14,34 +15,50 @@
     {
       "eventName": "ACCESS_RELEASED",
       "trigger": "Acesso persistido depois da confirmação do pagamento.",
-      "requiredMetadata": ["paymentId", "accessToken", "productSlug", "experimentId", "releasedAt"],
-      "correlationKeys": ["paymentId", "accessToken", "experimentId"],
+      "requiredMetadata": ["paymentId", "accessReferenceHash", "productSlug", "experimentId", "releasedAt"],
+      "correlationKeys": ["paymentId", "accessReferenceHash", "experimentId"],
       "authoritativeSource": "Backend PDE responsável pela concessão de acesso.",
       "commercialMeaning": "Confirma que a compra produziu acesso retomável; não cria nova venda."
     },
     {
       "eventName": "MISSION_COMPLETED",
       "trigger": "Marco operacional de entrega concluído com artefato auditável.",
-      "requiredMetadata": ["accessToken", "productSlug", "experimentId", "missionId", "completedAt"],
-      "correlationKeys": ["accessToken", "missionId", "experimentId"],
+      "requiredMetadata": ["accessReferenceHash", "productSlug", "experimentId", "experienceVersion", "missionId", "completionRole", "completedAt"],
+      "correlationKeys": ["accessReferenceHash", "missionId", "experimentId"],
       "authoritativeSource": "Backend PDE no endpoint operacional autorizado.",
-      "commercialMeaning": "Com missionId entrega-completa-48h, comprova entrega; não cria nova venda."
+      "commercialMeaning": "Comprova o marco operacional individual; não substitui o evento de entrega e não cria nova venda."
+    },
+    {
+      "eventName": "DELIVERY_COMPLETED",
+      "trigger": "A operação persiste o artefato material completo da missão entrega-completa-48h.",
+      "requiredMetadata": ["accessReferenceHash", "productSlug", "experimentId", "experienceVersion", "missionId", "deliveryVersion", "completedAt"],
+      "correlationKeys": ["accessReferenceHash", "missionId", "experienceVersion", "experimentId"],
+      "authoritativeSource": "Backend PDE depois de persistir a entrega completa pelo endpoint operacional autorizado.",
+      "commercialMeaning": "Mede a entrega material e seu prazo efetivo; não depende da primeira aplicação e não cria nova venda."
     },
     {
       "eventName": "FIRST_USE",
-      "trigger": "Primeiro uso autenticado registrado depois da liberação do acesso.",
-      "requiredMetadata": ["accessToken", "productSlug", "experimentId", "occurredAt"],
-      "correlationKeys": ["accessToken", "experimentId"],
-      "authoritativeSource": "Backend PDE após interação autenticada da cliente.",
-      "commercialMeaning": "Confirma início de uso do valor entregue; não cria nova venda."
+      "trigger": "A missão primeira-aplicacao-e-revisao é concluída depois de validar applicationStatus=APPLIED.",
+      "requiredMetadata": ["accessReferenceHash", "productSlug", "experimentId", "experienceVersion", "missionId", "applicationStatus", "occurredAt"],
+      "correlationKeys": ["accessReferenceHash", "experienceVersion", "experimentId"],
+      "authoritativeSource": "Backend PDE após validar e persistir a primeira aplicação real da cliente.",
+      "commercialMeaning": "Confirma o primeiro uso real do valor já entregue; briefing ou simples abertura não contam e o evento não cria nova venda."
     },
     {
       "eventName": "MISSION_COMPLETED",
       "trigger": "Primeira aplicação prática concluída com o material personalizado.",
-      "requiredMetadata": ["accessToken", "productSlug", "experimentId", "missionId", "completedAt"],
-      "correlationKeys": ["accessToken", "missionId", "experimentId"],
+      "requiredMetadata": ["accessReferenceHash", "productSlug", "experimentId", "missionId", "completedAt"],
+      "correlationKeys": ["accessReferenceHash", "missionId", "experimentId"],
       "authoritativeSource": "Backend PDE no endpoint operacional autorizado.",
       "commercialMeaning": "Com missionId primeira-aplicacao-e-revisao, comprova aplicação real; não cria nova venda."
+    },
+    {
+      "eventName": "JOURNEY_COMPLETED",
+      "trigger": "Todos os marcos da jornada assistida foram concluídos depois da primeira aplicação.",
+      "requiredMetadata": ["accessReferenceHash", "productSlug", "experimentId", "experienceVersion", "missionId", "completedMissions", "completedAt"],
+      "correlationKeys": ["accessReferenceHash", "experienceVersion", "experimentId"],
+      "authoritativeSource": "Backend PDE após persistir a última missão da jornada.",
+      "commercialMeaning": "Mede encerramento da jornada; permanece separado de entrega e primeiro uso e não cria nova venda."
     },
     {
       "eventName": "REFUND_CONFIRMED",

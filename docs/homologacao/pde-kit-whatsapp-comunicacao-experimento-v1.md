@@ -9,7 +9,7 @@ classificado como Produto IA, sem exigir canal pago e sem transformar validaçã
 
 - preço testado: R$ 349 em pagamento único;
 - enquadramento: implementação personalizada e revisada em até 48 horas, não biblioteca genérica;
-- entrega: 10–20 respostas, 5–10 perguntas, 3–5 follow-ups, regras, guia e checklist;
+- entrega: exatamente 15 respostas, 8 perguntas, 4 follow-ups, regras, guia e checklist;
 - microvalor: três cenários, duas perguntas e uma resposta em até 12 horas;
 - canal inicial: abordagem individual consentida, sem mídia paga e sem comunicação em massa;
 - prova permitida: demonstração real dos materiais, escopo, prazo, limites e processo de revisão;

@@ -18,8 +18,8 @@ pertencem a Psique e Têmis.
 - Entrada: checklist, perguntas, políticas e cinco conversas anonimizadas ou exemplos equivalentes.
 - Microvalor em até 12 horas: três cenários prioritários, duas perguntas de qualificação e uma
   resposta ajustada ao tom.
-- Entrega completa em até 48 horas após pagamento e entrada completa: 10–20 respostas, 5–10
-  perguntas, 3–5 follow-ups, regras de escalonamento, guia e checklist.
+- Entrega completa em até 48 horas após pagamento e entrada completa: exatamente 15 respostas, 8
+  perguntas, 4 follow-ups, regras de escalonamento, guia e checklist.
 - Primeira aplicação: três respostas, um bloco de qualificação e uma regra de escalonamento na mesma
   semana, sempre com revisão humana.
 - Continuidade opcional: atualização de R$ 99 para até cinco ajustes pequenos; mudança superior a

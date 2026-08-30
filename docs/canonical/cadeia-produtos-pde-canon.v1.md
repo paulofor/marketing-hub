@@ -378,8 +378,10 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 - instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso;
 - versionar o contrato de eventos com nome, gatilho, metadados mínimos, chaves de correlação, fonte
   de verdade e significado comercial. A jornada mínima usa `PURCHASE_COMPLETED`, `ACCESS_RELEASED`,
-  `MISSION_COMPLETED` para o marco de entrega, `FIRST_USE` e `REFUND_CONFIRMED`; a homologação deve
-  bloquear ativação se algum deles não possuir persistência e correlação comprovadas;
+  `MISSION_COMPLETED` para cada marco, `DELIVERY_COMPLETED` para a entrega material,
+  `FIRST_USE` para a primeira aplicação comprovada, `JOURNEY_COMPLETED` para o encerramento e
+  `REFUND_CONFIRMED`; a homologação deve bloquear ativação se algum deles não possuir persistência,
+  correlação e ordem temporal comprovadas;
 - em coorte inicial de até cinco vendas, qualquer reembolso pausa novos contatos para análise de
   causa-raiz. Reembolso causado por promessa, entrega, privacidade ou margem bloqueia a continuidade;
   a taxa percentual isolada só passa a orientar decisão com amostra compatível.

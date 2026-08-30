@@ -1,0 +1,227 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v2",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-08-30T05:49:16Z",
+  "status": "PASSED",
+  "revalidationReason": "A tarefa produtiva #271 de Têmis confirmou que a comunicação e o checkout estavam alinhados, mas o login, o consumo pago e o reembolso não compartilhavam um entitlement autoritativo. Esta revisão comprova a correção causal contra o contrato real do Mercado Pago e preserva o manifesto v1 como histórico imutável.",
+  "scope": "Pagamento Mercado Pago, vínculo único de acesso, login de compradora, versão exata, idempotência, recompra, reembolso, workspace, progresso, operação, materiais, entrega sem bearer na URL, suporte, privacidade, analytics segregado e pacote imutável de Têmis.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
+      "sha256": "a7ede56602ab83a2f81b52626a2c51c82498ff772c5e1a6f8e8f0e2a2a20537c"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "666475cc777cb193b7ef1308175539d8e4279cd958558b7d2039a4a37b943614"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "59a914b136125a5e843aed6005da3a2362a6e9e141dba8a7c5517f926c907f43"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelPaidEntitlementService.java",
+      "sha256": "e98867b29f0a4a6f9ef827fcfc67f9d73cc7c8329737f0f92a5a1fd7abb22b33"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/MercadoPagoEntitlementController.java",
+      "sha256": "918ae8302f59aabe13538c38889a6eaddc01205e3887a6fd89920b602ad8774f"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/support/MercadoPagoEntitlementAuthenticationFilter.java",
+      "sha256": "63935841753a20c51026d52e958581189fc20c62d890998617feb5fd4d86188b"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AccessController.java",
+      "sha256": "03c156710e9334eaca2f0338bb857547ebce452b127fa2acc0b244f5d160f89c"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/controller/MercadoPagoWebhookController.java",
+      "sha256": "17ddeaa1f723538840c3cfdcc7c396937fb06bf394bc84381722d1762a4b2afa"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/service/PdePaymentEntitlementClient.java",
+      "sha256": "38fbbfe5c09d3d67f1d5f0a636e5ff8505c707ef0724b6ad9ab66777713d1223"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoader.java",
+      "sha256": "c8bcca334e1834a29cf0550f0055b77e0c2978c4506046cd8895aac8055bcdbf"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
+      "sha256": "1c9c8d69516bbef7501fe32543af72426ee594519edf60300427108f4ffa1880",
+      "proves": [
+        "autenticação interna acontece antes da validação do payload financeiro",
+        "imagem real do serviço de pagamentos inicia com integração PDE habilitada e health UP",
+        "e-mail sem compra não cria grant nem recebe magic link",
+        "pagamento fictício segregado libera um único token da versão exata",
+        "replays de degustação e checkout reutilizam chaves idempotentes",
+        "download da entrega usa header e URL sem bearer",
+        "reembolso repetido bloqueia workspace, progresso, operação, materiais e entrega",
+        "suporte e privacidade permanecem disponíveis após reembolso",
+        "QA não entra em vendas, receita ou sessões humanas",
+        "a jornada completa funciona em Desktop Chrome, iPhone 15 Pro e Pixel 7"
+      ]
+    },
+    {
+      "path": "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
+      "sha256": "7ba9bb7317dab4b97a40450b531be95ce64a545078a6ca430a2edc18b2e693c1",
+      "proves": [
+        "build público mantém QA segregado",
+        "degustação usa contrato idempotente sem texto livre na telemetria",
+        "preview administrativo não registra evento comercial"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
+      "sha256": "8a3a0058035dd6f213003ad60275281dad9659cdd6fb98bc6397f431bdac9d84",
+      "proves": [
+        "a mesma guarda paga protege todas as fronteiras do acesso",
+        "suporte e direitos de privacidade não reexpõem a workspace revogada",
+        "login pago preserva versão, origem e token"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelPaidEntitlementServiceTest.java",
+      "sha256": "519fc5884a40c83e0315a2fb6b754fae8d5e52f6c70b3994a81b9c6f9767e694",
+      "proves": [
+        "produto 9, experimento 89, preço, moeda, versão e compradora são validados",
+        "uma transação não pode vincular dois tokens",
+        "reembolso antigo não revoga recompra posterior",
+        "webhook atrasado não reativa pagamento terminal"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/MercadoPagoEntitlementControllerTest.java",
+      "sha256": "09410b0837cf5013a6e89ff0a0e26a93af3a263454ff5f6e3a8d9f6c22662b76",
+      "proves": [
+        "ingestão financeira exige bearer interno exato",
+        "reembolso só revoga depois de persistir a confirmação"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/support/MercadoPagoEntitlementAuthenticationFilterTest.java",
+      "sha256": "b7cc4b18858f144fbfcab1808d76de0094606af639da4b60e6697c9babed9419",
+      "proves": [
+        "credencial ausente retorna JSON UTF-8 com 401 antes da desserialização e da validação do corpo",
+        "credencial exata libera o payload e endpoints alheios permanecem inalterados"
+      ]
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/service/PdePaymentEntitlementClientTest.java",
+      "sha256": "43b81ebd3eeec8f0307124705d3b6cbcadf110a2db549648d1affdb76185f721",
+      "proves": [
+        "contexto Spring seleciona o construtor produtivo do cliente PDE",
+        "serviço de pagamentos envia payload completo, URL e credencial dedicados",
+        "produto alheio não produz entitlement",
+        "falha do PDE retorna erro para o Mercado Pago repetir o webhook"
+      ]
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/controller/MercadoPagoWebhookControllerTest.java",
+      "sha256": "23bfbbc8dcc785bacb5fa5b61effd0375826f09e0fa497658cd6ca8cae4261c3",
+      "proves": [
+        "webhook relê o pagamento antes dos efeitos",
+        "payload bruto e resposta do provedor permanecem auditados"
+      ]
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoaderTest.java",
+      "sha256": "9a4728b3e2e3c9a657737c7d8fcae8c3df283bbd66da191f8c7ad0528e8f7076",
+      "proves": [
+        "Têmis seleciona apenas o manifesto v2 do Rigel",
+        "manifesto histórico permanece imutável",
+        "hash divergente no pacote atual bloqueia a revisão"
+      ]
+    },
+    {
+      "path": "pde-platform/docker-compose.assisted-service-validation.yml",
+      "sha256": "d4d6dcbe188077ad2dda65b10718bf541d3ab1614607100aace80c65e855740d",
+      "proves": [
+        "MySQL 5.7, SMTP descartável, backend, frontend, pagamentos e três navegadores usam topologia local segregada"
+      ]
+    },
+    {
+      "path": "docs/homologacao/rigel-paid-entitlement-v1-matriz.md",
+      "sha256": "14a76a30c753827f50aeb5f6375b84550d9f124bb8ccfb6436dbb1c31c7e8765",
+      "proves": [
+        "matriz cobre caminho feliz, falhas, integrações, observabilidade, métricas e segregação",
+        "preferência produtiva do Mercado Pago foi confirmada por consulta somente leitura"
+      ]
+    }
+  ],
+  "consecutiveLocalRounds": [
+    {
+      "round": 1,
+      "result": "PASSED",
+      "pdeBackendUnitTests": 138,
+      "paymentServiceUnitTests": 43,
+      "themisWorkerUnitTests": 72,
+      "publicBuildAnalyticsTests": 5,
+      "assistedJourneyTests": 18,
+      "browsers": [
+        "Desktop Chrome",
+        "iPhone 15 Pro",
+        "Pixel 7"
+      ],
+      "commercialEvidence": {
+        "files": 74,
+        "manifests": 3
+      },
+      "infrastructure": [
+        "MySQL 5.7 com volume novo",
+        "SMTP descartável com topologia nova",
+        "imagem Docker do frontend construída localmente",
+        "jar real do serviço de pagamentos com integração PDE habilitada e health UP"
+      ]
+    },
+    {
+      "round": 2,
+      "result": "PASSED",
+      "pdeBackendUnitTests": 138,
+      "paymentServiceUnitTests": 43,
+      "themisWorkerUnitTests": 72,
+      "publicBuildAnalyticsTests": 5,
+      "assistedJourneyTests": 18,
+      "browsers": [
+        "Desktop Chrome",
+        "iPhone 15 Pro",
+        "Pixel 7"
+      ],
+      "commercialEvidence": {
+        "files": 74,
+        "manifests": 3
+      },
+      "infrastructure": [
+        "MySQL 5.7 com segundo volume novo",
+        "SMTP descartável com segunda topologia nova",
+        "imagem Docker do frontend construída localmente",
+        "jar real do serviço de pagamentos com integração PDE habilitada e health UP"
+      ]
+    }
+  ],
+  "privacyAndCostEvidence": {
+    "buyerEmailPersistedInPaymentAudit": false,
+    "accessTokenPersistedInPaymentAudit": false,
+    "externalModelCalledDuringHomologation": false,
+    "realPaymentCreated": false,
+    "testTrafficCountedAsHuman": false,
+    "intermediateEventsCountedAsSale": false
+  },
+  "authoritativePaymentContract": {
+    "provider": "MERCADO_PAGO",
+    "preferenceId": "133771061-472e4ef4-5d13-4122-831a-706d12435081",
+    "externalReference": "kit-whatsapp-pronto",
+    "productId": 9,
+    "experimentId": 89,
+    "amountBrl": 349,
+    "currency": "BRL",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  }
+}

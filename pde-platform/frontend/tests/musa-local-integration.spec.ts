@@ -13,6 +13,7 @@ const contractServerBaseUrl =
 const internalToken =
   process.env.PDE_TEST_INTERNAL_TOKEN ?? "pde-local-internal-test";
 const internalHeaders = { "X-PDE-Internal-Token": internalToken };
+const accessHeaders = (token: string) => ({ "X-PDE-Access-Token": token });
 const v7MissionSemanticContract = [
   [
     "dia-1-ruido-visual",
@@ -302,13 +303,17 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
     { mainObstacle: "Trabalho ou reunião" },
   ]) {
     const invalidInteraction = await request.post(
-      `${backendBaseUrl}/api/pde/access/${access.token}/missions/dia-1-ruido-visual/interactions`,
-      { data: { answers: invalidAnswers } },
+      `${backendBaseUrl}/api/pde/access/missions/dia-1-ruido-visual/interactions`,
+      {
+        headers: accessHeaders(access.token),
+        data: { answers: invalidAnswers },
+      },
     );
     expect(invalidInteraction.ok()).toBeFalsy();
   }
   const workspaceResponse = await request.get(
-    `${backendBaseUrl}/api/pde/access/${access.token}/workspace`,
+    `${backendBaseUrl}/api/pde/access/workspace`,
+    { headers: accessHeaders(access.token) },
   );
   const workspace = await workspaceResponse.json();
   expect(workspace.subscriptionStatus).toBe("ACTIVE");
@@ -457,9 +462,7 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
   );
   const correctionResponsePromise = page.waitForResponse(
     (response) =>
-      response
-        .url()
-        .includes(`/api/pde/access/${access.token}/privacy-requests`) &&
+      response.url().includes(`/api/pde/access/privacy-requests`) &&
       response.request().method() === "POST",
   );
   await page.getByLabel("Corrigir e-mail do acesso").fill(correctedEmail);
@@ -484,9 +487,7 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
   page.once("dialog", (dialog) => dialog.accept());
   const deletionResponsePromise = page.waitForResponse(
     (response) =>
-      response
-        .url()
-        .includes(`/api/pde/access/${access.token}/privacy-requests`) &&
+      response.url().includes(`/api/pde/access/privacy-requests`) &&
       response.request().method() === "POST",
   );
   await page
@@ -499,7 +500,8 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
   expect(
     (
       await request.get(
-        `${backendBaseUrl}/api/pde/access/${access.token}/workspace`,
+        `${backendBaseUrl}/api/pde/access/workspace`,
+        { headers: accessHeaders(access.token) },
       )
     ).status(),
   ).toBe(404);
@@ -526,9 +528,9 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
   expect(expiredAccessResponse.status()).toBe(201);
   const expiredAccess = await expiredAccessResponse.json();
   const expirationResponse = await request.post(
-    `${backendBaseUrl}/api/internal/pde/test-access/${expiredAccess.token}/expire`,
+    `${backendBaseUrl}/api/internal/pde/test-access/expire`,
     {
-      headers: internalHeaders,
+      headers: { ...internalHeaders, ...accessHeaders(expiredAccess.token) },
     },
   );
   expect(expirationResponse.ok()).toBeTruthy();
@@ -565,8 +567,11 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
   ).toBeTruthy();
 
   const expiredDeletionResponse = await request.post(
-    `${backendBaseUrl}/api/pde/access/${expiredAccess.token}/privacy-requests`,
-    { data: { action: "DELETION" } },
+    `${backendBaseUrl}/api/pde/access/privacy-requests`,
+    {
+      headers: accessHeaders(expiredAccess.token),
+      data: { action: "DELETION" },
+    },
   );
   expect(expiredDeletionResponse.ok()).toBeTruthy();
 });
@@ -594,7 +599,8 @@ test("v7 reconcilia compra e reembolso Pepper sem duplicar venda líquida", asyn
   const paidAccess = await paidWebhook.json();
   expect(paidAccess.source).toBe("PEPPER");
   const activeWorkspaceResponse = await request.get(
-    `${backendBaseUrl}/api/pde/access/${paidAccess.token}/workspace`,
+    `${backendBaseUrl}/api/pde/access/workspace`,
+    { headers: accessHeaders(paidAccess.token) },
   );
   expect(activeWorkspaceResponse.ok()).toBeTruthy();
   const activeWorkspace = await activeWorkspaceResponse.json();
@@ -618,8 +624,9 @@ test("v7 reconcilia compra e reembolso Pepper sem duplicar venda líquida", asyn
       ]),
     );
     const guidanceResponse = await request.post(
-      `${backendBaseUrl}/api/pde/access/${paidAccess.token}/missions/${mission.id}/ai-guidance`,
+      `${backendBaseUrl}/api/pde/access/missions/${mission.id}/ai-guidance`,
       {
+        headers: accessHeaders(paidAccess.token),
         data: {
           guidanceType: mission.interaction.guidanceType,
           answers: neutralAnswers,
@@ -630,7 +637,8 @@ test("v7 reconcilia compra e reembolso Pepper sem duplicar venda líquida", asyn
     expect(guidanceResponse.ok()).toBeTruthy();
     expect((await guidanceResponse.json()).status).toBe("COMPLETED");
     const completionResponse = await request.post(
-      `${backendBaseUrl}/api/pde/access/${paidAccess.token}/missions/${mission.id}/complete`,
+      `${backendBaseUrl}/api/pde/access/missions/${mission.id}/complete`,
+      { headers: accessHeaders(paidAccess.token) },
     );
     expect(completionResponse.ok()).toBeTruthy();
   }
@@ -642,7 +650,8 @@ test("v7 reconcilia compra e reembolso Pepper sem duplicar venda líquida", asyn
     );
   }
   const repeatedDeliveryResponse = await request.post(
-    `${backendBaseUrl}/api/pde/access/${paidAccess.token}/missions/${lastMission.id}/complete`,
+    `${backendBaseUrl}/api/pde/access/missions/${lastMission.id}/complete`,
+    { headers: accessHeaders(paidAccess.token) },
   );
   expect(repeatedDeliveryResponse.ok()).toBeTruthy();
 
@@ -678,7 +687,8 @@ test("v7 reconcilia compra e reembolso Pepper sem duplicar venda líquida", asyn
   });
 
   const refundedWorkspaceResponse = await request.get(
-    `${backendBaseUrl}/api/pde/access/${paidAccess.token}/workspace`,
+    `${backendBaseUrl}/api/pde/access/workspace`,
+    { headers: accessHeaders(paidAccess.token) },
   );
   expect(refundedWorkspaceResponse.ok()).toBeTruthy();
   expect((await refundedWorkspaceResponse.json()).subscriptionStatus).toBe(

@@ -2,8 +2,10 @@ package com.marketinghub.pde.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.marketinghub.pde.service.AccessService;
+import com.marketinghub.pde.dto.AccessRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -26,5 +28,22 @@ class DevAccessControllerTest {
         context
                 .withPropertyValues("pde.access.dev-enabled=true")
                 .run(result -> assertThat(result).hasSingleBean(DevAccessController.class));
+    }
+
+    /** Encaminha a homologação somente para o grant INTERNAL_QA da versão informada. */
+    @Test
+    void createsVersionedInternalQaAccess() {
+        AccessService accessService = mock(AccessService.class);
+        DevAccessController controller = new DevAccessController(accessService);
+
+        controller.createDevAccess(new AccessRequest(
+                "kit-whatsapp-pronto",
+                "teste+rigel@sandbox.local",
+                "kit-whatsapp-pronto-pde-v2"));
+
+        verify(accessService).createInternalQaAccess(
+                "kit-whatsapp-pronto",
+                "teste+rigel@sandbox.local",
+                "kit-whatsapp-pronto-pde-v2");
     }
 }

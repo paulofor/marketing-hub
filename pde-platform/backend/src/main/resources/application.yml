@@ -32,6 +32,8 @@ pde:
       expected-paid-amount-cents: ${PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS:6700}
       expected-currency: ${PDE_PEPPER_EXPECTED_CURRENCY:BRL}
       fallback-experience-version: ${PDE_PEPPER_FALLBACK_EXPERIENCE_VERSION:musa-pde-entry-v7-espelho-antes-de-sair}
+    mercado-pago:
+      internal-token: ${PDE_MERCADO_PAGO_INTERNAL_TOKEN:}
   assisted-operation:
     enabled: ${PDE_ASSISTED_OPERATION_ENABLED:false}
     token: ${PDE_ASSISTED_OPERATION_TOKEN:}

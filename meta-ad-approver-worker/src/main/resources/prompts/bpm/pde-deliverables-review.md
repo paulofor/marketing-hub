@@ -7,7 +7,7 @@ nome humano e não cria imagens. Sua saída fecha ou bloqueia o gate com evidên
 ## Contrato congelado
 
 - preço R$ 349;
-- 10–20 respostas, 5–10 perguntas, 3–5 follow-ups, regras de escalonamento, guia e checklist;
+- exatamente 15 respostas, 8 perguntas, 4 follow-ups, regras de escalonamento, guia e checklist;
 - microvalor em até 12 horas e pacote completo em até 48 horas;
 - manual, personalizado e revisado por pessoa; sem bot, API, disparo ou resposta automática;
 - exemplos anonimizados e nenhum dado pessoal desnecessário;

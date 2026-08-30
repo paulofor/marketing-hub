@@ -16,11 +16,12 @@
   "serviceScope": {
     "includedItems": [
       "Briefing inicial guiado",
-      "10 a 20 respostas personalizadas",
-      "5 a 10 perguntas de qualificação",
-      "3 a 5 follow-ups manuais",
+      "15 respostas personalizadas",
+      "8 perguntas de qualificação",
+      "4 follow-ups manuais",
       "Regras de escalonamento",
-      "Guia, checklist, revisão humana e entrega"
+      "Guia, checklist, revisão humana e entrega",
+      "Acesso aos materiais sem expiração enquanto o pagamento permanecer vigente"
     ],
     "excludedItems": [
       "Software, bot ou automação",
@@ -101,20 +102,20 @@
           {
             "id": "responses",
             "title": "Respostas personalizadas",
-            "minItems": 10,
-            "maxItems": 20
+            "minItems": 15,
+            "maxItems": 15
           },
           {
             "id": "qualificationQuestions",
             "title": "Perguntas de qualificação",
-            "minItems": 5,
-            "maxItems": 10
+            "minItems": 8,
+            "maxItems": 8
           },
           {
             "id": "followUps",
             "title": "Follow-ups manuais",
-            "minItems": 3,
-            "maxItems": 5
+            "minItems": 4,
+            "maxItems": 4
           },
           {
             "id": "escalationRules",

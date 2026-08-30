@@ -34,12 +34,12 @@ public class AiGuidanceController {
         this.internalApiAuthorizer = internalApiAuthorizer;
     }
 
-    /** Cria uma orientação guiada por IA para a missão informada. */
-    @PostMapping("/api/pde/access/{token}/missions/{missionId}/ai-guidance")
+    /** Cria orientação guiada mantendo o bearer fora do caminho HTTP. */
+    @PostMapping("/api/pde/access/missions/{missionId}/ai-guidance")
     @ResponseStatus(HttpStatus.CREATED)
     public AiGuidanceResponse createGuidance(
-            @PathVariable("token") String token,
             @PathVariable("missionId") String missionId,
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token,
             @Valid @RequestBody AiGuidanceCreateRequest request) {
         return aiGuidanceService.createGuidanceRequest(token, missionId, request);
     }
@@ -59,11 +59,11 @@ public class AiGuidanceController {
         return aiGuidanceService.getPublicPresenceDiagnostic(requestId);
     }
 
-    /** Retorna o estado atual de uma orientação guiada por IA. */
-    @GetMapping("/api/pde/access/{token}/ai-guidance/{requestId}")
+    /** Retorna a orientação autenticada sem registrar a credencial na URL. */
+    @GetMapping("/api/pde/access/ai-guidance/{requestId}")
     public AiGuidanceResponse getGuidance(
-            @PathVariable("token") String token,
-            @PathVariable("requestId") String requestId) {
+            @PathVariable("requestId") String requestId,
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token) {
         return aiGuidanceService.getGuidance(token, requestId);
     }
 

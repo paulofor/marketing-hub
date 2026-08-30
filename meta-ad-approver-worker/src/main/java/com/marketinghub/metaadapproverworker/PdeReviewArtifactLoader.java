@@ -11,11 +11,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -28,6 +31,8 @@ final class PdeReviewArtifactLoader {
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final String COMMUNICATION_CONTRACT_DIRECTORY = "pde-platform/contracts";
   private static final String BUNDLE_INDEX = "commercial-review-bundle-index-v1.json";
+  private static final String PROMPT_MODE_FULL = "FULL";
+  private static final String PROMPT_MODE_ATTESTED_REFERENCE = "ATTESTED_REFERENCE";
   private static final List<String> COMMERCIAL_EVIDENCE_COLLECTIONS =
       List.of("homologationEvidence", "implementationEvidence", "executableEvidence");
   private static final Pattern MANIFEST_REVISION = Pattern.compile("(?:^|[.-])v([1-9][0-9]*)$");
@@ -93,30 +98,35 @@ final class PdeReviewArtifactLoader {
         || !contractsDirectory.toRealPath().startsWith(repositoryRoot.toRealPath())) {
       throw new IOException("Diretório de contratos comerciais PDE não encontrado");
     }
-    List<Map<String, Object>> evidence = new ArrayList<>();
+    List<Path> artifacts;
     try (Stream<Path> files = Files.list(contractsDirectory)) {
-      for (Path artifact :
+      artifacts =
           files
               .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
               .filter(path -> path.getFileName().toString().endsWith(".json"))
               .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-              .toList()) {
-        if (!artifact.normalize().startsWith(contractsDirectory)) {
-          throw new IllegalArgumentException("Contrato comercial fora do diretório autorizado");
-        }
-        String content = Files.readString(artifact, StandardCharsets.UTF_8);
-        validateDeclaredEvidenceHashes(content, artifact);
-        evidence.add(
-            Map.of(
-                "path",
-                repositoryRoot.relativize(artifact).toString(),
-                "contentLength",
-                content.length(),
-                "contentChecksum",
-                checksum(content),
-                "content",
-                content));
+              .toList();
+    }
+    Set<Path> currentManifestPaths = currentManifestPaths(artifacts);
+    List<Map<String, Object>> evidence = new ArrayList<>();
+    for (Path artifact : artifacts) {
+      if (!artifact.normalize().startsWith(contractsDirectory)) {
+        throw new IllegalArgumentException("Contrato comercial fora do diretório autorizado");
       }
+      String content = Files.readString(artifact, StandardCharsets.UTF_8);
+      if (currentManifestPaths.contains(artifact)) {
+        validateDeclaredEvidenceHashes(content, artifact);
+      }
+      evidence.add(
+          Map.of(
+              "path",
+              repositoryRoot.relativize(artifact).toString(),
+              "contentLength",
+              content.length(),
+              "contentChecksum",
+              checksum(content),
+              "content",
+              content));
     }
     if (evidence.isEmpty()) {
       throw new IOException("Nenhum contrato comercial PDE versionado foi encontrado");
@@ -125,6 +135,43 @@ final class PdeReviewArtifactLoader {
       evidence.add(readAuthorizedEvidence(relativePath));
     }
     return evidence;
+  }
+
+  /** Seleciona por produto somente o manifesto atual que deve coincidir com o código candidato. */
+  private Set<Path> currentManifestPaths(List<Path> artifacts) throws IOException {
+    Map<String, List<CommunicationManifestCandidate>> candidatesByProduct = new HashMap<>();
+    for (Path artifact : artifacts) {
+      JsonNode contract = JSON_MAPPER.readTree(Files.readString(artifact, StandardCharsets.UTF_8));
+      if (!declaresCommercialEvidence(contract)) continue;
+      String productSlug = contract.path("product").path("slug").asText("");
+      if (productSlug.isBlank()) productSlug = contract.path("productSlug").asText("");
+      if (productSlug.isBlank()) {
+        throw new IOException(
+            "Manifesto comercial sem produto: " + repositoryRoot.relativize(artifact));
+      }
+      candidatesByProduct
+          .computeIfAbsent(productSlug, ignored -> new ArrayList<>())
+          .add(new CommunicationManifestCandidate(artifact, manifestRevision(contract)));
+    }
+    Set<Path> current = new HashSet<>();
+    for (Map.Entry<String, List<CommunicationManifestCandidate>> entry :
+        candidatesByProduct.entrySet()) {
+      int latestRevision =
+          entry.getValue().stream()
+              .mapToInt(CommunicationManifestCandidate::revision)
+              .max()
+              .orElseThrow();
+      List<CommunicationManifestCandidate> latest =
+          entry.getValue().stream()
+              .filter(candidate -> candidate.revision() == latestRevision)
+              .toList();
+      if (latest.size() != 1) {
+        throw new IOException(
+            "Mais de um manifesto vigente corresponde ao produto " + entry.getKey());
+      }
+      current.add(latest.getFirst().path());
+    }
+    return Set.copyOf(current);
   }
 
   /** Seleciona o manifesto do alvo e entrega a candidata atual sem misturar produtos. */
@@ -173,6 +220,7 @@ final class PdeReviewArtifactLoader {
     Map<String, Map<String, Object>> evidence = new LinkedHashMap<>();
     evidence.put(candidate.path(), candidate.evidence());
     Map<String, String> declaredHashes = new LinkedHashMap<>();
+    Map<String, PromptEvidenceDirective> declaredDirectives = new LinkedHashMap<>();
     for (String collectionName : COMMERCIAL_EVIDENCE_COLLECTIONS) {
       JsonNode collection = candidate.contract().path(collectionName);
       if (collection.isMissingNode()) continue;
@@ -190,8 +238,16 @@ final class PdeReviewArtifactLoader {
         if (previous != null && !previous.equals(expectedHash)) {
           throw new IOException("Manifesto comercial contém hashes conflitantes: " + relativePath);
         }
+        PromptEvidenceDirective directive = PromptEvidenceDirective.from(declared, relativePath);
+        PromptEvidenceDirective previousDirective =
+            declaredDirectives.putIfAbsent(relativePath, directive);
+        if (previousDirective != null && !previousDirective.equals(directive)) {
+          throw new IOException(
+              "Manifesto comercial contém modos de prompt conflitantes: " + relativePath);
+        }
         Map<String, Object> artifact = readAuthorizedEvidence(relativePath, bundleIndex);
-        evidence.putIfAbsent(relativePath, withBaselineHash(artifact, expectedHash));
+        evidence.putIfAbsent(
+            relativePath, directive.apply(withBaselineHash(artifact, expectedHash)));
       }
     }
     if (declaredHashes.isEmpty()) {
@@ -351,6 +407,38 @@ final class PdeReviewArtifactLoader {
   /** Representa o manifesto elegível e sua revisão versionada. */
   private record ManifestCandidate(
       String path, Map<String, Object> evidence, JsonNode contract, int revision) {}
+
+  /** Identifica um manifesto geral durante a escolha da revisão atual por produto. */
+  private record CommunicationManifestCandidate(Path path, int revision) {}
+
+  /** Define como uma prova atestada entra no prompt sem permitir truncamento silencioso. */
+  private record PromptEvidenceDirective(String mode, String reviewSummary) {
+    /** Valida o modo explícito e exige resumo verificável quando o conteúdo for redundante. */
+    private static PromptEvidenceDirective from(JsonNode declared, String relativePath)
+        throws IOException {
+      String mode = declared.path("promptMode").asText(PROMPT_MODE_FULL).trim();
+      String summary = declared.path("reviewSummary").asText("").trim();
+      if (!PROMPT_MODE_FULL.equals(mode) && !PROMPT_MODE_ATTESTED_REFERENCE.equals(mode)) {
+        throw new IOException("Modo de prompt inválido para a prova comercial: " + relativePath);
+      }
+      if (PROMPT_MODE_ATTESTED_REFERENCE.equals(mode) && summary.isBlank()) {
+        throw new IOException(
+            "Prova comercial referenciada sem resumo verificável: " + relativePath);
+      }
+      return new PromptEvidenceDirective(mode, summary);
+    }
+
+    /** Mantém conteýo integral por padrão ou usa resumo declarado e hash atestado. */
+    private Map<String, Object> apply(Map<String, Object> artifact) {
+      Map<String, Object> result = new LinkedHashMap<>(artifact);
+      result.put("promptMode", mode);
+      if (PROMPT_MODE_ATTESTED_REFERENCE.equals(mode)) {
+        result.remove("content");
+        result.put("reviewSummary", reviewSummary);
+      }
+      return java.util.Collections.unmodifiableMap(result);
+    }
+  }
 
   /** Representa a identidade tipada enviada pelo backend para a atividade reservada. */
   private record ReviewTarget(

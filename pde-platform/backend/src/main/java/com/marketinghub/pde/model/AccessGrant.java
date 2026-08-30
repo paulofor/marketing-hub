@@ -135,7 +135,12 @@ public class AccessGrant {
 
     /** Revoga a continuidade paga após reembolso confirmado sem apagar o histórico da cliente. */
     public void revokePaidAccess(Instant refundedAt) {
-        this.source = "PEPPER_REFUNDED";
+        revokePaidAccess("PEPPER_REFUNDED", refundedAt);
+    }
+
+    /** Revoga o acesso usando a origem final específica do provedor confirmado. */
+    public void revokePaidAccess(String revokedSource, Instant refundedAt) {
+        this.source = revokedSource;
         this.expiresAt = refundedAt;
     }
 

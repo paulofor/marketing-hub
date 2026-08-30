@@ -5,14 +5,24 @@ const backendBaseUrl =
   process.env.PDE_ASSISTED_BACKEND_URL ?? "http://127.0.0.1:8096";
 const mailBaseUrl =
   process.env.PDE_ASSISTED_MAIL_URL ?? "http://sandbox-mail:8025";
+const paymentsBaseUrl =
+  process.env.PDE_ASSISTED_PAYMENTS_URL ?? "http://127.0.0.1:8080";
 const internalToken =
   process.env.PDE_ASSISTED_INTERNAL_TOKEN ?? "pde-local-internal-test";
 const internalHeaders = { "X-PDE-Internal-Token": internalToken };
+const accessHeaders = (token: string) => ({ "X-PDE-Access-Token": token });
+const operationHeaders = (token: string, operationToken: string) => ({
+  "X-PDE-Access-Token": token,
+  "X-PDE-Operation-Token": operationToken,
+});
 const psiquePageHeightLimit = 8500;
 const crossBrowserRenderingSafetyMargin = 900;
 
 const relativeLuminance = (color: string) => {
-  const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+  const channels = color
+    .match(/[\d.]+/g)
+    ?.slice(0, 3)
+    .map(Number);
   if (!channels || channels.length !== 3) {
     throw new Error(`Cor RGB inválida no contrato visual: ${color}`);
   }
@@ -98,12 +108,47 @@ test.beforeEach(async ({ context, page, request }) => {
   await page.goto("/?mh_test=1");
 });
 
+test("autentica a ingestão financeira antes de validar o payload", async ({
+  request,
+}) => {
+  const response = await request.post(
+    `${backendBaseUrl}/api/internal/pde/mercado-pago/entitlements`,
+    { data: {} },
+  );
+
+  expect(response.status()).toBe(401);
+  await expect(response.json()).resolves.toMatchObject({
+    error: "Entitlement financeiro não autorizado",
+  });
+});
+
+test("inicia pagamentos com a integração de entitlement habilitada", async ({
+  request,
+}) => {
+  const response = await request.get(`${paymentsBaseUrl}/actuator/health`);
+
+  expect(response.ok()).toBeTruthy();
+  await expect(response.json()).resolves.toMatchObject({ status: "UP" });
+});
+
 test("conclui a jornada assistida com marcos operacionais, preserva progresso e abre materiais", async ({
   page,
   request,
 }, testInfo) => {
   const commercialEvents: Array<Record<string, unknown>> = [];
-  page.on("request", (browserRequest) => {
+  const browserAccessRequests: Array<{
+    url: string;
+    postData: string;
+    referrer: string;
+    accessHeader: string;
+  }> = [];
+  const captureBrowserRequest = (browserRequest: {
+    method(): string;
+    url(): string;
+    postData(): string | null;
+    headers(): Record<string, string>;
+    postDataJSON(): unknown;
+  }) => {
     if (
       browserRequest.method() === "POST" &&
       browserRequest.url().includes("/api/pde/access/events")
@@ -111,7 +156,17 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
       const payload = browserRequest.postDataJSON() as Record<string, unknown>;
       commercialEvents.push(payload);
     }
-  });
+    if (browserRequest.url().includes("/api/pde/access/")) {
+      const headers = browserRequest.headers();
+      browserAccessRequests.push({
+        url: browserRequest.url(),
+        postData: browserRequest.postData() ?? "",
+        referrer: headers.referer ?? "",
+        accessHeader: headers["x-pde-access-token"] ?? "",
+      });
+    }
+  };
+  page.on("request", captureBrowserRequest);
 
   const canonicalOfferResponse = await request.get(
     `${backendBaseUrl}/api/pde/products/${productSlug}/commercial-offer`,
@@ -195,8 +250,9 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
               : Number.POSITIVE_INFINITY,
           ),
         ),
-        transformationHeadingColor:
-          window.getComputedStyle(transformationHeading).color,
+        transformationHeadingColor: window.getComputedStyle(
+          transformationHeading,
+        ).color,
         transformationBackgroundColor:
           window.getComputedStyle(transformation).backgroundColor,
         textSizeAdjust:
@@ -268,7 +324,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     "https://pay.example/kit-whatsapp",
   );
   await expect(page.getByTestId("assisted-scope")).toContainText(
-    "10 a 20 respostas personalizadas",
+    "15 respostas personalizadas",
   );
   await expect(page.getByTestId("assisted-public-proofs")).toContainText(
     "Três follow-ups manuais",
@@ -351,6 +407,10 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     }
   }
   expect(materializedResponses.size).toBe(6);
+  await tasting.getByLabel("Situação").selectOption("orcamento-sem-resposta");
+  await tasting.getByLabel("Tom").selectOption("acolhedor");
+  await tasting.getByRole("button", { name: "Gerar minha amostra" }).click();
+  await expect(tastingResult).toContainText("manicure");
   await expect(tastingResult).toContainText(
     "A implantação paga inclui briefing",
   );
@@ -377,14 +437,38 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
         commercialEvents.filter((event) => event.eventType === "VALUE_MOMENT")
           .length,
     )
-    .toBe(6);
+    .toBe(7);
   await expect
     .poll(
       () =>
         commercialEvents.filter((event) => event.eventType === "PAYWALL_VIEWED")
           .length,
     )
-    .toBe(6);
+    .toBe(7);
+  const eventKeys = (eventType: string) =>
+    commercialEvents
+      .filter((event) => event.eventType === eventType)
+      .map(
+        (event) =>
+          (event.metadata as Record<string, unknown>).idempotencyKey as string,
+      );
+  const tastingStartedKeys = eventKeys("TASTING_STARTED");
+  const valueMomentKeys = eventKeys("VALUE_MOMENT");
+  const paywallKeys = eventKeys("PAYWALL_VIEWED");
+  expect(tastingStartedKeys).toEqual([
+    "tasting-started:kit-whatsapp-tasting-v1",
+  ]);
+  expect(new Set(valueMomentKeys).size).toBe(6);
+  expect(new Set(paywallKeys)).toEqual(new Set(valueMomentKeys));
+  expect(valueMomentKeys.at(-1)).toBe(valueMomentKeys[0]);
+  expect(paywallKeys.at(-1)).toBe(paywallKeys[0]);
+  for (const key of [
+    ...tastingStartedKeys,
+    ...valueMomentKeys,
+    ...paywallKeys,
+  ]) {
+    expect(key).toMatch(/^[a-z0-9._:-]+$/);
+  }
   expect(JSON.stringify(commercialEvents)).not.toContain("manicure");
 
   const popupPromise = page.waitForEvent("popup");
@@ -406,12 +490,25 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     ),
   ).toBeVisible();
   await checkoutPage.close();
+  const checkoutRetryPromise = page.waitForEvent("popup");
+  await checkout.click();
+  const checkoutRetryPage = await checkoutRetryPromise;
+  await checkoutRetryPage.close();
   await expect
     .poll(() => commercialEvents.map((event) => event.eventType))
     .toContain("CHECKOUT_STARTED");
-  const checkoutEvent = commercialEvents.find(
+  await expect
+    .poll(
+      () =>
+        commercialEvents.filter(
+          (event) => event.eventType === "CHECKOUT_STARTED",
+        ).length,
+    )
+    .toBe(2);
+  const checkoutEvents = commercialEvents.filter(
     (event) => event.eventType === "CHECKOUT_STARTED",
   );
+  const checkoutEvent = checkoutEvents[0];
   expect(checkoutEvent).toMatchObject({
     productSlug,
     source: "mh_test",
@@ -422,20 +519,62 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
       checkoutHost: "pay.example",
     },
   });
+  expect(
+    (checkoutEvent?.metadata as Record<string, unknown>).idempotencyKey,
+  ).toMatch(/^checkout:[a-z0-9._:-]+$/);
+  expect(
+    new Set(
+      checkoutEvents.map(
+        (event) => (event.metadata as Record<string, unknown>).idempotencyKey,
+      ),
+    ).size,
+  ).toBe(1);
 
   const email = `teste+kit-whatsapp-${testInfo.project.name}-${Date.now()}@sandbox.local`;
-  const qaAccessResponse = await request.post(
-    `${backendBaseUrl}/api/internal/pde/test-access`,
+  const unknownLogin = await request.post(
+    `${backendBaseUrl}/api/pde/access/login-link`,
+    { data: { productSlug, email } },
+  );
+  expect(unknownLogin.status()).toBe(404);
+  const paymentTransactionId = `mp-rigel-${testInfo.project.name}-${Date.now()}`;
+  const approvedPayment = await request.post(
+    `${backendBaseUrl}/api/internal/pde/test-payment-entitlements`,
     {
       headers: internalHeaders,
-      data: { productSlug, email },
+      data: {
+        email,
+        transactionId: paymentTransactionId,
+        paymentStatus: "approved",
+        experienceVersion: "kit-whatsapp-pronto-pde-v2",
+      },
     },
   );
-  expect(qaAccessResponse.status()).toBe(201);
-  const qaAccess = (await qaAccessResponse.json()) as { token: string };
-  await page.goto(`/access/${qaAccess.token}?mh_test=1`);
+  expect(approvedPayment.status()).toBe(201);
+  const paidLoginResponse = await request.post(
+    `${backendBaseUrl}/api/pde/access/login-link`,
+    { data: { productSlug, email } },
+  );
+  expect(paidLoginResponse.ok()).toBeTruthy();
+  const paidLogin = (await paidLoginResponse.json()) as {
+    accessUrl: string;
+    deliveryStatus: string;
+  };
+  expect(paidLogin.deliveryStatus).toBe("SENT");
+  expect(paidLogin.accessUrl).toMatch(/^\/access#access=[a-z0-9-]+$/);
+  const expectedAccessToken = paidLogin.accessUrl.split("#access=")[1];
+  expect(expectedAccessToken).toBeTruthy();
+  const paidLoginRetry = await request.post(
+    `${backendBaseUrl}/api/pde/access/login-link`,
+    { data: { productSlug, email } },
+  );
+  expect((await paidLoginRetry.json()).accessUrl).toBe(paidLogin.accessUrl);
+  await page.goto(`/access?mh_test=1#access=${expectedAccessToken}`);
 
   await expect(page.getByTestId("assisted-workspace")).toBeVisible();
+  expect(page.url()).not.toContain(expectedAccessToken);
+  expect(new URL(page.url()).pathname).toBe("/access");
+  expect(new URL(page.url()).hash).toBe("");
+  expect(new URL(page.url()).searchParams.get("mh_test")).toBe("1");
   await expect(page.getByText(email)).toBeVisible();
   await expect(page.getByText("0 de 6 etapas concluídas")).toBeVisible();
   await expect(
@@ -490,20 +629,23 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     productSlug,
   );
   expect(accessToken).toBeTruthy();
+  expect(accessToken).toBe(expectedAccessToken);
 
   const deliveryBeforeOperation = await request.get(
-    `${backendBaseUrl}/api/pde/access/${accessToken}/deliveries/microvalor-12h/download`,
+    `${backendBaseUrl}/api/pde/access/deliveries/microvalor-12h/download`,
+    { headers: { "X-PDE-Access-Token": accessToken! } },
   );
   expect(deliveryBeforeOperation.ok()).toBeFalsy();
 
   const unauthorizedCustomerAdvance = await request.post(
-    `${backendBaseUrl}/api/pde/access/${accessToken}/missions/conferencia-de-completude/complete`,
+    `${backendBaseUrl}/api/pde/access/missions/conferencia-de-completude/complete`,
+    { headers: accessHeaders(accessToken!) },
   );
   expect(unauthorizedCustomerAdvance.ok()).toBeFalsy();
 
   const unauthorizedOperationAdvance = await request.post(
-    `${backendBaseUrl}/api/internal/pde/assisted-operation/access/${accessToken}/missions/conferencia-de-completude/complete`,
-    { headers: { "X-PDE-Operation-Token": "token-incorreto" } },
+    `${backendBaseUrl}/api/internal/pde/assisted-operation/access/missions/conferencia-de-completude/complete`,
+    { headers: operationHeaders(accessToken!, "token-incorreto") },
   );
   expect(unauthorizedOperationAdvance.status()).toBe(403);
 
@@ -588,16 +730,49 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     },
   ];
   const incompleteDelivery = await request.post(
-    `${backendBaseUrl}/api/internal/pde/assisted-operation/access/${accessToken}/missions/microvalor-12h/complete`,
-    { headers: { "X-PDE-Operation-Token": "pde-local-operation-test" } },
+    `${backendBaseUrl}/api/internal/pde/assisted-operation/access/missions/microvalor-12h/complete`,
+    {
+      headers: operationHeaders(accessToken!, "pde-local-operation-test"),
+    },
   );
   expect(incompleteDelivery.ok()).toBeFalsy();
 
   for (const stage of operationalStages) {
+    if (stage.missionId === "entrega-completa-48h") {
+      for (const invalidCount of [
+        { sectionId: "responses", count: 14 },
+        { sectionId: "qualificationQuestions", count: 7 },
+        { sectionId: "followUps", count: 3 },
+      ]) {
+        const incompleteSections = stage.deliverySections?.map((section) =>
+          section.sectionId === invalidCount.sectionId
+            ? { ...section, items: section.items.slice(0, invalidCount.count) }
+            : section,
+        );
+        const incompleteFullDelivery = await request.post(
+          `${backendBaseUrl}/api/internal/pde/assisted-operation/access/missions/${stage.missionId}/complete`,
+          {
+            headers: operationHeaders(
+              accessToken!,
+              "pde-local-operation-test",
+            ),
+            data: {
+              deliveryTitle: stage.deliveryTitle,
+              deliveryVersion: stage.deliveryVersion,
+              deliverySections: incompleteSections,
+            },
+          },
+        );
+        expect(
+          incompleteFullDelivery.ok(),
+          `escopo parcial aceito: ${invalidCount.sectionId}=${invalidCount.count}`,
+        ).toBeFalsy();
+      }
+    }
     const operationAdvance = await request.post(
-      `${backendBaseUrl}/api/internal/pde/assisted-operation/access/${accessToken}/missions/${stage.missionId}/complete`,
+      `${backendBaseUrl}/api/internal/pde/assisted-operation/access/missions/${stage.missionId}/complete`,
       {
-        headers: { "X-PDE-Operation-Token": "pde-local-operation-test" },
+        headers: operationHeaders(accessToken!, "pde-local-operation-test"),
         data:
           stage.deliveryContent || stage.deliverySections
             ? {
@@ -651,12 +826,20 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await page.getByRole("link", { name: "Abrir material" }).first().click();
   await protectedMaterialRequest;
 
-  for (const link of await page
+  const personalDeliveryLinks = await page
     .getByRole("link", { name: "Baixar entrega personalizada" })
     .evaluateAll((nodes) =>
       nodes.map((node) => (node as HTMLAnchorElement).href),
-    )) {
-    const response = await request.get(link);
+    );
+  for (const link of personalDeliveryLinks) {
+    expect(new URL(link).pathname).toMatch(
+      /^\/api\/pde\/access\/deliveries\/[a-z0-9-]+\/download$/,
+    );
+    expect(link).not.toContain(accessToken);
+    expect((await request.get(link)).status()).toBe(403);
+    const response = await request.get(link, {
+      headers: { "X-PDE-Access-Token": accessToken! },
+    });
     expect(
       response.ok(),
       `entrega personalizada indisponível: ${link}`,
@@ -664,6 +847,16 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     expect(response.headers()["content-disposition"]).toContain("attachment");
     expect((await response.text()).length).toBeGreaterThan(100);
   }
+  const protectedDeliveryRequest = page.waitForRequest(
+    (browserRequest) =>
+      browserRequest.url().includes(personalDeliveryLinks[0]) &&
+      browserRequest.headers()["x-pde-access-token"] === accessToken,
+  );
+  await page
+    .getByRole("link", { name: "Baixar entrega personalizada" })
+    .first()
+    .click();
+  await protectedDeliveryRequest;
 
   for (const link of await page
     .getByRole("link", { name: "Abrir material" })
@@ -750,8 +943,12 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     productSlug,
   );
   const secondPage = await page.context().newPage();
-  await secondPage.goto(`/access/${accessToken}?mh_test=1`);
+  secondPage.on("request", captureBrowserRequest);
+  await secondPage.goto(`/access?mh_test=1#access=${accessToken}`);
   await expect(secondPage.getByTestId("assisted-workspace")).toBeVisible();
+  expect(secondPage.url()).not.toContain(accessToken);
+  expect(new URL(secondPage.url()).pathname).toBe("/access");
+  expect(new URL(secondPage.url()).searchParams.get("mh_test")).toBe("1");
   await expect(secondPage.getByText(email)).toBeVisible();
   await expect(secondPage.getByText("6 de 6 etapas concluídas")).toBeVisible();
   await expect
@@ -763,6 +960,105 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     )
     .toBe(accessToken);
   await secondPage.close();
+
+  const refundedPayment = await request.post(
+    `${backendBaseUrl}/api/internal/pde/test-payment-entitlements`,
+    {
+      headers: internalHeaders,
+      data: {
+        email,
+        transactionId: paymentTransactionId,
+        paymentStatus: "refunded",
+        experienceVersion: "kit-whatsapp-pronto-pde-v2",
+      },
+    },
+  );
+  expect(refundedPayment.status()).toBe(201);
+  const refundedPaymentRetry = await request.post(
+    `${backendBaseUrl}/api/internal/pde/test-payment-entitlements`,
+    {
+      headers: internalHeaders,
+      data: {
+        email,
+        transactionId: paymentTransactionId,
+        paymentStatus: "refunded",
+        experienceVersion: "kit-whatsapp-pronto-pde-v2",
+      },
+    },
+  );
+  expect(refundedPaymentRetry.status()).toBe(201);
+  expect(
+    (
+      await request.get(
+        `${backendBaseUrl}/api/pde/access/workspace`,
+        { headers: accessHeaders(accessToken!) },
+      )
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.post(
+        `${backendBaseUrl}/api/pde/access/missions/entrada-guiada/interactions`,
+        {
+          headers: accessHeaders(accessToken!),
+          data: { answers: { services: "não deve persistir" } },
+        },
+      )
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.post(
+        `${backendBaseUrl}/api/internal/pde/assisted-operation/access/missions/conferencia-de-completude/complete`,
+        {
+          headers: operationHeaders(
+            accessToken!,
+            "pde-local-operation-test",
+          ),
+        },
+      )
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.get(
+        `${backendBaseUrl}/api/pde/access/materials/authorize`,
+        {
+          headers: { "X-PDE-Access-Token": accessToken! },
+        },
+      )
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.get(
+        `${backendBaseUrl}/api/pde/access/deliveries/microvalor-12h/download`,
+        { headers: { "X-PDE-Access-Token": accessToken! } },
+      )
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.post(
+        `${backendBaseUrl}/api/pde/access/support-requests`,
+        {
+          headers: accessHeaders(accessToken!),
+          data: { message: "Suporte após reembolso continua acessível." },
+        },
+      )
+    ).ok(),
+  ).toBeTruthy();
+  expect(
+    (
+      await request.post(
+        `${backendBaseUrl}/api/pde/access/privacy-requests`,
+        {
+          headers: accessHeaders(accessToken!),
+          data: { action: "ACCESS" },
+        },
+      )
+    ).ok(),
+  ).toBeTruthy();
 
   await expect
     .poll(async () => {
@@ -787,9 +1083,22 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   const summaryResponse = await request.get(
     `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/summary`,
   );
-  expect((await summaryResponse.json()).rawTotalEvents).toBeGreaterThanOrEqual(
-    12,
+  const persistedAnalytics = await summaryResponse.json();
+  expect(persistedAnalytics.rawTotalEvents).toBeGreaterThanOrEqual(12);
+  expect(JSON.stringify(commercialEvents)).not.toContain(accessToken);
+  expect(JSON.stringify(persistedAnalytics)).not.toContain(accessToken);
+  const authenticatedRequests = browserAccessRequests.filter((entry) =>
+    /\/(workspace|missions|deliveries|materials|support-requests|privacy-requests|ai-guidance)(\/|$)/.test(
+      new URL(entry.url).pathname,
+    ),
   );
+  expect(authenticatedRequests.length).toBeGreaterThan(6);
+  for (const entry of authenticatedRequests) {
+    expect(entry.url).not.toContain(accessToken);
+    expect(entry.postData).not.toContain(accessToken);
+    expect(entry.referrer).not.toContain(accessToken);
+    expect(entry.accessHeader).toBe(accessToken);
+  }
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,

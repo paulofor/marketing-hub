@@ -8,6 +8,8 @@ import com.marketinghub.payments.model.MercadoPagoWebhookLog;
 import com.marketinghub.payments.model.WebhookProcessingStatus;
 import com.marketinghub.payments.repository.MercadoPagoWebhookLogRepository;
 import com.marketinghub.payments.service.CheckoutService;
+import com.marketinghub.payments.service.PaymentAuditPayloadSanitizer;
+import com.marketinghub.payments.service.PdePaymentEntitlementClient;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Recebe o webhook do Mercado Pago, audita o payload e aplica seus efeitos idempotentes. */
 @RestController
 @RequestMapping("/api/v1/mercadopago")
 public class MercadoPagoWebhookController {
@@ -29,15 +32,23 @@ public class MercadoPagoWebhookController {
     private final CheckoutService checkoutService;
     private final ObjectMapper objectMapper;
     private final MercadoPagoWebhookLogRepository webhookLogRepository;
+    private final PdePaymentEntitlementClient pdePaymentEntitlementClient;
+    private final PaymentAuditPayloadSanitizer paymentAuditPayloadSanitizer;
 
+    /** Configura consulta, auditoria e publicação do estado financeiro confirmado. */
     public MercadoPagoWebhookController(CheckoutService checkoutService,
                                         ObjectMapper objectMapper,
-                                        MercadoPagoWebhookLogRepository webhookLogRepository) {
+                                        MercadoPagoWebhookLogRepository webhookLogRepository,
+                                        PdePaymentEntitlementClient pdePaymentEntitlementClient,
+                                        PaymentAuditPayloadSanitizer paymentAuditPayloadSanitizer) {
         this.checkoutService = checkoutService;
         this.objectMapper = objectMapper;
         this.webhookLogRepository = webhookLogRepository;
+        this.pdePaymentEntitlementClient = pdePaymentEntitlementClient;
+        this.paymentAuditPayloadSanitizer = paymentAuditPayloadSanitizer;
     }
 
+    /** Consulta novamente o pagamento no provedor antes de aplicar entrega e entitlement. */
     @PostMapping("/webhook")
     public ResponseEntity<Void> handleWebhook(@RequestBody(required = false) MercadoPagoWebhookPayload payload,
                                               @RequestParam(name = "id", required = false) String idFromQuery,
@@ -50,7 +61,8 @@ public class MercadoPagoWebhookController {
         auditLog.setHasPayload(payload != null);
 
         String rawPayload = serialize(payload);
-        auditLog.setPayload(rawPayload);
+        String minimizedPayload = paymentAuditPayloadSanitizer.minimize(rawPayload);
+        auditLog.setPayload(minimizedPayload);
 
         String resourceId = payload != null ? payload.extractResourceId() : null;
         if (!StringUtils.hasText(resourceId)) {
@@ -74,10 +86,11 @@ public class MercadoPagoWebhookController {
                 return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             }
             MercadoPagoPaymentDetails details = paymentDetails.get();
-            checkoutService.updateFromPayment(details, rawPayload);
+            checkoutService.updateFromPayment(details, minimizedPayload);
+            pdePaymentEntitlementClient.notifyIfSupported(details);
             auditLog.setResourceId(details.id());
             auditLog.setMercadoPagoStatus(details.status());
-            auditLog.setMercadoPagoResponse(details.rawPayload());
+            auditLog.setMercadoPagoResponse(paymentAuditPayloadSanitizer.minimize(details.rawPayload()));
             auditLog.setProcessingStatus(WebhookProcessingStatus.PROCESSED);
             log.info("Webhook do Mercado Pago processado com sucesso (id={}, status={})", resourceId,
                     details.status());
@@ -96,6 +109,7 @@ public class MercadoPagoWebhookController {
         }
     }
 
+    /** Serializa o payload recebido antes de aplicar a minimização da auditoria persistida. */
     private String serialize(MercadoPagoWebhookPayload payload) {
         if (payload == null) {
             return null;
@@ -103,6 +117,7 @@ public class MercadoPagoWebhookController {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar payload bruto do webhook do Mercado Pago", ex);
             return null;
         }
     }

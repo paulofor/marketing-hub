@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.9.0
+  version: 1.10.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades, documentos e execuções independentes no Marketing Hub.
 paths:
   /api/business-processes:
@@ -806,11 +806,22 @@ components:
       properties:
         key: { type: string }
         label: { type: string }
-        controlType: { type: string, enum: [TEXT, TEXTAREA] }
+        controlType: { type: string, enum: [TEXT, TEXTAREA, SELECT] }
         required: { type: boolean }
         maxLength: { type: integer, nullable: true }
         defaultValue: { type: string, nullable: true }
         helpText: { type: string, nullable: true }
+        options:
+          type: array
+          description: Opções canônicas exigidas quando controlType for SELECT.
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessInputOption"
+    IndependentBusinessProcessInputOption:
+      type: object
+      required: [value, label]
+      properties:
+        value: { type: string }
+        label: { type: string }
     IndependentBusinessProcessCatalog:
       type: object
       required:

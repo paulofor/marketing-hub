@@ -1,0 +1,86 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-30-argos-meta-public-browser-v1.yaml
+  - changeSet:
+      id: 2026-08-30-argos-meta-public-browser-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - tableExists:
+            tableName: mois_meta_ad_investigation
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                ADD COLUMN meta_ad_investigation_id BIGINT NULL AFTER research_evidence_report_json,
+                ADD KEY idx_product_discovery_meta_investigation (meta_ad_investigation_id),
+                ADD CONSTRAINT fk_product_discovery_meta_investigation
+                  FOREIGN KEY (meta_ad_investigation_id) REFERENCES mois_meta_ad_investigation(id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                DROP FOREIGN KEY fk_product_discovery_meta_investigation,
+                DROP KEY idx_product_discovery_meta_investigation,
+                DROP COLUMN meta_ad_investigation_id;
+  - changeSet:
+      id: 2026-08-30-argos-meta-public-browser-v1-002
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - tableExists:
+            tableName: mois_meta_ad_investigation
+        - columnExists:
+            tableName: product_discovery_cycle
+            columnName: meta_ad_investigation_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE product_discovery_meta_browser_run (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                cycle_id BIGINT NOT NULL,
+                investigation_id BIGINT NOT NULL,
+                execution_lease_id VARCHAR(36) NOT NULL,
+                collector_run_id VARCHAR(80) NOT NULL,
+                search_url VARCHAR(2048) NOT NULL,
+                outcome VARCHAR(40) NOT NULL,
+                http_status INT NULL,
+                platform_filter_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+                page_title VARCHAR(255) NULL,
+                result_count INT NOT NULL DEFAULT 0,
+                error_message TEXT NULL,
+                raw_payload_json LONGTEXT NOT NULL,
+                started_at DATETIME NOT NULL,
+                finished_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_product_discovery_meta_browser_run
+                  (cycle_id, execution_lease_id, collector_run_id),
+                KEY idx_product_discovery_meta_browser_latest
+                  (cycle_id, investigation_id, finished_at),
+                CONSTRAINT fk_product_discovery_meta_browser_cycle
+                  FOREIGN KEY (cycle_id) REFERENCES product_discovery_cycle(id),
+                CONSTRAINT fk_product_discovery_meta_browser_investigation
+                  FOREIGN KEY (investigation_id) REFERENCES mois_meta_ad_investigation(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE product_discovery_meta_browser_run;

@@ -1,0 +1,35 @@
+services:
+  mysql57-argos-meta-session:
+    image: mysql:5.7
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: marketinghub_argos_meta
+      MYSQL_USER: marketinghub
+      MYSQL_PASSWORD: marketinghub-local
+      MYSQL_ROOT_PASSWORD: marketinghub-root-local
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "marketinghub",
+          "-pmarketinghub-local",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  argos-meta-session-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.argos-meta-supervised-session-test
+    image: marketing-hub/argos-meta-supervised-session-test:validation
+    environment:
+      ARGOS_META_MYSQL_URL: jdbc:mysql://mysql57-argos-meta-session:3306/marketinghub_argos_meta?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    depends_on:
+      mysql57-argos-meta-session:
+        condition: service_healthy

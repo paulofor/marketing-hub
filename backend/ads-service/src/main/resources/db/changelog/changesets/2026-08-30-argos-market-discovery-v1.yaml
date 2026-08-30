@@ -1,0 +1,130 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-30-argos-market-discovery-v1.yaml
+  - changeSet:
+      id: 2026-08-30-argos-market-discovery-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SET @argos_market_sql = IF(
+                (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'product_discovery_cycle'
+                    AND column_name = 'research_mode') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN research_mode VARCHAR(32) NOT NULL DEFAULT ''VALIDATE_MARKET'' AFTER objective',
+                'SELECT 1'
+              );
+              PREPARE argos_market_stmt FROM @argos_market_sql;
+              EXECUTE argos_market_stmt;
+              DEALLOCATE PREPARE argos_market_stmt;
+
+              SET @argos_market_sql = IF(
+                (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'product_discovery_cycle'
+                    AND column_name = 'market_type') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN market_type VARCHAR(24) NOT NULL DEFAULT ''UNSPECIFIED'' AFTER research_mode',
+                'SELECT 1'
+              );
+              PREPARE argos_market_stmt FROM @argos_market_sql;
+              EXECUTE argos_market_stmt;
+              DEALLOCATE PREPARE argos_market_stmt;
+
+              SET @argos_market_sql = IF(
+                (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'product_discovery_cycle'
+                    AND column_name = 'reference_sources') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN reference_sources LONGTEXT NULL AFTER market_type',
+                'SELECT 1'
+              );
+              PREPARE argos_market_stmt FROM @argos_market_sql;
+              EXECUTE argos_market_stmt;
+              DEALLOCATE PREPARE argos_market_stmt;
+
+              SET @argos_market_sql = IF(
+                (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'product_discovery_cycle'
+                    AND column_name = 'research_analysis_raw_response') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN research_analysis_raw_response LONGTEXT NULL AFTER research_plan_model',
+                'SELECT 1'
+              );
+              PREPARE argos_market_stmt FROM @argos_market_sql;
+              EXECUTE argos_market_stmt;
+              DEALLOCATE PREPARE argos_market_stmt;
+
+              SET @argos_market_sql = IF(
+                (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'product_discovery_cycle'
+                    AND column_name = 'research_analysis_model') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN research_analysis_model VARCHAR(120) NULL AFTER research_analysis_raw_response',
+                'SELECT 1'
+              );
+              PREPARE argos_market_stmt FROM @argos_market_sql;
+              EXECUTE argos_market_stmt;
+              DEALLOCATE PREPARE argos_market_stmt;
+
+              SET @argos_market_sql = IF(
+                (SELECT COUNT(*) FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'product_discovery_cycle'
+                    AND column_name = 'research_evidence_report_json') = 0,
+                'ALTER TABLE product_discovery_cycle ADD COLUMN research_evidence_report_json LONGTEXT NULL AFTER research_analysis_model',
+                'SELECT 1'
+              );
+              PREPARE argos_market_stmt FROM @argos_market_sql;
+              EXECUTE argos_market_stmt;
+              DEALLOCATE PREPARE argos_market_stmt;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                DROP COLUMN research_evidence_report_json,
+                DROP COLUMN research_analysis_model,
+                DROP COLUMN research_analysis_raw_response,
+                DROP COLUMN reference_sources,
+                DROP COLUMN market_type,
+                DROP COLUMN research_mode;
+  - changeSet:
+      id: 2026-08-30-argos-market-discovery-v1-002
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - columnExists:
+            tableName: agent
+            columnName: current_version
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET current_version = GREATEST(COALESCE(current_version, 0), 4)
+              WHERE agent_key = 'market-radar';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET current_version = 3
+              WHERE agent_key = 'market-radar'
+                AND current_version = 4;

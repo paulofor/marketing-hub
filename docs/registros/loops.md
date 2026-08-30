@@ -435,6 +435,14 @@
 - **Causa-raiz confirmada em 2026-08-26:** os tokens operacionais existentes passam na consulta de permissões, porém uma chamada real a `ads_archive` é rejeitada pela Meta com OAuth `code=10` e `error_subcode=2332002`; configuração da credencial não comprova autorização do aplicativo para esse endpoint.
 - **Correção efetiva local:** o coletor realiza preflight real em `ads_archive` antes de reservar uma pendência, publica diagnóstico sanitizado na saúde e mantém a fila intacta quando a autorização externa não foi concedida. Argos recebe status explícito de espera ou indisponibilidade e nunca converte a falha em ausência de mercado.
 - **Prevenção:** teste de contrato cobre token ausente, rejeição da Meta, token fora da URL, bloqueio da reserva e consulta Instagram normalizada. No Brasil, o caminho permanece supervisionado pela Biblioteca pública, sem scraping ou contorno de controle de acesso.
+- **Recorrência fechada localmente em 2026-08-30:** a execução independente agora materializa a sessão supervisionada na própria tela, abre a consulta pública oficial, registra anúncio, texto, plataforma e payload bruto na investigação exata e só reabre Argos quando existe anúncio atual, ativo e observado no Instagram. A tentativa anterior permanece auditável; o comando humano é idempotente e a investigação não muda mesmo que o novo plano reformule a consulta. Testes de contrato protegem segregação por `investigationId`, bloqueio de evidência Facebook, URL oficial, congelamento durante execução e ausência de campanha, credencial ou conclusão de venda.
+- **Evolução decidida em 2026-08-30:** Argos passa a tentar a mesma consulta por um Chromium
+  efêmero e determinístico antes de solicitar trabalho humano. O browser aceita somente a URL
+  oficial vinculada ao lease, confirma Brasil, Instagram e anúncios ativos, limita volume e
+  persiste o payload bruto. Resultado vazio só é válido quando aparece explicitamente na interface;
+  login, CAPTCHA, bloqueio, timeout, filtro ausente ou mudança de layout retornam à sessão humana.
+  A proteção deve cobrir idempotência, segregação por ciclo/investigação, ausência de cookies e
+  proibição de interpretar anúncios como vendas.
 
 ## LOOP-PRODUCT-AI-PAID-DELIVERY-CONTRACT-DRIFT — Entrega paga sem template ativo
 
@@ -664,14 +672,34 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Causa-raiz confirmada**: o worker materializava candidatos sempre que existia alguma evidência
   pública, mesmo quando o gate obrigatório de marketplace não passava. O backend, por sua vez,
   aplicava o mínimo de dez ofertas também ao resultado canônico vazio.
-- **Correção efetiva**: pesquisa dirigida sem ofertas suficientes passa a retornar zero
-  oportunidades e `RESEARCH_MORE`; o backend aceita esse encerramento honesto e continua
-  bloqueando qualquer candidato não vazio com menos de dez ofertas comparáveis. O filtro final
+- **Correção efetiva**: pesquisa dirigida sem ofertas suficientes pode retornar zero oportunidades
+  ou candidatas factuais em `RESEARCH_MORE`; o backend aceita esse encerramento honesto e continua
+  bloqueando `APPROVE` com menos de dez ofertas comparáveis. O filtro final
   compara palavras completas, ignora modalidade comercial genérica e consolida título e produtor;
   o backend repete a deduplicação, normaliza variações cosméticas e rejeita anúncios antes de
   contar o gate.
 - **Prevenção**: testes de contrato no worker e no backend protegem simultaneamente o resultado
-  vazio válido e a rejeição de candidatos artificiais ou comercialmente subcomprovados.
+  vazio válido, a visibilidade de sinais imaturos e a rejeição de aprovação artificial ou
+  comercialmente subcomprovada.
+
+## LOOP-PRODUCT-DISCOVERY-FALLBACK-GENERICO — Argos repete sugestões sem síntese factual
+
+- **Severidade**: ALTO.
+- **Status**: corrigido localmente em 2026-08-30; aguarda publicação.
+- **Sintoma confirmado no histórico**: os ciclos 40 a 44 registraram
+  `deterministic-fallback-v1`; a coleta rasa alimentava os mesmos três moldes de sugestão e não
+  conseguia explorar mercados a partir do comportamento de pessoas no Instagram.
+- **Causa-raiz confirmada**: o deploy desligava explicitamente o Codex, o prompt de síntese
+  versionado não era chamado, os artigos de `/pesquisas` não entravam na imagem, B2C dependia de
+  palavras incidentais no briefing e os limites de coleta eram insuficientes para comparar lentes
+  distintas.
+- **Correção efetiva**: Argos v4 separa planejamento e síntese factual, usa modo e tipo de comprador
+  explícitos, indexa os Markdown por caminho e hash, aceita fontes editoriais, amplia consultas
+  públicas e só materializa candidatas que citem evidências coletadas. O fallback preserva zero
+  candidatas e declara a degradação. Atena continua como única autora da priorização e da estratégia.
+- **Prevenção**: contratos testam modelo ativo no deploy, índice sincronizado, referências válidas,
+  rejeição de molde genérico, opções da tela, auditoria das duas chamadas e persistência de
+  `RESEARCH_MORE` sem promover evidência insuficiente a aprovação.
 
 ## LOOP-PRODUCT-DISCOVERY-ORPHANED-LEASE — pesquisa interrompida bloqueia a fila
 
@@ -2500,3 +2528,20 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o validador rejeita composição ausente ou incoerente e impede aprovação com
   qualquer nota aplicável abaixo de 3 ou déficit crítico. Testes cobrem com e sem pessoas, seis
   schemas estritos, quatro fluxos BPM, observação, simulação, frontend, harness e MySQL 5.7.
+
+## LOOP-PREFLIGHT-REEXECUCAO-GATES-SEM-FLUSH — tentativa bloqueada colide com seus próprios gates
+
+- **Data:** 2026-08-30.
+- **Sintoma:** o comando `Reexecutar preflight` do Rigel retornou HTTP 500 e o MySQL registrou
+  `Duplicate entry '8-HYPOTHESIS_ARTIFACT_APPROVED' for key 'uk_experiment_run_gate_code'`.
+- **Causa-raiz confirmada:** o executor novo reutilizava o run produtivo bloqueado, enquanto o
+  serviço enfileirava a remoção e a reinserção dos mesmos gates na mesma unidade de trabalho. O
+  Hibernate tentou o `INSERT` antes de efetivar o `DELETE`. O histórico do experimento 51 já
+  demonstrava o contrato correto: run #1 bloqueado preservado e run #2 bem-sucedido.
+- **Correção sistêmica:** uma retentativa BPM após falha cria o próximo run produtivo e uma nova
+  ocorrência, preservando a tentativa anterior. A rota administrativa que reavalia explicitamente
+  o mesmo run força o flush da exclusão antes de reconstruir os onze gates, sem enfraquecer a chave
+  única.
+- **Prevenção:** testes de integração reproduzem a colisão em banco com restrição física, exigem
+  exatamente onze códigos únicos após duas avaliações e comprovam que a retentativa BPM usa um novo
+  run sem alterar a ocorrência bloqueada anterior.

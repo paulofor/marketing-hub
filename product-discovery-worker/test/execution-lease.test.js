@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  analysisAuditCallbackPayload,
   createPollLock,
   failureCallbackPayload,
   researchPlanCallbackPayload,
@@ -73,4 +74,44 @@ test("propaga prompt e tokens reais no callback auditável do plano", () => {
     cachedInputTokens: 20,
     outputTokens: 10,
   });
+});
+
+test("agrega as duas chamadas de Argos sem perder URLs nem resposta bruta", () => {
+  const payload = analysisAuditCallbackPayload(
+    {
+      mode: "CODEX",
+      prompt: "prompt do plano",
+      agentPromptPart: "agente do plano",
+      activityPromptPart: "atividade do plano",
+      reasoningEffort: "high",
+      usage: { inputTokens: 100, cachedInputTokens: 20, outputTokens: 10 },
+    },
+    {
+      rawResponse: '{"candidates":[]}',
+      model: "gpt-5.6-sol",
+      mode: "CODEX",
+      prompt: "prompt da síntese",
+      agentPromptPart: "agente da síntese",
+      activityPromptPart: "atividade da síntese",
+      reasoningEffort: "high",
+      usage: { inputTokens: 300, cachedInputTokens: 100, outputTokens: 80 },
+      accessedUrls: [
+        {
+          url: "https://example.com/fonte",
+          label: "Fonte",
+          accessMethod: "PUBLIC_SEARCH",
+          accessedAt: "2026-08-30T17:00:00.000Z",
+        },
+      ],
+    },
+  );
+
+  assert.equal(payload.executionMode, "MODEL");
+  assert.equal(payload.inputTokens, 400);
+  assert.equal(payload.cachedInputTokens, 120);
+  assert.equal(payload.outputTokens, 90);
+  assert.match(payload.promptSent, /PLANEJAMENTO/);
+  assert.match(payload.promptSent, /SÍNTESE FACTUAL/);
+  assert.equal(payload.accessedUrls.length, 1);
+  assert.equal(payload.rawResponse, '{"candidates":[]}');
 });

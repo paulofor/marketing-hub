@@ -101,6 +101,51 @@ test("createHealthPayload keeps last processed cycle after completion and failur
   assert.equal(payload.polling.lastPollError, "Falha no polling");
 });
 
+test("expõe o último desfecho público sem declarar anúncio como venda", () => {
+  const state = createHealthState(new Date("2026-08-30T12:00:00.000Z"));
+  markCycleCompleted(
+    state,
+    { cycleId: 144, theme: "guarda roupa cápsula" },
+    {
+      opportunities: [],
+      evidenceReport: {
+        metaCoverage: [
+          {
+            investigationId: 91,
+            sourceStatus: "OBSERVED",
+            collectionMode: "PUBLIC_BROWSER",
+            adsObserved: 3,
+            activeAds: 2,
+            advertisersObserved: 2,
+          },
+        ],
+      },
+    },
+    new Date("2026-08-30T12:02:00.000Z"),
+  );
+
+  const payload = createHealthPayload({
+    searchConfig: resolveSearchConfig({}),
+    state,
+    pollIntervalMs: 60000,
+    maxSearchResults: 30,
+    env: { ARGOS_META_BROWSER_ENABLED: "true" },
+  });
+
+  assert.equal(payload.metaPublicBrowser.enabled, true);
+  assert.equal(payload.metaPublicBrowser.engine, "chromium");
+  assert.deepEqual(payload.metaPublicBrowser.lastCollection, {
+    cycleId: 144,
+    investigationId: 91,
+    sourceStatus: "OBSERVED",
+    collectionMode: "PUBLIC_BROWSER",
+    adsObserved: 3,
+    activeAds: 2,
+    advertisersObserved: 2,
+    processedAt: "2026-08-30T12:02:00.000Z",
+  });
+});
+
 test("startHealthServer serves healthz JSON and not found responses", async () => {
   const state = createHealthState(new Date("2026-07-26T12:00:00.000Z"));
   const server = startHealthServer({

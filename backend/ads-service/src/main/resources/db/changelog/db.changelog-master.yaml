@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-30-argos-meta-public-browser-v1.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-30-argos-market-discovery-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-30-rigel-exact-delivery-contract-v1.yaml
       relativeToChangelogFile: true
   - include:

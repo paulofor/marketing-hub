@@ -88,9 +88,10 @@ export function buildPurchaseMomentResearchGate(job, marketplaceOffers, options 
 function requiresConsumerInstagramFocus(job) {
   return (
     /instagram/i.test(String(job?.acquisitionChannel || "")) &&
-    /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
-      `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
-    )
+    (job?.marketType === "B2C" ||
+      /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
+        `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
+      ))
   );
 }
 

@@ -8,6 +8,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanu
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceOfferListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdBrowserCollectionRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdBrowserCollectionService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
@@ -16,6 +18,9 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlan
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResultRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaObservationRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -36,15 +41,21 @@ public class ProductDiscoveryController {
   private final ProductDiscoveryService service;
   private final ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
   private final ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
+  private final ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService;
+  private final ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService;
 
   /** Inicializa o controller com o serviço canônico do módulo. */
   public ProductDiscoveryController(
       ProductDiscoveryService service,
       ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService,
-      ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService) {
+      ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService,
+      ProductDiscoveryMetaAdBrowserCollectionService metaAdBrowserCollectionService,
+      ProductDiscoverySupervisedMetaSessionService supervisedMetaSessionService) {
     this.service = service;
     this.marketplaceEvidenceService = marketplaceEvidenceService;
     this.metaAdEvidenceService = metaAdEvidenceService;
+    this.metaAdBrowserCollectionService = metaAdBrowserCollectionService;
+    this.supervisedMetaSessionService = supervisedMetaSessionService;
   }
 
   /** Lista ciclos recentes de descoberta para a tela administrativa. */
@@ -122,6 +133,37 @@ public class ProductDiscoveryController {
       @Valid @RequestBody ProductDiscoveryMetaAdEvidenceRequest request) {
     service.validateActiveExecution(cycleId, request.executionLeaseId());
     return ResponseEntity.ok(metaAdEvidenceService.requestAndSearch(cycleId, request));
+  }
+
+  /** Recebe a observação pública do Chromium vinculada ao lease vigente de Argos. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/meta-ad-browser-collection")
+  public ResponseEntity<ProductDiscoveryMetaAdEvidenceListResponse> recordMetaAdBrowserCollection(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ProductDiscoveryMetaAdBrowserCollectionRequest request) {
+    return ResponseEntity.ok(metaAdBrowserCollectionService.record(cycleId, request));
+  }
+
+  /** Exibe a sessão supervisionada que complementa a pesquisa brasileira de Argos. */
+  @GetMapping("/product-discovery/v1/cycles/{cycleId}/supervised-meta-session")
+  public ResponseEntity<ProductDiscoverySupervisedMetaSessionResponse> supervisedMetaSession(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(supervisedMetaSessionService.get(cycleId));
+  }
+
+  /** Registra pela tela uma observação humana feita na Biblioteca pública da Meta. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/supervised-meta-session/observations")
+  public ResponseEntity<ProductDiscoverySupervisedMetaSessionResponse> observeSupervisedMetaAd(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ProductDiscoverySupervisedMetaObservationRequest request) {
+    return ResponseEntity.ok(supervisedMetaSessionService.observe(cycleId, request));
+  }
+
+  /** Reabre uma única tentativa de Argos depois que a cobertura Instagram foi confirmada. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/supervised-meta-session/resume")
+  public ResponseEntity<ProductDiscoverySupervisedMetaSessionResponse> resumeSupervisedMetaSession(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(supervisedMetaSessionService.resume(cycleId));
   }
 
   /** Expõe o plano dirigido sem expor cookies, senhas ou tokens dos coletores. */

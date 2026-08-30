@@ -1,25 +1,13 @@
-Pesquise oportunidades PDE para:
+Analise o contexto factual abaixo e retorne somente o contrato do schema.
 
-Tema: {{theme}}
-Publico: {{targetAudience}}
-Pais: {{country}}
-Idioma: {{language}}
-Canal provavel: {{acquisitionChannel}}
-Restricoes comerciais: {{commercialConstraints}}
-Categorias proibidas: {{forbiddenCategories}}
-Objetivo: {{objective}}
+Para cada candidata, registre público, situação de compra, dor, linguagem observada, alternativas,
+esforço residual, sinais de escala e desatendimento, fronteira de valor que a IA poderia tornar
+simples, evidência visual para Instagram e risco comercial. `evidenceIds` deve conter somente IDs
+existentes no contexto.
 
-Retorne oportunidades que possam ser resumidas assim:
+Não priorize as candidatas e não recomende estratégia. Use `maturity` apenas para indicar qualidade
+factual do dossiê: `SIGNAL`, `RESEARCHABLE`, `DOSSIER_READY`, `HUMAN_REVIEW` ou `REJECTED`.
 
-Muitas pessoas vivem [dor concreta], as solucoes atuais deixam [lacuna clara], e podemos entregar [microexperiencia digital] que gera [valor percebido rapido] com baixo esforco.
+Contexto:
 
-Compare de 2 a 3 oportunidades realmente distintas e registre fontes de dor, artigos cientificos e sinais comerciais como preco, concorrentes, reviews, anuncios ou compra. Sem evidencia real suficiente, nao invente fonte nem aprove oportunidade.
-
-Quando Canal provavel for Instagram e as restricoes declararem B2C, descreva para cada oportunidade
-a pessoa fisica, a cena de urgencia, o gancho de tres segundos, o primeiro valor mobile e as
-dependencias operacionais. Registre tambem prazo, consequencia, tentativa frustrada, comportamento
-pago atual, alternativa gratuita e vantagem que precisara ser observada no prototipo privado.
-Registre o territorio humano sustentado por evidencia, o resultado pronto, a entrada minima e o
-trabalho de IA que o produto elimina. O consumidor nao pode precisar escrever prompts, configurar
-ferramentas ou montar a saida.
-Seguidores, alcance, temperatura Hotmart e anuncio ativo nao sao vendas.
+{{researchContextJson}}

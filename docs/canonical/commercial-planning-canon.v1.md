@@ -28,6 +28,12 @@ Argos usa uma sessão Codex individual e persistente, reconectável pelo monitor
 
 Argos deve cruzar ofertas estruturadas de Hotmart e ClickBank com evidências da Biblioteca de Anúncios da Meta já persistidas pelo coletor canônico. O gate comercial exige ao menos dez ofertas comparáveis dos marketplaces; anúncios Meta não contam para esse mínimo. Anúncio ativo, comercial e observado por pelo menos duas vezes ao longo de trinta dias constitui sinal de investimento sustentado, nunca prova isolada de vendas. A conclusão deve preservar anunciante, texto, destino, snapshot, datas, contagem de observações, longevidade e a ressalva metodológica.
 
+Para anúncios comerciais gerais no Brasil, o coletor canônico da Descoberta pode ser o navegador
+público limitado do Product Discovery Worker. Ele recebe somente a URL oficial vinculada pelo
+backend, confirma país, Instagram e status ativo e reporta cards visíveis sem login ou cookies
+persistentes. CAPTCHA, bloqueio, filtro ausente ou layout ambíguo devem migrar para observação humana
+supervisionada; nunca podem ser convertidos em zero anúncios ou ausência de mercado.
+
 Na ClickBank, Gravity deve ser preservada como tração observada, com identidade estável do produto entre coletas. O coletor não pode fabricar score de sucesso fixo: ausência de Gravity permanece ausência de evidência, e Gravity nunca deve ser apresentada como número de vendas.
 
 Os estados canônicos do dossiê são `RESEARCHING`, `UNDER_REVIEW`, `READY_FOR_TEST`, `APPROVED`, `DISCARDED` e `CONVERTED_TO_PLAN`. Evidências devem registrar fonte e data; pareceres devem registrar agente, decisão, justificativa, riscos, recomendação e data. Dossiês e pareceres não autorizam gastos, publicação, preço ou campanhas.

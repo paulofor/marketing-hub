@@ -15,6 +15,27 @@ import {
   SEARCH_PROVIDERS,
 } from "../src/research.js";
 
+function candidateBlueprints(count = 3) {
+  return Array.from({ length: count }, (_, index) => ({
+    name: `Situação factual ${index + 1}`,
+    primaryAudience: "Pessoa física em situação concreta",
+    purchaseSituation: "Prazo próximo e tentativa anterior insuficiente.",
+    rootPain: "A pessoa não consegue concluir a tarefa com segurança.",
+    practicalPain: "Alternativas atuais exigem comparação e montagem manual.",
+    emotionalPain: "A incerteza aumenta o receio de errar.",
+    observedLanguage: ["não consigo", "vale a pena"],
+    currentAlternatives: ["conteúdo gratuito", "serviço pago"],
+    residualEffort: "Pesquisar, comparar e montar a resposta.",
+    scaleEvidence: "Sinais públicos em fontes independentes.",
+    unmetnessEvidence: "Relatos de solução confusa e demorada.",
+    pdeValueBoundary: "Reduzir organização e montagem sem escolher o formato.",
+    instagramFitEvidence: "A cena possui contraste visual observável.",
+    commercialRisk: "Intenção comercial ainda precisa de gate factual.",
+    evidenceIds: ["P1", "P2"],
+    maturity: "RESEARCHABLE",
+  }));
+}
+
 test("buildSearchQueries creates pain-oriented queries", () => {
   const queries = buildSearchQueries({
     theme: "mulheres que compram roupa online",
@@ -137,6 +158,8 @@ test("analyzeSearchResults não presume Instagram no ciclo B2C", () => {
         snippet: "systematic review interview training intervention",
       },
     ],
+    null,
+    { candidateBlueprints: candidateBlueprints() },
   );
 
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
@@ -178,6 +201,7 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
     collectedAt: "2026-08-25T00:00:00Z",
   }));
   const report = analyzeSearchResults(job, results, offers, {
+    candidateBlueprints: candidateBlueprints(),
     minimumComparableOffers: 10,
     metaAdEvidence: [
       {
@@ -245,6 +269,8 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
         snippet: "systematic review evidence based intervention",
       },
     ],
+    null,
+    { candidateBlueprints: candidateBlueprints() },
   );
 
   assert.equal(report.opportunities.length, 3);
@@ -284,6 +310,8 @@ test("analyzeSearchResults requires scientific articles before approving mechani
         snippet: "não consigo decidir e tenho medo de errar",
       },
     ],
+    null,
+    { candidateBlueprints: candidateBlueprints() },
   );
 
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
@@ -466,6 +494,8 @@ test("mecanismo de propostas exige ciência sobre decisão, clareza e confiança
           "Comprar plano por R$ 29 para resolver problema confuso e manual.",
       },
     ],
+    null,
+    { candidateBlueprints: candidateBlueprints() },
   );
 
   const evidence = JSON.parse(report.opportunities[0].evidenceJson);
@@ -760,13 +790,15 @@ test("analyzeSearchResults blocks approval without commercial intent", () => {
         snippet: "systematic review intervention",
       },
     ],
+    null,
+    { candidateBlueprints: candidateBlueprints() },
   );
   assert.equal(report.opportunities.length, 3);
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
   assert.match(report.opportunities[0].commercialRisk, /intenção de compra/);
 });
 
-test("analyzeSearchResults bloqueia dossie sem dez ofertas comparaveis", () => {
+test("analyzeSearchResults preserva candidatas imaturas sem aprová-las", () => {
   const report = analyzeSearchResults(
     { theme: "leads", targetAudience: "manicures" },
     [
@@ -787,10 +819,16 @@ test("analyzeSearchResults bloqueia dossie sem dez ofertas comparaveis", () => {
       title: `Oferta ${index}`,
       url: `https://hotmart.com/${index}`,
     })),
+    { candidateBlueprints: candidateBlueprints() },
   );
   assert.match(report.decisionSummary, /9 ofertas comparáveis/);
-  assert.equal(report.opportunities.length, 0);
-  assert.match(report.decisionSummary, /Principal decisão: RESEARCH_MORE/);
+  assert.equal(report.opportunities.length, 3);
+  assert.ok(
+    report.opportunities.every(
+      (opportunity) => opportunity.decision === "RESEARCH_MORE",
+    ),
+  );
+  assert.match(report.decisionSummary, /Maturidade factual: RESEARCH_MORE/);
 });
 
 test("scientific and commercial queries are inside the operational query limit", () => {

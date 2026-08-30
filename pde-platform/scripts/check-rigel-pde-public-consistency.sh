@@ -20,7 +20,7 @@ jq -e '
   and .commercialBinding.primaryCta == "Quero meu atendimento sob medida"
   and .commercialBinding.priceBrl == 349
   and .commercialBinding.billingModel == "ONE_TIME"
-  and (.serviceScope.includedItems | length) == 6
+  and (.serviceScope.includedItems | length) == 7
   and (.publicProofs | length) == 4
   and (.commercialProcess | length) == 4
 ' "${temporary_dir}/product.json" >/dev/null

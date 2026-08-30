@@ -90,11 +90,12 @@ export type SaveBusinessProcess = CreateBusinessProcess;
 export type IndependentBusinessProcessInputField = {
   key: string;
   label: string;
-  controlType: "TEXT" | "TEXTAREA";
+  controlType: "TEXT" | "TEXTAREA" | "SELECT";
   required: boolean;
   maxLength?: number;
   defaultValue?: string;
   helpText?: string;
+  options?: { value: string; label: string }[];
 };
 
 export type IndependentBusinessProcessCatalogItem = {

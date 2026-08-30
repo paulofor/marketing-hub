@@ -1,1 +1,2 @@
-- [Liberar experimento para o Facebook Ads Worker](liberar-facebook-ads-worker.md)
+- <a href="liberar-facebook-ads-worker.md" target="_blank" rel="noopener noreferrer">Liberar experimento para o Facebook Ads Worker</a>
+- <a href="argos-biblioteca-meta-supervisionada.md" target="_blank" rel="noopener noreferrer">Complementar a pesquisa de Argos na Biblioteca Meta</a>

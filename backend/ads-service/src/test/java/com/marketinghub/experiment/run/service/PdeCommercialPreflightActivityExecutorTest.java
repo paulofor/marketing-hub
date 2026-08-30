@@ -105,6 +105,49 @@ class PdeCommercialPreflightActivityExecutorTest {
     assertThat(result.objectiveAchieved()).isTrue();
   }
 
+  /** Preserva o run bloqueado e executa o preflight em uma nova tentativa produtiva. */
+  @Test
+  void createsNewRunAfterFailedPreflight() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product);
+    ExperimentRun failedRun = run(experiment, ExperimentRunStatus.PREFLIGHT_FAILED);
+    ExperimentRun retryRun = run(experiment, ExperimentRunStatus.DRAFT);
+    retryRun.setId(13L);
+    retryRun.setRunNumber(2);
+    when(experiments.findById(89L)).thenReturn(Optional.of(experiment));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(
+            Optional.of(failedRun),
+            Optional.of(failedRun),
+            Optional.of(failedRun),
+            Optional.of(retryRun));
+    when(predecessors.readiness(any(), any(), any()))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Revisões concluídas."));
+    doAnswer(
+            invocation -> {
+              retryRun.setStatus(ExperimentRunStatus.PREFLIGHT_PENDING);
+              return null;
+            })
+        .when(runService)
+        .runPreflight(13L);
+
+    BackendProductProcessActivityReadiness readiness =
+        executor.readiness(process(), activity(), product, "experiment:89");
+    BackendProductProcessActivityExecutionResult result =
+        executor.execute(process(), activity(), product, "experiment:89");
+
+    assertThat(readiness.actionLabel()).isEqualTo("Reexecutar preflight");
+    assertThat(readiness.description()).contains("preserva tentativas anteriores");
+    verify(runService)
+        .create(
+            org.mockito.ArgumentMatchers.eq(89L),
+            any(com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest.class));
+    verify(runService, never()).runPreflight(12L);
+    verify(runService).runPreflight(13L);
+    verify(runService).synchronizePreflightActivity(13L);
+    assertThat(result.operationalState()).isEqualTo("PENDING");
+  }
+
   /** Monta o experimento operacional do produto. */
   private Experiment experiment(Product product) {
     Experiment experiment = new Experiment();

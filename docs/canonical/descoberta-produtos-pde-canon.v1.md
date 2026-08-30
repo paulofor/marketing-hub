@@ -271,6 +271,10 @@ coleta. O Product Discovery Worker envia essa solicitacao somente ao endpoint in
 dominio; o backend cria ou reutiliza a investigacao canonica no radar MOIS e devolve evidencias ja
 persistidas, sem expor token, cookie ou controller de outro modulo ao executor.
 
+Cada ciclo possui exatamente uma investigacao Meta e uma consulta ampla da categoria. O plano nao
+pode fragmentar o mesmo ciclo em investigacoes concorrentes, pois isso perderia a correspondencia
+entre consulta, payload bruto e dossie; refinamento posterior deve abrir uma nova tentativa do ciclo.
+
 O dossie deve persistir separadamente:
 
 - status da fonte, modo de coleta e identificador da investigacao;
@@ -289,6 +293,52 @@ Anuncios Meta nao entram na contagem minima de dez ofertas pagas comparaveis e n
 score como se fossem compras. Eles medem presenca, variedade, atualidade e investimento aparente no
 canal. A comprovacao final continua dependendo de eventos atribuidos, checkout e pagamento
 reconciliado do proprio Marketing Hub.
+
+Por decisao de 2026-08-30, a cobertura comercial brasileira deve tentar primeiro uma observacao
+publica deterministica no Chromium efemero do Product Discovery Worker. O backend prepara e vincula
+a busca oficial; o navegador do executor apenas observa os fatos publicamente visiveis e os reporta
+pelo endpoint interno do proprio dominio. A sessao humana continua obrigatoria como fallback quando
+a fonte exigir interacao, bloquear a automacao ou deixar de expor filtros e fatos verificaveis.
+
+O navegador publico deve:
+
+- aceitar somente a URL oficial preparada pelo backend para a investigacao e o lease vigentes;
+- fixar pais, status ativo e plataforma Instagram na propria URL e confirmar os tres filtros na
+  interface antes de aceitar qualquer card;
+- limitar consultas, tempo e quantidade de anuncios, sem rolagem ou repeticao irrestrita;
+- registrar status HTTP, titulo, duracao, desfecho, ID do anuncio, anunciante, texto visivel,
+  formato, destino, atividade, sinal comercial, instante, URL e payload bruto estruturado;
+- usar contexto efemero, sem storage state, senha, token, login, cookie persistente ou download de
+  lote de criativos;
+- devolver `NO_MATCHING_ACTIVE_ADS` somente quando a propria interface confirmar um resultado
+  vazio com os filtros esperados;
+- devolver `AWAITING_SUPERVISED_OBSERVATION` diante de CAPTCHA, login obrigatorio, bloqueio,
+  timeout, layout desconhecido, filtro ausente ou qualquer ambiguidade;
+- manter anuncio ativo como sinal de presenca e investimento, nunca como compra, venda ou receita.
+
+Quando o navegador devolver `AWAITING_SUPERVISED_OBSERVATION`, a propria execucao independente
+deve oferecer uma sessao supervisionada da Biblioteca publica da Meta. A sessao deve:
+
+- abrir a busca oficial com os termos, pais e plataforma definidos por Argos;
+- aceitar somente URL oficial da Biblioteca e registrar ID do anuncio, anunciante, texto visivel,
+  formato, plataforma, destino, atividade da pagina e sinal comercial observado;
+- persistir o payload bruto, instante, investigacao e ciclo antes de qualquer normalizacao;
+- rejeitar instante futuro e congelar novos registros enquanto a tentativa reaberta estiver na fila
+  ou em execucao;
+- expor para o operador os anuncios ativos e a linguagem comercial que Argos consumira;
+- manter a tentativa concluida como historico e abrir uma nova tentativa auditavel somente por
+  comando humano explicito de reanalise;
+- reutilizar obrigatoriamente a mesma investigacao na reanalise, mesmo que o novo planejamento
+  formule termos diferentes, impedindo perda ou mistura da evidencia supervisionada;
+- bloquear a reanalise enquanto nao existir anuncio atual, ativo e explicitamente distribuido no
+  Instagram.
+
+A extracao publica automatizada e a sessao humana nao podem automatizar login, armazenar cookie ou
+senha, contornar CAPTCHA, rate limit, bloqueio ou controle de acesso, publicar anuncio, alterar
+campanha ou declarar venda. A automacao pode estruturar somente os cards publicos carregados pela
+interface oficial no limite do ciclo; a observacao humana confirma apenas o que estava visivel na
+mesma fonte. Atividade, longevidade e linguagem continuam sendo sinais de mercado, nao receita
+comprovada.
 
 ## Caixa de sinais humanos observados
 
@@ -399,18 +449,49 @@ continua sendo a fonte detalhada do domínio, mas não pode existir como execuç
 processo. Retroativos devem preservar status e erro reais, identificar a origem do backfill e manter
 como ausentes horários, prompt, tokens ou custos que não tenham sido registrados na execução.
 
-Um ciclo dirigido não pode concluir nem marcar a tarefa do dossiê como concluída com menos
-de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de páginas
-comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto pelos
-marketplaces. A contagem deve deduplicar por referência e domínio, exigir aderência
-semântica e preservar ao menos dois caminhos independentes de confirmação. Dados ausentes
-devem bloquear o ciclo com a lacuna explícita, sem fabricar evidência e sem transformar
+Um ciclo dirigido não pode concluir com oportunidade `APPROVE` nem liberar o dossiê para a etapa
+seguinte com menos de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de
+páginas comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto
+pelos marketplaces. A pesquisa pode encerrar tecnicamente e preservar candidatas factuais como
+`RESEARCH_MORE`, desde que a lacuna permaneça explícita e nenhuma próxima etapa seja liberada. A
+contagem deve deduplicar por referência e domínio, exigir aderência semântica e preservar ao menos
+dois caminhos independentes de confirmação. Dados ausentes não podem ser fabricados nem transformar
 temperatura, score, ranking, anúncio ou página comercial em venda.
 
 O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de
 compra, afiliação, publicação, acesso a credenciais ou ampliação autônoma do limite.
 Enquanto a sessão Codex individual estiver desabilitada, o worker pode usar o plano
 determinístico seguro, sem alterar os gates comerciais.
+
+### Descoberta orientada a público e canal
+
+Por decisão de 2026-08-30, a mesma atividade de Argos aceita dois modos explícitos:
+
+- `VALIDATE_MARKET`: aprofunda um mercado ou dor já informados;
+- `DISCOVER_MARKETS`: parte de uma lente ampla de público, canal, contexto editorial e fontes de
+  referência para encontrar situações de compra e mercados candidatos.
+
+No modo de descoberta, Argos deve pesquisar em camadas independentes: linguagem espontânea da dor,
+comportamento no canal, alternativas gratuitas e pagas, ofertas e preços, reclamações, mecanismo
+científico candidato e inspiração das coleções vivas do repositório. As consultas devem ser curtas,
+atômicas e variadas; copiar o briefing inteiro para todas as fontes não constitui plano dirigido.
+
+Argos pode sugerir de duas a três **candidatas factuais de mercado** quando conseguir vincular cada
+uma a evidências coletadas. Isso não é priorização estratégica: Argos registra pessoa, cena, dor,
+linguagem, alternativas, esforço residual, sinais comerciais, aderência observável ao Instagram,
+fontes e lacunas. Atena continua sendo a única autoridade para escolher mercado prioritário,
+posicionamento, tese de oferta, formato do PDE e canal.
+
+Candidatas com evidência insuficiente podem permanecer visíveis como `RESEARCH_MORE`, para orientar
+a próxima coleta, sem se tornarem oportunidade aprovada. O mínimo de dez ofertas comparáveis, a
+cobertura Meta/Instagram e os demais gates continuam bloqueando `APPROVE`, mas não devem apagar uma
+candidata factual nem transformar falta de maturidade comercial em falha técnica.
+
+O planejamento e a síntese devem usar prompts e schemas versionados. O ciclo deve preservar as duas
+interações: request, resposta bruta, modelo, modo, tokens disponíveis, fontes acessadas e relatório
+estruturado. Toda referência devolvida pelo modelo deve apontar para um identificador de evidência
+realmente coletado; identificador inexistente bloqueia a execução em vez de ser corrigido ou
+ignorado silenciosamente.
 
 O worker de descoberta deve usar API de busca dedicada quando houver chave operacional
 configurada. A ordem preferencial inicial e:

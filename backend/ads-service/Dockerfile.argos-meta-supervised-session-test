@@ -1,0 +1,10 @@
+FROM maven:3.9.8-eclipse-temurin-21
+
+WORKDIR /workspace
+
+COPY pom.xml ./
+COPY src ./src
+
+RUN mvn -q -DskipTests test-compile
+
+CMD ["mvn", "-q", "-Dargos.meta.mysql57=true", "-Dtest=ProductDiscoverySupervisedMetaMySql57IntegrationTest", "test"]

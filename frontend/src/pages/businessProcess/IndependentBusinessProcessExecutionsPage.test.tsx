@@ -22,12 +22,52 @@ const catalog = [
     executionAvailabilityReason: "Pronto para iniciar sem produto.",
     inputFields: [
       {
+        key: "researchMode",
+        label: "O que Argos deve fazer?",
+        controlType: "SELECT",
+        required: true,
+        maxLength: 32,
+        defaultValue: "DISCOVER_MARKETS",
+        helpText: "Descobrir ou validar um mercado.",
+        options: [
+          { value: "DISCOVER_MARKETS", label: "Descobrir mercados candidatos" },
+          { value: "VALIDATE_MARKET", label: "Validar um mercado informado" },
+        ],
+      },
+      {
+        key: "marketType",
+        label: "Tipo de comprador",
+        controlType: "SELECT",
+        required: true,
+        maxLength: 32,
+        defaultValue: "B2C",
+        options: [
+          { value: "B2C", label: "Pessoa física (B2C)" },
+          { value: "B2B", label: "Empresa (B2B)" },
+        ],
+      },
+      {
         key: "theme",
-        label: "Tema ou pergunta de mercado",
+        label: "Público, universo ou mercado de partida",
         controlType: "TEXT",
         required: true,
         maxLength: 191,
         helpText: "Descreva a dor pesquisada.",
+      },
+      {
+        key: "acquisitionChannel",
+        label: "Canal provável de aquisição",
+        controlType: "TEXT",
+        required: false,
+        maxLength: 120,
+        defaultValue: "Instagram",
+      },
+      {
+        key: "referenceSources",
+        label: "Fontes editoriais de referência",
+        controlType: "TEXTAREA",
+        required: false,
+        maxLength: 5000,
       },
       {
         key: "country",
@@ -86,6 +126,7 @@ function detail(execution = summary) {
             assignedAgentKey: "market-radar",
             assignedAgentNickname: "Argos",
             title: "Reunir evidências factuais",
+            evidence: undefined as unknown,
             costEstimationStatus: "NOT_REPORTED",
             createdAt: "2026-08-30T14:00:00Z",
           },
@@ -141,9 +182,18 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(await screen.findByDisplayValue("BR")).toBeInTheDocument();
     expect(screen.getByDisplayValue("pt-BR")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Descobrir mercados candidatos" }),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Pessoa física (B2C)")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Instagram")).toBeInTheDocument();
     await user.type(
-      screen.getByLabelText("Tema ou pergunta de mercado *"),
+      screen.getByLabelText("Público, universo ou mercado de partida *"),
       "agenda vazia para manicures",
+    );
+    await user.type(
+      screen.getByLabelText("Fontes editoriais de referência"),
+      "https://revistamarieclaire.globo.com/",
     );
     await user.click(screen.getByRole("button", { name: "Iniciar processo" }));
 
@@ -154,6 +204,10 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       requestedByName: "Marketing Hub",
       input: {
         theme: "agenda vazia para manicures",
+        researchMode: "DISCOVER_MARKETS",
+        marketType: "B2C",
+        acquisitionChannel: "Instagram",
+        referenceSources: "https://revistamarieclaire.globo.com/",
         country: "BR",
         language: "pt-BR",
       },
@@ -197,5 +251,157 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Bloqueada").length).toBeGreaterThan(0);
     expect(screen.queryByText("Venda")).not.toBeInTheDocument();
+  });
+
+  it("registra observação oficial e reabre Argos na mesma sessão Meta", async () => {
+    const completed = {
+      ...summary,
+      status: "COMPLETED",
+      completedActivityCount: 1,
+      startedAt: "2026-08-30T14:00:05Z",
+      finishedAt: "2026-08-30T14:01:00Z",
+    };
+    const completedDetail = detail(completed);
+    completedDetail.activities[0].tasks[0].evidence = {
+      researchEvidenceReport: {
+        metaCoverage: [
+          {
+            investigationId: 72,
+            publisherPlatform: "INSTAGRAM",
+            sourceStatus: "AWAITING_SUPERVISED_OBSERVATION",
+          },
+        ],
+      },
+    };
+    const awaitingSession = {
+      cycleId: 77,
+      investigationId: 72,
+      cycleStatus: "COMPLETED",
+      query: "autocuidado feminino visual",
+      country: "BR",
+      publisherPlatform: "INSTAGRAM",
+      sourceStatus: "AWAITING_SUPERVISED_OBSERVATION",
+      collectionMode: "SUPERVISED",
+      collectionReason: "Observação humana na fonte oficial.",
+      searchUrl: "https://www.facebook.com/ads/library/?q=autocuidado",
+      adsObserved: 0,
+      activeAds: 0,
+      advertisersObserved: 0,
+      interpretation:
+        "Cobertura aguardando observação; isso não significa ausência de mercado.",
+      canRegisterObservation: true,
+      canResume: false,
+      resumeReason: "Registre um anúncio atual no Instagram.",
+      items: [],
+    };
+    const observedSession = {
+      ...awaitingSession,
+      sourceStatus: "OBSERVED",
+      adsObserved: 1,
+      activeAds: 1,
+      advertisersObserved: 1,
+      canResume: true,
+      resumeReason:
+        "A evidência está pronta para uma nova tentativa auditável de Argos.",
+      items: [
+        {
+          metaAdId: "ad-72",
+          advertiserName: "Marca observada",
+          adTexts: ["Seu ritual de cinco minutos começa agora."],
+          publisherPlatforms: ["INSTAGRAM"],
+          formatTypes: ["VIDEO"],
+          active: true,
+          commercialSignal: true,
+          observations: 1,
+          longevityDays: 0,
+          sustainedInvestmentSignal: false,
+          evidenceConfidence: "LOW",
+          firstObservedAt: "2026-08-30T20:00:00Z",
+          lastObservedAt: "2026-08-30T20:00:00Z",
+        },
+      ],
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/independent-business-process-executions/catalog") {
+        return { data: catalog };
+      }
+      if (url === "/api/independent-business-process-executions") {
+        return { data: [completed] };
+      }
+      if (url === "/api/independent-business-process-executions/91") {
+        return { data: completedDetail };
+      }
+      if (
+        url === "/api/product-discovery/v1/cycles/77/supervised-meta-session"
+      ) {
+        return { data: awaitingSession };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+    vi.mocked(axios.post).mockImplementation(async (url) => {
+      if (
+        url ===
+        "/api/product-discovery/v1/cycles/77/supervised-meta-session/observations"
+      ) {
+        return { data: observedSession };
+      }
+      if (
+        url ===
+        "/api/product-discovery/v1/cycles/77/supervised-meta-session/resume"
+      ) {
+        return {
+          data: {
+            ...observedSession,
+            cycleStatus: "READY_FOR_RESEARCH",
+            canResume: false,
+            resumeReason:
+              "A reanálise de Argos já está na fila ou em execução.",
+          },
+        };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Confirmar anúncios e linguagem no Instagram",
+      }),
+    ).toBeInTheDocument();
+    await user.type(screen.getByLabelText("ID do anúncio *"), "ad-72");
+    await user.type(screen.getByLabelText("Anunciante *"), "Marca observada");
+    await user.type(
+      screen.getByLabelText("URL oficial do anúncio *"),
+      "https://www.facebook.com/ads/library/?id=ad-72",
+    );
+    await user.type(
+      screen.getByLabelText("Texto comercial visível *"),
+      "Seu ritual de cinco minutos começa agora.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Registrar observação" }),
+    );
+
+    expect(
+      await screen.findByText("Seu ritual de cinco minutos começa agora."),
+    ).toBeInTheDocument();
+    const resumeButton = screen.getByRole("button", {
+      name: "Reanalisar com Argos",
+    });
+    expect(resumeButton).toBeEnabled();
+    await user.click(resumeButton);
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/product-discovery/v1/cycles/77/supervised-meta-session/resume",
+      ),
+    );
+    expect(
+      await screen.findByText(
+        "A reanálise de Argos já está na fila ou em execução.",
+      ),
+    ).toBeInTheDocument();
   });
 });

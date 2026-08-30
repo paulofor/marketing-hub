@@ -36,6 +36,34 @@ audit_liquibase_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_argos_market_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-market-discovery-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_argos_market_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-market-discovery-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
+audit_argos_meta_browser_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-meta-public-browser-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_argos_meta_browser_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-meta-public-browser-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 trap audit_cleanup EXIT
 audit_cleanup
 
@@ -113,6 +141,137 @@ audit_assert_equal \
     (SELECT COUNT(*) FROM business_process_activity_instance WHERE evidence_quality = 'BACKFILLED_FROM_CYCLE'), ':',
     (SELECT COUNT(*) FROM agent_task WHERE source_reference LIKE 'product-discovery-cycle:%'), ':',
     (SELECT COUNT(*) FROM agent_task WHERE status = 'BLOCKED' AND execution_error = 'POST complete falhou com status 422')
+  );")"
+
+audit_argos_market_update
+audit_assert_equal \
+  "schema e versão da descoberta ampla de mercados" \
+  "6:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'research_mode',
+          'market_type',
+          'reference_sources',
+          'research_analysis_raw_response',
+          'research_analysis_model',
+          'research_evidence_report_json'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar')
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG WHERE ID LIKE '2026-08-30-argos-market-discovery-v1-%';" \
+  >/dev/null 2>&1
+audit_argos_market_update
+audit_assert_equal \
+  "retomada idempotente da descoberta ampla" \
+  "6:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'research_mode',
+          'market_type',
+          'reference_sources',
+          'research_analysis_raw_response',
+          'research_analysis_model',
+          'research_evidence_report_json'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar')
+  );")"
+
+audit_argos_market_command "rollbackCount 2"
+audit_assert_equal \
+  "rollback isolado da descoberta ampla" \
+  "0:3" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'research_mode',
+          'market_type',
+          'reference_sources',
+          'research_analysis_raw_response',
+          'research_analysis_model',
+          'research_evidence_report_json'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar')
+  );")"
+
+audit_argos_market_update
+audit_assert_equal \
+  "reaplicação da descoberta ampla após rollback" \
+  "6:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name IN (
+          'research_mode',
+          'market_type',
+          'reference_sources',
+          'research_analysis_raw_response',
+          'research_analysis_model',
+          'research_evidence_report_json'
+        )), ':',
+    (SELECT current_version FROM agent WHERE agent_key = 'market-radar')
+  );")"
+
+audit_argos_meta_browser_update
+audit_argos_meta_browser_update
+audit_assert_equal \
+  "vínculo e auditoria do navegador público de Argos" \
+  "1:16:3" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'meta_ad_investigation_id'), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_browser_run'), ':',
+    (SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_browser_run'
+        AND index_name IN (
+          'PRIMARY',
+          'uk_product_discovery_meta_browser_run',
+          'idx_product_discovery_meta_browser_latest'
+        ))
+  );")"
+
+audit_argos_meta_browser_command "rollbackCount 2"
+audit_assert_equal \
+  "rollback isolado do navegador público" \
+  "0:0" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'meta_ad_investigation_id'), ':',
+    (SELECT COUNT(*) FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_browser_run')
+  );")"
+
+audit_argos_meta_browser_update
+audit_assert_equal \
+  "reaplicação do navegador público após rollback" \
+  "1:1" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'meta_ad_investigation_id'), ':',
+    (SELECT COUNT(*) FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_browser_run')
   );")"
 
 echo "Auditoria BPM da descoberta PDE aprovada no MySQL 5.7."

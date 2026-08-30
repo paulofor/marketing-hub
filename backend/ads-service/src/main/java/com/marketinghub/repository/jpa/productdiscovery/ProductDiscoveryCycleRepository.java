@@ -6,6 +6,7 @@ import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -15,6 +16,11 @@ import org.springframework.data.repository.query.Param;
 /** Repositório dos ciclos de descoberta de produtos PDE. */
 public interface ProductDiscoveryCycleRepository
     extends JpaRepository<ProductDiscoveryCycle, Long> {
+
+  /** Bloqueia o ciclo durante comandos humanos idempotentes que alteram sua execução. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT cycle FROM ProductDiscoveryCycle cycle WHERE cycle.id = :cycleId")
+  Optional<ProductDiscoveryCycle> findByIdForUpdate(@Param("cycleId") Long cycleId);
 
   /** Lista os ciclos mais recentes para a tela administrativa. */
   List<ProductDiscoveryCycle> findTop50ByOrderByUpdatedAtDesc();

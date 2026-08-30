@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskBlockerGuidanceRequest;
 import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.agenttask.AgentTaskHelpLinkRequest;
@@ -15,7 +16,9 @@ import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,16 +38,21 @@ public class ProductDiscoveryBpmAuditService {
   private static final String OLDER_LEGACY_ACTIVITY_ID = "evidence";
   private static final String AGENT_KEY = "market-radar";
   private static final String EXECUTION_SOURCE_PREFIX = "product-discovery-cycle:";
+  private static final List<String> COMPATIBLE_ACTIVITY_IDS =
+      List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID, OLDER_LEGACY_ACTIVITY_ID);
   private final BusinessProcessDefinitionRepository processRepository;
+  private final AgentTaskRepository taskRepository;
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
 
   /** Inicializa a correlação com o catálogo publicado e a mesa canônica dos agentes. */
   public ProductDiscoveryBpmAuditService(
       BusinessProcessDefinitionRepository processRepository,
+      AgentTaskRepository taskRepository,
       AgentTaskService agentTaskService,
       ObjectMapper objectMapper) {
     this.processRepository = processRepository;
+    this.taskRepository = taskRepository;
     this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
   }
@@ -66,13 +74,33 @@ public class ProductDiscoveryBpmAuditService {
             activityId,
             false,
             null),
-        List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID, OLDER_LEGACY_ACTIVITY_ID));
+        COMPATIBLE_ACTIVITY_IDS);
+  }
+
+  /** Abre nova ocorrência após a observação humana sem apagar a tentativa anterior concluída. */
+  public AgentTaskResponse reopenForSupervisedMetaEvidence(
+      ProductDiscoveryCycle cycle, long investigationId) {
+    requirePersistedCycle(cycle);
+    BusinessProcessDefinition process = publishedProcess();
+    return agentTaskService.createByHuman(
+        new CreateAgentTaskRequest(
+            AGENT_KEY,
+            "Operador do Marketing Hub",
+            executionTitle(cycle),
+            "Reanalisar a pesquisa com as evidências supervisionadas da Biblioteca Meta #"
+                + investigationId
+                + ".",
+            "HIGH",
+            sourceReference(cycle),
+            process.getId(),
+            resolveInitialActivityId(process),
+            false,
+            null));
   }
 
   /** Marca o recebimento real da execução quando o backend entrega o ciclo ao worker. */
   public void start(ProductDiscoveryCycle cycle) {
-    AgentTaskResponse task = open(cycle);
-    agentTaskService.claimLinkedProcessTask(AGENT_KEY, task.id());
+    agentTaskService.claimLinkedProcessTask(AGENT_KEY, latestTaskId(cycle));
   }
 
   /** Registra modelo, prompt e tokens disponíveis assim que Argos persiste o plano de pesquisa. */
@@ -90,6 +118,36 @@ public class ProductDiscoveryBpmAuditService {
         request.cachedInputTokens(),
         request.outputTokens(),
         modelInvocation(request.executionMode()));
+  }
+
+  /** Atualiza a tarefa com a síntese factual, tokens agregados e URLs realmente consultadas. */
+  public void recordAnalysis(
+      ProductDiscoveryCycle cycle, ProductDiscoveryAnalysisAuditRequest request) {
+    Long taskId = ensureClaimed(cycle);
+    Boolean modelInvocation = modelInvocation(request.executionMode());
+    agentTaskService.recordClaimedProcessTaskExecutionAudit(
+        AGENT_KEY,
+        taskId,
+        request.model(),
+        request.reasoningEffort(),
+        request.promptSent(),
+        request.agentPromptPart(),
+        request.activityPromptPart(),
+        request.inputTokens(),
+        request.cachedInputTokens(),
+        request.outputTokens(),
+        modelInvocation);
+    agentTaskService.recordClaimedProcessTaskExecutionAudit(
+        AGENT_KEY,
+        taskId,
+        new AgentTaskExecutionAuditRequest(
+            Boolean.TRUE.equals(modelInvocation) ? "MODEL" : "DETERMINISTIC",
+            request.model(),
+            Boolean.FALSE.equals(modelInvocation) ? "NOT_APPLICABLE" : request.reasoningEffort(),
+            request.promptSent(),
+            request.agentPromptPart(),
+            request.activityPromptPart(),
+            request.accessedUrls() == null ? List.of() : request.accessedUrls()));
   }
 
   /** Conclui a tarefa BPM com decisão, oportunidades e plano estruturados do ciclo real. */
@@ -132,9 +190,27 @@ public class ProductDiscoveryBpmAuditService {
 
   /** Garante que callbacks diretos ou ciclos anteriores também possuam uma tarefa reservada. */
   private Long ensureClaimed(ProductDiscoveryCycle cycle) {
-    AgentTaskResponse task = open(cycle);
-    agentTaskService.claimLinkedProcessTask(AGENT_KEY, task.id());
-    return task.id();
+    Long taskId = latestTaskId(cycle);
+    agentTaskService.claimLinkedProcessTask(AGENT_KEY, taskId);
+    return taskId;
+  }
+
+  /**
+   * Localiza a tentativa mais recente para callbacks não reabrirem a tarefa histórica concluída.
+   */
+  private Long latestTaskId(ProductDiscoveryCycle cycle) {
+    return taskRepository
+        .findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference(cycle))
+        .stream()
+        .filter(task -> task.getAssignedAgent() != null)
+        .filter(task -> AGENT_KEY.equals(task.getAssignedAgent().getAgentKey()))
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(task -> PROCESS_CODE.equals(task.getProcessDefinition().getProcessCode()))
+        .filter(task -> COMPATIBLE_ACTIVITY_IDS.contains(task.getProcessActivityId()))
+        .filter(task -> !"CANCELLED".equals(task.getStatus()))
+        .max(Comparator.comparing(AgentTask::getId, Comparator.nullsFirst(Long::compareTo)))
+        .map(AgentTask::getId)
+        .orElseGet(() -> open(cycle).id());
   }
 
   /** Localiza a versão publicada que era vigente quando o ciclo foi aberto. */
@@ -165,6 +241,10 @@ public class ProductDiscoveryBpmAuditService {
       throw new IllegalStateException(
           "Processo publicado de descoberta PDE não possui atividade inicial compatível.");
     } catch (IllegalStateException ex) {
+      LOGGER.error(
+          "Processo publicado de descoberta PDE possui atividade inicial inválida. processDefinitionId={}",
+          process.getId(),
+          ex);
       throw ex;
     } catch (Exception ex) {
       LOGGER.error(
@@ -205,6 +285,11 @@ public class ProductDiscoveryBpmAuditService {
     result.put("cycleId", cycle.getId());
     result.put("status", cycle.getStatus().name());
     result.put("stageCode", cycle.getStageCode());
+    result.put(
+        "researchMode",
+        cycle.getResearchMode() == null ? "VALIDATE_MARKET" : cycle.getResearchMode().name());
+    result.put(
+        "marketType", cycle.getMarketType() == null ? "UNSPECIFIED" : cycle.getMarketType().name());
     return result;
   }
 
@@ -225,6 +310,20 @@ public class ProductDiscoveryBpmAuditService {
       evidence.set(
           "researchPlanRawResponse",
           parseAuditJson(cycle, "researchPlanRawResponse", cycle.getResearchPlanRawResponse()));
+    }
+    if (StringUtils.hasText(cycle.getResearchAnalysisModel())) {
+      evidence.put("researchAnalysisModel", cycle.getResearchAnalysisModel());
+    }
+    if (StringUtils.hasText(cycle.getResearchAnalysisRawResponse())) {
+      evidence.set(
+          "researchAnalysisRawResponse",
+          parseAuditJson(
+              cycle, "researchAnalysisRawResponse", cycle.getResearchAnalysisRawResponse()));
+    }
+    if (StringUtils.hasText(cycle.getResearchEvidenceReportJson())) {
+      evidence.set(
+          "researchEvidenceReport",
+          parseAuditJson(cycle, "researchEvidenceReport", cycle.getResearchEvidenceReportJson()));
     }
     return evidence;
   }
@@ -248,7 +347,8 @@ public class ProductDiscoveryBpmAuditService {
   /** Distingue chamada real de modelo do fallback determinístico sem inferir modo legado. */
   private Boolean modelInvocation(String executionMode) {
     if (!StringUtils.hasText(executionMode)) return null;
-    if ("CODEX".equalsIgnoreCase(executionMode.trim())) return true;
+    if ("CODEX".equalsIgnoreCase(executionMode.trim())
+        || "MODEL".equalsIgnoreCase(executionMode.trim())) return true;
     if ("DETERMINISTIC".equalsIgnoreCase(executionMode.trim())) return false;
     throw new IllegalArgumentException("Modo de execução do plano de pesquisa não reconhecido.");
   }

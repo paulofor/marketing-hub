@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryMarketType;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +40,7 @@ class ProductDiscoveryIndependentBusinessProcessExecutionHandlerTest {
     var input =
         new ObjectMapper()
             .readTree(
-                "{\"theme\":\"agenda vazia para manicures\",\"targetAudience\":\"Manicures autônomas\",\"country\":\"BR\",\"language\":\"pt-BR\",\"acquisitionChannel\":\"Instagram\"}");
+                "{\"researchMode\":\"DISCOVER_MARKETS\",\"marketType\":\"B2C\",\"theme\":\"agenda vazia para manicures\",\"targetAudience\":\"Manicures autônomas\",\"country\":\"BR\",\"language\":\"pt-BR\",\"acquisitionChannel\":\"Instagram\",\"referenceSources\":\"https://example.com/revista\"}");
 
     var result = handler.start(input);
 
@@ -47,6 +49,10 @@ class ProductDiscoveryIndependentBusinessProcessExecutionHandlerTest {
     verify(service).createCycle(request.capture());
     assertThat(request.getValue().theme()).isEqualTo("agenda vazia para manicures");
     assertThat(request.getValue().targetAudience()).isEqualTo("Manicures autônomas");
+    assertThat(request.getValue().researchMode())
+        .isEqualTo(ProductDiscoveryResearchMode.DISCOVER_MARKETS);
+    assertThat(request.getValue().marketType()).isEqualTo(ProductDiscoveryMarketType.B2C);
+    assertThat(request.getValue().referenceSources()).isEqualTo("https://example.com/revista");
     assertThat(result.sourceReference()).isEqualTo("product-discovery-cycle:77");
     assertThat(result.displayName()).isEqualTo("agenda vazia para manicures");
   }
@@ -58,7 +64,7 @@ class ProductDiscoveryIndependentBusinessProcessExecutionHandlerTest {
         new ProductDiscoveryIndependentBusinessProcessExecutionHandler(
             mock(ProductDiscoveryService.class));
 
-    assertThat(handler.inputFields()).hasSize(8);
+    assertThat(handler.inputFields()).hasSize(11);
     assertThat(handler.inputFields())
         .anySatisfy(
             field -> {
@@ -69,6 +75,15 @@ class ProductDiscoveryIndependentBusinessProcessExecutionHandlerTest {
             field -> {
               assertThat(field.key()).isEqualTo("country");
               assertThat(field.defaultValue()).isEqualTo("BR");
+            })
+        .anySatisfy(
+            field -> {
+              assertThat(field.key()).isEqualTo("researchMode");
+              assertThat(field.controlType()).isEqualTo("SELECT");
+              assertThat(field.defaultValue()).isEqualTo("DISCOVER_MARKETS");
+              assertThat(field.options())
+                  .extracting("value")
+                  .containsExactly("DISCOVER_MARKETS", "VALIDATE_MARKET");
             });
   }
 }

@@ -18,6 +18,8 @@ import {
   recentOperationalLogLines,
 } from "./operational-log.js";
 import { planDirectedResearch } from "./argos-codex.js";
+import { synthesizeMarketCandidates } from "./argos-research.js";
+import { selectResearchLibraryContext } from "./research-library.js";
 import { startCodexAuthReconnectConsumer } from "./codex-auth-reconnect.js";
 import { startAgentHealthReporter } from "./agent-health-reporter.js";
 import { collectMarketplaceEvidence } from "./marketplace-evidence.js";
@@ -28,16 +30,16 @@ const pollIntervalMs = Number(
   process.env.PRODUCT_DISCOVERY_POLL_INTERVAL_MS || "60000",
 );
 const maxSearchResults = Number(
-  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS || "12",
+  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS || "30",
 );
 const minSearchQueries = Number(
-  process.env.PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES || "6",
+  process.env.PRODUCT_DISCOVERY_MIN_SEARCH_QUERIES || "10",
 );
 const maxSearchQueries = Number(
-  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES || "14",
+  process.env.PRODUCT_DISCOVERY_MAX_SEARCH_QUERIES || "24",
 );
 const maxResultsPerQuery = Number(
-  process.env.PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY || "3",
+  process.env.PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY || "5",
 );
 const healthHost = process.env.PRODUCT_DISCOVERY_HEALTH_HOST || "0.0.0.0";
 const healthPort = Number(process.env.PRODUCT_DISCOVERY_HEALTH_PORT || "8080");
@@ -105,7 +107,9 @@ async function processJob(job) {
     `[product-discovery-worker] processing cycle=${job.cycleId} theme=${job.theme}`,
   );
   try {
-    const directed = await planDirectedResearch(job);
+    const researchLibraryContext = await selectResearchLibraryContext(job);
+    const enrichedJob = { ...job, researchLibraryContext };
+    const directed = await planDirectedResearch(enrichedJob);
     operationalLogger.info(
       `[product-discovery-worker] directed plan cycle=${job.cycleId} model=${directed.model} inputTokens=${directed.usage?.inputTokens ?? "unavailable"} cachedInputTokens=${directed.usage?.cachedInputTokens ?? "unavailable"} outputTokens=${directed.usage?.outputTokens ?? "unavailable"}`,
     );
@@ -114,7 +118,7 @@ async function processJob(job) {
       withExecutionLease(job, researchPlanCallbackPayload(directed)),
     );
     const results = await searchInternet(
-      { ...job, directedQueries: directed.plan.publicQueries },
+      { ...enrichedJob, directedQueries: directed.plan.publicQueries },
       {
         config: searchConfig,
         maxSearchResults,
@@ -137,11 +141,42 @@ async function processJob(job) {
       ...commercialEvidence.marketplaceOffers,
       ...extractPublicComparableOffers(results),
     ]);
-    const report = analyzeSearchResults(job, results, comparableOffers, {
-      minimumComparableOffers: directed.plan.minimumComparableOffers,
-      metaAdEvidence: commercialEvidence.metaAdEvidence,
+    const publicEvidence = identifyEvidence(results, "P", "PUBLIC_SEARCH");
+    const identifiedOffers = identifyEvidence(
+      comparableOffers,
+      "O",
+      "COMMERCIAL_OFFER",
+    );
+    const identifiedMetaAds = identifyEvidence(
+      commercialEvidence.metaAdEvidence,
+      "M",
+      "META_AD_LIBRARY",
+    );
+    const analysis = await synthesizeMarketCandidates({
+      job: enrichedJob,
+      plan: directed.plan,
+      publicEvidence,
+      repositoryEvidence: researchLibraryContext.evidence,
+      repositoryCoverage: researchLibraryContext.coverage,
+      marketplaceOffers: identifiedOffers,
+      metaAdEvidence: identifiedMetaAds,
       metaCoverage: commercialEvidence.metaCoverage,
     });
+    operationalLogger.info(
+      `[product-discovery-worker] factual synthesis cycle=${job.cycleId} model=${analysis.model} mode=${analysis.mode} candidates=${analysis.synthesis.candidates.length} inputTokens=${analysis.usage?.inputTokens ?? "unavailable"} cachedInputTokens=${analysis.usage?.cachedInputTokens ?? "unavailable"} outputTokens=${analysis.usage?.outputTokens ?? "unavailable"}`,
+    );
+    const report = analyzeSearchResults(enrichedJob, publicEvidence, identifiedOffers, {
+      minimumComparableOffers: directed.plan.minimumComparableOffers,
+      metaAdEvidence: identifiedMetaAds,
+      metaCoverage: commercialEvidence.metaCoverage,
+      candidateBlueprints: analysis.synthesis.candidates,
+      analysisSummary: analysis.synthesis.decisionSummary,
+      analysisMode: analysis.mode,
+      analysisModel: analysis.model,
+      repositoryEvidence: researchLibraryContext.evidence,
+      repositoryCoverage: researchLibraryContext.coverage,
+    });
+    report.analysisAudit = analysisAuditCallbackPayload(directed, analysis);
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,
       withExecutionLease(job, report),
@@ -161,6 +196,32 @@ async function processJob(job) {
       error,
     );
   }
+}
+
+/** Agrega planejamento e síntese na mesma tarefa sem perder as respostas brutas separadas. */
+export function analysisAuditCallbackPayload(directed, analysis) {
+  const usage = aggregateUsage(directed.usage, analysis.usage);
+  const modelExecution = directed.mode === "CODEX" || analysis.mode === "CODEX";
+  return {
+    rawResponse: analysis.rawResponse,
+    model: analysis.model,
+    executionMode: modelExecution ? "MODEL" : "DETERMINISTIC",
+    promptSent: joinAuditParts(directed.prompt, analysis.prompt),
+    agentPromptPart: modelExecution
+      ? joinAuditParts(directed.agentPromptPart, analysis.agentPromptPart)
+      : undefined,
+    activityPromptPart: joinAuditParts(
+      directed.activityPromptPart || directed.prompt,
+      analysis.activityPromptPart || analysis.prompt,
+    ),
+    reasoningEffort: modelExecution
+      ? analysis.reasoningEffort || directed.reasoningEffort
+      : "NOT_APPLICABLE",
+    inputTokens: usage?.inputTokens,
+    cachedInputTokens: usage?.cachedInputTokens,
+    outputTokens: usage?.outputTokens,
+    accessedUrls: analysis.accessedUrls,
+  };
 }
 
 /** Preserva no bloqueio o prompt e o raciocínio já preparados para a tentativa de Argos. */
@@ -220,6 +281,40 @@ function deduplicateOffers(offers) {
       ]),
     ).values(),
   ];
+}
+
+/** Atribui identidades estáveis depois da deduplicação para impedir citação inventada pelo modelo. */
+function identifyEvidence(items, prefix, sourceType) {
+  return (items || []).map((item, index) => ({
+    ...item,
+    evidenceId: `${prefix}${index + 1}`,
+    sourceType,
+  }));
+}
+
+/** Soma tokens somente quando todas as chamadas reais informaram seus contadores. */
+function aggregateUsage(...usages) {
+  const reported = usages.filter(Boolean);
+  if (reported.length !== usages.length) return null;
+  return reported.reduce(
+    (total, usage) => ({
+      inputTokens: total.inputTokens + Number(usage.inputTokens || 0),
+      cachedInputTokens:
+        total.cachedInputTokens + Number(usage.cachedInputTokens || 0),
+      outputTokens: total.outputTokens + Number(usage.outputTokens || 0),
+    }),
+    { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 },
+  );
+}
+
+/** Separa as duas fases no prompt auditável sem alterar o conteúdo enviado a cada chamada. */
+function joinAuditParts(planPart, analysisPart) {
+  return [
+    planPart ? `--- PLANEJAMENTO ---\n${planPart}` : null,
+    analysisPart ? `--- SÍNTESE FACTUAL ---\n${analysisPart}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 async function getJson(url) {

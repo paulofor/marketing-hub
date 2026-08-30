@@ -2,6 +2,7 @@ package com.marketinghub.mois.metaads.v1.service;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.List;
@@ -106,7 +107,7 @@ public final class MoisMetaAdDtos {
   public record SupervisedObservationRequest(
       @NotBlank String adReference,
       @NotBlank String advertiserName,
-      @NotBlank @Pattern(regexp = "https://(www\\.)?facebook\\.com/ads/library/.*")
+      @NotBlank @Pattern(regexp = "https://((www|business)\\.)?facebook\\.com/ads/library/.*")
           String adLibraryUrl,
       @NotBlank String adText,
       List<
@@ -120,7 +121,7 @@ public final class MoisMetaAdDtos {
       String destinationUrl,
       boolean pageActive,
       boolean commercialSignal,
-      Instant observedAt) {}
+      @PastOrPresent Instant observedAt) {}
 
   /** Recebe a conclusão técnica do coletor sem mascarar falhas. */
   public record CompleteInvestigationRequest(boolean success, String errorMessage) {}

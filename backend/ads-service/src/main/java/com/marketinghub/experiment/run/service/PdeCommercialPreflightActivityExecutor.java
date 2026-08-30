@@ -44,6 +44,11 @@ public class PdeCommercialPreflightActivityExecutor
           ExperimentRunStatus.PAUSED,
           ExperimentRunStatus.STOP_REQUESTED,
           ExperimentRunStatus.COMPLETED);
+  private static final Set<ExperimentRunStatus> RETRY_WITH_NEW_RUN_STATUSES =
+      Set.of(
+          ExperimentRunStatus.PREFLIGHT_FAILED,
+          ExperimentRunStatus.FAILED,
+          ExperimentRunStatus.CANCELLED);
   private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("^experiment:(\\d+)$");
 
   private final ExperimentRepository experimentRepository;
@@ -115,14 +120,15 @@ public class PdeCommercialPreflightActivityExecutor
         executable,
         reason,
         actionLabel,
-        "Cria uma única tentativa, executa os gates determinísticos e reutiliza suas evidências."
-            + " O painel abaixo registra a homologação funcional sem duplicar o run.",
+        "Cria uma tentativa produtiva quando necessário, preserva tentativas anteriores e executa"
+            + " os gates determinísticos. O painel abaixo registra a homologação funcional no run"
+            + " atual.",
         "EXPERIMENT_PREFLIGHT",
         experiment.getId(),
         requirements);
   }
 
-  /** Cria o run quando necessário, executa o preflight inicial e devolve o estado persistido. */
+  /** Cria uma nova tentativa após falha, executa o preflight e devolve o estado persistido. */
   @Override
   @Transactional
   public BackendProductProcessActivityExecutionResult execute(
@@ -138,19 +144,9 @@ public class PdeCommercialPreflightActivityExecutor
     Experiment experiment = referencedExperiment(product, sourceReference);
     ExperimentRun run =
         latestProductionRun(experiment.getId())
-            .orElseGet(
-                () -> {
-                  experimentRunService.create(
-                      experiment.getId(),
-                      new CreateExperimentRunRequest(
-                          ExperimentRunMode.PRODUCTION,
-                          ExperimentRunStopPolicy.MANUAL_ONLY,
-                          "BUSINESS_PROCESS_UI"));
-                  return latestProductionRun(experiment.getId()).orElseThrow();
-                });
-    if (run.getStatus() == ExperimentRunStatus.DRAFT
-        || run.getStatus() == ExperimentRunStatus.PREFLIGHT_FAILED
-        || run.getStatus() == ExperimentRunStatus.FAILED) {
+            .filter(value -> !RETRY_WITH_NEW_RUN_STATUSES.contains(value.getStatus()))
+            .orElseGet(() -> createProductionRun(experiment.getId()));
+    if (run.getStatus() == ExperimentRunStatus.DRAFT) {
       experimentRunService.runPreflight(run.getId());
       run = latestProductionRun(experiment.getId()).orElseThrow();
     }
@@ -175,6 +171,17 @@ public class PdeCommercialPreflightActivityExecutor
         "PENDING",
         false,
         "Run criado e gates iniciais avaliados. Registre no painel as evidências funcionais pendentes.");
+  }
+
+  /** Abre o próximo run produtivo e devolve a entidade persistida para avaliação. */
+  private ExperimentRun createProductionRun(Long experimentId) {
+    experimentRunService.create(
+        experimentId,
+        new CreateExperimentRunRequest(
+            ExperimentRunMode.PRODUCTION,
+            ExperimentRunStopPolicy.MANUAL_ONLY,
+            "BUSINESS_PROCESS_UI"));
+    return latestProductionRun(experimentId).orElseThrow();
   }
 
   /** Resolve o experimento declarado pela referência sem misturar outro ciclo ou produto. */
@@ -212,8 +219,7 @@ public class PdeCommercialPreflightActivityExecutor
     if (run.getStatus() == ExperimentRunStatus.DRAFT) {
       return "Executar preflight";
     }
-    if (run.getStatus() == ExperimentRunStatus.PREFLIGHT_FAILED
-        || run.getStatus() == ExperimentRunStatus.FAILED) {
+    if (RETRY_WITH_NEW_RUN_STATUSES.contains(run.getStatus())) {
       return "Reexecutar preflight";
     }
     if (COMPLETED_STATUSES.contains(run.getStatus())) {

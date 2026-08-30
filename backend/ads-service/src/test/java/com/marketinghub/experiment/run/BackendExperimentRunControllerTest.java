@@ -1,5 +1,6 @@
 package com.marketinghub.experiment.run;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -320,6 +321,28 @@ class BackendExperimentRunControllerTest {
         .andExpect(
             jsonPath("$.gates[?(@.gateCode == 'KPI_TARGET_CPL_VALID')].remediationCode")
                 .value(hasItem("DEFINE_KPI_TARGET_CPL")));
+  }
+
+  /** Reavalia o mesmo run bloqueado sem colidir nem duplicar os gates persistidos. */
+  @Test
+  void rerunFailedPreflightReplacesGatesWithoutDuplicates() throws Exception {
+    Long experimentId = createExperimentWithMissingDesign();
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+
+    mockMvc
+        .perform(post("/api/experiment-runs/{runId}/preflight", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_FAILED"));
+
+    mockMvc
+        .perform(post("/api/experiment-runs/{runId}/preflight", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_FAILED"));
+
+    var gates = gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
+    assertThat(gates).hasSize(11);
+    assertThat(gates).extracting(ExperimentRunGateResult::getGateCode).doesNotHaveDuplicates();
   }
 
   /** Cria o experimento mínimo necessário para vincular runs nos testes. */

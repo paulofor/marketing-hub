@@ -2521,3 +2521,20 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o validador rejeita composição ausente ou incoerente e impede aprovação com
   qualquer nota aplicável abaixo de 3 ou déficit crítico. Testes cobrem com e sem pessoas, seis
   schemas estritos, quatro fluxos BPM, observação, simulação, frontend, harness e MySQL 5.7.
+
+## LOOP-PREFLIGHT-REEXECUCAO-GATES-SEM-FLUSH — tentativa bloqueada colide com seus próprios gates
+
+- **Data:** 2026-08-30.
+- **Sintoma:** o comando `Reexecutar preflight` do Rigel retornou HTTP 500 e o MySQL registrou
+  `Duplicate entry '8-HYPOTHESIS_ARTIFACT_APPROVED' for key 'uk_experiment_run_gate_code'`.
+- **Causa-raiz confirmada:** o executor novo reutilizava o run produtivo bloqueado, enquanto o
+  serviço enfileirava a remoção e a reinserção dos mesmos gates na mesma unidade de trabalho. O
+  Hibernate tentou o `INSERT` antes de efetivar o `DELETE`. O histórico do experimento 51 já
+  demonstrava o contrato correto: run #1 bloqueado preservado e run #2 bem-sucedido.
+- **Correção sistêmica:** uma retentativa BPM após falha cria o próximo run produtivo e uma nova
+  ocorrência, preservando a tentativa anterior. A rota administrativa que reavalia explicitamente
+  o mesmo run força o flush da exclusão antes de reconstruir os onze gates, sem enfraquecer a chave
+  única.
+- **Prevenção:** testes de integração reproduzem a colisão em banco com restrição física, exigem
+  exatamente onze códigos únicos após duas avaliações e comprovam que a retentativa BPM usa um novo
+  run sem alterar a ocorrência bloqueada anterior.

@@ -105,6 +105,50 @@ class PdeCommercialPreflightActivityProjectorTest {
     verify(instances, never()).save(any());
   }
 
+  /** Cria nova ocorrência para o run seguinte e preserva o bloqueio da tentativa anterior. */
+  @Test
+  void preservesBlockedOccurrenceWhenRetryRunCompletes() throws Exception {
+    BusinessProcessDefinition process = process();
+    BusinessProcessActivityDefinition activity = activity(process);
+    ExperimentRun retryRun = run(ExperimentRunStatus.READY_TO_PUBLISH);
+    retryRun.setId(13L);
+    retryRun.setRunNumber(2);
+    BusinessProcessActivityInstance blocked = new BusinessProcessActivityInstance();
+    blocked.setId(148L);
+    blocked.setActivityDefinition(activity);
+    blocked.setSourceReference("experiment:89");
+    blocked.setOccurrenceNumber(1);
+    blocked.setStatus("BLOCKED");
+    blocked.setObjectiveAchieved(false);
+    blocked.setObjectiveEvidenceJson("{\"runId\":12}");
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "pde-commercial-homologation-activation", "PUBLISHED"))
+        .thenReturn(Optional.of(process));
+    when(activities.findByProcessDefinitionIdAndActivityId(56L, "preflight"))
+        .thenReturn(Optional.of(activity));
+    when(predecessors.readiness(process, activity, "experiment:89"))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Revisões concluídas."));
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            589L, "experiment:89"))
+        .thenReturn(Optional.of(blocked));
+
+    projector.synchronize(retryRun, List.of(gate(ExperimentRunGateStatus.PASS, "Tudo aprovado.")));
+
+    ArgumentCaptor<BusinessProcessActivityInstance> saved =
+        ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).save(saved.capture());
+    assertThat(saved.getValue()).isNotSameAs(blocked);
+    assertThat(saved.getValue().getOccurrenceNumber()).isEqualTo(2);
+    assertThat(saved.getValue().getStatus()).isEqualTo("COMPLETED");
+    assertThat(
+            objectMapper
+                .readTree(saved.getValue().getObjectiveEvidenceJson())
+                .path("runId")
+                .asLong())
+        .isEqualTo(13L);
+    assertThat(blocked.getStatus()).isEqualTo("BLOCKED");
+  }
+
   /** Monta o processo publicado que contém a atividade de preflight. */
   private BusinessProcessDefinition process() {
     BusinessProcessDefinition process = new BusinessProcessDefinition();

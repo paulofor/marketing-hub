@@ -307,9 +307,10 @@ test("health publico renderiza app, javascript e texto comercial", async ({
         "experienceVersion",
         "sessionId",
         "visitorId",
-        "accessToken",
+        "accessReferenceHash",
       ]),
     );
+    expect(journeyIntegration.correlationKeys).not.toContain("accessToken");
     expect(journeyIntegration.sourceOfTruth).toBe("pde_funnel_event");
     expect(journeyIntegration.testTrafficPolicy).toContain("INTERNAL_QA");
   }

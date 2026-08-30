@@ -128,7 +128,7 @@ public class BackendExperimentRunService {
         .toList();
   }
 
-  /** Avalia novamente os gates determinísticos iniciais e atualiza o status operacional do run. */
+  /** Substitui os gates determinísticos anteriores e atualiza o status operacional do run. */
   @Transactional
   public ExperimentRunPreflightResponse runPreflight(Long runId) {
     ExperimentRun run =
@@ -139,6 +139,7 @@ public class BackendExperimentRunService {
                     new EntityNotFoundException(
                         "Run de experimento %d não encontrado".formatted(runId)));
     gateResultRepository.deleteByExperimentRunId(runId);
+    gateResultRepository.flush();
     List<ExperimentRunGateResult> gates = buildInitialGateResults(run);
     List<ExperimentRunGateResult> savedGates = gateResultRepository.saveAll(gates);
     run.setPreflightStartedAt(

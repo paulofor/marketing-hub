@@ -6663,3 +6663,33 @@
 - **Correção:** o smoke valida headline e texto de apoio sempre renderizados, permanece sem analytics, e o painel do run passa a exigir resultado, conclusão e referência auditável para os quatro gates funcionais.
 - **Prevenção:** ausência de qualquer evidência mantém o comando desabilitado; `FAIL` permanece registrável; grupos de evidência comercial e distribuição são representados no contrato frontend; teste impede envio incompleto.
 - **Estado comercial preservado:** a Vega continua em `VALIDACAO_COMERCIAL` até a nova tela ser publicada e o run produtivo terminar `READY_TO_PUBLISH`; não houve contato, gasto, pagamento humano ou venda.
+
+## 2026-08-30 — Rigel: retentativa auditável do preflight técnico
+
+- O comando da atividade `Executar preflight técnico` reproduziu HTTP 500 no request
+  `63514590-2f78-4636-ac98-ea1a4b3777ce`; logs e MySQL confirmaram colisão na chave única dos gates
+  do run 8.
+- A retentativa passa a criar um novo run após falha e a preservar run, gates e ocorrência BPM
+  anteriores. A reavaliação explícita do mesmo run continua suportada, mas efetiva a exclusão antes
+  da reinserção.
+- O experimento 89 possuía preço de R$ 349 e amostra de 15, porém não tinha meta de conversão. A
+  tela oficial foi usada para registrar 20%, correspondendo aos três pagamentos em quinze contatos
+  definidos no Plano Comercial do Rigel, sem alterar preço, orçamento, canal ou ativação.
+- O preflight só pode concluir depois de registrar evidência factual dos quatro gates funcionais;
+  aprovação técnica não conta como venda e não autoriza contato, gasto ou campanha.
+- A primeira sonda pública do run 2 encontrou o contrato produtivo já minimizado com
+  `accessReferenceHash`, enquanto o smoke versionado ainda exigia o antigo `accessToken`. O teste foi
+  alinhado ao contrato canônico e agora reprova explicitamente qualquer bearer bruto entre as chaves
+  públicas de correlação, sem alterar página, checkout ou dados de clientes.
+- O mesmo smoke ainda congelava seis itens de escopo, embora a oferta vigente possua sete: o acesso
+  aos materiais enquanto o pagamento permanecer válido foi acrescentado ao contrato comercial. A
+  verificação pública passa a exigir os sete itens exatos, preservando o escopo já aprovado.
+- A homologação final foi registrada pela tela no run 9: onze gates `PASS`, status
+  `READY_TO_PUBLISH`, qualidade de dados `VALID` e nenhuma pendência. A ocorrência BPM 149 concluiu
+  o objetivo; a ocorrência 148 e o run 8 permaneceram bloqueados como histórico auditável.
+- Duas rodadas locais completas e consecutivas passaram. Cada rodada cobriu 36 testes do preflight,
+  5 testes da interface, 149 testes do PDE, 45 de pagamentos, Spotless, TypeScript, build, 2 smokes
+  públicos e 18 jornadas Docker em MySQL 5.7 com SMTP isolado, desktop, iPhone 15 Pro e Pixel 7.
+- A telemetria de homologação permaneceu `INTERNAL_QA`; as métricas humanas ficaram em 25 page
+  views, sem checkout ou compra comercial. O experimento continuou `PLANNED`, sem orçamento diário,
+  contato, campanha, gasto ou autorização da próxima atividade.

@@ -37,9 +37,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install Node.js dependencies
+        run: npm ci
+      - name: Materialize current research library
+        run: npm run build:research-library
+      - name: Require the versioned research index on pull requests
+        if: github.event_name == 'pull_request'
+        working-directory: ${{ github.workspace }}
+        run: git diff --exit-code -- product-discovery-worker/research-library/index.json
       - name: Run tests
         run: |
-          npm ci
           npx playwright-core install --with-deps chromium
           npm test
       - name: Validate application deploy coordination
@@ -74,6 +81,13 @@ jobs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Materialize current research library
+        working-directory: product-discovery-worker
+        run: npm run build:research-library
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry

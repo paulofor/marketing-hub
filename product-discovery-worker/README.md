@@ -30,6 +30,11 @@ A biblioteca interna é gerada deterministicamente por `npm run build:research-l
 versionado preserva caminho, hash e trechos dos Markdown de `/pesquisas`; esses artigos inspiram
 lentes de investigação, mas nunca substituem confirmação pública de demanda.
 
+No pull request, o CI regenera o índice e exige que a versão resultante já esteja commitada. No
+`push` da branch principal, testes e imagem materializam novamente a biblioteca a partir do checkout
+vigente. Essa segunda barreira impede que artigos incorporados pela base depois da validação do
+branch produzam uma imagem de Argos com um índice anterior.
+
 Em ciclos B2C para Instagram, Argos registra no plano uma consulta Meta com país,
 plataforma e termos específicos. O backend cria ou reutiliza o acompanhamento canônico e
 retorna status, modo de coleta, anúncios aderentes, anúncios ativos, anunciantes e

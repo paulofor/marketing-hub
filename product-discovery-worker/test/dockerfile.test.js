@@ -65,6 +65,33 @@ test("empacota a biblioteca factual e mantém o modelo ativo no deploy", () => {
   assert.match(workflow, /export ARGOS_CODEX_ENABLED='true'/);
 });
 
+test("materializa a biblioteca vigente antes dos testes e da imagem", () => {
+  const testJob = workflow.slice(
+    workflow.indexOf("\n  test:"),
+    workflow.indexOf("\n  docker:"),
+  );
+  const dockerJob = workflow.slice(
+    workflow.indexOf("\n  docker:"),
+    workflow.indexOf("\n  deploy:"),
+  );
+
+  assert.ok(
+    testJob.indexOf("npm run build:research-library") <
+      testJob.indexOf("npm test"),
+    "[ARQUITETURA] O CI deve materializar a biblioteca atual antes de testar Argos.",
+  );
+  assert.match(
+    testJob,
+    /if: github\.event_name == 'pull_request'[\s\S]*git diff --exit-code -- product-discovery-worker\/research-library\/index\.json/,
+    "[ARQUITETURA] Pull requests devem continuar bloqueando índice factual não versionado.",
+  );
+  assert.ok(
+    dockerJob.indexOf("npm run build:research-library") <
+      dockerJob.indexOf("docker/build-push-action@v5"),
+    "[ARQUITETURA] A imagem deve regenerar o índice a partir do checkout vigente antes do build.",
+  );
+});
+
 test("empacota Chromium como usuário sem privilégios e habilita a coleta limitada", () => {
   assert.match(dockerfile, /playwright-core install --with-deps chromium/);
   assert.match(dockerfile, /USER node/);

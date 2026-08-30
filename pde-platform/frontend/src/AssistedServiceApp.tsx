@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { ProductExperience, SupportMaterial } from "./musaExperiences";
 import { resolveAssistedServiceTastingContract } from "./assistedServiceTastingContracts";
+import { pdeAccessHeaders } from "./pdeAccessAuthorization";
 
 type MissionInteraction = {
   missionId: string;
@@ -57,6 +58,12 @@ type MagicLinkResponse = {
   email: string;
   deliveryStatus: string;
   accessUrl?: string;
+};
+
+type SupportRequestResponse = {
+  supportStatus: "OPEN";
+  message: string;
+  requestedAt: string;
 };
 
 type CommercialOffer = {
@@ -183,7 +190,6 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             allInteractionsByMission(loadedWorkspace.missionInteractions),
           );
           void trackEvent("SCREEN_VIEW", loadedProduct, {
-            accessToken,
             email: loadedWorkspace.email,
             provider: loadedWorkspace.accessSource,
             metadata: { screenName: "assisted_workspace" },
@@ -272,7 +278,11 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productSlug, email }),
+        body: JSON.stringify({
+          productSlug,
+          email,
+          experienceVersion: product?.experienceVersion,
+        }),
       });
       if (!response.ok) throw new Error(await responseMessage(response));
       if (testAccessEnabled) {
@@ -284,7 +294,6 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
         );
         if (product) {
           void trackEvent("LOGIN_COMPLETED", product, {
-            accessToken: access.token,
             email: access.email,
             provider: access.source,
           });
@@ -345,10 +354,10 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
       }
       if (Object.keys(answers).length > 0) {
         const interaction = await fetch(
-          `/api/pde/access/${encodeURIComponent(accessToken)}/missions/${encodeURIComponent(missionId)}/interactions`,
+          `/api/pde/access/missions/${encodeURIComponent(missionId)}/interactions`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: pdeAccessHeaders(accessToken, { json: true }),
             body: JSON.stringify({ answers }),
           },
         );
@@ -356,15 +365,17 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
           throw new Error(await responseMessage(interaction));
       }
       const response = await fetch(
-        `/api/pde/access/${encodeURIComponent(accessToken)}/missions/${encodeURIComponent(missionId)}/complete`,
-        { method: "POST" },
+        `/api/pde/access/missions/${encodeURIComponent(missionId)}/complete`,
+        {
+          method: "POST",
+          headers: pdeAccessHeaders(accessToken),
+        },
       );
       if (!response.ok) throw new Error(await responseMessage(response));
       const updated = (await response.json()) as Workspace;
       setWorkspace(updated);
       setMessage("Etapa salva. Você pode sair e retomar com o mesmo acesso.");
       void trackEvent("MISSION_COMPLETED", workspace.product, {
-        accessToken,
         email: workspace.email,
         provider: workspace.accessSource,
         metadata: { missionId },
@@ -392,16 +403,18 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     setMessage("");
     setError("");
     try {
-      const response = await fetch(
-        `/api/pde/access/${encodeURIComponent(accessToken)}/support-requests`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: supportMessage.trim() }),
-        },
-      );
+      const response = await fetch("/api/pde/access/support-requests", {
+        method: "POST",
+        headers: pdeAccessHeaders(accessToken, { json: true }),
+        body: JSON.stringify({ message: supportMessage.trim() }),
+      });
       if (!response.ok) throw new Error(await responseMessage(response));
-      setWorkspace((await response.json()) as Workspace);
+      const support = (await response.json()) as SupportRequestResponse;
+      setWorkspace((current) =>
+        current
+          ? { ...current, supportStatus: support.supportStatus }
+          : current,
+      );
       setSupportMessage("");
       setMessage(
         "Pedido de suporte registrado. A equipe responderá no e-mail deste acesso.",
@@ -416,9 +429,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
   /** Remove somente o token local e preserva o progresso persistido no backend. */
   function leaveWorkspace() {
     window.localStorage.removeItem(storageKey(productSlug));
-    const url = new URL(window.location.href);
-    url.searchParams.delete("access");
-    window.history.replaceState({}, "", url);
+    clearAccessTokenFromBrowserUrl();
     setAccessToken("");
     setWorkspace(null);
     setMessage("Sessão encerrada. Seu progresso permanece salvo.");
@@ -439,6 +450,10 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     if (!product || !commercialOffer) return;
     void trackEvent("CHECKOUT_STARTED", product, {
       metadata: {
+        idempotencyKey: stableTrackingActionId(
+          "checkout",
+          `${product.experienceVersion}:${commercialOffer.experimentId}`,
+        ),
         experimentId: commercialOffer.experimentId,
         priceBrl: commercialOffer.priceBrl,
         checkoutHost: new URL(commercialOffer.checkoutUrl).hostname,
@@ -447,6 +462,38 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
           : {}),
       },
     });
+  }
+
+  /** Baixa a entrega usando header de autorização sem inserir o bearer na URL. */
+  async function downloadPersonalDelivery(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    delivery: DeliveryArtifact,
+  ) {
+    event.preventDefault();
+    if (
+      !accessToken ||
+      !delivery.downloadUrl.startsWith("/api/pde/access/deliveries/")
+    ) {
+      setError("Esta entrega não possui uma rota protegida válida.");
+      return;
+    }
+    setError("");
+    try {
+      const response = await fetch(delivery.downloadUrl, {
+        headers: pdeAccessHeaders(accessToken),
+      });
+      if (!response.ok) throw new Error("Entrega não autorizada");
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `${delivery.missionId}.md`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch {
+      setError(
+        "Não conseguimos baixar esta entrega agora. Confirme seu acesso ou peça ajuda ao suporte.",
+      );
+    }
   }
 
   /** Abre um material protegido sem expor o token na URL ou enviá-lo a outro domínio. */
@@ -462,7 +509,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     setError("");
     try {
       const response = await fetch(material.url, {
-        headers: { "X-PDE-Access-Token": accessToken },
+        headers: pdeAccessHeaders(accessToken),
       });
       if (!response.ok) throw new Error("Material não autorizado");
       const objectUrl = URL.createObjectURL(await response.blob());
@@ -473,7 +520,6 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
       void trackEvent("MATERIAL_OPEN", workspace.product, {
-        accessToken,
         email: workspace.email,
         provider: workspace.accessSource,
         metadata: { materialTitle: material.title },
@@ -491,6 +537,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     tastingStarted.current = true;
     void trackEvent("TASTING_STARTED", product, {
       metadata: {
+        idempotencyKey: `tasting-started:${tastingContract.version}`,
         contractVersion: tastingContract.version,
         experimentId: commercialOffer?.experimentId,
       },
@@ -529,6 +576,10 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
       ),
     });
     const metadata = {
+      idempotencyKey: stableTrackingActionId(
+        "tasting",
+        `${service.toLocaleLowerCase("pt-BR")}:${tastingScenarioId}:${tastingToneId}`,
+      ),
       contractVersion: tastingContract.version,
       experimentId: commercialOffer?.experimentId,
       scenarioId: tastingScenarioId,
@@ -643,7 +694,9 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
               <small>
                 Pagamento único, sem recorrência. O briefing inicial está
                 incluído e o prazo de até 48 horas começa após o pagamento
-                confirmado e o recebimento das informações mínimas completas.
+                confirmado e o recebimento das informações mínimas completas. O
+                acesso aos materiais não expira enquanto o pagamento estiver
+                vigente.
               </small>
               <nav
                 className="assisted-pde-offer-policies"
@@ -1123,7 +1176,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
         </div>
         <p>
           {workspace.completedMissions} de {workspace.totalMissions} etapas
-          concluídas. Seu progresso fica salvo.
+          concluídas. Seu progresso fica salvo e o acesso não expira enquanto o
+          pagamento estiver vigente.
         </p>
       </section>
 
@@ -1206,7 +1260,12 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                         {new Date(delivery.createdAt).toLocaleString("pt-BR")}.
                       </p>
                       <pre>{delivery.content}</pre>
-                      <a href={delivery.downloadUrl}>
+                      <a
+                        href={delivery.downloadUrl}
+                        onClick={(event) =>
+                          void downloadPersonalDelivery(event, delivery)
+                        }
+                      >
                         Baixar entrega personalizada
                       </a>
                     </div>
@@ -1487,6 +1546,7 @@ function CommercialPolicyPage({
           paragraphs: [
             `A compra contrata uma implantação assistida para WhatsApp pelo valor de ${formatBrl(offer.priceBrl)}, conforme o escopo apresentado antes do checkout.`,
             "O prazo de até 48 horas começa depois da confirmação do pagamento e do briefing mínimo completo. A entrega exige revisão humana antes do uso e não envia mensagens automaticamente.",
+            "O acesso aos materiais e entregas não possui prazo de expiração enquanto o pagamento permanecer vigente. Reembolso ou chargeback revoga o consumo pago, preservando suporte e direitos de privacidade.",
             "O briefing deve usar exemplos anonimizados. Não envie nomes, telefones, endereços nem conversas identificáveis de clientes finais.",
           ],
         }
@@ -1495,6 +1555,9 @@ function CommercialPolicyPage({
             title: "Privacidade e uso de dados",
             paragraphs: [
               "Usamos e-mail, respostas do briefing, progresso e solicitações de suporte somente para entregar, revisar e dar acesso ao produto contratado.",
+              "Nas páginas públicas, geramos identificadores aleatórios first-party de visitante e sessão e registramos eventos de navegação e uso. Esses eventos podem incluir página e origem da visita sem credenciais, campanha e parâmetros UTM, seção, ação e tempo visível, tipo de dispositivo, navegador e user-agent, tamanho de tela e viewport e IP público.",
+              "Usamos os dados técnicos para medir o funil sem contar QA como resultado humano, diagnosticar falhas e desempenho por dispositivo, classificar tráfego humano, bot, plataforma ou QA e proteger acesso, pagamento e operação contra abuso. A telemetria não envia mensagens de WhatsApp nem autoriza contato comercial.",
+              "Os identificadores e detalhes técnicos da telemetria são anonimizados após 180 dias, preservando somente fatos agregáveis do evento. Dados necessários ao contrato e ao pagamento permanecem enquanto o acesso estiver ativo e pelo prazo legal ou contábil aplicável; a titular pode solicitar antes acesso, correção, exclusão ou anonimização quando cabível.",
               "A cliente deve fornecer situações anonimizadas. Dados identificáveis de terceiros não são necessários para a personalização.",
               `Dúvidas, correção ou exclusão podem ser solicitadas pelo e-mail ${offer.supportEmail}.`,
             ],
@@ -1567,11 +1630,11 @@ function CommercialLegalFooter({ offer }: { offer: CommercialOffer }) {
   );
 }
 
-/** Consulta a área autenticada usando o token de acesso. */
+/** Consulta a área autenticada usando o bearer somente no header protegido. */
 async function fetchWorkspace(token: string) {
-  const response = await fetch(
-    `/api/pde/access/${encodeURIComponent(token)}/workspace`,
-  );
+  const response = await fetch("/api/pde/access/workspace", {
+    headers: pdeAccessHeaders(token),
+  });
   if (!response.ok) throw new Error(await responseMessage(response));
   return (await response.json()) as Workspace;
 }
@@ -1599,22 +1662,49 @@ function allInteractionsByMission(
   return result;
 }
 
-/** Resolve o token na URL ou no armazenamento segregado por produto. */
+/** Resolve o bearer do fragmento e remove imediatamente qualquer formato legado da URL visível. */
 function accessTokenFromLocation(productSlug: string) {
+  const fragmentToken = new URLSearchParams(
+    window.location.hash.replace(/^#/, ""),
+  ).get("access");
   const pathToken = window.location.pathname.match(
     /^\/access\/([^/]+)\/?$/,
   )?.[1];
-  if (pathToken) {
-    const decodedToken = decodeURIComponent(pathToken);
-    persistAccessToken(productSlug, decodedToken);
-    return decodedToken;
-  }
   const queryToken = new URLSearchParams(window.location.search).get("access");
-  if (queryToken) {
-    persistAccessToken(productSlug, queryToken);
-    return queryToken;
+  const token =
+    fragmentToken ?? (pathToken ? decodeURIComponent(pathToken) : queryToken);
+  if (token) {
+    persistAccessToken(productSlug, token);
+    clearAccessTokenFromBrowserUrl();
+    return token;
   }
   return window.localStorage.getItem(storageKey(productSlug)) ?? "";
+}
+
+/** Limpa fragmento, query e caminho legados sem remover marcadores de QA não sensíveis. */
+function clearAccessTokenFromBrowserUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.delete("access");
+  if (/^\/access\/[^/]+\/?$/.test(url.pathname)) {
+    url.pathname = "/access";
+  }
+  window.history.replaceState({}, "", `${url.pathname}${url.search}` || "/");
+}
+
+/** Remove bearer, fragmento e parâmetros da URL registrada na telemetria comercial. */
+export function sanitizeAssistedTrackingUrl(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl, window.location.origin);
+    if (/^\/access\/[^/]+\/?$/.test(url.pathname)) {
+      url.pathname = "/access";
+    }
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 /** Persiste o acesso sem misturar produtos distintos no mesmo navegador. */
@@ -1692,7 +1782,6 @@ function applyTastingService(template: string, service: string) {
 }
 
 type TrackingOptions = {
-  accessToken?: string;
   email?: string;
   provider?: string;
   metadata?: Record<string, unknown>;
@@ -1750,11 +1839,10 @@ async function trackEvent(
       body: JSON.stringify({
         productSlug: product.slug,
         eventType,
-        accessToken: options.accessToken,
         email: options.email,
         provider: options.provider,
         source: analyticsPolicy.source,
-        pageUrl: window.location.href,
+        pageUrl: sanitizeAssistedTrackingUrl(window.location.href),
         metadata: {
           visitorId: stableTrackingId(
             "pde-assisted-visitor",
@@ -1766,10 +1854,11 @@ async function trackEvent(
           ),
           experienceVersion: product.experienceVersion,
           layoutKey: product.layoutKey,
+          path: sanitizeAssistedTrackingPath(window.location.pathname),
+          referrerUrl: sanitizeAssistedTrackingUrl(document.referrer),
           deviceType: window.innerWidth < 768 ? "mobile" : "desktop",
           viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
-          userAgent: navigator.userAgent,
           ...options.metadata,
         },
       }),
@@ -1777,6 +1866,11 @@ async function trackEvent(
   } catch {
     // A telemetria é auxiliar e nunca pode impedir a cliente de consumir o produto.
   }
+}
+
+/** Remove bearer do caminho antes de persistir o identificador de tela na telemetria. */
+function sanitizeAssistedTrackingPath(pathname: string) {
+  return /^\/access\/[^/]+\/?$/.test(pathname) ? "/access" : pathname;
 }
 
 /** Mantém identificadores first-party segregados sem incluir dados pessoais. */
@@ -1788,4 +1882,15 @@ function stableTrackingId(key: string, storage: Storage) {
     `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   storage.setItem(key, generated);
   return generated;
+}
+
+/** Cria uma chave opaca estável por ação e contexto sem persistir o texto informado. */
+function stableTrackingActionId(action: string, correlation: string) {
+  let fingerprint = 2166136261;
+  for (let index = 0; index < correlation.length; index += 1) {
+    fingerprint ^= correlation.charCodeAt(index);
+    fingerprint = Math.imul(fingerprint, 16777619);
+  }
+  const storageKey = `pde-assisted-action:${action}:${(fingerprint >>> 0).toString(16)}`;
+  return `${action}:${stableTrackingId(storageKey, window.sessionStorage)}`;
 }

@@ -49,8 +49,8 @@ apenas declarava possuir quinze respostas, sem materializar cada resposta promet
 anteriores foram descartadas a cada defeito.
 
 A causa-raiz foi fechada com contrato estruturado por seção. A entrega completa exige e persiste, por
-acesso, entre 10 e 20 respostas, 5 e 10 perguntas, 3 e 5 follow-ups, regras de escalonamento, guia e
-checklist. Quantidade ausente, seção duplicada, item vazio ou uma simples declaração bloqueiam o marco.
+acesso, exatamente 15 respostas, 8 perguntas e 4 follow-ups, além de regras de escalonamento, guia e
+checklist. Quantidade diferente, seção duplicada, item vazio ou uma simples declaração bloqueiam o marco.
 O primeiro uso também diferencia `PLANNED` de `APPLIED` e somente o segundo pode concluir a jornada.
 
 Após a última correção, duas rodadas integrais e consecutivas passaram em 21 de agosto de 2026:
@@ -109,3 +109,16 @@ iPhone 15 Pro e Pixel 7. Cada rodada validou 12 jornadas Playwright, 5 contratos
 MySQL 5.7 e SMTP descartável em topologia nova. No iPhone, o título caiu para 141 px, a ação terminou
 em 339 px e a página em 8.114 px; no Pixel, os valores ficaram em 148 px, 345 px e 7.928 px. Não
 houve request de analytics durante as capturas de QA nem contaminação das métricas comerciais.
+
+## Revalidação do escopo e da credencial após a tarefa 272
+
+Em 30 de agosto de 2026, Têmis aprovou preço, checkout, entitlement e reembolso, mas identificou que
+o intervalo técnico legado ainda permitiria concluir a entrega com 10 respostas, 5 perguntas e 3
+follow-ups, abaixo da estratégia congelada de 15, 8 e 4. A mesma revisão encontrou o bearer do magic
+link no caminho da página e na URL copiada pela telemetria.
+
+O contrato passou a exigir as três quantidades exatas. O link usa fragmento, o navegador persiste a
+credencial localmente e limpa path, query e hash antes do primeiro evento; analytics, referência e
+metadados não recebem o token bruto. Contratos preventivos rejeitam 14/7/3 e quantidade excedente,
+abrem também a rota legada para comprovar a limpeza e consultam o resumo persistido para impedir
+recorrência.

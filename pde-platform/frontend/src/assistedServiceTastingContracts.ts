@@ -139,7 +139,7 @@ const kitWhatsAppTastingV1: AssistedServiceTastingContract = {
     },
   ],
   paidBoundary:
-    "Esta amostra demonstra o método com uma situação. A implantação paga inclui briefing, adaptação às regras do seu negócio, 10 a 20 respostas, perguntas, follow-ups, escalonamento, revisão humana e entrega completa.",
+    "Esta amostra demonstra o método com uma situação. A implantação paga inclui briefing, adaptação às regras do seu negócio, 15 respostas, 8 perguntas, 4 follow-ups, escalonamento, revisão humana e entrega completa.",
   submitLabel: "Gerar minha amostra",
 };
 

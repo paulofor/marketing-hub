@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-30-rigel-exact-delivery-contract-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+        - columnExists:
+            tableName: product
+            columnName: updated_at
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: draft_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_by
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_at
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: updated_at
+        - sqlCheck:
+            expectedResult: "1"
+            sql: >-
+              SELECT CASE WHEN EXISTS (
+                SELECT 1 FROM product
+                WHERE slug = 'kit-whatsapp-pronto'
+                  AND pde_experience_json IS NOT NULL
+                  AND JSON_VALID(pde_experience_json) = 1
+                  AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.experienceVersion')) = 'kit-whatsapp-pronto-pde-v2'
+                  AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.missions[4].id')) = 'entrega-completa-48h'
+                  AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.missions[4].deliveryContract.sections[0].id')) = 'responses'
+                  AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.missions[4].deliveryContract.sections[1].id')) = 'qualificationQuestions'
+                  AND JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.missions[4].deliveryContract.sections[2].id')) = 'followUps'
+              ) THEN 1 ELSE 0 END
+      changes:
+        - sqlFile:
+            path: 2026-08-30-rigel-exact-delivery-contract-v1.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true

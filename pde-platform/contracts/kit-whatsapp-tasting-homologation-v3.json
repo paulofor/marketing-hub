@@ -1,0 +1,422 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v3",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-08-30T10:24:34Z",
+  "status": "PASSED",
+  "revalidationReason": "A tarefa produtiva #277 aprovou produto, preço, pagamento, entrega, acesso, correlação e QA, mas comprovou divergência entre a telemetria persistida e a política pública, além da ausência de uma referência FULL para a identidade legal produtiva. Esta revisão declara a coleta real, minimiza duplicação, anonimiza detalhes após 180 dias e congela fornecedor, CNPJ, suporte e URLs legais lidos no endpoint produtivo.",
+  "scope": "Correlação comercial exata e bearer somente em header; transparência integral de telemetria, anonimização dos detalhes após 180 dias, direitos da titular, identidade legal produtiva congelada, contrato exato 15/8/4, QA segregado e pacote imutável de Têmis.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
+      "sha256": "7c3b63575cd6fcf0a2affeeffb45f2d815e851cf574f61c981e4c4925bf42a52"
+    },
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "0f0b93e9014c1d815e217cbd19edb268df6d73920488a6ae43b51e32dfbd6b54",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Shell amplo e experiências legadas; o fluxo específico do Rigel permanece integral em AssistedServiceApp.tsx, nos contratos do Kit e nas jornadas executáveis declaradas."
+    },
+    {
+      "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
+      "sha256": "83e6d3c9d0c52234e52f535bdefde73b016bd974adb262a75a3fdca7dda8f85e"
+    },
+    {
+      "path": "pde-platform/frontend/src/pdeAccessAuthorization.ts",
+      "sha256": "401f1a830f6ff3d80641f438c95410946b24af75737c26ae49bf9418a69fad09"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "7c7412d51d360b111eda09efbb3a35946cec85b5c05674684706dc09fcf6192d",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Serviço amplo de acesso, jornada e analytics. A política nova de retenção é delegada à classe focada PdeFunnelTelemetryRetentionService; o teste JDBC e o inventário público permanecem integrais no prompt."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/PdeFunnelTelemetryRetentionService.java",
+      "sha256": "9a9f26cfb6602d111fb3a7dd275211f01a55db1e5336e5da493eae54f285432a"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialEventContract.java",
+      "sha256": "2ce77ccbf9db3e5a609f2924108817ca8722bdadd2bc46ee1fe692a3234b54e4"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "12fa6230a7e04ae361e70a7d575bdd950d6efac00b3ca45563b5a8baa03b02a9"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java",
+      "sha256": "e1654cb32ba05ad3a833a9a926c2e214c60e8f9ae64511bdd52c5c4d4343a10c"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelPaidEntitlementService.java",
+      "sha256": "d85db0c4e7a434063f6774eaf0ddfd5b17ef73754c3285b4c86342a9749a689f"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/MercadoPagoEntitlementController.java",
+      "sha256": "918ae8302f59aabe13538c38889a6eaddc01205e3887a6fd89920b602ad8774f"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/support/MercadoPagoEntitlementAuthenticationFilter.java",
+      "sha256": "63935841753a20c51026d52e958581189fc20c62d890998617feb5fd4d86188b"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AccessController.java",
+      "sha256": "4863d97ab4c374ab23aebee094e187ed2d8c0e2afe95824b5af5599f584948f3"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AiGuidanceController.java",
+      "sha256": "c4b6a1ecb0e84ad1df979c655532db31b78ad394d4237557f9e72e8471871c7e"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/AssistedOperationController.java",
+      "sha256": "5c25d6053e55c81d7be8dde210f92805c75bbc75fb4ffb6a2afa7b9f2dd2eaf2"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/controller/InternalAccessController.java",
+      "sha256": "c7a333d616a5f76e760b58a1b5bbd293e767b296441583e3d71d081fccb4ba31"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/controller/MercadoPagoWebhookController.java",
+      "sha256": "9557a5aa3dfb8dd9327a28edde000ef98e13d4cc6ee39cef6ac69e537c790a51"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/service/CheckoutService.java",
+      "sha256": "72ec61f82e025b110289d8d5a065f6f735474f2b6219ccc4df82b1e2ee12e667"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/service/PaymentAuditPayloadSanitizer.java",
+      "sha256": "3502cb8939e295155a616382d0c812576aaed248251bf44a697e366b812496f5"
+    },
+    {
+      "path": "lead-portal-payments-service/src/main/java/com/marketinghub/payments/service/PdePaymentEntitlementClient.java",
+      "sha256": "38fbbfe5c09d3d67f1d5f0a636e5ff8505c707ef0724b6ad9ab66777713d1223"
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoader.java",
+      "sha256": "8e25ea3ada2ab8559c48f8c254bdee26fa59a7e96b4a70ae66e24f1feb4a91e2"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
+      "sha256": "90d12bbb1a8096554e6a7874cd03e6d9f3f42e080673e3a1973f2c4426968379"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
+      "sha256": "6a7fab3b75a0a7ddf850cfe64b272d110cbbf64e1f1875bbb3a5779c0d6da622"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-v1.json",
+      "sha256": "28d88b616f11da343b61db195be6ff5a96f7a8379033b72e4918c52c48eb5e3e"
+    },
+    {
+      "path": "pde-platform/contracts/commercial-journey-event-contract-v1.json",
+      "sha256": "c5714acb99f5c0b945eac58ea1855fc604eb64769dd1d0687e2ee6efb71884d6"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-privacy-inventory-v1.json",
+      "sha256": "3ff479b8f31bb6d3d01b05260300a042f3a6030aebf1a650e382086f14360da8"
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-production-legal-identity-v1.json",
+      "sha256": "9f685cd5f4aee08d6d88c330216968b34537aa879bd7963b969f665bf65ad0fa"
+    },
+    {
+      "path": "docs/marketing/kit-whatsapp-pronto-data-governance-v1.md",
+      "sha256": "e544f34e38eeca0d4ff904dbd9cc57a9d9d59e8dc75fd4f4f942c3cf8c9f8f2d"
+    },
+    {
+      "path": "docs/canonical/pde-platform-canon.v1.md",
+      "sha256": "22c8d3d1794f134f395ce9cc4637013b1fbe466308f59a97d28e74f9e3fbbaeb",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "O backend é a fonte dos marcos comerciais; compra, entrega, primeira utilização e conclusão permanecem distintos, idempotentes, versionados e com QA segregado."
+    },
+    {
+      "path": "docs/canonical/product-types-canon.v1.md",
+      "sha256": "1c0bc27a4543dd3a9d7f9a8e54c0c7f730cfd81e2d8349a07a26f0a478c7038e",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Rigel é serviço assistido de pagamento único com entrega personalizada de 15 respostas, 8 perguntas e 4 follow-ups em até 48 horas após pagamento e briefing completo."
+    },
+    {
+      "path": "docs/canonical/cadeia-produtos-pde-canon.v1.md",
+      "sha256": "b7c9c074a49f6beac6cefb33da101581083889d6573da7ab8e8dac79fda73d75",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "A revisão independente antecede preflight e autorização humana; parecer aprovado não ativa produto, mídia, gasto ou contato e não conta como venda."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-30-rigel-exact-delivery-contract-v1.sql",
+      "sha256": "4e895810e4a5db862523e7c554628365e14551778acead863cd466b244252f3b"
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-30-rigel-exact-delivery-contract-v1.yaml",
+      "sha256": "48020881db8db3230cbed7ebf484ef61f9c295375abadbed041e5db66a4a9ef4"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
+      "sha256": "8054272c9ded96f5d5f8f719ea8814be0a2315215a819229ac1f64e6a1e03260",
+      "proves": [
+        "14 respostas, 7 perguntas ou 3 follow-ups não concluem a entrega",
+        "fragmento e caminho legado são removidos antes da telemetria",
+        "payload capturado e resumo persistido não contêm o bearer",
+        "entitlement e reembolso protegem as fronteiras pagas nos três navegadores"
+      ]
+    },
+    {
+      "path": "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
+      "sha256": "69ca448867e667e40efafbc7543f51e4eaa4c4cbe9c54cdb7dffcb55976e5862",
+      "proves": [
+        "build público mantém QA segregado",
+        "degustação e checkout usam chaves idempotentes",
+        "preview administrativo não registra evento comercial",
+        "evento real corresponde ao inventário público de privacidade",
+        "retenção, direitos e identidade legal produtiva aparecem na política"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
+      "sha256": "def6da864d1149063c5b25ffac756a55762780a892298069015edcb2a46050ea",
+      "proves": [
+        "somente 15/8/4 conclui a entrega material",
+        "magic link usa fragmento sem bearer no caminho",
+        "a mesma guarda paga protege todas as fronteiras",
+        "compra, acesso, entrega, primeira aplicação, encerramento e reembolso compartilham campos exatos e referência SHA-256",
+        "bearer bruto e aliases comerciais não são persistidos no JDBC",
+        "INTERNAL_QA permanece auditável sem entrar nos indicadores humanos",
+        "telemetria de 181 dias perde todos os correlatores e a de 179 dias permanece íntegra"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialEventContractTest.java",
+      "sha256": "c3a5cc85c1b8848320058734c5f20b7d02318bcd161e9b0192939a2812793951",
+      "proves": [
+        "campos congelados de produto, experimento, preço e moeda são obrigatórios",
+        "aliases legados e accessToken em metadados falham antes da persistência",
+        "a referência de acesso possui SHA-256 estável e não reutilizável"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/AccessControllerPublicSurfaceTest.java",
+      "sha256": "05cfff7b78d3b50590ab702a714b6fbc749e221b1636a7a52cb3b26db0710caa",
+      "proves": [
+        "workspace, progresso, IA, operação assistida e QA não aceitam bearer em mapping HTTP",
+        "toda a superfície autenticada usa caminhos sem token"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "3805e9ad5e3dda771ec4c04e6f0a60ec3414f689a14d7b653bb0af7e76d76d2a",
+      "proves": [
+        "fonte remota antiga é elevada ao contrato exato antes de chegar ao navegador"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialContractPolicyTest.java",
+      "sha256": "3c0569e01671a85031acaf27977985270dd26d83cb5c5a79559366dbc2ed0038",
+      "proves": [
+        "intervalos antigos viram 15/15, 8/8 e 4/4",
+        "máximo incapaz de cumprir a estratégia falha fechado"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelPaidEntitlementServiceTest.java",
+      "sha256": "519fc5884a40c83e0315a2fb6b754fae8d5e52f6c70b3994a81b9c6f9767e694",
+      "proves": [
+        "produto, experimento, preço, moeda, versão e compradora são validados",
+        "retry, recompra e reembolso preservam estado financeiro terminal"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/MercadoPagoEntitlementControllerTest.java",
+      "sha256": "09410b0837cf5013a6e89ff0a0e26a93af3a263454ff5f6e3a8d9f6c22662b76",
+      "proves": [
+        "ingestão financeira exige credencial interna e persiste antes da revogação"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/support/MercadoPagoEntitlementAuthenticationFilterTest.java",
+      "sha256": "b7cc4b18858f144fbfcab1808d76de0094606af639da4b60e6697c9babed9419",
+      "proves": [
+        "autenticação ocorre antes da desserialização e responde JSON UTF-8"
+      ]
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/service/PdePaymentEntitlementClientTest.java",
+      "sha256": "43b81ebd3eeec8f0307124705d3b6cbcadf110a2db549648d1affdb76185f721",
+      "proves": [
+        "contexto Spring e cliente PDE usam payload, URL e credencial dedicados"
+      ]
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/controller/MercadoPagoWebhookControllerTest.java",
+      "sha256": "68810c160255f02f0ea22a5e53c3a00ab1665b75e7130cc06004054476e207ef",
+      "proves": [
+        "webhook relê o pagamento autoritativo antes dos efeitos",
+        "resposta bruta persistida não conserva o e-mail da compradora"
+      ]
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/service/CheckoutServiceTest.java",
+      "sha256": "6259ae426afb863ac4fd7af44d3f0c2451feae22b70084bc85d4d509e45fe19c",
+      "proves": [
+        "registro funcional preserva o e-mail necessário à entrega",
+        "payloads duplicados da notificação e do provedor são persistidos sem o e-mail"
+      ]
+    },
+    {
+      "path": "lead-portal-payments-service/src/test/java/com/marketinghub/payments/service/PaymentAuditPayloadSanitizerTest.java",
+      "sha256": "9d4bebacd1d7fa96380d1fea8ff491e72213c7d87e98a8228d0327f19f747fe3",
+      "proves": [
+        "e-mails aninhados são removidos sem apagar identificadores técnicos",
+        "payload inválido conserva somente estado e SHA-256"
+      ]
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoaderTest.java",
+      "sha256": "a7c5af6325cb99b702d1d5428bca03766d3c16bafec11fb98c31a57b0f24baf3",
+      "proves": [
+        "Têmis seleciona somente o manifesto v3 atual e preserva v1/v2 como históricos",
+        "hash posterior ao build bloqueia a revisão"
+      ]
+    },
+    {
+      "path": "pde-platform/docker-compose.assisted-service-validation.yml",
+      "sha256": "d4d6dcbe188077ad2dda65b10718bf541d3ab1614607100aace80c65e855740d",
+      "proves": [
+        "MySQL 5.7, SMTP descartável, backend, frontend, pagamentos e três navegadores usam topologia segregada"
+      ]
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/RigelExactDeliveryContractChangelogTest.java",
+      "sha256": "d5e74e4e38d9386c811c6f898f187a90f5e5599fdbb18f699c40c7c156df7dec",
+      "proves": [
+        "include relativo, MySQL 5.7, limites exatos e ausência do padrão 1093"
+      ]
+    },
+    {
+      "path": "scripts/validate-rigel-commercial-slot-mysql57.sh",
+      "sha256": "850a1f4fbd56b2c3cef90622754c6889bf8f2b80f567a11640eb906e3238d7f3",
+      "proves": [
+        "produto e slot passam fisicamente por reaplicação e retomada no MySQL 5.7"
+      ]
+    },
+    {
+      "path": "backend/ads-service/src/test/resources/liquibase-mysql57/rigel-commercial-slot-baseline.sql",
+      "sha256": "646a3d6c6a820d22c1d1d69affce5665f61d94602b8b2545a95f50978d905e91",
+      "proves": [
+        "fixture física começa com os intervalos antigos e sem rascunho"
+      ]
+    },
+    {
+      "path": "docs/homologacao/rigel-paid-entitlement-v1-matriz.md",
+      "sha256": "7a80ea34cd8abb2c8cf95a42e0524c9643977eea3fd5d3c709cd66fbdd751fa5",
+      "proves": [
+        "matriz cobre #271 a #277, alternativas causais, integrações, observabilidade, métricas, dados e navegadores"
+      ]
+    }
+  ],
+  "consecutiveLocalRounds": [
+    {
+      "round": 1,
+      "result": "PASSED",
+      "pdeBackendUnitTests": 149,
+      "paymentServiceUnitTests": 45,
+      "themisWorkerUnitTests": 80,
+      "retentionWorkerTests": 4,
+      "liquibaseContractTests": 1,
+      "publicBuildAnalyticsTests": 6,
+      "assistedJourneyTests": 18,
+      "browsers": [
+        "Desktop Chrome",
+        "iPhone 15 Pro",
+        "Pixel 7"
+      ],
+      "commercialEvidence": {
+        "files": 100,
+        "manifests": 4
+      },
+      "infrastructure": [
+        "MySQL 5.7 com volume novo e changelog executado fisicamente",
+        "SMTP descartável com topologia nova",
+        "imagens Docker construídas localmente",
+        "limpeza confirmada sem containers ou volumes residuais"
+      ]
+    },
+    {
+      "round": 2,
+      "result": "PASSED",
+      "pdeBackendUnitTests": 149,
+      "paymentServiceUnitTests": 45,
+      "themisWorkerUnitTests": 80,
+      "retentionWorkerTests": 4,
+      "liquibaseContractTests": 1,
+      "publicBuildAnalyticsTests": 6,
+      "assistedJourneyTests": 18,
+      "browsers": [
+        "Desktop Chrome",
+        "iPhone 15 Pro",
+        "Pixel 7"
+      ],
+      "commercialEvidence": {
+        "files": 100,
+        "manifests": 4
+      },
+      "infrastructure": [
+        "MySQL 5.7 com segundo volume novo e changelog executado fisicamente",
+        "SMTP descartável com segunda topologia nova",
+        "imagens Docker construídas localmente",
+        "limpeza confirmada sem containers ou volumes residuais"
+      ]
+    }
+  ],
+  "privacyAndCostEvidence": {
+    "buyerEmailPersistedInCanonicalPurchaseRecordForFulfillment": true,
+    "buyerEmailPersistedInRawPaymentAudit": false,
+    "rawPaymentAuditEmailPolicy": "REDACTED_BEFORE_PERSISTENCE",
+    "unparseableRawPaymentAuditPolicy": "SHA256_ONLY",
+    "rawPaymentAuditPublicEndpoint": false,
+    "accessTokenPersistedInPaymentAudit": false,
+    "accessTokenPersistedInBrowserAnalytics": false,
+    "browserUserAgentDuplicatedInJson": false,
+    "publicPrivacyInventoryMatchesPersistence": true,
+    "detailedTelemetryRetentionDays": 180,
+    "expiredTelemetryIdentifiersAnonymized": true,
+    "externalModelCalledDuringHomologation": false,
+    "realPaymentCreated": false,
+    "testTrafficCountedAsHuman": false,
+    "intermediateEventsCountedAsSale": false
+  },
+  "authoritativePaymentContract": {
+    "provider": "MERCADO_PAGO",
+    "preferenceId": "133771061-472e4ef4-5d13-4122-831a-706d12435081",
+    "externalReference": "kit-whatsapp-pronto",
+    "productId": 9,
+    "experimentId": 89,
+    "amountBrl": 349,
+    "currency": "BRL",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "commercialDeliveryContract": {
+    "responses": 15,
+    "qualificationQuestions": 8,
+    "followUps": 4,
+    "deadlineHoursAfterPaymentAndCompleteBriefing": 48
+  },
+  "authoritativeProductionLegalIdentity": {
+    "contractPath": "pde-platform/contracts/kit-whatsapp-production-legal-identity-v1.json",
+    "sourceEndpoint": "https://kit-whatsapp-pronto.digicomdigital.com.br/api/pde/products/kit-whatsapp-pronto/commercial-offer",
+    "supplierDisplayName": "Digicom Digital",
+    "supplierRegistrationNumber": "25.215.414/0001-69",
+    "supportEmail": "contato@digicomdigital.com.br",
+    "legalOrigin": "https://kit-whatsapp-pronto.digicomdigital.com.br"
+  },
+  "privacyTransparencyContract": {
+    "contractPath": "pde-platform/contracts/kit-whatsapp-privacy-inventory-v1.json",
+    "policyPath": "/privacy",
+    "detailedTelemetryRetentionDays": 180,
+    "postRetentionPolicy": "ANONYMIZE_TECHNICAL_IDENTIFIERS_AND_KEEP_AGGREGATED_EVENT_FACTS"
+  }
+}

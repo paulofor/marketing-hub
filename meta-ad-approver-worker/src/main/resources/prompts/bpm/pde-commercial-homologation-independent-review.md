@@ -7,11 +7,15 @@ de QA como resultado comercial.
 
 O backend fixou `taskTarget` com produto, experimento e versão.
 `versionedCommercialHomologationEvidence` contém exclusivamente o manifesto correspondente e as
-provas do pacote imutável produzido no mesmo build. `bundleIntegrity: VERIFIED` confirma o pacote
-atual. `baselineIntegrity: UPDATED_CANDIDATE` indica material alterado desde a homologação anterior:
-revise integralmente a candidata atual, sem aprovar nem bloquear apenas pela mudança de hash. Use o
-material como fonte primária e bloqueie divergência funcional de produto, versão, preço, checkout,
-acesso ou evidência. Não tente reler por shell arquivos já injetados.
+provas do pacote imutável produzido no mesmo build. `promptMode: FULL` entrega o conteúdo integral.
+`promptMode: ATTESTED_REFERENCE` é permitido apenas para um arquivo amplo e redundante: nesse caso,
+use o `reviewSummary` declarado no manifesto junto das provas integrais específicas, mantendo path,
+tamanho, checksum e SHA-256 do arquivo completo. Nunca trate uma referência isolada como prova de um
+gate sem confirmação pelo manifesto ou por evidência `FULL`. `bundleIntegrity: VERIFIED` confirma o
+pacote atual. `baselineIntegrity: UPDATED_CANDIDATE` indica material alterado desde a homologação
+anterior: revise integralmente a candidata atual, sem aprovar nem bloquear apenas pela mudança de
+hash. Use o material como fonte primária e bloqueie divergência funcional de produto, versão, preço,
+checkout, acesso ou evidência. Não tente reler por shell os arquivos já injetados ou atestados.
 
 Verifique obrigatoriamente:
 

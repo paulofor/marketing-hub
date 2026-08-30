@@ -24,10 +24,11 @@ public class DevAccessController {
         this.accessService = accessService;
     }
 
-    /** Cria acesso DEV sem registrar compra ou venda e apenas quando o ambiente autoriza. */
+    /** Cria acesso interno de QA sem registrar compra ou venda e apenas quando o ambiente autoriza. */
     @PostMapping("/dev")
     @ResponseStatus(HttpStatus.CREATED)
     public AccessResponse createDevAccess(@Valid @RequestBody AccessRequest request) {
-        return accessService.createAccess(request.productSlug(), request.email(), "DEV");
+        return accessService.createInternalQaAccess(
+                request.productSlug(), request.email(), request.experienceVersion());
     }
 }

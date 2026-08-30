@@ -130,9 +130,66 @@ class CommercialBpmTaskConsumerTest {
             "canal efetivo proposto",
             "QA excluído",
             "Nunca use escala de 0 a 10",
-            "nota mínima de 80");
+            "nota mínima de 80",
+            "ATTESTED_REFERENCE",
+            "Não tente reler por shell");
     org.assertj.core.api.Assertions.assertThat(schema)
         .contains("activationRecommendation", "gateChecks", "priceClarityScore");
+  }
+
+  /** Mantém o prompt real dentro do limite sem depender de shell ou truncamento silencioso. */
+  @Test
+  void composesBoundedCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    Path repository =
+        moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
+            ? moduleDirectory.getParent()
+            : moduleDirectory;
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    CommercialBpmTaskConsumer consumer =
+        new CommercialBpmTaskConsumer(
+            properties, "codex", "gpt-5.6-sol", repository.toString(), repository.toString(), json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            275L,
+            "processCode",
+            "pde-commercial-homologation-activation",
+            "activityId",
+            "commercialIntegrityReview",
+            "taskTarget",
+            Map.of(
+                "experimentId",
+                89L,
+                "productId",
+                9L,
+                "productSlug",
+                "kit-whatsapp-pronto",
+                "experienceVersion",
+                "kit-whatsapp-pronto-pde-v2"));
+
+    String prompt = consumer.prompt(task);
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "ATTESTED_REFERENCE",
+            "reviewSummary",
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java")
+        .doesNotContain("VERSIONED_FILESYSTEM");
+    org.assertj.core.api.Assertions.assertThat(prompt.length())
+        .isLessThan(850_000)
+        .isLessThan(CommercialBpmTaskConsumer.promptCharacterLimit());
+  }
+
+  /** Rejeita localmente uma entrada sem margem antes de abrir processo ou consumir modelo. */
+  @Test
+  void rejectsPromptAbovePreventiveCharacterLimit() {
+    assertThatThrownBy(
+            () ->
+                CommercialBpmTaskConsumer.validatePromptSize(
+                    "x".repeat(CommercialBpmTaskConsumer.promptCharacterLimit() + 1)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("limite preventivo");
   }
 
   /** Mantém Têmis na coerência comercial da landing sem antecipar pagamento e acesso. */
@@ -184,6 +241,73 @@ class CommercialBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(1500L);
     org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(450L);
     Files.deleteIfExists(output);
+  }
+
+  /** Repete inatividade real com margem de inicialização e conclui sem processo órfão. */
+  @Test
+  void retriesInactiveModelAttemptAndCompletesSecondAttempt() throws Exception {
+    Path counter = Files.createTempFile("temis-attempt-counter-", ".txt");
+    Files.writeString(counter, "0");
+    Path executable = Files.createTempFile("temis-fake-codex-", ".sh");
+    Files.writeString(
+        executable,
+        """
+        #!/bin/sh
+        output=""
+        previous=""
+        for argument in "$@"; do
+          if [ "$previous" = "--output-last-message" ]; then output="$argument"; fi
+          previous="$argument"
+        done
+        cat >/dev/null
+        attempt=$(($(cat '%s') + 1))
+        printf '%%s' "$attempt" > '%s'
+        if [ "$attempt" -eq 1 ]; then
+          printf '%%s\n' '{"type":"turn.completed","usage":{"input_tokens":10,"cached_input_tokens":1,"output_tokens":2}}'
+          sleep 30
+        fi
+        printf '%%s' '{"decision":"APPROVED","commercialRationale":"Contrato coerente","evidence":["Prova íntegra"],"requiredChanges":[]}' > "$output"
+        printf '%%s\n' '{"type":"turn.completed","usage":{"input_tokens":20,"cached_input_tokens":2,"output_tokens":3}}'
+        """
+            .formatted(counter, counter));
+    executable.toFile().setExecutable(true);
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    CodexProcessSupervisor supervisor =
+        new CodexProcessSupervisor(
+            java.time.Duration.ofSeconds(1),
+            java.time.Duration.ofSeconds(5),
+            java.time.Duration.ofMillis(20));
+    CommercialBpmTaskConsumer consumer =
+        new CommercialBpmTaskConsumer(
+            properties,
+            executable.toString(),
+            "gpt-5.6-sol",
+            "/workspace",
+            "",
+            json,
+            supervisor,
+            2);
+
+    CommercialBpmTaskConsumer.BpmExecution execution =
+        consumer.execute(
+            Map.of(
+                "taskId",
+                273L,
+                "processCode",
+                "landing-page-generation",
+                "activityId",
+                "commercial",
+                "taskTarget",
+                Map.of("productId", 9L)));
+
+    org.assertj.core.api.Assertions.assertThat(execution.result().path("decision").asText())
+        .isEqualTo("APPROVED");
+    org.assertj.core.api.Assertions.assertThat(execution.usage().inputTokens()).isEqualTo(30L);
+    org.assertj.core.api.Assertions.assertThat(execution.usage().cachedInputTokens()).isEqualTo(3L);
+    org.assertj.core.api.Assertions.assertThat(execution.usage().outputTokens()).isEqualTo(5L);
+    org.assertj.core.api.Assertions.assertThat(Files.readString(counter)).isEqualTo("2");
+    Files.deleteIfExists(executable);
+    Files.deleteIfExists(counter);
   }
 
   /** Preserva contexto e ausência de efeitos externos inclusive quando Têmis bloqueia. */

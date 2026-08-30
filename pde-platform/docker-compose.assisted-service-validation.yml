@@ -53,7 +53,9 @@ services:
       PDE_ASSISTED_OPERATION_ENABLED: "true"
       PDE_ASSISTED_OPERATION_TOKEN: pde-local-operation-test
       PDE_INTERNAL_API_TOKEN: pde-local-internal-test
+      PDE_MERCADO_PAGO_INTERNAL_TOKEN: pde-local-payment-test
       PDE_INTERNAL_QA_ENABLED: "true"
+      PDE_EXPOSE_MAGIC_LINK_IN_RESPONSE: "true"
       PDE_ACCESS_JDBC_URL: jdbc:mysql://pde-platform-local-mysql:3306/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       PDE_ACCESS_JDBC_USERNAME: pde
       PDE_ACCESS_JDBC_PASSWORD: pde
@@ -113,6 +115,40 @@ services:
       timeout: 5s
       retries: 20
 
+  lead-portal-payments-kit-validation:
+    build:
+      context: ../lead-portal-payments-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ""
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:rigel_payment_validation;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_DATASOURCE_DRIVER: org.h2.Driver
+      SPRING_JPA_HIBERNATE_DIALECT: org.hibernate.dialect.H2Dialect
+      SPRING_SQL_INIT_MODE: always
+      SPRING_SQL_INIT_SCHEMA_LOCATIONS: classpath:schema-h2.sql
+      DELIVERY_ENABLED: "false"
+      DIGITAL_PRODUCT_DELIVERY_EMAIL_ENABLED: "false"
+      PRODUCT_AI_DELIVERY_ENABLED: "false"
+      PDE_ENTITLEMENT_ENABLED: "true"
+      PDE_ENTITLEMENT_BACKEND_BASE_URL: http://pde-platform-backend-kit-validation:8096
+      PDE_ENTITLEMENT_INTERNAL_TOKEN: pde-local-payment-test
+      PDE_ENTITLEMENT_PRODUCT_SLUG: kit-whatsapp-pronto
+    depends_on:
+      pde-platform-backend-kit-validation:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --silent http://127.0.0.1:8080/actuator/health >/dev/null || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - default
+
   pde-assisted-service-e2e:
     build:
       context: ./frontend
@@ -122,12 +158,15 @@ services:
       PDE_ASSISTED_BACKEND_URL: http://pde-platform-backend-kit-validation:8096
       PDE_ASSISTED_MAIL_URL: http://sandbox-mail:8025
       PDE_ASSISTED_INTERNAL_TOKEN: pde-local-internal-test
+      PDE_ASSISTED_PAYMENTS_URL: http://lead-portal-payments-kit-validation:8080
     depends_on:
       pde-platform-backend-kit-validation:
         condition: service_healthy
       pde-platform-frontend-kit-validation:
         condition: service_healthy
       sandbox-mail:
+        condition: service_healthy
+      lead-portal-payments-kit-validation:
         condition: service_healthy
 
 volumes:

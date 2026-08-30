@@ -431,6 +431,26 @@ O modelo AIDA pode ser usado como apoio psicológico dentro de cada estágio, ma
 
 Cada evento comercial e cada consulta administrativa de analytics deve preservar `experienceVersion`. Quando um experimento estiver ligado a um slot produtivo, o monitor deve consultar a versão exata do slot e não pode somar sessões, eventos, origens ou jornadas de outras versões do mesmo produto. A jornada guiada também deve medir `MISSION_FEEDBACK_SUBMITTED` após a conclusão das missões, com percepção de utilidade, facilidade e aplicabilidade, e `JOURNEY_COMPLETED` ao concluir o plano inteiro.
 
+Em jornadas assistidas com entrega operacional, `DELIVERY_COMPLETED`, `FIRST_USE` e
+`JOURNEY_COMPLETED` são fatos distintos e não podem substituir uns aos outros. O backend deve emitir
+`DELIVERY_COMPLETED` de forma idempotente no instante em que persiste o artefato material completo;
+deve emitir `FIRST_USE` somente depois de validar uma primeira aplicação real da cliente; e deve
+emitir `JOURNEY_COMPLETED` apenas ao encerrar todos os marcos. Briefing, abertura de tela ou simples
+liberação de acesso não constituem primeiro uso quando o produto exige entrega anterior.
+
+O bearer que autentica a área paga nunca pode aparecer em caminho, query, fragmento persistido,
+referrer, telemetria ou log. Depois de o fragmento transitório do link mágico ser consumido e limpo
+pelo navegador, workspace, missões, interações, orientação, suporte, privacidade, materiais e
+operação usam exclusivamente o header `X-PDE-Access-Token`. Eventos persistidos correlacionam o
+acesso por `accessReferenceHash` irreversível e estável; o bearer bruto não integra metadados nem a
+coluna analítica de correlação. Testes devem percorrer a jornada e falhar se qualquer URL, payload,
+log ou artefato contiver o token sentinela.
+
+Para o `kit-whatsapp-pronto` na versão `kit-whatsapp-pronto-pde-v2`, o entitlement existente é de
+pagamento único e sem expiração enquanto o pagamento permanecer vigente. Essa permanência deve ser
+declarada antes da compra e dentro da área. Reembolso ou chargeback revoga o consumo pago, mas não
+remove suporte nem os direitos de privacidade.
+
 O contrato `persuasiveJourney` publicado pelo Marketing Hub deve declarar esses estágios de forma versionada, com função comercial, mudança esperada no usuário, seções/eventos rastreados, métrica principal e regra de otimização quando o estágio quebrar. O relatório do experimento deve usar essa jornada para responder em qual estágio a pessoa perdeu confiança, desejo ou disposição de pagar.
 
 ### Analytics obrigatório para campanhas PDE
@@ -471,6 +491,9 @@ Eventos mínimos:
 - `FIRST_USE`;
 - `MISSION_OPEN`;
 - `MISSION_COMPLETED`;
+- `DELIVERY_COMPLETED`;
+- `JOURNEY_COMPLETED`;
+- `REFUND_CONFIRMED`;
 - `MATERIAL_OPEN`.
 
 Metadados mínimos por evento quando disponíveis:
@@ -487,6 +510,20 @@ Metadados mínimos por evento quando disponíveis:
 - tamanho de tela e viewport;
 - seção, ação ou material acionado;
 - tempo visível quando o evento representar permanência.
+
+A política pública de privacidade de cada PDE deve declarar, em linguagem compreensível, todas as
+categorias técnicas realmente coletadas, inclusive identificadores first-party de visitante e
+sessão, página e referência, campanha/UTM, dispositivo, navegador/user-agent, tela/viewport e IP
+público quando aplicável. Também deve explicar finalidade, segregação de QA, retenção e caminhos de
+acesso, correção, exclusão ou anonimização. Um teste de contrato deve comparar a coleta e a
+persistência efetivas com o inventário versionado exibido na política.
+
+Identificadores e contexto detalhado da telemetria devem ser anonimizados depois de 180 dias,
+independentemente de o acesso comercial continuar ativo. A retenção pode preservar produto, versão,
+tipo, instante e classificação agregável do evento, mas deve remover acesso, e-mail, IP, navegador,
+URL, referência, sessão, visitante, UTM, dispositivo, dimensões, duração, seção, ação e metadata
+bruta. Dados funcionais ou financeiros seguem separadamente o contrato ativo e os prazos legais ou
+contábeis aplicáveis.
 
 O backend PDE deve persistir esses eventos em estrutura consultável e expor resumo agregado para decisão comercial. Logs técnicos não substituem analytics persistido. Antes de liberar nova campanha para o Clube MUSA/PDE, deve ser possível responder no mínimo: quantas pessoas entraram, quantas iniciaram login, quantas concluíram login, quantas viram paywall, quantas clicaram em assinatura, quantas iniciaram checkout, quantas tiveram compra aprovada, quantas receberam acesso e quantas fizeram primeiro uso.
 

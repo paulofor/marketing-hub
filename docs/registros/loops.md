@@ -373,6 +373,12 @@
 - Fechamento complementar de retomada do BPM de Dédalo (2026-08-15): depois de um deploy, a execução técnica `agent-task:30` permanecia `PROCESSANDO` porque a recuperação por troca de build reconhecia somente homologações comerciais legadas. A política agora inclui explicitamente ciclos BPM `agent-task:*`, preserva a tarefa e a entrada congelada e permite que somente o novo build retome a lease; teste unitário impede que uma tarefa BPM volte a aguardar o timeout genérico de 45 minutos.
 - Fechamento complementar de qualidade no BPM de landing (2026-08-15): concluir a geração de HTML liberava Psique antes do Quality Review, e atividades automáticas do diagrama sem tarefa persistida podiam bloquear sucessoras para sempre. A tarefa de Dédalo agora permanece ativa durante correções e só termina após aprovação técnica independente; o sequenciador atravessa atividades automáticas sem tarefa própria e continua exigindo a conclusão das tarefas humanas/agentes realmente cadastradas.
 - Fechamento complementar em Psique (2026-08-29): a tarefa BPM #264 atingiu 40 minutos sem novo evento, mas o encerramento matou apenas o lançador Node e deixou o processo Codex órfão no PID 1. A tentativa #265 comprovou ainda que os snapshots eram persistidos, porém o prompt mandava reabrir `localPath` pela ferramenta de filesystem; o `bubblewrap` era corretamente bloqueado pelo container com `no-new-privileges`, impedindo a inspeção dos pixels. O worker passa a anexar cada captura diretamente ao turno com `--image`, mantém a sandbox somente leitura, mede timeout por inatividade com teto absoluto de três janelas e encerra descendentes antes do lançador. Testes de contrato cobrem anexos multimodais, progresso acima de uma janela e limpeza integral da árvore de processos.
+- Fechamento complementar em Têmis (2026-08-30): as tarefas #271 e #272 concluíram o mesmo gate
+  comercial em 117 e 81 segundos, mas a #273 permaneceu 40 minutos sem informar tokens ou novo
+  evento. O timeout encerrava somente o lançador Node e deixou o binário Codex reparentado ao Java.
+  O executor agora distingue inatividade de análise ativa, encerra descendentes antes do lançador,
+  repete uma única vez a chamada parada e soma os contadores reais das tentativas. Testes com processo
+  filho real cobrem progresso, inatividade, teto absoluto, retry e ausência de órfãos.
 - Fechamento complementar da Mesa do Agente (2026-08-15): a telemetria persistia processo vivo, heartbeat, eventos, bytes e tokens, mas o monitor descartava esses sinais e mostrava apenas `PROCESSANDO` e um total diário igual a zero, sem distinguir ausência de medição. O monitor passa a associar a telemetria mais recente à identidade canônica do agente e a tela expõe atividade, atraso e consumo informado da execução sem publicar logs brutos ou raciocínio interno.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
@@ -2043,6 +2049,31 @@ Use este checklist quando o problema estiver em algum loop acima:
   silenciosa. O comando revalida checkout já persistido, e a idempotência do provedor passa a incluir
   produto, preço, moeda e URL de entrega, permitindo corrigir contratos alterados sem duplicar
   retries idênticos. Testes nos dois módulos impedem retorno de versão, preço ou entrega antigos.
+- **Recorrência do Rigel fechada localmente em 2026-08-30:** a tarefa #271 de Têmis comprovou que o
+  Kit WhatsApp Pronto publicado possuía checkout correto, mas o login ainda criava acesso sem compra
+  e as fronteiras de workspace, progresso, operação, materiais e entrega não consultavam um
+  entitlement vigente comum. A preferência real do Mercado Pago confirmou produto `9`, experimento
+  `89`, referência `kit-whatsapp-pronto`, preço `R$ 349,00` e moeda `BRL`. O webhook agora publica
+  aprovação, reembolso ou contestação por contrato interno autenticado; o PDE valida a versão
+  `kit-whatsapp-pronto-pde-v2`, vincula um único token por hash e reaplica a mesma guarda em toda
+  fronteira paga. Reembolso bloqueia o consumo sem retirar suporte ou privacidade; retry atrasado não
+  reativa estado terminal e devolução antiga não revoga recompra posterior. Os contratos locais
+  repetem compra, login, entrega, recompra e reembolso em desktop, iPhone 15 Pro e Pixel 7, com
+  MySQL 5.7, SMTP descartável e métricas de QA segregadas. Uma sonda produtiva adicional encontrou
+  a validação do corpo sendo executada antes da autorização do controller; o backend foi revertido
+  sem escrita e a autenticação passou para um filtro anterior ao dispatcher. O teste de contrato
+  agora exige `401` para corpo inválido sem Bearer e comprova que a cadeia de leitura do payload não
+  é chamada. O mesmo teste roda em container e exige JSON UTF-8 exato, prevenindo que a resposta de
+  autenticação volte a corromper mensagens em português no navegador. A primeira troca controlada
+  do serviço de pagamentos ainda expôs que dois construtores sem seleção explícita impediam o
+  contexto Spring de criar `PdePaymentEntitlementClient`; o rollback restaurou a imagem anterior
+  saudável. O construtor produtivo agora é explícito e a homologação inicia o jar de pagamentos,
+  exige health `UP` e testa o contexto Spring, fechando a lacuna entre unitário isolado e bootstrap.
+  A tarefa produtiva #272 aprovou essa cadeia e revelou uma divergência anterior ao entitlement: a
+  estratégia congelada prometia exatamente 15 respostas, 8 perguntas e 4 follow-ups, enquanto o
+  contrato de conclusão ainda aceitava 10, 5 e 3. Produto, slot, prompt de construção, revisão e
+  jornada passam a usar as três quantidades exatas; o backend rejeita 14/7/3 e também quantidades
+  excedentes, impedindo que `DELIVERY_COMPLETED` represente escopo diferente da oferta.
 
 ## LOOP-PDE-TELEMETRIA-EXPOE-TOKEN-NA-URL — navegação autenticada vaza segredo
 
@@ -2056,6 +2087,40 @@ Use este checklist quando o problema estiver em algum loop acima:
   `/access/:token` e remove query e fragmento das URLs de página e referência antes do envio.
 - **Prevenção:** teste Playwright percorre uma rota autenticada com token sentinela, captura todos os
   eventos e bloqueia qualquer payload que contenha o segredo, em desktop e mobile.
+- **Recorrência fechada localmente em 2026-08-30:** a tarefa #272 de Têmis encontrou o mesmo defeito
+  no frontend assistido do Rigel: `AssistedServiceApp` lia `/access/{token}` e copiava
+  `window.location.href` integral para o evento. O link mágico passa a transportar a credencial no
+  fragmento, que não chega ao servidor ou ao referrer; a inicialização persiste o token e limpa
+  path, query e hash antes do primeiro evento. A telemetria assistida deixou de serializar
+  `accessToken`, sanitiza página, referência e path e comprova ausência do segredo tanto no payload
+  capturado quanto no resumo persistido.
+- **Fechamento integral após a tarefa #276 em 2026-08-30:** a primeira correção protegia o link e a
+  telemetria, mas workspace, conclusão, interações, IA, operação assistida, suporte, privacidade e QA
+  interno ainda aceitavam o bearer no segmento da URL. Toda a superfície autenticada foi migrada
+  para `X-PDE-Access-Token`, sem manter rota paralela insegura. Testes de reflexão impedem novo
+  mapping com `{token}`; Playwright usa um bearer sentinela e bloqueia sua presença em URL, corpo,
+  referrer, evento ou resumo persistido, exigindo-o somente no header protegido.
+
+## LOOP-PDE-POLITICA-PRIVACIDADE-DIVERGE-DA-TELEMETRIA — aviso público omite coleta real
+
+- **Data:** 2026-08-30.
+- **Sintoma:** a tarefa #277 de Têmis comprovou que o Kit declarava apenas e-mail, briefing,
+  progresso e suporte, enquanto eventos persistiam identificadores de visitante/sessão, URLs, IP,
+  navegador, dispositivo e dimensões.
+- **Causa-raiz:** o inventário canônico de analytics e a política pública evoluíam em fontes
+  separadas; os testes validavam ausência do bearer, mas não paridade entre campos coletados,
+  finalidade, retenção e texto apresentado à titular.
+- **Correção sistêmica:** o inventário versionado passa a declarar campos do navegador, dados
+  derivados no backend, finalidades, identidade legal e retenção. A política pública expõe todas as
+  categorias e o backend anonimiza, após 180 dias, identificadores e contexto detalhado, preservando
+  somente fatos agregáveis.
+- **Prevenção:** Playwright captura o `PAGE_VIEW`, compara as chaves com o inventário, verifica cada
+  categoria visível e a identidade produtiva congelada; teste JDBC prova o limite 179/181 dias,
+  idempotência e remoção de todos os correlatores técnicos antigos.
+- **Fechamento produtivo:** a tarefa #278 terminou `COMPLETED` em 2026-08-30, com decisão
+  `APPROVED`, 11 gates aprovados, 8 evidências e zero mudanças obrigatórias. A instância BPM 140
+  atingiu o objetivo e qualificou somente o pacote versionado para preflight, sem autorizar contato,
+  publicação, mídia, gasto ou ativação.
 
 ## LOOP-PDE-MISSAO-DIVERGE-DA-INTERACAO — jornada conclui IDs sem entregar a promessa
 
@@ -2086,6 +2151,22 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de frontend exigem nomes e chaves da degustação; teste JDBC repete cada
   marco e comprova uma única linha por evento; a jornada Compose reconcilia os eventos finais com
   compra, acesso, entrega e reembolso idempotentes.
+- **Recorrência do Rigel fechada localmente em 2026-08-30:** a tarefa #274 comprovou que o backend
+  registrava `FIRST_USE` na conclusão do briefing e só emitia `DELIVERY_COMPLETED` depois da primeira
+  aplicação, invertendo as duas métricas comerciais. A jornada assistida agora registra a entrega
+  quando a operação persiste `entrega-completa-48h`, registra primeiro uso somente após
+  `applicationStatus=APPLIED` em `primeira-aplicacao-e-revisao` e mantém `JOURNEY_COMPLETED`
+  separado. O teste JDBC repete a jornada, exige a ordem compra → entrega → primeira aplicação →
+  encerramento, uma linha por marco, versão explícita e segregação de `INTERNAL_QA`. A mesma revisão
+  elimina e-mails dos payloads financeiros duplicados de auditoria, preservando somente o registro
+  funcional necessário à entrega e um hash quando o payload recebido não for JSON válido.
+- **Fechamento de correlação após a tarefa #276 em 2026-08-30:** embora a ordem já estivesse
+  correta, eventos do Rigel ainda misturavam aliases como `mercadoPagoPaymentId` e não exigiam
+  `experimentId` e a mesma referência de acesso em todos os marcos. Um contrato fechado agora
+  enriquece e valida compra, acesso, missão, entrega, primeiro uso, jornada e reembolso antes da
+  persistência; a coluna histórica de correlação e os metadados guardam apenas SHA-256, nunca o
+  bearer. Teste JDBC repete todo o ciclo, exige campos e valores congelados (`R$ 349`, `BRL`,
+  experimento 89), ordem temporal, ausência de aliases e uma única linha por marco.
 
 ## LOOP-PDE-HUB-FALLBACK-MASCARA-CONTRATO — fallback faz a superfície divergir da fonte canônica
 
@@ -2357,3 +2438,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   arquivo ausente e comprovam que não há mistura. Testes adicionais bloqueiam alvo ausente ou
   ambíguo, corrupção posterior ao build e ausência do índice na imagem implantada. Os workflows de
   ambos os revisores são acionados quando contratos ou provas versionadas mudam.
+- **Recorrência fechada localmente em 2026-08-30:** a tarefa #275 recebeu 1.125.976 caracteres
+  porque o executor duplicava no prompt o conteúdo integral das provas já congeladas na imagem,
+  ultrapassando o teto de 1.048.576 antes do primeiro turno. A alternativa de reler o pacote por
+  shell foi descartada em teste de paridade porque repetia o bloqueio de `bubblewrap` já conhecido.
+  Têmis continua recebendo integralmente manifesto, contratos, implementação específica e testes;
+  somente artefatos amplos e redundantes usam `ATTESTED_REFERENCE`, com resumo explícito, tamanho,
+  checksum e SHA-256 do arquivo completo. Um limite preventivo de 900.000 caracteres bloqueia
+  regressão antes de abrir o processo do modelo, e o teste monta o prompt real do Rigel sem depender
+  de shell ou truncamento silencioso.

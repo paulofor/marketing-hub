@@ -19,6 +19,24 @@ const productContractV2 = JSON.parse(
   ),
 );
 const productContract = { ...productContractV1, ...productContractV2 };
+const privacyInventory = JSON.parse(
+  readFileSync(
+    resolve(
+      process.cwd(),
+      "../contracts/kit-whatsapp-privacy-inventory-v1.json",
+    ),
+    "utf8",
+  ),
+);
+const productionLegalIdentity = JSON.parse(
+  readFileSync(
+    resolve(
+      process.cwd(),
+      "../contracts/kit-whatsapp-production-legal-identity-v1.json",
+    ),
+    "utf8",
+  ),
+);
 
 const commercialOffer = {
   productSlug,
@@ -39,9 +57,10 @@ const commercialOffer = {
   productFormat: "IMPLANTACAO_PERSONALIZADA",
   deliveryMode: "ASSISTIDA_MANUAL",
   valueUnit: "Respostas, perguntas e follow-ups prontos para revisar e usar",
-  supplierDisplayName: "Digicom Digital",
-  supplierRegistrationNumber: "00.000.000/0001-00",
-  supportEmail: "teste@sandbox.local",
+  supplierDisplayName: productionLegalIdentity.supplierDisplayName,
+  supplierRegistrationNumber:
+    productionLegalIdentity.supplierRegistrationNumber,
+  supportEmail: productionLegalIdentity.supportEmail,
   termsUrl: "/terms",
   privacyUrl: "/privacy",
   refundPolicyUrl: "/refund-policy",
@@ -71,7 +90,11 @@ test("segrega eventos de homologação mesmo no build público", async ({
   context,
   page,
 }) => {
-  const events: Array<{ eventType: string; source: string }> = [];
+  const events: Array<{
+    eventType: string;
+    source: string;
+    metadata?: Record<string, unknown>;
+  }> = [];
   await context.route("**/api/pde/access/events", async (route) => {
     events.push(route.request().postDataJSON());
     await route.fulfill({ status: 204, body: "" });
@@ -105,6 +128,21 @@ test("segrega eventos de homologação mesmo no build público", async ({
       ]),
     );
   expect(events.every((event) => event.source === "mh_test")).toBeTruthy();
+  const entitlementEvents = events.filter((event) =>
+    ["TASTING_STARTED", "VALUE_MOMENT", "PAYWALL_VIEWED"].includes(
+      event.eventType,
+    ),
+  );
+  expect(entitlementEvents).toHaveLength(3);
+  for (const event of entitlementEvents) {
+    expect(event.metadata?.idempotencyKey).toMatch(/^[a-z0-9._:-]+$/);
+  }
+  expect(entitlementEvents[0].metadata?.idempotencyKey).toBe(
+    "tasting-started:kit-whatsapp-tasting-v1",
+  );
+  expect(entitlementEvents[1].metadata?.idempotencyKey).toBe(
+    entitlementEvents[2].metadata?.idempotencyKey,
+  );
 });
 
 test("não envia analytics no preview administrativo", async ({
@@ -203,4 +241,87 @@ test("preserva a origem humana na navegação pública normal", async ({
   expect(sources.every((source) => source === "pde-assisted-service")).toBe(
     true,
   );
+});
+
+test("declara toda telemetria persistida, retenção e identidade legal produtiva", async ({
+  context,
+  page,
+}) => {
+  const events: Array<{
+    eventType: string;
+    pageUrl: string;
+    metadata: Record<string, unknown>;
+  }> = [];
+  await context.route("**/api/pde/access/events", async (route) => {
+    events.push(route.request().postDataJSON());
+    await route.fulfill({ status: 204, body: "" });
+  });
+
+  await page.goto("/privacy?mh_test=1");
+  await expect(
+    page.getByRole("heading", { name: "Privacidade e uso de dados" }),
+  ).toBeVisible();
+  for (const disclosure of privacyInventory.publicDisclosureTerms) {
+    await expect(page.getByText(disclosure, { exact: false })).toBeVisible();
+  }
+  await expect(
+    page.getByText(productionLegalIdentity.supplierDisplayName),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      `CNPJ ${productionLegalIdentity.supplierRegistrationNumber}`,
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: productionLegalIdentity.supportEmail }),
+  ).toBeVisible();
+
+  await expect
+    .poll(() => events.find((event) => event.eventType === "PAGE_VIEW"))
+    .toBeTruthy();
+  const pageView = events.find((event) => event.eventType === "PAGE_VIEW");
+  expect(Object.keys(pageView?.metadata ?? {}).sort()).toEqual(
+    [...privacyInventory.browserEventMetadataFields].sort(),
+  );
+  expect(pageView?.metadata).not.toHaveProperty("userAgent");
+  expect(pageView?.metadata).not.toHaveProperty("clientIp");
+  expect(pageView?.pageUrl).toContain("/privacy");
+  expect(pageView?.pageUrl).not.toContain("accessToken");
+
+  const accessServiceSource = readFileSync(
+    resolve(
+      process.cwd(),
+      "../backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+    ),
+    "utf8",
+  );
+  const retentionServiceSource = readFileSync(
+    resolve(
+      process.cwd(),
+      "../backend/src/main/java/com/marketinghub/pde/service/PdeFunnelTelemetryRetentionService.java",
+    ),
+    "utf8",
+  );
+  const persistedTelemetrySource = `${accessServiceSource}\n${retentionServiceSource}`;
+  for (const column of privacyInventory.persistedTechnicalColumns) {
+    expect(persistedTelemetrySource).toContain(column);
+  }
+  expect(retentionServiceSource).toContain("anonymizeExpiredDetailedTelemetry");
+  expect(privacyInventory.retention.detailedTelemetryDays).toBe(180);
+
+  expect(productionLegalIdentity.supplierRegistrationNumber).toBe(
+    "25.215.414/0001-69",
+  );
+  expect(productionLegalIdentity.supportEmail).toBe(
+    "contato@digicomdigital.com.br",
+  );
+  for (const legalUrl of [
+    productionLegalIdentity.termsUrl,
+    productionLegalIdentity.privacyUrl,
+    productionLegalIdentity.refundPolicyUrl,
+  ]) {
+    expect(new URL(legalUrl).origin).toBe(
+      "https://kit-whatsapp-pronto.digicomdigital.com.br",
+    );
+  }
 });

@@ -29,7 +29,12 @@ class ProductJourneyIntegrationContractServiceTest {
         assertThat(contract.eventsPath()).isEqualTo("/api/pde/access/events");
         assertThat(contract.requiredEventTypes())
                 .contains("PAGE_VIEW", "CHECKOUT_STARTED", "PURCHASE_COMPLETED", "ACCESS_RELEASED", "FIRST_USE");
-        assertThat(contract.correlationKeys()).contains("eventId", "sessionId", "visitorId", "accessToken");
+        assertThat(contract.correlationKeys())
+                .contains("eventId", "sessionId", "visitorId", "accessReferenceHash")
+                .doesNotContain("accessToken");
+        assertThat(contract.workspacePathTemplate()).isEqualTo("/api/pde/access/workspace");
+        assertThat(contract.missionCompletionPathTemplate())
+                .isEqualTo("/api/pde/access/missions/{missionId}/complete");
         assertThat(contract.sourceOfTruth()).isEqualTo("pde_funnel_event");
         assertThat(contract.testTrafficPolicy()).contains("INTERNAL_QA");
     }

@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,11 +47,11 @@ public class InternalAccessController {
                 request.productSlug(), request.email(), request.experienceVersion());
     }
 
-    /** Expira um acesso segregado para validar a jornada pós-90 dias sem criar cobrança ou venda. */
-    @PostMapping("/{token}/expire")
+    /** Expira acesso segregado sem inserir sua credencial no caminho da homologação. */
+    @PostMapping("/expire")
     public WorkspaceResponse expireInternalQaAccess(
             @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken,
-            @PathVariable("token") String token) {
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String token) {
         internalApiAuthorizer.requireAuthorized(internalToken);
         if (!internalQaEnabled) {
             throw new SecurityException("Acesso de homologação PDE está desabilitado neste ambiente");

@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +35,7 @@ public class CommercialBpmTaskConsumer {
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
       "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
+  private static final int MAX_PROMPT_CHARACTERS = 900_000;
   private static final List<BpmContract> CONTRACTS =
       List.of(
           new BpmContract("pde-commercial-homologation-activation", "commercialIntegrityReview"),
@@ -48,16 +49,21 @@ public class CommercialBpmTaskConsumer {
   private final String reasoningEffort;
   private final String repositoryPath;
   private final PdeReviewArtifactLoader pdeArtifactLoader;
+  private final CodexProcessSupervisor processSupervisor;
+  private final int maxModelAttempts;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica e a sandbox independente de Têmis. */
+  @Autowired
   public CommercialBpmTaskConsumer(
       MetaAdApproverProperties properties,
       @Value("${CODEX_COMMAND:codex}") String codex,
       @Value("${CODEX_MODEL:gpt-5.6-sol}") String model,
       @Value("${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}") String repositoryPath,
       @Value("${TEMIS_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
-      ObjectMapper json) {
+      ObjectMapper json,
+      CodexProcessSupervisor processSupervisor,
+      @Value("${meta-ad-approver.commercial-model-max-attempts:2}") int maxModelAttempts) {
     this.backend = BackendRestClientFactory.create(properties);
     this.codex = codex;
     this.model = model;
@@ -69,6 +75,28 @@ public class CommercialBpmTaskConsumer {
                 ? repositoryPath
                 : commercialEvidencePath);
     this.json = json;
+    this.processSupervisor = processSupervisor;
+    this.maxModelAttempts = Math.max(1, maxModelAttempts);
+  }
+
+  /** Mantém testes de contrato isolados sem iniciar o contexto Spring completo. */
+  CommercialBpmTaskConsumer(
+      MetaAdApproverProperties properties,
+      String codex,
+      String model,
+      String repositoryPath,
+      String commercialEvidencePath,
+      ObjectMapper json) {
+    this(
+        properties,
+        codex,
+        model,
+        repositoryPath,
+        commercialEvidencePath,
+        json,
+        new CodexProcessSupervisor(
+            Duration.ofMinutes(10), Duration.ofMinutes(40), Duration.ofSeconds(15)),
+        2);
   }
 
   /** Reserva em PLAY e revisa uma atividade liberada sem decidir a próxima etapa. */
@@ -120,52 +148,66 @@ public class CommercialBpmTaskConsumer {
 
   /** Executa o prompt versionado e valida coerência, compliance e prontidão comercial. */
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
+    PromptComposition prompt = promptComposition(task);
+    validatePromptSize(prompt.fullPrompt());
+    Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
+    TokenUsage accumulatedUsage = TokenUsage.empty();
+    try {
+      for (int attempt = 1; attempt <= maxModelAttempts; attempt++) {
+        AttemptExecution execution = executeAttempt(task, schema, prompt);
+        accumulatedUsage = accumulatedUsage.plus(execution.usage());
+        if (execution.outcome() == CodexProcessSupervisor.WaitOutcome.COMPLETED) {
+          return new BpmExecution(
+              execution.result(),
+              accumulatedUsage,
+              prompt.fullPrompt(),
+              prompt.agentPromptPart(),
+              prompt.activityPromptPart());
+        }
+        if (execution.outcome() == CodexProcessSupervisor.WaitOutcome.INACTIVITY_TIMEOUT
+            && attempt < maxModelAttempts) {
+          log.warn(
+              "Chamada de Têmis sem progresso será repetida. taskId={} attempt={} maxAttempts={} inactivityMinutes={}",
+              taskId(task),
+              attempt,
+              maxModelAttempts,
+              processSupervisor.inactivityTimeout().toMinutes());
+          continue;
+        }
+        throw new BpmExecutionException(
+            timeoutMessage(execution.outcome(), attempt),
+            accumulatedUsage,
+            prompt.fullPrompt(),
+            prompt.agentPromptPart(),
+            prompt.activityPromptPart());
+      }
+      throw new IllegalStateException("Têmis não executou nenhuma tentativa do modelo.");
+    } finally {
+      Files.deleteIfExists(schema);
+    }
+  }
+
+  /** Executa uma tentativa isolada e devolve conclusão ou motivo técnico de interrupção. */
+  private AttemptExecution executeAttempt(
+      Map<String, Object> task, Path schema, PromptComposition prompt)
+      throws IOException, InterruptedException {
     Path output = Files.createTempFile("temis-bpm-result-", ".json");
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
-    Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
-    PromptComposition prompt = promptComposition(task);
+    Process process = null;
     try {
-      List<String> command =
-          new ArrayList<>(
-              List.of(
-                  codex,
-                  "--search",
-                  "exec",
-                  "-c",
-                  "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
-                  "--config",
-                  "model_reasoning_effort=\"" + reasoningEffort + "\"",
-                  "-",
-                  "--skip-git-repo-check",
-                  "--sandbox",
-                  "read-only",
-                  "--cd",
-                  repositoryPath,
-                  "--output-schema",
-                  schema.toString(),
-                  "--output-last-message",
-                  output.toString(),
-                  "--json",
-                  "--color",
-                  "never"));
-      if (model != null && !model.isBlank()) command.addAll(List.of("--model", model));
-      Process process =
-          new ProcessBuilder(command)
+      process =
+          new ProcessBuilder(command(output, schema))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      if (!process.waitFor(40, TimeUnit.MINUTES)) {
-        process.destroyForcibly();
-        throw new BpmExecutionException(
-            "Timeout do gate BPM de Têmis após 40 minutos.",
-            readTokenUsage(json, processLog),
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart());
-      }
+      CodexProcessSupervisor.WaitOutcome outcome =
+          processSupervisor.awaitCompletion(process, processLog);
       TokenUsage usage = readTokenUsage(json, processLog);
+      if (outcome != CodexProcessSupervisor.WaitOutcome.COMPLETED) {
+        return new AttemptExecution(null, usage, outcome);
+      }
       if (process.exitValue() != 0) {
         throw new BpmExecutionException(
             "Codex encerrou com falha: " + Files.readString(processLog),
@@ -175,13 +217,10 @@ public class CommercialBpmTaskConsumer {
             prompt.activityPromptPart());
       }
       try {
-        JsonNode result = json.readTree(Files.readString(output));
-        return new BpmExecution(
-            result,
+        return new AttemptExecution(
+            json.readTree(Files.readString(output)),
             usage,
-            prompt.fullPrompt(),
-            prompt.agentPromptPart(),
-            prompt.activityPromptPart());
+            CodexProcessSupervisor.WaitOutcome.COMPLETED);
       } catch (IOException ex) {
         log.error(
             "Resposta inválida no gate BPM de Têmis. taskId={} output={}",
@@ -197,10 +236,71 @@ public class CommercialBpmTaskConsumer {
             ex);
       }
     } finally {
+      if (process != null && process.isAlive()) processSupervisor.terminateTree(process);
       Files.deleteIfExists(output);
       Files.deleteIfExists(processLog);
-      Files.deleteIfExists(schema);
     }
+  }
+
+  /** Monta o comando imutável usado por cada tentativa de revisão comercial. */
+  private List<String> command(Path output, Path schema) {
+    List<String> command =
+        new ArrayList<>(
+            List.of(
+                codex,
+                "--search",
+                "exec",
+                "-c",
+                "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
+                "--config",
+                "model_reasoning_effort=\"" + reasoningEffort + "\"",
+                "-",
+                "--skip-git-repo-check",
+                "--sandbox",
+                "read-only",
+                "--cd",
+                repositoryPath,
+                "--output-schema",
+                schema.toString(),
+                "--output-last-message",
+                output.toString(),
+                "--json",
+                "--color",
+                "never"));
+    if (model != null && !model.isBlank()) command.addAll(List.of("--model", model));
+    return List.copyOf(command);
+  }
+
+  /** Bloqueia localmente uma entrada sem margem antes que a CLI consuma uma tentativa do modelo. */
+  static void validatePromptSize(String prompt) {
+    if (prompt.length() > MAX_PROMPT_CHARACTERS) {
+      throw new IllegalArgumentException(
+          "Prompt comercial excede o limite preventivo de "
+              + MAX_PROMPT_CHARACTERS
+              + " caracteres: "
+              + prompt.length());
+    }
+  }
+
+  /** Expõe o teto preventivo somente para testes de contrato do executor. */
+  static int promptCharacterLimit() {
+    return MAX_PROMPT_CHARACTERS;
+  }
+
+  /** Explica se Têmis parou por inatividade repetida ou pelo teto absoluto da tentativa. */
+  private String timeoutMessage(CodexProcessSupervisor.WaitOutcome outcome, int attempts) {
+    if (outcome == CodexProcessSupervisor.WaitOutcome.INACTIVITY_TIMEOUT) {
+      return "Timeout do gate BPM de Têmis após "
+          + attempts
+          + " tentativa(s) sem atividade por "
+          + processSupervisor.inactivityTimeout().toMinutes()
+          + " minutos.";
+    }
+    return "Teto absoluto do gate BPM de Têmis após "
+        + processSupervisor.absoluteTimeout().toMinutes()
+        + " minutos na tentativa "
+        + attempts
+        + ".";
   }
 
   /** Persiste a decisão auditável sem publicar landing, campanha ou experimento. */
@@ -282,7 +382,7 @@ public class CommercialBpmTaskConsumer {
   }
 
   /** Resolve o contexto congelado e injeta os artefatos da revisão comercial correspondente. */
-  private String prompt(Map<String, Object> task) throws IOException {
+  String prompt(Map<String, Object> task) throws IOException {
     return promptComposition(task).fullPrompt();
   }
 
@@ -552,6 +652,10 @@ public class CommercialBpmTaskConsumer {
       String agentPromptPart,
       String activityPromptPart) {}
 
+  /** Preserva o resultado técnico de uma tentativa antes da política de repetição. */
+  private record AttemptExecution(
+      JsonNode result, TokenUsage usage, CodexProcessSupervisor.WaitOutcome outcome) {}
+
   /** Representa as duas partes e a composição exata enviada ao modelo. */
   private record PromptComposition(
       String fullPrompt, String agentPromptPart, String activityPromptPart) {}
@@ -561,6 +665,21 @@ public class CommercialBpmTaskConsumer {
     /** Indica se a execução informou ao menos os contadores canônicos. */
     boolean informed() {
       return inputTokens != null || cachedInputTokens != null || outputTokens != null;
+    }
+
+    /** Soma medições de tentativas sem inventar contadores que o Codex não informou. */
+    TokenUsage plus(TokenUsage other) {
+      if (other == null) return this;
+      return new TokenUsage(
+          sumNullable(inputTokens, other.inputTokens),
+          sumNullable(cachedInputTokens, other.cachedInputTokens),
+          sumNullable(outputTokens, other.outputTokens));
+    }
+
+    /** Soma dois contadores preservando ausência quando ambos não foram medidos. */
+    private static Long sumNullable(Long first, Long second) {
+      if (first == null && second == null) return null;
+      return (first == null ? 0L : first) + (second == null ? 0L : second);
     }
 
     /** Representa execução sem medição disponível. */

@@ -46,7 +46,9 @@ public class CheckoutService {
     private final PremiumDeliveryService premiumDeliveryService;
     private final DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService;
     private final ProductAiPaidDeliveryBackendClient productAiPaidDeliveryBackendClient;
+    private final PaymentAuditPayloadSanitizer paymentAuditPayloadSanitizer;
 
+    /** Recebe os contratos de checkout, entrega e minimização da auditoria financeira. */
     public CheckoutService(MercadoPagoClient mercadoPagoClient,
                            LeadPortalPackageGateway packageGateway,
                            LeadPortalPurchaseRepository purchaseRepository,
@@ -54,7 +56,8 @@ public class CheckoutService {
                            PaymentProperties paymentProperties,
                            PremiumDeliveryService premiumDeliveryService,
                            DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService,
-                           ProductAiPaidDeliveryBackendClient productAiPaidDeliveryBackendClient) {
+                           ProductAiPaidDeliveryBackendClient productAiPaidDeliveryBackendClient,
+                           PaymentAuditPayloadSanitizer paymentAuditPayloadSanitizer) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.packageGateway = packageGateway;
         this.purchaseRepository = purchaseRepository;
@@ -63,12 +66,15 @@ public class CheckoutService {
         this.premiumDeliveryService = premiumDeliveryService;
         this.digitalProductPostPurchaseEmailService = digitalProductPostPurchaseEmailService;
         this.productAiPaidDeliveryBackendClient = productAiPaidDeliveryBackendClient;
+        this.paymentAuditPayloadSanitizer = paymentAuditPayloadSanitizer;
     }
 
+    /** Consulta o pagamento diretamente no provedor antes de aplicar qualquer efeito local. */
     public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
         return mercadoPagoClient.fetchPayment(paymentId);
     }
 
+    /** Cria ou reutiliza o checkout validado para um pacote comercial elegível. */
     @Transactional
     public CreateCheckoutResponse createCheckout(CreateCheckoutRequest request) {
         LeadPortalPackageSummary imagePackage = packageGateway.loadPackage(request.getPackageId());
@@ -80,8 +86,13 @@ public class CheckoutService {
         String buyerEmail = resolveBuyerEmail(request, imagePackage);
         String buyerName = resolveBuyerName(request, imagePackage);
 
-        log.info("Dados do checkout do pacote {}: valor={} {}, comprador={} ({})", imagePackage.packageId(), amount,
-                currency, buyerName, buyerEmail);
+        log.info(
+                "Dados do checkout do pacote {} validados: valor={} {}, buyerNamePresent={}, buyerEmailPresent={}",
+                imagePackage.packageId(),
+                amount,
+                currency,
+                StringUtils.hasText(buyerName),
+                StringUtils.hasText(buyerEmail));
 
         LeadPortalPurchase latestPurchase = purchaseRepository
                 .findTopByPackageIdOrderByCreatedAtDesc(imagePackage.packageId())
@@ -167,8 +178,8 @@ public class CheckoutService {
         purchase.setBuyerEmail(buyerEmail);
         purchase.setMercadoPagoPaymentId(paymentDetails.id());
         purchase.setMercadoPagoStatus(paymentDetails.status());
-        purchase.setNotificationPayload(rawPayload);
-        purchase.setMercadoPagoPaymentPayload(paymentDetails.rawPayload());
+        purchase.setNotificationPayload(paymentAuditPayloadSanitizer.minimize(rawPayload));
+        purchase.setMercadoPagoPaymentPayload(paymentAuditPayloadSanitizer.minimize(paymentDetails.rawPayload()));
         purchase.setAmount(paymentDetails.amount());
         purchase.setCurrency(paymentDetails.currency());
 

@@ -9,7 +9,7 @@
 - preço aprovado: R$ 349;
 - microvalor: três cenários, duas perguntas de qualificação e uma resposta ajustada ao tom em até
   12 horas;
-- entrega completa: 10–20 respostas, 5–10 perguntas, 3–5 follow-ups, regras de escalonamento, guia
+- entrega completa: exatamente 15 respostas, 8 perguntas, 4 follow-ups, regras de escalonamento, guia
   e checklist em até 48 horas;
 - primeira aplicação válida: três respostas, um bloco de qualificação e uma regra de escalonamento
   usados na mesma semana com revisão humana.
@@ -314,7 +314,7 @@ O pacote local aprovado contém:
 - vídeo vertical H.264 1080x1920 de 30 segundos, planejado por Apolo e composto com Playwright e
   ffmpeg;
 - resposta, pergunta e três follow-ups capturados da PDE Platform em cenário fictício e segregado;
-- oferta coerente com 10–20 respostas, 5–10 perguntas, 3–5 follow-ups manuais, revisão humana,
+- oferta coerente com 15 respostas, 8 perguntas, 4 follow-ups manuais, revisão humana,
   R$ 349 em pagamento único e entrega em até 48 horas após pagamento e briefing completos;
 - manifesto com origem, direitos, hashes, destino em desktop/mobile e separação entre produção e
   revisão.
@@ -360,8 +360,8 @@ snapshot, checkout, escopo, processo de entrega, provas, fornecedor e políticas
 foram corrigidos o caminho ESM do MCP, a inspeção da candidata antes da persistência e a evidência
 visual do Quality Review, que agora combina página integral e recorte legível das provas.
 
-A candidata final usa três CTAs canônicos, quatro provas aprovadas e descreve exatamente 10–20
-respostas, 5–10 perguntas, 3–5 follow-ups manuais, regras de escalonamento, guia, checklist, revisão
+A candidata final usa três CTAs canônicos, quatro provas aprovadas e descreve exatamente 15
+respostas, 8 perguntas, 4 follow-ups manuais, regras de escalonamento, guia, checklist, revisão
 humana, prévia em até 12 horas e entrega em até 48 horas após pagamento e briefing completos. Ela
 não promete automação, recorrência ou resultado garantido. Quality Review aprovou com 89/100, Psique
 aprovou a percepção da cliente e Têmis aprovou todos os gates comerciais sobre a mesma evidência.
@@ -420,3 +420,59 @@ Java, 2 testes reais de captura Playwright, Spotless, todos os schemas, build da
 dentro do container, handshake do provedor, sondas públicas e emulação de iPhone 15 Pro e Pixel 7.
 A imagem produtiva ainda contém o schema anterior; por isso, uma nova tentativa oficial só deve ser
 aberta depois do PR e do deploy do worker, sem apagar a auditoria das tarefas #259 a #263.
+
+## Integridade comercial após as tarefas 271 e 272
+
+Em 30 de agosto de 2026, a tarefa #271 mostrou que login e consumo pago não possuíam entitlement
+autoritativo comum. A correção vinculou produto 9, experimento 89, versão v2, R$ 349 e BRL ao estado
+real do Mercado Pago; reembolso ou contestação bloqueiam todas as fronteiras pagas sem retirar
+suporte e privacidade.
+
+A reexecução #272 aprovou essa cadeia, mas bloqueou uma divergência anterior: a conclusão técnica
+aceitava 10 respostas, 5 perguntas e 3 follow-ups, abaixo da estratégia congelada de 15, 8 e 4. O
+contrato atual exige exatamente as três quantidades e o changelog físico MySQL 5.7 atualiza produto,
+slot publicado e rascunho quando existir. O mesmo parecer encontrou o bearer no caminho do magic
+link e na URL analítica; o fragmento agora é removido antes do primeiro evento e nenhum payload ou
+resumo persistido pode conter o token bruto.
+
+A tarefa #273 não chegou ao parecer: a chamada externa permaneceu 40 minutos sem evento ou tokens e
+o timeout deixou o processo interno Codex órfão. As duas tarefas anteriores, com contexto comparável,
+haviam concluído em menos de dois minutos, confirmando uma inferência parada em vez de defeito do
+pacote comercial. Têmis passa a medir inatividade separadamente do teto absoluto, encerrar toda a
+árvore de processos e repetir uma única vez sem reduzir o esforço de raciocínio; o consumo real das
+tentativas permanece acumulado na tarefa.
+
+## Ordem comercial corrigida após a tarefa 274
+
+A tarefa #274 comprovou que a instrumentação registrava primeiro uso ao concluir o briefing e só
+marcava entrega depois da primeira aplicação. A causa estava no gatilho genérico da primeira missão
+e na reutilização do encerramento da jornada como entrega. O backend agora deriva fatos distintos:
+`DELIVERY_COMPLETED` quando a operação persiste o kit completo, `FIRST_USE` somente após a aplicação
+real validada e `JOURNEY_COMPLETED` ao encerrar todos os marcos.
+
+O teste relacional repete compra e jornada, exige uma linha por evento e a ordem compra → entrega →
+primeira aplicação → encerramento. A leitura por versão mantém a homologação `INTERNAL_QA` na
+auditoria bruta, fora das métricas humanas. A revisão financeira também remove e-mails dos payloads
+brutos duplicados do webhook e da compra; o e-mail canônico continua disponível apenas no registro
+funcional protegido, necessário para liberar e entregar o produto.
+
+## Transparência e minimização após a tarefa 277
+
+A tarefa #277 comprovou que toda a cadeia financeira e operacional corrigida estava coerente, mas
+bloqueou a ativação porque a política pública não declarava a telemetria técnica realmente
+persistida. O aviso passa a informar identificadores first-party de visitante/sessão, página,
+referrer, UTM, interação, dispositivo, navegador, tela/viewport e IP, com finalidade, segregação de
+QA e exercício de direitos.
+
+Entre apenas ampliar o texto, remover toda observabilidade ou minimizar e declarar o necessário,
+foi escolhida a terceira alternativa. O navegador deixa de duplicar user-agent no JSON; o backend
+usa o header recebido e anonimiza todos os correlatores detalhados com mais de 180 dias, mantendo
+somente fatos agregáveis. Um contrato separado congela Digicom Digital, CNPJ
+25.215.414/0001-69, suporte e URLs legais lidos no endpoint produtivo, sem reutilizar placeholders
+de sandbox como prova de identidade.
+
+A correção foi homologada em duas rodadas locais completas e consecutivas e publicada em imagens
+imutáveis do backend PDE, frontend do Kit e Têmis. A reexecução produtiva #278 terminou
+`COMPLETED` em 1min02s, com decisão `APPROVED`, recomendação `READY_FOR_PREFLIGHT`, 11 gates, 8
+evidências e nenhuma alteração obrigatória. A instância BPM 140 atingiu o objetivo com evidência
+direta; a aprovação não iniciou preflight, contato, mídia, gasto ou ativação comercial.

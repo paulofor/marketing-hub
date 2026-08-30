@@ -27,8 +27,8 @@ public class ProductJourneyIntegrationContractService {
                 "/api/pde/access/events",
                 "/api/pde/access/analytics/{productSlug}/summary",
                 "/api/pde/access/login-link",
-                "/api/pde/access/{token}/workspace",
-                "/api/pde/access/{token}/missions/{missionId}/complete",
+                "/api/pde/access/workspace",
+                "/api/pde/access/missions/{missionId}/complete",
                 FunnelEventCatalog.REQUIRED_COMMERCIAL_JOURNEY_EVENTS,
                 java.util.List.of(
                         "eventId",
@@ -36,7 +36,7 @@ public class ProductJourneyIntegrationContractService {
                         "experienceVersion",
                         "sessionId",
                         "visitorId",
-                        "accessToken"),
+                        "accessReferenceHash"),
                 "pde_funnel_event",
                 "trafficQuality=INTERNAL_QA ou mh_test identifica dados de homologação");
     }

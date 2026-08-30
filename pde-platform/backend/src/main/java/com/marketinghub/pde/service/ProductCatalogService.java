@@ -84,7 +84,7 @@ public class ProductCatalogService {
         Optional<ProductExperienceResponse> marketingHubProduct =
                 loadMarketingHubProduct(slug, host, requestedSlotCode, requestedExperienceVersion);
         if (marketingHubProduct.isPresent()) {
-            return applyDefaultLayout(marketingHubProduct.get());
+            return applyDefaultLayout(RigelCommercialContractPolicy.enforce(marketingHubProduct.get()));
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {

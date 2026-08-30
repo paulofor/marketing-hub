@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.Test;
 
@@ -174,6 +175,218 @@ class AccessServiceTest {
         assertThat(workspace.supportStatus()).isEqualTo("OPEN");
     }
 
+    /** Prova a ordem compra, entrega, primeira aplicação e jornada sem duplicar eventos ou contar QA. */
+    @Test
+    void recordsAssistedCommercialMilestonesOnceInCanonicalOrder() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:pde_assisted_event_order;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        ProductCatalogService catalog = assistedDeliveryCatalog();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                catalog,
+                objectMapper,
+                tempDir.resolve("assisted-commercial-events.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        AccessResponse commercialAccess = accessService.createAccess(
+                "kit-delivery", "compradora@example.com", "CHECKOUT", "kit-delivery-v1");
+        completeAssistedJourney(accessService, commercialAccess.token());
+        completeAssistedJourney(accessService, commercialAccess.token());
+
+        AccessResponse qaAccess = accessService.createAccess(
+                "kit-delivery", "teste+event-order@sandbox.local", "INTERNAL_QA", "kit-delivery-v1");
+        completeAssistedJourney(accessService, qaAccess.token());
+
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.prepareStatement("""
+                        SELECT
+                          SUM(CASE WHEN event_type = 'PURCHASE_COMPLETED' THEN 1 ELSE 0 END) AS purchases,
+                          SUM(CASE WHEN event_type = 'DELIVERY_COMPLETED' THEN 1 ELSE 0 END) AS deliveries,
+                          SUM(CASE WHEN event_type = 'FIRST_USE' THEN 1 ELSE 0 END) AS first_uses,
+                          SUM(CASE WHEN event_type = 'JOURNEY_COMPLETED' THEN 1 ELSE 0 END) AS journeys,
+                          MIN(CASE WHEN event_type = 'PURCHASE_COMPLETED' THEN id END) AS purchase_id,
+                          MIN(CASE WHEN event_type = 'DELIVERY_COMPLETED' THEN id END) AS delivery_id,
+                          MIN(CASE WHEN event_type = 'FIRST_USE' THEN id END) AS first_use_id,
+                          MIN(CASE WHEN event_type = 'JOURNEY_COMPLETED' THEN id END) AS journey_id
+                        FROM pde_funnel_event
+                        WHERE access_token = ?
+                        """)) {
+            statement.setString(
+                    1,
+                    RigelCommercialEventContract.persistedAccessReference(
+                            commercialAccess.token()));
+            try (var result = statement.executeQuery()) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getLong("purchases")).isEqualTo(1);
+                assertThat(result.getLong("deliveries")).isEqualTo(1);
+                assertThat(result.getLong("first_uses")).isEqualTo(1);
+                assertThat(result.getLong("journeys")).isEqualTo(1);
+                assertThat(result.getLong("delivery_id")).isGreaterThan(result.getLong("purchase_id"));
+                assertThat(result.getLong("first_use_id")).isGreaterThan(result.getLong("delivery_id"));
+                assertThat(result.getLong("journey_id")).isGreaterThan(result.getLong("first_use_id"));
+            }
+        }
+
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.prepareStatement("""
+                        SELECT event_type, metadata_json
+                        FROM pde_funnel_event
+                        WHERE access_token = ? AND event_type IN ('DELIVERY_COMPLETED', 'FIRST_USE')
+                        ORDER BY id
+                        """)) {
+            statement.setString(
+                    1,
+                    RigelCommercialEventContract.persistedAccessReference(
+                            commercialAccess.token()));
+            try (var result = statement.executeQuery()) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString("event_type")).isEqualTo("DELIVERY_COMPLETED");
+                Map<String, Object> deliveryMetadata = objectMapper.readValue(result.getString("metadata_json"), Map.class);
+                assertThat(deliveryMetadata)
+                        .containsEntry("missionId", "entrega-completa-48h")
+                        .containsEntry("deliveryVersion", "kit-v1")
+                        .containsEntry("experienceVersion", "kit-delivery-v1")
+                        .containsKey("completedAt");
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString("event_type")).isEqualTo("FIRST_USE");
+                Map<String, Object> firstUseMetadata = objectMapper.readValue(result.getString("metadata_json"), Map.class);
+                assertThat(firstUseMetadata)
+                        .containsEntry("missionId", "primeira-aplicacao-e-revisao")
+                        .containsEntry("applicationStatus", "APPLIED")
+                        .containsEntry("experienceVersion", "kit-delivery-v1")
+                        .containsKey("occurredAt");
+                assertThat(result.next()).isFalse();
+            }
+        }
+
+        var summary = accessService.summarizeFunnelAnalytics("kit-delivery", false, "kit-delivery-v1");
+        assertThat(summary.purchaseCompleted()).isEqualTo(1);
+        assertThat(summary.deliveryCompleted()).isEqualTo(1);
+        assertThat(summary.firstUse()).isEqualTo(1);
+        assertThat(summary.experienceVersions())
+                .singleElement()
+                .satisfies(metric -> {
+                    assertThat(metric.experienceVersion()).isEqualTo("kit-delivery-v1");
+                    assertThat(metric.totalEvents()).isGreaterThan(0);
+                });
+        assertThat(summary.trafficQualityBreakdown())
+                .extracting("trafficQuality")
+                .contains("HUMAN", "INTERNAL_QA");
+    }
+
+    /** Prova no JDBC que todo o ciclo Rigel usa campos exatos e nunca persiste o bearer. */
+    @Test
+    void persistsExactRigelLifecycleWithOneIrreversibleCorrelation() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:rigel_exact_event_contract;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        ObjectMapper objectMapper = new ObjectMapper();
+        RigelPaidEntitlementService entitlementService = new RigelPaidEntitlementService("", "", "");
+        AccessService accessService = new AccessService(
+                rigelPaidCatalog(),
+                objectMapper,
+                tempDir.resolve("rigel-exact-events.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                "",
+                null,
+                null,
+                null,
+                entitlementService);
+        String email = "teste+rigel-exact-events@sandbox.local";
+        String paymentId = "mp-rigel-exact-276";
+
+        AccessResponse access = releaseRigelPaidAccess(accessService, entitlementService, email, paymentId);
+        completeAssistedJourney(accessService, access.token());
+        completeAssistedJourney(accessService, access.token());
+        entitlementService.recordInternalQaPayment(
+                email, paymentId, "refunded", RigelPaidEntitlementService.EXPERIENCE_VERSION);
+        assertThat(accessService.revokeMercadoPagoPaidAccess(email, paymentId, "refunded")).isTrue();
+        assertThat(accessService.revokeMercadoPagoPaidAccess(email, paymentId, "refunded")).isFalse();
+
+        String expectedReference = RigelCommercialEventContract.persistedAccessReference(access.token());
+        Map<String, Map<String, Object>> metadataByEvent = new LinkedHashMap<>();
+        Map<String, Long> idByEvent = new LinkedHashMap<>();
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.prepareStatement("""
+                        SELECT id, event_type, access_token, metadata_json
+                        FROM pde_funnel_event
+                        WHERE product_slug = ?
+                        ORDER BY id
+                        """)) {
+            statement.setString(1, RigelPaidEntitlementService.PRODUCT_SLUG);
+            try (var result = statement.executeQuery()) {
+                while (result.next()) {
+                    String eventType = result.getString("event_type");
+                    String metadataJson = result.getString("metadata_json");
+                    assertThat(result.getString("access_token")).isEqualTo(expectedReference);
+                    assertThat(metadataJson).doesNotContain(access.token(), "accessToken");
+                    if (Set.of(
+                                    "PURCHASE_COMPLETED",
+                                    "ACCESS_RELEASED",
+                                    "DELIVERY_COMPLETED",
+                                    "FIRST_USE",
+                                    "JOURNEY_COMPLETED",
+                                    "REFUND_CONFIRMED")
+                            .contains(eventType)) {
+                        assertThat(metadataByEvent.put(
+                                        eventType,
+                                        objectMapper.readValue(metadataJson, Map.class)))
+                                .as("evento comercial duplicado: %s", eventType)
+                                .isNull();
+                        idByEvent.put(eventType, result.getLong("id"));
+                    }
+                }
+            }
+        }
+
+        assertThat(metadataByEvent.keySet())
+                .containsExactlyInAnyOrder(
+                        "PURCHASE_COMPLETED",
+                        "ACCESS_RELEASED",
+                        "DELIVERY_COMPLETED",
+                        "FIRST_USE",
+                        "JOURNEY_COMPLETED",
+                        "REFUND_CONFIRMED");
+        assertThat(metadataByEvent.get("PURCHASE_COMPLETED"))
+                .containsEntry("paymentId", paymentId)
+                .containsEntry("amountBrl", 349.00)
+                .containsEntry("currency", "BRL")
+                .containsEntry("experimentId", 89)
+                .containsKey("approvedAt");
+        assertThat(metadataByEvent.get("ACCESS_RELEASED"))
+                .containsEntry("paymentId", paymentId)
+                .containsEntry("accessReferenceHash", expectedReference)
+                .containsKey("releasedAt");
+        for (String eventType : List.of("DELIVERY_COMPLETED", "FIRST_USE", "JOURNEY_COMPLETED")) {
+            assertThat(metadataByEvent.get(eventType))
+                    .containsEntry("accessReferenceHash", expectedReference)
+                    .containsEntry("productSlug", RigelPaidEntitlementService.PRODUCT_SLUG)
+                    .containsEntry("experimentId", 89)
+                    .containsEntry("experienceVersion", RigelPaidEntitlementService.EXPERIENCE_VERSION);
+        }
+        assertThat(metadataByEvent.get("REFUND_CONFIRMED"))
+                .containsEntry("paymentId", paymentId)
+                .containsEntry("amountBrl", 349.00)
+                .containsEntry("providerStatus", "refunded")
+                .containsEntry("reason", "refunded")
+                .containsKey("confirmedAt");
+        assertThat(idByEvent.get("ACCESS_RELEASED")).isGreaterThan(idByEvent.get("PURCHASE_COMPLETED"));
+        assertThat(idByEvent.get("FIRST_USE")).isGreaterThan(idByEvent.get("DELIVERY_COMPLETED"));
+        assertThat(idByEvent.get("JOURNEY_COMPLETED")).isGreaterThan(idByEvent.get("FIRST_USE"));
+        assertThat(idByEvent.get("REFUND_CONFIRMED")).isGreaterThan(idByEvent.get("JOURNEY_COMPLETED"));
+    }
+
     /** Bloqueia uma entrega que apenas declara quantidades sem materializar cada componente prometido. */
     @Test
     void rejectsDeclarativeFullDeliveryWithoutStructuredItems() {
@@ -205,6 +418,41 @@ class AccessServiceTest {
                                 "Declara incluir quinze respostas, oito perguntas, quatro follow-ups, guia e checklist.")));
     }
 
+    /** Rejeita qualquer quantidade diferente de quinze respostas, oito perguntas e quatro follow-ups. */
+    @Test
+    void rejectsDeliveryBelowOrAboveFrozenCommercialCounts() {
+        ProductCatalogService catalog = assistedDeliveryCatalog();
+        AccessService accessService = new AccessService(
+                catalog, new ObjectMapper(), tempDir.resolve("commercial-counts-delivery.json").toString());
+        AccessResponse access = accessService.createAccess("kit-delivery", "cliente@sandbox.local", "DEV");
+
+        saveCompleteBriefing(accessService, access.token());
+        accessService.completeMission(access.token(), "entrada-guiada");
+        accessService.completeOperationalMission(access.token(), "conferencia-de-completude");
+        accessService.completeOperationalMission(access.token(), "diagnostico-humano");
+        accessService.completeOperationalMission(
+                access.token(),
+                "microvalor-12h",
+                new OperationalMissionCompletionRequest(
+                        "Microentrega Studio Aurora",
+                        "micro-v1",
+                        "Conteúdo individual com três cenários, duas perguntas e uma resposta ajustada ao briefing da cliente. "
+                                + "A mensagem exige revisão humana antes de qualquer uso no WhatsApp."));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> completeFullDelivery(accessService, access.token(), deliverySectionsWithCounts(14, 8, 4)));
+        assertThrows(IllegalArgumentException.class,
+                () -> completeFullDelivery(accessService, access.token(), deliverySectionsWithCounts(15, 7, 4)));
+        assertThrows(IllegalArgumentException.class,
+                () -> completeFullDelivery(accessService, access.token(), deliverySectionsWithCounts(15, 8, 3)));
+        assertThrows(IllegalArgumentException.class,
+                () -> completeFullDelivery(accessService, access.token(), deliverySectionsWithCounts(16, 8, 4)));
+
+        completeFullDelivery(accessService, access.token(), completeDeliverySections());
+        assertThat(accessService.getWorkspace(access.token()).completedMissionIds())
+                .contains("entrega-completa-48h");
+    }
+
     /** Monta um catálogo mínimo com autoridade explícita para cliente e operação. */
     private ProductCatalogService roleAwareCatalog() {
         ProductCatalogService catalog = mock(ProductCatalogService.class);
@@ -224,6 +472,8 @@ class AccessServiceTest {
     private ProductCatalogService assistedDeliveryCatalog() {
         ProductCatalogService catalog = mock(ProductCatalogService.class);
         ProductExperienceResponse product = mock(ProductExperienceResponse.class);
+        when(product.slug()).thenReturn("kit-delivery");
+        when(product.experienceVersion()).thenReturn("kit-delivery-v1");
         when(product.missions()).thenReturn(List.of(
                 new ProductExperienceResponse.MissionDto(
                         "entrada-guiada", 1, "Entrada", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER"),
@@ -246,15 +496,51 @@ class AccessServiceTest {
                 new ProductExperienceResponse.MissionDto(
                         "primeira-aplicacao-e-revisao", 6, "Aplicação", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER")));
         when(catalog.getProduct("kit-delivery")).thenReturn(product);
+        when(catalog.getProductForRequest("kit-delivery", "", "", "kit-delivery-v1"))
+                .thenReturn(product);
+        return catalog;
+    }
+
+    /** Monta o contrato pago e versionado do Rigel usado nos testes de entitlement. */
+    private ProductCatalogService rigelPaidCatalog() {
+        ProductCatalogService catalog = mock(ProductCatalogService.class);
+        ProductExperienceResponse product = mock(ProductExperienceResponse.class);
+        when(product.slug()).thenReturn("kit-whatsapp-pronto");
+        when(product.experienceVersion()).thenReturn("kit-whatsapp-pronto-pde-v2");
+        when(product.missions()).thenReturn(List.of(
+                new ProductExperienceResponse.MissionDto(
+                        "entrada-guiada", 1, "Entrada", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER"),
+                new ProductExperienceResponse.MissionDto(
+                        "conferencia-de-completude", 2, "Conferência", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "diagnostico-humano", 3, "Diagnóstico", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "microvalor-12h", 4, "Microvalor", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "entrega-completa-48h",
+                        5,
+                        "Entrega",
+                        "Objetivo",
+                        "Ação",
+                        "Evidência",
+                        "Dica",
+                        "OPERATION",
+                        completeDeliveryContract()),
+                new ProductExperienceResponse.MissionDto(
+                        "primeira-aplicacao-e-revisao", 6, "Aplicação", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER")));
+        when(catalog.getProduct("kit-whatsapp-pronto")).thenReturn(product);
+        when(catalog.getProductForRequest(
+                        "kit-whatsapp-pronto", "", "", "kit-whatsapp-pronto-pde-v2"))
+                .thenReturn(product);
         return catalog;
     }
 
     /** Define o contrato mínimo do kit completo usado nos testes da entrega material. */
     private ProductExperienceResponse.DeliveryContractDto completeDeliveryContract() {
         return new ProductExperienceResponse.DeliveryContractDto(List.of(
-                new ProductExperienceResponse.DeliverySectionDto("responses", "Respostas", 10, 20),
-                new ProductExperienceResponse.DeliverySectionDto("qualificationQuestions", "Perguntas", 5, 10),
-                new ProductExperienceResponse.DeliverySectionDto("followUps", "Follow-ups", 3, 5),
+                new ProductExperienceResponse.DeliverySectionDto("responses", "Respostas", 15, 15),
+                new ProductExperienceResponse.DeliverySectionDto("qualificationQuestions", "Perguntas", 8, 8),
+                new ProductExperienceResponse.DeliverySectionDto("followUps", "Follow-ups", 4, 4),
                 new ProductExperienceResponse.DeliverySectionDto("escalationRules", "Regras", 1, 8),
                 new ProductExperienceResponse.DeliverySectionDto("usageGuide", "Guia", 3, 10),
                 new ProductExperienceResponse.DeliverySectionDto("checklist", "Checklist", 5, 20)));
@@ -262,13 +548,63 @@ class AccessServiceTest {
 
     /** Monta uma entrega completa com todos os itens exigidos pelo contrato. */
     private List<DeliverySectionRequest> completeDeliverySections() {
+        return deliverySectionsWithCounts(15, 8, 4);
+    }
+
+    /** Monta uma entrega parametrizada para testar os três limites comerciais independentes. */
+    private List<DeliverySectionRequest> deliverySectionsWithCounts(
+            int responses, int qualificationQuestions, int followUps) {
         return List.of(
-                new DeliverySectionRequest("responses", numberedItems("Resposta personalizada", 10)),
-                new DeliverySectionRequest("qualificationQuestions", numberedItems("Pergunta personalizada", 5)),
-                new DeliverySectionRequest("followUps", numberedItems("Follow-up manual", 3)),
+                new DeliverySectionRequest("responses", numberedItems("Resposta personalizada", responses)),
+                new DeliverySectionRequest(
+                        "qualificationQuestions", numberedItems("Pergunta personalizada", qualificationQuestions)),
+                new DeliverySectionRequest("followUps", numberedItems("Follow-up manual", followUps)),
                 new DeliverySectionRequest("escalationRules", List.of("Revisar pessoalmente toda exceção")),
                 new DeliverySectionRequest("usageGuide", numberedItems("Passo de uso", 3)),
                 new DeliverySectionRequest("checklist", numberedItems("Item de revisão", 5)));
+    }
+
+    /** Tenta concluir a entrega integral usando exatamente as seções informadas. */
+    private void completeFullDelivery(
+            AccessService accessService, String token, List<DeliverySectionRequest> deliverySections) {
+        accessService.completeOperationalMission(
+                token,
+                "entrega-completa-48h",
+                new OperationalMissionCompletionRequest(
+                        "Kit completo Studio Aurora", "kit-v1", null, deliverySections));
+    }
+
+    /** Executa toda a jornada assistida com evidência material de entrega e aplicação real. */
+    private void completeAssistedJourney(AccessService accessService, String token) {
+        if (accessService.getWorkspace(token).completedMissionIds().isEmpty()) {
+            saveCompleteBriefing(accessService, token);
+            accessService.completeMission(token, "entrada-guiada");
+            accessService.completeOperationalMission(token, "conferencia-de-completude");
+            accessService.completeOperationalMission(token, "diagnostico-humano");
+            accessService.completeOperationalMission(
+                    token,
+                    "microvalor-12h",
+                    new OperationalMissionCompletionRequest(
+                            "Microentrega Studio Aurora",
+                            "micro-v1",
+                            "Conteúdo individual com três respostas, duas perguntas e regras de escalonamento. "
+                                    + "A cliente deve revisar tudo antes do envio manual pelo WhatsApp."));
+            completeFullDelivery(accessService, token, completeDeliverySections());
+            accessService.saveMissionInteraction(
+                    token,
+                    "primeira-aplicacao-e-revisao",
+                    new MissionInteractionRequest(Map.of(
+                            "selectedResponses", "Respostas 1, 2 e 3",
+                            "qualificationBlock", "Perguntas 1 a 8",
+                            "escalationRule", "Revisão humana para toda exceção",
+                            "applicationStatus", "APPLIED",
+                            "applicationOutcome", "Resposta aplicada em conversa real",
+                            "applicationReview", "Tom e clareza revisados antes do envio")));
+            accessService.completeMission(token, "primeira-aplicacao-e-revisao");
+            return;
+        }
+        accessService.completeOperationalMission(token, "entrega-completa-48h", null);
+        accessService.completeMission(token, "primeira-aplicacao-e-revisao");
     }
 
     /** Gera itens distintos para provar quantidade material em cada seção. */
@@ -276,6 +612,13 @@ class AccessServiceTest {
         return java.util.stream.IntStream.rangeClosed(1, quantity)
                 .mapToObj(index -> prefix + " " + index + " ajustado ao Studio Aurora")
                 .toList();
+    }
+
+    /** Extrai o bearer do fragmento seguro emitido no link mágico usado pelo navegador. */
+    private String tokenFromAccessUrl(String accessUrl) {
+        String prefix = "/access#access=";
+        assertThat(accessUrl).startsWith(prefix);
+        return accessUrl.substring(prefix.length());
     }
 
     /** Salva o briefing completo antes de concluir a entrada da cliente. */
@@ -286,6 +629,28 @@ class AccessServiceTest {
                 "policies", "Hora marcada na região central",
                 "tone", "Acolhedor, profissional e direto",
                 "anonymousScenarios", "Cinco situações anonimizadas")));
+    }
+
+    /** Libera uma compra Mercado Pago do Rigel com o contrato comercial canônico. */
+    private AccessResponse releaseRigelPaidAccess(
+            AccessService accessService,
+            RigelPaidEntitlementService entitlementService,
+            String email,
+            String transactionId) {
+        entitlementService.recordInternalQaPayment(
+                email,
+                transactionId,
+                "approved",
+                "kit-whatsapp-pronto-pde-v2");
+        var login = accessService.requestMagicLink(
+                "kit-whatsapp-pronto", email, "kit-whatsapp-pronto-pde-v2");
+        String token = tokenFromAccessUrl(login.accessUrl());
+        return new AccessResponse(
+                token,
+                "kit-whatsapp-pronto",
+                email.toLowerCase(),
+                RigelPaidEntitlementService.PAID_SOURCE,
+                login.accessUrl());
     }
 
     /** Confirma que respostas de personalização do Dia 1 continuam disponíveis após reinício. */
@@ -309,6 +674,164 @@ class AccessServiceTest {
                 .contains("presenceFocus", "mainObstacle", "desiredSignal");
     }
 
+    /** Impede que e-mail sem compra crie acesso ou link mágico para o Rigel pago. */
+    @Test
+    void rejectsUnknownOrUnpaidRigelAccess() {
+        AccessService accessService = new AccessService(
+                rigelPaidCatalog(),
+                new ObjectMapper(),
+                tempDir.resolve("rigel-unpaid.json").toString());
+
+        assertThrows(SecurityException.class, () -> accessService.createAccess(
+                "kit-whatsapp-pronto",
+                "sem-compra@sandbox.local",
+                "MAGIC_LINK",
+                "kit-whatsapp-pronto-pde-v2"));
+        assertThrows(IllegalArgumentException.class, () -> accessService.requestMagicLink(
+                "kit-whatsapp-pronto",
+                "sem-compra@sandbox.local",
+                "kit-whatsapp-pronto-pde-v2"));
+    }
+
+    /** Libera exatamente a versão paga do Rigel e preserva o mesmo grant no retry Mercado Pago. */
+    @Test
+    void grantsOnlyExactRigelPaidVersionAndKeepsMercadoPagoRetryIdempotent() {
+        RigelPaidEntitlementService entitlementService =
+                new RigelPaidEntitlementService("", "", "");
+        AccessService accessService = new AccessService(
+                rigelPaidCatalog(),
+                new ObjectMapper(),
+                tempDir.resolve("rigel-paid.json").toString(),
+                entitlementService);
+
+        assertThrows(SecurityException.class, () -> entitlementService.recordInternalQaPayment(
+                "compradora@sandbox.local",
+                "rigel-wrong-version",
+                "approved",
+                "kit-whatsapp-pronto-pde-v1"));
+
+        AccessResponse first = releaseRigelPaidAccess(
+                accessService,
+                entitlementService,
+                "compradora@sandbox.local",
+                "rigel-paid-1");
+        AccessResponse replay = releaseRigelPaidAccess(
+                accessService,
+                entitlementService,
+                "compradora@sandbox.local",
+                "rigel-paid-1");
+        WorkspaceResponse workspace = accessService.getWorkspace(replay.token());
+        var loginLink = accessService.requestExistingMagicLink(
+                "kit-whatsapp-pronto", "compradora@sandbox.local");
+
+        assertThat(replay.token()).isEqualTo(first.token());
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("MERCADO_PAGO");
+        assertThat(workspace.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+        assertThat(loginLink.accessUrl()).isEqualTo(first.accessUrl());
+    }
+
+    /** Revoga todas as fronteiras pagas do Rigel sem bloquear suporte ou direitos de privacidade. */
+    @Test
+    void revokesEveryRigelPaidBoundaryWhileKeepingSupportAndPrivacy() {
+        RigelPaidEntitlementService entitlementService =
+                new RigelPaidEntitlementService("", "", "");
+        AccessService accessService = new AccessService(
+                rigelPaidCatalog(),
+                new ObjectMapper(),
+                tempDir.resolve("rigel-refund.json").toString(),
+                entitlementService);
+        AccessResponse access = releaseRigelPaidAccess(
+                accessService,
+                entitlementService,
+                "reembolso@sandbox.local",
+                "rigel-refund-1");
+
+        saveCompleteBriefing(accessService, access.token());
+        accessService.completeMission(access.token(), "entrada-guiada");
+        accessService.completeOperationalMission(access.token(), "conferencia-de-completude");
+        accessService.completeOperationalMission(access.token(), "diagnostico-humano");
+        accessService.completeOperationalMission(
+                access.token(),
+                "microvalor-12h",
+                new OperationalMissionCompletionRequest(
+                        "Microentrega Rigel",
+                        "micro-v1",
+                        "Conteúdo individual com três respostas, duas perguntas e regras de escalonamento. "
+                                + "A cliente deve revisar cada texto antes de qualquer envio manual pelo WhatsApp."));
+        accessService.completeOperationalMission(
+                access.token(),
+                "entrega-completa-48h",
+                new OperationalMissionCompletionRequest(
+                        "Kit completo Rigel",
+                        "kit-v1",
+                        null,
+                        completeDeliverySections()));
+
+        WorkspaceResponse activeWorkspace = accessService.getWorkspace(access.token());
+        assertThat(activeWorkspace.deliveryArtifacts()).allSatisfy(delivery ->
+                assertThat(delivery.downloadUrl())
+                        .startsWith("/api/pde/access/deliveries/")
+                        .doesNotContain(access.token()));
+        accessService.authorizeMaterialAccess(access.token());
+        assertThat(accessService.getDeliveryArtifact(access.token(), "entrega-completa-48h").content())
+                .contains("Resposta personalizada 1");
+
+        assertThat(entitlementService.recordInternalQaPayment(
+                        "reembolso@sandbox.local",
+                        "rigel-refund-1",
+                        "refunded",
+                        "kit-whatsapp-pronto-pde-v2")
+                .result())
+                .isEqualTo("DUPLICATE_OR_UPDATED");
+        assertThat(entitlementService.recordInternalQaPayment(
+                        "reembolso@sandbox.local",
+                        "rigel-refund-1",
+                        "refunded",
+                        "kit-whatsapp-pronto-pde-v2")
+                .result())
+                .isEqualTo("DUPLICATE_OR_UPDATED");
+
+        assertThrows(SecurityException.class, () -> accessService.getWorkspace(access.token()));
+        assertThrows(SecurityException.class, () -> accessService.saveMissionInteraction(
+                access.token(),
+                "primeira-aplicacao-e-revisao",
+                new MissionInteractionRequest(Map.of("applicationStatus", "APPLIED"))));
+        assertThrows(SecurityException.class, () -> accessService.completeMission(
+                access.token(), "primeira-aplicacao-e-revisao"));
+        assertThrows(SecurityException.class, () -> accessService.completeOperationalMission(
+                access.token(), "entrega-completa-48h"));
+        assertThrows(SecurityException.class, () -> accessService.authorizeMaterialAccess(access.token()));
+        assertThrows(SecurityException.class, () -> accessService.getDeliveryArtifact(
+                access.token(), "entrega-completa-48h"));
+
+        assertThat(accessService.requestSupport(access.token(), "Preciso revisar o reembolso.").supportStatus())
+                .isEqualTo("OPEN");
+        assertThat(accessService.executePrivacyAction(
+                        access.token(), new PrivacyActionRequest("ACCESS", null)).status())
+                .isEqualTo("COMPLETED");
+    }
+
+    /** Mantém o QA do Rigel segregado e preso à mesma versão revisada comercialmente. */
+    @Test
+    void allowsSegregatedRigelQaOnlyForCanonicalPaidVersion() {
+        AccessService accessService = new AccessService(
+                rigelPaidCatalog(),
+                new ObjectMapper(),
+                tempDir.resolve("rigel-qa.json").toString());
+
+        AccessResponse access = accessService.createInternalQaAccess(
+                "kit-whatsapp-pronto",
+                "teste+rigel-qa@sandbox.local",
+                "kit-whatsapp-pronto-pde-v2");
+
+        assertThat(accessService.getWorkspace(access.token()).accessSource()).isEqualTo("INTERNAL_QA");
+        assertThrows(SecurityException.class, () -> accessService.createInternalQaAccess(
+                "kit-whatsapp-pronto",
+                "teste+rigel-v1@sandbox.local",
+                "kit-whatsapp-pronto-pde-v1"));
+    }
+
     /** Confirma que o magic link cria acesso de entrada sem marcar assinatura ativa. */
     @Test
     void createsMagicLinkAccessAsTrial() {
@@ -319,7 +842,7 @@ class AccessServiceTest {
                 tempDir.resolve("access-grants.json").toString());
 
         var response = accessService.requestMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
-        String token = response.accessUrl().replace("/access/", "");
+        String token = tokenFromAccessUrl(response.accessUrl());
         WorkspaceResponse workspace = accessService.getWorkspace(token);
 
         assertThat(response.deliveryStatus()).isEqualTo("EMAIL_NOT_CONFIGURED");
@@ -366,32 +889,37 @@ class AccessServiceTest {
         assertThat(response.accessUrl()).isNull();
     }
 
-    /** Confirma que o Kit recebe link mágico no próprio domínio e nunca no domínio MUSA. */
+    /** Confirma que uma compra do Kit recebe link no próprio domínio e nunca no domínio MUSA. */
     @Test
     void sendsNonMusaMagicLinkToProductDomain() {
-        ProductCatalogService productCatalogService = mock(ProductCatalogService.class);
-        when(productCatalogService.getProduct("kit-whatsapp-pronto"))
-                .thenReturn(mock(ProductExperienceResponse.class));
+        ProductCatalogService productCatalogService = rigelPaidCatalog();
         CapturingMailService mailService = new CapturingMailService();
+        RigelPaidEntitlementService entitlementService =
+                new RigelPaidEntitlementService("", "", "");
         AccessService accessService = new AccessService(
                 productCatalogService,
                 new ObjectMapper(),
                 tempDir.resolve("kit-magic-link.json").toString(),
-                "",
-                "",
-                "",
-                false,
                 "http://localhost:5176",
                 false,
                 mailService,
-                null);
+                null,
+                entitlementService);
+        entitlementService.recordInternalQaPayment(
+                "prestador@sandbox.local",
+                "rigel-magic-link-1",
+                "approved",
+                "kit-whatsapp-pronto-pde-v2");
 
         var response = accessService.requestMagicLink(
-                "kit-whatsapp-pronto", "prestador@sandbox.local");
+                "kit-whatsapp-pronto",
+                "prestador@sandbox.local",
+                "kit-whatsapp-pronto-pde-v2");
 
         assertThat(response.deliveryStatus()).isEqualTo("SENT");
         assertThat(mailService.accessUrl)
-                .startsWith("https://kit-whatsapp-pronto.digicomdigital.com.br/access/")
+                .startsWith("https://kit-whatsapp-pronto.digicomdigital.com.br/access#access=")
+                .doesNotContain("/access/")
                 .doesNotContain("clubemusa.com.br");
     }
 
@@ -1817,6 +2345,89 @@ class AccessServiceTest {
         }
     }
 
+    /** Anonimiza a telemetria detalhada após 180 dias e preserva apenas fatos agregáveis. */
+    @Test
+    void anonymizesDetailedFunnelTelemetryAfterOneHundredEightyDays() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:pde_telemetry_retention;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPrivacyPersistenceSchema(jdbcUrl);
+        Instant reference = Instant.parse("2026-08-30T10:00:00Z");
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.prepareStatement("""
+                        INSERT INTO pde_funnel_event (
+                          event_id, product_slug, experience_version, access_token, email, normalized_email,
+                          event_type, provider, source, page_url, client_ip, user_agent,
+                          traffic_quality, traffic_quality_reason, traffic_provider,
+                          referrer_url, session_id, visitor_id, utm_source, utm_medium, utm_campaign,
+                          utm_content, utm_term, device_type, screen_width, screen_height,
+                          viewport_width, viewport_height, visible_ms, section_id, action_name,
+                          metadata_json, occurred_at
+                        ) VALUES (?, 'kit-whatsapp-pronto', 'kit-whatsapp-pronto-pde-v2',
+                          'access-reference', 'cliente@example.com', 'cliente@example.com',
+                          'PAGE_VIEW', 'pde-platform', 'pde-assisted-service',
+                          'https://kit-whatsapp-pronto.digicomdigital.com.br/', '203.0.113.10',
+                          'Mozilla/5.0', 'HUMAN', 'browser', 'direct',
+                          'https://origem.example/', 'session-private', 'visitor-private',
+                          'newsletter', 'email', 'rigel', 'hero', 'keyword', 'mobile',
+                          393, 852, 393, 852, 1500, 'hero', 'page-view',
+                          '{\"sessionId\":\"session-private\"}', ?)
+                        """)) {
+            statement.setString(1, "old-detailed-event");
+            statement.setTimestamp(2, Timestamp.from(reference.minusSeconds(181L * 24L * 60L * 60L)));
+            statement.executeUpdate();
+            statement.setString(1, "recent-detailed-event");
+            statement.setTimestamp(2, Timestamp.from(reference.minusSeconds(179L * 24L * 60L * 60L)));
+            statement.executeUpdate();
+        }
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("telemetry-retention.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                "",
+                mock(PdeDatabaseMigrationService.class),
+                null,
+                null);
+
+        assertThat(accessService.enforceDataRetention(reference)).isZero();
+        assertThat(accessService.enforceDataRetention(reference)).isZero();
+
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.prepareStatement("""
+                        SELECT event_id, product_slug, event_type, traffic_quality,
+                               access_token, email, normalized_email, page_url, client_ip, user_agent,
+                               referrer_url, session_id, visitor_id, utm_source, utm_medium, utm_campaign,
+                               utm_content, utm_term, device_type, screen_width, screen_height,
+                               viewport_width, viewport_height, visible_ms, section_id, action_name, metadata_json
+                        FROM pde_funnel_event
+                        ORDER BY event_id
+                        """);
+                var result = statement.executeQuery()) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getString("event_id")).isEqualTo("old-detailed-event");
+            assertThat(result.getString("product_slug")).isEqualTo("kit-whatsapp-pronto");
+            assertThat(result.getString("event_type")).isEqualTo("PAGE_VIEW");
+            assertThat(result.getString("traffic_quality")).isEqualTo("HUMAN");
+            for (String column : List.of(
+                    "access_token", "email", "normalized_email", "page_url", "client_ip", "user_agent",
+                    "referrer_url", "session_id", "visitor_id", "utm_source", "utm_medium", "utm_campaign",
+                    "utm_content", "utm_term", "device_type", "screen_width", "screen_height",
+                    "viewport_width", "viewport_height", "visible_ms", "section_id", "action_name",
+                    "metadata_json")) {
+                assertThat(result.getString(column)).as(column).isNull();
+            }
+            assertThat(result.next()).isTrue();
+            assertThat(result.getString("event_id")).isEqualTo("recent-detailed-event");
+            assertThat(result.getString("session_id")).isEqualTo("session-private");
+            assertThat(result.getString("client_ip")).isEqualTo("203.0.113.10");
+            assertThat(result.next()).isFalse();
+        }
+    }
+
     /** Confirma que todos os 7 dias possuem contrato de orientação por IA no backend. */
     @Test
     void acceptsAiGuidanceForAllSevenMusaDays() {
@@ -2144,27 +2755,36 @@ class AccessServiceTest {
                       token VARCHAR(120) PRIMARY KEY,
                       product_slug VARCHAR(120) NOT NULL,
                       email VARCHAR(191) NOT NULL,
+                      normalized_email VARCHAR(191) NOT NULL,
                       source VARCHAR(80) NOT NULL,
                       experience_version VARCHAR(80) NOT NULL DEFAULT '',
                       paid_at TIMESTAMP NULL,
                       expires_at TIMESTAMP NULL,
-                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      UNIQUE (product_slug, normalized_email)
                     )
                     """);
             statement.execute("""
                     CREATE TABLE pde_access_mission_completion (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
                       access_token VARCHAR(120) NOT NULL,
                       mission_id VARCHAR(120) NOT NULL,
-                      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      UNIQUE (access_token, mission_id)
                     )
                     """);
             statement.execute("""
                     CREATE TABLE pde_access_mission_interaction_answer (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
                       access_token VARCHAR(120) NOT NULL,
+                      product_slug VARCHAR(120) NOT NULL,
                       mission_id VARCHAR(120) NOT NULL,
                       question_key VARCHAR(120) NOT NULL,
-                      answer_text TEXT,
-                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                      answer_text TEXT NOT NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      UNIQUE (access_token, mission_id, question_key)
                     )
                     """);
             statement.execute("""

@@ -31,17 +31,17 @@ public class AssistedOperationController {
         this.operationToken = operationToken;
     }
 
-    /** Conclui uma etapa operacional sem conceder essa autoridade ao navegador da cliente. */
-    @PostMapping("/{token}/missions/{missionId}/complete")
+    /** Conclui a etapa operacional com os dois segredos fora do caminho HTTP. */
+    @PostMapping("/missions/{missionId}/complete")
     public WorkspaceResponse completeOperationalMission(
-            @PathVariable("token") String token,
             @PathVariable("missionId") String missionId,
             @RequestHeader(name = "X-PDE-Operation-Token", required = false) String informedToken,
+            @RequestHeader(name = "X-PDE-Access-Token", required = false) String accessToken,
             @Valid @RequestBody(required = false) OperationalMissionCompletionRequest request) {
         if (operationToken.isBlank() || !operationToken.equals(informedToken)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Operação PDE não autorizada");
         }
-        accessService.completeOperationalMission(token, missionId, request);
-        return accessService.getWorkspace(token);
+        accessService.completeOperationalMission(accessToken, missionId, request);
+        return accessService.getWorkspace(accessToken);
     }
 }

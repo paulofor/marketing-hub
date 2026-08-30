@@ -30,10 +30,10 @@ class ProductJourneyIntegrationControllerTest {
                                 "/api/pde/access/events",
                                 "/api/pde/access/analytics/{productSlug}/summary",
                                 "/api/pde/access/login-link",
-                                "/api/pde/access/{token}/workspace",
-                                "/api/pde/access/{token}/missions/{missionId}/complete",
+                                "/api/pde/access/workspace",
+                                "/api/pde/access/missions/{missionId}/complete",
                                 List.of("PAGE_VIEW", "PURCHASE_COMPLETED", "FIRST_USE"),
-                                List.of("eventId", "sessionId"),
+                                List.of("eventId", "sessionId", "accessReferenceHash"),
                                 "pde_funnel_event",
                                 "trafficQuality=INTERNAL_QA"));
         MockMvc mvc =

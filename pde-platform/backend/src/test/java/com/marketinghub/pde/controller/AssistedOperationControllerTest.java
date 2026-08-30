@@ -37,7 +37,8 @@ class AssistedOperationControllerTest {
         AccessService accessService = mock(AccessService.class);
         AssistedOperationController controller = new AssistedOperationController(accessService, "segredo-local");
 
-        assertThatThrownBy(() -> controller.completeOperationalMission("acesso", "diagnostico", "incorreto", null))
+        assertThatThrownBy(() ->
+                        controller.completeOperationalMission("diagnostico", "incorreto", "acesso", null))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("403");
         verifyNoInteractions(accessService);

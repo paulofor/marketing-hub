@@ -26,7 +26,9 @@ consultas e outra organiza somente os fatos coletados. Prompt, resposta bruta, m
 disponíveis e URLs ficam ligados ao ciclo. Se o modelo estiver desligado, o modo determinístico
 preserva a coleta, mas retorna zero candidatas em vez de repetir sugestões genéricas.
 
-A biblioteca interna é gerada deterministicamente por `npm run build:research-library`. O índice
+A biblioteca interna declara `/pesquisas` como fonte de verdade em
+`research-library/source-manifest.json` e é gerada deterministicamente por
+`npm run build:research-library`. O índice
 materializado na imagem preserva caminho, hash e trechos dos Markdown versionados de `/pesquisas`;
 esses artigos inspiram lentes de investigação, mas nunca substituem confirmação pública de demanda.
 

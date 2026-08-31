@@ -6,6 +6,7 @@ on:
     paths:
       - "product-discovery-worker/**"
       - "pesquisas/**"
+      - "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json"
       - "scripts/test-isolated-agent-codex-auth.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"
@@ -14,6 +15,7 @@ on:
     paths:
       - "product-discovery-worker/**"
       - "pesquisas/**"
+      - "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json"
       - "scripts/test-isolated-agent-codex-auth.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"

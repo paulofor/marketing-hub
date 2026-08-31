@@ -28,6 +28,21 @@ const researchLibraryIgnore = readFileSync(
   new URL("../research-library/.gitignore", import.meta.url),
   "utf8",
 );
+const researchLibrarySourceManifest = JSON.parse(
+  readFileSync(
+    new URL("../research-library/source-manifest.json", import.meta.url),
+    "utf8",
+  ),
+);
+const agentHarness = JSON.parse(
+  readFileSync(
+    new URL(
+      "../../backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
 
 test("instala certificados raiz antes do cliente Codex", () => {
   const certificates = dockerfile.indexOf("ca-certificates");
@@ -109,6 +124,30 @@ test("materializa a biblioteca vigente antes dos testes e da imagem", () => {
     dockerJob.indexOf("npm run build:research-library") <
       dockerJob.indexOf("docker/build-push-action@v5"),
     "[ARQUITETURA] A imagem deve regenerar o índice a partir do checkout vigente antes do build.",
+  );
+});
+
+test("mantém a fonte viva no harness sem anunciar o índice derivado como versionado", () => {
+  const marketRadar = agentHarness.agents.find(
+    (agent) => agent.agentKey === "market-radar",
+  );
+  const knowledgeBase = marketRadar?.artifacts.find(
+    (artifact) => artifact.artifactType === "KNOWLEDGE_BASE",
+  );
+
+  assert.equal(researchLibrarySourceManifest.sourceRoot, "pesquisas");
+  assert.equal(
+    researchLibrarySourceManifest.sourceGlob,
+    "pesquisas/**/*.md",
+  );
+  assert.equal(
+    researchLibrarySourceManifest.generatedArtifactPath,
+    "product-discovery-worker/research-library/index.json",
+  );
+  assert.equal(
+    knowledgeBase?.path,
+    "product-discovery-worker/research-library/source-manifest.json",
+    "[ARQUITETURA] O harness deve apontar ao contrato versionado da biblioteca, não ao índice derivado e ignorado.",
   );
 });
 

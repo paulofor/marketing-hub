@@ -22,6 +22,7 @@ ser concluída por uma pessoa com um único aceite, sem criar campanha, gasto, c
 | Desktop | Chromium 1440 × 1000 | resumo e botão principal visíveis sem formulário técnico | captura Playwright |
 | Mobile | iPhone 15 Pro | botão ocupa largura útil e recusa permanece secundária | captura Playwright |
 | Mobile | Pixel 7 | resumo, evidências expansíveis e aceite sem rolagem lateral | captura Playwright |
+| Publicação | backend atualizado e bundle anterior no host | detector compara a revisão real de `/healthz`, recompila o frontend defasado e só marca o deploy após a revisão esperada responder | contrato de deploy e healthz |
 
 ## Critério de conclusão
 

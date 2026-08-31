@@ -296,16 +296,108 @@
   border-radius: 12px;
   background: #fff;
   color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
-.independent-process-history__item.is-selected {
+.independent-process-history__item:hover,
+.independent-process-history__item:focus-visible {
   border-color: var(--independent-green);
   background: var(--independent-mint);
+  box-shadow: 0 6px 18px rgb(21 53 43 / 10%);
+  color: inherit;
+  transform: translateY(-1px);
 }
 
 .independent-process-history__item > span:not(.independent-process-status),
 .independent-process-history__item small {
   color: #6a7a75;
+}
+
+.independent-process-history__error {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 9px;
+  margin-top: 5px;
+  border-radius: 9px;
+  background: #fff1f1;
+  color: #842323;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.independent-process-history__error > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.independent-process-history__error > span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.independent-process-history__error strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.independent-process-history__action {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  justify-self: end;
+  margin-top: 5px;
+  color: var(--independent-green);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.independent-process-detail-page__header {
+  display: grid;
+  gap: 16px;
+}
+
+.independent-process-detail-page__back {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-self: start;
+}
+
+.independent-process-blocked-guidance {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid #f0b6b6;
+  border-radius: 16px;
+  background: #fff4f4;
+  color: #722020;
+}
+
+.independent-process-blocked-guidance h2 {
+  margin: 0 0 4px;
+  font-size: 1.08rem;
+}
+
+.independent-process-blocked-guidance p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.independent-process-blocked-guidance .btn {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .independent-process-status {
@@ -816,6 +908,12 @@
   .independent-process-channel {
     width: fit-content;
     white-space: normal;
+  }
+  .independent-process-blocked-guidance {
+    grid-template-columns: 1fr;
+  }
+  .independent-process-blocked-guidance .btn {
+    width: 100%;
   }
   .independent-process-flow-overview__step-wrap,
   .independent-process-candidate__stage-wrap {

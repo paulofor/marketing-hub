@@ -6719,3 +6719,36 @@
   carregamento real da busca antes de substituir o worker.
 - A publicação só prossegue com `credential=CONFIGURED`; a credencial nunca entra em log. Isso
   protege a coleta factual que antecede decisões de mercado, sem tratar evidência como venda.
+
+## 2026-08-31 — Argos: três solicitações bloqueadas antes da pesquisa
+
+- **Evidência produtiva:** as execuções independentes 6, 7 e 8 criaram corretamente os ciclos
+  45–47 e as tarefas 285–287, mas todas terminaram `BLOCKED` sem planejamento, pesquisa, candidata
+  ou produto. Logs, detalhe da API e banco registraram a mesma recusa de leitura do `config.toml`.
+- **Causa-raiz confirmada pelo histórico:** o diretório persistente da sessão era criado por `root`
+  com modo `0700`, incompatível com o usuário `node` da imagem. O workflow posterior aparentou
+  sucesso porque o preflight Compose consumiu o restante do heredoc e não reiniciou nem validou o
+  worker; o processo antigo continuou `DEGRADED`.
+- **Correção local:** o deploy passa a reconciliar a sessão pelo UID/GID real, validar Codex e Brave
+  dentro da imagem, preservar o restante do script remoto e exigir recriação e saúde. A prova de
+  Codex é `codex login status` no diretório exclusivo e gravável do agente; `config.toml` pode não
+  existir em uma sessão válida e não é usado como gate isolado. O histórico mostra a causa no próprio
+  cartão, cada solicitação ganha uma rota de detalhe e um comando idempotente de nova tentativa com
+  a mesma entrada.
+- **Métrica esperada:** 100% das novas solicitações devem produzir resultado factual ou bloqueio
+  funcional explicado, nunca uma falha de permissão; continuar com health `UP` e tarefa concluída,
+  ajustar diante de fonte externa bloqueada e parar se Codex ou Brave perderem prontidão.
+- Nenhuma campanha, orçamento, contato, gasto, venda ou receita foi criado nesta correção.
+
+## 2026-08-31 — Rigel: autorização simples protegida contra frontend defasado
+
+- **Gargalo real:** o backend já expunha a autorização de um clique do Rigel, mas a tela publicada
+  ainda carregava um bundle anterior e exigia responsável, justificativa e evidência; com `ok`, a
+  justificativa de dois caracteres mantinha o botão desabilitado.
+- **Causa-raiz:** uma falha anterior reverteu frontend e backend; o deploy posterior atualizou só o
+  backend e o marcador global não comprovava a revisão real da superfície estática.
+- **Correção preparada:** o deploy passa a comparar o histórico do frontend com a revisão declarada
+  no seu `/healthz`, reconstrói a imagem quando ela estiver defasada e valida essa revisão antes de
+  registrar a publicação como bem-sucedida.
+- **Impacto comercial esperado:** a decisão humana volta a ser um aceite simples e auditável, sem
+  criar campanha, contato, gasto ou venda.

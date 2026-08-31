@@ -2504,6 +2504,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   no backend; aprovação exige um único comando, reprovação continua exigindo o motivo e atividades
   sem contexto auditável permanecem bloqueadas. Testes de backend, frontend e navegação responsiva
   impedem que essa etapa volte a expor campos que o sistema já conhece.
+- **Fechamento de paridade de publicação em 2026-08-31:** a correção do aceite simples chegou ao
+  backend, mas uma falha de deploy reverteu o bundle do frontend. Um deploy posterior apenas de
+  backend avançou o marcador global e a tela continuou exibindo o formulário antigo. O deploy agora
+  compara as mudanças do frontend com a revisão efetivamente exposta em `/healthz`, força a imagem
+  quando a superfície estiver defasada e recusa marcar sucesso enquanto o healthz não confirmar a
+  revisão esperada. Os testes simulam marcador global adiantado, frontend defasado e healthz ausente.
 
 ## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
 
@@ -2602,3 +2608,19 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes cobrem origem ausente, permissão `0400`, ausência de segredo nos logs e ordem
   `pull → preparação → preflight → publicação`. Assim, drift de proprietário ou modo bloqueia o
   deploy antes de trocar um worker saudável.
+- **Correção complementar da sessão Codex em 2026-08-31:** as execuções independentes 6, 7 e 8
+  abriram os ciclos 45, 46 e 47, mas as tarefas 285–287 bloquearam antes do planejamento com
+  `Permission denied` ao ler `/home/node/.codex/config.toml`. O deploy criava o volume da sessão com
+  modo `0700` e proprietário `root`, embora a imagem execute como `node`. O primeiro `docker compose
+  run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comandos posteriores e
+  permitia um workflow verde sem `compose up` nem health final. O publicador agora deriva UID/GID da
+  imagem, reconcilia a árvore da sessão sem seguir links simbólicos, comprova leitura, escrita e
+  identidade Codex dentro da imagem, executa ambos os preflights com `-T` e `</dev/null>` e força a
+  recriação antes do gate de saúde. Testes de contrato protegem permissões, ordem e continuidade do
+  script remoto.
+- **Ajuste confirmado por SSH em 2026-08-31:** a sessão exclusiva de Argos continha `auth.json`
+  válido, mas não possuía `config.toml`; em uma execução isolada e somente leitura da mesma imagem,
+  `codex login status` confirmou a identidade sem esse arquivo. Exigir `config.toml` no preflight
+  criaria um bloqueio falso após a correção de permissões. O gate passa a exigir diretório próprio
+  gravável e a confirmação autoritativa `codex login status`, preservando a reconciliação segura de
+  proprietário, o stdin fechado, a recriação forçada e o health final.

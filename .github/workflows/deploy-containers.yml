@@ -84,7 +84,21 @@ jobs:
             exit 1
           fi
 
-          bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}"
+          deployed_frontend_revision="UNKNOWN"
+          for attempt in 1 2 3; do
+            if frontend_health="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "curl -fsS --max-time 10 http://localhost:5173/healthz" 2>/dev/null)" \
+              && deployed_frontend_revision="$(printf '%s\n' "${frontend_health}" | bash scripts/read-frontend-build-revision.sh 2>/dev/null)"; then
+              break
+            fi
+            sleep $((attempt * 5))
+          done
+
+          printf 'Revisão observada do frontend: %s\n' "${deployed_frontend_revision}"
+          bash scripts/detect-deployment-changes.sh \
+            "${base}" \
+            "${GITHUB_SHA}" \
+            "${GITHUB_OUTPUT}" \
+            "${deployed_frontend_revision}"
 
       - name: Validate transactional app deploy contract
         run: |
@@ -537,6 +551,24 @@ jobs:
             bash "${DEPLOY_DIR}/bin/backend-health.sh" \
               http://localhost:8000/ops-mh-observability-v2/health
           REMOTE
+
+      - name: Require deployed frontend revision
+        if: needs.detect-changes.outputs.frontend == 'true'
+        env:
+          GIT_SHA: ${{ github.sha }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          set -euo pipefail
+          frontend_health="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+            "curl -fsS --max-time 10 http://localhost:5173/healthz")"
+          deployed_frontend_revision="$(printf '%s\n' "${frontend_health}" | bash scripts/read-frontend-build-revision.sh)"
+
+          if [[ "${deployed_frontend_revision}" != "${GIT_SHA}" ]]; then
+            echo "Frontend publicado em revisão divergente: esperado=${GIT_SHA} observado=${deployed_frontend_revision}" >&2
+            exit 1
+          fi
+
+          echo "Frontend confirmou a revisão publicada ${deployed_frontend_revision}."
 
       - name: Mark successful APP revision
         env:

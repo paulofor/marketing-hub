@@ -1,5 +1,6 @@
 import axios from "axios";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
@@ -20,11 +21,11 @@ import {
 import { toast } from "react-toastify";
 import {
   useIndependentBusinessProcessCatalog,
-  useIndependentBusinessProcessExecution,
   useIndependentBusinessProcessExecutions,
   useStartIndependentBusinessProcessExecution,
 } from "../../api/businessProcess/useIndependentBusinessProcessExecutions";
 import type {
+  IndependentBusinessProcessExecution,
   IndependentBusinessProcessFlowReport,
   IndependentBusinessProcessExecutionSummary,
   IndependentBusinessProcessInputField,
@@ -42,7 +43,7 @@ const statusLabels: Record<string, string> = {
   CANCELLED: "Cancelada",
 };
 
-function createRequestKey() {
+export function createIndependentExecutionRequestKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   const random =
     `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`
@@ -78,10 +79,11 @@ function formatCost(value?: number, coverage?: string) {
   }).format(value)}${coverage === "PARTIAL" ? " (parcial)" : ""}`;
 }
 
-function requestError(error: unknown) {
+export function independentExecutionRequestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    { detail?: string; message?: string; error?: string } | undefined;
+    | { detail?: string; message?: string; error?: string }
+    | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -97,14 +99,16 @@ function defaultInputs(fields: IndependentBusinessProcessInputField[]) {
 }
 
 export default function IndependentBusinessProcessExecutionsPage() {
+  const navigate = useNavigate();
   const catalogQuery = useIndependentBusinessProcessCatalog();
   const executionsQuery = useIndependentBusinessProcessExecutions();
   const start = useStartIndependentBusinessProcessExecution();
   const [selectedProcessId, setSelectedProcessId] = useState<number>();
-  const [selectedExecutionId, setSelectedExecutionId] = useState<number>();
   const [requestedByName, setRequestedByName] = useState("Marketing Hub");
   const [input, setInput] = useState<Record<string, string>>({});
-  const [requestKey, setRequestKey] = useState(createRequestKey);
+  const [requestKey, setRequestKey] = useState(
+    createIndependentExecutionRequestKey,
+  );
   const catalog = catalogQuery.data ?? [];
   const executions = executionsQuery.data ?? [];
   const selectedProcess = useMemo(
@@ -112,9 +116,6 @@ export default function IndependentBusinessProcessExecutionsPage() {
       catalog.find((item) => item.processDefinitionId === selectedProcessId),
     [catalog, selectedProcessId],
   );
-  const detailQuery =
-    useIndependentBusinessProcessExecution(selectedExecutionId);
-
   useEffect(() => {
     if (selectedProcessId !== undefined || catalog.length === 0) return;
     const first = catalog.find((item) => item.executionAvailable) ?? catalog[0];
@@ -124,13 +125,8 @@ export default function IndependentBusinessProcessExecutionsPage() {
   useEffect(() => {
     if (!selectedProcess) return;
     setInput(defaultInputs(selectedProcess.inputFields));
-    setRequestKey(createRequestKey());
+    setRequestKey(createIndependentExecutionRequestKey());
   }, [selectedProcess]);
-
-  useEffect(() => {
-    if (selectedExecutionId !== undefined || executions.length === 0) return;
-    setSelectedExecutionId(executions[0].id);
-  }, [executions, selectedExecutionId]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -144,13 +140,13 @@ export default function IndependentBusinessProcessExecutionsPage() {
           Object.entries(input).filter(([, value]) => value.trim() !== ""),
         ),
       });
-      setSelectedExecutionId(result.execution.id);
-      setRequestKey(createRequestKey());
+      setRequestKey(createIndependentExecutionRequestKey());
       toast.success(
         "Processo iniciado e tarefa encaminhada ao agente responsável.",
       );
+      navigate(`/business-process-executions/${result.execution.id}`);
     } catch (error) {
-      toast.error(requestError(error));
+      toast.error(independentExecutionRequestError(error));
     }
   };
 
@@ -378,13 +374,10 @@ export default function IndependentBusinessProcessExecutionsPage() {
               ) : null}
               <div className="independent-process-history__list">
                 {executions.map((execution) => (
-                  <button
-                    type="button"
+                  <Link
                     key={execution.id}
-                    className={`independent-process-history__item ${
-                      execution.id === selectedExecutionId ? "is-selected" : ""
-                    }`}
-                    onClick={() => setSelectedExecutionId(execution.id)}
+                    className="independent-process-history__item"
+                    to={`/business-process-executions/${execution.id}`}
                   >
                     <span
                       className={`independent-process-status ${statusClass(execution.status)}`}
@@ -402,7 +395,20 @@ export default function IndependentBusinessProcessExecutionsPage() {
                       {execution.completedActivityCount}/
                       {execution.activityCount} atividades
                     </small>
-                  </button>
+                    {execution.latestError ? (
+                      <span className="independent-process-history__error">
+                        <AlertCircle size={16} aria-hidden="true" />
+                        <span>
+                          <strong>Por que não executou</strong>
+                          {execution.latestError}
+                        </span>
+                      </span>
+                    ) : null}
+                    <span className="independent-process-history__action">
+                      Ver detalhes
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </span>
+                  </Link>
                 ))}
                 {!executionsQuery.isLoading && executions.length === 0 ? (
                   <p className="text-body-secondary mb-0">
@@ -413,14 +419,6 @@ export default function IndependentBusinessProcessExecutionsPage() {
             </div>
           </aside>
         </section>
-      ) : null}
-
-      {selectedExecutionId !== undefined ? (
-        <ExecutionDetail
-          loading={detailQuery.isLoading}
-          error={detailQuery.isError}
-          detail={detailQuery.data}
-        />
       ) : null}
     </div>
   );
@@ -522,16 +520,22 @@ function AutonomousDiscoveryFlow() {
 type ExecutionDetailProps = {
   loading: boolean;
   error: boolean;
-  detail?: ReturnType<typeof useIndependentBusinessProcessExecution>["data"];
+  detail?: IndependentBusinessProcessExecution;
 };
 
-function ExecutionDetail({ loading, error, detail }: ExecutionDetailProps) {
-  if (loading)
+export function IndependentBusinessProcessExecutionDetail({
+  loading,
+  error,
+  detail,
+}: ExecutionDetailProps) {
+  if (loading && !detail)
     return <div className="card card-body">Carregando execução...</div>;
-  if (error || !detail) {
+  if (!detail) {
     return (
       <div className="alert alert-danger">
-        Não foi possível detalhar a execução.
+        {error
+          ? "Não foi possível detalhar a execução."
+          : "A execução ainda não possui detalhe disponível."}
       </div>
     );
   }

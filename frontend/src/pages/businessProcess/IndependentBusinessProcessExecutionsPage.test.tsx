@@ -2,14 +2,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axios from "axios";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   IndependentBusinessProcessExecution,
   IndependentBusinessProcessFlowReport,
   IndependentBusinessProcessExecutionSummary,
+  StartIndependentBusinessProcessExecution,
 } from "../../api/businessProcess/types";
 import IndependentBusinessProcessExecutionsPage from "./IndependentBusinessProcessExecutionsPage";
+import IndependentBusinessProcessExecutionDetailPage from "./IndependentBusinessProcessExecutionDetailPage";
 
 vi.mock("axios");
 
@@ -197,14 +199,23 @@ function detail(execution = summary): ExecutionDetailFixture {
   };
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/business-process-executions") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <IndependentBusinessProcessExecutionsPage />
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route
+            path="/business-process-executions"
+            element={<IndependentBusinessProcessExecutionsPage />}
+          />
+          <Route
+            path="/business-process-executions/:executionId"
+            element={<IndependentBusinessProcessExecutionDetailPage />}
+          />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -327,7 +338,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       throw new Error(`URL inesperada: ${url}`);
     });
 
-    renderPage();
+    renderPage("/business-process-executions/91");
 
     const productLink = await screen.findByRole("link", {
       name: "Abrir produto #901",
@@ -362,15 +373,58 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       }
       throw new Error(`URL inesperada: ${url}`);
     });
+    const retriedBlocked = {
+      ...blocked,
+      id: 92,
+      requestKey: "8c819fc2-32a6-4a0c-86bf-0a88406ceba0",
+      sourceReference: "product-discovery-cycle:78",
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: detail(retriedBlocked),
+    });
 
+    const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByText("Causa registrada:")).toBeInTheDocument();
+    expect(await screen.findByText("Por que não executou")).toBeInTheDocument();
     expect(
       screen.getAllByText("Fonte pública recusou a consulta.").length,
     ).toBeGreaterThan(0);
+    const detailLink = screen.getByRole("link", {
+      name: /#91.*Ver detalhes/i,
+    });
+    expect(detailLink).toHaveAttribute(
+      "href",
+      "/business-process-executions/91",
+    );
+    await user.click(detailLink);
+
+    expect(await screen.findByText("Causa registrada:")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Esta tentativa não executou" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Bloqueada").length).toBeGreaterThan(0);
     expect(screen.queryByText("Venda")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
+    const firstRetry = vi.mocked(axios.post).mock
+      .calls[0][1] as StartIndependentBusinessProcessExecution;
+    expect(firstRetry).toMatchObject({
+      processDefinitionId: 52,
+      requestedByName: "Marketing Hub",
+      input: blocked.input,
+    });
+    expect(
+      await screen.findByRole("heading", {
+        name: "Execução #92 · agenda vazia para manicures",
+      }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(2));
+    const secondRetry = vi.mocked(axios.post).mock
+      .calls[1][1] as StartIndependentBusinessProcessExecution;
+    expect(secondRetry.requestKey).not.toBe(firstRetry.requestKey);
   });
 
   it("registra observação oficial e reabre Argos na mesma sessão Meta", async () => {
@@ -483,7 +537,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     });
     const user = userEvent.setup();
 
-    renderPage();
+    renderPage("/business-process-executions/91");
 
     expect(
       await screen.findByRole("heading", {

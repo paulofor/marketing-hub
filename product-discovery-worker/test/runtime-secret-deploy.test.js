@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,6 +22,14 @@ const prepareScript = join(
 const validateScript = join(
   moduleDirectory,
   "../scripts/validate-runtime-search-config.mjs",
+);
+const prepareCodexHomeScript = join(
+  moduleDirectory,
+  "../scripts/prepare-codex-runtime-home.sh",
+);
+const workflowPath = join(
+  moduleDirectory,
+  "../../.github/workflows/product-discovery-worker-ci.yml",
 );
 
 test("prepara uma cópia protegida da chave para o usuário do runtime", () => {
@@ -111,3 +121,106 @@ function runtimeEnvironment(keyPath) {
   delete env.BRAVE_API_KEY;
   return env;
 }
+
+test("reconcilia a sessão Codex para o UID do container sem revelar seu conteúdo", () => {
+  const directory = mkdtempSync(join(tmpdir(), "argos-codex-home-"));
+  const codexHome = join(directory, "codex-home");
+  const nestedDirectory = join(codexHome, "state");
+  const configPath = join(codexHome, "config.toml");
+  const authPath = join(nestedDirectory, "auth.json");
+  const privateValue = "session-test-value-never-log";
+  mkdirSync(nestedDirectory, { recursive: true, mode: 0o755 });
+  writeFileSync(configPath, "model = 'test'\n", { mode: 0o644 });
+  writeFileSync(authPath, privateValue, { mode: 0o644 });
+
+  try {
+    const result = spawnSync(
+      "bash",
+      [
+        prepareCodexHomeScript,
+        codexHome,
+        String(process.getuid()),
+        String(process.getgid()),
+      ],
+      { encoding: "utf8" },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(statSync(codexHome).mode & 0o777, 0o700);
+    assert.equal(statSync(nestedDirectory).mode & 0o777, 0o700);
+    assert.equal(statSync(configPath).mode & 0o777, 0o600);
+    assert.equal(statSync(authPath).mode & 0o777, 0o600);
+    assert.equal(result.stdout.includes(privateValue), false);
+    assert.equal(result.stderr.includes(privateValue), false);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("recusa reconciliar uma sessão Codex que contém link simbólico", () => {
+  const directory = mkdtempSync(join(tmpdir(), "argos-codex-symlink-"));
+  const codexHome = join(directory, "codex-home");
+  const outside = join(directory, "outside");
+  mkdirSync(codexHome, { mode: 0o700 });
+  writeFileSync(outside, "não alterar", { mode: 0o600 });
+  symlinkSync(outside, join(codexHome, "auth.json"));
+
+  try {
+    const result = spawnSync(
+      "bash",
+      [
+        prepareCodexHomeScript,
+        codexHome,
+        String(process.getuid()),
+        String(process.getgid()),
+      ],
+      { encoding: "utf8" },
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /link simbólico/);
+    assert.equal(readFileSync(outside, "utf8"), "não alterar");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("o deploy valida Brave e Codex sem consumir o restante do script remoto", () => {
+  const workflow = readFileSync(workflowPath, "utf8");
+  const pullIndex = workflow.indexOf(
+    'docker compose "${compose_files[@]}" pull',
+  );
+  const codexHomeIndex = workflow.indexOf("prepare-codex-runtime-home.sh");
+  const braveSecretIndex = workflow.indexOf("prepare-brave-runtime-secret.sh");
+  const searchPreflightIndex = workflow.indexOf(
+    "validate-runtime-search-config.mjs",
+  );
+  const codexPreflightIndex = workflow.indexOf("codex login status");
+  const publishIndex = workflow.indexOf(
+    "up -d --force-recreate --remove-orphans",
+  );
+
+  assert.ok(pullIndex >= 0);
+  assert.ok(pullIndex < codexHomeIndex);
+  assert.ok(codexHomeIndex < braveSecretIndex);
+  assert.ok(braveSecretIndex < searchPreflightIndex);
+  assert.ok(searchPreflightIndex < codexPreflightIndex);
+  assert.ok(codexPreflightIndex < publishIndex);
+  assert.match(
+    workflow,
+    /run -T --rm --no-deps --entrypoint node[\s\S]*?validate-runtime-search-config\.mjs[\s\\]*?<\/dev\/null/,
+  );
+  assert.match(
+    workflow,
+    /run -T --rm --no-deps --entrypoint sh[\s\S]*?codex login status >\/dev\/null'[\s\\]*?<\/dev\/null/,
+  );
+  assert.match(
+    workflow,
+    /test -d "\$CODEX_HOME" && test -w "\$CODEX_HOME" && codex login status >\/dev\/null/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /test -r "\$CODEX_HOME\/config\.toml"/,
+    "A prontidão de Argos deve ser comprovada pelo Codex, não por um arquivo opcional.",
+  );
+});

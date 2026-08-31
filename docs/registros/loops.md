@@ -2560,3 +2560,23 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** teste de contrato exige geração anterior a `npm test` e anterior ao build da imagem.
   Assim, o PR continua expondo drift auditável e um merge aceito sem respeitar o check não consegue
   publicar uma imagem de Argos com biblioteca factual antiga.
+
+## LOOP-ARGOS-SECRET-BRAVE-ILEGIVEL — arquivo existe no host, mas o runtime não consegue pesquisá-lo
+
+- **Data:** 2026-08-31.
+- **Sintoma:** o workflow `Product Discovery Worker CI` da execução `33343796393` construiu e puxou
+  a imagem, mas falhou no pós-deploy após 24 respostas HTTP 503. O payload produtivo informou
+  `activeSearchProvider=brave`, `keySource=file` e `keyStatus=MISSING`, embora a validação no host
+  tivesse confirmado um arquivo não vazio.
+- **Causa-raiz confirmada pelo runtime e pela reprodução local:** o Docker secret preservava o
+  arquivo operacional restrito a `root`, enquanto a imagem executa como usuário `node`. A leitura
+  com o usuário não privilegiado reproduziu `EACCES`; a mesma cópia com proprietário do runtime e
+  modo `0400` foi lida. O workflow validava a existência no host, mas não a legibilidade dentro da
+  imagem antes de substituir o serviço.
+- **Correção sistêmica:** o deploy deriva UID/GID da imagem, prepara uma cópia protegida sob a pasta
+  privada de Argos, monta somente essa cópia e executa um preflight dentro da imagem exata antes do
+  `compose up`. O gate final exige simultaneamente health `UP`, credencial `CONFIGURED` e log
+  operacional.
+- **Prevenção:** testes cobrem origem ausente, permissão `0400`, ausência de segredo nos logs e ordem
+  `pull → preparação → preflight → publicação`. Assim, drift de proprietário ou modo bloqueia o
+  deploy antes de trocar um worker saudável.

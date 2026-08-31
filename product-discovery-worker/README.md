@@ -86,9 +86,12 @@ A chave deve existir no servidor em:
 /root/infra/brave-token/brave_api_key
 ```
 
-O compose de produção monta esse arquivo como Docker secret em
-`/run/secrets/brave_search_api_key` e o worker lê pelo
-`BRAVE_SEARCH_API_KEY_FILE`.
+O workflow preserva esse arquivo operacional sob controle de `root`, deriva o
+UID/GID não privilegiado da imagem e cria uma cópia modo `0400` em
+`/root/infra/argos/secrets/brave_search_api_key`. Antes de substituir o serviço,
+ele monta essa cópia como Docker secret em `/run/secrets/brave_search_api_key` e
+executa o mesmo carregamento usado pelo worker. Ausência, arquivo vazio ou falta
+de permissão bloqueiam o deploy sem imprimir a credencial.
 
 ## Health operacional
 

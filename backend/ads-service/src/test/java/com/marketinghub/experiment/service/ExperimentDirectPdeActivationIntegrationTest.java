@@ -132,6 +132,12 @@ class ExperimentDirectPdeActivationIntegrationTest {
         .anyMatch(detail -> detail.contains("ausência de gasto"));
     assertThat(readiness.confirmationMessage().replace('\u00a0', ' '))
         .contains("15 contatos", "R$ 540,00");
+    assertThat(readiness.decisionMode()).isEqualTo("REVIEW_AND_ACCEPT");
+    assertThat(readiness.auditEvidenceReference())
+        .contains(
+            "experiment:" + fixture.experimentId(),
+            "experiment-run:" + fixture.runId(),
+            "commercial-plan:");
   }
 
   /** Mantém o formulário bloqueado quando READY_TO_PUBLISH não possui toda a prova funcional. */

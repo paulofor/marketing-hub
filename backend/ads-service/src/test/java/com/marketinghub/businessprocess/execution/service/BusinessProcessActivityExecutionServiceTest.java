@@ -487,9 +487,9 @@ class BusinessProcessActivityExecutionServiceTest {
     ProductProcessActivityExecutionRequest request =
         new ProductProcessActivityExecutionRequest(
             "APPROVE",
-            "Paulo Operador",
-            "Gates e teto financeiro foram revisados.",
-            "experiment-run:12",
+            null,
+            null,
+            null,
             "CONFIRM:pde-commercial-homologation-activation:authorization");
     HumanProductProcessActivityReadiness readiness =
         new HumanProductProcessActivityReadiness(
@@ -502,7 +502,9 @@ class BusinessProcessActivityExecutionServiceTest {
             request.confirmationToken(),
             "EXPERIMENT_ACTIVATION",
             89L,
-            List.of());
+            List.of(),
+            HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
+            "experiment:89; experiment-run:12; commercial-plan:4");
     when(processes.findById(56L)).thenReturn(Optional.of(process));
     when(products.findById(9L)).thenReturn(Optional.of(product));
     when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
@@ -532,6 +534,9 @@ class BusinessProcessActivityExecutionServiceTest {
               assertThat(activity.executionControl().executorType()).isEqualTo("HUMAN");
               assertThat(activity.executionControl().interactionType()).isEqualTo("APPROVAL");
               assertThat(activity.executionControl().actionAvailable()).isTrue();
+              assertThat(activity.executionControl().decisionMode()).isEqualTo("REVIEW_AND_ACCEPT");
+              assertThat(activity.executionControl().auditEvidenceReference())
+                  .isEqualTo("experiment:89; experiment-run:12; commercial-plan:4");
             });
     assertThat(result.operationalState()).isEqualTo("COMPLETED");
     verify(humanExecutor).execute(process, authorization, product, "experiment:89", request);

@@ -385,13 +385,15 @@ export type ProductProcessActivityExecutionControl = {
   workspaceReferenceId?: number;
   targetProcessDefinitionId?: number;
   requirements: ProductProcessActivityRequirement[];
+  decisionMode?: "DETAILED" | "REVIEW_AND_ACCEPT";
+  auditEvidenceReference?: string;
 };
 
 export type ProductProcessActivityHumanDecision = {
   decision: "APPROVE" | "REJECT";
-  operatorName: string;
-  justification: string;
-  evidenceReference: string;
+  operatorName?: string;
+  justification?: string;
+  evidenceReference?: string;
   confirmationToken: string;
 };
 

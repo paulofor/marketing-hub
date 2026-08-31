@@ -2498,6 +2498,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   sem reescrever a ocorrência histórica bloqueada; o período do macroprocesso registra
   `AUDITED_PRODUCTION_PREFLIGHT` como fonte posterior da reconciliação. Os códigos dos gates foram
   centralizados para impedir nova divergência entre preflight e autorização.
+- **Recorrência de usabilidade fechada em 2026-08-31:** mesmo com todo o contexto persistido, a
+  decisão humana ainda exigia redigitar responsável, justificativa e referência de evidência. O
+  contrato `REVIEW_AND_ACCEPT` passa a apresentar o resumo e preencher a auditoria exclusivamente
+  no backend; aprovação exige um único comando, reprovação continua exigindo o motivo e atividades
+  sem contexto auditável permanecem bloqueadas. Testes de backend, frontend e navegação responsiva
+  impedem que essa etapa volte a expor campos que o sistema já conhece.
 
 ## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
 

@@ -1384,6 +1384,40 @@
   font-size: 0.8rem;
 }
 
+.product-process-activity-control__review-details {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.6rem;
+  padding: 0.75rem;
+}
+
+.product-process-activity-control__review-details > summary {
+  align-items: center;
+  color: #166534;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.86rem;
+  font-weight: 800;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.product-process-activity-control__review-details
+  > summary::-webkit-details-marker {
+  display: none;
+}
+
+.product-process-activity-control__review-details > summary span {
+  color: #15803d;
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.product-process-activity-control__review-details[open] > summary {
+  margin-bottom: 0.7rem;
+}
+
 .product-process-activity-control__availability {
   align-items: flex-start;
   border-radius: 0.5rem;
@@ -1462,6 +1496,88 @@
 }
 
 .product-process-human-decision .btn {
+  justify-self: start;
+}
+
+.product-process-review-accept {
+  background: #ffffff;
+  border: 1px solid #86efac;
+  border-radius: 0.7rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.product-process-review-accept__summary {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.product-process-review-accept__summary > svg {
+  color: #15803d;
+  flex: 0 0 auto;
+}
+
+.product-process-review-accept__summary div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.product-process-review-accept__summary strong {
+  color: #14532d;
+  font-size: 1rem;
+}
+
+.product-process-review-accept__summary p,
+.product-process-review-accept__summary small {
+  margin: 0;
+}
+
+.product-process-review-accept__summary p {
+  color: #334155;
+  font-weight: 700;
+}
+
+.product-process-review-accept__summary small {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.product-process-review-accept__approve {
+  font-size: 1rem;
+  justify-content: center;
+  min-height: 3rem;
+  width: 100%;
+}
+
+.product-process-review-accept__reject-toggle {
+  color: #64748b;
+  font-size: 0.82rem;
+  justify-self: center;
+  padding: 0.2rem 0.5rem;
+}
+
+.product-process-review-accept__rejection {
+  border-top: 1px solid #e2e8f0;
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.8rem;
+}
+
+.product-process-review-accept__rejection label {
+  color: #475569;
+  display: grid;
+  font-size: 0.82rem;
+  font-weight: 700;
+  gap: 0.35rem;
+}
+
+.product-process-review-accept__rejection label > span[aria-hidden="true"] {
+  color: #b91c1c;
+}
+
+.product-process-review-accept__rejection .btn {
   justify-self: start;
 }
 
@@ -1737,7 +1853,8 @@
   }
 
   .product-process-activity-control > .btn,
-  .product-process-human-decision .btn {
+  .product-process-human-decision .btn,
+  .product-process-review-accept__rejection .btn {
     justify-content: center;
     width: 100%;
   }

@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-31-argos-agent-version-v4-audit.yaml
+  - changeSet:
+      id: 2026-08-31-argos-agent-version-v4-audit-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: agent_version
+        - columnExists:
+            tableName: agent
+            columnName: current_version
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM agent a JOIN agent_version av ON av.agent_id = a.id AND av.version_number = 4 WHERE a.agent_key = 'market-radar' AND a.current_version < 4
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 4,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'version', 4,
+                  'sourceChangeSet', '2026-08-31-argos-agent-version-v4-audit-001',
+                  'previousCurrentVersion', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'authority', 'MARKET_EVIDENCE',
+                  'marketDiscoveryVersion', 'V4',
+                  'researchSources', JSON_ARRAY('WEB', 'META_AD_LIBRARY', 'RESEARCH_LIBRARY', 'PUBLIC_OFFERS')
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 4
+              WHERE a.agent_key = 'market-radar'
+                AND av.id IS NULL;
+
+              UPDATE agent
+              SET current_version = GREATEST(COALESCE(current_version, 0), 4)
+              WHERE agent_key = 'market-radar';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 4
+              SET a.current_version = CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.previousCurrentVersion'))
+                AS UNSIGNED
+              )
+              WHERE a.agent_key = 'market-radar'
+                AND a.current_version = 4
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-08-31-argos-agent-version-v4-audit-001';
+
+              DELETE av
+              FROM agent_version av
+              JOIN agent a ON a.id = av.agent_id
+              WHERE a.agent_key = 'market-radar'
+                AND av.version_number = 4
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-08-31-argos-agent-version-v4-audit-001';

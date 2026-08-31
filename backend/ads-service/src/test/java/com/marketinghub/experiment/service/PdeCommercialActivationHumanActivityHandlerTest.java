@@ -14,9 +14,12 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ExperimentRunningGateRequirementDto;
+import com.marketinghub.experiment.run.ExperimentRun;
+import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,13 +28,14 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: comprovar requisitos financeiros e efeito da autorização comercial PDE. */
 class PdeCommercialActivationHumanActivityHandlerTest {
   private final ExperimentRepository experiments = mock(ExperimentRepository.class);
+  private final ExperimentRunRepository runs = mock(ExperimentRunRepository.class);
   private final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
   private final ExperimentReadinessService readinessService =
       mock(ExperimentReadinessService.class);
   private final ExperimentService experimentService = mock(ExperimentService.class);
   private final PdeCommercialActivationHumanActivityHandler handler =
       new PdeCommercialActivationHumanActivityHandler(
-          experiments, plans, readinessService, experimentService);
+          experiments, runs, plans, readinessService, experimentService);
 
   /** Libera a decisão somente com gates verdes e teto financeiro positivo. */
   @Test
@@ -41,13 +45,19 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
     when(readinessService.summarize(89L)).thenReturn(readiness(true));
     when(plans.findByExperimentReference(89L))
-        .thenReturn(List.of(CommercialPlan.builder().maxBudget(new BigDecimal("400.00")).build()));
+        .thenReturn(
+            List.of(CommercialPlan.builder().id(4L).maxBudget(new BigDecimal("400.00")).build()));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(java.util.Optional.of(ExperimentRun.builder().id(9L).runNumber(2).build()));
 
     HumanProductProcessActivityReadiness result =
         handler.readiness(process(), activity(), product, "experiment:89");
 
     assertThat(result.ready()).isTrue();
     assertThat(result.confirmationMessage().replace('\u00a0', ' ')).contains("R$ 400,00");
+    assertThat(result.decisionMode()).isEqualTo("REVIEW_AND_ACCEPT");
+    assertThat(result.auditEvidenceReference())
+        .isEqualTo("experiment:89; experiment-run:9/run-number:2; commercial-plan:4");
     assertThat(result.requirements())
         .extracting(requirement -> requirement.code())
         .contains("PREFLIGHT_APPROVED", "BUDGET_LIMIT_DEFINED");
@@ -61,13 +71,40 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
     when(readinessService.summarize(89L)).thenReturn(readiness(true));
     when(plans.findByExperimentReference(89L))
-        .thenReturn(List.of(CommercialPlan.builder().maxBudget(BigDecimal.ZERO).build()));
+        .thenReturn(List.of(CommercialPlan.builder().id(4L).maxBudget(BigDecimal.ZERO).build()));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(java.util.Optional.of(ExperimentRun.builder().id(9L).runNumber(2).build()));
 
     HumanProductProcessActivityReadiness result =
         handler.readiness(process(), activity(), product, "experiment:89");
 
     assertThat(result.ready()).isFalse();
     assertThat(result.reason()).contains("Defina o teto");
+    verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
+  }
+
+  /** Bloqueia o aceite simples quando o run ainda não possui referência auditável. */
+  @Test
+  void blocksReviewAndAcceptWithoutAuditableProductionRun() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(readinessService.summarize(89L)).thenReturn(readiness(true));
+    when(plans.findByExperimentReference(89L))
+        .thenReturn(
+            List.of(CommercialPlan.builder().id(4L).maxBudget(new BigDecimal("540.00")).build()));
+
+    HumanProductProcessActivityReadiness result =
+        handler.readiness(process(), activity(), product, "experiment:89");
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.auditEvidenceReference()).isNull();
+    assertThat(result.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("AUDIT_CONTEXT_READY");
+              assertThat(requirement.satisfied()).isFalse();
+            });
     verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 

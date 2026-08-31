@@ -765,6 +765,14 @@ components:
         workspaceReferenceId: { type: integer, format: int64, nullable: true }
         targetProcessDefinitionId:
           { type: integer, format: int64, nullable: true }
+        decisionMode:
+          type: string
+          enum: [DETAILED, REVIEW_AND_ACCEPT]
+          description: Define se a decisão exige formulário completo ou apenas revisão e aceite.
+        auditEvidenceReference:
+          type: string
+          nullable: true
+          description: Referência persistida que o backend registrará sem exigir redigitação.
         requirements:
           type: array
           items:
@@ -774,15 +782,24 @@ components:
       description: Decisão explícita exigida para uma atividade de aprovação humana.
       required:
         - decision
-        - operatorName
-        - justification
-        - evidenceReference
         - confirmationToken
       properties:
         decision: { type: string, enum: [APPROVE, REJECT] }
-        operatorName: { type: string, minLength: 3, maxLength: 191 }
-        justification: { type: string, minLength: 10, maxLength: 2000 }
-        evidenceReference: { type: string, minLength: 3, maxLength: 1000 }
+        operatorName:
+          type: string
+          minLength: 3
+          maxLength: 191
+          description: Obrigatório no modo DETAILED; resolvido pelo backend em REVIEW_AND_ACCEPT.
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Obrigatória no modo DETAILED e em reprovação; gerada pelo backend na aprovação simplificada.
+        evidenceReference:
+          type: string
+          minLength: 3
+          maxLength: 1000
+          description: Obrigatória no modo DETAILED; resolvida pelo backend em REVIEW_AND_ACCEPT.
         confirmationToken: { type: string }
     ProductProcessActivityExecutionRequest:
       type: object

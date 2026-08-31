@@ -27,6 +27,7 @@ require_contract 'rollback_app_stack || true' 'rollback quando a aplicação da 
 require_contract 'wait_backend_container_http' 'validação do estado do container e da saúde HTTP'
 
 bash "$(dirname "$0")/test-backend-health-wait.sh"
+bash "$(dirname "$0")/test-read-frontend-build-revision.sh"
 
 if ! grep -A4 '^concurrency:' "${WORKFLOW_FILE}" | grep -Fq 'cancel-in-progress: false'; then
   printf '[ARQUITETURA] workflow pode cancelar um deploy válido por causa de push posterior sem mudança operacional.\n' >&2
@@ -51,9 +52,11 @@ fi
 
 if ! grep -Fq '.deployed-app-revision' "${WORKFLOW_FILE}" \
   || ! grep -Fq 'scripts/detect-deployment-changes.sh' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'scripts/read-frontend-build-revision.sh' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'Require deployed frontend revision' "${WORKFLOW_FILE}" \
   || ! grep -Fq 'Mark successful APP revision' "${WORKFLOW_FILE}" \
   || ! grep -Fq 'abortando para não perder módulos pendentes' "${WORKFLOW_FILE}"; then
-  printf '[ARQUITETURA] workflow deve detectar mudanças desde a última revisão APP realmente publicada.\n' >&2
+  printf '[ARQUITETURA] workflow deve detectar e confirmar revisões realmente publicadas em cada superfície APP.\n' >&2
   exit 1
 fi
 

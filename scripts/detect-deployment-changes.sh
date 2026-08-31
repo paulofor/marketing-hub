@@ -4,6 +4,7 @@ set -euo pipefail
 BASE_REVISION="${1:?Informe a revisão base efetivamente publicada.}"
 HEAD_REVISION="${2:-HEAD}"
 OUTPUT_FILE="${3:-${GITHUB_OUTPUT:-}}"
+FRONTEND_BASE_REVISION="${4:-${BASE_REVISION}}"
 
 if ! git cat-file -e "${BASE_REVISION}^{commit}" 2>/dev/null; then
   printf '[ARQUITETURA] revisão publicada inválida ou ausente no histórico: %s\n' "${BASE_REVISION}" >&2
@@ -17,6 +18,20 @@ fi
 
 changed_files="$(git diff --name-only "${BASE_REVISION}" "${HEAD_REVISION}")"
 printf 'Arquivos alterados desde o ultimo deploy confirmado (%s):\n%s\n' "${BASE_REVISION}" "${changed_files}"
+
+frontend_revision_known=true
+if ! git cat-file -e "${FRONTEND_BASE_REVISION}^{commit}" 2>/dev/null; then
+  frontend_revision_known=false
+  printf 'Revisão publicada do frontend indisponível (%s); a imagem será reconstruída por segurança.\n' \
+    "${FRONTEND_BASE_REVISION}" >&2
+fi
+
+frontend_changed_files=""
+if [[ "${frontend_revision_known}" == "true" ]]; then
+  frontend_changed_files="$(git diff --name-only "${FRONTEND_BASE_REVISION}" "${HEAD_REVISION}")"
+  printf 'Arquivos alterados desde a revisão observada do frontend (%s):\n%s\n' \
+    "${FRONTEND_BASE_REVISION}" "${frontend_changed_files}"
+fi
 
 backend=false
 frontend=false
@@ -40,6 +55,17 @@ while IFS= read -r file; do
     deploy/nginx/*) app_deploy_descriptor=true ;;
   esac
 done <<< "${changed_files}"
+
+if [[ "${frontend_revision_known}" != "true" ]]; then
+  frontend=true
+else
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    case "${file}" in
+      .github/workflows/deploy-containers.yml|.dockerignore|frontend/*) frontend=true ;;
+    esac
+  done <<< "${frontend_changed_files}"
+fi
 
 app_deploy=false
 app_image=false

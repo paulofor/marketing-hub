@@ -2504,6 +2504,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   no backend; aprovação exige um único comando, reprovação continua exigindo o motivo e atividades
   sem contexto auditável permanecem bloqueadas. Testes de backend, frontend e navegação responsiva
   impedem que essa etapa volte a expor campos que o sistema já conhece.
+- **Fechamento de paridade de publicação em 2026-08-31:** a correção do aceite simples chegou ao
+  backend, mas uma falha de deploy reverteu o bundle do frontend. Um deploy posterior apenas de
+  backend avançou o marcador global e a tela continuou exibindo o formulário antigo. O deploy agora
+  compara as mudanças do frontend com a revisão efetivamente exposta em `/healthz`, força a imagem
+  quando a superfície estiver defasada e recusa marcar sucesso enquanto o healthz não confirmar a
+  revisão esperada. Os testes simulam marcador global adiantado, frontend defasado e healthz ausente.
 
 ## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
 

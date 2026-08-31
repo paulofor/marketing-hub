@@ -6719,3 +6719,15 @@
   carregamento real da busca antes de substituir o worker.
 - A publicação só prossegue com `credential=CONFIGURED`; a credencial nunca entra em log. Isso
   protege a coleta factual que antecede decisões de mercado, sem tratar evidência como venda.
+## 2026-08-31 — Rigel: autorização simples protegida contra frontend defasado
+
+- **Gargalo real:** o backend já expunha a autorização de um clique do Rigel, mas a tela publicada
+  ainda carregava um bundle anterior e exigia responsável, justificativa e evidência; com `ok`, a
+  justificativa de dois caracteres mantinha o botão desabilitado.
+- **Causa-raiz:** uma falha anterior reverteu frontend e backend; o deploy posterior atualizou só o
+  backend e o marcador global não comprovava a revisão real da superfície estática.
+- **Correção preparada:** o deploy passa a comparar o histórico do frontend com a revisão declarada
+  no seu `/healthz`, reconstrói a imagem quando ela estiver defasada e valida essa revisão antes de
+  registrar a publicação como bem-sucedida.
+- **Impacto comercial esperado:** a decisão humana volta a ser um aceite simples e auditável, sem
+  criar campanha, contato, gasto ou venda.

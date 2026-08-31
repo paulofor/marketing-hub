@@ -33,4 +33,45 @@ grep -Fxq 'backend=true' "${output_file}"
 grep -Fxq 'frontend=true' "${output_file}"
 grep -Fxq 'app_deploy=true' "${output_file}"
 
+stale_frontend_output="${TEST_REPO}/stale-frontend-output"
+published_app_revision="$(git -C "${TEST_REPO}" rev-parse HEAD~1)"
+
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${published_app_revision}" \
+    "${head_revision}" \
+    "${stale_frontend_output}" \
+    "${deployed_revision}"
+)
+
+grep -Fxq 'backend=true' "${stale_frontend_output}"
+grep -Fxq 'frontend=true' "${stale_frontend_output}"
+grep -Fxq 'app_deploy=true' "${stale_frontend_output}"
+
+current_frontend_output="${TEST_REPO}/current-frontend-output"
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${published_app_revision}" \
+    "${head_revision}" \
+    "${current_frontend_output}" \
+    "${published_app_revision}"
+)
+
+grep -Fxq 'backend=true' "${current_frontend_output}"
+grep -Fxq 'frontend=false' "${current_frontend_output}"
+
+unknown_frontend_output="${TEST_REPO}/unknown-frontend-output"
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${published_app_revision}" \
+    "${head_revision}" \
+    "${unknown_frontend_output}" \
+    "UNKNOWN"
+)
+
+grep -Fxq 'frontend=true' "${unknown_frontend_output}"
+
 printf 'Contrato de retomada de modulos pendentes validado.\n'

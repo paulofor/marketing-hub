@@ -2638,3 +2638,19 @@ Use este checklist quando o problema estiver em algum loop acima:
   criaria um bloqueio falso após a correção de permissões. O gate passa a exigir diretório próprio
   gravável e a confirmação autoritativa `codex login status`, preservando a reconciliação segura de
   proprietário, o stdin fechado, a recriação forçada e o health final.
+
+## LOOP-ARGOS-CODEX-TMP-SYMLINK — wrapper transitório bloqueia reconciliação da sessão
+
+- **Data:** 2026-08-31.
+- **Sintoma:** o workflow `Product Discovery Worker CI` da execução `33411397994` testou e construiu
+  corretamente a imagem com os 48 artigos vigentes de `/pesquisas`, mas falhou antes de recriar o
+  worker com “a sessão Codex contém link simbólico”.
+- **Causa-raiz confirmada pelo histórico e por SSH:** o próprio Codex criou em
+  `codex-home/tmp/arg0/...` links descartáveis para `apply_patch`, `applypatch`, o wrapper de execução
+  e o sandbox. O preflight novo bloqueava qualquer link da árvore antes de distinguir estado
+  persistente de arquivos temporários legítimos.
+- **Correção sistêmica:** a preparação esvazia somente `codex-home/tmp`, sem seguir links, antes de
+  reconciliar proprietário e permissões. Links fora dessa área transitória continuam proibidos e a
+  sessão autenticada, bancos de estado e demais arquivos persistentes são preservados.
+- **Prevenção:** teste reproduz os wrappers do Codex, exige limpeza sem alterar o alvo nem o
+  `auth.json` e mantém o teste separado que recusa link simbólico fora do diretório temporário.

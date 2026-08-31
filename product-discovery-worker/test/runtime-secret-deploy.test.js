@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -150,6 +151,42 @@ test("reconcilia a sessão Codex para o UID do container sem revelar seu conteú
     assert.equal(statSync(nestedDirectory).mode & 0o777, 0o700);
     assert.equal(statSync(configPath).mode & 0o777, 0o600);
     assert.equal(statSync(authPath).mode & 0o777, 0o600);
+    assert.equal(result.stdout.includes(privateValue), false);
+    assert.equal(result.stderr.includes(privateValue), false);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("remove wrappers transitórios do Codex sem apagar a sessão autenticada", () => {
+  const directory = mkdtempSync(join(tmpdir(), "argos-codex-transient-"));
+  const codexHome = join(directory, "codex-home");
+  const transientDirectory = join(codexHome, "tmp", "arg0", "codex-run");
+  const transientLink = join(transientDirectory, "apply_patch");
+  const authPath = join(codexHome, "auth.json");
+  const outside = join(directory, "codex-binary");
+  const privateValue = "session-test-value-never-log";
+  mkdirSync(transientDirectory, { recursive: true, mode: 0o700 });
+  writeFileSync(authPath, privateValue, { mode: 0o600 });
+  writeFileSync(outside, "não alterar", { mode: 0o600 });
+  symlinkSync(outside, transientLink);
+
+  try {
+    const result = spawnSync(
+      "bash",
+      [
+        prepareCodexHomeScript,
+        codexHome,
+        String(process.getuid()),
+        String(process.getgid()),
+      ],
+      { encoding: "utf8" },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(transientLink), false);
+    assert.equal(readFileSync(authPath, "utf8"), privateValue);
+    assert.equal(readFileSync(outside, "utf8"), "não alterar");
     assert.equal(result.stdout.includes(privateValue), false);
     assert.equal(result.stderr.includes(privateValue), false);
   } finally {

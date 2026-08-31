@@ -131,7 +131,7 @@ public class PdeCommercialActivationHumanActivityHandler
         requirements);
   }
 
-  /** Ativa o experimento pelo serviço canônico após a confirmação humana. */
+  /** Ativa ou reconcilia os estados comerciais pelo serviço canônico após a confirmação humana. */
   @Override
   @Transactional
   public void approve(
@@ -141,9 +141,7 @@ public class PdeCommercialActivationHumanActivityHandler
       String sourceReference,
       ProductProcessActivityExecutionRequest request) {
     Experiment experiment = referencedExperiment(product, sourceReference);
-    if (experiment.getStatus() != ExperimentStatus.RUNNING) {
-      experimentService.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
-    }
+    experimentService.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
   }
 
   /** Resolve o experimento declarado pela referência sem misturar outro ciclo ou produto. */

@@ -84,6 +84,34 @@ class ProductProcessPeriodServiceTest {
     verify(periodRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
   }
 
+  /** Registra explicitamente quando um preflight posterior reconciliou o avanço comercial. */
+  @Test
+  void preservesAuditedPreflightAsTransitionEvidence() {
+    Product product = Product.builder().id(9L).commercialStatus("ATIVO").build();
+    ProductProcessPeriod previous = new ProductProcessPeriod();
+    previous.setId(32L);
+    previous.setProduct(product);
+    previous.setEnteredAt(Instant.parse("2026-08-20T12:00:00Z"));
+    previous.setUpdatedAt(previous.getEnteredAt());
+    when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+            "pde-value-creation-delivery", "PUBLISHED"))
+        .thenReturn(List.of(chain()));
+    when(periodRepository.findTopByProductIdAndExitedAtIsNullOrderByEnteredAtDescIdDesc(9L))
+        .thenReturn(Optional.of(previous));
+
+    service.recordAuditedPreflightTransition(product, "COMUNICACAO_E_JORNADA");
+
+    assertThat(previous.getExitEvidence()).isEqualTo("AUDITED_PRODUCTION_PREFLIGHT");
+    assertThat(previous.isObjectiveAchieved()).isTrue();
+    ArgumentCaptor<ProductProcessPeriod> openedPeriod =
+        ArgumentCaptor.forClass(ProductProcessPeriod.class);
+    verify(periodRepository).save(openedPeriod.capture());
+    assertThat(openedPeriod.getValue().getProcessCodeSnapshot())
+        .isEqualTo("pde-sales-delivery-learning");
+    assertThat(openedPeriod.getValue().getEntryEvidence())
+        .isEqualTo("AUDITED_PRODUCTION_PREFLIGHT");
+  }
+
   /** Monta a cadeia mínima com os processos de comunicação e homologação. */
   private BusinessProcessChainDefinition chain() {
     BusinessProcessChainDefinition chain = new BusinessProcessChainDefinition();
@@ -94,7 +122,8 @@ class ProductProcessPeriodServiceTest {
     chain.setItems(
         List.of(
             item(chain, 43L, "pde-communication-sales-journey", "Comunicação", 4),
-            item(chain, 44L, "pde-commercial-homologation-activation", "Homologação", 5)));
+            item(chain, 44L, "pde-commercial-homologation-activation", "Homologação", 5),
+            item(chain, 45L, "pde-sales-delivery-learning", "Venda e entrega", 6)));
     return chain;
   }
 

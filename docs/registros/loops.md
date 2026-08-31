@@ -2482,6 +2482,16 @@ Use este checklist quando o problema estiver em algum loop acima:
   transação, com histórico auditável e botão exclusivo na tela.
 - **Prevenção:** testes bloqueiam ativação sem `READY_TO_PUBLISH`, comprovam que não é necessário
   inventar criativo Meta e exigem rollback integral diante de qualquer falha de persistência.
+- **Recorrência Rigel confirmada em 2026-08-31:** o low-ticket PDE de abordagem individual possuía
+  run produtivo com onze gates `PASS`, mas a prontidão só reconhecia o tipo de assinatura PDE ou a
+  integração do processo comercial anterior. A tela repetia pendências de landing, checkout e
+  instrumentação já auditadas e não oferecia a aprovação humana.
+- **Fechamento sistêmico:** a ativação direta passa a reconhecer também low-ticket vinculado ao tipo
+  de produto `PDE`, mas exige os quatro códigos canônicos em `PASS` com referência auditável. A
+  prontidão projeta exatamente essas evidências e a ativação mantém a sincronização transacional,
+  sem reescrever a ocorrência histórica bloqueada; o período do macroprocesso registra
+  `AUDITED_PRODUCTION_PREFLIGHT` como fonte posterior da reconciliação. Os códigos dos gates foram
+  centralizados para impedir nova divergência entre preflight e autorização.
 
 ## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
 

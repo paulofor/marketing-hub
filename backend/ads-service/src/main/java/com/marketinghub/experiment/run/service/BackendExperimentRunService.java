@@ -6,6 +6,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.run.ExperimentEvidenceValidity;
 import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunDataQualityStatus;
+import com.marketinghub.experiment.run.ExperimentRunGateCodes;
 import com.marketinghub.experiment.run.ExperimentRunGateEvaluatorType;
 import com.marketinghub.experiment.run.ExperimentRunGateGroup;
 import com.marketinghub.experiment.run.ExperimentRunGateResult;
@@ -41,12 +42,15 @@ public class BackendExperimentRunService {
   private final ExperimentRepository experimentRepository;
   private static final String EVALUATOR_VERSION = "experiment-run-preflight.v1";
   private static final String HOMOLOGATION_EVALUATOR_VERSION = "experiment-run-homologation.v1";
-  private static final String LANDING_GATE = "LANDING_QUALITY_REVIEW_APPROVED";
-  private static final String FORM_GATE = "FORM_CAN_BE_SUBMITTED";
-  private static final String SALES_JOURNEY_GATE = "CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED";
-  private static final String META_DISTRIBUTION_GATE = "META_EFFECTIVE_STATUS_CONFIRMED";
-  private static final String DIRECT_DISTRIBUTION_GATE = "DIRECT_CHANNEL_READINESS_CONFIRMED";
-  private static final String DATA_GATE = "DATA_FRESHNESS_VALID";
+  private static final String LANDING_GATE = ExperimentRunGateCodes.LANDING_QUALITY_REVIEW_APPROVED;
+  private static final String FORM_GATE = ExperimentRunGateCodes.FORM_CAN_BE_SUBMITTED;
+  private static final String SALES_JOURNEY_GATE =
+      ExperimentRunGateCodes.CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED;
+  private static final String META_DISTRIBUTION_GATE =
+      ExperimentRunGateCodes.META_EFFECTIVE_STATUS_CONFIRMED;
+  private static final String DIRECT_DISTRIBUTION_GATE =
+      ExperimentRunGateCodes.DIRECT_CHANNEL_READINESS_CONFIRMED;
+  private static final String DATA_GATE = ExperimentRunGateCodes.DATA_FRESHNESS_VALID;
 
   private final ExperimentRunRepository experimentRunRepository;
   private final ExperimentRunGateResultRepository gateResultRepository;

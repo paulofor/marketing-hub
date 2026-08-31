@@ -29,6 +29,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.experiment.salespagetype.ExperimentSalesPageTypeSelectionRepository;
@@ -765,6 +766,43 @@ class ExperimentReadinessServiceTest {
         .singleElement()
         .satisfies(
             requirement -> assertThat(requirement.title()).isEqualTo("Jornada PDE integrada"));
+    assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+  }
+
+  /** Libera o formulário do Rigel quando o run produtivo já auditou a jornada completa. */
+  @Test
+  void shouldUseAuditedDirectPreflightForLowTicketPdeReadiness() {
+    Long experimentId = 89L;
+    Experiment experiment = buildExperiment(experimentId, 79L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setProduct(
+        Product.builder()
+            .id(9L)
+            .slug("kit-whatsapp-pronto")
+            .productTypeDefinition(ProductTypeDefinition.builder().code("PDE").build())
+            .build());
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(0L);
+    when(directPdeActivationService.appliesTo(experiment)).thenReturn(true);
+    when(directPdeActivationService.isReadyForActivation(experiment)).thenReturn(true);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.hasCreatives()).isFalse();
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(summary.runningGateRequirements())
+        .allMatch(ExperimentRunningGateRequirementDto::ready)
+        .extracting(ExperimentRunningGateRequirementDto::detail)
+        .anyMatch(detail -> detail.contains("desktop e mobile"))
+        .anyMatch(detail -> detail.contains("pagamento de teste"))
+        .anyMatch(detail -> detail.contains("eventos segregados"))
+        .anyMatch(detail -> detail.contains("ausência de gasto"));
     assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
   }
 

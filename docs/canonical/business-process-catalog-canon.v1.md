@@ -218,8 +218,15 @@ executar gates e registrar homologação atualizam automaticamente a instância 
 pode ser reexecutado de forma que apague evidências. `authorization` expõe todos os requisitos de
 `RUNNING`, exige teto financeiro positivo e uma confirmação que informa experimento, amostra e teto.
 A ação não cria campanha paga. Um run concluído por uma superfície anterior pode ser reconciliado
-com a atividade sem reexecutar ou apagar gates. O backend mantém atividades backend sem comando explícito como
-`AUTOMATIC`, mostrando o evento aguardado em vez de permitir conclusão manual sem evidência.
+com a atividade sem reexecutar ou apagar gates. Em abordagem individual de produto PDE, a
+reconciliação libera a aprovação somente quando o run produtivo possui `PASS` com evidência para
+página, checkout/entrega, canal consentido e qualidade dos dados. Ocorrências bloqueadas do processo
+anterior não são reescritas; quando o preflight posterior comprovar o mesmo objetivo, o período do
+macroprocesso registra `AUDITED_PRODUCTION_PREFLIGHT` como evidência explícita da reconciliação. Ao
+aprovar, a mesma transação atualiza experimento, run, janela comercial, produto e instância BPM;
+qualquer falha preserva integralmente o estado anterior.
+O backend mantém atividades backend sem comando explícito como `AUTOMATIC`, mostrando o evento
+aguardado em vez de permitir conclusão manual sem evidência.
 
 ## Execuções independentes de produto
 

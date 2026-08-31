@@ -158,7 +158,7 @@ test("reconcilia a sessão Codex para o UID do container sem revelar seu conteú
   }
 });
 
-test("remove wrappers transitórios do Codex sem apagar a sessão autenticada", () => {
+test("preserva a árvore transitória ativa sem reconciliar seus links simbólicos", () => {
   const directory = mkdtempSync(join(tmpdir(), "argos-codex-transient-"));
   const codexHome = join(directory, "codex-home");
   const transientDirectory = join(codexHome, "tmp", "arg0", "codex-run");
@@ -184,11 +184,38 @@ test("remove wrappers transitórios do Codex sem apagar a sessão autenticada", 
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(existsSync(transientLink), false);
+    assert.equal(existsSync(transientLink), true);
     assert.equal(readFileSync(authPath, "utf8"), privateValue);
     assert.equal(readFileSync(outside, "utf8"), "não alterar");
     assert.equal(result.stdout.includes(privateValue), false);
     assert.equal(result.stderr.includes(privateValue), false);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("recusa um link simbólico usado como diretório temporário do Codex", () => {
+  const directory = mkdtempSync(join(tmpdir(), "argos-codex-tmp-link-"));
+  const codexHome = join(directory, "codex-home");
+  const outside = join(directory, "outside");
+  mkdirSync(codexHome, { mode: 0o700 });
+  mkdirSync(outside, { mode: 0o700 });
+  symlinkSync(outside, join(codexHome, "tmp"));
+
+  try {
+    const result = spawnSync(
+      "bash",
+      [
+        prepareCodexHomeScript,
+        codexHome,
+        String(process.getuid()),
+        String(process.getgid()),
+      ],
+      { encoding: "utf8" },
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /diretório temporário.*diretório real/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

@@ -30,25 +30,33 @@ fi
 
 install -d -o "$runtime_uid" -g "$runtime_gid" -m 700 "$runtime_home"
 
-# O Codex cria wrappers simbólicos descartáveis neste diretório durante a execução.
+# O Codex gerencia esta árvore enquanto o worker anterior ainda pode estar ativo.
+# Ela é validada como diretório real, mas permanece opaca para não disputar arquivos
+# transitórios nem confundir os wrappers simbólicos legítimos com estado persistente.
 transient_directory="$runtime_home/tmp"
 if [ -L "$transient_directory" ] || \
   { [ -e "$transient_directory" ] && [ ! -d "$transient_directory" ]; }; then
   echo "Erro: o diretório temporário da sessão Codex deve ser um diretório real." >&2
   exit 1
 fi
-if [ -d "$transient_directory" ]; then
-  find -P "$transient_directory" -mindepth 1 -delete
-fi
+install -d -o "$runtime_uid" -g "$runtime_gid" -m 700 "$transient_directory"
 
-if find -P "$runtime_home" -mindepth 1 -type l -print -quit | grep -q .; then
+if find -P "$runtime_home" \
+  -path "$transient_directory" -prune -o \
+  -mindepth 1 -type l -print -quit | grep -q .; then
   echo "Erro: a sessão Codex contém link simbólico e não pode ter permissões reconciliadas com segurança." >&2
   exit 1
 fi
 
-chown -R --no-dereference "$runtime_uid:$runtime_gid" "$runtime_home"
-find -P "$runtime_home" -type d -exec chmod 700 {} +
-find -P "$runtime_home" -type f -exec chmod 600 {} +
+find -P "$runtime_home" \
+  -path "$transient_directory" -prune -o \
+  -exec chown --no-dereference "$runtime_uid:$runtime_gid" {} +
+find -P "$runtime_home" \
+  -path "$transient_directory" -prune -o \
+  -type d -exec chmod 700 {} +
+find -P "$runtime_home" \
+  -path "$transient_directory" -prune -o \
+  -type f -exec chmod 600 {} +
 
 actual_uid="$(stat -c '%u' "$runtime_home")"
 actual_gid="$(stat -c '%g' "$runtime_home")"

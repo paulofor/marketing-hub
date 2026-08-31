@@ -79,6 +79,103 @@ class StandardHumanProductProcessActivityExecutorTest {
     assertThat(evidence.path("evidenceReference").asText()).isEqualTo("experiment-run:12");
   }
 
+  /** Permite revisar e aceitar sem redigitar a auditoria já resolvida pelo backend. */
+  @Test
+  void recordsReviewAndAcceptDecisionWithBackendAuditContext() throws Exception {
+    BusinessProcessDefinition process = process();
+    BusinessProcessActivityDefinition activity = activity(process);
+    HumanProductProcessActivityHandler handler = mock(HumanProductProcessActivityHandler.class);
+    StandardHumanProductProcessActivityExecutor reviewExecutor =
+        new StandardHumanProductProcessActivityExecutor(
+            instances,
+            predecessors,
+            new ObjectMapper(),
+            List.of(handler),
+            Clock.fixed(NOW, ZoneOffset.UTC));
+    when(handler.supports(process, activity)).thenReturn(true);
+    when(handler.readiness(process, activity, Product.builder().id(9L).build(), "experiment:89"))
+        .thenReturn(
+            new HumanProductProcessActivityReadiness(
+                true,
+                "Tudo pronto.",
+                "Li, entendi e autorizo",
+                "Revise e aceite.",
+                "Revise e autorize",
+                "O experimento está pronto, com amostra de 15 contatos e teto de R$ 540,00.",
+                "CONFIRM:pde-commercial-homologation-activation:authorization",
+                "EXPERIMENT_ACTIVATION",
+                89L,
+                List.of(),
+                HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
+                "experiment:89; experiment-run:9/run-number:2; commercial-plan:4"));
+    when(predecessors.readiness(process, activity, "experiment:89"))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Predecessoras prontas."));
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            590L, "experiment:89"))
+        .thenReturn(Optional.empty());
+
+    HumanProductProcessActivityExecutionResult result =
+        reviewExecutor.execute(
+            process,
+            activity,
+            Product.builder().id(9L).build(),
+            "experiment:89",
+            new ProductProcessActivityExecutionRequest(
+                "APPROVE",
+                null,
+                null,
+                null,
+                "CONFIRM:pde-commercial-homologation-activation:authorization"));
+
+    ArgumentCaptor<BusinessProcessActivityInstance> saved =
+        ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).save(saved.capture());
+    var evidence = new ObjectMapper().readTree(saved.getValue().getObjectiveEvidenceJson());
+    assertThat(result.objectiveAchieved()).isTrue();
+    assertThat(evidence.path("operatorName").asText())
+        .isEqualTo("Operador humano pelo Marketing Hub");
+    assertThat(evidence.path("evidenceReference").asText())
+        .isEqualTo("experiment:89; experiment-run:9/run-number:2; commercial-plan:4");
+    assertThat(evidence.path("decisionMode").asText()).isEqualTo("REVIEW_AND_ACCEPT");
+  }
+
+  /** Exige somente o motivo quando o operador decide não autorizar no modo simplificado. */
+  @Test
+  void requiresReasonToRejectReviewAndAcceptDecision() {
+    BusinessProcessDefinition process = process();
+    BusinessProcessActivityDefinition activity = activity(process);
+    HumanProductProcessActivityHandler handler = mock(HumanProductProcessActivityHandler.class);
+    StandardHumanProductProcessActivityExecutor reviewExecutor =
+        new StandardHumanProductProcessActivityExecutor(
+            instances,
+            predecessors,
+            new ObjectMapper(),
+            List.of(handler),
+            Clock.fixed(NOW, ZoneOffset.UTC));
+    when(handler.supports(process, activity)).thenReturn(true);
+    when(handler.readiness(process, activity, Product.builder().id(9L).build(), "experiment:89"))
+        .thenReturn(reviewAndAcceptReadiness());
+    when(predecessors.readiness(process, activity, "experiment:89"))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Predecessoras prontas."));
+
+    assertThatThrownBy(
+            () ->
+                reviewExecutor.execute(
+                    process,
+                    activity,
+                    Product.builder().id(9L).build(),
+                    "experiment:89",
+                    new ProductProcessActivityExecutionRequest(
+                        "REJECT",
+                        null,
+                        null,
+                        null,
+                        "CONFIRM:pde-commercial-homologation-activation:authorization")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("motivo");
+    verify(instances, never()).save(any());
+  }
+
   /** Preserva a decisão bloqueada anterior ao registrar uma nova ocorrência aprovada. */
   @Test
   void preservesBlockedDecisionWhenRetrying() {
@@ -195,6 +292,23 @@ class StandardHumanProductProcessActivityExecutorTest {
         justification,
         "experiment-run:12",
         "CONFIRM:pde-commercial-homologation-activation:authorization");
+  }
+
+  /** Monta a prontidão simplificada usada nos cenários de recusa segura. */
+  private HumanProductProcessActivityReadiness reviewAndAcceptReadiness() {
+    return new HumanProductProcessActivityReadiness(
+        true,
+        "Tudo pronto.",
+        "Li, entendi e autorizo",
+        "Revise e aceite.",
+        "Revise e autorize",
+        "O experimento está pronto, com amostra de 15 contatos e teto de R$ 540,00.",
+        "CONFIRM:pde-commercial-homologation-activation:authorization",
+        "EXPERIMENT_ACTIVATION",
+        89L,
+        List.of(),
+        HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
+        "experiment:89; experiment-run:9/run-number:2; commercial-plan:4");
   }
 
   /** Monta o processo publicado usado pela confirmação específica. */

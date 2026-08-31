@@ -248,6 +248,7 @@ class IndependentBusinessProcessExecutionServiceTest {
         tasks,
         mapper,
         handlers,
+        List.of(),
         Clock.fixed(NOW, ZoneOffset.UTC));
   }
 

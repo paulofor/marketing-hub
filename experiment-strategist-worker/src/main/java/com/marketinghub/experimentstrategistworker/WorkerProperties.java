@@ -12,6 +12,7 @@ public class WorkerProperties {
   private String repositoryPath;
   private String codexCommand;
   private String model;
+  private String reasoningEffort = "high";
   private Duration codexTimeout = Duration.ofMinutes(40);
   private String clarityApiTokenFile;
 
@@ -53,6 +54,25 @@ public class WorkerProperties {
   /** Configura o modelo. */
   public void setModel(String value) {
     model = value;
+  }
+
+  /** Retorna o esforço de raciocínio auditado nas atividades de Atena. */
+  public String getReasoningEffort() {
+    return reasoningEffort;
+  }
+
+  /** Configura o esforço de raciocínio usado e persistido por Atena. */
+  public void setReasoningEffort(String value) {
+    reasoningEffort = value;
+  }
+
+  /** Exige esforço explícito antes de qualquer chamada de modelo. */
+  public String requiredReasoningEffort() {
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      throw new IllegalStateException(
+          "EXPERIMENT_STRATEGIST_REASONING_EFFORT é obrigatório para auditar Atena.");
+    }
+    return reasoningEffort.trim();
   }
 
   /** Retorna o timeout do Codex. */

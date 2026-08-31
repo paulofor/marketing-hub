@@ -34,6 +34,7 @@ public class StandardHumanProductProcessActivityExecutor
   private static final String HUMAN_OWNER = "operador humano";
   private static final String APPROVE = "APPROVE";
   private static final String REJECT = "REJECT";
+  private static final String MARKETING_HUB_OPERATOR = "Operador humano pelo Marketing Hub";
 
   private final BusinessProcessActivityInstanceRepository activityInstanceRepository;
   private final ProductProcessActivityPredecessorService predecessorService;
@@ -132,7 +133,8 @@ public class StandardHumanProductProcessActivityExecutor
     if (!readiness.ready()) {
       throw new IllegalStateException(readiness.reason());
     }
-    validateRequest(request, readiness.confirmationToken());
+    ProductProcessActivityExecutionRequest resolvedRequest =
+        validateAndResolveRequest(request, readiness);
     Instant decidedAt = Instant.now(clock);
     BusinessProcessActivityInstance instance =
         decisionInstance(activityDefinition, sourceReference, decidedAt);
@@ -144,22 +146,23 @@ public class StandardHumanProductProcessActivityExecutor
     instance.setUpdatedAt(decidedAt);
     reserveDecision(instance, activityDefinition, sourceReference);
     Optional<HumanProductProcessActivityHandler> handler = handler(process, activityDefinition);
-    if (APPROVE.equals(request.decision()) && handler.isPresent()) {
-      handler.get().approve(process, activityDefinition, product, sourceReference, request);
+    if (APPROVE.equals(resolvedRequest.decision()) && handler.isPresent()) {
+      handler.get().approve(process, activityDefinition, product, sourceReference, resolvedRequest);
     }
-    boolean approved = APPROVE.equals(request.decision());
+    boolean approved = APPROVE.equals(resolvedRequest.decision());
     ObjectNode evidence = objectMapper.createObjectNode();
-    evidence.put("decision", request.decision());
-    evidence.put("operatorName", request.operatorName().trim());
-    evidence.put("justification", request.justification().trim());
-    evidence.put("evidenceReference", request.evidenceReference().trim());
-    evidence.put("confirmationToken", request.confirmationToken().trim());
+    evidence.put("decision", resolvedRequest.decision());
+    evidence.put("operatorName", resolvedRequest.operatorName());
+    evidence.put("justification", resolvedRequest.justification());
+    evidence.put("evidenceReference", resolvedRequest.evidenceReference());
+    evidence.put("confirmationToken", resolvedRequest.confirmationToken());
+    evidence.put("decisionMode", readiness.decisionMode());
     evidence.put("decidedAt", decidedAt.toString());
     instance.setStatus(approved ? "COMPLETED" : "BLOCKED");
     instance.setExitedAt(decidedAt);
     instance.setObjectiveAchieved(approved);
     instance.setObjectiveEvidenceJson(evidence.toString());
-    instance.setBlockedReason(approved ? null : request.justification().trim());
+    instance.setBlockedReason(approved ? null : resolvedRequest.justification());
     instance.setKnownCostUsd(BigDecimal.ZERO.setScale(8));
     instance.setCostCoverage("COMPLETE");
     instance.setEvidenceQuality("DIRECT");
@@ -252,26 +255,68 @@ public class StandardHumanProductProcessActivityExecutor
     return "CONFIRM:" + processCode + ":" + activityId;
   }
 
-  /** Rejeita decisões incompletas ou confirmadas para outra atividade. */
-  private void validateRequest(
-      ProductProcessActivityExecutionRequest request, String expectedToken) {
+  /** Valida a decisão e completa no backend a auditoria da confirmação simplificada. */
+  private ProductProcessActivityExecutionRequest validateAndResolveRequest(
+      ProductProcessActivityExecutionRequest request,
+      HumanProductProcessActivityReadiness readiness) {
     if (request == null) {
       throw invalidRequest("A decisão humana é obrigatória.");
     }
     if (!APPROVE.equals(request.decision()) && !REJECT.equals(request.decision())) {
       throw invalidRequest("A decisão deve ser APPROVE ou REJECT.");
     }
-    if (!usefulText(request.operatorName(), 3, 191)) {
-      throw invalidRequest("Informe o responsável pela decisão.");
-    }
-    if (!usefulText(request.justification(), 10, 2000)) {
-      throw invalidRequest("Informe uma justificativa objetiva para a decisão.");
-    }
-    if (!usefulText(request.evidenceReference(), 3, 1000)) {
-      throw invalidRequest("Informe uma referência de evidência auditável.");
-    }
-    if (!expectedToken.equals(request.confirmationToken())) {
+    if (!readiness.confirmationToken().equals(request.confirmationToken())) {
       throw invalidRequest("A confirmação não corresponde a esta atividade.");
+    }
+    if (readiness.reviewAndAccept()) {
+      return resolveReviewAndAcceptRequest(request, readiness);
+    }
+    requireUsefulText(request.operatorName(), 3, 191, "Informe o responsável pela decisão.");
+    requireUsefulText(
+        request.justification(), 10, 2000, "Informe uma justificativa objetiva para a decisão.");
+    requireUsefulText(
+        request.evidenceReference(), 3, 1000, "Informe uma referência de evidência auditável.");
+    return new ProductProcessActivityExecutionRequest(
+        request.decision(),
+        request.operatorName().trim(),
+        request.justification().trim(),
+        request.evidenceReference().trim(),
+        request.confirmationToken().trim());
+  }
+
+  /** Usa o contexto persistido para que aprovar exija somente revisar e aceitar. */
+  private ProductProcessActivityExecutionRequest resolveReviewAndAcceptRequest(
+      ProductProcessActivityExecutionRequest request,
+      HumanProductProcessActivityReadiness readiness) {
+    String justification =
+        APPROVE.equals(request.decision())
+            ? "Autorização registrada após revisão do resumo: " + readiness.confirmationMessage()
+            : request.justification();
+    requireUsefulText(
+        justification,
+        10,
+        2000,
+        APPROVE.equals(request.decision())
+            ? "O resumo auditável da autorização está incompleto."
+            : "Informe o motivo para não autorizar.");
+    requireUsefulText(
+        readiness.auditEvidenceReference(),
+        3,
+        1000,
+        "A autorização ainda não possui referência de evidência auditável.");
+    return new ProductProcessActivityExecutionRequest(
+        request.decision(),
+        MARKETING_HUB_OPERATOR,
+        justification.trim(),
+        readiness.auditEvidenceReference().trim(),
+        request.confirmationToken().trim());
+  }
+
+  /** Rejeita texto ausente ou fora do limite antes de qualquer alteração persistida. */
+  private void requireUsefulText(
+      String value, int minimumLength, int maximumLength, String reason) {
+    if (!usefulText(value, minimumLength, maximumLength)) {
+      throw invalidRequest(reason);
     }
   }
 

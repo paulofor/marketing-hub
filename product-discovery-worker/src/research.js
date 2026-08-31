@@ -232,9 +232,11 @@ export const SEARCH_PROVIDERS = {
 };
 
 export function buildSearchQueries(job) {
-  const base = compactSearchBase(normalizeSearchText(
-    [job.theme, job.targetAudience].filter(Boolean).join(" "),
-  ));
+  const base = compactSearchBase(
+    normalizeSearchText(
+      [job.theme, job.targetAudience].filter(Boolean).join(" "),
+    ),
+  );
   const domainQueries = inferDomainPainQueries(base);
   const genericQueries = CONSUMER_LANGUAGE_TEMPLATES.map((template) =>
     template.replace("{base}", base),
@@ -500,7 +502,10 @@ function isPublicComparableOffer(result) {
   const broadOfferSignal =
     /comprar agora|assine|inscreva-se|matr[ií]cula|curso online|programa online|consultoria|mentoria|produto digital/.test(
       text,
-    ) || /\/(produto|products?|curso|courses?|programa|planos?|pricing|checkout)(\/|$)/.test(path);
+    ) ||
+    /\/(produto|products?|curso|courses?|programa|planos?|pricing|checkout)(\/|$)/.test(
+      path,
+    );
   return commercialSignal && (productSignal || broadOfferSignal);
 }
 
@@ -557,7 +562,9 @@ export function analyzeSearchResults(
   });
   const instagramB2cGatePassed =
     !instagramB2cRequired ||
-    (metaAdEvidence.some((item) => item.active) &&
+    (metaAdEvidence.some(
+      (item) => item.active && metaAdIncludesInstagram(item),
+    ) &&
       metaCoverage.some(
         (coverage) =>
           coverage.publisherPlatform === "INSTAGRAM" &&
@@ -597,13 +604,13 @@ export function analyzeSearchResults(
       ? "RESEARCH_MORE"
       : !marketplaceGatePassed
         ? "RESEARCH_MORE"
-        : !instagramB2cGatePassed
+      : !instagramB2cGatePassed
           ? "RESEARCH_MORE"
-          : purchaseMomentGate.required &&
-              !purchaseMomentGate.finalPrioritizationEligible
-            ? "RESEARCH_MORE"
-            : highRiskHits > 0
-              ? "HUMAN_REVIEW"
+          : highRiskHits > 0
+            ? "HUMAN_REVIEW"
+            : purchaseMomentGate.required &&
+                !purchaseMomentGate.finalPrioritizationEligible
+              ? "RESEARCH_MORE"
               : scientificArticles.length === 0
                 ? "RESEARCH_MORE"
                 : commercialIntentHits === 0
@@ -639,48 +646,68 @@ export function analyzeSearchResults(
 
   return {
     decisionSummary: `${options.analysisSummary ? `${options.analysisSummary} ` : ""}Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${decision}.`,
-    opportunities: opportunityBlueprints.map((blueprint) => ({
-      name: blueprint.name,
-      primaryAudience: blueprint.primaryAudience,
-      rootPain: blueprint.rootPain,
-      practicalPain: blueprint.practicalPain,
-      emotionalPain: blueprint.emotionalPain,
-      scaleEvidence: blueprint.scaleEvidence,
-      unmetnessEvidence: blueprint.unmetnessEvidence,
-      pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Base científica candidata: ${mechanismEvidence}`,
-      firstCampaignAngle: null,
-      commercialRisk: `${blueprint.commercialRisk} ${commercialRisk}`.trim(),
-      evidenceJson: JSON.stringify({
-        candidateEvidence: {
-          purchaseSituation: blueprint.purchaseSituation,
-          observedLanguage: blueprint.observedLanguage,
-          currentAlternatives: blueprint.currentAlternatives,
-          residualEffort: blueprint.residualEffort,
-          instagramFitEvidence: blueprint.instagramFitEvidence,
-          evidenceIds: blueprint.evidenceIds,
-          maturity: blueprint.maturity,
-        },
-        publicEvidence: evidence,
-        marketplaceOffers: comparableMarketplaceOffers,
-        metaAdEvidence,
-        metaCoverage,
-        metaAdInterpretation:
-          "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
-        instagramB2cRequired,
+    opportunities: opportunityBlueprints.map((blueprint) => {
+      const evidenceIds = new Set(blueprint.evidenceIds || []);
+      const referenced = (items) =>
+        (items || []).filter((item) => evidenceIds.has(item.evidenceId));
+      const maturity = effectiveCandidateMaturity(blueprint.maturity, {
+        marketplaceGatePassed,
         instagramB2cGatePassed,
-        instagramPublicEvidence,
-        purchaseMomentGate,
-        scientificArticles,
-        commercialIntentHits,
-      }),
-      score,
-      decision:
-        blueprint.maturity === "HUMAN_REVIEW"
-          ? "HUMAN_REVIEW"
-          : blueprint.maturity === "REJECTED"
-            ? "REJECT"
-            : decision,
-    })),
+        decision,
+      });
+      return {
+        name: blueprint.name,
+        primaryAudience: blueprint.primaryAudience,
+        rootPain: blueprint.rootPain,
+        practicalPain: blueprint.practicalPain,
+        emotionalPain: blueprint.emotionalPain,
+        scaleEvidence: blueprint.scaleEvidence,
+        unmetnessEvidence: blueprint.unmetnessEvidence,
+        pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Base científica candidata: ${mechanismEvidence}`,
+        firstCampaignAngle: null,
+        commercialRisk: `${blueprint.commercialRisk} ${commercialRisk}`.trim(),
+        evidenceJson: JSON.stringify({
+          candidateEvidence: {
+            purchaseSituation: blueprint.purchaseSituation,
+            observedLanguage: blueprint.observedLanguage,
+            currentAlternatives: blueprint.currentAlternatives,
+            residualEffort: blueprint.residualEffort,
+            instagramFitEvidence: blueprint.instagramFitEvidence,
+            evidenceIds: blueprint.evidenceIds,
+            maturity,
+          },
+          referencedEvidence: {
+            publicEvidence: referenced(evidence),
+            marketplaceOffers: referenced(comparableMarketplaceOffers),
+            metaAdEvidence: referenced(metaAdEvidence),
+            repositoryEvidence: referenced(options.repositoryEvidence),
+          },
+          publicEvidence: evidence,
+          marketplaceOffers: comparableMarketplaceOffers,
+          metaAdEvidence,
+          repositoryEvidence: options.repositoryEvidence || [],
+          metaCoverage,
+          metaAdInterpretation:
+            "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
+          instagramB2cRequired,
+          instagramB2cGatePassed,
+          instagramPublicEvidence,
+          purchaseMomentGate,
+          scientificArticles,
+          commercialIntentHits,
+        }),
+        score,
+        maturity,
+        decision:
+          maturity === "HUMAN_REVIEW"
+            ? "HUMAN_REVIEW"
+            : maturity === "REJECTED"
+              ? "REJECT"
+              : maturity === "DOSSIER_READY"
+                ? decision
+                : "RESEARCH_MORE",
+      };
+    }),
     evidenceReport: {
       researchMode: job.researchMode || "VALIDATE_MARKET",
       marketType: job.marketType || "UNSPECIFIED",
@@ -706,6 +733,33 @@ export function analyzeSearchResults(
       },
     },
   };
+}
+
+/** Confirma no anúncio a distribuição explícita no Instagram, sem inferir pela consulta. */
+function metaAdIncludesInstagram(ad) {
+  if (String(ad?.publisherPlatform || "").toUpperCase() === "INSTAGRAM") {
+    return true;
+  }
+  return (ad?.publisherPlatforms || []).some(
+    (platform) => String(platform).toUpperCase() === "INSTAGRAM",
+  );
+}
+
+/** Impede que uma classificação do modelo ultrapasse os gates factuais recalculados pelo worker. */
+function effectiveCandidateMaturity(
+  declaredMaturity,
+  { marketplaceGatePassed, instagramB2cGatePassed, decision },
+) {
+  const declared = declaredMaturity || "SIGNAL";
+  if (decision === "HUMAN_REVIEW") return "HUMAN_REVIEW";
+  if (decision === "REJECT") return "REJECTED";
+  if (
+    declared === "DOSSIER_READY" &&
+    (!marketplaceGatePassed || !instagramB2cGatePassed)
+  ) {
+    return "RESEARCHABLE";
+  }
+  return declared;
 }
 
 export function normalizeDuckDuckGoResponse(payload) {
@@ -747,7 +801,9 @@ function inferProvider(env = process.env) {
 
 /** Mantém o tema central curto para que cada template acrescente uma única intenção. */
 function compactSearchBase(value) {
-  const words = String(value || "").split(/\s+/).filter(Boolean);
+  const words = String(value || "")
+    .split(/\s+/)
+    .filter(Boolean);
   return words.slice(0, 18).join(" ").slice(0, 140).trim();
 }
 

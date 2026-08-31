@@ -2,10 +2,20 @@ import axios from "axios";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowRight,
+  BookOpen,
   CheckCircle2,
   Clock3,
+  ExternalLink,
+  Globe2,
+  Instagram,
+  PackageCheck,
   Play,
   RefreshCw,
+  Search,
+  Sparkles,
+  Target,
+  WalletCards,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
@@ -15,6 +25,7 @@ import {
   useStartIndependentBusinessProcessExecution,
 } from "../../api/businessProcess/useIndependentBusinessProcessExecutions";
 import type {
+  IndependentBusinessProcessFlowReport,
   IndependentBusinessProcessExecutionSummary,
   IndependentBusinessProcessInputField,
 } from "../../api/businessProcess/types";
@@ -204,6 +215,10 @@ export default function IndependentBusinessProcessExecutionsPage() {
         ) : null}
       </section>
 
+      {selectedProcess?.processCode === "pde-opportunity-discovery" ? (
+        <AutonomousDiscoveryFlow />
+      ) : null}
+
       {selectedProcess ? (
         <section className="independent-process-workspace">
           <form className="card independent-process-form" onSubmit={submit}>
@@ -262,6 +277,7 @@ export default function IndependentBusinessProcessExecutionsPage() {
                           rows={3}
                           required={field.required}
                           maxLength={field.maxLength}
+                          title={field.helpText}
                           value={input[field.key] ?? ""}
                           onChange={(event) =>
                             setInput({
@@ -275,6 +291,7 @@ export default function IndependentBusinessProcessExecutionsPage() {
                           id={controlId}
                           className="form-select"
                           required={field.required}
+                          title={field.helpText}
                           value={input[field.key] ?? ""}
                           onChange={(event) =>
                             setInput({
@@ -298,6 +315,7 @@ export default function IndependentBusinessProcessExecutionsPage() {
                           className="form-control"
                           required={field.required}
                           maxLength={field.maxLength}
+                          title={field.helpText}
                           value={input[field.key] ?? ""}
                           onChange={(event) =>
                             setInput({
@@ -408,6 +426,99 @@ export default function IndependentBusinessProcessExecutionsPage() {
   );
 }
 
+function AutonomousDiscoveryFlow() {
+  const steps = [
+    {
+      title: "Tema amplo",
+      owner: "Usuário",
+      description: "Você informa apenas o universo que deseja explorar.",
+      icon: <Target size={20} aria-hidden="true" />,
+    },
+    {
+      title: "Pesquisa factual",
+      owner: "Argos",
+      description: "Internet, Instagram, Biblioteca Meta e /pesquisas.",
+      icon: <Search size={20} aria-hidden="true" />,
+    },
+    {
+      title: "2–3 candidatas",
+      owner: "Backend",
+      description: "Dossiês vinculados e rastreáveis, sem inventar demanda.",
+      icon: <BookOpen size={20} aria-hidden="true" />,
+    },
+    {
+      title: "Priorização",
+      owner: "Atena",
+      description: "Seleciona no máximo uma oportunidade por ciclo.",
+      icon: <Sparkles size={20} aria-hidden="true" />,
+    },
+    {
+      title: "Economia",
+      owner: "Plutus",
+      description: "Valida preço, margem, limites e risco financeiro.",
+      icon: <WalletCards size={20} aria-hidden="true" />,
+    },
+    {
+      title: "Harness PDE",
+      owner: "Dédalo",
+      description: "Projeta a experiência sensorial e personalizada com IA.",
+      icon: <PackageCheck size={20} aria-hidden="true" />,
+    },
+    {
+      title: "Produto planejado",
+      owner: "Backend",
+      description: "Cria o cadastro em PLANNED e mantém execução em STOP.",
+      icon: <CheckCircle2 size={20} aria-hidden="true" />,
+    },
+  ];
+  return (
+    <section
+      className="independent-process-flow-overview"
+      aria-labelledby="autonomous-flow-title"
+    >
+      <div className="independent-process-flow-overview__heading">
+        <div>
+          <span>Fluxo autônomo até o produto</span>
+          <h2 id="autonomous-flow-title">Do tema amplo ao PDE planejado</h2>
+        </div>
+        <div className="independent-process-channel">
+          <Instagram size={18} aria-hidden="true" />
+          Canal de aquisição: Instagram
+        </div>
+      </div>
+      <p>
+        Os agentes derivam público, problema, oferta, economia e experiência. O
+        produto só nasce em <strong>PLANNED</strong> após todos os gates; não há
+        publicação, campanha ou gasto automático. A priorização deste fluxo
+        serve ao planejamento: a validação privada do Momento de Compra continua
+        obrigatória antes da priorização comercial final e da ativação.
+      </p>
+      <div className="independent-process-flow-overview__steps">
+        {steps.map((step, index) => (
+          <div
+            className="independent-process-flow-overview__step-wrap"
+            key={step.title}
+          >
+            <article className="independent-process-flow-overview__step">
+              <div>{step.icon}</div>
+              <span>{step.owner}</span>
+              <strong>{step.title}</strong>
+              <small>{step.description}</small>
+            </article>
+            {index < steps.length - 1 ? (
+              <ArrowRight
+                className="independent-process-flow-overview__arrow"
+                size={18}
+                aria-hidden="true"
+              />
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 type ExecutionDetailProps = {
   loading: boolean;
   error: boolean;
@@ -501,6 +612,10 @@ function ExecutionDetail({ loading, error, detail }: ExecutionDetailProps) {
             </div>
           </div>
 
+          {detail.processReport ? (
+            <PdeOpportunityFlowReport report={detail.processReport} />
+          ) : null}
+
           <details className="independent-process-input">
             <summary>Ver entrada enviada</summary>
             <dl>
@@ -571,6 +686,310 @@ function ExecutionDetail({ loading, error, detail }: ExecutionDetailProps) {
       ) : null}
     </>
   );
+}
+
+const maturityLabels: Record<string, string> = {
+  SIGNAL: "Sinal inicial",
+  RESEARCHABLE: "Precisa aprofundar",
+  DOSSIER_READY: "Dossiê pronto",
+  HUMAN_REVIEW: "Revisão humana",
+  REJECTED: "Descartada",
+};
+
+const flowStatusLabels: Record<string, string> = {
+  ...statusLabels,
+  NOT_SELECTED: "Não priorizada",
+  NOT_STARTED: "Não iniciada",
+  WAITING: "Aguardando",
+  OBSERVED: "Observado",
+  MISSING: "Não comprovado",
+};
+
+function PdeOpportunityFlowReport({
+  report,
+}: {
+  report: IndependentBusinessProcessFlowReport;
+}) {
+  return (
+    <section
+      className="independent-process-report"
+      aria-labelledby="independent-process-report-title"
+    >
+      <header className="independent-process-report__header">
+        <div>
+          <span>Relatório de negócio · Argos até produto</span>
+          <h3 id="independent-process-report-title">{report.headline}</h3>
+        </div>
+        <span
+          className={`independent-process-status ${statusClass(report.status)}`}
+        >
+          {flowStatusLabels[report.status] ?? report.status}
+        </span>
+      </header>
+
+      <div className="independent-process-report__summary">
+        <div>
+          <span>Canal</span>
+          <strong>
+            <Instagram size={16} aria-hidden="true" />
+            {report.acquisitionChannel}
+          </strong>
+        </div>
+        <div>
+          <span>Candidatas factuais</span>
+          <strong>{report.candidateCount}</strong>
+        </div>
+        <div>
+          <span>Dossiês prontos</span>
+          <strong>{report.dossierReadyCount}</strong>
+        </div>
+        <div>
+          <span>Produtos planejados</span>
+          <strong>{report.plannedProductCount}</strong>
+        </div>
+      </div>
+
+      <div className="independent-process-report__section-heading">
+        <Globe2 size={20} aria-hidden="true" />
+        <div>
+          <h4>Cobertura factual</h4>
+          <p>O que Argos conseguiu observar em cada fonte.</p>
+        </div>
+      </div>
+      <div className="independent-process-report__coverage">
+        {report.sourceCoverage.map((source) => (
+          <article key={source.sourceCode}>
+            <span
+              className={`independent-process-status ${statusClass(
+                source.status === "OBSERVED"
+                  ? "COMPLETED"
+                  : source.status === "MISSING"
+                    ? "BLOCKED"
+                    : source.status,
+              )}`}
+            >
+              {flowStatusLabels[source.status] ?? source.status}
+            </span>
+            <strong>{source.label}</strong>
+            <b>{source.itemCount} itens</b>
+            <small>{source.summary}</small>
+          </article>
+        ))}
+      </div>
+
+      <div className="independent-process-report__section-heading">
+        <Target size={20} aria-hidden="true" />
+        <div>
+          <h4>Mercados candidatos</h4>
+          <p>
+            Sinais, fontes e decisões persistidas — intenção e anúncios não são
+            tratados como vendas.
+          </p>
+        </div>
+      </div>
+      {report.candidates.length === 0 ? (
+        <div className="independent-process-report__empty">
+          Argos ainda não formou uma candidata factual. Consulte a cobertura e a
+          próxima lacuna da pesquisa.
+        </div>
+      ) : (
+        <div className="independent-process-candidates">
+          {report.candidates.map((candidate) => (
+            <article
+              className="independent-process-candidate"
+              key={candidate.opportunityId}
+            >
+              <header>
+                <div>
+                  <span>Candidata #{candidate.opportunityId}</span>
+                  <h4>{candidate.name}</h4>
+                  {candidate.primaryAudience ? (
+                    <p>{candidate.primaryAudience}</p>
+                  ) : null}
+                </div>
+                <div className="independent-process-candidate__badges">
+                  <span className="independent-process-status is-pending">
+                    {maturityLabels[candidate.maturity] ?? candidate.maturity}
+                  </span>
+                  {candidate.score !== undefined ? (
+                    <strong>Score factual {candidate.score}</strong>
+                  ) : null}
+                </div>
+              </header>
+
+              <dl className="independent-process-candidate__facts">
+                {candidate.rootPain ? (
+                  <div>
+                    <dt>Dor raiz</dt>
+                    <dd>{candidate.rootPain}</dd>
+                  </div>
+                ) : null}
+                {candidate.purchaseSituation ? (
+                  <div>
+                    <dt>Momento de compra</dt>
+                    <dd>{candidate.purchaseSituation}</dd>
+                  </div>
+                ) : null}
+                {candidate.instagramFitEvidence ? (
+                  <div>
+                    <dt>Aderência ao Instagram</dt>
+                    <dd>{candidate.instagramFitEvidence}</dd>
+                  </div>
+                ) : null}
+                {candidate.residualEffort ? (
+                  <div>
+                    <dt>Esforço que ainda sobra</dt>
+                    <dd>{candidate.residualEffort}</dd>
+                  </div>
+                ) : null}
+                {candidate.commercialRisk ? (
+                  <div>
+                    <dt>Risco comercial</dt>
+                    <dd>{candidate.commercialRisk}</dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>Linhagem</dt>
+                  <dd>
+                    Dossiê{" "}
+                    {candidate.dossierId
+                      ? `#${candidate.dossierId}`
+                      : "ainda não criado"}
+                    {candidate.commercialPlanId
+                      ? ` · Plano #${candidate.commercialPlanId}`
+                      : ""}
+                  </dd>
+                </div>
+              </dl>
+
+              {candidate.observedLanguage.length > 0 ? (
+                <div className="independent-process-candidate__language">
+                  <strong>Linguagem observada</strong>
+                  <div>
+                    {candidate.observedLanguage.map((text) => (
+                      <span key={text}>“{text}”</span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {candidate.currentAlternatives.length > 0 ? (
+                <div className="independent-process-candidate__language">
+                  <strong>Alternativas que o público usa hoje</strong>
+                  <div>
+                    {candidate.currentAlternatives.map((alternative) => (
+                      <span key={alternative}>{alternative}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="independent-process-candidate__sources">
+                <strong>
+                  Fontes da candidata ({candidate.sources.length})
+                </strong>
+                {candidate.sources.length === 0 ? (
+                  <p>Nenhuma fonte rastreável foi vinculada.</p>
+                ) : (
+                  <ul>
+                    {candidate.sources.map((source, index) => (
+                      <li
+                        key={`${source.sourceType}-${source.url ?? source.title}-${index}`}
+                      >
+                        <span>{source.sourceType}</span>
+                        {isHttpUrl(source.url) ? (
+                          <a href={source.url} target="_blank" rel="noreferrer">
+                            {source.title}
+                            <ExternalLink size={13} aria-hidden="true" />
+                          </a>
+                        ) : (
+                          <span className="independent-process-candidate__source-reference">
+                            <strong>{source.title}</strong>
+                            {source.url ? <small>{source.url}</small> : null}
+                          </span>
+                        )}
+                        {source.evidence ? (
+                          <small>{source.evidence}</small>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="independent-process-candidate__stages">
+                {candidate.stages.map((stage, index) => (
+                  <div
+                    className="independent-process-candidate__stage-wrap"
+                    key={stage.stageCode}
+                  >
+                    <article className="independent-process-candidate__stage">
+                      <span>{stage.agent}</span>
+                      <strong>{stage.label}</strong>
+                      <b
+                        className={`independent-process-status ${statusClass(
+                          stage.status,
+                        )}`}
+                      >
+                        {flowStatusLabels[stage.status] ?? stage.status}
+                      </b>
+                      {stage.decision ? (
+                        <small>Decisão: {stage.decision}</small>
+                      ) : null}
+                      {stage.taskId ? (
+                        <small>Tarefa #{stage.taskId}</small>
+                      ) : null}
+                      {stage.estimatedCostUsd !== undefined ? (
+                        <small>
+                          Custo:{" "}
+                          {formatCost(stage.estimatedCostUsd, "COMPLETE")}
+                        </small>
+                      ) : null}
+                      {stage.updatedAt ? (
+                        <small>Atualizado: {formatDate(stage.updatedAt)}</small>
+                      ) : null}
+                      {stage.summary ? <p>{stage.summary}</p> : null}
+                      {stage.blocker ? (
+                        <p className="text-danger">Bloqueio: {stage.blocker}</p>
+                      ) : null}
+                    </article>
+                    {index < candidate.stages.length - 1 ? (
+                      <ArrowRight size={16} aria-hidden="true" />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              <div className="independent-process-candidate__next-action">
+                <strong>Próxima ação</strong>
+                <span>{candidate.nextAction}</span>
+                {candidate.productId ? (
+                  <div className="independent-process-candidate__product">
+                    <small>
+                      {candidate.productName} · {candidate.productStatus}
+                    </small>
+                    <a
+                      className="btn btn-sm btn-outline-primary"
+                      href={`/products/${candidate.productId}/edit`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir produto #{candidate.productId}
+                      <ExternalLink size={14} aria-hidden="true" />
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function isHttpUrl(value?: string) {
+  return value?.startsWith("https://") || value?.startsWith("http://");
 }
 
 function findSupervisedMetaCycleId(

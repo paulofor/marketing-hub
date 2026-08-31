@@ -2,6 +2,9 @@ package com.marketinghub.landinggeneratoragent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +12,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
@@ -226,6 +230,19 @@ class PdeConstructionBpmTaskConsumerTest {
 
     PdeConstructionBpmTaskConsumer.validate(
         result, "venda-entrega-satisfacao-cliente", "materialization");
+  }
+
+  /** Encerra o processo Codex filho antes do lançador quando a atividade ultrapassa o timeout. */
+  @Test
+  void terminatesWholeProcessTree() {
+    Process process = mock(Process.class);
+    ProcessHandle child = mock(ProcessHandle.class);
+    when(process.descendants()).thenReturn(Stream.of(child));
+
+    PdeConstructionBpmTaskConsumer.terminateTree(process);
+
+    verify(child).destroyForcibly();
+    verify(process).destroyForcibly();
   }
 
   /** Verifica recursivamente o subconjunto estrito exigido pelos contratos de saída. */

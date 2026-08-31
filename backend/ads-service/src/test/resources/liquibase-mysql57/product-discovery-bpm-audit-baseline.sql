@@ -154,11 +154,26 @@ CREATE TABLE product_discovery_opportunity (
   id BIGINT NOT NULL AUTO_INCREMENT,
   cycle_id BIGINT NOT NULL,
   name VARCHAR(191) NOT NULL,
+  evidence_json LONGTEXT NULL,
   score DECIMAL(5,2) NOT NULL,
   decision VARCHAR(40) NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_audit_opportunity_cycle
     FOREIGN KEY (cycle_id) REFERENCES product_discovery_cycle(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE product (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(191) NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE opportunity_dossier (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  product_discovery_cycle_id BIGINT NULL,
+  converted_plan_id BIGINT NULL,
+  title VARCHAR(191) NOT NULL,
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO business_process_definition
@@ -224,3 +239,9 @@ VALUES
 
 INSERT INTO product_discovery_opportunity (cycle_id, name, score, decision)
 VALUES (40, 'Proposta pronta em dez minutos', 76.00, 'RESEARCH_MORE');
+
+INSERT INTO product (id, name)
+VALUES (900, 'Produto PDE de homologação');
+
+INSERT INTO opportunity_dossier (id, product_discovery_cycle_id, converted_plan_id, title)
+VALUES (700, 40, NULL, 'Dossiê factual de homologação');

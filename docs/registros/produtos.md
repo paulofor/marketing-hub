@@ -1,5 +1,20 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-31 — Handoff autônomo da descoberta até produto planejado
+
+- Evidência: ciclos independentes de Argos concluíam sem candidatas estruturais, dossiê ou fila para
+  Atena; a maturidade devolvida pelo worker permanecia apenas dentro do JSON de evidências.
+- Alternativas: transferência manual mantinha a perda de contexto; um pipeline paralelo duplicaria
+  filas e responsabilidades; foi escolhida a conexão com os contratos BPM já publicados.
+- Decisão: tema amplo inicia descoberta B2C/Instagram com Web, Meta e `/pesquisas`; o backend cria um
+  dossiê por candidata e libera sequencialmente Atena, Plutus e Dédalo apenas para `DOSSIER_READY`.
+- Segurança: alto risco e rejeição prevalecem sobre prontidão declarada pelo modelo; o worker e o
+  backend bloqueiam combinações contraditórias antes do handoff.
+- Materialização: três gates aprovados criam um produto `PLANNED` e preservam plano, harness,
+  evidências e custos, sem publicar, gastar ou registrar venda.
+- Relatório: a tela independente deve explicar candidatas, fontes, dossiês, decisões, bloqueios,
+  próxima ação e produto sem obrigar leitura de JSON técnico.
+
 ## 2026-08-30 — Argos amplia a descoberta factual para aquisição pelo Instagram
 
 - Evidência histórica: os ciclos 40 a 44 operaram em fallback determinístico, com pouca cobertura e

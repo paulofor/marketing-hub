@@ -10,6 +10,15 @@ public interface OpportunityDossierRepository extends JpaRepository<OpportunityD
   /** Lista os dossiês priorizando os atualizados recentemente. */
   List<OpportunityDossier> findAllByOrderByUpdatedAtDesc();
 
-  /** Localiza o dossiê que originou um ciclo executável de pesquisa de Argos. */
-  Optional<OpportunityDossier> findByProductDiscoveryCycleId(Long productDiscoveryCycleId);
+  /** Lista todos os dossiês candidatos criados por um mesmo ciclo de Argos. */
+  List<OpportunityDossier> findAllByProductDiscoveryCycleIdOrderByIdAsc(
+      Long productDiscoveryCycleId);
+
+  /** Localiza o dossiê idempotente da candidata factual informada. */
+  Optional<OpportunityDossier> findByProductDiscoveryOpportunityId(
+      Long productDiscoveryOpportunityId);
+
+  /** Reutiliza a candidata de mesmo ciclo e título após uma reanálise auditável de Argos. */
+  Optional<OpportunityDossier> findFirstByProductDiscoveryCycleIdAndTitleIgnoreCase(
+      Long productDiscoveryCycleId, String title);
 }

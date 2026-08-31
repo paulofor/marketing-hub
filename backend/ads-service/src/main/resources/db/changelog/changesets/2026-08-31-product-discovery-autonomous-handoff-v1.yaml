@@ -1,0 +1,356 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-1-maturity-column-contract
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_opportunity
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+                FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_discovery_opportunity'
+                 AND column_name = 'maturity_status'
+                 AND NOT (
+                   data_type = 'varchar'
+                   AND character_maximum_length = 32
+                 )
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-2-maturity-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: product_discovery_opportunity
+              columnName: maturity_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_opportunity
+                ADD COLUMN maturity_status VARCHAR(32) NULL AFTER decision;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_opportunity
+                DROP COLUMN maturity_status;
+
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-3-maturity-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: product_discovery_opportunity
+            columnName: maturity_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_discovery_opportunity
+                 SET maturity_status =
+                   CASE
+                     WHEN JSON_VALID(COALESCE(evidence_json, '')) = 1 THEN
+                       CASE JSON_UNQUOTE(JSON_EXTRACT(evidence_json, '$.candidateEvidence.maturity'))
+                         WHEN 'SIGNAL' THEN 'SIGNAL'
+                         WHEN 'RESEARCHABLE' THEN 'RESEARCHABLE'
+                         WHEN 'DOSSIER_READY' THEN 'DOSSIER_READY'
+                         WHEN 'HUMAN_REVIEW' THEN 'HUMAN_REVIEW'
+                         WHEN 'REJECTED' THEN 'REJECTED'
+                         ELSE CASE decision
+                           WHEN 'APPROVE' THEN 'DOSSIER_READY'
+                           WHEN 'HUMAN_REVIEW' THEN 'HUMAN_REVIEW'
+                           WHEN 'REJECT' THEN 'REJECTED'
+                           ELSE 'RESEARCHABLE'
+                         END
+                       END
+                     ELSE CASE decision
+                       WHEN 'APPROVE' THEN 'DOSSIER_READY'
+                       WHEN 'HUMAN_REVIEW' THEN 'HUMAN_REVIEW'
+                       WHEN 'REJECT' THEN 'REJECTED'
+                       ELSE 'RESEARCHABLE'
+                     END
+                   END
+               WHERE maturity_status IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_discovery_opportunity
+                 SET maturity_status = NULL;
+
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-4-maturity-final-contract
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: product_discovery_opportunity
+            columnName: maturity_status
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT CASE
+                WHEN COUNT(*) = 0 THEN 0
+                WHEN COUNT(*) = 1
+                  AND MAX(non_unique) = 1
+                  AND MAX(column_name = 'maturity_status') = 1
+                  AND MAX(seq_in_index) = 1
+                  AND (
+                    SELECT is_nullable = 'NO'
+                      AND column_default = 'SIGNAL'
+                      AND data_type = 'varchar'
+                      AND character_maximum_length = 32
+                      FROM information_schema.columns
+                     WHERE table_schema = DATABASE()
+                       AND table_name = 'product_discovery_opportunity'
+                       AND column_name = 'maturity_status'
+                  ) = 1
+                  THEN 0
+                ELSE 1
+              END
+                FROM information_schema.statistics
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_discovery_opportunity'
+                 AND index_name = 'idx_product_discovery_opportunity_maturity'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-5-maturity-contract
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            indexExists:
+              tableName: product_discovery_opportunity
+              indexName: idx_product_discovery_opportunity_maturity
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM product_discovery_opportunity WHERE maturity_status IS NULL
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_opportunity
+                MODIFY COLUMN maturity_status VARCHAR(32) NOT NULL DEFAULT 'SIGNAL',
+                ADD KEY idx_product_discovery_opportunity_maturity (maturity_status);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_opportunity
+                DROP KEY idx_product_discovery_opportunity_maturity,
+                MODIFY COLUMN maturity_status VARCHAR(32) NULL;
+
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-6-dossier-lineage-contract
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: opportunity_dossier
+        - tableExists:
+            tableName: product_discovery_opportunity
+        - tableExists:
+            tableName: product
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT CASE
+                WHEN column_count NOT IN (0, 2) OR valid_column_count <> column_count THEN 1
+                WHEN index_count NOT IN (0, 2)
+                  OR index_entry_count <> index_count
+                  OR valid_index_count <> index_count THEN 1
+                WHEN fk_count NOT IN (0, 2)
+                  OR fk_column_count <> fk_count
+                  OR valid_fk_count <> fk_count THEN 1
+                ELSE 0
+              END
+              FROM (
+                SELECT
+                  (SELECT COUNT(*)
+                     FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND column_name IN (
+                        'product_discovery_opportunity_id', 'created_product_id'
+                      )) AS column_count,
+                  (SELECT COUNT(*)
+                     FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND data_type = 'bigint'
+                      AND is_nullable = 'YES'
+                      AND column_name IN (
+                        'product_discovery_opportunity_id', 'created_product_id'
+                      )) AS valid_column_count,
+                  (SELECT COUNT(DISTINCT index_name)
+                     FROM information_schema.statistics
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND index_name IN (
+                        'uk_opportunity_dossier_discovery_opportunity',
+                        'uk_opportunity_dossier_created_product'
+                      )) AS index_count,
+                  (SELECT COUNT(*)
+                     FROM information_schema.statistics
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND index_name IN (
+                        'uk_opportunity_dossier_discovery_opportunity',
+                        'uk_opportunity_dossier_created_product'
+                      )) AS index_entry_count,
+                  (SELECT COUNT(DISTINCT index_name)
+                     FROM information_schema.statistics
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND non_unique = 0
+                      AND seq_in_index = 1
+                      AND (
+                        (index_name = 'uk_opportunity_dossier_discovery_opportunity'
+                          AND column_name = 'product_discovery_opportunity_id')
+                        OR
+                        (index_name = 'uk_opportunity_dossier_created_product'
+                          AND column_name = 'created_product_id')
+                      )) AS valid_index_count,
+                  (SELECT COUNT(*)
+                     FROM information_schema.referential_constraints
+                    WHERE constraint_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND constraint_name IN (
+                        'fk_opportunity_dossier_discovery_opportunity',
+                        'fk_opportunity_dossier_created_product'
+                      )) AS fk_count,
+                  (SELECT COUNT(*)
+                     FROM information_schema.key_column_usage
+                    WHERE constraint_schema = DATABASE()
+                      AND table_name = 'opportunity_dossier'
+                      AND constraint_name IN (
+                        'fk_opportunity_dossier_discovery_opportunity',
+                        'fk_opportunity_dossier_created_product'
+                      )) AS fk_column_count,
+                  (SELECT COUNT(*)
+                     FROM information_schema.referential_constraints rc
+                     JOIN information_schema.key_column_usage kcu
+                       ON kcu.constraint_schema = rc.constraint_schema
+                      AND kcu.table_name = rc.table_name
+                      AND kcu.constraint_name = rc.constraint_name
+                    WHERE rc.constraint_schema = DATABASE()
+                      AND rc.table_name = 'opportunity_dossier'
+                      AND (
+                        (rc.constraint_name = 'fk_opportunity_dossier_discovery_opportunity'
+                          AND kcu.column_name = 'product_discovery_opportunity_id'
+                          AND kcu.referenced_table_name = 'product_discovery_opportunity'
+                          AND kcu.referenced_column_name = 'id'
+                          AND rc.delete_rule = 'SET NULL')
+                        OR
+                        (rc.constraint_name = 'fk_opportunity_dossier_created_product'
+                          AND kcu.column_name = 'created_product_id'
+                          AND kcu.referenced_table_name = 'product'
+                          AND kcu.referenced_column_name = 'id'
+                          AND rc.delete_rule IN ('RESTRICT', 'NO ACTION'))
+                      )) AS valid_fk_count
+              ) contract_state
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 2026-08-31-product-discovery-autonomous-handoff-v1-7-dossier-lineage
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: opportunity_dossier
+              columnName: product_discovery_opportunity_id
+        - not:
+            columnExists:
+              tableName: opportunity_dossier
+              columnName: created_product_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE opportunity_dossier
+                ADD COLUMN product_discovery_opportunity_id BIGINT NULL AFTER product_discovery_cycle_id,
+                ADD COLUMN created_product_id BIGINT NULL AFTER converted_plan_id,
+                ADD UNIQUE KEY uk_opportunity_dossier_discovery_opportunity (product_discovery_opportunity_id),
+                ADD UNIQUE KEY uk_opportunity_dossier_created_product (created_product_id),
+                ADD CONSTRAINT fk_opportunity_dossier_discovery_opportunity
+                  FOREIGN KEY (product_discovery_opportunity_id)
+                  REFERENCES product_discovery_opportunity(id) ON DELETE SET NULL,
+                ADD CONSTRAINT fk_opportunity_dossier_created_product
+                  FOREIGN KEY (created_product_id) REFERENCES product(id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE opportunity_dossier
+                DROP FOREIGN KEY fk_opportunity_dossier_created_product,
+                DROP FOREIGN KEY fk_opportunity_dossier_discovery_opportunity,
+                DROP KEY uk_opportunity_dossier_created_product,
+                DROP KEY uk_opportunity_dossier_discovery_opportunity,
+                DROP COLUMN created_product_id,
+                DROP COLUMN product_discovery_opportunity_id;

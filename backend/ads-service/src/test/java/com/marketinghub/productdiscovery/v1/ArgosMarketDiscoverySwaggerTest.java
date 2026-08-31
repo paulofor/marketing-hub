@@ -12,12 +12,12 @@ class ArgosMarketDiscoverySwaggerTest {
 
   /** Exige modo, comprador, fontes e auditoria no contrato do ciclo e do worker. */
   @Test
-  void documentsProductDiscoveryV12() throws Exception {
+  void documentsProductDiscoveryV13() throws Exception {
     String swagger = Files.readString(SWAGGER_ROOT.resolve("product-discovery-swagger.yaml"));
 
     assertThat(swagger)
         .contains(
-            "version: 1.2.0",
+            "version: 1.3.0",
             "DISCOVER_MARKETS",
             "VALIDATE_MARKET",
             "marketType",
@@ -37,7 +37,7 @@ class ArgosMarketDiscoverySwaggerTest {
 
     assertThat(swagger)
         .contains(
-            "version: 1.10.0",
+            "version: 1.11.0",
             "enum: [TEXT, TEXTAREA, SELECT]",
             "IndependentBusinessProcessInputOption",
             "Opções canônicas exigidas quando controlType for SELECT");

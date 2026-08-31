@@ -87,7 +87,7 @@ class IndependentBusinessProcessExecutionControllerTest {
             null,
             null);
     when(service.start(any()))
-        .thenReturn(new IndependentBusinessProcessExecutionResponse(summary, List.of()));
+        .thenReturn(new IndependentBusinessProcessExecutionResponse(summary, List.of(), null));
     var mockMvc =
         MockMvcBuilders.standaloneSetup(new IndependentBusinessProcessExecutionController(service))
             .build();

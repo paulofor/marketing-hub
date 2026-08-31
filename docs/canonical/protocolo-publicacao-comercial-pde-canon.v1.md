@@ -143,6 +143,13 @@ comando administrativo deve alterar atomicamente o experimento para `RUNNING`, o
 abrir sua janela comercial e mover o produto para Venda, Entrega e Aprendizado. Se qualquer uma
 dessas alterações não puder ser persistida, nenhuma delas deve permanecer aplicada.
 
+Quando o backend já possuir o run, os gates, a amostra, o teto e as referências auditáveis, a
+decisão humana final deve usar o padrão **revisar e aceitar**. A tela apresenta um resumo em linguagem
+de negócio e um único comando explícito de autorização; o backend registra automaticamente a
+justificativa e as referências persistidas, sem pedir que o operador copie identificadores técnicos.
+Não autorizar continua disponível e exige somente o motivo da recusa. Essa simplificação não amplia
+a autorização: não cria campanha, não publica peça, não realiza contato e não gera gasto.
+
 ## Registro de decisao
 
 Cada publicacao comercial de PDE deve deixar evidencia operacional no Marketing Hub ou na documentacao do experimento:

@@ -398,6 +398,12 @@
   O executor agora distingue inatividade de análise ativa, encerra descendentes antes do lançador,
   repete uma única vez a chamada parada e soma os contadores reais das tentativas. Testes com processo
   filho real cobrem progresso, inatividade, teto absoluto, retry e ausência de órfãos.
+- Fechamento complementar na descoberta autônoma (2026-08-31): o novo handoff Argos → Atena →
+  Plutus → Dédalo acrescentava uma quarta rotina bloqueante aos schedulers de Atena e Plutus; sem
+  ampliar os pools, uma chamada Codex longa poderia impedir a reconexão ou outra fila oficial. Os
+  dois workers passam a manter quatro threads protegidas por teste de contrato. O consumidor BPM de
+  Dédalo também encerra descendentes antes do lançador em timeout, com teste que impede voltar a
+  deixar o processo Codex órfão.
 - Fechamento complementar da Mesa do Agente (2026-08-15): a telemetria persistia processo vivo, heartbeat, eventos, bytes e tokens, mas o monitor descartava esses sinais e mostrava apenas `PROCESSANDO` e um total diário igual a zero, sem distinguir ausência de medição. O monitor passa a associar a telemetria mais recente à identidade canônica do agente e a tela expõe atividade, atraso e consumo informado da execução sem publicar logs brutos ou raciocínio interno.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
@@ -2492,6 +2498,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   sem reescrever a ocorrência histórica bloqueada; o período do macroprocesso registra
   `AUDITED_PRODUCTION_PREFLIGHT` como fonte posterior da reconciliação. Os códigos dos gates foram
   centralizados para impedir nova divergência entre preflight e autorização.
+- **Recorrência de usabilidade fechada em 2026-08-31:** mesmo com todo o contexto persistido, a
+  decisão humana ainda exigia redigitar responsável, justificativa e referência de evidência. O
+  contrato `REVIEW_AND_ACCEPT` passa a apresentar o resumo e preencher a auditoria exclusivamente
+  no backend; aprovação exige um único comando, reprovação continua exigindo o motivo e atividades
+  sem contexto auditável permanecem bloqueadas. Testes de backend, frontend e navegação responsiva
+  impedem que essa etapa volte a expor campos que o sistema já conhece.
 
 ## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
 

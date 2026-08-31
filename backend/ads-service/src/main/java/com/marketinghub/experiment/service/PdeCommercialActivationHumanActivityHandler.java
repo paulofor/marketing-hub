@@ -9,9 +9,12 @@ import com.marketinghub.businessprocess.execution.service.requestProductProcessA
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.experiment.run.ExperimentRun;
+import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -36,6 +39,7 @@ public class PdeCommercialActivationHumanActivityHandler
   private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("^experiment:(\\d+)$");
 
   private final ExperimentRepository experimentRepository;
+  private final ExperimentRunRepository experimentRunRepository;
   private final CommercialPlanRepository commercialPlanRepository;
   private final ExperimentReadinessService readinessService;
   private final ExperimentService experimentService;
@@ -43,10 +47,12 @@ public class PdeCommercialActivationHumanActivityHandler
   /** Configura as fontes de experimento, teto financeiro, prontidão e mudança de estado. */
   public PdeCommercialActivationHumanActivityHandler(
       ExperimentRepository experimentRepository,
+      ExperimentRunRepository experimentRunRepository,
       CommercialPlanRepository commercialPlanRepository,
       ExperimentReadinessService readinessService,
       ExperimentService experimentService) {
     this.experimentRepository = experimentRepository;
+    this.experimentRunRepository = experimentRunRepository;
     this.commercialPlanRepository = commercialPlanRepository;
     this.readinessService = readinessService;
     this.experimentService = experimentService;
@@ -73,8 +79,15 @@ public class PdeCommercialActivationHumanActivityHandler
     Experiment experiment = referencedExperiment(product, sourceReference);
     ExperimentReadinessSummaryDto readiness = readinessService.summarize(experiment.getId());
     CommercialPlan plan = currentPlan(product.getId(), experiment.getId());
+    ExperimentRun productionRun = latestProductionRun(experiment.getId());
     BigDecimal budgetLimit = plan == null ? null : plan.getMaxBudget();
     boolean budgetDefined = budgetLimit != null && budgetLimit.compareTo(BigDecimal.ZERO) > 0;
+    boolean auditContextReady =
+        plan != null
+            && plan.getId() != null
+            && productionRun != null
+            && productionRun.getId() != null
+            && productionRun.getRunNumber() != null;
     List<HumanProductProcessActivityRequirement> requirements = new ArrayList<>();
     readiness
         .runningGateRequirements()
@@ -98,7 +111,22 @@ public class PdeCommercialActivationHumanActivityHandler
             budgetDefined
                 ? "Não ultrapasse o teto persistido sem uma nova decisão humana."
                 : "Defina o teto no plano comercial antes de autorizar a ativação."));
-    boolean ready = readiness.eligibleForRunning() && budgetDefined;
+    requirements.add(
+        new HumanProductProcessActivityRequirement(
+            "AUDIT_CONTEXT_READY",
+            "Evidências vinculadas",
+            auditContextReady,
+            auditContextReady
+                ? "Run #"
+                    + productionRun.getRunNumber()
+                    + " e plano #"
+                    + plan.getId()
+                    + " serão registrados automaticamente."
+                : "O run produtivo e o plano comercial ainda não possuem identidade auditável.",
+            auditContextReady
+                ? "A tela registrará essas referências sem exigir digitação."
+                : "Reconcilie o run produtivo e o plano comercial antes da decisão."));
+    boolean ready = readiness.eligibleForRunning() && budgetDefined && auditContextReady;
     String reason =
         ready
             ? "Preflight, requisitos comerciais e teto financeiro estão prontos para decisão."
@@ -112,23 +140,36 @@ public class PdeCommercialActivationHumanActivityHandler
             ? "amostra ainda não definida"
             : "amostra de " + experiment.getSampleSize() + " contatos";
     String budget = budgetDefined ? brl(budgetLimit) : "teto financeiro ainda não definido";
+    String auditEvidenceReference =
+        auditContextReady
+            ? "experiment:"
+                + experiment.getId()
+                + "; experiment-run:"
+                + productionRun.getId()
+                + "/run-number:"
+                + productionRun.getRunNumber()
+                + "; commercial-plan:"
+                + plan.getId()
+            : null;
     return new HumanProductProcessActivityReadiness(
         ready,
         reason,
-        "Autorizar ativação",
-        "Registra a decisão e inicia a janela comercial somente após todos os requisitos. Não cria campanha paga.",
-        "Autorizar ativação e orçamento",
-        "Confirmo a ativação do experimento "
+        "Li, entendi e autorizo",
+        "Revise o resumo abaixo e autorize com um único comando. O sistema registra as evidências e inicia a janela comercial, sem criar campanha paga.",
+        "Revise e autorize",
+        "O experimento "
             + experiment.getName()
-            + ", com "
+            + " está pronto, com "
             + sample
-            + " e limite máximo de "
+            + " e teto total de "
             + budget
             + ".",
         CONFIRMATION_TOKEN,
         "EXPERIMENT_ACTIVATION",
         experiment.getId(),
-        requirements);
+        requirements,
+        HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
+        auditEvidenceReference);
   }
 
   /** Ativa ou reconcilia os estados comerciais pelo serviço canônico após a confirmação humana. */
@@ -173,6 +214,14 @@ public class PdeCommercialActivationHumanActivityHandler
     return commercialPlanRepository.findByExperimentReference(experimentId).stream()
         .findFirst()
         .or(() -> commercialPlanRepository.findByProductId(productId).stream().findFirst())
+        .orElse(null);
+  }
+
+  /** Retorna o run produtivo exato que sustenta o resumo apresentado ao operador. */
+  private ExperimentRun latestProductionRun(Long experimentId) {
+    return experimentRunRepository
+        .findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            experimentId, ExperimentRunMode.PRODUCTION)
         .orElse(null);
   }
 

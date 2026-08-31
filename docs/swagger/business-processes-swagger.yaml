@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.10.0
+  version: 1.11.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades, documentos e execuções independentes no Marketing Hub.
 paths:
   /api/business-processes:
@@ -203,6 +203,10 @@ paths:
       responses:
         "201":
           description: Entidade técnica e primeira tarefa BPM criadas na mesma transação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndependentBusinessProcessExecution"
         "400":
           {
             description: Entrada incompatível com os campos declarados pelo backend,
@@ -224,6 +228,10 @@ paths:
       responses:
         "200":
           description: Resumo consolidado e trilha auditável de tarefas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndependentBusinessProcessExecution"
         "404": { description: Execução independente não encontrada }
 components:
   parameters:
@@ -757,6 +765,14 @@ components:
         workspaceReferenceId: { type: integer, format: int64, nullable: true }
         targetProcessDefinitionId:
           { type: integer, format: int64, nullable: true }
+        decisionMode:
+          type: string
+          enum: [DETAILED, REVIEW_AND_ACCEPT]
+          description: Define se a decisão exige formulário completo ou apenas revisão e aceite.
+        auditEvidenceReference:
+          type: string
+          nullable: true
+          description: Referência persistida que o backend registrará sem exigir redigitação.
         requirements:
           type: array
           items:
@@ -766,15 +782,24 @@ components:
       description: Decisão explícita exigida para uma atividade de aprovação humana.
       required:
         - decision
-        - operatorName
-        - justification
-        - evidenceReference
         - confirmationToken
       properties:
         decision: { type: string, enum: [APPROVE, REJECT] }
-        operatorName: { type: string, minLength: 3, maxLength: 191 }
-        justification: { type: string, minLength: 10, maxLength: 2000 }
-        evidenceReference: { type: string, minLength: 3, maxLength: 1000 }
+        operatorName:
+          type: string
+          minLength: 3
+          maxLength: 191
+          description: Obrigatório no modo DETAILED; resolvido pelo backend em REVIEW_AND_ACCEPT.
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Obrigatória no modo DETAILED e em reprovação; gerada pelo backend na aprovação simplificada.
+        evidenceReference:
+          type: string
+          minLength: 3
+          maxLength: 1000
+          description: Obrigatória no modo DETAILED; resolvida pelo backend em REVIEW_AND_ACCEPT.
         confirmationToken: { type: string }
     ProductProcessActivityExecutionRequest:
       type: object
@@ -912,3 +937,170 @@ components:
         createdAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time, nullable: true }
         finishedAt: { type: string, format: date-time, nullable: true }
+    IndependentBusinessProcessExecution:
+      type: object
+      required: [execution, activities]
+      properties:
+        execution:
+          $ref: "#/components/schemas/IndependentBusinessProcessExecutionSummary"
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessActivity"
+        processReport:
+          allOf:
+            - $ref: "#/components/schemas/IndependentBusinessProcessFlowReport"
+          nullable: true
+    IndependentBusinessProcessActivity:
+      type: object
+      required: [activityId, activityName, status, tasks]
+      properties:
+        activityId: { type: string }
+        activityName: { type: string }
+        status:
+          type: string
+          enum: [NOT_STARTED, PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessTask"
+    IndependentBusinessProcessTask:
+      type: object
+      required:
+        [
+          taskId,
+          status,
+          assignedAgentKey,
+          assignedAgentNickname,
+          title,
+          costEstimationStatus,
+          createdAt,
+        ]
+      properties:
+        taskId: { type: integer, format: int64 }
+        status: { type: string }
+        assignedAgentKey: { type: string }
+        assignedAgentNickname: { type: string }
+        title: { type: string }
+        result: { type: object, nullable: true, additionalProperties: true }
+        evidence: { type: object, nullable: true, additionalProperties: true }
+        executionError: { type: string, nullable: true }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        estimatedCostUsd: { type: number, nullable: true }
+        costEstimationStatus: { type: string }
+        modelCode: { type: string, nullable: true }
+        executionMode: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+    IndependentBusinessProcessFlowReport:
+      type: object
+      required:
+        [
+          reportType,
+          status,
+          headline,
+          acquisitionChannel,
+          candidateCount,
+          dossierReadyCount,
+          plannedProductCount,
+          sourceCoverage,
+          candidates,
+        ]
+      properties:
+        reportType: { type: string, enum: [PDE_OPPORTUNITY_TO_PRODUCT_V1] }
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED]
+        headline: { type: string }
+        acquisitionChannel: { type: string, enum: [Instagram] }
+        candidateCount: { type: integer, minimum: 0, maximum: 3 }
+        dossierReadyCount: { type: integer, minimum: 0, maximum: 3 }
+        plannedProductCount: { type: integer, minimum: 0, maximum: 1 }
+        sourceCoverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessSourceCoverage"
+        candidates:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessCandidate"
+    IndependentBusinessProcessSourceCoverage:
+      type: object
+      required: [sourceCode, label, status, itemCount, summary]
+      properties:
+        sourceCode: { type: string, enum: [WEB, META, PESQUISAS, MARKETPLACE] }
+        label: { type: string }
+        status: { type: string, enum: [IN_PROGRESS, OBSERVED, MISSING, BLOCKED] }
+        itemCount: { type: integer, minimum: 0 }
+        summary: { type: string }
+    IndependentBusinessProcessCandidate:
+      type: object
+      required:
+        [
+          opportunityId,
+          name,
+          maturity,
+          decision,
+          observedLanguage,
+          currentAlternatives,
+          nextAction,
+          sources,
+          stages,
+        ]
+      properties:
+        opportunityId: { type: integer, format: int64 }
+        name: { type: string }
+        primaryAudience: { type: string, nullable: true }
+        rootPain: { type: string, nullable: true }
+        score: { type: number, nullable: true }
+        maturity:
+          type: string
+          enum: [SIGNAL, RESEARCHABLE, DOSSIER_READY, HUMAN_REVIEW, REJECTED]
+        decision: { type: string, enum: [APPROVE, RESEARCH_MORE, HUMAN_REVIEW, REJECT] }
+        purchaseSituation: { type: string, nullable: true }
+        observedLanguage: { type: array, items: { type: string } }
+        currentAlternatives: { type: array, items: { type: string } }
+        residualEffort: { type: string, nullable: true }
+        instagramFitEvidence: { type: string, nullable: true }
+        commercialRisk: { type: string, nullable: true }
+        dossierId: { type: integer, format: int64, nullable: true }
+        dossierStatus: { type: string, nullable: true }
+        commercialPlanId: { type: integer, format: int64, nullable: true }
+        productId: { type: integer, format: int64, nullable: true }
+        productName: { type: string, nullable: true }
+        productStatus: { type: string, nullable: true }
+        nextAction: { type: string }
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessCandidateSource"
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndependentBusinessProcessCandidateStage"
+    IndependentBusinessProcessCandidateSource:
+      type: object
+      required: [sourceType, title]
+      properties:
+        sourceType: { type: string, enum: [WEB, META, PESQUISAS, MARKETPLACE] }
+        title: { type: string }
+        url: { type: string, nullable: true }
+        evidence: { type: string, nullable: true }
+    IndependentBusinessProcessCandidateStage:
+      type: object
+      required: [stageCode, label, agent, status]
+      properties:
+        stageCode: { type: string, enum: [ARGOS, ATENA, PLUTUS, DEDALO, PRODUCT] }
+        label: { type: string }
+        agent: { type: string }
+        status: { type: string }
+        decision: { type: string, nullable: true }
+        summary: { type: string, nullable: true }
+        taskId: { type: integer, format: int64, nullable: true }
+        estimatedCostUsd: { type: number, nullable: true }
+        blocker: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }

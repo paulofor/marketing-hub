@@ -26,34 +26,12 @@ const catalog = [
     inputFields: [
       {
         key: "theme",
-        label: "Tema ou pergunta de mercado",
-        controlType: "TEXT",
+        label: "Tema amplo",
+        controlType: "TEXTAREA",
         required: true,
         maxLength: 191,
-        helpText: "Descreva a dor pesquisada.",
-      },
-      {
-        key: "objective",
-        label: "Objetivo comercial da pesquisa",
-        controlType: "TEXTAREA",
-        required: false,
-        maxLength: 5000,
-      },
-      {
-        key: "country",
-        label: "País",
-        controlType: "TEXT",
-        required: true,
-        maxLength: 16,
-        defaultValue: "BR",
-      },
-      {
-        key: "language",
-        label: "Idioma",
-        controlType: "TEXT",
-        required: true,
-        maxLength: 16,
-        defaultValue: "pt-BR",
+        helpText:
+          "Os agentes derivam público, problema, oferta, economia e experiência.",
       },
     ],
   },
@@ -69,7 +47,7 @@ const blocked = {
   sourceReference: "product-discovery-cycle:76",
   displayName: "dor anterior",
   requestedByName: "Marketing Hub",
-  input: { theme: "dor anterior", country: "BR", language: "pt-BR" },
+  input: { theme: "dor anterior" },
   status: "BLOCKED",
   activityCount: 1,
   completedActivityCount: 0,
@@ -81,8 +59,167 @@ const blocked = {
 };
 
 function detail(execution) {
+  const processReport =
+    execution.id === 92
+      ? {
+          reportType: "PDE_OPPORTUNITY_TO_PRODUCT_V1",
+          status: "PENDING",
+          headline: "Duas candidatas factuais aguardam priorização de Atena.",
+          acquisitionChannel: "Instagram",
+          candidateCount: 2,
+          dossierReadyCount: 1,
+          plannedProductCount: 0,
+          sourceCoverage: [
+            {
+              sourceCode: "WEB",
+              label: "Internet",
+              status: "OBSERVED",
+              itemCount: 12,
+              summary: "Fontes públicas independentes coletadas.",
+            },
+            {
+              sourceCode: "META",
+              label: "Biblioteca Meta / Instagram",
+              status: "OBSERVED",
+              itemCount: 3,
+              summary: "Anúncios observados; isso não comprova venda.",
+            },
+            {
+              sourceCode: "PESQUISAS",
+              label: "Acervo /pesquisas",
+              status: "OBSERVED",
+              itemCount: 7,
+              summary: "Referências versionadas confrontaram as hipóteses.",
+            },
+            {
+              sourceCode: "MARKETPLACE",
+              label: "Ofertas comparáveis",
+              status: "OBSERVED",
+              itemCount: 10,
+              summary: "Ofertas não equivalem a vendas.",
+            },
+          ],
+          candidates: [
+            {
+              opportunityId: 501,
+              name: "Guarda-roupa cápsula sensorial para mulheres 40+",
+              primaryAudience: "Mulheres brasileiras de 40 a 55 anos",
+              rootPain: "Escolher combinações ainda exige tentativa manual.",
+              score: 81,
+              maturity: "DOSSIER_READY",
+              decision: "RESEARCH_MORE",
+              purchaseSituation: "Mudança corporal antes de um evento.",
+              observedLanguage: ["Quero me sentir eu de novo"],
+              currentAlternatives: ["Consultoria de imagem"],
+              residualEffort: "Adaptar recomendações ao próprio corpo.",
+              instagramFitEvidence: "Transformação visual em carrossel.",
+              commercialRisk: "Validar disposição real de pagar.",
+              dossierId: 301,
+              dossierStatus: "UNDER_REVIEW",
+              nextAction: "Aguardar Atena priorizar no máximo uma candidata.",
+              sources: [
+                {
+                  sourceType: "WEB",
+                  title: "Pesquisa pública",
+                  url: "https://example.test/pesquisa",
+                  evidence: "Dor recorrente observada.",
+                },
+                {
+                  sourceType: "PESQUISAS",
+                  title: "Artigo interno sobre climatério",
+                  url: "/pesquisas/climaterio.md",
+                  evidence: "Hipótese confrontada no acervo.",
+                },
+              ],
+              stages: [
+                {
+                  stageCode: "ARGOS",
+                  label: "Pesquisa factual",
+                  agent: "Argos",
+                  status: "COMPLETED",
+                  decision: "RESEARCH_MORE",
+                },
+                {
+                  stageCode: "ATENA",
+                  label: "Priorização de mercado",
+                  agent: "Atena",
+                  status: "PENDING",
+                },
+                {
+                  stageCode: "PLUTUS",
+                  label: "Economia e limites",
+                  agent: "Plutus",
+                  status: "WAITING",
+                },
+                {
+                  stageCode: "DEDALO",
+                  label: "Harness e experiência PDE",
+                  agent: "Dédalo",
+                  status: "WAITING",
+                },
+                {
+                  stageCode: "PRODUCT",
+                  label: "Produto planejado",
+                  agent: "Backend",
+                  status: "WAITING",
+                },
+              ],
+            },
+            {
+              opportunityId: 502,
+              name: "Organizador visual de combinações confortáveis",
+              primaryAudience: "Mulheres brasileiras de 40 a 55 anos",
+              rootPain: "O armário não traduz mudanças de rotina.",
+              score: 63,
+              maturity: "RESEARCHABLE",
+              decision: "RESEARCH_MORE",
+              observedLanguage: [],
+              currentAlternatives: [],
+              commercialRisk: "Faltam anúncios aderentes.",
+              dossierId: 302,
+              dossierStatus: "RESEARCHING",
+              nextAction: "Argos deve aprofundar as lacunas factuais.",
+              sources: [],
+              stages: [
+                {
+                  stageCode: "ARGOS",
+                  label: "Pesquisa factual",
+                  agent: "Argos",
+                  status: "COMPLETED",
+                  decision: "RESEARCH_MORE",
+                },
+                {
+                  stageCode: "ATENA",
+                  label: "Priorização de mercado",
+                  agent: "Atena",
+                  status: "NOT_STARTED",
+                },
+                {
+                  stageCode: "PLUTUS",
+                  label: "Economia e limites",
+                  agent: "Plutus",
+                  status: "WAITING",
+                },
+                {
+                  stageCode: "DEDALO",
+                  label: "Harness e experiência PDE",
+                  agent: "Dédalo",
+                  status: "WAITING",
+                },
+                {
+                  stageCode: "PRODUCT",
+                  label: "Produto planejado",
+                  agent: "Backend",
+                  status: "WAITING",
+                },
+              ],
+            },
+          ],
+        }
+      : undefined;
   return {
     execution,
+    processReport,
     activities: [
       {
         activityId: "marketEvidence",
@@ -181,7 +318,11 @@ try {
     await expect(
       page.getByText("Fonte pública recusou a consulta.").first(),
     ).toBeVisible();
-    await expect(page.getByLabel("País *")).toHaveValue("BR");
+    await expect(
+      page.getByRole("heading", { name: "Do tema amplo ao PDE planejado" }),
+    ).toBeVisible();
+    await expect(page.getByText("Canal de aquisição: Instagram")).toBeVisible();
+    await expect(page.getByText("Produto planejado").first()).toBeVisible();
 
     const submit = page.getByRole("button", { name: "Iniciar processo" });
     await submit.click();
@@ -191,11 +332,8 @@ try {
       `${profileName}: validação obrigatória não bloqueou envio`,
     );
     await page
-      .getByLabel("Tema ou pergunta de mercado *")
-      .fill("agenda vazia para manicures");
-    await page
-      .getByLabel("Objetivo comercial da pesquisa")
-      .fill("Comprovar uma dor urgente e monetizável sem inventar produto.");
+      .getByLabel("Tema amplo *")
+      .fill("guarda-roupa cápsula para mulheres 40+ com bem-estar");
     await submit.click({ noWaitAfter: true });
     await expect(
       page.getByRole("button", { name: "Iniciando..." }),
@@ -214,8 +352,19 @@ try {
     }
     await expect(
       page.getByRole("heading", {
-        name: "Execução #92 · agenda vazia para manicures",
+        name: "Execução #92 · guarda-roupa cápsula para mulheres 40+ com bem-estar",
       }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Guarda-roupa cápsula sensorial para mulheres 40+"),
+    ).toBeVisible();
+    await expect(page.getByText("Biblioteca Meta / Instagram")).toBeVisible();
+    await expect(page.getByText("/pesquisas/climaterio.md")).toBeVisible();
+    await expect(
+      page.getByText("Harness e experiência PDE").first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Aguardar Atena priorizar no máximo uma candidata."),
     ).toBeVisible();
 
     assert.equal(posts.length, 1, `${profileName}: duplo envio da execução`);
@@ -224,15 +373,12 @@ try {
       52,
       `${profileName}: processo incorreto`,
     );
-    assert.equal(
-      posts[0].input.country,
-      "BR",
-      `${profileName}: default de país ausente`,
-    );
-    assert.equal(
-      posts[0].input.language,
-      "pt-BR",
-      `${profileName}: default de idioma ausente`,
+    assert.deepEqual(
+      posts[0].input,
+      {
+        theme: "guarda-roupa cápsula para mulheres 40+ com bem-estar",
+      },
+      `${profileName}: tela enviou decisões que pertencem aos agentes`,
     );
     assert.equal(
       "productId" in posts[0],

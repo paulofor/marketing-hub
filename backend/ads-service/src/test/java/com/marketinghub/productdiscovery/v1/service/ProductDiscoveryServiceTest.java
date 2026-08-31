@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -14,6 +15,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
@@ -181,6 +183,7 @@ class ProductDiscoveryServiceTest {
             "Cobertura Meta e dez ofertas comparáveis ainda ausentes",
             "{\"marketplaceOffers\":[{\"marketplace\":\"HOTMART\",\"referenceId\":\"1\",\"title\":\"Imagem profissional\"}]}",
             new BigDecimal("58"),
+            ProductDiscoveryOpportunityMaturity.RESEARCHABLE,
             ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
     ProductDiscoveryAnalysisAuditRequest audit =
         new ProductDiscoveryAnalysisAuditRequest(
@@ -206,7 +209,7 @@ class ProductDiscoveryServiceTest {
             new ProductDiscoveryResultRequest(
                 "lease-27",
                 "Candidata factual preservada; pesquisa comercial ainda necessária.",
-                List.of(opportunity),
+                List.of(opportunity, opportunity),
                 evidenceReport,
                 audit));
 
@@ -214,8 +217,120 @@ class ProductDiscoveryServiceTest {
     assertThat(cycle.getResearchAnalysisModel()).isEqualTo("gpt-5.6-sol");
     assertThat(cycle.getResearchAnalysisRawResponse()).contains("decisionSummary");
     assertThat(cycle.getResearchEvidenceReportJson()).contains("DISCOVER_MARKETS");
-    verify(opportunityRepository).save(any(ProductDiscoveryOpportunity.class));
+    verify(opportunityRepository, times(2)).save(any(ProductDiscoveryOpportunity.class));
     verify(bpmAuditService).recordAnalysis(cycle, audit);
+  }
+
+  /** Deve bloquear uma síntese autônoma que não compare ao menos duas candidatas factuais. */
+  @Test
+  void blocksAutonomousDiscoveryWithOnlyOneCandidate() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(30L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-30");
+    cycle.setResearchMode(ProductDiscoveryResearchMode.DISCOVER_MARKETS);
+    when(cycleRepository.findById(30L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Candidata isolada",
+            "Público",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Comparação factual ausente",
+            "{}",
+            new BigDecimal("45"),
+            ProductDiscoveryOpportunityMaturity.RESEARCHABLE,
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    30L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-30", "Apenas uma candidata", List.of(opportunity))))
+        .hasMessageContaining("duas a três candidatas factuais");
+  }
+
+  /** Deve rejeitar aprovação que contradiz a maturidade factual declarada pela candidata. */
+  @Test
+  void blocksApprovalWithoutDossierReadyMaturity() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(28L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-28");
+    when(cycleRepository.findById(28L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Sinal imaturo",
+            "Público",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Ainda faltam fontes",
+            "{}",
+            new BigDecimal("45"),
+            ProductDiscoveryOpportunityMaturity.RESEARCHABLE,
+            ProductDiscoveryOpportunityDecision.APPROVE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    28L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-28", "Aprovação contraditória", List.of(opportunity))))
+        .hasMessageContaining("DOSSIER_READY");
+  }
+
+  /** Deve impedir que uma candidata sensível contorne o gate humano usando maturidade pronta. */
+  @Test
+  void blocksDossierReadyThatStillRequiresHumanReview() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(29L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-29");
+    when(cycleRepository.findById(29L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Situação sensível",
+            "Público",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Revisão humana obrigatória",
+            "{}",
+            new BigDecimal("70"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
+            ProductDiscoveryOpportunityDecision.HUMAN_REVIEW);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    29L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-29", "Revisão obrigatória", List.of(opportunity))))
+        .hasMessageContaining("HUMAN_REVIEW exige HUMAN_REVIEW");
   }
 
   /** Deve bloquear a conclusao dirigida quando faltarem dez ofertas reais comparaveis. */
@@ -244,7 +359,8 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"marketplaceOffers\":[{\"marketplace\":\"HOTMART\",\"referenceId\":\"1\"}]}",
             new BigDecimal("50"),
-            ProductDiscoveryOpportunityDecision.APPROVE);
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
 
     assertThatThrownBy(
             () ->
@@ -291,6 +407,7 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"marketplaceOffers\":[" + offers + "]}",
             new BigDecimal("50"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
             ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
@@ -348,6 +465,7 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"marketplaceOffers\":[" + paidOffers + "," + ads + "]}",
             new BigDecimal("50"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
             ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
@@ -357,6 +475,45 @@ class ProductDiscoveryServiceTest {
                     new ProductDiscoveryResultRequest(
                         "lease-26", "Pesquisar mais", List.of(opportunity))))
         .hasMessageContaining("recebidas 9");
+  }
+
+  /** Deve bloquear maturidade pronta quando a cobertura Instagram não foi comprovada. */
+  @Test
+  void blocksDossierReadyWithoutObservedInstagramMetaEvidence() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(29L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-29");
+    cycle.setAcquisitionChannel("Instagram");
+    cycle.setCommercialConstraints("B2C e mobile");
+    when(cycleRepository.findById(29L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Rotina visual 40+",
+            "Mulheres 40+",
+            "Decisão visual ainda exige montagem",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "Meta ainda não observada",
+            "{\"purchaseMomentGate\":{\"required\":true},\"metaAdEvidence\":[],\"metaCoverage\":[]}",
+            new BigDecimal("72"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    29L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-29", "Dossiê declarado pronto", List.of(opportunity))))
+        .hasMessageContaining("Biblioteca Meta para Instagram");
   }
 
   /** Deve impedir que o worker aprove B2C no Instagram antes das duas leituras privadas. */
@@ -386,6 +543,7 @@ class ProductDiscoveryServiceTest {
             null,
             "{\"purchaseMomentGate\":{\"required\":true,\"sourceQualityPassed\":true,\"finalPrioritizationEligible\":false}}",
             new BigDecimal("83"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
             ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
@@ -426,6 +584,7 @@ class ProductDiscoveryServiceTest {
             {"purchaseMomentGate":{"required":true,"status":"PASS","sourceQualityPassed":true,"finalPrioritizationEligible":true,"minimumIndependentReadings":2,"sourceQuality":{"passed":true,"evaluatedAt":"2026-08-26T10:00:00Z","maxAgeDays":30,"reasons":[]},"eligibleCandidateNames":["Ensaio profissional"],"candidates":[]}}
             """,
             new BigDecimal("83"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
             ProductDiscoveryOpportunityDecision.APPROVE);
 
     assertThatThrownBy(
@@ -466,6 +625,15 @@ class ProductDiscoveryServiceTest {
             null,
             """
             {
+              "metaAdEvidence": [{
+                "active": true,
+                "publisherPlatforms": ["INSTAGRAM"]
+              }],
+              "metaCoverage": [{
+                "publisherPlatform": "INSTAGRAM",
+                "sourceStatus": "OBSERVED",
+                "activeAds": 1
+              }],
               "purchaseMomentGate": {
                 "required": true,
                 "status": "PASS",
@@ -563,6 +731,7 @@ class ProductDiscoveryServiceTest {
             }
             """,
             new BigDecimal("83"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
             ProductDiscoveryOpportunityDecision.APPROVE);
 
     ProductDiscoveryCycleDetailResponse response =

@@ -162,21 +162,24 @@ function history(phase) {
         control: {
           executorType: "HUMAN",
           interactionType: "APPROVAL",
-          actionLabel: "Autorizar ativação",
+          actionLabel: "Li, entendi e autorizo",
           description:
-            "Registra a decisão e inicia a janela comercial sem criar campanha paga.",
+            "Revise o resumo e autorize com um único comando, sem criar campanha paga.",
           actionAvailable: preflightCompleted && !authorizationCompleted,
           availabilityReason: preflightCompleted
             ? "Preflight, requisitos comerciais e teto financeiro estão prontos."
             : "Conclua primeiro a atividade Executar preflight técnico.",
           confirmationRequired: true,
-          confirmationTitle: "Autorizar ativação e orçamento",
+          confirmationTitle: "Revise e autorize",
           confirmationMessage:
-            "Confirmo a ativação do experimento Rigel direto, com amostra de 15 contatos e limite máximo de R$ 400,00.",
+            "O experimento Rigel direto está pronto, com amostra de 15 contatos e teto total de R$ 540,00.",
           confirmationToken:
             "CONFIRM:pde-commercial-homologation-activation:authorization",
           workspaceCode: "EXPERIMENT_ACTIVATION",
           workspaceReferenceId: 89,
+          decisionMode: "REVIEW_AND_ACCEPT",
+          auditEvidenceReference:
+            "experiment:89; experiment-run:12/run-number:1; commercial-plan:4",
           requirements: [
             {
               code: "PREFLIGHT_APPROVED",
@@ -193,7 +196,7 @@ function history(phase) {
               code: "BUDGET_LIMIT_DEFINED",
               title: "Teto financeiro definido",
               satisfied: true,
-              detail: "O plano limita a operação a R$ 400,00.",
+              detail: "O plano limita a operação a R$ 540,00.",
               recommendation: "Não ultrapasse o teto sem nova decisão humana.",
             },
           ],
@@ -373,18 +376,14 @@ try {
     );
 
     const authorizationButton = page.getByRole("button", {
-      name: "Autorizar ativação",
+      name: "Li, entendi e autorizo",
     });
-    await expect(authorizationButton).toBeDisabled();
-    await page.getByLabel(/Responsável/).fill("Paulo Operador");
-    await page
-      .getByLabel(/Justificativa/)
-      .fill("Preflight, evidências e teto financeiro foram revisados.");
-    await page.getByLabel(/Evidência auditável/).fill("experiment-run:12");
-    await page
-      .getByRole("checkbox", { name: /Confirmo a ativação do experimento/ })
-      .check();
     await expect(authorizationButton).toBeEnabled();
+    await expect(page.getByText("2/2 verificações prontas")).toBeVisible();
+    await expect(page.getByText(/amostra de 15 contatos/)).toBeVisible();
+    await expect(page.getByLabel(/Responsável/)).toHaveCount(0);
+    await expect(page.getByLabel(/Justificativa/)).toHaveCount(0);
+    await expect(page.getByLabel(/Evidência auditável/)).toHaveCount(0);
 
     const sizes = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -410,9 +409,6 @@ try {
     );
     assert.deepEqual(commands[1].body, {
       decision: "APPROVE",
-      operatorName: "Paulo Operador",
-      justification: "Preflight, evidências e teto financeiro foram revisados.",
-      evidenceReference: "experiment-run:12",
       confirmationToken:
         "CONFIRM:pde-commercial-homologation-activation:authorization",
     });

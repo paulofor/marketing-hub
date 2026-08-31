@@ -69,6 +69,10 @@ public class ProductDiscoveryOpportunity {
   @Column(name = "decision", nullable = false, length = 40)
   private ProductDiscoveryOpportunityDecision decision;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "maturity_status", nullable = false, length = 32)
+  private ProductDiscoveryOpportunityMaturity maturity;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -83,6 +87,9 @@ public class ProductDiscoveryOpportunity {
     updatedAt = now;
     if (decision == null) {
       decision = ProductDiscoveryOpportunityDecision.RESEARCH_MORE;
+    }
+    if (maturity == null) {
+      maturity = ProductDiscoveryOpportunityMaturity.SIGNAL;
     }
     if (score == null) {
       score = BigDecimal.ZERO;
@@ -238,6 +245,16 @@ public class ProductDiscoveryOpportunity {
   /** Define a decisão da oportunidade. */
   public void setDecision(ProductDiscoveryOpportunityDecision decision) {
     this.decision = decision;
+  }
+
+  /** Retorna a maturidade factual que controla a passagem para Atena. */
+  public ProductDiscoveryOpportunityMaturity getMaturity() {
+    return maturity;
+  }
+
+  /** Define a maturidade factual produzida por Argos. */
+  public void setMaturity(ProductDiscoveryOpportunityMaturity maturity) {
+    this.maturity = maturity;
   }
 
   /** Retorna a data de criação. */

@@ -64,6 +64,20 @@ audit_argos_meta_browser_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_autonomous_handoff_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-31-product-discovery-autonomous-handoff-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_autonomous_handoff_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-31-product-discovery-autonomous-handoff-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 trap audit_cleanup EXIT
 audit_cleanup
 
@@ -272,6 +286,152 @@ audit_assert_equal \
     (SELECT COUNT(*) FROM information_schema.tables
       WHERE table_schema = DATABASE()
         AND table_name = 'product_discovery_meta_browser_run')
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "INSERT INTO product_discovery_opportunity
+        (cycle_id, name, evidence_json, score, decision)
+      VALUES
+        (40, 'Dossie declarado pronto',
+          JSON_OBJECT('candidateEvidence', JSON_OBJECT('maturity', 'DOSSIER_READY')),
+          81.00, 'RESEARCH_MORE'),
+        (40, 'Aprovacao legada', 'payload-invalido', 72.00, 'APPROVE'),
+        (40, 'Revisao sensivel',
+          JSON_OBJECT('candidateEvidence', JSON_OBJECT('maturity', 'HUMAN_REVIEW')),
+          55.00, 'APPROVE'),
+        (40, 'Candidata descartada', NULL, 12.00, 'REJECT');" \
+  >/dev/null 2>&1
+
+audit_autonomous_handoff_update
+audit_assert_equal \
+  "maturidade factual retroativa" \
+  "RESEARCHABLE,DOSSIER_READY,DOSSIER_READY,HUMAN_REVIEW,REJECTED" \
+  "$(audit_db_scalar "SELECT GROUP_CONCAT(maturity_status ORDER BY id SEPARATOR ',')
+    FROM product_discovery_opportunity;")"
+audit_assert_equal \
+  "schema retomável do handoff autônomo" \
+  "NO:SIGNAL:1:2:2:2" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT is_nullable FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_opportunity'
+        AND column_name = 'maturity_status'), ':',
+    (SELECT column_default FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_opportunity'
+        AND column_name = 'maturity_status'), ':',
+    (SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_opportunity'
+        AND index_name = 'idx_product_discovery_opportunity_maturity'), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND column_name IN ('product_discovery_opportunity_id', 'created_product_id')), ':',
+    (SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND index_name IN (
+          'uk_opportunity_dossier_discovery_opportunity',
+          'uk_opportunity_dossier_created_product'
+        )), ':',
+    (SELECT COUNT(*) FROM information_schema.referential_constraints
+      WHERE constraint_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND constraint_name IN (
+          'fk_opportunity_dossier_discovery_opportunity',
+          'fk_opportunity_dossier_created_product'
+        ))
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "UPDATE opportunity_dossier
+         SET product_discovery_opportunity_id = 2,
+             created_product_id = 900
+       WHERE id = 700;
+      INSERT INTO product (id, name) VALUES (901, 'Produto temporario para FK');
+      INSERT INTO product_discovery_opportunity
+        (id, cycle_id, name, evidence_json, score, decision)
+      VALUES (600, 40, 'Candidata temporaria para FK', NULL, 10.00, 'REJECT');
+      INSERT INTO opportunity_dossier
+        (id, product_discovery_cycle_id, converted_plan_id, title,
+         product_discovery_opportunity_id, created_product_id)
+      VALUES (701, 40, NULL, 'Dossie temporario para FK', 600, 901);
+      DELETE FROM product_discovery_opportunity WHERE id = 600;
+      INSERT IGNORE INTO opportunity_dossier
+        (id, product_discovery_cycle_id, converted_plan_id, title,
+         product_discovery_opportunity_id, created_product_id)
+      VALUES (702, 40, NULL, 'Duplicata que deve ser ignorada', 3, 900);" \
+  >/dev/null 2>&1
+audit_assert_equal \
+  "linhagem, unicidade e exclusão segura" \
+  "2:900:NULL:901:1" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT product_discovery_opportunity_id FROM opportunity_dossier WHERE id = 700), ':',
+    (SELECT created_product_id FROM opportunity_dossier WHERE id = 700), ':',
+    COALESCE((SELECT CAST(product_discovery_opportunity_id AS CHAR)
+      FROM opportunity_dossier WHERE id = 701), 'NULL'), ':',
+    (SELECT created_product_id FROM opportunity_dossier WHERE id = 701), ':',
+    (SELECT COUNT(*) FROM opportunity_dossier WHERE created_product_id = 900)
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-08-31-product-discovery-autonomous-handoff-v1-%';" \
+  >/dev/null 2>&1
+audit_autonomous_handoff_update
+audit_assert_equal \
+  "retomada após DDL aplicado sem registro" \
+  "7:1:2" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-08-31-product-discovery-autonomous-handoff-v1-%'), ':',
+    (SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_opportunity'
+        AND index_name = 'idx_product_discovery_opportunity_maturity'), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND column_name IN ('product_discovery_opportunity_id', 'created_product_id'))
+  );")"
+
+audit_autonomous_handoff_command "rollbackCount 7"
+audit_assert_equal \
+  "rollback integral do handoff autônomo" \
+  "0:0" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_opportunity'
+        AND column_name = 'maturity_status'), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND column_name IN ('product_discovery_opportunity_id', 'created_product_id'))
+  );")"
+
+audit_autonomous_handoff_update
+audit_assert_equal \
+  "reaplicação do handoff autônomo após rollback" \
+  "5:2:2" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM product_discovery_opportunity
+      WHERE maturity_status IS NOT NULL), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND column_name IN ('product_discovery_opportunity_id', 'created_product_id')), ':',
+    (SELECT COUNT(*) FROM information_schema.referential_constraints
+      WHERE constraint_schema = DATABASE()
+        AND table_name = 'opportunity_dossier'
+        AND constraint_name IN (
+          'fk_opportunity_dossier_discovery_opportunity',
+          'fk_opportunity_dossier_created_product'
+        ))
   );")"
 
 echo "Auditoria BPM da descoberta PDE aprovada no MySQL 5.7."

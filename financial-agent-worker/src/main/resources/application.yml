@@ -3,6 +3,10 @@ server:
 spring:
   application:
     name: financial-agent-worker
+  task:
+    scheduling:
+      pool:
+        size: 4
 management:
   endpoints:
     web:

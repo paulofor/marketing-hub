@@ -61,31 +61,7 @@ export default function ProductProcessActivityExecutionPanel({
         {control.description}
       </p>
 
-      {control.requirements.length > 0 ? (
-        <ul
-          className="product-process-activity-control__requirements"
-          aria-label="Pré-requisitos da atividade"
-        >
-          {control.requirements.map((requirement) => (
-            <li key={requirement.code}>
-              {requirement.satisfied ? (
-                <CheckCircle2 size={18} aria-hidden="true" />
-              ) : (
-                <AlertTriangle size={18} aria-hidden="true" />
-              )}
-              <div>
-                <strong>{requirement.title}</strong>
-                <span>{requirement.detail}</span>
-                {!requirement.satisfied ? (
-                  <small>
-                    <b>Próxima ação:</b> {requirement.recommendation}
-                  </small>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ActivityRequirements activity={activity} />
 
       <p
         className={`product-process-activity-control__availability ${control.actionAvailable || controlCompleted ? "is-ready" : "is-pending"}`}
@@ -167,6 +143,194 @@ function ExecutionIcon({
 }
 
 function HumanDecisionForm({
+  activity,
+  executing,
+  onExecute,
+}: {
+  activity: ProductProcessActivityExecutionGroup;
+  executing: boolean;
+  onExecute: (command: ProductProcessActivityExecutionCommand) => void;
+}) {
+  const control = activity.executionControl!;
+  if (control.decisionMode === "REVIEW_AND_ACCEPT") {
+    return (
+      <ReviewAndAcceptDecision
+        activity={activity}
+        executing={executing}
+        onExecute={onExecute}
+      />
+    );
+  }
+  return (
+    <DetailedHumanDecisionForm
+      activity={activity}
+      executing={executing}
+      onExecute={onExecute}
+    />
+  );
+}
+
+function ActivityRequirements({
+  activity,
+}: {
+  activity: ProductProcessActivityExecutionGroup;
+}) {
+  const control = activity.executionControl!;
+  if (control.requirements.length === 0) return null;
+  const content = (
+    <ul
+      className="product-process-activity-control__requirements"
+      aria-label="Pré-requisitos da atividade"
+    >
+      {control.requirements.map((requirement) => (
+        <li key={requirement.code}>
+          {requirement.satisfied ? (
+            <CheckCircle2 size={18} aria-hidden="true" />
+          ) : (
+            <AlertTriangle size={18} aria-hidden="true" />
+          )}
+          <div>
+            <strong>{requirement.title}</strong>
+            <span>{requirement.detail}</span>
+            {!requirement.satisfied ? (
+              <small>
+                <b>Próxima ação:</b> {requirement.recommendation}
+              </small>
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+  if (control.decisionMode !== "REVIEW_AND_ACCEPT") return content;
+  const approved = control.requirements.filter(
+    (requirement) => requirement.satisfied,
+  ).length;
+  return (
+    <details className="product-process-activity-control__review-details">
+      <summary>
+        <CheckCircle2 size={18} aria-hidden="true" />
+        {approved}/{control.requirements.length} verificações prontas
+        <span>Ver evidências</span>
+      </summary>
+      {content}
+    </details>
+  );
+}
+
+function ReviewAndAcceptDecision({
+  activity,
+  executing,
+  onExecute,
+}: {
+  activity: ProductProcessActivityExecutionGroup;
+  executing: boolean;
+  onExecute: (command: ProductProcessActivityExecutionCommand) => void;
+}) {
+  const control = activity.executionControl!;
+  const [showRejection, setShowRejection] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const ready = control.actionAvailable && Boolean(control.confirmationToken);
+  const rejectionReady = ready && rejectionReason.trim().length >= 10;
+
+  if (!control.actionAvailable) return null;
+
+  const approve = () => {
+    if (!ready || executing || !control.confirmationToken) return;
+    onExecute({
+      activityId: activity.activityId,
+      decision: {
+        decision: "APPROVE",
+        confirmationToken: control.confirmationToken,
+      },
+    });
+  };
+
+  const reject = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!rejectionReady || executing || !control.confirmationToken) return;
+    onExecute({
+      activityId: activity.activityId,
+      decision: {
+        decision: "REJECT",
+        justification: rejectionReason.trim(),
+        confirmationToken: control.confirmationToken,
+      },
+    });
+  };
+
+  return (
+    <div className="product-process-review-accept">
+      <div className="product-process-review-accept__summary">
+        <CheckCircle2 size={24} aria-hidden="true" />
+        <div>
+          <strong>{control.confirmationTitle || "Tudo pronto"}</strong>
+          <p>{control.confirmationMessage}</p>
+          <small>
+            A evidência e a justificativa serão registradas automaticamente.
+            Esta autorização não cria campanha paga nem realiza gasto.
+          </small>
+        </div>
+      </div>
+      <button
+        className="btn btn-success product-process-review-accept__approve"
+        type="button"
+        disabled={!ready || executing}
+        onClick={approve}
+      >
+        {executing ? (
+          <Loader2
+            className="spinner-border spinner-border-sm"
+            size={16}
+            aria-hidden="true"
+          />
+        ) : (
+          <UserCheck size={17} aria-hidden="true" />
+        )}
+        {executing
+          ? "Autorizando..."
+          : control.actionLabel || "Li, entendi e autorizo"}
+      </button>
+      <button
+        className="btn btn-link product-process-review-accept__reject-toggle"
+        type="button"
+        disabled={executing}
+        onClick={() => setShowRejection((visible) => !visible)}
+      >
+        Não autorizar
+      </button>
+      {showRejection ? (
+        <form
+          className="product-process-review-accept__rejection"
+          onSubmit={reject}
+        >
+          <label>
+            Motivo da não autorização <span aria-hidden="true">*</span>
+            <textarea
+              className="form-control"
+              rows={3}
+              value={rejectionReason}
+              onChange={(event) => setRejectionReason(event.target.value)}
+              placeholder="Explique o que precisa ser corrigido antes de autorizar"
+              minLength={10}
+              maxLength={2000}
+              required
+            />
+          </label>
+          <button
+            className="btn btn-outline-danger"
+            type="submit"
+            disabled={!rejectionReady || executing}
+          >
+            Registrar não autorização
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function DetailedHumanDecisionForm({
   activity,
   executing,
   onExecute,

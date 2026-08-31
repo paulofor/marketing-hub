@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
@@ -13,7 +13,10 @@ vi.mock("../experiment/ExperimentRunPanel", () => ({
 describe("ProductProcessActivityExecutionPanel", () => {
   const onExecute = vi.fn();
 
-  beforeEach(() => onExecute.mockReset());
+  beforeEach(() => {
+    cleanup();
+    onExecute.mockReset();
+  });
 
   it("requires an explicit and audited human decision", () => {
     renderPanel(humanActivity());
@@ -48,6 +51,55 @@ describe("ProductProcessActivityExecutionPanel", () => {
         justification:
           "Os gates e o teto financeiro foram revisados e aprovados.",
         evidenceReference: "experiment-run:12",
+        confirmationToken:
+          "CONFIRM:pde-commercial-homologation-activation:authorization",
+      },
+    });
+  });
+
+  it("lets the operator review and authorize without retyping backend evidence", () => {
+    renderPanel(reviewAndAcceptActivity());
+
+    expect(screen.queryByLabelText(/Responsável/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Justificativa/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Evidência auditável/),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("7/7 verificações prontas")).toBeVisible();
+    expect(screen.getByText(/amostra de 15 contatos/)).toBeVisible();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Li, entendi e autorizo" }),
+    );
+
+    expect(onExecute).toHaveBeenCalledWith({
+      activityId: "authorization",
+      decision: {
+        decision: "APPROVE",
+        confirmationToken:
+          "CONFIRM:pde-commercial-homologation-activation:authorization",
+      },
+    });
+  });
+
+  it("asks only for a reason when the operator does not authorize", () => {
+    renderPanel(reviewAndAcceptActivity());
+
+    fireEvent.click(screen.getByRole("button", { name: "Não autorizar" }));
+    const submit = screen.getByRole("button", {
+      name: "Registrar não autorização",
+    });
+    expect(submit).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Motivo da não autorização/), {
+      target: { value: "O teto precisa ser revisto antes da ativação." },
+    });
+    fireEvent.click(submit);
+
+    expect(onExecute).toHaveBeenCalledWith({
+      activityId: "authorization",
+      decision: {
+        decision: "REJECT",
+        justification: "O teto precisa ser revisto antes da ativação.",
         confirmationToken:
           "CONFIRM:pde-commercial-homologation-activation:authorization",
       },
@@ -182,6 +234,30 @@ describe("ProductProcessActivityExecutionPanel", () => {
             recommendation: "Não ultrapasse o teto.",
           },
         ],
+      },
+    };
+  }
+
+  function reviewAndAcceptActivity(): ProductProcessActivityExecutionGroup {
+    const activity = humanActivity();
+    return {
+      ...activity,
+      executionControl: {
+        ...activity.executionControl!,
+        actionLabel: "Li, entendi e autorizo",
+        confirmationTitle: "Revise e autorize",
+        confirmationMessage:
+          "O experimento Rigel está pronto, com amostra de 15 contatos e teto total de R$ 540,00.",
+        decisionMode: "REVIEW_AND_ACCEPT",
+        auditEvidenceReference:
+          "experiment:89; experiment-run:9/run-number:2; commercial-plan:4",
+        requirements: Array.from({ length: 7 }, (_, index) => ({
+          code: `READY_${index}`,
+          title: `Verificação ${index + 1}`,
+          satisfied: true,
+          detail: "Evidência aprovada pelo backend.",
+          recommendation: "Preserve a evidência.",
+        })),
       },
     };
   }

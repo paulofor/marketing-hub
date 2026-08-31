@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "activity",
+    "decision",
+    "selectedDossierId",
+    "selectedOpportunityId",
+    "alternatives",
+    "selectedAlternative",
+    "marketStrategicContract",
+    "assumptions",
+    "requiredChanges",
+    "rationale",
+    "sources"
+  ],
+  "properties": {
+    "activity": { "type": "string", "enum": ["marketStrategy"] },
+    "decision": { "type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"] },
+    "selectedDossierId": { "type": ["integer", "null"] },
+    "selectedOpportunityId": { "type": ["integer", "null"] },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": { "type": "string" },
+          "benefit": { "type": "string" },
+          "risk": { "type": "string" },
+          "effort": { "type": "string" },
+          "fit": { "type": "string" }
+        }
+      }
+    },
+    "selectedAlternative": { "type": "string" },
+    "marketStrategicContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "status",
+        "segment",
+        "buyer",
+        "problem",
+        "desiredOutcome",
+        "behavioralDrivers",
+        "competitorAlternatives",
+        "competitiveGap",
+        "positioning",
+        "offerThesis",
+        "valueMechanism",
+        "included",
+        "excluded",
+        "causalHypothesis",
+        "primaryMetric",
+        "continueCriteria",
+        "adjustCriteria",
+        "stopCriteria",
+        "evidenceReferences"
+      ],
+      "properties": {
+        "contractVersion": { "type": "string", "enum": ["MARKET_STRATEGY_V2"] },
+        "status": { "type": "string", "enum": ["READY_FOR_OPERATION", "INSUFFICIENT_EVIDENCE"] },
+        "segment": { "type": "string" },
+        "buyer": { "type": "string" },
+        "problem": { "type": "string" },
+        "desiredOutcome": { "type": "string" },
+        "behavioralDrivers": { "type": "array", "items": { "type": "string" } },
+        "competitorAlternatives": { "type": "array", "items": { "type": "string" } },
+        "competitiveGap": { "type": "string" },
+        "positioning": { "type": "string" },
+        "offerThesis": { "type": "string" },
+        "valueMechanism": { "type": "string" },
+        "included": { "type": "array", "items": { "type": "string" } },
+        "excluded": { "type": "array", "items": { "type": "string" } },
+        "causalHypothesis": { "type": "string" },
+        "primaryMetric": { "type": "string" },
+        "continueCriteria": { "type": "string" },
+        "adjustCriteria": { "type": "string" },
+        "stopCriteria": { "type": "string" },
+        "evidenceReferences": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "requiredChanges": { "type": "array", "items": { "type": "string" } },
+    "rationale": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "title", "evidence"],
+        "properties": {
+          "url": { "type": "string" },
+          "title": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    }
+  }
+}

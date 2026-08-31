@@ -137,10 +137,15 @@ class IrisCommunicationAgentChangelogTest {
             "CREATE TABLE agent_theme", "CREATE TABLE agent_input", "CREATE TABLE agent_output");
     assertThat(compose)
         .contains(
-            "liquibase-iris-communication-agent", "2026-08-28-iris-communication-agent-v1.yaml");
+            "liquibase-iris-communication-agent",
+            "2026-08-28-iris-communication-agent-v1.yaml",
+            "liquibase-argos-agent-version-v4-audit",
+            "2026-08-31-argos-agent-version-v4-audit.yaml");
     assertThat(runner)
         .contains(
             "compose run --rm --build liquibase-iris-communication-agent",
+            "compose run --rm --build liquibase-argos-agent-version-v4-audit",
+            "a versão autônoma v4 do Argos não possui histórico auditável",
             "HEALTH_CONTRACT=${REPOSITORY_DIR}/config/agents/codex-agent-health-compliance.json",
             "agent['key']}:{agent['expectedVersion']}",
             "as versões implantadas dos nove agentes divergem dos contratos persistidos",

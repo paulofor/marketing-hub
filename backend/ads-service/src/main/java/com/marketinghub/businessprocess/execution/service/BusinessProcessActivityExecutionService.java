@@ -727,7 +727,9 @@ public class BusinessProcessActivityExecutionService {
           humanReadiness.workspaceCode(),
           humanReadiness.workspaceReferenceId(),
           null,
-          requirements);
+          requirements,
+          humanReadiness.decisionMode(),
+          humanReadiness.auditEvidenceReference());
     }
     if (hasBackendExecutor) {
       if (backendReadiness == null) {

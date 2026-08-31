@@ -1,2 +1,3 @@
 - <a href="liberar-facebook-ads-worker.md" target="_blank" rel="noopener noreferrer">Liberar experimento para o Facebook Ads Worker</a>
 - <a href="argos-biblioteca-meta-supervisionada.md" target="_blank" rel="noopener noreferrer">Complementar a pesquisa de Argos na Biblioteca Meta</a>
+- <a href="autorizar-ativacao-pde.md" target="_blank" rel="noopener noreferrer">Autorizar ativação e orçamento de um PDE</a>

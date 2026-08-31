@@ -1,7 +1,9 @@
 package com.marketinghub.opportunitydossier;
 
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.product.Product;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -85,6 +87,14 @@ public class OpportunityDossier {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_discovery_cycle_id")
   private ProductDiscoveryCycle productDiscoveryCycle;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "product_discovery_opportunity_id", unique = true)
+  private ProductDiscoveryOpportunity productDiscoveryOpportunity;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "created_product_id", unique = true)
+  private Product createdProduct;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false)

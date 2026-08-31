@@ -48,6 +48,14 @@ duplicar apelidos:
 bash backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh
 ```
 
+A auditoria BPM da descoberta PDE também valida fisicamente o handoff autônomo. A fixture confirma
+o retroativo de maturidade factual, vínculos únicos entre candidata, dossiê e produto, chaves
+estrangeiras, retomada após DDL aplicado sem registro, rollback e reaplicação:
+
+```bash
+bash backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh
+```
+
 As consultas desse runner declaram `--default-character-set=utf8mb4`. Sem o charset explícito, o
 cliente MySQL 5.7 pode não comparar nomes acentuados como `Dédalo` e `Têmis` com o valor UTF-8
 persistido, produzindo falso positivo ou falso negativo na homologação.

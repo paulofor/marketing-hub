@@ -43,6 +43,33 @@ const statusLabels: Record<string, string> = {
   CANCELLED: "Cancelada",
 };
 
+export function isCompletedWithGaps(
+  execution: IndependentBusinessProcessExecutionSummary,
+) {
+  return (
+    execution.status === "BLOCKED" &&
+    execution.activityCount > 0 &&
+    execution.completedActivityCount === execution.activityCount &&
+    !execution.latestError?.trim()
+  );
+}
+
+function executionStatusLabel(
+  execution: IndependentBusinessProcessExecutionSummary,
+) {
+  return isCompletedWithGaps(execution)
+    ? "Concluída com lacunas"
+    : (statusLabels[execution.status] ?? execution.status);
+}
+
+function executionStatusClass(
+  execution: IndependentBusinessProcessExecutionSummary,
+) {
+  return isCompletedWithGaps(execution)
+    ? "is-completed-with-gaps"
+    : statusClass(execution.status);
+}
+
 export function createIndependentExecutionRequestKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   const random =
@@ -82,8 +109,7 @@ function formatCost(value?: number, coverage?: string) {
 export function independentExecutionRequestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    | { detail?: string; message?: string; error?: string }
-    | undefined;
+    { detail?: string; message?: string; error?: string } | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -380,9 +406,9 @@ export default function IndependentBusinessProcessExecutionsPage() {
                     to={`/business-process-executions/${execution.id}`}
                   >
                     <span
-                      className={`independent-process-status ${statusClass(execution.status)}`}
+                      className={`independent-process-status ${executionStatusClass(execution)}`}
                     >
-                      {statusLabels[execution.status] ?? execution.status}
+                      {executionStatusLabel(execution)}
                     </span>
                     <strong>
                       #{execution.id} · {execution.displayName}
@@ -549,20 +575,29 @@ export function IndependentBusinessProcessExecutionDetail({
           <div className="independent-process-detail__header">
             <div>
               <span
-                className={`independent-process-status ${statusClass(execution.status)}`}
+                className={`independent-process-status ${executionStatusClass(execution)}`}
               >
-                {statusLabels[execution.status] ?? execution.status}
+                {executionStatusLabel(execution)}
               </span>
               <h2>
                 Execução #{execution.id} · {execution.displayName}
               </h2>
               <p>{execution.sourceReference}</p>
             </div>
-            {execution.status === "COMPLETED" ? (
+            {execution.status === "COMPLETED" ||
+            isCompletedWithGaps(execution) ? (
               <CheckCircle2
-                className="text-success"
+                className={
+                  execution.status === "COMPLETED"
+                    ? "text-success"
+                    : "text-warning"
+                }
                 size={32}
-                aria-label="Execução concluída"
+                aria-label={
+                  execution.status === "COMPLETED"
+                    ? "Execução concluída"
+                    : "Execução concluída com lacunas"
+                }
               />
             ) : execution.status === "BLOCKED" ? (
               <AlertCircle

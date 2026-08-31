@@ -136,7 +136,7 @@ test("agrega as duas chamadas de Argos sem perder URLs nem resposta bruta", () =
         {
           url: "https://example.com/fonte",
           label: "Fonte",
-          accessMethod: "PUBLIC_SEARCH",
+          accessMethod: "WEB_SEARCH",
           accessedAt: "2026-08-30T17:00:00.000Z",
         },
       ],

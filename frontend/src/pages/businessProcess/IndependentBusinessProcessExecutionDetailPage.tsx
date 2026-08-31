@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -11,6 +11,7 @@ import {
   createIndependentExecutionRequestKey,
   IndependentBusinessProcessExecutionDetail,
   independentExecutionRequestError,
+  isCompletedWithGaps,
 } from "./IndependentBusinessProcessExecutionsPage";
 import "./IndependentBusinessProcessExecutionsPage.css";
 
@@ -36,6 +37,7 @@ export default function IndependentBusinessProcessExecutionDetailPage() {
     };
   }
   const execution = query.data?.execution;
+  const completedWithGaps = execution ? isCompletedWithGaps(execution) : false;
 
   const retryExecution = async () => {
     if (!execution) return;
@@ -83,7 +85,24 @@ export default function IndependentBusinessProcessExecutionDetailPage() {
         </div>
       </header>
 
-      {execution?.status === "BLOCKED" ? (
+      {completedWithGaps ? (
+        <section
+          className="independent-process-completed-guidance"
+          aria-labelledby="independent-process-completed-title"
+        >
+          <CheckCircle2 size={28} aria-hidden="true" />
+          <div>
+            <h2 id="independent-process-completed-title">
+              A execução terminou; o avanço comercial aguarda evidências
+            </h2>
+            <p>
+              Todas as atividades foram concluídas sem erro. O processo
+              permanece retido por um gate de qualidade registrado no relatório
+              abaixo. Não é necessário repetir a mesma entrada.
+            </p>
+          </div>
+        </section>
+      ) : execution?.status === "BLOCKED" ? (
         <section
           className="independent-process-blocked-guidance"
           aria-labelledby="independent-process-blocked-title"

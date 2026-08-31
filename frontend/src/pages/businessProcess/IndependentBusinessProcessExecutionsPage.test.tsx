@@ -427,6 +427,63 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     expect(secondRetry.requestKey).not.toBe(firstRetry.requestKey);
   });
 
+  it("distingue execução concluída retida pelo gate sem oferecer nova tentativa", async () => {
+    const completedWithGaps: IndependentBusinessProcessExecutionSummary = {
+      ...summary,
+      status: "BLOCKED",
+      completedActivityCount: 1,
+      startedAt: "2026-08-30T14:00:05Z",
+      finishedAt: "2026-08-30T14:04:00Z",
+    };
+    const completedWithGapsDetail = detail(completedWithGaps);
+    completedWithGapsDetail.activities = completedWithGapsDetail.activities.map(
+      (activity) => ({
+        ...activity,
+        status: "COMPLETED",
+        tasks: activity.tasks.map((task) => ({
+          ...task,
+          status: "COMPLETED",
+        })),
+      }),
+    );
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/independent-business-process-executions/catalog") {
+        return { data: catalog };
+      }
+      if (url === "/api/independent-business-process-executions") {
+        return { data: [completedWithGaps] };
+      }
+      if (url === "/api/independent-business-process-executions/91") {
+        return { data: completedWithGapsDetail };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findByText("Concluída com lacunas"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: /#91.*Ver detalhes/i }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "A execução terminou; o avanço comercial aguarda evidências",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Execução concluída com lacunas"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Esta tentativa não executou")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Tentar novamente" }),
+    ).toBeNull();
+    expect(
+      screen.getByText(/Tarefa #271 · Argos · Concluída/),
+    ).toBeInTheDocument();
+  });
+
   it("registra observação oficial e reabre Argos na mesma sessão Meta", async () => {
     const completed: IndependentBusinessProcessExecutionSummary = {
       ...summary,

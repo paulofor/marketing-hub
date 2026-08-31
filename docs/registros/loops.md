@@ -25,6 +25,28 @@
   três gates diretos e recusam o piso fixo de cem visitas. Teste do backend mantém o Rigel fora das
   etapas Meta e preserva o fluxo pago existente.
 
+## LOOP-ARGOS-METODO-AUDITORIA-FORA-DO-CONTRATO — pesquisa conclui e callback final é revertido
+
+- **Data:** 2026-08-31.
+- **Sintoma confirmado:** a tarefa #290 concluiu planejamento, coleta e síntese de duas candidatas,
+  mas o backend rejeitou o callback final com HTTP 400 e `Método de acesso da URL inválido`. A
+  transação não persistiu candidatas nem cobertura e a execução independente #10 terminou
+  `BLOCKED`. A tarefa #288 já apresentava o mesmo padrão de HTTP 400 sem a causa devolvida na tela.
+- **Causa-raiz confirmada no código, banco e logs:** Argos enviava `PUBLIC_SEARCH` em
+  `analysisAudit.accessedUrls[].accessMethod`, enquanto o contrato canônico do backend e do Swagger
+  aceita `WEB_SEARCH`. Os testes do worker repetiam o valor inválido e as execuções anteriores
+  concluídas não transportavam URLs auditadas, ocultando a divergência até a auditoria tornar-se
+  obrigatória.
+- **Correção sistêmica:** o worker reporta busca pública como `WEB_SEARCH`, preservando
+  `PUBLIC_SEARCH` somente como classificação interna da evidência. O teste de Argos valida o payload
+  real e confere o método contra o bloco `AccessedUrl` do Swagger do backend.
+- **Prevenção:** qualquer novo método de acesso do Argos precisa existir no contrato publicado; o
+  teste cruzado falha antes da imagem quando worker e backend divergem.
+- **Fechamento da retentativa:** a tarefa #291 concluiu a execução corrigida, mas a execução
+  independente #11 permaneceu `BLOCKED` pelo gate comercial porque as três candidatas ficaram em
+  `RESEARCH_MORE`. A tela agora diferencia esse resultado como `Concluída com lacunas`, explica o
+  gate e não oferece retentativa que duplicaria uma pesquisa tecnicamente concluída.
+
 ## LOOP-ARGOS-INDICE-DERIVADO-DECLARADO-COMO-VERSIONADO — deploy central falha após pesquisa diária
 
 - **Data:** 2026-08-31.

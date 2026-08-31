@@ -243,7 +243,7 @@ function accessedUrls(context) {
         0,
         200,
       ),
-      accessMethod: "PUBLIC_SEARCH",
+      accessMethod: "WEB_SEARCH",
       accessedAt,
     }));
 }

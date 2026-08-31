@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -67,7 +68,7 @@ public class ExperimentCockpitService {
     ExperimentLandingAnalyticsDto analytics = funnelService.summarizeLandingAnalytics(experimentId);
     List<ExperimentFunnelStageDto> funnelStages = funnelService.summarize(experimentId);
     List<ExperimentFunnelStageDto> commercialFunnelStages =
-        normalizeFunnelForCommercialReading(experiment.getCampaignMetric(), funnelStages);
+        commercialFunnelFor(experiment, funnelStages);
     ExperimentFunnelDiagnosticsResponseDto funnelDiagnostics =
         funnelDiagnosticService.diagnose(experimentId);
     ExperimentDiagnosticsDto experimentDiagnostics = diagnosticsService.diagnose(experimentId);
@@ -76,7 +77,8 @@ public class ExperimentCockpitService {
         buildScoreboard(experiment, commercialFunnelStages, analytics, revenue);
     List<String> metricIntegrityIssues = diagnoseMetricIntegrity(analytics, funnelStages);
     ExperimentCockpitBottleneckDto bottleneck =
-        diagnoseBottleneck(readiness, funnelDiagnostics, scoreboard, metricIntegrityIssues);
+        diagnoseBottleneck(
+            experiment, readiness, funnelDiagnostics, scoreboard, metricIntegrityIssues);
     return new ExperimentCockpitDto(
         experiment.getId(),
         experiment.getName(),
@@ -85,7 +87,7 @@ public class ExperimentCockpitService {
         valueOf(experiment.getCampaignObjective()),
         scoreboard,
         buildQuestion(experiment),
-        buildHealth(readiness, experimentDiagnostics, metricIntegrityIssues),
+        buildHealth(experiment, readiness, experimentDiagnostics, metricIntegrityIssues),
         commercialFunnelStages.stream()
             .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
             .map(this::toCockpitStage)
@@ -189,6 +191,7 @@ public class ExperimentCockpitService {
 
   /** Resume a prontidão operacional que define se a leitura de mercado pode ser interpretada. */
   private ExperimentCockpitHealthDto buildHealth(
+      Experiment experiment,
       ExperimentReadinessSummaryDto readiness,
       ExperimentDiagnosticsDto diagnostics,
       List<String> metricIntegrityIssues) {
@@ -200,6 +203,13 @@ public class ExperimentCockpitService {
                 .toList());
     blockers.addAll(metricIntegrityIssues);
     if (blockers.isEmpty()) {
+      if (isDirectOneToOne(experiment)) {
+        return new ExperimentCockpitHealthDto(
+            "READY",
+            "Canal individual pronto para operação",
+            "O piloto DIRECT_ONE_TO_ONE opera sem campanha Meta ou orçamento diário. A leitura comercial começa nos contatos consentidos e mantém o tráfego de QA fora das métricas humanas.",
+            blockers);
+      }
       return new ExperimentCockpitHealthDto(
           "READY",
           firstText(diagnostics.headline(), "Experimento pronto para leitura comercial"),
@@ -217,6 +227,7 @@ public class ExperimentCockpitService {
 
   /** Decide o gargalo principal priorizando falha técnica, compra e etapa mais próxima da venda. */
   private ExperimentCockpitBottleneckDto diagnoseBottleneck(
+      Experiment experiment,
       ExperimentReadinessSummaryDto readiness,
       ExperimentFunnelDiagnosticsResponseDto funnelDiagnostics,
       ExperimentCockpitScoreboardDto scoreboard,
@@ -336,6 +347,19 @@ public class ExperimentCockpitService {
           "A campanha começou a gerar impressões, mas ainda não atingiu 200 exposições para avaliar ausência de cliques.",
           "Evita trocar um criativo por variação aleatória de uma amostra pequena.",
           "Manter o criativo atual e coletar dados até 200 impressões, preservando o limite financeiro do experimento.");
+    }
+    if (isDirectOneToOne(experiment)) {
+      int sampleSize = experiment.getSampleSize() == null ? 0 : experiment.getSampleSize();
+      return bottleneck(
+          "AGUARDANDO_CONTATOS_DIRETOS",
+          "Piloto direto pronto, ainda sem contatos medidos",
+          "secondary",
+          "O canal individual está ativo e não depende de campanha Meta, porém ainda não existem eventos humanos da amostra consentida.",
+          "A instrumentação pode ser considerada pronta sem transformar QA em visita ou venda; o próximo aprendizado virá dos contatos reais autorizados.",
+          sampleSize > 0
+              ? "Registrar somente os contatos consentidos da amostra de %d e acompanhar avanço, pagamento, entrega e primeiro uso."
+                  .formatted(sampleSize)
+              : "Registrar a amostra consentida definida no contrato estratégico e acompanhar avanço, pagamento, entrega e primeiro uso.");
     }
     return bottleneck(
         "SEM_DADOS",
@@ -539,6 +563,18 @@ public class ExperimentCockpitService {
                   "Preservar campanha e oferta",
                   "Não altere criativo, público ou página antes de existir sinal real da Meta.",
                   experimentRoute));
+      case "AGUARDANDO_CONTATOS_DIRETOS" ->
+          List.of(
+              action(
+                  "ACOMPANHAR_AMOSTRA_DIRETA",
+                  "Acompanhar amostra consentida",
+                  "O canal já está ativo; registre somente contatos aderentes e seus resultados reais, sem exigir campanha ou impressão Meta.",
+                  experimentRoute),
+              action(
+                  "CONFERIR_EVENTOS_DIRETOS",
+                  "Conferir eventos do canal direto",
+                  "Preserve a separação entre QA, contato humano, checkout, pagamento, entrega e primeiro uso.",
+                  experimentRoute));
       case "EXECUCAO_INVALIDA", "FALHA_TECNICA_FUNIL", "CLIQUE_SEM_PAGINA" ->
           List.of(
               action(
@@ -570,6 +606,23 @@ public class ExperimentCockpitService {
   private ExperimentCockpitActionDto action(
       String code, String label, String rationale, String targetRoute) {
     return new ExperimentCockpitActionDto(code, label, rationale, targetRoute);
+  }
+
+  /** Seleciona somente as etapas comerciais que pertencem ao canal vigente do experimento. */
+  private List<ExperimentFunnelStageDto> commercialFunnelFor(
+      Experiment experiment, List<ExperimentFunnelStageDto> stages) {
+    if (isDirectOneToOne(experiment)) {
+      return stages.stream()
+          .filter(stage -> stage.getStage() != ExperimentFunnelStage.VISUALIZACAO_ANUNCIO)
+          .filter(stage -> stage.getStage() != ExperimentFunnelStage.ACESSO_FORM_LEAD)
+          .toList();
+    }
+    return normalizeFunnelForCommercialReading(experiment.getCampaignMetric(), stages);
+  }
+
+  /** Identifica o piloto individual que não utiliza mídia paga ou campanha Meta. */
+  private boolean isDirectOneToOne(Experiment experiment) {
+    return experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE;
   }
 
   /** Retorna o total de uma etapa do funil. */

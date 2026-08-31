@@ -6752,3 +6752,23 @@
   registrar a publicação como bem-sucedida.
 - **Impacto comercial esperado:** a decisão humana volta a ser um aceite simples e auditável, sem
   criar campanha, contato, gasto ou venda.
+
+## 2026-08-31 — Rigel: Hermes alinhado ao piloto individual
+
+- **Gargalo real:** a tarefa #289 foi executada, mas bloqueou a primeira atividade operacional por
+  ausência de campanha Meta, apesar de o experimento 89 usar `DIRECT_ONE_TO_ONE`, amostra de 15
+  contatos consentidos e zero mídia paga.
+- **Evidência histórica:** o run 9 está `RUNNING`, com onze gates `PASS`; os gates de canal direto,
+  checkout/entrega e qualidade dos dados comprovam a instrumentação com seis eventos `INTERNAL_QA`
+  segregados. Esses eventos não contam como contato, compra ou venda.
+- **Correção preparada:** o contrato v3 de Hermes passa a resolver canal e amostra, consultar o
+  preflight vigente e concluir a integridade direta sem inventar campanha ou visita humana. O
+  cockpit deixa de mostrar etapas e recomendação exclusivas da Meta para o canal individual.
+- **Métrica esperada:** a nova tentativa deve concluir `task-1` usando o run 9 e liberar `task-2`;
+  a etapa seguinte deve aguardar os 15 contatos consentidos reais, preservando zero vendas até haver
+  pagamento oficial.
+- **Homologação local:** após corrigir a cobertura do catálogo de harness encontrada na primeira
+  tentativa, duas rodadas completas e consecutivas passaram. Cada rodada validou 2.158 testes do
+  backend, 31 do Hermes, cinco contratos MCP, 436 testes do frontend, Spotless, TypeScript,
+  empacotamento, imagens Docker e navegação em desktop, iPhone 15 Pro e Pixel 7.
+- Nenhum contato, campanha, gasto, pagamento ou venda foi criado durante o diagnóstico.

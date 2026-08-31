@@ -292,22 +292,25 @@ class GrowthOperatorBpmRunnerTest {
   /** Protege gates comerciais, três alternativas e memória ligada à ferramenta. */
   @Test
   void shouldVersionExperimentOptimizationContract() throws Exception {
-    String prompt = read("prompts/bpm/v2/experiment-optimization.md");
+    String prompt = read("prompts/bpm/v3/experiment-optimization.md");
     String schema = read("prompts/bpm/v2/experiment-optimization-schema.json");
     String mcp = read("mcp/marketing-hub-readonly.mjs");
 
     assertThat(prompt)
         .contains(
             "Meta → landing → checkout",
-            "pelo menos 100 visitas humanas válidas",
-            "p95 de carregamento abaixo de 4",
-            "zero erros de recurso",
-            "gasto Meta acumulado maior ou igual a R$ 25,00",
-            "Orçamento global ou diário maior não",
-            "substitui nem revoga essa trava",
+            "DIRECT_ONE_TO_ONE",
+            "DIRECT_CHANNEL_READINESS_CONFIRMED",
+            "CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED",
+            "DATA_FRESHNESS_VALID",
+            "consultar_preflight",
+            "campanha Meta, impressão Meta e orçamento diário não se aplicam",
+            "amostra definida no contrato estratégico e no experimento",
+            "gasto Meta de R$ 25,00 aplica-se somente",
             "exatamente três alternativas",
             "marketStrategicContract",
-            "Não proponha uma nova estratégia");
+            "Não proponha uma nova estratégia")
+        .doesNotContain("pelo menos 100 visitas humanas válidas");
     assertThat(schema)
         .contains(
             "executionStatus",
@@ -319,6 +322,7 @@ class GrowthOperatorBpmRunnerTest {
         .contains(
             "MCP_EXPERIMENT_ID",
             "consultar_cockpit",
+            "consultar_preflight",
             "funnel/analytics",
             "experiment:${await resolvedExperimentId()}",
             "MCP_TOOL",
@@ -326,6 +330,8 @@ class GrowthOperatorBpmRunnerTest {
             "readOnlyHint: !writable",
             "openWorldHint: true",
             "destructiveHint: false");
+    assertThat(GrowthOperatorBpmRunner.promptResourceFor("operacao-otimizacao-experimento"))
+        .isEqualTo("prompts/bpm/v3/experiment-optimization.md");
   }
 
   /** Protege mensuração e impede autoria estratégica no contrato operacional do PDE. */

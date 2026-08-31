@@ -44,6 +44,29 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
     outputTokens: 80,
   });
   assert.equal(result.accessedUrls.length, 3);
+  assert.deepEqual(
+    [...new Set(result.accessedUrls.map((item) => item.accessMethod))],
+    ["WEB_SEARCH"],
+  );
+});
+
+test("auditoria de busca pública usa método aceito pelo contrato do backend", async () => {
+  const method =
+    deterministicSynthesis(researchContext()).accessedUrls[0].accessMethod;
+  const swagger = await readFile(
+    new URL("../../docs/swagger/agent-tasks-v1-swagger.yaml", import.meta.url),
+    "utf8",
+  );
+  const accessedUrlContract = swagger.match(
+    /    AccessedUrl:\n[\s\S]*?(?=\n    AuditLink:)/,
+  )?.[0];
+
+  assert.ok(
+    accessedUrlContract,
+    "contrato AccessedUrl não encontrado no Swagger",
+  );
+  assert.match(accessedUrlContract, new RegExp(`\\b${method}\\b`));
+  assert.doesNotMatch(accessedUrlContract, /PUBLIC_SEARCH/);
 });
 
 test("síntese bloqueia referência inventada em vez de corrigir silenciosamente", () => {

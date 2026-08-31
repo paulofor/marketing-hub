@@ -2618,3 +2618,9 @@ Use este checklist quando o problema estiver em algum loop acima:
   identidade Codex dentro da imagem, executa ambos os preflights com `-T` e `</dev/null>` e força a
   recriação antes do gate de saúde. Testes de contrato protegem permissões, ordem e continuidade do
   script remoto.
+- **Ajuste confirmado por SSH em 2026-08-31:** a sessão exclusiva de Argos continha `auth.json`
+  válido, mas não possuía `config.toml`; em uma execução isolada e somente leitura da mesma imagem,
+  `codex login status` confirmou a identidade sem esse arquivo. Exigir `config.toml` no preflight
+  criaria um bloqueio falso após a correção de permissões. O gate passa a exigir diretório próprio
+  gravável e a confirmação autoritativa `codex login status`, preservando a reconciliação segura de
+  proprietário, o stdin fechado, a recriação forçada e o health final.

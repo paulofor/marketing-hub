@@ -235,7 +235,7 @@ jobs:
             </dev/null
           docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint sh \
             product-discovery-worker -c \
-            'test -r "$CODEX_HOME/config.toml" && test -w "$CODEX_HOME" && codex login status >/dev/null' \
+            'test -d "$CODEX_HOME" && test -w "$CODEX_HOME" && codex login status >/dev/null' \
             </dev/null
           docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans
 

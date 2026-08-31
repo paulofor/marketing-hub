@@ -214,4 +214,13 @@ test("o deploy valida Brave e Codex sem consumir o restante do script remoto", (
     workflow,
     /run -T --rm --no-deps --entrypoint sh[\s\S]*?codex login status >\/dev\/null'[\s\\]*?<\/dev\/null/,
   );
+  assert.match(
+    workflow,
+    /test -d "\$CODEX_HOME" && test -w "\$CODEX_HOME" && codex login status >\/dev\/null/,
+  );
+  assert.doesNotMatch(
+    workflow,
+    /test -r "\$CODEX_HOME\/config\.toml"/,
+    "A prontidão de Argos deve ser comprovada pelo Codex, não por um arquivo opcional.",
+  );
 });

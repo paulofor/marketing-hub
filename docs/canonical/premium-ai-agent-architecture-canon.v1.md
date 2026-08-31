@@ -143,10 +143,12 @@ empobrecido e perder URL, mídia, tenant, experimento ou outra evidência usada 
 Cada agente deve montar um diretório Codex persistente próprio dentro de
 `/opt/marketing-hub/agents/<agente>/codex-home`; é proibido que containers diferentes montem o mesmo
 diretório mutável. Durante a migração do layout legado, o workflow pode copiar uma única vez
-`auth.json` e `config.toml` da sessão operacional confiável em `/opt/growth-operator/codex-home`,
-sempre com modo `600`, proprietário do usuário sem privilégios do container e sem imprimir o
-conteúdo. Depois do bootstrap, cada diretório evolui de forma independente. Diretório vazio nunca
-é considerado autenticação e o deploy deve validar `codex login status` antes de declarar prontidão.
+os materiais da sessão operacional confiável em `/opt/growth-operator/codex-home`, incluindo
+`auth.json` e `config.toml` quando este existir, sempre com modo `600`, proprietário do usuário sem
+privilégios do container e sem imprimir o conteúdo. Depois do bootstrap, cada diretório evolui de
+forma independente. Diretório vazio nunca é considerado autenticação e o deploy deve validar
+`codex login status` antes de declarar prontidão; a existência isolada de `config.toml` não
+substitui essa prova.
 
 ## Capacidades por domínio
 

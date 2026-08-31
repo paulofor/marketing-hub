@@ -2608,3 +2608,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes cobrem origem ausente, permissão `0400`, ausência de segredo nos logs e ordem
   `pull → preparação → preflight → publicação`. Assim, drift de proprietário ou modo bloqueia o
   deploy antes de trocar um worker saudável.
+- **Correção complementar da sessão Codex em 2026-08-31:** as execuções independentes 6, 7 e 8
+  abriram os ciclos 45, 46 e 47, mas as tarefas 285–287 bloquearam antes do planejamento com
+  `Permission denied` ao ler `/home/node/.codex/config.toml`. O deploy criava o volume da sessão com
+  modo `0700` e proprietário `root`, embora a imagem execute como `node`. O primeiro `docker compose
+  run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comandos posteriores e
+  permitia um workflow verde sem `compose up` nem health final. O publicador agora deriva UID/GID da
+  imagem, reconcilia a árvore da sessão sem seguir links simbólicos, comprova leitura, escrita e
+  identidade Codex dentro da imagem, executa ambos os preflights com `-T` e `</dev/null>` e força a
+  recriação antes do gate de saúde. Testes de contrato protegem permissões, ordem e continuidade do
+  script remoto.

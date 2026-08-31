@@ -15,7 +15,10 @@ const deployCompose = readFileSync(
   "utf8",
 );
 const workflow = readFileSync(
-  new URL("../../.github/workflows/product-discovery-worker-ci.yml", import.meta.url),
+  new URL(
+    "../../.github/workflows/product-discovery-worker-ci.yml",
+    import.meta.url,
+  ),
   "utf8",
 );
 
@@ -104,29 +107,41 @@ test("empacota Chromium como usuário sem privilégios e habilita a coleta limit
       /ARGOS_META_BROWSER_ENABLED: \$\{ARGOS_META_BROWSER_ENABLED:-true\}/,
       "[ARQUITETURA] Argos deve tentar a Biblioteca pública antes do fallback humano.",
     );
-    assert.match(compose, /ARGOS_META_BROWSER_MAX_ADS: \$\{ARGOS_META_BROWSER_MAX_ADS:-12\}/);
+    assert.match(
+      compose,
+      /ARGOS_META_BROWSER_MAX_ADS: \$\{ARGOS_META_BROWSER_MAX_ADS:-12\}/,
+    );
   }
 });
 
 test("valida o secret como usuário do runtime antes de substituir o worker", () => {
-  const publishStep = workflow.slice(workflow.indexOf("- name: Publish service"));
+  const publishStep = workflow.slice(
+    workflow.indexOf("- name: Publish service"),
+  );
   const pullPosition = publishStep.indexOf(
     'docker compose "${compose_files[@]}" pull',
   );
   const preparePosition = publishStep.indexOf(
     "scripts/prepare-brave-runtime-secret.sh",
   );
+  const prepareCodexPosition = publishStep.indexOf(
+    "scripts/prepare-codex-runtime-home.sh",
+  );
   const preflightPosition = publishStep.indexOf(
     "scripts/validate-runtime-search-config.mjs",
   );
+  const codexPreflightPosition = publishStep.indexOf("codex login status");
   const publishPosition = publishStep.indexOf(
-    'docker compose "${compose_files[@]}" up -d --remove-orphans',
+    'docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans',
   );
 
   assert.ok(pullPosition >= 0);
+  assert.ok(pullPosition < prepareCodexPosition);
+  assert.ok(prepareCodexPosition < preparePosition);
   assert.ok(pullPosition < preparePosition);
   assert.ok(preparePosition < preflightPosition);
-  assert.ok(preflightPosition < publishPosition);
+  assert.ok(preflightPosition < codexPreflightPosition);
+  assert.ok(codexPreflightPosition < publishPosition);
   assert.match(
     publishStep,
     /runtime_uid="\$\(docker run --rm --entrypoint id "\$product_discovery_worker_image" -u\)"/,

@@ -257,6 +257,14 @@ O catálogo operacional é
 compatível continua visível com a causa da indisponibilidade, mas não pode ser disparado. Repetir o
 mesmo `requestKey` devolve a execução já criada e nunca abre outro ciclo ou duplica consumo de modelo.
 
+Cada item do histórico deve abrir a rota dedicada
+`/business-process-executions/{executionId}`. Uma execução terminal bloqueada deve mostrar já no
+histórico a causa literal consolidada pelo backend e, no detalhe, estado, horários, entrada,
+atividades, tarefas, erros, evidências, custos e a orientação de retentativa. Selecionar um item e
+renderizar seu conteúdo apenas abaixo do formulário não atende ao contrato de visibilidade. A nova
+tentativa preserva a ocorrência bloqueada e reutiliza a mesma entrada em uma nova solicitação
+idempotente; a tela não pode sobrescrever histórico nem inferir uma causa diferente da persistida.
+
 Status, progresso e custos exibidos são consolidados pelo backend a partir das instâncias e tarefas
 persistidas. Ausência de medição permanece ausente; execução, aprovação ou documento produzido não é
 venda. A entrada independente não pode conter `productId`, `experimentId` ou associação artificial a

@@ -102,6 +102,7 @@ import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
 import BusinessProcessesPage from "./pages/businessProcess/BusinessProcessesPage";
 import IndependentBusinessProcessExecutionsPage from "./pages/businessProcess/IndependentBusinessProcessExecutionsPage";
+import IndependentBusinessProcessExecutionDetailPage from "./pages/businessProcess/IndependentBusinessProcessExecutionDetailPage";
 import BusinessProcessActivityDocumentsPage from "./pages/businessProcess/BusinessProcessActivityDocumentsPage";
 import BusinessProcessActivityExecutionsPage from "./pages/businessProcess/BusinessProcessActivityExecutionsPage";
 import BusinessProcessChainsPage from "./pages/businessProcessChain/BusinessProcessChainsPage";
@@ -452,6 +453,10 @@ export default function App() {
               <Route
                 path="/business-process-executions"
                 element={<IndependentBusinessProcessExecutionsPage />}
+              />
+              <Route
+                path="/business-process-executions/:executionId"
+                element={<IndependentBusinessProcessExecutionDetailPage />}
               />
               <Route
                 path="/business-processes/retired"

@@ -209,7 +209,6 @@ jobs:
           compose_files=(-f docker-compose.yml -f docker-compose.deploy.yml)
 
           install -m 700 -d /root/infra/brave-token
-          install -m 700 -d /root/infra/argos/codex-home
           if [ ! -s "$source_secret" ]; then
             echo "Erro: informe a chave Brave no arquivo operacional antes de publicar o Product Discovery Worker." >&2
             exit 1
@@ -227,11 +226,18 @@ jobs:
           docker compose "${compose_files[@]}" pull
           runtime_uid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -u)"
           runtime_gid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -g)"
+          bash scripts/prepare-codex-runtime-home.sh \
+            "$ARGOS_CODEX_HOME" "$runtime_uid" "$runtime_gid"
           bash scripts/prepare-brave-runtime-secret.sh \
             "$source_secret" "$runtime_secret" "$runtime_uid" "$runtime_gid"
-          docker compose "${compose_files[@]}" run --rm --no-deps --entrypoint node \
-            product-discovery-worker scripts/validate-runtime-search-config.mjs
-          docker compose "${compose_files[@]}" up -d --remove-orphans
+          docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint node \
+            product-discovery-worker scripts/validate-runtime-search-config.mjs \
+            </dev/null
+          docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint sh \
+            product-discovery-worker -c \
+            'test -r "$CODEX_HOME/config.toml" && test -w "$CODEX_HOME" && codex login status >/dev/null' \
+            </dev/null
+          docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans
 
           healthy=false
           health_payload=""

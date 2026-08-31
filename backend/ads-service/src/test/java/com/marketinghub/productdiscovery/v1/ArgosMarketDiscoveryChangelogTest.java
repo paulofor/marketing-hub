@@ -9,15 +9,19 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: proteger a evolução auditável de Argos no schema físico MySQL 5.7. */
 class ArgosMarketDiscoveryChangelogTest {
   private static final String FILE = "2026-08-30-argos-market-discovery-v1.yaml";
+  private static final String META_BROWSER_FILE = "2026-08-30-argos-meta-public-browser-v1.yaml";
   private static final Path CHANGELOG_ROOT = Path.of("src/main/resources/db/changelog");
 
-  /** Exige resolução relativa do novo changelog a partir do mestre. */
+  /** Exige resolução relativa e aplicação do pré-requisito de mercado antes do navegador Meta. */
   @Test
-  void masterIncludesArgosMarketDiscoveryRelatively() throws Exception {
+  void masterIncludesArgosMarketDiscoveryBeforeMetaBrowser() throws Exception {
     String master = Files.readString(CHANGELOG_ROOT.resolve("db.changelog-master.yaml"));
+    String marketInclude = "file: changesets/" + FILE + "\n      relativeToChangelogFile: true";
+    String metaBrowserInclude =
+        "file: changesets/" + META_BROWSER_FILE + "\n      relativeToChangelogFile: true";
 
-    assertThat(master)
-        .contains("file: changesets/" + FILE + "\n      relativeToChangelogFile: true");
+    assertThat(master).contains(marketInclude, metaBrowserInclude);
+    assertThat(master.indexOf(marketInclude)).isLessThan(master.indexOf(metaBrowserInclude));
   }
 
   /** Protege colunas, retomada de DDL e versão do agente sem riscos temporais ou MySQL 1093. */
@@ -44,7 +48,7 @@ class ArgosMarketDiscoveryChangelogTest {
         .doesNotContain("DELETE FROM product_discovery_cycle");
   }
 
-  /** Mantém aplicação, retomada, rollback e reaplicação reais na matriz MySQL 5.7. */
+  /** Mantém aplicação pelo mestre, retomada, rollback e reaplicação reais na matriz MySQL 5.7. */
   @Test
   void keepsPhysicalMysql57MatrixVersioned() throws Exception {
     String baseline =
@@ -60,6 +64,9 @@ class ArgosMarketDiscoveryChangelogTest {
         .contains("retomada idempotente da descoberta ampla")
         .contains("rollback isolado da descoberta ampla")
         .contains("reaplicação da descoberta ampla após rollback")
+        .contains("changelogSync")
+        .contains("ordem de deploy do changelog mestre")
+        .contains("2026-08-31-product-discovery-autonomous-handoff-v1-%")
         .contains("\"6:4\"")
         .contains("\"0:3\"");
   }

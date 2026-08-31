@@ -2654,3 +2654,23 @@ Use este checklist quando o problema estiver em algum loop acima:
   sessão autenticada, bancos de estado e demais arquivos persistentes são preservados.
 - **Prevenção:** teste reproduz os wrappers do Codex, exige limpeza sem alterar o alvo nem o
   `auth.json` e mantém o teste separado que recusa link simbólico fora do diretório temporário.
+
+## LOOP-ARGOS-AUDITORIA-MULTIFASE-FORA-DE-ORDEM — pesquisa concluída é recusada no callback
+
+- **Data:** 2026-08-31.
+- **Sintoma:** a execução independente #9 e o ciclo #48 pesquisaram Internet, Hotmart, Biblioteca
+  Meta e `/pesquisas`, produziram duas candidatas factuais e consumiram o modelo, mas terminaram
+  bloqueados quando o callback `/complete` recebeu HTTP 400.
+- **Causa-raiz confirmada no backend, worker e banco:** Argos agregava planejamento e síntese no
+  prompt integral em ordem cronológica, porém agregava separadamente todas as partes de agente e
+  todas as partes de atividade. Cada conteúdo estava presente, mas os dois blocos consolidados não
+  apareciam de forma contígua na ordem agente–atividade exigida pela auditoria BPM. O teste validava
+  apenas marcadores, tokens e URLs, sem reproduzir o gate real de composição.
+- **Correção sistêmica:** o dossiê multifase preserva os conteúdos e a ordem cronológica de
+  planejamento e síntese com marcadores explícitos. O backend reconhece o contrato multifase e
+  recompõe cada interação com agente antes da atividade, sem remover fase, reordenar request real ou
+  relaxar a validação dos prompts simples. O worker também preserva no bloqueio a mensagem segura do
+  backend, limitada e sanitizada, para a causa deixar de aparecer na tela apenas como `HTTP 400`.
+- **Prevenção:** testes do worker e do backend reproduzem o callback produtivo, exigem a presença das
+  duas fases, recusam inversão dentro de qualquer interação e impedem corpo HTML ou credencial na
+  mensagem operacional.

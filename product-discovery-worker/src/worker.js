@@ -337,9 +337,25 @@ async function postJson(url, payload) {
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
-    throw new Error(`POST ${url} failed with status ${response.status}`);
+    throw new Error(await backendFailureMessage("POST", url, response));
   }
   return response.json();
+}
+
+/** Acrescenta ao erro HTTP somente a mensagem segura e limitada devolvida pelo backend. */
+export async function backendFailureMessage(method, url, response) {
+  let detail = "";
+  try {
+    const body = JSON.parse(await response.text());
+    detail = String(body?.message || "")
+      .replace(/(?:sk-|sess-|eyJ)[A-Za-z0-9._-]+/g, "[SEGREDO_REMOVIDO]")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
+  } catch {
+    detail = "";
+  }
+  return `${method} ${url} failed with status ${response.status}${detail ? `: ${detail}` : ""}`;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

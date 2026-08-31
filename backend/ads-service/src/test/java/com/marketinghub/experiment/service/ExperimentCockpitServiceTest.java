@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsSeverity;
@@ -271,6 +272,63 @@ class ExperimentCockpitServiceTest {
     assertTrue(cockpit.funnel().stream().allMatch(stage -> stage.totalCount() == 0));
     assertEquals("AGUARDANDO_PRIMEIRA_IMPRESSAO", cockpit.bottleneck().code());
     assertEquals("AGUARDAR_PRIMEIRA_IMPRESSAO", cockpit.nextActions().get(0).code());
+  }
+
+  /** Mantém o piloto individual fora dos requisitos e das etapas exclusivas de campanha Meta. */
+  @Test
+  void getCockpitUsesDirectChannelWithoutDemandingMetaCampaign() {
+    Long experimentId = 89L;
+    Experiment experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .name("Rigel")
+            .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+            .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
+            .sampleSize(15)
+            .build();
+    when(experimentRepository.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(readinessService.summarize(experimentId))
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
+    when(diagnosticsService.diagnose(experimentId))
+        .thenReturn(
+            new ExperimentDiagnosticsDto(
+                ExperimentDiagnosticsSeverity.INFO,
+                "Nenhuma inconsistência detectada",
+                "Nenhuma campanha foi gerada ainda para este experimento.",
+                null,
+                List.of(),
+                null));
+    when(funnelService.summarizeLandingAnalytics(experimentId))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+    when(funnelService.summarize(experimentId))
+        .thenReturn(
+            List.of(
+                stage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 0),
+                stage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 0),
+                stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 0),
+                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 0),
+                stage(ExperimentFunnelStage.COMPRA, 0)));
+    when(funnelDiagnosticService.diagnose(experimentId))
+        .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+    when(funnelService.approvedRevenue(experimentId)).thenReturn(BigDecimal.ZERO);
+
+    var cockpit = service.getCockpit(experimentId);
+
+    assertEquals("READY", cockpit.health().status());
+    assertTrue(cockpit.health().description().contains("sem campanha Meta"));
+    assertEquals("AGUARDANDO_CONTATOS_DIRETOS", cockpit.bottleneck().code());
+    assertTrue(cockpit.bottleneck().recommendedFocus().contains("amostra de 15"));
+    assertEquals("ACOMPANHAR_AMOSTRA_DIRETA", cockpit.nextActions().getFirst().code());
+    assertTrue(
+        cockpit.funnel().stream()
+            .noneMatch(
+                stage ->
+                    stage.stage().equals("VISUALIZACAO_ANUNCIO")
+                        || stage.stage().equals("ACESSO_FORM_LEAD")));
   }
 
   /** Prepara um experimento real saudável, sem eventos de funil e com métricas de anúncio. */

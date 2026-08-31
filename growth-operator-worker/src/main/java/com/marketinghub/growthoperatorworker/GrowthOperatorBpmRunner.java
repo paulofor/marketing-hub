@@ -227,7 +227,7 @@ public class GrowthOperatorBpmRunner {
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
       case COMMUNICATION_PROCESS -> "prompts/bpm/v2/pde-growth-operation-contract.md";
-      case EXPERIMENT_PROCESS -> "prompts/bpm/v2/experiment-optimization.md";
+      case EXPERIMENT_PROCESS -> "prompts/bpm/v3/experiment-optimization.md";
       default -> throw new IllegalArgumentException("Processo BPM não suportado por Hermes.");
     };
   }

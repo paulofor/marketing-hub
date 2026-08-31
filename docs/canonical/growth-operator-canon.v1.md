@@ -49,6 +49,23 @@ humano posterior contradisser segmento, desejo, posicionamento ou tese de oferta
 estratégia. O Contrato Operacional de Crescimento contém somente rota de distribuição, atribuição,
 funil, eventos, segregação, amostra, consentimento, checkout/acesso a verificar e gates humanos.
 
+### Leitura operacional por canal
+
+Hermes deve resolver o canal persistido antes de aplicar gates de mensuração. Requisitos de Meta,
+como campanha, impressão, clique, gasto e orçamento diário, pertencem somente a experimentos de
+mídia paga e nunca podem bloquear um experimento `DIRECT_ONE_TO_ONE`.
+
+Na primeira atividade de integridade, um canal individual pode usar o preflight produtivo auditado
+para comprovar página, checkout/entrega, correlação, deduplicação e segregação. Eventos
+`INTERNAL_QA` comprovam apenas a instrumentação e permanecem excluídos de visitas humanas,
+contatos, pagamentos e vendas. Com os gates diretos e de dados em `PASS`, run ativo e placares sem
+divergência, a atividade técnica pode concluir antes do primeiro contato comercial.
+
+A amostra de qualquer atividade posterior vem do Contrato Estratégico de Mercado e do experimento,
+nunca de um piso genérico de campanha. Em `DIRECT_ONE_TO_ONE`, contam somente contatos individuais,
+consentidos e aderentes; não se exigem impressões ou visitas Meta. A trava preventiva de gasto Meta
+só se aplica quando existir campanha paga desse canal.
+
 O fingerprint exclui a memoria acumulada e inclui apenas evidencias operacionais atuais. Assim, o proprio relatorio anterior nao cria artificialmente uma mudanca. Cada execucao tambem persiste as chamadas MCP realmente observadas, permitindo auditar quais ferramentas fundamentaram a conclusao.
 
 Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
@@ -80,6 +97,11 @@ Estudio, funcao no funil, custo comercial, progressao dos videos, acoes posterio
 aprendizados. O Operador deve comparar pecas do mesmo `strategyGroupKey`, distinguir custo de
 producao de gasto de campanha e somente confirmar aprendizado quando houver eventos humanos
 atribuidos.
+
+A ferramenta `consultar_preflight` resolve o run produtivo mais recente do experimento e devolve o
+run com seus gates persistidos. Ela é somente leitura e deve ser usada por Hermes antes de decidir
+integridade ou amostra, impedindo que uma tentativa antiga bloqueada ou um requisito de outro canal
+substitua a evidência vigente.
 
 ## Memória ligada à ferramenta
 

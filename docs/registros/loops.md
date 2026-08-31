@@ -4,6 +4,27 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-HERMES-CANAL-DIRETO-TRATADO-COMO-META — piloto aprovado bloqueia por campanha inexistente
+
+- **Data:** 2026-08-31.
+- **Sintoma confirmado:** a tarefa #289 do Rigel consumiu o modelo e terminou `BLOCKED`, exigindo
+  campanha Meta, primeira impressão e jornada Meta → landing → checkout, embora o experimento 89
+  estivesse ativo em `DIRECT_ONE_TO_ONE`, com amostra de 15 contatos e sem mídia paga por contrato.
+- **Causa-raiz confirmada no código, banco e histórico:** o prompt v2 de
+  `operacao-otimizacao-experimento` fixava Meta e cem visitas para qualquer canal. O cockpit também
+  mantinha etapas e ação de campanha quando `experiment.platform` era direto. Ao mesmo tempo, o run
+  9 já possuía `DIRECT_CHANNEL_READINESS_CONFIRMED`,
+  `CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED` e `DATA_FRESHNESS_VALID` em `PASS`, incluindo seis eventos
+  `INTERNAL_QA` segregados sem contaminar as métricas humanas.
+- **Correção sistêmica:** Hermes v3 resolve canal e amostra persistidos, consulta o preflight do run
+  produtivo mais recente e aceita QA somente como prova de instrumentação. Campanha, impressão,
+  visita e trava de gasto Meta ficam exclusivas da mídia paga. O cockpit do canal direto remove as
+  etapas de anúncio, informa que o piloto está pronto e aguarda contatos consentidos em vez de pedir
+  campanha.
+- **Prevenção:** testes do worker usam runs 8 e 9 para impedir mistura da tentativa antiga, exigem os
+  três gates diretos e recusam o piso fixo de cem visitas. Teste do backend mantém o Rigel fora das
+  etapas Meta e preserva o fluxo pago existente.
+
 ## LOOP-ARGOS-INDICE-DERIVADO-DECLARADO-COMO-VERSIONADO — deploy central falha após pesquisa diária
 
 - **Data:** 2026-08-31.

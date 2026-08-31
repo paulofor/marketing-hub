@@ -88,6 +88,67 @@ test('mantem a consulta comercial disponivel quando a memoria just-in-time falha
   }
 });
 
+test('consulta o preflight do run produtivo mais recente sem misturar tentativa anterior', async () => {
+  const requests = [];
+  const backend = await startBackend(async (request, response) => {
+    requests.push(request.url);
+    response.setHeader('Content-Type', 'application/json');
+    if (request.url.includes('/api/internal/agent-memory/v1/agents/growth-operator')) {
+      response.end('[]');
+      return;
+    }
+    if (request.url === '/api/experiments/89/runs') {
+      response.end(JSON.stringify([
+        { id: 8, runNumber: 1, mode: 'PRODUCTION', status: 'PREFLIGHT_FAILED' },
+        { id: 9, runNumber: 2, mode: 'PRODUCTION', status: 'RUNNING' }
+      ]));
+      return;
+    }
+    if (request.url === '/api/experiment-runs/9/preflight') {
+      response.end(JSON.stringify({
+        runId: 9,
+        hasBlockers: false,
+        gates: [
+          { gateCode: 'DIRECT_CHANNEL_READINESS_CONFIRMED', status: 'PASS' },
+          { gateCode: 'CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED', status: 'PASS' },
+          { gateCode: 'DATA_FRESHNESS_VALID', status: 'PASS' }
+        ]
+      }));
+      return;
+    }
+    response.statusCode = 404;
+    response.end(JSON.stringify({ error: 'rota inesperada' }));
+  });
+  const client = startMcp(backend.address().port, { MCP_EXPERIMENT_ID: '89' });
+  try {
+    const result = await client.request('tools/call', {
+      name: 'consultar_preflight',
+      arguments: {}
+    });
+    const payload = JSON.parse(result.result.content[0].text);
+
+    assert.equal(payload.data.run.id, 9);
+    assert.equal(payload.data.preflight.hasBlockers, false);
+    assert.deepEqual(
+      payload.data.preflight.gates.map(gate => gate.gateCode),
+      [
+        'DIRECT_CHANNEL_READINESS_CONFIRMED',
+        'CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED',
+        'DATA_FRESHNESS_VALID'
+      ]
+    );
+    assert.deepEqual(payload.audit.sources, [
+      '/api/experiments/89/runs',
+      '/api/experiment-runs/9/preflight'
+    ]);
+    assert(requests.includes('/api/experiment-runs/9/preflight'));
+    assert(!requests.includes('/api/experiment-runs/8/preflight'));
+  } finally {
+    await client.close();
+    backend.close();
+  }
+});
+
 test('registra candidato no experimento ou na ferramenta sem permitir escopo arbitrario', async () => {
   const bodies = [];
   const backend = await startBackend(async (request, response) => {

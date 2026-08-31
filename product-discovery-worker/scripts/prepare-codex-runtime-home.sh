@@ -30,6 +30,17 @@ fi
 
 install -d -o "$runtime_uid" -g "$runtime_gid" -m 700 "$runtime_home"
 
+# O Codex cria wrappers simbólicos descartáveis neste diretório durante a execução.
+transient_directory="$runtime_home/tmp"
+if [ -L "$transient_directory" ] || \
+  { [ -e "$transient_directory" ] && [ ! -d "$transient_directory" ]; }; then
+  echo "Erro: o diretório temporário da sessão Codex deve ser um diretório real." >&2
+  exit 1
+fi
+if [ -d "$transient_directory" ]; then
+  find -P "$transient_directory" -mindepth 1 -delete
+fi
+
 if find -P "$runtime_home" -mindepth 1 -type l -print -quit | grep -q .; then
   echo "Erro: a sessão Codex contém link simbólico e não pode ter permissões reconciliadas com segurança." >&2
   exit 1

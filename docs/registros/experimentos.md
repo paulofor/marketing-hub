@@ -6694,6 +6694,23 @@
   views, sem checkout ou compra comercial. O experimento continuou `PLANNED`, sem orçamento diário,
   contato, campanha, gasto ou autorização da próxima atividade.
 
+## 2026-08-31 — Rigel: autorização humana reconciliada com o preflight aprovado
+
+- **Causa-raiz confirmada:** o experimento 89 era `LOW_TICKET_PRODUCT` com produto do catálogo
+  `PDE`, enquanto a ativação direta reconhecia apenas o tipo de assinatura. A prontidão ignorava o
+  run 9 já homologado e repetia pendências incompatíveis com seus onze gates `PASS`.
+- **Correção local:** os quatro gates funcionais do run produtivo passam a ser a fonte explícita de
+  página, checkout/entrega, canal consentido e qualidade dos dados. A tela existente recebe esses
+  requisitos do backend e libera o formulário humano somente com teto financeiro positivo.
+- **Integridade:** a aprovação continua sem criar campanha ou gasto; ela sincroniza experimento,
+  run, janela comercial, produto e BPM na mesma transação. A ocorrência de comunicação bloqueada
+  permanece no histórico, enquanto o período do macroprocesso registra o preflight posterior como
+  evidência explícita da reconciliação.
+- **Métrica e gate:** continuar somente se a tela mostrar todos os requisitos satisfeitos e a
+  aprovação deixar os quatro estados coerentes; ajustar diante de evidência ausente; parar e fazer
+  rollback integral diante de qualquer falha de persistência. Dados `INTERNAL_QA` não contam como
+  visita, checkout, compra ou venda.
+
 ## 2026-08-31 — Argos: credencial factual validada antes do deploy
 
 - O workflow `33343796393` deixou o Argos `DEGRADED`: o arquivo Brave existia no host, mas o usuário

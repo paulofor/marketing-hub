@@ -60,6 +60,18 @@ public class ProductProcessPeriodService {
   /** Fecha e efetiva o macroprocesso anterior antes de abrir o novo quando o estado muda. */
   @Transactional
   public void recordTransition(Product product, String previousCommercialStatus) {
+    recordTransition(product, previousCommercialStatus, "COMMERCIAL_STATUS_TRANSITION");
+  }
+
+  /** Reconcilia o avanço excepcional comprovado por um preflight produtivo auditável. */
+  @Transactional
+  public void recordAuditedPreflightTransition(Product product, String previousCommercialStatus) {
+    recordTransition(product, previousCommercialStatus, "AUDITED_PRODUCTION_PREFLIGHT");
+  }
+
+  /** Fecha o período anterior e preserva a evidência específica que autorizou o avanço. */
+  private void recordTransition(
+      Product product, String previousCommercialStatus, String transitionEvidence) {
     if (product == null || product.getId() == null) return;
     BusinessProcessChainDefinition chain = publishedChain();
     if (chain == null) return;
@@ -74,14 +86,14 @@ public class ProductProcessPeriodService {
         .ifPresent(
             period -> {
               period.setExitedAt(changedAt);
-              period.setExitEvidence("COMMERCIAL_STATUS_TRANSITION");
+              period.setExitEvidence(transitionEvidence);
               period.setObjectiveAchieved(currentCode != null);
               period.setOpenSlot(null);
               period.setUpdatedAt(changedAt);
               // Libera no banco o slot único do período aberto antes do INSERT do próximo período.
               periodRepository.saveAndFlush(period);
             });
-    openPeriod(product, chain, currentCode, changedAt, "COMMERCIAL_STATUS_TRANSITION");
+    openPeriod(product, chain, currentCode, changedAt, transitionEvidence);
   }
 
   /** Abre a posição atual usando a cadeia publicada quando o estado possui vínculo canônico. */

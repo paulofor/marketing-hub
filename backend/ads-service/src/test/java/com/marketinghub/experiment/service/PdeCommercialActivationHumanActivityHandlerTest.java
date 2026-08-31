@@ -93,6 +93,28 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     verify(experimentService).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 
+  /** Reconcilia run e produto mesmo quando um estado legado já deixou o experimento em RUNNING. */
+  @Test
+  void reconcilesCommercialStatesWhenExperimentWasAlreadyRunning() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.RUNNING);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+
+    handler.approve(
+        process(),
+        activity(),
+        product,
+        "experiment:89",
+        new ProductProcessActivityExecutionRequest(
+            "APPROVE",
+            "Paulo Operador",
+            "Estados comerciais revisados para reconciliação.",
+            "experiment-run:9",
+            "CONFIRM:pde-commercial-homologation-activation:authorization"));
+
+    verify(experimentService).updateStatus(89L, ExperimentStatus.RUNNING);
+  }
+
   /** Impede que uma decisão do produto atual ative experimento pertencente a outro produto. */
   @Test
   void rejectsExperimentFromAnotherProduct() {

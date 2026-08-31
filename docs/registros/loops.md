@@ -4,6 +4,24 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-ARGOS-INDICE-DERIVADO-DECLARADO-COMO-VERSIONADO — deploy central falha após pesquisa diária
+
+- **Data:** 2026-08-31.
+- **Sintoma confirmado no GitHub Actions:** o workflow central do merge do PR #5074 falhou no
+  `AgentHarnessCatalogTest` porque exigia
+  `product-discovery-worker/research-library/index.json`; os deploys de Argos e Psique foram
+  bloqueados em cascata aguardando o mesmo workflow.
+- **Causa-raiz confirmada pelo histórico:** `/pesquisas` passou corretamente a ser a fonte viva e o
+  índice deixou de ser versionado, mas o catálogo de harness continuou anunciando o arquivo derivado
+  como artefato versionado. O workflow de Argos gerava o índice antes dos próprios testes, ocultando
+  esse contrato residual até outro backend precisar ser publicado.
+- **Correção sistêmica:** um manifesto versionado declara a fonte, o glob, as regras de elegibilidade
+  e o caminho do índice derivado. O gerador consome esse manifesto e o harness referencia o contrato,
+  nunca o JSON ignorado.
+- **Prevenção:** o CI de Argos também é acionado por mudanças no catálogo e testa conjuntamente
+  manifesto, fonte e referência do harness, impedindo que novos artigos ou refatorações reintroduzam
+  dependência de um índice manual.
+
 ## LOOP-AGENT-TASK-AUDITORIA-TERMINAL-INCOMPLETA — tarefa bloqueia sem explicar execução ou correção
 
 - **Data:** 2026-08-29.

@@ -11,8 +11,16 @@ import { fileURLToPath } from "node:url";
 
 const workerRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const repositoryRoot = resolve(workerRoot, "..");
-const sourceRoot = resolve(repositoryRoot, "pesquisas");
-const outputPath = resolve(workerRoot, "research-library/index.json");
+const sourceManifestPath = resolve(
+  workerRoot,
+  "research-library/source-manifest.json",
+);
+const sourceManifest = JSON.parse(readFileSync(sourceManifestPath, "utf8"));
+const sourceRoot = resolve(repositoryRoot, sourceManifest.sourceRoot);
+const outputPath = resolve(
+  repositoryRoot,
+  sourceManifest.generatedArtifactPath,
+);
 const checkOnly = process.argv.includes("--check");
 
 /** Materializa a coleção viva em um índice reproduzível que entra na imagem de Argos. */
@@ -27,7 +35,8 @@ function buildIndex() {
       collection,
       title: firstHeading(content) || filename.replace(/\.md$/i, ""),
       date: filename.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || null,
-      evidenceEligible: filename !== "ini.md",
+      evidenceEligible:
+        !sourceManifest.evidenceIneligibleBasenames.includes(filename),
       sha256: createHash("sha256").update(content).digest("hex"),
       content,
     };
@@ -35,7 +44,7 @@ function buildIndex() {
   return `${JSON.stringify(
     {
       schemaVersion: 1,
-      generatedFrom: "pesquisas/**/*.md",
+      generatedFrom: sourceManifest.sourceGlob,
       documents,
     },
     null,

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "pesquisas",
+  "sourceGlob": "pesquisas/**/*.md",
+  "generatedArtifactPath": "product-discovery-worker/research-library/index.json",
+  "evidenceIneligibleBasenames": ["ini.md"]
+}

@@ -877,7 +877,7 @@
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da resposta de pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json", "description": "Contrato estruturado das evidências." },
         { "artifactType": "RUNTIME_CONFIG", "name": "Planejador Codex de Argos", "version": "v4", "path": "product-discovery-worker/src/argos-codex.js", "description": "Plano, consultas, modelo, sandbox, timeout e telemetria." },
         { "artifactType": "RUNTIME_CONFIG", "name": "Sintetizador factual de Argos", "version": "v4", "path": "product-discovery-worker/src/argos-research.js", "description": "Valida evidências, candidatas, resposta bruta e degradação explícita." },
-        { "artifactType": "KNOWLEDGE_BASE", "name": "Índice das pesquisas internas", "version": "v1", "path": "product-discovery-worker/research-library/index.json", "description": "Caminhos, hashes e trechos versionados dos artigos Markdown." },
+        { "artifactType": "KNOWLEDGE_BASE", "name": "Fonte das pesquisas internas", "version": "v1", "path": "product-discovery-worker/research-library/source-manifest.json", "description": "Contrato versionado que declara /pesquisas como fonte de verdade e o índice gerado usado pelo Argos." },
         { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "product-discovery-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
         { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/product-discovery-worker-ci.yml", "description": "Testes, build e publicação versionados." }
       ]

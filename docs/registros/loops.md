@@ -2545,3 +2545,18 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de integração reproduzem a colisão em banco com restrição física, exigem
   exatamente onze códigos únicos após duas avaliações e comprovam que a retentativa BPM usa um novo
   run sem alterar a ocorrência bloqueada anterior.
+
+## LOOP-ARGOS-INDICE-PESQUISAS-DIVERGENTE — merge combina artigos novos com índice anterior
+
+- **Data:** 2026-08-30.
+- **Sintoma:** o workflow `Product Discovery Worker CI` falhou em `main` com “Índice de pesquisas
+  desatualizado”, impedindo testes, imagem e deploy do Argos.
+- **Causa-raiz confirmada pelo histórico:** o índice foi gerado no branch do Argos antes de dois
+  artigos de 30/08 entrarem na base. O merge combinou os Markdown novos com o índice anterior; o
+  check do merge detectou a divergência, mas o repositório não exigia checks para aceitar o PR.
+- **Correção sistêmica:** o índice versionado inclui os artigos vigentes. O CI o materializa antes
+  dos testes, mantém o diff bloqueante no pull request e o materializa novamente no job que produz a
+  imagem a partir do checkout final.
+- **Prevenção:** teste de contrato exige geração anterior a `npm test` e anterior ao build da imagem.
+  Assim, o PR continua expondo drift auditável e um merge aceito sem respeitar o check não consegue
+  publicar uma imagem de Argos com biblioteca factual antiga.

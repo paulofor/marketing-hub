@@ -93,9 +93,18 @@ grep -Fq '.github/workflows/deploy-containers.yml) backend=true; frontend=true; 
   ../scripts/detect-deployment-changes.sh
 
 # O workflow deve consumir a fonte canônica de detecção em vez de manter uma
-# segunda lista de módulos que possa divergir silenciosamente.
-grep -Fq 'bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}"' \
-  ../.github/workflows/deploy-containers.yml
+# segunda lista de módulos que possa divergir silenciosamente. A normalização
+# preserva o contrato mesmo quando a chamada YAML é quebrada em várias linhas.
+normalized_deploy_workflow="$(
+  awk '{ sub(/[[:space:]]*\\[[:space:]]*$/, ""); printf "%s ", $0 }' \
+    ../.github/workflows/deploy-containers.yml \
+    | tr -s '[:space:]' ' '
+)"
+if ! grep -Fq 'bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}" "${deployed_frontend_revision}"' \
+  <<<"${normalized_deploy_workflow}"; then
+  echo "[CONTRATO] O workflow deve chamar o detector canônico com as revisões APP e frontend." >&2
+  exit 1
+fi
 
 # Código de vídeo só pode chegar ao host quando a imagem do mesmo SHA tiver
 # sido construída e publicada. Mudanças apenas de descritor continuam válidas.

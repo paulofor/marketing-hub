@@ -27,13 +27,12 @@ disponíveis e URLs ficam ligados ao ciclo. Se o modelo estiver desligado, o mod
 preserva a coleta, mas retorna zero candidatas em vez de repetir sugestões genéricas.
 
 A biblioteca interna é gerada deterministicamente por `npm run build:research-library`. O índice
-versionado preserva caminho, hash e trechos dos Markdown de `/pesquisas`; esses artigos inspiram
-lentes de investigação, mas nunca substituem confirmação pública de demanda.
+materializado na imagem preserva caminho, hash e trechos dos Markdown versionados de `/pesquisas`;
+esses artigos inspiram lentes de investigação, mas nunca substituem confirmação pública de demanda.
 
-No pull request, o CI regenera o índice e exige que a versão resultante já esteja commitada. No
-`push` da branch principal, testes e imagem materializam novamente a biblioteca a partir do checkout
-vigente. Essa segunda barreira impede que artigos incorporados pela base depois da validação do
-branch produzam uma imagem de Argos com um índice anterior.
+Testes locais, pull requests e a construção da imagem materializam a biblioteca a partir do checkout
+vigente. O índice é um artefato ignorado pelo Git para não disputar merge com sua fonte; a imagem
+imutável ligada ao SHA preserva exatamente o conteúdo usado por Argos.
 
 Em ciclos B2C para Instagram, Argos registra no plano uma consulta Meta com país,
 plataforma e termos específicos. O backend cria ou reutiliza o acompanhamento canônico e

@@ -930,6 +930,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - teste de contrato protege as duas classificações.
 - **Regra preventiva**:
   - sucesso do workflow só comprova publicação quando o job de build e o job de deploy do destino foram executados, não apenas quando o workflow agregado ficou verde.
+- **Fechamento complementar em 2026-08-31:** ao adicionar a revisão real do frontend como quarto
+  argumento, a chamada do detector foi formatada em várias linhas. O contrato isolado de vídeo ainda
+  procurava literalmente a chamada antiga em uma linha, bloqueou antes dos testes e fez o deploy da
+  aplicação terminar vermelho mesmo sem defeito no vídeo. A validação agora normaliza espaços do
+  YAML e exige a chamada canônica completa, incluindo as revisões APP e frontend; assim, mudanças de
+  formatação não quebram o gate e a ausência de qualquer argumento continua bloqueante.
 
 ---
 
@@ -2582,12 +2588,20 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz confirmada pelo histórico:** o índice foi gerado no branch do Argos antes de dois
   artigos de 30/08 entrarem na base. O merge combinou os Markdown novos com o índice anterior; o
   check do merge detectou a divergência, mas o repositório não exigia checks para aceitar o PR.
-- **Correção sistêmica:** o índice versionado inclui os artigos vigentes. O CI o materializa antes
-  dos testes, mantém o diff bloqueante no pull request e o materializa novamente no job que produz a
-  imagem a partir do checkout final.
-- **Prevenção:** teste de contrato exige geração anterior a `npm test` e anterior ao build da imagem.
-  Assim, o PR continua expondo drift auditável e um merge aceito sem respeitar o check não consegue
-  publicar uma imagem de Argos com biblioteca factual antiga.
+- **Correção inicial:** o índice versionado passou a incluir os artigos vigentes. O CI o materializava
+  antes dos testes, mantinha o diff bloqueante no pull request e o materializava novamente no job que
+  produzia a imagem a partir do checkout final. Isso protegeu a imagem, mas manteve a disputa de merge.
+- **Fechamento definitivo em 2026-08-31:** uma nova pesquisa Gartner entrou diretamente em `main`
+  sem atualizar o índice derivado. O PR #5071, embora não alterasse essa pesquisa, recebeu o merge
+  sintético com o artigo novo e falhou novamente no gate de `git diff`; o push posterior de `main`
+  materializou o índice correto e passou, confirmando que a falha era disputa entre fonte e artefato,
+  não conteúdo inválido. `/pesquisas` permanece como fonte de verdade versionada e `index.json`
+  passa a ser artefato ignorado, determinístico e materializado antes de testes e da construção da
+  imagem. Testes locais também o geram por `pretest`; o contrato impede reintroduzir o gate de diff
+  sobre o artefato. Isso preserva hashes e conteúdo auditável na imagem ligada ao SHA sem exigir
+  commits automáticos nem bloquear PRs por pesquisas concorrentes.
+- **Prevenção vigente:** teste de contrato exige materialização anterior a testes e imagem, geração
+  automática em testes locais, `index.json` ignorado pelo Git e ausência do antigo gate de diff.
 
 ## LOOP-ARGOS-SECRET-BRAVE-ILEGIVEL — arquivo existe no host, mas o runtime não consegue pesquisá-lo
 

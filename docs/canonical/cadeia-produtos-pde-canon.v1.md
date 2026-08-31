@@ -645,3 +645,17 @@ A cadeia deve permitir medir, no mínimo:
 
 O indicador principal da cadeia é **tempo até venda entregue com satisfação**, e não quantidade de
 artefatos, tarefas ou processos concluídos.
+
+## Entrada autônoma da cadeia por tema amplo
+
+Por decisão de 2026-08-31, a cadeia pode nascer antes de existir produto pela execução independente
+`Tema amplo + Instagram`. Argos pesquisa Internet, Meta e `/pesquisas`, o backend materializa um
+dossiê por candidata factual e controla o avanço sequencial por Atena, Plutus e Dédalo. Após os três
+gates aprovados, o backend cria o cadastro do produto em estado `PLANNED` e mantém toda a linhagem
+visível na execução que iniciou a descoberta.
+
+O cadastro planejado é o ponto de entrada governado nos macroprocessos de construção e venda, não a
+conclusão da cadeia. Ele não constitui produto pronto, publicação, campanha, gasto, venda ou receita.
+Essa escolha inicial de Atena prioriza somente uma candidata para planejamento, economia e
+arquitetura. A priorização comercial final continua condicionada ao protótipo privado e às duas
+leituras da Validação do Momento de Compra descritas neste cânone.

@@ -146,7 +146,7 @@ public class PdeConstructionBpmTaskConsumer {
       process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
-        process.destroyForcibly();
+        terminateTree(process);
         throw new BpmExecutionException(
             "Timeout da atividade de construção do PDE.",
             readTokenUsage(json, processLog),
@@ -575,6 +575,12 @@ public class PdeConstructionBpmTaskConsumer {
     try (var input = new ClassPathResource(resource).getInputStream()) {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8);
     }
+  }
+
+  /** Encerra descendentes antes do lançador para impedir processo Codex órfão após timeout. */
+  static void terminateTree(Process process) {
+    process.descendants().forEach(ProcessHandle::destroyForcibly);
+    process.destroyForcibly();
   }
 
   /** Preserva resultado e consumo da mesma execução. */

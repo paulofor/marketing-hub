@@ -398,6 +398,12 @@
   O executor agora distingue inatividade de análise ativa, encerra descendentes antes do lançador,
   repete uma única vez a chamada parada e soma os contadores reais das tentativas. Testes com processo
   filho real cobrem progresso, inatividade, teto absoluto, retry e ausência de órfãos.
+- Fechamento complementar na descoberta autônoma (2026-08-31): o novo handoff Argos → Atena →
+  Plutus → Dédalo acrescentava uma quarta rotina bloqueante aos schedulers de Atena e Plutus; sem
+  ampliar os pools, uma chamada Codex longa poderia impedir a reconexão ou outra fila oficial. Os
+  dois workers passam a manter quatro threads protegidas por teste de contrato. O consumidor BPM de
+  Dédalo também encerra descendentes antes do lançador em timeout, com teste que impede voltar a
+  deixar o processo Codex órfão.
 - Fechamento complementar da Mesa do Agente (2026-08-15): a telemetria persistia processo vivo, heartbeat, eventos, bytes e tokens, mas o monitor descartava esses sinais e mostrava apenas `PROCESSANDO` e um total diário igual a zero, sem distinguir ausência de medição. O monitor passa a associar a telemetria mais recente à identidade canônica do agente e a tela expõe atividade, atraso e consumo informado da execução sem publicar logs brutos ou raciocínio interno.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final

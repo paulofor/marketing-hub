@@ -8,6 +8,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryMarketType;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
@@ -386,9 +387,12 @@ public class ProductDiscoveryService {
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
     validateExecutionLease(cycle, request.executionLeaseId());
+    validateOpportunityCount(cycle, request);
     recordResearchArtifacts(cycle, request);
+    validateOpportunityMaturity(request);
     validateMarketplaceEvidenceGate(cycle, request);
     validatePurchaseMomentGate(cycle, request);
+    validateInstagramHandoffEvidence(cycle, request);
     opportunityRepository.deleteAllByCycleId(cycleId);
     for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
       ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
@@ -405,6 +409,7 @@ public class ProductDiscoveryService {
       opportunity.setCommercialRisk(optionalText(item.commercialRisk()));
       opportunity.setEvidenceJson(optionalText(item.evidenceJson()));
       opportunity.setScore(item.score());
+      opportunity.setMaturity(item.maturity());
       opportunity.setDecision(item.decision());
       opportunityRepository.save(opportunity);
     }
@@ -424,15 +429,51 @@ public class ProductDiscoveryService {
     return getCycle(cycleId);
   }
 
+  /** Exige de duas a três candidatas no modo autônomo sem afetar validações legadas de mercado. */
+  private void validateOpportunityCount(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
+    if (cycle.getResearchMode() != ProductDiscoveryResearchMode.DISCOVER_MARKETS) return;
+    int count = request.opportunities().size();
+    if (count < 2 || count > 3) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "Descoberta autônoma exige de duas a três candidatas factuais; recebidas " + count);
+    }
+  }
+
+  /** Impede combinações contraditórias entre decisão e maturidade factual da mesma candidata. */
+  private void validateOpportunityMaturity(ProductDiscoveryResultRequest request) {
+    boolean invalid =
+        request.opportunities().stream()
+            .anyMatch(opportunity -> !isCompatibleMaturityDecision(opportunity));
+    if (invalid) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "Decisão incompatível com a maturidade factual: APPROVE exige DOSSIER_READY, HUMAN_REVIEW exige HUMAN_REVIEW e REJECT exige REJECTED.");
+    }
+  }
+
+  /** Declara as únicas combinações que podem controlar o handoff sem ignorar revisão humana. */
+  private boolean isCompatibleMaturityDecision(
+      ProductDiscoveryOpportunityResultRequest opportunity) {
+    return switch (opportunity.maturity()) {
+      case SIGNAL, RESEARCHABLE ->
+          opportunity.decision() == ProductDiscoveryOpportunityDecision.RESEARCH_MORE;
+      case DOSSIER_READY ->
+          opportunity.decision() == ProductDiscoveryOpportunityDecision.APPROVE
+              || opportunity.decision() == ProductDiscoveryOpportunityDecision.RESEARCH_MORE;
+      case HUMAN_REVIEW ->
+          opportunity.decision() == ProductDiscoveryOpportunityDecision.HUMAN_REVIEW;
+      case REJECTED -> opportunity.decision() == ProductDiscoveryOpportunityDecision.REJECT;
+    };
+  }
+
   /** Bloqueia conclusao dirigida quando Argos nao recebeu ofertas reais comparaveis suficientes. */
   private void validateMarketplaceEvidenceGate(
       ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
     if (!StringUtils.hasText(cycle.getResearchPlanJson())
         || !cycle.getResearchPlanJson().contains("marketplaceRequests")
-        || request.opportunities().stream()
-            .noneMatch(
-                opportunity ->
-                    opportunity.decision() == ProductDiscoveryOpportunityDecision.APPROVE)) {
+        || request.opportunities().stream().noneMatch(this::requiresCommercialHandoff)) {
       return;
     }
     long comparableOffers =
@@ -464,6 +505,80 @@ public class ProductDiscoveryService {
           HttpStatus.UNPROCESSABLE_ENTITY,
           "Dossie bloqueado: sao necessarias ao menos 10 ofertas reais comparaveis; recebidas "
               + comparableOffers);
+    }
+  }
+
+  /** Recalcula a cobertura Meta antes de permitir que a maturidade abra o handoff comercial. */
+  private void validateInstagramHandoffEvidence(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
+    if (!requiresPurchaseMomentGate(cycle)) return;
+    boolean invalid =
+        request.opportunities().stream()
+            .filter(
+                opportunity ->
+                    opportunity.maturity() == ProductDiscoveryOpportunityMaturity.DOSSIER_READY)
+            .map(opportunity -> readOpportunityEvidence(cycle, opportunity))
+            .anyMatch(evidence -> !hasObservedInstagramMeta(evidence));
+    if (invalid) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "Dossie bloqueado: candidata DOSSIER_READY exige anuncio ativo observado na Biblioteca Meta para Instagram");
+    }
+  }
+
+  /** Identifica decisões ou maturidade que podem liberar uma etapa posterior. */
+  private boolean requiresCommercialHandoff(ProductDiscoveryOpportunityResultRequest opportunity) {
+    return opportunity.decision() == ProductDiscoveryOpportunityDecision.APPROVE
+        || opportunity.maturity() == ProductDiscoveryOpportunityMaturity.DOSSIER_READY;
+  }
+
+  /** Confirma simultaneamente cobertura observada e anúncio ativo distribuído no Instagram. */
+  private boolean hasObservedInstagramMeta(JsonNode evidence) {
+    boolean coverage = false;
+    for (JsonNode item : evidence.path("metaCoverage")) {
+      if ("INSTAGRAM".equalsIgnoreCase(item.path("publisherPlatform").asText())
+          && "OBSERVED".equalsIgnoreCase(item.path("sourceStatus").asText())
+          && item.path("activeAds").asInt(0) > 0) {
+        coverage = true;
+        break;
+      }
+    }
+    if (!coverage) return false;
+    for (JsonNode ad : evidence.path("metaAdEvidence")) {
+      if (ad.path("active").asBoolean(false) && containsInstagramPlatform(ad)) return true;
+    }
+    return false;
+  }
+
+  /** Aceita a plataforma singular ou a lista auditável devolvida pela Biblioteca Meta. */
+  private boolean containsInstagramPlatform(JsonNode ad) {
+    if ("INSTAGRAM".equalsIgnoreCase(ad.path("publisherPlatform").asText())) return true;
+    for (JsonNode platform : ad.path("publisherPlatforms")) {
+      if ("INSTAGRAM".equalsIgnoreCase(platform.asText())) return true;
+    }
+    return false;
+  }
+
+  /** Lê o envelope factual integral e registra a exceção antes de bloquear o callback. */
+  private JsonNode readOpportunityEvidence(
+      ProductDiscoveryCycle cycle, ProductDiscoveryOpportunityResultRequest opportunity) {
+    try {
+      return JSON.readTree(requiredText(opportunity.evidenceJson(), "evidenceJson"));
+    } catch (ResponseStatusException ex) {
+      LOGGER.error(
+          "[product-discovery] Evidencia ausente no handoff cycleId={} oportunidade={}",
+          cycle.getId(),
+          opportunity.name(),
+          ex);
+      throw ex;
+    } catch (Exception ex) {
+      LOGGER.error(
+          "[product-discovery] Falha ao ler evidencia do handoff cycleId={} oportunidade={}",
+          cycle.getId(),
+          opportunity.name(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "Evidencia factual invalida para o handoff.", ex);
     }
   }
 
@@ -924,6 +1039,7 @@ public class ProductDiscoveryService {
         opportunity.getCommercialRisk(),
         opportunity.getEvidenceJson(),
         opportunity.getScore(),
+        opportunity.getMaturity(),
         opportunity.getDecision(),
         opportunity.getCreatedAt(),
         opportunity.getUpdatedAt());

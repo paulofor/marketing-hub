@@ -6,6 +6,7 @@
     "decisionSummary": { "type": "string" },
     "candidates": {
       "type": "array",
+      "minItems": 2,
       "maxItems": 3,
       "items": {
         "type": "object",
@@ -29,8 +30,8 @@
           "maturity"
         ],
         "properties": {
-          "name": { "type": "string" },
-          "primaryAudience": { "type": "string" },
+          "name": { "type": "string", "maxLength": 191 },
+          "primaryAudience": { "type": "string", "maxLength": 191 },
           "purchaseSituation": { "type": "string" },
           "rootPain": { "type": "string" },
           "practicalPain": { "type": "string" },

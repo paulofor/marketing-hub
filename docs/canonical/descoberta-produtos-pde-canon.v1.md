@@ -668,3 +668,41 @@ com entrada minima e baixo esforco.
 ```
 
 Se essa frase nao puder ser preenchida com evidencia, a oportunidade nao deve avancar.
+
+## Handoff autônomo e visível da descoberta
+
+Por decisão de 2026-08-31, a entrada padrão da descoberta B2C deve pedir apenas um **tema amplo**.
+O backend completa de forma explícita o contrato operacional com modo `DISCOVER_MARKETS`, Brasil,
+português, aquisição por Instagram e consulta combinada à Internet, à Biblioteca pública da Meta e
+ao acervo versionado `/pesquisas`. Configurações adicionais continuam permitidas em integrações
+especializadas, mas não devem transformar o formulário principal em uma definição antecipada de
+público, produto, oferta ou mecanismo.
+
+Cada candidata factual deve persistir maturidade própria. Candidatas `SIGNAL` e `RESEARCHABLE`
+permanecem visíveis com lacunas e próxima pesquisa; candidatas `REJECTED` preservam a razão; somente
+`DOSSIER_READY` libera o handoff. A maturidade não pode ficar escondida dentro de JSON bruto nem ser
+inferida pelo frontend. A classificação do modelo não é autoridade suficiente: o worker deve
+rebaixar `DOSSIER_READY` quando faltarem as dez ofertas comparáveis ou a cobertura observada da
+Biblioteca Meta/Instagram, e o backend deve recalcular esses mesmos gates antes de abrir a cadeia.
+Sinal de alto risco tem precedência sobre qualquer prontidão: decisão `HUMAN_REVIEW` exige
+maturidade `HUMAN_REVIEW`, decisão `REJECT` exige `REJECTED`, e nenhuma das duas pode abrir Atena
+automaticamente como `DOSSIER_READY`.
+
+O backend cria um dossiê idempotente para cada candidata e, quando ela estiver `DOSSIER_READY`, abre
+a cadeia publicada `Atena → Plutus → Dédalo`. Atena escolhe estratégia, Plutus valida economia e
+Dédalo projeta o harness e a experiência PDE. Cada gate deve aprovar antes que o seguinte possa ser
+reservado. Depois da aprovação de Dédalo, o backend pode criar somente um produto `PLANNED`, ligado
+ao dossiê, plano e evidências, com execução automática em `STOP`; isso não autoriza landing,
+campanha, publicação, orçamento, gasto ou venda.
+
+`DOSSIER_READY`, a escolha de Atena nesta cadeia e a criação do produto `PLANNED` significam
+prontidão para **planejamento e prototipação**, não priorização comercial final. A Validação do
+Momento de Compra continua obrigatória depois que existir protótipo privado utilizável e antes de
+comparar a candidata com o benchmark, ativar experimento, publicar, contatar pessoas ou gastar.
+Essa separação evita o ciclo impossível de exigir uso de um protótipo antes de Dédalo poder projetar
+o harness que dará origem a ele.
+
+A tela de processos independentes deve mostrar a cadeia completa, as 2–3 candidatas, fontes Web,
+Meta e `/pesquisas`, dossiê, parecer por agente, decisão, custo, bloqueio, próxima ação e produto
+resultante. JSON técnico pode continuar disponível para auditoria, mas não substitui o relatório em
+linguagem de negócio.

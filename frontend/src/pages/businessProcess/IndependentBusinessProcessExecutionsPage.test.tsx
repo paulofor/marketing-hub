@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+  IndependentBusinessProcessExecution,
+  IndependentBusinessProcessFlowReport,
+  IndependentBusinessProcessExecutionSummary,
+} from "../../api/businessProcess/types";
 import IndependentBusinessProcessExecutionsPage from "./IndependentBusinessProcessExecutionsPage";
 
 vi.mock("axios");
@@ -22,74 +27,18 @@ const catalog = [
     executionAvailabilityReason: "Pronto para iniciar sem produto.",
     inputFields: [
       {
-        key: "researchMode",
-        label: "O que Argos deve fazer?",
-        controlType: "SELECT",
-        required: true,
-        maxLength: 32,
-        defaultValue: "DISCOVER_MARKETS",
-        helpText: "Descobrir ou validar um mercado.",
-        options: [
-          { value: "DISCOVER_MARKETS", label: "Descobrir mercados candidatos" },
-          { value: "VALIDATE_MARKET", label: "Validar um mercado informado" },
-        ],
-      },
-      {
-        key: "marketType",
-        label: "Tipo de comprador",
-        controlType: "SELECT",
-        required: true,
-        maxLength: 32,
-        defaultValue: "B2C",
-        options: [
-          { value: "B2C", label: "Pessoa física (B2C)" },
-          { value: "B2B", label: "Empresa (B2B)" },
-        ],
-      },
-      {
         key: "theme",
-        label: "Público, universo ou mercado de partida",
-        controlType: "TEXT",
+        label: "Tema amplo",
+        controlType: "TEXTAREA",
         required: true,
         maxLength: 191,
-        helpText: "Descreva a dor pesquisada.",
-      },
-      {
-        key: "acquisitionChannel",
-        label: "Canal provável de aquisição",
-        controlType: "TEXT",
-        required: false,
-        maxLength: 120,
-        defaultValue: "Instagram",
-      },
-      {
-        key: "referenceSources",
-        label: "Fontes editoriais de referência",
-        controlType: "TEXTAREA",
-        required: false,
-        maxLength: 5000,
-      },
-      {
-        key: "country",
-        label: "País",
-        controlType: "TEXT",
-        required: true,
-        maxLength: 16,
-        defaultValue: "BR",
-      },
-      {
-        key: "language",
-        label: "Idioma",
-        controlType: "TEXT",
-        required: true,
-        maxLength: 16,
-        defaultValue: "pt-BR",
+        helpText: "Os agentes derivam público, dor, oferta e experiência.",
       },
     ],
   },
 ];
 
-const summary = {
+const summary: IndependentBusinessProcessExecutionSummary = {
   id: 91,
   requestKey: "b82df168-e383-4acd-8ca4-ab858b39fd3e",
   processDefinitionId: 52,
@@ -111,9 +60,121 @@ const summary = {
   createdAt: "2026-08-30T14:00:00Z",
 };
 
-function detail(execution = summary) {
+type ExecutionDetailFixture = IndependentBusinessProcessExecution & {
+  processReport: IndependentBusinessProcessFlowReport;
+};
+
+function detail(execution = summary): ExecutionDetailFixture {
   return {
     execution,
+    processReport: {
+      reportType: "PDE_OPPORTUNITY_TO_PRODUCT_V1",
+      status: execution.status,
+      headline: "Uma candidata factual está pronta para priorização.",
+      acquisitionChannel: "Instagram",
+      candidateCount: 1,
+      dossierReadyCount: 1,
+      plannedProductCount: 0,
+      sourceCoverage: [
+        {
+          sourceCode: "WEB",
+          label: "Internet",
+          status: "OBSERVED",
+          itemCount: 12,
+          summary: "Fontes públicas independentes coletadas.",
+        },
+        {
+          sourceCode: "META",
+          label: "Biblioteca Meta / Instagram",
+          status: "OBSERVED",
+          itemCount: 3,
+          summary: "Anúncios públicos observados; isso não equivale a venda.",
+        },
+        {
+          sourceCode: "PESQUISAS",
+          label: "Acervo /pesquisas",
+          status: "OBSERVED",
+          itemCount: 7,
+          summary: "Referências internas usadas para confrontar hipóteses.",
+        },
+      ],
+      candidates: [
+        {
+          opportunityId: 501,
+          name: "Guarda-roupa cápsula sensorial para mulheres 40+",
+          primaryAudience: "Mulheres brasileiras de 40 a 55 anos",
+          rootPain:
+            "Escolher combinações confortáveis ainda exige tentativa manual.",
+          score: 81,
+          maturity: "DOSSIER_READY",
+          decision: "APPROVE",
+          purchaseSituation:
+            "Mudança corporal no climatério antes de um evento.",
+          observedLanguage: ["Quero me sentir eu de novo"],
+          currentAlternatives: ["Consultoria de imagem"],
+          residualEffort:
+            "Montar combinações e adaptar peças ao próprio corpo.",
+          instagramFitEvidence:
+            "Transformação visual demonstrável em carrossel.",
+          commercialRisk: "Validar disposição real de pagar.",
+          dossierId: 301,
+          dossierStatus: "UNDER_REVIEW",
+          nextAction: "Aguardar Atena priorizar no máximo uma candidata.",
+          sources: [
+            {
+              sourceType: "WEB",
+              title: "Pesquisa factual",
+              url: "https://example.test/pesquisa",
+              evidence: "Dor recorrente observada.",
+            },
+            {
+              sourceType: "PESQUISAS",
+              title: "Artigo interno sobre climatério",
+              url: "/pesquisas/climaterio.md",
+              evidence: "Hipótese confrontada com o acervo versionado.",
+            },
+          ],
+          stages: [
+            {
+              stageCode: "ARGOS",
+              label: "Pesquisa factual",
+              agent: "Argos",
+              status: "COMPLETED",
+              decision: "APPROVE",
+              summary: "Candidata factual formada.",
+            },
+            {
+              stageCode: "ATENA",
+              label: "Priorização de mercado",
+              agent: "Atena",
+              status: "PENDING",
+              summary: "Aguardando priorização.",
+            },
+            {
+              stageCode: "PLUTUS",
+              label: "Economia e limites",
+              agent: "Plutus",
+              status: "WAITING",
+              summary: "Aguardando Atena.",
+            },
+            {
+              stageCode: "DEDALO",
+              label: "Harness e experiência PDE",
+              agent: "Dédalo",
+              status: "WAITING",
+              summary: "Aguardando Plutus.",
+            },
+            {
+              stageCode: "PRODUCT",
+              label: "Produto planejado",
+              agent: "Backend",
+              status: "WAITING",
+              summary: "Aguardando os gates.",
+            },
+          ],
+        },
+      ],
+    },
     activities: [
       {
         activityId: "marketEvidence",
@@ -180,21 +241,19 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
         name: "Executar processos independentes",
       }),
     ).toBeInTheDocument();
-    expect(await screen.findByDisplayValue("BR")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("pt-BR")).toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: "Descobrir mercados candidatos" }),
+      await screen.findByRole("heading", {
+        name: "Do tema amplo ao PDE planejado",
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Pessoa física (B2C)")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Instagram")).toBeInTheDocument();
-    await user.type(
-      screen.getByLabelText("Público, universo ou mercado de partida *"),
-      "agenda vazia para manicures",
+    expect(screen.getByText("Produto planejado")).toBeInTheDocument();
+    const theme = screen.getByLabelText("Tema amplo *");
+    expect(theme).toHaveAttribute("maxlength", "191");
+    expect(theme).toHaveAttribute(
+      "title",
+      "Os agentes derivam público, dor, oferta e experiência.",
     );
-    await user.type(
-      screen.getByLabelText("Fontes editoriais de referência"),
-      "https://revistamarieclaire.globo.com/",
-    );
+    await user.type(theme, "agenda vazia para manicures");
     await user.click(screen.getByRole("button", { name: "Iniciar processo" }));
 
     await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
@@ -204,12 +263,6 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       requestedByName: "Marketing Hub",
       input: {
         theme: "agenda vazia para manicures",
-        researchMode: "DISCOVER_MARKETS",
-        marketType: "B2C",
-        acquisitionChannel: "Instagram",
-        referenceSources: "https://revistamarieclaire.globo.com/",
-        country: "BR",
-        language: "pt-BR",
       },
     });
     expect(body).not.toHaveProperty("productId");
@@ -220,10 +273,77 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
         name: "Execução #91 · agenda vazia para manicures",
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Biblioteca Meta / Instagram")).toBeInTheDocument();
+    expect(screen.getByText("Acervo /pesquisas")).toBeInTheDocument();
+    expect(screen.getByText("/pesquisas/climaterio.md")).toBeInTheDocument();
+    expect(
+      screen.getByText("Guarda-roupa cápsula sensorial para mulheres 40+"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Harness e experiência PDE")).toBeInTheDocument();
+    expect(
+      screen.getByText("Aguardar Atena priorizar no máximo uma candidata."),
+    ).toBeInTheDocument();
+  });
+
+  it("torna o produto planejado e sua linhagem visíveis no relatório", async () => {
+    const completed: IndependentBusinessProcessExecutionSummary = {
+      ...summary,
+      status: "COMPLETED",
+      completedActivityCount: 1,
+      startedAt: "2026-08-30T14:00:05Z",
+      finishedAt: "2026-08-30T14:04:00Z",
+    };
+    const completedDetail = detail(completed);
+    completedDetail.processReport.plannedProductCount = 1;
+    completedDetail.processReport.candidates[0] = {
+      ...completedDetail.processReport.candidates[0],
+      productId: 901,
+      productName: "Cápsula sensorial PDE",
+      productStatus: "PLANNED",
+      commercialPlanId: 801,
+      nextAction:
+        "Abrir o produto planejado e iniciar a construção funcional governada do PDE.",
+      stages: completedDetail.processReport.candidates[0].stages.map((stage) =>
+        stage.stageCode === "PRODUCT"
+          ? {
+              ...stage,
+              status: "COMPLETED",
+              decision: "PLANNED",
+              summary: "Produto #901 criado sem publicação ou gasto.",
+            }
+          : stage,
+      ),
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/independent-business-process-executions/catalog") {
+        return { data: catalog };
+      }
+      if (url === "/api/independent-business-process-executions") {
+        return { data: [completed] };
+      }
+      if (url === "/api/independent-business-process-executions/91") {
+        return { data: completedDetail };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+
+    renderPage();
+
+    const productLink = await screen.findByRole("link", {
+      name: "Abrir produto #901",
+    });
+    expect(productLink).toHaveAttribute("href", "/products/901/edit");
+    expect(productLink).toHaveAttribute("target", "_blank");
+    expect(
+      screen.getByText("Plano #801", { exact: false }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Produto #901 criado sem publicação ou gasto."),
+    ).toBeInTheDocument();
   });
 
   it("mostra bloqueio e causa persistida sem tratá-los como conclusão", async () => {
-    const blocked = {
+    const blocked: IndependentBusinessProcessExecutionSummary = {
       ...summary,
       status: "BLOCKED",
       latestError: "Fonte pública recusou a consulta.",
@@ -254,7 +374,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
   });
 
   it("registra observação oficial e reabre Argos na mesma sessão Meta", async () => {
-    const completed = {
+    const completed: IndependentBusinessProcessExecutionSummary = {
       ...summary,
       status: "COMPLETED",
       completedActivityCount: 1,

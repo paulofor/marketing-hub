@@ -55,6 +55,7 @@ public class IndependentBusinessProcessExecutionService {
   private final ObjectMapper objectMapper;
   private final Clock clock;
   private final Map<String, IndependentBusinessProcessExecutionHandler> handlers;
+  private final Map<String, IndependentBusinessProcessExecutionReportProvider> reportProviders;
 
   /** Configura persistência, adaptadores e consolidação auditável das execuções. */
   @Autowired
@@ -64,7 +65,8 @@ public class IndependentBusinessProcessExecutionService {
       BusinessProcessActivityDefinitionRepository activityRepository,
       AgentTaskRepository taskRepository,
       ObjectMapper objectMapper,
-      List<IndependentBusinessProcessExecutionHandler> handlers) {
+      List<IndependentBusinessProcessExecutionHandler> handlers,
+      List<IndependentBusinessProcessExecutionReportProvider> reportProviders) {
     this(
         executionRepository,
         processRepository,
@@ -72,6 +74,7 @@ public class IndependentBusinessProcessExecutionService {
         taskRepository,
         objectMapper,
         handlers,
+        reportProviders,
         Clock.systemUTC());
   }
 
@@ -83,6 +86,7 @@ public class IndependentBusinessProcessExecutionService {
       AgentTaskRepository taskRepository,
       ObjectMapper objectMapper,
       List<IndependentBusinessProcessExecutionHandler> handlers,
+      List<IndependentBusinessProcessExecutionReportProvider> reportProviders,
       Clock clock) {
     this.executionRepository = executionRepository;
     this.processRepository = processRepository;
@@ -95,6 +99,12 @@ public class IndependentBusinessProcessExecutionService {
             .collect(
                 Collectors.toUnmodifiableMap(
                     IndependentBusinessProcessExecutionHandler::processCode, Function.identity()));
+    this.reportProviders =
+        reportProviders.stream()
+            .collect(
+                Collectors.toUnmodifiableMap(
+                    IndependentBusinessProcessExecutionReportProvider::processCode,
+                    Function.identity()));
   }
 
   /** Lista o catálogo publicado e informa quando ainda falta um adaptador operacional. */
@@ -272,7 +282,16 @@ public class IndependentBusinessProcessExecutionService {
     List<AgentTask> tasks = tasks(execution);
     List<IndependentBusinessProcessActivityResponse> activities = activities(execution, tasks);
     return new IndependentBusinessProcessExecutionResponse(
-        summary(execution, tasks, activities), activities);
+        summary(execution, tasks, activities), activities, processReport(execution));
+  }
+
+  /** Resolve o relatório especializado sem exigir heurísticas no frontend. */
+  private com.marketinghub.businessprocess.independent.service.executions
+          .IndependentBusinessProcessFlowReportResponse
+      processReport(IndependentBusinessProcessExecution execution) {
+    IndependentBusinessProcessExecutionReportProvider provider =
+        reportProviders.get(execution.getProcessDefinition().getProcessCode());
+    return provider == null ? null : provider.report(execution.getSourceReference());
   }
 
   /** Consolida o resumo quando a listagem não precisa devolver cada tentativa. */
@@ -288,7 +307,7 @@ public class IndependentBusinessProcessExecutionService {
       IndependentBusinessProcessExecution execution,
       List<AgentTask> tasks,
       List<IndependentBusinessProcessActivityResponse> activities) {
-    String status = aggregateExecutionStatus(activities);
+    String status = businessStatus(execution, aggregateExecutionStatus(activities));
     int completed =
         (int) activities.stream().filter(item -> "COMPLETED".equals(item.status())).count();
     BigDecimal cost =
@@ -461,6 +480,16 @@ public class IndependentBusinessProcessExecutionService {
   /** Reconhece os estados que encerram a tentativa atual da execução. */
   private boolean isTerminal(String status) {
     return Set.of("COMPLETED", "BLOCKED", "CANCELLED").contains(status);
+  }
+
+  /** Usa o estado funcional especializado quando o processo possuir uma cadeia posterior. */
+  private String businessStatus(
+      IndependentBusinessProcessExecution execution, String technicalStatus) {
+    IndependentBusinessProcessExecutionReportProvider provider =
+        reportProviders.get(execution.getProcessDefinition().getProcessCode());
+    if (provider == null || execution.getSourceReference() == null) return technicalStatus;
+    String reportStatus = provider.report(execution.getSourceReference()).status();
+    return reportStatus == null ? technicalStatus : reportStatus;
   }
 
   /** Exige uma execução registrada para manter respostas 404 consistentes. */

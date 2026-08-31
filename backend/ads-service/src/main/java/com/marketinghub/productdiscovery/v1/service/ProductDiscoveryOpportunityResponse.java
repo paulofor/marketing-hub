@@ -1,6 +1,7 @@
 package com.marketinghub.productdiscovery.v1.service;
 
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -20,6 +21,7 @@ public record ProductDiscoveryOpportunityResponse(
     String commercialRisk,
     String evidenceJson,
     BigDecimal score,
+    ProductDiscoveryOpportunityMaturity maturity,
     ProductDiscoveryOpportunityDecision decision,
     Instant createdAt,
     Instant updatedAt) {}

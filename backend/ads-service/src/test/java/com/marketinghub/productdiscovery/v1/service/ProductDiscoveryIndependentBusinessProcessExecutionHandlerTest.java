@@ -37,10 +37,7 @@ class ProductDiscoveryIndependentBusinessProcessExecutionHandlerTest {
                 Instant.parse("2026-08-30T14:00:00Z"),
                 Instant.parse("2026-08-30T14:00:00Z")));
     var handler = new ProductDiscoveryIndependentBusinessProcessExecutionHandler(service);
-    var input =
-        new ObjectMapper()
-            .readTree(
-                "{\"researchMode\":\"DISCOVER_MARKETS\",\"marketType\":\"B2C\",\"theme\":\"agenda vazia para manicures\",\"targetAudience\":\"Manicures autônomas\",\"country\":\"BR\",\"language\":\"pt-BR\",\"acquisitionChannel\":\"Instagram\",\"referenceSources\":\"https://example.com/revista\"}");
+    var input = new ObjectMapper().readTree("{\"theme\":\"agenda vazia para manicures\"}");
 
     var result = handler.start(input);
 
@@ -48,42 +45,33 @@ class ProductDiscoveryIndependentBusinessProcessExecutionHandlerTest {
         ArgumentCaptor.forClass(CreateProductDiscoveryCycleRequest.class);
     verify(service).createCycle(request.capture());
     assertThat(request.getValue().theme()).isEqualTo("agenda vazia para manicures");
-    assertThat(request.getValue().targetAudience()).isEqualTo("Manicures autônomas");
+    assertThat(request.getValue().targetAudience()).isNull();
+    assertThat(request.getValue().country()).isEqualTo("BR");
+    assertThat(request.getValue().language()).isEqualTo("pt-BR");
+    assertThat(request.getValue().acquisitionChannel()).isEqualTo("Instagram");
     assertThat(request.getValue().researchMode())
         .isEqualTo(ProductDiscoveryResearchMode.DISCOVER_MARKETS);
     assertThat(request.getValue().marketType()).isEqualTo(ProductDiscoveryMarketType.B2C);
-    assertThat(request.getValue().referenceSources()).isEqualTo("https://example.com/revista");
+    assertThat(request.getValue().referenceSources()).isNull();
     assertThat(result.sourceReference()).isEqualTo("product-discovery-cycle:77");
     assertThat(result.displayName()).isEqualTo("agenda vazia para manicures");
   }
 
-  /** Declara campos obrigatórios e defaults de país e idioma para a tela dinâmica. */
+  /** Publica somente o tema amplo dentro do limite físico da coluna canônica. */
   @Test
   void publishesDynamicInputContract() {
     var handler =
         new ProductDiscoveryIndependentBusinessProcessExecutionHandler(
             mock(ProductDiscoveryService.class));
 
-    assertThat(handler.inputFields()).hasSize(11);
     assertThat(handler.inputFields())
-        .anySatisfy(
+        .singleElement()
+        .satisfies(
             field -> {
               assertThat(field.key()).isEqualTo("theme");
               assertThat(field.required()).isTrue();
-            })
-        .anySatisfy(
-            field -> {
-              assertThat(field.key()).isEqualTo("country");
-              assertThat(field.defaultValue()).isEqualTo("BR");
-            })
-        .anySatisfy(
-            field -> {
-              assertThat(field.key()).isEqualTo("researchMode");
-              assertThat(field.controlType()).isEqualTo("SELECT");
-              assertThat(field.defaultValue()).isEqualTo("DISCOVER_MARKETS");
-              assertThat(field.options())
-                  .extracting("value")
-                  .containsExactly("DISCOVER_MARKETS", "VALIDATE_MARKET");
+              assertThat(field.controlType()).isEqualTo("TEXTAREA");
+              assertThat(field.maxLength()).isEqualTo(191);
             });
   }
 }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -35,6 +35,34 @@ function candidateBlueprints(count = 3) {
     maturity: "RESEARCHABLE",
   }));
 }
+
+test("schema exige duas ou três candidatas factuais", () => {
+  const schema = JSON.parse(
+    readFileSync(
+      new URL(
+        "../prompts/productdiscovery.v1/research/response-schema.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  const prompt = readFileSync(
+    new URL(
+      "../prompts/productdiscovery.v1/research/user.md",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.equal(schema.properties.candidates.minItems, 2);
+  assert.equal(schema.properties.candidates.maxItems, 3);
+  assert.equal(schema.properties.candidates.items.properties.name.maxLength, 191);
+  assert.equal(
+    schema.properties.candidates.items.properties.primaryAudience.maxLength,
+    191,
+  );
+  assert.match(prompt, /duas ou três candidatas factuais distintas/);
+});
 
 test("buildSearchQueries creates pain-oriented queries", () => {
   const queries = buildSearchQueries({
@@ -173,6 +201,58 @@ test("analyzeSearchResults não presume Instagram no ciclo B2C", () => {
   assert.deepEqual(evidence.metaCoverage, []);
 });
 
+test("analyzeSearchResults vincula a cada candidata somente as evidências citadas", () => {
+  const blueprints = candidateBlueprints(1);
+  blueprints[0].evidenceIds = ["P1", "R1"];
+  const repositoryEvidence = [
+    {
+      evidenceId: "R1",
+      path: "pesquisas/mercados/climaterio.md",
+      title: "Climatério e decisões de vestuário",
+      excerpt: "Mudanças corporais alteram conforto e decisão de compra.",
+    },
+    {
+      evidenceId: "R2",
+      path: "pesquisas/mercados/viagem.md",
+      title: "Viagem solo",
+      excerpt: "Referência de outro mercado.",
+    },
+  ];
+  const report = analyzeSearchResults(
+    { theme: "guarda-roupa cápsula 40+" },
+    [
+      {
+        evidenceId: "P1",
+        title: "Dor de vestuário",
+        url: "https://example.test/roupa",
+        snippet: "Relato factual do esforço de escolha.",
+      },
+      {
+        evidenceId: "P2",
+        title: "Dor de viagem",
+        url: "https://example.test/viagem",
+        snippet: "Fonte de outro mercado.",
+      },
+    ],
+    [],
+    { candidateBlueprints: blueprints, repositoryEvidence },
+  );
+
+  const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.equal(evidence.publicEvidence.length, 2);
+  assert.equal(evidence.repositoryEvidence.length, 2);
+  assert.deepEqual(
+    evidence.referencedEvidence.publicEvidence.map((item) => item.evidenceId),
+    ["P1"],
+  );
+  assert.deepEqual(
+    evidence.referencedEvidence.repositoryEvidence.map(
+      (item) => item.evidenceId,
+    ),
+    ["R1"],
+  );
+});
+
 test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Instagram atual", () => {
   const job = {
     theme: "entrevista de emprego",
@@ -208,6 +288,7 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
         referenceId: "ad-1",
         title: "Treino entrevista emprego",
         active: true,
+        publisherPlatforms: ["INSTAGRAM"],
       },
     ],
     metaCoverage: [
@@ -242,6 +323,8 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
 });
 
 test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {
+  const blueprints = candidateBlueprints();
+  blueprints[0].maturity = "DOSSIER_READY";
   const report = analyzeSearchResults(
     {
       theme: "mulheres que compram roupa online",
@@ -270,7 +353,7 @@ test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () =>
       },
     ],
     null,
-    { candidateBlueprints: candidateBlueprints() },
+    { candidateBlueprints: blueprints },
   );
 
   assert.equal(report.opportunities.length, 3);
@@ -829,6 +912,100 @@ test("analyzeSearchResults preserva candidatas imaturas sem aprová-las", () => 
     ),
   );
   assert.match(report.decisionSummary, /Maturidade factual: RESEARCH_MORE/);
+});
+
+test("analyzeSearchResults rebaixa dossiê declarado pronto sem ofertas e Meta", () => {
+  const blueprints = candidateBlueprints();
+  blueprints[0].maturity = "DOSSIER_READY";
+
+  const report = analyzeSearchResults(
+    {
+      theme: "rotina visual de mulheres 40+",
+      targetAudience: "mulheres 40+",
+      acquisitionChannel: "Instagram",
+      marketType: "B2C",
+    },
+    [
+      {
+        evidenceId: "P1",
+        title: "Dor observada",
+        url: "https://forum.example/dor",
+        snippet: "não consigo resolver e procuro uma alternativa paga",
+      },
+      {
+        evidenceId: "P2",
+        title: "Tentativa insuficiente",
+        url: "https://reviews.example/tentativa",
+        snippet: "a solução é confusa, cara e demorada",
+      },
+    ],
+    [],
+    {
+      candidateBlueprints: blueprints,
+      metaAdEvidence: [],
+      metaCoverage: [],
+    },
+  );
+
+  assert.equal(report.opportunities[0].maturity, "RESEARCHABLE");
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
+});
+
+test("analyzeSearchResults exige revisão humana sem liberar dossiê sensível", () => {
+  const blueprints = candidateBlueprints();
+  blueprints[0].maturity = "DOSSIER_READY";
+  const offers = Array.from({ length: 10 }, (_, index) => ({
+    marketplace: "HOTMART",
+    referenceId: String(index),
+    title: `Oferta sensível ${index}`,
+    url: `https://hotmart.com/sensivel-${index}`,
+  }));
+
+  const report = analyzeSearchResults(
+    {
+      theme: "aconselhamento médico para mulheres",
+      targetAudience: "mulheres 40+",
+      acquisitionChannel: "Instagram",
+      marketType: "B2C",
+    },
+    [
+      {
+        evidenceId: "P1",
+        title: "Risco de diagnóstico",
+        url: "https://forum.example/diagnostico",
+        snippet: "diagnóstico médico caro e difícil",
+      },
+      {
+        evidenceId: "P2",
+        title: "Revisão científica",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42",
+        snippet: "systematic review intervention",
+      },
+    ],
+    offers,
+    {
+      candidateBlueprints: blueprints,
+      minimumComparableOffers: 10,
+      metaAdEvidence: [
+        {
+          referenceId: "ad-sensitive-1",
+          title: "Oferta sensível",
+          active: true,
+          publisherPlatforms: ["INSTAGRAM"],
+        },
+      ],
+      metaCoverage: [
+        {
+          publisherPlatform: "INSTAGRAM",
+          sourceStatus: "OBSERVED",
+          activeAds: 1,
+        },
+      ],
+    },
+  );
+
+  assert.equal(report.opportunities[0].decision, "HUMAN_REVIEW");
+  assert.equal(report.opportunities[0].maturity, "HUMAN_REVIEW");
 });
 
 test("scientific and commercial queries are inside the operational query limit", () => {

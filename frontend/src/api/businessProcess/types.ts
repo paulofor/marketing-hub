@@ -171,9 +171,75 @@ export type IndependentBusinessProcessActivity = {
   tasks: IndependentBusinessProcessTask[];
 };
 
+export type IndependentBusinessProcessSourceCoverage = {
+  sourceCode: string;
+  label: string;
+  status: string;
+  itemCount: number;
+  summary: string;
+};
+
+export type IndependentBusinessProcessCandidateSource = {
+  sourceType: string;
+  title: string;
+  url?: string;
+  evidence?: string;
+};
+
+export type IndependentBusinessProcessCandidateStage = {
+  stageCode: string;
+  label: string;
+  agent: string;
+  status: string;
+  decision?: string;
+  summary?: string;
+  taskId?: number;
+  estimatedCostUsd?: number;
+  blocker?: string;
+  updatedAt?: string;
+};
+
+export type IndependentBusinessProcessCandidate = {
+  opportunityId: number;
+  name: string;
+  primaryAudience?: string;
+  rootPain?: string;
+  score?: number;
+  maturity: string;
+  decision: string;
+  purchaseSituation?: string;
+  observedLanguage: string[];
+  currentAlternatives: string[];
+  residualEffort?: string;
+  instagramFitEvidence?: string;
+  commercialRisk?: string;
+  dossierId?: number;
+  dossierStatus?: string;
+  commercialPlanId?: number;
+  productId?: number;
+  productName?: string;
+  productStatus?: string;
+  nextAction: string;
+  sources: IndependentBusinessProcessCandidateSource[];
+  stages: IndependentBusinessProcessCandidateStage[];
+};
+
+export type IndependentBusinessProcessFlowReport = {
+  reportType: string;
+  status: IndependentBusinessProcessExecutionSummary["status"];
+  headline: string;
+  acquisitionChannel: string;
+  candidateCount: number;
+  dossierReadyCount: number;
+  plannedProductCount: number;
+  sourceCoverage: IndependentBusinessProcessSourceCoverage[];
+  candidates: IndependentBusinessProcessCandidate[];
+};
+
 export type IndependentBusinessProcessExecution = {
   execution: IndependentBusinessProcessExecutionSummary;
   activities: IndependentBusinessProcessActivity[];
+  processReport?: IndependentBusinessProcessFlowReport;
 };
 
 export type StartIndependentBusinessProcessExecution = {

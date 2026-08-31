@@ -1,6 +1,7 @@
 Analise o contexto factual abaixo e retorne somente o contrato do schema.
 
-Para cada candidata, registre público, situação de compra, dor, linguagem observada, alternativas,
+Gere exatamente duas ou três candidatas factuais distintas. Para cada candidata, registre público,
+situação de compra, dor, linguagem observada, alternativas,
 esforço residual, sinais de escala e desatendimento, fronteira de valor que a IA poderia tornar
 simples, evidência visual para Instagram e risco comercial. `evidenceIds` deve conter somente IDs
 existentes no contexto.

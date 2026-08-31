@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Discovery
-  version: 1.2.0
+  version: 1.3.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
@@ -459,8 +459,8 @@ components:
         stageCode: { type: string, enum: [research] }
         executionLeaseId: { type: string, format: uuid }
         executionAttempt: { type: integer, minimum: 1 }
-        theme: { type: string }
-        targetAudience: { type: string, nullable: true }
+        theme: { type: string, maxLength: 191 }
+        targetAudience: { type: string, maxLength: 191, nullable: true }
         country: { type: string }
         language: { type: string }
         acquisitionChannel: { type: string, nullable: true }
@@ -482,8 +482,10 @@ components:
         decisionSummary: { type: string }
         opportunities:
           type: array
-          description: Candidatas factuais; sinais imaturos permanecem RESEARCH_MORE.
-          items: { type: object }
+          maxItems: 3
+          description: No modo DISCOVER_MARKETS, são obrigatórias 2–3 candidatas factuais; sinais imaturos permanecem RESEARCH_MORE.
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryOpportunityResult"
         evidenceReport:
           type: object
           nullable: true
@@ -516,6 +518,31 @@ components:
               label: { type: string, nullable: true }
               accessMethod: { type: string, nullable: true }
               accessedAt: { type: string, format: date-time, nullable: true }
+    ProductDiscoveryOpportunityResult:
+      type: object
+      required: [name, primaryAudience, rootPain, score, maturity, decision]
+      properties:
+        name: { type: string, maxLength: 191 }
+        primaryAudience: { type: string, maxLength: 191 }
+        rootPain: { type: string }
+        practicalPain: { type: string, nullable: true }
+        emotionalPain: { type: string, nullable: true }
+        scaleEvidence: { type: string, nullable: true }
+        unmetnessEvidence: { type: string, nullable: true }
+        pdeExperience: { type: string, nullable: true }
+        firstCampaignAngle: { type: string, nullable: true }
+        commercialRisk: { type: string, nullable: true }
+        evidenceJson:
+          type: string
+          nullable: true
+          description: Evidências exatas e rastreáveis; o payload bruto permanece na auditoria.
+        score: { type: number }
+        maturity:
+          type: string
+          enum: [SIGNAL, RESEARCHABLE, DOSSIER_READY, HUMAN_REVIEW, REJECTED]
+        decision:
+          type: string
+          enum: [APPROVE, RESEARCH_MORE, HUMAN_REVIEW, REJECT]
     ProductDiscoveryLegacyCleanup:
       type: object
       properties:
@@ -582,8 +609,10 @@ components:
           type: string
         theme:
           type: string
+          maxLength: 191
         targetAudience:
           type: string
+          maxLength: 191
         acquisitionChannel:
           type: string
         objective:

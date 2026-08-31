@@ -27,4 +27,4 @@ services:
 
 secrets:
   brave_search_api_key:
-    file: ${BRAVE_SEARCH_API_KEY_HOST_FILE:-/root/infra/brave-token/brave_api_key}
+    file: ${BRAVE_SEARCH_API_KEY_HOST_FILE:-/root/infra/argos/secrets/brave_search_api_key}

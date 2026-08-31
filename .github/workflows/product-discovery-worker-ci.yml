@@ -193,32 +193,68 @@ jobs:
             product-discovery-worker/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish service
         run: |
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
-            && install -m 700 -d /root/infra/brave-token \
-            && install -m 700 -d /root/infra/argos/codex-home \
-            && if [ ! -s /root/infra/brave-token/brave_api_key ]; then \
-              echo 'Erro: informe a chave Brave em /root/infra/brave-token/brave_api_key antes de publicar o Product Discovery Worker.' >&2; \
-              exit 1; \
-            fi \
-            && cd ${REMOTE_PATH} \
-            && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
-            && export PRODUCT_DISCOVERY_WORKER_IMAGE='${IMAGE_NAMESPACE}/product-discovery-worker:${IMAGE_TAG}' \
-            && export PRODUCT_DISCOVERY_SEARCH_PROVIDER='brave' \
-            && export PRODUCT_DISCOVERY_SEARCH_COUNTRY='br' \
-            && export PRODUCT_DISCOVERY_SEARCH_LANGUAGE='pt-br' \
-            && export BRAVE_SEARCH_API_KEY_HOST_FILE='/root/infra/brave-token/brave_api_key' \
-            && export ARGOS_CODEX_HOME='/root/infra/argos/codex-home' \
-            && export ARGOS_CODEX_ENABLED='true' \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
-            && for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24; do \
-              if curl --fail --show-error --silent --connect-timeout 5 --max-time 10 http://127.0.0.1:18081/healthz >/dev/null \
-                && curl --fail --show-error --silent --connect-timeout 5 --max-time 10 http://127.0.0.1:18081/ops-product-discovery-observability-v1/logfile | grep -Fq '[product-discovery-worker]'; then break; fi; \
-              if [ \"\$attempt\" = \"24\" ]; then \
-                docker compose -f docker-compose.yml -f docker-compose.deploy.yml ps; \
-                docker compose -f docker-compose.yml -f docker-compose.deploy.yml logs --tail=80 product-discovery-worker; \
-                exit 1; \
-              fi; \
-              sleep 5; \
-            done \
-            && docker image prune -af"
+          if [ -n "${GHCR_TOKEN}" ]; then
+            printf '%s' "${GHCR_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              "docker login '${IMAGE_REGISTRY}' -u '${GHCR_USERNAME}' --password-stdin"
+          fi
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s -- \
+            "${REMOTE_PATH}" \
+            "${IMAGE_NAMESPACE}/product-discovery-worker:${IMAGE_TAG}" <<'REMOTE_PUBLISH'
+          set -euo pipefail
+
+          remote_path="$1"
+          product_discovery_worker_image="$2"
+          source_secret="/root/infra/brave-token/brave_api_key"
+          runtime_secret="/root/infra/argos/secrets/brave_search_api_key"
+          compose_files=(-f docker-compose.yml -f docker-compose.deploy.yml)
+
+          install -m 700 -d /root/infra/brave-token
+          install -m 700 -d /root/infra/argos/codex-home
+          if [ ! -s "$source_secret" ]; then
+            echo "Erro: informe a chave Brave no arquivo operacional antes de publicar o Product Discovery Worker." >&2
+            exit 1
+          fi
+
+          cd "$remote_path"
+          export PRODUCT_DISCOVERY_WORKER_IMAGE="$product_discovery_worker_image"
+          export PRODUCT_DISCOVERY_SEARCH_PROVIDER="brave"
+          export PRODUCT_DISCOVERY_SEARCH_COUNTRY="br"
+          export PRODUCT_DISCOVERY_SEARCH_LANGUAGE="pt-br"
+          export BRAVE_SEARCH_API_KEY_HOST_FILE="$runtime_secret"
+          export ARGOS_CODEX_HOME="/root/infra/argos/codex-home"
+          export ARGOS_CODEX_ENABLED="true"
+
+          docker compose "${compose_files[@]}" pull
+          runtime_uid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -u)"
+          runtime_gid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -g)"
+          bash scripts/prepare-brave-runtime-secret.sh \
+            "$source_secret" "$runtime_secret" "$runtime_uid" "$runtime_gid"
+          docker compose "${compose_files[@]}" run --rm --no-deps --entrypoint node \
+            product-discovery-worker scripts/validate-runtime-search-config.mjs
+          docker compose "${compose_files[@]}" up -d --remove-orphans
+
+          healthy=false
+          health_payload=""
+          for ((attempt = 1; attempt <= 24; attempt++)); do
+            health_payload="$(curl --show-error --silent --connect-timeout 5 --max-time 10 \
+              http://127.0.0.1:18081/healthz || true)"
+            if printf '%s' "$health_payload" | grep -Fq '"status":"UP"' \
+              && printf '%s' "$health_payload" | grep -Fq '"keyStatus":"CONFIGURED"' \
+              && curl --fail --show-error --silent --connect-timeout 5 --max-time 10 \
+                http://127.0.0.1:18081/ops-product-discovery-observability-v1/logfile \
+                | grep -Fq '[product-discovery-worker]'; then
+              healthy=true
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$healthy" != "true" ]; then
+            echo "Health final do Product Discovery Worker: $health_payload" >&2
+            docker compose "${compose_files[@]}" ps
+            docker compose "${compose_files[@]}" logs --tail=80 product-discovery-worker
+            exit 1
+          fi
+
+          docker image prune -af
+          REMOTE_PUBLISH

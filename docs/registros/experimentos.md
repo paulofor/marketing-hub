@@ -6693,3 +6693,12 @@
 - A telemetria de homologação permaneceu `INTERNAL_QA`; as métricas humanas ficaram em 25 page
   views, sem checkout ou compra comercial. O experimento continuou `PLANNED`, sem orçamento diário,
   contato, campanha, gasto ou autorização da próxima atividade.
+
+## 2026-08-31 — Argos: credencial factual validada antes do deploy
+
+- O workflow `33343796393` deixou o Argos `DEGRADED`: o arquivo Brave existia no host, mas o usuário
+  não privilegiado da imagem não conseguia lê-lo e o health respondia HTTP 503.
+- O deploy passa a preparar uma cópia modo `0400` para o UID/GID derivado da imagem e a executar o
+  carregamento real da busca antes de substituir o worker.
+- A publicação só prossegue com `credential=CONFIGURED`; a credencial nunca entra em log. Isso
+  protege a coleta factual que antecede decisões de mercado, sem tratar evidência como venda.

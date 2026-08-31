@@ -62,7 +62,7 @@ test("empacota a biblioteca factual e mantém o modelo ativo no deploy", () => {
     );
   }
   assert.match(workflow, /- "pesquisas\/\*\*"/);
-  assert.match(workflow, /export ARGOS_CODEX_ENABLED='true'/);
+  assert.match(workflow, /export ARGOS_CODEX_ENABLED=["']true["']/);
 });
 
 test("materializa a biblioteca vigente antes dos testes e da imagem", () => {
@@ -106,4 +106,36 @@ test("empacota Chromium como usuário sem privilégios e habilita a coleta limit
     );
     assert.match(compose, /ARGOS_META_BROWSER_MAX_ADS: \$\{ARGOS_META_BROWSER_MAX_ADS:-12\}/);
   }
+});
+
+test("valida o secret como usuário do runtime antes de substituir o worker", () => {
+  const publishStep = workflow.slice(workflow.indexOf("- name: Publish service"));
+  const pullPosition = publishStep.indexOf(
+    'docker compose "${compose_files[@]}" pull',
+  );
+  const preparePosition = publishStep.indexOf(
+    "scripts/prepare-brave-runtime-secret.sh",
+  );
+  const preflightPosition = publishStep.indexOf(
+    "scripts/validate-runtime-search-config.mjs",
+  );
+  const publishPosition = publishStep.indexOf(
+    'docker compose "${compose_files[@]}" up -d --remove-orphans',
+  );
+
+  assert.ok(pullPosition >= 0);
+  assert.ok(pullPosition < preparePosition);
+  assert.ok(preparePosition < preflightPosition);
+  assert.ok(preflightPosition < publishPosition);
+  assert.match(
+    publishStep,
+    /runtime_uid="\$\(docker run --rm --entrypoint id "\$product_discovery_worker_image" -u\)"/,
+    "[ARQUITETURA] O deploy deve derivar o UID da própria imagem, sem tornar o worker root.",
+  );
+  assert.match(
+    deployCompose,
+    /BRAVE_SEARCH_API_KEY_HOST_FILE:-\/root\/infra\/argos\/secrets\/brave_search_api_key/,
+    "[ARQUITETURA] O container deve montar apenas a cópia protegida preparada para seu usuário.",
+  );
+  assert.match(publishStep, /'"keyStatus":"CONFIGURED"'/);
 });

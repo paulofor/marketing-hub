@@ -2667,11 +2667,22 @@ Use este checklist quando o problema estiver em algum loop acima:
   `codex-home/tmp/arg0/...` links descartáveis para `apply_patch`, `applypatch`, o wrapper de execução
   e o sandbox. O preflight novo bloqueava qualquer link da árvore antes de distinguir estado
   persistente de arquivos temporários legítimos.
-- **Correção sistêmica:** a preparação esvazia somente `codex-home/tmp`, sem seguir links, antes de
-  reconciliar proprietário e permissões. Links fora dessa área transitória continuam proibidos e a
-  sessão autenticada, bancos de estado e demais arquivos persistentes são preservados.
-- **Prevenção:** teste reproduz os wrappers do Codex, exige limpeza sem alterar o alvo nem o
-  `auth.json` e mantém o teste separado que recusa link simbólico fora do diretório temporário.
+- **Correção inicial, substituída pelo fechamento abaixo:** a preparação esvaziava somente
+  `codex-home/tmp`, sem seguir links, antes de reconciliar proprietário e permissões. Links fora
+  dessa área transitória continuavam proibidos e a sessão autenticada, bancos de estado e demais
+  arquivos persistentes eram preservados.
+- **Prevenção inicial:** o teste reproduzia os wrappers do Codex, exigia a limpeza sem alterar o alvo
+  nem o `auth.json` e mantinha o teste separado que recusava link fora do diretório temporário.
+- **Recorrência e fechamento em 2026-08-31:** a execução `33438811846` voltou a falhar com a mesma
+  mensagem mesmo depois da limpeza. O host comprovou que os únicos links continuavam sob
+  `codex-home/tmp/arg0`: o worker anterior permanecia ativo com o mesmo volume e recriava seus
+  wrappers entre a limpeza e a varredura global, caracterizando uma corrida real. Parar o worker
+  antes do preflight criaria indisponibilidade e poderia deixá-lo desligado diante de outra falha;
+  apagar repetidamente não eliminaria a corrida; permitir links globalmente enfraqueceria a sessão.
+  A preparação passa a validar `tmp` como diretório físico e tratá-lo como árvore opaca pertencente
+  ao Codex, excluindo-a da varredura e da reconciliação enquanto preserva a rejeição de qualquer
+  link no estado persistente, inclusive `auth.json`, e de um próprio `tmp` simbólico. O teste de
+  contrato preserva wrappers ativos e mantém o alvo externo e a sessão autenticada inalterados.
 
 ## LOOP-ARGOS-AUDITORIA-MULTIFASE-FORA-DE-ORDEM — pesquisa concluída é recusada no callback
 

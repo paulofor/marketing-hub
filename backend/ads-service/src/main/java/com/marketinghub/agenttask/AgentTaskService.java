@@ -23,12 +23,15 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,6 +86,8 @@ public class AgentTaskService {
           "token");
   private static final String ACCESSED_URL_LINK = "ACCESSED_URL";
   private static final String BLOCKER_HELP_LINK = "BLOCKER_HELP";
+  private static final Pattern PROMPT_PHASE_HEADER =
+      Pattern.compile("(?m)^--- ([^\\r\\n]+) ---\\r?$");
 
   private final AgentTaskRepository repository;
   private final BusinessProcessActivityInstanceRepository activityInstanceRepository;
@@ -2087,6 +2092,7 @@ public class AgentTaskService {
     String fullPrompt = task.getExecutionPrompt();
     String agentPrompt = task.getExecutionAgentPrompt();
     String activityPrompt = task.getExecutionActivityPrompt();
+    if (matchesPhasedPromptComposition(fullPrompt, agentPrompt, activityPrompt)) return;
     int agentStart = fullPrompt.indexOf(agentPrompt);
     int activityStart =
         agentStart < 0 ? -1 : fullPrompt.indexOf(activityPrompt, agentStart + agentPrompt.length());
@@ -2095,6 +2101,51 @@ public class AgentTaskService {
           HttpStatus.BAD_REQUEST,
           "As partes do agente e da atividade devem compor, nesta ordem, o prompt integral.");
     }
+  }
+
+  /** Valida cada interação de um prompt multifase sem reordenar o que foi enviado ao modelo. */
+  private boolean matchesPhasedPromptComposition(
+      String fullPrompt, String agentPrompt, String activityPrompt) {
+    Map<String, String> fullPhases = promptPhases(fullPrompt);
+    Map<String, String> agentPhases = promptPhases(agentPrompt);
+    Map<String, String> activityPhases = promptPhases(activityPrompt);
+    if (fullPhases.isEmpty()
+        || !List.copyOf(fullPhases.keySet()).equals(List.copyOf(agentPhases.keySet()))
+        || !List.copyOf(fullPhases.keySet()).equals(List.copyOf(activityPhases.keySet()))) {
+      return false;
+    }
+    return fullPhases.entrySet().stream()
+        .allMatch(
+            phase ->
+                phase
+                    .getValue()
+                    .equals(
+                        agentPhases.get(phase.getKey())
+                            + "\n\n"
+                            + activityPhases.get(phase.getKey())));
+  }
+
+  /** Separa os blocos nomeados do dossiê de prompts preservando sua ordem declarada. */
+  private Map<String, String> promptPhases(String prompt) {
+    Map<String, String> phases = new LinkedHashMap<>();
+    Matcher matcher = PROMPT_PHASE_HEADER.matcher(prompt);
+    String currentName = null;
+    int contentStart = -1;
+    while (matcher.find()) {
+      if (currentName != null) {
+        if (phases.putIfAbsent(currentName, prompt.substring(contentStart, matcher.start()).trim())
+            != null) {
+          return Map.of();
+        }
+      }
+      currentName = matcher.group(1).trim();
+      contentStart = matcher.end();
+    }
+    if (currentName != null
+        && phases.putIfAbsent(currentName, prompt.substring(contentStart).trim()) != null) {
+      return Map.of();
+    }
+    return phases;
   }
 
   /** Persiste orientação explícita ou deriva um fallback acionável sem depender de logs. */

@@ -1862,6 +1862,87 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Aceita duas interações auditadas quando cada fase preserva agente antes da atividade. */
+  @Test
+  void acceptsPromptPartsAcrossOrderedModelPhases() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(8L, "market-radar", "Argos"),
+            process("PUBLISHED", "Argos"),
+            "marketEvidence",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    String fullPrompt =
+        "--- PLANEJAMENTO ---\nNúcleo do plano.\n\nPlaneje a pesquisa.\n\n"
+            + "--- SÍNTESE FACTUAL ---\nNúcleo da síntese.\n\nSintetize as evidências.";
+    String agentPrompt =
+        "--- PLANEJAMENTO ---\nNúcleo do plano.\n\n"
+            + "--- SÍNTESE FACTUAL ---\nNúcleo da síntese.";
+    String activityPrompt =
+        "--- PLANEJAMENTO ---\nPlaneje a pesquisa.\n\n"
+            + "--- SÍNTESE FACTUAL ---\nSintetize as evidências.";
+
+    service.completeClaimedProcessTask(
+        "market-radar",
+        30L,
+        new CompleteAgentTaskRequest(
+            "{}",
+            "{}",
+            null,
+            new AgentTaskExecutionAuditRequest(
+                "MODEL",
+                "gpt-5.6-sol",
+                "high",
+                fullPrompt,
+                agentPrompt,
+                activityPrompt,
+                List.of())));
+
+    assertThat(task.getExecutionPrompt()).isEqualTo(fullPrompt);
+    assertThat(task.getExecutionAgentPrompt()).isEqualTo(agentPrompt);
+    assertThat(task.getExecutionActivityPrompt()).isEqualTo(activityPrompt);
+    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+  }
+
+  /** Rejeita dossiê multifase quando uma atividade antecede o núcleo de sua própria interação. */
+  @Test
+  void rejectsPromptPartsInsideAnInvertedModelPhase() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(8L, "market-radar", "Argos"),
+            process("PUBLISHED", "Argos"),
+            "marketEvidence",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "market-radar",
+                    30L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        null,
+                        new AgentTaskExecutionAuditRequest(
+                            "MODEL",
+                            "gpt-5.6-sol",
+                            "high",
+                            "--- PLANEJAMENTO ---\nPlaneje.\n\nNúcleo.",
+                            "--- PLANEJAMENTO ---\nNúcleo.",
+                            "--- PLANEJAMENTO ---\nPlaneje.",
+                            List.of()))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("nesta ordem");
+    verify(repository, never()).save(any());
+  }
+
   /** Não declara custo inaplicável quando o modelo foi chamado sem telemetria de tokens. */
   @Test
   void keepsModelCostNotReportedWhenUsageIsUnavailable() {

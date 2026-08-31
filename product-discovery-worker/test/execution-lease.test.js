@@ -2,11 +2,48 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   analysisAuditCallbackPayload,
+  backendFailureMessage,
   createPollLock,
   failureCallbackPayload,
   researchPlanCallbackPayload,
   withExecutionLease,
 } from "../src/worker.js";
+
+test("preserva na tela a causa segura devolvida pelo backend", async () => {
+  const message = await backendFailureMessage(
+    "POST",
+    "http://backend/api/complete",
+    {
+      status: 400,
+      text: async () =>
+        JSON.stringify({
+          message:
+            "As partes do agente e da atividade devem compor o prompt integral.",
+        }),
+    },
+  );
+
+  assert.equal(
+    message,
+    "POST http://backend/api/complete failed with status 400: As partes do agente e da atividade devem compor o prompt integral.",
+  );
+});
+
+test("não incorpora corpo não estruturado nem credencial em erro operacional", async () => {
+  const message = await backendFailureMessage(
+    "POST",
+    "http://backend/api/complete",
+    {
+      status: 500,
+      text: async () => "<html>sk-segredo-nao-deve-aparecer</html>",
+    },
+  );
+
+  assert.equal(
+    message,
+    "POST http://backend/api/complete failed with status 500",
+  );
+});
 
 test("repete o lease vigente em todo callback da descoberta", () => {
   const payload = withExecutionLease(
@@ -80,7 +117,7 @@ test("agrega as duas chamadas de Argos sem perder URLs nem resposta bruta", () =
   const payload = analysisAuditCallbackPayload(
     {
       mode: "CODEX",
-      prompt: "prompt do plano",
+      prompt: "agente do plano\n\natividade do plano",
       agentPromptPart: "agente do plano",
       activityPromptPart: "atividade do plano",
       reasoningEffort: "high",
@@ -90,7 +127,7 @@ test("agrega as duas chamadas de Argos sem perder URLs nem resposta bruta", () =
       rawResponse: '{"candidates":[]}',
       model: "gpt-5.6-sol",
       mode: "CODEX",
-      prompt: "prompt da síntese",
+      prompt: "agente da síntese\n\natividade da síntese",
       agentPromptPart: "agente da síntese",
       activityPromptPart: "atividade da síntese",
       reasoningEffort: "high",
@@ -112,6 +149,18 @@ test("agrega as duas chamadas de Argos sem perder URLs nem resposta bruta", () =
   assert.equal(payload.outputTokens, 90);
   assert.match(payload.promptSent, /PLANEJAMENTO/);
   assert.match(payload.promptSent, /SÍNTESE FACTUAL/);
+  assert.match(
+    payload.promptSent,
+    /PLANEJAMENTO ---\nagente do plano\n\natividade do plano/,
+  );
+  assert.match(
+    payload.promptSent,
+    /SÍNTESE FACTUAL ---\nagente da síntese\n\natividade da síntese/,
+  );
+  assert.match(payload.agentPromptPart, /agente do plano/);
+  assert.match(payload.agentPromptPart, /agente da síntese/);
+  assert.match(payload.activityPromptPart, /atividade do plano/);
+  assert.match(payload.activityPromptPart, /atividade da síntese/);
   assert.equal(payload.accessedUrls.length, 1);
   assert.equal(payload.rawResponse, '{"candidates":[]}');
 });

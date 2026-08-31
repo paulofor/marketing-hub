@@ -36,6 +36,14 @@ audit_liquibase_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_master_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/db.changelog-master.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+      'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 audit_argos_market_update() {
   audit_compose run --rm \
     -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-30-argos-market-discovery-v1.yaml \
@@ -156,6 +164,35 @@ audit_assert_equal \
     (SELECT COUNT(*) FROM agent_task WHERE source_reference LIKE 'product-discovery-cycle:%'), ':',
     (SELECT COUNT(*) FROM agent_task WHERE status = 'BLOCKED' AND execution_error = 'POST complete falhou com status 422')
   );")"
+
+audit_master_command "changelogSync"
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-08-30-argos-market-discovery-v1-%'
+         OR ID LIKE '2026-08-30-argos-meta-public-browser-v1-%';" \
+  >/dev/null 2>&1
+audit_master_command "update"
+audit_assert_equal \
+  "ordem de deploy do changelog mestre" \
+  "4:1:1" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-08-30-argos-market-discovery-v1-%'
+         OR ID LIKE '2026-08-30-argos-meta-public-browser-v1-%'), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_cycle'
+        AND column_name = 'meta_ad_investigation_id'), ':',
+    (SELECT COUNT(*) FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_browser_run')
+  );")"
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-08-31-product-discovery-autonomous-handoff-v1-%';" \
+  >/dev/null 2>&1
 
 audit_argos_market_update
 audit_assert_equal \

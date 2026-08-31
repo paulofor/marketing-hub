@@ -21,6 +21,13 @@ const workflow = readFileSync(
   ),
   "utf8",
 );
+const packageDefinition = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+);
+const researchLibraryIgnore = readFileSync(
+  new URL("../research-library/.gitignore", import.meta.url),
+  "utf8",
+);
 
 test("instala certificados raiz antes do cliente Codex", () => {
   const certificates = dockerfile.indexOf("ca-certificates");
@@ -50,7 +57,7 @@ test("empacota a biblioteca factual e mantém o modelo ativo no deploy", () => {
   assert.match(
     dockerfile,
     /COPY research-library \.\/research-library/,
-    "[ARQUITETURA] A imagem de Argos deve conter o índice versionado dos artigos de pesquisa.",
+    "[ARQUITETURA] A imagem de Argos deve conter o índice materializado dos artigos versionados.",
   );
   for (const compose of [localCompose, deployCompose]) {
     assert.match(
@@ -83,10 +90,20 @@ test("materializa a biblioteca vigente antes dos testes e da imagem", () => {
       testJob.indexOf("npm test"),
     "[ARQUITETURA] O CI deve materializar a biblioteca atual antes de testar Argos.",
   );
+  assert.equal(
+    packageDefinition.scripts.pretest,
+    "npm run build:research-library",
+    "[ARQUITETURA] Testes locais devem materializar a biblioteca viva antes da validação.",
+  );
   assert.match(
-    testJob,
-    /if: github\.event_name == 'pull_request'[\s\S]*git diff --exit-code -- product-discovery-worker\/research-library\/index\.json/,
-    "[ARQUITETURA] Pull requests devem continuar bloqueando índice factual não versionado.",
+    researchLibraryIgnore,
+    /^index\.json$/m,
+    "[ARQUITETURA] O índice derivado não deve disputar merge com os Markdown que são a fonte de verdade.",
+  );
+  assert.doesNotMatch(
+    workflow,
+    /git diff --exit-code -- product-discovery-worker\/research-library\/index\.json/,
+    "[ARQUITETURA] O CI não deve bloquear PR por drift de um artefato determinístico gerado no próprio job.",
   );
   assert.ok(
     dockerJob.indexOf("npm run build:research-library") <

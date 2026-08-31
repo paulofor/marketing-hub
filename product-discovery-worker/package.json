@@ -6,6 +6,7 @@
   "scripts": {
     "build:research-library": "node scripts/build-research-library.mjs",
     "check:research-library": "node scripts/build-research-library.mjs --check",
+    "pretest": "npm run build:research-library",
     "start": "node src/worker.js",
     "test": "npm run check:research-library && node --test"
   },

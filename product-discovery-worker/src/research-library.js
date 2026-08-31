@@ -76,7 +76,7 @@ export async function selectResearchLibraryContext(job, options = {}) {
   };
 }
 
-/** Carrega uma única vez o índice versionado presente na imagem do executor. */
+/** Carrega uma única vez o índice materializado na imagem versionada do executor. */
 async function loadLibrary(indexUrl) {
   if (indexUrl) {
     return JSON.parse(await readFile(indexUrl, "utf8"));

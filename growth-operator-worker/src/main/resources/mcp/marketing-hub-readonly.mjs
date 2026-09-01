@@ -16,6 +16,7 @@ const experimentTools = [
   tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento.', {}),
   tool('consultar_preflight', 'Consulta o run produtivo mais recente e seus gates auditados.', {}),
   tool('consultar_cockpit', 'Consulta placar comercial, gargalo e métricas do experimento.', {}),
+  tool('consultar_amostra_direta', 'Consulta somente os contatos consentidos e aderentes registrados na amostra individual.', {}),
   tool('consultar_processo', 'Consulta as tarefas BPM auditáveis deste experimento.', {})
 ];
 
@@ -27,6 +28,7 @@ const memoryGroundedToolNames = new Set([
   'consultar_campanhas',
   'consultar_preflight',
   'consultar_cockpit',
+  'consultar_amostra_direta',
   'consultar_processo',
   'consultar_memoria',
   'consultar_estrategia_videos',
@@ -66,8 +68,9 @@ const routes = {
     : `/api/growth-operator/v1/internal/commercial-plans/${planId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`,
   consultar_campanhas: () => experimentRoute('facebook-campaigns'),
   consultar_cockpit: () => experimentRoute('cockpit'),
+  consultar_amostra_direta: () => experimentRoute('direct-contact-sample'),
   consultar_processo: async () => `/api/agent-tasks/process-instances?sourceReference=${encodeURIComponent(`experiment:${await resolvedExperimentId()}`)}`,
-  consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions`,
+  consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions?limit=10`,
   consultar_estrategia_videos: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/video-strategy-intelligence`,
   consultar_pendencias: () => `/api/growth-operator/v1/commercial-plans/${planId}/tasks`,
   solicitar_pausa_experimento: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/experiment/pause`,

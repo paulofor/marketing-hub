@@ -10,6 +10,8 @@ export interface ExperimentCockpitScoreboard {
   clicks?: number | null;
   ctr?: number | null;
   cpc?: number | null;
+  directContacts: number;
+  directContactTarget: number;
   pageViews: number;
   partialVideoViews: number;
   completeVideoViews: number;

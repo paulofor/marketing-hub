@@ -16,8 +16,21 @@ import org.springframework.data.repository.query.Param;
 /** Responsabilidade: persistir execucoes auditaveis do Operador de Crescimento. */
 public interface GrowthOperatorExecutionRepository
     extends JpaRepository<GrowthOperatorExecution, Long> {
-  /** Lista as execucoes recentes de um planejamento. */
-  List<GrowthOperatorExecution> findByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
+  /** Lista uma janela limitada das execucoes recentes de um planejamento. */
+  List<GrowthOperatorExecution> findByCommercialPlanIdOrderByCreatedAtDesc(
+      Long planId, Pageable pageable);
+
+  /** Conta todas as execucoes do planejamento sem carregar seus payloads de auditoria. */
+  long countByCommercialPlanId(Long planId);
+
+  /** Conta execucoes de um status sem carregar os campos LONGTEXT. */
+  long countByCommercialPlanIdAndStatus(Long planId, GrowthOperatorExecutionStatus status);
+
+  /** Retorna o maior numero de ciclo sem materializar o historico completo. */
+  @Query(
+      "select coalesce(max(execution.cycleNumber), 0) from GrowthOperatorExecution execution "
+          + "where execution.commercialPlan.id = :planId")
+  Integer findMaxCycleNumberByCommercialPlanId(@Param("planId") Long planId);
 
   /** Busca a proxima pendencia para consumo controlado pelo worker. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)

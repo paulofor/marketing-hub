@@ -6772,3 +6772,34 @@
   backend, 31 do Hermes, cinco contratos MCP, 436 testes do frontend, Spotless, TypeScript,
   empacotamento, imagens Docker e navegação em desktop, iPhone 15 Pro e Pixel 7.
 - Nenhum contato, campanha, gasto, pagamento ou venda foi criado durante o diagnóstico.
+## 2026-09-01 — Rigel: amostra direta consentida auditável
+
+- **Evidência produtiva anterior:** as tarefas #294 e #295 bloquearam em 0/15 contatos e consumiram
+  juntas US$ 0,6939976 porque não existia uma fonte persistida capaz de provar pessoa distinta,
+  consentimento, aderência e abordagem real.
+- **Causa-raiz:** Hermes podia reavaliar uma entrada invariável, enquanto visita, sessão, clique e QA
+  eram as únicas métricas disponíveis; nenhuma delas representa contato individual consentido.
+- **Correção preparada:** backend, tela e Hermes passam a usar uma amostra v1 própria, com fingerprint
+  SHA-256 gerado no navegador, evidência de consentimento anterior, horário, aderência, operador,
+  deduplicação, teto serializado e bloqueio da retentativa até 15/15.
+- **Privacidade e integridade comercial:** o identificador é pseudonimizado, nunca chega em claro ao
+  backend; a função não envia mensagens nem transforma contato, QA ou teste em compra, receita ou
+  venda.
+- **Homologação local:** duas rodadas completas e consecutivas passaram após o último ajuste. Cada
+  rodada validou 2.171 testes do backend, 31 do Hermes, 442 do frontend, MySQL 5.7 físico, contratos,
+  builds, três imagens Docker e jornadas desktop, iPhone 15 Pro e Pixel 7.
+- **Validação produtiva:** banco, MCP e tela confirmaram #294 e #295 em `BLOCKED`, experimento 89
+  `RUNNING`, canal `DIRECT_ONE_TO_ONE`, meta 15 e zero eventos humanos. A tarefa #296 não foi criada,
+  pois repetiria a mesma entrada e novo custo sem evidência.
+- **Publicação manual não aplicada:** o SSH de Hermes aceitou a chave disponível, mas o host principal
+  `191.252.181.168` recusou essa chave para todos os usuários operacionais testados. Backend e
+  frontend permaneceram intactos; a imagem de Hermes também foi preservada para não publicar um
+  consumidor cujo novo endpoint ainda não existe em produção.
+- **Estabilidade identificada antes da publicação:** o plano 2 possuía 362 históricos do Operador,
+  totalizando 232,23 MB de payloads de auditoria; a leitura integral e a escrita implícita em GET
+  causaram transação longa, locks e reinício por pressão de heap. A correção preparada limita a
+  janela a 10 (máximo 20), calcula totais no banco e separa definitivamente leitura de sincronização.
+- **Homologação final reiniciada e concluída:** após a correção de estabilidade e a segregação do
+  fingerprint por experimento, duas novas rodadas consecutivas passaram com 2.173 testes backend,
+  31 do Hermes, cinco MCP, 443 do frontend, MySQL 5.7 físico, contratos, três imagens Docker e
+  desktop/iPhone/Pixel. A produção permaneceu sem #296 e sem dado comercial sintético.

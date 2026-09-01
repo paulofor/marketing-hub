@@ -2,6 +2,7 @@ package com.marketinghub.growthoperator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: validar o contexto auditável entregue ao Operador de Crescimento. */
 class GrowthOperatorServiceTest {
@@ -58,6 +60,33 @@ class GrowthOperatorServiceTest {
         .thenAnswer(invocation -> java.util.Optional.ofNullable(saved[0]));
   }
 
+  /** Limita o histórico público mesmo quando o consumidor solicita uma janela excessiva. */
+  @Test
+  void shouldCapPublicHistoryAtTwentyExecutions() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    when(planService.getPlan(2L)).thenReturn(CommercialPlan.builder().id(2L).build());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper().findAndRegisterModules());
+
+    service.list(2L, 500);
+
+    ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+    verify(repository).findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), pageable.capture());
+    assertThat(pageable.getValue().getPageSize()).isEqualTo(20);
+  }
+
   /** Confirma continuidade para plano aberto sem exigir experimento e ignora plano encerrado. */
   @Test
   void shouldEnsureOpenPlansWithoutRunningExperiment() {
@@ -69,7 +98,8 @@ class GrowthOperatorServiceTest {
         CommercialPlan.builder().id(3L).status(CommercialPlanStatus.COMPLETED).build();
     when(planService.list(null)).thenReturn(List.of(openPlan, completedPlan));
     when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(openPlan);
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
     mockVersionedSave(repository);
     GrowthOperatorService service =
         new GrowthOperatorService(
@@ -114,7 +144,8 @@ class GrowthOperatorServiceTest {
             .experiment(experiment)
             .build();
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
     mockVersionedSave(repository);
     ExperimentFunnelService funnelService = mock(ExperimentFunnelService.class);
     when(funnelService.buildDetailedAnalyticsEvidence(82L, 2000))
@@ -218,7 +249,8 @@ class GrowthOperatorServiceTest {
     when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(plan);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
     mockVersionedSave(repository);
     GrowthOperatorService service =
         new GrowthOperatorService(
@@ -240,7 +272,8 @@ class GrowthOperatorServiceTest {
     latest.setCreatedAt(Instant.now().minusSeconds(3600));
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.of(latest));
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(latest));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of(latest));
     clearInvocations(repository);
 
     GrowthOperatorExecutionResponse response = service.ensureAutomaticCycle(2L);
@@ -261,7 +294,8 @@ class GrowthOperatorServiceTest {
     when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(plan);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
     when(taskRepository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
     mockVersionedSave(repository);
     GrowthOperatorService service =
@@ -284,7 +318,8 @@ class GrowthOperatorServiceTest {
     latest.setCreatedAt(Instant.now().minusSeconds(3600));
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.of(latest));
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(latest));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of(latest));
     var openTask = mock(com.marketinghub.growthoperator.GrowthOperatorTask.class);
     when(openTask.getId()).thenReturn(1L);
     when(openTask.getCommercialPlan()).thenReturn(plan);
@@ -330,7 +365,8 @@ class GrowthOperatorServiceTest {
     stale.setAutomaticCycle(true);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.of(stale));
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(stale));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of(stale));
     when(repository.countRecentActiveTelemetry(any(), any())).thenReturn(0L);
     mockVersionedSave(repository);
     GrowthOperatorService service =
@@ -374,7 +410,11 @@ class GrowthOperatorServiceTest {
     completed.setCreatedAt(Instant.parse("2026-08-04T10:00:00Z"));
     completed.setFinishedAt(Instant.parse("2026-08-04T10:02:00Z"));
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(completed));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of(completed));
+    when(repository.countByCommercialPlanId(2L)).thenReturn(1L);
+    when(repository.countByCommercialPlanIdAndStatus(2L, GrowthOperatorExecutionStatus.COMPLETED))
+        .thenReturn(1L);
     mockVersionedSave(repository);
     ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     GrowthOperatorService service =
@@ -421,7 +461,8 @@ class GrowthOperatorServiceTest {
     experiment.setId(81L);
     CommercialPlan plan = CommercialPlan.builder().id(2L).experiment(experiment).build();
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
     mockVersionedSave(repository);
     var event =
         new ExperimentLandingAnalyticsDetailedEventDto(
@@ -576,7 +617,8 @@ class GrowthOperatorServiceTest {
             .stopCriteria("Revisar em R$ 75; bloquear em R$ 175 sem venda.")
             .build();
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(eq(2L), any(Pageable.class)))
+        .thenReturn(List.of());
     mockVersionedSave(repository);
     when(objectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(2L, 1))
         .thenReturn(

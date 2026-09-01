@@ -1,6 +1,8 @@
 package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: validar a segregação e a prestação de contas dos agentes no plano. */
 class CommercialPlanAgentActivityServiceTest {
@@ -62,7 +65,8 @@ class CommercialPlanAgentActivityServiceTest {
     when(cycles.findByCommercialPlanIdOrderByUpdatedAtDesc(4L)).thenReturn(List.of());
     when(strategists.findByCommercialPlanIdOrderByCreatedAtDesc(4L)).thenReturn(List.of());
     when(financials.findByCommercialPlanIdOrderByCreatedAtDesc(4L)).thenReturn(List.of());
-    when(growthOperators.findByCommercialPlanIdOrderByCreatedAtDesc(4L)).thenReturn(List.of());
+    when(growthOperators.findByCommercialPlanIdOrderByCreatedAtDesc(eq(4L), any(Pageable.class)))
+        .thenReturn(List.of());
     when(versions.current(4L))
         .thenReturn(new CommercialPlanVersionDto(3L, 4L, 3, "{}", "USER", "Atualização", now));
 
@@ -144,7 +148,8 @@ class CommercialPlanAgentActivityServiceTest {
     when(strategists.findByCommercialPlanIdOrderByCreatedAtDesc(7L))
         .thenReturn(List.of(strategist));
     when(financials.findByCommercialPlanIdOrderByCreatedAtDesc(7L)).thenReturn(List.of());
-    when(growthOperators.findByCommercialPlanIdOrderByCreatedAtDesc(7L)).thenReturn(List.of());
+    when(growthOperators.findByCommercialPlanIdOrderByCreatedAtDesc(eq(7L), any(Pageable.class)))
+        .thenReturn(List.of());
     when(versions.current(7L))
         .thenReturn(new CommercialPlanVersionDto(2L, 7L, 2, "{}", "USER", "Atualização", now));
 

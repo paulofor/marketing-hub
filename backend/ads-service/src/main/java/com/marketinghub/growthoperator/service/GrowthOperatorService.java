@@ -58,7 +58,8 @@ public class GrowthOperatorService {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorService.class);
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
   private static final int SESSION_EVENT_LIMIT = 2000;
-  private static final int MEMORY_TIMELINE_LIMIT = 30;
+  private static final int MEMORY_TIMELINE_LIMIT = 10;
+  private static final int MAX_HISTORY_LIMIT = 20;
   private static final long STALE_EXECUTION_SECONDS = 120L;
   private static final Pattern MONEY_GATE_PATTERN =
       Pattern.compile("R\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", Pattern.CASE_INSENSITIVE);
@@ -270,21 +271,21 @@ public class GrowthOperatorService {
         hasText(request.objective()) ? request.objective() : defaultObjective(plan));
     execution.setBlocker(plan.getCurrentBlocker());
     execution.setEvidenceSnapshot(
-        buildEvidenceSnapshot(
-            plan,
-            repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId),
-            executionWeekNumber));
+        buildEvidenceSnapshot(plan, recentHistory(planId), executionWeekNumber));
     execution.setEvidenceFingerprint(buildEvidenceFingerprint(execution.getEvidenceSnapshot()));
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(false);
     return toResponse(saveWithCurrentAgentVersion(execution));
   }
 
-  /** Lista o historico de diagnosticos de um planejamento. */
+  /** Lista uma janela limitada do historico de diagnosticos de um planejamento. */
   @Transactional(readOnly = true)
-  public List<GrowthOperatorExecutionResponse> list(Long planId) {
+  public List<GrowthOperatorExecutionResponse> list(Long planId, int requestedLimit) {
     commercialPlanService.getPlan(planId);
-    return repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
+    int limit = Math.max(1, Math.min(MAX_HISTORY_LIMIT, requestedLimit));
+    return repository
+        .findByCommercialPlanIdOrderByCreatedAtDesc(planId, PageRequest.of(0, limit))
+        .stream()
         .map(this::toResponse)
         .toList();
   }
@@ -454,10 +455,7 @@ public class GrowthOperatorService {
       return toResponse(latest.get());
     }
     String evidenceSnapshot =
-        buildEvidenceSnapshot(
-            plan,
-            repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId),
-            executionWeekNumber);
+        buildEvidenceSnapshot(plan, recentHistory(planId), executionWeekNumber);
     String evidenceFingerprint = buildEvidenceFingerprint(evidenceSnapshot);
     if (!recoveredStaleExecution
         && latest.isPresent()
@@ -661,7 +659,7 @@ public class GrowthOperatorService {
       snapshot.put(
           "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));
     }
-    snapshot.put("consolidatedMemory", buildConsolidatedMemory(executionHistory));
+    snapshot.put("consolidatedMemory", buildConsolidatedMemory(plan.getId(), executionHistory));
     snapshot.put("operatorTasks", listTasks(plan.getId()));
     try {
       return objectMapper.writeValueAsString(snapshot);
@@ -836,23 +834,21 @@ public class GrowthOperatorService {
         1, Math.min(5, (int) (java.time.temporal.ChronoUnit.DAYS.between(monday, today) / 7) + 1));
   }
 
-  /** Consolida todo o historico em contagens e preserva uma linha do tempo recente e relevante. */
+  /** Consolida contagens no banco e preserva apenas a linha do tempo recente e relevante. */
   private Map<String, Object> buildConsolidatedMemory(
-      List<GrowthOperatorExecution> executionHistory) {
+      Long planId, List<GrowthOperatorExecution> executionHistory) {
+    long totalCycles = repository.countByCommercialPlanId(planId);
     LinkedHashMap<String, Object> memory = new LinkedHashMap<>();
-    memory.put("totalCycles", executionHistory.size());
+    memory.put("totalCycles", totalCycles);
     memory.put(
         "completedCycles",
-        executionHistory.stream()
-            .filter(item -> item.getStatus() == GrowthOperatorExecutionStatus.COMPLETED)
-            .count());
+        repository.countByCommercialPlanIdAndStatus(
+            planId, GrowthOperatorExecutionStatus.COMPLETED));
     memory.put(
         "failedCycles",
-        executionHistory.stream()
-            .filter(item -> item.getStatus() == GrowthOperatorExecutionStatus.FAILED)
-            .count());
+        repository.countByCommercialPlanIdAndStatus(planId, GrowthOperatorExecutionStatus.FAILED));
     memory.put("timelineLimit", MEMORY_TIMELINE_LIMIT);
-    memory.put("timelineTruncated", executionHistory.size() > MEMORY_TIMELINE_LIMIT);
+    memory.put("timelineTruncated", totalCycles > MEMORY_TIMELINE_LIMIT);
     memory.put(
         "timeline",
         executionHistory.stream().limit(MEMORY_TIMELINE_LIMIT).map(this::toMemoryItem).toList());
@@ -952,12 +948,14 @@ public class GrowthOperatorService {
 
   /** Calcula a sequencia auditavel do ciclo dentro do planejamento. */
   private int nextCycleNumber(Long planId) {
-    return repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
-            .map(GrowthOperatorExecution::getCycleNumber)
-            .filter(java.util.Objects::nonNull)
-            .max(Integer::compareTo)
-            .orElse(0)
-        + 1;
+    Integer maxCycle = repository.findMaxCycleNumberByCommercialPlanId(planId);
+    return (maxCycle == null ? 0 : maxCycle) + 1;
+  }
+
+  /** Carrega somente a janela usada na memoria operacional de um novo ciclo. */
+  private List<GrowthOperatorExecution> recentHistory(Long planId) {
+    return repository.findByCommercialPlanIdOrderByCreatedAtDesc(
+        planId, PageRequest.of(0, MEMORY_TIMELINE_LIMIT));
   }
 
   /** Indica se um texto possui conteudo util. */

@@ -56,6 +56,13 @@ estrangeiras, retomada após DDL aplicado sem registro, rollback e reaplicação
 bash backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh
 ```
 
+A amostra individual consentida possui fixture física mínima. Ela valida `DATETIME NOT NULL`, chave
+estrangeira, deduplicação por experimento e reaplicação do changelog:
+
+```bash
+bash backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql57.sh
+```
+
 As consultas desse runner declaram `--default-character-set=utf8mb4`. Sem o charset explícito, o
 cliente MySQL 5.7 pode não comparar nomes acentuados como `Dédalo` e `Têmis` com o valor UTF-8
 persistido, produzindo falso positivo ou falso negativo na homologação.

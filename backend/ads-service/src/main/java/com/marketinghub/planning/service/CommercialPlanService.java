@@ -241,27 +241,23 @@ public class CommercialPlanService {
     return values.hasNonNull(field) ? values.get(field).decimalValue() : null;
   }
 
-  /** Lista planos comerciais, com filtro opcional por status. */
-  @Transactional
+  /** Lista planos comerciais sem transformar leitura em sincronizacao de escrita. */
+  @Transactional(readOnly = true)
   public List<CommercialPlan> list(CommercialPlanStatus status) {
-    List<CommercialPlan> plans =
-        status != null
-            ? planRepository.findByStatusOrderByUpdatedAtDesc(status)
-            : planRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
-    return plans.stream().map(this::syncExecution).toList();
+    return status != null
+        ? planRepository.findByStatusOrderByUpdatedAtDesc(status)
+        : planRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
   }
 
-  /** Busca um plano comercial pelo identificador. */
-  @Transactional
+  /** Busca um plano comercial sem atualizar marcos durante requisicoes de leitura. */
+  @Transactional(readOnly = true)
   public CommercialPlan getPlan(Long id) {
-    CommercialPlan plan =
-        planRepository
-            .findById(id)
-            .orElseThrow(
-                () ->
-                    new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
-    return syncExecution(plan);
+    return planRepository
+        .findById(id)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
   }
 
   /**
@@ -278,9 +274,7 @@ public class CommercialPlanService {
     return plan;
   }
 
-  /**
-   * Atualiza o portfolio com experimentos compativeis em execucao sem exigir que o plano possua um.
-   */
+  /** Atualiza o portfolio e os totais executados no comando operacional de sincronizacao. */
   @Transactional
   public CommercialPlan synchronizeAvailableRunningExperiments(Long id) {
     CommercialPlan plan = getPlan(id);
@@ -289,11 +283,11 @@ public class CommercialPlanService {
             .filter(experiment -> belongsToPlan(plan, experiment))
             .toList();
     if (compatible.isEmpty()) {
-      return plan;
+      return syncExecution(plan);
     }
     plan.getExperiments().addAll(compatible);
     plan.setExperiment(compatible.get(0));
-    return planRepository.save(plan);
+    return syncExecution(planRepository.save(plan));
   }
 
   /** Adiciona um experimento compatível ao portfólio de testes do plano. */

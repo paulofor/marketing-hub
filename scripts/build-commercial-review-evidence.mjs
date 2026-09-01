@@ -10,6 +10,8 @@ const EVIDENCE_COLLECTIONS = [
   "executableEvidence",
 ];
 
+const PROMPT_MODES = new Set(["FULL", "ATTESTED_REFERENCE"]);
+
 const FIXED_REVIEW_PATHS = [
   "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
   "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
@@ -100,6 +102,16 @@ async function buildBundle(sourceArgument, destinationArgument) {
       for (const evidence of collection) {
         if (!/^[a-f0-9]{64}$/i.test(evidence?.sha256 ?? "")) {
           throw new Error(`SHA-256 de evidência inválido em ${relativePath}`);
+        }
+        const promptMode = evidence?.promptMode ?? "FULL";
+        if (!PROMPT_MODES.has(promptMode)) {
+          throw new Error(`Modo de prompt inválido em ${relativePath}: ${String(promptMode)}`);
+        }
+        if (
+          promptMode === "ATTESTED_REFERENCE" &&
+          (typeof evidence?.reviewSummary !== "string" || evidence.reviewSummary.trim() === "")
+        ) {
+          throw new Error(`Referência atestada sem resumo verificável em ${relativePath}`);
         }
         paths.add(authorizedRelativePath(evidence?.path));
       }

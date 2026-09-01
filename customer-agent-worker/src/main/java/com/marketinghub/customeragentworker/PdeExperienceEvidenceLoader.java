@@ -26,6 +26,8 @@ final class PdeExperienceEvidenceLoader {
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final String CONTRACT_DIRECTORY = "pde-platform/contracts";
   private static final String BUNDLE_INDEX = "commercial-review-bundle-index-v1.json";
+  private static final String PROMPT_MODE_FULL = "FULL";
+  private static final String PROMPT_MODE_ATTESTED_REFERENCE = "ATTESTED_REFERENCE";
   private static final List<String> COMMERCIAL_EVIDENCE_COLLECTIONS =
       List.of("homologationEvidence", "implementationEvidence", "executableEvidence");
   private static final Pattern MANIFEST_REVISION = Pattern.compile("(?:^|[.-])v([1-9][0-9]*)$");
@@ -113,6 +115,7 @@ final class PdeExperienceEvidenceLoader {
     Map<String, Map<String, Object>> evidence = new LinkedHashMap<>();
     evidence.put(candidate.path(), candidate.evidence());
     Map<String, String> declaredHashes = new LinkedHashMap<>();
+    Map<String, PromptEvidenceDirective> declaredDirectives = new LinkedHashMap<>();
     for (String collectionName : COMMERCIAL_EVIDENCE_COLLECTIONS) {
       JsonNode collection = candidate.contract().path(collectionName);
       if (collection.isMissingNode()) continue;
@@ -130,8 +133,16 @@ final class PdeExperienceEvidenceLoader {
         if (previous != null && !previous.equals(expectedHash)) {
           throw new IOException("Manifesto comercial contém hashes conflitantes: " + relativePath);
         }
+        PromptEvidenceDirective directive = PromptEvidenceDirective.from(declared, relativePath);
+        PromptEvidenceDirective previousDirective =
+            declaredDirectives.putIfAbsent(relativePath, directive);
+        if (previousDirective != null && !previousDirective.equals(directive)) {
+          throw new IOException(
+              "Manifesto comercial contém modos de prompt conflitantes: " + relativePath);
+        }
         Map<String, Object> artifact = readAuthorizedEvidence(relativePath, bundleIndex);
-        evidence.putIfAbsent(relativePath, withBaselineHash(artifact, expectedHash));
+        evidence.putIfAbsent(
+            relativePath, directive.apply(withBaselineHash(artifact, expectedHash)));
       }
     }
     if (declaredHashes.isEmpty()) {
@@ -247,6 +258,35 @@ final class PdeExperienceEvidenceLoader {
   /** Representa o manifesto elegível e sua revisão versionada. */
   private record ManifestCandidate(
       String path, Map<String, Object> evidence, JsonNode contract, int revision) {}
+
+  /** Define como uma prova atestada entra no prompt sem truncamento silencioso. */
+  private record PromptEvidenceDirective(String mode, String reviewSummary) {
+    /** Valida o modo explícito e exige resumo verificável para referência sem conteúdo integral. */
+    private static PromptEvidenceDirective from(JsonNode declared, String relativePath)
+        throws IOException {
+      String mode = declared.path("promptMode").asText(PROMPT_MODE_FULL).trim();
+      String summary = declared.path("reviewSummary").asText("").trim();
+      if (!PROMPT_MODE_FULL.equals(mode) && !PROMPT_MODE_ATTESTED_REFERENCE.equals(mode)) {
+        throw new IOException("Modo de prompt inválido para a prova comercial: " + relativePath);
+      }
+      if (PROMPT_MODE_ATTESTED_REFERENCE.equals(mode) && summary.isBlank()) {
+        throw new IOException(
+            "Prova comercial referenciada sem resumo verificável: " + relativePath);
+      }
+      return new PromptEvidenceDirective(mode, summary);
+    }
+
+    /** Mantém conteúdo integral ou entrega resumo, tamanho e hashes do arquivo atestado. */
+    private Map<String, Object> apply(Map<String, Object> artifact) {
+      Map<String, Object> result = new LinkedHashMap<>(artifact);
+      result.put("promptMode", mode);
+      if (PROMPT_MODE_ATTESTED_REFERENCE.equals(mode)) {
+        result.remove("content");
+        result.put("reviewSummary", reviewSummary);
+      }
+      return java.util.Collections.unmodifiableMap(result);
+    }
+  }
 
   /** Representa a identidade tipada enviada pelo backend para a atividade reservada. */
   private record ReviewTarget(

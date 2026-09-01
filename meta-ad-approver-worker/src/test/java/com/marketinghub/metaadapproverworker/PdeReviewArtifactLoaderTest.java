@@ -419,9 +419,11 @@ class PdeReviewArtifactLoaderTest {
     assertThat(vega)
         .extracting(item -> item.get("path"))
         .contains(
-            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v3.json",
             "pde-platform/frontend/src/App.tsx")
         .doesNotContain(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v2.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");

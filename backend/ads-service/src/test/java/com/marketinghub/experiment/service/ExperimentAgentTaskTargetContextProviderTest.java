@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,13 +74,17 @@ class ExperimentAgentTaskTargetContextProviderTest {
             .name("Kit WhatsApp Pronto")
             .internalName("Rigel")
             .publicUrl("https://produto-generico.example")
-            .pdeExperienceJson("{\"experienceVersion\":\"kit-whatsapp-pronto-pde-v2\"}")
+            .pdeExperienceJson(
+                """
+                {"experienceVersion":"kit-whatsapp-pronto-pde-v2","commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/checkout-v2","offerReference":"checkout-v2","priceBrl":349,"currency":"BRL","billingModel":"ONE_TIME"}}
+                """)
             .build();
     Experiment experiment =
         Experiment.builder()
             .id(89L)
             .product(product)
             .followUpActionUrl("https://landing-rigel.example")
+            .commercialCheckoutUrl("https://checkout-fallback.example/rigel")
             .build();
     PdeProductionSlot slot =
         PdeProductionSlot.builder()
@@ -103,8 +108,47 @@ class ExperimentAgentTaskTargetContextProviderTest {
         provider.resolve("experiment:89", "pde-commercial-homologation-activation").orElseThrow();
 
     assertThat(landing.publicUrl()).isEqualTo("https://landing-rigel.example");
+    assertThat(landing.commercialCheckoutUrl())
+        .isEqualTo("https://checkout-fallback.example/rigel");
     assertThat(pde.publicUrl()).isEqualTo("https://pde-v2-rigel.example");
     assertThat(pde.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+    assertThat(pde.commercialCheckoutProvider()).isEqualTo("PEPPER");
+    assertThat(pde.commercialCheckoutReference()).isEqualTo("checkout-v2");
+    assertThat(pde.commercialCheckoutUrl()).isEqualTo("https://go.pepper.com.br/checkout-v2");
+    assertThat(pde.unitPriceBrl()).isEqualByComparingTo("349.00");
+  }
+
+  /** Bloqueia uma revisão que combine o checkout versionado com preço de outro experimento. */
+  @Test
+  void rejectsVersionedCheckoutWithDivergentExperimentPrice() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    PdeProductionSlotRepository slots = mock(PdeProductionSlotRepository.class);
+    Product product =
+        Product.builder()
+            .id(4L)
+            .slug("metodo-musa-7-dias")
+            .pdeExperienceJson(
+                """
+                {"experienceVersion":"musa-v7","commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/owm6x","offerReference":"owm6x","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"}}
+                """)
+            .build();
+    Experiment experiment =
+        Experiment.builder().id(90L).product(product).unitPrice(new BigDecimal("97.00")).build();
+    when(experiments.findById(90L)).thenReturn(Optional.of(experiment));
+    when(slots.findFirstByProductSlugAndExperienceVersionAndStatusInOrderByPublishedAtDesc(
+            "metodo-musa-7-dias",
+            "musa-v7",
+            java.util.List.of(PdeProductionSlotStatus.READY, PdeProductionSlotStatus.ACTIVE)))
+        .thenReturn(Optional.empty());
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(
+            experiments, products, new ObjectMapper(), slots);
+
+    assertThatThrownBy(
+            () -> provider.resolve("experiment:90", "pde-commercial-homologation-activation"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Preço do alvo comercial diverge");
   }
 
   /** Resolve a landing pelo experimento segregado do plano e recusa vínculo cruzado. */

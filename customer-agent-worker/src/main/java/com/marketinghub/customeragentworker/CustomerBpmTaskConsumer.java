@@ -33,6 +33,7 @@ public class CustomerBpmTaskConsumer {
   private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
   private static final String SERVICE_TIER_EXCEPTION =
       "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
+  private static final int MAX_PROMPT_CHARACTERS = 900_000;
   private static final List<BpmContract> CONTRACTS =
       List.of(
           new BpmContract("creative-production-approval", "customer"),
@@ -219,10 +220,11 @@ public class CustomerBpmTaskConsumer {
       Map<String, Object> task,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
       throws IOException, InterruptedException {
+    PromptComposition prompt = promptComposition(task, visualEvidence);
+    validatePromptSize(prompt.fullPrompt());
     Path output = Files.createTempFile("psique-bpm-result-", ".json");
     Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
-    PromptComposition prompt = promptComposition(task, visualEvidence);
     List<Map<String, Object>> visualAccesses = visualAccessedUrls(visualEvidence);
     Process process = null;
     try {
@@ -326,6 +328,22 @@ public class CustomerBpmTaskConsumer {
       }
     }
     return List.copyOf(command);
+  }
+
+  /** Bloqueia localmente uma entrada sem margem antes que a CLI consuma uma tentativa do modelo. */
+  static void validatePromptSize(String prompt) {
+    if (prompt.length() > MAX_PROMPT_CHARACTERS) {
+      throw new IllegalArgumentException(
+          "Prompt de Psique excede o limite preventivo de "
+              + MAX_PROMPT_CHARACTERS
+              + " caracteres: "
+              + prompt.length());
+    }
+  }
+
+  /** Expõe o teto preventivo somente para testes de contrato do executor. */
+  static int promptCharacterLimit() {
+    return MAX_PROMPT_CHARACTERS;
   }
 
   /**
@@ -463,7 +481,7 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Resolve o contexto e injeta evidência versionada sem depender da sandbox interna do modelo. */
-  private String prompt(
+  String prompt(
       Map<String, Object> task,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
       throws IOException {

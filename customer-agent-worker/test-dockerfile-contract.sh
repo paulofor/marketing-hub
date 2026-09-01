@@ -35,6 +35,13 @@ grep -Fq 'Validate real mobile visual capture' "${workflow}"
 grep -Fq 'Validate full capture with bundled Chromium' "${workflow}"
 grep -Fq 'npm test' "${workflow}"
 grep -Fq 'await chromium.launch' "${workflow}"
+grep -Fq -- '--interactive' "${workflow}"
+grep -Fq -- '--input-type=module' "${workflow}"
+grep -Fq '< customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs' "${workflow}"
+if grep -Fq -- '--volume "$PWD/customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs' "${workflow}"; then
+  echo "[ARQUITETURA] O gate da captura não pode depender de bind mount silenciosamente ausente." >&2
+  exit 1
+fi
 if grep -Fq 'channel: "chromium"' "${workflow}"; then
   echo "[ARQUITETURA] O gate do container deve usar o headless shell compatível com filesystem somente leitura." >&2
   exit 1

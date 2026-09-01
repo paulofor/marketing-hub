@@ -15,9 +15,9 @@ class MusaV7CanonicalProductContractChangelogTest {
   private static final Path CHANGELOG_ROOT = Path.of("src/main/resources/db/changelog");
   private static final Path MASTER_CHANGELOG = CHANGELOG_ROOT.resolve("db.changelog-master.yaml");
   private static final Path CHANGESET =
-      CHANGELOG_ROOT.resolve("changesets/2026-08-24-musa-v7-canonical-product-contract.yaml");
+      CHANGELOG_ROOT.resolve("changesets/2026-09-01-musa-v7-canonical-checkout-binding.yaml");
   private static final Path SQL =
-      CHANGELOG_ROOT.resolve("changesets/2026-08-24-musa-v7-canonical-product-contract.sql");
+      CHANGELOG_ROOT.resolve("changesets/2026-09-01-musa-v7-canonical-checkout-binding.sql");
   private static final Path PDE_FALLBACK =
       Path.of("../../pde-platform/backend/src/main/resources/contracts/musa-v7-product-v1.json");
   private static final Pattern SQL_CONTRACT =
@@ -28,7 +28,7 @@ class MusaV7CanonicalProductContractChangelogTest {
   @Test
   void masterIncludesCanonicalContractCorrectionWithRelativePath() throws IOException {
     String master = Files.readString(MASTER_CHANGELOG);
-    String file = "changesets/2026-08-24-musa-v7-canonical-product-contract.yaml";
+    String file = "changesets/2026-09-01-musa-v7-canonical-checkout-binding.yaml";
 
     assertThat(master)
         .contains("file: " + file)
@@ -62,6 +62,11 @@ class MusaV7CanonicalProductContractChangelogTest {
     assertThat(persisted.path("name").asText())
         .isEqualTo("Método MUSA - Presença Elegante em 7 Dias");
     assertThat(persisted.path("missions")).hasSize(7);
+    assertThat(persisted.path("commercialCheckout").path("provider").asText()).isEqualTo("PEPPER");
+    assertThat(persisted.path("commercialCheckout").path("checkoutUrl").asText())
+        .isEqualTo("https://go.pepper.com.br/owm6x");
+    assertThat(persisted.path("commercialCheckout").path("priceBrl").decimalValue())
+        .isEqualByComparingTo("67.00");
     persisted
         .path("missions")
         .forEach(mission -> assertThat(mission.path("interaction").isObject()).isTrue());

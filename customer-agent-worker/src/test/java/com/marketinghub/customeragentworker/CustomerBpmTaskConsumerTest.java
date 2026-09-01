@@ -232,6 +232,8 @@ class CustomerBpmTaskConsumerTest {
             "fronteira externa esperada",
             "Use `ADJUST` somente para defeito corrigível na candidata local",
             "todos os itens de `gateChecks` em `PASS`",
+            "ATTESTED_REFERENCE",
+            "Não tente reler por shell",
             "visualEvidence",
             "todas as capturas `FOLD`",
             "purchaseEmotion");
@@ -243,6 +245,69 @@ class CustomerBpmTaskConsumerTest {
             CustomerBpmTaskConsumer.supportsContract(
                 "pde-commercial-homologation-activation", "pdeGate"))
         .isFalse();
+  }
+
+  /** Mantém o prompt real da Vega com margem e sem truncar provas funcionais ou visuais. */
+  @Test
+  void composesBoundedVegaCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    Path repository =
+        moduleDirectory.getFileName().toString().equals("customer-agent-worker")
+            ? moduleDirectory.getParent()
+            : moduleDirectory;
+    CustomerBpmTaskConsumer consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000",
+            "codex",
+            "gpt-5.6-sol",
+            "high",
+            repository.toString(),
+            repository.toString(),
+            json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            299L,
+            "sourceReference",
+            "experiment:90",
+            "processCode",
+            "pde-commercial-homologation-activation",
+            "activityId",
+            "humanExperienceReview",
+            "taskTarget",
+            Map.of(
+                "experimentId",
+                90L,
+                "productId",
+                4L,
+                "productSlug",
+                "metodo-musa-7-dias",
+                "experienceVersion",
+                "musa-pde-entry-v7-espelho-antes-de-sair"));
+
+    String prompt = consumer.prompt(task, List.of());
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "musa-v7-commercial-homologation-v3.json",
+            "ATTESTED_REFERENCE",
+            "reviewSummary",
+            "pde-platform/backend/src/main/resources/contracts/musa-v7-product-v1.json",
+            "https://go.pepper.com.br/owm6x");
+    org.assertj.core.api.Assertions.assertThat(prompt.length())
+        .isLessThan(850_000)
+        .isLessThan(CustomerBpmTaskConsumer.promptCharacterLimit());
+  }
+
+  /** Rejeita localmente uma entrada sem margem antes de abrir processo ou consumir modelo. */
+  @Test
+  void rejectsPromptAbovePreventiveCharacterLimit() {
+    assertThatThrownBy(
+            () ->
+                CustomerBpmTaskConsumer.validatePromptSize(
+                    "x".repeat(CustomerBpmTaskConsumer.promptCharacterLimit() + 1)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("limite preventivo");
   }
 
   /** Mantém Psique no escopo da landing sem antecipar o preflight do subprocesso seguinte. */

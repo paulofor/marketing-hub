@@ -181,6 +181,50 @@ class CommercialBpmTaskConsumerTest {
         .isLessThan(CommercialBpmTaskConsumer.promptCharacterLimit());
   }
 
+  /** Mantém também o prompt real da Vega abaixo do teto antes da revisão sucessora. */
+  @Test
+  void composesBoundedVegaCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    Path repository =
+        moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
+            ? moduleDirectory.getParent()
+            : moduleDirectory;
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    CommercialBpmTaskConsumer consumer =
+        new CommercialBpmTaskConsumer(
+            properties, "codex", "gpt-5.6-sol", repository.toString(), repository.toString(), json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            257L,
+            "processCode",
+            "pde-commercial-homologation-activation",
+            "activityId",
+            "commercialIntegrityReview",
+            "taskTarget",
+            Map.of(
+                "experimentId",
+                90L,
+                "productId",
+                4L,
+                "productSlug",
+                "metodo-musa-7-dias",
+                "experienceVersion",
+                "musa-pde-entry-v7-espelho-antes-de-sair"));
+
+    String prompt = consumer.prompt(task);
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "musa-v7-commercial-homologation-v3.json",
+            "ATTESTED_REFERENCE",
+            "reviewSummary",
+            "https://go.pepper.com.br/owm6x");
+    org.assertj.core.api.Assertions.assertThat(prompt.length())
+        .isLessThan(850_000)
+        .isLessThan(CommercialBpmTaskConsumer.promptCharacterLimit());
+  }
+
   /** Rejeita localmente uma entrada sem margem antes de abrir processo ou consumir modelo. */
   @Test
   void rejectsPromptAbovePreventiveCharacterLimit() {

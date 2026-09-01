@@ -79,6 +79,19 @@
     o preço como completamente claro. O schema aceitava 0–100 sem explicar a escala, permitindo a
     interpretação 10/10. O prompt agora define extremos e exige no mínimo 80/100 para aprovação; o
     validator e um teste negativo impedem que uma nota numericamente incoerente libere o gate.
+13. As tarefas #283 e #299 de Psique não chegaram à análise funcional porque repetiam integralmente
+    arquivos amplos já congelados na imagem, produzindo prompts de 1.285.136 e 1.320.451 caracteres.
+    O manifesto v2 passa a distinguir provas funcionais integrais de referências gerais atestadas,
+    e o worker bloqueia localmente qualquer prompt acima de 900.000 caracteres. A retentativa #300
+    abriu o modelo com 472.811 caracteres, preservando conteúdo, resumo, tamanho e hashes auditáveis.
+14. A #300 encontrou o primeiro defeito comercial real depois da compactação: a superfície e a
+    entrega homologadas vendem pela oferta Pepper `owm6x`, enquanto o experimento 90 conservava uma
+    preferência Mercado Pago criada pelo comando administrativo genérico. Foram comparados aceitar
+    a divergência, migrar o produto sem rehomologação e vincular o checkout à versão PDE. A terceira
+    alternativa elimina a causa: o contrato do produto declara provedor, oferta, URL, preço, moeda e
+    cobrança; tarefa, oferta pública e validação administrativa usam esse vínculo antes do fallback.
+    O manifesto v3 congela a implementação e os testes dessa reconciliação sem alterar preço, copy,
+    mídia ou produto entregue.
 
 Os estados `paid`, `refunded` e `chargeback` usados na reconciliação seguem o contrato oficial de
 [status de pagamento da Pepper](https://docs.pepper.com.br/webhooks/status-de-pagamento), e produto,
@@ -103,9 +116,12 @@ valor, moeda e UTMs são confirmados pela
   `utm_content`.
 - Nenhum e-mail real, contato, campanha, publicação, gasto ou venda foi produzido. Endereços de
   teste usam somente `@sandbox.local`.
-- O manifesto final contém 33 evidências íntegras. Os pareceres e sua telemetria ficam no registro
-  separado `musa-v7-commercial-homologation-agent-results.md`, evitando que a saída do próprio
-  revisor altere retroativamente o conjunto de provas que ele recebeu.
+- O manifesto v2 contém 33 evidências íntegras e preserva a entrada exata da tarefa #300. O v3
+  contém 45 evidências e acrescenta o vínculo canônico de checkout e suas provas preventivas para
+  uma nova revisão. Os
+  pareceres e sua telemetria ficam no registro separado
+  `musa-v7-commercial-homologation-agent-results.md`, evitando que a saída do próprio revisor altere
+  retroativamente o conjunto de provas que ele recebeu.
 - O tier Flex foi solicitado aos dois agentes, mas o catálogo do Codex informou que
   `gpt-5.6-sol` não o suporta e omitiu a configuração. As execuções efetivas usaram o tier padrão;
   tentativas sem resposta final não são contabilizadas como custo zero.
@@ -125,6 +141,18 @@ valor, moeda e UTMs são confirmados pela
 - A linha de base permaneceu com zero pagamentos e zero acessos da Vega. Os eventos conhecidos
   eram 126 humanos em 16 sessões, 28 de QA em 3 sessões, 203 suspeitos de automação em 25 sessões e
   27 crawlers em 2 sessões.
+
+## Revalidação corretiva de 2026-09-01
+
+- A superfície `https://v7.clubemusa.com.br/`, o diagnóstico versionado e a oferta Pepper `owm6x`
+  responderam HTTP 200. O diagnóstico confirmou produto, versão, imagem e commit exatos da v7.
+- O `runtime-config.js` produtivo declarou a Pepper como destino efetivamente apresentado à cliente;
+  nenhuma alteração de preço, oferta, campanha, gasto ou comunicação foi necessária.
+- O experimento 90 continuou `PLANNED` e sua URL administrativa Mercado Pago foi preservada como
+  evidência histórica da divergência até a publicação da reconciliação. O novo resolvedor impede que
+  esse fallback antigo seja exposto à cliente ou usado como alvo da revisão versionada.
+- A migração nova atualiza somente o contrato JSON do produto e do slot MUSA v7. O experimento é
+  reconciliado pelo comando oficial da tela, mantendo a operação auditável e idempotente.
 
 ## Métrica e decisão operacional futura
 

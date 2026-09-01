@@ -67,6 +67,15 @@ estrangeira, deduplicação por experimento e reaplicação do changelog:
 bash backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql57.sh
 ```
 
+A homologação comercial MUSA v7 possui fixture física versionada. Ela valida produto e slot com o
+mesmo contrato JSON, identidade do checkout Pepper, reaplicação, rollback da reconciliação financeira
+e compatibilidade real com MySQL 5.7:
+
+```bash
+PDE_LIQUIBASE_PROJECT=<projeto-compose-exclusivo> \
+  bash pde-platform/local-validation/test-musa-v7-liquibase-mysql57.sh
+```
+
 O recrutamento inbound consentido possui fixture própria. Ela valida as três tabelas, todos os
 campos temporais como `DATETIME`, chaves estrangeiras, deduplicação de visita e pessoa, retomada após
 DDL sem ledger, rollback e reaplicação:

@@ -1295,6 +1295,8 @@ class AgentTaskServiceTest {
             "Rigel",
             "kit-whatsapp-pronto-pde-v2",
             null,
+            null,
+            null,
             "https://checkout.example/rigel",
             new BigDecimal("349.00"));
     AgentTaskService service =

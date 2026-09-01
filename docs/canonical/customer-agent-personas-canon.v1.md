@@ -329,6 +329,13 @@ indicado por `--output-last-message`, validada antes do callback e persistida se
 operacional. Saída parcial do processo, mensagens de progresso e diagnóstico nunca podem ser
 tratados como parecer concluído.
 
+Pacotes comerciais amplos devem preservar o conteúdo funcional e as provas específicas integrais.
+Um arquivo redundante só pode entrar como `ATTESTED_REFERENCE` quando o manifesto declarar um
+`reviewSummary` verificável e o worker conservar path, tamanho, checksum, SHA-256 e integridade do
+arquivo completo congelado na imagem. Truncamento silencioso e releitura por shell são proibidos.
+Antes de iniciar o Codex, o worker deve recusar prompts acima de 900.000 caracteres e um teste de
+contrato deve montar o prompt comercial real para impedir recorrência por crescimento do pacote.
+
 Nas atividades BPM de Psique, o worker deve configurar explicitamente o tipo de raciocínio, manter o
 prompt integral resolvido e capturar somente URLs cuja abertura foi confirmada por evento estruturado
 do runtime. Na execução Codex atual, isso significa itens terminais `web_search` com ação

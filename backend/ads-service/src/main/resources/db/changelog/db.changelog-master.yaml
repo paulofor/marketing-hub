@@ -2012,3 +2012,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-30-customer-agent-visual-composition-v4.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-01-musa-v7-canonical-checkout-binding.yaml
+      relativeToChangelogFile: true

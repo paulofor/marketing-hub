@@ -10,6 +10,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -54,6 +55,25 @@ class PublicProductCommercialOfferServiceTest {
     assertThat(offer.salesPageUrl()).isEqualTo("https://kit-whatsapp-pronto.digicomdigital.com.br");
     assertThat(offer.supplierDisplayName()).isEqualTo("Digicom Digital");
     assertThat(offer.termsUrl()).endsWith("/terms");
+  }
+
+  /** Prioriza o checkout da versão PDE quando o experimento conserva um fallback antigo. */
+  @Test
+  void returnsVersionedPdeCheckoutInsteadOfStaleExperimentFallback() {
+    Product product = product();
+    product.setPdeExperienceJson(
+        """
+        {"commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/owm6x","offerReference":"owm6x","priceBrl":349,"currency":"BRL","billingModel":"ONE_TIME"}}
+        """);
+    Experiment experiment = experiment(product);
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(slot()));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+
+    var offer = service().getOffer("kit-whatsapp-pronto");
+
+    assertThat(offer.checkoutUrl()).isEqualTo("https://go.pepper.com.br/owm6x");
   }
 
   /** Impede que a resposta pública volte a expor razão social ou endereço do fornecedor. */
@@ -128,6 +148,7 @@ class PublicProductCommercialOfferServiceTest {
         productRepository,
         slotRepository,
         experimentRepository,
+        new PdeCommercialCheckoutContractResolver(new ObjectMapper()),
         "Digicom Digital",
         "00.000.000/0001-00",
         "teste@sandbox.local");

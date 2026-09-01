@@ -2649,6 +2649,31 @@ Use este checklist quando o problema estiver em algum loop acima:
   anterior e fez o check de Têmis falhar antes dos testes funcionais. A atestação foi atualizada para
   a mesma revisão canônica validada pelo backend, frontend e Hermes; o teste do repositório continua
   bloqueando qualquer alteração futura do cânone sem a atualização explícita do manifesto.
+- **Recorrência de Psique fechada em 2026-09-01:** as tarefas #283 e #299 da Vega receberam,
+  respectivamente, 1.285.136 e 1.320.451 caracteres e falharam antes do primeiro turno. O manifesto
+  v1 transportava integralmente arquivos amplos e redundantes — incluindo o registro global de
+  loops, o shell do frontend e serviços/testes gerais — e Psique ainda não reconhecia o modo
+  `ATTESTED_REFERENCE` já adotado por Têmis. A Vega passa a usar um manifesto v2: contratos,
+  evidências funcionais específicas e pixels permanecem integrais; apenas arquivos gerais entram
+  com resumo explícito, tamanho, checksum e SHA-256 atestado. Psique valida o mesmo contrato e recusa
+  localmente qualquer prompt acima de 900.000 caracteres antes de consumir o modelo. Testes montam
+  o prompt real da Vega e impedem referência sem resumo, truncamento silencioso ou releitura por
+  shell.
+- **Recorrência comercial da Vega fechada em 2026-09-01:** após a compactação, a tarefa #300
+  executou com 472.811 caracteres e encontrou a divergência factual que as tarefas anteriores não
+  alcançavam: a experiência v7 publicada e o pacote homologado usam Pepper `owm6x`, mas o comando
+  genérico de validar checkout havia substituído o experimento 90 por uma preferência Mercado Pago.
+  Foram descartados relaxar Psique e migrar o pagamento sem rehomologação. O contrato versionado do
+  produto passa a declarar provedor, URL, oferta, preço, moeda e cobrança; tarefas, oferta pública e
+  validação administrativa resolvem essa identidade antes do fallback. Assim, validar novamente
+  reconcilia o experimento com o checkout homologado sem criar preferência concorrente. Testes de
+  contrato protegem segregação por processo, preço, HTTPS e ausência de chamada ao provedor fallback.
+- **Prevenção do container fechada em 2026-09-01:** a homologação local detectou que o gate da
+  captura final usava bind mount para injetar o teste na imagem. Quando a origem não era visível ao
+  daemon, o destino virava um diretório vazio e `node --test` encerrava com sucesso executando zero
+  casos. O workflow passa o módulo de teste por stdin, exige modo interativo e executa os dois casos
+  reais no filesystem somente leitura. O contrato do Dockerfile rejeita a volta do bind mount e
+  exige explicitamente o transporte por stdin.
 
 ## LOOP-PSIQUE-ESTETICA-EM-TEXTO-LIVRE — aprovação não comprova equilíbrio visual
 

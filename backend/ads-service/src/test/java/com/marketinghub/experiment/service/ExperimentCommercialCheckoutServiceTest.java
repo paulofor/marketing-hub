@@ -7,11 +7,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -44,7 +46,48 @@ class ExperimentCommercialCheckoutServiceTest {
   void setUp() {
     service =
         new ExperimentCommercialCheckoutService(
-            experimentRepository, productRepository, pdeProductionSlotRepository, paymentsClient);
+            experimentRepository,
+            productRepository,
+            pdeProductionSlotRepository,
+            paymentsClient,
+            new PdeCommercialCheckoutContractResolver(new ObjectMapper()));
+  }
+
+  /** Deve reconciliar o checkout versionado sem criar uma preferência concorrente. */
+  @Test
+  void reconcilesVersionedCheckoutWithoutCallingFallbackProvider() {
+    Product product =
+        Product.builder()
+            .id(4L)
+            .slug("metodo-musa-7-dias")
+            .name("Método MUSA")
+            .pdeExperienceJson(
+                """
+                {"commercialCheckout":{"provider":"PEPPER","checkoutUrl":"https://go.pepper.com.br/owm6x","offerReference":"owm6x","priceBrl":67,"currency":"BRL","billingModel":"ONE_TIME"}}
+                """)
+            .build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(90L)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .unitPrice(new BigDecimal("67.00"))
+            .commercialCheckoutUrl("https://mercadopago.example/preferencia-antiga")
+            .followUpActionUrl("https://v7.clubemusa.com.br")
+            .build();
+    PdeProductionSlot slot = activeSlot("v7", "https://v7.clubemusa.com.br", 90L);
+    when(experimentRepository.findById(90L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(slot));
+
+    var response = service.create(90L);
+
+    assertThat(response.preferenceId()).isEqualTo("owm6x");
+    assertThat(response.checkoutUrl()).isEqualTo("https://go.pepper.com.br/owm6x");
+    assertThat(experiment.getCommercialCheckoutUrl()).isEqualTo(response.checkoutUrl());
+    verify(paymentsClient, never()).createCommercialProductCheckout(any());
+    verify(productRepository).save(product);
+    verify(experimentRepository).save(experiment);
   }
 
   /** Deve criar checkout de R$ 349 somente após existir uma entrega PDE validada. */

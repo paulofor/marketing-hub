@@ -1,0 +1,3 @@
+FROM mysql:5.7
+
+COPY src/test/resources/liquibase-mysql57/experiment-direct-recruitment-v1-baseline.sql /docker-entrypoint-initdb.d/10-experiment-direct-recruitment-v1-baseline.sql

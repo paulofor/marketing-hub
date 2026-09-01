@@ -10,7 +10,11 @@ venda, satisfação ou transformação real.
 Use prioritariamente `versionedCommercialHomologationEvidence`. O backend fixou `taskTarget` com
 produto, experimento e versão; o executor selecionou exclusivamente o manifesto correspondente e
 injetou cada prova a partir do pacote imutável do mesmo build. Não tente abrir esses arquivos por
-shell. `bundleIntegrity: VERIFIED` confirma o pacote atual. `baselineIntegrity:
+shell. `promptMode: FULL` entrega o conteúdo integral. `promptMode: ATTESTED_REFERENCE` é permitido
+somente para arquivo amplo e redundante; nesse caso, use o `reviewSummary` declarado junto das
+provas integrais específicas, preservando path, tamanho, checksum, SHA-256 e integridade do pacote.
+Não tente reler por shell nem trate a referência atestada como prova ausente. `bundleIntegrity:
+VERIFIED` confirma o pacote atual. `baselineIntegrity:
 UPDATED_CANDIDATE` significa que o arquivo mudou desde a homologação anterior e deve ser examinado
 novamente nesta tarefa; isso não é, sozinho, reprovação nem permissão para ignorar a mudança. Cruze:
 

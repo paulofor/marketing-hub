@@ -959,7 +959,8 @@ components:
         activityName: { type: string }
         status:
           type: string
-          enum: [NOT_STARTED, PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]
+          enum:
+            [NOT_STARTED, PENDING, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]
         tasks:
           type: array
           items:
@@ -969,6 +970,9 @@ components:
       required:
         [
           taskId,
+          processDefinitionId,
+          processVersionNumber,
+          sourceReference,
           status,
           assignedAgentKey,
           assignedAgentNickname,
@@ -978,6 +982,9 @@ components:
         ]
       properties:
         taskId: { type: integer, format: int64 }
+        processDefinitionId: { type: integer, format: int64 }
+        processVersionNumber: { type: integer }
+        sourceReference: { type: string }
         status: { type: string }
         assignedAgentKey: { type: string }
         assignedAgentNickname: { type: string }
@@ -991,7 +998,18 @@ components:
         estimatedCostUsd: { type: number, nullable: true }
         costEstimationStatus: { type: string }
         modelCode: { type: string, nullable: true }
-        executionMode: { type: string, nullable: true }
+        executionMode:
+          type: string
+          nullable: true
+          enum: [MODEL, DETERMINISTIC, NOT_STARTED]
+        reasoningEffort: { type: string, nullable: true }
+        productInternalName:
+          type: string
+          nullable: true
+          description: Permanece nulo em uma execução independente sem vínculo artificial a produto.
+        promptSent: { type: string, nullable: true }
+        agentPromptPart: { type: string, nullable: true }
+        activityPromptPart: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
         startedAt: { type: string, format: date-time, nullable: true }
         finishedAt: { type: string, format: date-time, nullable: true }
@@ -1038,17 +1056,13 @@ components:
       properties:
         sourceCode: { type: string, enum: [WEB, META, PESQUISAS, MARKETPLACE] }
         label: { type: string }
-        status: { type: string, enum: [IN_PROGRESS, OBSERVED, MISSING, BLOCKED] }
+        status:
+          { type: string, enum: [IN_PROGRESS, OBSERVED, MISSING, BLOCKED] }
         itemCount: { type: integer, minimum: 0 }
         summary: { type: string }
     IndependentBusinessProcessMarketExpansion:
       type: object
-      required:
-        [
-          attemptsCompleted,
-          maxAttempts,
-          attempts,
-        ]
+      required: [attemptsCompleted, maxAttempts, attempts]
       properties:
         strategyCode: { type: string, nullable: true }
         attemptsCompleted: { type: integer, minimum: 1, maximum: 3 }
@@ -1128,7 +1142,8 @@ components:
         maturity:
           type: string
           enum: [SIGNAL, RESEARCHABLE, DOSSIER_READY, HUMAN_REVIEW, REJECTED]
-        decision: { type: string, enum: [APPROVE, RESEARCH_MORE, HUMAN_REVIEW, REJECT] }
+        decision:
+          { type: string, enum: [APPROVE, RESEARCH_MORE, HUMAN_REVIEW, REJECT] }
         purchaseSituation: { type: string, nullable: true }
         observedLanguage: { type: array, items: { type: string } }
         currentAlternatives: { type: array, items: { type: string } }
@@ -1162,7 +1177,8 @@ components:
       type: object
       required: [stageCode, label, agent, status]
       properties:
-        stageCode: { type: string, enum: [ARGOS, ATENA, PLUTUS, DEDALO, PRODUCT] }
+        stageCode:
+          { type: string, enum: [ARGOS, ATENA, PLUTUS, DEDALO, PRODUCT] }
         label: { type: string }
         agent: { type: string }
         status: { type: string }

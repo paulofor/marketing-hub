@@ -6,12 +6,15 @@ import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver.CanonicalCheckout;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,6 +46,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   private final PdeProductionSlotRepository productionSlots;
   private final CommercialPlanRepository commercialPlans;
   private final ObjectMapper objectMapper;
+  private final PdeCommercialCheckoutContractResolver checkoutResolver;
 
   /** Configura as fontes canônicas de experimento, produto e contrato PDE. */
   @Autowired
@@ -51,18 +55,26 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       ProductRepository products,
       ObjectMapper objectMapper,
       PdeProductionSlotRepository productionSlots,
-      CommercialPlanRepository commercialPlans) {
+      CommercialPlanRepository commercialPlans,
+      PdeCommercialCheckoutContractResolver checkoutResolver) {
     this.experiments = experiments;
     this.products = products;
     this.objectMapper = objectMapper;
     this.productionSlots = productionSlots;
     this.commercialPlans = commercialPlans;
+    this.checkoutResolver = checkoutResolver;
   }
 
   /** Mantém testes focados na identidade comercial sem exigir catálogo de slots produtivos. */
   ExperimentAgentTaskTargetContextProvider(
       ExperimentRepository experiments, ProductRepository products, ObjectMapper objectMapper) {
-    this(experiments, products, objectMapper, null, null);
+    this(
+        experiments,
+        products,
+        objectMapper,
+        null,
+        null,
+        new PdeCommercialCheckoutContractResolver(objectMapper));
   }
 
   /** Permite testar a resolução versionada do slot sem carregar um plano comercial. */
@@ -71,7 +83,29 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       ProductRepository products,
       ObjectMapper objectMapper,
       PdeProductionSlotRepository productionSlots) {
-    this(experiments, products, objectMapper, productionSlots, null);
+    this(
+        experiments,
+        products,
+        objectMapper,
+        productionSlots,
+        null,
+        new PdeCommercialCheckoutContractResolver(objectMapper));
+  }
+
+  /** Permite testar a resolução por plano usando o mesmo contrato canônico de checkout. */
+  ExperimentAgentTaskTargetContextProvider(
+      ExperimentRepository experiments,
+      ProductRepository products,
+      ObjectMapper objectMapper,
+      PdeProductionSlotRepository productionSlots,
+      CommercialPlanRepository commercialPlans) {
+    this(
+        experiments,
+        products,
+        objectMapper,
+        productionSlots,
+        commercialPlans,
+        new PdeCommercialCheckoutContractResolver(objectMapper));
   }
 
   /** Resolve somente referências explícitas e nunca usa nome livre da tarefa como identidade. */
@@ -143,6 +177,8 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     }
     String experienceVersion = experienceVersion(product);
     if (blank(experienceVersion)) return Optional.empty();
+    Optional<CanonicalCheckout> canonicalCheckout =
+        canonicalCheckout(experiment, product, processCode);
     return Optional.of(
         new AgentTaskTargetResponse(
             sourceReference,
@@ -153,8 +189,35 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
             product.getInternalName(),
             experienceVersion,
             publicUrl(experiment, product, experienceVersion, processCode),
-            experiment == null ? null : experiment.getCommercialCheckoutUrl(),
-            experiment == null ? product.getCurrentPriceBrl() : experiment.getUnitPrice()));
+            canonicalCheckout.map(CanonicalCheckout::provider).orElse(null),
+            canonicalCheckout.map(CanonicalCheckout::offerReference).orElse(null),
+            canonicalCheckout
+                .map(CanonicalCheckout::checkoutUrl)
+                .orElse(experiment == null ? null : experiment.getCommercialCheckoutUrl()),
+            commercialPrice(experiment, product, canonicalCheckout)));
+  }
+
+  /** Usa o preço da versão PDE e bloqueia qualquer experimento comercial divergente. */
+  private BigDecimal commercialPrice(
+      Experiment experiment, Product product, Optional<CanonicalCheckout> canonicalCheckout) {
+    BigDecimal fallback =
+        experiment == null ? product.getCurrentPriceBrl() : experiment.getUnitPrice();
+    if (canonicalCheckout.isEmpty()) return fallback;
+    BigDecimal canonicalPrice = canonicalCheckout.orElseThrow().priceBrl();
+    if (fallback != null && fallback.compareTo(canonicalPrice) != 0) {
+      throw new IllegalStateException(
+          "Preço do alvo comercial diverge do checkout versionado do contrato PDE");
+    }
+    return canonicalPrice;
+  }
+
+  /** Usa o checkout da mesma versão PDE somente nos processos que revisam essa experiência. */
+  private Optional<CanonicalCheckout> canonicalCheckout(
+      Experiment experiment, Product product, String processCode) {
+    if (processCode != null && VERSIONED_PDE_VISUAL_PROCESSES.contains(processCode)) {
+      return checkoutResolver.resolve(product);
+    }
+    return Optional.empty();
   }
 
   /** Resolve a tela exata do PDE ou mantém a landing própria do experimento conforme o processo. */

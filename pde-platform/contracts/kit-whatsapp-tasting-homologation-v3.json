@@ -129,7 +129,7 @@
     },
     {
       "path": "docs/canonical/pde-platform-canon.v1.md",
-      "sha256": "22c8d3d1794f134f395ce9cc4637013b1fbe466308f59a97d28e74f9e3fbbaeb",
+      "sha256": "e9092001b8a4ee6abafff42a0c7c2f55d20e08306e10805b8f4ac95a8a59a9ed",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "O backend é a fonte dos marcos comerciais; compra, entrega, primeira utilização e conclusão permanecem distintos, idempotentes, versionados e com QA segregado."
     },
@@ -276,7 +276,7 @@
     },
     {
       "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/PdeReviewArtifactLoaderTest.java",
-      "sha256": "a7c5af6325cb99b702d1d5428bca03766d3c16bafec11fb98c31a57b0f24baf3",
+      "sha256": "7b739416edeb6185afd99e2bc8d27a996689391226dd06cfd74bf7ae5749e26b",
       "proves": [
         "Têmis seleciona somente o manifesto v3 atual e preserva v1/v2 como históricos",
         "hash posterior ao build bloqueia a revisão"

@@ -1,0 +1,426 @@
+openapi: 3.0.3
+info:
+  title: Recrutamento direto consentido
+  version: 1.0.0
+  description: >-
+    Prepara, aprova e mede convites inbound para formar a amostra de um experimento
+    DIRECT_ONE_TO_ONE sem persistir telefone ou e-mail em claro.
+paths:
+  /api/experiments/{experimentId}/direct-recruitment:
+    get:
+      summary: Consulta a atividade e seu funil auditável
+      parameters:
+        - $ref: "#/components/parameters/ExperimentId"
+      responses:
+        "200":
+          description: Estado atual ou próxima ação NOT_CREATED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "409":
+          description: Experimento não usa DIRECT_ONE_TO_ONE
+        "412":
+          description: Oferta pública canônica indisponível ou divergente
+  /api/experiments/{experimentId}/direct-recruitment/draft:
+    post:
+      summary: Cria o rascunho versionado sem publicá-lo externamente
+      parameters:
+        - $ref: "#/components/parameters/ExperimentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [createdBy]
+              properties:
+                createdBy:
+                  type: string
+                  maxLength: 100
+      responses:
+        "200":
+          description: Rascunho preparado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "409":
+          description: Rascunho já existente ou experimento incompatível
+  /api/experiments/{experimentId}/direct-recruitment/activate:
+    post:
+      summary: Ativa a URL após aprovação humana sem distribuir conteúdo
+      parameters:
+        - $ref: "#/components/parameters/ExperimentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approvedBy, approvalConfirmed]
+              properties:
+                approvedBy:
+                  type: string
+                  maxLength: 100
+                approvalConfirmed:
+                  type: boolean
+                  enum: [true]
+      responses:
+        "200":
+          description: Convite ativo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+        "409":
+          description: Estado do convite, experimento ou amostra impede ativação
+  /api/experiments/{experimentId}/direct-recruitment/pause:
+    post:
+      summary: Pausa novas adesões e preserva o histórico
+      parameters:
+        - $ref: "#/components/parameters/ExperimentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pausedBy, reason]
+              properties:
+                pausedBy:
+                  type: string
+                  maxLength: 100
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Convite pausado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Campaign"
+  /api/public/direct-recruitments/{token}:
+    get:
+      summary: Consulta o convite sem liberar a URL da oferta
+      parameters:
+        - $ref: "#/components/parameters/PublicToken"
+      responses:
+        "200":
+          description: Conteúdo e disponibilidade persistida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicCampaign"
+        "404":
+          description: Token inválido ou inexistente
+  /api/public/direct-recruitments/{token}/visits:
+    post:
+      summary: Registra uma visita única pseudonimizada
+      parameters:
+        - $ref: "#/components/parameters/PublicToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisitRequest"
+      responses:
+        "200":
+          description: Contagem idempotente da visita
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [counted, uniqueVisits]
+                properties:
+                  counted:
+                    type: boolean
+                  uniqueVisits:
+                    type: integer
+                    format: int64
+  /api/public/direct-recruitments/{token}/submissions:
+    post:
+      summary: Qualifica a adesão e registra contato consentido quando aderente
+      parameters:
+        - $ref: "#/components/parameters/PublicToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionRequest"
+      responses:
+        "200":
+          description: Resultado idempotente; offerUrl existe somente para QUALIFIED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "400":
+          description: Consentimento ou payload inválido
+        "409":
+          description: Convite fechado, amostra completa ou pessoa duplicada
+components:
+  parameters:
+    ExperimentId:
+      name: experimentId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    PublicToken:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Campaign:
+      type: object
+      required:
+        - experimentId
+        - status
+        - contractVersion
+        - headline
+        - bodyText
+        - consentVersion
+        - targetContacts
+        - remainingContacts
+        - uniqueVisits
+        - submissions
+        - qualifiedSubmissions
+        - recordedContacts
+        - connectedOrganicAccounts
+        - privacyPolicyUrl
+        - acquisitionStatus
+        - distributionGuidance
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+        experimentId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        status:
+          type: string
+          enum: [NOT_CREATED, DRAFT, ACTIVE, PAUSED, COMPLETED]
+        contractVersion:
+          type: string
+          example: direct-recruitment-v1
+        headline:
+          type: string
+        bodyText:
+          type: string
+        audienceSummary:
+          type: string
+        consentText:
+          type: string
+        consentVersion:
+          type: string
+        offerUrl:
+          type: string
+          format: uri
+        offerCta:
+          type: string
+        privacyPolicyUrl:
+          type: string
+          format: uri
+        publicPath:
+          type: string
+          nullable: true
+        targetContacts:
+          type: integer
+        remainingContacts:
+          type: integer
+          format: int64
+        uniqueVisits:
+          type: integer
+          format: int64
+        submissions:
+          type: integer
+          format: int64
+        qualifiedSubmissions:
+          type: integer
+          format: int64
+        notQualifiedSubmissions:
+          type: integer
+          format: int64
+        recordedContacts:
+          type: integer
+          format: int64
+        connectedOrganicAccounts:
+          type: integer
+          format: int64
+        acquisitionStatus:
+          type: string
+          enum:
+            - NOT_CREATED
+            - DRAFT_REQUIRES_APPROVAL
+            - ACTIVE_WITHOUT_DISTRIBUTION
+            - READY_FOR_ORGANIC_DISTRIBUTION
+            - PAUSED
+            - SAMPLE_COMPLETE
+        distributionGuidance:
+          type: string
+    PublicCampaign:
+      type: object
+      required:
+        - token
+        - experimentId
+        - status
+        - acceptingSubmissions
+        - productName
+        - headline
+        - bodyText
+        - audienceSummary
+        - consentText
+        - consentVersion
+        - privacyPolicyUrl
+        - targetContacts
+        - remainingContacts
+        - availabilityMessage
+      properties:
+        token:
+          type: string
+          format: uuid
+        experimentId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, PAUSED, COMPLETED]
+        acceptingSubmissions:
+          type: boolean
+        productName:
+          type: string
+        headline:
+          type: string
+        bodyText:
+          type: string
+        audienceSummary:
+          type: string
+        consentText:
+          type: string
+        consentVersion:
+          type: string
+        privacyPolicyUrl:
+          type: string
+          format: uri
+        targetContacts:
+          type: integer
+        remainingContacts:
+          type: integer
+          format: int64
+        availabilityMessage:
+          type: string
+    VisitRequest:
+      type: object
+      required: [visitorFingerprint]
+      properties:
+        visitorFingerprint:
+          type: string
+          pattern: "^[0-9a-fA-F]{64}$"
+        utmSource:
+          type: string
+          maxLength: 100
+        utmMedium:
+          type: string
+          maxLength: 100
+        utmCampaign:
+          type: string
+          maxLength: 100
+        utmContent:
+          type: string
+          maxLength: 100
+    SubmissionRequest:
+      type: object
+      required:
+        - contactFingerprint
+        - submissionKey
+        - serviceSegment
+        - weeklyConversationsRange
+        - usesWhatsapp
+        - decisionMaker
+        - wantsPersonalizedImplementation
+        - consentAccepted
+        - consentVersion
+      properties:
+        contactFingerprint:
+          type: string
+          pattern: "^[0-9a-fA-F]{64}$"
+        submissionKey:
+          type: string
+          format: uuid
+        serviceSegment:
+          type: string
+          enum:
+            [
+              BEAUTY_WELLNESS,
+              CONSULTING,
+              HOME_SERVICES,
+              HEALTH,
+              EDUCATION,
+              OTHER_SERVICE,
+            ]
+        weeklyConversationsRange:
+          type: string
+          enum: [ONE_TO_TEN, ELEVEN_TO_THIRTY, OVER_THIRTY]
+        usesWhatsapp:
+          type: boolean
+        decisionMaker:
+          type: boolean
+        wantsPersonalizedImplementation:
+          type: boolean
+        consentAccepted:
+          type: boolean
+          enum: [true]
+        consentVersion:
+          type: string
+        utmSource:
+          type: string
+          maxLength: 100
+        utmMedium:
+          type: string
+          maxLength: 100
+        utmCampaign:
+          type: string
+          maxLength: 100
+        utmContent:
+          type: string
+          maxLength: 100
+    SubmissionResponse:
+      type: object
+      required:
+        - submissionId
+        - status
+        - qualified
+        - message
+        - remainingContacts
+        - sampleComplete
+      properties:
+        submissionId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [QUALIFIED, NOT_QUALIFIED]
+        qualified:
+          type: boolean
+        message:
+          type: string
+        offerUrl:
+          type: string
+          format: uri
+          nullable: true
+        remainingContacts:
+          type: integer
+          format: int64
+        sampleComplete:
+          type: boolean

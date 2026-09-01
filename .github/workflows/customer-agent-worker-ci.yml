@@ -92,14 +92,14 @@ jobs:
             'import { chromium } from "playwright-core"; const browser = await chromium.launch({headless: true, args: ["--no-sandbox"]}); console.log(await browser.version()); await browser.close();'
       - name: Validate full capture with bundled Chromium
         run: |
-          docker run --rm --init --read-only \
+          docker run --rm --init --read-only --interactive \
             --tmpfs /tmp:size=256m,noexec,nosuid \
             --security-opt no-new-privileges:true \
             --env CUSTOMER_AGENT_BPM_VISUAL_SCRIPT=/app/browser/bpm-visual-evidence.mjs \
-            --volume "$PWD/customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs:/app/bpm-visual-evidence.test.mjs:ro" \
             --entrypoint node \
             marketing-hub/customer-agent-worker:${{ github.sha }} \
-            --test /app/bpm-visual-evidence.test.mjs
+            --input-type=module \
+            < customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs
 
   deploy:
     name: Deploy worker

@@ -6,7 +6,7 @@ const contractUrl = new URL(
   import.meta.url,
 );
 const outputUrl = new URL(
-  "../backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-24-musa-v7-canonical-product-contract.sql",
+  "../backend/ads-service/src/main/resources/db/changelog/changesets/2026-09-01-musa-v7-canonical-checkout-binding.sql",
   import.meta.url,
 );
 
@@ -30,6 +30,20 @@ if (!Array.isArray(contract.missions) || contract.missions.length !== 7) {
 }
 if (contract.missions.some((mission) => !mission.interaction)) {
   throw new Error("Toda missão MUSA v7 deve possuir interação canônica");
+}
+const expectedCheckout = {
+  provider: "PEPPER",
+  checkoutUrl: "https://go.pepper.com.br/owm6x",
+  offerReference: "owm6x",
+  priceBrl: 67,
+  currency: "BRL",
+  billingModel: "ONE_TIME",
+};
+if (
+  JSON.stringify(contract.commercialCheckout) !==
+  JSON.stringify(expectedCheckout)
+) {
+  throw new Error("Contrato MUSA v7 diverge do checkout Pepper homologado");
 }
 
 const sqlLiteral = JSON.stringify(contract).replaceAll("'", "''");

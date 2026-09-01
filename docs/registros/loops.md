@@ -2649,6 +2649,31 @@ Use este checklist quando o problema estiver em algum loop acima:
   anterior e fez o check de Têmis falhar antes dos testes funcionais. A atestação foi atualizada para
   a mesma revisão canônica validada pelo backend, frontend e Hermes; o teste do repositório continua
   bloqueando qualquer alteração futura do cânone sem a atualização explícita do manifesto.
+- **Recorrência de Psique fechada em 2026-09-01:** as tarefas #283 e #299 da Vega receberam,
+  respectivamente, 1.285.136 e 1.320.451 caracteres e falharam antes do primeiro turno. O manifesto
+  v1 transportava integralmente arquivos amplos e redundantes — incluindo o registro global de
+  loops, o shell do frontend e serviços/testes gerais — e Psique ainda não reconhecia o modo
+  `ATTESTED_REFERENCE` já adotado por Têmis. A Vega passa a usar um manifesto v2: contratos,
+  evidências funcionais específicas e pixels permanecem integrais; apenas arquivos gerais entram
+  com resumo explícito, tamanho, checksum e SHA-256 atestado. Psique valida o mesmo contrato e recusa
+  localmente qualquer prompt acima de 900.000 caracteres antes de consumir o modelo. Testes montam
+  o prompt real da Vega e impedem referência sem resumo, truncamento silencioso ou releitura por
+  shell.
+- **Recorrência comercial da Vega fechada em 2026-09-01:** após a compactação, a tarefa #300
+  executou com 472.811 caracteres e encontrou a divergência factual que as tarefas anteriores não
+  alcançavam: a experiência v7 publicada e o pacote homologado usam Pepper `owm6x`, mas o comando
+  genérico de validar checkout havia substituído o experimento 90 por uma preferência Mercado Pago.
+  Foram descartados relaxar Psique e migrar o pagamento sem rehomologação. O contrato versionado do
+  produto passa a declarar provedor, URL, oferta, preço, moeda e cobrança; tarefas, oferta pública e
+  validação administrativa resolvem essa identidade antes do fallback. Assim, validar novamente
+  reconcilia o experimento com o checkout homologado sem criar preferência concorrente. Testes de
+  contrato protegem segregação por processo, preço, HTTPS e ausência de chamada ao provedor fallback.
+- **Prevenção do container fechada em 2026-09-01:** a homologação local detectou que o gate da
+  captura final usava bind mount para injetar o teste na imagem. Quando a origem não era visível ao
+  daemon, o destino virava um diretório vazio e `node --test` encerrava com sucesso executando zero
+  casos. O workflow passa o módulo de teste por stdin, exige modo interativo e executa os dois casos
+  reais no filesystem somente leitura. O contrato do Dockerfile rejeita a volta do bind mount e
+  exige explicitamente o transporte por stdin.
 
 ## LOOP-PSIQUE-ESTETICA-EM-TEXTO-LIVRE — aprovação não comprova equilíbrio visual
 
@@ -2842,6 +2867,24 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
   `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
 
+## LOOP-IRIS-CODEX-AUTH-PENDING-SEM-TIMEOUT — reconexão não sai de REQUESTED
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** a reconexão `#21` de Íris permaneceu em `REQUESTED`, sem URL, código
+  temporário ou `started_at`, embora o container estivesse saudável e consultasse as filas de
+  trabalho do backend.
+- **Causa-raiz confirmada no processo, banco e histórico:** o dump da JVM mostrou a thread
+  `scheduling-2` bloqueada dentro de `CodexAuthReconnectScheduler.processPending`, aguardando uma
+  chamada HTTP sem timeout desde a janela em que o backend sofreu lentidão. A outra thread continuou
+  consultando trabalho, mascarando a falha específica da reconexão.
+- **Correção sistêmica:** a porta HTTP da reconexão passa a limitar conexão e leitura, liberando a
+  rotina para tentar novamente no próximo ciclo. Os callbacks do device code e da confirmação passam
+  a tolerar até três falhas transitórias sem reiniciar o OAuth e são serializados para a confirmação
+  nunca ultrapassar a persistência do código temporário.
+- **Prevenção:** teste do worker simula backend que aceita a conexão e não responde, exigindo retorno
+  limitado; o teste do App Server exige recuperação de falha transitória tanto no device code quanto
+  na conclusão, sem transportar credenciais.
+
 ## LOOP-ACTIONS-DEPLOY-HOST-COMPARTILHADO-CANCELADO — serviços válidos somem da fila
 
 - **Data:** 2026-09-01.
@@ -2936,6 +2979,29 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes cobrem canal, estado, temporalidade, duplicidade, teto, concorrência, gate BPM,
   MCP, privacidade e interface. A matriz local separa contato, checkout, pagamento, entrega e venda e
   proíbe dados produtivos sintéticos.
+
+## LOOP-HERMES-AMOSTRA-SEM-AQUISICAO — placar correto depende de lista inexistente
+
+- **Data:** 2026-09-01.
+- **Sintoma:** o Rigel permaneceu corretamente em 0/15, mas a orientação operacional exigia que uma
+  pessoa listasse, obtivesse consentimento e abordasse quinze prestadores fora do Marketing Hub. O
+  sistema sabia validar contatos existentes, mas não tinha como formar a própria amostra.
+- **Causa-raiz confirmada no código, banco e histórico:** a correção anterior fechou somente o lado
+  downstream do funil. As tabelas de contato direto, lead, submissão do Lead Portal, conta WhatsApp e
+  mensagem WhatsApp permaneciam vazias; também não havia conta social orgânica conectada. Portanto,
+  não existia lista própria que pudesse ser reutilizada nem etapa persistida de convite, visita,
+  qualificação e adesão.
+- **Correção sistêmica:** `task-2` passa a conter uma atividade de aquisição inbound versionada. O
+  backend prepara a comunicação a partir da oferta canônica, exige aprovação humana, expõe link
+  público opaco, deduplica visitas, qualifica o prestador por regras determinísticas e converte
+  somente a adesão consentida em contato oficial. A oferta é liberada na própria sessão, sem guardar
+  telefone ou e-mail em claro.
+- **Limite operacional:** ativação não publica post, não envia mensagem e não cria campanha ou gasto.
+  O painel separa o estado `ACTIVE_WITHOUT_DISTRIBUTION` de uma distribuição real e exige canal
+  orgânico conectado; mídia paga continua dependendo de outro experimento e autorização explícita.
+- **Prevenção:** a matriz ponta a ponta cobre aprovação, privacidade, duplicidade, limite 15/15,
+  qualificação, métricas separadas, falha de dependência e navegadores. O Swagger e o cânone impedem
+  que visita, publicação, adesão não qualificada ou impacto estimado virem contato ou venda.
 
 ## LOOP-HERMES-HISTORICO-LONGTEXT-SEM-LIMITE — leitura esgota o backend e trava filas
 

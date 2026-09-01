@@ -151,6 +151,13 @@ O checkout externo deve:
 
 Pepper é a preferência inicial para automação. Mercado Pago pode ser fallback.
 
+Quando uma versão PDE já possui checkout homologado, o contrato canônico persistido do produto deve
+declarar `commercialCheckout` com provedor, URL HTTPS, referência da oferta, preço, moeda e modelo de
+cobrança. Esse vínculo versionado prevalece para a oferta pública, para as tarefas de homologação e
+para o comando administrativo de validar checkout. O comando não pode criar ou substituir por um
+fallback de outro provedor enquanto esse vínculo estiver válido; deve reconciliar o experimento com
+a mesma identidade comercial da experiência publicada.
+
 O webhook público é somente um aviso de que uma transação pode ter mudado de estado. Antes de
 liberar acesso, o backend PDE deve consultar o provedor pela identificação exata da transação e
 confirmar, no retorno autenticado do provedor, status pago e oferta autorizada. Para oferta de preço

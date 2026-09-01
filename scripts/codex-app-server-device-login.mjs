@@ -5,6 +5,8 @@ import readline from 'node:readline';
 
 const command = process.env.CODEX_APP_SERVER_COMMAND || 'codex';
 const timeoutMs = Number.parseInt(process.env.CODEX_DEVICE_LOGIN_TIMEOUT_MS || '900000', 10);
+const callbackAttempts = Number.parseInt(process.env.CODEX_AUTH_CALLBACK_ATTEMPTS || '3', 10);
+const callbackRetryDelayMs = Number.parseInt(process.env.CODEX_AUTH_CALLBACK_RETRY_DELAY_MS || '1000', 10);
 const child = spawn(command, ['app-server', '--listen', 'stdio://'], {
   env: process.env,
   stdio: ['pipe', 'pipe', 'inherit'],
@@ -16,16 +18,39 @@ let loginId;
 let finished = false;
 const reconnectId = process.env.CODEX_AUTH_RECONNECT_ID;
 const callbackBaseUrl = (process.env.CODEX_AUTH_CALLBACK_BASE_URL || '').replace(/\/$/, '');
+let resolveDeviceCodeRegistration;
+let rejectDeviceCodeRegistration;
+const deviceCodeRegistration = new Promise((resolve, reject) => {
+  resolveDeviceCodeRegistration = resolve;
+  rejectDeviceCodeRegistration = reject;
+});
+deviceCodeRegistration.catch(() => {});
 
 async function callback(path, body) {
   if (!reconnectId || !callbackBaseUrl) return;
-  const response = await fetch(`${callbackBaseUrl}/api/internal/agents/executor-health/codex-auth/reconnections/${reconnectId}/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!response.ok) throw new Error(`Backend recusou callback de autenticação (${response.status})`);
+  const url = `${callbackBaseUrl}/api/internal/agents/executor-health/codex-auth/reconnections/${reconnectId}/${path}`;
+  let lastError;
+  for (let attempt = 1; attempt <= callbackAttempts; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (response.ok) return;
+      lastError = new Error(`Backend recusou callback ${path} (${response.status})`);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < callbackAttempts) await delay(callbackRetryDelayMs * attempt);
+  }
+  throw new Error(`Falha ao registrar ${path} no backend apos ${callbackAttempts} tentativas: ${lastError?.message || 'erro desconhecido'}`);
+}
+
+/** Aguarda entre callbacks transitórios sem reiniciar ou duplicar o fluxo OAuth. */
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function request(method, params) {
@@ -69,6 +94,7 @@ lines.on('line', async (line) => {
     return;
   }
   try {
+    await deviceCodeRegistration;
     const account = await request('account/read', { refreshToken: false });
     const authMode = account.account?.type || account.authMode;
     if (!authMode) throw new Error('Codex App Server não confirmou a conta autenticada');
@@ -100,8 +126,10 @@ try {
     throw new Error('Codex App Server não devolveu URL e código de autenticação.');
   }
   await callback('device-code', { verificationUrl: login.verificationUrl, userCode: login.userCode });
+  resolveDeviceCodeRegistration();
   console.log(`Abra ${login.verificationUrl} e informe o código ${login.userCode}.`);
   console.log('Aguardando a confirmação segura do Codex App Server...');
 } catch (error) {
+  rejectDeviceCodeRegistration(error);
   stop(1, error.message);
 }

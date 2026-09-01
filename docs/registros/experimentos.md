@@ -6803,3 +6803,27 @@
   fingerprint por experimento, duas novas rodadas consecutivas passaram com 2.173 testes backend,
   31 do Hermes, cinco MCP, 443 do frontend, MySQL 5.7 físico, contratos, três imagens Docker e
   desktop/iPhone/Pixel. A produção permaneceu sem #296 e sem dado comercial sintético.
+
+## 2026-09-01 — Rigel: aquisição inbound da amostra dentro do Marketing Hub
+
+- **Gargalo real:** o experimento 89 estava aberto e o placar 0/15 era correto, mas a operação
+  começava por uma lista externa que não existia. O banco confirmou zero contatos, leads,
+  submissões, contas WhatsApp, mensagens e contas sociais conectadas aplicáveis ao piloto.
+- **Alternativas avaliadas:** lista pública e abordagem fria foi rejeitada por baixa intenção e
+  risco de privacidade; campanha paga ficou reservada a outro experimento com orçamento e
+  autorização; convite inbound consentido foi escolhido por preservar o canal, o teto e a intenção.
+- **Implementação preparada:** a atividade de acumular amostra passa a preparar um convite público,
+  exigir aprovação humana, medir visita e adesão separadamente, qualificar uso de WhatsApp, poder de
+  decisão e interesse em implantação e incluir automaticamente somente o perfil consentido na
+  amostra oficial. A identidade é transformada em SHA-256 no navegador e a oferta do Rigel aparece
+  apenas depois da adesão qualificada.
+- **Gate de distribuição:** ativar a URL não publica comunicação. O painel informa quando não existe
+  canal orgânico conectado e encaminha à configuração de distribuição; post, mensagem, campanha,
+  orçamento, gasto, checkout, pagamento e venda continuam eventos explícitos e separados.
+- **Métrica esperada:** sair de 0/15 por adesões humanas únicas; acompanhar visitas → adesões →
+  qualificados → contatos → checkout → pagamentos. Com 15/15, uma única revisão de Hermes é
+  liberada; zero pagamentos exige revisar oferta/comunicação antes de ampliar aquisição.
+- **Homologação local final:** depois da última correção, duas rodadas completas e consecutivas
+  passaram. Cada rodada validou 2.187 testes backend, 453 frontend, MySQL 5.7 físico, contratos de
+  workflow, duas imagens Docker e os fluxos administrativo e público em desktop, iPhone e Pixel.
+  Nenhum dado produtivo, publicação, gasto ou venda foi criado.

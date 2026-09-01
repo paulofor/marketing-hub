@@ -1,0 +1,299 @@
+{
+  "contractVersion": "musa-v7-commercial-homologation.v2",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 4,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v7-espelho-antes-de-sair",
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v7.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "promise": "Organizar em sete dias escolhas práticas de presença elegante prioritariamente com o que a cliente já possui, sem promessa de transformação garantida.",
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "variableCostCeilingBrl": 20,
+    "minimumContributionPerSaleBrl": 0.01,
+    "plannedContributionBeforeCacBrl": 47,
+    "expectedCacBrl": 25,
+    "plannedContributionAfterExpectedCacBrl": 22
+  },
+  "localPreflightCandidate": {
+    "experimentId": null,
+    "creationState": "LOCAL_CONTRACT_ONLY",
+    "mode": "PRODUCTION",
+    "platform": "DIRECT_ONE_TO_ONE",
+    "campaignObjective": "SALES",
+    "primaryVariable": "Enquadramento da transformação prática sem compra impulsiva",
+    "primaryMetric": "Venda líquida reconciliada e entregue",
+    "sampleSizeHumanVisitors": 100,
+    "targetNetSales": 5,
+    "targetConversionRatePercent": 5,
+    "planningBaselineConversionRatePercent": 0.8,
+    "authorizedBudgetBrl": 0,
+    "humanAuthorizationRequired": true
+  },
+  "measurementContract": {
+    "sequence": [
+      "TASTING_STARTED",
+      "VALUE_MOMENT",
+      "PAYWALL_VIEWED",
+      "CHECKOUT_STARTED",
+      "PURCHASE_COMPLETED",
+      "ACCESS_RELEASED",
+      "FIRST_USE",
+      "MISSION_COMPLETED",
+      "DELIVERY_COMPLETED",
+      "REFUND_CONFIRMED"
+    ],
+    "testTrafficClass": "INTERNAL_QA",
+    "testRecipientPattern": "teste+musa-v7-<project>-<timestamp>@sandbox.local",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED"
+  },
+  "preflightEvidenceMapping": [
+    {
+      "gateCode": "LANDING_QUALITY_REVIEW_APPROVED",
+      "evidence": "Jornada responsiva e oferta exata exercitadas em desktop, iPhone 15 Pro e Pixel 7."
+    },
+    {
+      "gateCode": "CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED",
+      "evidence": "Pagamento de teste idempotente, acesso de 90 dias, primeira utilização, sete missões e materiais protegidos."
+    },
+    {
+      "gateCode": "DIRECT_CHANNEL_READINESS_CONFIRMED",
+      "evidence": "Canal orgânico/direto consentido, orçamento zero e nenhuma automação de contato ou mídia."
+    },
+    {
+      "gateCode": "DATA_FRESHNESS_VALID",
+      "evidence": "Eventos correlacionados e deduplicados com INTERNAL_QA excluído das métricas humanas e comerciais."
+    }
+  ],
+  "decisionRules": {
+    "continue": "Após autorização humana e ativação futura, continuar enquanto compra, acesso, entrega e contribuição positiva permanecerem reconciliados.",
+    "adjust": "Ajustar uma variável se houver degustação humana sem momento de valor, paywall ou checkout.",
+    "stop": "Parar diante de gasto não autorizado, falha de privacidade, preço divergente, venda sem entrega, reembolso não reconciliado ou contribuição não positiva."
+  },
+  "productionObservation": {
+    "observedAt": "2026-08-24T00:00:00Z",
+    "publicSurfaceStatus": "HTTP_200_RESPONSIVE",
+    "checkoutStatus": "HTTP_200_PRODUCT_AND_PRICE_MATCH",
+    "versionDiagnosticsStatus": "BLOCKED_HTML_INSTEAD_OF_JSON",
+    "currentProductExperiment": "ABSENT",
+    "salesApproved": 0,
+    "externalSpendBrl": 0
+  },
+  "localValidationObservation": {
+    "status": "READY_FOR_VERSIONED_DEPLOY_AND_PREFLIGHT",
+    "versionDiagnosticsStatus": "JSON_IDENTITY_CONFIRMED",
+    "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+    "backendTestsPassed": 116,
+    "journeysPassed": 9,
+    "devices": [
+      "Chromium desktop",
+      "iPhone 15 Pro",
+      "Pixel 7"
+    ],
+    "rawQaPurchaseCompletedAfterReplay": 1,
+    "rawQaAccessReleasedAfterReplay": 1,
+    "rawQaDeliveryCompletedAfterReplay": 1,
+    "rawQaRefundsConfirmedAfterReplay": 1,
+    "humanPurchaseCompletedAfterReplay": 0,
+    "humanAccessReleasedAfterReplay": 0,
+    "humanDeliveryCompletedAfterReplay": 0,
+    "humanRefundsConfirmedAfterReplay": 0,
+    "humanNetSalesApprovedAfterRefund": 0,
+    "marketingHubSourceParity": "PRODUCT_AND_PUBLISHED_SLOT_MATCH_VERSIONED_CONTRACT",
+    "liquibaseMysql57": "DOUBLE_UPDATE_ROLLBACK_REAPPLY_PASSED",
+    "externalSpendBrl": 0,
+    "boundary": "Aprovação local não autoriza publicação, contato, mídia, gasto ou RUNNING. A produção continua bloqueada até publicar este artefato e repetir o preflight."
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/App.tsx",
+      "sha256": "0f0b93e9014c1d815e217cbd19edb268df6d73920488a6ae43b51e32dfbd6b54",
+      "role": "Superfície pública, paywall, acesso, privacidade e jornada.",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Shell amplo das experiências PDE; o contrato MUSA específico, a jornada executável e os pixels atuais permanecem integrais nas demais provas."
+    },
+    {
+      "path": "pde-platform/frontend/src/musaExperiences.ts",
+      "sha256": "adb35c041e4db0b6cb900a08014b9933f90728b28d41c30d152ab45e05ec60ed",
+      "role": "Contrato funcional da versão MUSA v7."
+    },
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v7-product-v1.json",
+      "sha256": "e5a13a53848ec335e535c3c0c4c3fce003e7f41a502a4243202b20bdc2bb03fd",
+      "role": "Fallback canônico do backend com a mesma identidade comercial."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/dto/ProductExperienceResponse.java",
+      "sha256": "02fcecaacba29d12340fdf184879b4c44b383ea23a1e5f2e13d069c5c5f8e49f",
+      "role": "Contrato de interação versionado entregue junto de cada missão."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AiGuidanceService.java",
+      "sha256": "1622cdbb6b5570f567fb13ebbf19310a78ba333db501e12ab1a57a0dfb3c8fc7",
+      "role": "Orientação determinística local aderente ao tipo e aos campos de cada missão v7."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/MusaV7CategoricalContract.java",
+      "sha256": "531a458fcfc387a204a3c6c72958ea0acbecd1324edfb77043a064c448f71524",
+      "role": "Validação canônica de chaves, opções e versão da interação v7."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "7c7412d51d360b111eda09efbb3a35946cec85b5c05674684706dc09fcf6192d",
+      "role": "Bloqueio de conclusão de missão sem interação semanticamente válida.",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Serviço geral de acesso, progresso e jornada; o contrato funcional MUSA, a validação categórica e as provas executáveis específicas permanecem integrais."
+    },
+    {
+      "path": "pde-platform/frontend/tests/marketing-hub-contract-server.mjs",
+      "sha256": "ec5e5ca767a725a5ab9f7230b899d55288fab0fa82defe159a0f3422a2c7c9b9",
+      "role": "Test double do catálogo com nome e promessa congelados."
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "3805e9ad5e3dda771ec4c04e6f0a60ec3414f689a14d7b653bb0af7e76d76d2a",
+      "role": "Contrato que comprova que a resposta publicada pelo Hub não é mascarada pelo fallback."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "12fa6230a7e04ae361e70a7d575bdd950d6efac00b3ca45563b5a8baa03b02a9",
+      "role": "Integração que usa o Marketing Hub como fonte e reserva fallback para indisponibilidade real."
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
+      "sha256": "def6da864d1149063c5b25ffac756a55762780a892298069015edcb2a46050ea",
+      "role": "Prova de que missão v7 só conclui após salvar o formulário canônico correto.",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Suíte ampla do acesso PDE; a jornada MUSA em três dispositivos e os testes específicos de catálogo e contrato permanecem integrais."
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-local-integration.spec.ts",
+      "sha256": "933da11fac446c7c5381c97beff76e56fbf41f71cf3700a8ea43e5a82041c090",
+      "role": "Jornada real segregada em três dispositivos."
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-entry.visual.spec.ts",
+      "sha256": "3e3197a48f189ebe8d2e9230c787d9ca46347bfc91d7228cd3c0386a87d8fab7",
+      "role": "Preço, atribuição do checkout e bloqueio de token na telemetria."
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/controller/AccessControllerPepperWebhookTest.java",
+      "sha256": "fab27688a7d7934832c1009f5b12337389d8a655eee2490b521d933e0f440791",
+      "role": "Contrato de pagamento Pepper, idempotência e acesso."
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/PaymentAuditServiceTest.java",
+      "sha256": "a6a3ba0e937009d9e3b2c3876d3661c0c30099ea2e7e800830075e33a44b77f5",
+      "role": "Auditoria financeira e reconciliação."
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/PepperRefundSyncServiceTest.java",
+      "sha256": "99b55d30ec0844770f8fd6d3eebc968851ac7447dd910d1e4eb53253220b7299",
+      "role": "Reembolso, revogação e repetição idempotente."
+    },
+    {
+      "path": "pde-platform/docker-compose.local-validation.yml",
+      "sha256": "5275482bd65c302c50e628f978afa4ae6695f955c647f23e4f11e7b858d8c46d",
+      "role": "Topologia isolada, identidade da versão e integrações locais."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-24-musa-v7-refund-reconciliation.yaml",
+      "sha256": "0b7bc2fe7066fee0784aeafbc540b6f7247524946c18a0bfa72cd1f481641df4",
+      "role": "Persistência versionada da compra e do reembolso no MySQL 5.7."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-24-musa-v7-canonical-product-contract.yaml",
+      "sha256": "c4bfc4a66225ee5e19176d618a94f5a44c230537e143d5c65b0c28d7e8b19e71",
+      "role": "Changeset corretivo que aplica o contrato canônico no produto e no slot v7."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-24-musa-v7-canonical-product-contract.sql",
+      "sha256": "b2cc21dbb3b166c9e44f84376da73ffa8be84e26effb21ed510dc386e3e46701",
+      "role": "Contrato integral persistido no Marketing Hub sem subconsulta da tabela-alvo."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml",
+      "sha256": "5df5eca1d49c513c3e41aa9b0dcc558dcfbdbdbbfed0a8d52b635a35f7dee418",
+      "role": "Inclusão relativa obrigatória da correção na sequência principal do Liquibase.",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Changelog mestre global; os changesets MUSA, o SQL integral e o teste de compatibilidade MySQL 5.7 permanecem integrais."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/MusaV7CanonicalProductContractChangelogTest.java",
+      "sha256": "e9405743b74fc615c7264f3b152619ce3bdba81bedfb75bb90d9b7dac8812df2",
+      "role": "Teste preventivo de paridade semântica, include relativo e compatibilidade MySQL 5.7."
+    },
+    {
+      "path": "pde-platform/local-validation/test-musa-v7-liquibase-mysql57.sh",
+      "sha256": "86567c446e354c1703024bfa493e16b7af4cfd41d7e38daa6172324d7195b1ed",
+      "role": "Homologação física idempotente do contrato no MySQL 5.7 com rollback e reaplicação."
+    },
+    {
+      "path": "scripts/generate-musa-v7-canonical-contract-changelog.mjs",
+      "sha256": "fbef274ef599f223b5c2814006ca5d12e72346eec08f2c035b1f50e01eaf92e0",
+      "role": "Geração determinística do SQL a partir do contrato versionado homologado."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review.md",
+      "sha256": "ee366ce3dc05e7fe5ce8ac17e90ff326bc83407b9524c9942c9a55ae8a5c262a",
+      "role": "Prompt de Têmis com escala percentual inequívoca para clareza do preço."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumer.java",
+      "sha256": "dcaf482500529ba035eeb56b9edee6480df55c12ef41c834f38be46c89247edc",
+      "role": "Validator que bloqueia aprovação comercial com nota de preço inferior a 80/100."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumerTest.java",
+      "sha256": "b565ea9b6ad4b2387552928ffdbe79386adf837c512fdb63024c007b8ef71e72",
+      "role": "Teste preventivo da escala de Têmis e do piso coerente de aprovação."
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-customer-review.md",
+      "sha256": "f395ff6123010d6fd58336fa1caf7959e95955c52c9db01cc092474654db7a39",
+      "role": "Prompt de Psique que separa defeito local da confirmação produtiva pós-deploy."
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerBpmTaskConsumer.java",
+      "sha256": "aee9ce81d597640b91f6a728d5470c50e086a914ada8bb841a3eced7b608d763",
+      "role": "Validator que impede decisão APPROVED com gate funcional ainda em ajuste."
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/CustomerBpmTaskConsumerTest.java",
+      "sha256": "755e452aea3a44b4eb28da1d9a0582312099a1dd825335276ac6f293071afcff",
+      "role": "Teste preventivo de coerência entre decisão geral e gates de Psique."
+    },
+    {
+      "path": "docs/registros/loops.md",
+      "sha256": "8e3f8ec1631c7cd39a613d217e23d634288facc34d6a26e17bfe323f93e1d1bd",
+      "role": "Registro da causa-raiz e da prevenção contra fallback que mascara a fonte central.",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Registro histórico global de recorrências; as evidências de construção e homologação específicas da Vega permanecem integrais e o arquivo completo continua congelado por SHA-256."
+    },
+    {
+      "path": "docs/registros/musa-v7-construction-evidence.md",
+      "sha256": "6b84b9e2361d2eef0b1be721348ba808e6903647c7096345c960c6eb1a2892f5",
+      "role": "Evidência congelada dos gates anteriores consumida sem recomputação."
+    },
+    {
+      "path": "docs/registros/musa-v7-commercial-homologation-evidence.md",
+      "sha256": "c67ebf36bf189e83cc1bd189d7f832705044cf5c9eb2e0c10571ca44c4f3430d",
+      "role": "Evidência operacional e comercial da homologação atual."
+    }
+  ]
+}

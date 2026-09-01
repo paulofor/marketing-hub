@@ -22,6 +22,7 @@ import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.IndependentBusinessProcessExecutionRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -238,6 +239,49 @@ class IndependentBusinessProcessExecutionServiceTest {
     assertThat(result.execution().costCoverage()).isEqualTo("NOT_REPORTED");
   }
 
+  /** Expõe a auditoria completa da tarefa no mesmo contrato do detalhe independente. */
+  @Test
+  void reportsCompletePersistedTaskAudit() {
+    BusinessProcessDefinition process = process("INDEPENDENT", "PUBLISHED");
+    IndependentBusinessProcessExecution execution = execution(process);
+    AgentTask audited = task(process, "COMPLETED", null);
+    audited.setExecutionMode("MODEL");
+    audited.setExecutionModelCode("gpt-5.6-sol");
+    audited.setExecutionReasoningEffort("high");
+    audited.setExecutionPrompt("Prompt integral auditado.");
+    audited.setExecutionAgentPrompt("Parte persistida do agente.");
+    audited.setExecutionActivityPrompt("Parte persistida da atividade.");
+    audited.setInputTokens(2_028L);
+    audited.setCachedInputTokens(110L);
+    audited.setOutputTokens(227L);
+    audited.setEstimatedCostUsd(new BigDecimal("0.01234567"));
+    audited.setCostEstimationStatus("ESTIMATED");
+    when(executions.findById(91L)).thenReturn(Optional.of(execution));
+    when(activities.findAllByProcessDefinitionIdOrderByIdAsc(52L))
+        .thenReturn(List.of(activity(process)));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc(execution.getSourceReference()))
+        .thenReturn(List.of(audited));
+
+    var result = service(List.of(handler)).get(91L);
+    var response = result.activities().getFirst().tasks().getFirst();
+
+    assertThat(response.processDefinitionId()).isEqualTo(52L);
+    assertThat(response.processVersionNumber()).isEqualTo(6);
+    assertThat(response.sourceReference()).isEqualTo("product-discovery-cycle:77");
+    assertThat(response.executionMode()).isEqualTo("MODEL");
+    assertThat(response.modelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(response.reasoningEffort()).isEqualTo("high");
+    assertThat(response.promptSent()).isEqualTo("Prompt integral auditado.");
+    assertThat(response.agentPromptPart()).isEqualTo("Parte persistida do agente.");
+    assertThat(response.activityPromptPart()).isEqualTo("Parte persistida da atividade.");
+    assertThat(response.inputTokens()).isEqualTo(2_028L);
+    assertThat(response.cachedInputTokens()).isEqualTo(110L);
+    assertThat(response.outputTokens()).isEqualTo(227L);
+    assertThat(response.estimatedCostUsd()).isEqualByComparingTo("0.01234567");
+    assertThat(response.productInternalName()).isNull();
+    assertThat(response.finishedAt()).isEqualTo(NOW.plusSeconds(30));
+  }
+
   /** Monta o serviço com relógio fixo para evitar timestamps flutuantes. */
   private IndependentBusinessProcessExecutionService service(
       List<IndependentBusinessProcessExecutionHandler> handlers) {
@@ -299,6 +343,7 @@ class IndependentBusinessProcessExecutionServiceTest {
     task.setId(271L);
     task.setAssignedAgent(agent);
     task.setProcessDefinition(process);
+    task.setSourceReference("product-discovery-cycle:77");
     task.setProcessActivityId("marketEvidence");
     task.setProcessActivityName("Reunir evidências factuais de mercado");
     task.setTitle("Reunir evidências factuais");

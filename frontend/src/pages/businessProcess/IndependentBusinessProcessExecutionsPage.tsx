@@ -32,6 +32,7 @@ import type {
 } from "../../api/businessProcess/types";
 import PageTitle from "../../components/PageTitle";
 import ArgosMetaSupervisedSession from "../productDiscovery/ArgosMetaSupervisedSession";
+import BusinessProcessExecutionAudit from "./BusinessProcessExecutionAudit";
 import "./IndependentBusinessProcessExecutionsPage.css";
 
 const statusLabels: Record<string, string> = {
@@ -694,13 +695,17 @@ export function IndependentBusinessProcessExecutionDetail({
                       {statusLabels[task.status] ?? task.status}
                     </summary>
                     <div className="independent-process-attempt__body">
-                      <p>
-                        <strong>Modelo:</strong>{" "}
-                        {task.modelCode ?? "Não informado"}
-                      </p>
-                      <p>
-                        <strong>Iniciada:</strong> {formatDate(task.startedAt)}
-                      </p>
+                      <BusinessProcessExecutionAudit
+                        execution={{
+                          ...task,
+                          processVersionNumber:
+                            task.processVersionNumber ??
+                            execution.processVersionNumber,
+                          sourceReference:
+                            task.sourceReference ?? execution.sourceReference,
+                        }}
+                        headingLevel="h4"
+                      />
                       {task.executionError ? (
                         <p className="text-danger">
                           <strong>Erro:</strong> {task.executionError}
@@ -809,7 +814,7 @@ function PdeOpportunityFlowReport({
             <div>
               <h4>Ampliação controlada de mercado</h4>
               <p>
-                Argos registrou {report.marketExpansion.attemptsCompleted} de {" "}
+                Argos registrou {report.marketExpansion.attemptsCompleted} de{" "}
                 {report.marketExpansion.maxAttempts} lentes possíveis na mesma
                 execução.
               </p>

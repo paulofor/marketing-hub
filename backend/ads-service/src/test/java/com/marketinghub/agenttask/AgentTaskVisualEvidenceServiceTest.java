@@ -66,6 +66,8 @@ class AgentTaskVisualEvidenceServiceTest {
                     "Rigel",
                     "rigel-v2",
                     "https://rigel.example/jornada",
+                    null,
+                    null,
                     "https://checkout.example/rigel",
                     new java.math.BigDecimal("349.00"))));
     service =

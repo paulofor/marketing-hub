@@ -394,6 +394,9 @@ public class IndependentBusinessProcessExecutionService {
   private IndependentBusinessProcessTaskResponse taskResponse(AgentTask task) {
     return new IndependentBusinessProcessTaskResponse(
         task.getId(),
+        task.getProcessDefinition().getId(),
+        task.getProcessDefinition().getVersionNumber(),
+        task.getSourceReference(),
         task.getStatus(),
         task.getAssignedAgent().getAgentKey(),
         task.getAssignedAgent().getNickname(),
@@ -408,9 +411,20 @@ public class IndependentBusinessProcessExecutionService {
         task.getCostEstimationStatus(),
         task.getExecutionModelCode(),
         task.getExecutionMode(),
+        task.getExecutionReasoningEffort(),
+        null,
+        task.getExecutionPrompt(),
+        task.getExecutionAgentPrompt(),
+        task.getExecutionActivityPrompt(),
         task.getCreatedAt(),
         task.getReceivedAt(),
-        task.getDeliveredAt());
+        finishedAt(task));
+  }
+
+  /** Usa a entrega ou a atualização terminal sem fabricar término para tarefa ainda ativa. */
+  private Instant finishedAt(AgentTask task) {
+    if (task.getDeliveredAt() != null) return task.getDeliveredAt();
+    return List.of("BLOCKED", "CANCELLED").contains(task.getStatus()) ? task.getUpdatedAt() : null;
   }
 
   /** Carrega somente tarefas pertencentes à referência materializada desta execução. */

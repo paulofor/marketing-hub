@@ -16,6 +16,20 @@ PDE_LIQUIBASE_COMPOSE=(
 PDE_LIQUIBASE_MYSQL_CONTAINER="$("${PDE_LIQUIBASE_COMPOSE[@]}" ps -q pde-platform-local-mysql)"
 test -n "${PDE_LIQUIBASE_MYSQL_CONTAINER}"
 
+PDE_LIQUIBASE_MYSQL_HEALTH=""
+for PDE_LIQUIBASE_HEALTH_ATTEMPT in $(seq 1 60); do
+  PDE_LIQUIBASE_MYSQL_HEALTH="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${PDE_LIQUIBASE_MYSQL_CONTAINER}")"
+  if test "${PDE_LIQUIBASE_MYSQL_HEALTH}" = "healthy"; then
+    break
+  fi
+  if test "${PDE_LIQUIBASE_MYSQL_HEALTH}" = "unhealthy"; then
+    docker logs --tail 100 "${PDE_LIQUIBASE_MYSQL_CONTAINER}" >&2
+    exit 1
+  fi
+  sleep 1
+done
+test "${PDE_LIQUIBASE_MYSQL_HEALTH}" = "healthy"
+
 docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" mysql -u root -ppde-root --execute "
   DROP DATABASE IF EXISTS ${PDE_LIQUIBASE_DATABASE};
   CREATE DATABASE ${PDE_LIQUIBASE_DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -74,6 +88,13 @@ for PDE_LIQUIBASE_ROUND in 1 2; do
     --username=root \
     --password=pde-root \
     --search-path=/liquibase/changelog \
+    --changelog-file=changesets/2026-09-01-musa-v7-canonical-checkout-binding.yaml \
+    update >/dev/null
+  "${PDE_LIQUIBASE_COMPOSE[@]}" --profile liquibase-validation run --rm --no-deps pde-liquibase-validation \
+    --url="jdbc:mysql://pde-platform-local-mysql:3306/${PDE_LIQUIBASE_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+    --username=root \
+    --password=pde-root \
+    --search-path=/liquibase/changelog \
     --changelog-file=changesets/2026-08-24-musa-v7-refund-reconciliation.yaml \
     update >/dev/null
 done
@@ -95,7 +116,7 @@ PDE_LIQUIBASE_ROLLBACK_RESULT="$(docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" 
       ':', (SELECT COUNT(*) FROM DATABASECHANGELOG)
     );
   ")"
-test "${PDE_LIQUIBASE_ROLLBACK_RESULT}" = "0:4"
+test "${PDE_LIQUIBASE_ROLLBACK_RESULT}" = "0:5"
 
 "${PDE_LIQUIBASE_COMPOSE[@]}" run --rm --no-deps pde-liquibase-validation \
   --url="jdbc:mysql://pde-platform-local-mysql:3306/${PDE_LIQUIBASE_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
@@ -116,6 +137,9 @@ PDE_LIQUIBASE_RESULT="$(docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" mysql -N 
       ':', JSON_UNQUOTE(JSON_EXTRACT(p.pde_experience_json, '\$.name')),
       ':', JSON_LENGTH(JSON_EXTRACT(p.pde_experience_json, '\$.missions')),
       ':', JSON_LENGTH(JSON_EXTRACT(p.pde_experience_json, '\$.missions[0].interaction.fields')),
+      ':', JSON_UNQUOTE(JSON_EXTRACT(p.pde_experience_json, '\$.commercialCheckout.provider')),
+      ':', JSON_UNQUOTE(JSON_EXTRACT(p.pde_experience_json, '\$.commercialCheckout.checkoutUrl')),
+      ':', JSON_UNQUOTE(JSON_EXTRACT(p.pde_experience_json, '\$.commercialCheckout.priceBrl')),
       ':', (p.pde_experience_json = s.draft_experience_json),
       ':', (p.pde_experience_json = s.published_experience_json),
       ':', (SELECT COUNT(*) FROM information_schema.tables
@@ -129,5 +153,5 @@ PDE_LIQUIBASE_RESULT="$(docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" mysql -N 
     JOIN pde_production_slot s ON s.product_slug = p.slug;
   ")"
 
-test "${PDE_LIQUIBASE_RESULT}" = "3:1:musa-pde-entry-v7-espelho-antes-de-sair:Método MUSA - Presença Elegante em 7 Dias:7:4:1:1:1:2:5"
+test "${PDE_LIQUIBASE_RESULT}" = "3:1:musa-pde-entry-v7-espelho-antes-de-sair:Método MUSA - Presença Elegante em 7 Dias:7:4:PEPPER:https://go.pepper.com.br/owm6x:67:1:1:1:2:6"
 echo "Liquibase MUSA v7 aprovado no MySQL 5.7: duas aplicações, rollback e reaplicação idempotentes."

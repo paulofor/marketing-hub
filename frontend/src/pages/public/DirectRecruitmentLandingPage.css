@@ -1,0 +1,147 @@
+.direct-recruitment-page {
+  min-height: 100vh;
+  padding: clamp(2rem, 6vw, 5rem) 1rem;
+  color: #172033;
+  background:
+    radial-gradient(circle at 10% 5%, rgba(79, 70, 229, 0.15), transparent 38%),
+    radial-gradient(
+      circle at 92% 85%,
+      rgba(14, 165, 233, 0.13),
+      transparent 32%
+    ),
+    #f7f8fc;
+}
+
+.direct-recruitment-page--center {
+  display: grid;
+  place-items: center;
+}
+
+.direct-recruitment-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(38rem, 1.1fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.direct-recruitment-hero h1 {
+  max-width: 14ch;
+  margin: 1rem 0 1.25rem;
+  font-size: clamp(2.35rem, 5vw, 4.75rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.direct-recruitment-eyebrow {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.55rem 0.8rem;
+  color: #3730a3;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #e8e7ff;
+  border-radius: 999px;
+}
+
+.direct-recruitment-lead {
+  max-width: 52ch;
+  color: #4b5568;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  line-height: 1.65;
+}
+
+.direct-recruitment-benefit {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  max-width: 34rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  color: #14532d;
+  font-weight: 600;
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.9rem;
+}
+
+.direct-recruitment-audience {
+  max-width: 54ch;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.direct-recruitment-card {
+  width: 100%;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 80px rgba(34, 47, 80, 0.13);
+}
+
+.direct-recruitment-card .form-control,
+.direct-recruitment-card .form-select {
+  min-height: 3rem;
+}
+
+.direct-recruitment-step {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  background: #4f46e5;
+  border-radius: 999px;
+}
+
+.direct-recruitment-result {
+  padding: 2rem 0;
+  color: #166534;
+  text-align: center;
+}
+
+.direct-recruitment-result p {
+  max-width: 40rem;
+  margin: 1rem auto 1.5rem;
+  color: #374151;
+}
+
+@media (max-width: 991.98px) {
+  .direct-recruitment-page {
+    padding-top: 2rem;
+  }
+
+  .direct-recruitment-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .direct-recruitment-hero h1 {
+    max-width: 18ch;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .direct-recruitment-page {
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  .direct-recruitment-shell {
+    gap: 1.5rem;
+  }
+
+  .direct-recruitment-card {
+    padding: 1.1rem;
+    border-radius: 1rem;
+  }
+
+  .direct-recruitment-hero h1 {
+    font-size: 2.45rem;
+  }
+}

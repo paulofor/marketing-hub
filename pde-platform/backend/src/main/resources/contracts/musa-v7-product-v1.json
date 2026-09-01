@@ -7,6 +7,14 @@
   "promise": "Organizar em sete dias escolhas práticas de presença elegante prioritariamente com o que a cliente já possui, sem promessa de transformação garantida.",
   "audience": "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com microações acessíveis.",
   "priceLabel": "R$67",
+  "commercialCheckout": {
+    "provider": "PEPPER",
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "offerReference": "owm6x",
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME"
+  },
   "theme": {
     "primary": "#7a2444",
     "accent": "#d6a75c",

@@ -12,5 +12,7 @@ public record AgentTaskTargetResponse(
     String productInternalName,
     String experienceVersion,
     String publicUrl,
+    String commercialCheckoutProvider,
+    String commercialCheckoutReference,
     String commercialCheckoutUrl,
     BigDecimal unitPriceBrl) {}

@@ -7,6 +7,8 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver;
+import com.marketinghub.pde.service.PdeCommercialCheckoutContractResolver.CanonicalCheckout;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
@@ -35,6 +37,7 @@ public class PublicProductCommercialOfferService {
   private final ProductRepository productRepository;
   private final PdeProductionSlotRepository slotRepository;
   private final ExperimentRepository experimentRepository;
+  private final PdeCommercialCheckoutContractResolver checkoutResolver;
   private final String supplierDisplayName;
   private final String supplierRegistrationNumber;
   private final String supplierSupportEmail;
@@ -44,12 +47,14 @@ public class PublicProductCommercialOfferService {
       ProductRepository productRepository,
       PdeProductionSlotRepository slotRepository,
       ExperimentRepository experimentRepository,
+      PdeCommercialCheckoutContractResolver checkoutResolver,
       @Value("${commerce.supplier.display-name:}") String supplierDisplayName,
       @Value("${commerce.supplier.registration-number:}") String supplierRegistrationNumber,
       @Value("${commerce.supplier.support-email:}") String supplierSupportEmail) {
     this.productRepository = productRepository;
     this.slotRepository = slotRepository;
     this.experimentRepository = experimentRepository;
+    this.checkoutResolver = checkoutResolver;
     this.supplierDisplayName = supplierDisplayName;
     this.supplierRegistrationNumber = supplierRegistrationNumber;
     this.supplierSupportEmail = supplierSupportEmail;
@@ -72,7 +77,12 @@ public class PublicProductCommercialOfferService {
                     new ResponseStatusException(
                         HttpStatus.PRECONDITION_FAILED,
                         "Slot PDE sem experimento comercial disponível."));
-    validateExperiment(product, experiment);
+    CanonicalCheckout canonicalCheckout = checkoutResolver.resolve(product).orElse(null);
+    String checkoutUrl =
+        canonicalCheckout == null
+            ? experiment.getCommercialCheckoutUrl()
+            : canonicalCheckout.checkoutUrl();
+    validateExperiment(product, experiment, canonicalCheckout, checkoutUrl);
     String displayName = normalizeRequired(supplierDisplayName, "Fornecedor sem marca pública.");
     String registrationNumber =
         normalizeRequired(supplierRegistrationNumber, "Fornecedor sem registro fiscal.");
@@ -98,7 +108,7 @@ public class PublicProductCommercialOfferService {
         normalizeRequired(experiment.getFunnelPromise(), "Oferta sem promessa comercial."),
         primaryCta,
         experiment.getUnitPrice(),
-        experiment.getCommercialCheckoutUrl().trim(),
+        checkoutUrl.trim(),
         salesPageUrl,
         product.getTargetAudience(),
         product.getProductFormat(),
@@ -181,7 +191,11 @@ public class PublicProductCommercialOfferService {
   /**
    * Impede que um slot publique checkout incompleto, produto divergente ou experimento encerrado.
    */
-  private void validateExperiment(Product product, Experiment experiment) {
+  private void validateExperiment(
+      Product product,
+      Experiment experiment,
+      CanonicalCheckout canonicalCheckout,
+      String checkoutUrl) {
     if (experiment.getProduct() == null
         || !product.getId().equals(experiment.getProduct().getId())) {
       throw new ResponseStatusException(
@@ -197,11 +211,16 @@ public class PublicProductCommercialOfferService {
       throw new ResponseStatusException(
           HttpStatus.PRECONDITION_FAILED, "Oferta sem preço comercial válido.");
     }
-    String checkout =
-        normalizeRequired(experiment.getCommercialCheckoutUrl(), "Oferta sem checkout comercial.");
+    String checkout = normalizeRequired(checkoutUrl, "Oferta sem checkout comercial.");
     if (!checkout.startsWith("https://")) {
       throw new ResponseStatusException(
           HttpStatus.PRECONDITION_FAILED, "Checkout comercial precisa usar HTTPS.");
+    }
+    if (canonicalCheckout != null
+        && experiment.getUnitPrice().compareTo(canonicalCheckout.priceBrl()) != 0) {
+      throw new ResponseStatusException(
+          HttpStatus.PRECONDITION_FAILED,
+          "Preço do experimento diverge do checkout versionado do PDE.");
     }
   }
 

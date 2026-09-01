@@ -12,9 +12,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Responsabilidade: garantir que Psique receba a evidência integral e versionada da experiência.
- */
+/** Responsabilidade: garantir o transporte versionado e governado das evidências de Psique. */
 class PdeExperienceEvidenceLoaderTest {
   @TempDir Path tempDir;
 
@@ -98,7 +96,102 @@ class PdeExperienceEvidenceLoaderTest {
         .doesNotContain("arquivo-ausente.txt");
     assertThat(evidence.get(1))
         .containsEntry("baselineIntegrity", "MATCH")
-        .containsEntry("bundleIntegrity", "LOCAL_SOURCE");
+        .containsEntry("bundleIntegrity", "LOCAL_SOURCE")
+        .containsEntry("promptMode", "FULL")
+        .containsEntry("content", "prova comercial íntegra");
+  }
+
+  /** Mantém o arquivo completo atestado sem duplicá-lo quando o manifesto fornece resumo. */
+  @Test
+  void loadsAttestedReferenceWithoutDuplicatingContent() throws Exception {
+    Path proof = tempDir.resolve("docs/registros/arquivo-amplo.md");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "conteúdo amplo já comprovado por provas específicas");
+    String hash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Path manifest = tempDir.resolve("pde-platform/contracts/produto-homologacao-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"produto-homologacao.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "homologationEvidence":[{
+            "path":"docs/registros/arquivo-amplo.md",
+            "sha256":"%s",
+            "promptMode":"ATTESTED_REFERENCE",
+            "reviewSummary":"Registro geral; os contratos funcionais específicos permanecem integrais."
+          }]
+        }
+        """
+            .formatted(hash));
+
+    var evidence =
+        new PdeExperienceEvidenceLoader(tempDir.toString())
+            .loadCommercialHomologationEvidence(
+                Map.of(
+                    "experimentId",
+                    90L,
+                    "productId",
+                    4L,
+                    "productSlug",
+                    "produto-b",
+                    "experienceVersion",
+                    "produto-b-v1"));
+
+    assertThat(evidence.get(1))
+        .containsEntry("promptMode", "ATTESTED_REFERENCE")
+        .containsEntry(
+            "reviewSummary",
+            "Registro geral; os contratos funcionais específicos permanecem integrais.")
+        .containsEntry("contentLength", 51)
+        .containsEntry("sha256", hash)
+        .doesNotContainKey("content");
+  }
+
+  /** Impede referência atestada sem uma síntese explícita e auditável. */
+  @Test
+  void rejectsAttestedReferenceWithoutReviewSummary() throws Exception {
+    Path proof = tempDir.resolve("docs/registros/arquivo-amplo.md");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "prova");
+    String hash =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(proof)));
+    Path manifest = tempDir.resolve("pde-platform/contracts/produto-homologacao-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"produto-homologacao.v1",
+          "product":{"id":4,"slug":"produto-b","experienceVersion":"produto-b-v1"},
+          "homologationEvidence":[{
+            "path":"docs/registros/arquivo-amplo.md",
+            "sha256":"%s",
+            "promptMode":"ATTESTED_REFERENCE"
+          }]
+        }
+        """
+            .formatted(hash));
+
+    assertThatThrownBy(
+            () ->
+                new PdeExperienceEvidenceLoader(tempDir.toString())
+                    .loadCommercialHomologationEvidence(
+                        Map.of(
+                            "experimentId",
+                            90L,
+                            "productId",
+                            4L,
+                            "productSlug",
+                            "produto-b",
+                            "experienceVersion",
+                            "produto-b-v1")))
+        .isInstanceOf(java.io.IOException.class)
+        .hasMessageContaining("resumo verificável");
   }
 
   /** Entrega uma nova candidata para reavaliação sem tratá-la como corrupção do pacote. */
@@ -234,8 +327,11 @@ class PdeExperienceEvidenceLoaderTest {
     assertThat(vega)
         .extracting(item -> item.get("path"))
         .contains(
-            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v3.json",
             "pde-platform/frontend/src/App.tsx")
-        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
+        .doesNotContain(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v2.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
   }
 }

@@ -271,6 +271,10 @@ atividades, tarefas, erros, evidências, custos e a orientação de retentativa.
 renderizar seu conteúdo apenas abaixo do formulário não atende ao contrato de visibilidade. A nova
 tentativa preserva a ocorrência bloqueada e reutiliza a mesma entrada em uma nova solicitação
 idempotente; a tela não pode sobrescrever histórico nem inferir uma causa diferente da persistida.
+Cada tarefa do detalhe independente apresenta o mesmo bloco auditável do histórico por atividade:
+origem, ausência explícita de produto, versão, estado, marcos e duração, modo, modelo, esforço de
+raciocínio, tokens, custo e as partes persistidas do prompt completo. Esses dados pertencem ao mesmo
+endpoint de detalhe e não podem ser reconstruídos por uma segunda consulta ou por heurística visual.
 
 Status, progresso e custos exibidos são consolidados pelo backend a partir das instâncias e tarefas
 persistidas. Ausência de medição permanece ausente; execução, aprovação ou documento produzido não é

@@ -78,7 +78,7 @@ jobs:
   deploy:
     name: Deploy (PDE Monitor Worker)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     concurrency:
       group: deploy-vps-191-252-120-96
       queue: max
@@ -151,4 +151,4 @@ jobs:
             && docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
-            && docker image prune -af"
+            && docker image prune -f --filter until=168h"

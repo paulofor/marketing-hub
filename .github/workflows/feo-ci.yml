@@ -78,7 +78,7 @@ jobs:
   deploy:
     name: Deploy (FEO)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     concurrency:
       group: deploy-vps-191-252-120-96
       queue: max
@@ -109,7 +109,7 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          bash scripts/ssh-keyscan-with-retry.sh "$DEPLOY_HOST" "$HOME/.ssh/known_hosts"
           printf '%s\n' "SSH_COMMON_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o TCPKeepAlive=yes -o ConnectTimeout=60" >> "$GITHUB_ENV"
       - name: Ensure Docker runtime on VPS
         run: |
@@ -149,4 +149,4 @@ jobs:
             && echo '${GHCR_TOKEN}' | docker login ${{ env.REGISTRY }} -u '${GHCR_USERNAME}' --password-stdin \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
-            && docker image prune -af"
+            && docker image prune -f --filter until=168h"

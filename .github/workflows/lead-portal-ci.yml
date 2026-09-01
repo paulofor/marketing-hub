@@ -238,7 +238,7 @@ jobs:
                 echo "Falha antes da homologação pública; restaurando as imagens anteriores do Lead Portal." >&2
                 export LEAD_PORTAL_BACKEND_IMAGE="$previous_backend_image"
                 export LEAD_PORTAL_FRONTEND_IMAGE="$previous_frontend_image"
-                docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d backend frontend || true
+                bash scripts/recreate-app-services.sh || true
                 for rollback_attempt in $(seq 1 24); do
                   rollback_backend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-backend 2>/dev/null || true)"
                   rollback_frontend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-frontend 2>/dev/null || true)"
@@ -268,7 +268,7 @@ jobs:
           docker network inspect public-net >/dev/null 2>&1 || docker network create public-net
           bash scripts/reconcile-stale-runtime.sh
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull
-          docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d backend frontend
+          bash scripts/recreate-app-services.sh
           for health_attempt in $(seq 1 36); do
             backend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-backend 2>/dev/null || true)"
             frontend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-frontend 2>/dev/null || true)"
@@ -334,7 +334,7 @@ jobs:
               | grep -F 'data-mh-clarity-analytics="aggregate-v1"' >/dev/null
           fi
           deployment_validated=true
-          docker image prune -af
+          docker image prune -f --filter until=168h
           trap - EXIT
           REMOTE_PUBLISH
       - name: Clean build artifacts from repository

@@ -79,7 +79,7 @@ jobs:
       - test
       - docker
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     concurrency:
       group: deploy-vps-191-252-120-96
       queue: max
@@ -148,7 +148,7 @@ jobs:
             && export IMAGE_WATERMARK_SERVICE_IMAGE='${IMAGE_NAMESPACE}/image-watermark-service:${IMAGE_TAG}' \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
-            && docker image prune -af"
+            && docker image prune -f --filter until=168h"
       - name: Clean build artifacts from repository
         if: always()
         run: |

@@ -6,14 +6,24 @@ on:
     paths:
       - ".github/workflows/**"
       - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
+      - "scripts/test-shared-vps-deploy-resilience.sh"
+      - "scripts/test-ssh-keyscan-with-retry.sh"
+      - "lead-portal/scripts/recreate-app-services.sh"
+      - "lead-portal/scripts/test-recreate-app-services.sh"
   pull_request:
     paths:
       - ".github/workflows/**"
       - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
+      - "scripts/test-shared-vps-deploy-resilience.sh"
+      - "scripts/test-ssh-keyscan-with-retry.sh"
+      - "lead-portal/scripts/recreate-app-services.sh"
+      - "lead-portal/scripts/test-recreate-app-services.sh"
   workflow_dispatch:
 
 permissions:
@@ -34,13 +44,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validar sintaxe dos contratos shell
-        run: >-
+        run: |
           bash -n scripts/docker-pull-with-transient-retry.sh
-          scripts/test-docker-pull-with-transient-retry.sh
-          scripts/test-shared-vps-deploy-queue.sh
+          bash -n scripts/test-docker-pull-with-transient-retry.sh
+          bash -n scripts/ssh-keyscan-with-retry.sh
+          bash -n scripts/test-shared-vps-deploy-queue.sh
+          bash -n scripts/test-shared-vps-deploy-resilience.sh
+          bash -n scripts/test-ssh-keyscan-with-retry.sh
+          bash -n lead-portal/scripts/recreate-app-services.sh
+          bash -n lead-portal/scripts/test-recreate-app-services.sh
 
       - name: Validar retry transitório do Docker
         run: bash scripts/test-docker-pull-with-transient-retry.sh
 
       - name: Validar fila do host compartilhado
         run: bash scripts/test-shared-vps-deploy-queue.sh
+
+      - name: Validar resiliência do host compartilhado
+        run: bash scripts/test-shared-vps-deploy-resilience.sh

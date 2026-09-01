@@ -5,10 +5,12 @@ workflow=".github/workflows/lead-portal-ci.yml"
 compose_file="lead-portal/docker-compose.yml"
 proxy_config="lead-portal/nginx.conf"
 reconcile_script="lead-portal/scripts/reconcile-stale-runtime.sh"
+recreate_script="lead-portal/scripts/recreate-app-services.sh"
 landing_probe_script="lead-portal/scripts/verify-public-landing.sh"
 proxy_e2e_script="lead-portal/scripts/test-proxy-resilience-e2e.sh"
 
 grep -F 'bash scripts/reconcile-stale-runtime.sh' "$workflow" >/dev/null
+test "$(grep -Fc 'bash scripts/recreate-app-services.sh' "$workflow")" -ge 2
 grep -F 'previous_backend_image=' "$workflow" >/dev/null
 grep -F 'previous_frontend_image=' "$workflow" >/dev/null
 grep -F 'restaurando as imagens anteriores do Lead Portal' "$workflow" >/dev/null
@@ -28,6 +30,9 @@ grep -F 'checkout|mercadopago|pagamento|pref_id' "$landing_probe_script" >/dev/n
 grep -F 'marketinghub-lead-portal-backend-1' "$reconcile_script" >/dev/null
 grep -F 'marketinghub-lead-portal-frontend-1' "$reconcile_script" >/dev/null
 grep -F '.HostConfig.PortBindings' "$reconcile_script" >/dev/null
+grep -F 'Recriação normal falhou' "$recreate_script" >/dev/null
+grep -F 'com.docker.compose.project.working_dir' "$recreate_script" >/dev/null
+grep -F 'timeout 90 docker stop --time 30' "$recreate_script" >/dev/null
 grep -F 'lead-portal-landing-cache:/var/cache/nginx/landing' "$compose_file" >/dev/null
 grep -F 'JAVA_TOOL_OPTIONS: -Xms64m -Xmx256m' "$compose_file" >/dev/null
 grep -F 'proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;' "$proxy_config" >/dev/null
@@ -58,5 +63,7 @@ validate_remote_arguments() {
 validate_remote_arguments remote token registry user namespace tag sha exp-88-gerasalespage-v1
 EXPECTED_CLARITY_PROJECT_ID=clarity-123 \
   validate_remote_arguments remote token registry user namespace tag sha exp-88-gerasalespage-v1 clarity-123
+
+bash lead-portal/scripts/test-recreate-app-services.sh
 
 echo "Contrato resiliente do deploy da landing aprovado."

@@ -747,6 +747,23 @@ const flowStatusLabels: Record<string, string> = {
   WAITING: "Aguardando",
   OBSERVED: "Observado",
   MISSING: "Não comprovado",
+  UNAVAILABLE: "Não executada",
+  AWAITING_OBSERVATION: "Aguardando observação",
+  OBSERVED_EMPTY: "Executada sem aderência",
+  NO_MATCHING_ACTIVE_ADS: "Executada sem anúncio aderente",
+  NO_ACTIVE_ADS: "Sem anúncio ativo",
+  NO_RELEVANT_PLATFORM_EVIDENCE: "Sem evidência aderente ao Instagram",
+  AWAITING_PUBLIC_BROWSER: "Aguardando navegador público",
+  AWAITING_SUPERVISED_OBSERVATION: "Aguardando observação supervisionada",
+  AWAITING_OFFICIAL_COLLECTION: "Aguardando coleta oficial",
+};
+
+const metaCollectionModeLabels: Record<string, string> = {
+  PUBLIC_BROWSER: "Navegador público",
+  SUPERVISED: "Observação supervisionada",
+  OFFICIAL_API: "API oficial",
+  BACKEND_UNAVAILABLE: "Integração indisponível",
+  UNKNOWN: "Não iniciada",
 };
 
 const expansionOutcomeLabels: Record<string, string> = {
@@ -846,6 +863,49 @@ function PdeOpportunityFlowReport({
                   <span>+{attempt.newMetaAdCount} anúncios</span>
                   <span>{attempt.dossierReadyCount} dossiês prontos</span>
                 </div>
+                {attempt.metaQuery || attempt.metaCoverageStatus ? (
+                  <section className="independent-process-report__attempt-meta">
+                    <strong>
+                      <Instagram size={14} aria-hidden="true" /> Biblioteca Meta
+                      / Instagram
+                    </strong>
+                    {attempt.metaQuery ? (
+                      <span>Consulta: {attempt.metaQuery}</span>
+                    ) : null}
+                    {attempt.metaCoverageStatus ? (
+                      <span>
+                        Cobertura:{" "}
+                        {flowStatusLabels[attempt.metaCoverageStatus] ??
+                          attempt.metaCoverageStatus}
+                      </span>
+                    ) : null}
+                    {attempt.metaCollectionMode ? (
+                      <span>
+                        Modo:{" "}
+                        {metaCollectionModeLabels[
+                          attempt.metaCollectionMode
+                        ] ?? attempt.metaCollectionMode}
+                      </span>
+                    ) : null}
+                    <span>
+                      {attempt.metaAdsObserved ?? 0} anúncio(s) ·{" "}
+                      {attempt.metaAdvertisersObserved ?? 0} anunciante(s)
+                    </span>
+                    {attempt.metaCoverageSummary ? (
+                      <small>{attempt.metaCoverageSummary}</small>
+                    ) : null}
+                    {isHttpUrl(attempt.metaSearchUrl) ? (
+                      <a
+                        href={attempt.metaSearchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Abrir consulta oficial
+                        <ExternalLink size={13} aria-hidden="true" />
+                      </a>
+                    ) : null}
+                  </section>
+                ) : null}
               </article>
             ))}
           </div>
@@ -866,7 +926,9 @@ function PdeOpportunityFlowReport({
               className={`independent-process-status ${statusClass(
                 source.status === "OBSERVED"
                   ? "COMPLETED"
-                  : source.status === "MISSING"
+                  : source.status === "OBSERVED_EMPTY"
+                    ? "COMPLETED"
+                    : ["MISSING", "UNAVAILABLE"].includes(source.status)
                     ? "BLOCKED"
                     : source.status,
               )}`}

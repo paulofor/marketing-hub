@@ -56,6 +56,20 @@
   consulta hipersegmentada, callback correlacionado e rejeição de entrega física. Serviço e chave
   única impedem repetir a investigação ou a consulta normalizada em outra tentativa do ciclo; o
   relatório acumula as coberturas sem converter anúncio em venda.
+- **Recorrência fechada em 2026-09-01 — execução independente #16:** as três consultas planejadas
+  continham de oito a nove termos e o endpoint rejeitou todas com HTTP 400 antes de criar
+  investigação ou abrir o Chromium. O worker converteu o erro do próprio contrato em três coberturas
+  `UNAVAILABLE`; por isso o relatório misturou onze URLs públicas auxiliares do Instagram com zero
+  coleta da Biblioteca Meta e sugeriu falsamente uma indisponibilidade externa.
+- **Correção sistêmica da recorrência:** o executor agora compila toda frase do modelo para dois a
+  cinco termos que passam pelo mesmo critério do backend antes de coletar. HTTP 4xx não transitório
+  passa a ser erro interno, com ciclo, tentativa, consulta e causa no log; somente falha transitória
+  pode virar `UNAVAILABLE`. O endpoint e a tela correlacionam consulta, status, modo, anúncios,
+  anunciantes, explicação e URL oficial a cada uma das três lentes. A síntese gerencial traduz os
+  estados técnicos e mantém a linguagem livre anterior intacta, sem expor códigos internos.
+- **Teste de contrato da recorrência:** as três consultas reais da #16 devem ser reduzidas e aceitas;
+  HTTP 400 deve falhar a execução, HTTP 503 deve preservar cobertura indisponível e o relatório deve
+  diferenciar `OBSERVED_EMPTY`, espera de observação e integração não executada.
 
 ## LOOP-HERMES-CANAL-DIRETO-TRATADO-COMO-META — piloto aprovado bloqueia por campanha inexistente
 

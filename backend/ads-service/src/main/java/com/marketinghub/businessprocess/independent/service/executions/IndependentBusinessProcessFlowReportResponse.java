@@ -42,7 +42,14 @@ public record IndependentBusinessProcessFlowReportResponse(
       int newMetaAdCount,
       int candidateCount,
       int dossierReadyCount,
-      String outcome) {}
+      String outcome,
+      String metaQuery,
+      String metaCoverageStatus,
+      String metaCollectionMode,
+      int metaAdsObserved,
+      int metaAdvertisersObserved,
+      String metaCoverageSummary,
+      String metaSearchUrl) {}
 
   /** Expõe uma candidata factual e toda sua linhagem até o produto. */
   public record Candidate(

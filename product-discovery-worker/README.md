@@ -135,6 +135,10 @@ Em ciclos B2C orientados ao Instagram, o backend prepara e congela uma consulta
 oficial da Biblioteca de Anúncios. Argos abre essa URL em uma sessão Chromium
 efêmera, sem login, cookies persistentes ou credenciais, confirma os filtros
 Brasil, Instagram e anúncios ativos e observa no máximo 12 cards já carregados.
+Antes de enviar a solicitação, o worker compila a frase livre planejada para o
+contrato de dois a cinco termos específicos aceito pelo backend. Uma rejeição
+HTTP 4xx desse contrato encerra a tentativa como falha interna corrigível; ela
+nunca pode ser relatada como indisponibilidade da Meta ou ausência de mercado.
 
 `OBSERVED` e `EMPTY` só são registrados quando a interface confirma os filtros.
 CAPTCHA, login, bloqueio, timeout ou mudança de layout geram

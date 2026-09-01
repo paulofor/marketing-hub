@@ -67,7 +67,7 @@ export async function planDirectedResearch(job, options = {}) {
       }
       throw error;
     }
-    const plan = JSON.parse(rawResponse);
+    const plan = normalizePlanForExecution(JSON.parse(rawResponse), job);
     validatePlan(plan);
     return {
       plan,
@@ -318,6 +318,23 @@ export function deterministicPlan(job) {
   };
 }
 
+/** Compila a frase livre do modelo no contrato curto aceito pela Biblioteca Meta. */
+export function normalizePlanForExecution(plan, job = {}) {
+  if (!Array.isArray(plan?.metaAdRequests)) return plan;
+  return {
+    ...plan,
+    metaAdRequests: plan.metaAdRequests.map((request) => ({
+      ...request,
+      query: normalizeMetaQuery([
+        request?.query,
+        plan.researchLens,
+        job.theme,
+        job.targetAudience,
+      ]),
+    })),
+  };
+}
+
 /** Valida limites que impedem o agente de ampliar coleta ou inventar fontes. */
 export function validatePlan(plan) {
   if (
@@ -364,11 +381,14 @@ export function validatePlan(plan) {
   }
   for (const request of plan.metaAdRequests) {
     const metaTerms = metaQueryTerms(request.query);
+    const backendTerms = backendMetaQueryTerms(request.query);
     if (
       !request.query ||
       Array.from(request.query).length > 60 ||
       metaTerms.length < 2 ||
       metaTerms.length > 5 ||
+      backendTerms.length < 2 ||
+      backendTerms.length > 5 ||
       !request.country ||
       request.publisherPlatform !== "INSTAGRAM" ||
       request.maxAds < 1 ||
@@ -468,15 +488,7 @@ function compactQuery(value, maxLength = 140) {
 
 /** Extrai uma categoria comercial curta, sem copiar idade, público ou briefing inteiro. */
 function metaCategoryQuery(job) {
-  const primary = metaQueryTerms(job?.theme);
-  const fallback = metaQueryTerms(job?.targetAudience);
-  const terms = [
-    ...new Set(primary.length >= 2 ? primary : [...primary, ...fallback]),
-  ].slice(0, 5);
-  if (terms.length < 2) {
-    terms.push(terms.includes("serviços") ? "soluções" : "serviços");
-  }
-  return compactQuery([...new Set(terms)].slice(0, 5).join(" "), 60);
+  return normalizeMetaQuery([job?.theme, job?.targetAudience]);
 }
 
 /** Mantém somente termos comerciais úteis para a consulta pública da Biblioteca Meta. */
@@ -517,6 +529,77 @@ function metaQueryTerms(value) {
     .map((term) => term.trim())
     .filter((term) => term.length >= 3 && !ignored.has(term) && !/^\d+$/.test(term))
     .filter((term, index, terms) => terms.indexOf(term) === index);
+}
+
+/** Reproduz a contagem defensiva do backend para impedir divergência entre os contratos. */
+function backendMetaQueryTerms(value) {
+  const ignored = new Set([
+    "como",
+    "para",
+    "pela",
+    "pelo",
+    "brasil",
+    "consumidor",
+    "instagram",
+    "produto",
+    "produtos",
+    "digital",
+    "digitais",
+    "anuncio",
+    "anuncios",
+  ]);
+  return String(value || "")
+    .toLocaleLowerCase("pt-BR")
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((term) => term.trim())
+    .filter(
+      (term) =>
+        term.length >= 4 &&
+        !ignored.has(term) &&
+        !/^\d+$/.test(term),
+    )
+    .filter((term, index, terms) => terms.indexOf(term) === index);
+}
+
+/** Reduz uma consulta livre sem perder duas palavras que o backend consiga pesquisar. */
+function normalizeMetaQuery(values) {
+  const [primary, ...fallbacks] = values || [];
+  const primaryTerms = metaQueryTerms(primary);
+  const selected = primaryTerms.slice(0, 5);
+  const supplementalCandidates = [
+    ...new Set([
+      ...primaryTerms.slice(5),
+      ...fallbacks.flatMap((value) => metaQueryTerms(value)),
+    ]),
+  ];
+  const remainingSpecific = supplementalCandidates.filter(
+    (term) =>
+      backendMetaQueryTerms(term).length > 0 && !selected.includes(term),
+  );
+
+  while (backendMetaQueryTerms(selected.join(" ")).length < 2) {
+    const replacement =
+      remainingSpecific.shift() ||
+      ["serviços", "pessoais", "soluções", "cuidados"].find(
+        (term) => !selected.includes(term),
+      );
+    if (!replacement) break;
+    if (selected.length < 5) {
+      selected.push(replacement);
+      continue;
+    }
+    let replaceIndex = -1;
+    for (let index = selected.length - 1; index >= 0; index -= 1) {
+      if (backendMetaQueryTerms(selected[index]).length === 0) {
+        replaceIndex = index;
+        break;
+      }
+    }
+    if (replaceIndex < 0) break;
+    selected[replaceIndex] = replacement;
+  }
+
+  return compactQuery(selected.join(" "), 60);
 }
 
 /** Converte fontes editoriais declaradas em buscas públicas por domínio, sem raspar área privada. */

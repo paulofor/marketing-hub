@@ -552,6 +552,7 @@ export function analyzeSearchResults(
   const metaCoverage = Array.isArray(options.metaCoverage)
     ? options.metaCoverage
     : [];
+  const metaCoverageSummary = summarizeMetaCoverage(metaCoverage);
   const instagramB2cRequired = requiresConsumerInstagramFocus(job);
   const instagramPublicEvidence = evidence.filter((item) => {
     const domain = safeDomain(item.url);
@@ -631,7 +632,7 @@ export function analyzeSearchResults(
   const commercialRisk = !marketplaceGatePassed
     ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
     : !instagramB2cGatePassed
-      ? `A cobertura Meta/Instagram não foi comprovada (${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}); ausência ou indisponibilidade da fonte não significa ausência de mercado.`
+      ? `${metaCoverageSummary}; ausência ou indisponibilidade da fonte não significa ausência de mercado.`
       : purchaseMomentGate.required && !purchaseMomentGate.sourceQualityPassed
         ? `As fontes comerciais não passaram pelo gate de qualidade: ${purchaseMomentGate.reasons.join(" ")}`
         : purchaseMomentGate.required
@@ -645,7 +646,7 @@ export function analyzeSearchResults(
                 : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   return {
-    decisionSummary: `${options.analysisSummary ? `${options.analysisSummary} ` : ""}Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${decision}.`,
+    decisionSummary: `${options.analysisSummary ? `${options.analysisSummary} ` : ""}Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, ${metaCoverageSummary}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${decision}.`,
     opportunities: opportunityBlueprints.map((blueprint) => {
       const evidenceIds = new Set(blueprint.evidenceIds || []);
       const referenced = (items) =>
@@ -734,6 +735,36 @@ export function analyzeSearchResults(
       },
     },
   };
+}
+
+/** Traduz os estados técnicos da Biblioteca Meta para uma conclusão comercial auditável. */
+function summarizeMetaCoverage(metaCoverage) {
+  const statuses = metaCoverage
+    .map((item) => String(item?.sourceStatus || ""))
+    .filter(Boolean);
+  const attempts = statuses.length;
+  if (attempts === 0) return "cobertura Meta/Instagram não solicitada";
+  if (statuses.includes("UNAVAILABLE")) {
+    return `cobertura Meta/Instagram não executada em ${attempts} tentativa(s) por falha de integração`;
+  }
+  if (statuses.some((status) => status.startsWith("AWAITING_"))) {
+    return `cobertura Meta/Instagram aguardando observação em ${attempts} tentativa(s)`;
+  }
+  if (statuses.includes("OBSERVED")) {
+    return `cobertura Meta/Instagram observada em ${attempts} tentativa(s)`;
+  }
+  if (
+    statuses.every((status) =>
+      [
+        "NO_MATCHING_ACTIVE_ADS",
+        "NO_ACTIVE_ADS",
+        "NO_RELEVANT_PLATFORM_EVIDENCE",
+      ].includes(status),
+    )
+  ) {
+    return `cobertura Meta/Instagram executada em ${attempts} consulta(s), sem anúncio ativo aderente`;
+  }
+  return `cobertura Meta/Instagram sem resultado auditável em ${attempts} tentativa(s)`;
 }
 
 /** Confirma no anúncio a distribuição explícita no Instagram, sem inferir pela consulta. */

@@ -1057,7 +1057,19 @@ components:
         sourceCode: { type: string, enum: [WEB, META, PESQUISAS, MARKETPLACE] }
         label: { type: string }
         status:
-          { type: string, enum: [IN_PROGRESS, OBSERVED, MISSING, BLOCKED] }
+          {
+            type: string,
+            enum:
+              [
+                IN_PROGRESS,
+                OBSERVED,
+                OBSERVED_EMPTY,
+                AWAITING_OBSERVATION,
+                UNAVAILABLE,
+                MISSING,
+                BLOCKED,
+              ],
+          }
         itemCount: { type: integer, minimum: 0 }
         summary: { type: string }
     IndependentBusinessProcessMarketExpansion:
@@ -1096,6 +1108,8 @@ components:
           newMetaAdCount,
           candidateCount,
           dossierReadyCount,
+          metaAdsObserved,
+          metaAdvertisersObserved,
         ]
       properties:
         attemptNumber: { type: integer, minimum: 1, maximum: 3 }
@@ -1119,6 +1133,13 @@ components:
               EXPANSION_NOT_APPLICABLE,
               ATTEMPT_LIMIT_REACHED,
             ]
+        metaQuery: { type: string, nullable: true }
+        metaCoverageStatus: { type: string, nullable: true }
+        metaCollectionMode: { type: string, nullable: true }
+        metaAdsObserved: { type: integer, minimum: 0 }
+        metaAdvertisersObserved: { type: integer, minimum: 0 }
+        metaCoverageSummary: { type: string, nullable: true }
+        metaSearchUrl: { type: string, format: uri, nullable: true }
     IndependentBusinessProcessCandidate:
       type: object
       required:

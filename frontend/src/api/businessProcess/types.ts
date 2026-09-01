@@ -243,6 +243,13 @@ export type IndependentBusinessProcessMarketExpansionAttempt = {
   candidateCount: number;
   dossierReadyCount: number;
   outcome?: string;
+  metaQuery?: string;
+  metaCoverageStatus?: string;
+  metaCollectionMode?: string;
+  metaAdsObserved?: number;
+  metaAdvertisersObserved?: number;
+  metaCoverageSummary?: string;
+  metaSearchUrl?: string;
 };
 
 export type IndependentBusinessProcessMarketExpansion = {

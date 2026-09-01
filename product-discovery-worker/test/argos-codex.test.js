@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   deterministicPlan,
   executeCodexWithInput,
+  normalizePlanForExecution,
   parseCodexUsage,
   planDirectedResearch,
   validatePlan,
@@ -110,6 +111,42 @@ test("planejamento rejeita consulta Meta hipersegmentada", () => {
     "beleza pele cabelo menopausa sono autocuidado mulheres maduras";
 
   assert.throws(() => validatePlan(result.plan), /categoria ampla/);
+});
+
+test("compila as consultas reais da execução 16 antes de chamar o backend", () => {
+  const base = deterministicPlan({
+    theme: "Mulheres entre 35 e 60 anos foco em beleza e bem-estar.",
+    targetAudience: "mulheres brasileiras entre 35 e 60 anos",
+  }).plan;
+  const cases = [
+    [
+      "mulheres 35 60 beleza bem-estar pele madura menopausa autocuidado",
+      "beleza bem estar pele madura",
+    ],
+    [
+      "beleza e autocuidado feminino 40+ preço tratamento Brasil",
+      "beleza autocuidado preço tratamento",
+    ],
+    [
+      "mulher 40+ recomeço afetivo primeiro encontro autoestima beleza Brasil",
+      "recomeço afetivo primeiro encontro autoestima",
+    ],
+  ];
+
+  for (const [query, expected] of cases) {
+    const plan = normalizePlanForExecution(
+      {
+        ...base,
+        metaAdRequests: [{ ...base.metaAdRequests[0], query }],
+      },
+      {
+        theme: "Mulheres entre 35 e 60 anos foco em beleza e bem-estar.",
+      },
+    );
+
+    assert.equal(plan.metaAdRequests[0].query, expected);
+    validatePlan(plan);
+  }
 });
 
 test("planejamento envia o contexto pela entrada padrão e lê a saída estruturada", async () => {

@@ -42,4 +42,23 @@ class ArgosMarketDiscoverySwaggerTest {
             "IndependentBusinessProcessInputOption",
             "Opções canônicas exigidas quando controlType for SELECT");
   }
+
+  /** Exige a causa e os números da cobertura Meta em cada tentativa de ampliação. */
+  @Test
+  void documentsMetaCoverageByMarketExpansionAttempt() throws Exception {
+    String swagger = Files.readString(SWAGGER_ROOT.resolve("business-processes-swagger.yaml"));
+
+    assertThat(swagger)
+        .contains(
+            "metaQuery",
+            "metaCoverageStatus",
+            "metaCollectionMode",
+            "metaAdsObserved",
+            "metaAdvertisersObserved",
+            "metaCoverageSummary",
+            "metaSearchUrl",
+            "OBSERVED_EMPTY",
+            "AWAITING_OBSERVATION",
+            "UNAVAILABLE");
+  }
 }

@@ -2842,6 +2842,37 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
   `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
 
+## LOOP-ACTIONS-DEPLOY-HOST-COMPARTILHADO-CANCELADO — serviços válidos somem da fila
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado no histórico:** as últimas execuções de OPRM Coletor MEI, Ops Monitor,
+  PDE Monitor, Product AI e Scientific Research terminaram `cancelled`; em todas, testes e imagem
+  estavam verdes e somente o job de deploy, ainda sem executar passos, foi cancelado.
+- **Causa-raiz confirmada:** doze workflows serializavam publicação pelo mesmo grupo
+  `deploy-vps-191-252-120-96`, mas usavam a fila padrão de uma única pendência. O merge do PR #4591
+  disparou vários serviços simultaneamente; cada novo job pendente substituiu outro serviço válido,
+  mesmo com `cancel-in-progress: false`.
+- **Correção sistêmica:** todos os deploys desse host mantêm execução exclusiva e habilitam
+  `queue: max`, preservando até cem jobs pendentes. Um contrato central enumera os doze workflows,
+  exige grupo, fila ampliada e proteção da execução ativa e rejeita novo consumidor não registrado.
+- **Prevenção:** o workflow leve `GitHub Actions Contracts` executa o contrato em qualquer mudança
+  de workflow ou dos validadores, sem publicar imagem nem acessar host produtivo.
+
+## LOOP-LIQUIBASE-MYSQL57-PULL-TRANSITORIO — fixture válida falha antes do banco iniciar
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** a execução `33471607982` teve oito jobs físicos ou estáticos aprovados e
+  falhou somente em `Validar atividades, instâncias e tentativas`, antes de iniciar MySQL, com
+  `failed to fetch oauth token` e `TLS handshake timeout` ao resolver `mysql:5.7` no Docker Hub.
+- **Causa-raiz confirmada pelo log e pelos jobs irmãos:** runners isolados baixavam a mesma imagem
+  base em paralelo e tratavam uma única instabilidade do registry como falha da migração. Não houve
+  erro de changelog, SQL, fixture ou Liquibase nessa execução.
+- **Correção sistêmica:** cada job físico faz pre-pull de `mysql:5.7` com três tentativas limitadas e
+  atraso curto. Somente a aquisição da imagem é repetida; migração, assertivas e rollback continuam
+  em tentativa única para não mascarar defeito funcional.
+- **Prevenção:** teste com Docker simulado comprova recuperação na terceira tentativa, falha após o
+  limite e rejeição de configuração inválida; o workflow de contratos executa esse teste sem rede.
+
 ## LOOP-ARGOS-CALLBACK-DURANTE-REINICIO-BACKEND — pesquisa fica órfã após gerar nova lente
 
 - **Data:** 2026-09-01.

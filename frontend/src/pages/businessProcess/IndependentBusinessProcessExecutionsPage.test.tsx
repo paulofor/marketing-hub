@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -220,13 +226,29 @@ function detail(execution = summary): ExecutionDetailFixture {
         tasks: [
           {
             taskId: 271,
+            processDefinitionId: 52,
+            processVersionNumber: 6,
+            sourceReference: "product-discovery-cycle:77",
             status: execution.status,
             assignedAgentKey: "market-radar",
             assignedAgentNickname: "Argos",
             title: "Reunir evidências factuais",
+            result: { decision: "RESEARCH_MORE" },
             evidence: undefined as unknown,
-            costEstimationStatus: "NOT_REPORTED",
+            inputTokens: 1800,
+            cachedInputTokens: 400,
+            outputTokens: 260,
+            estimatedCostUsd: 0.01234567,
+            costEstimationStatus: "ESTIMATED",
+            modelCode: "gpt-5.6-sol",
+            executionMode: "MODEL",
+            reasoningEffort: "high",
+            promptSent: "Prompt integral auditado para Argos.",
+            agentPromptPart: "Você é o Argos auditável.",
+            activityPromptPart: "Pesquise mercados adjacentes.",
             createdAt: "2026-08-30T14:00:00Z",
+            startedAt: "2026-08-30T14:00:05Z",
+            finishedAt: "2026-08-30T14:01:05Z",
           },
         ],
       },
@@ -393,6 +415,63 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("Produto #901 criado sem publicação ou gasto."),
+    ).toBeInTheDocument();
+  });
+
+  it("mostra na execução independente o mesmo bloco auditável da tarefa", async () => {
+    const completed: IndependentBusinessProcessExecutionSummary = {
+      ...summary,
+      status: "COMPLETED",
+      completedActivityCount: 1,
+      startedAt: "2026-08-30T14:00:05Z",
+      finishedAt: "2026-08-30T14:01:05Z",
+    };
+    const completedDetail = detail(completed);
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/independent-business-process-executions/91") {
+        return { data: completedDetail };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+    renderPage("/business-process-executions/91");
+    const user = userEvent.setup();
+    const taskSummary = await screen.findByText(
+      /Tarefa #271 · Argos · Concluída/,
+    );
+
+    await user.click(taskSummary);
+
+    const taskCard = within(taskSummary.closest("details") as HTMLElement);
+    expect(taskCard.getByText("Produto interno")).toBeInTheDocument();
+    expect(taskCard.getByText("Não vinculado")).toBeInTheDocument();
+    expect(
+      taskCard.getByText("product-discovery-cycle:77"),
+    ).toBeInTheDocument();
+    expect(taskCard.getByText("v6")).toBeInTheDocument();
+    expect(taskCard.getByText("MODEL")).toBeInTheDocument();
+    expect(taskCard.getByText("gpt-5.6-sol")).toBeInTheDocument();
+    expect(taskCard.getByText("high")).toBeInTheDocument();
+    expect(
+      taskCard.getByText("entrada 1800 · cache 400 · saída 260"),
+    ).toBeInTheDocument();
+    expect(taskCard.getByText("US$ 0.01234567")).toBeInTheDocument();
+    expect(
+      taskCard.getByRole("heading", { name: "Parte do agente" }),
+    ).toBeInTheDocument();
+    expect(
+      taskCard.getByRole("heading", { name: "Parte da atividade" }),
+    ).toBeInTheDocument();
+    expect(
+      taskCard.getByRole("heading", {
+        name: "Prompt completo enviado ao modelo por Argos",
+      }),
+    ).toBeInTheDocument();
+    expect(taskCard.getByText("Você é o Argos auditável.")).toBeInTheDocument();
+    expect(
+      taskCard.getByText("Pesquise mercados adjacentes."),
+    ).toBeInTheDocument();
+    expect(
+      taskCard.getByText("Prompt integral auditado para Argos."),
     ).toBeInTheDocument();
   });
 

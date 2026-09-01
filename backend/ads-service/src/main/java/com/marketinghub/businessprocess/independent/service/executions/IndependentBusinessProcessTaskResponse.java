@@ -7,6 +7,9 @@ import java.time.Instant;
 /** Contrato auditável de uma tentativa de tarefa pertencente à execução independente. */
 public record IndependentBusinessProcessTaskResponse(
     Long taskId,
+    Long processDefinitionId,
+    Integer processVersionNumber,
+    String sourceReference,
     String status,
     String assignedAgentKey,
     String assignedAgentNickname,
@@ -21,6 +24,11 @@ public record IndependentBusinessProcessTaskResponse(
     String costEstimationStatus,
     String modelCode,
     String executionMode,
+    String reasoningEffort,
+    String productInternalName,
+    String promptSent,
+    String agentPromptPart,
+    String activityPromptPart,
     Instant createdAt,
     Instant startedAt,
     Instant finishedAt) {}

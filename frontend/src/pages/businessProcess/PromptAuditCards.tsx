@@ -6,7 +6,7 @@ type PromptAuditCardsProps = {
   agentPromptPart?: string;
   activityPromptPart?: string;
   promptSent?: string;
-  headingLevel?: "h2" | "h3";
+  headingLevel?: "h2" | "h3" | "h4";
 };
 
 /** Apresenta as duas partes persistidas e o prompt integral sem inferir conteúdo no frontend. */

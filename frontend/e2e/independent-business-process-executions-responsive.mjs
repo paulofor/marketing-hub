@@ -228,12 +228,21 @@ function detail(execution) {
         tasks: [
           {
             taskId: execution.id === 91 ? 271 : 272,
+            processDefinitionId: 52,
+            processVersionNumber: 6,
+            sourceReference: execution.sourceReference,
             status: execution.status,
             assignedAgentKey: "market-radar",
             assignedAgentNickname: "Argos",
             title: "Reunir evidências factuais",
             executionError: execution.latestError,
             costEstimationStatus: "NOT_REPORTED",
+            executionMode:
+              execution.status === "PENDING" ? "NOT_STARTED" : "MODEL",
+            modelCode:
+              execution.status === "PENDING" ? undefined : "gpt-5.6-sol",
+            reasoningEffort:
+              execution.status === "PENDING" ? "NOT_APPLICABLE" : "high",
             createdAt: execution.createdAt,
           },
         ],
@@ -365,6 +374,16 @@ try {
     ).toBeVisible();
     await expect(
       page.getByText("Aguardar Atena priorizar no máximo uma candidata."),
+    ).toBeVisible();
+    await page.getByText(/Tarefa #272 · Argos/).click();
+    await expect(
+      page.getByRole("heading", { name: "Parte do agente" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Parte da atividade" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Modelo não iniciado" }),
     ).toBeVisible();
 
     assert.equal(posts.length, 1, `${profileName}: duplo envio da execução`);

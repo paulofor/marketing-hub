@@ -145,6 +145,9 @@ export type IndependentBusinessProcessExecutionSummary = {
 
 export type IndependentBusinessProcessTask = {
   taskId: number;
+  processDefinitionId?: number;
+  processVersionNumber?: number;
+  sourceReference?: string;
   status: string;
   assignedAgentKey: string;
   assignedAgentNickname: string;
@@ -158,7 +161,12 @@ export type IndependentBusinessProcessTask = {
   estimatedCostUsd?: number;
   costEstimationStatus: string;
   modelCode?: string;
-  executionMode?: string;
+  executionMode?: "MODEL" | "DETERMINISTIC" | "NOT_STARTED";
+  reasoningEffort?: string;
+  productInternalName?: string;
+  promptSent?: string;
+  agentPromptPart?: string;
+  activityPromptPart?: string;
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;

@@ -224,6 +224,10 @@ test("mantém ciclo, lease e callback terminal únicos no fluxo integrado", asyn
     2,
   );
   assert.equal(completeCallbacks[0].payload.analysisAudit.inputTokens, 60);
+  assertMatchesBackendPromptComposition(planCallbacks[1].payload);
+  assertMatchesBackendPromptComposition(
+    completeCallbacks[0].payload.analysisAudit,
+  );
 });
 
 test("limita configuração e exige novidade mínima na ampliação", () => {
@@ -247,6 +251,8 @@ function discoveryJob() {
 
 function directed(attemptNumber) {
   const initial = attemptNumber === 1;
+  const agentPromptPart = "agente do plano";
+  const activityPromptPart = `atividade do plano ${attemptNumber}`;
   const plan = {
     researchLens: initial
       ? "Rotina de beleza antes de sair"
@@ -279,15 +285,17 @@ function directed(attemptNumber) {
     rawResponse: JSON.stringify(plan),
     model: "modelo-teste",
     mode: "CODEX",
-    prompt: `prompt do plano ${attemptNumber}`,
-    agentPromptPart: "agente do plano",
-    activityPromptPart: `atividade do plano ${attemptNumber}`,
+    prompt: `${agentPromptPart}\n\n${activityPromptPart}`,
+    agentPromptPart,
+    activityPromptPart,
     reasoningEffort: "high",
     usage: { inputTokens: 10, cachedInputTokens: 2, outputTokens: 3 },
   };
 }
 
 function analysis(expansionAxis) {
+  const agentPromptPart = "agente da síntese";
+  const activityPromptPart = `atividade da síntese ${expansionAxis}`;
   const synthesis = {
     decisionSummary: "Síntese factual de teste.",
     candidates: [
@@ -303,9 +311,9 @@ function analysis(expansionAxis) {
     rawResponse: JSON.stringify(synthesis),
     model: "modelo-teste",
     mode: "CODEX",
-    prompt: `prompt da síntese ${expansionAxis}`,
-    agentPromptPart: "agente da síntese",
-    activityPromptPart: `atividade da síntese ${expansionAxis}`,
+    prompt: `${agentPromptPart}\n\n${activityPromptPart}`,
+    agentPromptPart,
+    activityPromptPart,
     reasoningEffort: "high",
     usage: { inputTokens: 20, cachedInputTokens: 4, outputTokens: 5 },
     accessedUrls: [],
@@ -370,4 +378,51 @@ function report({
       metaCoverage: [],
     },
   };
+}
+
+/** Reproduz o gate canônico do backend para prompts multifase do agente. */
+function assertMatchesBackendPromptComposition(payload) {
+  const fullPhases = promptPhases(payload.promptSent);
+  const agentPhases = promptPhases(payload.agentPromptPart);
+  const activityPhases = promptPhases(payload.activityPromptPart);
+  assert.deepEqual(
+    [...fullPhases.keys()],
+    [...agentPhases.keys()],
+    "as fases do agente devem acompanhar o prompt integral",
+  );
+  assert.deepEqual(
+    [...fullPhases.keys()],
+    [...activityPhases.keys()],
+    "as fases da atividade devem acompanhar o prompt integral",
+  );
+  assert.ok(fullPhases.size > 0, "a auditoria multifase deve nomear as fases");
+  for (const [phase, fullPrompt] of fullPhases) {
+    assert.equal(
+      fullPrompt,
+      `${agentPhases.get(phase)}\n\n${activityPhases.get(phase)}`,
+      `a fase ${phase} deve preservar agente antes da atividade`,
+    );
+  }
+}
+
+/** Interpreta os mesmos cabeçalhos aceitos pela auditoria BPM. */
+function promptPhases(prompt) {
+  const header = /^--- ([^\r\n]+) ---\r?$/gm;
+  const phases = new Map();
+  let currentName;
+  let contentStart = -1;
+  let match;
+  while ((match = header.exec(prompt)) !== null) {
+    if (currentName) {
+      assert.equal(phases.has(currentName), false, `fase duplicada: ${currentName}`);
+      phases.set(currentName, prompt.slice(contentStart, match.index).trim());
+    }
+    currentName = match[1].trim();
+    contentStart = header.lastIndex;
+  }
+  if (currentName) {
+    assert.equal(phases.has(currentName), false, `fase duplicada: ${currentName}`);
+    phases.set(currentName, prompt.slice(contentStart).trim());
+  }
+  return phases;
 }

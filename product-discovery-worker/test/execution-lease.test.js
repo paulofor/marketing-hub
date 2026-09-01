@@ -5,6 +5,7 @@ import {
   backendFailureMessage,
   createPollLock,
   failureCallbackPayload,
+  postJson,
   researchPlanCallbackPayload,
   withExecutionLease,
 } from "../src/worker.js";
@@ -83,6 +84,77 @@ test("impede polling sobreposto enquanto uma pesquisa ainda está em execução"
   assert.equal(lock.tryAcquire(), false);
   lock.release();
   assert.equal(lock.tryAcquire(), true);
+});
+
+test("repete o mesmo callback e lease enquanto o backend ainda recusa conexão", async () => {
+  const calls = [];
+  const waits = [];
+  const warnings = [];
+  let remainingFailures = 2;
+  const payload = { executionLeaseId: "lease-296", planJson: "{}" };
+
+  const result = await postJson("http://backend/api/plan", payload, {
+    maxAttempts: 3,
+    retryDelayMs: 7,
+    fetchFn: async (_url, request) => {
+      calls.push(request.body);
+      if (remainingFailures > 0) {
+        remainingFailures -= 1;
+        const cause = Object.assign(new Error("connection refused"), {
+          code: "ECONNREFUSED",
+        });
+        throw new TypeError("fetch failed", { cause });
+      }
+      return { ok: true, json: async () => ({ accepted: true }) };
+    },
+    sleepFn: async (delayMs) => waits.push(delayMs),
+    logger: { warn: (message) => warnings.push(message) },
+  });
+
+  assert.deepEqual(result, { accepted: true });
+  assert.equal(calls.length, 3);
+  assert.ok(calls.every((body) => body === JSON.stringify(payload)));
+  assert.deepEqual(waits, [7, 7]);
+  assert.equal(warnings.length, 2);
+});
+
+test("não repete erro HTTP de contrato nem conexão interrompida após estabelecimento", async () => {
+  let contractCalls = 0;
+  let uncertainCalls = 0;
+  const noWait = async () => assert.fail("não deveria aguardar nova tentativa");
+
+  await assert.rejects(
+    postJson("http://backend/api/plan", {}, {
+      maxAttempts: 3,
+      fetchFn: async () => {
+        contractCalls += 1;
+        return {
+          ok: false,
+          status: 400,
+          text: async () => JSON.stringify({ message: "Contrato inválido" }),
+        };
+      },
+      sleepFn: noWait,
+    }),
+    /status 400: Contrato inválido/,
+  );
+  await assert.rejects(
+    postJson("http://backend/api/complete", {}, {
+      maxAttempts: 3,
+      fetchFn: async () => {
+        uncertainCalls += 1;
+        const cause = Object.assign(new Error("connection reset"), {
+          code: "ECONNRESET",
+        });
+        throw new TypeError("fetch failed", { cause });
+      },
+      sleepFn: noWait,
+    }),
+    /fetch failed/,
+  );
+
+  assert.equal(contractCalls, 1);
+  assert.equal(uncertainCalls, 1);
 });
 
 test("propaga prompt e tokens reais no callback auditável do plano", () => {

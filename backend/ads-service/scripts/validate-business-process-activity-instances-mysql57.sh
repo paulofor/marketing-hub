@@ -4,7 +4,7 @@ set -euo pipefail
 ACTIVITY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ACTIVITY_MODULE_DIR="$(cd "${ACTIVITY_SCRIPT_DIR}/.." && pwd)"
 ACTIVITY_COMPOSE_FILE="${ACTIVITY_MODULE_DIR}/docker-compose.activity-instances-mysql57.yml"
-ACTIVITY_COMPOSE_PROJECT="aihub-fe4d58e6-4b88-4d6e-8585-9c09b11d298c-8393ae1675"
+ACTIVITY_COMPOSE_PROJECT="${ACTIVITY_COMPOSE_PROJECT:-liquibase-activity-instances-local}"
 
 activity_compose() {
   docker compose \

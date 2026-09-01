@@ -44,8 +44,10 @@ uma candidata `DOSSIER_READY`; venda continua sendo somente pagamento aprovado e
 | Modo de validação | Ciclo `VALIDATE_MARKET` | Uma única rodada | Motivo `EXPANSION_NOT_APPLICABLE` |
 | Modelo desabilitado | Plano/síntese determinísticos | Uma única rodada, sem simular expansão inteligente | Motivo `EXPANSION_NOT_APPLICABLE` |
 | Fonte externa indisponível | Meta ou marketplace devolve indisponibilidade, Web ainda responde | Ausência permanece lacuna; o fluxo pode testar outra lente até o limite | Cobertura e causa preservadas, sem inferir ausência de mercado |
+| Backend reiniciando entre duas lentes | Callback encontra conexão recusada antes de enviar o request | Repetir o mesmo payload e lease por janela limitada, sem chamar novamente o modelo | Tentativas de transporte registradas e um único callback aceito |
+| Resposta interrompida ou contrato inválido | Conexão cai depois de estabelecida ou backend devolve HTTP 4xx | Não repetir automaticamente um callback de efeito incerto ou inválido | Falha preservada para recuperação pelo lease, sem duplicar conclusão |
 | Deduplicação acumulada | Mesma URL/oferta aparece em duas consultas | Gate conta o item uma única vez | Contagem final e incremento por rodada coerentes |
-| Auditoria do modelo | Duas ou três chamadas de plano/síntese com tokens conhecidos | Request, resposta bruta, modelo, URLs e consumo agregados na mesma tarefa | Histórico estruturado por tentativa, sem perder respostas anteriores |
+| Auditoria do modelo | Duas ou três chamadas de plano/síntese com tokens conhecidos | Cada callback de plano e o callback final recompõem, por fase única, agente antes da atividade | Request, resposta bruta, modelo, URLs e consumo agregados na mesma tarefa, sem perder respostas anteriores |
 | Backend e segregação | Test doubles usam ciclo e lease exclusivos | Nenhuma tarefa, ciclo ou produto extra é criado | Mesmo `cycleId`, mesmo lease e um callback terminal |
 | Tela desktop | Relatório com três tentativas | Lentes, progresso, limite e motivo legíveis | Chromium desktop sem overflow ou ação enganosa |
 | Tela iPhone 15 Pro | Mesmo relatório | Cards em uma coluna e conteúdo legível por toque | Emulação mobile completa |

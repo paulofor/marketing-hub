@@ -94,6 +94,7 @@ jobs:
     timeout-minutes: 20
     concurrency:
       group: deploy-vps-191-252-120-96
+      queue: max
       cancel-in-progress: false
     permissions:
       contents: read

@@ -1,0 +1,46 @@
+name: GitHub Actions Contracts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/test-docker-pull-with-transient-retry.sh"
+      - "scripts/test-shared-vps-deploy-queue.sh"
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/test-docker-pull-with-transient-retry.sh"
+      - "scripts/test-shared-vps-deploy-queue.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-actions-contracts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validar contratos dos workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Validar sintaxe dos contratos shell
+        run: >-
+          bash -n scripts/docker-pull-with-transient-retry.sh
+          scripts/test-docker-pull-with-transient-retry.sh
+          scripts/test-shared-vps-deploy-queue.sh
+
+      - name: Validar retry transitório do Docker
+        run: bash scripts/test-docker-pull-with-transient-retry.sh
+
+      - name: Validar fila do host compartilhado
+        run: bash scripts/test-shared-vps-deploy-queue.sh

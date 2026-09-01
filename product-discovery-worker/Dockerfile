@@ -1,6 +1,8 @@
 FROM node:20-bookworm-slim
 
 ARG CODEX_VERSION=0.146.0
+ARG RUNTIME_UID=1000
+ARG RUNTIME_GID=1000
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && update-ca-certificates \
@@ -26,6 +28,6 @@ ENV NODE_ENV=production
 
 EXPOSE 8080
 
-USER node
+USER ${RUNTIME_UID}:${RUNTIME_GID}
 
 CMD ["node", "src/worker.js"]

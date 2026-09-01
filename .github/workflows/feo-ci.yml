@@ -5,7 +5,6 @@ on:
     branches: ["main", "master"]
     paths:
       - "feo/**"
-      - ".github/workflows/feo-ci.yml"
       - "docs/registro-protocolo/padrao-modulo.md"
   pull_request:
     paths:

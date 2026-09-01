@@ -5,11 +5,11 @@ on:
     branches: ["main", "master"]
     paths:
       - 'oprm-coletor-mei/**'
-      - '.github/workflows/oprm-coletor-mei-ci.yml'
   pull_request:
     paths:
       - 'oprm-coletor-mei/**'
       - '.github/workflows/oprm-coletor-mei-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test:

@@ -2947,6 +2947,24 @@ Use este checklist quando o problema estiver em algum loop acima:
   um wrapper explícito com severidade mínima `warning`, preservando erros reais de shell e o lint de
   workflows. Um teste com double comprova que Actionlint invoca exatamente essa política, eliminando
   a diferença silenciosa entre sandbox e GitHub.
+- **Recorrência de congestionamento fechada em 2026-09-01:** a fila ampliada preservou corretamente
+  todos os deploys do PR #5085, mas a alteração simultânea dos doze arquivos de workflow disparou
+  doze publicações produtivas mesmo quando o serviço correspondente não havia mudado. A execução
+  `33545611569` do Argos ficou uma hora e vinte minutos aguardando onze publicações anteriores; não
+  havia falha de build nem ausência de runner. Alteração isolada de workflow continua validada no
+  pull request pelo contrato central, porém deixa de integrar os caminhos de `push` produtivo do
+  próprio serviço. Mudança real do módulo continua publicando normalmente e `workflow_dispatch`
+  permanece como rollout operacional explícito. O contrato da fila rejeita a reintrodução desse
+  gatilho e preserva simultaneamente `queue: max` e a exclusão mútua do VPS.
+- **Contenção do Argos na mesma recorrência:** após sair da fila, o run antigo iniciou dois
+  containers auxiliares apenas para descobrir UID/GID e depois reteve o lock no preflight do
+  Compose. No host, a espera completa de I/O superou 90% e o health não respondeu em vinte segundos.
+  A imagem passa a fixar a identidade não privilegiada `1000:1000`, o deploy reutiliza esse contrato
+  sem containers auxiliares e preflight, recriação e limpeza recebem limites próprios. Testes exigem
+  a mesma identidade na imagem e no workflow, proíbem o `docker run` auxiliar e protegem os limites.
+  O run antigo foi cancelado antes da substituição; a árvore órfã identificada pelo mesmo SHA foi
+  encerrada com `TERM`, e o container produtivo anterior permaneceu `UP`, com Brave configurado e
+  polling concluído.
 
 ## LOOP-MUSA-CHECKOUT-CANONICO-FORA-DO-DTO — contrato válido derruba o backend no CI
 

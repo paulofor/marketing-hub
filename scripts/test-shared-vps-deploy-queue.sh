@@ -38,6 +38,30 @@ for relative_workflow in "${QUEUE_TEST_WORKFLOWS[@]}"; do
     echo "Proteção da execução ativa ausente: ${relative_workflow}" >&2
     exit 1
   fi
+
+  push_block="$(awk '
+    /^  push:/ { in_push = 1; next }
+    in_push && /^  [[:alnum:]_-]+:/ { exit }
+    in_push { print }
+  ' "${workflow}")"
+  if grep -Fq "${relative_workflow}" <<<"${push_block}"; then
+    echo "Mudança isolada do workflow não pode disparar deploy produtivo: ${relative_workflow}" >&2
+    exit 1
+  fi
+
+  pull_request_block="$(awk '
+    /^  pull_request:/ { in_pull_request = 1; next }
+    in_pull_request && /^  [[:alnum:]_-]+:/ { exit }
+    in_pull_request { print }
+  ' "${workflow}")"
+  if ! grep -Fq "${relative_workflow}" <<<"${pull_request_block}"; then
+    echo "Mudança do workflow deve continuar validada no pull request: ${relative_workflow}" >&2
+    exit 1
+  fi
+  if ! grep -Fq "workflow_dispatch:" "${workflow}"; then
+    echo "Rollout operacional explícito ausente: ${relative_workflow}" >&2
+    exit 1
+  fi
 done
 
 while IFS= read -r workflow; do

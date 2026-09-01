@@ -5,11 +5,11 @@ on:
     branches: ["main", "master"]
     paths:
       - 'product-ai-worker/**'
-      - '.github/workflows/product-ai-worker-ci.yml'
   pull_request:
     paths:
       - 'product-ai-worker/**'
       - '.github/workflows/product-ai-worker-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test:

@@ -160,3 +160,21 @@ test("workflow da Psique espera a aplicação e reporta a revisão imutável", a
   assert.match(workflow, /node scripts\/wait-for-app-deployment\.mjs deploy-containers\.yml/);
   assert.match(workflow, /AGENT_BUILD_REFERENCE='\$\{GITHUB_SHA\}'/);
 });
+
+test("workflow de Íris espera a aplicação antes de alterar o host do agente", async () => {
+  const workflow = await readFile(
+    path.join(repositoryRoot, ".github/workflows/meta-ad-approver-worker-ci.yml"),
+    "utf8",
+  );
+
+  assert.match(workflow, /permissions:\n  contents: read\n  actions: read/);
+  assert.match(workflow, /name: Validate application deploy coordination/);
+  assert.match(workflow, /name: Wait for matching application deployment\n        if: github\.event_name == 'push'/);
+  assert.match(workflow, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.match(workflow, /node scripts\/wait-for-app-deployment\.mjs deploy-containers\.yml/);
+
+  const waitPosition = workflow.indexOf("- name: Wait for matching application deployment");
+  const hostMutationPosition = workflow.indexOf("- name: Add agent VPS SSH key");
+  assert.ok(waitPosition >= 0, "o gate de coordenação deve existir");
+  assert.ok(hostMutationPosition > waitPosition, "o host do agente só pode ser alterado após o deploy da aplicação");
+});

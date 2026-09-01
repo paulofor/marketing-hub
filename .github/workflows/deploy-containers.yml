@@ -7,7 +7,8 @@ on:
 concurrency:
   group: deploy-containers-${{ github.ref }}
   # Um push posterior pode conter somente documentação. Ele não pode cancelar
-  # uma publicação válida antes de a detecção de módulos ser executada.
+  # uma publicação válida nem substituir uma revisão que ainda aguarda na fila.
+  queue: max
   cancel-in-progress: false
 
 env:

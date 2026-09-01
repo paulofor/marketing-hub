@@ -2819,6 +2819,17 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o teste compartilhado do coordenador cobre seleção por SHA, espera, erro transitório,
   falha e timeout; um contrato específico exige permissão `actions: read`, execução do gate e ordem
   anterior à primeira etapa que acessa o VPS de Íris.
+- **Recorrência após o PR #5080:** o workflow central usa `cancel-in-progress: false`, mas o GitHub
+  mantém apenas uma execução pendente por grupo de concorrência. Enquanto o deploy do PR #5079 ainda
+  rodava, os pushes seguintes substituíram na fila o deploy pendente do #5080 e marcaram-no como
+  `cancelled`. Íris, Argos e Psique encerraram imediatamente, embora o deploy verde posterior do SHA
+  `8efe702de544` já contivesse o merge `ece15c20faee` do #5080.
+- **Fechamento sistêmico:** o deploy central mantém execução única, mas passa a usar `queue: max` para
+  preservar até cem revisões pendentes em vez de substituir silenciosamente a anterior. Cada worker
+  continua liberado somente pelo workflow verde do mesmo SHA; não há compatibilidade presumida com
+  backend sucessor nem publicação de worker antigo contra outra revisão.
+- **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
+  `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
 
 ## LOOP-HERMES-AMOSTRA-DIRETA-SEM-CONTRATO — retentativa paga sem evidência nova
 

@@ -2858,6 +2858,31 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o workflow leve `GitHub Actions Contracts` executa o contrato em qualquer mudança
   de workflow ou dos validadores, sem publicar imagem nem acessar host produtivo.
 
+## LOOP-ACTIONS-HOST-COMPARTILHADO-SOB-PRESSAO — deploy válido falha por I/O e identidade divergente
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** no SHA `dd9af4ff0887f96879f03b061bb159ad2b9e9ce7`, testes e imagens
+  ficaram verdes, mas Lead Portal falhou ao substituir um container ainda ativo, Product AI colidiu
+  com o nome `product-ai-worker`, FEO não concluiu o primeiro `ssh-keyscan` e Argos foi cancelado ao
+  atingir vinte minutos durante o health final.
+- **Causa-raiz confirmada pelo histórico, logs e diagnóstico do host:** os deploys já estavam
+  serializados, porém o VPS de 957 MB operava com aproximadamente 1,5 GB de swap, 87–98% de espera
+  de I/O e `load average` superior a 22. A pressão prolongou operações Docker e SSH. Em paralelo, o
+  Product AI deixou de declarar o projeto Compose canônico `marketinghub-product-ai-worker`, embora
+  o container existente continuasse pertencendo a esse projeto, transformando uma atualização em
+  colisão entre projetos.
+- **Correção sistêmica:** os doze deploys do host compartilhado recebem janela de 45 minutos e deixam
+  de executar prune agressivo de todas as imagens; FEO repete somente a coleta pública da chave SSH,
+  com limite e `StrictHostKeyChecking`; Product AI preserva o nome de projeto Compose canônico; Lead
+  Portal tenta a recriação normal e só então reconcilia, com propriedade e portas validadas, os dois
+  containers canônicos; Argos mantém seu health estrito dentro da nova janela.
+- **Prevenção:** `GitHub Actions Contracts` valida timeout mínimo, ausência de `prune -af`, identidade
+  Compose, retry de SSH e recuperação limitada do Lead Portal. Os helpers possuem testes com doubles
+  que cobrem recuperação transitória, limite de tentativas e rejeição de propriedade inesperada.
+- **Estado operacional observado:** Argos terminou saudável (`UP`, Brave configurado) mesmo após o
+  cancelamento do runner; Product AI e FEO permaneceram parados; o backend do Lead Portal permaneceu
+  `unhealthy`. A correção deste loop é versionada e não autoriza publicação fora de PR.
+
 ## LOOP-LIQUIBASE-MYSQL57-PULL-TRANSITORIO — fixture válida falha antes do banco iniciar
 
 - **Data:** 2026-09-01.

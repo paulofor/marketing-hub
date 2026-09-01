@@ -5,6 +5,7 @@ frontend_config="lead-portal/frontend/nginx.conf"
 proxy_config="lead-portal/nginx.conf"
 workflow=".github/workflows/lead-portal-ci.yml"
 flow_page="lead-portal/frontend/src/pages/FlowPage.tsx"
+recreate_script="lead-portal/scripts/recreate-app-services.sh"
 
 grep -F 'location = /index.html {' "$frontend_config" >/dev/null
 grep -F 'Cache-Control "no-store, no-cache, must-revalidate"' "$frontend_config" >/dev/null
@@ -17,7 +18,8 @@ grep -F 'docker ps --filter publish=443 -q' "$workflow" >/dev/null
 grep -F 'com.docker.compose.project.working_dir' "$workflow" >/dev/null
 grep -F 'A porta pública está ocupada por container fora do escopo do Lead Portal' "$workflow" >/dev/null
 grep -F 'docker rm -f lead-portal-proxy-1 lead-portal_proxy_1' "$workflow" >/dev/null
-grep -F 'up -d backend frontend' "$workflow" >/dev/null
+grep -F 'bash scripts/recreate-app-services.sh' "$workflow" >/dev/null
+grep -F 'docker compose "${compose_files[@]}" up -d backend frontend' "$recreate_script" >/dev/null
 grep -F 'up -d proxy' "$workflow" >/dev/null
 grep -F 'deployment_validated=false' "$workflow" >/dev/null
 grep -F 'if [ "$deployment_validated" = false ]' "$workflow" >/dev/null
@@ -39,7 +41,7 @@ if grep -F 'up -d --force-recreate proxy' "$workflow" >/dev/null; then
   exit 1
 fi
 
-backend_frontend_line="$(grep -n -F 'up -d backend frontend' "$workflow" | head -1 | cut -d: -f1)"
+backend_frontend_line="$(grep -n -F 'bash scripts/recreate-app-services.sh' "$workflow" | tail -1 | cut -d: -f1)"
 port_owner_line="$(grep -n -F 'docker ps --filter publish=80 -q' "$workflow" | head -1 | cut -d: -f1)"
 if [ "$backend_frontend_line" -ge "$port_owner_line" ]; then
   echo "[ARQUITETURA] backend e frontend saudáveis devem preceder qualquer troca do proxy público" >&2

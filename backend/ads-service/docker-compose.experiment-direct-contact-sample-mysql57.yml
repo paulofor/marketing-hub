@@ -1,0 +1,40 @@
+services:
+  mysql57-experiment-direct-contact:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql57-experiment-direct-contact-sample
+    image: marketing-hub/ads-service-mysql57-experiment-direct-contact:validation
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: marketinghub_local
+      MYSQL_USER: marketinghub
+      MYSQL_PASSWORD: marketinghub-local
+      MYSQL_ROOT_PASSWORD: marketinghub-root-local
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "marketinghub",
+          "-pmarketinghub-local",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  liquibase-experiment-direct-contact:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-experiment-direct-contact:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2026-09-01-experiment-direct-contact-sample-v1.yaml
+    depends_on:
+      mysql57-experiment-direct-contact:
+        condition: service_healthy

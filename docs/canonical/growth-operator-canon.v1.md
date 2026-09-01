@@ -70,6 +70,15 @@ O fingerprint exclui a memoria acumulada e inclui apenas evidencias operacionais
 
 Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
 
+Por decisão de 2026-09-01, toda leitura do histórico do Operador é obrigatoriamente paginada: a
+tela e o MCP usam dez ciclos recentes e o backend recusa janelas acima de vinte. Totais por status
+e o próximo número de ciclo são calculados por agregações no banco, sem materializar os campos
+`LONGTEXT`. Endpoints `GET` de plano e histórico são estritamente de leitura; sincronização de
+marcos ou métricas acontece somente no comando operacional explícito que reconcilia os planos antes
+de avaliar um novo ciclo. Essa separação preserva a
+auditoria completa sem manter transações longas ou carregar centenas de respostas de modelo na
+memória do backend.
+
 Quando o planejamento estiver associado a um experimento, o snapshot deve incluir a inteligencia
 de sessoes completa disponivel na janela do funil: resumo, jornadas recentes e eventos individuais
 em ordem temporal, incluindo secao, duracao, video, CTA, desempenho, dispositivo, origem e versao.

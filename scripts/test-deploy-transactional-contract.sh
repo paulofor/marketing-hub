@@ -29,8 +29,13 @@ require_contract 'wait_backend_container_http' 'validação do estado do contain
 bash "$(dirname "$0")/test-backend-health-wait.sh"
 bash "$(dirname "$0")/test-read-frontend-build-revision.sh"
 
-if ! grep -A4 '^concurrency:' "${WORKFLOW_FILE}" | grep -Fq 'cancel-in-progress: false'; then
+if ! grep -A6 '^concurrency:' "${WORKFLOW_FILE}" | grep -Fq 'cancel-in-progress: false'; then
   printf '[ARQUITETURA] workflow pode cancelar um deploy válido por causa de push posterior sem mudança operacional.\n' >&2
+  exit 1
+fi
+
+if ! grep -A6 '^concurrency:' "${WORKFLOW_FILE}" | grep -Fq 'queue: max'; then
+  printf '[ARQUITETURA] workflow deve preservar na fila os deploys pendentes de cada revisão.\n' >&2
   exit 1
 fi
 

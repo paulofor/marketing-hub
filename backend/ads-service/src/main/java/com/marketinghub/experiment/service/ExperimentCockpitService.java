@@ -4,6 +4,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.experiment.directcontact.v1.ExperimentDirectContactService;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
@@ -43,6 +44,7 @@ public class ExperimentCockpitService {
   private final ExperimentDiagnosticsService diagnosticsService;
   private final ExperimentFunnelService funnelService;
   private final ExperimentFunnelDiagnosticService funnelDiagnosticService;
+  private final ExperimentDirectContactService directContactService;
 
   /** Inicializa o cockpit com fontes canônicas de experimento, prontidão, funil e diagnóstico. */
   public ExperimentCockpitService(
@@ -50,12 +52,14 @@ public class ExperimentCockpitService {
       ExperimentReadinessService readinessService,
       ExperimentDiagnosticsService diagnosticsService,
       ExperimentFunnelService funnelService,
-      ExperimentFunnelDiagnosticService funnelDiagnosticService) {
+      ExperimentFunnelDiagnosticService funnelDiagnosticService,
+      ExperimentDirectContactService directContactService) {
     this.experimentRepository = experimentRepository;
     this.readinessService = readinessService;
     this.diagnosticsService = diagnosticsService;
     this.funnelService = funnelService;
     this.funnelDiagnosticService = funnelDiagnosticService;
+    this.directContactService = directContactService;
   }
 
   /** Monta a visão consolidada do cockpit para um experimento. */
@@ -157,6 +161,12 @@ public class ExperimentCockpitService {
     long purchases = stageTotal(funnelStages, ExperimentFunnelStage.COMPRA);
     Long impressions = metric != null ? metric.getImpressions() : null;
     Long clicks = metric != null ? metric.getClicks() : null;
+    long directContacts =
+        isDirectOneToOne(experiment)
+            ? directContactService.countRecordedContacts(experiment.getId())
+            : 0L;
+    int directContactTarget =
+        isDirectOneToOne(experiment) ? directContactService.targetContacts(experiment) : 0;
     return new ExperimentCockpitScoreboardDto(
         spend,
         revenue,
@@ -166,6 +176,8 @@ public class ExperimentCockpitService {
         clicks,
         percentage(clicks, impressions),
         clicks != null && clicks > 0 && metric != null ? metric.getCpc() : null,
+        directContacts,
+        directContactTarget,
         measuredPageViews,
         partialVideoViews,
         completeVideoViews,
@@ -349,17 +361,23 @@ public class ExperimentCockpitService {
           "Manter o criativo atual e coletar dados até 200 impressões, preservando o limite financeiro do experimento.");
     }
     if (isDirectOneToOne(experiment)) {
-      int sampleSize = experiment.getSampleSize() == null ? 0 : experiment.getSampleSize();
+      long recordedContacts = scoreboard.directContacts();
+      int sampleSize = scoreboard.directContactTarget();
+      long remainingContacts = Math.max(0L, sampleSize - recordedContacts);
       return bottleneck(
-          "AGUARDANDO_CONTATOS_DIRETOS",
-          "Piloto direto pronto, ainda sem contatos medidos",
+          recordedContacts >= sampleSize && sampleSize > 0
+              ? "AMOSTRA_DIRETA_PRONTA_PARA_REVISAO"
+              : "AGUARDANDO_CONTATOS_DIRETOS",
+          recordedContacts >= sampleSize && sampleSize > 0
+              ? "Amostra direta pronta para revisão"
+              : "Piloto direto acumulando contatos consentidos",
           "secondary",
-          "O canal individual está ativo e não depende de campanha Meta, porém ainda não existem eventos humanos da amostra consentida.",
-          "A instrumentação pode ser considerada pronta sem transformar QA em visita ou venda; o próximo aprendizado virá dos contatos reais autorizados.",
-          sampleSize > 0
-              ? "Registrar somente os contatos consentidos da amostra de %d e acompanhar avanço, pagamento, entrega e primeiro uso."
-                  .formatted(sampleSize)
-              : "Registrar a amostra consentida definida no contrato estratégico e acompanhar avanço, pagamento, entrega e primeiro uso.");
+          "%d de %d contatos individuais consentidos e aderentes foram registrados; faltam %d."
+              .formatted(recordedContacts, sampleSize, remainingContacts),
+          "O placar usa registros próprios de abordagem e não transforma QA, visita ou clique em contato.",
+          recordedContacts >= sampleSize && sampleSize > 0
+              ? "Reavaliar a atividade de Hermes e preservar separadamente checkout, pagamento, entrega e primeiro uso."
+              : "Registrar somente cada contato realmente realizado, com consentimento anterior e aderência confirmada.");
     }
     return bottleneck(
         "SEM_DADOS",

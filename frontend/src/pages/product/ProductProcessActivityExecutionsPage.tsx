@@ -25,6 +25,7 @@ import PageTitle from "../../components/PageTitle";
 import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExecutionCard";
 import "../businessProcess/BusinessProcessesPage.css";
 import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecutionPanel";
+import DirectContactSamplePanel from "./DirectContactSamplePanel";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -117,6 +118,11 @@ export default function ProductProcessActivityExecutionsPage() {
         (data.completedActivityCount / data.selectedActivityCount) * 100,
       )
     : 0;
+  const directContactExperimentId =
+    data?.processCode === "operacao-otimizacao-experimento" &&
+    data.currentExecutionReference?.match(/^experiment:([1-9][0-9]*)$/)
+      ? Number(data.currentExecutionReference.split(":")[1])
+      : null;
 
   if (!validProductId || !validProcessId) {
     return (
@@ -477,6 +483,15 @@ export default function ProductProcessActivityExecutionsPage() {
                 <p className="product-process-activity-executions__state-reason">
                   <strong>Situação:</strong> {activity.stateReason}
                 </p>
+
+                {activity.activityId === "task-2" &&
+                directContactExperimentId ? (
+                  <DirectContactSamplePanel
+                    experimentId={directContactExperimentId}
+                    productId={productId}
+                    processDefinitionId={processDefinitionId}
+                  />
+                ) : null}
 
                 {!activity.executionRequestAvailable &&
                 !activity.executionControl &&

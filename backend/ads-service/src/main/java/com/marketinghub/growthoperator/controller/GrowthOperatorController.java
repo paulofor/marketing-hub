@@ -36,10 +36,11 @@ public class GrowthOperatorController {
     return service.start(planId, request);
   }
 
-  /** Lista diagnosticos vinculados ao planejamento. */
+  /** Lista uma janela limitada dos diagnosticos vinculados ao planejamento. */
   @GetMapping("/commercial-plans/{planId}/executions")
-  public List<GrowthOperatorExecutionResponse> list(@PathVariable Long planId) {
-    return service.list(planId);
+  public List<GrowthOperatorExecutionResponse> list(
+      @PathVariable Long planId, @RequestParam(defaultValue = "10") int limit) {
+    return service.list(planId, limit);
   }
 
   /** Lista pendencias abertas e concluidas do planejamento. */

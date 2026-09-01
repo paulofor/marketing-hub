@@ -501,6 +501,11 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 - operar e comparar mídia, creators/parceiros e ativos próprios somente nas rotas aprovadas, pagando
   comissão ou mídia apenas conforme contrato e atribuição auditável;
 - acompanhar o gargalo real do funil;
+- quando o canal for `DIRECT_ONE_TO_ONE`, persistir cada abordagem como registro próprio com
+  identificador pseudonimizado, evidência de consentimento anterior, horário do contato, aderência ao
+  público e operador; visita, clique, sessão e tráfego de QA nunca substituem esse registro;
+- impedir nova revisão automatizada da amostra direta até existir evidência nova e liberar a decisão
+  somente ao atingir o alvo vigente, sem ultrapassá-lo silenciosamente;
 - garantir acesso e entrega antes de ampliar aquisição;
 - medir receita, CAC, conversão, primeiro uso, conclusão, satisfação e reembolso;
 - manter a compradora identificada em uma continuidade simples e de baixo atrito para retorno, uso e

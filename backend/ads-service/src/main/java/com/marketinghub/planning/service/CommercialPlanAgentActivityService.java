@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,7 +82,7 @@ public class CommercialPlanAgentActivityService {
         .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId())
         .forEach(execution -> entries.add(financialEntry(execution)));
     growthOperatorRepository
-        .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId())
+        .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId(), PageRequest.of(0, 10))
         .forEach(execution -> entries.add(growthOperatorEntry(execution)));
     var planExperiments = new LinkedHashSet<>(plan.getExperiments());
     if (plan.getExperiment() != null) planExperiments.add(plan.getExperiment());

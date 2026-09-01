@@ -2819,3 +2819,50 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o teste compartilhado do coordenador cobre seleção por SHA, espera, erro transitório,
   falha e timeout; um contrato específico exige permissão `actions: read`, execução do gate e ordem
   anterior à primeira etapa que acessa o VPS de Íris.
+- **Recorrência após o PR #5080:** o workflow central usa `cancel-in-progress: false`, mas o GitHub
+  mantém apenas uma execução pendente por grupo de concorrência. Enquanto o deploy do PR #5079 ainda
+  rodava, os pushes seguintes substituíram na fila o deploy pendente do #5080 e marcaram-no como
+  `cancelled`. Íris, Argos e Psique encerraram imediatamente, embora o deploy verde posterior do SHA
+  `8efe702de544` já contivesse o merge `ece15c20faee` do #5080.
+- **Fechamento sistêmico:** o deploy central mantém execução única, mas passa a usar `queue: max` para
+  preservar até cem revisões pendentes em vez de substituir silenciosamente a anterior. Cada worker
+  continua liberado somente pelo workflow verde do mesmo SHA; não há compatibilidade presumida com
+  backend sucessor nem publicação de worker antigo contra outra revisão.
+- **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
+  `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
+
+## LOOP-HERMES-AMOSTRA-DIRETA-SEM-CONTRATO — retentativa paga sem evidência nova
+
+- **Data:** 2026-09-01.
+- **Sintoma:** as tarefas #294 e #295 de Hermes terminaram `BLOCKED` com 0/15 contatos do Rigel; a
+  segunda tentativa repetiu a mesma leitura e as duas consumiram US$ 0,6939976 sem produzir sinal
+  comercial novo.
+- **Causa-raiz confirmada no frontend, backend, worker, banco e histórico:** o experimento 89 e o
+  Plano Comercial definiam 15 contatos consentidos, mas o sistema possuía apenas eventos de funil,
+  sessões e QA. Não existia entidade, endpoint nem tela para provar pessoa distinta, consentimento,
+  aderência e abordagem. O reinício genérico permitia chamar o modelo mesmo com a entrada invariável.
+- **Correção sistêmica:** a amostra direta ganha contrato v1 próprio, identidade pseudonimizada no
+  navegador, prova de consentimento, datas, aderência, operador, deduplicação e teto serializado. O
+  backend calcula o placar e bloqueia nova tarefa até 15/15; Hermes consulta essa fonte oficial e
+  deixa de inferir contato a partir de visita, clique ou QA.
+- **Prevenção:** testes cobrem canal, estado, temporalidade, duplicidade, teto, concorrência, gate BPM,
+  MCP, privacidade e interface. A matriz local separa contato, checkout, pagamento, entrega e venda e
+  proíbe dados produtivos sintéticos.
+
+## LOOP-HERMES-HISTORICO-LONGTEXT-SEM-LIMITE — leitura esgota o backend e trava filas
+
+- **Data:** 2026-09-01.
+- **Sintoma:** durante a preparação da retentativa do Rigel, o backend alternou entre `UP` e
+  indisponível; filas de tarefas receberam timeout de lock e o processo reiniciou por falta de
+  memória.
+- **Causa-raiz confirmada em logs, transações e banco:** o plano 2 acumulou 362 execuções do
+  Operador, com 232,23 MB de payloads `LONGTEXT`. A tela consultava o histórico a cada 15 segundos,
+  serviços carregavam todas as execuções e endpoints `GET` também sincronizavam e gravavam plano e
+  marcos. Uma transação ficou aberta por mais de 246 segundos, com 57 linhas bloqueadas e 145
+  modificadas, enquanto o heap atingiu aproximadamente 1.159/1.180 MB.
+- **Correção sistêmica:** histórico público e memória do agente passam a usar janela de dez itens,
+  com teto absoluto de vinte; contagens e maior ciclo usam agregações SQL; a tela reduz o polling; e
+  leituras de plano deixam de executar qualquer sincronização de escrita.
+- **Prevenção:** testes exigem paginação e teto no repositório, preservam contagens consolidadas sem
+  carregar payloads e comprovam que `getPlan` não chama sincronização nem `save`. O cânone proíbe
+  histórico não paginado e escrita implícita em endpoints de leitura.

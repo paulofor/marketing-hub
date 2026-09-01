@@ -105,10 +105,11 @@ export function useGrowthOperatorExecutions(planId?: number | null) {
   return useQuery({
     queryKey: ["growth-operator-executions", planId],
     enabled: !!planId,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data } = await axios.get<GrowthOperatorExecution[]>(
         `/api/growth-operator/v1/commercial-plans/${planId}/executions`,
+        { params: { limit: 10 } },
       );
       return data;
     },

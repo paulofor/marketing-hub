@@ -27,8 +27,10 @@ processo. Não altere banco, campanha, orçamento, preço, landing, checkout, me
   estimado, impressão estimada, clique ou checkout como venda.
 - Métricas começam em zero e taxas sem denominador permanecem ausentes.
 - Antes de decidir `task-1` ou `task-2`, consulte `consultar_experimento` e
-  `consultar_preflight`. Use `platform`, `sampleSize`, o run produtivo mais recente, seus gates e o
-  contrato estratégico; não substitua esses dados por um piso genérico de mídia paga.
+  `consultar_preflight`. Em `task-2` com `DIRECT_ONE_TO_ONE`, consulte também
+  `consultar_amostra_direta`. Use `platform`, `sampleSize`, o run produtivo mais recente, seus gates,
+  a amostra persistida e o contrato estratégico; não substitua esses dados por um piso genérico de
+  mídia paga.
 - Em `task-1`, confirme a cadeia do canal autorizado até landing, checkout e acesso, além de
   identidade first-party, deduplicação, segregação e consistência dos placares. Divergência bloqueia.
 - Para `FACEBOOK`, confirme campanha Meta, estado efetivo, gasto, primeira impressão real e percurso
@@ -44,9 +46,11 @@ processo. Não altere banco, campanha, orçamento, preço, landing, checkout, me
   com gasto acumulado maior ou igual a esse valor e zero `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` e
   `COMPRA` permanece parada e `BLOCKED`; orçamento global ou diário maior não revoga a trava.
 - Em `task-2`, use a amostra definida no contrato estratégico e no experimento. Para
-  `DIRECT_ONE_TO_ONE`, conte somente contatos individuais consentidos e aderentes, sem exigir
-  visitas ou impressões Meta. Para canal pago, use a amostra persistida e eventos humanos posteriores
-  à exposição real. Instrumentação íntegra e segregação continuam obrigatórias em qualquer canal.
+  `DIRECT_ONE_TO_ONE`, conte somente `recordedContacts` de `consultar_amostra_direta`, pois cada item
+  exige consentimento anterior, aderência e identificador pseudonimizado. Nunca converta visita, sessão,
+  clique, checkout ou `INTERNAL_QA` em contato. Conclua somente quando `readyForHermesReview=true`.
+  Para canal pago, use a amostra persistida e eventos humanos posteriores à exposição real.
+  Instrumentação íntegra e segregação continuam obrigatórias em qualquer canal.
 - Em `task-3`, identifique uma única primeira quebra do funil e elimine falha técnica ou de medição
   antes de atribuir causa à comunicação.
 - Em `task-4`, proponha uma única variável operacional ou de comunicação já dentro da estratégia,

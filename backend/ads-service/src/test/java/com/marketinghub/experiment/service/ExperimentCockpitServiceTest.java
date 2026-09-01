@@ -11,6 +11,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.experiment.directcontact.v1.ExperimentDirectContactService;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsSeverity;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -41,6 +42,7 @@ class ExperimentCockpitServiceTest {
   @Mock private ExperimentDiagnosticsService diagnosticsService;
   @Mock private ExperimentFunnelService funnelService;
   @Mock private ExperimentFunnelDiagnosticService funnelDiagnosticService;
+  @Mock private ExperimentDirectContactService directContactService;
 
   @InjectMocks private ExperimentCockpitService service;
 
@@ -315,13 +317,17 @@ class ExperimentCockpitServiceTest {
     when(funnelDiagnosticService.diagnose(experimentId))
         .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
     when(funnelService.approvedRevenue(experimentId)).thenReturn(BigDecimal.ZERO);
+    when(directContactService.countRecordedContacts(experimentId)).thenReturn(0L);
+    when(directContactService.targetContacts(experiment)).thenReturn(15);
 
     var cockpit = service.getCockpit(experimentId);
 
     assertEquals("READY", cockpit.health().status());
     assertTrue(cockpit.health().description().contains("sem campanha Meta"));
     assertEquals("AGUARDANDO_CONTATOS_DIRETOS", cockpit.bottleneck().code());
-    assertTrue(cockpit.bottleneck().recommendedFocus().contains("amostra de 15"));
+    assertEquals(0L, cockpit.scoreboard().directContacts());
+    assertEquals(15, cockpit.scoreboard().directContactTarget());
+    assertTrue(cockpit.bottleneck().diagnosis().contains("0 de 15"));
     assertEquals("ACOMPANHAR_AMOSTRA_DIRETA", cockpit.nextActions().getFirst().code());
     assertTrue(
         cockpit.funnel().stream()

@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-experiment-direct-contact-sample-v1-1-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - or:
+            - not:
+                tableExists:
+                  tableName: experiment_direct_contact
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'experiment_direct_contact') = 9
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'experiment_direct_contact'
+                            AND COLUMN_NAME IN ('consent_recorded_at', 'contacted_at', 'created_at')
+                            AND DATA_TYPE = 'datetime'
+                            AND IS_NULLABLE = 'NO') = 3
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'experiment_direct_contact'
+                            AND INDEX_NAME = 'uk_experiment_direct_contact_fingerprint'
+                            AND NON_UNIQUE = 0) = 2
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.REFERENTIAL_CONSTRAINTS
+                          WHERE CONSTRAINT_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'experiment_direct_contact'
+                            AND CONSTRAINT_NAME = 'fk_experiment_direct_contact_experiment') = 1,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS experiment_direct_contact (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                experiment_id BIGINT NOT NULL,
+                contact_fingerprint CHAR(64) NOT NULL,
+                consent_evidence_reference VARCHAR(500) NOT NULL,
+                consent_recorded_at DATETIME NOT NULL,
+                contacted_at DATETIME NOT NULL,
+                audience_fit_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+                recorded_by VARCHAR(100) NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_experiment_direct_contact_fingerprint
+                  (experiment_id, contact_fingerprint),
+                INDEX idx_experiment_direct_contact_sample (experiment_id, contacted_at),
+                CONSTRAINT fk_experiment_direct_contact_experiment
+                  FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE experiment_direct_contact;

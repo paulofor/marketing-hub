@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub — amostra direta consentida
+  version: 1.0.0
+  description: Contrato administrativo para acumular contatos reais de experimentos DIRECT_ONE_TO_ONE.
+paths:
+  /api/experiments/{experimentId}/direct-contact-sample:
+    get:
+      summary: Consulta a amostra direta consentida
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          description: Placar e registros pseudonimizados da amostra.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectContactSample'
+        '404':
+          description: Experimento não encontrado.
+        '409':
+          description: Experimento não usa canal direto.
+  /api/experiments/{experimentId}/direct-contact-sample/contacts:
+    post:
+      summary: Registra um contato já realizado, consentido e aderente
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDirectContact'
+      responses:
+        '200':
+          description: Contato registrado e placar atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectContactSample'
+        '400':
+          description: Consentimento, evidência, datas, fingerprint ou aderência inválidos.
+        '404':
+          description: Experimento não encontrado.
+        '409':
+          description: Canal/estado incompatível, duplicidade ou meta já atingida.
+components:
+  parameters:
+    ExperimentId:
+      name: experimentId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+  schemas:
+    RegisterDirectContact:
+      type: object
+      required:
+        - contactFingerprint
+        - consentEvidenceReference
+        - consentRecordedAt
+        - contactedAt
+        - audienceFitConfirmed
+        - recordedBy
+      properties:
+        contactFingerprint:
+          type: string
+          pattern: '^[0-9a-fA-F]{64}$'
+          description: SHA-256 calculado no navegador; telefone ou e-mail em claro é proibido.
+        consentEvidenceReference:
+          type: string
+          maxLength: 500
+          pattern: '^(internal://|https://)'
+        consentRecordedAt:
+          type: string
+          format: date-time
+        contactedAt:
+          type: string
+          format: date-time
+        audienceFitConfirmed:
+          type: boolean
+          enum: [true]
+        recordedBy:
+          type: string
+          maxLength: 100
+    DirectContact:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        contactFingerprintSuffix:
+          type: string
+          description: Somente os últimos 12 caracteres do identificador pseudonimizado.
+        consentEvidenceReference:
+          type: string
+        consentRecordedAt:
+          type: string
+          format: date-time
+        contactedAt:
+          type: string
+          format: date-time
+        audienceFitConfirmed:
+          type: boolean
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    DirectContactSample:
+      type: object
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        platform:
+          type: string
+          enum: [DIRECT_ONE_TO_ONE]
+        experimentStatus:
+          type: string
+        targetContacts:
+          type: integer
+        recordedContacts:
+          type: integer
+          format: int64
+        remainingContacts:
+          type: integer
+          format: int64
+        readyForHermesReview:
+          type: boolean
+        operationalStatus:
+          type: string
+          enum: [ACCUMULATING_CONSENTED_SAMPLE, READY_FOR_HERMES_REVIEW]
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DirectContact'

@@ -2,8 +2,10 @@ package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
@@ -66,6 +68,20 @@ class CommercialPlanServiceTest {
             experimentRepository,
             executionSyncService,
             versionService);
+  }
+
+  /** Mantém a consulta do plano livre de sincronizações e gravações implícitas. */
+  @Test
+  void getPlanDoesNotWriteDuringRead() {
+    CommercialPlan plan = CommercialPlan.builder().id(2L).build();
+    when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
+
+    CommercialPlan result = service.getPlan(2L);
+
+    assertThat(result).isSameAs(plan);
+    verifyNoInteractions(executionSyncService);
+    verify(milestoneRepository, never()).findByPlanIdOrderBySequenceOrderAsc(2L);
+    verify(planRepository, never()).save(any(CommercialPlan.class));
   }
 
   /** Deve bloquear planos sem os gates comerciais minimos. */
@@ -159,7 +175,7 @@ class CommercialPlanServiceTest {
 
     assertThat(simulation.getRecommendation()).isEqualTo(CommercialPlanRecommendation.CORRECT);
     assertThat(simulation.getBestNextAction()).contains("Completar objetivo");
-    verify(planRepository, times(2)).save(plan);
+    verify(planRepository).save(plan);
   }
 
   /** Aplica hipóteses aprovadas apenas nos campos que ainda estavam ausentes. */
@@ -206,7 +222,6 @@ class CommercialPlanServiceTest {
     CommercialPlan plan =
         CommercialPlan.builder().id(2L).hypothesis(hypothesis).experiment(oldExperiment).build();
     when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
-    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(2L)).thenReturn(List.of());
     when(experimentRepository.findByStatus(ExperimentStatus.RUNNING))
         .thenReturn(List.of(runningExperiment));
     when(planRepository.save(any(CommercialPlan.class)))
@@ -236,7 +251,6 @@ class CommercialPlanServiceTest {
             .build();
     CommercialPlan plan = CommercialPlan.builder().id(2L).experiment(oldExperiment).build();
     when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
-    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(2L)).thenReturn(List.of());
     when(experimentRepository.findByStatus(ExperimentStatus.RUNNING))
         .thenReturn(List.of(runningExperiment));
     when(planRepository.save(any(CommercialPlan.class)))
@@ -254,7 +268,6 @@ class CommercialPlanServiceTest {
         Hypothesis.builder().id(UUID.randomUUID()).title("Agenda cheia").build();
     CommercialPlan plan = CommercialPlan.builder().id(2L).hypothesis(hypothesis).build();
     when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
-    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(2L)).thenReturn(List.of());
     when(experimentRepository.findByStatus(ExperimentStatus.RUNNING))
         .thenReturn(
             List.of(

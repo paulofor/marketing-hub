@@ -2784,6 +2784,12 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes do worker e do backend reproduzem o callback produtivo, exigem a presença das
   duas fases, recusam inversão dentro de qualquer interação e impedem corpo HTML ou credencial na
   mensagem operacional.
+- **Recorrência e fechamento em 2026-09-01:** a tarefa #296 e o ciclo #52 passaram pelo primeiro
+  plano, mas o segundo callback `/plan` agregou todas as partes de agente separadas de todas as
+  partes de atividade. O mesmo formato repetia os nomes `PLANEJAMENTO` e `SÍNTESE FACTUAL` no
+  callback final, que seria recusado depois. Cada tentativa agora usa fases únicas e estáveis,
+  independentes do texto livre da lente, e cada fase recompõe exatamente agente antes da atividade.
+  O teste integrado reproduz o gate do backend tanto no segundo plano quanto na conclusão.
 
 ## LOOP-BACKEND-CADEIA-PRODUTO-CONTEXTO-REPETIDO — tela responde sem concluir os cards
 
@@ -2830,6 +2836,27 @@ Use este checklist quando o problema estiver em algum loop acima:
   backend sucessor nem publicação de worker antigo contra outra revisão.
 - **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
   `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
+
+## LOOP-ARGOS-CALLBACK-DURANTE-REINICIO-BACKEND — pesquisa fica órfã após gerar nova lente
+
+- **Data:** 2026-09-01.
+- **Sintoma:** a tarefa #297 e o ciclo #53 superaram a auditoria multifase, coletaram 30 fontes,
+  oito ofertas e sintetizaram três candidatas; depois de gerar a segunda lente, o callback `/plan`
+  falhou com `fetch failed` e deixou a tarefa `IN_PROGRESS` até o vencimento do lease.
+- **Causa-raiz confirmada no histórico:** o backend foi recriado às 05:14:49Z e só concluiu o
+  startup às 05:17:35Z. Nesse intervalo, health, reconexão e callback de Argos receberam
+  `ECONNREFUSED 191.252.181.168:80`. O worker fazia uma única tentativa de callback e a própria
+  notificação `/fail` encontrava a mesma indisponibilidade.
+- **Correção sistêmica:** callbacks de Argos repetem por uma janela limitada somente falhas que
+  comprovam que a conexão TCP não chegou a ser estabelecida, sempre com o mesmo payload e lease.
+  HTTP 4xx e conexões interrompidas depois de estabelecidas não são repetidos, evitando duplicar um
+  callback terminal cujo efeito seja incerto.
+- **Prevenção:** teste de contrato simula duas recusas seguidas de recuperação, exige payload e
+  lease idênticos e confirma que erro HTTP e `ECONNRESET` permanecem em tentativa única.
+- **Validação operacional:** a imagem `task296-transport-v2` recuperou o ciclo #53 após o lease
+  expirar, concluiu a tarefa #297 com três lentes auditadas e três oportunidades persistidas e
+  encerrou em `ATTEMPT_LIMIT_REACHED`, sem novo erro de callback. A tela apresentou `CONCLUÍDA COM
+  LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate comercial.
 
 ## LOOP-HERMES-AMOSTRA-DIRETA-SEM-CONTRATO — retentativa paga sem evidência nova
 

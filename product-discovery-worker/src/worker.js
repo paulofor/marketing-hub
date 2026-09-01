@@ -45,6 +45,12 @@ const maxSearchQueries = Number(
 const maxResultsPerQuery = Number(
   process.env.PRODUCT_DISCOVERY_MAX_RESULTS_PER_QUERY || "5",
 );
+const backendCallbackMaxAttempts = Number(
+  process.env.ARGOS_BACKEND_CALLBACK_MAX_ATTEMPTS || "25",
+);
+const backendCallbackRetryDelayMs = Number(
+  process.env.ARGOS_BACKEND_CALLBACK_RETRY_DELAY_MS || "15000",
+);
 const healthHost = process.env.PRODUCT_DISCOVERY_HEALTH_HOST || "0.0.0.0";
 const healthPort = Number(process.env.PRODUCT_DISCOVERY_HEALTH_PORT || "8080");
 const searchConfig = resolveSearchConfig();
@@ -443,7 +449,7 @@ function joinAuditParts(planPart, analysisPart) {
 /** Separa no documento auditável os prompts de plano e síntese de cada tentativa. */
 function joinAttemptAuditParts(directedAttempts, analysisAttempts, field) {
   return directedAttempts
-    .map((item) => {
+    .flatMap((item) => {
       const analysis = analysisAttempts.find(
         (candidate) => candidate.attemptNumber === item.attemptNumber,
       )?.analysis;
@@ -453,10 +459,14 @@ function joinAttemptAuditParts(directedAttempts, analysisAttempts, field) {
       const analysisPart =
         analysis?.[field] ||
         (field === "activityPromptPart" ? analysis?.prompt : undefined);
-      const phases = joinAuditParts(planPart, analysisPart);
-      return phases
-        ? `=== TENTATIVA ${item.attemptNumber} · ${item.directed.plan.researchLens} ===\n${phases}`
-        : null;
+      return [
+        planPart
+          ? `${attemptPhaseHeader(item.attemptNumber, "PLANEJAMENTO")}\n${planPart}`
+          : null,
+        analysisPart
+          ? `${attemptPhaseHeader(item.attemptNumber, "SÍNTESE FACTUAL")}\n${analysisPart}`
+          : null,
+      ];
     })
     .filter(Boolean)
     .join("\n\n");
@@ -470,11 +480,16 @@ function joinDirectedAttemptParts(directedAttempts, field) {
         item.directed[field] ||
         (field === "activityPromptPart" ? item.directed.prompt : undefined);
       return value
-        ? `=== TENTATIVA ${item.attemptNumber} · ${item.directed.plan.researchLens} ===\n${value}`
+        ? `${attemptPhaseHeader(item.attemptNumber, "PLANEJAMENTO")}\n${value}`
         : null;
     })
     .filter(Boolean)
     .join("\n\n");
+}
+
+/** Nomeia cada interação sem depender de texto livre produzido pelo modelo. */
+function attemptPhaseHeader(attemptNumber, phaseName) {
+  return `--- TENTATIVA ${attemptNumber} · ${phaseName} ---`;
 }
 
 /** Preserva JSON bruto como estrutura e usa nulo apenas quando a fase não foi executada. */
@@ -504,19 +519,77 @@ async function getJson(url) {
   return response.json();
 }
 
-async function postJson(url, payload) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    throw new Error(await backendFailureMessage("POST", url, response));
+/**
+ * Repete callbacks somente quando a conexão nem chegou ao backend, preservando a segurança de
+ * callbacks terminais que podem ter sido aplicados antes de uma resposta interrompida.
+ */
+export async function postJson(url, payload, options = {}) {
+  const fetchFn = options.fetchFn || fetch;
+  const sleepFn = options.sleepFn || sleep;
+  const logger = options.logger || operationalLogger;
+  const maxAttempts = boundedInteger(
+    options.maxAttempts ?? backendCallbackMaxAttempts,
+    25,
+    1,
+    40,
+  );
+  const retryDelayMs = boundedInteger(
+    options.retryDelayMs ?? backendCallbackRetryDelayMs,
+    15000,
+    0,
+    30000,
+  );
+  const serializedPayload = JSON.stringify(payload);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetchFn(url, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: serializedPayload,
+      });
+      if (!response.ok) {
+        throw new Error(await backendFailureMessage("POST", url, response));
+      }
+      return response.json();
+    } catch (error) {
+      const errorCode = preconnectFailureCode(error);
+      if (!errorCode || attempt >= maxAttempts) throw error;
+      logger.warn(
+        `[product-discovery-worker] backend callback unavailable url=${url} code=${errorCode} attempt=${attempt}/${maxAttempts}; retrying`,
+      );
+      await sleepFn(retryDelayMs);
+    }
   }
-  return response.json();
+}
+
+/** Identifica apenas falhas anteriores ao estabelecimento da conexão TCP, seguras para repetição. */
+function preconnectFailureCode(error) {
+  const code = error?.cause?.code || error?.code;
+  return [
+    "ECONNREFUSED",
+    "EHOSTUNREACH",
+    "ENETUNREACH",
+    "EAI_AGAIN",
+    "UND_ERR_CONNECT_TIMEOUT",
+  ].includes(code)
+    ? code
+    : null;
+}
+
+/** Limita configurações operacionais para evitar espera infinita por backend indisponível. */
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(maximum, Math.max(minimum, parsed));
+}
+
+/** Aguarda entre callbacks sem bloquear o loop de eventos do worker. */
+function sleep(delayMs) {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
 /** Acrescenta ao erro HTTP somente a mensagem segura e limitada devolvida pelo backend. */

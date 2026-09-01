@@ -82,6 +82,7 @@ class ProductDiscoveryControllerTest {
                     """
                     {
                       "executionLeaseId":"lease-81",
+                      "attemptNumber":1,
                       "investigationId":91,
                       "collectorRunId":"argos-browser-81-lease-81",
                       "searchUrl":"https://www.facebook.com/ads/library/?country=BR&q=guarda+roupa",
@@ -171,6 +172,7 @@ class ProductDiscoveryControllerTest {
                     """
                     {
                       "executionLeaseId":"lease-81",
+                      "attemptNumber":1,
                       "query":"entrevista emprego",
                       "country":"BR",
                       "publisherPlatform":"INSTAGRAM",

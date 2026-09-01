@@ -8,12 +8,15 @@ import com.marketinghub.mois.metaads.v1.service.MoisMetaAdDtos;
 import com.marketinghub.mois.metaads.v1.service.MoisMetaAdInvestigationService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryMetaAttempt;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
+import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryMetaAttemptRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -22,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProductDiscoveryMetaAdSessionLinkServiceTest {
 
   @Mock private ProductDiscoveryCycleRepository cycleRepository;
+  @Mock private ProductDiscoveryMetaAttemptRepository metaAttemptRepository;
   @Mock private MoisMetaAdInvestigationService investigationService;
 
   /** Deve selecionar o último vínculo Instagram sem aceitar uma cobertura Facebook posterior. */
@@ -42,7 +46,7 @@ class ProductDiscoveryMetaAdSessionLinkServiceTest {
     when(investigationService.get(72L)).thenReturn(Optional.of(investigation));
     ProductDiscoveryMetaAdSessionLinkService service =
         new ProductDiscoveryMetaAdSessionLinkService(
-            cycleRepository, investigationService, new ObjectMapper());
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
 
     Optional<MoisMetaAdDtos.InvestigationResponse> result = service.linkedInvestigation(44L);
 
@@ -57,7 +61,7 @@ class ProductDiscoveryMetaAdSessionLinkServiceTest {
     when(cycleRepository.findById(45L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryMetaAdSessionLinkService service =
         new ProductDiscoveryMetaAdSessionLinkService(
-            cycleRepository, investigationService, new ObjectMapper());
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
 
     assertThat(service.linkedInvestigation(45L)).isEmpty();
   }
@@ -74,11 +78,95 @@ class ProductDiscoveryMetaAdSessionLinkServiceTest {
     when(investigationService.get(73L)).thenReturn(Optional.of(investigation));
     ProductDiscoveryMetaAdSessionLinkService service =
         new ProductDiscoveryMetaAdSessionLinkService(
-            cycleRepository, investigationService, new ObjectMapper());
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
 
-    assertThat(service.bindActiveInvestigation(46L, 73L, "lease-46")).isEqualTo(investigation);
+    assertThat(
+            service.bindAttemptInvestigation(
+                46L, 1, 73L, "lease-46", "autocuidado feminino visual"))
+        .isEqualTo(investigation);
     assertThat(cycle.getMetaAdInvestigationId()).isEqualTo(73L);
+    org.mockito.Mockito.verify(metaAttemptRepository)
+        .save(org.mockito.ArgumentMatchers.any(ProductDiscoveryMetaAttempt.class));
     org.mockito.Mockito.verify(cycleRepository).save(cycle);
+  }
+
+  /** Deve recuperar investigações diferentes para tentativas diferentes do mesmo ciclo. */
+  @Test
+  void resolvesInvestigationByAttempt() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(47L);
+    ProductDiscoveryMetaAttempt first =
+        new ProductDiscoveryMetaAttempt(cycle, 1, 73L, "lease-47", "beleza bem estar");
+    ProductDiscoveryMetaAttempt second =
+        new ProductDiscoveryMetaAttempt(cycle, 2, 74L, "lease-47", "consultoria imagem");
+    when(metaAttemptRepository.findByCycleIdAndAttemptNumber(47L, 1))
+        .thenReturn(Optional.of(first));
+    when(metaAttemptRepository.findByCycleIdAndAttemptNumber(47L, 2))
+        .thenReturn(Optional.of(second));
+    when(investigationService.get(73L)).thenReturn(Optional.of(investigation(73L)));
+    when(investigationService.get(74L)).thenReturn(Optional.of(investigation(74L)));
+    ProductDiscoveryMetaAdSessionLinkService service =
+        new ProductDiscoveryMetaAdSessionLinkService(
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
+
+    assertThat(service.linkedAttemptInvestigation(cycle, 1).map(item -> item.id())).contains(73L);
+    assertThat(service.linkedAttemptInvestigation(cycle, 2).map(item -> item.id())).contains(74L);
+  }
+
+  /** Deve criar a segunda investigação somente depois de preservar a primeira. */
+  @Test
+  void bindsDistinctSecondAttemptAfterFirstAttempt() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(48L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-48");
+    ProductDiscoveryMetaAttempt first =
+        new ProductDiscoveryMetaAttempt(cycle, 1, 73L, "lease-48", "beleza bem estar");
+    when(cycleRepository.findByIdForUpdate(48L)).thenReturn(Optional.of(cycle));
+    when(metaAttemptRepository.findByCycleIdAndAttemptNumber(48L, 2)).thenReturn(Optional.empty());
+    when(metaAttemptRepository.findByCycleIdAndAttemptNumber(48L, 1))
+        .thenReturn(Optional.of(first));
+    when(investigationService.get(74L)).thenReturn(Optional.of(investigation(74L)));
+    ProductDiscoveryMetaAdSessionLinkService service =
+        new ProductDiscoveryMetaAdSessionLinkService(
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
+
+    service.bindAttemptInvestigation(48L, 2, 74L, "lease-48", "consultoria imagem");
+
+    ArgumentCaptor<ProductDiscoveryMetaAttempt> saved =
+        ArgumentCaptor.forClass(ProductDiscoveryMetaAttempt.class);
+    org.mockito.Mockito.verify(metaAttemptRepository).save(saved.capture());
+    assertThat(saved.getValue().getAttemptNumber()).isEqualTo(2);
+    assertThat(saved.getValue().getInvestigationId()).isEqualTo(74L);
+    assertThat(saved.getValue().getSearchQuery()).isEqualTo("consultoria imagem");
+    assertThat(cycle.getMetaAdInvestigationId()).isEqualTo(74L);
+  }
+
+  /** Deve impedir que uma nova tentativa repita a mesma consulta com outro identificador. */
+  @Test
+  void rejectsRepeatedQueryAcrossAttempts() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(49L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-49");
+    ProductDiscoveryMetaAttempt first =
+        new ProductDiscoveryMetaAttempt(cycle, 1, 73L, "lease-49", "beleza bem estar");
+    when(cycleRepository.findByIdForUpdate(49L)).thenReturn(Optional.of(cycle));
+    when(metaAttemptRepository.findByCycleIdAndAttemptNumber(49L, 2)).thenReturn(Optional.empty());
+    when(metaAttemptRepository.findByCycleIdAndAttemptNumber(49L, 1))
+        .thenReturn(Optional.of(first));
+    when(metaAttemptRepository.existsByCycleIdAndSearchQueryIgnoreCase(49L, "beleza bem estar"))
+        .thenReturn(true);
+    when(investigationService.get(74L)).thenReturn(Optional.of(investigation(74L)));
+    ProductDiscoveryMetaAdSessionLinkService service =
+        new ProductDiscoveryMetaAdSessionLinkService(
+            cycleRepository, metaAttemptRepository, investigationService, new ObjectMapper());
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.bindAttemptInvestigation(49L, 2, 74L, "lease-49", "  beleza   bem estar "))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("repetiu a consulta Meta");
   }
 
   /** Monta a investigação canônica usada pelo vínculo do relatório. */

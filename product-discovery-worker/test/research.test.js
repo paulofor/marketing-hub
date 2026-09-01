@@ -29,6 +29,13 @@ function candidateBlueprints(count = 3) {
     scaleEvidence: "Sinais públicos em fontes independentes.",
     unmetnessEvidence: "Relatos de solução confusa e demorada.",
     pdeValueBoundary: "Reduzir organização e montagem sem escolher o formato.",
+    pdeDeliveryFit: {
+      deliveryMode: "AI_DIGITAL_EXPERIENCE",
+      minimumInput: "Uma resposta curta e uma imagem opcional.",
+      aiBackstageWork: "Organizar evidências e personalizar a orientação.",
+      readyDigitalOutcome: "Orientação individual pronta para aplicar.",
+      physicalDependency: "NONE",
+    },
     instagramFitEvidence: "A cena possui contraste visual observável.",
     commercialRisk: "Intenção comercial ainda precisa de gate factual.",
     evidenceIds: ["P1", "P2"],

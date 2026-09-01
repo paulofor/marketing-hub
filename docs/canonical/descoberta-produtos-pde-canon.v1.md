@@ -271,13 +271,19 @@ coleta. O Product Discovery Worker envia essa solicitacao somente ao endpoint in
 dominio; o backend cria ou reutiliza a investigacao canonica no radar MOIS e devolve evidencias ja
 persistidas, sem expor token, cookie ou controller de outro modulo ao executor.
 
-Cada ciclo possui exatamente uma investigacao Meta e uma consulta ampla da categoria. O plano nao
-pode fragmentar o mesmo ciclo em investigacoes concorrentes, pois isso perderia a correspondencia
-entre consulta, payload bruto e dossie; refinamento posterior deve abrir uma nova tentativa do ciclo.
+Por decisao complementar de 2026-09-01, cada **tentativa** do ciclo possui exatamente uma
+investigacao Meta imutavel e uma consulta curta da categoria. Um ciclo `DISCOVER_MARKETS` pode ter
+ate tres investigacoes, uma por tentativa, vinculadas de forma auditavel por `cycleId` e
+`attemptNumber`. A primeira consulta deve representar a categoria paga ampla; as seguintes devem
+representar categoria ou trabalho pago adjacente e distinto. Cada consulta deve ter de dois a cinco
+termos comerciais e no maximo 60 caracteres, sem copiar idade, lista de sintomas, briefing inteiro,
+`PDE` ou `IA`. Retry da mesma tentativa reutiliza obrigatoriamente sua investigacao; uma tentativa
+nova nunca pode reutilizar silenciosamente a primeira busca. O backend e o banco devem rejeitar no
+mesmo ciclo tanto a repeticao do identificador da investigacao quanto da consulta Meta normalizada.
 
 O dossie deve persistir separadamente:
 
-- status da fonte, modo de coleta e identificador da investigacao;
+- status da fonte, modo de coleta, numero da tentativa e identificador da investigacao;
 - quantidade de anuncios aderentes, anuncios ativos e anunciantes distintos;
 - plataforma declarada pela fonte, data da observacao mais recente e URL oficial de pesquisa;
 - cada anuncio aderente com referencia, anunciante, atividade, longevidade, confianca e ressalva de
@@ -328,8 +334,9 @@ deve oferecer uma sessao supervisionada da Biblioteca publica da Meta. A sessao 
 - expor para o operador os anuncios ativos e a linguagem comercial que Argos consumira;
 - manter a tentativa concluida como historico e abrir uma nova tentativa auditavel somente por
   comando humano explicito de reanalise;
-- reutilizar obrigatoriamente a mesma investigacao na reanalise, mesmo que o novo planejamento
-  formule termos diferentes, impedindo perda ou mistura da evidencia supervisionada;
+- reutilizar obrigatoriamente a mesma investigacao na reanalise supervisionada da tentativa
+  selecionada; uma nova lente automatica usa outra tentativa e outra investigacao, impedindo perda
+  ou mistura da evidencia;
 - bloquear a reanalise enquanto nao existir anuncio atual, ativo e explicitamente distribuido no
   Instagram.
 
@@ -465,7 +472,10 @@ executor pode reavaliar na mesma execução com até três tentativas totais. Ca
 alterar exatamente uma lente investigativa adjacente a partir das lacunas observadas, sem mudar país,
 canal, restrições comerciais ou assumir o posicionamento que pertence a Atena. Web, ofertas, Meta e
 acervo devem ser acumulados e deduplicados antes da nova síntese. Cada tentativa pode realizar
-exatamente uma consulta Meta, respeitando o mesmo limite individual da primeira rodada.
+exatamente uma consulta Meta curta e uma investigacao propria, respeitando o mesmo limite
+individual da primeira rodada. A escada comeca pela categoria paga ampla e, se vier vazia, muda para
+uma categoria ou trabalho pago adjacente; hipersegmentar idade, sintomas e contexto na mesma busca
+nao constitui ampliacao.
 
 A ampliação deve parar quando encontrar ao menos uma candidata `DOSSIER_READY`, quando uma nova
 lente não acrescentar evidência pública, oferta comparável nem anúncio Meta, quando repetir lente ou
@@ -494,6 +504,13 @@ uma a evidências coletadas. Isso não é priorização estratégica: Argos regi
 linguagem, alternativas, esforço residual, sinais comerciais, aderência observável ao Instagram,
 fontes e lacunas. Atena continua sendo a única autoridade para escolher mercado prioritário,
 posicionamento, tese de oferta, formato do PDE e canal.
+
+Produtos fisicos e servicos presenciais observados podem comprovar gasto, linguagem, desejo e
+alternativas existentes, mas nao podem se tornar a candidata PDE. Toda candidata deve declarar
+entrada minima, trabalho relevante realizado por IA nos bastidores, resultado digital
+individualizado pronto para uso e dependencia fisica `NONE`. Curso, ebook, conteudo estatico,
+dashboard ou formulario generico nao atendem esse contrato; sem encaixe de experiencia digital com
+IA, Argos deve omitir a candidata em vez de encaminhar um objeto fisico para Atena.
 
 Candidatas com evidência insuficiente podem permanecer visíveis como `RESEARCH_MORE`, para orientar
 a próxima coleta, sem se tornarem oportunidade aprovada. O mínimo de dez ofertas comparáveis, a
@@ -577,6 +594,9 @@ com estas caracteristicas:
 - possibilidade de antes/depois concreto;
 - continuidade natural para produto pago;
 - entrega digital escalavel com custo marginal baixo;
+- trabalho relevante executado por IA nos bastidores, sem exigir prompt ou configuracao do usuario;
+- resultado digital individualizado e pronto para uso, sem fabricacao, estoque, envio ou servico
+  presencial;
 - limite claro do que o produto faz e nao faz.
 
 Produtos que exigem resultado medico, juridico, financeiro garantido, renda garantida,

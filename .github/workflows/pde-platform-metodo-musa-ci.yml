@@ -51,11 +51,11 @@ jobs:
       run:
         working-directory: pde-platform/backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate isolated deploy contract
         run: bash ../scripts/test-deploy-isolation-contract.sh
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -70,9 +70,9 @@ jobs:
       run:
         working-directory: pde-platform/frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -95,9 +95,9 @@ jobs:
       run:
         working-directory: pde-platform/pde-retention-worker
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20
       - name: Validate executor
@@ -117,7 +117,7 @@ jobs:
     outputs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry

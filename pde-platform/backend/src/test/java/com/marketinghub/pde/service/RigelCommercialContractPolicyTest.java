@@ -82,6 +82,7 @@ class RigelCommercialContractPolicyTest {
                         "Após pagamento e briefing"),
                 List.of(),
                 List.of(),
+                null,
                 null);
     }
 }

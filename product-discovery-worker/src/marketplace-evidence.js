@@ -5,6 +5,9 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
   const backendBaseUrl = options.backendBaseUrl;
   const fetchFn = options.fetchFn || fetch;
   const logger = options.logger || console;
+  const attemptNumber = Number.isInteger(options.attemptNumber)
+    ? options.attemptNumber
+    : 1;
   const marketplaceOffers = [];
   const metaAdEvidence = [];
   const metaCoverage = [];
@@ -50,6 +53,7 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
       },
       body: JSON.stringify({
         executionLeaseId: options.executionLeaseId,
+        attemptNumber,
         query: request.query,
         country: request.country,
         publisherPlatform: request.publisherPlatform,
@@ -61,6 +65,7 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
         `[product-discovery-worker] Meta Ad Library evidence failed cycle=${options.cycleId} status=${response.status}`,
       );
       metaCoverage.push({
+        attemptNumber,
         query: request.query,
         country: request.country,
         publisherPlatform: request.publisherPlatform,
@@ -81,7 +86,7 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
       payload = await collectAndPersistPublicMetaEvidence(
         payload,
         request,
-        options,
+        { ...options, attemptNumber },
       );
     }
     const normalizedAds = normalizeMetaAdEvidence(
@@ -98,6 +103,7 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     );
     metaAdEvidence.push(...relevantAds);
     metaCoverage.push({
+      attemptNumber,
       query: payload.query || request.query,
       country: payload.country || request.country,
       publisherPlatform: payload.publisherPlatform || request.publisherPlatform,
@@ -156,7 +162,7 @@ async function collectAndPersistPublicMetaEvidence(payload, request, options) {
       logger: options.logger || console,
     },
   );
-  const collectorRunId = `argos-browser-${options.cycleId}-${options.executionLeaseId}`.slice(
+  const collectorRunId = `argos-browser-${options.cycleId}-${options.executionLeaseId}-${options.attemptNumber}`.slice(
     0,
     80,
   );
@@ -172,6 +178,7 @@ async function collectAndPersistPublicMetaEvidence(payload, request, options) {
     },
     body: JSON.stringify({
       executionLeaseId: options.executionLeaseId,
+      attemptNumber: options.attemptNumber,
       investigationId: payload.investigationId,
       collectorRunId,
       searchUrl: payload.searchUrl,

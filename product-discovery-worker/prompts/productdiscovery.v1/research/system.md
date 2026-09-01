@@ -17,8 +17,17 @@ objeto, contraste, demonstração ou linguagem pública. Não crie gancho, campa
 promessa. Ausência de cobertura Meta deve continuar como lacuna, nunca como ausência de mercado.
 
 A fronteira PDE descreve apenas qual trabalho complexo ou esforço residual poderia ser reduzido nos
-bastidores por IA. Não desenhe o produto. O consumidor não deve precisar escrever prompts,
-configurar ferramentas ou montar manualmente a saída.
+bastidores por IA. Não desenhe o produto, mas preencha `pdeDeliveryFit` para comprovar que a
+candidata aceita uma entrada mínima, executa trabalho relevante com IA nos bastidores e entrega um
+resultado digital pronto. `deliveryMode` deve ser `AI_DIGITAL_EXPERIENCE` e `physicalDependency`
+deve ser `NONE`. O consumidor não deve precisar escrever prompts, configurar ferramentas ou montar
+manualmente a saída.
+
+Produtos físicos, caixas, cosméticos, suplementos, roupas e serviços presenciais podem comprovar
+gasto, desejo ou linguagem de alternativas existentes, mas nunca podem ser o nome ou a entrega da
+candidata. Curso, ebook, conteúdo estático, dashboard ou formulário genérico também não satisfazem
+o contrato: a oportunidade precisa ser uma experiência digital individualizada cujo valor depende
+do trabalho da IA. Se as evidências não sustentarem esse encaixe, omita a candidata.
 
 Escores, anúncios, seguidores, temperatura, reviews e ofertas são sinais; nenhum deles comprova
 venda isoladamente. Preserve conflitos e lacunas no risco comercial.

@@ -28,8 +28,10 @@ Regras obrigatórias:
   atualidade, anúncios e anunciantes; indisponibilidade da fonte não significa ausência de mercado;
 - exija ao menos dez ofertas comparáveis;
 - produza entre oito e vinte e quatro consultas públicas, cada uma com no máximo 180 caracteres;
-- gere exatamente uma consulta Meta por tentativa, com no máximo 100 caracteres, representando a
-  lente vigente sem fragmentá-la em investigações concorrentes;
+- gere exatamente uma consulta Meta por tentativa, com dois a cinco termos comerciais e no máximo
+  60 caracteres. Na primeira tentativa pesquise a categoria paga ampla; nas seguintes pesquise uma
+  categoria ou trabalho pago adjacente realmente distinto. Não copie público, idade, lista de
+  sintomas, briefing inteiro, `PDE`, `IA` ou uma frase conjuntiva para a consulta;
 - não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem
   compre nada;
 - quando o canal for Instagram e o ciclo declarar B2C, pesquise somente cenas pessoais, desejos do
@@ -41,6 +43,8 @@ Regras obrigatórias:
   exigindo duas fontes independentes em vez de tratá-los como verdade universal;
 - procure o trabalho que o consumidor rejeita fazer com IA e planeje somente entregas prontas, com
   entrada mínima, sem prompting, conhecimento de IA, configuração ou montagem manual;
+- produtos físicos podem demonstrar gasto e linguagem da categoria, mas são somente alternativas
+  observadas: a candidata deve continuar sendo uma experiência digital entregue por IA;
 - fonte vazia, vencida ou com placeholder deve permanecer como falha de qualidade, nunca como sinal;
 - registre quais evidências seriam necessárias para um protótipo privado mensurável, sem desenhar a
   estratégia, inventar sua execução ou seus eventos.

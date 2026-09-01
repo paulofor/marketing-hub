@@ -73,8 +73,9 @@ public class ProductDiscoveryMetaAdBrowserCollectionService {
     }
 
     log.info(
-        "Product Discovery recebeu coleta Meta pública bruta cycleId={} investigationId={} collectorRunId={} payload={}",
+        "Product Discovery recebeu coleta Meta pública bruta cycleId={} attemptNumber={} investigationId={} collectorRunId={} payload={}",
         cycleId,
+        request.attemptNumber(),
         investigation.id(),
         request.collectorRunId(),
         rawPayload);
@@ -114,17 +115,14 @@ public class ProductDiscoveryMetaAdBrowserCollectionService {
     return cycle;
   }
 
-  /** Recupera somente a investigação previamente congelada no ciclo. */
+  /** Recupera somente a investigação previamente congelada para a tentativa informada. */
   private MoisMetaAdDtos.InvestigationResponse requiredInvestigation(
       ProductDiscoveryCycle cycle, ProductDiscoveryMetaAdBrowserCollectionRequest request) {
-    if (cycle.getMetaAdInvestigationId() == null
-        || !cycle.getMetaAdInvestigationId().equals(request.investigationId())) {
-      throw conflict("A coleta pública não pertence à investigação vinculada ao ciclo");
-    }
     return sessionLinkService
-        .linkedInvestigation(cycle)
+        .linkedAttemptInvestigation(cycle, request.attemptNumber())
         .filter(item -> item.id() == request.investigationId())
-        .orElseThrow(() -> conflict("A investigação Meta vinculada não foi encontrada"));
+        .orElseThrow(
+            () -> conflict("A coleta pública não pertence à investigação vinculada à tentativa"));
   }
 
   /** Confirma fonte, filtros, tempos e coerência entre desfecho e cards recebidos. */
@@ -211,12 +209,13 @@ public class ProductDiscoveryMetaAdBrowserCollectionService {
     jdbcTemplate.update(
         """
         INSERT INTO product_discovery_meta_browser_run
-          (cycle_id, investigation_id, execution_lease_id, collector_run_id, search_url,
+          (cycle_id, attempt_number, investigation_id, execution_lease_id, collector_run_id, search_url,
            outcome, http_status, platform_filter_confirmed, page_title, result_count,
            error_message, raw_payload_json, started_at, finished_at, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         cycleId,
+        request.attemptNumber(),
         request.investigationId(),
         request.executionLeaseId(),
         request.collectorRunId(),

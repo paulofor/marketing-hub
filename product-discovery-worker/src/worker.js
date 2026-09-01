@@ -169,8 +169,15 @@ export async function processJob(job, dependencies = {}) {
           backendBaseUrl: activeBackendBaseUrl,
           logger,
           cycleId: job.cycleId,
+          attemptNumber,
           executionLeaseId: job.executionLeaseId,
-          researchContext: [job.theme, job.targetAudience, job.objective]
+          researchContext: [
+            job.theme,
+            job.targetAudience,
+            job.objective,
+            plan.researchLens,
+            ...(plan.metaAdRequests || []).map((request) => request.query),
+          ]
             .filter(Boolean)
             .join(" "),
         });

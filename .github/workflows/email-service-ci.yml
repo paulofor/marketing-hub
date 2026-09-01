@@ -140,13 +140,16 @@ jobs:
             --exclude '.git/' \
             --exclude 'target/' \
             email-service/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
+          scp ${SSH_COMMON_ARGS} \
+            scripts/docker-compose-pull-with-transient-retry.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}/docker-compose-pull-with-transient-retry.sh"
       - name: Publish service
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
           && export EMAIL_SERVICE_IMAGE='${IMAGE_NAMESPACE}/email-service:${IMAGE_TAG}' \
-          && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+          && bash ./docker-compose-pull-with-transient-retry.sh -f docker-compose.yml -f docker-compose.deploy.yml \
           && { docker rm -f email-service >/dev/null 2>&1 || true; } \
           && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
           && docker image prune -f --filter until=168h"

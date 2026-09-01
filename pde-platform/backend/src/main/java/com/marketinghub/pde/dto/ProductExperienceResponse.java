@@ -1,5 +1,6 @@
 package com.marketinghub.pde.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /** Descreve o produto experiencial que o frontend renderiza para a cliente. */
@@ -24,7 +25,8 @@ public record ProductExperienceResponse(
         ServiceScopeDto serviceScope,
         List<PublicProofDto> publicProofs,
         List<CommercialProcessStepDto> commercialProcess,
-        CommercialBindingDto commercialBinding
+        CommercialBindingDto commercialBinding,
+        CommercialCheckoutDto commercialCheckout
 ) {
 
     /** Mantém compatibilidade com os contratos anteriores à experiência comercial assistida v2. */
@@ -67,6 +69,7 @@ public record ProductExperienceResponse(
                 null,
                 List.of(),
                 List.of(),
+                null,
                 null);
     }
 
@@ -250,6 +253,16 @@ public record ProductExperienceResponse(
             Long experimentId,
             String primaryCta,
             java.math.BigDecimal priceBrl,
+            String billingModel
+    ) {}
+
+    /** Vincula a experiência publicada ao checkout externo homologado e à oferta exata. */
+    public record CommercialCheckoutDto(
+            String provider,
+            String checkoutUrl,
+            String offerReference,
+            BigDecimal priceBrl,
+            String currency,
             String billingModel
     ) {}
 }

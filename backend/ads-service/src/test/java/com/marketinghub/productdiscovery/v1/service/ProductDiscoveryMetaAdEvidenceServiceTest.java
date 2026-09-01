@@ -43,12 +43,17 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     service =
         new ProductDiscoveryMetaAdEvidenceService(
             jdbcTemplate, investigationService, sessionLinkService, new ObjectMapper());
-    when(sessionLinkService.linkedInvestigation(Mockito.anyLong())).thenReturn(Optional.empty());
-    when(sessionLinkService.bindActiveInvestigation(
-            Mockito.anyLong(), Mockito.anyLong(), Mockito.anyString()))
+    when(sessionLinkService.linkedAttemptInvestigation(Mockito.anyLong(), Mockito.anyInt()))
+        .thenReturn(Optional.empty());
+    when(sessionLinkService.bindAttemptInvestigation(
+            Mockito.anyLong(),
+            Mockito.anyInt(),
+            Mockito.anyLong(),
+            Mockito.anyString(),
+            Mockito.anyString()))
         .thenAnswer(
             invocation -> {
-              long investigationId = invocation.getArgument(1);
+              long investigationId = invocation.getArgument(2);
               return investigation(investigationId, 0);
             });
     createSchema();
@@ -89,14 +94,15 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     when(investigationService.ensureForProductDiscovery(
             "workspace-001", "treino entrevista emprego", "BR", "INSTAGRAM"))
         .thenReturn(investigation(7L, 3));
-    when(sessionLinkService.bindActiveInvestigation(81L, 7L, "lease-81"))
+    when(sessionLinkService.bindAttemptInvestigation(
+            81L, 1, 7L, "lease-81", "treino entrevista emprego"))
         .thenReturn(investigation(7L, 3));
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
             81L,
             new ProductDiscoveryMetaAdEvidenceRequest(
-                "lease-81", "treino entrevista emprego", "BR", "INSTAGRAM", 25));
+                "lease-81", 1, "treino entrevista emprego", "BR", "INSTAGRAM", 25));
 
     assertThat(response.sourceStatus()).isEqualTo("OBSERVED");
     assertThat(response.adsObserved()).isEqualTo(2);
@@ -127,14 +133,15 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     when(investigationService.ensureForProductDiscovery(
             "workspace-001", "negociacao salarial carreira", "BR", "INSTAGRAM"))
         .thenReturn(investigation(8L, 1));
-    when(sessionLinkService.bindActiveInvestigation(82L, 8L, "lease-82"))
+    when(sessionLinkService.bindAttemptInvestigation(
+            82L, 1, 8L, "lease-82", "negociacao salarial carreira"))
         .thenReturn(investigation(8L, 1));
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
             82L,
             new ProductDiscoveryMetaAdEvidenceRequest(
-                "lease-82", "negociacao salarial carreira", "BR", "INSTAGRAM", 25));
+                "lease-82", 1, "negociacao salarial carreira", "BR", "INSTAGRAM", 25));
 
     assertThat(response.sourceStatus()).isEqualTo("STALE");
     assertThat(response.activeAds()).isZero();
@@ -148,9 +155,9 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
                 service.requestAndSearch(
                     83L,
                     new ProductDiscoveryMetaAdEvidenceRequest(
-                        "lease-83", "produto Instagram", "BR", "INSTAGRAM", 25)))
+                        "lease-83", 1, "produto Instagram", "BR", "INSTAGRAM", 25)))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("dois termos específicos");
+        .hasMessageContaining("dois a cinco termos específicos");
     verifyNoInteractions(investigationService);
   }
 
@@ -166,11 +173,16 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
                 service.requestAndSearch(
                     89L,
                     new ProductDiscoveryMetaAdEvidenceRequest(
-                        "lease-89", "viagem solo mulheres", "BR", "INSTAGRAM", 25)))
+                        "lease-89", 1, "viagem solo mulheres", "BR", "INSTAGRAM", 25)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("território e plataforma");
     Mockito.verify(sessionLinkService, Mockito.never())
-        .bindActiveInvestigation(Mockito.anyLong(), Mockito.anyLong(), Mockito.anyString());
+        .bindAttemptInvestigation(
+            Mockito.anyLong(),
+            Mockito.anyInt(),
+            Mockito.anyLong(),
+            Mockito.anyString(),
+            Mockito.anyString());
   }
 
   /** Deve pedir o Chromium público quando a API comercial brasileira não cobre a consulta. */
@@ -181,13 +193,15 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     when(investigationService.ensureForProductDiscovery(
             "workspace-001", "guarda roupa climatério", "BR", "INSTAGRAM"))
         .thenReturn(investigation);
-    when(sessionLinkService.bindActiveInvestigation(85L, 9L, "lease-85")).thenReturn(investigation);
+    when(sessionLinkService.bindAttemptInvestigation(
+            85L, 1, 9L, "lease-85", "guarda roupa climatério"))
+        .thenReturn(investigation);
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
             85L,
             new ProductDiscoveryMetaAdEvidenceRequest(
-                "lease-85", "guarda roupa climatério", "BR", "INSTAGRAM", 25));
+                "lease-85", 1, "guarda roupa climatério", "BR", "INSTAGRAM", 25));
 
     assertThat(response.sourceStatus()).isEqualTo("AWAITING_PUBLIC_BROWSER");
     assertThat(response.collectionMode()).isEqualTo("PUBLIC_BROWSER");
@@ -201,7 +215,8 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
     when(investigationService.ensureForProductDiscovery(
             "workspace-001", "viagem solo mulheres", "BR", "INSTAGRAM"))
         .thenReturn(investigation);
-    when(sessionLinkService.bindActiveInvestigation(86L, 10L, "lease-86"))
+    when(sessionLinkService.bindAttemptInvestigation(
+            86L, 1, 10L, "lease-86", "viagem solo mulheres"))
         .thenReturn(investigation);
     insertBrowserRun(86L, 10L, "EMPTY", true);
 
@@ -209,7 +224,7 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         service.requestAndSearch(
             86L,
             new ProductDiscoveryMetaAdEvidenceRequest(
-                "lease-86", "viagem solo mulheres", "BR", "INSTAGRAM", 25));
+                "lease-86", 1, "viagem solo mulheres", "BR", "INSTAGRAM", 25));
 
     assertThat(empty.sourceStatus()).isEqualTo("NO_MATCHING_ACTIVE_ADS");
     assertThat(empty.collectionMode()).isEqualTo("PUBLIC_BROWSER");
@@ -220,13 +235,13 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         service.requestAndSearch(
             86L,
             new ProductDiscoveryMetaAdEvidenceRequest(
-                "lease-86", "viagem solo mulheres", "BR", "INSTAGRAM", 25));
+                "lease-86", 1, "viagem solo mulheres", "BR", "INSTAGRAM", 25));
 
     assertThat(fallback.sourceStatus()).isEqualTo("AWAITING_SUPERVISED_OBSERVATION");
     assertThat(fallback.collectionMode()).isEqualTo("SUPERVISED");
   }
 
-  /** Deve restringir a reanálise à investigação anterior mesmo quando o plano muda a consulta. */
+  /** Deve restringir o retry à investigação imutável da mesma tentativa. */
   @Test
   void reusesOnlyTheLinkedSupervisedInvestigation() {
     Instant now = Instant.now();
@@ -276,14 +291,16 @@ class ProductDiscoveryMetaAdEvidenceServiceTest {
         "INSTAGRAM",
         now.minusSeconds(1_800));
     MoisMetaAdDtos.InvestigationResponse linked = investigation(7L, 1);
-    when(sessionLinkService.linkedInvestigation(84L)).thenReturn(Optional.of(linked));
-    when(sessionLinkService.bindActiveInvestigation(84L, 7L, "lease-84")).thenReturn(linked);
+    when(sessionLinkService.linkedAttemptInvestigation(84L, 1)).thenReturn(Optional.of(linked));
+    when(sessionLinkService.bindAttemptInvestigation(
+            84L, 1, 7L, "lease-84", "treino entrevista emprego"))
+        .thenReturn(linked);
 
     ProductDiscoveryMetaAdEvidenceListResponse response =
         service.requestAndSearch(
             84L,
             new ProductDiscoveryMetaAdEvidenceRequest(
-                "lease-84", "consulta reformulada pelo modelo", "BR", "INSTAGRAM", 25));
+                "lease-84", 1, "treino entrevista emprego", "BR", "INSTAGRAM", 25));
 
     assertThat(response.investigationId()).isEqualTo(7L);
     assertThat(response.query()).isEqualTo("treino entrevista emprego");

@@ -56,6 +56,7 @@ class ProductCatalogServiceTest {
         assertThat(publicProduct.missions()).isEmpty();
         assertThat(publicProduct.supportMaterials()).isEmpty();
         assertThat(publicProduct.scientificEvidencePack()).isNull();
+        assertThat(publicProduct.commercialCheckout()).isNotNull();
     }
 
     /** Confirma que o catálogo prioriza o contrato PDE publicado pelo Marketing Hub. */
@@ -359,6 +360,14 @@ class ProductCatalogServiceTest {
         assertThat(product.heroVideos()).isEmpty();
         assertThat(product.scientificEvidencePack()).isNull();
         assertThat(product.completionOffer()).contains("90 dias", "sem assinatura").doesNotContain("desafios mensais");
+        assertThat(product.commercialCheckout()).satisfies(checkout -> {
+            assertThat(checkout.provider()).isEqualTo("PEPPER");
+            assertThat(checkout.checkoutUrl()).isEqualTo("https://go.pepper.com.br/owm6x");
+            assertThat(checkout.offerReference()).isEqualTo("owm6x");
+            assertThat(checkout.priceBrl()).isEqualByComparingTo("67");
+            assertThat(checkout.currency()).isEqualTo("BRL");
+            assertThat(checkout.billingModel()).isEqualTo("ONE_TIME");
+        });
         assertThat(product.missions()).hasSize(7);
         assertThat(product.missions()).extracting(ProductExperienceResponse.MissionDto::id)
                 .containsExactly(

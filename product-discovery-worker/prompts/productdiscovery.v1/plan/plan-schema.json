@@ -70,7 +70,7 @@
         "additionalProperties": false,
         "required": ["query", "country", "publisherPlatform", "maxAds"],
         "properties": {
-          "query": { "type": "string" },
+          "query": { "type": "string", "maxLength": 60 },
           "country": { "type": "string", "minLength": 2, "maxLength": 2 },
           "publisherPlatform": {
             "type": "string",

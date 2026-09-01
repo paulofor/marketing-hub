@@ -54,11 +54,12 @@ public class ProductDiscoveryMetaAdEvidenceService {
     String country = normalizedCountry(request.country());
     String publisherPlatform = normalizedPublisherPlatform(request.publisherPlatform());
     Optional<MoisMetaAdDtos.InvestigationResponse> linkedInvestigation =
-        sessionLinkService.linkedInvestigation(cycleId);
+        sessionLinkService.linkedAttemptInvestigation(cycleId, request.attemptNumber());
     String requestedQuery = normalizedQuery(request.query());
-    if (linkedInvestigation.isEmpty() && specificTerms(requestedQuery).size() < 2) {
+    List<String> requestedTerms = specificTerms(requestedQuery);
+    if (requestedTerms.size() < 2 || requestedTerms.size() > 5) {
       throw new IllegalArgumentException(
-          "A consulta Meta deve conter ao menos dois termos específicos da categoria");
+          "A consulta Meta deve conter de dois a cinco termos específicos da categoria");
     }
     MoisMetaAdDtos.InvestigationResponse investigation =
         linkedInvestigation.orElseGet(
@@ -72,19 +73,24 @@ public class ProductDiscoveryMetaAdEvidenceService {
           "A investigação Meta vinculada não pertence ao território e plataforma do ciclo");
     }
     investigation =
-        sessionLinkService.bindActiveInvestigation(
-            cycleId, investigation.id(), request.executionLeaseId());
+        sessionLinkService.bindAttemptInvestigation(
+            cycleId,
+            request.attemptNumber(),
+            investigation.id(),
+            request.executionLeaseId(),
+            requestedQuery);
     String query =
         linkedInvestigation
             .map(linked -> normalizedQuery(linked.searchTerms()))
             .orElse(requestedQuery);
-    if (specificTerms(query).size() < 2) {
+    if (specificTerms(query).size() < 2 || specificTerms(query).size() > 5) {
       throw new IllegalArgumentException(
-          "A consulta Meta deve conter ao menos dois termos específicos da categoria");
+          "A consulta Meta deve conter de dois a cinco termos específicos da categoria");
     }
     log.info(
-        "Product Discovery solicitou evidência Meta cycleId={} investigationId={} linkedSession={} country={} publisherPlatform={} query={}",
+        "Product Discovery solicitou evidência Meta cycleId={} attemptNumber={} investigationId={} linkedSession={} country={} publisherPlatform={} query={}",
         cycleId,
+        request.attemptNumber(),
         investigation.id(),
         linkedInvestigation.isPresent(),
         country,

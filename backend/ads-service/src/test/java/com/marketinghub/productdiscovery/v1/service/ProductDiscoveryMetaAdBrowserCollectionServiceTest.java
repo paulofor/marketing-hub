@@ -59,6 +59,7 @@ class ProductDiscoveryMetaAdBrowserCollectionServiceTest {
         CREATE TABLE product_discovery_meta_browser_run (
           id BIGINT AUTO_INCREMENT PRIMARY KEY,
           cycle_id BIGINT NOT NULL,
+          attempt_number INT NOT NULL,
           investigation_id BIGINT NOT NULL,
           execution_lease_id VARCHAR(36) NOT NULL,
           collector_run_id VARCHAR(80) NOT NULL,
@@ -79,7 +80,8 @@ class ProductDiscoveryMetaAdBrowserCollectionServiceTest {
     cycle = activeCycle();
     investigation = investigation();
     when(cycleRepository.findByIdForUpdate(144L)).thenReturn(Optional.of(cycle));
-    when(sessionLinkService.linkedInvestigation(cycle)).thenReturn(Optional.of(investigation));
+    when(sessionLinkService.linkedAttemptInvestigation(cycle, 1))
+        .thenReturn(Optional.of(investigation));
     ProductDiscoveryMetaAdEvidenceListResponse response = evidenceResponse("OBSERVED");
     when(evidenceService.searchInvestigation(eq(144L), eq(investigation), eq(50)))
         .thenReturn(response);
@@ -126,6 +128,7 @@ class ProductDiscoveryMetaAdBrowserCollectionServiceTest {
     ProductDiscoveryMetaAdBrowserCollectionRequest fallback =
         new ProductDiscoveryMetaAdBrowserCollectionRequest(
             "lease-144",
+            1,
             91L,
             "argos-browser-144-fallback",
             investigation.collection().searchUrl(),
@@ -208,6 +211,7 @@ class ProductDiscoveryMetaAdBrowserCollectionServiceTest {
   private ProductDiscoveryMetaAdBrowserCollectionRequest observedRequest() {
     return new ProductDiscoveryMetaAdBrowserCollectionRequest(
         "lease-144",
+        1,
         91L,
         "argos-browser-144-lease-144",
         investigation.collection().searchUrl(),
@@ -239,6 +243,7 @@ class ProductDiscoveryMetaAdBrowserCollectionServiceTest {
       String collectorRunId, Instant startedAt, Instant finishedAt) {
     return new ProductDiscoveryMetaAdBrowserCollectionRequest(
         "lease-144",
+        1,
         91L,
         collectorRunId,
         investigation.collection().searchUrl(),

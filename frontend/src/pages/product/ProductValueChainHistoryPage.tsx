@@ -4,16 +4,18 @@ import {
   Clock3,
   GitBranch,
   ListTree,
+  RefreshCw,
   Workflow,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { formatCommercialStatus } from "../../api/product/productStatus";
-import { useProduct } from "../../api/product/useProduct";
 import { useProductProcessCommits } from "../../api/product/useProductProcessCommits";
 import {
   sortProductStageMeasurements,
   type ProductStageMeasurement,
   useProductValueChainPosition,
+  useProductValueChainSummary,
 } from "../../api/product/useProductValueChainPositions";
 import PageTitle from "../../components/PageTitle";
 import ProductProcessCommitLedger from "../../components/ProductProcessCommitLedger";
@@ -95,21 +97,25 @@ function costLabel(measurement: ProductStageMeasurement) {
 
 export default function ProductValueChainHistoryPage() {
   const { productId } = useParams();
-  const productQuery = useProduct(productId);
-  const positionQuery = useProductValueChainPosition(productId);
-  const commitsQuery = useProductProcessCommits(productId);
-  const product = productQuery.data;
+  const [historyRequested, setHistoryRequested] = useState(false);
+  const summaryQuery = useProductValueChainSummary(productId);
+  const positionQuery = useProductValueChainPosition(
+    productId,
+    historyRequested,
+  );
+  const commitsQuery = useProductProcessCommits(productId, historyRequested);
+  const summary = summaryQuery.data;
   const position = positionQuery.data;
   const measurements = [
     ...(position?.processMeasurements ?? []),
     ...(position?.subprocessPosition?.measurements ?? []),
   ].sort(sortProductStageMeasurements);
 
-  if (productQuery.isLoading || positionQuery.isLoading) {
-    return <p className="text-muted">Carregando histórico da cadeia...</p>;
+  if (summaryQuery.isLoading) {
+    return <p className="text-muted">Carregando posição atual...</p>;
   }
 
-  if (productQuery.isError || positionQuery.isError || !product || !position) {
+  if (summaryQuery.isError || !summary) {
     return (
       <div>
         <Link className="btn btn-outline-secondary mb-3" to="/products">
@@ -117,18 +123,20 @@ export default function ProductValueChainHistoryPage() {
           Voltar para produtos
         </Link>
         <div className="alert alert-danger" role="alert">
-          Não foi possível carregar o histórico deste produto.
+          Não foi possível carregar a posição atual deste produto.
         </div>
       </div>
     );
   }
 
   const displayName =
-    product.name || product.internalName || `Produto ${product.id}`;
-  const identified = position.resolutionStatus === "IDENTIFIED";
-  const subprocessPosition = position.subprocessPosition;
+    summary.productName ||
+    summary.productInternalName ||
+    `Produto ${summary.productId}`;
+  const identified = summary.resolutionStatus === "IDENTIFIED";
+  const subprocessPosition = position?.subprocessPosition;
   const currentSubprocess = subprocessPosition?.currentSubprocessName;
-  const nextSubprocess = position.subprocessPosition?.nextSubprocessName;
+  const nextSubprocess = subprocessPosition?.nextSubprocessName;
   const currentParentActivity = currentSubprocess
     ? null
     : subprocessPosition?.currentActivityName;
@@ -149,11 +157,12 @@ export default function ProductValueChainHistoryPage() {
         <div>
           <PageTitle>Histórico da cadeia de valor</PageTitle>
           <p className="text-muted mb-1">
-            {displayName} · {formatCommercialStatus(position.commercialStatus)}
+            {displayName} · {formatCommercialStatus(summary.commercialStatus)}
           </p>
-          {product.internalName && product.internalName !== product.name ? (
+          {summary.productInternalName &&
+          summary.productInternalName !== summary.productName ? (
             <small className="text-muted">
-              Nome interno: {product.internalName}
+              Nome interno: {summary.productInternalName}
             </small>
           ) : null}
         </div>
@@ -166,7 +175,7 @@ export default function ProductValueChainHistoryPage() {
       {!identified ? (
         <div className="alert alert-warning" role="alert">
           <strong>Posição ainda não identificada.</strong>{" "}
-          {position.resolutionMessage}
+          {summary.resolutionMessage}
         </div>
       ) : (
         <>
@@ -180,12 +189,12 @@ export default function ProductValueChainHistoryPage() {
               </span>
               <strong>
                 <span className="product-value-chain__stage-number">
-                  {position.sequenceNumber}
+                  {summary.sequenceNumber}
                 </span>
-                {position.processName}
+                {summary.processName}
               </strong>
               <small>
-                {position.chainName} · cadeia v{position.chainVersion}
+                {summary.chainName} · cadeia v{summary.chainVersion}
               </small>
             </article>
             <article>
@@ -193,30 +202,45 @@ export default function ProductValueChainHistoryPage() {
                 <GitBranch size={16} aria-hidden="true" /> Progresso
               </span>
               <strong>
-                Etapa {position.sequenceNumber} de {position.processCount}
+                Etapa {summary.sequenceNumber} de {summary.processCount}
               </strong>
               <small>Posição enviada pelo backend da cadeia publicada.</small>
             </article>
             <article>
-              <span>
-                <Clock3 size={16} aria-hidden="true" />
-                {subprocessAwaitingFirstExecution
-                  ? "Subprocesso atual"
-                  : currentParentActivity
-                    ? subprocessPosition?.trackingStatus === "COMPLETED"
-                      ? "Próxima atividade"
-                      : "Atividade atual"
-                    : "Próximo marco"}
-              </span>
-              <strong>{nextMilestone}</strong>
-              <small>
-                {subprocessAwaitingFirstExecution
-                  ? "Subprocesso atual preparado; ainda aguarda a primeira execução."
-                  : currentParentActivity
-                    ? "Continuação enviada pelo backend dentro do processo atual."
-                    : position.subprocessPosition?.nextSubprocessObjective ||
-                      "O próximo objetivo será definido pela cadeia publicada."}
-              </small>
+              {position ? (
+                <>
+                  <span>
+                    <Clock3 size={16} aria-hidden="true" />
+                    {subprocessAwaitingFirstExecution
+                      ? "Subprocesso atual"
+                      : currentParentActivity
+                        ? subprocessPosition?.trackingStatus === "COMPLETED"
+                          ? "Próxima atividade"
+                          : "Atividade atual"
+                        : "Próximo marco"}
+                  </span>
+                  <strong>{nextMilestone}</strong>
+                  <small>
+                    {subprocessAwaitingFirstExecution
+                      ? "Subprocesso atual preparado; ainda aguarda a primeira execução."
+                      : currentParentActivity
+                        ? "Continuação enviada pelo backend dentro do processo atual."
+                        : subprocessPosition?.nextSubprocessObjective ||
+                          "O próximo objetivo será definido pela cadeia publicada."}
+                  </small>
+                </>
+              ) : (
+                <>
+                  <span>
+                    <Clock3 size={16} aria-hidden="true" /> Histórico detalhado
+                  </span>
+                  <strong>Sob demanda</strong>
+                  <small>
+                    Datas, custos e tarefas anteriores só serão consultados
+                    quando você solicitar.
+                  </small>
+                </>
+              )}
             </article>
           </section>
 
@@ -232,153 +256,217 @@ export default function ProductValueChainHistoryPage() {
                 </p>
               </div>
               <span className="badge text-bg-light border">
-                {measurements.length} etapa
-                {measurements.length === 1 ? "" : "s"} na cadeia
+                {position
+                  ? `${measurements.length} etapa${measurements.length === 1 ? "" : "s"} na cadeia`
+                  : "Sob demanda"}
               </span>
             </div>
 
-            {measurements.length === 0 ? (
-              <div className="alert alert-secondary mb-0">
-                Nenhuma passagem com evidência temporal foi registrada para este
-                produto.
-              </div>
-            ) : (
-              <ol
-                className="product-value-chain-history__timeline"
-                aria-label="Histórico dos processos e subprocessos"
-              >
-                {measurements.map((measurement, index) => (
-                  <li
-                    key={`${measurement.stageType}-${measurement.processDefinitionId}-${measurement.enteredAt || index}`}
-                    className={`product-value-chain-history__item product-value-chain-history__item--${measurement.trackingStatus.toLowerCase()}`}
-                  >
-                    <div className="product-value-chain-history__item-heading">
-                      <div>
-                        <span className="product-value-chain-history__stage-type">
-                          {measurement.sequenceLabel ? (
-                            <span className="product-value-chain__stage-number">
-                              {measurement.sequenceLabel}
-                            </span>
-                          ) : null}
-                          {measurement.stageType === "PROCESS"
-                            ? "Processo"
-                            : "Subprocesso"}
-                        </span>
-                        <h3 className="h6 mb-1">{measurement.processName}</h3>
-                        <div className="product-value-chain-history__activity-links">
-                          <Link
-                            className="product-value-chain-history__activities-link"
-                            to={`/products/${product.id}/value-chain-history/processes/${measurement.processDefinitionId}/activities`}
-                          >
-                            <ListTree size={15} aria-hidden="true" />
-                            Atividades e tarefas
-                          </Link>
-                          <Link
-                            className="product-value-chain-history__activities-link"
-                            to={`/business-processes?processId=${measurement.processDefinitionId}`}
-                          >
-                            <Workflow size={15} aria-hidden="true" />
-                            Abrir BPM
-                          </Link>
-                        </div>
-                      </div>
-                      <span className="product-value-chain-history__status">
-                        {measurement.trackingStatus === "COMPLETED" ? (
-                          <CheckCircle2 size={15} aria-hidden="true" />
-                        ) : (
-                          <Clock3 size={15} aria-hidden="true" />
-                        )}
-                        {statusLabel(measurement)}
-                      </span>
-                    </div>
-
-                    <dl className="product-value-chain-history__facts">
-                      <div>
-                        <dt>Entrada</dt>
-                        <dd>{formatDateTime(measurement.enteredAt)}</dd>
-                        <small>
-                          {formatEvidence(measurement.entryEvidence)}
-                        </small>
-                      </div>
-                      <div>
-                        <dt>Saída</dt>
-                        <dd>
-                          {measurement.exitedAt
-                            ? formatDateTime(measurement.exitedAt)
-                            : measurement.trackingStatus === "PLANNED"
-                              ? "Aguardando a primeira execução"
-                              : "Objetivo ainda sem saída comprovada"}
-                        </dd>
-                        <small>
-                          {formatEvidence(measurement.exitEvidence)}
-                        </small>
-                      </div>
-                      <div>
-                        <dt>Permanência</dt>
-                        <dd>{formatElapsedDays(measurement.elapsedDays)}</dd>
-                        <small>
-                          {measurement.objectiveAchieved
-                            ? "Objetivo do estágio atingido"
-                            : "Objetivo do estágio ainda não atingido"}
-                        </small>
-                      </div>
-                      <div>
-                        <dt>Custo estimado conhecido</dt>
-                        <dd>{costLabel(measurement)}</dd>
-                        <small>
-                          {measurement.costedExecutionCount} com custo ·{" "}
-                          {measurement.uncostedExecutionCount} sem custo
-                          reportado
-                        </small>
-                      </div>
-                    </dl>
-                    {measurement.commitRegistrationAllowed ? (
-                      <ProductProcessCommitLedger
-                        productId={product.id}
-                        processDefinitionId={measurement.processDefinitionId}
-                        processName={measurement.processName}
-                        commits={(commitsQuery.data ?? []).filter(
-                          (commit) =>
-                            commit.processDefinitionId ===
-                            measurement.processDefinitionId,
-                        )}
-                      />
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-            )}
-            {completedSubprocessNextActivity && position.processDefinitionId ? (
-              <section
-                className="product-value-chain-history__next-step"
-                aria-label="Próximo passo do processo"
-              >
-                <div>
-                  <span>
-                    <GitBranch size={16} aria-hidden="true" /> Próximo passo
-                  </span>
-                  <h2 className="h6 mb-1">{completedSubprocessNextActivity}</h2>
-                  <p className="text-muted mb-0">
-                    O subprocesso anterior atingiu o objetivo. Esta atividade é
-                    a continuação oficial enviada pelo backend e ainda não conta
-                    como iniciada.
-                  </p>
-                </div>
-                <Link
+            {!historyRequested ? (
+              <div className="alert alert-light border mb-0" role="status">
+                <p className="mb-3">
+                  O processo atual já está disponível. Carregue o histórico
+                  detalhado somente quando precisar consultar datas, custos,
+                  evidências e tarefas anteriores.
+                </p>
+                <button
+                  type="button"
                   className="btn btn-primary"
-                  to={`/products/${product.id}/value-chain-history/processes/${position.processDefinitionId}/activities`}
+                  onClick={() => setHistoryRequested(true)}
                 >
                   <ListTree size={16} aria-hidden="true" />
-                  Abrir próximo passo
-                </Link>
-              </section>
-            ) : null}
-            {commitsQuery.isError ? (
-              <div className="alert alert-warning mt-3 mb-0" role="alert">
-                O histórico de commits está temporariamente indisponível. As
-                datas, custos e demais evidências do processo continuam válidos.
+                  Carregar histórico detalhado
+                </button>
               </div>
-            ) : null}
+            ) : positionQuery.isFetching && !position ? (
+              <div className="alert alert-light border mb-0" role="status">
+                <button type="button" className="btn btn-primary" disabled>
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  />
+                  Carregando histórico detalhado...
+                </button>
+              </div>
+            ) : positionQuery.isError || !position ? (
+              <div className="alert alert-warning mb-0" role="alert">
+                <p className="mb-3">
+                  Não foi possível carregar o histórico detalhado. A posição
+                  atual acima continua válida.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={() => void positionQuery.refetch()}
+                  disabled={positionQuery.isFetching}
+                >
+                  {positionQuery.isFetching ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <RefreshCw size={16} aria-hidden="true" />
+                  )}
+                  Tentar novamente
+                </button>
+              </div>
+            ) : (
+              <>
+                {measurements.length === 0 ? (
+                  <div className="alert alert-secondary mb-0">
+                    Nenhuma passagem com evidência temporal foi registrada para
+                    este produto.
+                  </div>
+                ) : (
+                  <ol
+                    className="product-value-chain-history__timeline"
+                    aria-label="Histórico dos processos e subprocessos"
+                  >
+                    {measurements.map((measurement, index) => (
+                      <li
+                        key={`${measurement.stageType}-${measurement.processDefinitionId}-${measurement.enteredAt || index}`}
+                        className={`product-value-chain-history__item product-value-chain-history__item--${measurement.trackingStatus.toLowerCase()}`}
+                      >
+                        <div className="product-value-chain-history__item-heading">
+                          <div>
+                            <span className="product-value-chain-history__stage-type">
+                              {measurement.sequenceLabel ? (
+                                <span className="product-value-chain__stage-number">
+                                  {measurement.sequenceLabel}
+                                </span>
+                              ) : null}
+                              {measurement.stageType === "PROCESS"
+                                ? "Processo"
+                                : "Subprocesso"}
+                            </span>
+                            <h3 className="h6 mb-1">
+                              {measurement.processName}
+                            </h3>
+                            <div className="product-value-chain-history__activity-links">
+                              <Link
+                                className="product-value-chain-history__activities-link"
+                                to={`/products/${summary.productId}/value-chain-history/processes/${measurement.processDefinitionId}/activities`}
+                              >
+                                <ListTree size={15} aria-hidden="true" />
+                                Atividades e tarefas
+                              </Link>
+                              <Link
+                                className="product-value-chain-history__activities-link"
+                                to={`/business-processes?processId=${measurement.processDefinitionId}`}
+                              >
+                                <Workflow size={15} aria-hidden="true" />
+                                Abrir BPM
+                              </Link>
+                            </div>
+                          </div>
+                          <span className="product-value-chain-history__status">
+                            {measurement.trackingStatus === "COMPLETED" ? (
+                              <CheckCircle2 size={15} aria-hidden="true" />
+                            ) : (
+                              <Clock3 size={15} aria-hidden="true" />
+                            )}
+                            {statusLabel(measurement)}
+                          </span>
+                        </div>
+
+                        <dl className="product-value-chain-history__facts">
+                          <div>
+                            <dt>Entrada</dt>
+                            <dd>{formatDateTime(measurement.enteredAt)}</dd>
+                            <small>
+                              {formatEvidence(measurement.entryEvidence)}
+                            </small>
+                          </div>
+                          <div>
+                            <dt>Saída</dt>
+                            <dd>
+                              {measurement.exitedAt
+                                ? formatDateTime(measurement.exitedAt)
+                                : measurement.trackingStatus === "PLANNED"
+                                  ? "Aguardando a primeira execução"
+                                  : "Objetivo ainda sem saída comprovada"}
+                            </dd>
+                            <small>
+                              {formatEvidence(measurement.exitEvidence)}
+                            </small>
+                          </div>
+                          <div>
+                            <dt>Permanência</dt>
+                            <dd>
+                              {formatElapsedDays(measurement.elapsedDays)}
+                            </dd>
+                            <small>
+                              {measurement.objectiveAchieved
+                                ? "Objetivo do estágio atingido"
+                                : "Objetivo do estágio ainda não atingido"}
+                            </small>
+                          </div>
+                          <div>
+                            <dt>Custo estimado conhecido</dt>
+                            <dd>{costLabel(measurement)}</dd>
+                            <small>
+                              {measurement.costedExecutionCount} com custo ·{" "}
+                              {measurement.uncostedExecutionCount} sem custo
+                              reportado
+                            </small>
+                          </div>
+                        </dl>
+                        {measurement.commitRegistrationAllowed ? (
+                          <ProductProcessCommitLedger
+                            productId={summary.productId}
+                            processDefinitionId={
+                              measurement.processDefinitionId
+                            }
+                            processName={measurement.processName}
+                            commits={(commitsQuery.data ?? []).filter(
+                              (commit) =>
+                                commit.processDefinitionId ===
+                                measurement.processDefinitionId,
+                            )}
+                          />
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {completedSubprocessNextActivity &&
+                position.processDefinitionId ? (
+                  <section
+                    className="product-value-chain-history__next-step"
+                    aria-label="Próximo passo do processo"
+                  >
+                    <div>
+                      <span>
+                        <GitBranch size={16} aria-hidden="true" /> Próximo passo
+                      </span>
+                      <h2 className="h6 mb-1">
+                        {completedSubprocessNextActivity}
+                      </h2>
+                      <p className="text-muted mb-0">
+                        O subprocesso anterior atingiu o objetivo. Esta
+                        atividade é a continuação oficial enviada pelo backend e
+                        ainda não conta como iniciada.
+                      </p>
+                    </div>
+                    <Link
+                      className="btn btn-primary"
+                      to={`/products/${summary.productId}/value-chain-history/processes/${position.processDefinitionId}/activities`}
+                    >
+                      <ListTree size={16} aria-hidden="true" />
+                      Abrir próximo passo
+                    </Link>
+                  </section>
+                ) : null}
+                {commitsQuery.isError ? (
+                  <div className="alert alert-warning mt-3 mb-0" role="alert">
+                    O histórico de commits está temporariamente indisponível. As
+                    datas, custos e demais evidências do processo continuam
+                    válidos.
+                  </div>
+                ) : null}
+              </>
+            )}
           </section>
         </>
       )}

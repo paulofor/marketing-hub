@@ -12,6 +12,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.product.ProductValueChainSummaryProduct;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -143,6 +144,50 @@ class ProductValueChainPositionServiceTest {
     assertThat(position.processName()).isEqualTo("Comunicação e jornada de venda do PDE");
     assertThat(position.sequenceNumber()).isEqualTo(4);
     assertThat(position.processCount()).isEqualTo(6);
+  }
+
+  /** Resolve o resumo sem consultar tarefas, custos, artefatos ou o cadastro comercial extenso. */
+  @Test
+  void resolvesLightweightSummaryWithoutLoadingHistory() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    BusinessProcessChainDefinitionRepository chainRepository =
+        mock(BusinessProcessChainDefinitionRepository.class);
+    ProductStageMeasurementResolver measurementResolver =
+        mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver subprocessResolver =
+        mock(ProductSubprocessPositionResolver.class);
+    when(productRepository.findValueChainSummaryById(4L))
+        .thenReturn(
+            Optional.of(
+                new ProductValueChainSummaryProduct(
+                    4L, "MUSA — Método de Presença em 7 Dias", "Vega", "VALIDACAO_COMERCIAL")));
+    when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+            "pde-value-creation-delivery", "PUBLISHED"))
+        .thenReturn(List.of(chain()));
+    var service =
+        new ProductValueChainPositionService(
+            productRepository,
+            chainRepository,
+            subprocessResolver,
+            new PdeProcessCodeResolver(),
+            measurementResolver);
+
+    var summary = service.getSummary(4L);
+
+    assertThat(summary.productId()).isEqualTo(4L);
+    assertThat(summary.productName()).isEqualTo("MUSA — Método de Presença em 7 Dias");
+    assertThat(summary.productInternalName()).isEqualTo("Vega");
+    assertThat(summary.processName()).isEqualTo("Homologação e ativação comercial do PDE");
+    assertThat(summary.sequenceNumber()).isEqualTo(5);
+    assertThat(summary.processCount()).isEqualTo(6);
+    verify(measurementResolver, never())
+        .loadContext(org.mockito.ArgumentMatchers.any(Product.class));
+    verify(subprocessResolver, never())
+        .resolve(
+            org.mockito.ArgumentMatchers.any(Product.class),
+            org.mockito.ArgumentMatchers.any(BusinessProcessDefinition.class),
+            org.mockito.ArgumentMatchers.anyInt(),
+            org.mockito.ArgumentMatchers.any(ProductStageMeasurementContext.class));
   }
 
   /** Reutiliza um único contexto e consulta somente produtos em PLAY na tela operacional. */

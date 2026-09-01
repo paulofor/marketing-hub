@@ -143,6 +143,15 @@ objetivo atingido ou permissão para registrar commit; somente o backend decide 
 Assim, uma etapa concluída nunca encerra visualmente a cadeia enquanto houver processos canônicos
 seguintes.
 
+A primeira renderização dessa superfície deve consultar somente a identidade do produto e sua
+posição atual na cadeia publicada. A trilha completa de processos, subprocessos, custos, commits e
+tarefas históricas deve ser consultada pelo backend apenas após solicitação explícita do usuário.
+Depois de carregado, o histórico continua mostrando toda a cadeia publicada e toda ausência de
+evidência de forma explícita; carregamento sob demanda não autoriza cache de verdade de negócio,
+paginação local de dados incompletos nem inferência no frontend. As consultas de tarefas por origem
+devem possuir índice compatível com MySQL 5.7 para que o custo não cresça como varredura integral da
+tabela.
+
 O contrato canônico é
 `GET /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions`. O
 backend, e não o frontend, calcula a situação de cada atividade e do processo. A instância BPM é a

@@ -2,6 +2,7 @@ package com.marketinghub.product.web;
 
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
+import com.marketinghub.product.service.valuechainposition.summary.ProductValueChainSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +32,12 @@ public class ProductValueChainPositionController {
   @GetMapping("/{productId}")
   public ProductValueChainPositionResponse getPosition(@PathVariable Long productId) {
     return service.getPosition(productId);
+  }
+
+  /** Retorna a posição atual sem percorrer tarefas, custos e evidências históricas. */
+  @Operation(summary = "Retorna o resumo leve da posição atual do produto")
+  @GetMapping("/{productId}/summary")
+  public ProductValueChainSummaryResponse getSummary(@PathVariable Long productId) {
+    return service.getSummary(productId);
   }
 }

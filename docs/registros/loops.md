@@ -2864,6 +2864,14 @@ Use este checklist quando o problema estiver em algum loop acima:
   frontend.
 - **Prevenção:** testes de contrato exigem o filtro `playOnly`, comprovam o reaproveitamento do mesmo
   contexto e mantêm processo, subprocesso, tempo e custo resolvidos exclusivamente no backend.
+- **Recorrência fechada em 2026-09-01:** a otimização da listagem preservou no endpoint individual a
+  reconstrução integral e a tela `/products/{id}/value-chain-history` continuou acionando-a na
+  primeira renderização. No Vega, isso carregava 27 tarefas e cerca de 300 mil caracteres, enquanto
+  `agent_task.source_reference` ainda não possuía índice. A primeira visão agora usa projeção leve
+  de identidade e posição; processos, subprocessos, custos e commits só são buscados por comando
+  explícito. O índice prefixado `source_reference(191)` torna as consultas exatas e por prefixo
+  compatíveis com MySQL 5.7/utf8mb4. Testes de contrato impedem antecipação do histórico e a
+  homologação física exige criação e reaplicação do índice.
 
 ## LOOP-IRIS-DEPLOY-CONCORRENTE-COM-APP — health do agente disputa reinício do backend
 

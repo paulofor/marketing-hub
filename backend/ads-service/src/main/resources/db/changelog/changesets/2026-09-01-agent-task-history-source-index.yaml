@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-agent-task-history-source-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent_task
+        - columnExists:
+            tableName: agent_task
+            columnName: source_reference
+        - not:
+            indexExists:
+              tableName: agent_task
+              indexName: idx_agent_task_source_reference
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD INDEX idx_agent_task_source_reference (source_reference(191));
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                DROP INDEX idx_agent_task_source_reference;

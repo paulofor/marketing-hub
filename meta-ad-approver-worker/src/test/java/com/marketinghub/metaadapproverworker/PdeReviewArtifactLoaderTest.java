@@ -155,10 +155,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/produto-homologation-v2.json");
   }
 
-  /**
-   * Confirma que o manifesto versionado do repositório aponta para a revisão posterior à tarefa
-   * 272.
-   */
+  /** Confirma que o repositório carrega as revisões comerciais vigentes de Rigel e MUSA. */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -173,7 +170,9 @@ class PdeReviewArtifactLoaderTest {
         .extracting(item -> item.get("path"))
         .contains(
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v4.json");
   }
 
   /** Entrega à revisão independente somente a prova comercial declarada e íntegra. */
@@ -413,14 +412,17 @@ class PdeReviewArtifactLoaderTest {
 
     assertThat(rigel)
         .extracting(item -> item.get("path"))
-        .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
+        .contains(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
         .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json")
         .doesNotContain("pde-platform/contracts/musa-v7-commercial-homologation-v1.json");
     assertThat(vega)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v4.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v3.json",
-            "pde-platform/frontend/src/App.tsx")
+            "pde-platform/frontend/src/musaExperiences.ts")
         .doesNotContain(
             "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v2.json",

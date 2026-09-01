@@ -2683,6 +2683,13 @@ Use este checklist quando o problema estiver em algum loop acima:
   validação administrativa resolvem essa identidade antes do fallback. Assim, validar novamente
   reconcilia o experimento com o checkout homologado sem criar preferência concorrente. Testes de
   contrato protegem segregação por processo, preço, HTTPS e ausência de chamada ao provedor fallback.
+- **Recorrência de atestação fechada em 2026-09-01:** a evolução tipada do catálogo e do checkout
+  alterou provas legítimas do MUSA e do Rigel, enquanto os manifestos v3 também continuavam acoplados
+  ao changelog mestre e a este registro global. Os checks de Íris e Psique falharam com `SHA-256
+  divergente` antes de alcançar os testes funcionais. Os manifestos v3 permanecem imutáveis como
+  baseline e as versões v4 declaram somente o delta comercial executável, referenciam a baseline por
+  hash e excluem arquivos globais mutáveis. Assim, uma pesquisa, changeset alheio ou novo registro de
+  loop não invalida novamente a prova de cada produto.
 - **Prevenção do container fechada em 2026-09-01:** a homologação local detectou que o gate da
   captura final usava bind mount para injetar o teste na imagem. Quando a origem não era visível ao
   daemon, o destino virava um diretório vazio e `node --test` encerrava com sucesso executando zero
@@ -2766,6 +2773,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes cobrem origem ausente, permissão `0400`, ausência de segredo nos logs e ordem
   `pull → preparação → preflight → publicação`. Assim, drift de proprietário ou modo bloqueia o
   deploy antes de trocar um worker saudável.
+- **Recorrência de contrato fechada em 2026-09-01:** o pull direto foi substituído pelo helper de
+  retry transitório, mas dois testes continuaram procurando a linha antiga e bloquearam Argos antes
+  da imagem. Os testes agora reconhecem o helper canônico e preservam a mesma ordem obrigatória
+  `pull resiliente → preparação → preflight → publicação`, sem exigir uma implementação obsoleta.
 - **Correção complementar da sessão Codex em 2026-08-31:** as execuções independentes 6, 7 e 8
   abriram os ciclos 45, 46 e 47, mas as tarefas 285–287 bloquearam antes do planejamento com
   `Permission denied` ao ler `/home/node/.codex/config.toml`. O deploy criava o volume da sessão com
@@ -2922,6 +2933,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   o SHA antes de compilar e valida `max`, `single`, valor inválido e o conflito com
   `cancel-in-progress: true`. Todos os workflows passam pelo mesmo binário no contrato do CI; a
   revisão provisória deve ser substituída pela primeira release oficial que incorpore esse suporte.
+- **Recorrência do runner fechada em 2026-09-01:** o primeiro uso da revisão nova passou localmente
+  onde ShellCheck não estava instalado, mas o runner hospedado ativou a integração automaticamente e
+  transformou 239 diagnósticos informativos `SC2029`/`SC2086` em falha. O runner canônico agora usa
+  um wrapper explícito com severidade mínima `warning`, preservando erros reais de shell e o lint de
+  workflows. Um teste com double comprova que Actionlint invoca exatamente essa política, eliminando
+  a diferença silenciosa entre sandbox e GitHub.
 
 ## LOOP-MUSA-CHECKOUT-CANONICO-FORA-DO-DTO — contrato válido derruba o backend no CI
 
@@ -2936,6 +2953,22 @@ Use este checklist quando o problema estiver em algum loop acima:
   produto a preservam e o frontend declara o mesmo contrato opcional.
 - **Prevenção:** o teste do catálogo desserializa o JSON canônico, confere provedor, URL, oferta,
   preço, moeda e cobrança e garante que o recorte público não descarte o vínculo homologado.
+
+## LOOP-ACTIONS-MAVEN-CENTRAL-RATE-LIMIT — imagem válida falha ao resolver dependências
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** o run `33541793142` aprovou backend, frontend e worker do MUSA, mas a
+  construção da imagem recebeu HTTP 429 ao resolver os BOMs do Spring Boot e da AWS no Maven Central.
+- **Causa-raiz:** o Dockerfile copiava todo o código antes da única chamada Maven. Qualquer mudança
+  invalidava a camada inteira e repetia todos os downloads; uma resposta transitória encerrava o
+  build sem retry, e os erros posteriores de versões ausentes eram apenas consequência dos BOMs não
+  resolvidos.
+- **Correção sistêmica:** a imagem resolve dependências em uma camada anterior ao código e usa um
+  helper que repete somente 408, 429, 5xx e falhas de transporte, força atualização após limpar
+  marcadores `.lastUpdated` e encerra imediatamente diante de erro funcional.
+- **Prevenção:** teste com doubles cobre recuperação transitória, limite de tentativas, rejeição de
+  erro de compilação e ordem das camadas; o workflow executa o contrato antes dos testes e a imagem
+  continua sendo construída localmente antes de qualquer publicação.
 
 ## LOOP-ACTIONS-HOST-COMPARTILHADO-SOB-PRESSAO — deploy válido falha por I/O e identidade divergente
 

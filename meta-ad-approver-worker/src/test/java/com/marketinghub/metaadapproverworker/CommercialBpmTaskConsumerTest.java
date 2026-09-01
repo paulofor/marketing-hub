@@ -137,7 +137,7 @@ class CommercialBpmTaskConsumerTest {
         .contains("activationRecommendation", "gateChecks", "priceClarityScore");
   }
 
-  /** Mantém o prompt real dentro do limite sem depender de shell ou truncamento silencioso. */
+  /** Mantém o prompt real dentro do limite e comprova a atestação incremental vigente. */
   @Test
   void composesBoundedCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -172,16 +172,18 @@ class CommercialBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "kit-whatsapp-tasting-homologation-v4.json",
+            "kit-whatsapp-tasting-homologation-v3.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",
-            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java")
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
         .doesNotContain("VERSIONED_FILESYSTEM");
     org.assertj.core.api.Assertions.assertThat(prompt.length())
         .isLessThan(850_000)
         .isLessThan(CommercialBpmTaskConsumer.promptCharacterLimit());
   }
 
-  /** Mantém também o prompt real da Vega abaixo do teto antes da revisão sucessora. */
+  /** Mantém o prompt real da Vega abaixo do teto e comprova manifesto vigente e baseline. */
   @Test
   void composesBoundedVegaCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -216,6 +218,7 @@ class CommercialBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "musa-v7-commercial-homologation-v4.json",
             "musa-v7-commercial-homologation-v3.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",

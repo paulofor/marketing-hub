@@ -2644,6 +2644,11 @@ Use este checklist quando o problema estiver em algum loop acima:
   checksum e SHA-256 do arquivo completo. Um limite preventivo de 900.000 caracteres bloqueia
   regressão antes de abrir o processo do modelo, e o teste monta o prompt real do Rigel sem depender
   de shell ou truncamento silencioso.
+- **Recorrência de contrato fechada em 2026-09-01:** o cânone da cadeia PDE passou a exigir registro
+  próprio para abordagens `DIRECT_ONE_TO_ONE`, mas o manifesto comercial vigente preservou o hash
+  anterior e fez o check de Têmis falhar antes dos testes funcionais. A atestação foi atualizada para
+  a mesma revisão canônica validada pelo backend, frontend e Hermes; o teste do repositório continua
+  bloqueando qualquer alteração futura do cânone sem a atualização explícita do manifesto.
 
 ## LOOP-PSIQUE-ESTETICA-EM-TEXTO-LIVRE — aprovação não comprova equilíbrio visual
 

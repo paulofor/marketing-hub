@@ -141,7 +141,7 @@
     },
     {
       "path": "docs/canonical/cadeia-produtos-pde-canon.v1.md",
-      "sha256": "54099cf04e04e6a706f350c1e03772cd7515c6148637e85235316c8a45f9cf0f",
+      "sha256": "569ea41d2c7443651b0dc5417694eaa5dcf38bc6884aad8131564d9d6092b8ba",
       "promptMode": "ATTESTED_REFERENCE",
       "reviewSummary": "A revisão independente antecede preflight e autorização humana; parecer aprovado não ativa produto, mídia, gasto ou contato e não conta como venda."
     },

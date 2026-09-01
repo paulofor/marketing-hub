@@ -60,6 +60,8 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - name: Validate resilient Maven container build contract
+        run: bash scripts/test-maven-build-with-transient-retry.sh
       - name: Run tests
         run: mvn -B test
 

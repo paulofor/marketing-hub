@@ -252,7 +252,7 @@ test("recusa reconciliar uma sessão Codex que contém link simbólico", () => {
 test("o deploy valida Brave e Codex sem consumir o restante do script remoto", () => {
   const workflow = readFileSync(workflowPath, "utf8");
   const pullIndex = workflow.indexOf(
-    'docker compose "${compose_files[@]}" pull',
+    'bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"',
   );
   const codexHomeIndex = workflow.indexOf("prepare-codex-runtime-home.sh");
   const braveSecretIndex = workflow.indexOf("prepare-brave-runtime-secret.sh");

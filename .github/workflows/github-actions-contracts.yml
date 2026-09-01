@@ -10,7 +10,9 @@ on:
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
       - "scripts/run-actionlint.sh"
+      - "scripts/actionlint-shellcheck.sh"
       - "scripts/test-actionlint-queue-support.sh"
+      - "scripts/test-actionlint-shellcheck-policy.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-pull-with-transient-retry.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
@@ -28,7 +30,9 @@ on:
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
       - "scripts/run-actionlint.sh"
+      - "scripts/actionlint-shellcheck.sh"
       - "scripts/test-actionlint-queue-support.sh"
+      - "scripts/test-actionlint-shellcheck-policy.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-pull-with-transient-retry.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
@@ -69,7 +73,9 @@ jobs:
           bash -n scripts/docker-pull-with-transient-retry.sh
           bash -n scripts/install-actionlint.sh
           bash -n scripts/run-actionlint.sh
+          bash -n scripts/actionlint-shellcheck.sh
           bash -n scripts/test-actionlint-queue-support.sh
+          bash -n scripts/test-actionlint-shellcheck-policy.sh
           bash -n scripts/test-docker-pull-with-transient-retry.sh
           bash -n scripts/test-docker-compose-pull-with-transient-retry.sh
           bash -n scripts/ssh-keyscan-with-retry.sh
@@ -86,6 +92,9 @@ jobs:
 
       - name: Validar suporte do Actionlint à fila ampliada
         run: bash scripts/test-actionlint-queue-support.sh
+
+      - name: Validar política ShellCheck do Actionlint
+        run: bash scripts/test-actionlint-shellcheck-policy.sh
 
       - name: Validar retry transitório do Docker
         run: bash scripts/test-docker-pull-with-transient-retry.sh

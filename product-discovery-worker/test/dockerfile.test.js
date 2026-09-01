@@ -180,7 +180,7 @@ test("valida o secret como usuário do runtime antes de substituir o worker", ()
     workflow.indexOf("- name: Publish service"),
   );
   const pullPosition = publishStep.indexOf(
-    'docker compose "${compose_files[@]}" pull',
+    'bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"',
   );
   const preparePosition = publishStep.indexOf(
     "scripts/prepare-brave-runtime-secret.sh",

@@ -247,7 +247,7 @@ class CustomerBpmTaskConsumerTest {
         .isFalse();
   }
 
-  /** Mantém o prompt real da Vega com margem e sem truncar provas funcionais ou visuais. */
+  /** Mantém o prompt real da Vega com margem e comprova manifesto vigente e baseline. */
   @Test
   void composesBoundedVegaCommercialPromptFromReadOnlyEvidenceWorkspace() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -289,6 +289,7 @@ class CustomerBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "musa-v7-commercial-homologation-v4.json",
             "musa-v7-commercial-homologation-v3.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",

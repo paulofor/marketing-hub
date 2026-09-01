@@ -241,7 +241,7 @@ export default function ProductListPage() {
     deferredIdentityQuery,
     true,
   );
-  const valueChainPositions = useProductValueChainPositions();
+  const valueChainPositions = useProductValueChainPositions(true);
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
   const automaticExecution = useProductAutomaticExecution();
   const products = useMemo(

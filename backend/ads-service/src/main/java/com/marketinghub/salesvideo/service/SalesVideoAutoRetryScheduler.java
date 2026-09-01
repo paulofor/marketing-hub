@@ -11,6 +11,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class SalesVideoAutoRetryScheduler {
   private static final Logger LOGGER = LoggerFactory.getLogger(SalesVideoAutoRetryScheduler.class);
   private static final String AUTO_REQUESTED_BY = "auto@marketinghub.io";
+  private static final int MAX_SCAN_LIMIT = 100;
 
   private final SalesVideoJobRepository jobRepository;
   private final SalesVideoJobService jobService;
@@ -40,7 +42,7 @@ public class SalesVideoAutoRetryScheduler {
     this.reprocessPolicy = reprocessPolicy;
     this.enabled = enabled;
     this.retryDelay = Duration.ofMinutes(retryDelayMinutes);
-    this.scanLimit = scanLimit;
+    this.scanLimit = Math.max(1, Math.min(scanLimit, MAX_SCAN_LIMIT));
   }
 
   /** Reprocessa jobs falhos elegíveis sem duplicar filhos de retry já criados. */
@@ -51,7 +53,11 @@ public class SalesVideoAutoRetryScheduler {
     }
     Instant cutoff = Instant.now().minus(retryDelay);
     List<SalesVideoJob> candidates =
-        jobRepository.findByStatusAndFinishedAtBefore(SalesVideoStatus.VIDEO_FAILED, cutoff);
+        jobRepository.findAutomaticRetryCandidates(
+            SalesVideoStatus.VIDEO_FAILED,
+            cutoff,
+            SalesVideoRetryReason.AUTO_RECOVERY,
+            PageRequest.of(0, scanLimit));
     int executed = 0;
     for (SalesVideoJob job : candidates) {
       if (!isAutomaticRetryCandidate(job)) {

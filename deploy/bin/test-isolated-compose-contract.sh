@@ -46,6 +46,12 @@ if ! grep -Fq 'CMD curl -fsS --connect-timeout 2 --max-time 4 http://127.0.0.1:8
   exit 1
 fi
 
+if ! grep -Fq 'exec java -XX:+ExitOnOutOfMemoryError $JAVA_OPTS -jar /app/app.jar' \
+  ../backend/ads-service/Dockerfile; then
+  echo "[CONTRATO] O backend deve encerrar a JVM após OOM para permitir recuperação pelo Docker." >&2
+  exit 1
+fi
+
 if grep -q 'docker compose up' bin/apply-video-only.sh; then
   echo "[CONTRATO] apply-video-only.sh deve informar explicitamente docker-compose.video.yml." >&2
   exit 1

@@ -1,5 +1,6 @@
 package com.marketinghub.salesvideo.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -15,8 +16,10 @@ import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: validar o retry automático dos jobs de vídeo. */
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +42,12 @@ class SalesVideoAutoRetrySchedulerTest {
             .failureDetail("retryable=true;code=PROVIDER_TIMEOUT;message=timeout")
             .finishedAt(Instant.parse("2026-07-10T03:20:47Z"))
             .build();
-    given(jobRepository.findByStatusAndFinishedAtBefore(eq(SalesVideoStatus.VIDEO_FAILED), any()))
+    given(
+            jobRepository.findAutomaticRetryCandidates(
+                eq(SalesVideoStatus.VIDEO_FAILED),
+                any(),
+                eq(SalesVideoRetryReason.AUTO_RECOVERY),
+                any()))
         .willReturn(List.of(job));
     given(reprocessPolicy.hasAttemptsRemaining(job)).willReturn(true);
     given(jobRepository.existsByRetryOfJob_Id(10108L)).willReturn(true);
@@ -64,7 +72,12 @@ class SalesVideoAutoRetrySchedulerTest {
                 "retryable=false;code=VIDEO_PROVIDER_ERROR;message=Nenhum provider configurado para o job")
             .finishedAt(Instant.parse("2026-07-11T23:01:04Z"))
             .build();
-    given(jobRepository.findByStatusAndFinishedAtBefore(eq(SalesVideoStatus.VIDEO_FAILED), any()))
+    given(
+            jobRepository.findAutomaticRetryCandidates(
+                eq(SalesVideoStatus.VIDEO_FAILED),
+                any(),
+                eq(SalesVideoRetryReason.AUTO_RECOVERY),
+                any()))
         .willReturn(List.of(job));
     SalesVideoAutoRetryScheduler scheduler =
         new SalesVideoAutoRetryScheduler(jobRepository, jobService, reprocessPolicy, true, 15, 20);
@@ -87,7 +100,12 @@ class SalesVideoAutoRetrySchedulerTest {
             .retryReason(SalesVideoRetryReason.AUTO_RECOVERY)
             .finishedAt(Instant.parse("2026-07-11T23:06:04Z"))
             .build();
-    given(jobRepository.findByStatusAndFinishedAtBefore(eq(SalesVideoStatus.VIDEO_FAILED), any()))
+    given(
+            jobRepository.findAutomaticRetryCandidates(
+                eq(SalesVideoStatus.VIDEO_FAILED),
+                any(),
+                eq(SalesVideoRetryReason.AUTO_RECOVERY),
+                any()))
         .willReturn(List.of(job));
     SalesVideoAutoRetryScheduler scheduler =
         new SalesVideoAutoRetryScheduler(jobRepository, jobService, reprocessPolicy, true, 15, 20);
@@ -96,5 +114,57 @@ class SalesVideoAutoRetrySchedulerTest {
 
     verify(reprocessPolicy, never()).hasAttemptsRemaining(job);
     verify(jobService, never()).retry(eq(20424L), any());
+  }
+
+  /** Deve limitar no banco o lote inspecionado pelo retry automático. */
+  @Test
+  void shouldLimitAutomaticRetryCandidatesAtDatabaseQuery() {
+    given(
+            jobRepository.findAutomaticRetryCandidates(
+                eq(SalesVideoStatus.VIDEO_FAILED),
+                any(),
+                eq(SalesVideoRetryReason.AUTO_RECOVERY),
+                any()))
+        .willReturn(List.of());
+    SalesVideoAutoRetryScheduler scheduler =
+        new SalesVideoAutoRetryScheduler(jobRepository, jobService, reprocessPolicy, true, 15, 20);
+
+    scheduler.retryFailedJobs();
+
+    ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+    verify(jobRepository)
+        .findAutomaticRetryCandidates(
+            eq(SalesVideoStatus.VIDEO_FAILED),
+            any(),
+            eq(SalesVideoRetryReason.AUTO_RECOVERY),
+            pageable.capture());
+    assertThat(pageable.getValue().getPageNumber()).isZero();
+    assertThat(pageable.getValue().getPageSize()).isEqualTo(20);
+  }
+
+  /** Deve limitar configurações excessivas para preservar a memória do backend. */
+  @Test
+  void shouldClampExcessiveAutomaticRetryScanLimit() {
+    given(
+            jobRepository.findAutomaticRetryCandidates(
+                eq(SalesVideoStatus.VIDEO_FAILED),
+                any(),
+                eq(SalesVideoRetryReason.AUTO_RECOVERY),
+                any()))
+        .willReturn(List.of());
+    SalesVideoAutoRetryScheduler scheduler =
+        new SalesVideoAutoRetryScheduler(
+            jobRepository, jobService, reprocessPolicy, true, 15, 1000);
+
+    scheduler.retryFailedJobs();
+
+    ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+    verify(jobRepository)
+        .findAutomaticRetryCandidates(
+            eq(SalesVideoStatus.VIDEO_FAILED),
+            any(),
+            eq(SalesVideoRetryReason.AUTO_RECOVERY),
+            pageable.capture());
+    assertThat(pageable.getValue().getPageSize()).isEqualTo(100);
   }
 }

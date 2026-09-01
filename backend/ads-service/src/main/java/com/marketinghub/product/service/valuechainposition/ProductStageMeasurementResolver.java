@@ -3,12 +3,10 @@ package com.marketinghub.product.service.valuechainposition;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
-import com.marketinghub.experiment.Experiment;
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
-import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductProcessPeriod;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -96,7 +94,15 @@ public class ProductStageMeasurementResolver {
       Product product,
       List<BusinessProcessChainItem> orderedItems,
       BusinessProcessDefinition currentProcess) {
-    MeasurementContext context = context(product);
+    return resolveProcessMeasurements(product, orderedItems, currentProcess, loadContext(product));
+  }
+
+  /** Consolida a cadeia reutilizando as evidências já carregadas para o produto. */
+  List<ProductStageMeasurementResponse> resolveProcessMeasurements(
+      Product product,
+      List<BusinessProcessChainItem> orderedItems,
+      BusinessProcessDefinition currentProcess,
+      ProductStageMeasurementContext context) {
     List<ProductProcessPeriod> periods =
         periodRepository.findByProductIdOrderByEnteredAtAscIdAsc(product.getId());
     List<ProductStageMeasurementResponse> measurements = new ArrayList<>();
@@ -114,7 +120,7 @@ public class ProductStageMeasurementResolver {
                         period, process, String.valueOf(item.getSequenceNumber()), context)));
         continue;
       }
-      List<AgentTask> matchingTasks = processTasks(context.tasks(), process);
+      List<AgentTaskMeasurementSnapshot> matchingTasks = processTasks(context.tasks(), process);
       if (!matchingTasks.isEmpty()) {
         measurements.add(
             measureDerivedProcess(
@@ -164,13 +170,28 @@ public class ProductStageMeasurementResolver {
       BusinessProcessDefinition currentSubprocess,
       Integer parentSequenceNumber,
       boolean currentSubprocessAwaitingFirstExecution) {
-    MeasurementContext context = context(product);
+    return resolveSubprocessMeasurements(
+        loadContext(product),
+        subprocesses,
+        currentSubprocess,
+        parentSequenceNumber,
+        currentSubprocessAwaitingFirstExecution);
+  }
+
+  /** Consolida subprocessos reutilizando as evidências já carregadas para o produto. */
+  List<ProductStageMeasurementResponse> resolveSubprocessMeasurements(
+      ProductStageMeasurementContext context,
+      List<BusinessProcessDefinition> subprocesses,
+      BusinessProcessDefinition currentSubprocess,
+      Integer parentSequenceNumber,
+      boolean currentSubprocessAwaitingFirstExecution) {
     List<ProductStageMeasurementResponse> measurements = new ArrayList<>();
     for (int index = 0; index < subprocesses.size(); index++) {
       BusinessProcessDefinition subprocess = subprocesses.get(index);
       String sequenceLabel =
           parentSequenceNumber == null ? null : parentSequenceNumber + "." + (index + 1);
-      List<AgentTask> matchingTasks = subprocessTasks(context.tasks(), subprocess);
+      List<AgentTaskMeasurementSnapshot> matchingTasks =
+          subprocessTasks(context.tasks(), subprocess);
       if (matchingTasks.isEmpty()) {
         if (currentSubprocess != null && subprocess.getId().equals(currentSubprocess.getId())) {
           measurements.add(
@@ -218,7 +239,12 @@ public class ProductStageMeasurementResolver {
 
   /** Confirma o objetivo persistido de um subprocesso sem inferir avanço por simples status. */
   public boolean objectiveAchieved(Product product, BusinessProcessDefinition subprocess) {
-    MeasurementContext context = context(product);
+    return objectiveAchieved(loadContext(product), subprocess);
+  }
+
+  /** Confirma o objetivo usando as evidências já carregadas para a mesma resolução. */
+  boolean objectiveAchieved(
+      ProductStageMeasurementContext context, BusinessProcessDefinition subprocess) {
     return persistedSubprocessObjectiveAchievedAt(
             subprocess, subprocessTasks(context.tasks(), subprocess))
         != null;
@@ -228,7 +254,7 @@ public class ProductStageMeasurementResolver {
    * Obtém o horário auditável em que todas as atividades criativas obrigatórias foram concluídas.
    */
   private Instant persistedSubprocessObjectiveAchievedAt(
-      BusinessProcessDefinition subprocess, List<AgentTask> matchingTasks) {
+      BusinessProcessDefinition subprocess, List<AgentTaskMeasurementSnapshot> matchingTasks) {
     if ("landing-page-generation".equals(subprocess.getProcessCode())) {
       return approvedLandingAchievedAt(matchingTasks);
     }
@@ -236,11 +262,11 @@ public class ProductStageMeasurementResolver {
     Set<String> packageIds = new java.util.HashSet<>();
     List<Instant> completionTimes = new ArrayList<>();
     for (String activityId : CREATIVE_APPROVAL_ACTIVITIES) {
-      AgentTask latest = latestActivityTask(matchingTasks, activityId);
-      if (latest == null || !"COMPLETED".equals(latest.getStatus())) return null;
+      AgentTaskMeasurementSnapshot latest = latestActivityTask(matchingTasks, activityId);
+      if (latest == null || !"COMPLETED".equals(latest.status())) return null;
       String packageId = acceptedCreativePackageId(latest);
       Instant completionTime =
-          latest.getDeliveredAt() != null ? latest.getDeliveredAt() : latest.getUpdatedAt();
+          latest.deliveredAt() != null ? latest.deliveredAt() : latest.updatedAt();
       if (packageId == null || completionTime == null) return null;
       packageIds.add(packageId);
       completionTimes.add(completionTime);
@@ -254,11 +280,13 @@ public class ProductStageMeasurementResolver {
    * Reconhece a landing aprovada somente quando Íris, Quality Review, Psique e Têmis fecharam a
    * mesma execução; publicação humana permanece fora deste objetivo.
    */
-  private Instant approvedLandingAchievedAt(List<AgentTask> matchingTasks) {
-    Map<String, List<AgentTask>> byExecution =
+  private Instant approvedLandingAchievedAt(List<AgentTaskMeasurementSnapshot> matchingTasks) {
+    Map<String, List<AgentTaskMeasurementSnapshot>> byExecution =
         matchingTasks.stream()
-            .filter(task -> task.getSourceReference() != null)
-            .collect(java.util.stream.Collectors.groupingBy(AgentTask::getSourceReference));
+            .filter(task -> task.sourceReference() != null)
+            .collect(
+                java.util.stream.Collectors.groupingBy(
+                    AgentTaskMeasurementSnapshot::sourceReference));
     return byExecution.values().stream()
         .map(this::approvedLandingExecutionAchievedAt)
         .filter(Objects::nonNull)
@@ -267,20 +295,23 @@ public class ProductStageMeasurementResolver {
   }
 
   /** Valida decisões e evidências estruturadas dos três gates da mesma execução de landing. */
-  private Instant approvedLandingExecutionAchievedAt(List<AgentTask> tasks) {
-    Map<String, AgentTask> latestByActivity = new LinkedHashMap<>();
+  private Instant approvedLandingExecutionAchievedAt(List<AgentTaskMeasurementSnapshot> tasks) {
+    Map<String, AgentTaskMeasurementSnapshot> latestByActivity = new LinkedHashMap<>();
     tasks.stream()
-        .filter(task -> LANDING_APPROVAL_ACTIVITIES.contains(task.getProcessActivityId()))
+        .filter(task -> LANDING_APPROVAL_ACTIVITIES.contains(task.processActivityId()))
         .sorted(
             Comparator.comparing(
-                    AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
-                .thenComparing(AgentTask::getId, Comparator.nullsFirst(Comparator.naturalOrder())))
-        .forEach(task -> latestByActivity.put(task.getProcessActivityId(), task));
+                    AgentTaskMeasurementSnapshot::updatedAt,
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(
+                    AgentTaskMeasurementSnapshot::id,
+                    Comparator.nullsFirst(Comparator.naturalOrder())))
+        .forEach(task -> latestByActivity.put(task.processActivityId(), task));
     if (!LANDING_APPROVAL_ACTIVITIES.stream()
         .allMatch(
             activityId ->
                 latestByActivity.containsKey(activityId)
-                    && "COMPLETED".equals(latestByActivity.get(activityId).getStatus()))) {
+                    && "COMPLETED".equals(latestByActivity.get(activityId).status()))) {
       return null;
     }
     if (!approvedLandingHtml(latestByActivity.get("html"))
@@ -289,57 +320,58 @@ public class ProductStageMeasurementResolver {
       return null;
     }
     return latestByActivity.values().stream()
-        .map(task -> task.getDeliveredAt() != null ? task.getDeliveredAt() : task.getUpdatedAt())
+        .map(task -> task.deliveredAt() != null ? task.deliveredAt() : task.updatedAt())
         .filter(Objects::nonNull)
         .max(Comparator.naturalOrder())
         .orElse(null);
   }
 
   /** Exige a aprovação independente, o HTML final e o checkout preservado por Dédalo. */
-  private boolean approvedLandingHtml(AgentTask task) {
+  private boolean approvedLandingHtml(AgentTaskMeasurementSnapshot task) {
     try {
-      JsonNode evidence = objectMapper.readTree(task.getEvidenceJson());
+      JsonNode evidence = objectMapper.readTree(task.evidenceJson());
       return "APPROVE_FOR_PUBLICATION".equals(evidence.path("approvalRecommendation").asText())
           && !evidence.path("landingHtml").asText().isBlank()
           && !evidence.path("checkoutUrl").asText().isBlank();
     } catch (JsonProcessingException | IllegalArgumentException ex) {
       log.warn(
           "Evidência da landing inválida ao medir objetivo do subprocesso. taskId={}",
-          task.getId(),
+          task.id(),
           ex);
       return false;
     }
   }
 
   /** Aceita somente parecer funcional explícito e aprovado de Psique ou Têmis. */
-  private boolean approvedDecision(AgentTask task) {
+  private boolean approvedDecision(AgentTaskMeasurementSnapshot task) {
     try {
-      return "APPROVED"
-          .equals(objectMapper.readTree(task.getResultJson()).path("decision").asText());
+      return "APPROVED".equals(objectMapper.readTree(task.resultJson()).path("decision").asText());
     } catch (JsonProcessingException | IllegalArgumentException ex) {
       log.warn(
-          "Parecer de landing inválido ao medir objetivo do subprocesso. taskId={}",
-          task.getId(),
-          ex);
+          "Parecer de landing inválido ao medir objetivo do subprocesso. taskId={}", task.id(), ex);
       return false;
     }
   }
 
   /** Seleciona a execução mais recente de uma atividade específica do subprocesso. */
-  private AgentTask latestActivityTask(List<AgentTask> tasks, String activityId) {
+  private AgentTaskMeasurementSnapshot latestActivityTask(
+      List<AgentTaskMeasurementSnapshot> tasks, String activityId) {
     return tasks.stream()
-        .filter(task -> activityId.equals(task.getProcessActivityId()))
+        .filter(task -> activityId.equals(task.processActivityId()))
         .max(
             Comparator.comparing(
-                    AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
-                .thenComparing(AgentTask::getId, Comparator.nullsFirst(Comparator.naturalOrder())))
+                    AgentTaskMeasurementSnapshot::updatedAt,
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(
+                    AgentTaskMeasurementSnapshot::id,
+                    Comparator.nullsFirst(Comparator.naturalOrder())))
         .orElse(null);
   }
 
   /** Valida a evidência humana, os ativos e a ausência de publicação ou gasto do mesmo pacote. */
-  private String acceptedCreativePackageId(AgentTask task) {
+  private String acceptedCreativePackageId(AgentTaskMeasurementSnapshot task) {
     try {
-      JsonNode evidence = objectMapper.readTree(task.getEvidenceJson());
+      JsonNode evidence = objectMapper.readTree(task.evidenceJson());
       String packageId = evidence.path("creativePackageId").asText();
       boolean accepted =
           evidence.path("importedByHuman").asBoolean(false)
@@ -354,8 +386,8 @@ public class ProductStageMeasurementResolver {
     } catch (JsonProcessingException | IllegalArgumentException ex) {
       log.warn(
           "Evidência criativa inválida ao medir objetivo do subprocesso. taskId={} processCode={}",
-          task.getId(),
-          task.getProcessDefinition() == null ? null : task.getProcessDefinition().getProcessCode(),
+          task.id(),
+          task.processCode(),
           ex);
       return null;
     }
@@ -366,8 +398,8 @@ public class ProductStageMeasurementResolver {
       ProductProcessPeriod period,
       BusinessProcessDefinition process,
       String sequenceLabel,
-      MeasurementContext context) {
-    List<AgentTask> matchingTasks = processTasks(context.tasks(), process);
+      ProductStageMeasurementContext context) {
+    List<AgentTaskMeasurementSnapshot> matchingTasks = processTasks(context.tasks(), process);
     Instant enteredAt = period.getEnteredAt();
     String entryEvidence = period.getEntryEvidence();
     if ("BACKFILLED_PRODUCT_UPDATE".equals(entryEvidence)) {
@@ -379,9 +411,9 @@ public class ProductStageMeasurementResolver {
     }
     Instant exitedAt = period.getExitedAt();
     Instant effectiveEnteredAt = enteredAt;
-    List<AgentTask> tasksWithin =
+    List<AgentTaskMeasurementSnapshot> tasksWithin =
         matchingTasks.stream()
-            .filter(task -> within(task.getCreatedAt(), effectiveEnteredAt, exitedAt))
+            .filter(task -> within(task.createdAt(), effectiveEnteredAt, exitedAt))
             .toList();
     return measurement(
         "PROCESS",
@@ -402,10 +434,10 @@ public class ProductStageMeasurementResolver {
       BusinessProcessDefinition process,
       int sequenceNumber,
       BusinessProcessDefinition currentProcess,
-      List<AgentTask> matchingTasks,
+      List<AgentTaskMeasurementSnapshot> matchingTasks,
       List<BusinessProcessChainItem> orderedItems,
       List<ProductProcessPeriod> periods,
-      MeasurementContext context) {
+      ProductStageMeasurementContext context) {
     Instant enteredAt = firstCreatedAt(matchingTasks);
     boolean current = process.getId().equals(currentProcess.getId());
     Instant nextTaskEntry =
@@ -485,14 +517,14 @@ public class ProductStageMeasurementResolver {
       Instant exitedAt,
       String exitEvidence,
       boolean objectiveAchieved,
-      List<AgentTask> tasks,
+      List<AgentTaskMeasurementSnapshot> tasks,
       List<StudioCostLedgerEntry> ledger) {
     BigDecimal knownCost = BigDecimal.ZERO;
     int costedExecutions = 0;
     int uncostedExecutions = 0;
-    for (AgentTask task : tasks) {
-      if (task.getEstimatedCostUsd() != null) {
-        knownCost = knownCost.add(task.getEstimatedCostUsd());
+    for (AgentTaskMeasurementSnapshot task : tasks) {
+      if (task.estimatedCostUsd() != null) {
+        knownCost = knownCost.add(task.estimatedCostUsd());
         costedExecutions++;
       } else {
         uncostedExecutions++;
@@ -546,64 +578,71 @@ public class ProductStageMeasurementResolver {
     return uncostedExecutions == 0 ? "COMPLETE" : "PARTIAL";
   }
 
-  /** Carrega tarefas dos planos e experimentos do produto e o ledger financeiro relacionado. */
-  private MeasurementContext context(Product product) {
-    List<CommercialPlan> plans = commercialPlanRepository.findByProductId(product.getId());
-    Map<Long, AgentTask> tasks = new LinkedHashMap<>();
-    for (CommercialPlan plan : plans) {
+  /** Carrega uma única vez as evidências enxutas usadas por toda a resolução do produto. */
+  ProductStageMeasurementContext loadContext(Product product) {
+    List<Long> planIds = commercialPlanRepository.findIdsByProductId(product.getId());
+    Map<Long, AgentTaskMeasurementSnapshot> commercialPlanTasks = new LinkedHashMap<>();
+    Map<Long, AgentTaskMeasurementSnapshot> tasks = new LinkedHashMap<>();
+    for (Long planId : planIds) {
       taskRepository
-          .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-              "commercial-plan:" + plan.getId() + "@")
-          .forEach(task -> tasks.put(task.getId(), task));
+          .findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:" + planId + "@")
+          .forEach(
+              task -> {
+                commercialPlanTasks.put(task.id(), task);
+                tasks.put(task.id(), task);
+              });
     }
-    for (Experiment experiment :
-        experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(product.getId())) {
+    for (Long experimentId :
+        experimentRepository.findIdsByProductIdOrderByUpdatedAtDescIdDesc(product.getId())) {
       taskRepository
-          .findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:" + experiment.getId())
-          .forEach(task -> tasks.put(task.getId(), task));
+          .findMeasurementSnapshotsBySourceReference("experiment:" + experimentId)
+          .forEach(task -> tasks.put(task.id(), task));
     }
     Map<Long, StudioCostLedgerEntry> ledger = new LinkedHashMap<>();
     studioLedgerRepository
         .findByProductIdOrderByCreatedAtAsc(product.getId())
         .forEach(entry -> ledger.put(entry.getId(), entry));
-    if (!plans.isEmpty()) {
+    if (!planIds.isEmpty()) {
       studioLedgerRepository
-          .findByCommercialPlanIdInOrderByCreatedAtAsc(
-              plans.stream().map(CommercialPlan::getId).toList())
+          .findByCommercialPlanIdInOrderByCreatedAtAsc(planIds)
           .forEach(entry -> ledger.put(entry.getId(), entry));
     }
-    return new MeasurementContext(List.copyOf(tasks.values()), List.copyOf(ledger.values()));
+    return new ProductStageMeasurementContext(
+        List.copyOf(tasks.values()),
+        List.copyOf(commercialPlanTasks.values()),
+        List.copyOf(ledger.values()));
   }
 
   /** Seleciona tarefas do macroprocesso e de todos os seus subprocessos. */
-  private List<AgentTask> processTasks(List<AgentTask> tasks, BusinessProcessDefinition process) {
+  private List<AgentTaskMeasurementSnapshot> processTasks(
+      List<AgentTaskMeasurementSnapshot> tasks, BusinessProcessDefinition process) {
     return tasks.stream()
-        .filter(task -> task.getProcessDefinition() != null)
+        .filter(task -> task.processDefinitionId() != null)
         .filter(
             task ->
-                process.getProcessCode().equals(task.getProcessDefinition().getProcessCode())
-                    || process
-                        .getProcessCode()
-                        .equals(task.getProcessDefinition().getParentProcessCode()))
-        .sorted(Comparator.comparing(AgentTask::getCreatedAt).thenComparing(AgentTask::getId))
+                process.getProcessCode().equals(task.processCode())
+                    || process.getProcessCode().equals(task.parentProcessCode()))
+        .sorted(
+            Comparator.comparing(AgentTaskMeasurementSnapshot::createdAt)
+                .thenComparing(AgentTaskMeasurementSnapshot::id))
         .toList();
   }
 
   /** Seleciona somente tarefas vinculadas ao código do subprocesso informado. */
-  private List<AgentTask> subprocessTasks(
-      List<AgentTask> tasks, BusinessProcessDefinition subprocess) {
+  private List<AgentTaskMeasurementSnapshot> subprocessTasks(
+      List<AgentTaskMeasurementSnapshot> tasks, BusinessProcessDefinition subprocess) {
     return tasks.stream()
-        .filter(task -> task.getProcessDefinition() != null)
-        .filter(
-            task ->
-                subprocess.getProcessCode().equals(task.getProcessDefinition().getProcessCode()))
-        .sorted(Comparator.comparing(AgentTask::getCreatedAt).thenComparing(AgentTask::getId))
+        .filter(task -> task.processDefinitionId() != null)
+        .filter(task -> subprocess.getProcessCode().equals(task.processCode()))
+        .sorted(
+            Comparator.comparing(AgentTaskMeasurementSnapshot::createdAt)
+                .thenComparing(AgentTaskMeasurementSnapshot::id))
         .toList();
   }
 
   /** Localiza a primeira tarefa do próximo subprocesso que comprova a transição. */
   private Instant nextSubprocessEntry(
-      List<AgentTask> tasks,
+      List<AgentTaskMeasurementSnapshot> tasks,
       List<BusinessProcessDefinition> subprocesses,
       int currentIndex,
       Instant enteredAt) {
@@ -623,9 +662,9 @@ public class ProductStageMeasurementResolver {
   }
 
   /** Localiza o primeiro instante de criação disponível. */
-  private Instant firstCreatedAt(List<AgentTask> tasks) {
+  private Instant firstCreatedAt(List<AgentTaskMeasurementSnapshot> tasks) {
     return tasks.stream()
-        .map(AgentTask::getCreatedAt)
+        .map(AgentTaskMeasurementSnapshot::createdAt)
         .filter(Objects::nonNull)
         .min(Comparator.naturalOrder())
         .orElse(null);
@@ -651,10 +690,7 @@ public class ProductStageMeasurementResolver {
   }
 
   /** Informa se uma tarefa ainda mantém o subprocesso em execução. */
-  private boolean isActive(AgentTask task) {
-    return ACTIVE_TASK_STATUSES.contains(task.getStatus());
+  private boolean isActive(AgentTaskMeasurementSnapshot task) {
+    return ACTIVE_TASK_STATUSES.contains(task.status());
   }
-
-  /** Agrupa as execuções e custos já atribuídos ao produto. */
-  private record MeasurementContext(List<AgentTask> tasks, List<StudioCostLedgerEntry> ledger) {}
 }

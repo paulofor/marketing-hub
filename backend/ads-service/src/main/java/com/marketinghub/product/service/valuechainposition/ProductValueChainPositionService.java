@@ -45,7 +45,14 @@ public class ProductValueChainPositionService {
   /** Lista a posição de todos os produtos usando somente a versão publicada da cadeia PDE. */
   @Transactional(readOnly = true)
   public List<ProductValueChainPositionResponse> listPositions() {
-    List<Product> products = productRepository.findAll();
+    return listPositions(false);
+  }
+
+  /** Lista posições, permitindo restringir a visão operacional aos produtos em PLAY. */
+  @Transactional(readOnly = true)
+  public List<ProductValueChainPositionResponse> listPositions(boolean playOnly) {
+    List<Product> products =
+        playOnly ? productRepository.findAllInPlayState() : productRepository.findAll();
     return chainRepository
         .findAllByChainCodeAndStatusOrderByVersionNumberDesc(PDE_CHAIN_CODE, PUBLISHED_STATUS)
         .stream()
@@ -98,6 +105,8 @@ public class ProductValueChainPositionService {
       return unresolvedPosition(product, chain, orderedItems.size());
     }
     var process = item.getProcessDefinition();
+    ProductStageMeasurementContext measurementContext =
+        stageMeasurementResolver.loadContext(product);
     return new ProductValueChainPositionResponse(
         product.getId(),
         product.getCommercialStatus(),
@@ -112,8 +121,9 @@ public class ProductValueChainPositionService {
         process.getVersionNumber(),
         item.getSequenceNumber(),
         orderedItems.size(),
-        stageMeasurementResolver.resolveProcessMeasurements(product, orderedItems, process),
-        subprocessResolver.resolve(product, process, item.getSequenceNumber()));
+        stageMeasurementResolver.resolveProcessMeasurements(
+            product, orderedItems, process, measurementContext),
+        subprocessResolver.resolve(product, process, item.getSequenceNumber(), measurementContext));
   }
 
   /**

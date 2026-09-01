@@ -2,6 +2,8 @@ package com.marketinghub.product.service.valuechainposition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -141,6 +143,55 @@ class ProductValueChainPositionServiceTest {
     assertThat(position.processName()).isEqualTo("Comunicação e jornada de venda do PDE");
     assertThat(position.sequenceNumber()).isEqualTo(4);
     assertThat(position.processCount()).isEqualTo(6);
+  }
+
+  /** Reutiliza um único contexto e consulta somente produtos em PLAY na tela operacional. */
+  @Test
+  void reusesMeasurementContextForProductsInPlay() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    BusinessProcessChainDefinitionRepository chainRepository =
+        mock(BusinessProcessChainDefinitionRepository.class);
+    ProductStageMeasurementResolver measurementResolver =
+        mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver subprocessResolver =
+        mock(ProductSubprocessPositionResolver.class);
+    Product rigel = product(9L, "COMUNICACAO_E_JORNADA");
+    ProductStageMeasurementContext context =
+        new ProductStageMeasurementContext(List.of(), List.of(), List.of());
+    when(productRepository.findAllInPlayState()).thenReturn(List.of(rigel));
+    when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+            "pde-value-creation-delivery", "PUBLISHED"))
+        .thenReturn(List.of(chain()));
+    when(measurementResolver.loadContext(rigel)).thenReturn(context);
+    var service =
+        new ProductValueChainPositionService(
+            productRepository,
+            chainRepository,
+            subprocessResolver,
+            new PdeProcessCodeResolver(),
+            measurementResolver);
+
+    var positions = service.listPositions(true);
+
+    assertThat(positions)
+        .singleElement()
+        .extracting(ProductValueChainPositionResponse::productId)
+        .isEqualTo(9L);
+    verify(productRepository).findAllInPlayState();
+    verify(productRepository, never()).findAll();
+    verify(measurementResolver).loadContext(rigel);
+    verify(measurementResolver)
+        .resolveProcessMeasurements(
+            org.mockito.ArgumentMatchers.eq(rigel),
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.any(BusinessProcessDefinition.class),
+            org.mockito.ArgumentMatchers.same(context));
+    verify(subprocessResolver)
+        .resolve(
+            org.mockito.ArgumentMatchers.eq(rigel),
+            org.mockito.ArgumentMatchers.any(BusinessProcessDefinition.class),
+            org.mockito.ArgumentMatchers.eq(4),
+            org.mockito.ArgumentMatchers.same(context));
   }
 
   /** Monta um produto enxuto para representar um estado comercial. */

@@ -3,6 +3,7 @@ package com.marketinghub.product.service.valuechainposition;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
@@ -72,6 +73,17 @@ public class ProductSubprocessPositionResolver {
   /** Resolve subprocessos preservando a numeração hierárquica do processo pai. */
   public ProductSubprocessPositionResponse resolve(
       Product product, BusinessProcessDefinition parentProcess, Integer parentSequenceNumber) {
+    ProductStageMeasurementContext context =
+        stageMeasurementResolver == null ? null : stageMeasurementResolver.loadContext(product);
+    return resolve(product, parentProcess, parentSequenceNumber, context);
+  }
+
+  /** Resolve subprocessos reutilizando as evidências já carregadas para o mesmo produto. */
+  ProductSubprocessPositionResponse resolve(
+      Product product,
+      BusinessProcessDefinition parentProcess,
+      Integer parentSequenceNumber,
+      ProductStageMeasurementContext context) {
     List<BusinessProcessDefinition> subprocesses = orderedSubprocesses(parentProcess);
     if (subprocesses.isEmpty()) {
       return new ProductSubprocessPositionResponse(
@@ -91,9 +103,12 @@ public class ProductSubprocessPositionResolver {
           List.of());
     }
 
-    List<AgentTask> tasks = productTasks(product).stream().filter(this::hasProcess).toList();
-    AgentTask latestChildTask = latestChildTask(tasks, subprocesses);
-    AgentTask activeChildTask = latestActiveChildTask(tasks, subprocesses, latestChildTask);
+    List<AgentTaskMeasurementSnapshot> tasks =
+        (context == null ? productTasks(product) : context.commercialPlanTasks())
+            .stream().filter(this::hasProcess).toList();
+    AgentTaskMeasurementSnapshot latestChildTask = latestChildTask(tasks, subprocesses);
+    AgentTaskMeasurementSnapshot activeChildTask =
+        latestActiveChildTask(tasks, subprocesses, latestChildTask);
     BusinessProcessDefinition current = childDefinition(activeChildTask, subprocesses);
     BusinessProcessDefinition lastRecorded = childDefinition(latestChildTask, subprocesses);
     BusinessProcessDefinition next =
@@ -101,14 +116,14 @@ public class ProductSubprocessPositionResolver {
             ? nextSubprocess(current, subprocesses)
             : nextSubprocess(lastRecorded, subprocesses);
     boolean currentAwaitingFirstExecution = false;
-    String activityName = activeChildTask == null ? null : activeChildTask.getProcessActivityName();
+    String activityName = activeChildTask == null ? null : activeChildTask.processActivityName();
     String status =
         activeChildTask != null ? "IN_PROGRESS" : lastRecorded != null ? "RECORDED" : "PLANNED";
 
     if (current == null
         && lastRecorded != null
         && stageMeasurementResolver != null
-        && stageMeasurementResolver.objectiveAchieved(product, lastRecorded)) {
+        && objectiveAchieved(product, lastRecorded, context)) {
       if (next != null) {
         current = next;
         next = nextSubprocess(current, subprocesses);
@@ -138,7 +153,18 @@ public class ProductSubprocessPositionResolver {
         current,
         next,
         parentSequenceNumber,
-        currentAwaitingFirstExecution);
+        currentAwaitingFirstExecution,
+        context);
+  }
+
+  /** Confirma o objetivo sem recarregar o histórico quando o contexto já está disponível. */
+  private boolean objectiveAchieved(
+      Product product,
+      BusinessProcessDefinition subprocess,
+      ProductStageMeasurementContext context) {
+    return context == null
+        ? stageMeasurementResolver.objectiveAchieved(product, subprocess)
+        : stageMeasurementResolver.objectiveAchieved(context, subprocess);
   }
 
   /** Localiza a primeira atividade do processo pai depois do subprocesso concluído. */
@@ -183,26 +209,53 @@ public class ProductSubprocessPositionResolver {
   }
 
   /** Localiza tarefas do produto por planos comerciais persistidos e suas versões auditáveis. */
-  private List<AgentTask> productTasks(Product product) {
-    List<AgentTask> tasks = new ArrayList<>();
+  private List<AgentTaskMeasurementSnapshot> productTasks(Product product) {
+    List<AgentTaskMeasurementSnapshot> tasks = new ArrayList<>();
     for (CommercialPlan plan : commercialPlanRepository.findByProductId(product.getId())) {
       tasks.addAll(
-          taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-              "commercial-plan:" + plan.getId() + "@"));
+          taskRepository
+              .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+                  "commercial-plan:" + plan.getId() + "@")
+              .stream()
+              .map(this::snapshot)
+              .toList());
     }
     return tasks;
   }
 
+  /** Converte a entidade completa apenas no caminho legado sem contexto compartilhado. */
+  private AgentTaskMeasurementSnapshot snapshot(AgentTask task) {
+    BusinessProcessDefinition process = task.getProcessDefinition();
+    return new AgentTaskMeasurementSnapshot(
+        task.getId(),
+        process == null ? null : process.getId(),
+        process == null ? null : process.getProcessCode(),
+        process == null ? null : process.getParentProcessCode(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName(),
+        task.getSourceReference(),
+        task.getStatus(),
+        task.getActivityInstance() == null ? null : task.getActivityInstance().getStatus(),
+        task.getCreatedAt(),
+        task.getUpdatedAt(),
+        task.getDeliveredAt(),
+        task.getResultJson(),
+        task.getEvidenceJson(),
+        task.getEstimatedCostUsd());
+  }
+
   /** Seleciona a tarefa mais recente registrada em qualquer subprocesso da composição atual. */
-  private AgentTask latestChildTask(
-      List<AgentTask> tasks, List<BusinessProcessDefinition> subprocesses) {
+  private AgentTaskMeasurementSnapshot latestChildTask(
+      List<AgentTaskMeasurementSnapshot> tasks, List<BusinessProcessDefinition> subprocesses) {
     Set<Long> childIds =
         subprocesses.stream()
             .map(BusinessProcessDefinition::getId)
             .collect(java.util.stream.Collectors.toSet());
     return tasks.stream()
-        .filter(task -> childIds.contains(task.getProcessDefinition().getId()))
-        .max(Comparator.comparing(AgentTask::getUpdatedAt).thenComparing(AgentTask::getId))
+        .filter(task -> childIds.contains(task.processDefinitionId()))
+        .max(
+            Comparator.comparing(AgentTaskMeasurementSnapshot::updatedAt)
+                .thenComparing(AgentTaskMeasurementSnapshot::id))
         .orElse(null);
   }
 
@@ -210,48 +263,49 @@ public class ProductSubprocessPositionResolver {
    * Seleciona trabalho ativo somente na execução mais recente e usa a instância BPM como
    * autoridade.
    */
-  private AgentTask latestActiveChildTask(
-      List<AgentTask> tasks,
+  private AgentTaskMeasurementSnapshot latestActiveChildTask(
+      List<AgentTaskMeasurementSnapshot> tasks,
       List<BusinessProcessDefinition> subprocesses,
-      AgentTask latestRecordedTask) {
+      AgentTaskMeasurementSnapshot latestRecordedTask) {
     if (latestRecordedTask == null) return null;
     Set<Long> childIds =
         subprocesses.stream()
             .map(BusinessProcessDefinition::getId)
             .collect(java.util.stream.Collectors.toSet());
     return tasks.stream()
-        .filter(task -> childIds.contains(task.getProcessDefinition().getId()))
+        .filter(task -> childIds.contains(task.processDefinitionId()))
         .filter(
-            task ->
-                Objects.equals(latestRecordedTask.getSourceReference(), task.getSourceReference()))
+            task -> Objects.equals(latestRecordedTask.sourceReference(), task.sourceReference()))
         .filter(this::isOperationallyActive)
-        .max(Comparator.comparing(AgentTask::getUpdatedAt).thenComparing(AgentTask::getId))
+        .max(
+            Comparator.comparing(AgentTaskMeasurementSnapshot::updatedAt)
+                .thenComparing(AgentTaskMeasurementSnapshot::id))
         .orElse(null);
   }
 
   /** Faz o estado consolidado da instância BPM prevalecer sobre tentativas antigas da tarefa. */
-  private boolean isOperationallyActive(AgentTask task) {
+  private boolean isOperationallyActive(AgentTaskMeasurementSnapshot task) {
     String status =
-        task.getActivityInstance() == null
-            ? task.getStatus()
-            : task.getActivityInstance().getStatus();
+        task.activityInstanceStatus() == null ? task.status() : task.activityInstanceStatus();
     return ACTIVE_TASK_STATUSES.contains(status);
   }
 
   /** Calcula a posição interna do processo pai a partir da última tarefa auditada. */
   private ParentProgress parentProgress(
-      List<AgentTask> tasks, BusinessProcessDefinition parentProcess) {
+      List<AgentTaskMeasurementSnapshot> tasks, BusinessProcessDefinition parentProcess) {
     List<JsonNode> nodes = orderedNodes(parentProcess);
-    AgentTask latestParentTask =
+    AgentTaskMeasurementSnapshot latestParentTask =
         tasks.stream()
-            .filter(task -> parentProcess.getId().equals(task.getProcessDefinition().getId()))
-            .max(Comparator.comparing(AgentTask::getUpdatedAt).thenComparing(AgentTask::getId))
+            .filter(task -> parentProcess.getId().equals(task.processDefinitionId()))
+            .max(
+                Comparator.comparing(AgentTaskMeasurementSnapshot::updatedAt)
+                    .thenComparing(AgentTaskMeasurementSnapshot::id))
             .orElse(null);
     int currentIndex = firstWorkNodeIndex(nodes);
     if (latestParentTask != null) {
-      int recordedIndex = indexOfNode(nodes, latestParentTask.getProcessActivityId());
+      int recordedIndex = indexOfNode(nodes, latestParentTask.processActivityId());
       currentIndex =
-          ACTIVE_TASK_STATUSES.contains(latestParentTask.getStatus())
+          ACTIVE_TASK_STATUSES.contains(latestParentTask.status())
               ? recordedIndex
               : Math.min(recordedIndex + 1, nodes.size() - 1);
     }
@@ -360,11 +414,11 @@ public class ProductSubprocessPositionResolver {
 
   /** Localiza a definição vinculada à tarefa auditada. */
   private BusinessProcessDefinition childDefinition(
-      AgentTask task, List<BusinessProcessDefinition> subprocesses) {
+      AgentTaskMeasurementSnapshot task, List<BusinessProcessDefinition> subprocesses) {
     return task == null
         ? null
         : subprocesses.stream()
-            .filter(process -> process.getId().equals(task.getProcessDefinition().getId()))
+            .filter(process -> process.getId().equals(task.processDefinitionId()))
             .findFirst()
             .orElse(null);
   }
@@ -378,8 +432,8 @@ public class ProductSubprocessPositionResolver {
   }
 
   /** Confirma que a tarefa possui vínculo canônico com uma definição de processo. */
-  private boolean hasProcess(AgentTask task) {
-    return task.getProcessDefinition() != null;
+  private boolean hasProcess(AgentTaskMeasurementSnapshot task) {
+    return task.processDefinitionId() != null;
   }
 
   /** Monta o contrato enxuto usado pelos cards administrativos. */
@@ -391,7 +445,8 @@ public class ProductSubprocessPositionResolver {
       BusinessProcessDefinition current,
       BusinessProcessDefinition next,
       Integer parentSequenceNumber,
-      boolean currentAwaitingFirstExecution) {
+      boolean currentAwaitingFirstExecution,
+      ProductStageMeasurementContext context) {
     Integer currentSequenceNumber = current == null ? null : subprocesses.indexOf(current) + 1;
     Integer nextSequenceNumber = next == null ? null : subprocesses.indexOf(next) + 1;
     return new ProductSubprocessPositionResponse(
@@ -410,11 +465,18 @@ public class ProductSubprocessPositionResolver {
         next == null ? null : next.getOutcomeDescription(),
         stageMeasurementResolver == null
             ? List.of()
-            : currentAwaitingFirstExecution
-                ? stageMeasurementResolver.resolveSubprocessMeasurements(
-                    product, subprocesses, current, parentSequenceNumber, true)
+            : context == null
+                ? currentAwaitingFirstExecution
+                    ? stageMeasurementResolver.resolveSubprocessMeasurements(
+                        product, subprocesses, current, parentSequenceNumber, true)
+                    : stageMeasurementResolver.resolveSubprocessMeasurements(
+                        product, subprocesses, current, parentSequenceNumber)
                 : stageMeasurementResolver.resolveSubprocessMeasurements(
-                    product, subprocesses, current, parentSequenceNumber));
+                    context,
+                    subprocesses,
+                    current,
+                    parentSequenceNumber,
+                    currentAwaitingFirstExecution));
   }
 
   /** Representa a posição calculada dentro do processo pai. */

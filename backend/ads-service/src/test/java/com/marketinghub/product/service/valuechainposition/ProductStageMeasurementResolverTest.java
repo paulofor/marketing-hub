@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.experiment.Experiment;
@@ -65,9 +66,9 @@ class ProductStageMeasurementResolverTest {
     mediaCost.setEstimatedCostUsd(new BigDecimal("2.250000"));
     mediaCost.setCostEvidence("PROVIDER_RATE_CARD_ESTIMATE");
     mediaCost.setStartedAt(Instant.parse("2026-08-22T12:00:00Z"));
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(List.of(unknown, known));
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
+        .thenReturn(snapshots(List.of(unknown, known)));
     when(periods.findByProductIdOrderByEnteredAtAscIdAsc(9L)).thenReturn(List.of(period));
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of(mediaCost));
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L)))
@@ -130,10 +131,10 @@ class ProductStageMeasurementResolverTest {
       task.setSourceReference("experiment:89");
       productionTasks.add(task);
     }
-    when(plans.findByProductId(9L)).thenReturn(List.of());
-    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
-        .thenReturn(productionTasks);
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of());
+    when(experiments.findIdsByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(89L));
+    when(tasks.findMeasurementSnapshotsBySourceReference("experiment:89"))
+        .thenReturn(snapshots(productionTasks));
     when(periods.findByProductIdOrderByEnteredAtAscIdAsc(9L)).thenReturn(List.of());
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
 
@@ -160,9 +161,9 @@ class ProductStageMeasurementResolverTest {
     BusinessProcessDefinition landing = process(18L, "landing", "communication");
     AgentTask creativeTask = task(1L, creative, "2026-08-20T12:00:00Z", "1.00000000", "BLOCKED");
     AgentTask landingTask = task(2L, landing, "2026-08-22T12:00:00Z", "0.50000000", "IN_PROGRESS");
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(List.of(landingTask, creativeTask));
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
+        .thenReturn(snapshots(List.of(landingTask, creativeTask)));
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
 
@@ -195,9 +196,9 @@ class ProductStageMeasurementResolverTest {
             approvedCreativeTask(2L, creative, "audiovisual"),
             approvedCreativeTask(3L, creative, "customer"),
             approvedCreativeTask(4L, creative, "commercial"));
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(approvedTasks);
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
+        .thenReturn(snapshots(approvedTasks));
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
 
@@ -226,9 +227,9 @@ class ProductStageMeasurementResolverTest {
             approvedCreativeTask(2L, creative, "audiovisual"),
             approvedCreativeTask(3L, creative, "customer"),
             approvedCreativeTask(4L, creative, "commercial"));
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(approvedTasks);
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
+        .thenReturn(snapshots(approvedTasks));
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
 
@@ -259,9 +260,9 @@ class ProductStageMeasurementResolverTest {
             approvedLandingTask(1L, landing, "html", "2026-08-26T10:00:00Z"),
             approvedLandingTask(2L, landing, "customer", "2026-08-26T10:01:00Z"),
             approvedLandingTask(3L, landing, "commercial", "2026-08-26T10:02:00Z"));
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(approvedTasks.reversed());
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
+        .thenReturn(snapshots(approvedTasks.reversed()));
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
 
@@ -296,15 +297,16 @@ class ProductStageMeasurementResolverTest {
             approvedLandingTask(5L, landing, "commercial", "2026-08-27T10:02:00Z"));
     approvedRetry.forEach(
         task -> task.setSourceReference("commercial-plan:4@v3:journey:attempt:2"));
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
         .thenReturn(
-            List.of(
-                approvedRetry.get(2),
-                approvedRetry.get(1),
-                approvedRetry.get(0),
-                blockedCustomer,
-                blockedHtml));
+            snapshots(
+                List.of(
+                    approvedRetry.get(2),
+                    approvedRetry.get(1),
+                    approvedRetry.get(0),
+                    blockedCustomer,
+                    blockedHtml)));
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
 
@@ -325,9 +327,9 @@ class ProductStageMeasurementResolverTest {
     BusinessProcessDefinition discovery = process(10L, "discovery", null);
     BusinessProcessDefinition communication = process(43L, "communication", null);
     AgentTask blocked = task(1L, discovery, "2026-08-20T12:00:00Z", null, "BLOCKED");
-    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(List.of(blocked));
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of(4L));
+    when(tasks.findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:4@"))
+        .thenReturn(snapshots(List.of(blocked)));
     when(periods.findByProductIdOrderByEnteredAtAscIdAsc(9L)).thenReturn(List.of());
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
@@ -350,7 +352,7 @@ class ProductStageMeasurementResolverTest {
     BusinessProcessDefinition discovery = process(10L, "discovery", null);
     BusinessProcessDefinition communication = process(43L, "communication", null);
     BusinessProcessDefinition homologation = process(56L, "homologation", null);
-    when(plans.findByProductId(9L)).thenReturn(List.of());
+    when(plans.findIdsByProductId(9L)).thenReturn(List.of());
     when(periods.findByProductIdOrderByEnteredAtAscIdAsc(9L)).thenReturn(List.of());
     when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
 
@@ -417,6 +419,34 @@ class ProductStageMeasurementResolverTest {
       task.setResultJson("{\"decision\":\"APPROVED\"}");
     }
     return task;
+  }
+
+  /** Converte entidades sintéticas no contrato enxuto retornado pelas consultas de medição. */
+  private List<AgentTaskMeasurementSnapshot> snapshots(List<AgentTask> source) {
+    return source.stream()
+        .map(
+            task -> {
+              BusinessProcessDefinition process = task.getProcessDefinition();
+              return new AgentTaskMeasurementSnapshot(
+                  task.getId(),
+                  process == null ? null : process.getId(),
+                  process == null ? null : process.getProcessCode(),
+                  process == null ? null : process.getParentProcessCode(),
+                  task.getProcessActivityId(),
+                  task.getProcessActivityName(),
+                  task.getSourceReference(),
+                  task.getStatus(),
+                  task.getActivityInstance() == null
+                      ? null
+                      : task.getActivityInstance().getStatus(),
+                  task.getCreatedAt(),
+                  task.getUpdatedAt(),
+                  task.getDeliveredAt(),
+                  task.getResultJson(),
+                  task.getEvidenceJson(),
+                  task.getEstimatedCostUsd());
+            })
+        .toList();
   }
 
   /** Monta uma definição enxuta de processo ou subprocesso. */

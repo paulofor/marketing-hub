@@ -70,7 +70,7 @@ test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () =>
   assert.ok(
     result.plan.publicQueries.some((query) => /Instagram Reel/.test(query)),
   );
-  assert.match(result.plan.metaAdRequests[0].query, /consumidor/);
+  assert.equal(result.plan.metaAdRequests[0].query, "preparação entrevista emprego");
   assert.equal(result.plan.metaAdRequests[0].publisherPlatform, "INSTAGRAM");
   assert.ok(
     result.plan.stopConditions.some((condition) =>
@@ -87,6 +87,29 @@ test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () =>
       /exige prompting/i.test(condition),
     ),
   );
+});
+
+test("planejamento reduz briefing nichado a categoria Meta ampla", () => {
+  const result = deterministicPlan({
+    theme: "Beleza e bem-estar feminino para mulheres de 35 a 60 anos no Brasil",
+    targetAudience: "mulheres brasileiras entre 35 e 60 anos",
+    acquisitionChannel: "Instagram",
+    marketType: "B2C",
+  });
+
+  assert.equal(result.plan.metaAdRequests[0].query, "beleza bem estar");
+  validatePlan(result.plan);
+});
+
+test("planejamento rejeita consulta Meta hipersegmentada", () => {
+  const result = deterministicPlan({
+    theme: "beleza e bem-estar",
+    targetAudience: "mulheres 40+",
+  });
+  result.plan.metaAdRequests[0].query =
+    "beleza pele cabelo menopausa sono autocuidado mulheres maduras";
+
+  assert.throws(() => validatePlan(result.plan), /categoria ampla/);
 });
 
 test("planejamento envia o contexto pela entrada padrão e lê a saída estruturada", async () => {

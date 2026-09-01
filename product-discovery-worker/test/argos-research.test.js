@@ -170,6 +170,13 @@ function validSynthesis() {
         scaleEvidence: "A dor aparece em duas fontes públicas independentes.",
         unmetnessEvidence: "Alternativas exigem comparação e montagem manual.",
         pdeValueBoundary: "Reduzir comparação e montagem, sem definir o produto.",
+        pdeDeliveryFit: {
+          deliveryMode: "AI_DIGITAL_EXPERIENCE",
+          minimumInput: "Foto da roupa e ocasião informada em uma escolha.",
+          aiBackstageWork: "Comparar contexto, peças e sinais visuais.",
+          readyDigitalOutcome: "Orientação visual individual pronta para usar.",
+          physicalDependency: "NONE",
+        },
         instagramFitEvidence: "A cena permite contraste visual entre alternativas.",
         commercialRisk: "Cobertura Meta ainda não observada.",
         evidenceIds: ["P1", "P2", "O1", "R1"],
@@ -178,3 +185,32 @@ function validSynthesis() {
     ],
   };
 }
+
+test("síntese rejeita produto físico como candidata PDE", () => {
+  const synthesis = validSynthesis();
+  synthesis.candidates[0].pdeDeliveryFit = {
+    deliveryMode: "AI_DIGITAL_EXPERIENCE",
+    minimumInput: "Preferências da cliente.",
+    aiBackstageWork: "Escolher os itens.",
+    readyDigitalOutcome: "Caixa de cosméticos enviada para a casa.",
+    physicalDependency: "SHIPPING",
+  };
+
+  assert.throws(
+    () => validateSynthesis(synthesis, researchContext()),
+    /experiência digital com IA/,
+  );
+});
+
+test("síntese não aceita caixa física mesmo com marcador PDE inconsistente", () => {
+  const synthesis = validSynthesis();
+  synthesis.candidates[0].name =
+    "Assinaturas de caixas de beleza e autocuidado";
+  synthesis.candidates[0].pdeDeliveryFit.readyDigitalOutcome =
+    "Caixa de cosméticos enviada mensalmente para a cliente.";
+
+  assert.throws(
+    () => validateSynthesis(synthesis, researchContext()),
+    /entrega física/,
+  );
+});

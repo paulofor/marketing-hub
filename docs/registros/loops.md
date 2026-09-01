@@ -41,6 +41,21 @@
 - **Prevenção:** testes com dependências locais exigem o mesmo ciclo, lease e callback terminal,
   cobrem sucesso, ausência de evidência nova e limite; backend e tela expõem as tentativas
   persistidas sem interpretar pesquisa como venda.
+- **Recorrência fechada em 2026-09-01:** a execução #14 exibiu três lentes, 74 evidências Web e nove
+  ofertas, mas o banco preservou somente uma execução do navegador Meta. O worker planejava uma
+  consulta por rodada, enquanto o backend congelava `meta_ad_investigation_id` no ciclo inteiro e
+  reutilizava a primeira busca nas rodadas 2 e 3. A consulta congelada também reunia idade,
+  sintomas e categorias demais; no mesmo coletor ela retornou zero cards, enquanto `beleza e
+  bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12 cards cada.
+- **Correção sistêmica complementar:** cada tentativa passa a ter vínculo persistido e imutável com
+  sua própria investigação, callback e auditoria do Chromium. A escada Meta usa de dois a cinco
+  termos, começa ampla e muda para alternativa paga adjacente. O schema de síntese recusa candidata
+  física e exige entrada mínima, trabalho de IA, resultado digital pronto e dependência física
+  inexistente.
+- **Prevenção complementar:** testes de contrato cobrem vínculo por tentativa, retry idempotente,
+  consulta hipersegmentada, callback correlacionado e rejeição de entrega física. Serviço e chave
+  única impedem repetir a investigação ou a consulta normalizada em outra tentativa do ciclo; o
+  relatório acumula as coberturas sem converter anúncio em venda.
 
 ## LOOP-HERMES-CANAL-DIRETO-TRATADO-COMO-META — piloto aprovado bloqueia por campanha inexistente
 

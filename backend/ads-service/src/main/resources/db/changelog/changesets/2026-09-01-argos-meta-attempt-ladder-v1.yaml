@@ -1,0 +1,212 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-01-argos-meta-attempt-ladder-v1.yaml
+  - changeSet:
+      id: 2026-09-01-argos-meta-attempt-ladder-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - tableExists:
+            tableName: mois_meta_ad_investigation
+        - or:
+            - not:
+                tableExists:
+                  tableName: product_discovery_meta_attempt
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'product_discovery_meta_attempt') = 7
+                    AND (SELECT COUNT(DISTINCT INDEX_NAME)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_meta_attempt'
+                            AND INDEX_NAME IN (
+                              'PRIMARY',
+                              'uk_product_discovery_meta_attempt',
+                              'uk_product_discovery_meta_investigation_attempt',
+                              'uk_product_discovery_meta_query_attempt',
+                              'idx_product_discovery_meta_attempt_latest'
+                            )) = 5
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.REFERENTIAL_CONSTRAINTS
+                          WHERE CONSTRAINT_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'product_discovery_meta_attempt'
+                            AND CONSTRAINT_NAME IN (
+                              'fk_product_discovery_meta_attempt_cycle',
+                              'fk_product_discovery_meta_attempt_investigation'
+                            )) = 2,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS product_discovery_meta_attempt (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                cycle_id BIGINT NOT NULL,
+                attempt_number INT NOT NULL,
+                investigation_id BIGINT NOT NULL,
+                execution_lease_id VARCHAR(36) NOT NULL,
+                search_query VARCHAR(60) NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_product_discovery_meta_attempt (cycle_id, attempt_number),
+                UNIQUE KEY uk_product_discovery_meta_investigation_attempt
+                  (cycle_id, investigation_id),
+                UNIQUE KEY uk_product_discovery_meta_query_attempt
+                  (cycle_id, search_query),
+                KEY idx_product_discovery_meta_attempt_latest
+                  (cycle_id, attempt_number, created_at),
+                CONSTRAINT fk_product_discovery_meta_attempt_cycle
+                  FOREIGN KEY (cycle_id) REFERENCES product_discovery_cycle(id),
+                CONSTRAINT fk_product_discovery_meta_attempt_investigation
+                  FOREIGN KEY (investigation_id) REFERENCES mois_meta_ad_investigation(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE product_discovery_meta_attempt;
+  - changeSet:
+      id: 2026-09-01-argos-meta-attempt-ladder-v1-002
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_meta_browser_run
+        - or:
+            - not:
+                columnExists:
+                  tableName: product_discovery_meta_browser_run
+                  columnName: attempt_number
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'product_discovery_meta_browser_run'
+                        AND COLUMN_NAME = 'attempt_number'
+                        AND DATA_TYPE = 'int') = 1,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SET @argos_meta_attempt_column_sql = IF(
+                (SELECT COUNT(*)
+                   FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'product_discovery_meta_browser_run'
+                    AND COLUMN_NAME = 'attempt_number') = 0,
+                'ALTER TABLE product_discovery_meta_browser_run ADD COLUMN attempt_number INT NULL AFTER cycle_id',
+                'SELECT 1'
+              );
+              PREPARE argos_meta_attempt_column_stmt FROM @argos_meta_attempt_column_sql;
+              EXECUTE argos_meta_attempt_column_stmt;
+              DEALLOCATE PREPARE argos_meta_attempt_column_stmt;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_meta_browser_run
+                DROP COLUMN attempt_number;
+  - changeSet:
+      id: 2026-09-01-argos-meta-attempt-ladder-v1-003
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_meta_attempt
+        - columnExists:
+            tableName: product_discovery_meta_browser_run
+            columnName: attempt_number
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE product_discovery_meta_browser_run
+                SET attempt_number = 1
+                WHERE attempt_number IS NULL;
+
+              INSERT IGNORE INTO product_discovery_meta_attempt
+                (cycle_id, attempt_number, investigation_id, execution_lease_id,
+                 search_query, created_at)
+              SELECT c.id,
+                     1,
+                     c.meta_ad_investigation_id,
+                     LEFT(COALESCE(NULLIF(c.execution_lease_id, ''),
+                                   CONCAT('legacy-cycle-', c.id)), 36),
+                     LEFT(i.search_terms, 60),
+                     COALESCE(c.updated_at, c.created_at)
+                FROM product_discovery_cycle c
+                JOIN mois_meta_ad_investigation i
+                  ON i.id = c.meta_ad_investigation_id
+               WHERE c.meta_ad_investigation_id IS NOT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SELECT 1;
+  - changeSet:
+      id: 2026-09-01-argos-meta-attempt-ladder-v1-004
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: product_discovery_meta_browser_run
+            columnName: attempt_number
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_meta_browser_run
+                MODIFY COLUMN attempt_number INT NOT NULL;
+              SET @argos_meta_attempt_index_sql = IF(
+                (SELECT COUNT(*)
+                   FROM information_schema.STATISTICS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'product_discovery_meta_browser_run'
+                    AND INDEX_NAME = 'idx_product_discovery_meta_browser_attempt') = 0,
+                'ALTER TABLE product_discovery_meta_browser_run ADD KEY idx_product_discovery_meta_browser_attempt (cycle_id, attempt_number, finished_at)',
+                'SELECT 1'
+              );
+              PREPARE argos_meta_attempt_index_stmt FROM @argos_meta_attempt_index_sql;
+              EXECUTE argos_meta_attempt_index_stmt;
+              DEALLOCATE PREPARE argos_meta_attempt_index_stmt;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_meta_browser_run
+                DROP KEY idx_product_discovery_meta_browser_attempt,
+                MODIFY COLUMN attempt_number INT NULL;

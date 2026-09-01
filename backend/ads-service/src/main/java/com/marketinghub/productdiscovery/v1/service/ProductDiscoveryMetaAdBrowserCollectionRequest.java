@@ -14,6 +14,7 @@ import java.util.List;
 /** Transporta uma observação pública e limitada da Biblioteca Meta executada pelo Argos. */
 public record ProductDiscoveryMetaAdBrowserCollectionRequest(
     @NotBlank @Size(max = 36) String executionLeaseId,
+    @NotNull @Min(1) @Max(3) Integer attemptNumber,
     @NotNull Long investigationId,
     @NotBlank @Size(max = 80) String collectorRunId,
     @NotBlank

@@ -24,6 +24,7 @@
           "scaleEvidence",
           "unmetnessEvidence",
           "pdeValueBoundary",
+          "pdeDeliveryFit",
           "instagramFitEvidence",
           "commercialRisk",
           "evidenceIds",
@@ -50,6 +51,30 @@
           "scaleEvidence": { "type": "string" },
           "unmetnessEvidence": { "type": "string" },
           "pdeValueBoundary": { "type": "string" },
+          "pdeDeliveryFit": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "deliveryMode",
+              "minimumInput",
+              "aiBackstageWork",
+              "readyDigitalOutcome",
+              "physicalDependency"
+            ],
+            "properties": {
+              "deliveryMode": {
+                "type": "string",
+                "enum": ["AI_DIGITAL_EXPERIENCE"]
+              },
+              "minimumInput": { "type": "string" },
+              "aiBackstageWork": { "type": "string" },
+              "readyDigitalOutcome": { "type": "string" },
+              "physicalDependency": {
+                "type": "string",
+                "enum": ["NONE"]
+              }
+            }
+          },
           "instagramFitEvidence": { "type": "string" },
           "commercialRisk": { "type": "string" },
           "evidenceIds": {

@@ -164,6 +164,7 @@ test("não amplia ciclos que apenas validam um mercado informado", async () => {
 
 test("mantém ciclo, lease e callback terminal únicos no fluxo integrado", async () => {
   const callbacks = [];
+  const commercialAttempts = [];
   const job = { ...discoveryJob(), executionLeaseId: "lease-77" };
   await processJob(job, {
     backendBaseUrl: "http://backend.local",
@@ -176,14 +177,17 @@ test("mantém ciclo, lease e callback terminal únicos no fluxo integrado", asyn
       const attempt = researchJob.marketExpansionContext.attemptNumber;
       return [publicItem(attempt)];
     },
-    collectMarketplaceEvidence: async (plan) => ({
-      marketplaceOffers:
-        plan.expansionAxis === "INITIAL_SCOPE"
-          ? [offer(1)]
-          : Array.from({ length: 10 }, (_, index) => offer(index + 1)),
-      metaAdEvidence: [],
-      metaCoverage: [],
-    }),
+    collectMarketplaceEvidence: async (plan, options) => {
+      commercialAttempts.push(options);
+      return {
+        marketplaceOffers:
+          plan.expansionAxis === "INITIAL_SCOPE"
+            ? [offer(1)]
+            : Array.from({ length: 10 }, (_, index) => offer(index + 1)),
+        metaAdEvidence: [],
+        metaCoverage: [],
+      };
+    },
     synthesizeMarketCandidates: async (context) =>
       analysis(context.plan.expansionAxis),
     analyzeSearchResults: (_researchJob, publicEvidence, offers, options) =>
@@ -224,6 +228,11 @@ test("mantém ciclo, lease e callback terminal únicos no fluxo integrado", asyn
     2,
   );
   assert.equal(completeCallbacks[0].payload.analysisAudit.inputTokens, 60);
+  assert.deepEqual(
+    commercialAttempts.map((item) => item.attemptNumber),
+    [1, 2],
+  );
+  assert.match(commercialAttempts[1].researchContext, /Momento adjacente/);
   assertMatchesBackendPromptComposition(planCallbacks[1].payload);
   assertMatchesBackendPromptComposition(
     completeCallbacks[0].payload.analysisAudit,

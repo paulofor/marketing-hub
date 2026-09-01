@@ -147,6 +147,7 @@ test("solicita cobertura Instagram correlacionada e separa anúncios de ofertas"
 
   assert.deepEqual(receivedBody, {
     executionLeaseId: "lease-81",
+    attemptNumber: 1,
     query: "treino entrevista emprego",
     country: "BR",
     publisherPlatform: "INSTAGRAM",
@@ -253,7 +254,8 @@ test("executa Chromium quando o backend prepara a sessão e persiste o lote ante
   assert.equal(browserCalls.length, 1);
   assert.equal(browserCalls[0].investigationId, 91);
   assert.match(calls[1].path, /meta-ad-browser-collection$/);
-  assert.equal(calls[1].body.collectorRunId, "argos-browser-144-lease-144");
+  assert.equal(calls[1].body.attemptNumber, 1);
+  assert.equal(calls[1].body.collectorRunId, "argos-browser-144-lease-144-1");
   assert.equal(calls[1].body.outcome, "OBSERVED");
   assert.equal(evidence.metaAdEvidence.length, 1);
   assert.equal(evidence.metaCoverage[0].collectionMode, "PUBLIC_BROWSER");

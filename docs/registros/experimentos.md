@@ -6827,3 +6827,25 @@
   passaram. Cada rodada validou 2.187 testes backend, 453 frontend, MySQL 5.7 físico, contratos de
   workflow, duas imagens Docker e os fluxos administrativo e público em desktop, iPhone e Pixel.
   Nenhum dado produtivo, publicação, gasto ou venda foi criado.
+## 2026-09-01 — Argos: ampliação Meta por tentativa para oportunidades PDE
+
+- **Gargalo real:** a execução #14 acumulou 74 evidências Web e nove ofertas, mas as três lentes
+  terminaram com zero anúncios Meta porque o backend reutilizou a consulta estreita da primeira
+  tentativa.
+- **Hipótese confirmada:** no mesmo coletor público, a consulta hipersegmentada retornou zero cards;
+  duas categorias mais amplas retornaram 12 cards cada. Ampliar a categoria paga é mais informativo
+  do que afrouxar o gate ou repetir a mesma busca.
+- **Ajuste preparado:** cada tentativa passa a executar e auditar sua própria investigação Meta,
+  com escada ampla para adjacente, no máximo três rodadas e consultas de dois a cinco termos.
+  Produtos físicos permanecem como evidência de gasto; candidatas precisam ser experiências
+  digitais individualizadas cujo valor seja produzido por IA.
+- **Métrica de homologação:** uma nova execução deve mostrar até três consultas Meta distintas,
+  interromper ao encontrar cobertura válida ou no limite e persistir apenas candidatas com entrega
+  digital por IA. Anúncio observado continua sem contar como venda.
+- **Matriz local definida antes da homologação:** caminho feliz com categoria ampla, lente adjacente,
+  evidência acumulada e parada em dossiê pronto; validações de consulta hipersegmentada, consulta ou
+  investigação repetida, lease divergente, ausência de evidência nova e candidata física; integração
+  worker → controllers do Product Discovery → MySQL 5.7 com payload bruto e correlação por tentativa;
+  métricas separadas de Web, ofertas, anúncios, dossiês e vendas; dados limitados à fixture local,
+  sem chamada produtiva, publicação ou gasto; contrato da tela validado por testes do frontend e
+  build responsivo, sem mudança visual que exija nova matriz específica de navegador.

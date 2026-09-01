@@ -72,6 +72,20 @@ audit_argos_meta_browser_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_argos_meta_attempt_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-01-argos-meta-attempt-ladder-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_argos_meta_attempt_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-01-argos-meta-attempt-ladder-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 audit_autonomous_handoff_update() {
   audit_compose run --rm \
     -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-08-31-product-discovery-autonomous-handoff-v1.yaml \
@@ -323,6 +337,99 @@ audit_assert_equal \
     (SELECT COUNT(*) FROM information_schema.tables
       WHERE table_schema = DATABASE()
         AND table_name = 'product_discovery_meta_browser_run')
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "INSERT INTO mois_meta_ad_investigation
+        (id, workspace_id, search_terms, country_code, publisher_platform, status,
+         created_at, updated_at)
+      VALUES
+        (1001, 'workspace-001',
+         'beleza bem-estar mulheres 35 60 pele cabelo menopausa autocuidado',
+         'BR', 'INSTAGRAM', 'ACTIVE_SUPERVISED', NOW(), NOW());
+      UPDATE product_discovery_cycle
+         SET meta_ad_investigation_id = 1001,
+             execution_lease_id = 'legacy-lease-42'
+       WHERE id = 42;
+      INSERT INTO product_discovery_meta_browser_run
+        (cycle_id, investigation_id, execution_lease_id, collector_run_id, search_url,
+         outcome, http_status, platform_filter_confirmed, page_title, result_count,
+         error_message, raw_payload_json, started_at, finished_at, created_at)
+      VALUES
+        (42, 1001, 'legacy-lease-42', 'legacy-browser-42',
+         'https://www.facebook.com/ads/library/?country=BR&q=beleza',
+         'EMPTY', 403, 1, 'Biblioteca de Anúncios', 0,
+         NULL, '{}', NOW(), NOW(), NOW());" \
+  >/dev/null 2>&1
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-01-argos-meta-attempt-ladder-v1-%';" \
+  >/dev/null 2>&1
+audit_argos_meta_attempt_update
+audit_assert_equal \
+  "escada Meta por tentativa e backfill legado" \
+  "7:1:1:60:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_attempt'), ':',
+    (SELECT COUNT(*) FROM product_discovery_meta_attempt
+      WHERE cycle_id = 42 AND attempt_number = 1 AND investigation_id = 1001), ':',
+    (SELECT COUNT(*) FROM product_discovery_meta_browser_run
+      WHERE cycle_id = 42 AND attempt_number = 1), ':',
+    (SELECT CHAR_LENGTH(search_query) FROM product_discovery_meta_attempt
+      WHERE cycle_id = 42 AND attempt_number = 1), ':',
+    (SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics
+      WHERE table_schema = DATABASE()
+        AND table_name IN ('product_discovery_meta_attempt', 'product_discovery_meta_browser_run')
+        AND index_name IN (
+          'uk_product_discovery_meta_attempt',
+          'uk_product_discovery_meta_investigation_attempt',
+          'uk_product_discovery_meta_query_attempt',
+          'idx_product_discovery_meta_browser_attempt'
+        ))
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-01-argos-meta-attempt-ladder-v1-%';" \
+  >/dev/null 2>&1
+audit_argos_meta_attempt_update
+audit_assert_equal \
+  "retomada da escada Meta sem duplicar vínculo" \
+  "1:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM product_discovery_meta_attempt WHERE cycle_id = 42), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-01-argos-meta-attempt-ladder-v1-%')
+  );")"
+
+audit_argos_meta_attempt_command "rollbackCount 4"
+audit_assert_equal \
+  "rollback isolado da escada Meta" \
+  "0:0:1" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_attempt'), ':',
+    (SELECT COUNT(*) FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'product_discovery_meta_browser_run'
+        AND column_name = 'attempt_number'), ':',
+    (SELECT COUNT(*) FROM product_discovery_meta_browser_run WHERE cycle_id = 42)
+  );")"
+
+audit_argos_meta_attempt_update
+audit_assert_equal \
+  "reaplicação da escada Meta após rollback" \
+  "1:1" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM product_discovery_meta_attempt WHERE cycle_id = 42), ':',
+    (SELECT attempt_number FROM product_discovery_meta_browser_run WHERE cycle_id = 42)
   );")"
 
 audit_compose exec -T mysql57-product-discovery-bpm-audit \

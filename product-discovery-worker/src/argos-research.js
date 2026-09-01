@@ -161,6 +161,33 @@ export function validateSynthesis(synthesis, context) {
         `Candidata ${name} usa inspiração interna sem confirmação pública`,
       );
     }
+    const pdeFit = candidate.pdeDeliveryFit;
+    if (
+      !pdeFit ||
+      pdeFit.deliveryMode !== "AI_DIGITAL_EXPERIENCE" ||
+      pdeFit.physicalDependency !== "NONE" ||
+      !String(pdeFit.minimumInput || "").trim() ||
+      !String(pdeFit.aiBackstageWork || "").trim() ||
+      !String(pdeFit.readyDigitalOutcome || "").trim()
+    ) {
+      throw new Error(
+        `Candidata ${name} não comprova entrega como experiência digital com IA`,
+      );
+    }
+    const candidateDelivery = `${name} ${pdeFit.readyDigitalOutcome}`
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    if (
+      /\b(assinatura|envio|enviad[ao]|receber|entrega)\b.{0,50}\b(caixa|cosmetico|suplemento|roupa|produto fisico)\b/.test(
+        candidateDelivery,
+      ) ||
+      /\bcaixas? de (beleza|autocuidado|cosmeticos)\b/.test(candidateDelivery)
+    ) {
+      throw new Error(
+        `Candidata ${name} descreve entrega física em vez de experiência digital com IA`,
+      );
+    }
   }
 }
 

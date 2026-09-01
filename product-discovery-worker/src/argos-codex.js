@@ -213,6 +213,7 @@ export function parseCodexUsage(stdout) {
 /** Produz um plano seguro quando o piloto Codex está desligado ou ainda sem sessão. */
 export function deterministicPlan(job) {
   const theme = compactQuery([job.theme, job.targetAudience].filter(Boolean).join(" "));
+  const metaQuery = metaCategoryQuery(job);
   const consumerInstagramFocus = requiresConsumerInstagramFocus(job);
   const discoveryMode = job.researchMode === "DISCOVER_MARKETS";
   const referenceQueries = referenceSourceQueries(job, theme);
@@ -278,10 +279,7 @@ export function deterministicPlan(job) {
     ],
     metaAdRequests: [
       {
-        query: compactQuery(
-          consumerInstagramFocus ? `${theme} consumidor` : theme,
-          100,
-        ),
+        query: metaQuery,
         country: "BR",
         publisherPlatform: "INSTAGRAM",
         maxAds: 25,
@@ -365,16 +363,19 @@ export function validatePlan(plan) {
     }
   }
   for (const request of plan.metaAdRequests) {
+    const metaTerms = metaQueryTerms(request.query);
     if (
       !request.query ||
-      Array.from(request.query).length > 100 ||
+      Array.from(request.query).length > 60 ||
+      metaTerms.length < 2 ||
+      metaTerms.length > 5 ||
       !request.country ||
       request.publisherPlatform !== "INSTAGRAM" ||
       request.maxAds < 1 ||
       request.maxAds > 50
     ) {
       throw new Error(
-        "Limite inválido de pesquisa dirigida na Biblioteca Meta",
+        "Consulta Meta deve representar uma categoria ampla com dois a cinco termos e até 60 caracteres",
       );
     }
   }
@@ -463,6 +464,59 @@ function compactQuery(value, maxLength = 140) {
     .join("")
     .replace(/\s+\S*$/, "")
     .trim();
+}
+
+/** Extrai uma categoria comercial curta, sem copiar idade, público ou briefing inteiro. */
+function metaCategoryQuery(job) {
+  const primary = metaQueryTerms(job?.theme);
+  const fallback = metaQueryTerms(job?.targetAudience);
+  const terms = [
+    ...new Set(primary.length >= 2 ? primary : [...primary, ...fallback]),
+  ].slice(0, 5);
+  if (terms.length < 2) {
+    terms.push(terms.includes("serviços") ? "soluções" : "serviços");
+  }
+  return compactQuery([...new Set(terms)].slice(0, 5).join(" "), 60);
+}
+
+/** Mantém somente termos comerciais úteis para a consulta pública da Biblioteca Meta. */
+function metaQueryTerms(value) {
+  const ignored = new Set([
+    "anos",
+    "brasil",
+    "brasileira",
+    "brasileiras",
+    "brasileiro",
+    "brasileiros",
+    "consumidor",
+    "consumidora",
+    "consumidores",
+    "entre",
+    "feminino",
+    "feminina",
+    "foco",
+    "homem",
+    "homens",
+    "instagram",
+    "mulher",
+    "mulheres",
+    "pessoa",
+    "pessoas",
+    "produto",
+    "produtos",
+    "com",
+    "das",
+    "dos",
+    "para",
+    "pela",
+    "pelo",
+  ]);
+  return String(value || "")
+    .toLocaleLowerCase("pt-BR")
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((term) => term.trim())
+    .filter((term) => term.length >= 3 && !ignored.has(term) && !/^\d+$/.test(term))
+    .filter((term, index, terms) => terms.indexOf(term) === index);
 }
 
 /** Converte fontes editoriais declaradas em buscas públicas por domínio, sem raspar área privada. */

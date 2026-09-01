@@ -663,7 +663,7 @@ export function analyzeSearchResults(
         emotionalPain: blueprint.emotionalPain,
         scaleEvidence: blueprint.scaleEvidence,
         unmetnessEvidence: blueprint.unmetnessEvidence,
-        pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Base científica candidata: ${mechanismEvidence}`,
+        pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Entrada mínima: ${blueprint.pdeDeliveryFit.minimumInput} Trabalho da IA nos bastidores: ${blueprint.pdeDeliveryFit.aiBackstageWork} Resultado digital pronto: ${blueprint.pdeDeliveryFit.readyDigitalOutcome} Base científica candidata: ${mechanismEvidence}`,
         firstCampaignAngle: null,
         commercialRisk: `${blueprint.commercialRisk} ${commercialRisk}`.trim(),
         evidenceJson: JSON.stringify({
@@ -672,6 +672,7 @@ export function analyzeSearchResults(
             observedLanguage: blueprint.observedLanguage,
             currentAlternatives: blueprint.currentAlternatives,
             residualEffort: blueprint.residualEffort,
+            pdeDeliveryFit: blueprint.pdeDeliveryFit,
             instagramFitEvidence: blueprint.instagramFitEvidence,
             evidenceIds: blueprint.evidenceIds,
             maturity,

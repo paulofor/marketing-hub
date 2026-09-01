@@ -8,6 +8,14 @@ Crie somente um plano estruturado de pesquisa pública para a Descoberta PDE. Fo
 buscas públicas, pedidos direcionados aos coletores HOTMART/CLICKBANK e consultas à Biblioteca
 Meta.
 
+O contexto informa o número da tentativa dentro de uma ampliação controlada. Na primeira tentativa,
+use `expansionAxis=INITIAL_SCOPE` e descreva a lente recebida. Nas tentativas seguintes, escolha
+exatamente um eixo adjacente permitido, dê à lente um nome distinto e mude ao menos quatro consultas
+públicas. Use as candidatas e lacunas anteriores para buscar outro momento de vida, linguagem da dor,
+alternativa paga ou contexto adjacente do mesmo público. Não repita consultas anteriores, não abra
+um mercado sem relação causal com o briefing e não transforme a lente investigativa em
+posicionamento final.
+
 Quando o modo for `DISCOVER_MARKETS`, distribua as consultas entre linguagem espontânea da dor,
 situações pessoais, comportamento no canal, alternativas gratuitas, ofertas pagas, reclamações,
 preços e mecanismo científico candidato. Explore territórios distintos; não copie o briefing inteiro
@@ -20,8 +28,8 @@ Regras obrigatórias:
   atualidade, anúncios e anunciantes; indisponibilidade da fonte não significa ausência de mercado;
 - exija ao menos dez ofertas comparáveis;
 - produza entre oito e vinte e quatro consultas públicas, cada uma com no máximo 180 caracteres;
-- gere exatamente uma consulta Meta, com no máximo 100 caracteres, representando a categoria ampla
-  do ciclo sem fragmentá-la em investigações concorrentes;
+- gere exatamente uma consulta Meta por tentativa, com no máximo 100 caracteres, representando a
+  lente vigente sem fragmentá-la em investigações concorrentes;
 - não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem
   compre nada;
 - quando o canal for Instagram e o ciclo declarar B2C, pesquise somente cenas pessoais, desejos do
@@ -37,3 +45,6 @@ Regras obrigatórias:
 - registre quais evidências seriam necessárias para um protótipo privado mensurável, sem desenhar a
   estratégia, inventar sua execução ou seus eventos.
 - trate artigos da biblioteca interna como inspiração rastreável, nunca como validação de demanda.
+- preserve país, canal, tipo de mercado, segurança e restrições comerciais em todas as tentativas;
+- a ampliação muda a pergunta de pesquisa, não autoriza aumentar o limite individual de nenhuma
+  fonte nem escolher mercado, produto ou oferta.

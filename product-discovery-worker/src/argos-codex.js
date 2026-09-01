@@ -217,6 +217,15 @@ export function deterministicPlan(job) {
   const discoveryMode = job.researchMode === "DISCOVER_MARKETS";
   const referenceQueries = referenceSourceQueries(job, theme);
   const plan = {
+    researchLens: compactQuery(
+      discoveryMode
+        ? `Escopo inicial de situações pessoais em ${theme}`
+        : `Validação factual de ${theme}`,
+      160,
+    ),
+    expansionAxis: "INITIAL_SCOPE",
+    expansionRationale:
+      "Primeira tentativa preserva o tema, o público e as restrições comerciais recebidas.",
     questions: consumerInstagramFocus
       ? [
           `Em qual cena pessoal o consumidor reconhece a urgência de ${theme}?`,
@@ -314,6 +323,19 @@ export function deterministicPlan(job) {
 /** Valida limites que impedem o agente de ampliar coleta ou inventar fontes. */
 export function validatePlan(plan) {
   if (
+    typeof plan.researchLens !== "string" ||
+    plan.researchLens.trim().length < 8 ||
+    Array.from(plan.researchLens).length > 160 ||
+    ![
+      "INITIAL_SCOPE",
+      "ADJACENT_LIFE_MOMENT",
+      "ADJACENT_PAIN_LANGUAGE",
+      "ADJACENT_PAID_ALTERNATIVE",
+      "ADJACENT_AUDIENCE_CONTEXT",
+    ].includes(plan.expansionAxis) ||
+    typeof plan.expansionRationale !== "string" ||
+    plan.expansionRationale.trim().length < 12 ||
+    Array.from(plan.expansionRationale).length > 500 ||
     !Array.isArray(plan.questions) ||
     plan.questions.length < 3 ||
     !Array.isArray(plan.publicQueries) ||
@@ -381,6 +403,16 @@ async function buildPromptComposition(job) {
     referenceSources: job.referenceSources || "não informadas",
     researchLibraryContext: JSON.stringify(
       job.researchLibraryContext || { evidence: [], coverage: [] },
+      null,
+      2,
+    ),
+    marketExpansionContext: JSON.stringify(
+      job.marketExpansionContext || {
+        strategyCode: "BOUNDED_ADJACENT_MARKET_EXPANSION_V1",
+        attemptNumber: 1,
+        maxAttempts: 3,
+        instruction: "Investigue o escopo inicial recebido.",
+      },
       null,
       2,
     ),

@@ -744,6 +744,20 @@ const flowStatusLabels: Record<string, string> = {
   MISSING: "Não comprovado",
 };
 
+const expansionOutcomeLabels: Record<string, string> = {
+  ADJUST_AND_CONTINUE: "Ampliar e reavaliar",
+  DOSSIER_READY_FOUND: "Dossiê pronto encontrado",
+  NO_NEW_EVIDENCE: "Sem nova evidência",
+  REPEATED_RESEARCH_LENS: "Lente repetida evitada",
+  EXPANSION_NOT_APPLICABLE: "Ampliação não aplicável",
+  ATTEMPT_LIMIT_REACHED: "Limite alcançado",
+};
+
+function expansionOutcomeStatus(outcome?: string) {
+  if (outcome === "DOSSIER_READY_FOUND") return "COMPLETED";
+  return "PENDING";
+}
+
 function PdeOpportunityFlowReport({
   report,
 }: {
@@ -787,6 +801,51 @@ function PdeOpportunityFlowReport({
           <strong>{report.plannedProductCount}</strong>
         </div>
       </div>
+
+      {report.marketExpansion ? (
+        <section className="independent-process-report__expansion">
+          <div className="independent-process-report__section-heading">
+            <RefreshCw size={20} aria-hidden="true" />
+            <div>
+              <h4>Ampliação controlada de mercado</h4>
+              <p>
+                Argos registrou {report.marketExpansion.attemptsCompleted} de {" "}
+                {report.marketExpansion.maxAttempts} lentes possíveis na mesma
+                execução.
+              </p>
+            </div>
+          </div>
+          <div className="independent-process-report__expansion-stop">
+            <strong>{report.marketExpansion.finalResearchLens}</strong>
+            <span>{report.marketExpansion.stopSummary}</span>
+          </div>
+          <div className="independent-process-report__attempts">
+            {report.marketExpansion.attempts.map((attempt) => (
+              <article key={attempt.attemptNumber}>
+                <header>
+                  <span>Tentativa {attempt.attemptNumber}</span>
+                  <span
+                    className={`independent-process-status ${statusClass(
+                      expansionOutcomeStatus(attempt.outcome),
+                    )}`}
+                  >
+                    {expansionOutcomeLabels[attempt.outcome ?? ""] ??
+                      attempt.outcome}
+                  </span>
+                </header>
+                <strong>{attempt.researchLens}</strong>
+                {attempt.rationale ? <p>{attempt.rationale}</p> : null}
+                <div>
+                  <span>+{attempt.newPublicEvidenceCount} Web</span>
+                  <span>+{attempt.newComparableOfferCount} ofertas</span>
+                  <span>+{attempt.newMetaAdCount} anúncios</span>
+                  <span>{attempt.dossierReadyCount} dossiês prontos</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="independent-process-report__section-heading">
         <Globe2 size={20} aria-hidden="true" />

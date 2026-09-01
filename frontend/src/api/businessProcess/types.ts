@@ -224,6 +224,29 @@ export type IndependentBusinessProcessCandidate = {
   stages: IndependentBusinessProcessCandidateStage[];
 };
 
+export type IndependentBusinessProcessMarketExpansionAttempt = {
+  attemptNumber: number;
+  researchLens?: string;
+  expansionAxis?: string;
+  rationale?: string;
+  newPublicEvidenceCount: number;
+  newComparableOfferCount: number;
+  newMetaAdCount: number;
+  candidateCount: number;
+  dossierReadyCount: number;
+  outcome?: string;
+};
+
+export type IndependentBusinessProcessMarketExpansion = {
+  strategyCode?: string;
+  attemptsCompleted: number;
+  maxAttempts: number;
+  stopReason?: string;
+  stopSummary?: string;
+  finalResearchLens?: string;
+  attempts: IndependentBusinessProcessMarketExpansionAttempt[];
+};
+
 export type IndependentBusinessProcessFlowReport = {
   reportType: string;
   status: IndependentBusinessProcessExecutionSummary["status"];
@@ -233,6 +256,7 @@ export type IndependentBusinessProcessFlowReport = {
   dossierReadyCount: number;
   plannedProductCount: number;
   sourceCoverage: IndependentBusinessProcessSourceCoverage[];
+  marketExpansion?: IndependentBusinessProcessMarketExpansion;
   candidates: IndependentBusinessProcessCandidate[];
 };
 

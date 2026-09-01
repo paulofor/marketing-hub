@@ -100,6 +100,41 @@ function detail(execution = summary): ExecutionDetailFixture {
           summary: "Referências internas usadas para confrontar hipóteses.",
         },
       ],
+      marketExpansion: {
+        strategyCode: "BOUNDED_ADJACENT_MARKET_EXPANSION_V1",
+        attemptsCompleted: 2,
+        maxAttempts: 3,
+        stopReason: "DOSSIER_READY_FOUND",
+        stopSummary:
+          "Argos encontrou uma candidata factual pronta para o gate de Atena.",
+        finalResearchLens: "Momento de reencontro antes de um evento",
+        attempts: [
+          {
+            attemptNumber: 1,
+            researchLens: "Rotina de beleza antes de sair",
+            expansionAxis: "INITIAL_SCOPE",
+            rationale: "Investigar o escopo inicial recebido.",
+            newPublicEvidenceCount: 20,
+            newComparableOfferCount: 1,
+            newMetaAdCount: 0,
+            candidateCount: 3,
+            dossierReadyCount: 0,
+            outcome: "ADJUST_AND_CONTINUE",
+          },
+          {
+            attemptNumber: 2,
+            researchLens: "Momento de reencontro antes de um evento",
+            expansionAxis: "ADJACENT_LIFE_MOMENT",
+            rationale: "Buscar uma situação concreta de decisão próxima.",
+            newPublicEvidenceCount: 8,
+            newComparableOfferCount: 9,
+            newMetaAdCount: 2,
+            candidateCount: 2,
+            dossierReadyCount: 1,
+            outcome: "DOSSIER_READY_FOUND",
+          },
+        ],
+      },
       candidates: [
         {
           opportunityId: 501,
@@ -286,6 +321,14 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Biblioteca Meta / Instagram")).toBeInTheDocument();
     expect(screen.getByText("Acervo /pesquisas")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Ampliação controlada de mercado" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Momento de reencontro antes de um evento"),
+    ).toHaveLength(2);
+    expect(screen.getByText("Dossiê pronto encontrado")).toBeInTheDocument();
+    expect(screen.getByText("+9 ofertas")).toBeInTheDocument();
     expect(screen.getByText("/pesquisas/climaterio.md")).toBeInTheDocument();
     expect(
       screen.getByText("Guarda-roupa cápsula sensorial para mulheres 40+"),

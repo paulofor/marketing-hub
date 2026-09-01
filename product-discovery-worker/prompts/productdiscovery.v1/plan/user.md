@@ -13,4 +13,8 @@ Biblioteca interna consultada pelo executor:
 
 {{researchLibraryContext}}
 
+Contexto auditável da ampliação controlada:
+
+{{marketExpansionContext}}
+
 Retorne somente o contrato estruturado solicitado pelo schema.

@@ -103,7 +103,42 @@ public class ProductDiscoveryIndependentExecutionReportService
         ready,
         products,
         sourceCoverage(cycle, evidenceReport, opportunities),
+        marketExpansion(evidenceReport),
         candidates);
+  }
+
+  /** Converte as rodadas persistidas pelo worker em um resumo gerencial tipado. */
+  private IndependentBusinessProcessFlowReportResponse.MarketExpansion marketExpansion(
+      JsonNode evidenceReport) {
+    JsonNode expansion = evidenceReport.path("marketExpansion");
+    if (!expansion.isObject()) return null;
+    List<IndependentBusinessProcessFlowReportResponse.MarketExpansionAttempt> attempts =
+        new ArrayList<>();
+    JsonNode persistedAttempts = expansion.path("attempts");
+    if (persistedAttempts.isArray()) {
+      persistedAttempts.forEach(
+          item ->
+              attempts.add(
+                  new IndependentBusinessProcessFlowReportResponse.MarketExpansionAttempt(
+                      item.path("attemptNumber").asInt(),
+                      optionalText(item, "researchLens"),
+                      optionalText(item, "expansionAxis"),
+                      optionalText(item, "rationale"),
+                      item.path("newPublicEvidenceCount").asInt(),
+                      item.path("newComparableOfferCount").asInt(),
+                      item.path("newMetaAdCount").asInt(),
+                      item.path("candidateCount").asInt(),
+                      item.path("dossierReadyCount").asInt(),
+                      optionalText(item, "outcome"))));
+    }
+    return new IndependentBusinessProcessFlowReportResponse.MarketExpansion(
+        optionalText(expansion, "strategyCode"),
+        expansion.path("attemptsCompleted").asInt(attempts.size()),
+        expansion.path("maxAttempts").asInt(),
+        optionalText(expansion, "stopReason"),
+        optionalText(expansion, "stopSummary"),
+        optionalText(expansion, "finalResearchLens"),
+        List.copyOf(attempts));
   }
 
   /** Converte uma candidata na visão gerencial com seus cinco estágios. */

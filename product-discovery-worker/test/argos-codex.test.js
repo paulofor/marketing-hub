@@ -16,6 +16,8 @@ test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
     targetAudience: "nail designers",
   });
   validatePlan(result.plan);
+  assert.equal(result.plan.expansionAxis, "INITIAL_SCOPE");
+  assert.match(result.plan.researchLens, /Validação factual/);
   assert.equal(result.plan.minimumComparableOffers, 10);
   assert.deepEqual(
     result.plan.marketplaceRequests.map((item) => item.marketplace),
@@ -43,7 +45,7 @@ test("plano bloqueia marketplace e volume não autorizados", () => {
   assert.throws(() => validatePlan(result.plan), /Marketplace não autorizado/);
 });
 
-test("plano limita a Meta a uma investigação canônica por ciclo", () => {
+test("plano limita a Meta a uma investigação canônica por tentativa", () => {
   const result = deterministicPlan({
     theme: "guarda-roupa cápsula para mulheres 40+",
     targetAudience: "mulheres 40+",
@@ -119,12 +121,55 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   assert.match(receivedInput, /B2B disfarçado/);
   assert.doesNotMatch(receivedInput, /{{[^}]+}}/);
   assert.equal(receivedSchema.additionalProperties, false);
+  assert.ok(receivedSchema.required.includes("researchLens"));
+  assert.ok(receivedSchema.required.includes("expansionAxis"));
   assert.ok(receivedSchema.required.includes("minimumComparableOffers"));
   assert.deepEqual(result.plan, expected);
   assert.equal(result.model, "modelo-teste");
   assert.equal(result.mode, "CODEX");
   assert.equal(result.prompt, receivedInput);
   assert.equal(result.reasoningEffort, "high");
+});
+
+test("planejamento recebe lacunas anteriores para criar lente adjacente", async () => {
+  let receivedInput;
+  const expected = deterministicPlan({
+    theme: "beleza e bem-estar feminino 35+",
+    researchMode: "DISCOVER_MARKETS",
+  }).plan;
+  expected.researchLens = "Reencontro e fotografia depois dos 40";
+  expected.expansionAxis = "ADJACENT_LIFE_MOMENT";
+  expected.expansionRationale =
+    "A primeira rodada teve apenas uma oferta e precisa de uma cena de decisão mais concreta.";
+  expected.publicQueries = expected.publicQueries.map(
+    (query, index) => `reencontro fotografia 40+ ${index + 1} ${query}`.slice(0, 180),
+  );
+
+  await planDirectedResearch(
+    {
+      cycleId: 35,
+      theme: "beleza e bem-estar feminino 35+",
+      researchMode: "DISCOVER_MARKETS",
+      marketExpansionContext: {
+        attemptNumber: 2,
+        maxAttempts: 3,
+        previousResearchLenses: ["Rotina antes de sair"],
+        accumulatedEvidence: { comparableOfferCount: 1, metaAdCount: 0 },
+      },
+    },
+    {
+      enabled: true,
+      execute: async (_command, args, input) => {
+        receivedInput = input;
+        const outputIndex = args.indexOf("--output-last-message") + 1;
+        await writeFile(args[outputIndex], JSON.stringify(expected));
+      },
+    },
+  );
+
+  assert.match(receivedInput, /"attemptNumber": 2/);
+  assert.match(receivedInput, /Rotina antes de sair/);
+  assert.match(receivedInput, /outro momento de vida/);
 });
 
 test("resposta inválida preserva prompt e raciocínio para o bloqueio auditável", async () => {

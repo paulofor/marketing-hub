@@ -2802,3 +2802,20 @@ Use este checklist quando o problema estiver em algum loop acima:
   frontend.
 - **Prevenção:** testes de contrato exigem o filtro `playOnly`, comprovam o reaproveitamento do mesmo
   contexto e mantêm processo, subprocesso, tempo e custo resolvidos exclusivamente no backend.
+
+## LOOP-IRIS-DEPLOY-CONCORRENTE-COM-APP — health do agente disputa reinício do backend
+
+- **Data:** 2026-09-01.
+- **Sintoma:** o workflow `Meta Ad Approver Worker CI/CD` da execução `33458845205` validou código,
+  arquitetura e imagens, recriou Íris e o Aprovador Meta, mas falhou no health com
+  `ECONNREFUSED 191.252.181.168:80`.
+- **Causa-raiz confirmada pelo histórico dos workflows:** o health remoto do agente começou enquanto
+  a execução `33458845135` reiniciava backend e frontend para o mesmo SHA. O workflow de Íris não
+  possuía o gate de coordenação já usado por Argos e Psique, então interpretou a janela transitória
+  do deploy central como defeito do próprio agente.
+- **Correção sistêmica:** antes de autenticar no VPS ou alterar o worker, Íris aguarda a conclusão com
+  sucesso do workflow `deploy-containers.yml` disparado por `push` para o mesmo commit. Falha ou
+  timeout do deploy central bloqueia a publicação do agente sem tocar no host.
+- **Prevenção:** o teste compartilhado do coordenador cobre seleção por SHA, espera, erro transitório,
+  falha e timeout; um contrato específico exige permissão `actions: read`, execução do gate e ordem
+  anterior à primeira etapa que acessa o VPS de Íris.

@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.salesvideo;
 
 import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoRetryReason;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import java.time.Instant;
 import java.util.List;
@@ -34,8 +35,23 @@ public interface SalesVideoJobRepository
           + "where (j.asset.id = :assetId or j.posterAsset.id = :assetId or j.vttAsset.id = :assetId)")
   boolean existsByAnyAssetReference(@Param("assetId") Long assetId);
 
-  /** Lista jobs falhos ou pendentes por status e data de corte operacional. */
-  List<SalesVideoJob> findByStatusAndFinishedAtBefore(SalesVideoStatus status, Instant finishedAt);
+  /**
+   * Lista um lote limitado de falhas elegíveis para avaliação de retry automático, sem carregar o
+   * histórico completo em memória.
+   */
+  @Query(
+      "select j from SalesVideoJob j where j.status = :status "
+          + "and j.finishedAt < :finishedAt "
+          + "and j.failureDetail like '%retryable=true%' "
+          + "and (j.retryReason is null or j.retryReason <> :excludedRetryReason) "
+          + "and not exists (select child.id from SalesVideoJob child "
+          + "where child.retryOfJob.id = j.id) "
+          + "order by j.finishedAt asc, j.id asc")
+  List<SalesVideoJob> findAutomaticRetryCandidates(
+      @Param("status") SalesVideoStatus status,
+      @Param("finishedAt") Instant finishedAt,
+      @Param("excludedRetryReason") SalesVideoRetryReason excludedRetryReason,
+      Pageable pageable);
 
   /** Lista jobs pendentes antigos ainda não iniciados. */
   List<SalesVideoJob> findByStatusAndRequestedAtBeforeAndStartedAtIsNull(

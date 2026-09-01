@@ -20,7 +20,7 @@ class ProductValueChainPositionControllerTest {
   @Test
   void listsProductValueChainPositions() throws Exception {
     ProductValueChainPositionService service = mock(ProductValueChainPositionService.class);
-    when(service.listPositions())
+    when(service.listPositions(false))
         .thenReturn(
             List.of(
                 new ProductValueChainPositionResponse(
@@ -50,6 +50,20 @@ class ProductValueChainPositionControllerTest {
         .andExpect(jsonPath("$[0].processName").value("Comunicação e jornada de venda do PDE"))
         .andExpect(jsonPath("$[0].sequenceNumber").value(4))
         .andExpect(jsonPath("$[0].processCount").value(6));
+  }
+
+  /** Encaminha o filtro de PLAY para evitar carregar produtos fora da visão operacional. */
+  @Test
+  void listsOnlyPositionsInPlayWhenRequested() throws Exception {
+    ProductValueChainPositionService service = mock(ProductValueChainPositionService.class);
+    when(service.listPositions(true)).thenReturn(List.of());
+    var mockMvc =
+        MockMvcBuilders.standaloneSetup(new ProductValueChainPositionController(service)).build();
+
+    mockMvc
+        .perform(get("/api/products/value-chain-positions").param("playOnly", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray());
   }
 
   /** Expõe o histórico de um produto sem obrigar a tela a carregar todo o catálogo. */

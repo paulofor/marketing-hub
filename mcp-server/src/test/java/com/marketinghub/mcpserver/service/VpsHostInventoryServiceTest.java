@@ -184,7 +184,7 @@ class VpsHostInventoryServiceTest {
         Files.writeString(script, """
                 #!/usr/bin/env sh
                 case "$*" in
-                  *"docker restart marketinghub-backend"*)
+                  *"docker restart --time 5 marketinghub-backend"*)
                     echo "marketinghub-backend"
                     exit 0
                     ;;

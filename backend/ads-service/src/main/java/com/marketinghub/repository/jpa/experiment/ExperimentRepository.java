@@ -55,6 +55,12 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   /** Lista os experimentos do produto, priorizando a referência operacional mais recente. */
   List<Experiment> findByProductIdOrderByUpdatedAtDescIdDesc(Long productId);
 
+  /** Lista apenas os identificadores usados para medir tarefas vinculadas ao produto. */
+  @Query(
+      "select e.id from Experiment e where e.product.id = :productId "
+          + "order by e.updatedAt desc, e.id desc")
+  List<Long> findIdsByProductIdOrderByUpdatedAtDescIdDesc(@Param("productId") Long productId);
+
   boolean existsByNicheAndName(MarketNiche niche, String name);
 
   long countByNicheId(Long nicheId);

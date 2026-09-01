@@ -4,6 +4,24 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** o frontend administrativo entregava HTML e JavaScript, mas permanecia em
+  `Carregando produtos em PLAY...`; o backend estava `unhealthy`, sem resposta HTTP, após
+  `OutOfMemoryError: Java heap space`. O mesmo padrão ocorreu às 16:17 e às 22:02 no fuso do host.
+- **Causa-raiz confirmada no código, banco, logs e histórico:** o retry automático de vídeo aplicava
+  `scanLimit` somente depois de `findByStatusAndFinishedAtBefore` carregar todos os jobs falhos. Com
+  12.664 falhas e nenhuma elegível, o MySQL registrou 4.130 consultas, 52.302.320 linhas devolvidas e
+  pico de 42,664 segundos por consulta. O heap de 1.180 MB foi esgotado e a JVM permaneceu viva,
+  impedindo que `restart: unless-stopped` recuperasse o serviço.
+- **Correção sistêmica:** a consulta passa a filtrar retry explícito, origem não automática e
+  ausência de filho no SQL, com paginação e teto absoluto de 100 candidatos. A JVM encerra em OOM
+  residual para o Docker reiniciar o backend pela política existente. A recuperação manual canônica
+  limita a parada do container a 5 segundos, evitando exceder o timeout do MCP entre parar e subir.
+- **Prevenção:** testes unitários exigem paginação na consulta e limitam configurações excessivas; o
+  contrato da imagem exige `ExitOnOutOfMemoryError`, preservando o heap dump para diagnóstico.
+
 ## LOOP-ARGOS-RESEARCH-MORE-TERMINAL-SEM-AMPLIACAO — lacuna conhecida encerra a descoberta
 
 - **Data:** 2026-09-01.
@@ -2766,3 +2784,21 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes do worker e do backend reproduzem o callback produtivo, exigem a presença das
   duas fases, recusam inversão dentro de qualquer interação e impedem corpo HTML ou credencial na
   mensagem operacional.
+
+## LOOP-BACKEND-CADEIA-PRODUTO-CONTEXTO-REPETIDO — tela responde sem concluir os cards
+
+- **Data:** 2026-08-31.
+- **Sintoma:** o frontend e os produtos em PLAY voltaram a responder após a recuperação do backend,
+  mas os cards permaneceram em `Carregando posição...`; a consulta agregada da cadeia levou 15,3 s
+  e o detalhe de um único produto levou 9,1 s.
+- **Causa-raiz confirmada no código, banco e histórico de produção:** a funcionalidade entrou no
+  deploy vigente sem histórico anterior de sucesso e carregava todos os produtos, planos,
+  experimentos e tarefas completas. O mesmo contexto era consultado novamente para o processo,
+  decisão de avanço e medição dos subprocessos. A consulta de `agent_task` transferia também campos
+  extensos que não participam da medição.
+- **Correção sistêmica:** as telas operacionais solicitam somente produtos em PLAY; o backend projeta
+  apenas os campos auditáveis necessários das tarefas e compartilha um único contexto entre processo
+  e subprocessos. O endpoint individual preserva o histórico completo, sem cache ou inferência no
+  frontend.
+- **Prevenção:** testes de contrato exigem o filtro `playOnly`, comprovam o reaproveitamento do mesmo
+  contexto e mantêm processo, subprocesso, tempo e custo resolvidos exclusivamente no backend.

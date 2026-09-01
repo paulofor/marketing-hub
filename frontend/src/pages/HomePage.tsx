@@ -40,7 +40,7 @@ function getProductPrimaryColor(product: Product) {
 
 export default function HomePage() {
   const { data, isLoading } = useProducts(undefined, true);
-  const valueChainPositions = useProductValueChainPositions();
+  const valueChainPositions = useProductValueChainPositions(true);
   const productsInPlay = useMemo(
     () => (Array.isArray(data) ? data : []),
     [data],
@@ -62,8 +62,8 @@ export default function HomePage() {
         <div>
           <PageTitle>Início</PageTitle>
           <p className="text-muted mb-0">
-            Produtos em PLAY prontos para operação, campanha, vídeo e melhoria de
-            conversão.
+            Produtos em PLAY prontos para operação, campanha, vídeo e melhoria
+            de conversão.
           </p>
         </div>
         <Link className="btn btn-outline-primary" to="/products">

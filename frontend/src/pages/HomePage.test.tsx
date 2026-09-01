@@ -75,6 +75,10 @@ describe("HomePage", () => {
     expect(axios.get).toHaveBeenCalledWith("/api/products", {
       params: { playOnly: true },
     });
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/products/value-chain-positions",
+      { params: { playOnly: true } },
+    );
     expect(screen.getByText("R$ 27,00")).toBeTruthy();
     expect(screen.getByText("Vega")).toBeTruthy();
     expect(screen.getByText("Opala")).toBeTruthy();

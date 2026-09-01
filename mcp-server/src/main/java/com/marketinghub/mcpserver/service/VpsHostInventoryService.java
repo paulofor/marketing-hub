@@ -33,6 +33,7 @@ public class VpsHostInventoryService {
             List.of(LEAD_PORTAL_STACK, LEAD_PORTAL_PAYMENTS_PROXY);
     private static final String BACKEND_MODULE = "backend";
     private static final String RESTART_CONFIRMATION = "RESTART_BACKEND";
+    private static final int BACKEND_RESTART_STOP_TIMEOUT_SECONDS = 5;
     private static final Pattern SAFE_CONTAINER_NAME = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_.-]{0,127}");
 
     private final McpProperties properties;
@@ -111,7 +112,7 @@ public class VpsHostInventoryService {
     }
 
     /**
-     * Executa via SSH somente o restart do container de backend configurado e previamente validado.
+     * Executa via SSH somente o restart do backend, com parada curta para concluir antes do timeout do MCP.
      */
     private List<String> executeSshBackendRestart(McpProperties.VpsHostInventory config) {
         String destination = config.user() + "@" + config.backendHost();
@@ -120,7 +121,8 @@ public class VpsHostInventoryService {
                 "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new",
                 "-o", "UserKnownHostsFile=" + config.knownHostsFile(),
                 "-o", "ConnectTimeout=" + config.timeoutSeconds(), destination,
-                "docker restart " + config.backendContainer());
+                "docker restart --time " + BACKEND_RESTART_STOP_TIMEOUT_SECONDS + " "
+                        + config.backendContainer());
         return executeCommand(command, "ssh backend restart", config.backendHost());
     }
 

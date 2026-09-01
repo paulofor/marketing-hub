@@ -86,13 +86,14 @@ export function sortProductStageMeasurements(
   return first.processDefinitionId - second.processDefinitionId;
 }
 
-export function useProductValueChainPositions() {
+export function useProductValueChainPositions(playOnly = false) {
   return useQuery({
-    queryKey: ["products", "value-chain-positions"],
+    queryKey: ["products", "value-chain-positions", { playOnly }],
     queryFn: async () =>
       (
         await axios.get<ProductValueChainPosition[]>(
           "/api/products/value-chain-positions",
+          playOnly ? { params: { playOnly: true } } : undefined,
         )
       ).data,
   });

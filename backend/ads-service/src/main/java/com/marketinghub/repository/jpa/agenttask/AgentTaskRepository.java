@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.agenttask;
 
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
@@ -25,11 +26,67 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   List<AgentTask> findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
       String sourceReferencePrefix);
 
+  /** Lista somente os campos necessários para medir tarefas de todas as versões de um plano. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskMeasurementSnapshot(
+        task.id,
+        process.id,
+        process.processCode,
+        process.parentProcessCode,
+        task.processActivityId,
+        task.processActivityName,
+        task.sourceReference,
+        task.status,
+        activityInstance.status,
+        task.createdAt,
+        task.updatedAt,
+        task.deliveredAt,
+        task.resultJson,
+        task.evidenceJson,
+        task.estimatedCostUsd)
+      from AgentTask task
+      left join task.processDefinition process
+      left join task.activityInstance activityInstance
+      where task.sourceReference like concat(:sourceReferencePrefix, '%')
+      order by task.updatedAt desc, task.id desc
+      """)
+  List<AgentTaskMeasurementSnapshot> findMeasurementSnapshotsBySourceReferenceStartingWith(
+      @Param("sourceReferencePrefix") String sourceReferencePrefix);
+
   /** Busca a tarefa mais recente pela referência exata, sem confundir ids com prefixo comum. */
   Optional<AgentTask> findTopBySourceReferenceOrderByUpdatedAtDescIdDesc(String sourceReference);
 
   /** Lista todo o histórico operacional de uma entidade para montar a instância BPM. */
   List<AgentTask> findBySourceReferenceOrderByCreatedAtAscIdAsc(String sourceReference);
+
+  /** Lista somente os campos necessários para medir o histórico exato de um experimento. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskMeasurementSnapshot(
+        task.id,
+        process.id,
+        process.processCode,
+        process.parentProcessCode,
+        task.processActivityId,
+        task.processActivityName,
+        task.sourceReference,
+        task.status,
+        activityInstance.status,
+        task.createdAt,
+        task.updatedAt,
+        task.deliveredAt,
+        task.resultJson,
+        task.evidenceJson,
+        task.estimatedCostUsd)
+      from AgentTask task
+      left join task.processDefinition process
+      left join task.activityInstance activityInstance
+      where task.sourceReference = :sourceReference
+      order by task.createdAt asc, task.id asc
+      """)
+  List<AgentTaskMeasurementSnapshot> findMeasurementSnapshotsBySourceReference(
+      @Param("sourceReference") String sourceReference);
 
   /** Busca a delegação mais recente de um agente para uma origem operacional exata. */
   Optional<AgentTask> findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(

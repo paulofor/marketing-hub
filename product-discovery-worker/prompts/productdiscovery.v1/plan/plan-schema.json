@@ -2,6 +2,9 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "researchLens",
+    "expansionAxis",
+    "expansionRationale",
     "questions",
     "publicQueries",
     "marketplaceRequests",
@@ -10,6 +13,26 @@
     "stopConditions"
   ],
   "properties": {
+    "researchLens": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 160
+    },
+    "expansionAxis": {
+      "type": "string",
+      "enum": [
+        "INITIAL_SCOPE",
+        "ADJACENT_LIFE_MOMENT",
+        "ADJACENT_PAIN_LANGUAGE",
+        "ADJACENT_PAID_ALTERNATIVE",
+        "ADJACENT_AUDIENCE_CONTEXT"
+      ]
+    },
+    "expansionRationale": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 500
+    },
     "questions": {
       "type": "array",
       "minItems": 3,

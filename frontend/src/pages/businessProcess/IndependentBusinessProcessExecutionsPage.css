@@ -558,6 +558,73 @@
   font-size: 0.82rem;
 }
 
+.independent-process-report__expansion {
+  margin: 0 0 20px;
+  padding: 0 14px 14px;
+  border: 1px solid #cadfd7;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.independent-process-report__expansion-stop {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--independent-green);
+  background: #f4faf7;
+}
+
+.independent-process-report__expansion-stop span {
+  color: #52655f;
+  font-size: 0.82rem;
+}
+
+.independent-process-report__attempts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.independent-process-report__attempts article {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  padding: 12px;
+  border: 1px solid var(--independent-line);
+  border-radius: 11px;
+}
+
+.independent-process-report__attempts article > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  color: #64746f;
+  font-size: 0.74rem;
+}
+
+.independent-process-report__attempts article > p {
+  margin: 0;
+  color: #52655f;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.independent-process-report__attempts article > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.independent-process-report__attempts article > div > span {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #edf5f1;
+  color: #355b4e;
+  font-size: 0.7rem;
+}
+
 .independent-process-report__coverage {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -907,6 +974,9 @@
   .independent-process-report__coverage {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .independent-process-report__attempts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 575px) {
@@ -919,6 +989,7 @@
   .independent-process-metrics,
   .independent-process-report__summary,
   .independent-process-report__coverage,
+  .independent-process-report__attempts,
   .independent-process-candidate__facts,
   .independent-process-flow-overview__steps,
   .independent-process-candidate__stages {

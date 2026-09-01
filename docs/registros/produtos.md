@@ -1,5 +1,18 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-01 — Argos amplia o mercado de forma controlada dentro da mesma execução
+
+- Evidência: a execução #11 encontrou três dores potenciais, mas somente uma de dez ofertas e nenhum
+  anúncio Meta comprovado; todas ficaram em `RESEARCH_MORE` e nenhuma receita foi gerada.
+- Alternativas: ampliar tudo em uma única busca diluiria aderência; abrir execuções independentes
+  perderia contexto e elevaria consumo; foi escolhida a reavaliação acumulativa e limitada.
+- Decisão: em `DISCOVER_MARKETS`, Argos pode testar até três lentes adjacentes, uma por vez, mantendo
+  público, canal, país, segurança e autoridade estratégica de Atena.
+- Métrica: continuar somente com evidência incremental; liberar a cadeia ao encontrar candidata
+  `DOSSIER_READY`; parar sem mascarar a lacuna quando não houver progresso ou o limite terminar.
+- Verdade comercial: ampliação, oferta observada, anúncio e dossiê não são vendas; receita continua
+  sendo somente pagamento aprovado e reconciliado.
+
 ## 2026-08-31 — Handoff autônomo da descoberta até produto planejado
 
 - Evidência: ciclos independentes de Argos concluíam sem candidatas estruturais, dossiê ou fila para

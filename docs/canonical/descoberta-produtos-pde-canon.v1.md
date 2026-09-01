@@ -458,10 +458,23 @@ contagem deve deduplicar por referência e domínio, exigir aderência semântic
 dois caminhos independentes de confirmação. Dados ausentes não podem ser fabricados nem transformar
 temperatura, score, ranking, anúncio ou página comercial em venda.
 
-O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de
-compra, afiliação, publicação, acesso a credenciais ou ampliação autônoma do limite.
-Enquanto a sessão Codex individual estiver desabilitada, o worker pode usar o plano
-determinístico seguro, sem alterar os gates comerciais.
+O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de compra,
+afiliação, publicação, acesso a credenciais ou ampliação autônoma dos limites de coleta por fonte.
+No modo `DISCOVER_MARKETS`, se a primeira avaliação terminar sem candidata `DOSSIER_READY`, o
+executor pode reavaliar na mesma execução com até três tentativas totais. Cada nova tentativa deve
+alterar exatamente uma lente investigativa adjacente a partir das lacunas observadas, sem mudar país,
+canal, restrições comerciais ou assumir o posicionamento que pertence a Atena. Web, ofertas, Meta e
+acervo devem ser acumulados e deduplicados antes da nova síntese. Cada tentativa pode realizar
+exatamente uma consulta Meta, respeitando o mesmo limite individual da primeira rodada.
+
+A ampliação deve parar quando encontrar ao menos uma candidata `DOSSIER_READY`, quando uma nova
+lente não acrescentar evidência pública, oferta comparável nem anúncio Meta, quando repetir lente ou
+consultas já usadas ou ao alcançar a terceira tentativa. O relatório funcional e a auditoria da
+mesma tarefa devem preservar lente, justificativa, incremento de evidência, candidatas, decisão e
+motivo de parada de cada rodada. `RESEARCH_MORE` continua sendo o desfecho honesto quando o limite
+terminar sem gate comercial aprovado. Enquanto a sessão Codex individual estiver desabilitada, o
+worker pode usar o plano determinístico seguro, sem ampliar o mercado nem alterar os gates
+comerciais.
 
 ### Descoberta orientada a público e canal
 

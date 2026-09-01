@@ -14,11 +14,35 @@ public record IndependentBusinessProcessFlowReportResponse(
     int dossierReadyCount,
     int plannedProductCount,
     List<SourceCoverage> sourceCoverage,
+    MarketExpansion marketExpansion,
     List<Candidate> candidates) {
 
   /** Resume a cobertura factual de uma origem pesquisada por Argos. */
   public record SourceCoverage(
       String sourceCode, String label, String status, int itemCount, String summary) {}
+
+  /** Resume o ciclo adaptativo de Argos sem duplicar as evidências completas na tela. */
+  public record MarketExpansion(
+      String strategyCode,
+      int attemptsCompleted,
+      int maxAttempts,
+      String stopReason,
+      String stopSummary,
+      String finalResearchLens,
+      List<MarketExpansionAttempt> attempts) {}
+
+  /** Expõe a lente, o progresso factual e a decisão operacional de uma rodada. */
+  public record MarketExpansionAttempt(
+      int attemptNumber,
+      String researchLens,
+      String expansionAxis,
+      String rationale,
+      int newPublicEvidenceCount,
+      int newComparableOfferCount,
+      int newMetaAdCount,
+      int candidateCount,
+      int dossierReadyCount,
+      String outcome) {}
 
   /** Expõe uma candidata factual e toda sua linhagem até o produto. */
   public record Candidate(

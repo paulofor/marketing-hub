@@ -73,6 +73,9 @@ gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 - `ARGOS_CODEX_MODEL`: modelo das duas fases. Padrão: `gpt-5.6-sol`.
 - `ARGOS_CODEX_REASONING_EFFORT`: esforço registrado para auditoria. Padrão: `high`.
 - `ARGOS_CODEX_TIMEOUT_MS`: timeout individual de cada fase. Padrão: `600000`.
+- `ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS`: rodadas totais na mesma execução `DISCOVER_MARKETS`,
+  limitadas entre `1` e `3`. Padrão: `3`; a primeira usa o escopo inicial e as demais exigem lente
+  adjacente e evidência nova.
 
 ## Deploy
 

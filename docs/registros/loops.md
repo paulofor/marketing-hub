@@ -4,6 +4,26 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-ARGOS-RESEARCH-MORE-TERMINAL-SEM-AMPLIACAO — lacuna conhecida encerra a descoberta
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** a execução independente #11 e a tarefa #291 concluíram tecnicamente com
+  três candidatas em `RESEARCH_MORE`, somente uma de dez ofertas comparáveis e nenhum anúncio
+  Meta/Instagram comprovado. O relatório determinava aprofundar as lacunas, mas o worker encerrava o
+  ciclo depois de uma única combinação de consultas.
+- **Causa-raiz confirmada no código, banco, logs e histórico:** o worker possuía uma sequência fixa
+  `planejar → coletar → sintetizar → concluir`, sem condição de continuidade funcional. Ciclos
+  recentes de descoberta ampla registraram apenas uma tentativa; já o ciclo histórico #36 obteve
+  quatorze ofertas e três dossiês prontos, descartando a hipótese de impossibilidade estrutural do
+  gate.
+- **Correção sistêmica:** `DISCOVER_MARKETS` passa a permitir até três lentes investigativas
+  adjacentes na mesma execução. Evidências são acumuladas e deduplicadas; sucesso, falta de progresso,
+  repetição de lente e limite encerram o loop de forma determinística. Atena continua responsável
+  por posicionamento e priorização.
+- **Prevenção:** testes com dependências locais exigem o mesmo ciclo, lease e callback terminal,
+  cobrem sucesso, ausência de evidência nova e limite; backend e tela expõem as tentativas
+  persistidas sem interpretar pesquisa como venda.
+
 ## LOOP-HERMES-CANAL-DIRETO-TRATADO-COMO-META — piloto aprovado bloqueia por campanha inexistente
 
 - **Data:** 2026-08-31.

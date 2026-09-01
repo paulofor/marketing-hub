@@ -85,6 +85,11 @@ test("empacota a biblioteca factual e mantém o modelo ativo no deploy", () => {
       /PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS: \$\{PRODUCT_DISCOVERY_MAX_SEARCH_RESULTS:-30\}/,
       "[ARQUITETURA] A coleta deve preservar a profundidade mínima homologada.",
     );
+    assert.match(
+      compose,
+      /ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS: \$\{ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS:-3\}/,
+      "[ARQUITETURA] A ampliação adaptativa deve permanecer limitada a três rodadas na mesma execução.",
+    );
   }
   assert.match(workflow, /- "pesquisas\/\*\*"/);
   assert.match(workflow, /export ARGOS_CODEX_ENABLED=["']true["']/);

@@ -75,6 +75,13 @@ não substitui `business_process_activity_instance` e `agent_task`; o frontend n
 nem sintetizar tarefas a partir dela. O histórico por atividade deve representar a execução
 persistida, inclusive falhas, modelo, prompt, consumo disponível, datas, resultado e evidências, sem
 converter atividade técnica em sucesso funcional.
+
+Quando uma única tarefa de descoberta PDE executar ampliação controlada de mercado, as rodadas não
+criam novas tarefas nem novas instâncias. O relatório persistido deve expor, em ordem, a lente
+investigativa, a justificativa, a evidência incremental, a maturidade obtida e o motivo de continuar
+ou parar em cada tentativa. O callback terminal continua único e o backend permanece a autoridade
+exclusiva para liberar Atena ou encerrar a atividade com lacunas.
+
 Se uma versão nova for publicada durante uma execução já aberta, seus callbacks devem continuar na
 tarefa da versão original. Renomeações de atividade entre versões só podem ser correlacionadas por
 aliases explícitos do fluxo, preservando uma única execução para a mesma referência de origem.

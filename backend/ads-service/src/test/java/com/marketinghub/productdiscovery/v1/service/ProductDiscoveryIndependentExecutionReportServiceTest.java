@@ -114,6 +114,11 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(report.sourceCoverage())
         .extracting(item -> item.sourceCode() + ":" + item.itemCount())
         .contains("WEB:1", "META:1", "PESQUISAS:1", "MARKETPLACE:1");
+    assertThat(report.marketExpansion().attemptsCompleted()).isEqualTo(2);
+    assertThat(report.marketExpansion().stopReason()).isEqualTo("DOSSIER_READY_FOUND");
+    assertThat(report.marketExpansion().attempts())
+        .extracting(item -> item.attemptNumber() + ":" + item.outcome())
+        .containsExactly("1:ADJUST_AND_CONTINUE", "2:DOSSIER_READY_FOUND");
     var winner = report.candidates().get(0);
     assertThat(winner.productId()).isEqualTo(901L);
     assertThat(winner.nextAction()).contains("Abrir o produto planejado");
@@ -164,7 +169,41 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
           "publicEvidence":[{}],
           "marketplaceOffers":[{}],
           "metaAdEvidence":[{}],
-          "repositoryEvidence":[{}]
+          "repositoryEvidence":[{}],
+          "marketExpansion":{
+            "strategyCode":"BOUNDED_ADJACENT_MARKET_EXPANSION_V1",
+            "attemptsCompleted":2,
+            "maxAttempts":3,
+            "stopReason":"DOSSIER_READY_FOUND",
+            "stopSummary":"Uma candidata ficou pronta para Atena.",
+            "finalResearchLens":"Momento de reencontro",
+            "attempts":[
+              {
+                "attemptNumber":1,
+                "researchLens":"Rotina antes de sair",
+                "expansionAxis":"INITIAL_SCOPE",
+                "rationale":"Escopo inicial recebido.",
+                "newPublicEvidenceCount":20,
+                "newComparableOfferCount":1,
+                "newMetaAdCount":0,
+                "candidateCount":3,
+                "dossierReadyCount":0,
+                "outcome":"ADJUST_AND_CONTINUE"
+              },
+              {
+                "attemptNumber":2,
+                "researchLens":"Momento de reencontro",
+                "expansionAxis":"ADJACENT_LIFE_MOMENT",
+                "rationale":"Aprofundar situação com decisão próxima.",
+                "newPublicEvidenceCount":8,
+                "newComparableOfferCount":10,
+                "newMetaAdCount":2,
+                "candidateCount":2,
+                "dossierReadyCount":1,
+                "outcome":"DOSSIER_READY_FOUND"
+              }
+            ]
+          }
         }
         """);
     return cycle;

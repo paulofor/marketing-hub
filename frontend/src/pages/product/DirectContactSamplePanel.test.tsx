@@ -18,6 +18,10 @@ vi.mock("../../api/experiment/useExperimentDirectContactSample", () => ({
   }),
 }));
 
+vi.mock("./DirectRecruitmentPanel", () => ({
+  default: () => <div>Aquisição consentida simulada</div>,
+}));
+
 import { useExperimentDirectContactSample } from "../../api/experiment/useExperimentDirectContactSample";
 
 const accumulatingSample = {
@@ -55,14 +59,14 @@ describe("DirectContactSamplePanel", () => {
 
     expect(screen.getByText("0/15 contatos")).toBeInTheDocument();
     expect(screen.getByText(/Faltam 15 contatos/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Telefone ou e-mail do contato"), {
+    fireEvent.change(screen.getByLabelText(/Telefone ou e-mail do contato/), {
       target: { value: "+55 (11) 99999-9999" },
     });
     fireEvent.change(
-      screen.getByLabelText("Referência da evidência de consentimento"),
+      screen.getByLabelText(/Referência da evidência de consentimento/),
       { target: { value: "internal://consentimentos/rigel-001" } },
     );
-    fireEvent.change(screen.getByLabelText("Registrado por"), {
+    fireEvent.change(screen.getByLabelText(/Registrado por/), {
       target: { value: "Operador QA" },
     });
     fireEvent.click(

@@ -86,19 +86,73 @@ function sample(recordedContacts) {
   };
 }
 
+function recruitmentCampaign(status, recordedContacts) {
+  const active = status === "ACTIVE";
+  return {
+    id: status === "NOT_CREATED" ? null : 10,
+    experimentId: 89,
+    productName: "Kit WhatsApp Pronto",
+    status,
+    contractVersion: "direct-recruitment-v1",
+    headline: "Seu atendimento no WhatsApp poderia vender mais?",
+    bodyText: "Participe de uma validação rápida e consentida.",
+    audienceSummary: "Pequenos prestadores de serviços.",
+    consentText: "Aceito participar e conhecer a oferta.",
+    consentVersion: "consent-v1",
+    offerUrl: "https://rigel.example",
+    offerCta: "Conhecer o Rigel",
+    privacyPolicyUrl: "https://rigel.example/privacidade",
+    publicPath:
+      status === "NOT_CREATED"
+        ? null
+        : "/participar/11111111-2222-4333-8444-555555555555",
+    targetContacts: 15,
+    remainingContacts: Math.max(0, 15 - recordedContacts),
+    uniqueVisits: 0,
+    submissions: 0,
+    qualifiedSubmissions: 0,
+    notQualifiedSubmissions: 0,
+    recordedContacts,
+    connectedOrganicAccounts: 0,
+    acquisitionStatus:
+      recordedContacts >= 15
+        ? "SAMPLE_COMPLETE"
+        : status === "NOT_CREATED"
+          ? "NOT_CREATED"
+          : active
+            ? "ACTIVE_WITHOUT_DISTRIBUTION"
+            : "DRAFT_REQUIRES_APPROVAL",
+    distributionGuidance:
+      recordedContacts >= 15
+        ? "A amostra está pronta para uma única revisão de Hermes."
+        : active
+          ? "Conecte uma conta orgânica no Marketing Hub."
+          : "Revise e aprove o convite.",
+    createdBy: status === "NOT_CREATED" ? null : "Homologação local",
+    statusChangedBy: active ? "Homologação local" : null,
+    statusReason: null,
+    createdAt: status === "NOT_CREATED" ? null : "2026-09-01T10:00:00Z",
+    updatedAt: status === "NOT_CREATED" ? null : "2026-09-01T10:00:00Z",
+    activatedAt: active ? "2026-09-01T10:01:00Z" : null,
+    pausedAt: null,
+    completedAt: null,
+  };
+}
+
 async function validateProfile(browser, name, contextOptions) {
   const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   let recordedContacts = 0;
+  let recruitmentStatus = "NOT_CREATED";
   let postedPayload;
+  const recruitmentCommands = [];
 
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
     if (
       request.method() === "GET" &&
-      pathname ===
-        "/api/business-processes/66/products/9/activity-executions"
+      pathname === "/api/business-processes/66/products/9/activity-executions"
     ) {
       await route.fulfill({ json: history });
       return;
@@ -111,6 +165,37 @@ async function validateProfile(browser, name, contextOptions) {
       return;
     }
     if (
+      request.method() === "GET" &&
+      pathname === "/api/experiments/89/direct-recruitment"
+    ) {
+      await route.fulfill({
+        json: recruitmentCampaign(recruitmentStatus, recordedContacts),
+      });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      pathname === "/api/experiments/89/direct-recruitment/draft"
+    ) {
+      recruitmentCommands.push({ pathname, payload: request.postDataJSON() });
+      recruitmentStatus = "DRAFT";
+      await route.fulfill({
+        json: recruitmentCampaign(recruitmentStatus, recordedContacts),
+      });
+      return;
+    }
+    if (
+      request.method() === "POST" &&
+      pathname === "/api/experiments/89/direct-recruitment/activate"
+    ) {
+      recruitmentCommands.push({ pathname, payload: request.postDataJSON() });
+      recruitmentStatus = "ACTIVE";
+      await route.fulfill({
+        json: recruitmentCampaign(recruitmentStatus, recordedContacts),
+      });
+      return;
+    }
+    if (
       request.method() === "POST" &&
       pathname === "/api/experiments/89/direct-contact-sample/contacts"
     ) {
@@ -119,20 +204,57 @@ async function validateProfile(browser, name, contextOptions) {
       await route.fulfill({ json: sample(recordedContacts) });
       return;
     }
-    await route.fulfill({ status: 404, json: { message: "Rota não simulada" } });
+    await route.fulfill({
+      status: 404,
+      json: { message: "Rota não simulada" },
+    });
   });
 
   await page.goto(`${baseUrl}${pagePath}`, { waitUntil: "networkidle" });
+  await expect(
+    page.getByRole("heading", { name: "Aquisição consentida da amostra" }),
+  ).toBeVisible();
+  await expect(page.getByText("Atividade não preparada")).toBeVisible();
+  await page.getByLabel("Responsável pela atividade").fill("Homologação local");
+  await page
+    .getByRole("button", { name: "Preparar convite para aprovação" })
+    .click();
+  await expect(page.getByText("Rascunho aguardando aprovação")).toBeVisible();
+  await expect(page.getByText("Link público rastreável")).toHaveCount(0);
+  await page
+    .getByLabel(/Aprovo esta comunicação e confirmo que ativar/)
+    .check();
+  await page.getByRole("button", { name: "Aprovar e ativar convite" }).click();
+  await expect(
+    page.getByText("Ativo, sem canal de distribuição"),
+  ).toBeVisible();
+  await expect(page.getByText("Link público rastreável")).toBeVisible();
+  await expect(
+    page.locator('a[href*="/participar/11111111-2222-4333-8444-555555555555"]'),
+  ).toBeVisible();
+  assert.deepEqual(
+    recruitmentCommands.map((command) => command.pathname),
+    [
+      "/api/experiments/89/direct-recruitment/draft",
+      "/api/experiments/89/direct-recruitment/activate",
+    ],
+  );
+  assert.equal(recruitmentCommands[1].payload.approvalConfirmed, true);
+
   await expect(
     page.getByRole("heading", { name: "Amostra individual consentida" }),
   ).toBeVisible();
   await expect(page.getByText("0/15 contatos")).toBeVisible();
   await expect(page.getByText(/Faltam 15 contatos/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reiniciar tarefa" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Reiniciar tarefa" }),
+  ).toHaveCount(0);
 
   await page
     .getByLabel("Telefone ou e-mail do contato")
-    .fill(`teste+rigel-${name.toLowerCase().replace(/\s+/g, "-")}@sandbox.local`);
+    .fill(
+      `teste+rigel-${name.toLowerCase().replace(/\s+/g, "-")}@sandbox.local`,
+    );
   await page
     .getByLabel("Referência da evidência de consentimento")
     .fill(`internal://consentimentos/homologacao-${name}`);
@@ -142,7 +264,9 @@ async function validateProfile(browser, name, contextOptions) {
       "Confirmo que o contato consentiu e pertence ao público do experimento.",
     )
     .check();
-  await page.getByRole("button", { name: "Registrar contato realizado" }).click();
+  await page
+    .getByRole("button", { name: "Registrar contato realizado" })
+    .click();
   await expect(page.getByText("1/15 contatos")).toBeVisible();
 
   assert.equal(postedPayload.contactFingerprint.length, 64);
@@ -166,7 +290,9 @@ async function validateProfile(browser, name, contextOptions) {
   );
 
   await context.close();
-  process.stdout.write(`[UI] ${name}: amostra 0/15, registro pseudonimizado e gate 15/15 validados\n`);
+  process.stdout.write(
+    `[UI] ${name}: amostra 0/15, registro pseudonimizado e gate 15/15 validados\n`,
+  );
 }
 
 async function main() {

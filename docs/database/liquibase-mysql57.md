@@ -67,6 +67,14 @@ estrangeira, deduplicação por experimento e reaplicação do changelog:
 bash backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql57.sh
 ```
 
+O recrutamento inbound consentido possui fixture própria. Ela valida as três tabelas, todos os
+campos temporais como `DATETIME`, chaves estrangeiras, deduplicação de visita e pessoa, retomada após
+DDL sem ledger, rollback e reaplicação:
+
+```bash
+bash backend/ads-service/scripts/validate-experiment-direct-recruitment-mysql57.sh
+```
+
 As consultas desse runner declaram `--default-character-set=utf8mb4`. Sem o charset explícito, o
 cliente MySQL 5.7 pode não comparar nomes acentuados como `Dédalo` e `Têmis` com o valor UTF-8
 persistido, produzindo falso positivo ou falso negativo na homologação.

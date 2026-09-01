@@ -2937,6 +2937,29 @@ Use este checklist quando o problema estiver em algum loop acima:
   MCP, privacidade e interface. A matriz local separa contato, checkout, pagamento, entrega e venda e
   proíbe dados produtivos sintéticos.
 
+## LOOP-HERMES-AMOSTRA-SEM-AQUISICAO — placar correto depende de lista inexistente
+
+- **Data:** 2026-09-01.
+- **Sintoma:** o Rigel permaneceu corretamente em 0/15, mas a orientação operacional exigia que uma
+  pessoa listasse, obtivesse consentimento e abordasse quinze prestadores fora do Marketing Hub. O
+  sistema sabia validar contatos existentes, mas não tinha como formar a própria amostra.
+- **Causa-raiz confirmada no código, banco e histórico:** a correção anterior fechou somente o lado
+  downstream do funil. As tabelas de contato direto, lead, submissão do Lead Portal, conta WhatsApp e
+  mensagem WhatsApp permaneciam vazias; também não havia conta social orgânica conectada. Portanto,
+  não existia lista própria que pudesse ser reutilizada nem etapa persistida de convite, visita,
+  qualificação e adesão.
+- **Correção sistêmica:** `task-2` passa a conter uma atividade de aquisição inbound versionada. O
+  backend prepara a comunicação a partir da oferta canônica, exige aprovação humana, expõe link
+  público opaco, deduplica visitas, qualifica o prestador por regras determinísticas e converte
+  somente a adesão consentida em contato oficial. A oferta é liberada na própria sessão, sem guardar
+  telefone ou e-mail em claro.
+- **Limite operacional:** ativação não publica post, não envia mensagem e não cria campanha ou gasto.
+  O painel separa o estado `ACTIVE_WITHOUT_DISTRIBUTION` de uma distribuição real e exige canal
+  orgânico conectado; mídia paga continua dependendo de outro experimento e autorização explícita.
+- **Prevenção:** a matriz ponta a ponta cobre aprovação, privacidade, duplicidade, limite 15/15,
+  qualificação, métricas separadas, falha de dependência e navegadores. O Swagger e o cânone impedem
+  que visita, publicação, adesão não qualificada ou impacto estimado virem contato ou venda.
+
 ## LOOP-HERMES-HISTORICO-LONGTEXT-SEM-LIMITE — leitura esgota o backend e trava filas
 
 - **Data:** 2026-09-01.

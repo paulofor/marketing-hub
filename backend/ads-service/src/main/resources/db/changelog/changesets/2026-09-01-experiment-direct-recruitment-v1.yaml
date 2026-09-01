@@ -1,0 +1,203 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-experiment-direct-recruitment-v1-1-campaign
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - or:
+            - not:
+                tableExists:
+                  tableName: experiment_direct_recruitment_campaign
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'experiment_direct_recruitment_campaign') = 21
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'experiment_direct_recruitment_campaign'
+                            AND INDEX_NAME IN (
+                              'uk_exp_direct_recruit_campaign_exp',
+                              'uk_exp_direct_recruit_campaign_token'
+                            )
+                            AND NON_UNIQUE = 0) = 2,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS experiment_direct_recruitment_campaign (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                experiment_id BIGINT NOT NULL,
+                public_token CHAR(36) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                contract_version VARCHAR(32) NOT NULL,
+                headline VARCHAR(255) NOT NULL,
+                body_text VARCHAR(1000) NOT NULL,
+                audience_summary VARCHAR(1000) NOT NULL,
+                consent_text VARCHAR(1500) NOT NULL,
+                consent_version VARCHAR(32) NOT NULL,
+                offer_url VARCHAR(1200) NOT NULL,
+                offer_cta VARCHAR(191) NOT NULL,
+                privacy_policy_url VARCHAR(1200) NOT NULL,
+                created_by VARCHAR(100) NOT NULL,
+                status_changed_by VARCHAR(100) NULL,
+                status_reason VARCHAR(500) NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                activated_at DATETIME NULL,
+                paused_at DATETIME NULL,
+                completed_at DATETIME NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_exp_direct_recruit_campaign_exp (experiment_id),
+                UNIQUE KEY uk_exp_direct_recruit_campaign_token (public_token),
+                CONSTRAINT fk_exp_direct_recruit_campaign_experiment
+                  FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE experiment_direct_recruitment_campaign;
+
+  - changeSet:
+      id: 2026-09-01-experiment-direct-recruitment-v1-2-visit
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - or:
+            - not:
+                tableExists:
+                  tableName: experiment_direct_recruitment_visit
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'experiment_direct_recruitment_visit') = 9
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'experiment_direct_recruitment_visit'
+                            AND INDEX_NAME = 'uk_exp_direct_recruit_visit_visitor'
+                            AND NON_UNIQUE = 0) = 2,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS experiment_direct_recruitment_visit (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                campaign_id BIGINT NOT NULL,
+                visitor_fingerprint CHAR(64) NOT NULL,
+                utm_source VARCHAR(100) NULL,
+                utm_medium VARCHAR(100) NULL,
+                utm_campaign VARCHAR(100) NULL,
+                utm_content VARCHAR(100) NULL,
+                first_visited_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_exp_direct_recruit_visit_visitor
+                  (campaign_id, visitor_fingerprint),
+                INDEX idx_exp_direct_recruit_visit_time (campaign_id, first_visited_at),
+                CONSTRAINT fk_exp_direct_recruit_visit_campaign
+                  FOREIGN KEY (campaign_id)
+                  REFERENCES experiment_direct_recruitment_campaign(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE experiment_direct_recruitment_visit;
+
+  - changeSet:
+      id: 2026-09-01-experiment-direct-recruitment-v1-3-submission
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - or:
+            - not:
+                tableExists:
+                  tableName: experiment_direct_recruitment_submission
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'experiment_direct_recruitment_submission') = 19
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'experiment_direct_recruitment_submission'
+                            AND INDEX_NAME IN (
+                              'uk_exp_direct_recruit_submission_key',
+                              'uk_exp_direct_recruit_submission_contact'
+                            )
+                            AND NON_UNIQUE = 0) = 4,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS experiment_direct_recruitment_submission (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                campaign_id BIGINT NOT NULL,
+                submission_key CHAR(36) NOT NULL,
+                contact_fingerprint CHAR(64) NOT NULL,
+                service_segment VARCHAR(48) NOT NULL,
+                weekly_conversations_range VARCHAR(32) NOT NULL,
+                uses_whatsapp TINYINT(1) NOT NULL DEFAULT 0,
+                decision_maker TINYINT(1) NOT NULL DEFAULT 0,
+                wants_personalized_implementation TINYINT(1) NOT NULL DEFAULT 0,
+                consent_accepted TINYINT(1) NOT NULL DEFAULT 0,
+                consent_version VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                qualification_reason VARCHAR(500) NOT NULL,
+                utm_source VARCHAR(100) NULL,
+                utm_medium VARCHAR(100) NULL,
+                utm_campaign VARCHAR(100) NULL,
+                utm_content VARCHAR(100) NULL,
+                submitted_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_exp_direct_recruit_submission_key
+                  (campaign_id, submission_key),
+                UNIQUE KEY uk_exp_direct_recruit_submission_contact
+                  (campaign_id, contact_fingerprint),
+                INDEX idx_exp_direct_recruit_submission_status
+                  (campaign_id, status, submitted_at),
+                CONSTRAINT fk_exp_direct_recruit_submission_campaign
+                  FOREIGN KEY (campaign_id)
+                  REFERENCES experiment_direct_recruitment_campaign(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE experiment_direct_recruitment_submission;

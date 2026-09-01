@@ -22,8 +22,7 @@ export type ExperimentDirectContactSample = {
   remainingContacts: number;
   readyForHermesReview: boolean;
   operationalStatus:
-    | "ACCUMULATING_CONSENTED_SAMPLE"
-    | "READY_FOR_HERMES_REVIEW";
+    "ACCUMULATING_CONSENTED_SAMPLE" | "READY_FOR_HERMES_REVIEW";
   contacts: ExperimentDirectContact[];
 };
 
@@ -47,7 +46,9 @@ export function fingerprintDirectContact(
   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isPhone = phone.length >= 8 && phone.length <= 15;
   if (!isEmail && !isPhone) {
-    throw new Error("Informe um telefone ou e-mail válido para identificar o contato.");
+    throw new Error(
+      "Informe um telefone ou e-mail válido para identificar o contato.",
+    );
   }
   const normalized = isEmail ? email : phone;
   return sha256(`experiment:${experimentId}:${normalized}`);
@@ -58,6 +59,7 @@ export function useExperimentDirectContactSample(experimentId?: number) {
   return useQuery({
     queryKey: ["experiments", experimentId, "direct-contact-sample"],
     enabled: Boolean(experimentId),
+    refetchInterval: 15_000,
     queryFn: async () =>
       (
         await axios.get<ExperimentDirectContactSample>(
@@ -96,6 +98,9 @@ export function useRegisterExperimentDirectContact(
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["experiments", experimentId, "direct-contact-sample"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["experiments", experimentId, "direct-recruitment"],
         }),
         queryClient.invalidateQueries({
           queryKey: [

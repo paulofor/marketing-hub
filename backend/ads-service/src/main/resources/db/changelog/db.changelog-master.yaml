@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-09-01-experiment-direct-recruitment-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-09-01-experiment-direct-contact-sample-v1.yaml
       relativeToChangelogFile: true
   - include:

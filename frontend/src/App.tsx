@@ -1,4 +1,10 @@
-import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
@@ -191,6 +197,7 @@ import AudioVideoStudioVideosAnalysisPage from "./pages/audioVideoStudio/AudioVi
 import PdeVideoProductionPage from "./pages/pdeVideoProduction/PdeVideoProductionPage";
 import HomePage from "./pages/HomePage";
 import VideoProviderFinancePage from "./pages/financial/VideoProviderFinancePage";
+import DirectRecruitmentLandingPage from "./pages/public/DirectRecruitmentLandingPage";
 
 function LegacyNicheRedirect() {
   const { nicheId } = useParams();
@@ -208,6 +215,21 @@ function LegacyHypothesisRedirect() {
 }
 
 export default function App() {
+  const location = useLocation();
+  if (location.pathname.startsWith("/participar/")) {
+    return (
+      <>
+        <Routes>
+          <Route
+            path="/participar/:token"
+            element={<DirectRecruitmentLandingPage />}
+          />
+          <Route path="*" element={<DirectRecruitmentLandingPage />} />
+        </Routes>
+        <ToastContainer position="top-right" />
+      </>
+    );
+  }
   return (
     <div className="app-shell">
       <MainNavigation />

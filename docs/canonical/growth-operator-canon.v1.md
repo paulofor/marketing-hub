@@ -66,6 +66,30 @@ nunca de um piso genérico de campanha. Em `DIRECT_ONE_TO_ONE`, contam somente c
 consentidos e aderentes; não se exigem impressões ou visitas Meta. A trava preventiva de gasto Meta
 só se aplica quando existir campanha paga desse canal.
 
+### Formação da amostra no canal individual
+
+Por decisão de 2026-09-01, um experimento `DIRECT_ONE_TO_ONE` não pode pressupor que já exista uma
+lista de pessoas acessível ao operador. A atividade de acumular amostra distingue, de forma
+persistida, convite público, visita, adesão qualificada e contato comercial consentido. Lista
+comprada, tráfego, QA, tarefa executada, impacto estimado ou publicação não contam como contato.
+
+A rota padrão de formação da amostra é inbound e de baixo risco: o Marketing Hub prepara uma
+página versionada de convite, exige aprovação humana antes de ativá-la, recebe qualificação mínima
+e consentimento livre, informado e inequívoco e pseudonimiza a identidade no navegador. Somente a
+adesão qualificada e consentida entra automaticamente na amostra oficial e libera a oferta; o dado
+de contato em claro não pode chegar ao backend. A página deve apresentar a política de privacidade
+canônica antes da adesão e mantê-la acessível em nova aba depois do envio.
+
+Ativar o convite não significa distribuí-lo. O backend deve informar separadamente se existe conta
+orgânica conectada e não pode publicar post, enviar mensagem, criar campanha ou gerar gasto por essa
+ativação. Sem canal conectado, a tela deve manter o bloqueio operacional visível. Tráfego pago exige
+outro experimento, orçamento e autorização explícita, sem converter silenciosamente o experimento
+direto vigente.
+
+Para auditoria e segregação, persistem somente fingerprint vinculado ao experimento, respostas
+categóricas de qualificação, versão do consentimento, origem UTM e horários. Visitas, adesões,
+qualificados, contatos, checkouts e pagamentos permanecem métricas distintas.
+
 O fingerprint exclui a memoria acumulada e inclui apenas evidencias operacionais atuais. Assim, o proprio relatorio anterior nao cria artificialmente uma mudanca. Cada execucao tambem persiste as chamadas MCP realmente observadas, permitindo auditar quais ferramentas fundamentaram a conclusao.
 
 Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.

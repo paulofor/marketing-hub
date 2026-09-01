@@ -15,6 +15,7 @@ on:
       - "backend/ads-service/Dockerfile.mysql57-product-type-consultants-v1"
       - "backend/ads-service/Dockerfile.mysql57-rigel-commercial-slot"
       - "backend/ads-service/Dockerfile.mysql57-experiment-direct-contact-sample"
+      - "backend/ads-service/Dockerfile.mysql57-experiment-direct-recruitment"
       - "backend/ads-service/.dockerignore"
       - "backend/ads-service/docker-compose.product-process-mysql57.yml"
       - "backend/ads-service/docker-compose.activity-instances-mysql57.yml"
@@ -25,6 +26,7 @@ on:
       - "backend/ads-service/docker-compose.product-type-consultants-v1-mysql57.yml"
       - "backend/ads-service/docker-compose.rigel-commercial-slot-mysql57.yml"
       - "backend/ads-service/docker-compose.experiment-direct-contact-sample-mysql57.yml"
+      - "backend/ads-service/docker-compose.experiment-direct-recruitment-mysql57.yml"
       - "backend/ads-service/scripts/validate-business-process-activity-instances-mysql57.sh"
       - "backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh"
@@ -32,6 +34,7 @@ on:
       - "backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh"
       - "backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh"
       - "backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql57.sh"
+      - "backend/ads-service/scripts/validate-experiment-direct-recruitment-mysql57.sh"
       - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/IrisCommunicationAgentChangelogTest.java"
       - "config/agents/codex-agent-health-compliance.json"
       - "scripts/test-codex-agent-health-standard.mjs"
@@ -227,3 +230,20 @@ jobs:
         env:
           DIRECT_CONTACT_SAMPLE_COMPOSE_PROJECT: liquibase-direct-contact-${{ github.run_id }}
         run: bash backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql57.sh
+
+  validate-experiment-direct-recruitment:
+    name: Validar recrutamento direto consentido
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Preparar imagem MySQL 5.7
+        run: bash scripts/docker-pull-with-transient-retry.sh mysql:5.7
+
+      - name: Validar migração física no MySQL 5.7
+        env:
+          DIRECT_RECRUITMENT_COMPOSE_PROJECT: liquibase-direct-recruitment-${{ github.run_id }}
+        run: bash backend/ads-service/scripts/validate-experiment-direct-recruitment-mysql57.sh

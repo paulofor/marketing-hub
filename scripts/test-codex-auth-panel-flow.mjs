@@ -7,12 +7,15 @@ import { once } from 'node:events';
 import path from 'node:path';
 
 const callbacks = [];
+const attemptsByPath = new Map();
 const server = http.createServer((request, response) => {
   let body = '';
   request.on('data', (chunk) => { body += chunk; });
   request.on('end', () => {
     callbacks.push({ path: request.url, body: JSON.parse(body) });
-    response.writeHead(200, { 'Content-Type': 'application/json' });
+    const attempts = (attemptsByPath.get(request.url) || 0) + 1;
+    attemptsByPath.set(request.url, attempts);
+    response.writeHead(attempts === 1 ? 503 : 200, { 'Content-Type': 'application/json' });
     response.end('{}');
   });
 });
@@ -26,6 +29,7 @@ const child = spawn('node', [path.join(root, 'scripts/codex-app-server-device-lo
     CODEX_APP_SERVER_COMMAND: path.join(root, 'scripts/fake-codex-app-server.mjs'),
     CODEX_AUTH_RECONNECT_ID: '42',
     CODEX_AUTH_CALLBACK_BASE_URL: `http://127.0.0.1:${address.port}`,
+    CODEX_AUTH_CALLBACK_RETRY_DELAY_MS: '5',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -36,14 +40,16 @@ const [code] = await once(child, 'exit');
 server.close();
 
 assert.equal(code, 0, output);
-assert.equal(callbacks.length, 2);
+assert.equal(callbacks.length, 4);
 assert.equal(callbacks[0].path, '/api/internal/agents/executor-health/codex-auth/reconnections/42/device-code');
 assert.deepEqual(callbacks[0].body, {
   verificationUrl: 'https://auth.openai.com/codex/device',
   userCode: 'TEST-CODE',
 });
-assert.equal(callbacks[1].path, '/api/internal/agents/executor-health/codex-auth/reconnections/42/completion');
-assert.equal(callbacks[1].body.authenticated, true);
-assert.match(callbacks[1].body.detail, /chatgpt/);
+assert.equal(callbacks[1].path, '/api/internal/agents/executor-health/codex-auth/reconnections/42/device-code');
+assert.equal(callbacks[2].path, '/api/internal/agents/executor-health/codex-auth/reconnections/42/completion');
+assert.equal(callbacks[3].path, '/api/internal/agents/executor-health/codex-auth/reconnections/42/completion');
+assert.equal(callbacks[3].body.authenticated, true);
+assert.match(callbacks[3].body.detail, /chatgpt/);
 assert.equal(JSON.stringify(callbacks).includes('refresh'), false);
-console.log('Fluxo seguro de reconexão Codex validado.');
+console.log('Fluxo seguro de reconexão Codex e retentativa de callbacks validados.');

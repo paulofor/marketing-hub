@@ -2,12 +2,14 @@ package com.marketinghub.communicationagentworker;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -23,10 +25,16 @@ class CodexAuthReconnectScheduler {
 
   /** Configura a porta do backend e a identidade exclusiva da agente. */
   CodexAuthReconnectScheduler(
+      RestClient.Builder backendBuilder,
       @Value("${BACKEND_URL:http://backend:8000}") String backendUrl,
       @Value("${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}") String repositoryPath,
-      @Value("${AGENT_HEALTH_KEY:communication-director}") String agentKey) {
-    backend = RestClient.builder().baseUrl(backendUrl).build();
+      @Value("${AGENT_HEALTH_KEY:communication-director}") String agentKey,
+      @Value("${CODEX_AUTH_RECONNECT_CONNECT_TIMEOUT:PT2S}") Duration connectTimeout,
+      @Value("${CODEX_AUTH_RECONNECT_READ_TIMEOUT:PT3S}") Duration readTimeout) {
+    SimpleClientHttpRequestFactory requests = new SimpleClientHttpRequestFactory();
+    requests.setConnectTimeout(connectTimeout);
+    requests.setReadTimeout(readTimeout);
+    backend = backendBuilder.baseUrl(backendUrl).requestFactory(requests).build();
     this.backendUrl = backendUrl;
     this.repositoryPath = repositoryPath;
     this.agentKey = agentKey;

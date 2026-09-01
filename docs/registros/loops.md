@@ -2842,6 +2842,24 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
   `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
 
+## LOOP-IRIS-CODEX-AUTH-PENDING-SEM-TIMEOUT — reconexão não sai de REQUESTED
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** a reconexão `#21` de Íris permaneceu em `REQUESTED`, sem URL, código
+  temporário ou `started_at`, embora o container estivesse saudável e consultasse as filas de
+  trabalho do backend.
+- **Causa-raiz confirmada no processo, banco e histórico:** o dump da JVM mostrou a thread
+  `scheduling-2` bloqueada dentro de `CodexAuthReconnectScheduler.processPending`, aguardando uma
+  chamada HTTP sem timeout desde a janela em que o backend sofreu lentidão. A outra thread continuou
+  consultando trabalho, mascarando a falha específica da reconexão.
+- **Correção sistêmica:** a porta HTTP da reconexão passa a limitar conexão e leitura, liberando a
+  rotina para tentar novamente no próximo ciclo. Os callbacks do device code e da confirmação passam
+  a tolerar até três falhas transitórias sem reiniciar o OAuth e são serializados para a confirmação
+  nunca ultrapassar a persistência do código temporário.
+- **Prevenção:** teste do worker simula backend que aceita a conexão e não responde, exigindo retorno
+  limitado; o teste do App Server exige recuperação de falha transitória tanto no device code quanto
+  na conclusão, sem transportar credenciais.
+
 ## LOOP-ACTIONS-DEPLOY-HOST-COMPARTILHADO-CANCELADO — serviços válidos somem da fila
 
 - **Data:** 2026-09-01.

@@ -131,6 +131,14 @@ export type ProductExperience = {
     priceBrl: number;
     billingModel: "ONE_TIME";
   };
+  commercialCheckout?: {
+    provider: string;
+    checkoutUrl: string;
+    offerReference: string;
+    priceBrl: number;
+    currency: string;
+    billingModel: "ONE_TIME";
+  };
 };
 
 export type PublicFirstFold = {

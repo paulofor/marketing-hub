@@ -2915,6 +2915,27 @@ Use este checklist quando o problema estiver em algum loop acima:
   exige grupo, fila ampliada e proteção da execução ativa e rejeita novo consumidor não registrado.
 - **Prevenção:** o workflow leve `GitHub Actions Contracts` executa o contrato em qualquer mudança
   de workflow ou dos validadores, sem publicar imagem nem acessar host produtivo.
+- **Lacuna de validação local confirmada em 2026-09-01:** o GitHub já aceitava `queue: max`, mas o
+  Actionlint 1.7.12 ainda reportava o campo oficial como chave inesperada. Ignorar a mensagem
+  esconderia também valores e combinações inválidas.
+- **Fechamento da validação local:** o projeto fixa a revisão `644076a` do PR upstream #654, confere
+  o SHA antes de compilar e valida `max`, `single`, valor inválido e o conflito com
+  `cancel-in-progress: true`. Todos os workflows passam pelo mesmo binário no contrato do CI; a
+  revisão provisória deve ser substituída pela primeira release oficial que incorpore esse suporte.
+
+## LOOP-MUSA-CHECKOUT-CANONICO-FORA-DO-DTO — contrato válido derruba o backend no CI
+
+- **Data:** 2026-09-01.
+- **Sintoma confirmado:** os runs `33526337300` e `33526765425` do MUSA falharam em 14 testes do
+  backend com `UnrecognizedPropertyException` para `commercialCheckout`; frontend e worker haviam
+  passado.
+- **Causa-raiz confirmada pelo diff e pela reprodução local:** o checkout Pepper entrou no JSON
+  canônico e no cânone comercial, mas `ProductExperienceResponse` continuou com o contrato anterior.
+  O carregamento da v7 falhava fechado antes de qualquer teste funcional.
+- **Correção sistêmica:** o DTO tipa a identidade completa do checkout, todas as reconstruções do
+  produto a preservam e o frontend declara o mesmo contrato opcional.
+- **Prevenção:** o teste do catálogo desserializa o JSON canônico, confere provedor, URL, oferta,
+  preço, moeda e cobrança e garante que o recorte público não descarte o vínculo homologado.
 
 ## LOOP-ACTIONS-HOST-COMPARTILHADO-SOB-PRESSAO — deploy válido falha por I/O e identidade divergente
 
@@ -2937,6 +2958,15 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** `GitHub Actions Contracts` valida timeout mínimo, ausência de `prune -af`, identidade
   Compose, retry de SSH e recuperação limitada do Lead Portal. Os helpers possuem testes com doubles
   que cobrem recuperação transitória, limite de tentativas e rejeição de propriedade inesperada.
+- **Recorrência confirmada em 2026-09-01:** FEO, e-mail e Product AI aprovaram testes e imagens, mas
+  falharam no `docker compose pull` por `TLS handshake timeout`, `Client.Timeout` e
+  `context deadline exceeded`. O Lead Portal baixou as imagens, porém o gate fixo de 36 tentativas
+  expirou enquanto o Spring ainda avançava sem exceção sob a mesma pressão de I/O.
+- **Fechamento adicional:** os doze deploys passam a transportar um helper versionado que repete
+  somente erros transitórios conhecidos do registry e encerra imediatamente falhas permanentes,
+  como autenticação. O Lead Portal usa prazo real de 15 minutos para iniciar, aborta cedo se um
+  container encerrar e reserva sete minutos para restaurar as imagens anteriores. O contrato central
+  proíbe `docker compose pull` direto e testes com doubles cobrem recuperação, limite e erro fatal.
 - **Estado operacional observado:** Argos terminou saudável (`UP`, Brave configurado) mesmo após o
   cancelamento do runner; Product AI e FEO permaneceram parados; o backend do Lead Portal permaneceu
   `unhealthy`. A correção deste loop é versionada e não autoriza publicação fora de PR.

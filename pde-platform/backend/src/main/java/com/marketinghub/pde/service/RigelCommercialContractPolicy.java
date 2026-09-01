@@ -127,6 +127,7 @@ final class RigelCommercialContractPolicy {
                 serviceScope,
                 product.publicProofs(),
                 product.commercialProcess(),
-                product.commercialBinding());
+                product.commercialBinding(),
+                product.commercialCheckout());
     }
 }

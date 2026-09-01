@@ -5,25 +5,39 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/**"
+      - "scripts/docker-compose-pull-with-transient-retry.sh"
       - "scripts/docker-pull-with-transient-retry.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
+      - "scripts/install-actionlint.sh"
+      - "scripts/run-actionlint.sh"
+      - "scripts/test-actionlint-queue-support.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
+      - "scripts/test-docker-compose-pull-with-transient-retry.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
       - "lead-portal/scripts/recreate-app-services.sh"
       - "lead-portal/scripts/test-recreate-app-services.sh"
+      - "lead-portal/scripts/wait-for-app-services-health.sh"
+      - "lead-portal/scripts/test-wait-for-app-services-health.sh"
   pull_request:
     paths:
       - ".github/workflows/**"
+      - "scripts/docker-compose-pull-with-transient-retry.sh"
       - "scripts/docker-pull-with-transient-retry.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
+      - "scripts/install-actionlint.sh"
+      - "scripts/run-actionlint.sh"
+      - "scripts/test-actionlint-queue-support.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
+      - "scripts/test-docker-compose-pull-with-transient-retry.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
       - "lead-portal/scripts/recreate-app-services.sh"
       - "lead-portal/scripts/test-recreate-app-services.sh"
+      - "lead-portal/scripts/wait-for-app-services-health.sh"
+      - "lead-portal/scripts/test-wait-for-app-services-health.sh"
   workflow_dispatch:
 
 permissions:
@@ -41,21 +55,43 @@ jobs:
 
     steps:
       - name: Baixar repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Configurar Go para o Actionlint
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.26.1"
+          cache: false
 
       - name: Validar sintaxe dos contratos shell
         run: |
+          bash -n scripts/docker-compose-pull-with-transient-retry.sh
           bash -n scripts/docker-pull-with-transient-retry.sh
+          bash -n scripts/install-actionlint.sh
+          bash -n scripts/run-actionlint.sh
+          bash -n scripts/test-actionlint-queue-support.sh
           bash -n scripts/test-docker-pull-with-transient-retry.sh
+          bash -n scripts/test-docker-compose-pull-with-transient-retry.sh
           bash -n scripts/ssh-keyscan-with-retry.sh
           bash -n scripts/test-shared-vps-deploy-queue.sh
           bash -n scripts/test-shared-vps-deploy-resilience.sh
           bash -n scripts/test-ssh-keyscan-with-retry.sh
           bash -n lead-portal/scripts/recreate-app-services.sh
           bash -n lead-portal/scripts/test-recreate-app-services.sh
+          bash -n lead-portal/scripts/wait-for-app-services-health.sh
+          bash -n lead-portal/scripts/test-wait-for-app-services-health.sh
+
+      - name: Validar sintaxe dos workflows
+        run: bash scripts/run-actionlint.sh
+
+      - name: Validar suporte do Actionlint à fila ampliada
+        run: bash scripts/test-actionlint-queue-support.sh
 
       - name: Validar retry transitório do Docker
         run: bash scripts/test-docker-pull-with-transient-retry.sh
+
+      - name: Validar retry transitório do Docker Compose
+        run: bash scripts/test-docker-compose-pull-with-transient-retry.sh
 
       - name: Validar fila do host compartilhado
         run: bash scripts/test-shared-vps-deploy-queue.sh

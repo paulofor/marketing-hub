@@ -190,6 +190,9 @@ jobs:
             --exclude '.git/' \
             --exclude 'node_modules/' \
             product-discovery-worker/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
+          scp ${SSH_COMMON_ARGS} \
+            scripts/docker-compose-pull-with-transient-retry.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}/docker-compose-pull-with-transient-retry.sh"
       - name: Publish service
         run: |
           if [ -n "${GHCR_TOKEN}" ]; then
@@ -222,7 +225,7 @@ jobs:
           export ARGOS_CODEX_HOME="/root/infra/argos/codex-home"
           export ARGOS_CODEX_ENABLED="true"
 
-          docker compose "${compose_files[@]}" pull
+          bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"
           runtime_uid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -u)"
           runtime_gid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -g)"
           bash scripts/prepare-codex-runtime-home.sh \

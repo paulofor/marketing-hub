@@ -24,6 +24,7 @@ public class ExperimentDto {
   private Long nicheId;
   private Long productId;
   private String productName;
+  private Long sourceExperimentId;
   private String desireTerritoryCode;
   private String desireTerritorySnapshotJson;
   private java.util.UUID hypothesisId;
@@ -79,6 +80,7 @@ public class ExperimentDto {
   private BigDecimal mdePercent;
 
   private BigDecimal dailyBudget;
+  private BigDecimal mediaSpendLimit;
   private BigDecimal unitPrice;
   private BigDecimal cost;
   private BigDecimal totalCost;

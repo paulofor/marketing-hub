@@ -32,6 +32,8 @@ import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
+import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
+import com.marketinghub.experiment.service.createFacebookSuccessor.FacebookSuccessorReadinessResponse;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
@@ -110,6 +112,24 @@ public class ExperimentController {
   @PostMapping("/{id}/duplicate")
   public ExperimentDto duplicate(@PathVariable Long id) {
     return mapper.toDto(service.duplicate(id));
+  }
+
+  /** Cria um sucessor Facebook limpo com orçamento diário e teto total auditáveis. */
+  @Operation(
+      summary = "Criar sucessor Facebook de um experimento",
+      description =
+          "Preserva o contrato comercial e reinicia métricas, campanhas, custos, liberações e aprovações operacionais.")
+  @PostMapping("/{id}/facebook-successors")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ExperimentDto createFacebookSuccessor(
+      @PathVariable Long id, @Valid @RequestBody CreateFacebookSuccessorRequest request) {
+    return mapper.toDto(service.createFacebookSuccessor(id, request));
+  }
+
+  /** Informa à tela se deve criar um sucessor Facebook ou abrir o sucessor já existente. */
+  @GetMapping("/{id}/facebook-successor-readiness")
+  public FacebookSuccessorReadinessResponse facebookSuccessorReadiness(@PathVariable Long id) {
+    return service.facebookSuccessorReadiness(id);
   }
 
   /** Cria um experimento comercial limpo a partir de uma homologação fake aprovada. */

@@ -83,6 +83,34 @@ public class ExperimentFunnelAutoStopService {
   }
 
   /**
+   * Interrompe o experimento no primeiro gasto sincronizado que alcançar o teto total autorizado.
+   *
+   * @return {@code true} quando a trava financeira foi aplicada.
+   */
+  public boolean stopIfMediaSpendLimitReached(Experiment experiment) {
+    if (experiment == null
+        || experiment.getStatus() != ExperimentStatus.RUNNING
+        || experiment.getMediaSpendLimit() == null
+        || experiment.getMediaSpendLimit().compareTo(BigDecimal.ZERO) <= 0) {
+      return false;
+    }
+    BigDecimal campaignSpend = resolveCampaignSpend(experiment);
+    if (campaignSpend.compareTo(experiment.getMediaSpendLimit()) < 0) {
+      return false;
+    }
+    LOGGER.warn(
+        "Automatic campaign stop triggered for experiment {} after media spend limit: spend={}, mediaSpendLimit={}",
+        experiment.getId(),
+        campaignSpend,
+        experiment.getMediaSpendLimit());
+    invalidateExperimentAndRequestStops(
+        experiment,
+        FacebookCampaignStopReason.CAMPAIGN_MEDIA_SPEND_LIMIT_REACHED,
+        "teto total autorizado de mídia atingido");
+    return true;
+  }
+
+  /**
    * Mantém elegíveis a execução ativa e a pausa externa recém-reconciliada, sem reabrir estados
    * comerciais já encerrados.
    */

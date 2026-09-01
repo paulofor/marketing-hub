@@ -35,6 +35,7 @@ import ExperimentRunPanel from "./ExperimentRunPanel";
 import LandingTab from "./LandingTab";
 import ExperimentVideoTab from "./ExperimentVideoTab";
 import ExperimentProcessInstanceTab from "./ExperimentProcessInstanceTab";
+import ExperimentFacebookSuccessorPanel from "./ExperimentFacebookSuccessorPanel";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
@@ -2067,6 +2068,43 @@ export default function ExperimentDetailPage() {
           <span className="badge bg-secondary">{data.status}</span>
         </div>
       </div>
+      <ExperimentFacebookSuccessorPanel experiment={data} />
+      {data.platform === "FACEBOOK" ? (
+        <section className="card mt-3" aria-label="Controle financeiro da mídia">
+          <div className="card-body py-3 d-flex flex-wrap gap-4">
+            <div>
+              <div className="small text-muted">Orçamento diário</div>
+              <strong>
+                {data.dailyBudget != null
+                  ? data.dailyBudget.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  : "Não definido"}
+              </strong>
+            </div>
+            <div>
+              <div className="small text-muted">Teto total de mídia</div>
+              <strong>
+                {data.mediaSpendLimit != null
+                  ? data.mediaSpendLimit.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
+                  : "Não definido"}
+              </strong>
+            </div>
+            <div>
+              <div className="small text-muted">Período autorizado</div>
+              <strong>
+                {data.startDate && data.endDate
+                  ? `${data.startDate} a ${data.endDate}`
+                  : "Não definido"}
+              </strong>
+            </div>
+          </div>
+        </section>
+      ) : null}
       {isPdeMembershipSubscriptionFunnel ? (
         <section
           className="experiment-pde-spotlight mt-3"

@@ -41,6 +41,7 @@ import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -177,12 +178,34 @@ class ExperimentReadinessServiceTest {
     assertThat(summary.runningGateRequirements()).allMatch(requirement -> requirement.ready());
   }
 
+  /** Bloqueia a publicação Meta quando o teto total não acompanha o orçamento diário. */
+  @Test
+  void shouldBlockFacebookCampaignWithoutAuthorizedMediaSpendLimit() {
+    Long experimentId = 801L;
+    Experiment experiment = buildExperiment(experimentId, 811L);
+    experiment.setMediaSpendLimit(null);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .contains(ExperimentReadinessIssueType.BUDGET);
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("MEDIA_BUDGET_READY"))
+        .singleElement()
+        .satisfies(requirement -> assertThat(requirement.ready()).isFalse());
+    assertThat(service.computeMissingConfiguration(experiment)).contains("mediaSpendLimit");
+  }
+
   /** Garante que abordagem individual preserve gates comerciais sem exigir segmentação Meta. */
   @Test
   void shouldTreatMetaTargetingAsNotApplicableForDirectOneToOneChannel() {
     Long experimentId = 81L;
     Experiment experiment = buildExperiment(experimentId, 91L);
     experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    clearMediaSpendPlan(experiment);
     LeadPortalFlow flow = new LeadPortalFlow();
     flow.setApproved(true);
     experiment.setLeadPortalFlow(flow);
@@ -711,6 +734,7 @@ class ExperimentReadinessServiceTest {
     Experiment experiment = buildExperiment(experimentId, 79L);
     experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
     experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    clearMediaSpendPlan(experiment);
     experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
     experiment.setFollowUpActionUrl("https://v7.clubemusa.com.br");
     experiment.setProduct(Product.builder().id(4L).build());
@@ -745,6 +769,7 @@ class ExperimentReadinessServiceTest {
     Experiment experiment = buildExperiment(experimentId, 79L);
     experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
     experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    clearMediaSpendPlan(experiment);
     experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
     experiment.setProduct(Product.builder().id(9L).slug("kit-whatsapp-pronto").build());
 
@@ -776,6 +801,7 @@ class ExperimentReadinessServiceTest {
     Experiment experiment = buildExperiment(experimentId, 79L);
     experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
     experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    clearMediaSpendPlan(experiment);
     experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
     experiment.setProduct(
         Product.builder()
@@ -990,7 +1016,20 @@ class ExperimentReadinessServiceTest {
     experiment.setNiche(niche);
     experiment.setHypothesisRef(hypothesis);
     experiment.setCreativeApproved(true);
+    experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+    experiment.setDailyBudget(new BigDecimal("20.00"));
+    experiment.setMediaSpendLimit(new BigDecimal("100.00"));
+    experiment.setStartDate(LocalDate.of(2026, 9, 1));
+    experiment.setEndDate(LocalDate.of(2026, 9, 5));
     return experiment;
+  }
+
+  /** Remove qualquer verba Meta do cenário que usa abordagem individual consentida. */
+  private void clearMediaSpendPlan(Experiment experiment) {
+    experiment.setDailyBudget(null);
+    experiment.setMediaSpendLimit(null);
+    experiment.setStartDate(null);
+    experiment.setEndDate(null);
   }
 
   /** Preenche o contrato comercial mínimo gerado pela etapa Oferta. */

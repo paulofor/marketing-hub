@@ -50,6 +50,7 @@ public class CreateExperimentRequest {
   private BigDecimal mdePercent;
 
   private BigDecimal dailyBudget;
+  private BigDecimal mediaSpendLimit;
   private BigDecimal unitPrice;
   private BigDecimal cost;
   private BigDecimal expense;

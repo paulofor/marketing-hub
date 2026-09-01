@@ -189,6 +189,11 @@ ao Aprovador Meta para reescrita semântica antes de uma nova tentativa.
    `dailyBudget` do experimento (em reais), convertido para centavos antes do
    POST; somente na ausência desse valor o worker recorre ao
    `adSetDailyBudget` configurado na conta da Meta.
+   O `mediaSpendLimit` é convertido em centavos e enviado como `spend_cap`
+   nativo da campanha, sem criar `daily_budget` ou `lifetime_budget` na
+   campanha. No primeiro Insights em que `spend` alcançar esse mesmo teto, o
+   worker também solicita pausa diretamente na Meta antes de reportar a
+   métrica ao backend, como defesa adicional.
 4. **Imagem do criativo (pré-validação)**: antes de enviar a criação da
    campanha para a Meta, o worker executa uma checagem prévia dos URLs de imagem
    dos criativos e registra o resultado em log (`success`/`fallback`) para cada

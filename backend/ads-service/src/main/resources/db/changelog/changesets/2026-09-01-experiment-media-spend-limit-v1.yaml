@@ -1,0 +1,124 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-experiment-media-spend-limit-v1-1
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: media_spend_limit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+              ADD COLUMN media_spend_limit DECIMAL(10, 2) NULL AFTER daily_budget;
+
+  - changeSet:
+      id: 2026-09-01-experiment-media-spend-limit-v1-2-source
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: source_experiment_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+              ADD COLUMN source_experiment_id BIGINT NULL AFTER product_id;
+
+  - changeSet:
+      id: 2026-09-01-experiment-media-spend-limit-v1-3-source-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: experiment
+            columnName: source_experiment_id
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.statistics
+              WHERE table_schema = DATABASE()
+                AND table_name = 'experiment'
+                AND index_name = 'uk_experiment_source_platform';
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE UNIQUE INDEX uk_experiment_source_platform
+              ON experiment (source_experiment_id, platform);
+
+  - changeSet:
+      id: 2026-09-01-experiment-media-spend-limit-v1-4-source-fk
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: experiment
+            columnName: source_experiment_id
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.table_constraints
+              WHERE constraint_schema = DATABASE()
+                AND table_name = 'experiment'
+                AND constraint_name = 'fk_experiment_source';
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+              ADD CONSTRAINT fk_experiment_source
+              FOREIGN KEY (source_experiment_id) REFERENCES experiment (id);
+
+  - changeSet:
+      id: 2026-09-01-experiment-media-spend-limit-v1-5-stop-reason-repair
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: facebook_ads_campaign
+            columnName: stop_reason
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'facebook_ads_campaign'
+                AND column_name = 'stop_reason'
+                AND data_type = 'varchar'
+                AND character_maximum_length >= 100
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE facebook_ads_campaign
+              MODIFY stop_reason VARCHAR(100) NULL;

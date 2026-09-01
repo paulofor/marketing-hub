@@ -205,6 +205,51 @@ paths:
       responses:
         '200':
           description: Experimento duplicado
+  /api/experiments/{id}/facebook-successor-readiness:
+    get:
+      tags: [Experiments]
+      summary: Consultar prontidão para criar um sucessor Facebook
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Decisão canônica e sucessor já existente, quando houver
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacebookSuccessorReadinessResponse'
+  /api/experiments/{id}/facebook-successors:
+    post:
+      tags: [Experiments]
+      summary: Criar sucessor Facebook segregado
+      description: Preserva o contrato comercial e reinicia campanhas, métricas, custos, liberações e aprovações operacionais.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFacebookSuccessorRequest'
+      responses:
+        '201':
+          description: Sucessor Facebook criado em PLANNED, sem publicação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '409':
+          description: Origem incompleta ou sucessor já existente
   /api/experiments/{id}/costs/reset:
     post:
       tags: [Experiments]
@@ -1594,6 +1639,13 @@ components:
         endDate:
           type: string
           format: date
+        dailyBudget:
+          type: number
+          format: decimal
+        mediaSpendLimit:
+          type: number
+          format: decimal
+          description: Teto total autorizado para gasto de mídia do experimento.
         journeyTemplateId:
           type: integer
           format: int64
@@ -1609,6 +1661,10 @@ components:
       properties:
         id:
           type: integer
+        sourceExperimentId:
+          type: integer
+          format: int64
+          nullable: true
         name:
           type: string
         hypothesis:
@@ -1640,6 +1696,58 @@ components:
           type: integer
         journeyTemplateName:
           type: string
+        dailyBudget:
+          type: number
+          format: decimal
+          nullable: true
+        mediaSpendLimit:
+          type: number
+          format: decimal
+          nullable: true
+    CreateFacebookSuccessorRequest:
+      type: object
+      required:
+        - dailyBudget
+        - mediaSpendLimit
+        - startDate
+        - endDate
+        - facebookPageId
+        - instagramAccountId
+      properties:
+        dailyBudget:
+          type: number
+          format: decimal
+          minimum: 0.01
+        mediaSpendLimit:
+          type: number
+          format: decimal
+          minimum: 0.01
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        facebookPageId:
+          type: integer
+          format: int64
+        instagramAccountId:
+          type: integer
+          format: int64
+    FacebookSuccessorReadinessResponse:
+      type: object
+      required: [available, blockers]
+      properties:
+        available:
+          type: boolean
+        existingSuccessorId:
+          type: integer
+          format: int64
+          nullable: true
+        blockers:
+          type: array
+          items:
+            type: string
     ExperimentConstruction:
       type: object
       properties:

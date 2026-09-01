@@ -47,6 +47,7 @@ interface FormData {
   baselineCvr: string;
   targetCvr: string;
   dailyBudget: string;
+  mediaSpendLimit: string;
   unitPrice: string;
   followUpActionUrl: string;
   startDate: string;
@@ -110,6 +111,7 @@ export default function EditExperimentPage() {
       baselineCvr: "",
       targetCvr: "",
       dailyBudget: "",
+      mediaSpendLimit: "",
       unitPrice: "",
       followUpActionUrl: "",
       startDate: "",
@@ -156,6 +158,10 @@ export default function EditExperimentPage() {
         dailyBudget:
           data.dailyBudget != null && data.dailyBudget > 0
             ? String(data.dailyBudget)
+            : "",
+        mediaSpendLimit:
+          data.mediaSpendLimit != null && data.mediaSpendLimit > 0
+            ? String(data.mediaSpendLimit)
             : "",
         unitPrice: data.unitPrice != null ? String(data.unitPrice) : "",
         followUpActionUrl: data.followUpActionUrl ?? "",
@@ -471,6 +477,20 @@ export default function EditExperimentPage() {
         alert("Informe um orçamento diário válido ou deixe o campo vazio");
         return;
       }
+      const parsedMediaSpendLimit = parseOptionalPositiveAmount(
+        values.mediaSpendLimit,
+      );
+      if (parsedMediaSpendLimit === null) {
+        alert("Informe um teto total de mídia válido ou deixe o campo vazio");
+        return;
+      }
+      if (
+        values.platform === "FACEBOOK" &&
+        ((parsedDailyBudget == null) !== (parsedMediaSpendLimit == null))
+      ) {
+        alert("Orçamento diário e teto total de mídia devem ser informados juntos");
+        return;
+      }
       const parsedKpiTarget = parseOptionalPositiveAmount(values.kpiTarget);
       if (parsedKpiTarget === null) {
         alert("Informe uma meta de KPI válida ou deixe o campo vazio");
@@ -570,6 +590,7 @@ export default function EditExperimentPage() {
             : "LEADS",
         kpiTarget: parsedKpiTarget,
         dailyBudget: parsedDailyBudget ?? null,
+        mediaSpendLimit: parsedMediaSpendLimit ?? null,
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
@@ -735,6 +756,9 @@ export default function EditExperimentPage() {
                         register("platform").onChange(event);
                         if (event.target.value === "DIRECT_ONE_TO_ONE") {
                           setValue("dailyBudget", "", { shouldDirty: true });
+                          setValue("mediaSpendLimit", "", {
+                            shouldDirty: true,
+                          });
                           setValue("kpiTarget", "", { shouldDirty: true });
                           setValue("metricPresetId", "", {
                             shouldDirty: true,
@@ -1002,6 +1026,25 @@ export default function EditExperimentPage() {
                         type="number"
                         {...register("kpiTarget")}
                       />
+                    </div>
+                  )}
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label className="form-label" htmlFor="mediaSpendLimit">
+                        Teto total de mídia
+                      </label>
+                      <input
+                        id="mediaSpendLimit"
+                        className="form-control"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...register("mediaSpendLimit")}
+                      />
+                      <div className="form-text">
+                        O Hub solicita pausa assim que o gasto sincronizado
+                        atingir este valor.
+                      </div>
                     </div>
                   )}
                   {platformValue === "FACEBOOK" && (

@@ -30,6 +30,7 @@ export interface UpdateExperiment {
   targetCvr?: number;
   mde?: number;
   dailyBudget?: number | null;
+  mediaSpendLimit?: number | null;
   unitPrice?: number | null;
   cost?: number | null;
   expense?: number | null;

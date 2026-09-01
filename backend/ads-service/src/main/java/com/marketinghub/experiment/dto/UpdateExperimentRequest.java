@@ -50,6 +50,8 @@ public class UpdateExperimentRequest {
   private BigDecimal mdePercent;
 
   private BigDecimal dailyBudget;
+  private BigDecimal mediaSpendLimit;
+  @JsonIgnore private boolean mediaSpendLimitPresent;
   private BigDecimal unitPrice;
   @JsonIgnore private boolean unitPricePresent;
   private BigDecimal cost;
@@ -216,6 +218,13 @@ public class UpdateExperimentRequest {
   public void setDailyBudget(BigDecimal dailyBudget) {
     this.dailyBudget = dailyBudget;
     this.dailyBudgetPresent = true;
+  }
+
+  /** Registra a presença do teto total de mídia no payload de atualização. */
+  @JsonSetter(value = "mediaSpendLimit", nulls = Nulls.SET)
+  public void setMediaSpendLimit(BigDecimal mediaSpendLimit) {
+    this.mediaSpendLimit = mediaSpendLimit;
+    this.mediaSpendLimitPresent = true;
   }
 
   @JsonSetter(value = "unitPrice", nulls = Nulls.SET)

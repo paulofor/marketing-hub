@@ -261,7 +261,7 @@ public class FacebookAdsCampaignController {
   }
 
   @GetMapping("/metrics/sync-targets")
-  // Lista campanhas em execução e campanhas encerradas sem fechamento final de métricas.
+  /** Lista campanhas que precisam de métricas e inclui o teto financeiro do experimento. */
   public List<CampaignMetricsSyncTarget> metricsSyncTargets() {
     return campaignRepository
         .findMetricsSyncTargets(ExperimentStatus.RUNNING, METRICS_SETTLEMENT_STATUSES)
@@ -269,7 +269,10 @@ public class FacebookAdsCampaignController {
         .map(
             c ->
                 new CampaignMetricsSyncTarget(
-                    c.getId(), c.getExperiment().getId(), c.getMetricsLastSyncedAt()))
+                    c.getId(),
+                    c.getExperiment().getId(),
+                    c.getExperiment().getMediaSpendLimit(),
+                    c.getMetricsLastSyncedAt()))
         .toList();
   }
 
@@ -575,10 +578,13 @@ public class FacebookAdsCampaignController {
     }
   }
 
-  // Executa regras derivadas da métrica sem impedir a persistência do gasto oficial da Meta.
+  /** Executa travas derivadas sem impedir a persistência do gasto oficial recebido da Meta. */
   private void evaluateMetricsSideEffectsSafely(
       FacebookAdsCampaign campaign, ExperimentCampaignMetric metric) {
     try {
+      if (funnelAutoStopService.stopIfMediaSpendLimitReached(campaign.getExperiment())) {
+        return;
+      }
       funnelAutoStopService.stopIfNoPrimaryResultAfterMinimumSpend(campaign.getExperiment());
       funnelAutoStopService.stopIfAnyPrioritizedStageStatisticallyFailed(campaign.getExperiment());
       funnelAutoStopService.stopIfLowImpressionsAfterRunningTime(
@@ -895,7 +901,7 @@ public class FacebookAdsCampaignController {
     return videoData.toString();
   }
 
-  // Executa a operação toSummary da integração Facebook Ads.
+  /** Monta o contrato enxuto do experimento consumido pelo publicador Facebook. */
   private ExperimentSummary toSummary(
       Experiment experiment, LeadPortalExperimentMetricsDto leadPortalMetrics) {
     String pageId = resolveExperimentPageId(experiment);
@@ -914,6 +920,7 @@ public class FacebookAdsCampaignController {
         experiment.getNiche() != null ? experiment.getNiche().getFacebookPixelId() : null,
         experiment.getKpiTargetCpl(),
         experiment.getDailyBudget(),
+        experiment.getMediaSpendLimit(),
         experiment.getStartDate(),
         experiment.getEndDate(),
         experiment.getNiche() != null ? experiment.getNiche().getName() : null,
@@ -1151,6 +1158,7 @@ public class FacebookAdsCampaignController {
       String facebookPixelId,
       BigDecimal kpiTargetCpl,
       BigDecimal dailyBudget,
+      BigDecimal mediaSpendLimit,
       LocalDate startDate,
       LocalDate endDate,
       String nicheName,
@@ -1232,7 +1240,7 @@ public class FacebookAdsCampaignController {
       boolean requiredCollectorsPresent) {}
 
   public record CampaignMetricsSyncTarget(
-      String campaignId, Long experimentId, Instant lastSyncedAt) {}
+      String campaignId, Long experimentId, BigDecimal mediaSpendLimit, Instant lastSyncedAt) {}
 
   public record CampaignMetricsUpdateRequest(
       LocalDate dateStart,

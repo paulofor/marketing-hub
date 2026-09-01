@@ -22,6 +22,8 @@ import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepo
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
+import java.math.BigDecimal;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -161,6 +163,7 @@ public class ExperimentReadinessService {
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
     boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;
+    boolean mediaBudgetReady = hasReadyMediaBudget(experiment);
     boolean commercialMaterialReady = hasCreatives || pdeOperationalEvidenceReady;
     boolean landingAssetLineageReady =
         pdeOperationalEvidenceReady
@@ -168,6 +171,15 @@ public class ExperimentReadinessService {
                 experimentId, currentLandingHtml);
 
     List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
+    if (!mediaBudgetReady) {
+      issues.add(
+          new ExperimentReadinessIssueDto(
+              ExperimentReadinessIssueType.BUDGET,
+              "Teto de mídia incompleto",
+              "Campanha Meta exige orçamento diário, teto total e período compatíveis.",
+              "Defina um período cujo total planejado não ultrapasse o teto autorizado.",
+              List.of()));
+    }
     if (!commercialMaterialReady) {
       issues.add(
           new ExperimentReadinessIssueDto(
@@ -413,6 +425,18 @@ public class ExperimentReadinessService {
                     ? "Salve ao menos um interesse, cargo ou comportamento aprovado."
                     : "Preserve a lista consentida, a origem e a atribuição de cada contato."),
             runningRequirement(
+                "MEDIA_BUDGET_READY",
+                requiresMetaTargeting ? "Teto de mídia configurado" : "Sem gasto de mídia",
+                mediaBudgetReady,
+                requiresMetaTargeting
+                    ? mediaBudgetReady
+                        ? "Orçamento diário, teto total e período estão coerentes."
+                        : "O orçamento planejado não possui uma trava financeira completa."
+                    : "O canal individual não autoriza gasto de mídia.",
+                requiresMetaTargeting
+                    ? "Defina orçamento diário, teto total e período compatíveis."
+                    : "Mantenha orçamento e teto de mídia vazios."),
+            runningRequirement(
                 "NO_BLOCKING_STAGES",
                 "Sem etapas bloqueantes",
                 blockingStagesCompleted,
@@ -498,6 +522,36 @@ public class ExperimentReadinessService {
     return issues.isEmpty();
   }
 
+  /** Confirma a ausência de verba no canal direto ou um plano financeiro completo no Facebook. */
+  private boolean hasReadyMediaBudget(Experiment experiment) {
+    if (experiment == null) {
+      return false;
+    }
+    if (experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      return isNullOrNonPositive(experiment.getDailyBudget())
+          && isNullOrNonPositive(experiment.getMediaSpendLimit());
+    }
+    BigDecimal dailyBudget = experiment.getDailyBudget();
+    BigDecimal mediaSpendLimit = experiment.getMediaSpendLimit();
+    if (dailyBudget == null
+        || dailyBudget.compareTo(BigDecimal.ZERO) <= 0
+        || mediaSpendLimit == null
+        || mediaSpendLimit.compareTo(dailyBudget) < 0
+        || experiment.getStartDate() == null
+        || experiment.getEndDate() == null
+        || experiment.getStartDate().isAfter(experiment.getEndDate())) {
+      return false;
+    }
+    long inclusiveDays =
+        ChronoUnit.DAYS.between(experiment.getStartDate(), experiment.getEndDate()) + 1;
+    return dailyBudget.multiply(BigDecimal.valueOf(inclusiveDays)).compareTo(mediaSpendLimit) <= 0;
+  }
+
+  /** Trata zero legado como ausência de verba para experimentos de canal direto. */
+  private boolean isNullOrNonPositive(BigDecimal value) {
+    return value == null || value.compareTo(BigDecimal.ZERO) <= 0;
+  }
+
   /** Verifica se o experimento já pode entrar na fila de campanha paga. */
   public boolean isReadyForCampaign(Experiment experiment) {
     return computeMissingConfiguration(experiment).isEmpty();
@@ -506,6 +560,27 @@ public class ExperimentReadinessService {
   /** Lista as configurações faltantes que bloqueiam publicação de campanha. */
   public List<String> computeMissingConfiguration(Experiment experiment) {
     List<String> missing = new ArrayList<>();
+    if (experiment != null && experiment.getPlatform() == ExperimentPlatform.FACEBOOK) {
+      if (experiment.getDailyBudget() == null
+          || experiment.getDailyBudget().compareTo(BigDecimal.ZERO) <= 0) {
+        missing.add("dailyBudget");
+      }
+      if (experiment.getMediaSpendLimit() == null
+          || experiment.getMediaSpendLimit().compareTo(BigDecimal.ZERO) <= 0) {
+        missing.add("mediaSpendLimit");
+      }
+      if (experiment.getStartDate() == null) {
+        missing.add("startDate");
+      }
+      if (experiment.getEndDate() == null) {
+        missing.add("endDate");
+      }
+      if (!hasReadyMediaBudget(experiment)
+          && !missing.contains("mediaSpendLimit")
+          && !missing.contains("dailyBudget")) {
+        missing.add("mediaSpendPlan");
+      }
+    }
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
     boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;

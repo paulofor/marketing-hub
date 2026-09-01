@@ -15,6 +15,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /** Testa o mapeamento das métricas de campanha coletadas na Meta. */
@@ -155,6 +156,60 @@ class FacebookCampaignMetricsServiceTest {
         verify(facebookAdsService).pauseCampaign("cmp-1");
     }
 
+    /** Garante a pausa imediata na Meta quando o gasto alcança o teto autorizado. */
+    @Test
+    void pauseCampaignIfMediaSpendLimitReachedPausesMetaCampaign() throws Exception {
+        FacebookAdsService facebookAdsService = mock(FacebookAdsService.class);
+        FacebookCampaignMetricsService service = service(facebookAdsService);
+        var target = new FacebookCampaignMetricsService.CampaignMetricsSyncTarget(
+                "cmp-limit", 90L, new BigDecimal("100.00"), null);
+        var payload = new FacebookCampaignMetricsService.CampaignMetricsUpdateRequest(
+                LocalDate.parse("2026-09-05"),
+                LocalDate.parse("2026-09-05"),
+                4000L,
+                5000L,
+                300L,
+                7L,
+                new BigDecimal("100.00"));
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "pauseCampaignIfMediaSpendLimitReached",
+                FacebookCampaignMetricsService.CampaignMetricsSyncTarget.class,
+                FacebookCampaignMetricsService.CampaignMetricsUpdateRequest.class);
+        method.setAccessible(true);
+        boolean paused = (boolean) method.invoke(service, target, payload);
+
+        assertThat(paused).isTrue();
+        verify(facebookAdsService).pauseCampaign("cmp-limit");
+    }
+
+    /** Mantém a Meta ativa antes de alcançar o teto autorizado. */
+    @Test
+    void pauseCampaignIfMediaSpendLimitReachedWaitsForLimit() throws Exception {
+        FacebookAdsService facebookAdsService = mock(FacebookAdsService.class);
+        FacebookCampaignMetricsService service = service(facebookAdsService);
+        var target = new FacebookCampaignMetricsService.CampaignMetricsSyncTarget(
+                "cmp-limit", 90L, new BigDecimal("100.00"), null);
+        var payload = new FacebookCampaignMetricsService.CampaignMetricsUpdateRequest(
+                LocalDate.parse("2026-09-05"),
+                LocalDate.parse("2026-09-05"),
+                4000L,
+                5000L,
+                300L,
+                7L,
+                new BigDecimal("99.99"));
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "pauseCampaignIfMediaSpendLimitReached",
+                FacebookCampaignMetricsService.CampaignMetricsSyncTarget.class,
+                FacebookCampaignMetricsService.CampaignMetricsUpdateRequest.class);
+        method.setAccessible(true);
+        boolean paused = (boolean) method.invoke(service, target, payload);
+
+        assertThat(paused).isFalse();
+        verify(facebookAdsService, never()).pauseCampaign("cmp-limit");
+    }
+
     /** Garante que a trava emergencial nao dispara antes do piso financeiro. */
     @Test
     void shouldEmergencyPauseWaitsForMinimumSpend() throws Exception {
@@ -181,7 +236,7 @@ class FacebookCampaignMetricsServiceTest {
     @Test
     void isValidSyncTargetRejectsBlankCampaignId() throws Exception {
         FacebookCampaignMetricsService service = service();
-        var target = new FacebookCampaignMetricsService.CampaignMetricsSyncTarget("", 66L, null);
+        var target = new FacebookCampaignMetricsService.CampaignMetricsSyncTarget("", 66L, null, null);
 
         Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
                 "isValidSyncTarget",

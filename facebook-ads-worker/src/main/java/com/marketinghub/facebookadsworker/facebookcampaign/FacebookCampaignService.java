@@ -491,7 +491,8 @@ public class FacebookCampaignService {
                     () -> facebookAdsService.createCampaign(
                         config.adAccountId(),
                         exp.name(),
-                        resolvedCampaignObjective
+                        resolvedCampaignObjective,
+                        resolveMediaSpendLimit(exp)
                     )
                 );
             } catch (FacebookAccessTokenExpiredException ex) {
@@ -989,6 +990,15 @@ public class FacebookCampaignService {
         return config.adSetDailyBudget();
     }
 
+    /** Converte o teto total autorizado em centavos para o `spend_cap` nativo da campanha Meta. */
+    private String resolveMediaSpendLimit(Experiment experiment) {
+        BigDecimal mediaSpendLimit = experiment.mediaSpendLimit();
+        if (mediaSpendLimit == null || mediaSpendLimit.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Experiment media spend limit must be greater than zero");
+        }
+        return mediaSpendLimit.movePointRight(2).setScale(0, RoundingMode.HALF_UP).toPlainString();
+    }
+
     /**
      * Bloqueia a publicação quando a página selecionada não está conectada ao Instagram do experimento.
      */
@@ -1286,6 +1296,7 @@ public class FacebookCampaignService {
         String pageId,
         String facebookPixelId,
         BigDecimal dailyBudget,
+        BigDecimal mediaSpendLimit,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
         FacebookPage facebookPage,
         InstagramAccount instagramAccount,

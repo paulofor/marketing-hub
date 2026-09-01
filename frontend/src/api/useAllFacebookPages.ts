@@ -3,7 +3,7 @@ import axios from "axios";
 import type { FacebookAccount } from "./useFacebookAccounts";
 import type { FacebookPage } from "./useFacebookPages";
 
-export function useAllFacebookPages() {
+export function useAllFacebookPages(enabled = true) {
   return useQuery({
     queryKey: ["facebook-pages", "all"],
     queryFn: async () => {
@@ -26,6 +26,7 @@ export function useAllFacebookPages() {
 
       return pagesByAccount.flat();
     },
+    enabled,
     staleTime: 1000 * 60 * 5,
   });
 }

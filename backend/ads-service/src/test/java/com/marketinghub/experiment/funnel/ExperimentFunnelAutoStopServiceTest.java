@@ -95,6 +95,42 @@ class ExperimentFunnelAutoStopServiceTest {
     assertThat(campaign.getStopLastError()).isNull();
   }
 
+  /** Garante que o teto total invalida a execução e pede a pausa da campanha. */
+  @Test
+  void stopsCampaignWhenAuthorizedMediaSpendLimitIsReached() {
+    experiment.setMediaSpendLimit(new BigDecimal("100.00"));
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metricWithSpend("100.00")));
+    FacebookAdsCampaign campaign = campaign("camp-media-limit");
+    when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+    boolean stopped = service.stopIfMediaSpendLimitReached(experiment);
+
+    assertThat(stopped).isTrue();
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+    assertThat(campaign.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_MEDIA_SPEND_LIMIT_REACHED);
+    assertThat(campaign.getStopRequestedAt()).isNotNull();
+    verify(runMetricLifecycleService)
+        .completeCommercialStop(
+            experiment,
+            FacebookCampaignStopReason.CAMPAIGN_MEDIA_SPEND_LIMIT_REACHED,
+            "teto total autorizado de mídia atingido");
+  }
+
+  /** Mantém a campanha ativa enquanto o gasto sincronizado estiver abaixo do teto. */
+  @Test
+  void keepsCampaignRunningBeforeAuthorizedMediaSpendLimit() {
+    experiment.setMediaSpendLimit(new BigDecimal("100.00"));
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metricWithSpend("99.99")));
+
+    boolean stopped = service.stopIfMediaSpendLimitReached(experiment);
+
+    assertThat(stopped).isFalse();
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+  }
+
   /**
    * Garante que a liquidação final invalida o experimento e corrige a causa mesmo após a Meta ter
    * sido reconciliada como pausa externa.

@@ -89,6 +89,23 @@ class FacebookAdsServiceTest {
         assertEquals("456", id);
     }
 
+    /** Garante teto nativo sem mover o orçamento diário do conjunto para a campanha. */
+    @Test
+    void createCampaignSendsSpendCapWithoutCampaignBudget() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"789\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        String id = service.createCampaign("1", "Vega", "OUTCOME_SALES", "10000");
+
+        RecordedRequest request = takeRequest("campaign with spend cap");
+        JsonNode body = objectMapper.readTree(request.getBody().inputStream());
+        assertEquals("10000", body.get("spend_cap").asText());
+        assertFalse(body.has("daily_budget"));
+        assertFalse(body.has("lifetime_budget"));
+        assertFalse(body.get("is_adset_budget_sharing_enabled").asBoolean());
+        assertEquals("789", id);
+    }
+
     @Test
     void createAdSetPostsCorrectRequest() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"id\":\"222\"}")

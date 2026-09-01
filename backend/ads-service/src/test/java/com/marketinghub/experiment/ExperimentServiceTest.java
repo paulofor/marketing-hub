@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
@@ -17,6 +18,7 @@ import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
 import com.marketinghub.experiment.run.ExperimentRunStopPolicy;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
@@ -30,6 +32,7 @@ import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
@@ -46,6 +49,7 @@ import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +84,7 @@ class ExperimentServiceTest {
   @Autowired TargetingElementRepository targetingElementRepository;
   @Autowired InstagramAccountRepository instagramAccountRepository;
   @Autowired FacebookAccountRepository facebookAccountRepository;
+  @Autowired FacebookPageRepository facebookPageRepository;
   @Autowired FacebookAdsCampaignRepository facebookAdsCampaignRepository;
   @Autowired GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
   @Autowired GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
@@ -219,6 +224,157 @@ class ExperimentServiceTest {
     assertThat(service.listPendingCreativeGeneration(10))
         .extracting(Experiment::getId)
         .contains(requested.getId());
+  }
+
+  /** Cria um sucessor Facebook limpo, com teto total e sem herdar execução do canal direto. */
+  @Test
+  void createFacebookSuccessorKeepsCommercialContractAndSegregatesExecution() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Vega sucessor Facebook").build());
+    Product product = productRepository.findById(testProductId).orElseThrow();
+    product.setMarketNiche(niche);
+    productRepository.save(product);
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Espelho antes de sair").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(product)
+                .title("VEGA-H003")
+                .premiseAngle(angle)
+                .promise("Presença percebida em poucos minutos")
+                .problem("A imagem parece comum mesmo depois de se arrumar")
+                .persona("Mulher que quer presença sem comprar roupa nova")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+    Experiment source =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("VEGA-H003-E001")
+                .creationSource(ExperimentCreationSource.MANUAL_FLOW)
+                .hypothesis("Espelho antes de sair")
+                .singlePain("Sinto que falta presença quando estou pronta")
+                .funnelPromise("Descobrir o sinal que apaga sua presença")
+                .primaryCta("Descobrir meu sinal")
+                .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .hypothesisRef(hypothesis)
+                .unitPrice(new BigDecimal("67.00"))
+                .status(ExperimentStatus.RUNNING)
+                .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
+                .stage(ExperimentStage.AD)
+                .primaryVariable("Reconhecimento íntimo")
+                .primaryMetric("Compra aprovada")
+                .followUpActionUrl("https://v7.clubemusa.com.br")
+                .commercialCheckoutUrl("https://go.pepper.com.br/owm6x")
+                .build());
+    FacebookAccount account =
+        facebookAccountRepository.save(
+            FacebookAccount.builder().name("Conta Vega").adAccountId("act_vega_successor").build());
+    FacebookPage page =
+        facebookPageRepository.save(
+            FacebookPage.builder()
+                .account(account)
+                .pageId("page-vega")
+                .name("Produtividade 360")
+                .build());
+    InstagramAccount instagram = createInstagramAccount();
+
+    Experiment successor =
+        service.createFacebookSuccessor(
+            source.getId(),
+            new CreateFacebookSuccessorRequest(
+                new BigDecimal("20.00"),
+                new BigDecimal("100.00"),
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 5),
+                page.getId(),
+                instagram.getId()));
+
+    assertThat(successor.getSourceExperiment().getId()).isEqualTo(source.getId());
+    assertThat(successor.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
+    assertThat(successor.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+    assertThat(successor.getDailyBudget()).isEqualByComparingTo("20.00");
+    assertThat(successor.getMediaSpendLimit()).isEqualByComparingTo("100.00");
+    assertThat(successor.getFollowUpActionUrl()).isEqualTo("https://v7.clubemusa.com.br");
+    assertThat(successor.getCommercialCheckoutUrl()).isEqualTo("https://go.pepper.com.br/owm6x");
+    assertThat(successor.getFacebookPage().getId()).isEqualTo(page.getId());
+    assertThat(successor.getInstagramAccount().getId()).isEqualTo(instagram.getId());
+    assertThat(successor.isCreativeApproved()).isFalse();
+    assertThat(successor.getFacebookReleaseRequestedAt()).isNull();
+    assertThat(successor.getCost()).isNull();
+    assertThat(successor.getTotalCost()).isNull();
+
+    assertThatThrownBy(
+            () ->
+                service.createFacebookSuccessor(
+                    source.getId(),
+                    new CreateFacebookSuccessorRequest(
+                        new BigDecimal("20.00"),
+                        new BigDecimal("100.00"),
+                        LocalDate.of(2026, 9, 1),
+                        LocalDate.of(2026, 9, 5),
+                        page.getId(),
+                        instagram.getId())))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("sucessor Facebook já existe");
+  }
+
+  /** Recusa um período cujo gasto planejado ultrapassa o teto total autorizado. */
+  @Test
+  void createFacebookSuccessorRejectsPlanAboveAuthorizedLimit() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Vega teto Facebook").build());
+    Product product = productRepository.findById(testProductId).orElseThrow();
+    product.setMarketNiche(niche);
+    productRepository.save(product);
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Presença natural").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(product)
+                .title("VEGA-H004")
+                .premiseAngle(angle)
+                .promise("Presença percebida")
+                .problem("Falta acabamento")
+                .persona("Mulher que se arruma")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+    Experiment source =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("VEGA-H004-E001")
+                .hypothesisRef(hypothesis)
+                .status(ExperimentStatus.RUNNING)
+                .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
+                .followUpActionUrl("https://v7.clubemusa.com.br")
+                .commercialCheckoutUrl("https://go.pepper.com.br/owm6x")
+                .build());
+
+    assertThatThrownBy(
+            () ->
+                service.createFacebookSuccessor(
+                    source.getId(),
+                    new CreateFacebookSuccessorRequest(
+                        new BigDecimal("20.00"),
+                        new BigDecimal("100.00"),
+                        LocalDate.of(2026, 9, 1),
+                        LocalDate.of(2026, 9, 6),
+                        1L,
+                        1L)))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("ultrapassa o teto total");
   }
 
   @Test
@@ -1043,6 +1199,9 @@ class ExperimentServiceTest {
     req.setMetricPresetId("LEAN_150_RUNNING_GUARD");
     req.setSampleSize(150);
     req.setDailyBudget(new BigDecimal("25"));
+    req.setMediaSpendLimit(new BigDecimal("125"));
+    req.setStartDate(LocalDate.of(2026, 9, 1));
+    req.setEndDate(LocalDate.of(2026, 9, 5));
     req.setJourneyTemplateId(createJourneyTemplate().getId());
     req.setLeadPortalFlowId(createLeadPortalFlow(niche));
     req.setInstagramAccountId(createInstagramAccount().getId());
@@ -1178,6 +1337,9 @@ class ExperimentServiceTest {
     req.setMetricPresetId("LEAN_150_PDE_RUNNING_GUARD");
     req.setSampleSize(150);
     req.setDailyBudget(new BigDecimal("25"));
+    req.setMediaSpendLimit(new BigDecimal("125"));
+    req.setStartDate(LocalDate.of(2026, 9, 1));
+    req.setEndDate(LocalDate.of(2026, 9, 5));
     req.setJourneyTemplateId(createJourneyTemplate().getId());
     req.setLeadPortalFlowId(createLeadPortalFlow(niche));
     req.setInstagramAccountId(createInstagramAccount().getId());
@@ -1412,6 +1574,9 @@ class ExperimentServiceTest {
     req.setKpiTargetCpl(new BigDecimal("45"));
     req.setMetricPresetId("LEAN_150_REACTIVATE");
     req.setDailyBudget(new BigDecimal("25"));
+    req.setMediaSpendLimit(new BigDecimal("125"));
+    req.setStartDate(LocalDate.of(2026, 9, 1));
+    req.setEndDate(LocalDate.of(2026, 9, 5));
     req.setJourneyTemplateId(createJourneyTemplate().getId());
     req.setLeadPortalFlowId(createLeadPortalFlow(niche));
     req.setInstagramAccountId(createInstagramAccount().getId());

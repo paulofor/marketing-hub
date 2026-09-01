@@ -110,9 +110,7 @@ public class FacebookCampaignMetricsService {
         return target != null && StringUtils.hasText(target.campaignId());
     }
 
-    /**
-     * Processa uma campanha elegível consultando insights e reportando sucesso ou erro ao backend.
-     */
+    /** Processa uma campanha elegível, aplica travas locais e reporta a métrica ao backend. */
     private void processTarget(CampaignMetricsSyncTarget target) {
         try {
             JsonNode statusSnapshot = syncStatusSnapshot(target.campaignId());
@@ -129,7 +127,10 @@ public class FacebookCampaignMetricsService {
                 reportMetricsError(target.campaignId(), "Could not parse insights payload");
                 return;
             }
-            pauseCampaignIfNoLeadsAfterMinimumSpend(target.campaignId(), payload);
+            boolean pausedByAuthorizedLimit = pauseCampaignIfMediaSpendLimitReached(target, payload);
+            if (!pausedByAuthorizedLimit) {
+                pauseCampaignIfNoLeadsAfterMinimumSpend(target.campaignId(), payload);
+            }
             sendMetrics(target.campaignId(), payload);
         } catch (FacebookAccessTokenExpiredException ex) {
             LOGGER.warn("Facebook access token expired while fetching metrics for campaign {}", target.campaignId(), ex);
@@ -272,6 +273,43 @@ public class FacebookCampaignMetricsService {
                     campaignId,
                     payload.spend(),
                     ex);
+        }
+    }
+
+    /**
+     * Pausa diretamente na Meta quando o gasto alcança o teto total autorizado pelo experimento.
+     *
+     * @return {@code true} quando a pausa foi aplicada com sucesso.
+     */
+    private boolean pauseCampaignIfMediaSpendLimitReached(
+            CampaignMetricsSyncTarget target,
+            CampaignMetricsUpdateRequest payload) {
+        if (target == null
+                || target.mediaSpendLimit() == null
+                || target.mediaSpendLimit().compareTo(BigDecimal.ZERO) <= 0
+                || payload == null
+                || payload.spend() == null
+                || payload.spend().compareTo(target.mediaSpendLimit()) < 0) {
+            return false;
+        }
+        try {
+            facebookAdsService.pauseCampaign(target.campaignId());
+            LOGGER.warn(
+                    "Authorized media spend limit reached for Facebook campaign {}: experimentId={} spend={} mediaSpendLimit={}",
+                    target.campaignId(),
+                    target.experimentId(),
+                    payload.spend(),
+                    target.mediaSpendLimit());
+            return true;
+        } catch (Exception ex) {
+            LOGGER.warn(
+                    "Could not pause Facebook campaign {} after authorized media spend limit: experimentId={} spend={} mediaSpendLimit={}",
+                    target.campaignId(),
+                    target.experimentId(),
+                    payload.spend(),
+                    target.mediaSpendLimit(),
+                    ex);
+            return false;
         }
     }
 
@@ -465,7 +503,12 @@ public class FacebookCampaignMetricsService {
         return false;
     }
 
-    public record CampaignMetricsSyncTarget(String campaignId, long experimentId, Instant lastSyncedAt) {}
+    /** Contrato de campanha elegível com a trava financeira persistida no backend. */
+    public record CampaignMetricsSyncTarget(
+            String campaignId,
+            long experimentId,
+            BigDecimal mediaSpendLimit,
+            Instant lastSyncedAt) {}
 
     public record CampaignMetricsUpdateRequest(
             LocalDate dateStart,

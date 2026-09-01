@@ -94,6 +94,7 @@ export interface Experiment {
   nicheId: number;
   productId?: number | null;
   productName?: string | null;
+  sourceExperimentId?: number | null;
   hypothesisId: string;
   name: string;
   creationSource?: ExperimentCreationSource | null;
@@ -145,6 +146,7 @@ export interface Experiment {
   targetCvr?: number | null;
   mdePercent?: number | null;
   dailyBudget?: number | null;
+  mediaSpendLimit?: number | null;
   unitPrice?: number | null;
   cost?: number | null;
   totalCost?: number | null;

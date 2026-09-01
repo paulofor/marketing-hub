@@ -3124,3 +3124,21 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes exigem paginação e teto no repositório, preservam contagens consolidadas sem
   carregar payloads e comprovam que `getPlan` não chama sincronização nem `save`. O cânone proíbe
   histórico não paginado e escrita implícita em endpoints de leitura.
+
+## LOOP-EXPERIMENTO-META-SEM-TETO-TOTAL — orçamento diário não limita o gasto acumulado
+
+- **Data:** 2026-09-01.
+- **Sintoma:** o experimento 90 foi ativado com um teto comercial, mas permaneceu no canal direto;
+  ao avaliar um sucessor Facebook, o contrato existente oferecia apenas orçamento diário e não
+  possuía limite absoluto auditável para a mídia.
+- **Causa-raiz confirmada no frontend, backend, banco e worker:** o teto do plano comercial não era
+  um contrato operacional da campanha. O ad set recebia verba diária, enquanto o worker conservava
+  apenas uma pausa emergencial fixa para zero leads; nenhum campo limitava o gasto acumulado do
+  experimento nem separava a troca de canal da execução anterior.
+- **Correção sistêmica:** o experimento ganha `media_spend_limit` e referência opcional à origem. A
+  troca de canal cria um sucessor limpo e idempotente; o gate exige orçamento, teto e período
+  compatíveis; a campanha recebe `spend_cap` nativo e backend/worker reconciliam a pausa e sua causa.
+- **Prevenção:** testes cobrem plano acima do teto, sucessor duplicado, ausência de herança
+  operacional, prontidão sem limite e gasto em R$ 99,99/R$ 100,00 nos dois lados da integração. A
+  matriz ponta a ponta separa criação, aprovação, publicação, gasto e venda e impede que o teto do
+  plano seja interpretado como orçamento Meta.

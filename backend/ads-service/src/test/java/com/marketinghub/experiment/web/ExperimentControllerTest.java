@@ -10,6 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.ads.FacebookPage;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentPlatform;
+import com.marketinghub.experiment.ExperimentStage;
+import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.journey.model.JourneyTemplate;
@@ -17,6 +25,8 @@ import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.ads.CampaignRepository;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
@@ -70,6 +80,8 @@ class ExperimentControllerTest {
   @Autowired private JourneyTemplateRepository journeyTemplateRepository;
   @Autowired private TargetingElementRepository targetingElementRepository;
   @Autowired private InstagramAccountRepository instagramAccountRepository;
+  @Autowired private FacebookPageRepository facebookPageRepository;
+  @Autowired private FacebookAccountRepository facebookAccountRepository;
   @Autowired private com.marketinghub.repository.jpa.product.ProductRepository productRepository;
 
   @Autowired
@@ -144,6 +156,8 @@ class ExperimentControllerTest {
     leadPortalFlowRepository.saveAll(leadPortalFlows);
 
     repository.deleteAll();
+    facebookPageRepository.deleteAll();
+    facebookAccountRepository.deleteAll();
     leadPortalFlowRepository.deleteAll();
     journeyTemplateRepository.deleteAll();
     targetingElementRepository.deleteAll();
@@ -245,6 +259,108 @@ class ExperimentControllerTest {
     assertThat(saved.get(0).getJourneyTemplate().getId()).isEqualTo(template.getId());
     assertThat(saved.get(0).getProductAiSubtype())
         .isEqualTo(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+  }
+
+  /** Valida pela API a criação segregada e a decisão idempotente do sucessor Facebook. */
+  @Test
+  void facebookSuccessorEndpointsCreateOnceAndExposeCanonicalDecision() throws Exception {
+    MarketNiche niche = nicheRepo.findById(nicheId).orElseThrow();
+    var product =
+        productRepository.save(
+            com.marketinghub.product.Product.builder()
+                .slug("vega-sucessor-facebook")
+                .name("Vega")
+                .marketNiche(niche)
+                .desireAssociationMapVersion("v1")
+                .desireAssociationMapJson(
+                    "{\"territories\":[{\"code\":\"PRESENCA\",\"name\":\"Presença\"}]}")
+                .build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Espelho antes de sair").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(product)
+                .title("VEGA-H003")
+                .premiseAngle(angle)
+                .promise("Presença percebida em poucos minutos")
+                .problem("A imagem parece comum mesmo depois de se arrumar")
+                .persona("Mulher que quer presença sem comprar roupa nova")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(BigDecimal.ONE)
+                .build());
+    Experiment source =
+        repository.save(
+            Experiment.builder()
+                .niche(niche)
+                .product(product)
+                .name("VEGA-H003-E001")
+                .hypothesisRef(hypothesis)
+                .hypothesis("Espelho antes de sair")
+                .singlePain("Sinto que falta presença quando estou pronta")
+                .funnelPromise("Descobrir o sinal que apaga sua presença")
+                .primaryCta("Descobrir meu sinal")
+                .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .unitPrice(new BigDecimal("67.00"))
+                .followUpActionUrl("https://v7.clubemusa.com.br")
+                .commercialCheckoutUrl("https://go.pepper.com.br/owm6x")
+                .status(ExperimentStatus.RUNNING)
+                .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
+                .stage(ExperimentStage.AD)
+                .build());
+    FacebookAccount account =
+        facebookAccountRepository.save(
+            FacebookAccount.builder().name("Conta Vega").adAccountId("act_vega").build());
+    FacebookPage page =
+        facebookPageRepository.save(
+            FacebookPage.builder()
+                .account(account)
+                .pageId("485863027935937")
+                .name("Produtividade 360")
+                .build());
+    var instagram = fixtures.createAndSaveInstagramAccount();
+
+    mockMvc
+        .perform(get("/api/experiments/" + source.getId() + "/facebook-successor-readiness"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.available").value(true))
+        .andExpect(jsonPath("$.existingSuccessorId").doesNotExist());
+
+    String response =
+        mockMvc
+            .perform(
+                post("/api/experiments/" + source.getId() + "/facebook-successors")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        mapper.writeValueAsString(
+                            java.util.Map.of(
+                                "dailyBudget", new BigDecimal("20.00"),
+                                "mediaSpendLimit", new BigDecimal("100.00"),
+                                "startDate", LocalDate.of(2026, 9, 1),
+                                "endDate", LocalDate.of(2026, 9, 5),
+                                "facebookPageId", page.getId(),
+                                "instagramAccountId", instagram.getId()))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.sourceExperimentId").value(source.getId()))
+            .andExpect(jsonPath("$.platform").value("FACEBOOK"))
+            .andExpect(jsonPath("$.status").value("PLANNED"))
+            .andExpect(jsonPath("$.dailyBudget").value(20.0))
+            .andExpect(jsonPath("$.mediaSpendLimit").value(100.0))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    long successorId = mapper.readTree(response).path("id").asLong();
+
+    mockMvc
+        .perform(get("/api/experiments/" + source.getId() + "/facebook-successor-readiness"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.available").value(false))
+        .andExpect(jsonPath("$.existingSuccessorId").value(successorId));
+    assertThat(repository.findById(source.getId()).orElseThrow().getStatus())
+        .isEqualTo(ExperimentStatus.RUNNING);
   }
 
   /** Garante que a construção do experimento manual é exposta como verdade do backend. */

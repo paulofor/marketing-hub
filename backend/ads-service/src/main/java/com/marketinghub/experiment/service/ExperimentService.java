@@ -11,6 +11,8 @@ import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService;
+import com.marketinghub.experiment.service.createFacebookSuccessor.CreateFacebookSuccessorRequest;
+import com.marketinghub.experiment.service.createFacebookSuccessor.FacebookSuccessorReadinessResponse;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageAnalyticsContract;
@@ -55,6 +57,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -454,6 +457,12 @@ public class ExperimentService {
         && request.getStartDate().isAfter(request.getEndDate())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
     }
+    validateMediaSpendPlan(
+        resolvedPlatform,
+        request.getDailyBudget(),
+        request.getMediaSpendLimit(),
+        request.getStartDate(),
+        request.getEndDate());
     String automaticName = buildAutomaticExperimentName(niche, hyp);
     if (repository.existsByNicheAndName(niche, automaticName)) {
       throw new ResponseStatusException(
@@ -536,6 +545,7 @@ public class ExperimentService {
             .targetCvr(request.getTargetCvr())
             .mdePercent(request.getMdePercent())
             .dailyBudget(request.getDailyBudget())
+            .mediaSpendLimit(request.getMediaSpendLimit())
             .unitPrice(unitPrice)
             .cost(request.getCost())
             .totalCost(initialTotalCost)
@@ -710,6 +720,7 @@ public class ExperimentService {
             .targetCvr(original.getTargetCvr())
             .mdePercent(original.getMdePercent())
             .dailyBudget(original.getDailyBudget())
+            .mediaSpendLimit(original.getMediaSpendLimit())
             .unitPrice(original.getUnitPrice())
             .cost(original.getCost())
             .totalCost(original.getTotalCost())
@@ -744,6 +755,134 @@ public class ExperimentService {
             .followUpActionUrl(original.getFollowUpActionUrl())
             .build();
     return repository.save(copy);
+  }
+
+  /**
+   * Cria um sucessor Facebook limpo, preservando o contrato comercial e segregando toda execução do
+   * experimento de origem.
+   */
+  @Transactional
+  public Experiment createFacebookSuccessor(
+      Long sourceExperimentId, CreateFacebookSuccessorRequest request) {
+    Experiment source = get(sourceExperimentId);
+    FacebookSuccessorReadinessResponse readiness = facebookSuccessorReadiness(source);
+    if (!readiness.available()) {
+      String reason =
+          readiness.existingSuccessorId() != null
+              ? "O sucessor Facebook já existe: " + readiness.existingSuccessorId()
+              : String.join("; ", readiness.blockers());
+      throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+    }
+    validateMediaSpendPlan(
+        ExperimentPlatform.FACEBOOK,
+        request.dailyBudget(),
+        request.mediaSpendLimit(),
+        request.startDate(),
+        request.endDate());
+    FacebookPage facebookPage = attachFacebookPage(request.facebookPageId());
+    InstagramAccount instagramAccount = attachInstagramAccount(request.instagramAccountId());
+    String automaticName =
+        buildAutomaticExperimentName(source.getNiche(), source.getHypothesisRef());
+    if (repository.existsByNicheAndName(source.getNiche(), automaticName)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Já existe um experimento com o próximo identificador da hipótese");
+    }
+
+    Experiment successor =
+        Experiment.builder()
+            .niche(source.getNiche())
+            .product(source.getProduct())
+            .sourceExperiment(source)
+            .desireTerritoryCode(source.getDesireTerritoryCode())
+            .desireTerritorySnapshotJson(source.getDesireTerritorySnapshotJson())
+            .name(automaticName)
+            .creationSource(ExperimentCreationSource.MANUAL_FLOW)
+            .hypothesis(source.getHypothesis())
+            .singlePain(source.getSinglePain())
+            .freeReward(source.getFreeReward())
+            .funnelPromise(source.getFunnelPromise())
+            .primaryCta(source.getPrimaryCta())
+            .commercialObjective(source.getCommercialObjective())
+            .experimentType(source.getExperimentType())
+            .productAiSubtype(source.getProductAiSubtype())
+            .campaignObjective(source.getCampaignObjective())
+            .hypothesisRef(source.getHypothesisRef())
+            .kpiTargetCpl(source.getKpiTargetCpl())
+            .metricPreset(source.getMetricPreset())
+            .stopLossCpl(source.getStopLossCpl())
+            .sampleSize(source.getSampleSize())
+            .baselineCvr(source.getBaselineCvr())
+            .targetCvr(source.getTargetCvr())
+            .mdePercent(source.getMdePercent())
+            .dailyBudget(request.dailyBudget())
+            .mediaSpendLimit(request.mediaSpendLimit())
+            .unitPrice(source.getUnitPrice())
+            .startDate(request.startDate())
+            .endDate(request.endDate())
+            .status(ExperimentStatus.PLANNED)
+            .platform(ExperimentPlatform.FACEBOOK)
+            .stage(ExperimentStage.AD)
+            .primaryVariable(source.getPrimaryVariable())
+            .primaryMetric(source.getPrimaryMetric())
+            .imagesPerPackage(source.getImagesPerPackage())
+            .openImagesPerPackage(source.getOpenImagesPerPackage())
+            .compressedImagesPerPackage(source.getCompressedImagesPerPackage())
+            .facebookPage(facebookPage)
+            .instagramAccount(instagramAccount)
+            .journeyTemplate(source.getJourneyTemplate())
+            .imageGenerationModel(source.getImageGenerationModel())
+            .imageGenerationQuality(source.getImageGenerationQuality())
+            .followUpActionUrl(source.getFollowUpActionUrl())
+            .commercialCheckoutUrl(source.getCommercialCheckoutUrl())
+            .build();
+    Experiment saved = repository.save(successor);
+    commercialPlanRepository
+        .findByExperimentReference(sourceExperimentId)
+        .forEach(
+            plan -> {
+              plan.getExperiments().add(saved);
+              commercialPlanRepository.save(plan);
+            });
+    promptSchemaUsageService.linkHypothesisTemplates(saved.getId());
+    return saved;
+  }
+
+  /** Retorna a decisão persistível que orienta a ação de sucessor Facebook na interface. */
+  @Transactional(readOnly = true)
+  public FacebookSuccessorReadinessResponse facebookSuccessorReadiness(Long sourceExperimentId) {
+    return facebookSuccessorReadiness(get(sourceExperimentId));
+  }
+
+  /** Consolida os bloqueios de origem e evita sucessores duplicados para a mesma troca de canal. */
+  private FacebookSuccessorReadinessResponse facebookSuccessorReadiness(Experiment source) {
+    Optional<Experiment> existing =
+        source == null || source.getId() == null
+            ? Optional.empty()
+            : repository.findFirstBySourceExperimentIdAndPlatformOrderByCreatedAtDesc(
+                source.getId(), ExperimentPlatform.FACEBOOK);
+    if (existing.isPresent()) {
+      return new FacebookSuccessorReadinessResponse(false, existing.get().getId(), List.of());
+    }
+    List<String> blockers = new java.util.ArrayList<>();
+    if (source == null || source.getPlatform() != ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      blockers.add("O experimento de origem precisa usar o canal direto");
+    }
+    if (source == null
+        || source.getProduct() == null
+        || source.getHypothesisRef() == null
+        || source.getNiche() == null) {
+      blockers.add("Produto, hipótese e nicho precisam estar vinculados");
+    }
+    if (source != null && source.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
+      blockers.add("Homologação fake deve usar o fluxo de comercialização");
+    }
+    if (source == null || !StringUtils.hasText(source.getFollowUpActionUrl())) {
+      blockers.add("O destino comercial precisa estar aprovado");
+    }
+    if (source == null || !StringUtils.hasText(source.getCommercialCheckoutUrl())) {
+      blockers.add("O checkout comercial precisa estar aprovado");
+    }
+    return new FacebookSuccessorReadinessResponse(blockers.isEmpty(), null, List.copyOf(blockers));
   }
 
   /**
@@ -786,6 +925,7 @@ public class ExperimentService {
             .targetCvr(original.getTargetCvr())
             .mdePercent(original.getMdePercent())
             .dailyBudget(original.getDailyBudget())
+            .mediaSpendLimit(original.getMediaSpendLimit())
             .unitPrice(original.getUnitPrice())
             .status(ExperimentStatus.PLANNED)
             .platform(original.getPlatform())
@@ -965,6 +1105,11 @@ public class ExperimentService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget not set");
     }
     if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
+        && (exp.getMediaSpendLimit() == null
+            || exp.getMediaSpendLimit().compareTo(java.math.BigDecimal.ZERO) <= 0)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mediaSpendLimit not set");
+    }
+    if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
         && !facebookAdsCampaignRepository.existsByExperimentId(exp.getId())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
@@ -1123,6 +1268,7 @@ public class ExperimentService {
       exp.setPlatform(resolvedPlatform);
       if (resolvedPlatform == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
         exp.setDailyBudget(null);
+        exp.setMediaSpendLimit(null);
         exp.setFacebookPage(null);
         exp.setFacebookInstantForm(null);
         exp.setInstagramAccount(null);
@@ -1179,7 +1325,9 @@ public class ExperimentService {
       }
       exp.setDailyBudget(request.getDailyBudget());
     }
-    validateBudgetForPlatform(exp.getPlatform(), exp.getDailyBudget());
+    if (request.isMediaSpendLimitPresent()) {
+      exp.setMediaSpendLimit(request.getMediaSpendLimit());
+    }
     if (request.isUnitPricePresent()) {
       exp.setUnitPrice(normalizeUnitPrice(request.getUnitPrice()));
     }
@@ -1215,6 +1363,13 @@ public class ExperimentService {
     }
     exp.setStartDate(request.getStartDate());
     exp.setEndDate(request.getEndDate());
+    validateBudgetForPlatform(exp.getPlatform(), exp.getDailyBudget());
+    validateMediaSpendPlan(
+        exp.getPlatform(),
+        exp.getDailyBudget(),
+        exp.getMediaSpendLimit(),
+        exp.getStartDate(),
+        exp.getEndDate());
     if (request.getCreativesToGenerate() != null) {
       exp.setCreativesToGenerate(request.getCreativesToGenerate());
     }
@@ -1766,6 +1921,52 @@ public class ExperimentService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "dailyBudget não se aplica ao canal de abordagem individual consentida");
+    }
+  }
+
+  /** Valida a combinação de orçamento diário, teto total e período do experimento. */
+  private void validateMediaSpendPlan(
+      ExperimentPlatform platform,
+      BigDecimal dailyBudget,
+      BigDecimal mediaSpendLimit,
+      java.time.LocalDate startDate,
+      java.time.LocalDate endDate) {
+    if (platform == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      if (mediaSpendLimit != null) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "mediaSpendLimit não se aplica ao canal de abordagem individual consentida");
+      }
+      return;
+    }
+    if (dailyBudget == null && mediaSpendLimit == null) {
+      return;
+    }
+    if (dailyBudget == null || dailyBudget.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "dailyBudget must be greater than zero");
+    }
+    if (mediaSpendLimit == null || mediaSpendLimit.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "mediaSpendLimit must be greater than zero");
+    }
+    if (mediaSpendLimit.compareTo(dailyBudget) < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "mediaSpendLimit must be at least dailyBudget");
+    }
+    if (startDate == null || endDate == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "startDate and endDate are required with a media budget");
+    }
+    if (startDate.isAfter(endDate)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
+    }
+    long inclusiveDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+    BigDecimal maximumPlannedSpend = dailyBudget.multiply(BigDecimal.valueOf(inclusiveDays));
+    if (maximumPlannedSpend.compareTo(mediaSpendLimit) > 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "O período planejado ultrapassa o teto total de mídia; reduza os dias ou o orçamento diário");
     }
   }
 

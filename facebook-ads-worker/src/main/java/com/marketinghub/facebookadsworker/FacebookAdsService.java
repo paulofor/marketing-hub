@@ -174,6 +174,17 @@ public class FacebookAdsService {
      * Cria uma campanha ativa na Meta sem orçamento de campanha, declarando explicitamente o compartilhamento de orçamento dos ad sets.
      */
     public String createInstagramCampaign(String adAccountId, String name, String objective) {
+        return createInstagramCampaign(adAccountId, name, objective, null);
+    }
+
+    /**
+     * Cria uma campanha Meta com teto nativo de gasto, sem transferir o orçamento diário do ad set para a campanha.
+     */
+    public String createInstagramCampaign(
+            String adAccountId,
+            String name,
+            String objective,
+            String spendCap) {
         String path = buildVersionedPath("/act_" + adAccountId + "/campaigns");
         String resolvedObjective = hasText(objective) ? objective : "OUTCOME_TRAFFIC";
         Map<String, Object> body = new HashMap<>();
@@ -182,6 +193,9 @@ public class FacebookAdsService {
         body.put("status", "ACTIVE");
         body.put("special_ad_categories", List.of());
         body.put("is_adset_budget_sharing_enabled", false);
+        if (hasText(spendCap)) {
+            body.put("spend_cap", spendCap.trim());
+        }
         body.put("access_token", requireAccessToken());
 
         JsonNode response = executePost(path, body);
@@ -200,6 +214,15 @@ public class FacebookAdsService {
      */
     public String createCampaign(String adAccountId, String name, String objective) {
         return createInstagramCampaign(adAccountId, name, objective);
+    }
+
+    /** Cria uma campanha Meta com objetivo e teto total de gasto explícitos. */
+    public String createCampaign(
+            String adAccountId,
+            String name,
+            String objective,
+            String spendCap) {
+        return createInstagramCampaign(adAccountId, name, objective, spendCap);
     }
 
     /**

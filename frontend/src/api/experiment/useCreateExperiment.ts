@@ -35,6 +35,7 @@ export interface CreateExperiment {
   targetCvr?: number;
   mde?: number;
   dailyBudget?: number;
+  mediaSpendLimit?: number;
   unitPrice: number;
   cost?: number;
   expense?: number;

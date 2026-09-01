@@ -25,7 +25,13 @@ import org.hibernate.type.SqlTypes;
 
 /** Representa um experimento comercial com contexto, ativos, métricas e regras de publicação. */
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"niche_id", "name"}))
+@Table(
+    uniqueConstraints = {
+      @UniqueConstraint(columnNames = {"niche_id", "name"}),
+      @UniqueConstraint(
+          name = "uk_experiment_source_platform",
+          columnNames = {"source_experiment_id", "platform"})
+    })
 @Data
 @Builder
 @NoArgsConstructor
@@ -43,6 +49,13 @@ public class Experiment {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "product_id")
   private Product product;
+
+  /** Experimento anterior que originou este sucessor de canal, sem compartilhar execução. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "source_experiment_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private Experiment sourceExperiment;
 
   /** Código estável do território do Mapa de Desejo escolhido para o teste. */
   @Column(name = "desire_territory_code", length = 64)
@@ -194,6 +207,10 @@ public class Experiment {
   /** Orçamento diário previsto para o experimento. */
   @Column(name = "daily_budget", precision = 10, scale = 2)
   private java.math.BigDecimal dailyBudget;
+
+  /** Teto absoluto de gasto de mídia permitido para este experimento. */
+  @Column(name = "media_spend_limit", precision = 10, scale = 2)
+  private java.math.BigDecimal mediaSpendLimit;
 
   @Column(name = "unit_price_brl", precision = 10, scale = 2)
   private java.math.BigDecimal unitPrice;

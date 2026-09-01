@@ -8,7 +8,7 @@ export interface InstagramAccount {
   code: string;
 }
 
-export function useInstagramAccounts() {
+export function useInstagramAccounts(enabled = true) {
   return useQuery({
     queryKey: ["instagram-accounts"],
     queryFn: async () => {
@@ -17,6 +17,7 @@ export function useInstagramAccounts() {
       );
       return data;
     },
+    enabled,
     staleTime: 1000 * 60 * 5,
   });
 }

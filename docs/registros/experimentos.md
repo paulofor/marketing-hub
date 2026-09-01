@@ -6849,3 +6849,21 @@
   métricas separadas de Web, ofertas, anúncios, dossiês e vendas; dados limitados à fixture local,
   sem chamada produtiva, publicação ou gasto; contrato da tela validado por testes do frontend e
   build responsivo, sem mudança visual que exija nova matriz específica de navegador.
+
+## 2026-09-01 — Vega: sucessor Facebook com teto total autorizado
+
+- **Gargalo real:** o experimento 90 está ativo em `DIRECT_ONE_TO_ONE`, com zero campanha Meta e
+  orçamento diário zerado; convertê-lo misturaria a evidência do canal direto com mídia paga.
+- **Decisão:** preservar o experimento 90 e criar pela tela um sucessor Facebook segregado, com
+  orçamento diário de R$ 20,00, teto total de R$ 100,00 e período máximo inicial de cinco dias.
+- **Implementação preparada:** a tela consulta a elegibilidade no backend e cria no máximo um
+  sucessor por origem. O novo experimento herda produto, hipótese, oferta, destino e checkout, mas
+  não herda campanha, métricas, custo, criativos, aprovação, liberação ou execução anterior.
+- **Trava financeira:** orçamento diário continua pertencendo ao ad set; o teto total é persistido
+  separadamente e enviado como `spend_cap` nativo da campanha. Worker e backend ainda solicitam
+  pausa quando o gasto sincronizado o alcançar, preservando uma defesa auditável adicional.
+- **Métrica esperada:** após publicação e preparação dos ativos, uma campanha deve ficar vinculada
+  ao sucessor, nunca ao #90; gasto acumulado deve permanecer em até R$ 100,00 e visita, CTA,
+  checkout e pagamento devem continuar eventos reais e separados.
+- **Limite desta entrega local:** nenhum experimento, campanha, criativo, gasto ou venda produtiva
+  foi criado antes do deploy da nova funcionalidade pelo fluxo oficial.

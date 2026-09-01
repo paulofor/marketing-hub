@@ -84,6 +84,7 @@ type FormState = {
   targetCvr: string;
   mde: string;
   dailyBudget: string;
+  mediaSpendLimit: string;
   unitPrice: string;
   startDate: string;
   endDate: string;
@@ -133,6 +134,7 @@ export default function NewExperimentPage() {
     targetCvr: "",
     mde: "",
     dailyBudget: "",
+    mediaSpendLimit: "",
     unitPrice: "",
     startDate: "",
     endDate: "",
@@ -486,6 +488,20 @@ export default function NewExperimentPage() {
         alert("Informe um orçamento diário válido ou deixe o campo vazio");
         return;
       }
+      const parsedMediaSpendLimit = parseOptionalPositiveAmount(
+        form.mediaSpendLimit,
+      );
+      if (parsedMediaSpendLimit === null) {
+        alert("Informe um teto total de mídia válido ou deixe o campo vazio");
+        return;
+      }
+      if (
+        form.platform === "FACEBOOK" &&
+        ((parsedDailyBudget == null) !== (parsedMediaSpendLimit == null))
+      ) {
+        alert("Orçamento diário e teto total de mídia devem ser informados juntos");
+        return;
+      }
       const parsedKpiTarget = parseOptionalPositiveAmount(form.kpiTarget);
       if (parsedKpiTarget === null) {
         alert("Informe um custo-alvo válido ou deixe o campo vazio");
@@ -561,6 +577,7 @@ export default function NewExperimentPage() {
         targetCvr: parsedTargetCvr,
         mde: form.mde ? Number(form.mde) : undefined,
         dailyBudget: parsedDailyBudget,
+        mediaSpendLimit: parsedMediaSpendLimit,
         unitPrice: parsedUnitPrice,
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
@@ -606,6 +623,7 @@ export default function NewExperimentPage() {
         targetCvr: "",
         mde: "",
         dailyBudget: "",
+        mediaSpendLimit: "",
         unitPrice: "",
         startDate: "",
         endDate: "",
@@ -739,6 +757,10 @@ export default function NewExperimentPage() {
               event.target.value === "DIRECT_ONE_TO_ONE"
                 ? ""
                 : current.dailyBudget,
+            mediaSpendLimit:
+              event.target.value === "DIRECT_ONE_TO_ONE"
+                ? ""
+                : current.mediaSpendLimit,
             facebookPageId:
               event.target.value === "DIRECT_ONE_TO_ONE"
                 ? ""
@@ -1406,6 +1428,27 @@ export default function NewExperimentPage() {
           />
           <div className="form-text mb-2">
             Defina somente quando a campanha paga estiver aprovada.
+          </div>
+          <label className="form-label" htmlFor="mediaSpendLimit">
+            Teto total de mídia
+          </label>
+          <input
+            id="mediaSpendLimit"
+            className="form-control mb-2"
+            placeholder="Valor máximo autorizado"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={form.mediaSpendLimit}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                mediaSpendLimit: event.target.value,
+              }))
+            }
+          />
+          <div className="form-text mb-2">
+            Obrigatório junto do orçamento diário antes de liberar a campanha.
           </div>
         </>
       )}

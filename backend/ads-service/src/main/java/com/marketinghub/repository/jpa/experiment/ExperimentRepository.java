@@ -24,6 +24,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
       attributePaths = {
         "niche",
         "hypothesisRef",
+        "sourceExperiment",
         "facebookPage",
         "instagramAccount",
         "leadPortalFlow"
@@ -47,13 +48,18 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
       Pageable pageable);
 
   @Override
-  @EntityGraph(attributePaths = {"facebookPage", "instagramAccount", "leadPortalFlow"})
+  @EntityGraph(
+      attributePaths = {"sourceExperiment", "facebookPage", "instagramAccount", "leadPortalFlow"})
   Optional<Experiment> findById(Long id);
 
   List<Experiment> findByNicheId(Long nicheId);
 
   /** Lista os experimentos do produto, priorizando a referência operacional mais recente. */
   List<Experiment> findByProductIdOrderByUpdatedAtDescIdDesc(Long productId);
+
+  /** Localiza o sucessor mais recente criado a partir de um experimento em um canal específico. */
+  Optional<Experiment> findFirstBySourceExperimentIdAndPlatformOrderByCreatedAtDesc(
+      Long sourceExperimentId, ExperimentPlatform platform);
 
   /** Lista apenas os identificadores usados para medir tarefas vinculadas ao produto. */
   @Query(

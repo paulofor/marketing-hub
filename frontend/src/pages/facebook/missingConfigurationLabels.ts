@@ -29,6 +29,13 @@ const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   facebookPixel: { label: "Configurar pixel do nicho para venda low-ticket" },
   kpiTargetCpl: { label: "Definir o KPI alvo (CPL)" },
   stopLossCpl: { label: "Definir o stop-loss de CPL" },
+  dailyBudget: { label: "Definir o orçamento diário da mídia" },
+  mediaSpendLimit: { label: "Definir o teto total da mídia" },
+  mediaSpendPlan: {
+    label: "Ajustar período, orçamento diário e teto total",
+    helperText:
+      "O total máximo dos dias planejados não pode ultrapassar o teto autorizado para o experimento.",
+  },
   sampleSize: { label: "Informar o tamanho da amostra" },
   startDate: { label: "Definir a data de início" },
   endDate: { label: "Definir a data de término" },

@@ -104,4 +104,24 @@ class ProductRepositoryTest {
         .extracting(Product::getId)
         .containsExactly(productInPlay.getId());
   }
+
+  /** Deve projetar apenas a identidade necessária ao resumo da cadeia de valor. */
+  @Test
+  void findValueChainSummaryWithoutLoadingTheFullCommercialContract() {
+    Product product =
+        repository.saveAndFlush(
+            Product.builder()
+                .name("MUSA — Método de Presença em 7 Dias")
+                .internalName("Vega")
+                .commercialStatus("VALIDACAO_COMERCIAL")
+                .pdeExperienceJson("x".repeat(20_000))
+                .build());
+
+    var summary = repository.findValueChainSummaryById(product.getId()).orElseThrow();
+
+    assertThat(summary.id()).isEqualTo(product.getId());
+    assertThat(summary.name()).isEqualTo("MUSA — Método de Presença em 7 Dias");
+    assertThat(summary.internalName()).isEqualTo("Vega");
+    assertThat(summary.commercialStatus()).isEqualTo("VALIDACAO_COMERCIAL");
+  }
 }

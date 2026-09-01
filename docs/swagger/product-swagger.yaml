@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Products
-  version: 1.2.0
+  version: 1.3.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
   /api/products/value-chain-positions:
@@ -39,6 +39,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProductValueChainPosition"
+        "404":
+          description: Produto não encontrado.
+  /api/products/value-chain-positions/{productId}/summary:
+    get:
+      tags:
+        - Products
+      summary: Retorna a identidade e o macroprocesso atual sem consultar tarefas históricas.
+      operationId: getProductValueChainSummary
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Resumo leve para a primeira renderização da tela da cadeia de valor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductValueChainSummary"
         "404":
           description: Produto não encontrado.
   /api/products:
@@ -886,6 +908,63 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/ProductSubprocessPosition"
+    ProductValueChainSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - productId
+        - resolutionStatus
+        - resolutionMessage
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+          nullable: true
+        productInternalName:
+          type: string
+          nullable: true
+        commercialStatus:
+          type: string
+          nullable: true
+        resolutionStatus:
+          type: string
+          enum:
+            - IDENTIFIED
+            - NOT_IDENTIFIED
+            - CHAIN_UNAVAILABLE
+        resolutionMessage:
+          type: string
+        chainDefinitionId:
+          type: integer
+          format: int64
+          nullable: true
+        chainName:
+          type: string
+          nullable: true
+        chainVersion:
+          type: integer
+          nullable: true
+        processDefinitionId:
+          type: integer
+          format: int64
+          nullable: true
+        processCode:
+          type: string
+          nullable: true
+        processName:
+          type: string
+          nullable: true
+        processVersion:
+          type: integer
+          nullable: true
+        sequenceNumber:
+          type: integer
+          nullable: true
+        processCount:
+          type: integer
+          nullable: true
     ProductSubprocessPosition:
       type: object
       required:

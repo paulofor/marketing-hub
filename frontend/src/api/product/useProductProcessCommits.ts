@@ -25,12 +25,15 @@ export type RegisterProductProcessCommit = {
   recordedBy: string;
 };
 
-export function useProductProcessCommits(productId?: string | number) {
+export function useProductProcessCommits(
+  productId?: string | number,
+  enabled = true,
+) {
   const normalizedProductId =
     productId == null ? undefined : String(productId).trim();
   return useQuery({
     queryKey: ["products", "process-commits", normalizedProductId],
-    enabled: Boolean(normalizedProductId),
+    enabled: Boolean(normalizedProductId) && enabled,
     queryFn: async () =>
       (
         await axios.get<ProductProcessCommit[]>(

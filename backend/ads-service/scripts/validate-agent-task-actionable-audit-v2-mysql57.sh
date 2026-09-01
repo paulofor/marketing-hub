@@ -45,6 +45,17 @@ audit_v2_compose up -d --build mysql57-agent-task-actionable-audit-v2
 audit_v2_compose run --rm --build liquibase-agent-task-actionable-audit-v2
 audit_v2_compose run --rm --build liquibase-psique-visual-evidence
 audit_v2_compose run --rm --build liquibase-agent-task-prompt-parts-v1
+audit_v2_compose run --rm --build liquibase-agent-task-history-source-index
+
+audit_v2_assert_equal \
+  "índice do histórico por origem" \
+  "source_reference:191" \
+  "$(audit_v2_db_scalar "SELECT CONCAT(column_name, ':', sub_part)
+    FROM information_schema.statistics
+    WHERE table_schema = 'marketinghub_local'
+      AND table_name = 'agent_task'
+      AND index_name = 'idx_agent_task_source_reference'
+      AND seq_in_index = 1;")"
 
 audit_v2_assert_equal \
   "partes explícitas dos prompts" \
@@ -229,10 +240,11 @@ fi
 audit_v2_compose run --rm liquibase-agent-task-actionable-audit-v2
 audit_v2_compose run --rm liquibase-psique-visual-evidence
 audit_v2_compose run --rm liquibase-agent-task-prompt-parts-v1
+audit_v2_compose run --rm liquibase-agent-task-history-source-index
 
 audit_v2_assert_equal \
   "reaplicação sem duplicar schema, links ou provas" \
-  "2:1:2:2:2:3:20" \
+  "2:1:2:1:2:2:3:20" \
   "$(audit_v2_db_scalar "SELECT CONCAT(
       (SELECT COUNT(*) FROM DATABASECHANGELOG
         WHERE ID LIKE '2026-08-29-agent-task-actionable-audit-v2-%'), ':',
@@ -240,6 +252,8 @@ audit_v2_assert_equal \
         WHERE ID LIKE '2026-08-29-psique-task-visual-evidence-v1-%'), ':',
       (SELECT COUNT(*) FROM DATABASECHANGELOG
         WHERE ID LIKE '2026-08-29-agent-task-prompt-parts-v1-%'), ':',
+      (SELECT COUNT(*) FROM DATABASECHANGELOG
+        WHERE ID = '2026-09-01-agent-task-history-source-index'), ':',
       (SELECT COUNT(*) FROM information_schema.columns
         WHERE table_schema = 'marketinghub_local' AND table_name = 'agent_task'
           AND column_name IN ('execution_agent_prompt', 'execution_activity_prompt')), ':',

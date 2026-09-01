@@ -3,8 +3,10 @@ package com.marketinghub.product.service.valuechainposition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.service.valuechainposition.summary.ProductValueChainSummaryResponse;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.repository.jpa.product.ProductValueChainSummaryProduct;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Comparator;
 import java.util.List;
@@ -74,6 +76,57 @@ public class ProductValueChainPositionService {
         .findFirst()
         .map(chain -> positionsInChain(List.of(product), chain).getFirst())
         .orElseGet(() -> chainUnavailablePosition(product));
+  }
+
+  /** Retorna a identidade e o macroprocesso atual sem consultar tarefas, custos ou artefatos. */
+  @Transactional(readOnly = true)
+  public ProductValueChainSummaryResponse getSummary(Long productId) {
+    ProductValueChainSummaryProduct product =
+        productRepository
+            .findValueChainSummaryById(productId)
+            .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + productId));
+    return chainRepository
+        .findAllByChainCodeAndStatusOrderByVersionNumberDesc(PDE_CHAIN_CODE, PUBLISHED_STATUS)
+        .stream()
+        .findFirst()
+        .map(chain -> summaryInChain(product, chain))
+        .orElseGet(() -> chainUnavailableSummary(product));
+  }
+
+  /** Resolve a posição atual usando apenas o estado comercial e a cadeia publicada. */
+  private ProductValueChainSummaryResponse summaryInChain(
+      ProductValueChainSummaryProduct product, BusinessProcessChainDefinition chain) {
+    List<BusinessProcessChainItem> orderedItems =
+        chain.getItems().stream()
+            .sorted(Comparator.comparing(BusinessProcessChainItem::getSequenceNumber))
+            .toList();
+    Map<String, BusinessProcessChainItem> itemByCode =
+        orderedItems.stream()
+            .collect(
+                Collectors.toMap(
+                    item -> item.getProcessDefinition().getProcessCode(), Function.identity()));
+    String processCode = resolveProcessCode(product.commercialStatus(), itemByCode);
+    BusinessProcessChainItem item = processCode == null ? null : itemByCode.get(processCode);
+    if (item == null) {
+      return unresolvedSummary(product, chain, orderedItems.size());
+    }
+    var process = item.getProcessDefinition();
+    return new ProductValueChainSummaryResponse(
+        product.id(),
+        product.name(),
+        product.internalName(),
+        product.commercialStatus(),
+        "IDENTIFIED",
+        "Posição identificada na cadeia de valor vigente.",
+        chain.getId(),
+        chain.getName(),
+        chain.getVersionNumber(),
+        process.getId(),
+        process.getProcessCode(),
+        process.getName(),
+        process.getVersionNumber(),
+        item.getSequenceNumber(),
+        orderedItems.size());
   }
 
   /** Resolve todos os produtos contra os processos ordenados da cadeia vigente. */
@@ -159,6 +212,33 @@ public class ProductValueChainPositionService {
         null);
   }
 
+  /** Expõe um status sem vínculo sem acionar a trilha histórica do produto. */
+  private ProductValueChainSummaryResponse unresolvedSummary(
+      ProductValueChainSummaryProduct product,
+      BusinessProcessChainDefinition chain,
+      int processCount) {
+    String message =
+        product.commercialStatus() == null || product.commercialStatus().isBlank()
+            ? "Status comercial não informado; processo atual ainda não identificado."
+            : "Status comercial sem vínculo com um processo da cadeia vigente.";
+    return new ProductValueChainSummaryResponse(
+        product.id(),
+        product.name(),
+        product.internalName(),
+        product.commercialStatus(),
+        "NOT_IDENTIFIED",
+        message,
+        chain.getId(),
+        chain.getName(),
+        chain.getVersionNumber(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        processCount);
+  }
+
   /** Expõe explicitamente a indisponibilidade da cadeia em vez de fabricar uma posição. */
   private ProductValueChainPositionResponse chainUnavailablePosition(Product product) {
     return new ProductValueChainPositionResponse(
@@ -176,6 +256,27 @@ public class ProductValueChainPositionService {
         null,
         null,
         List.of(),
+        null);
+  }
+
+  /** Expõe a ausência da cadeia no resumo sem carregar o cadastro completo nem tarefas. */
+  private ProductValueChainSummaryResponse chainUnavailableSummary(
+      ProductValueChainSummaryProduct product) {
+    return new ProductValueChainSummaryResponse(
+        product.id(),
+        product.name(),
+        product.internalName(),
+        product.commercialStatus(),
+        "CHAIN_UNAVAILABLE",
+        "Cadeia de valor PDE publicada não encontrada.",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null);
   }
 }

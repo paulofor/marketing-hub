@@ -37,7 +37,8 @@ bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql5
 A auditoria acionável e visual das tarefas possui fixture física própria. Ela valida as colunas
 universais, os campos `DATETIME`, o vínculo segregado dos links, os snapshots de Psique com
 identificadores ASCII, as partes explícitas dos prompts em `agent_task` e nas execuções técnicas de
-landing, exclusão em cascata e reaplicação sem duplicidade:
+landing, o índice prefixado de `source_reference` usado pelo histórico sob demanda, exclusão em
+cascata e reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-agent-task-actionable-audit-v2-mysql57.sh

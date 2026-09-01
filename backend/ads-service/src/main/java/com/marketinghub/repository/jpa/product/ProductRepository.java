@@ -20,6 +20,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
   /** Busca um produto pelo slug comercial público. */
   Optional<Product> findBySlug(String slug);
 
+  /** Projeta a identidade e o estado atual sem carregar os campos comerciais extensos. */
+  @Query(
+      """
+      SELECT new com.marketinghub.repository.jpa.product.ProductValueChainSummaryProduct(
+        product.id, product.name, product.internalName, product.commercialStatus)
+      FROM Product product
+      WHERE product.id = :productId
+      """)
+  Optional<ProductValueChainSummaryProduct> findValueChainSummaryById(
+      @Param("productId") Long productId);
+
   /** Busca o produto operacional mais recente vinculado ao nicho informado. */
   Optional<Product> findFirstByMarketNiche_IdOrderByCreatedAtDesc(Long marketNicheId);
 

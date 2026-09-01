@@ -8,24 +8,22 @@ import ProductValueChainHistoryPage from "./ProductValueChainHistoryPage";
 
 vi.mock("axios");
 
-const product = {
-  id: 9,
-  slug: "kit-whatsapp-pronto",
-  name: "Kit WhatsApp Pronto",
-  internalName: "Rigel",
-  niche: "Prestadores locais",
-  avatar: "Profissionais que vendem pelo WhatsApp",
-  explicitPain: "Atendimento improvisado",
-  promise: "Atendimento sob medida",
-  uniqueMechanism: "Receitas prontas",
-  tripwire: "Diagnóstico",
-  riskReversal: "Garantia",
-  socialProof: "Provas aprovadas",
-  checkoutMonetization: "R$ 349",
-  funnel: "Microexperiência",
-  creativeVolume: "Pacote aprovado",
-  storytelling: "Clareza",
-  aiCost: 0,
+const summary = {
+  productId: 9,
+  productName: "Kit WhatsApp Pronto",
+  productInternalName: "Rigel",
+  commercialStatus: "COMUNICACAO_E_JORNADA",
+  resolutionStatus: "IDENTIFIED",
+  resolutionMessage: "Posição identificada.",
+  chainDefinitionId: 5,
+  chainName: "Criação e entrega de valor de Produtos Digitais Experienciais",
+  chainVersion: 5,
+  processDefinitionId: 43,
+  processCode: "pde-communication-sales-journey",
+  processName: "Comunicação e jornada de venda do PDE",
+  processVersion: 4,
+  sequenceNumber: 4,
+  processCount: 6,
 };
 
 const position = {
@@ -273,8 +271,11 @@ describe("ProductValueChainHistoryPage", () => {
   afterEach(() => cleanup());
 
   it("shows the auditable process and subprocess timeline from backend", async () => {
+    const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9/summary") {
+        return Promise.resolve({ data: summary });
+      }
       if (url === "/api/products/value-chain-positions/9") {
         return Promise.resolve({ data: position });
       }
@@ -294,7 +295,19 @@ describe("ProductValueChainHistoryPage", () => {
     expect(screen.getByText(/Kit WhatsApp Pronto/)).toBeTruthy();
     expect(screen.getByText("Nome interno: Rigel")).toBeTruthy();
     expect(screen.getByText("Etapa 4 de 6")).toBeTruthy();
-    expect(screen.getByText("Subprocesso atual")).toBeTruthy();
+    expect(screen.getAllByText("Sob demanda")).toHaveLength(2);
+    expect(axios.get).not.toHaveBeenCalledWith(
+      "/api/products/value-chain-positions/9",
+    );
+    expect(axios.get).not.toHaveBeenCalledWith(
+      "/api/products/9/process-commits",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Carregar histórico detalhado" }),
+    );
+
+    expect(await screen.findByText("Subprocesso atual")).toBeInTheDocument();
     expect(screen.getAllByText("Geração de landing page")).toHaveLength(2);
 
     const timeline = screen.getByRole("list", {
@@ -385,8 +398,11 @@ describe("ProductValueChainHistoryPage", () => {
   });
 
   it("shows the backend successor after the final subprocess is completed", async () => {
+    const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9/summary") {
+        return Promise.resolve({ data: summary });
+      }
       if (url === "/api/products/value-chain-positions/9") {
         return Promise.resolve({ data: completedLandingPosition });
       }
@@ -403,6 +419,9 @@ describe("ProductValueChainHistoryPage", () => {
         name: "Histórico da cadeia de valor",
       }),
     ).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "Carregar histórico detalhado" }),
+    );
     expect(screen.getByText("Próxima atividade")).toBeTruthy();
     const nextStep = screen.getByRole("region", {
       name: "Próximo passo do processo",
@@ -424,6 +443,7 @@ describe("ProductValueChainHistoryPage", () => {
   });
 
   it("does not fabricate a successor when the backend does not provide one", async () => {
+    const user = userEvent.setup();
     const terminalPosition = {
       ...completedLandingPosition,
       subprocessPosition: {
@@ -432,7 +452,9 @@ describe("ProductValueChainHistoryPage", () => {
       },
     };
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9/summary") {
+        return Promise.resolve({ data: summary });
+      }
       if (url === "/api/products/value-chain-positions/9") {
         return Promise.resolve({ data: terminalPosition });
       }
@@ -444,6 +466,11 @@ describe("ProductValueChainHistoryPage", () => {
 
     renderPage();
 
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Carregar histórico detalhado",
+      }),
+    );
     expect(await screen.findByText("Conclusão do processo atual")).toBeTruthy();
     expect(
       screen.queryByRole("region", { name: "Próximo passo do processo" }),
@@ -455,7 +482,9 @@ describe("ProductValueChainHistoryPage", () => {
     const sha = "a".repeat(40);
     let commits: any[] = [];
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9/summary") {
+        return Promise.resolve({ data: summary });
+      }
       if (url === "/api/products/value-chain-positions/9") {
         return Promise.resolve({ data: position });
       }
@@ -490,6 +519,12 @@ describe("ProductValueChainHistoryPage", () => {
       name: "Histórico da cadeia de valor",
     });
     await user.click(
+      screen.getByRole("button", { name: "Carregar histórico detalhado" }),
+    );
+    await screen.findByRole("list", {
+      name: "Histórico dos processos e subprocessos",
+    });
+    await user.click(
       screen.getAllByRole("button", { name: "Registrar commit" })[0],
     );
     await user.type(screen.getByLabelText("SHA completo"), sha);
@@ -518,7 +553,7 @@ describe("ProductValueChainHistoryPage", () => {
     );
   });
 
-  it("makes an integration failure explicit without fabricating history", async () => {
+  it("makes a summary integration failure explicit without fabricating history", async () => {
     (axios.get as any).mockRejectedValue(new Error("backend unavailable"));
 
     renderPage();
@@ -527,7 +562,43 @@ describe("ProductValueChainHistoryPage", () => {
       await screen.findByRole("alert", {
         name: "",
       }),
-    ).toHaveTextContent("Não foi possível carregar o histórico deste produto.");
+    ).toHaveTextContent(
+      "Não foi possível carregar a posição atual deste produto.",
+    );
+    expect(screen.queryByRole("list")).toBeNull();
+  });
+
+  it("keeps the current backend summary when detailed history fails", async () => {
+    const user = userEvent.setup();
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/value-chain-positions/9/summary") {
+        return Promise.resolve({ data: summary });
+      }
+      if (url === "/api/products/value-chain-positions/9") {
+        return Promise.reject(new Error("history unavailable"));
+      }
+      if (url === "/api/products/9/process-commits") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Carregar histórico detalhado",
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        /Não foi possível carregar o histórico detalhado/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Etapa 4 de 6")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Tentar novamente" }),
+    ).toBeEnabled();
     expect(screen.queryByRole("list")).toBeNull();
   });
 });

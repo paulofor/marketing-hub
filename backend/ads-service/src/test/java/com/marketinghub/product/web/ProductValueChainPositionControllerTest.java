@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
+import com.marketinghub.product.service.valuechainposition.summary.ProductValueChainSummaryResponse;
 import com.marketinghub.web.ApiExceptionHandler;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
@@ -98,6 +99,42 @@ class ProductValueChainPositionControllerTest {
         .andExpect(jsonPath("$.processName").value("Comunicação e jornada de venda do PDE"))
         .andExpect(jsonPath("$.sequenceNumber").value(4))
         .andExpect(jsonPath("$.processCount").value(6));
+  }
+
+  /** Expõe o resumo inicial sem incorporar medições ou tarefas históricas. */
+  @Test
+  void getsLightweightProductValueChainSummary() throws Exception {
+    ProductValueChainPositionService service = mock(ProductValueChainPositionService.class);
+    when(service.getSummary(4L))
+        .thenReturn(
+            new ProductValueChainSummaryResponse(
+                4L,
+                "MUSA — Método de Presença em 7 Dias",
+                "Vega",
+                "VALIDACAO_COMERCIAL",
+                "IDENTIFIED",
+                "Posição identificada na cadeia de valor vigente.",
+                5L,
+                "Criação e entrega de valor de Produtos Digitais Experienciais",
+                5,
+                45L,
+                "pde-commercial-homologation-activation",
+                "Homologação e ativação comercial do PDE",
+                4,
+                5,
+                6));
+    var mockMvc =
+        MockMvcBuilders.standaloneSetup(new ProductValueChainPositionController(service)).build();
+
+    mockMvc
+        .perform(get("/api/products/value-chain-positions/4/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(4L))
+        .andExpect(jsonPath("$.productName").value("MUSA — Método de Presença em 7 Dias"))
+        .andExpect(jsonPath("$.productInternalName").value("Vega"))
+        .andExpect(jsonPath("$.sequenceNumber").value(5))
+        .andExpect(jsonPath("$.processCount").value(6))
+        .andExpect(jsonPath("$.processMeasurements").doesNotExist());
   }
 
   /** Responde 404 quando o produto solicitado não existe, sem fabricar histórico. */

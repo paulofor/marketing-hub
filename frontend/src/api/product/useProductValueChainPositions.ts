@@ -55,6 +55,24 @@ export type ProductValueChainPosition = {
   } | null;
 };
 
+export type ProductValueChainSummary = {
+  productId: number;
+  productName?: string | null;
+  productInternalName?: string | null;
+  commercialStatus?: string | null;
+  resolutionStatus: "IDENTIFIED" | "NOT_IDENTIFIED" | "CHAIN_UNAVAILABLE";
+  resolutionMessage: string;
+  chainDefinitionId?: number | null;
+  chainName?: string | null;
+  chainVersion?: number | null;
+  processDefinitionId?: number | null;
+  processCode?: string | null;
+  processName?: string | null;
+  processVersion?: number | null;
+  sequenceNumber?: number | null;
+  processCount?: number | null;
+};
+
 export function sortProductStageMeasurements(
   first: ProductStageMeasurement,
   second: ProductStageMeasurement,
@@ -99,14 +117,30 @@ export function useProductValueChainPositions(playOnly = false) {
   });
 }
 
-export function useProductValueChainPosition(productId?: string | number) {
+export function useProductValueChainPosition(
+  productId?: string | number,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["products", "value-chain-positions", productId],
-    enabled: Boolean(productId),
+    enabled: Boolean(productId) && enabled,
     queryFn: async () =>
       (
         await axios.get<ProductValueChainPosition>(
           `/api/products/value-chain-positions/${productId}`,
+        )
+      ).data,
+  });
+}
+
+export function useProductValueChainSummary(productId?: string | number) {
+  return useQuery({
+    queryKey: ["products", "value-chain-summary", productId],
+    enabled: Boolean(productId),
+    queryFn: async () =>
+      (
+        await axios.get<ProductValueChainSummary>(
+          `/api/products/value-chain-positions/${productId}/summary`,
         )
       ).data,
   });

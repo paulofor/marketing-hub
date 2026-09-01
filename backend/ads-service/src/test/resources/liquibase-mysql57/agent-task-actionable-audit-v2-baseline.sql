@@ -1,6 +1,7 @@
 CREATE TABLE agent_task (
   id BIGINT NOT NULL AUTO_INCREMENT,
   status VARCHAR(30) NOT NULL,
+  source_reference VARCHAR(200) NULL,
   execution_model_code VARCHAR(128) NULL,
   execution_reasoning_effort VARCHAR(32) NULL,
   execution_prompt LONGTEXT NULL,
@@ -16,10 +17,10 @@ CREATE TABLE gera_landing_stage_execution (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO agent_task
-  (id, status, execution_model_code, execution_reasoning_effort, execution_prompt,
+  (id, status, source_reference, execution_model_code, execution_reasoning_effort, execution_prompt,
    created_at, updated_at)
 VALUES
-  (258, 'BLOCKED', 'gpt-5.6-sol', NULL, 'Prompt integral legado da tarefa 258.',
+  (258, 'BLOCKED', 'commercial-plan:3@v4', 'gpt-5.6-sol', NULL, 'Prompt integral legado da tarefa 258.',
    '2026-08-28 16:15:48', '2026-08-28 16:16:49'),
-  (259, 'IN_PROGRESS', NULL, NULL, NULL,
+  (259, 'IN_PROGRESS', 'experiment:90', NULL, NULL, NULL,
    '2026-08-29 01:00:00', '2026-08-29 01:00:00');

@@ -158,7 +158,9 @@ test("mantém a fonte viva no harness sem anunciar o índice derivado como versi
 
 test("empacota Chromium como usuário sem privilégios e habilita a coleta limitada", () => {
   assert.match(dockerfile, /playwright-core install --with-deps chromium/);
-  assert.match(dockerfile, /USER node/);
+  assert.match(dockerfile, /ARG RUNTIME_UID=1000/);
+  assert.match(dockerfile, /ARG RUNTIME_GID=1000/);
+  assert.match(dockerfile, /USER \$\{RUNTIME_UID\}:\$\{RUNTIME_GID\}/);
   assert.match(localCompose, /init: true/);
   assert.match(localCompose, /read_only: true/);
   assert.match(localCompose, /no-new-privileges:true/);
@@ -205,8 +207,19 @@ test("valida o secret como usuário do runtime antes de substituir o worker", ()
   assert.ok(codexPreflightPosition < publishPosition);
   assert.match(
     publishStep,
-    /runtime_uid="\$\(docker run --rm --entrypoint id "\$product_discovery_worker_image" -u\)"/,
-    "[ARQUITETURA] O deploy deve derivar o UID da própria imagem, sem tornar o worker root.",
+    /runtime_uid=1000\s+runtime_gid=1000/,
+    "[ARQUITETURA] O deploy deve reutilizar a identidade não privilegiada fixada na imagem sem iniciar containers auxiliares.",
+  );
+  assert.doesNotMatch(publishStep, /docker run --rm --entrypoint id/);
+  assert.match(
+    publishStep,
+    /timeout --foreground --kill-after=30s 240s[\s\S]*docker compose[\s\S]*validate-runtime-search-config\.mjs/,
+    "[ARQUITETURA] O preflight de busca deve ter limite próprio e não pode monopolizar a fila global.",
+  );
+  assert.match(
+    publishStep,
+    /timeout --foreground --kill-after=30s 300s[\s\S]*docker compose[\s\S]*up -d --force-recreate --remove-orphans/,
+    "[ARQUITETURA] A recriação deve ter limite próprio e não pode monopolizar a fila global.",
   );
   assert.match(
     deployCompose,

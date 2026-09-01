@@ -5,11 +5,11 @@ on:
     branches: ["main", "master"]
     paths:
       - "email-service/**"
-      - ".github/workflows/email-service-ci.yml"
   pull_request:
     paths:
       - "email-service/**"
       - ".github/workflows/email-service-ci.yml"
+  workflow_dispatch:
 
 jobs:
   test:

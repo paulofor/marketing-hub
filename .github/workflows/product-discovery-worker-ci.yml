@@ -10,7 +10,6 @@ on:
       - "scripts/test-isolated-agent-codex-auth.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"
-      - ".github/workflows/product-discovery-worker-ci.yml"
   pull_request:
     paths:
       - "product-discovery-worker/**"
@@ -226,20 +225,23 @@ jobs:
           export ARGOS_CODEX_ENABLED="true"
 
           bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"
-          runtime_uid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -u)"
-          runtime_gid="$(docker run --rm --entrypoint id "$product_discovery_worker_image" -g)"
+          runtime_uid=1000
+          runtime_gid=1000
           bash scripts/prepare-codex-runtime-home.sh \
             "$ARGOS_CODEX_HOME" "$runtime_uid" "$runtime_gid"
           bash scripts/prepare-brave-runtime-secret.sh \
             "$source_secret" "$runtime_secret" "$runtime_uid" "$runtime_gid"
-          docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint node \
+          timeout --foreground --kill-after=30s 240s \
+            docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint node \
             product-discovery-worker scripts/validate-runtime-search-config.mjs \
             </dev/null
-          docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint sh \
+          timeout --foreground --kill-after=30s 240s \
+            docker compose "${compose_files[@]}" run -T --rm --no-deps --entrypoint sh \
             product-discovery-worker -c \
             'test -d "$CODEX_HOME" && test -w "$CODEX_HOME" && codex login status >/dev/null' \
             </dev/null
-          docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans
+          timeout --foreground --kill-after=30s 300s \
+            docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans
 
           healthy=false
           health_payload=""
@@ -264,5 +266,6 @@ jobs:
             exit 1
           fi
 
-          docker image prune -f --filter until=168h
+          timeout --foreground --kill-after=15s 120s \
+            docker image prune -f --filter until=168h
           REMOTE_PUBLISH

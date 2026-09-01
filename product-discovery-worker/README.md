@@ -90,12 +90,13 @@ A chave deve existir no servidor em:
 /root/infra/brave-token/brave_api_key
 ```
 
-O workflow preserva esse arquivo operacional sob controle de `root`, deriva o
-UID/GID não privilegiado da imagem e cria uma cópia modo `0400` em
+O workflow preserva esse arquivo operacional sob controle de `root`, reutiliza o
+UID/GID `1000:1000` fixado no contrato da imagem e cria uma cópia modo `0400` em
 `/root/infra/argos/secrets/brave_search_api_key`. Antes de substituir o serviço,
 ele monta essa cópia como Docker secret em `/run/secrets/brave_search_api_key` e
 executa o mesmo carregamento usado pelo worker. Ausência, arquivo vazio ou falta
-de permissão bloqueiam o deploy sem imprimir a credencial.
+de permissão bloqueiam o deploy sem imprimir a credencial. Preflights, recriação
+e limpeza possuem limites próprios para não monopolizar a fila do VPS.
 
 ## Health operacional
 

@@ -5,11 +5,11 @@ on:
     branches: ["main", "master"]
     paths:
       - 'image-zipper-service/**'
-      - '.github/workflows/image-zipper-ci.yml'
   pull_request:
     paths:
       - 'image-zipper-service/**'
       - '.github/workflows/image-zipper-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test:

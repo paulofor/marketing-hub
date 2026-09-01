@@ -5,11 +5,11 @@ on:
     branches: ["main", "master"]
     paths:
       - 'image-watermark-service/**'
-      - '.github/workflows/image-watermark-ci.yml'
   pull_request:
     paths:
       - 'image-watermark-service/**'
       - '.github/workflows/image-watermark-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test:

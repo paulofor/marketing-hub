@@ -52,6 +52,30 @@ Criar, pelo Marketing Hub, um novo experimento Facebook para o Vega sem alterar 
 - Liquibase validado em MySQL 5.7, incluindo reaplicação idempotente.
 - Build das imagens alteradas e jornada visual nos três perfis de navegador.
 
+## Extensão da matriz — ativação e publicação do sucessor
+
+Data: 2026-09-02
+
+| Área | Cenário | Resultado esperado |
+| --- | --- | --- |
+| Conteúdo | Solicitar ângulo, copy e briefing visual do sucessor | As três etapas avançam em ordem, persistem request/response/custo e não ficam sem início por disputa com integrações lentas |
+| Isolamento | Saturar o agendador compartilhado do AI Worker | O pipeline comercial continua sendo iniciado pelo agendador exclusivo, sem duplicar job |
+| Empacotamento | Construir a imagem do AI Worker após a suíte | O workflow preserva o JAR aprovado e a imagem apenas o incorpora, sem recompilar o backend inteiro nem depender de artefato anterior |
+| Prova do produto | Plano possui `PRODUCT_PROOF` ou `DELIVERY` em imagem e estado `APPROVED` | Tela exibe a prova, backend libera a materialização e o worker recebe somente as referências do mesmo plano |
+| Falha segura | Plano possui apenas `ADS`, `SOCIAL`, vídeo, rascunho ou URL vazia | Botão e backend bloqueiam antes de consumir geração |
+| Compatibilidade | Experimento legado possui imagem concluída do GeraLanding | Referência continua aceita sem regressão |
+| Superfície PDE | Sucessor aponta para o mesmo produto, URL MUSA versionada e checkout do experimento direto homologado | Apenas landing/destino podem reutilizar a evidência do antecessor |
+| Segregação | Sucessor muda produto, URL ou checkout | Reuso é recusado; criativo, público, campanha, gasto e métricas jamais são herdados |
+| Criativo | Materializar as três variações | Criativos nascem `DRAFT`, vinculados ao #91 e usam a prova aprovada, sem criar venda ou aprovação |
+| Revisão | Enviar criativos a Têmis | Parecer multimodal independente decide `APPROVED`, `ADJUST` ou `REJECTED`; somente `READY` entra na fila Meta |
+| Publicação | Liberar #91 após todos os gates | Facebook Ads Worker cria uma única campanha, ad set e anúncio com R$ 20/dia e `spend_cap=10000` |
+| Observabilidade | Consultar Hub, logs e Meta após publicação | IDs externos, passos, payloads, respostas, status e teto ficam correlacionados ao #91 |
+| Métricas | Campanha recém-publicada sem eventos humanos | visitas, CTA, checkout, pagamento e receita permanecem zero; publicação não conta como venda |
+| Dispositivos | Abrir experimento em desktop, iPhone 15 Pro e Pixel 7 | Prova, geração, revisão, gates e liberação permanecem legíveis e acionáveis |
+
+Se qualquer rodada revelar defeito, a contagem reinicia e duas rodadas locais completas e
+consecutivas devem passar depois da última correção.
+
 ## Resultado da homologação local
 
 Em 2026-09-01, duas rodadas completas e consecutivas terminaram sem falhas funcionais:
@@ -65,3 +89,18 @@ Em 2026-09-01, duas rodadas completas e consecutivas terminaram sem falhas funci
 - criação simulada pela tela em Chromium desktop, iPhone 15 Pro e Pixel 7, sem overflow e sem carregar identidades Meta antes da abertura do formulário;
 - payload confirmado com R$ 20,00/dia, R$ 100,00 de teto, cinco dias, página e Instagram selecionados;
 - Graph API substituída por test double: nenhuma campanha, visita, checkout, pagamento, venda ou gasto real foi criado.
+
+Em 2026-09-02, após a preparação operacional do experimento #91 e a correção dos bloqueios de
+conteúdo e prova visual, duas novas rodadas completas e consecutivas terminaram sem falhas:
+
+- 2.217 testes do backend, 240 do AI Worker, 116 do Facebook Ads Worker e 459 do frontend por rodada;
+- Spotless, Prettier, build de produção, Actionlint, ShellCheck e contratos de imagem aprovados;
+- imagens do backend, frontend, AI Worker e Facebook Ads Worker reconstruídas em cada rodada;
+- scheduler comercial exclusivo confirmado sem duplicar job e imagem do AI Worker construída a
+  partir do JAR aprovado, sem recompilar o backend;
+- publicação Meta simulada com campanha, ad set, criativo, anúncio, callback `RUNNING`, orçamento de
+  R$ 20,00/dia, `spend_cap=10000` e pausa ao atingir R$ 100,00;
+- jornada de geração repetida em Chromium desktop, iPhone 15 Pro e Pixel 7, com prova MUSA visível,
+  ação habilitada, solicitação concluída, zero overflow e zero erro no console;
+- Meta e backend substituídos por test doubles: nenhum gasto, evento humano, pagamento ou venda foi
+  criado pela homologação.

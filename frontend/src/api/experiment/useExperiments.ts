@@ -125,6 +125,7 @@ export interface Experiment {
   landingPageWireframe?: string | null;
   landingPageImagePlanning?: string | null;
   landingPageImageAssets?: string | null;
+  commercialPlanVisualAssets?: string | null;
   landingPageDesignPreset?: string | null;
   landingPageDeliverables?: string | null;
   landingPageHtml?: string | null;

@@ -30,6 +30,9 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanVisualAsset;
+import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
@@ -45,6 +48,8 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecut
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import java.math.BigDecimal;
@@ -96,6 +101,8 @@ class ExperimentServiceTest {
   @Autowired ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
   @Autowired PdeProductionSlotRepository pdeProductionSlotRepository;
   @Autowired ProductRepository productRepository;
+  @Autowired CommercialPlanRepository commercialPlanRepository;
+  @Autowired CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
 
   private Long testProductId;
 
@@ -224,6 +231,69 @@ class ExperimentServiceTest {
     assertThat(service.listPendingCreativeGeneration(10))
         .extracting(Experiment::getId)
         .contains(requested.getId());
+  }
+
+  /** Enfileira anúncios PDE usando a prova real aprovada do plano sem exigir GeraLanding. */
+  @Test
+  void requestPipelineCreativesUsesApprovedCommercialProductProof() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Vega prova comercial").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("Espelho Vega").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
+                .title("Vega com prova real")
+                .premiseAngle(angle)
+                .promise("Presença coerente")
+                .problem("Ruído visual antes de sair")
+                .persona("Mulher urbana")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .build());
+    CreateExperimentRequest request = new CreateExperimentRequest();
+    applyStageDefaults(request);
+    request.setMarketNicheId(niche.getId());
+    request.setHypothesisId(hypothesis.getId());
+    request.setName("Vega pipeline com PRODUCT_PROOF");
+    request.setHypothesis("Espelho antes de sair");
+    request.setJourneyTemplateId(createJourneyTemplate().getId());
+    request.setInstagramAccountId(createInstagramAccount().getId());
+    request.setLeadPortalFlowId(createLeadPortalFlow(niche));
+    Experiment experiment = service.create(request);
+    experiment.setAdCopy(
+        "{\"adCopy\":{\"primaryTextVariants\":[{\"label\":\"dor\",\"primaryText\":\"Texto\",\"headline\":\"Headline\"}]}}");
+    experiment.setAdImageBriefing(
+        "{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Espelho antes de sair\"}]}}");
+    experimentRepository.save(experiment);
+
+    CommercialPlan plan =
+        commercialPlanRepository.save(
+            CommercialPlan.builder().name("Plano Vega").experiment(experiment).build());
+    CommercialPlanVisualAsset proof = new CommercialPlanVisualAsset();
+    proof.setCommercialPlan(plan);
+    proof.setAssetUrl("https://v7.clubemusa.com.br/assets/musa-editorial-presenca.png");
+    proof.setMediaType("IMAGE");
+    proof.setLabel("MUSA v7 — espelho antes de sair");
+    proof.setPurpose("PRODUCT_PROOF");
+    proof.setPurposesJson("[\"PRODUCT_PROOF\"]");
+    proof.setOrigin("PDE MUSA v7 versionado");
+    proof.setRightsStatement("Uso comercial do próprio produto MUSA.");
+    proof.setVersionNumber(1);
+    proof.setStatus(CommercialPlanVisualAssetStatus.APPROVED);
+    commercialPlanVisualAssetRepository.save(proof);
+
+    Experiment requested = service.requestPipelineCreatives(experiment.getId());
+    Experiment detail = service.getForDetail(experiment.getId());
+
+    assertThat(requested.getCreativeGenerationMode())
+        .isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
+    assertThat(requested.getCreativeGenerationStatus())
+        .isEqualTo(CreativeGenerationStatus.REQUESTED);
+    assertThat(detail.getCommercialPlanVisualAssets())
+        .contains("musa-editorial-presenca.png", "PRODUCT_PROOF");
   }
 
   /** Cria um sucessor Facebook limpo, com teto total e sem herdar execução do canal direto. */

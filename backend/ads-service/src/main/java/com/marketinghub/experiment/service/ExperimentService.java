@@ -27,6 +27,7 @@ import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.planning.CommercialPlanVisualAsset;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.productai.service.ProductAiExperimentPreparationService;
@@ -638,6 +639,14 @@ public class ExperimentService {
     return repository
         .findById(id)
         .orElseThrow(() -> new EntityNotFoundException("Experimento não encontrado: " + id));
+  }
+
+  /** Busca o detalhe administrativo e anexa as provas visuais aprovadas do mesmo plano. */
+  @Transactional(readOnly = true)
+  public Experiment getForDetail(Long id) {
+    Experiment experiment = get(id);
+    attachApprovedCommercialVisualAssets(experiment);
+    return experiment;
   }
 
   public Iterable<Experiment> list() {
@@ -1525,17 +1534,72 @@ public class ExperimentService {
     return exp;
   }
 
-  /** Verifica se o pipeline possui texto e briefing de imagem antes de enfileirar anúncios. */
+  /** Verifica se o pipeline possui texto, briefing e prova real antes de enfileirar anúncios. */
   private void ensurePipelinePrerequisites(Experiment exp) {
     if (!StringUtils.hasText(exp.getAdCopy()) || !StringUtils.hasText(exp.getAdImageBriefing())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
           "Conclua as etapas de Texto do Anúncio e Prompt da Imagem antes de gerar anúncios do pipeline.");
     }
-    if (!hasCompletedLandingReference(exp.getLandingPageImageAssets())) {
+    if (!hasCompletedLandingReference(exp.getLandingPageImageAssets())
+        && !hasApprovedCommercialProductEvidence(exp.getId())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Íris precisa concluir ao menos um exemplo visual real da landing antes de materializar o criativo.");
+          "A Biblioteca Audiovisual precisa ter ao menos um PRODUCT_PROOF ou DELIVERY aprovado antes de materializar o criativo.");
+    }
+  }
+
+  /** Confirma que o plano do experimento possui imagem real aprovada para orientar comunicação. */
+  private boolean hasApprovedCommercialProductEvidence(Long experimentId) {
+    if (experimentId == null) {
+      return false;
+    }
+    return commercialPlanRepository.findByExperimentReference(experimentId).stream()
+        .anyMatch(
+            plan ->
+                commercialPlanVisualAssetRepository
+                    .findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
+                        plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
+                    .stream()
+                    .anyMatch(this::isApprovedCommercialProductEvidence));
+  }
+
+  /** Restringe a referência de criação a uma imagem real de produto ou entrega. */
+  private boolean isApprovedCommercialProductEvidence(CommercialPlanVisualAsset asset) {
+    return asset != null
+        && "IMAGE".equalsIgnoreCase(asset.getMediaType())
+        && StringUtils.hasText(asset.getAssetUrl())
+        && (isProductEvidencePurpose(asset.getPurpose())
+            || containsProductEvidencePurpose(asset.getPurposesJson(), asset.getId()));
+  }
+
+  /** Reconhece as duas finalidades canônicas que provam o produto sem simular sua entrega. */
+  private boolean isProductEvidencePurpose(String purpose) {
+    return "PRODUCT_PROOF".equalsIgnoreCase(purpose) || "DELIVERY".equalsIgnoreCase(purpose);
+  }
+
+  /** Lê finalidades múltiplas sem aceitar palavras parciais ou manifesto inválido. */
+  private boolean containsProductEvidencePurpose(String purposesJson, Long assetId) {
+    if (!StringUtils.hasText(purposesJson)) {
+      return false;
+    }
+    try {
+      JsonNode purposes = objectMapper.readTree(purposesJson);
+      if (!purposes.isArray()) {
+        return false;
+      }
+      for (JsonNode purpose : purposes) {
+        if (isProductEvidencePurpose(purpose.asText())) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception ex) {
+      log.warn(
+          "Finalidades inválidas na Biblioteca Audiovisual. experimentServiceAssetId={}",
+          assetId,
+          ex);
+      return false;
     }
   }
 
@@ -2033,6 +2097,7 @@ public class ExperimentService {
 
   /** Anexa somente referências aprovadas do plano ao contrato operacional do AI Worker. */
   private void attachApprovedCommercialVisualAssets(Experiment experiment) {
+    experiment.setCommercialPlanVisualAssets(null);
     commercialPlanRepository.findByExperimentReference(experiment.getId()).stream()
         .findFirst()
         .ifPresent(
@@ -2042,6 +2107,7 @@ public class ExperimentService {
                       .findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
                           plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
                       .stream()
+                      .filter(this::isApprovedCommercialProductEvidence)
                       .map(
                           asset ->
                               java.util.Map.of(

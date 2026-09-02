@@ -1,5 +1,6 @@
-# Build artifacts
-/target
+# Inclui somente o JAR já aprovado; classes e relatórios não entram na imagem.
+/target/*
+!/target/app.jar
 
 # IDE files
 .idea/

@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -163,10 +164,13 @@ public class ExperimentReadinessService {
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
     boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;
+    boolean reusablePdeSuccessorDestinationReady =
+        hasReusablePdeSuccessorDestinationEvidence(experiment);
     boolean mediaBudgetReady = hasReadyMediaBudget(experiment);
     boolean commercialMaterialReady = hasCreatives || pdeOperationalEvidenceReady;
     boolean landingAssetLineageReady =
         pdeOperationalEvidenceReady
+            || reusablePdeSuccessorDestinationReady
             || landingAssetService.hasRequiredApprovedAssetReferences(
                 experimentId, currentLandingHtml);
 
@@ -368,9 +372,11 @@ public class ExperimentReadinessService {
                 landingReady,
                 directPdeReady
                     ? "O run produtivo homologado aprovou a superfície comercial em desktop e mobile."
-                    : landingReady
-                        ? "A página e seu pipeline canônico estão concluídos."
-                        : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
+                    : reusablePdeSuccessorDestinationReady
+                        ? "O sucessor preserva produto, destino e checkout da superfície PDE homologada no experimento anterior."
+                        : landingReady
+                            ? "A página e seu pipeline canônico estão concluídos."
+                            : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
                 "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
             runningRequirement(
                 "CREATIVE_APPROVED",
@@ -584,6 +590,8 @@ public class ExperimentReadinessService {
     boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
     boolean integratedPdeReady = integratedPdeJourneyEvidenceService.isReady(experiment);
     boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;
+    boolean reusablePdeSuccessorDestinationReady =
+        hasReusablePdeSuccessorDestinationEvidence(experiment);
     if (!pdeOperationalEvidenceReady && !hasApprovedCreative(experiment)) {
       missing.add("creativeApproval");
     }
@@ -601,6 +609,7 @@ public class ExperimentReadinessService {
                         ? experiment.getLandingPageHtml()
                         : experiment.getHtmlGeraLanding());
     if (!pdeOperationalEvidenceReady
+        && !reusablePdeSuccessorDestinationReady
         && !landingAssetService.hasRequiredApprovedAssetReferences(
             experiment.getId(), landingHtml)) {
       missing.add("landingApprovedProductEvidence");
@@ -629,6 +638,38 @@ public class ExperimentReadinessService {
       missing.add("approvedTargetingPackage");
     }
     return List.copyOf(missing);
+  }
+
+  /**
+   * Reutiliza somente a homologação da superfície PDE de um antecessor direto quando produto,
+   * destino e checkout continuam exatamente iguais no sucessor Facebook.
+   */
+  private boolean hasReusablePdeSuccessorDestinationEvidence(Experiment experiment) {
+    if (experiment == null
+        || experiment.getPlatform() != ExperimentPlatform.FACEBOOK
+        || experiment.getExperimentType() != ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+        || experiment.getSourceExperiment() == null
+        || experiment.getProduct() == null
+        || experiment.getSourceExperiment().getProduct() == null) {
+      return false;
+    }
+    Experiment source = experiment.getSourceExperiment();
+    boolean sameImmutableCommercialSurface =
+        Objects.equals(experiment.getProduct().getId(), source.getProduct().getId())
+            && sameRequiredText(experiment.getFollowUpActionUrl(), source.getFollowUpActionUrl())
+            && sameRequiredText(
+                experiment.getCommercialCheckoutUrl(), source.getCommercialCheckoutUrl())
+            && campaignDestinationPolicy.hasPdeMembershipDestination(experiment);
+    return sameImmutableCommercialSurface
+        && (directPdeActivationService.isReadyForActivation(source)
+            || integratedPdeJourneyEvidenceService.isReady(source));
+  }
+
+  /** Compara contratos obrigatórios sem aceitar ausência ou variação silenciosa. */
+  private boolean sameRequiredText(String current, String source) {
+    return StringUtils.hasText(current)
+        && StringUtils.hasText(source)
+        && current.trim().equals(source.trim());
   }
 
   /** Conta as etapas obrigatórias do GeraLanding cuja execução mais recente foi concluída. */

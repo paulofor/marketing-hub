@@ -958,6 +958,40 @@ test("analyzeSearchResults rebaixa dossiê declarado pronto sem ofertas e Meta",
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
 });
 
+test("analyzeSearchResults explica falha Meta sem expor códigos técnicos no relatório", () => {
+  const report = analyzeSearchResults(
+    {
+      theme: "beleza e bem-estar",
+      targetAudience: "mulheres 40+",
+      acquisitionChannel: "Instagram",
+      marketType: "B2C",
+    },
+    [
+      {
+        title: "Relato público",
+        url: "https://instagram.com/exemplo",
+        snippet: "dificuldade e alternativa paga",
+      },
+    ],
+    [],
+    {
+      candidateBlueprints: candidateBlueprints(),
+      metaCoverage: [
+        { sourceStatus: "UNAVAILABLE" },
+        { sourceStatus: "UNAVAILABLE" },
+        { sourceStatus: "UNAVAILABLE" },
+      ],
+    },
+  );
+
+  assert.match(
+    report.decisionSummary,
+    /cobertura Meta\/Instagram não executada em 3 tentativa\(s\) por falha de integração/,
+  );
+  assert.doesNotMatch(report.decisionSummary, /UNAVAILABLE/);
+  assert.doesNotMatch(report.opportunities[0].commercialRisk, /UNAVAILABLE/);
+});
+
 test("analyzeSearchResults exige revisão humana sem liberar dossiê sensível", () => {
   const blueprints = candidateBlueprints();
   blueprints[0].maturity = "DOSSIER_READY";

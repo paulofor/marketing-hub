@@ -126,6 +126,15 @@ function detail(execution = summary): ExecutionDetailFixture {
             candidateCount: 3,
             dossierReadyCount: 0,
             outcome: "ADJUST_AND_CONTINUE",
+            metaQuery: "beleza pele madura",
+            metaCoverageStatus: "NO_MATCHING_ACTIVE_ADS",
+            metaCollectionMode: "PUBLIC_BROWSER",
+            metaAdsObserved: 0,
+            metaAdvertisersObserved: 0,
+            metaCoverageSummary:
+              "Consulta executada sem anúncio ativo aderente.",
+            metaSearchUrl:
+              "https://www.facebook.com/ads/library/?q=beleza",
           },
           {
             attemptNumber: 2,
@@ -138,6 +147,12 @@ function detail(execution = summary): ExecutionDetailFixture {
             candidateCount: 2,
             dossierReadyCount: 1,
             outcome: "DOSSIER_READY_FOUND",
+            metaQuery: "autocuidado pele madura",
+            metaCoverageStatus: "OBSERVED",
+            metaCollectionMode: "PUBLIC_BROWSER",
+            metaAdsObserved: 2,
+            metaAdvertisersObserved: 2,
+            metaCoverageSummary: "Dois anúncios ativos observados.",
           },
         ],
       },
@@ -341,7 +356,9 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
         name: "Execução #91 · agenda vazia para manicures",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Biblioteca Meta / Instagram")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Biblioteca Meta / Instagram"),
+    ).toHaveLength(3);
     expect(screen.getByText("Acervo /pesquisas")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Ampliação controlada de mercado" }),
@@ -351,6 +368,13 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toHaveLength(2);
     expect(screen.getByText("Dossiê pronto encontrado")).toBeInTheDocument();
     expect(screen.getByText("+9 ofertas")).toBeInTheDocument();
+    expect(screen.getByText("Consulta: beleza pele madura")).toBeInTheDocument();
+    expect(
+      screen.getByText("Cobertura: Executada sem anúncio aderente"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Abrir consulta oficial/i }),
+    ).toHaveAttribute("target", "_blank");
     expect(screen.getByText("/pesquisas/climaterio.md")).toBeInTheDocument();
     expect(
       screen.getByText("Guarda-roupa cápsula sensorial para mulheres 40+"),

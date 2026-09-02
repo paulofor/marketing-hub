@@ -159,6 +159,88 @@ test("solicita cobertura Instagram correlacionada e separa anúncios de ofertas"
   assert.equal(evidence.metaCoverage[0].advertisersObserved, 1);
 });
 
+test("não converte rejeição do contrato interno em indisponibilidade da Meta", async () => {
+  await assert.rejects(
+    collectMarketplaceEvidence(
+      {
+        marketplaceRequests: [],
+        metaAdRequests: [
+          {
+            query: "beleza pele madura",
+            country: "BR",
+            publisherPlatform: "INSTAGRAM",
+            maxAds: 25,
+          },
+        ],
+      },
+      {
+        backendBaseUrl: "http://backend.test",
+        cycleId: 55,
+        attemptNumber: 2,
+        executionLeaseId: "lease-55",
+        logger: { warn() {} },
+        fetchFn: async () => ({
+          ok: false,
+          status: 400,
+          async text() {
+            return '{"message":"A consulta Meta deve conter de dois a cinco termos"}';
+          },
+        }),
+      },
+    ),
+    /contrato de cobertura Meta.*tentativa 2.*HTTP 400/,
+  );
+});
+
+test("expõe indisponibilidade transitória sem afirmar ausência de mercado", async () => {
+  const evidence = await collectMarketplaceEvidence(
+    {
+      marketplaceRequests: [],
+      metaAdRequests: [
+        {
+          query: "beleza pele madura",
+          country: "BR",
+          publisherPlatform: "INSTAGRAM",
+          maxAds: 25,
+        },
+      ],
+    },
+    {
+      backendBaseUrl: "http://backend.test",
+      cycleId: 56,
+      attemptNumber: 3,
+      executionLeaseId: "lease-56",
+      logger: { warn() {} },
+      fetchFn: async () => ({
+        ok: false,
+        status: 503,
+        async text() {
+          return "temporariamente indisponível";
+        },
+      }),
+    },
+  );
+
+  assert.deepEqual(evidence.metaCoverage, [
+    {
+      attemptNumber: 3,
+      query: "beleza pele madura",
+      country: "BR",
+      publisherPlatform: "INSTAGRAM",
+      sourceStatus: "UNAVAILABLE",
+      collectionMode: "BACKEND_UNAVAILABLE",
+      httpStatus: 503,
+      adsObserved: 0,
+      activeAds: 0,
+      advertisersObserved: 0,
+      latestObservationAt: null,
+      searchUrl: null,
+      interpretation:
+        "A integração de cobertura respondeu HTTP 503; isso não comprova ausência de anúncios ou de mercado.",
+    },
+  ]);
+});
+
 test("executa Chromium quando o backend prepara a sessão e persiste o lote antes da síntese", async () => {
   const calls = [];
   const browserCalls = [];

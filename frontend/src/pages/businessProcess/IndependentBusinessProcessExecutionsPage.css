@@ -625,6 +625,34 @@
   font-size: 0.7rem;
 }
 
+.independent-process-report__attempt-meta {
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+  border-radius: 9px;
+  background: #f7f4fb;
+  color: #50485d;
+  font-size: 0.75rem;
+}
+
+.independent-process-report__attempt-meta > strong,
+.independent-process-report__attempt-meta > a {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.independent-process-report__attempt-meta > small {
+  color: #6c6477;
+  line-height: 1.35;
+}
+
+.independent-process-report__attempt-meta > a {
+  width: fit-content;
+  color: var(--independent-green);
+  font-weight: 700;
+}
+
 .independent-process-report__coverage {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

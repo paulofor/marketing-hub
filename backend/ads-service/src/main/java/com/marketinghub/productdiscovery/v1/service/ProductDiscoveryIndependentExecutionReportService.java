@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,15 @@ public class ProductDiscoveryIndependentExecutionReportService
       LoggerFactory.getLogger(ProductDiscoveryIndependentExecutionReportService.class);
   private static final String PROCESS_CODE = "pde-opportunity-discovery";
   private static final String SOURCE_PREFIX = "product-discovery-cycle:";
+  private static final String META_COVERAGE_STATUS_CODE =
+      "(?:UNAVAILABLE|OBSERVED|NO_MATCHING_ACTIVE_ADS|NO_ACTIVE_ADS|NO_RELEVANT_PLATFORM_EVIDENCE|AWAITING_PUBLIC_BROWSER|AWAITING_SUPERVISED_OBSERVATION|AWAITING_OFFICIAL_COLLECTION|NOT_REQUESTED|STALE|UNKNOWN)";
+  private static final Pattern TECHNICAL_META_COVERAGE =
+      Pattern.compile(
+          "cobertura\\s+"
+              + META_COVERAGE_STATUS_CODE
+              + "(?:,\\s*"
+              + META_COVERAGE_STATUS_CODE
+              + ")*");
   private final ProductDiscoveryCycleRepository cycleRepository;
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
   private final OpportunityDossierRepository dossierRepository;
@@ -92,19 +103,47 @@ public class ProductDiscoveryIndependentExecutionReportService
     int products = (int) dossiers.stream().filter(item -> item.getCreatedProduct() != null).count();
     JsonNode evidenceReport =
         read(cycle.getResearchEvidenceReportJson(), "relatório", cycle.getId());
+    List<IndependentBusinessProcessFlowReportResponse.SourceCoverage> sourceCoverage =
+        sourceCoverage(cycle, evidenceReport, opportunities);
     return new IndependentBusinessProcessFlowReportResponse(
         "PDE_OPPORTUNITY_TO_PRODUCT_V1",
         reportStatus(cycle, List.copyOf(latestTasks.values()), ready, products),
-        firstText(
-            cycle.getDecisionSummary(),
-            "Argos ainda está reunindo evidências para formar candidatas factuais."),
+        businessHeadline(cycle, sourceCoverage),
         firstText(cycle.getAcquisitionChannel(), "Instagram"),
         opportunities.size(),
         ready,
         products,
-        sourceCoverage(cycle, evidenceReport, opportunities),
+        sourceCoverage,
         marketExpansion(evidenceReport),
         candidates);
+  }
+
+  /** Substitui códigos técnicos legados por uma leitura compreensível da cobertura Meta. */
+  private String businessHeadline(
+      ProductDiscoveryCycle cycle,
+      List<IndependentBusinessProcessFlowReportResponse.SourceCoverage> sourceCoverage) {
+    String headline =
+        firstText(
+            cycle.getDecisionSummary(),
+            "Argos ainda está reunindo evidências para formar candidatas factuais.");
+    Matcher matcher = TECHNICAL_META_COVERAGE.matcher(headline);
+    if (!matcher.find()) return headline;
+    String status =
+        sourceCoverage.stream()
+            .filter(item -> "META".equals(item.sourceCode()))
+            .map(IndependentBusinessProcessFlowReportResponse.SourceCoverage::status)
+            .findFirst()
+            .orElse("MISSING");
+    String replacement =
+        switch (status) {
+          case "OBSERVED" -> "cobertura da Biblioteca Meta observada";
+          case "OBSERVED_EMPTY" -> "cobertura da Biblioteca Meta executada sem anúncio aderente";
+          case "AWAITING_OBSERVATION" -> "cobertura da Biblioteca Meta aguardando observação";
+          case "UNAVAILABLE" ->
+              "cobertura da Biblioteca Meta não executada por falha de integração";
+          default -> "cobertura da Biblioteca Meta sem resultado auditável";
+        };
+    return matcher.replaceAll(Matcher.quoteReplacement(replacement));
   }
 
   /** Converte as rodadas persistidas pelo worker em um resumo gerencial tipado. */
@@ -115,21 +154,31 @@ public class ProductDiscoveryIndependentExecutionReportService
     List<IndependentBusinessProcessFlowReportResponse.MarketExpansionAttempt> attempts =
         new ArrayList<>();
     JsonNode persistedAttempts = expansion.path("attempts");
+    JsonNode metaCoverages = evidenceReport.path("metaCoverage");
     if (persistedAttempts.isArray()) {
-      persistedAttempts.forEach(
-          item ->
-              attempts.add(
-                  new IndependentBusinessProcessFlowReportResponse.MarketExpansionAttempt(
-                      item.path("attemptNumber").asInt(),
-                      optionalText(item, "researchLens"),
-                      optionalText(item, "expansionAxis"),
-                      optionalText(item, "rationale"),
-                      item.path("newPublicEvidenceCount").asInt(),
-                      item.path("newComparableOfferCount").asInt(),
-                      item.path("newMetaAdCount").asInt(),
-                      item.path("candidateCount").asInt(),
-                      item.path("dossierReadyCount").asInt(),
-                      optionalText(item, "outcome"))));
+      for (JsonNode item : persistedAttempts) {
+        int attemptNumber = item.path("attemptNumber").asInt();
+        JsonNode metaCoverage = metaCoverageForAttempt(metaCoverages, attemptNumber);
+        attempts.add(
+            new IndependentBusinessProcessFlowReportResponse.MarketExpansionAttempt(
+                attemptNumber,
+                optionalText(item, "researchLens"),
+                optionalText(item, "expansionAxis"),
+                optionalText(item, "rationale"),
+                item.path("newPublicEvidenceCount").asInt(),
+                item.path("newComparableOfferCount").asInt(),
+                item.path("newMetaAdCount").asInt(),
+                item.path("candidateCount").asInt(),
+                item.path("dossierReadyCount").asInt(),
+                optionalText(item, "outcome"),
+                optionalText(metaCoverage, "query"),
+                optionalText(metaCoverage, "sourceStatus"),
+                optionalText(metaCoverage, "collectionMode"),
+                metaCoverage.path("adsObserved").asInt(),
+                metaCoverage.path("advertisersObserved").asInt(),
+                optionalText(metaCoverage, "interpretation"),
+                optionalText(metaCoverage, "searchUrl")));
+      }
     }
     return new IndependentBusinessProcessFlowReportResponse.MarketExpansion(
         optionalText(expansion, "strategyCode"),
@@ -139,6 +188,20 @@ public class ProductDiscoveryIndependentExecutionReportService
         optionalText(expansion, "stopSummary"),
         optionalText(expansion, "finalResearchLens"),
         List.copyOf(attempts));
+  }
+
+  /**
+   * Correlaciona a cobertura Meta pelo número persistido e preserva o fallback histórico por ordem.
+   */
+  private JsonNode metaCoverageForAttempt(JsonNode coverages, int attemptNumber) {
+    if (!coverages.isArray()) return objectMapper.createObjectNode();
+    for (JsonNode coverage : coverages) {
+      if (coverage.path("attemptNumber").asInt(-1) == attemptNumber) return coverage;
+    }
+    int historicalIndex = attemptNumber - 1;
+    return historicalIndex >= 0 && historicalIndex < coverages.size()
+        ? coverages.get(historicalIndex)
+        : objectMapper.createObjectNode();
   }
 
   /** Converte uma candidata na visão gerencial com seus cinco estágios. */
@@ -393,14 +456,7 @@ public class ProductDiscoveryIndependentExecutionReportService
     int repository = count(report, "repositoryEvidence", opportunities, "repositoryEvidence");
     return List.of(
         coverage("WEB", "Internet", cycle, web, "Fontes públicas independentes coletadas."),
-        coverage(
-            "META",
-            "Biblioteca Meta / Instagram",
-            cycle,
-            meta,
-            meta > 0
-                ? "Anúncios públicos observados; atividade não equivale a venda."
-                : "Nenhum anúncio aderente foi comprovado ou a fonte exige observação supervisionada."),
+        metaCoverage(cycle, report, meta),
         coverage(
             "PESQUISAS",
             "Acervo /pesquisas",
@@ -413,6 +469,67 @@ public class ProductDiscoveryIndependentExecutionReportService
             cycle,
             offers,
             "Alternativas pagas públicas; oferta observada não comprova venda."));
+  }
+
+  /** Distingue pesquisa Meta vazia, espera de observação e integração não executada. */
+  private IndependentBusinessProcessFlowReportResponse.SourceCoverage metaCoverage(
+      ProductDiscoveryCycle cycle, JsonNode report, int count) {
+    if (count > 0) {
+      return new IndependentBusinessProcessFlowReportResponse.SourceCoverage(
+          "META",
+          "Biblioteca Meta / Instagram",
+          "OBSERVED",
+          count,
+          "Anúncios públicos observados; atividade não equivale a venda.");
+    }
+    JsonNode attempts = report.path("metaCoverage");
+    int attemptCount = attempts.isArray() ? attempts.size() : 0;
+    boolean unavailable = false;
+    boolean awaiting = false;
+    boolean observedEmpty = attemptCount > 0;
+    if (attempts.isArray()) {
+      for (JsonNode attempt : attempts) {
+        String status = attempt.path("sourceStatus").asText("");
+        unavailable |= "UNAVAILABLE".equals(status);
+        awaiting |= status.startsWith("AWAITING_");
+        observedEmpty &=
+            List.of("NO_MATCHING_ACTIVE_ADS", "NO_ACTIVE_ADS", "NO_RELEVANT_PLATFORM_EVIDENCE")
+                .contains(status);
+      }
+    }
+    if (unavailable) {
+      return new IndependentBusinessProcessFlowReportResponse.SourceCoverage(
+          "META",
+          "Biblioteca Meta / Instagram",
+          "UNAVAILABLE",
+          0,
+          attemptCount
+              + " tentativa(s) não chegaram à observação da Biblioteca; falha de integração não comprova ausência de mercado.");
+    }
+    if (awaiting) {
+      return new IndependentBusinessProcessFlowReportResponse.SourceCoverage(
+          "META",
+          "Biblioteca Meta / Instagram",
+          "AWAITING_OBSERVATION",
+          0,
+          attemptCount
+              + " tentativa(s) aguardam navegador público, coleta oficial ou observação supervisionada.");
+    }
+    if (observedEmpty) {
+      return new IndependentBusinessProcessFlowReportResponse.SourceCoverage(
+          "META",
+          "Biblioteca Meta / Instagram",
+          "OBSERVED_EMPTY",
+          0,
+          attemptCount
+              + " consulta(s) executadas sem anúncio ativo aderente; isso não comprova ausência de mercado.");
+    }
+    return coverage(
+        "META",
+        "Biblioteca Meta / Instagram",
+        cycle,
+        0,
+        "Nenhum anúncio aderente foi comprovado e não há cobertura executada auditável.");
   }
 
   /** Produz o estado de cobertura sem transformar fonte vazia em aprovação. */

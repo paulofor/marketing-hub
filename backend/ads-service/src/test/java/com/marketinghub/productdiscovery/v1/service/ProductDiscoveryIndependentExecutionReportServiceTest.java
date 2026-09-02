@@ -119,6 +119,10 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(report.marketExpansion().attempts())
         .extracting(item -> item.attemptNumber() + ":" + item.outcome())
         .containsExactly("1:ADJUST_AND_CONTINUE", "2:DOSSIER_READY_FOUND");
+    assertThat(report.marketExpansion().attempts().getFirst().metaQuery())
+        .isEqualTo("beleza pele madura");
+    assertThat(report.marketExpansion().attempts().getFirst().metaCoverageStatus())
+        .isEqualTo("NO_MATCHING_ACTIVE_ADS");
     var winner = report.candidates().get(0);
     assertThat(winner.productId()).isEqualTo(901L);
     assertThat(winner.nextAction()).contains("Abrir o produto planejado");
@@ -138,6 +142,41 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     ProductDiscoveryCycle cycle = cycle();
+    cycle.setDecisionSummary(
+        "A cobertura Meta ficou indisponível; zero anúncios não prova ausência de mercado. Ciclo com cobertura UNAVAILABLE, UNAVAILABLE, UNAVAILABLE, 11 evidências públicas auxiliares de Instagram.");
+    cycle.setResearchEvidenceReportJson(
+        """
+        {
+          "metaAdEvidence":[],
+          "metaCoverage":[
+            {
+              "query":"beleza pele madura",
+              "sourceStatus":"UNAVAILABLE",
+              "collectionMode":"UNKNOWN",
+              "adsObserved":0,
+              "advertisersObserved":0,
+              "interpretation":"A fonte não respondeu."
+            }
+          ],
+          "marketExpansion":{
+            "strategyCode":"BOUNDED_ADJACENT_MARKET_EXPANSION_V1",
+            "attemptsCompleted":1,
+            "maxAttempts":3,
+            "attempts":[
+              {
+                "attemptNumber":1,
+                "researchLens":"Rotina antes de sair",
+                "newPublicEvidenceCount":20,
+                "newComparableOfferCount":1,
+                "newMetaAdCount":0,
+                "candidateCount":1,
+                "dossierReadyCount":0,
+                "outcome":"ADJUST_AND_CONTINUE"
+              }
+            ]
+          }
+        }
+        """);
     ProductDiscoveryOpportunity signal =
         opportunity(503L, cycle, "Sinal inicial", ProductDiscoveryOpportunityMaturity.RESEARCHABLE);
     when(cycles.findById(42L)).thenReturn(Optional.of(cycle));
@@ -154,6 +193,17 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(report.status()).isEqualTo("BLOCKED");
     assertThat(report.candidates().get(0).nextAction()).contains("aprofundar");
     assertThat(report.plannedProductCount()).isZero();
+    assertThat(report.sourceCoverage())
+        .filteredOn(item -> "META".equals(item.sourceCode()))
+        .extracting(item -> item.status() + ":" + item.summary())
+        .containsExactly(
+            "UNAVAILABLE:1 tentativa(s) não chegaram à observação da Biblioteca; falha de integração não comprova ausência de mercado.");
+    assertThat(report.marketExpansion().attempts().getFirst().metaQuery())
+        .isEqualTo("beleza pele madura");
+    assertThat(report.headline())
+        .isEqualTo(
+            "A cobertura Meta ficou indisponível; zero anúncios não prova ausência de mercado. Ciclo com cobertura da Biblioteca Meta não executada por falha de integração, 11 evidências públicas auxiliares de Instagram.");
+    assertThat(report.headline()).doesNotContain("UNAVAILABLE");
   }
 
   /** Cria o ciclo concluído com as quatro fontes cobertas. */
@@ -169,6 +219,28 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
           "publicEvidence":[{}],
           "marketplaceOffers":[{}],
           "metaAdEvidence":[{}],
+          "metaCoverage":[
+            {
+              "attemptNumber":1,
+              "query":"beleza pele madura",
+              "sourceStatus":"NO_MATCHING_ACTIVE_ADS",
+              "collectionMode":"PUBLIC_BROWSER",
+              "adsObserved":0,
+              "advertisersObserved":0,
+              "interpretation":"Consulta executada sem anúncio aderente.",
+              "searchUrl":"https://www.facebook.com/ads/library/?q=beleza"
+            },
+            {
+              "attemptNumber":2,
+              "query":"autocuidado pele madura",
+              "sourceStatus":"OBSERVED",
+              "collectionMode":"PUBLIC_BROWSER",
+              "adsObserved":2,
+              "advertisersObserved":2,
+              "interpretation":"Dois anúncios ativos observados.",
+              "searchUrl":"https://www.facebook.com/ads/library/?q=autocuidado"
+            }
+          ],
           "repositoryEvidence":[{}],
           "marketExpansion":{
             "strategyCode":"BOUNDED_ADJACENT_MARKET_EXPANSION_V1",

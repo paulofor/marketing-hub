@@ -61,23 +61,30 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
       }),
     });
     if (!response.ok) {
+      const detail = await safeResponseDetail(response);
       logger.warn?.(
-        `[product-discovery-worker] Meta Ad Library evidence failed cycle=${options.cycleId} status=${response.status}`,
+        `[product-discovery-worker] Meta Ad Library evidence failed cycle=${options.cycleId} attempt=${attemptNumber} status=${response.status} query=${request.query}${detail ? ` detail=${detail}` : ""}`,
       );
+      if (isInternalContractFailure(response.status)) {
+        throw new Error(
+          `Backend recusou o contrato de cobertura Meta do ciclo ${options.cycleId}, tentativa ${attemptNumber}: HTTP ${response.status}${detail ? ` ${detail}` : ""}`,
+        );
+      }
       metaCoverage.push({
         attemptNumber,
         query: request.query,
         country: request.country,
         publisherPlatform: request.publisherPlatform,
         sourceStatus: "UNAVAILABLE",
-        collectionMode: "UNKNOWN",
+        collectionMode: "BACKEND_UNAVAILABLE",
+        httpStatus: response.status,
         adsObserved: 0,
         activeAds: 0,
         advertisersObserved: 0,
         latestObservationAt: null,
         searchUrl: null,
         interpretation:
-          "A fonte Meta não respondeu; isso não comprova ausência de anúncios ou de mercado.",
+          `A integração de cobertura respondeu HTTP ${response.status}; isso não comprova ausência de anúncios ou de mercado.`,
       });
       continue;
     }
@@ -123,6 +130,24 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     metaAdEvidence: deduplicateMarketplaceOffers(metaAdEvidence),
     metaCoverage,
   };
+}
+
+/** Distingue erro do nosso contrato de indisponibilidade transitória da integração. */
+function isInternalContractFailure(status) {
+  return status >= 400 && status < 500 && ![408, 429].includes(status);
+}
+
+/** Lê uma causa curta sem transportar HTML ou payload excessivo para logs e auditoria. */
+async function safeResponseDetail(response) {
+  if (typeof response?.text !== "function") return "";
+  try {
+    return String(await response.text())
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
+  } catch {
+    return "";
+  }
 }
 
 /** Decide se a investigação vigente ainda precisa da observação pública do Chromium. */

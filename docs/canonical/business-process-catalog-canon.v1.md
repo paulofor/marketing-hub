@@ -273,6 +273,13 @@ O catálogo operacional é
 compatível continua visível com a causa da indisponibilidade, mas não pode ser disparado. Repetir o
 mesmo `requestKey` devolve a execução já criada e nunca abre outro ciclo ou duplica consumo de modelo.
 
+O histórico abre com dez execuções recentes e busca páginas anteriores somente por comando explícito
+do usuário, usando `limit` e o cursor `beforeId`. A listagem deve projetar em lote apenas identidade,
+estado, progresso, consumo, horários e causa persistida; prompts, resultados, evidências, diagramas e
+relatórios especializados completos pertencem exclusivamente ao endpoint de detalhe. Enquanto existir
+execução ativa, a atualização automática consulta apenas essa projeção paginada e nunca pode hidratar
+campos `LONGTEXT` para reconstruir os cards.
+
 Cada item do histórico deve abrir a rota dedicada
 `/business-process-executions/{executionId}`. Uma execução terminal bloqueada deve mostrar já no
 histórico a causa literal consolidada pelo backend e, no detalhe, estado, horários, entrada,

@@ -133,8 +133,7 @@ function detail(execution = summary): ExecutionDetailFixture {
             metaAdvertisersObserved: 0,
             metaCoverageSummary:
               "Consulta executada sem anúncio ativo aderente.",
-            metaSearchUrl:
-              "https://www.facebook.com/ads/library/?q=beleza",
+            metaSearchUrl: "https://www.facebook.com/ads/library/?q=beleza",
           },
           {
             attemptNumber: 2,
@@ -356,9 +355,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
         name: "Execução #91 · agenda vazia para manicures",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Biblioteca Meta / Instagram"),
-    ).toHaveLength(3);
+    expect(screen.getAllByText("Biblioteca Meta / Instagram")).toHaveLength(3);
     expect(screen.getByText("Acervo /pesquisas")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Ampliação controlada de mercado" }),
@@ -368,7 +365,9 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     ).toHaveLength(2);
     expect(screen.getByText("Dossiê pronto encontrado")).toBeInTheDocument();
     expect(screen.getByText("+9 ofertas")).toBeInTheDocument();
-    expect(screen.getByText("Consulta: beleza pele madura")).toBeInTheDocument();
+    expect(
+      screen.getByText("Consulta: beleza pele madura"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Cobertura: Executada sem anúncio aderente"),
     ).toBeInTheDocument();
@@ -383,6 +382,49 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     expect(
       screen.getByText("Aguardar Atena priorizar no máximo uma candidata."),
     ).toBeInTheDocument();
+  });
+
+  it("carrega execuções antigas somente quando o usuário pedir", async () => {
+    const recent = Array.from({ length: 11 }, (_, index) => ({
+      ...summary,
+      id: 101 - index,
+      sourceReference: `product-discovery-cycle:${101 - index}`,
+    }));
+    const older = {
+      ...summary,
+      id: 91,
+      sourceReference: "product-discovery-cycle:91",
+    };
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
+      if (url === "/api/independent-business-process-executions/catalog") {
+        return { data: catalog };
+      }
+      if (url === "/api/independent-business-process-executions") {
+        const beforeId = config?.params?.beforeId;
+        return { data: beforeId === 92 ? [older] : recent };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByText(/#101 ·/)).toBeInTheDocument();
+    expect(screen.queryByText(/#91 ·/)).not.toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/independent-business-process-executions",
+      { params: { limit: 11 } },
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Carregar execuções anteriores" }),
+    );
+
+    expect(await screen.findByText(/#91 ·/)).toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/independent-business-process-executions",
+      { params: { limit: 11, beforeId: 92 } },
+    );
   });
 
   it("torna o produto planejado e sua linhagem visíveis no relatório", async () => {

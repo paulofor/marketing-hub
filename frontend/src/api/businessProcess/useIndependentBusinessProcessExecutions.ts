@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import axios from "axios";
 import type {
   IndependentBusinessProcessCatalogItem,
@@ -9,6 +14,12 @@ import type {
 
 const executionRootKey = ["independent-business-process-executions"];
 const executionListKey = [...executionRootKey, "list"];
+const executionPageSize = 10;
+
+type IndependentBusinessProcessExecutionPage = {
+  items: IndependentBusinessProcessExecutionSummary[];
+  nextBeforeId?: number;
+};
 
 export function useIndependentBusinessProcessCatalog() {
   return useQuery({
@@ -23,16 +34,30 @@ export function useIndependentBusinessProcessCatalog() {
 }
 
 export function useIndependentBusinessProcessExecutions() {
-  return useQuery({
+  return useInfiniteQuery<IndependentBusinessProcessExecutionPage>({
     queryKey: executionListKey,
-    queryFn: async () =>
-      (
-        await axios.get<IndependentBusinessProcessExecutionSummary[]>(
-          "/api/independent-business-process-executions",
-        )
-      ).data,
+    initialPageParam: undefined,
+    queryFn: async ({ pageParam }) => {
+      const response = await axios.get<
+        IndependentBusinessProcessExecutionSummary[]
+      >("/api/independent-business-process-executions", {
+        params: {
+          limit: executionPageSize + 1,
+          ...(typeof pageParam === "number" ? { beforeId: pageParam } : {}),
+        },
+      });
+      const items = response.data.slice(0, executionPageSize);
+      return {
+        items,
+        nextBeforeId:
+          response.data.length > executionPageSize
+            ? items[items.length - 1]?.id
+            : undefined,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextBeforeId,
     refetchInterval: (query) =>
-      query.state.data?.some((item) =>
+      query.state.data?.pages[0]?.items.some((item) =>
         ["PENDING", "IN_PROGRESS"].includes(item.status),
       )
         ? 5000

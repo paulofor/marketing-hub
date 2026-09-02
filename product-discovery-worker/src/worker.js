@@ -25,6 +25,7 @@ import { startAgentHealthReporter } from "./agent-health-reporter.js";
 import { collectMarketplaceEvidence } from "./marketplace-evidence.js";
 import { createAutomaticExecutionControl } from "./automatic-execution-control.js";
 import {
+  canonicalMarketplaceOfferKey,
   executeBoundedMarketResearch,
   MARKET_EXPANSION_STRATEGY_CODE,
 } from "./market-expansion.js";
@@ -420,10 +421,7 @@ export function createPollLock() {
 function deduplicateOffers(offers) {
   return [
     ...new Map(
-      offers.map((offer) => [
-        `${offer.marketplace}:${offer.referenceId || offer.url}`,
-        offer,
-      ]),
+      offers.map((offer) => [canonicalMarketplaceOfferKey(offer), offer]),
     ).values(),
   ];
 }

@@ -68,7 +68,13 @@ test("schema exige duas ou três candidatas factuais", () => {
     schema.properties.candidates.items.properties.primaryAudience.maxLength,
     191,
   );
+  assert.equal(schema.properties.decisionSummary.maxLength, 1500);
+  assert.equal(
+    schema.properties.candidates.items.properties.currentAlternatives.maxItems,
+    8,
+  );
   assert.match(prompt, /duas ou três candidatas factuais distintas/);
+  assert.match(prompt, /sem repetir a mesma evidência/i);
 });
 
 test("buildSearchQueries creates pain-oriented queries", () => {
@@ -171,6 +177,38 @@ test("buildSearchQueries inclui pesquisa de canal no recorte B2C Instagram", () 
       query.includes("aplicativo preço review pessoa física"),
     ),
   );
+});
+
+test("buildSearchQueries usa o foco amplo sem hipersegmentar toda busca comercial", () => {
+  const themes = [
+    [
+      "Mulheres entre 35 e 60 anos foco em beleza e bem-estar.",
+      "beleza e bem-estar",
+    ],
+    ["Homens entre 25 e 35 anos foco em finanças.", "finanças"],
+    [
+      "Mulheres entre 35 e 60 anos foco em relacionamentos.",
+      "relacionamentos",
+    ],
+  ];
+
+  for (const [theme, focus] of themes) {
+    const queries = buildSearchQueries({
+      theme,
+      researchMode: "DISCOVER_MARKETS",
+      marketType: "B2C",
+      acquisitionChannel: "Instagram",
+    });
+    assert.ok(
+      queries.some((query) => query === `${focus} curso online preço`),
+    );
+    assert.ok(
+      queries.some((query) =>
+        query.includes(`${focus} scientific study mechanism`),
+      ),
+    );
+    assert.ok(queries.every((query) => !query.includes("anos foco em")));
+  }
 });
 
 test("analyzeSearchResults não presume Instagram no ciclo B2C", () => {
@@ -559,6 +597,40 @@ test("extrai alternativas públicas pagas sem contar conteúdo editorial", () =>
   assert.match(offers[0].signalDisclaimer, /não vendas/);
 });
 
+test("conta apps oficiais por produto e não transforma notícia com preço em oferta", () => {
+  const offers = extractPublicComparableOffers([
+    {
+      title: "Skin Bliss: Skincare Routines",
+      url: "https://play.google.com/store/apps/details?id=com.getskinbliss.skinbliss&hl=pt",
+      snippet: "Aplicativo com versão gratuita e recursos Premium por assinatura.",
+    },
+    {
+      title: "Skinive: análise de pele",
+      url: "https://play.google.com/store/apps/details?id=com.skinive.App&hl=pt_BR",
+      snippet: "Opções gratuitas e Premium dentro do app.",
+    },
+    {
+      title: "IA Derma: Exame da Pele",
+      url: "https://apps.apple.com/br/app/pele-digital-exame-ia-derma/id1633219654",
+      snippet: "Recursos gratuitos e Premium com compras dentro do app.",
+    },
+    {
+      title: "Beleza impacta autoestima e gasto chega a R$ 500",
+      url: "https://jornal.example/cotidiano/2026/beleza-autoestima",
+      snippet: "Matéria relata preços pagos em salões e consultorias.",
+    },
+  ]);
+
+  assert.deepEqual(
+    offers.map((offer) => offer.referenceId),
+    [
+      "play.google.com:com.getskinbliss.skinbliss",
+      "play.google.com:com.skinive.App",
+      "apps.apple.com:id1633219654",
+    ],
+  );
+});
+
 test("mecanismo de propostas exige ciência sobre decisão, clareza e confiança", () => {
   const report = analyzeSearchResults(
     {
@@ -676,7 +748,7 @@ test("searchInternet limits Brave query while preserving the research intent", a
   const query = new URL(calls[0]).searchParams.get("q");
   assert.ok(Array.from(query).length <= 400);
   assert.ok(query.split(/\s+/).length <= 50);
-  assert.match(query, /cliente pergunta preço e some$/);
+  assert.match(query, /curso online preço$/);
 });
 
 test("searchInternet sends the canonical Brazilian locale accepted by Brave", async () => {
@@ -820,7 +892,7 @@ test("searchInternet uses stronger default search depth before stopping", async 
     calls.some((url) =>
       new URL(url).searchParams
         .get("q")
-        ?.includes("cliente pergunta preço e some"),
+        ?.includes("curso online preço"),
     ),
     "deve executar consultas comerciais específicas antes de parar",
   );
@@ -832,6 +904,120 @@ test("searchInternet uses stronger default search depth before stopping", async 
     ),
     "deve executar consulta científica antes de encerrar pelo volume de resultados",
   );
+});
+
+test("descoberta ampla preserva ofertas e ciência antes de encerrar por volume", async () => {
+  const calls = [];
+  const results = await searchInternet(
+    {
+      theme: "beleza e bem-estar",
+      targetAudience: "mulheres de 35 a 60 anos",
+      researchMode: "DISCOVER_MARKETS",
+      marketType: "B2C",
+      acquisitionChannel: "Instagram",
+    },
+    {
+      maxSearchResults: 6,
+      minSearchQueries: 2,
+      maxSearchQueries: 8,
+      maxResultsPerQuery: 3,
+      minimumPublicComparableOffers: 4,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { info() {} },
+      fetchFn: async (url) => {
+        calls.push(url);
+        const query = new URL(url).searchParams.get("q");
+        const callNumber = calls.length;
+        if (/scientific study mechanism/.test(query)) {
+          return {
+            ok: true,
+            json: async () => ({
+              web: {
+                results: [
+                  {
+                    title: "Systematic review of wellbeing intervention",
+                    url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+                    description: "Peer reviewed systematic review intervention.",
+                  },
+                ],
+              },
+            }),
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            web: {
+              results: [
+                {
+                  title: `Programa online de bem-estar ${callNumber}`,
+                  url: `https://oferta${callNumber}.example/curso/programa`,
+                  description: `Curso online por R$ ${40 + callNumber},00; compre agora.`,
+                },
+                {
+                  title: `Relato público ${callNumber}`,
+                  url: `https://relato${callNumber}.example/post`,
+                  description: "Dificuldade, insegurança e alternativa manual.",
+                },
+              ],
+            },
+          }),
+        };
+      },
+    },
+  );
+
+  assert.equal(calls.length, 5);
+  assert.equal(extractPublicComparableOffers(results).length, 4);
+  assert.ok(
+    results.some((item) => item.url.includes("pubmed.ncbi.nlm.nih.gov")),
+  );
+});
+
+test("descoberta ampla não encerra com apenas nove ofertas públicas", async () => {
+  const calls = [];
+  const offers = Array.from({ length: 9 }, (_, index) => ({
+    title: `Programa digital ${index + 1}`,
+    url: `https://oferta${index + 1}.example/curso/programa`,
+    description: `Curso online por R$ ${49 + index},00; compre agora.`,
+  }));
+  const science = {
+    title: "Systematic review of decision support",
+    url: "https://pubmed.ncbi.nlm.nih.gov/99999/",
+    description: "Peer reviewed systematic review intervention.",
+  };
+
+  await searchInternet(
+    {
+      theme: "finanças",
+      researchMode: "DISCOVER_MARKETS",
+      marketType: "B2C",
+      acquisitionChannel: "Instagram",
+    },
+    {
+      maxSearchResults: 5,
+      minSearchQueries: 2,
+      maxSearchQueries: 5,
+      maxResultsPerQuery: 10,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { info() {} },
+      fetchFn: async (url) => {
+        calls.push(url);
+        return {
+          ok: true,
+          json: async () => ({ web: { results: [...offers, science] } }),
+        };
+      },
+    },
+  );
+
+  assert.equal(calls.length, 5);
 });
 
 test("searchInternet fails operationally when every provider query fails", async () => {
@@ -995,6 +1181,8 @@ test("analyzeSearchResults explica falha Meta sem expor códigos técnicos no re
 test("analyzeSearchResults exige revisão humana sem liberar dossiê sensível", () => {
   const blueprints = candidateBlueprints();
   blueprints[0].maturity = "DOSSIER_READY";
+  blueprints[0].pdeDeliveryFit.readyDigitalOutcome =
+    "Diagnóstico médico individual pronto para seguir.";
   const offers = Array.from({ length: 10 }, (_, index) => ({
     marketplace: "HOTMART",
     referenceId: String(index),
@@ -1049,6 +1237,96 @@ test("analyzeSearchResults exige revisão humana sem liberar dossiê sensível",
   assert.equal(report.opportunities[0].maturity, "HUMAN_REVIEW");
 });
 
+test("analyzeSearchResults promove somente candidata segura com evidência própria", () => {
+  const blueprints = candidateBlueprints();
+  blueprints[0].evidenceIds = ["P1", "P2", "O1", "M1"];
+  blueprints[1].evidenceIds = ["P1", "P2", "O2"];
+  blueprints[2].evidenceIds = ["P1", "P2", "O3", "M1"];
+  blueprints[2].pdeDeliveryFit.readyDigitalOutcome =
+    "Recomendação de investimento com retorno garantido.";
+  const offers = Array.from({ length: 10 }, (_, index) => ({
+    evidenceId: `O${index + 1}`,
+    marketplace: "HOTMART",
+    referenceId: String(index),
+    title: `Alternativa paga ${index}`,
+    url: `https://hotmart.com/alternativa-${index}`,
+    price: "R$ 49,00",
+    collectedAt: "2026-09-01T00:00:00Z",
+  }));
+
+  const report = analyzeSearchResults(
+    {
+      theme: "beleza e bem-estar",
+      targetAudience: "mulheres de 35 a 60 anos",
+      acquisitionChannel: "Instagram",
+      marketType: "B2C",
+      researchMode: "DISCOVER_MARKETS",
+    },
+    [
+      {
+        evidenceId: "P1",
+        title: "Situação de compra observada",
+        url: "https://relatos.example/situacao",
+        snippet:
+          "Problema caro e complicado; consumidor procura comprar alternativa pronta.",
+      },
+      {
+        evidenceId: "P2",
+        title: "Comparação pública independente",
+        url: "https://reviews.example/comparacao",
+        snippet: "Review de curso pago que não resolve e exige montagem manual.",
+      },
+      {
+        evidenceId: "P3",
+        title: "Revisão sobre mecanismo e tratamento médico",
+        url: "https://pubmed.ncbi.nlm.nih.gov/123456/",
+        snippet:
+          "Systematic review que também descreve limites de tratamento médico.",
+      },
+    ],
+    offers,
+    {
+      candidateBlueprints: blueprints,
+      minimumComparableOffers: 10,
+      metaAdEvidence: [
+        {
+          evidenceId: "M1",
+          referenceId: "ad-1",
+          title: "Alternativa digital observada",
+          active: true,
+          publisherPlatforms: ["INSTAGRAM"],
+        },
+      ],
+      metaCoverage: [
+        {
+          publisherPlatform: "INSTAGRAM",
+          sourceStatus: "OBSERVED",
+          activeAds: 1,
+          advertisersObserved: 1,
+        },
+      ],
+      sourceEvaluatedAt: "2026-09-02T00:00:00Z",
+    },
+  );
+
+  assert.equal(report.opportunities[0].maturity, "DOSSIER_READY");
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
+  assert.equal(report.opportunities[1].maturity, "RESEARCHABLE");
+  assert.equal(report.opportunities[2].maturity, "HUMAN_REVIEW");
+  assert.equal(report.opportunities[2].decision, "HUMAN_REVIEW");
+  assert.match(report.decisionSummary, /1 DOSSIER_READY/);
+  const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.equal(evidence.candidateReadiness.independentPublicPaths, 2);
+  assert.equal(evidence.candidateReadiness.referencedComparableOffers, 1);
+  assert.equal(evidence.candidateReadiness.referencedActiveInstagramAds, 1);
+  assert.equal(evidence.candidateReadiness.highRiskHits, 0);
+  assert.ok(
+    evidence.publicEvidence.some((item) =>
+      /tratamento médico/i.test(item.snippet),
+    ),
+  );
+});
+
 test("scientific and commercial queries are inside the operational query limit", () => {
   const queries = buildSearchQueries({
     theme: "tema novo",
@@ -1060,6 +1338,13 @@ test("scientific and commercial queries are inside the operational query limit",
   assert.ok(
     queries.some(
       (query) => query.includes("preço") || query.includes("resposta pronta"),
+    ),
+  );
+  assert.ok(
+    queries.some(
+      (query) =>
+        query.includes("site:apps.apple.com") ||
+        query.includes("site:play.google.com/store/apps"),
     ),
   );
 });

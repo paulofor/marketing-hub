@@ -38,7 +38,7 @@ public class ProductDiscoveryService {
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final int MINIMUM_COMPARABLE_MARKETPLACE_OFFERS = 10;
   private static final Set<String> COMPARABLE_MARKETPLACES =
-      Set.of("hotmart", "clickbank", "public_web");
+      Set.of("hotmart", "clickbank", "public web");
   private static final String STAGE_CODE = "research";
   private static final Duration EXECUTION_LEASE_DURATION = Duration.ofMinutes(20);
   private static final List<String> LEGACY_ARTIFICIAL_EVIDENCE_MARKERS =
@@ -582,7 +582,7 @@ public class ProductDiscoveryService {
     }
   }
 
-  /** Consolida snapshots do mesmo produto sem inflar a prova comercial por referência legada. */
+  /** Consolida snapshots e reconhece a identidade normalizada das ofertas públicas do worker. */
   private String canonicalMarketplaceOfferKey(JsonNode node) {
     String marketplace = normalizeMarketplaceOfferIdentity(node.path("marketplace").asText());
     String title = normalizeMarketplaceOfferIdentity(node.path("title").asText());

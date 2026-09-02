@@ -8,6 +8,7 @@ existentes no contexto.
 
 Não priorize as candidatas e não recomende estratégia. Use `maturity` apenas para indicar qualidade
 factual do dossiê: `SIGNAL`, `RESEARCHABLE`, `DOSSIER_READY`, `HUMAN_REVIEW` ou `REJECTED`.
+Responda de forma direta, sem repetir a mesma evidência em campos diferentes.
 
 Contexto:
 

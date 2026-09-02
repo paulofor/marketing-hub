@@ -23,8 +23,9 @@ export async function planDirectedResearch(job, options = {}) {
   const model = options.model || process.env.ARGOS_CODEX_MODEL;
   const reasoningEffort =
     options.reasoningEffort ||
+    process.env.ARGOS_CODEX_PLAN_REASONING_EFFORT ||
     process.env.ARGOS_CODEX_REASONING_EFFORT ||
-    "high";
+    "medium";
   let execution;
   try {
     await writeFile(schema, schemaContract);
@@ -49,9 +50,13 @@ export async function planDirectedResearch(job, options = {}) {
     const execute = options.execute || executeCodexWithInput;
     execution = await execute(command, args, prompt.fullPrompt, {
       timeoutMs: Number(
-        options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000,
+        options.timeoutMs ||
+          process.env.ARGOS_CODEX_PLAN_TIMEOUT_MS ||
+          process.env.ARGOS_CODEX_TIMEOUT_MS ||
+          600000,
       ),
       maxBuffer: 10 * 1024 * 1024,
+      phaseName: "planejamento",
     });
     let rawResponse;
     try {
@@ -102,6 +107,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
   const spawnProcess = options.spawnProcess || spawn;
   const timeoutMs = Number(options.timeoutMs || 600000);
   const maxBuffer = Number(options.maxBuffer || 10 * 1024 * 1024);
+  const phaseName = String(options.phaseName || "execução").trim();
   return new Promise((resolve, reject) => {
     let child;
     let settled = false;
@@ -120,7 +126,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
       if (next.length > maxBuffer) {
         child?.kill("SIGTERM");
         rejectOnce(
-          new Error("Saída do planejamento de Argos excedeu o limite seguro"),
+          new Error(`Saída da ${phaseName} de Argos excedeu o limite seguro`),
         );
       }
       return next;
@@ -130,7 +136,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
       child = spawnProcess(command, args, { stdio: ["pipe", "pipe", "pipe"] });
     } catch (error) {
       rejectOnce(
-        new Error(`Falha ao iniciar o Codex para Argos: ${error.message}`, {
+        new Error(`Falha ao iniciar a ${phaseName} de Argos: ${error.message}`, {
           cause: error,
         }),
       );
@@ -140,7 +146,9 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     timeout = setTimeout(() => {
       child.kill("SIGTERM");
       rejectOnce(
-        new Error(`Planejamento de Argos excedeu o timeout de ${timeoutMs} ms`),
+        new Error(
+          `${capitalize(phaseName)} de Argos excedeu o timeout de ${timeoutMs} ms`,
+        ),
       );
     }, timeoutMs);
 
@@ -154,7 +162,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     });
     child.on("error", (error) => {
       rejectOnce(
-        new Error(`Falha ao executar o Codex para Argos: ${error.message}`, {
+        new Error(`Falha ao executar a ${phaseName} de Argos: ${error.message}`, {
           cause: error,
         }),
       );
@@ -165,7 +173,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
         const detail = stderr.trim().slice(-2000);
         rejectOnce(
           new Error(
-            `Codex encerrou o planejamento de Argos com código ${code ?? "desconhecido"}${signal ? ` e sinal ${signal}` : ""}${detail ? `: ${detail}` : ""}`,
+            `Codex encerrou a ${phaseName} de Argos com código ${code ?? "desconhecido"}${signal ? ` e sinal ${signal}` : ""}${detail ? `: ${detail}` : ""}`,
           ),
         );
         return;
@@ -178,7 +186,7 @@ export function executeCodexWithInput(command, args, input, options = {}) {
       if (error?.code !== "EPIPE") {
         rejectOnce(
           new Error(
-            `Falha ao enviar o contexto de Argos ao Codex: ${error.message}`,
+            `Falha ao enviar o contexto da ${phaseName} de Argos ao Codex: ${error.message}`,
             {
               cause: error,
             },
@@ -188,6 +196,12 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     });
     child.stdin.end(input, "utf8");
   });
+}
+
+/** Inicia a descrição da fase com maiúscula sem alterar o texto auditável restante. */
+function capitalize(value) {
+  const text = String(value || "execução");
+  return `${text.charAt(0).toLocaleUpperCase("pt-BR")}${text.slice(1)}`;
 }
 
 /** Extrai a contabilização final emitida pelo modo JSON do Codex. */
@@ -423,7 +437,7 @@ async function buildPromptComposition(job) {
     marketType: job.marketType || "UNSPECIFIED",
     referenceSources: job.referenceSources || "não informadas",
     researchLibraryContext: JSON.stringify(
-      job.researchLibraryContext || { evidence: [], coverage: [] },
+      researchLibraryPromptContext(job.researchLibraryContext),
       null,
       2,
     ),
@@ -448,6 +462,31 @@ async function buildPromptComposition(job) {
     agentPromptPart,
     activityPromptPart,
   };
+}
+
+/** Resume a biblioteca viva para planejar consultas sem duplicar manifestos e artigos integrais. */
+function researchLibraryPromptContext(context = {}) {
+  return {
+    evidence: (context.evidence || []).slice(0, 7).map((item) => ({
+      evidenceId: item.evidenceId,
+      collection: item.collection,
+      title: item.title,
+      date: item.date,
+      path: item.path,
+      excerpt: truncateForPrompt(item.excerpt, 900),
+    })),
+    coverage: (context.coverage || []).map((item) => ({
+      collection: item.collection,
+      status: item.status,
+      documentCount: Number(item.documentCount || 0),
+    })),
+  };
+}
+
+/** Aplica um teto previsível ao texto enviado ao modelo sem modificar o artefato persistido. */
+function truncateForPrompt(value, maxChars) {
+  const text = String(value || "").trim();
+  return Array.from(text).slice(0, maxChars).join("");
 }
 
 /** Resolve somente os placeholders conhecidos e preserva o restante como erro visível. */

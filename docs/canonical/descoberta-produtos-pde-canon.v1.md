@@ -461,8 +461,11 @@ seguinte com menos de dez ofertas únicas comparáveis, vindas dos marketplaces 
 páginas comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto
 pelos marketplaces. A pesquisa pode encerrar tecnicamente e preservar candidatas factuais como
 `RESEARCH_MORE`, desde que a lacuna permaneça explícita e nenhuma próxima etapa seja liberada. A
-contagem deve deduplicar por referência e domínio, exigir aderência semântica e preservar ao menos
-dois caminhos independentes de confirmação. Dados ausentes não podem ser fabricados nem transformar
+contagem deve usar no worker e no backend a mesma identidade canônica por marketplace, título e
+produtor, recorrendo à referência somente quando o título estiver ausente; deve ainda exigir
+aderência semântica e preservar ao menos dois caminhos independentes de confirmação. A busca pública
+não pode encerrar antecipadamente com um limiar inferior às dez ofertas exigidas pelo handoff. Dados
+ausentes não podem ser fabricados nem transformar
 temperatura, score, ranking, anúncio ou página comercial em venda.
 
 O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de compra,
@@ -717,6 +720,14 @@ permanecem visíveis com lacunas e próxima pesquisa; candidatas `REJECTED` pres
 inferida pelo frontend. A classificação do modelo não é autoridade suficiente: o worker deve
 rebaixar `DOSSIER_READY` quando faltarem as dez ofertas comparáveis ou a cobertura observada da
 Biblioteca Meta/Instagram, e o backend deve recalcular esses mesmos gates antes de abrir a cadeia.
+O worker também pode promover deterministicamente `RESEARCHABLE` a `DOSSIER_READY` quando o ciclo
+tiver as dez ofertas e cobertura Meta aprovadas e a candidata citar, em seus próprios IDs, ao menos
+duas rotas públicas independentes, uma oferta comparável e um anúncio ativo no Instagram, além de
+passar pelos gates científico, comercial e de entrega PDE com IA. As dez ofertas são um gate
+acumulado do ciclo; cada candidata deve citar ao menos uma alternativa aderente, não dez ofertas
+exclusivas. Alto risco deve ser recalculado sobre a entrega proposta pela candidata: termos
+sensíveis presentes apenas no corpus externo, na dor observada ou em uma ressalva não podem
+contaminar as demais candidatas.
 Sinal de alto risco tem precedência sobre qualquer prontidão: decisão `HUMAN_REVIEW` exige
 maturidade `HUMAN_REVIEW`, decisão `REJECT` exige `REJECTED`, e nenhuma das duas pode abrir Atena
 automaticamente como `DOSSIER_READY`.

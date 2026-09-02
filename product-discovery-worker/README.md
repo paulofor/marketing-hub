@@ -71,11 +71,23 @@ gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 - `PRODUCT_DISCOVERY_SEARCH_LANGUAGE`: idioma usado na busca. Padrão: `pt-br`.
 - `ARGOS_CODEX_ENABLED`: habilita planejamento e síntese factual pelo Codex. Padrão operacional: `true`.
 - `ARGOS_CODEX_MODEL`: modelo das duas fases. Padrão: `gpt-5.6-sol`.
-- `ARGOS_CODEX_REASONING_EFFORT`: esforço registrado para auditoria. Padrão: `high`.
-- `ARGOS_CODEX_TIMEOUT_MS`: timeout individual de cada fase. Padrão: `600000`.
+- `ARGOS_CODEX_REASONING_EFFORT`: esforço comum das duas fases. Padrão: `medium`, suficiente para
+  o contrato estruturado sem ocupar o executor com raciocínio excessivo.
+- `ARGOS_CODEX_PLAN_REASONING_EFFORT` e `ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT`: sobrescrevem o
+  esforço de uma fase específica quando houver evidência operacional para isso.
+- `ARGOS_CODEX_TIMEOUT_MS`: timeout individual comum das duas fases. Padrão: `600000`.
+- `ARGOS_CODEX_PLAN_TIMEOUT_MS` e `ARGOS_CODEX_SYNTHESIS_TIMEOUT_MS`: sobrescrevem o timeout da fase
+  correspondente e preservam no erro qual etapa realmente excedeu o limite.
 - `ARGOS_MARKET_EXPANSION_MAX_ATTEMPTS`: rodadas totais na mesma execução `DISCOVER_MARKETS`,
   limitadas entre `1` e `3`. Padrão: `3`; a primeira usa o escopo inicial e as demais exigem lente
   adjacente e evidência nova.
+
+Na descoberta ampla, as consultas são intercaladas por finalidade. O worker reserva resultados para
+alternativas públicas pagas, ciência e Instagram antes de preencher o relatório com relatos gerais;
+o volume total e o número de consultas continuam limitados pelas variáveis acima. Briefings no
+formato “público foco em tema” preservam o público para a síntese, mas usam somente o tema amplo nas
+consultas comerciais auxiliares. O encerramento antecipado exige as mesmas dez ofertas únicas do
+gate do backend, deduplicadas pela identidade canônica de marketplace, título e produtor.
 
 ## Deploy
 

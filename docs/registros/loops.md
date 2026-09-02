@@ -3214,3 +3214,62 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** contrato versionado exige a ordem pacote, upload, download e imagem; bloqueia
   qualquer retorno de `FROM maven` ou `COPY backend/ads-service` no Dockerfile e confirma que o JAR
   está incluído de forma explícita no contexto Docker.
+
+## LOOP-ARGOS-SINTESE-CONTEXTO-DUPLICADO — coleta termina, mas a descoberta expira na síntese
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** a execução independente #17 e a tarefa #303 concluíram o planejamento,
+  coletaram 30 fatos públicos e seis ofertas, mas expiraram depois de dez minutos durante a síntese.
+  O erro dizia incorretamente que o planejamento excedera o timeout.
+- **Causa-raiz confirmada no histórico e nos logs:** o prompt persistido tinha 89.185 caracteres. A
+  biblioteca de pesquisas seguia dentro de `job` e era repetida em blocos próprios de evidência; o
+  schema não limitava a maior parte dos textos. Em paralelo, as oito primeiras consultas dirigidas
+  ocupavam a frente da fila e o teto de resultados encerrava a busca antes das consultas de ofertas
+  pagas e ciência. A imagem operacional anterior também enviou à Meta uma consulta com mais de cinco
+  termos e recebeu HTTP 400, apesar de esse contrato já estar corrigido no código atual.
+- **Correção sistêmica:** planejamento e síntese recebem somente campos factuais necessários, com
+  trechos e saída limitados; cada fase possui esforço, timeout e mensagem de erro próprios. A busca
+  intercala alternativas pagas, ciência, Instagram e relatos e só encerra antecipadamente uma
+  descoberta ampla quando a composição mínima estiver presente.
+- **Prevenção:** testes de contrato injetam biblioteca e artigos extensos, impedem duplicação no
+  prompt, verificam o nome da fase no timeout e simulam volume precoce para provar que ofertas e
+  ciência permanecem no conjunto final. Os gates de dez ofertas, cobertura Meta observada e entrega
+  PDE com IA não foram relaxados.
+- **Recorrência observada na execução #19:** depois da compactação, a coleta chegou a 77 fatos,
+  doze ofertas, oito artigos científicos e sete anúncios aderentes, mas um termo sensível presente
+  no corpus amplo rebaixou globalmente as três candidatas para `HUMAN_REVIEW`; a síntese bruta havia
+  classificado todas como `RESEARCHABLE`. O mesmo desvio impediria temas amplos de finanças ou
+  relacionamentos mesmo quando a entrega proposta fosse segura.
+- **Fechamento adicional da causa-raiz:** risco passa a ser calculado somente sobre a entrega PDE de
+  cada candidata; fontes, dores e ressalvas permanecem auditadas sem contaminar outras candidatas.
+  O worker recalcula a prontidão por candidata e pode promover `RESEARCHABLE` apenas quando o ciclo
+  cumpre os gates globais e a candidata cita duas rotas públicas independentes, uma oferta e um
+  anúncio Instagram próprios. Testes preservam revisão humana para diagnóstico, terapia,
+  aconselhamento jurídico/financeiro e promessa de retorno, inclusive quando outra candidata segura
+  pode avançar no mesmo ciclo.
+- **Recorrência observada na execução #20:** a busca de beleza encontrou anúncios e ciência, mas o
+  worker considerou snapshots diferentes da mesma oferta enquanto o backend os consolidou por
+  título e produtor. O callback foi recusado com sete ofertas canônicas, apagando da tela as
+  candidatas incompletas. A busca Web também podia encerrar com oito ofertas apesar do gate de dez,
+  e carregava gênero e idade em todas as consultas auxiliares do tema amplo.
+- **Fechamento adicional da causa-raiz:** worker e backend passam a compartilhar a mesma identidade
+  comercial; a fronteira do callback rebaixa qualquer prontidão incompatível antes de enviar o
+  resultado; a busca só encerra antecipadamente com dez ofertas públicas e usa o trecho após
+  “foco em” nas consultas comerciais auxiliares. Testes reproduzem snapshots divergentes, nove
+  ofertas insuficientes e os três briefings amplos sem hipersegmentação.
+- **Recorrência observada na execução #21:** a busca corrigida coletou dez páginas comerciais
+  públicas já na primeira lente, mas o backend transformava `PUBLIC_WEB` em `public web` durante a
+  normalização e comparava o resultado com a constante não normalizada `public_web`. Assim, contou
+  zero ofertas e recusou novamente o callback, apesar de Web, ciência e Meta terem sido executados.
+- **Fechamento adicional da causa-raiz:** a lista canônica do backend passa a armazenar o mesmo valor
+  normalizado produzido pelo método de identidade. Teste unitário conclui uma pesquisa dirigida com
+  dez ofertas `PUBLIC_WEB`, enquanto os testes anteriores continuam bloqueando snapshots repetidos,
+  anúncios Meta disfarçados e menos de dez alternativas.
+- **Validação operacional do fechamento em 2026-09-02:** depois da correção, as três pesquisas
+  amplas solicitadas pela tela concluíram a atividade factual com duas candidatas `DOSSIER_READY`
+  cada. A execução #22/ciclo 61/tarefa #308, de beleza e bem-estar, acumulou 48 evidências públicas,
+  13 ofertas e dois anúncios Meta aderentes em duas lentes. A #23/ciclo 62/tarefa #312, de finanças,
+  acumulou 30 evidências públicas, 18 ofertas e três anúncios aderentes em uma lente. A #24/ciclo
+  63/tarefa #316, de relacionamentos, acumulou 60 evidências públicas, 23 ofertas e cinco anúncios
+  aderentes em três lentes. Os relatórios preservam `WAITING_SOURCE_QUALITY`, ressalvas de risco e a
+  distinção entre anúncio, dossiê e venda; nenhum pagamento ou receita foi inferido da pesquisa.

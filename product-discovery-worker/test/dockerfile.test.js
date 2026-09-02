@@ -21,6 +21,13 @@ const workflow = readFileSync(
   ),
   "utf8",
 );
+const composeUpHelper = readFileSync(
+  new URL(
+    "../../scripts/docker-compose-up-with-transient-retry.sh",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const packageDefinition = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 );
@@ -141,10 +148,7 @@ test("mantém a fonte viva no harness sem anunciar o índice derivado como versi
   );
 
   assert.equal(researchLibrarySourceManifest.sourceRoot, "pesquisas");
-  assert.equal(
-    researchLibrarySourceManifest.sourceGlob,
-    "pesquisas/**/*.md",
-  );
+  assert.equal(researchLibrarySourceManifest.sourceGlob, "pesquisas/**/*.md");
   assert.equal(
     researchLibrarySourceManifest.generatedArtifactPath,
     "product-discovery-worker/research-library/index.json",
@@ -195,7 +199,7 @@ test("valida o secret como usuário do runtime antes de substituir o worker", ()
   );
   const codexPreflightPosition = publishStep.indexOf("codex login status");
   const publishPosition = publishStep.indexOf(
-    'docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans',
+    'bash ./docker-compose-up-with-transient-retry.sh "${compose_files[@]}"',
   );
 
   assert.ok(pullPosition >= 0);
@@ -218,8 +222,13 @@ test("valida o secret como usuário do runtime antes de substituir o worker", ()
   );
   assert.match(
     publishStep,
-    /timeout --foreground --kill-after=30s 300s[\s\S]*docker compose[\s\S]*up -d --force-recreate --remove-orphans/,
-    "[ARQUITETURA] A recriação deve ter limite próprio e não pode monopolizar a fila global.",
+    /DOCKER_COMPOSE_UP_FORCE_RECREATE=true[\s\\]*bash \.\/docker-compose-up-with-transient-retry\.sh/,
+    "[ARQUITETURA] A recriação deve passar pela reconciliação limitada e idempotente.",
+  );
+  assert.match(
+    composeUpHelper,
+    /DOCKER_COMPOSE_UP_TIMEOUT_SECONDS:-300/,
+    "[ARQUITETURA] A reconciliação deve manter um limite próprio por tentativa.",
   );
   assert.match(
     deployCompose,

@@ -50,6 +50,32 @@ done
 product_ai_workflow="$test_root/.github/workflows/product-ai-worker-ci.yml"
 grep -F "export COMPOSE_PROJECT_NAME='marketinghub-product-ai-worker'" "$product_ai_workflow" >/dev/null
 
+product_discovery_workflow="$test_root/.github/workflows/product-discovery-worker-ci.yml"
+for helper in \
+  docker-login-with-transient-retry.sh \
+  docker-compose-up-with-transient-retry.sh \
+  wait-for-shared-vps-docker-capacity.sh; do
+  if ! grep -Fq "scripts/${helper}" "$product_discovery_workflow" \
+    || ! grep -Fq "bash ./${helper}" "$product_discovery_workflow"; then
+    echo "Deploy de Argos sem proteção operacional ${helper}." >&2
+    exit 1
+  fi
+  if [ "$(grep -Fc "scripts/${helper}" "$product_discovery_workflow")" -lt 3 ]; then
+    echo "Mudança em ${helper} não dispara CI e deploy de Argos em push e pull request." >&2
+    exit 1
+  fi
+done
+
+if grep -Eq 'docker login .*--password-stdin' "$product_discovery_workflow"; then
+  echo "Deploy de Argos contorna o retry seguro do login no registry." >&2
+  exit 1
+fi
+
+if grep -Eq 'docker compose .* up([[:space:]\\]|$)' "$product_discovery_workflow"; then
+  echo "Deploy de Argos contorna a reconciliação limitada do Docker Compose." >&2
+  exit 1
+fi
+
 feo_workflow="$test_root/.github/workflows/feo-ci.yml"
 # O contrato procura as variáveis literais no workflow.
 # shellcheck disable=SC2016

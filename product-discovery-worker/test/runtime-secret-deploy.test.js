@@ -251,6 +251,12 @@ test("recusa reconciliar uma sessão Codex que contém link simbólico", () => {
 
 test("o deploy valida Brave e Codex sem consumir o restante do script remoto", () => {
   const workflow = readFileSync(workflowPath, "utf8");
+  const capacityIndex = workflow.indexOf(
+    "bash ./wait-for-shared-vps-docker-capacity.sh",
+  );
+  const registryLoginIndex = workflow.indexOf(
+    "bash ./docker-login-with-transient-retry.sh",
+  );
   const pullIndex = workflow.indexOf(
     'bash ./docker-compose-pull-with-transient-retry.sh "${compose_files[@]}"',
   );
@@ -261,15 +267,24 @@ test("o deploy valida Brave e Codex sem consumir o restante do script remoto", (
   );
   const codexPreflightIndex = workflow.indexOf("codex login status");
   const publishIndex = workflow.indexOf(
-    "up -d --force-recreate --remove-orphans",
+    'bash ./docker-compose-up-with-transient-retry.sh "${compose_files[@]}"',
   );
 
+  assert.ok(capacityIndex >= 0);
+  assert.ok(capacityIndex < registryLoginIndex);
+  assert.ok(registryLoginIndex < pullIndex);
   assert.ok(pullIndex >= 0);
   assert.ok(pullIndex < codexHomeIndex);
   assert.ok(codexHomeIndex < braveSecretIndex);
   assert.ok(braveSecretIndex < searchPreflightIndex);
   assert.ok(searchPreflightIndex < codexPreflightIndex);
   assert.ok(codexPreflightIndex < publishIndex);
+  assert.match(workflow, /DOCKER_COMPOSE_UP_FORCE_RECREATE=true/);
+  assert.doesNotMatch(
+    workflow,
+    /docker login [^\n]*--password-stdin/,
+    "O login remoto precisa usar o helper que classifica falhas transitórias.",
+  );
   assert.match(
     workflow,
     /run -T --rm --no-deps --entrypoint node[\s\S]*?validate-runtime-search-config\.mjs[\s\\]*?<\/dev\/null/,

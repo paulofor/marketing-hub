@@ -8,6 +8,10 @@ on:
       - "pesquisas/**"
       - "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json"
       - "scripts/test-isolated-agent-codex-auth.sh"
+      - "scripts/docker-compose-pull-with-transient-retry.sh"
+      - "scripts/docker-compose-up-with-transient-retry.sh"
+      - "scripts/docker-login-with-transient-retry.sh"
+      - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"
   pull_request:
@@ -16,6 +20,10 @@ on:
       - "pesquisas/**"
       - "backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json"
       - "scripts/test-isolated-agent-codex-auth.sh"
+      - "scripts/docker-compose-pull-with-transient-retry.sh"
+      - "scripts/docker-compose-up-with-transient-retry.sh"
+      - "scripts/docker-login-with-transient-retry.sh"
+      - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"
       - ".github/workflows/product-discovery-worker-ci.yml"
@@ -120,7 +128,7 @@ jobs:
       - test
       - docker
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     concurrency:
       group: deploy-vps-191-252-120-96
       queue: max
@@ -159,8 +167,21 @@ jobs:
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' <<'REMOTE_DOCKER_BOOTSTRAP'
           set -euo pipefail
-          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-            systemctl enable --now docker >/dev/null 2>&1 || true
+          compose_plugin_installed=false
+          for compose_plugin in \
+            /usr/libexec/docker/cli-plugins/docker-compose \
+            /usr/lib/docker/cli-plugins/docker-compose \
+            /usr/local/libexec/docker/cli-plugins/docker-compose \
+            /usr/local/lib/docker/cli-plugins/docker-compose; do
+            if [ -x "$compose_plugin" ]; then
+              compose_plugin_installed=true
+              break
+            fi
+          done
+          if command -v docker >/dev/null 2>&1 && [ "$compose_plugin_installed" = "true" ]; then
+            if ! systemctl is-active --quiet docker; then
+              timeout --foreground --kill-after=10s 60s systemctl enable --now docker
+            fi
             exit 0
           fi
           export DEBIAN_FRONTEND=noninteractive
@@ -190,13 +211,20 @@ jobs:
             --exclude 'node_modules/' \
             product-discovery-worker/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
           scp ${SSH_COMMON_ARGS} \
+            scripts/docker-login-with-transient-retry.sh \
             scripts/docker-compose-pull-with-transient-retry.sh \
-            "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}/docker-compose-pull-with-transient-retry.sh"
+            scripts/docker-compose-up-with-transient-retry.sh \
+            scripts/wait-for-shared-vps-docker-capacity.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}/"
+      - name: Wait for safe Docker capacity on VPS
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "cd '${REMOTE_PATH}' && bash ./wait-for-shared-vps-docker-capacity.sh"
       - name: Publish service
         run: |
           if [ -n "${GHCR_TOKEN}" ]; then
             printf '%s' "${GHCR_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
-              "docker login '${IMAGE_REGISTRY}' -u '${GHCR_USERNAME}' --password-stdin"
+              "cd '${REMOTE_PATH}' && bash ./docker-login-with-transient-retry.sh '${IMAGE_REGISTRY}' '${GHCR_USERNAME}'"
           fi
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s -- \
             "${REMOTE_PATH}" \
@@ -240,8 +268,8 @@ jobs:
             product-discovery-worker -c \
             'test -d "$CODEX_HOME" && test -w "$CODEX_HOME" && codex login status >/dev/null' \
             </dev/null
-          timeout --foreground --kill-after=30s 300s \
-            docker compose "${compose_files[@]}" up -d --force-recreate --remove-orphans
+          DOCKER_COMPOSE_UP_FORCE_RECREATE=true \
+            bash ./docker-compose-up-with-transient-retry.sh "${compose_files[@]}"
 
           healthy=false
           health_payload=""

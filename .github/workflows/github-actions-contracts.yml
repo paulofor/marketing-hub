@@ -6,7 +6,10 @@ on:
     paths:
       - ".github/workflows/**"
       - "scripts/docker-compose-pull-with-transient-retry.sh"
+      - "scripts/docker-compose-up-with-transient-retry.sh"
+      - "scripts/docker-login-with-transient-retry.sh"
       - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
       - "scripts/run-actionlint.sh"
@@ -15,6 +18,9 @@ on:
       - "scripts/test-actionlint-shellcheck-policy.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-pull-with-transient-retry.sh"
+      - "scripts/test-docker-compose-up-with-transient-retry.sh"
+      - "scripts/test-docker-login-with-transient-retry.sh"
+      - "scripts/test-wait-for-shared-vps-docker-capacity.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
@@ -26,7 +32,10 @@ on:
     paths:
       - ".github/workflows/**"
       - "scripts/docker-compose-pull-with-transient-retry.sh"
+      - "scripts/docker-compose-up-with-transient-retry.sh"
+      - "scripts/docker-login-with-transient-retry.sh"
       - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
       - "scripts/run-actionlint.sh"
@@ -35,6 +44,9 @@ on:
       - "scripts/test-actionlint-shellcheck-policy.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-pull-with-transient-retry.sh"
+      - "scripts/test-docker-compose-up-with-transient-retry.sh"
+      - "scripts/test-docker-login-with-transient-retry.sh"
+      - "scripts/test-wait-for-shared-vps-docker-capacity.sh"
       - "scripts/test-shared-vps-deploy-queue.sh"
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
@@ -70,7 +82,10 @@ jobs:
       - name: Validar sintaxe dos contratos shell
         run: |
           bash -n scripts/docker-compose-pull-with-transient-retry.sh
+          bash -n scripts/docker-compose-up-with-transient-retry.sh
+          bash -n scripts/docker-login-with-transient-retry.sh
           bash -n scripts/docker-pull-with-transient-retry.sh
+          bash -n scripts/wait-for-shared-vps-docker-capacity.sh
           bash -n scripts/install-actionlint.sh
           bash -n scripts/run-actionlint.sh
           bash -n scripts/actionlint-shellcheck.sh
@@ -78,6 +93,9 @@ jobs:
           bash -n scripts/test-actionlint-shellcheck-policy.sh
           bash -n scripts/test-docker-pull-with-transient-retry.sh
           bash -n scripts/test-docker-compose-pull-with-transient-retry.sh
+          bash -n scripts/test-docker-compose-up-with-transient-retry.sh
+          bash -n scripts/test-docker-login-with-transient-retry.sh
+          bash -n scripts/test-wait-for-shared-vps-docker-capacity.sh
           bash -n scripts/ssh-keyscan-with-retry.sh
           bash -n scripts/test-shared-vps-deploy-queue.sh
           bash -n scripts/test-shared-vps-deploy-resilience.sh
@@ -101,6 +119,15 @@ jobs:
 
       - name: Validar retry transitório do Docker Compose
         run: bash scripts/test-docker-compose-pull-with-transient-retry.sh
+
+      - name: Validar login transitório do registry
+        run: bash scripts/test-docker-login-with-transient-retry.sh
+
+      - name: Validar reconciliação transitória do Docker Compose
+        run: bash scripts/test-docker-compose-up-with-transient-retry.sh
+
+      - name: Validar capacidade do VPS compartilhado
+        run: bash scripts/test-wait-for-shared-vps-docker-capacity.sh
 
       - name: Validar fila do host compartilhado
         run: bash scripts/test-shared-vps-deploy-queue.sh

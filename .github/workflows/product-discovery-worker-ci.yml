@@ -130,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     concurrency:
-      group: deploy-vps-191-252-120-96
+      group: deploy-vps-163-245-202-80
       queue: max
       cancel-in-progress: false
     permissions:
@@ -138,7 +138,7 @@ jobs:
       packages: read
       actions: read
     env:
-      DEPLOY_HOST: 191.252.120.96
+      DEPLOY_HOST: 163.245.202.80
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.PRODUCT_DISCOVERY_WORKER_REMOTE_PATH || '/root/product-discovery-worker' }}
       IMAGE_REGISTRY: ghcr.io
@@ -157,7 +157,7 @@ jobs:
         run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
       - name: Configure SSH
         env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}
+          VPS_SSH_KEY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY != '' && secrets.GROWTH_OPERATOR_VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519

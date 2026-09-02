@@ -61,7 +61,7 @@ mvn -s settings.xml spring-boot:run
 
 O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou URL HTTP/HTTPS** configurada em:
 
-- Product Discovery Worker: `MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH` (padrão `http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile`).
+- Product Discovery Worker: `MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH` (padrão `http://163.245.202.80:18081/ops-product-discovery-observability-v1/logfile`).
 
 - `MCP_LOG_BACKEND_PATH` (default `http://191.252.181.168:8099/ops-mh-observability-v2/backend-log-stream-x9k`, servido pelo leitor independente montado no volume persistente do backend);
 - `MCP_LOG_AI_WORKER_PATH` (default `http://191.252.210.83:4567/worker-observability/logfile`);
@@ -183,7 +183,7 @@ O tool `vps_host_inventory` consulta inventário físico e operacional dos VPS p
 Configuração:
 
 - `MCP_VPS_HOST_INVENTORY_ENABLED` (default `false`);
-- `MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS` (default `191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7`);
+- `MCP_VPS_HOST_INVENTORY_ALLOWED_HOSTS` (default `191.252.210.83,191.252.120.96,191.252.181.168,191.252.102.54,177.153.62.107,163.245.200.7,163.245.202.80`);
 - `MCP_VPS_HOST_INVENTORY_SSH_COMMAND` (default `ssh`);
 - `MCP_VPS_HOST_INVENTORY_USER` (default `root`);
 - `MCP_VPS_HOST_INVENTORY_IDENTITY_FILE` (default `/opt/marketinghub/mcp/ssh/id_ed25519`);
@@ -231,7 +231,7 @@ Não versione a chave privada nem cole o conteúdo dela em logs, issues, PRs ou 
 O tool `product_discovery_worker_health` consulta diretamente o endpoint HTTP `GET /healthz` do host operacional do `product-discovery-worker`, sem depender do Docker local do MCP:
 
 ```text
-GET http://191.252.120.96:18081/healthz
+GET http://163.245.202.80:18081/healthz
 ```
 
 Isso evita depender da porta publicada no host e permite diagnosticar rapidamente:
@@ -246,7 +246,7 @@ Configuração:
 - `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED` (default `true`);
 - `MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER` (default `product-discovery-worker`);
 - `MCP_PRODUCT_DISCOVERY_WORKER_DOCKER_COMMAND` (default herda `MCP_CHAT_LOG_DOCKER_COMMAND` ou `docker`);
-- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL` (default `http://191.252.120.96:18081/healthz`);
+- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL` (default `http://163.245.202.80:18081/healthz`);
 - `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_TIMEOUT_SECONDS` (default `10`).
 
 ## Ferramentas de diagnóstico Meta

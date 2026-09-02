@@ -26,6 +26,12 @@ Cada novo dossiê abre no backend um ciclo `productdiscovery.v1/research` e uma 
 
 Argos usa uma sessão Codex individual e persistente, reconectável pelo monitor de agentes. O pedido de reconexão é persistido pelo backend e consumido exclusivamente pelo Product Discovery Worker usando a chave `market-radar`; somente URL, código temporário e resultado operacional retornam ao painel. O `CODEX_HOME` de Argos deve ser gravável e isolado. Antes de substituir o worker, o deploy deve derivar o UID/GID da imagem, reconciliar proprietário e modos da sessão sem seguir links simbólicos e comprovar dentro da imagem exata que `config.toml` é legível, o diretório é gravável e `codex login status` reconhece a sessão. Credenciais, cookies e tokens de Hotmart e ClickBank nunca entram nessa sessão, no prompt ou no contrato de reconexão.
 
+Por decisão operacional de 2026-09-02, Argos deve ser publicado no VPS de agentes
+`163.245.202.80`. O host legado `191.252.120.96`, com 957 MB de RAM e pressão recorrente de memória
+e I/O, não pode voltar a receber o executor. Workflow, observabilidade MCP, health e inventário de
+segredos devem apontar juntos para o host vigente, preservando a sessão individual e a credencial
+Brave sem expor ou duplicar seus valores.
+
 Argos deve cruzar ofertas estruturadas de Hotmart e ClickBank com evidências da Biblioteca de Anúncios da Meta já persistidas pelo coletor canônico. O gate comercial exige ao menos dez ofertas comparáveis dos marketplaces; anúncios Meta não contam para esse mínimo. Anúncio ativo, comercial e observado por pelo menos duas vezes ao longo de trinta dias constitui sinal de investimento sustentado, nunca prova isolada de vendas. A conclusão deve preservar anunciante, texto, destino, snapshot, datas, contagem de observações, longevidade e a ressalva metodológica.
 
 Para anúncios comerciais gerais no Brasil, o coletor canônico da Descoberta pode ser o navegador

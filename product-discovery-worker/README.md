@@ -80,7 +80,8 @@ gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 ## Deploy
 
 O workflow `Product Discovery Worker CI` publica o container no host operacional de
-workers `191.252.120.96`.
+agentes `163.245.202.80`. O host legado `191.252.120.96`, com 957 MB de RAM, não
+deve voltar a receber Argos.
 
 No deploy de produção, o provider padrão é Brave, com busca direcionada ao Brasil
 (`PRODUCT_DISCOVERY_SEARCH_COUNTRY=br`, `PRODUCT_DISCOVERY_SEARCH_LANGUAGE=pt-br`).

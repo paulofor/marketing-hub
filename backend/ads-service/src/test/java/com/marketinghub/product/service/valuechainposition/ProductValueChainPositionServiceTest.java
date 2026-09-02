@@ -31,6 +31,7 @@ class ProductValueChainPositionServiceTest {
         .thenReturn(
             List.of(
                 product(6L, "IDEIA_PRIORIZADA_PARA_TESTE"),
+                product(7L, "PLANNED"),
                 product(9L, "COMUNICACAO_E_JORNADA"),
                 product(4L, "VALIDACAO_COMERCIAL"),
                 product(10L, "pde-sales-delivery-learning")));
@@ -47,7 +48,7 @@ class ProductValueChainPositionServiceTest {
 
     var positions = service.listPositions();
 
-    assertThat(positions).hasSize(4);
+    assertThat(positions).hasSize(5);
     assertThat(positions)
         .extracting(
             ProductValueChainPositionResponse::productId,
@@ -55,6 +56,7 @@ class ProductValueChainPositionServiceTest {
             ProductValueChainPositionResponse::processName)
         .containsExactly(
             org.assertj.core.groups.Tuple.tuple(6L, 2, "Plano Comercial e desenho da oferta PDE"),
+            org.assertj.core.groups.Tuple.tuple(7L, 3, "Construção e aprovação do PDE"),
             org.assertj.core.groups.Tuple.tuple(9L, 4, "Comunicação e jornada de venda do PDE"),
             org.assertj.core.groups.Tuple.tuple(4L, 5, "Homologação e ativação comercial do PDE"),
             org.assertj.core.groups.Tuple.tuple(10L, 6, "Venda, entrega e aprendizado do PDE"));

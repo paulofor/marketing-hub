@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Product Discovery
-  version: 1.3.0
+  version: 1.4.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
@@ -287,6 +287,32 @@ paths:
           description: Detalhe do ciclo.
         "404":
           description: Ciclo não encontrado.
+  /api/product-discovery/v1/cycles/{cycleId}/private-validation-handoff:
+    post:
+      tags:
+        - Product Discovery
+      summary: Retoma o handoff privado com os dossiês atuais sem repetir Argos.
+      operationId: resumeProductDiscoveryPrivateValidationHandoff
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Dossiês encaminhados idempotentemente à versão publicada do fluxo privado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryPrivateValidationHandoff"
+        "404":
+          description: Ciclo não encontrado.
+        "409":
+          description: Pesquisa factual ainda não concluída.
+        "422":
+          description: Ciclo concluído sem dossiê factual pronto.
   /api/product-discovery/v1/legacy-artificial-evidence/archive:
     post:
       tags:
@@ -302,6 +328,28 @@ paths:
                 $ref: "#/components/schemas/ProductDiscoveryLegacyCleanup"
 components:
   schemas:
+    ProductDiscoveryPrivateValidationHandoff:
+      type: object
+      required:
+        - cycleId
+        - sourceReference
+        - dossierReadyCount
+        - status
+        - nextActivity
+        - message
+      properties:
+        cycleId: { type: integer, format: int64 }
+        sourceReference:
+          type: string
+          pattern: "^product-discovery-cycle:[0-9]+$"
+        dossierReadyCount: { type: integer, minimum: 1 }
+        status:
+          type: string
+          enum: [QUEUED_FOR_PRIVATE_VALIDATION]
+        nextActivity:
+          type: string
+          enum: [ATENA_PRIVATE_PROTOTYPE_SELECTION]
+        message: { type: string }
     ProductDiscoveryMetaAdEvidenceRequest:
       type: object
       required: [executionLeaseId, attemptNumber, query]

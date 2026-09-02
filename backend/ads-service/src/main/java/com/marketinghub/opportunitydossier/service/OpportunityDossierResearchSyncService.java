@@ -101,7 +101,7 @@ public class OpportunityDossierResearchSyncService {
     dossier.setKnownRisks(opportunity.getCommercialRisk());
     dossier.setExperimentRecommendation(
         opportunity.getMaturity() == ProductDiscoveryOpportunityMaturity.DOSSIER_READY
-            ? "Aguardar os gates sequenciais de Atena, Plutus e Dédalo antes de construir ou testar."
+            ? "Atena seleciona para protótipo privado; Plutus limita a economia e Dédalo projeta o harness. Duas leituras independentes permanecem obrigatórias antes da priorização comercial final."
             : "Aprofundar as lacunas factuais registradas por Argos antes do handoff comercial.");
     dossier.setProductDiscoveryCycle(opportunity.getCycle());
     dossier.setProductDiscoveryOpportunity(opportunity);
@@ -278,8 +278,8 @@ public class OpportunityDossierResearchSyncService {
         sourceReference,
         "experiment-strategist",
         "marketStrategy",
-        "Atena · priorizar candidatas do ciclo #" + cycleId,
-        "Escolha no máximo um dossiê factual, compare as estratégias e preserve os fatos de Argos. Contexto: "
+        "Atena · selecionar protótipo privado do ciclo #" + cycleId,
+        "Escolha no máximo um dossiê factual para prototipação privada, predeclare duas leituras e preserve os fatos de Argos. A falta dessas leituras ainda não bloqueia esta atividade. Contexto: "
             + context);
     createTask(
         process,
@@ -294,8 +294,8 @@ public class OpportunityDossierResearchSyncService {
         sourceReference,
         "landing-generator",
         "productArchitecture",
-        "Dédalo · projetar harness do ciclo #" + cycleId,
-        "Projete o harness e a experiência PDE somente para o dossiê escolhido por Atena. Contexto factual: "
+        "Dédalo · projetar protótipo e harness do ciclo #" + cycleId,
+        "Projete primeiro o protótipo privado instrumentado e o harness PDE somente para o dossiê escolhido por Atena. Contexto factual: "
             + context);
   }
 

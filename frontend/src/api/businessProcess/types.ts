@@ -270,6 +270,13 @@ export type IndependentBusinessProcessFlowReport = {
   candidateCount: number;
   dossierReadyCount: number;
   plannedProductCount: number;
+  privateValidationHandoff: {
+    available: boolean;
+    cycleId: number;
+    status: string;
+    actionLabel: string;
+    reason: string;
+  };
   sourceCoverage: IndependentBusinessProcessSourceCoverage[];
   marketExpansion?: IndependentBusinessProcessMarketExpansion;
   candidates: IndependentBusinessProcessCandidate[];
@@ -420,7 +427,11 @@ export type ProductProcessActivityExecutionControl = {
   confirmationTitle?: string;
   confirmationMessage?: string;
   confirmationToken?: string;
-  workspaceCode?: "EXPERIMENT_PREFLIGHT" | "EXPERIMENT_ACTIVATION";
+  workspaceCode?:
+    | "EXPERIMENT_PREFLIGHT"
+    | "EXPERIMENT_ACTIVATION"
+    | "PDE_PRIVATE_PROTOTYPE_ACCEPTANCE"
+    | "PDE_PRIVATE_READING";
   workspaceReferenceId?: number;
   targetProcessDefinitionId?: number;
   requirements: ProductProcessActivityRequirement[];
@@ -434,6 +445,7 @@ export type ProductProcessActivityHumanDecision = {
   justification?: string;
   evidenceReference?: string;
   confirmationToken: string;
+  structuredEvidence?: Record<string, unknown>;
 };
 
 export type ProductProcessActivityExecutionRequest = {

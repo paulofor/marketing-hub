@@ -76,13 +76,20 @@ function detail(execution = summary): ExecutionDetailFixture {
   return {
     execution,
     processReport: {
-      reportType: "PDE_OPPORTUNITY_TO_PRODUCT_V1",
+      reportType: "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2",
       status: execution.status,
       headline: "Uma candidata factual está pronta para priorização.",
       acquisitionChannel: "Instagram",
       candidateCount: 1,
       dossierReadyCount: 1,
       plannedProductCount: 0,
+      privateValidationHandoff: {
+        available: false,
+        cycleId: 77,
+        status: "IN_PROGRESS",
+        actionLabel: "Retomar com Atena",
+        reason: "Atena já possui uma tarefa pendente.",
+      },
       sourceCoverage: [
         {
           sourceCode: "WEB",
@@ -202,7 +209,7 @@ function detail(execution = summary): ExecutionDetailFixture {
             },
             {
               stageCode: "ATENA",
-              label: "Priorização de mercado",
+              label: "Escolha para protótipo privado",
               agent: "Atena",
               status: "PENDING",
               summary: "Aguardando priorização.",
@@ -312,6 +319,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("inicia a atividade de Argos sem fabricar produto ou experimento", async () => {
@@ -382,6 +390,79 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     expect(
       screen.getByText("Aguardar Atena priorizar no máximo uma candidata."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Retomar com Atena" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("retoma Atena com os dossiês atuais sem repetir a pesquisa de Argos", async () => {
+    const completed: IndependentBusinessProcessExecutionSummary = {
+      ...summary,
+      status: "COMPLETED",
+      completedActivityCount: 1,
+      startedAt: "2026-08-30T14:00:05Z",
+      finishedAt: "2026-08-30T14:04:00Z",
+    };
+    const stalledDetail = detail(completed);
+    stalledDetail.processReport.privateValidationHandoff = {
+      available: true,
+      cycleId: 77,
+      status: "AVAILABLE",
+      actionLabel: "Retomar com Atena",
+      reason: "Os dossiês atuais podem seguir sem repetir a pesquisa de Argos.",
+    };
+    stalledDetail.processReport.candidates[0] = {
+      ...stalledDetail.processReport.candidates[0],
+      stages: stalledDetail.processReport.candidates[0].stages.map((stage) =>
+        stage.stageCode === "ATENA"
+          ? {
+              ...stage,
+              status: "BLOCKED",
+              blocker: "As leituras privadas ainda não existiam.",
+            }
+          : stage,
+      ),
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/independent-business-process-executions/91") {
+        return { data: stalledDetail };
+      }
+      throw new Error(`URL inesperada: ${url}`);
+    });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        cycleId: 77,
+        sourceReference: "product-discovery-cycle:77",
+        dossierReadyCount: 1,
+        status: "QUEUED_FOR_PRIVATE_VALIDATION",
+        nextActivity: "ATENA_PRIVATE_PROTOTYPE_SELECTION",
+        message: "Atena recebeu os dossiês atuais.",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderPage("/business-process-executions/91");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Encaminhar os dossiês atuais para protótipo privado",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/sem publicação, mídia ou cobrança/i),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retomar com Atena" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/api/product-discovery/v1/cycles/77/private-validation-handoff",
+      ),
+      { method: "POST" },
+    );
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("carrega execuções antigas somente quando o usuário pedir", async () => {
@@ -444,7 +525,7 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
       productStatus: "PLANNED",
       commercialPlanId: 801,
       nextAction:
-        "Abrir o produto planejado e iniciar a construção funcional governada do PDE.",
+        "Abrir a cadeia de valor do produto e iniciar a validação privada governada.",
       stages: completedDetail.processReport.candidates[0].stages.map((stage) =>
         stage.stageCode === "PRODUCT"
           ? {
@@ -474,7 +555,10 @@ describe("IndependentBusinessProcessExecutionsPage", () => {
     const productLink = await screen.findByRole("link", {
       name: "Abrir produto #901",
     });
-    expect(productLink).toHaveAttribute("href", "/products/901/edit");
+    expect(productLink).toHaveAttribute(
+      "href",
+      "/products/901/value-chain-history",
+    );
     expect(productLink).toHaveAttribute("target", "_blank");
     expect(
       screen.getByText("Plano #801", { exact: false }),

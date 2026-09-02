@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 interface ChangeProductAutomaticExecution {
@@ -12,6 +12,23 @@ export interface ProductAutomaticExecutionControl {
   automaticExecutionStatus: "PLAY" | "STOP";
   changedAt?: string | null;
   changedBy?: string | null;
+}
+
+/** Consulta PLAY/STOP somente quando a tela precisa oferecer um comando operacional. */
+export function useProductAutomaticExecutionControl(
+  productId?: string | number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["product", productId, "automatic-execution"],
+    enabled: Boolean(productId) && enabled,
+    queryFn: async () =>
+      (
+        await axios.get<ProductAutomaticExecutionControl>(
+          `/api/products/${productId}/automatic-execution`,
+        )
+      ).data,
+  });
 }
 
 /** Persiste PLAY/STOP no produto e recarrega a verdade exibida no catálogo. */
@@ -36,6 +53,13 @@ export function useProductAutomaticExecution() {
         }),
         queryClient.invalidateQueries({
           queryKey: ["product", control.productId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            "product",
+            String(control.productId),
+            "automatic-execution",
+          ],
         }),
       ]);
     },

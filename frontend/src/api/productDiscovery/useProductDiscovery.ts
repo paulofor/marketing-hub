@@ -104,6 +104,15 @@ export interface ProductDiscoveryLegacyCleanupResult {
   reason: string;
 }
 
+export interface ProductDiscoveryPrivateValidationHandoffResult {
+  cycleId: number;
+  sourceReference: string;
+  dossierReadyCount: number;
+  status: "QUEUED_FOR_PRIVATE_VALIDATION";
+  nextActivity: "ATENA_PRIVATE_PROTOTYPE_SELECTION";
+  message: string;
+}
+
 export const productDiscoveryStatusLabels: Record<
   ProductDiscoveryCycleStatus,
   string
@@ -232,9 +241,42 @@ export function useArchiveArtificialLegacyEvidence() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: productDiscoveryKeys.cycles }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycles,
+        }),
         queryClient.invalidateQueries({
           queryKey: productDiscoveryKeys.maturityRanking,
+        }),
+      ]);
+    },
+  });
+}
+
+export function useResumeProductDiscoveryPrivateValidationHandoff() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (cycleId: number) => {
+      const response = await fetch(
+        buildApiUrl(
+          `/api/product-discovery/v1/cycles/${cycleId}/private-validation-handoff`,
+        ),
+        { method: "POST" },
+      );
+      return parseJsonResponse<ProductDiscoveryPrivateValidationHandoffResult>(
+        response,
+        "Não foi possível encaminhar os dossiês atuais para Atena",
+      );
+    },
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycles,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.cycle(result.cycleId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["independent-business-process-executions"],
         }),
       ]);
     },

@@ -146,10 +146,21 @@ public class StandardHumanProductProcessActivityExecutor
     instance.setUpdatedAt(decidedAt);
     reserveDecision(instance, activityDefinition, sourceReference);
     Optional<HumanProductProcessActivityHandler> handler = handler(process, activityDefinition);
+    HumanProductProcessActivityCompletion completion =
+        APPROVE.equals(resolvedRequest.decision())
+            ? HumanProductProcessActivityCompletion.completed(resolvedRequest.structuredEvidence())
+            : HumanProductProcessActivityCompletion.blocked(
+                "Decisão humana reprovada; a causa foi registrada para correção.",
+                resolvedRequest.justification(),
+                resolvedRequest.structuredEvidence());
     if (APPROVE.equals(resolvedRequest.decision()) && handler.isPresent()) {
-      handler.get().approve(process, activityDefinition, product, sourceReference, resolvedRequest);
+      completion =
+          handler
+              .get()
+              .completeApproval(
+                  process, activityDefinition, product, sourceReference, resolvedRequest);
     }
-    boolean approved = APPROVE.equals(resolvedRequest.decision());
+    boolean approved = APPROVE.equals(resolvedRequest.decision()) && completion.objectiveAchieved();
     ObjectNode evidence = objectMapper.createObjectNode();
     evidence.put("decision", resolvedRequest.decision());
     evidence.put("operatorName", resolvedRequest.operatorName());
@@ -158,23 +169,33 @@ public class StandardHumanProductProcessActivityExecutor
     evidence.put("confirmationToken", resolvedRequest.confirmationToken());
     evidence.put("decisionMode", readiness.decisionMode());
     evidence.put("decidedAt", decidedAt.toString());
+    if (!completion.structuredEvidence().isEmpty()) {
+      evidence.set("structuredEvidence", objectMapper.valueToTree(completion.structuredEvidence()));
+    }
     instance.setStatus(approved ? "COMPLETED" : "BLOCKED");
     instance.setExitedAt(decidedAt);
     instance.setObjectiveAchieved(approved);
     instance.setObjectiveEvidenceJson(evidence.toString());
-    instance.setBlockedReason(approved ? null : resolvedRequest.justification());
+    instance.setBlockedReason(
+        approved ? null : firstText(completion.blockedReason(), resolvedRequest.justification()));
     instance.setKnownCostUsd(BigDecimal.ZERO.setScale(8));
     instance.setCostCoverage("COMPLETE");
     instance.setEvidenceQuality("DIRECT");
     instance.setUpdatedAt(decidedAt);
     activityInstanceRepository.save(instance);
-    return new HumanProductProcessActivityExecutionResult(
-        sourceReference,
-        approved ? "COMPLETED" : "BLOCKED",
-        approved,
+    String message =
         approved
-            ? "Decisão humana aprovada e registrada com evidência auditável."
-            : "Decisão humana reprovada; a causa foi registrada para correção.");
+            ? completion.message()
+            : firstText(
+                completion.message(),
+                "Decisão humana reprovada; a causa foi registrada para correção.");
+    return new HumanProductProcessActivityExecutionResult(
+        sourceReference, approved ? "COMPLETED" : "BLOCKED", approved, message);
+  }
+
+  /** Usa o primeiro texto real para preservar uma causa funcional especializada. */
+  private String firstText(String value, String fallback) {
+    return value == null || value.isBlank() ? fallback : value;
   }
 
   /** Reserva a ocorrência antes do efeito para impedir duas autorizações simultâneas. */
@@ -281,7 +302,8 @@ public class StandardHumanProductProcessActivityExecutor
         request.operatorName().trim(),
         request.justification().trim(),
         request.evidenceReference().trim(),
-        request.confirmationToken().trim());
+        request.confirmationToken().trim(),
+        request.structuredEvidence());
   }
 
   /** Usa o contexto persistido para que aprovar exija somente revisar e aceitar. */
@@ -309,7 +331,8 @@ public class StandardHumanProductProcessActivityExecutor
         MARKETING_HUB_OPERATOR,
         justification.trim(),
         readiness.auditEvidenceReference().trim(),
-        request.confirmationToken().trim());
+        request.confirmationToken().trim(),
+        request.structuredEvidence());
   }
 
   /** Rejeita texto ausente ou fora do limite antes de qualquer alteração persistida. */

@@ -17,6 +17,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
+import com.marketinghub.productdiscovery.v1.service.resumePrivateValidationHandoff.ProductDiscoveryPrivateValidationHandoffResponse;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.math.BigDecimal;
@@ -70,6 +71,71 @@ class ProductDiscoveryServiceTest {
 
     assertThat(response.id()).isEqualTo(37L);
     verify(bpmAuditService).open(any(ProductDiscoveryCycle.class));
+  }
+
+  /** Deve retomar o handoff atual sem recriar ou reexecutar a pesquisa factual de Argos. */
+  @Test
+  void resumesPrivateValidationFromCompletedFactualCycle() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(22L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
+    ProductDiscoveryOpportunity ready = new ProductDiscoveryOpportunity();
+    ready.setCycle(cycle);
+    ready.setMaturity(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    ProductDiscoveryOpportunity researching = new ProductDiscoveryOpportunity();
+    researching.setCycle(cycle);
+    researching.setMaturity(ProductDiscoveryOpportunityMaturity.RESEARCHABLE);
+    when(cycleRepository.findByIdForUpdate(22L)).thenReturn(Optional.of(cycle));
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(22L))
+        .thenReturn(List.of(ready, researching));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+
+    ProductDiscoveryPrivateValidationHandoffResponse response =
+        service.resumePrivateValidationHandoff(22L);
+
+    assertThat(response.cycleId()).isEqualTo(22L);
+    assertThat(response.sourceReference()).isEqualTo("product-discovery-cycle:22");
+    assertThat(response.dossierReadyCount()).isEqualTo(1);
+    assertThat(response.status()).isEqualTo("QUEUED_FOR_PRIVATE_VALIDATION");
+    assertThat(response.nextActivity()).isEqualTo("ATENA_PRIVATE_PROTOTYPE_SELECTION");
+    verify(dossierResearchSyncService).synchronize(22L, List.of(ready, researching));
+  }
+
+  /** Deve preservar ciclos ainda em pesquisa e impedir um handoff comercial prematuro. */
+  @Test
+  void blocksPrivateValidationHandoffBeforeResearchCompletion() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(23L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    when(cycleRepository.findByIdForUpdate(23L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+
+    assertThatThrownBy(() -> service.resumePrivateValidationHandoff(23L))
+        .hasMessageContaining("pesquisa factual concluída");
+  }
+
+  /** Deve impedir a criação de tarefas quando Argos ainda não formou um dossiê pronto. */
+  @Test
+  void blocksPrivateValidationHandoffWithoutReadyDossier() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(24L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
+    ProductDiscoveryOpportunity researching = new ProductDiscoveryOpportunity();
+    researching.setCycle(cycle);
+    researching.setMaturity(ProductDiscoveryOpportunityMaturity.RESEARCHABLE);
+    when(cycleRepository.findByIdForUpdate(24L)).thenReturn(Optional.of(cycle));
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(24L))
+        .thenReturn(List.of(researching));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+
+    assertThatThrownBy(() -> service.resumePrivateValidationHandoff(24L))
+        .hasMessageContaining("não possui dossiê factual pronto");
   }
 
   /** Deve preservar plano, resposta bruta e modelo sem credenciais de marketplace. */

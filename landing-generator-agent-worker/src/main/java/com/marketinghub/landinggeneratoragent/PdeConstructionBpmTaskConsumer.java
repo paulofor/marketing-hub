@@ -22,6 +22,13 @@ import org.springframework.web.client.RestClient;
 /** Responsabilidade: materializar as atividades de construção do PDE atribuídas a Dédalo. */
 @Component
 public class PdeConstructionBpmTaskConsumer {
+  private static final List<String> PRIVATE_VALIDATION_SIGNALS =
+      List.of(
+          "EXPERIENCE_STARTED",
+          "VALUE_MOMENT",
+          "READY_RESULT_USED",
+          "PREFERRED_OVER_FREE",
+          "CHECKOUT_STARTED");
   private static final Logger log = LoggerFactory.getLogger(PdeConstructionBpmTaskConsumer.class);
   private static final String AGENT_KEY = "landing-generator";
   private static final List<BpmContract> CONTRACTS =
@@ -36,30 +43,30 @@ public class PdeConstructionBpmTaskConsumer {
           new BpmContract(
               "pde-construction-approval",
               "journey",
-              "prompts/pde-construction/v1/journey.md",
-              "prompts/pde-construction/v1/journey-schema.json",
-              "pde-construction-v1",
+              "prompts/pde-construction/v2/journey.md",
+              "prompts/pde-construction/v2/journey-schema.json",
+              "pde-construction-v2",
               "READY"),
           new BpmContract(
               "pde-construction-approval",
               "deliverables",
-              "prompts/pde-construction/v1/deliverables.md",
-              "prompts/pde-construction/v1/deliverables-schema.json",
-              "pde-construction-v1",
+              "prompts/pde-construction/v2/deliverables.md",
+              "prompts/pde-construction/v2/deliverables-schema.json",
+              "pde-construction-v2",
               "READY"),
           new BpmContract(
               "pde-construction-approval",
               "access",
-              "prompts/pde-construction/v1/access.md",
-              "prompts/pde-construction/v1/access-schema.json",
-              "pde-construction-v1",
+              "prompts/pde-construction/v2/access.md",
+              "prompts/pde-construction/v2/access-schema.json",
+              "pde-construction-v2",
               "READY"),
           new BpmContract(
               "pde-commercial-plan-offer",
               "productArchitecture",
-              "prompts/pde-commercial-plan/v5/product-architecture.md",
-              "prompts/pde-commercial-plan/v5/product-architecture-schema.json",
-              "pde-commercial-plan-v5",
+              "prompts/pde-commercial-plan/v6/product-architecture.md",
+              "prompts/pde-commercial-plan/v6/product-architecture-schema.json",
+              "pde-commercial-plan-v6",
               "APPROVE"),
           new BpmContract(
               "pde-tasting-proof-of-value",
@@ -402,22 +409,48 @@ public class PdeConstructionBpmTaskConsumer {
     if (productArchitecture && !result.path("productArchitecture").isObject()) {
       throw new IllegalArgumentException("Arquitetura do PDE incompleta");
     }
+    JsonNode privatePrototype = result.path("productArchitecture").path("privatePrototype");
+    int maxValueTimeMinutes = privatePrototype.path("maxValueTimeMinutes").asInt(0);
+    if (productArchitecture
+        && (!privatePrototype.isObject()
+            || privatePrototype.path("scope").asText().isBlank()
+            || privatePrototype.path("simpleInput").asText().isBlank()
+            || privatePrototype.path("readyResult").asText().isBlank()
+            || maxValueTimeMinutes < 1
+            || maxValueTimeMinutes > 10
+            || !hasExactPrivateSignals(privatePrototype.path("instrumentationEvents"))
+            || !"SIMULATED_NO_CHARGE".equals(privatePrototype.path("checkoutMode").asText())
+            || !privatePrototype.path("excludedFromPrototype").isArray())) {
+      throw new IllegalArgumentException(
+          "Protótipo privado do PDE incompleto ou não instrumentado");
+    }
     if ("pde-construction-approval".equals(contract.processCode())
         && "journey".equals(contract.activityId())
         && (result.path("experienceContract").isMissingNode()
-            || result.path("experienceContract").path("stages").size() < 5)) {
+            || result.path("experienceContract").path("stages").size() < 3
+            || result.path("experienceContract").path("maxValueTimeMinutes").asInt(0) < 1
+            || result.path("experienceContract").path("maxValueTimeMinutes").asInt(0) > 10
+            || !hasExactPrivateSignals(
+                result.path("experienceContract").path("instrumentationEvents"))
+            || !"SIMULATED_NO_CHARGE"
+                .equals(result.path("experienceContract").path("checkoutMode").asText()))) {
       throw new IllegalArgumentException("Jornada do PDE incompleta");
     }
     if ("pde-construction-approval".equals(contract.processCode())
         && "deliverables".equals(contract.activityId())
         && (result.path("deliveryPackage").isMissingNode()
-            || result.path("deliveryPackage").path("assets").size() < 6)) {
+            || result.path("deliveryPackage").path("assets").size() < 3
+            || !"pde-private-prototype-v1"
+                .equals(result.path("deliveryPackage").path("version").asText())
+            || !hasExactPrivateSignals(
+                result.path("deliveryPackage").path("instrumentationEvents")))) {
       throw new IllegalArgumentException("Pacote do PDE incompleto");
     }
     if ("pde-construction-approval".equals(contract.processCode())
         && "access".equals(contract.activityId())
         && (result.path("accessContract").isMissingNode()
-            || result.path("accessContract").path("errorStates").isEmpty())) {
+            || result.path("accessContract").path("errorStates").isEmpty()
+            || !hasExactPrivateSignals(result.path("accessContract").path("observability")))) {
       throw new IllegalArgumentException("Contrato de acesso do PDE incompleto");
     }
     if ("pde-tasting-proof-of-value".equals(contract.processCode())
@@ -434,6 +467,15 @@ public class PdeConstructionBpmTaskConsumer {
             || !result.path("accessHandoff").isObject())) {
       throw new IllegalArgumentException("Personalização contratada incompleta");
     }
+  }
+
+  /** Exige os cinco eventos canônicos sem duplicação ou substituição silenciosa. */
+  private static boolean hasExactPrivateSignals(JsonNode signals) {
+    if (!signals.isArray() || signals.size() != PRIVATE_VALIDATION_SIGNALS.size()) return false;
+    List<String> values = new ArrayList<>();
+    signals.forEach(signal -> values.add(signal.asText()));
+    return values.stream().distinct().count() == PRIVATE_VALIDATION_SIGNALS.size()
+        && values.containsAll(PRIVATE_VALIDATION_SIGNALS);
   }
 
   /** Valida uma saída de teste usando o mesmo par processo/atividade consumido em produção. */

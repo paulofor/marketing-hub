@@ -617,6 +617,78 @@ class BusinessProcessActivityExecutionServiceTest {
             });
   }
 
+  /** Inicia a construção privada pelo próprio produto antes de existir experimento comercial. */
+  @Test
+  void requestsPrivateConstructionWithProductContextBeforeExperiment() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(66L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-construction-approval");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"journey\",\"type\":\"TASK\","
+            + "\"label\":\"Construir jornada de valor\","
+            + "\"description\":\"Materializar o protótipo privado.\","
+            + "\"responsibleAgentKeys\":[\"landing-generator\"]}]}");
+    Product product = Product.builder().id(901L).internalName("PDE privado").build();
+    product.setAutomaticExecutionEnabled(true);
+    product.setValidationDefinitionVersion("PDE_PRIVATE_VALIDATION_V1");
+    product.setPdeExperienceJson(
+        "{\"contractVersion\":\"PDE_HARNESS_PLAN_V1\","
+            + "\"experienceVersion\":\"private-validation-v1\"}");
+    BusinessProcessActivityDefinition journey =
+        activity(601L, process, "journey", "Construir jornada de valor");
+    journey.setDefinitionJson("{\"responsibleAgentKeys\":[\"landing-generator\"]}");
+    when(processes.findById(66L)).thenReturn(Optional.of(process));
+    when(products.findById(901L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(901L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(901L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(66L))
+        .thenReturn(List.of(journey));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(66L, "journey"))
+        .thenReturn(Optional.of(journey));
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var history = executionService.productProcessExecutions(66L, 901L);
+    var result = executionService.requestProductActivityExecution(66L, 901L, "journey");
+
+    assertThat(history.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.executionRequestAvailable()).isTrue();
+              assertThat(activity.executionRequestReason()).contains("pronta");
+            });
+    assertThat(result.sourceReference()).isEqualTo("product:901@private-validation-v1");
+    ArgumentCaptor<CreateAgentTaskRequest> request =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
+    assertThat(request.getValue().assignedAgentKey()).isEqualTo("landing-generator");
+    assertThat(request.getValue().sourceReference()).isEqualTo("product:901@private-validation-v1");
+  }
+
   /** Executa uma atividade determinística no backend e preserva a referência do ciclo atual. */
   @Test
   void requestsBackendOwnedProductActivityWithoutCreatingAgentTask() {

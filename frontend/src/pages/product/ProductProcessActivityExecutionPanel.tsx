@@ -29,6 +29,14 @@ const executorLabels = {
   UNCONFIGURED: "Sem contrato",
 } as const;
 
+const privateReadingSignals = [
+  ["EXPERIENCE_STARTED", "Iniciou a experiência"],
+  ["VALUE_MOMENT", "Chegou ao momento de valor"],
+  ["READY_RESULT_USED", "Usou o resultado pronto"],
+  ["PREFERRED_OVER_FREE", "Preferiu ao melhor caminho gratuito"],
+  ["CHECKOUT_STARTED", "Escolheu avançar no checkout simulado"],
+] as const;
+
 /** Apresenta o comando oficial da atividade usando somente o contrato enviado pelo backend. */
 export default function ProductProcessActivityExecutionPanel({
   activity,
@@ -152,6 +160,24 @@ function HumanDecisionForm({
   onExecute: (command: ProductProcessActivityExecutionCommand) => void;
 }) {
   const control = activity.executionControl!;
+  if (control.workspaceCode === "PDE_PRIVATE_PROTOTYPE_ACCEPTANCE") {
+    return (
+      <PrivatePrototypeAcceptanceForm
+        activity={activity}
+        executing={executing}
+        onExecute={onExecute}
+      />
+    );
+  }
+  if (control.workspaceCode === "PDE_PRIVATE_READING") {
+    return (
+      <PrivateReadingDecisionForm
+        activity={activity}
+        executing={executing}
+        onExecute={onExecute}
+      />
+    );
+  }
   if (control.decisionMode === "REVIEW_AND_ACCEPT") {
     return (
       <ReviewAndAcceptDecision
@@ -167,6 +193,447 @@ function HumanDecisionForm({
       executing={executing}
       onExecute={onExecute}
     />
+  );
+}
+
+const prototypeConfirmations = [
+  ["privateAccessConfirmed", "O acesso está restrito à validação privada"],
+  ["paymentDisabled", "O pagamento real está desativado"],
+  ["publicationDisabled", "O produto não está publicado ao público"],
+  ["noMediaSpendConfirmed", "Não houve mídia nem qualquer gasto"],
+  [
+    "firstPartyEventsConfirmed",
+    "Os cinco eventos próprios estão instrumentados",
+  ],
+  ["desktopValidated", "A jornada foi testada no desktop"],
+  ["mobileValidated", "A jornada foi testada no celular"],
+] as const;
+
+/** Aceita somente um endereço HTTP(S) completo para o revisor abrir o protótipo. */
+function isHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      Boolean(url.hostname) &&
+      (url.protocol === "http:" || url.protocol === "https:")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Confirma a versão utilizável antes de expor o protótipo às duas leituras privadas. */
+function PrivatePrototypeAcceptanceForm({
+  activity,
+  executing,
+  onExecute,
+}: {
+  activity: ProductProcessActivityExecutionGroup;
+  executing: boolean;
+  onExecute: (command: ProductProcessActivityExecutionCommand) => void;
+}) {
+  const control = activity.executionControl!;
+  const [operatorName, setOperatorName] = useState("");
+  const [prototypeVersion, setPrototypeVersion] = useState("");
+  const [privateAccessUrl, setPrivateAccessUrl] = useState("");
+  const [instrumentationReference, setInstrumentationReference] = useState("");
+  const [sourceEvidenceReference, setSourceEvidenceReference] = useState("");
+  const [sourceEvaluatedAt, setSourceEvaluatedAt] = useState("");
+  const [justification, setJustification] = useState("");
+  const [evidenceReference, setEvidenceReference] = useState("");
+  const [confirmations, setConfirmations] = useState<Record<string, boolean>>(
+    Object.fromEntries(prototypeConfirmations.map(([code]) => [code, false])),
+  );
+  const allConfirmed = prototypeConfirmations.every(
+    ([code]) => confirmations[code],
+  );
+  const versionValid = /^[a-z0-9][a-z0-9._-]{2,63}$/.test(
+    prototypeVersion.trim(),
+  );
+  const urlValid = isHttpUrl(privateAccessUrl.trim());
+  const sourceTimestamp = Date.parse(sourceEvaluatedAt);
+  const sourceDateValid =
+    Number.isFinite(sourceTimestamp) && sourceTimestamp <= Date.now();
+  const formReady =
+    control.actionAvailable &&
+    operatorName.trim().length >= 3 &&
+    versionValid &&
+    urlValid &&
+    instrumentationReference.trim().length >= 3 &&
+    sourceEvidenceReference.trim().length >= 3 &&
+    sourceDateValid &&
+    justification.trim().length >= 10 &&
+    evidenceReference.trim().length >= 3 &&
+    allConfirmed &&
+    Boolean(control.confirmationToken);
+
+  if (!control.actionAvailable) return null;
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!formReady || executing || !control.confirmationToken) return;
+    onExecute({
+      activityId: activity.activityId,
+      decision: {
+        decision: "APPROVE",
+        operatorName: operatorName.trim(),
+        justification: justification.trim(),
+        evidenceReference: evidenceReference.trim(),
+        confirmationToken: control.confirmationToken,
+        structuredEvidence: {
+          prototypeVersion: prototypeVersion.trim(),
+          privateAccessUrl: privateAccessUrl.trim(),
+          instrumentationReference: instrumentationReference.trim(),
+          sourceEvidenceReference: sourceEvidenceReference.trim(),
+          sourceEvaluatedAt: new Date(sourceEvaluatedAt).toISOString(),
+          ...confirmations,
+        },
+      },
+    });
+  };
+
+  return (
+    <form className="product-process-human-decision" onSubmit={submit}>
+      <h4>{control.confirmationTitle || "Confirmar protótipo privado"}</h4>
+      <p>
+        Este gate comprova uma versão utilizável e instrumentada. Ele não
+        publica, não cobra e não autoriza mídia.
+      </p>
+      <div className="product-process-human-decision__grid">
+        <label>
+          Responsável pela validação <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            value={operatorName}
+            onChange={(event) => setOperatorName(event.target.value)}
+            minLength={3}
+            maxLength={191}
+            required
+          />
+        </label>
+        <label>
+          Versão do protótipo <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            value={prototypeVersion}
+            onChange={(event) => setPrototypeVersion(event.target.value)}
+            placeholder="Ex.: private-v1"
+            pattern="[a-z0-9][a-z0-9._-]{2,63}"
+            minLength={3}
+            maxLength={64}
+            required
+          />
+        </label>
+      </div>
+      <label>
+        URL privada acessível aos revisores <span aria-hidden="true">*</span>
+        <input
+          className="form-control"
+          type="url"
+          value={privateAccessUrl}
+          onChange={(event) => setPrivateAccessUrl(event.target.value)}
+          placeholder="https://ambiente-privado.exemplo/prototipo"
+          required
+        />
+      </label>
+      <div className="product-process-human-decision__grid">
+        <label>
+          Referência da instrumentação <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            value={instrumentationReference}
+            onChange={(event) =>
+              setInstrumentationReference(event.target.value)
+            }
+            placeholder="Painel ou execução dos cinco eventos"
+            minLength={3}
+            maxLength={1000}
+            required
+          />
+        </label>
+        <label>
+          Fonte comercial vigente <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            value={sourceEvidenceReference}
+            onChange={(event) => setSourceEvidenceReference(event.target.value)}
+            placeholder="Snapshot ou relatório de fonte"
+            minLength={3}
+            maxLength={1000}
+            required
+          />
+        </label>
+        <label>
+          Data da verificação da fonte <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            type="datetime-local"
+            value={sourceEvaluatedAt}
+            onChange={(event) => setSourceEvaluatedAt(event.target.value)}
+            required
+          />
+        </label>
+      </div>
+      <label>
+        Resultado da homologação <span aria-hidden="true">*</span>
+        <textarea
+          className="form-control"
+          rows={3}
+          value={justification}
+          onChange={(event) => setJustification(event.target.value)}
+          placeholder="Descreva a jornada testada e o resultado pronto observado"
+          minLength={10}
+          maxLength={2000}
+          required
+        />
+      </label>
+      <label>
+        Evidência auditável da homologação <span aria-hidden="true">*</span>
+        <input
+          className="form-control"
+          value={evidenceReference}
+          onChange={(event) => setEvidenceReference(event.target.value)}
+          placeholder="Relatório, teste ou pacote de capturas"
+          minLength={3}
+          maxLength={1000}
+          required
+        />
+      </label>
+      <fieldset>
+        <legend className="h6">Travas obrigatórias</legend>
+        {prototypeConfirmations.map(([code, label]) => (
+          <label
+            key={code}
+            className="product-process-human-decision__confirmation"
+          >
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={confirmations[code]}
+              onChange={(event) =>
+                setConfirmations((current) => ({
+                  ...current,
+                  [code]: event.target.checked,
+                }))
+              }
+              required
+            />
+            <span>{label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <button
+        className="btn btn-success"
+        type="submit"
+        disabled={!formReady || executing}
+      >
+        {executing ? (
+          <Loader2
+            className="spinner-border spinner-border-sm"
+            size={16}
+            aria-hidden="true"
+          />
+        ) : (
+          <UserCheck size={17} aria-hidden="true" />
+        )}
+        {executing ? "Registrando..." : "Confirmar protótipo privado"}
+      </button>
+    </form>
+  );
+}
+
+/** Registra os cinco sinais sem coletar nome, e-mail ou telefone da pessoa. */
+function PrivateReadingDecisionForm({
+  activity,
+  executing,
+  onExecute,
+}: {
+  activity: ProductProcessActivityExecutionGroup;
+  executing: boolean;
+  onExecute: (command: ProductProcessActivityExecutionCommand) => void;
+}) {
+  const control = activity.executionControl!;
+  const [operatorName, setOperatorName] = useState("");
+  const [participantReference, setParticipantReference] = useState("");
+  const [justification, setJustification] = useState("");
+  const [evidenceReference, setEvidenceReference] = useState("");
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
+  const [firstPartyEvidenceConfirmed, setFirstPartyEvidenceConfirmed] =
+    useState(false);
+  const [signals, setSignals] = useState<Record<string, "" | "YES" | "NO">>(
+    Object.fromEntries(privateReadingSignals.map(([code]) => [code, ""])),
+  );
+  const allSignalsAnswered = privateReadingSignals.every(
+    ([code]) => signals[code] === "YES" || signals[code] === "NO",
+  );
+  const pseudonymousReference = /^PV-[A-F0-9]{12}$/.test(
+    participantReference.trim(),
+  );
+  const formReady =
+    control.actionAvailable &&
+    operatorName.trim().length >= 3 &&
+    pseudonymousReference &&
+    justification.trim().length >= 10 &&
+    evidenceReference.trim().length >= 3 &&
+    consentConfirmed &&
+    firstPartyEvidenceConfirmed &&
+    allSignalsAnswered &&
+    Boolean(control.confirmationToken);
+
+  if (!control.actionAvailable) return null;
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!formReady || executing || !control.confirmationToken) return;
+    onExecute({
+      activityId: activity.activityId,
+      decision: {
+        decision: "APPROVE",
+        operatorName: operatorName.trim(),
+        justification: justification.trim(),
+        evidenceReference: evidenceReference.trim(),
+        confirmationToken: control.confirmationToken,
+        structuredEvidence: {
+          participantReference: participantReference.trim(),
+          consentConfirmed: true,
+          firstPartyEvidenceConfirmed: true,
+          signals: Object.fromEntries(
+            privateReadingSignals.map(([code]) => [
+              code,
+              signals[code] === "YES",
+            ]),
+          ),
+        },
+      },
+    });
+  };
+
+  return (
+    <form className="product-process-human-decision" onSubmit={submit}>
+      <h4>{control.confirmationTitle || "Registrar leitura privada"}</h4>
+      <p>
+        Use um código aleatório criado para esta leitura. Não informe nome,
+        e-mail, telefone ou outro dado pessoal. Os cinco sinais precisam ser
+        “Sim” para o gate avançar; respostas negativas ficam registradas como
+        tentativa bloqueada e repetível após ajuste do protótipo.
+      </p>
+      <div className="product-process-human-decision__grid">
+        <label>
+          Responsável pelo registro <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            value={operatorName}
+            onChange={(event) => setOperatorName(event.target.value)}
+            minLength={3}
+            maxLength={191}
+            required
+          />
+        </label>
+        <label>
+          Código pseudonimizado da pessoa <span aria-hidden="true">*</span>
+          <input
+            className="form-control"
+            value={participantReference}
+            onChange={(event) => setParticipantReference(event.target.value)}
+            placeholder="Ex.: PV-A1B2C3D4E5F6"
+            pattern="PV-[A-F0-9]{12}"
+            minLength={15}
+            maxLength={15}
+            required
+          />
+        </label>
+      </div>
+      <fieldset>
+        <legend className="h6">Sinais observados</legend>
+        {privateReadingSignals.map(([code, label]) => (
+          <label key={code} className="d-block mb-2">
+            {label} <span aria-hidden="true">*</span>
+            <select
+              className="form-select"
+              aria-label={label}
+              value={signals[code]}
+              onChange={(event) =>
+                setSignals((current) => ({
+                  ...current,
+                  [code]: event.target.value as "" | "YES" | "NO",
+                }))
+              }
+              required
+            >
+              <option value="">Selecione</option>
+              <option value="YES">Sim, observado</option>
+              <option value="NO">Não observado</option>
+            </select>
+          </label>
+        ))}
+      </fieldset>
+      <label>
+        Observação da leitura <span aria-hidden="true">*</span>
+        <textarea
+          className="form-control"
+          rows={3}
+          value={justification}
+          onChange={(event) => setJustification(event.target.value)}
+          placeholder="Descreva comportamento, esforço, reação e objeções observadas"
+          minLength={10}
+          maxLength={2000}
+          required
+        />
+      </label>
+      <label>
+        Evidência auditável <span aria-hidden="true">*</span>
+        <input
+          className="form-control"
+          value={evidenceReference}
+          onChange={(event) => setEvidenceReference(event.target.value)}
+          placeholder="Referência interna, arquivo ou gravação consentida"
+          minLength={3}
+          maxLength={1000}
+          required
+        />
+      </label>
+      <label className="product-process-human-decision__confirmation">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          checked={consentConfirmed}
+          onChange={(event) => setConsentConfirmed(event.target.checked)}
+          required
+        />
+        <span>{control.confirmationMessage}</span>
+      </label>
+      <label className="product-process-human-decision__confirmation">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          checked={firstPartyEvidenceConfirmed}
+          onChange={(event) =>
+            setFirstPartyEvidenceConfirmed(event.target.checked)
+          }
+          required
+        />
+        <span>
+          Confirmo que os cinco sinais vieram dos eventos próprios desta versão
+          do protótipo.
+        </span>
+      </label>
+      <button
+        className="btn btn-success"
+        type="submit"
+        disabled={!formReady || executing}
+      >
+        {executing ? (
+          <Loader2
+            className="spinner-border spinner-border-sm"
+            size={16}
+            aria-hidden="true"
+          />
+        ) : (
+          <UserCheck size={17} aria-hidden="true" />
+        )}
+        {executing ? "Registrando..." : "Registrar leitura privada"}
+      </button>
+    </form>
   );
 }
 

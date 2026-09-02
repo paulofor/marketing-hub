@@ -55,14 +55,56 @@ class PdeMarketStrategyBpmTaskConsumerTest {
         .doesNotThrowAnyException();
   }
 
-  /** Confirma que o schema v6 permanece estrito em todos os objetos aninhados. */
+  /** Rejeita aprovação que tenta pular da pesquisa diretamente para operação comercial. */
+  @Test
+  void rejectsApprovalAsReadyForOperation() throws Exception {
+    var result = objectMapper.readTree(validResult("APPROVE", "301", "501")).deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("marketStrategicContract"))
+        .put("status", "READY_FOR_OPERATION");
+
+    assertThatThrownBy(() -> PdeMarketStrategyBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("contrato versionado");
+  }
+
+  /** Rejeita aprovação sem os cinco sinais e as duas leituras predeclaradas. */
+  @Test
+  void rejectsApprovalWithoutCompletePrivateValidationPlan() throws Exception {
+    var result = objectMapper.readTree(validResult("APPROVE", "301", "501"));
+    ((com.fasterxml.jackson.databind.node.ObjectNode)
+            result.path("marketStrategicContract").path("privateValidationPlan"))
+        .put("minimumIndependentReadings", 1);
+
+    assertThatThrownBy(() -> PdeMarketStrategyBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("duas leituras privadas");
+  }
+
+  /** Rejeita sinal repetido que tentaria ocultar a ausência de um critério privado. */
+  @Test
+  void rejectsApprovalWithDuplicatedPrivateSignal() throws Exception {
+    var result = objectMapper.readTree(validResult("APPROVE", "301", "501"));
+    var signals =
+        (com.fasterxml.jackson.databind.node.ArrayNode)
+            result
+                .path("marketStrategicContract")
+                .path("privateValidationPlan")
+                .path("requiredSignals");
+    signals.set(4, com.fasterxml.jackson.databind.node.TextNode.valueOf("EXPERIENCE_STARTED"));
+
+    assertThatThrownBy(() -> PdeMarketStrategyBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("duas leituras privadas");
+  }
+
+  /** Confirma que o schema v7 permanece estrito em todos os objetos aninhados. */
   @Test
   void keepsVersionedSchemaStrictAndComplete() throws Exception {
     JsonNode schema =
         objectMapper.readTree(
             Files.readString(
                 Path.of(
-                    "src/main/resources/prompts/pde-commercial-plan/v6/market-strategy-schema.json")));
+                    "src/main/resources/prompts/pde-commercial-plan/v7/market-strategy-schema.json")));
 
     assertStrictObjects(schema);
   }
@@ -91,6 +133,8 @@ class PdeMarketStrategyBpmTaskConsumerTest {
 
   /** Monta um parecer mínimo que respeita o schema versionado da atividade. */
   private String validResult(String decision, String dossierId, String opportunityId) {
+    String status =
+        "APPROVE".equals(decision) ? "READY_FOR_PRIVATE_VALIDATION" : "INSUFFICIENT_EVIDENCE";
     return """
         {
           "decision":"%s",
@@ -98,10 +142,55 @@ class PdeMarketStrategyBpmTaskConsumerTest {
           "selectedOpportunityId":%s,
           "alternatives":[{},{},{}],
           "selectedAlternative":"Alternativa factual",
-          "marketStrategicContract":{"contractVersion":"MARKET_STRATEGY_V2"},
+          "marketStrategicContract":{
+            "contractVersion":"MARKET_STRATEGY_V3",
+            "status":"%s",
+            "privateValidationPlan":{
+              "prototypeObjective":"Demonstrar resultado pronto em até dez minutos.",
+              "purchaseScene":{
+                "trigger":"Compromisso confirmado.",
+                "deadline":"Antes de sair hoje.",
+                "costOfError":"Perder confiança e tempo.",
+                "budgetEvidence":"Já compara alternativas pagas.",
+                "failedAttempt":"Tentou montar manualmente.",
+                "currentPaidBehavior":"Compra orientação especializada."
+              },
+              "strongestFreeAlternative":"Pesquisar e montar manualmente com uma IA genérica.",
+              "prototypeAdvantage":"Entregar resultado pessoal pronto sem prompting.",
+              "humanValueDelivery":{
+                "territories":["RECOGNITION","EFFORT_RELIEF"],
+                "desiredTransformation":"Sentir segurança com menos esforço.",
+                "evidenceSourceIds":["source-1","source-2"],
+                "evidencePathways":["CURRENT_LANGUAGE","PAID_BEHAVIOR"],
+                "readyMadeOutcome":"Resultado pessoal pronto para uso.",
+                "minimumCustomerInput":"Uma escolha curta em linguagem comum.",
+                "requiresPromptEngineering":false,
+                "requiresManualAssembly":false,
+                "usableWithoutAiKnowledge":true,
+                "customerStepsToValue":3,
+                "timeToUsableResultMinutes":8,
+                "automationBoundary":"A pessoa revisa antes de aplicar."
+              },
+              "minimumIndependentReadings":2,
+              "minimumEligibleParticipantsPerReading":1,
+              "requiredSignals":[
+                "EXPERIENCE_STARTED","VALUE_MOMENT","READY_RESULT_USED",
+                "PREFERRED_OVER_FREE","CHECKOUT_STARTED"
+              ],
+              "minimumExperienceStartRate":1,
+              "minimumValueMomentRate":1,
+              "minimumReadyResultUseRate":1,
+              "minimumPrototypePreferenceRate":1,
+              "minimumCheckoutStartRate":1,
+              "sourceMaxAgeDays":30,
+              "sourceRefreshRequired":false,
+              "sourceRefreshAction":"Nenhuma atualização necessária.",
+              "publicationBoundary":"Uso privado sem contato, publicação, pagamento ou gasto."
+            }
+          },
           "rationale":"Decisão sustentada pelo dossiê e suas fontes."
         }
         """
-        .formatted(decision, dossierId, opportunityId);
+        .formatted(decision, dossierId, opportunityId, status);
   }
 }

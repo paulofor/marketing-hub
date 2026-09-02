@@ -27,7 +27,7 @@ class CustomerBpmTaskConsumerTest {
   /** Aceita parecer aprovado somente quando há perspectiva e evidência verificável. */
   @Test
   void acceptsCompleteCustomerReview() throws Exception {
-    CustomerBpmTaskConsumer.validate(
+    var result =
         json.readTree(
             """
             {
@@ -69,10 +69,28 @@ class CustomerBpmTaskConsumerTest {
                 "emotionalTension":"Desejo o resultado, mas temo perder tempo e dinheiro",
                 "evidenceBoundary":"Reação simulada pela persona e pelo snapshot, não cliente real"
               },
+              "privateExperienceChecks":{
+                "sameProductAndVersion":true,
+                "twoDistinctParticipants":true,
+                "fiveSignalsPassedTwice":true,
+                "firstPartyEvents":true,
+                "lowEffortReadyResult":true,
+                "desktopAndMobileUsable":true,
+                "consentAndPrivacyPreserved":true,
+                "noMaterialHarm":true
+              },
               "evidence":["CTA visível"],
               "requiredChanges":[]
             }
-            """));
+            """);
+
+    CustomerBpmTaskConsumer.validate(result);
+    CustomerBpmTaskConsumer.validate(result, "pde-construction-approval");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("privateExperienceChecks"))
+        .put("lowEffortReadyResult", false);
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result, "pde-construction-approval"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("check reprovado");
   }
 
   /** Rejeita aprovação vazia que liberaria Têmis sem avaliação real da cliente. */
@@ -199,10 +217,10 @@ class CustomerBpmTaskConsumerTest {
   void selectsVersionedPdeExperienceContract() {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.promptResourceFor("pde-construction-approval"))
-        .isEqualTo("prompts/bpm/v3/pde-experience-review.md");
+        .isEqualTo("prompts/bpm/v4/pde-private-validation-experience-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
-        .isEqualTo("prompts/bpm/v3/pde-experience-review-schema.json");
+        .isEqualTo("prompts/bpm/v4/pde-private-validation-experience-review-schema.json");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.supportsContract(
                 "pde-construction-approval", "humanExperienceReview"))
@@ -210,6 +228,58 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.supportsContract("pde-construction-approval", "review"))
         .isFalse();
+  }
+
+  /** Usa somente o alvo e as leituras da tarefa privada, sem herdar provas de outro PDE. */
+  @Test
+  void composesPrivateValidationPromptWithoutGlobalProductEvidence() throws Exception {
+    CustomerBpmTaskConsumer consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000",
+            "codex",
+            "gpt-5.6-sol",
+            "high",
+            "/workspace-inexistente",
+            "/workspace-inexistente",
+            json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            401L,
+            "processCode",
+            "pde-construction-approval",
+            "activityId",
+            "humanExperienceReview",
+            "sourceReference",
+            "product:19@private-validation-v1",
+            "taskTarget",
+            Map.of(
+                "productId",
+                19L,
+                "productSlug",
+                "pde-planejado-301",
+                "experienceVersion",
+                "private-validation-v1",
+                "publicUrl",
+                "https://private.local/prototype"),
+            "processContext",
+            Map.of(
+                "completedHumanActivities",
+                List.of(
+                    Map.of(
+                        "activityId",
+                        "privateReading1",
+                        "participantReference",
+                        "PV-A1B2C3D4E5F6"))));
+
+    String prompt = consumer.prompt(task, List.of());
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "PV-A1B2C3D4E5F6",
+            "duas leituras humanas persistidas",
+            "checkout de teste ou parecer de agente não são venda")
+        .doesNotContain("versionedExperienceEvidence", "Kit Manual de Atendimento", "Rigel");
   }
 
   /** Seleciona o gate específico da cliente para homologação comercial do PDE. */

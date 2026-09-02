@@ -214,6 +214,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   /** Usa o checkout da mesma versão PDE somente nos processos que revisam essa experiência. */
   private Optional<CanonicalCheckout> canonicalCheckout(
       Experiment experiment, Product product, String processCode) {
+    if (isPrivateValidation(product, processCode)) return Optional.empty();
     if (processCode != null && VERSIONED_PDE_VISUAL_PROCESSES.contains(processCode)) {
       return checkoutResolver.resolve(product);
     }
@@ -223,6 +224,9 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   /** Resolve a tela exata do PDE ou mantém a landing própria do experimento conforme o processo. */
   private String publicUrl(
       Experiment experiment, Product product, String experienceVersion, String processCode) {
+    if (isPrivateValidation(product, processCode)) {
+      return privatePrototypeUrl(product);
+    }
     if (processCode != null && VERSIONED_PDE_VISUAL_PROCESSES.contains(processCode)) {
       if (productionSlots == null) return null;
       return productionSlots
@@ -237,6 +241,35 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       return experiment.getFollowUpActionUrl().trim();
     }
     return blank(product.getPublicUrl()) ? null : product.getPublicUrl().trim();
+  }
+
+  /** Identifica a construção privada para impedir uso de slot público ou checkout real. */
+  private boolean isPrivateValidation(Product product, String processCode) {
+    return "pde-construction-approval".equals(processCode)
+        && product.getValidationDefinitionVersion() != null
+        && product.getValidationDefinitionVersion().startsWith("PDE_PRIVATE_VALIDATION_V1");
+  }
+
+  /** Lê a URL da versão privada aceita, sem confundi-la com uma publicação produtiva. */
+  private String privatePrototypeUrl(Product product) {
+    if (blank(product.getValidationDefinitionJson())) return null;
+    try {
+      JsonNode acceptance =
+          objectMapper
+              .readTree(product.getValidationDefinitionJson())
+              .path("privatePrototypeAcceptance");
+      String value = acceptance.path("privateAccessUrl").asText(null);
+      return "READY".equals(acceptance.path("status").asText()) && !blank(value)
+          ? value.trim()
+          : null;
+    } catch (Exception ex) {
+      log.error(
+          "Contrato privado inválido ao resolver alvo da tarefa. productId={} productSlug={}",
+          product.getId(),
+          product.getSlug(),
+          ex);
+      return null;
+    }
   }
 
   /** Extrai a versão funcional do JSON canônico persistido no produto. */

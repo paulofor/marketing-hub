@@ -598,6 +598,13 @@ public class ProductStageMeasurementResolver {
           .findMeasurementSnapshotsBySourceReference("experiment:" + experimentId)
           .forEach(task -> tasks.put(task.id(), task));
     }
+    taskRepository
+        .findMeasurementSnapshotsBySourceReferenceStartingWith("product:" + product.getId() + "@")
+        .forEach(
+            task -> {
+              commercialPlanTasks.put(task.id(), task);
+              tasks.put(task.id(), task);
+            });
     Map<Long, StudioCostLedgerEntry> ledger = new LinkedHashMap<>();
     studioLedgerRepository
         .findByProductIdOrderByCreatedAtAsc(product.getId())

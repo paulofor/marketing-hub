@@ -126,7 +126,7 @@ public class CustomerBpmTaskConsumer {
       visualEvidence = prepareVisualEvidence(task);
       execution = execute(task, visualEvidence.uploaded());
       JsonNode result = execution.result();
-      validate(result);
+      validate(result, processCode(task));
       validateVisualAudit(result, visualEvidence.uploaded());
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
@@ -497,7 +497,7 @@ public class CustomerBpmTaskConsumer {
     if (visualEvidence != null && !visualEvidence.isEmpty()) {
       promptContext.put("visualEvidence", visualEvidence);
     }
-    if ("pde-construction-approval".equals(processCode(task))) {
+    if ("pde-construction-approval".equals(processCode(task)) && !isPrivateValidationTask(task)) {
       promptContext.put("versionedExperienceEvidence", pdeExperienceEvidenceLoader.load());
     } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
       promptContext.put(
@@ -524,7 +524,8 @@ public class CustomerBpmTaskConsumer {
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review.md";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review.md";
-      case "pde-construction-approval" -> "prompts/bpm/v3/pde-experience-review.md";
+      case "pde-construction-approval" ->
+          "prompts/bpm/v4/pde-private-validation-experience-review.md";
       default -> "prompts/bpm/v3/landing-customer-review.md";
     };
   }
@@ -535,7 +536,8 @@ public class CustomerBpmTaskConsumer {
       case "creative-production-approval" -> "prompts/bpm/v3/creative-customer-review-schema.json";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/v3/pde-commercial-homologation-customer-review-schema.json";
-      case "pde-construction-approval" -> "prompts/bpm/v3/pde-experience-review-schema.json";
+      case "pde-construction-approval" ->
+          "prompts/bpm/v4/pde-private-validation-experience-review-schema.json";
       default -> "prompts/bpm/v3/landing-customer-review-schema.json";
     };
   }
@@ -544,6 +546,14 @@ public class CustomerBpmTaskConsumer {
   private String processCode(Map<String, Object> task) {
     Object value = task.get("processCode");
     return value == null ? "" : value.toString();
+  }
+
+  /** Reconhece o produto privado para não misturar provas globais de outro PDE no parecer. */
+  private boolean isPrivateValidationTask(Map<String, Object> task) {
+    Object value = task.get("sourceReference");
+    String sourceReference = value == null ? "" : value.toString();
+    return sourceReference.startsWith("product:")
+        && sourceReference.contains("@private-validation-v1");
   }
 
   /** Valida que a decisão inclui evidência, resposta humana e gates internamente coerentes. */
@@ -572,6 +582,31 @@ public class CustomerBpmTaskConsumer {
           throw new IllegalArgumentException("Parecer de Psique aprovou com gate não aprovado");
         }
       }
+    }
+  }
+
+  /** Exige atestações específicas quando Psique revisa as duas leituras privadas. */
+  static void validate(JsonNode result, String processCode) {
+    validate(result);
+    if (!"pde-construction-approval".equals(processCode)) return;
+    JsonNode checks = result.path("privateExperienceChecks");
+    List<String> requiredChecks =
+        List.of(
+            "sameProductAndVersion",
+            "twoDistinctParticipants",
+            "fiveSignalsPassedTwice",
+            "firstPartyEvents",
+            "lowEffortReadyResult",
+            "desktopAndMobileUsable",
+            "consentAndPrivacyPreserved",
+            "noMaterialHarm");
+    if (!checks.isObject()
+        || requiredChecks.stream().anyMatch(check -> !checks.path(check).isBoolean())) {
+      throw new IllegalArgumentException("Parecer privado de Psique sem checks estruturados");
+    }
+    if ("APPROVED".equals(result.path("decision").asText())
+        && requiredChecks.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
+      throw new IllegalArgumentException("Psique aprovou a validação privada com check reprovado");
     }
   }
 

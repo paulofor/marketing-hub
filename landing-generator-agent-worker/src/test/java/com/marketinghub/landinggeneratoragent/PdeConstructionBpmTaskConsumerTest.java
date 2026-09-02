@@ -26,11 +26,15 @@ class PdeConstructionBpmTaskConsumerTest {
   void resolvesVersionedResourcesByActivity() {
     assertThat(
             PdeConstructionBpmTaskConsumer.promptResourceFor(
+                "pde-commercial-plan-offer", "productArchitecture"))
+        .isEqualTo("prompts/pde-commercial-plan/v6/product-architecture.md");
+    assertThat(
+            PdeConstructionBpmTaskConsumer.promptResourceFor(
                 "pde-construction-approval", "journey"))
-        .isEqualTo("prompts/pde-construction/v1/journey.md");
+        .isEqualTo("prompts/pde-construction/v2/journey.md");
     assertThat(
             PdeConstructionBpmTaskConsumer.schemaResourceFor("pde-construction-approval", "access"))
-        .isEqualTo("prompts/pde-construction/v1/access-schema.json");
+        .isEqualTo("prompts/pde-construction/v2/access-schema.json");
     assertThat(
             PdeConstructionBpmTaskConsumer.promptResourceFor(
                 "venda-entrega-satisfacao-cliente", "materialization"))
@@ -114,13 +118,14 @@ class PdeConstructionBpmTaskConsumerTest {
     }
   }
 
-  /** Impede que o prompt genérico de jornada recupere produto fixo ou comunicação de Íris. */
+  /** Impede que o prompt genérico recupere produto fixo ou antecipe comunicação comercial. */
   @Test
-  void keepsJourneyGenericAndRestrictedToPostPurchaseProduct() throws Exception {
-    String prompt = read("prompts/pde-construction/v1/journey.md");
+  void keepsJourneyGenericAndRestrictedToPrivatePrototype() throws Exception {
+    String prompt = read("prompts/pde-construction/v2/journey.md");
 
-    assertThat(prompt).contains("jornada pós-compra", "pertencem a Íris", "TASK_CONTEXT");
-    assertThat(prompt).doesNotContain("Kit Manual de Atendimento", "landing e artefatos");
+    assertThat(prompt)
+        .contains("experiência digital", "SIMULATED_NO_CHARGE", "TASK_CONTEXT")
+        .doesNotContain("Kit WhatsApp", "15 respostas", "pós-compra");
   }
 
   /** Aceita somente jornada com decisão comparada, cinco etapas e critérios verificáveis. */
@@ -132,10 +137,68 @@ class PdeConstructionBpmTaskConsumerTest {
             {"decision":"READY","rationale":"Contrato completo e coerente.",
              "selectedApproach":"Formulário guiado com entrega assistida completa.",
              "alternatives":[{},{},{}],"acceptanceCriteria":["a"],
-             "experienceContract":{"stages":[{},{},{},{},{}]}}
+             "experienceContract":{"stages":[{},{},{}],"maxValueTimeMinutes":8,
+               "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                 "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+               "checkoutMode":"SIMULATED_NO_CHARGE"}}
             """);
 
     PdeConstructionBpmTaskConsumer.validate(result, "pde-construction-approval", "journey");
+  }
+
+  /** Exige que a arquitetura comercial comece por um protótipo privado instrumentado. */
+  @Test
+  void validatesPrivatePrototypeArchitecture() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"APPROVE",
+              "rationale":"Harness mínimo preserva a estratégia e mede valor humano.",
+              "selectedApproach":"Experiência guiada com resultado pessoal pronto em dez minutos.",
+              "alternatives":[{},{},{}],
+              "productArchitecture":{
+                "privatePrototype":{
+                  "scope":"Uma decisão completa em ambiente privado.",
+                  "simpleInput":"Contexto informado em linguagem comum.",
+                  "readyResult":"Resultado pessoal pronto para uso.",
+                  "maxValueTimeMinutes":10,
+                  "instrumentationEvents":[
+                    "EXPERIENCE_STARTED","VALUE_MOMENT","READY_RESULT_USED",
+                    "PREFERRED_OVER_FREE","CHECKOUT_STARTED"
+                  ],
+                  "checkoutMode":"SIMULATED_NO_CHARGE",
+                  "excludedFromPrototype":["Pagamento real","Publicação"]
+                }
+              }
+            }
+            """);
+
+    PdeConstructionBpmTaskConsumer.validate(
+        result, "pde-commercial-plan-offer", "productArchitecture");
+  }
+
+  /** Rejeita arquitetura que omite a prova privada e tenta avançar direto ao produto completo. */
+  @Test
+  void rejectsArchitectureWithoutPrivatePrototype() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"APPROVE",
+              "rationale":"Contrato tenta avançar sem validar valor.",
+              "selectedApproach":"Aplicação completa antes de qualquer leitura privada.",
+              "alternatives":[{},{},{}],
+              "productArchitecture":{}
+            }
+            """);
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validate(
+                    result, "pde-commercial-plan-offer", "productArchitecture"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Protótipo privado");
   }
 
   /** Bloqueia pacote que não contém todos os grupos mínimos de entregáveis. */
@@ -147,7 +210,9 @@ class PdeConstructionBpmTaskConsumerTest {
             {"decision":"READY","rationale":"Pacote parcial.",
              "selectedApproach":"Materiais editáveis com orientação guiada completa.",
              "alternatives":[{},{},{}],"acceptanceCriteria":["a"],
-             "deliveryPackage":{"assets":[{},{},{}]}}
+             "deliveryPackage":{"version":"pde-private-prototype-v1","assets":[{},{}],
+               "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                 "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"]}}
             """);
 
     assertThatThrownBy(
@@ -167,7 +232,10 @@ class PdeConstructionBpmTaskConsumerTest {
             {"decision":"READY","rationale":"A jornada atende aos gates.",
              "selectedApproach":"sem","alternatives":[{},{},{}],
              "acceptanceCriteria":["critério"],
-             "experienceContract":{"stages":[{},{},{},{},{}]}}
+             "experienceContract":{"stages":[{},{},{}],"maxValueTimeMinutes":8,
+               "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                 "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+               "checkoutMode":"SIMULATED_NO_CHARGE"}}
             """);
 
     assertThatThrownBy(
@@ -178,7 +246,7 @@ class PdeConstructionBpmTaskConsumerTest {
         .hasMessageContaining("decisão comparada");
   }
 
-  /** Aceita arquitetura de produto aprovada sem exigir campos exclusivos da construção v1. */
+  /** Aceita arquitetura aprovada quando o protótipo privado está limitado e instrumentado. */
   @Test
   void validatesProductArchitecture() throws Exception {
     var result =
@@ -186,7 +254,15 @@ class PdeConstructionBpmTaskConsumerTest {
             """
             {"decision":"APPROVE","rationale":"Arquitetura coerente com os contratos.",
              "selectedApproach":"Experiência assistida com primeiro valor verificável.",
-             "alternatives":[{},{},{}],"productArchitecture":{"format":"PDE"}}
+             "alternatives":[{},{},{}],"productArchitecture":{"format":"PDE",
+               "privatePrototype":{"maxValueTimeMinutes":8,
+                 "scope":"Uma decisão privada completa.",
+                 "simpleInput":"Contexto em linguagem comum.",
+                 "readyResult":"Resultado pessoal pronto.",
+                 "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                   "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+                 "checkoutMode":"SIMULATED_NO_CHARGE",
+                 "excludedFromPrototype":["Pagamento real"]}}}
             """);
 
     PdeConstructionBpmTaskConsumer.validate(

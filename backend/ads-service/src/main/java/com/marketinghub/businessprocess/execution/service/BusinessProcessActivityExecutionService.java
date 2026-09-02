@@ -267,10 +267,11 @@ public class BusinessProcessActivityExecutionService {
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<Experiment> productExperiments = productExperiments(productId);
     List<AgentTask> tasks =
-        productProcessTasks(productPlans, productExperiments, selectedProcess.getProcessCode());
+        productProcessTasks(
+            productPlans, productExperiments, productId, selectedProcess.getProcessCode());
     List<BusinessProcessActivityInstance> instances =
         productProcessActivityInstances(
-            productPlans, productExperiments, selectedProcess.getProcessCode());
+            productPlans, productExperiments, productId, selectedProcess.getProcessCode());
     List<BusinessProcessActivityDefinition> selectedActivities =
         activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
 
@@ -313,11 +314,9 @@ public class BusinessProcessActivityExecutionService {
     String currentExecutionReference = currentExecutionReference(tasks, instances);
     String readinessSourceReference =
         currentExecutionReference == null
-            ? productExperiments.stream()
-                .findFirst()
-                .map(experiment -> "experiment:" + experiment.getId())
-                .orElse(null)
+            ? initialSourceReference(selectedProcess, product, productExperiments)
             : currentExecutionReference;
+    boolean hasExecutionContext = readinessSourceReference != null;
     Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId =
         currentInstancesByActivityId(selectedProcess.getId(), currentExecutionReference, instances);
     List<ProductProcessActivityExecutionGroupResponse> activities =
@@ -331,7 +330,7 @@ public class BusinessProcessActivityExecutionService {
             readinessSourceReference,
             currentInstancesByActivityId,
             product,
-            !productExperiments.isEmpty(),
+            hasExecutionContext,
             !Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()));
     ProductProcessSituation situation = processSituation(activities);
     BigDecimal knownCost = knownEstimatedCost(tasks);
@@ -432,17 +431,22 @@ public class BusinessProcessActivityExecutionService {
           HttpStatus.CONFLICT, "A atividade não possui contrato de execução configurado.");
     }
     List<Experiment> productExperiments = productExperiments(productId);
-    Experiment experiment = latestProductExperiment(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<AgentTask> processTasks =
-        productProcessTasks(productPlans, productExperiments, process.getProcessCode());
+        productProcessTasks(productPlans, productExperiments, productId, process.getProcessCode());
     List<BusinessProcessActivityInstance> processInstances =
-        productProcessActivityInstances(productPlans, productExperiments, process.getProcessCode());
+        productProcessActivityInstances(
+            productPlans, productExperiments, productId, process.getProcessCode());
     String currentSourceReference = currentExecutionReference(processTasks, processInstances);
     String sourceReference =
         currentSourceReference == null
-            ? "experiment:" + experiment.getId()
+            ? initialSourceReference(process, product, productExperiments)
             : currentSourceReference;
+    if (sourceReference == null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "O produto ainda não possui experimento nem contrato privado para contextualizar a execução.");
+    }
     ActivitySituation currentSituation =
         activitySituation(
             normalizedActivityId,
@@ -551,15 +555,17 @@ public class BusinessProcessActivityExecutionService {
         : experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(productId);
   }
 
-  /** Seleciona o experimento mais recente como referência auditável da nova execução. */
-  private Experiment latestProductExperiment(Long productId) {
-    return productExperiments(productId).stream()
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "O produto ainda não possui experimento para contextualizar a execução."));
+  /** Resolve a referência inicial sem fabricar experimento para um protótipo ainda privado. */
+  private String initialSourceReference(
+      BusinessProcessDefinition process, Product product, List<Experiment> productExperiments) {
+    if (!productExperiments.isEmpty()) {
+      return "experiment:" + productExperiments.getFirst().getId();
+    }
+    if ("pde-construction-approval".equals(process.getProcessCode())
+        && "PDE_PRIVATE_VALIDATION_V1".equals(product.getValidationDefinitionVersion())) {
+      return "product:" + product.getId() + "@private-validation-v1";
+    }
+    return null;
   }
 
   /** Prefere o nome interno no título operacional sem expor ausência como texto vazio. */
@@ -614,7 +620,7 @@ public class BusinessProcessActivityExecutionService {
       HumanProductProcessActivityReadiness humanReadiness,
       boolean hasAgentReadinessProvider,
       AgentProductProcessActivityReadiness agentReadiness,
-      boolean hasProductExperiment,
+      boolean hasExecutionContext,
       boolean productExecutionEnabled) {
     if (definition == null) return "Atividade histórica sem comando operacional.";
     if (!"PUBLISHED".equals(process.getStatus())) {
@@ -626,8 +632,8 @@ public class BusinessProcessActivityExecutionService {
     if (!"NOT_STARTED".equals(operationalState) && !"BLOCKED".equals(operationalState)) {
       return "A atividade já possui execução registrada neste ciclo.";
     }
-    if (!hasProductExperiment) {
-      return "O produto ainda não possui experimento para contextualizar a execução.";
+    if (!hasExecutionContext) {
+      return "O produto ainda não possui experimento nem contrato privado para contextualizar a execução.";
     }
     if (!productExecutionEnabled) {
       return "O produto está em STOP e não pode iniciar novas atividades.";
@@ -665,7 +671,7 @@ public class BusinessProcessActivityExecutionService {
       HumanProductProcessActivityReadiness humanReadiness,
       boolean requestAvailable,
       String requestReason,
-      boolean hasProductExperiment,
+      boolean hasExecutionContext,
       boolean productExecutionEnabled) {
     if (definition == null) {
       return new ProductProcessActivityExecutionControlResponse(
@@ -786,7 +792,7 @@ public class BusinessProcessActivityExecutionService {
     if (subprocess.isPresent()) {
       boolean navigationAvailable =
           "PUBLISHED".equals(process.getStatus())
-              && hasProductExperiment
+              && hasExecutionContext
               && productExecutionEnabled
               && !"COMPLETED".equals(operationalState);
       String reason =
@@ -913,9 +919,12 @@ public class BusinessProcessActivityExecutionService {
     return compatible.stream().findFirst();
   }
 
-  /** Busca tarefas dos planos e experimentos do produto sem misturar outro processo. */
+  /** Busca tarefas do produto, de seus planos e experimentos sem misturar outro processo. */
   private List<AgentTask> productProcessTasks(
-      List<CommercialPlan> productPlans, List<Experiment> productExperiments, String processCode) {
+      List<CommercialPlan> productPlans,
+      List<Experiment> productExperiments,
+      Long productId,
+      String processCode) {
     Map<Long, AgentTask> uniqueTasks = new LinkedHashMap<>();
     for (CommercialPlan plan : productPlans) {
       taskRepository
@@ -934,6 +943,12 @@ public class BusinessProcessActivityExecutionService {
           .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
           .forEach(task -> uniqueTasks.put(task.getId(), task));
     }
+    taskRepository
+        .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:" + productId + "@")
+        .stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
+        .forEach(task -> uniqueTasks.put(task.getId(), task));
     return uniqueTasks.values().stream()
         .sorted(
             Comparator.comparing(
@@ -942,9 +957,12 @@ public class BusinessProcessActivityExecutionService {
         .toList();
   }
 
-  /** Busca ocorrências BPM pelos planos e experimentos para preservar atividades sem tarefa. */
+  /** Busca ocorrências BPM do produto, dos planos e experimentos, inclusive sem tarefa. */
   private List<BusinessProcessActivityInstance> productProcessActivityInstances(
-      List<CommercialPlan> productPlans, List<Experiment> productExperiments, String processCode) {
+      List<CommercialPlan> productPlans,
+      List<Experiment> productExperiments,
+      Long productId,
+      String processCode) {
     Map<Long, BusinessProcessActivityInstance> uniqueInstances = new LinkedHashMap<>();
     for (CommercialPlan plan : productPlans) {
       activityInstanceRepository
@@ -958,6 +976,10 @@ public class BusinessProcessActivityExecutionService {
               processCode, "experiment:" + experiment.getId())
           .forEach(instance -> uniqueInstances.put(instance.getId(), instance));
     }
+    activityInstanceRepository
+        .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+            processCode, "product:" + productId + "@")
+        .forEach(instance -> uniqueInstances.put(instance.getId(), instance));
     return uniqueInstances.values().stream()
         .sorted(
             Comparator.comparing(
@@ -1023,7 +1045,7 @@ public class BusinessProcessActivityExecutionService {
       String readinessSourceReference,
       Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId,
       Product product,
-      boolean hasProductExperiment,
+      boolean hasExecutionContext,
       boolean productExecutionEnabled) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new java.util.ArrayList<>();
     int sequence = 1;
@@ -1051,7 +1073,7 @@ public class BusinessProcessActivityExecutionService {
               : backendActivityExecutor(selectedProcess, definition);
       BackendProductProcessActivityReadiness backendReadiness =
           backendExecutor
-              .filter(ignored -> hasProductExperiment && readinessSourceReference != null)
+              .filter(ignored -> hasExecutionContext && readinessSourceReference != null)
               .map(
                   executor ->
                       executor.readiness(
@@ -1063,7 +1085,7 @@ public class BusinessProcessActivityExecutionService {
               : humanActivityExecutor(selectedProcess, definition);
       HumanProductProcessActivityReadiness humanReadiness =
           humanExecutor
-              .filter(ignored -> hasProductExperiment && readinessSourceReference != null)
+              .filter(ignored -> hasExecutionContext && readinessSourceReference != null)
               .map(
                   executor ->
                       executor.readiness(
@@ -1075,6 +1097,7 @@ public class BusinessProcessActivityExecutionService {
               : agentActivityReadinessProvider(selectedProcess, definition);
       AgentProductProcessActivityReadiness agentReadiness =
           agentReadinessProvider
+              .filter(ignored -> hasExecutionContext && readinessSourceReference != null)
               .map(
                   provider ->
                       provider.readiness(
@@ -1092,7 +1115,7 @@ public class BusinessProcessActivityExecutionService {
       boolean executionRequestAvailable =
           definition != null
               && "PUBLISHED".equals(selectedProcess.getStatus())
-              && hasProductExperiment
+              && hasExecutionContext
               && productExecutionEnabled
               && ((!responsibleAgents.isEmpty()
                       && agentStateAllowsRequest
@@ -1117,7 +1140,7 @@ public class BusinessProcessActivityExecutionService {
               humanReadiness,
               agentReadinessProvider.isPresent(),
               agentReadiness,
-              hasProductExperiment,
+              hasExecutionContext,
               productExecutionEnabled);
       ProductProcessActivityExecutionControlResponse executionControl =
           executionControl(
@@ -1131,7 +1154,7 @@ public class BusinessProcessActivityExecutionService {
               humanReadiness,
               executionRequestAvailable,
               executionRequestReason,
-              hasProductExperiment,
+              hasExecutionContext,
               productExecutionEnabled);
       String activityName =
           definition != null

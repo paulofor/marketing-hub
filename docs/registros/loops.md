@@ -3273,3 +3273,36 @@ Use este checklist quando o problema estiver em algum loop acima:
   63/tarefa #316, de relacionamentos, acumulou 60 evidências públicas, 23 ofertas e cinco anúncios
   aderentes em três lentes. Os relatórios preservam `WAITING_SOURCE_QUALITY`, ressalvas de risco e a
   distinção entre anúncio, dossiê e venda; nenhum pagamento ou receita foi inferido da pesquisa.
+
+## LOOP-ATENA-VALIDACAO-PRIVADA-CIRCULAR — agente exige prova do protótipo antes de permitir sua criação
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** as tarefas de Atena #309, #313 e #317 bloquearam os seis dossiês prontos
+  das execuções #22, #23 e #24 por ausência de uso real, preferência e checkout. Plutus e Dédalo não
+  chegaram a executar, portanto o protótipo que produziria esses sinais nunca poderia existir.
+- **Causa-raiz confirmada no histórico, prompt e cânones:** o prompt operacional v6 ainda exigia
+  `READY_FOR_OPERATION` e reutilizava gates comerciais finais na seleção inicial, contrariando a
+  regra canônica de que `DOSSIER_READY` libera apenas planejamento e prototipação. O produto criado
+  em `PLANNED` também não possuía mapeamento para o macroprocesso de construção na tela da cadeia e
+  o executor de atividades exigia um experimento que, corretamente, ainda não existia.
+- **Correção sistêmica:** Atena passa a emitir `MARKET_STRATEGY_V3` com
+  `READY_FOR_PRIVATE_VALIDATION` e exatamente duas leituras predeclaradas; Dédalo recebe contrato
+  explícito de protótipo privado instrumentado; o backend valida ambos, cria o produto em `STOP`,
+  posiciona `PLANNED` em `pde-construction-approval`, permite a liberação explícita apenas da
+  construção e cria suas tarefas com referência `product:<id>` antes de existir experimento. A
+  validação privada aparece como etapa posterior separada no relatório.
+- **Prevenção:** schemas e testes rejeitam `READY_FOR_OPERATION`, plano sem duas leituras, protótipo
+  sem os cinco sinais ou com valor acima de dez minutos. Testes de materialização, roteamento,
+  contexto pré-experimento, relatório, Liquibase e interface garantem que seleção não autoriza
+  contato, publicação, gasto ou venda e que a próxima ação abre o histórico do produto planejado.
+- **Fechamento ponta a ponta:** a construção v6 adiciona aceitação humana da URL e versão privada,
+  duas leituras pseudonimizadas com eventos próprios, gates independentes de Psique e Têmis e
+  decisão final recalculada pelo backend. Uma leitura negativa permanece `BLOCKED` e repetível;
+  cinco falsos nunca podem completar a atividade. Os workers privados deixam de carregar artefatos
+  globais, impedindo mistura entre produtos, e a priorização mantém o produto em `STOP` sem efeitos
+  comerciais externos.
+- **Migração das execuções #22, #23 e #24:** o relatório passa a oferecer `Retomar com Atena` quando
+  o ciclo já terminou com `DOSSIER_READY`, o produto ainda não foi materializado e o primeiro gate
+  relevante está parado. O endpoint bloqueia ciclo incompleto ou sem dossiê pronto, trava o registro
+  durante o comando e reutiliza idempotentemente as evidências na versão publicada. Assim, o legado
+  avança sem repetir Argos nem duplicar tarefas em andamento.

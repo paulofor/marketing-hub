@@ -208,7 +208,7 @@ public class ProductSubprocessPositionResolver {
         .toList();
   }
 
-  /** Localiza tarefas do produto por planos comerciais persistidos e suas versões auditáveis. */
+  /** Localiza tarefas pré-experimento pelo produto e por seus planos comerciais auditáveis. */
   private List<AgentTaskMeasurementSnapshot> productTasks(Product product) {
     List<AgentTaskMeasurementSnapshot> tasks = new ArrayList<>();
     for (CommercialPlan plan : commercialPlanRepository.findByProductId(product.getId())) {
@@ -220,6 +220,13 @@ public class ProductSubprocessPositionResolver {
               .map(this::snapshot)
               .toList());
     }
+    tasks.addAll(
+        taskRepository
+            .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+                "product:" + product.getId() + "@")
+            .stream()
+            .map(this::snapshot)
+            .toList());
     return tasks;
   }
 

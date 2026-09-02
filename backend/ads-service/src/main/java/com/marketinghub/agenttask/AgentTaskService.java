@@ -1742,36 +1742,29 @@ public class AgentTaskService {
 
   /** Consolida resultados predecessores para o próximo agente avaliar evidências reais. */
   private String processContext(AgentTask task) {
-    Map<String, AgentTask> latestByOwnerActivity = new java.util.LinkedHashMap<>();
-    repository
-        .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            task.getProcessDefinition().getId(), task.getSourceReference())
-        .stream()
-        .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
-        .forEach(
-            sibling ->
-                latestByOwnerActivity.put(
-                    sibling.getAssignedAgent().getAgentKey() + ":" + sibling.getProcessActivityId(),
-                    sibling));
-    List<Map<String, Object>> completedActivities =
-        latestByOwnerActivity.values().stream()
-            .sorted(java.util.Comparator.comparing(AgentTask::getId))
-            .map(
-                sibling -> {
-                  Map<String, Object> context = new java.util.LinkedHashMap<>();
-                  context.put("taskId", sibling.getId());
-                  context.put("agentKey", sibling.getAssignedAgent().getAgentKey());
-                  context.put("activityId", sibling.getProcessActivityId());
-                  context.put("activityName", sibling.getProcessActivityName());
-                  context.put("resultJson", sibling.getResultJson());
-                  context.put("evidenceJson", sibling.getEvidenceJson());
-                  context.put("deliveredAt", sibling.getDeliveredAt());
-                  return context;
-                })
-            .toList();
     try {
+      Map<String, AgentTask> latestByOwnerActivity = new LinkedHashMap<>();
+      repository
+          .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+              task.getProcessDefinition().getId(), task.getSourceReference())
+          .stream()
+          .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
+          .forEach(
+              sibling ->
+                  latestByOwnerActivity.put(
+                      sibling.getAssignedAgent().getAgentKey()
+                          + ":"
+                          + sibling.getProcessActivityId(),
+                      sibling));
+      List<Map<String, Object>> completedActivities =
+          latestByOwnerActivity.values().stream()
+              .sorted(java.util.Comparator.comparing(AgentTask::getId))
+              .map(this::agentActivityContext)
+              .toList();
+      List<Map<String, Object>> completedHumanActivities = completedHumanActivities(task);
       Map<String, Object> context = new java.util.LinkedHashMap<>();
       context.put("completedActivities", completedActivities);
+      context.put("completedHumanActivities", completedHumanActivities);
       marketStrategicContextProvider
           .resolve(task.getSourceReference())
           .ifPresent(contract -> context.put("marketStrategicContract", contract));
@@ -1789,6 +1782,79 @@ public class AgentTaskService {
           task.getSourceReference(),
           ex);
       throw new IllegalStateException("Não foi possível consolidar o contexto do processo", ex);
+    }
+  }
+
+  /** Converte uma tarefa concluída em contexto estruturado sem JSON serializado dentro de JSON. */
+  private Map<String, Object> agentActivityContext(AgentTask sibling) {
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("taskId", sibling.getId());
+    context.put("agentKey", sibling.getAssignedAgent().getAgentKey());
+    context.put("activityId", sibling.getProcessActivityId());
+    context.put("activityName", sibling.getProcessActivityName());
+    context.put("result", readOptionalJson(sibling.getResultJson(), "resultado", sibling.getId()));
+    context.put(
+        "evidence", readOptionalJson(sibling.getEvidenceJson(), "evidência", sibling.getId()));
+    context.put(
+        "deliveredAt",
+        sibling.getDeliveredAt() == null ? null : sibling.getDeliveredAt().toString());
+    return context;
+  }
+
+  /** Lista decisões humanas concluídas para os agentes posteriores avaliarem fatos persistidos. */
+  private List<Map<String, Object>> completedHumanActivities(AgentTask task) {
+    if (activityInstanceRepository == null) return List.of();
+    Map<String, BusinessProcessActivityInstance> latest = new LinkedHashMap<>();
+    activityInstanceRepository
+        .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+            task.getProcessDefinition().getId(), task.getSourceReference())
+        .stream()
+        .filter(instance -> "COMPLETED".equals(instance.getStatus()))
+        .filter(BusinessProcessActivityInstance::isObjectiveAchieved)
+        .filter(instance -> instance.getActivityDefinition() != null)
+        .filter(
+            instance ->
+                instance.getActivityDefinition().getOwnerName() != null
+                    && "operador humano"
+                        .equalsIgnoreCase(instance.getActivityDefinition().getOwnerName().trim()))
+        .forEach(
+            instance ->
+                latest.merge(
+                    instance.getActivityDefinition().getActivityId(),
+                    instance,
+                    (current, replacement) ->
+                        replacement.getOccurrenceNumber() >= current.getOccurrenceNumber()
+                            ? replacement
+                            : current));
+    return latest.values().stream()
+        .sorted(java.util.Comparator.comparing(BusinessProcessActivityInstance::getId))
+        .map(this::humanActivityContext)
+        .toList();
+  }
+
+  /** Converte uma decisão humana concluída em evidência própria para o contexto do processo. */
+  private Map<String, Object> humanActivityContext(BusinessProcessActivityInstance instance) {
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("activityInstanceId", instance.getId());
+    context.put("activityId", instance.getActivityDefinition().getActivityId());
+    context.put("activityName", instance.getActivityDefinition().getName());
+    context.put(
+        "objectiveEvidence",
+        readOptionalJson(
+            instance.getObjectiveEvidenceJson(), "evidência humana", instance.getId()));
+    context.put(
+        "exitedAt", instance.getExitedAt() == null ? null : instance.getExitedAt().toString());
+    return context;
+  }
+
+  /** Lê JSON opcional preservando objeto nulo e falhando com contexto quando estiver corrompido. */
+  private JsonNode readOptionalJson(String raw, String label, Long entityId) {
+    if (raw == null || raw.isBlank()) return objectMapper.nullNode();
+    try {
+      return objectMapper.readTree(raw);
+    } catch (Exception ex) {
+      log.error("Falha ao ler {} do contexto BPM. entityId={}", label, entityId, ex);
+      throw new IllegalStateException("JSON inválido no contexto BPM: " + label + ".", ex);
     }
   }
 
@@ -2449,8 +2515,26 @@ public class AgentTaskService {
                       sibling,
                       (current, replacement) ->
                           replacement.getId() > current.getId() ? replacement : current));
-      Set<String> taskNodes = new HashSet<>();
-      siblings.stream().map(AgentTask::getProcessActivityId).forEach(taskNodes::add);
+      Map<String, BusinessProcessActivityInstance> latestInstancesByActivity = new HashMap<>();
+      if (activityInstanceRepository != null) {
+        activityInstanceRepository
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                candidate.getProcessDefinition().getId(), candidate.getSourceReference())
+            .stream()
+            .filter(instance -> instance.getActivityDefinition() != null)
+            .forEach(
+                instance ->
+                    latestInstancesByActivity.merge(
+                        instance.getActivityDefinition().getActivityId(),
+                        instance,
+                        (current, replacement) ->
+                            replacement.getOccurrenceNumber() >= current.getOccurrenceNumber()
+                                ? replacement
+                                : current));
+      }
+      Set<String> executionNodes = new HashSet<>();
+      siblings.stream().map(AgentTask::getProcessActivityId).forEach(executionNodes::add);
+      executionNodes.addAll(latestInstancesByActivity.keySet());
       Set<String> predecessors = new HashSet<>();
       Set<String> visited = new HashSet<>();
       ArrayDeque<String> queue = new ArrayDeque<>();
@@ -2461,18 +2545,16 @@ public class AgentTaskService {
           if (distanceFromStart.getOrDefault(source, Integer.MAX_VALUE)
               >= distanceFromStart.getOrDefault(current, Integer.MAX_VALUE)) continue;
           if (!visited.add(source)) continue;
-          if (taskNodes.contains(source)) predecessors.add(source);
+          if (executionNodes.contains(source)) predecessors.add(source);
           else queue.addLast(source);
         }
       }
       return predecessors.stream()
           .allMatch(
               predecessor ->
-                  latestTasksByActivityAndOwner
-                      .getOrDefault(predecessor, Map.of())
-                      .values()
-                      .stream()
-                      .allMatch(task -> "COMPLETED".equals(task.getStatus())));
+                  completedPredecessor(
+                      latestInstancesByActivity.get(predecessor),
+                      latestTasksByActivityAndOwner.get(predecessor)));
     } catch (Exception ex) {
       log.error(
           "Falha ao avaliar sequência BPM. taskId={} processDefinitionId={} activityId={}",
@@ -2483,6 +2565,17 @@ public class AgentTaskService {
       throw new IllegalStateException(
           "Não foi possível avaliar a sequência BPM da tarefa " + candidate.getId(), ex);
     }
+  }
+
+  /** Usa a instância como autoridade e mantém tarefas antigas apenas como compatibilidade. */
+  private boolean completedPredecessor(
+      BusinessProcessActivityInstance instance, Map<String, AgentTask> historicalTasks) {
+    if (instance != null) {
+      return "COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved();
+    }
+    return historicalTasks != null
+        && !historicalTasks.isEmpty()
+        && historicalTasks.values().stream().allMatch(task -> "COMPLETED".equals(task.getStatus()));
   }
 
   /**

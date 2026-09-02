@@ -35,6 +35,39 @@ CREATE TABLE business_process_activity_definition (
     FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE business_process_chain_definition (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  chain_code VARCHAR(100) NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  purpose TEXT NOT NULL,
+  outcome_description VARCHAR(500) NOT NULL,
+  primary_metric VARCHAR(200) NOT NULL,
+  version_number INT NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  created_at DATETIME NOT NULL,
+  published_at DATETIME NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT uk_business_process_chain_code_version UNIQUE (chain_code, version_number),
+  INDEX idx_business_process_chain_status (chain_code, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE business_process_chain_item (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  chain_definition_id BIGINT NOT NULL,
+  process_definition_id BIGINT NOT NULL,
+  sequence_number INT NOT NULL,
+  value_contribution VARCHAR(500) NOT NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT uk_business_process_chain_sequence UNIQUE (chain_definition_id, sequence_number),
+  CONSTRAINT uk_business_process_chain_process UNIQUE (chain_definition_id, process_definition_id),
+  CONSTRAINT fk_business_process_chain_item_chain
+    FOREIGN KEY (chain_definition_id) REFERENCES business_process_chain_definition(id),
+  CONSTRAINT fk_business_process_chain_item_process
+    FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id),
+  INDEX idx_business_process_chain_item_process (process_definition_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE agent (
   id BIGINT NOT NULL AUTO_INCREMENT,
   agent_key VARCHAR(100) NOT NULL,
@@ -202,6 +235,24 @@ VALUES
    'Argos', NULL, NULL,
    '{"id":"evidence","type":"TASK","label":"Confirmar evidências","owner":"Argos"}',
    '2026-08-26 21:36:50');
+
+INSERT INTO business_process_definition
+  (id, process_code, name, purpose, owner_name, trigger_description, outcome_description,
+   version_number, status, technical_reference, process_type, parent_process_code,
+   diagram_json, created_at, published_at)
+VALUES
+  (60, 'pde-communication-sales-journey', 'Comunicação comercial',
+   'Preparar comunicação.', 'Backend', 'Produto validado.', 'Comunicação pronta.',
+   5, 'PUBLISHED', 'fixture-local', 'VALUE_PROCESS', NULL, '{"nodes":[]}',
+   '2026-08-31 10:00:00', '2026-08-31 10:00:00'),
+  (61, 'pde-commercial-homologation-activation', 'Homologação comercial',
+   'Homologar operação.', 'Backend', 'Comunicação pronta.', 'Operação autorizada.',
+   5, 'PUBLISHED', 'fixture-local', 'VALUE_PROCESS', NULL, '{"nodes":[]}',
+   '2026-08-31 10:00:00', '2026-08-31 10:00:00'),
+  (62, 'pde-sales-delivery-learning', 'Venda, entrega e aprendizado',
+   'Vender e entregar.', 'Backend', 'Operação autorizada.', 'Venda entregue.',
+   5, 'PUBLISHED', 'fixture-local', 'VALUE_PROCESS', NULL, '{"nodes":[]}',
+   '2026-08-31 10:00:00', '2026-08-31 10:00:00');
 
 INSERT INTO agent (id, agent_key) VALUES (8, 'market-radar');
 

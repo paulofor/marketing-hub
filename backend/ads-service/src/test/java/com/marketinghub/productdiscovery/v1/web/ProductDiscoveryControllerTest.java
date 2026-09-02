@@ -16,6 +16,7 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchTrac
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionService;
+import com.marketinghub.productdiscovery.v1.service.resumePrivateValidationHandoff.ProductDiscoveryPrivateValidationHandoffResponse;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -140,6 +141,27 @@ class ProductDiscoveryControllerTest {
         .andExpect(jsonPath("$.items[0].maturity").value("Oportunidade promissora"))
         .andExpect(
             jsonPath("$.recommendedTracks[0].theme").value("renda extra para autonomos e MEIs"));
+  }
+
+  /** Deve expor o comando administrativo que retoma Atena sem repetir Argos. */
+  @Test
+  void resumesPrivateValidationHandoff() throws Exception {
+    when(service.resumePrivateValidationHandoff(77L))
+        .thenReturn(
+            new ProductDiscoveryPrivateValidationHandoffResponse(
+                77L,
+                "product-discovery-cycle:77",
+                2,
+                "QUEUED_FOR_PRIVATE_VALIDATION",
+                "ATENA_PRIVATE_PROTOTYPE_SELECTION",
+                "Atena recebeu os dossiês atuais."));
+
+    mockMvc
+        .perform(post("/api/product-discovery/v1/cycles/77/private-validation-handoff"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cycleId").value(77))
+        .andExpect(jsonPath("$.dossierReadyCount").value(2))
+        .andExpect(jsonPath("$.nextActivity").value("ATENA_PRIVATE_PROTOTYPE_SELECTION"));
   }
 
   /** Deve correlacionar a solicitação Meta ao lease vigente e expor a cobertura Instagram. */

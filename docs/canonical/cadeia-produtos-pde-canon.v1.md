@@ -664,3 +664,34 @@ conclusão da cadeia. Ele não constitui produto pronto, publicação, campanha,
 Essa escolha inicial de Atena prioriza somente uma candidata para planejamento, economia e
 arquitetura. A priorização comercial final continua condicionada ao protótipo privado e às duas
 leituras da Validação do Momento de Compra descritas neste cânone.
+
+Por decisão de 2026-09-02, essa entrada usa o processo publicado
+`pde-commercial-plan-offer` v6 e o contrato `MARKET_STRATEGY_V3`. Atena seleciona no máximo uma
+candidata para protótipo privado; Plutus limita a economia; Dédalo declara entrada, saída, tempo de
+valor, instrumentação e exclusões. O produto resultante nasce `PLANNED`, em `STOP`, e deve ser
+resolvido pela tela para o macroprocesso `pde-construction-approval`, nunca apresentado como pronto
+para operação.
+
+O estado `STOP` exige comando explícito do usuário na tela para liberar somente a construção
+privada. Como ainda não existe experimento comercial, as tarefas desse macroprocesso devem usar a
+referência `product:<id>` e o contexto PDE versionado do produto. Essa liberação não autoriza
+contato, publicação, campanha, cobrança ou gasto e não pode criar experimento artificialmente.
+
+A execução independente deve acrescentar uma etapa visível de Validação do Momento de Compra após a
+arquitetura. Enquanto as duas leituras privadas não existirem, essa etapa permanece `WAITING` e a
+próxima ação abre o histórico da cadeia do produto. Somente evidência persistida pode concluí-la;
+prompt, dossiê, score, anúncio concorrente, artefato técnico ou intenção estimada não substituem
+leitura humana, checkout, pagamento ou venda.
+
+O macroprocesso de construção deve ordenar `jornada → componentes → audiovisual quando previsto →
+acesso → aceitação do protótipo → leitura 1 → leitura 2 → Psique → Têmis → priorização final`. A
+aceitação registra URL privada, versão, instrumentação, snapshot e data das fontes, testes desktop e
+mobile e as travas de publicação, pagamento e mídia. Cada leitura usa código pseudonimizado
+`PV-XXXXXXXXXXXX`, consentimento e eventos próprios da mesma versão; qualquer um dos cinco sinais
+negativo preserva a tentativa como `BLOCKED` e exige ajuste antes de repetir.
+
+Psique e Têmis não podem consultar prova global de outro produto nesse fluxo. Seus pareceres devem
+ser explícitos e posteriores às duas leituras. O backend recalcula os sinais, taxas, pessoas
+distintas, ordem temporal, vigência da fonte e vínculo da versão antes da decisão humana final. O
+produto aprovado avança apenas para `COMUNICACAO_E_JORNADA`, permanece em `STOP` e continua sem
+experimento, publicação, cobrança, mídia, pagamento, venda ou receita.

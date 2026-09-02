@@ -27,6 +27,40 @@ a integridade comercial do resultado real. Psique valida a resposta humana. Herm
 crescimento. Se eventos posteriores contradisserem uma decisão estratégica, Hermes bloqueia a
 operação e solicita uma nova execução de Atena em vez de reescrever o contrato.
 
+## Contrato de seleção para protótipo privado v3
+
+Por decisão de 2026-09-02, a cadeia autônoma iniciada por uma candidata `DOSSIER_READY` usa
+`MARKET_STRATEGY_V3`. Nesse contrato, Atena pode retornar somente
+`READY_FOR_PRIVATE_VALIDATION` ou `INSUFFICIENT_EVIDENCE`. A primeira decisão seleciona no máximo
+uma candidata para que Plutus limite a economia e Dédalo projete um protótipo privado instrumentado;
+ela não significa `READY_FOR_OPERATION`, aprovação comercial, produto pronto, contato, publicação,
+campanha, gasto ou venda.
+
+Atena deve predeclarar exatamente duas leituras privadas do momento de compra, com hipótese,
+participantes mínimos, sinais observáveis, critérios de continuar, ajustar e parar e limite de
+publicação. A inexistência do protótipo e dessas leituras é esperada nessa etapa e não pode bloquear
+a seleção, pois Dédalo ainda precisa projetar o harness que será observado. Falta de qualidade ou
+atualidade das fontes pode exigir pesquisa adicional antes das leituras, mas não transforma uso,
+preferência ou checkout futuros em pré-condição circular para desenhar o protótipo.
+
+Cada leitura representa uma pessoa, portanto o contrato deve exigir denominador `1`, taxa mínima
+`1` nos cinco sinais canônicos e duas pessoas distintas. O plano deve congelar também a cena real de
+compra, a alternativa gratuita mais forte, a vantagem a ser demonstrada pelo protótipo, a entrega
+humana pronta e o prazo de vigência das fontes entre 1 e 90 dias. Esses campos são hipóteses e
+critérios anteriores ao uso; Atena não pode preenchê-los retrospectivamente com a resposta das
+pessoas.
+
+Depois da arquitetura, o backend pode criar apenas um produto `PLANNED`, em `STOP`, e encaminhá-lo
+ao processo de construção. A priorização comercial final continua condicionada ao protótipo
+utilizável, às duas leituras privadas persistidas e aos gates econômicos, humanos e comerciais da
+cadeia. O contrato v2 permanece válido para pesquisas estratégicas que já possuem operação e
+evidência posterior; ele não deve ser reutilizado no handoff autônomo da descoberta factual.
+
+Psique e Têmis recebem somente o alvo versionado e as provas persistidas da mesma referência do
+produto. Atena não pode usar parecer desses agentes, conclusão de tarefa, checkout simulado ou
+elogio como venda. A priorização posterior continua sendo decisão recalculada pelo backend e mantém
+o produto em `STOP` até autorizações separadas de comunicação e operação.
+
 ## Fontes de verdade
 
 - sessões e eventos persistidos do experimento;

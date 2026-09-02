@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.11.0
+  version: 1.12.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades, documentos e execuções independentes no Marketing Hub.
 paths:
   /api/business-processes:
@@ -1036,11 +1036,13 @@ components:
           candidateCount,
           dossierReadyCount,
           plannedProductCount,
+          privateValidationHandoff,
           sourceCoverage,
           candidates,
         ]
       properties:
-        reportType: { type: string, enum: [PDE_OPPORTUNITY_TO_PRODUCT_V1] }
+        reportType:
+          { type: string, enum: [PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2] }
         status:
           type: string
           enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED]
@@ -1049,6 +1051,8 @@ components:
         candidateCount: { type: integer, minimum: 0, maximum: 3 }
         dossierReadyCount: { type: integer, minimum: 0, maximum: 3 }
         plannedProductCount: { type: integer, minimum: 0, maximum: 1 }
+        privateValidationHandoff:
+          $ref: "#/components/schemas/IndependentBusinessProcessPrivateValidationHandoff"
         sourceCoverage:
           type: array
           items:
@@ -1062,6 +1066,25 @@ components:
           maxItems: 3
           items:
             $ref: "#/components/schemas/IndependentBusinessProcessCandidate"
+    IndependentBusinessProcessPrivateValidationHandoff:
+      type: object
+      required: [available, cycleId, status, actionLabel, reason]
+      properties:
+        available: { type: boolean }
+        cycleId: { type: integer, format: int64 }
+        status:
+          type: string
+          enum:
+            [
+              AVAILABLE,
+              WAITING_RESEARCH,
+              NO_READY_DOSSIER,
+              PRODUCT_PLANNED,
+              IN_PROGRESS,
+              MATERIALIZATION_PENDING,
+            ]
+        actionLabel: { type: string, enum: [Retomar com Atena] }
+        reason: { type: string }
     IndependentBusinessProcessSourceCoverage:
       type: object
       required: [sourceCode, label, status, itemCount, summary]

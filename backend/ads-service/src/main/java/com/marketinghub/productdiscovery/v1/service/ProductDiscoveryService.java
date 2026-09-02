@@ -10,6 +10,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
+import com.marketinghub.productdiscovery.v1.service.resumePrivateValidationHandoff.ProductDiscoveryPrivateValidationHandoffResponse;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.time.Duration;
@@ -110,6 +111,51 @@ public class ProductDiscoveryService {
             .map(this::toOpportunityResponse)
             .toList();
     return new ProductDiscoveryCycleDetailResponse(toCycleResponse(cycle), opportunities);
+  }
+
+  /**
+   * Retoma o handoff comercial do ciclo concluído sem repetir a pesquisa factual executada por
+   * Argos.
+   */
+  @Transactional
+  public ProductDiscoveryPrivateValidationHandoffResponse resumePrivateValidationHandoff(
+      Long cycleId) {
+    ProductDiscoveryCycle cycle =
+        cycleRepository
+            .findByIdForUpdate(cycleId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Ciclo de descoberta não encontrado"));
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Somente uma pesquisa factual concluída pode seguir para a validação privada");
+    }
+    List<ProductDiscoveryOpportunity> opportunities =
+        opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId);
+    int dossierReadyCount =
+        (int)
+            opportunities.stream()
+                .filter(
+                    opportunity ->
+                        opportunity.getMaturity()
+                            == ProductDiscoveryOpportunityMaturity.DOSSIER_READY)
+                .count();
+    if (dossierReadyCount == 0) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "O ciclo não possui dossiê factual pronto para validação privada");
+    }
+
+    dossierResearchSyncService.synchronize(cycleId, opportunities);
+    return new ProductDiscoveryPrivateValidationHandoffResponse(
+        cycleId,
+        "product-discovery-cycle:" + cycleId,
+        dossierReadyCount,
+        "QUEUED_FOR_PRIVATE_VALIDATION",
+        "ATENA_PRIVATE_PROTOTYPE_SELECTION",
+        "Atena recebeu os dossiês atuais para escolher no máximo um protótipo privado; a pesquisa de Argos não será repetida.");
   }
 
   /** Persiste o plano dirigido do Argos antes de qualquer coleta autenticada ou busca pública. */

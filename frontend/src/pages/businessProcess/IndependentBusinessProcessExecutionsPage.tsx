@@ -16,6 +16,7 @@ import {
   Search,
   Sparkles,
   Target,
+  UserCheck,
   WalletCards,
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -30,6 +31,7 @@ import type {
   IndependentBusinessProcessExecutionSummary,
   IndependentBusinessProcessInputField,
 } from "../../api/businessProcess/types";
+import { useResumeProductDiscoveryPrivateValidationHandoff } from "../../api/productDiscovery/useProductDiscovery";
 import PageTitle from "../../components/PageTitle";
 import ArgosMetaSupervisedSession from "../productDiscovery/ArgosMetaSupervisedSession";
 import BusinessProcessExecutionAudit from "./BusinessProcessExecutionAudit";
@@ -110,7 +112,8 @@ function formatCost(value?: number, coverage?: string) {
 export function independentExecutionRequestError(error: unknown) {
   if (!axios.isAxiosError(error)) return "Não foi possível iniciar o processo.";
   const data = error.response?.data as
-    { detail?: string; message?: string; error?: string } | undefined;
+    | { detail?: string; message?: string; error?: string }
+    | undefined;
   return (
     data?.detail ??
     data?.message ??
@@ -500,9 +503,10 @@ function AutonomousDiscoveryFlow() {
       icon: <BookOpen size={20} aria-hidden="true" />,
     },
     {
-      title: "Priorização",
+      title: "Escolha para protótipo",
       owner: "Atena",
-      description: "Seleciona no máximo uma oportunidade por ciclo.",
+      description:
+        "Seleciona no máximo uma candidata, sem liberá-la para venda.",
       icon: <Sparkles size={20} aria-hidden="true" />,
     },
     {
@@ -514,7 +518,8 @@ function AutonomousDiscoveryFlow() {
     {
       title: "Harness PDE",
       owner: "Dédalo",
-      description: "Projeta a experiência sensorial e personalizada com IA.",
+      description:
+        "Projeta primeiro a experiência privada, sensorial e instrumentada.",
       icon: <PackageCheck size={20} aria-hidden="true" />,
     },
     {
@@ -522,6 +527,13 @@ function AutonomousDiscoveryFlow() {
       owner: "Backend",
       description: "Cria o cadastro em PLANNED e mantém execução em STOP.",
       icon: <CheckCircle2 size={20} aria-hidden="true" />,
+    },
+    {
+      title: "Duas leituras privadas",
+      owner: "Backend · Psique · Têmis",
+      description:
+        "Comprova microvalor e preferência antes da decisão comercial final.",
+      icon: <UserCheck size={20} aria-hidden="true" />,
     },
   ];
   return (
@@ -813,6 +825,24 @@ function PdeOpportunityFlowReport({
 }: {
   report: IndependentBusinessProcessFlowReport;
 }) {
+  const resumePrivateValidation =
+    useResumeProductDiscoveryPrivateValidationHandoff();
+
+  const resumeCurrentDossiers = async () => {
+    try {
+      const result = await resumePrivateValidation.mutateAsync(
+        report.privateValidationHandoff.cycleId,
+      );
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível encaminhar os dossiês atuais para Atena.",
+      );
+    }
+  };
+
   return (
     <section
       className="independent-process-report"
@@ -851,6 +881,44 @@ function PdeOpportunityFlowReport({
           <strong>{report.plannedProductCount}</strong>
         </div>
       </div>
+
+      {report.privateValidationHandoff.available ? (
+        <section
+          className="independent-process-report__handoff"
+          aria-labelledby="private-validation-handoff-title"
+        >
+          <div>
+            <span>Próximo passo sem repetir Argos</span>
+            <h4 id="private-validation-handoff-title">
+              Encaminhar os dossiês atuais para protótipo privado
+            </h4>
+            <p>
+              Atena escolherá no máximo uma candidata; Plutus limitará a
+              economia e Dédalo projetará o harness. O produto continuará em
+              PLANNED e STOP, sem publicação, mídia ou cobrança.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={resumePrivateValidation.isPending}
+            onClick={() => void resumeCurrentDossiers()}
+          >
+            <RefreshCw
+              className={
+                resumePrivateValidation.isPending
+                  ? "independent-process-spin"
+                  : ""
+              }
+              size={17}
+              aria-hidden="true"
+            />
+            {resumePrivateValidation.isPending
+              ? "Encaminhando..."
+              : report.privateValidationHandoff.actionLabel}
+          </button>
+        </section>
+      ) : null}
 
       {report.marketExpansion ? (
         <section className="independent-process-report__expansion">
@@ -1162,7 +1230,7 @@ function PdeOpportunityFlowReport({
                     </small>
                     <a
                       className="btn btn-sm btn-outline-primary"
-                      href={`/products/${candidate.productId}/edit`}
+                      href={`/products/${candidate.productId}/value-chain-history`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -1187,10 +1255,8 @@ function isHttpUrl(value?: string) {
 function findSupervisedMetaCycleId(
   detail: NonNullable<ExecutionDetailProps["detail"]>,
 ) {
-  const match = detail.execution.sourceReference.match(
-    /^product-discovery-cycle:(\d+)$/,
-  );
-  if (!match) return undefined;
+  const cycleId = findProductDiscoveryCycleId(detail.execution.sourceReference);
+  if (cycleId === undefined) return undefined;
   const hasSession = detail.activities.some((activity) =>
     activity.tasks.some((task) => {
       const evidence = objectValue(task.evidence);
@@ -1208,7 +1274,14 @@ function findSupervisedMetaCycleId(
       );
     }),
   );
-  return hasSession ? Number(match[1]) : undefined;
+  return hasSession ? cycleId : undefined;
+}
+
+function findProductDiscoveryCycleId(sourceReference: string) {
+  const match = sourceReference.match(/^product-discovery-cycle:(\d+)$/);
+  if (!match) return undefined;
+  const cycleId = Number(match[1]);
+  return Number.isSafeInteger(cycleId) && cycleId > 0 ? cycleId : undefined;
 }
 
 function objectValue(value: unknown): Record<string, unknown> | undefined {

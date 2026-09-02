@@ -2315,6 +2315,134 @@ class AgentTaskServiceTest {
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
   }
 
+  /** Entrega a Psique as leituras humanas estruturadas sem serializar JSON dentro de JSON. */
+  @Test
+  void exposesCompletedHumanReadingInPendingContext() throws Exception {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setProcessCode("pde-construction-approval");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"privateReading2\",\"type\":\"TASK\"},"
+            + "{\"id\":\"humanExperienceReview\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"privateReading2\",\"to\":\"humanExperienceReview\"}]}");
+    AgentTask review = processTask(31L, psique, process, "humanExperienceReview", "PENDING");
+    BusinessProcessActivityDefinition readingDefinition = new BusinessProcessActivityDefinition();
+    readingDefinition.setActivityId("privateReading2");
+    readingDefinition.setName("Segunda leitura privada");
+    readingDefinition.setOwnerName("Operador humano");
+    BusinessProcessActivityInstance reading = new BusinessProcessActivityInstance();
+    reading.setId(81L);
+    reading.setActivityDefinition(readingDefinition);
+    reading.setSourceReference("commercial-plan:2@v4");
+    reading.setOccurrenceNumber(1);
+    reading.setStatus("COMPLETED");
+    reading.setObjectiveAchieved(true);
+    reading.setObjectiveEvidenceJson(
+        "{\"structuredEvidence\":{\"participantReference\":\"PV-A1B2C3D4E5F6\","
+            + "\"criteriaPassed\":true}}");
+    reading.setExitedAt(Instant.parse("2026-09-02T10:00:00Z"));
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(review));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(review));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(reading));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            instances,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            null,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.systemUTC());
+
+    AgentTaskPendingResponse pending =
+        service.claimEligibleProcessTask("customer-agent").orElseThrow();
+
+    var context = new ObjectMapper().readTree(pending.processContextJson());
+    assertThat(context.path("completedHumanActivities")).hasSize(1);
+    assertThat(
+            context
+                .path("completedHumanActivities")
+                .path(0)
+                .path("objectiveEvidence")
+                .path("structuredEvidence")
+                .path("participantReference")
+                .asText())
+        .isEqualTo("PV-A1B2C3D4E5F6");
+    assertThat(
+            context.path("completedHumanActivities").path(0).path("objectiveEvidence").isObject())
+        .isTrue();
+  }
+
+  /** Impede que o worker atravesse uma decisão humana bloqueada no diagrama. */
+  @Test
+  void blocksAgentTaskBehindBlockedHumanActivity() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"privateReading2\",\"type\":\"TASK\"},"
+            + "{\"id\":\"humanExperienceReview\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"privateReading2\",\"to\":\"humanExperienceReview\"}]}");
+    AgentTask review = processTask(31L, psique, process, "humanExperienceReview", "PENDING");
+    BusinessProcessActivityDefinition readingDefinition = new BusinessProcessActivityDefinition();
+    readingDefinition.setActivityId("privateReading2");
+    readingDefinition.setOwnerName("Operador humano");
+    BusinessProcessActivityInstance blocked = new BusinessProcessActivityInstance();
+    blocked.setId(81L);
+    blocked.setActivityDefinition(readingDefinition);
+    blocked.setOccurrenceNumber(1);
+    blocked.setStatus("BLOCKED");
+    blocked.setObjectiveAchieved(false);
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(review));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(review));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(blocked));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            instances,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            null,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.systemUTC());
+
+    assertThat(service.claimEligibleProcessTask("customer-agent")).isEmpty();
+    verify(repository, never()).save(any());
+  }
+
   /** Injeta a mesma estratégia de Atena nas tarefas de comunicação e operação do plano. */
   @Test
   void exposesMarketStrategicContractInPendingContext() {

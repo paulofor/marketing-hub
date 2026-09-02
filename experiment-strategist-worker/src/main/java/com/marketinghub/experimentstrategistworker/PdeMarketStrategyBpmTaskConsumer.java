@@ -26,8 +26,17 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private static final String AGENT_KEY = "experiment-strategist";
   private static final String PROCESS_CODE = "pde-commercial-plan-offer";
   private static final String ACTIVITY_ID = "marketStrategy";
-  private static final String PROMPT = "prompts/pde-commercial-plan/v6/market-strategy.md";
-  private static final String SCHEMA = "prompts/pde-commercial-plan/v6/market-strategy-schema.json";
+  private static final String PROMPT = "prompts/pde-commercial-plan/v7/market-strategy.md";
+  private static final String SCHEMA = "prompts/pde-commercial-plan/v7/market-strategy-schema.json";
+  private static final String READY_FOR_PRIVATE_VALIDATION = "READY_FOR_PRIVATE_VALIDATION";
+  private static final String INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE";
+  private static final List<String> REQUIRED_PRIVATE_SIGNALS =
+      List.of(
+          "EXPERIENCE_STARTED",
+          "VALUE_MOMENT",
+          "READY_RESULT_USED",
+          "PREFERRED_OVER_FREE",
+          "CHECKOUT_STARTED");
   private final RestClient backend;
   private final WorkerProperties properties;
   private final ObjectMapper objectMapper;
@@ -262,7 +271,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "agent",
             "Atena",
             "promptVersion",
-            "pde-commercial-plan-v6",
+            "pde-commercial-plan-v7",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -282,24 +291,107 @@ public class PdeMarketStrategyBpmTaskConsumer {
     validate(result, "product-discovery-cycle:test");
   }
 
-  /** Valida a seleção factual somente quando a origem pertence à descoberta autônoma. */
+  /** Valida seleção factual e o plano privado sem antecipar prontidão comercial. */
   static void validate(JsonNode result, String sourceReference) {
+    JsonNode contract = result.path("marketStrategicContract");
+    JsonNode validationPlan = contract.path("privateValidationPlan");
+    String decision = result.path("decision").asText();
+    String status = contract.path("status").asText();
     if (!List.of("APPROVE", "ADJUST", "REJECT").contains(result.path("decision").asText())
         || result.path("alternatives").size() != 3
         || result.path("selectedAlternative").asText().isBlank()
-        || !result.path("marketStrategicContract").isObject()
-        || !"MARKET_STRATEGY_V2"
-            .equals(result.path("marketStrategicContract").path("contractVersion").asText())
+        || !contract.isObject()
+        || !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+        || !List.of(READY_FOR_PRIVATE_VALIDATION, INSUFFICIENT_EVIDENCE).contains(status)
         || result.path("rationale").asText().isBlank()) {
       throw new IllegalArgumentException("Estratégia PDE fora do contrato versionado de Atena.");
     }
+    if (("APPROVE".equals(decision) && !READY_FOR_PRIVATE_VALIDATION.equals(status))
+        || (!"APPROVE".equals(decision) && !INSUFFICIENT_EVIDENCE.equals(status))) {
+      throw new IllegalArgumentException(
+          "A decisão de Atena não corresponde à prontidão para validação privada.");
+    }
     if (sourceReference != null
         && sourceReference.startsWith("product-discovery-cycle:")
-        && "APPROVE".equals(result.path("decision").asText())
+        && "APPROVE".equals(decision)
         && (!result.path("selectedDossierId").canConvertToLong()
             || !result.path("selectedOpportunityId").canConvertToLong())) {
       throw new IllegalArgumentException("Atena aprovou sem selecionar uma candidata factual.");
     }
+    if ("APPROVE".equals(decision)
+        && (!validationPlan.isObject()
+            || validationPlan.path("minimumIndependentReadings").asInt(0) != 2
+            || validationPlan.path("minimumEligibleParticipantsPerReading").asInt(0) != 1
+            || !containsAllPrivateSignals(validationPlan.path("requiredSignals"))
+            || !unitRate(validationPlan, "minimumExperienceStartRate")
+            || !unitRate(validationPlan, "minimumValueMomentRate")
+            || !unitRate(validationPlan, "minimumReadyResultUseRate")
+            || !unitRate(validationPlan, "minimumPrototypePreferenceRate")
+            || !unitRate(validationPlan, "minimumCheckoutStartRate")
+            || validationPlan.path("sourceMaxAgeDays").asInt(0) < 1
+            || validationPlan.path("sourceMaxAgeDays").asInt(0) > 90
+            || validationPlan.path("prototypeObjective").asText().isBlank()
+            || !completePurchaseScene(validationPlan.path("purchaseScene"))
+            || !canonicalHumanValueDelivery(validationPlan.path("humanValueDelivery"))
+            || validationPlan.path("strongestFreeAlternative").asText().isBlank()
+            || validationPlan.path("prototypeAdvantage").asText().isBlank()
+            || validationPlan.path("publicationBoundary").asText().isBlank()
+            || (validationPlan.path("sourceRefreshRequired").asBoolean(false)
+                && validationPlan.path("sourceRefreshAction").asText().isBlank()))) {
+      throw new IllegalArgumentException(
+          "Atena aprovou sem um plano completo de duas leituras privadas.");
+    }
+  }
+
+  /** Confirma os cinco sinais canônicos sem aceitar um subconjunto conveniente. */
+  private static boolean containsAllPrivateSignals(JsonNode signals) {
+    if (!signals.isArray() || signals.size() != REQUIRED_PRIVATE_SIGNALS.size()) return false;
+    List<String> values = new ArrayList<>();
+    signals.forEach(item -> values.add(item.asText()));
+    return values.stream().distinct().count() == REQUIRED_PRIVATE_SIGNALS.size()
+        && values.containsAll(REQUIRED_PRIVATE_SIGNALS);
+  }
+
+  /** Exige uma taxa integral para que cada leitura individual prove todos os sinais. */
+  private static boolean unitRate(JsonNode plan, String field) {
+    return plan.path(field).isNumber() && Double.compare(plan.path(field).asDouble(), 1d) == 0;
+  }
+
+  /** Confirma os seis fatos mínimos da cena de compra sem aceitar texto agregado. */
+  private static boolean completePurchaseScene(JsonNode scene) {
+    return hasText(scene, "trigger")
+        && hasText(scene, "deadline")
+        && hasText(scene, "costOfError")
+        && hasText(scene, "budgetEvidence")
+        && hasText(scene, "failedAttempt")
+        && hasText(scene, "currentPaidBehavior");
+  }
+
+  /** Confirma valor humano, saída pronta e baixo esforço no plano de Atena. */
+  private static boolean canonicalHumanValueDelivery(JsonNode delivery) {
+    return delivery.isObject()
+        && delivery.path("territories").isArray()
+        && !delivery.path("territories").isEmpty()
+        && delivery.path("evidenceSourceIds").isArray()
+        && delivery.path("evidenceSourceIds").size() >= 2
+        && delivery.path("evidencePathways").isArray()
+        && delivery.path("evidencePathways").size() >= 2
+        && hasText(delivery, "desiredTransformation")
+        && hasText(delivery, "readyMadeOutcome")
+        && hasText(delivery, "minimumCustomerInput")
+        && hasText(delivery, "automationBoundary")
+        && !delivery.path("requiresPromptEngineering").asBoolean(true)
+        && !delivery.path("requiresManualAssembly").asBoolean(true)
+        && delivery.path("usableWithoutAiKnowledge").asBoolean(false)
+        && delivery.path("customerStepsToValue").asInt(0) >= 1
+        && delivery.path("customerStepsToValue").asInt(0) <= 5
+        && delivery.path("timeToUsableResultMinutes").asInt(0) >= 1
+        && delivery.path("timeToUsableResultMinutes").asInt(0) <= 10;
+  }
+
+  /** Verifica texto obrigatório em um objeto estruturado. */
+  private static boolean hasText(JsonNode node, String field) {
+    return node.isObject() && !node.path(field).asText("").trim().isBlank();
   }
 
   /** Lê o último total cumulativo de tokens realmente informado. */

@@ -26,6 +26,8 @@ vi.mock("../../api/opportunityDossiers", () => ({
         deliveryModel: "Concierge assistido",
         knownRisks: "Duplicar solução gratuita",
         experimentRecommendation: "Comparar três formatos",
+        convertedPlanId: 801,
+        createdProductId: 901,
         evidence: [],
         reviews: [
           {
@@ -59,6 +61,12 @@ describe("OpportunityDossiersPage", () => {
     expect(screen.getByText("Execução #24")).toBeInTheDocument();
     expect(screen.getByText("Concierge assistido")).toBeInTheDocument();
     expect(screen.getByText("Duplicar solução gratuita")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir cadeia do produto #901" }),
+    ).toHaveAttribute("href", "/products/901/value-chain-history");
+    expect(
+      screen.getByRole("link", { name: "Abrir cadeia do produto #901" }),
+    ).toHaveAttribute("target", "_blank");
     fireEvent.click(screen.getByText("Reenfileirar ATENA"));
     expect(apiMocks.action).toHaveBeenCalledWith({
       id: 1,

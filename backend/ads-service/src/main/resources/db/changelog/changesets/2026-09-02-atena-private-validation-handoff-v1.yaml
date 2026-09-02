@@ -1,0 +1,286 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-02-atena-private-validation-handoff-v1-1-process
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-commercial-plan-offer',
+                'Estratégia, economia e protótipo privado do PDE',
+                'Selecionar uma candidata factual para prototipação privada, limitar a economia e projetar o harness sem antecipar prontidão comercial.',
+                'Backend de Planejamento Comercial',
+                'Candidatas DOSSIER_READY com evidências factuais de Argos.',
+                'Produto PLANNED em STOP com estratégia, economia, arquitetura e critérios de duas leituras privadas, sem autorização de publicação ou gasto.',
+                6, 'PUBLISHED',
+                'atena-private-validation-handoff-v1 / MARKET_STRATEGY_V3 / PDE_PRIVATE_VALIDATION_V1',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Dossiês factuais prontos","owner":"Backend","description":"Argos entrega candidatas DOSSIER_READY sem exigir protótipo que ainda não existe."},{"id":"marketStrategy","type":"TASK","label":"Selecionar para protótipo privado","owner":"Atena","description":"Escolhe no máximo uma candidata, congela estratégia e predeclara duas leituras; não libera venda.","responsibleAgentKeys":["experiment-strategist"],"responsibilityDomain":"MARKET_STRATEGY"},{"id":"economics","type":"TASK","label":"Limitar economia da validação","owner":"Plutus","description":"Valida preço como hipótese, custo, teto e travas sem exigir venda anterior.","responsibleAgentKeys":["financial-agent"],"responsibilityDomain":"FINANCIAL_VALIDATION"},{"id":"productArchitecture","type":"TASK","label":"Projetar protótipo e harness PDE","owner":"Dédalo","description":"Projeta entrada simples, resultado pronto, instrumentação e escopo excluído do protótipo privado.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"gate","type":"GATEWAY","label":"Contratos aptos à validação privada?","owner":"Backend","description":"Exige READY_FOR_PRIVATE_VALIDATION, duas leituras predeclaradas e protótipo instrumentado; nunca READY_FOR_OPERATION."},{"id":"end","type":"END","label":"Produto PLANNED encaminhado à construção","owner":"Backend","description":"A cadeia de valor recebe o produto em STOP; fontes vigentes e duas leituras continuam obrigatórias antes da priorização final."}],"flows":[{"from":"start","to":"marketStrategy"},{"from":"marketStrategy","to":"economics"},{"from":"economics","to":"productArchitecture"},{"from":"productArchitecture","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM business_process_definition
+                 WHERE process_code = 'pde-commercial-plan-offer'
+                   AND version_number = 6
+              );
+
+              UPDATE business_process_definition
+                 SET status = 'PUBLISHED',
+                     published_at = COALESCE(published_at, UTC_TIMESTAMP())
+               WHERE process_code = 'pde-commercial-plan-offer'
+                 AND version_number = 6;
+
+              UPDATE business_process_definition
+                 SET status = 'RETIRED'
+               WHERE process_code = 'pde-commercial-plan-offer'
+                 AND version_number <> 6
+                 AND status = 'PUBLISHED';
+
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id,
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].label'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].description'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].owner'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].executionResourceCode'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].subprocessCode'))),
+                CAST(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, ']')) AS CHAR),
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT 0 AS number UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+                UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11
+              ) sequence
+                ON sequence.number < JSON_LENGTH(JSON_EXTRACT(process.diagram_json, '$.nodes'))
+              LEFT JOIN business_process_activity_definition existing
+                ON existing.process_definition_id = process.id
+               AND BINARY existing.activity_id = BINARY JSON_UNQUOTE(
+                 JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))
+               )
+              WHERE process.process_code = 'pde-commercial-plan-offer'
+                AND process.version_number = 6
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].type'))
+                ) = 'TASK'
+                AND existing.id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition
+                 SET status = 'RETIRED'
+               WHERE process_code = 'pde-commercial-plan-offer'
+                 AND version_number = 6;
+
+              UPDATE business_process_definition
+                 SET status = 'PUBLISHED'
+               WHERE process_code = 'pde-commercial-plan-offer'
+                 AND version_number = 5;
+
+  - changeSet:
+      id: 2026-09-02-atena-private-validation-handoff-v1-2-construction
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-construction-approval',
+                'Protótipo, leituras privadas e aprovação do PDE',
+                'Materializar o PDE sem hardcode de produto, aceitar uma versão privada utilizável, registrar duas leituras e decidir a priorização comercial somente com evidência humana.',
+                'Backend de Construção PDE',
+                'Produto PLANNED em STOP com estratégia, economia, arquitetura e plano de duas leituras privadas.',
+                'PDE aprovado para comunicação ou bloqueado com causa, sem contato público, cobrança, campanha ou gasto.',
+                6, 'PUBLISHED',
+                'atena-private-validation-handoff-v1 / pde-construction-v2 / two-private-readings',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto planejado liberado","owner":"Backend","description":"O operador libera somente a construção privada do produto PLANNED."},{"id":"journey","type":"TASK","label":"Construir jornada privada de valor","owner":"Dédalo","description":"Materializa entrada, ações, estado e primeiro resultado útil conforme o harness aprovado, sem mudar mercado ou preço.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"deliverables","type":"TASK","label":"Produzir componentes do protótipo PDE","owner":"Dédalo","description":"Produz componentes funcionais genéricos orientados pelo contrato do produto, sem reutilizar entregáveis de outro PDE.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"audiovisual","type":"TASK","label":"Produzir audiovisual quando previsto","owner":"Apolo","description":"Produz somente o audiovisual exigido pela arquitetura; ausência de necessidade deve ser registrada sem artefato fictício.","responsibleAgentKeys":["videomaker"],"responsibilityDomain":"AUDIOVISUAL_PRODUCTION","executionResourceCode":"video-management-service"},{"id":"access","type":"TASK","label":"Implementar acesso privado e continuidade","owner":"Dédalo","description":"Garante acesso restrito, retomada, privacidade, erros, suporte e instrumentação das leituras.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"prototypeAcceptance","type":"TASK","label":"Confirmar protótipo privado utilizável","owner":"Operador humano","description":"Registra URL privada, versão, instrumentação, fonte vigente e testes desktop/mobile antes de convidar pessoas, sem publicar, cobrar ou gastar."},{"id":"privateReading1","type":"TASK","label":"Registrar primeira leitura privada","owner":"Operador humano","description":"Registra consentimento, código aleatório, eventos próprios e os cinco sinais canônicos; uma falha fica auditada e pode ser repetida."},{"id":"privateReading2","type":"TASK","label":"Registrar segunda leitura privada independente","owner":"Operador humano","description":"Registra uma pessoa distinta com os mesmos cinco sinais e evidência auditável, sem transformar intenção em venda."},{"id":"humanExperienceReview","type":"TASK","label":"Revisar experiência humana das leituras","owner":"Psique","description":"Avalia compreensão, prazer, utilidade, esforço, preferência e objeções usando somente protótipo e leituras persistidas.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercialIntegrityReview","type":"TASK","label":"Revisar integridade comercial das leituras","owner":"Têmis","description":"Confirma verdade, fidelidade, privacidade e ausência de cobrança, publicação ou gasto nas evidências privadas.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"finalPrioritization","type":"TASK","label":"Decidir priorização comercial final","owner":"Operador humano","description":"Autoriza apenas a próxima etapa de comunicação quando as duas leituras superarem os critérios e os gates independentes estiverem aprovados; não publica nem gasta."},{"id":"gate","type":"GATEWAY","label":"Produto apto à comunicação?","owner":"Backend","description":"Exige protótipo aceito, duas pessoas distintas, taxa integral nos cinco sinais e pareceres independentes aprovados."},{"id":"end","type":"END","label":"Decisão privada registrada","owner":"Backend","description":"O produto segue para comunicação ou permanece bloqueado para ajuste, sem efeito comercial externo."}],"flows":[{"from":"start","to":"journey"},{"from":"journey","to":"deliverables"},{"from":"deliverables","to":"audiovisual"},{"from":"audiovisual","to":"access"},{"from":"access","to":"prototypeAcceptance"},{"from":"prototypeAcceptance","to":"privateReading1"},{"from":"privateReading1","to":"privateReading2"},{"from":"privateReading2","to":"humanExperienceReview"},{"from":"humanExperienceReview","to":"commercialIntegrityReview"},{"from":"commercialIntegrityReview","to":"finalPrioritization"},{"from":"finalPrioritization","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM business_process_definition
+                 WHERE process_code = 'pde-construction-approval'
+                   AND version_number = 6
+              );
+
+              UPDATE business_process_definition
+                 SET status = 'PUBLISHED',
+                     published_at = COALESCE(published_at, UTC_TIMESTAMP())
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 6;
+
+              UPDATE business_process_definition
+                 SET status = 'RETIRED'
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number <> 6
+                 AND status = 'PUBLISHED';
+
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id,
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].label'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].description'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].owner'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].executionResourceCode'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].subprocessCode'))),
+                CAST(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, ']')) AS CHAR),
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT 0 AS number UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+                UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11
+              ) sequence
+                ON sequence.number < JSON_LENGTH(JSON_EXTRACT(process.diagram_json, '$.nodes'))
+              LEFT JOIN business_process_activity_definition existing
+                ON existing.process_definition_id = process.id
+               AND BINARY existing.activity_id = BINARY JSON_UNQUOTE(
+                 JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))
+               )
+              WHERE process.process_code = 'pde-construction-approval'
+                AND process.version_number = 6
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].type'))
+                ) = 'TASK'
+                AND existing.id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition
+                 SET status = 'RETIRED'
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 6;
+
+              UPDATE business_process_definition
+                 SET status = 'PUBLISHED'
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 5;
+
+  - changeSet:
+      id: 2026-09-02-atena-private-validation-handoff-v1-3-chain
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_chain_definition
+        - tableExists:
+            tableName: business_process_chain_item
+        - tableExists:
+            tableName: business_process_definition
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric,
+                 version_number, status, created_at, published_at)
+              SELECT 'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar evidência em protótipo privado, produto, comunicação, venda e entrega sem antecipar o gate comercial.',
+                'PDE vendido e entregue com satisfação após validação privada e autorização comercial.',
+                'Tempo até venda entregue com satisfação',
+                10, 'PUBLISHED', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM business_process_chain_definition
+                 WHERE chain_code = 'pde-value-creation-delivery'
+                   AND version_number = 10
+              );
+
+              UPDATE business_process_chain_definition
+                 SET status = 'PUBLISHED',
+                     published_at = COALESCE(published_at, UTC_TIMESTAMP())
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number = 10;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number,
+                 value_contribution, created_at)
+              SELECT chain.id, process.id, item.sequence_number, item.value_contribution,
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain
+              JOIN (
+                SELECT 1 AS sequence_number, 'pde-opportunity-discovery' AS process_code,
+                  'Argos entrega inteligência factual sem escolher estratégia.' AS value_contribution
+                UNION ALL SELECT 2, 'pde-commercial-plan-offer',
+                  'Atena seleciona para protótipo privado, Plutus limita a economia e Dédalo projeta o harness instrumentado.'
+                UNION ALL SELECT 3, 'pde-construction-approval',
+                  'Dédalo materializa o PDE, duas pessoas fazem leituras privadas e Psique e Têmis revisam valor humano e integridade antes da priorização final.'
+                UNION ALL SELECT 4, 'pde-communication-sales-journey',
+                  'Íris materializa persuasão pré-compra; Apolo produz audiovisual; Psique e Têmis revisam.'
+                UNION ALL SELECT 5, 'pde-commercial-homologation-activation',
+                  'Preflight e autorização humana decidem ativação separadamente.'
+                UNION ALL SELECT 6, 'pde-sales-delivery-learning',
+                  'Após autorização, Hermes opera e o sistema decide por venda entregue com satisfação.'
+              ) item
+              JOIN business_process_definition process
+                ON process.process_code = item.process_code
+               AND process.status = 'PUBLISHED'
+              LEFT JOIN business_process_chain_item existing
+                ON existing.chain_definition_id = chain.id
+               AND existing.sequence_number = item.sequence_number
+              WHERE chain.chain_code = 'pde-value-creation-delivery'
+                AND chain.version_number = 10
+                AND existing.id IS NULL;
+
+              UPDATE business_process_chain_definition
+                 SET status = 'RETIRED'
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number <> 10
+                 AND status = 'PUBLISHED';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_chain_definition
+                 SET status = 'RETIRED'
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number = 10;
+
+              UPDATE business_process_chain_definition
+                 SET status = 'PUBLISHED'
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number = 9;

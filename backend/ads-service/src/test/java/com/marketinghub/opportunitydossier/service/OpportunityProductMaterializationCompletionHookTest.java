@@ -56,8 +56,21 @@ class OpportunityProductMaterializationCompletionHookTest {
     verify(fixture.productService).updateAutomaticExecution(901L, false, "pde-discovery-handoff");
     assertThat(product.getValue().getCommercialStatus()).isEqualTo("PLANNED");
     assertThat(product.getValue().getDeliveryMode()).isEqualTo("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
+    assertThat(product.getValue().getValidationDefinitionVersion())
+        .isEqualTo("PDE_PRIVATE_VALIDATION_V1");
+    assertThat(product.getValue().getValidationDefinitionJson())
+        .contains(
+            "WAITING_PRIVATE_PROTOTYPE",
+            "privateValidationPlan",
+            "privatePrototype",
+            "minimumIndependentReadings");
     assertThat(product.getValue().getPdeExperienceJson())
-        .contains("PDE_HARNESS_PLAN_V1", "publicationBoundary", "dossierId");
+        .contains(
+            "PDE_HARNESS_PLAN_V1",
+            "private-validation-v1",
+            "publicationBoundary",
+            "privateValidationPlan",
+            "dossierId");
     assertThat(fixture.dossier.getStatus()).isEqualTo(OpportunityDossierStatus.CONVERTED_TO_PLAN);
     assertThat(fixture.dossier.getCreatedProduct()).isSameAs(fixture.product);
     assertThat(fixture.product.getAutomaticExecutionEnabled()).isFalse();
@@ -80,6 +93,18 @@ class OpportunityProductMaterializationCompletionHookTest {
   @Test
   void rejectsSelectedCandidateWithoutFactualMaturity() {
     Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.RESEARCHABLE);
+
+    assertThatThrownBy(
+            () -> fixture.hook.apply(fixture.architectureTask, fixture.architectureRequest()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("não puderam materializar");
+    verify(fixture.productService, never()).createProduct(any());
+  }
+
+  /** Bloqueia contrato antigo que tentava exigir prontidão operacional antes do protótipo. */
+  @Test
+  void rejectsStrategyWithoutPrivateValidationReadiness() {
+    Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY, false);
 
     assertThatThrownBy(
             () -> fixture.hook.apply(fixture.architectureTask, fixture.architectureRequest()))
@@ -136,6 +161,11 @@ class OpportunityProductMaterializationCompletionHookTest {
 
     /** Monta a linhagem do ciclo e as duas predecessoras já concluídas. */
     private Fixture(ProductDiscoveryOpportunityMaturity maturity) {
+      this(maturity, true);
+    }
+
+    /** Permite alternar entre o contrato novo e o legado para proteger a fronteira do backend. */
+    private Fixture(ProductDiscoveryOpportunityMaturity maturity, boolean privateValidationReady) {
       ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
       cycle.setId(42L);
       ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
@@ -159,7 +189,8 @@ class OpportunityProductMaterializationCompletionHookTest {
       Agent atena = Agent.builder().agentKey("experiment-strategist").build();
       Agent plutus = Agent.builder().agentKey("financial-agent").build();
       Agent dedalo = Agent.builder().agentKey("landing-generator").build();
-      AgentTask strategy = task(701L, process, atena, "marketStrategy", strategyResult());
+      AgentTask strategy =
+          task(701L, process, atena, "marketStrategy", strategyResult(privateValidationReady));
       AgentTask economics = task(702L, process, plutus, "economics", economicsResult());
       architectureTask = task(703L, process, dedalo, "productArchitecture", null);
       architectureTask.setStatus("IN_PROGRESS");
@@ -196,20 +227,77 @@ class OpportunityProductMaterializationCompletionHookTest {
     }
 
     /** Retorna a seleção estruturada de Atena. */
-    private String strategyResult() {
+    private String strategyResult(boolean privateValidationReady) {
+      if (!privateValidationReady) {
+        return """
+            {
+              "decision":"APPROVE",
+              "selectedDossierId":301,
+              "selectedOpportunityId":501,
+              "marketStrategicContract":{
+                "contractVersion":"MARKET_STRATEGY_V2",
+                "status":"READY_FOR_OPERATION"
+              }
+            }
+            """;
+      }
       return """
           {
             "decision":"APPROVE",
             "selectedDossierId":301,
             "selectedOpportunityId":501,
             "marketStrategicContract":{
+              "contractVersion":"MARKET_STRATEGY_V3",
+              "status":"READY_FOR_PRIVATE_VALIDATION",
               "segment":"Moda e bem-estar 40+",
               "buyer":"Mulheres brasileiras de 40 a 55 anos",
               "problem":"Escolher peças confortáveis ainda exige tentativa manual",
               "desiredOutcome":"Receber combinações pessoais prontas",
               "offerThesis":"Experiência pessoal de cápsula sensorial",
               "valueMechanism":"IA organiza contexto e devolve combinações utilizáveis",
-              "causalHypothesis":"Menos esforço aumenta o início da experiência"
+              "causalHypothesis":"Menos esforço aumenta o início da experiência",
+              "privateValidationPlan":{
+                "minimumIndependentReadings":2,
+                "minimumEligibleParticipantsPerReading":1,
+                "prototypeObjective":"Comprovar resultado pronto em até dez minutos.",
+                "purchaseScene":{
+                  "trigger":"Compromisso confirmado.",
+                  "deadline":"Antes de sair hoje.",
+                  "costOfError":"Perder confiança e tempo.",
+                  "budgetEvidence":"Compara alternativas pagas.",
+                  "failedAttempt":"Tentou montar manualmente.",
+                  "currentPaidBehavior":"Compra orientação especializada."
+                },
+                "strongestFreeAlternative":"Montagem manual com IA genérica.",
+                "prototypeAdvantage":"Resultado pessoal pronto sem prompting.",
+                "humanValueDelivery":{
+                  "territories":["RECOGNITION","EFFORT_RELIEF"],
+                  "desiredTransformation":"Sentir segurança com menos esforço.",
+                  "evidenceSourceIds":["source-1","source-2"],
+                  "evidencePathways":["CURRENT_LANGUAGE","PAID_BEHAVIOR"],
+                  "readyMadeOutcome":"Recomendação visual pronta.",
+                  "minimumCustomerInput":"Contexto e preferência em linguagem comum.",
+                  "requiresPromptEngineering":false,
+                  "requiresManualAssembly":false,
+                  "usableWithoutAiKnowledge":true,
+                  "customerStepsToValue":3,
+                  "timeToUsableResultMinutes":8,
+                  "automationBoundary":"A pessoa revisa antes de aplicar."
+                },
+                "requiredSignals":[
+                  "EXPERIENCE_STARTED","VALUE_MOMENT","READY_RESULT_USED",
+                  "PREFERRED_OVER_FREE","CHECKOUT_STARTED"
+                ],
+                "minimumExperienceStartRate":1,
+                "minimumValueMomentRate":1,
+                "minimumReadyResultUseRate":1,
+                "minimumPrototypePreferenceRate":1,
+                "minimumCheckoutStartRate":1,
+                "sourceMaxAgeDays":30,
+                "sourceRefreshRequired":false,
+                "sourceRefreshAction":"Nenhuma atualização pendente.",
+                "publicationBoundary":"Uso privado sem contato, publicação, cobrança ou gasto."
+              }
             }
           }
           """;
@@ -256,7 +344,19 @@ class OpportunityProductMaterializationCompletionHookTest {
             "productArchitecture":{
               "format":"%s",
               "valueJourney":["Contexto mínimo","Combinações prontas","Ajuste sensorial"],
-              "deliverables":["%s"]
+              "deliverables":["%s"],
+              "privatePrototype":{
+                "scope":"Uma decisão pessoal completa.",
+                "simpleInput":"Contexto e preferência em linguagem comum.",
+                "readyResult":"Recomendação visual pronta.",
+                "maxValueTimeMinutes":10,
+                "instrumentationEvents":[
+                  "EXPERIENCE_STARTED","VALUE_MOMENT","READY_RESULT_USED",
+                  "PREFERRED_OVER_FREE","CHECKOUT_STARTED"
+                ],
+                "checkoutMode":"SIMULATED_NO_CHARGE",
+                "excludedFromPrototype":["Pagamento real","Campanha"]
+              }
             }
           }
           """

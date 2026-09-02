@@ -35,6 +35,40 @@ class CommercialBpmTaskConsumerTest {
             "{\"decision\":\"APPROVED\",\"commercialRationale\":\"Jornada coerente\",\"evidence\":[\"Preço consistente\"],\"requiredChanges\":[]}"));
   }
 
+  /** Exige todos os controles comerciais verdadeiros para aprovar a validação privada. */
+  @Test
+  void validatesStructuredPrivateCommercialReview() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"APPROVED",
+              "commercialRationale":"As duas leituras sustentam a integridade comercial privada.",
+              "evidence":["Evidência própria preservada"],
+              "requiredChanges":[],
+              "privateValidationChecks":{
+                "sameProductAndVersion":true,
+                "criteriaPredeclared":true,
+                "twoDistinctParticipants":true,
+                "fiveSignalsPassedTwice":true,
+                "firstPartyEvents":true,
+                "privateAndUnpublished":true,
+                "paymentDisabled":true,
+                "zeroMediaSpend":true,
+                "privacyPreserved":true
+              }
+            }
+            """);
+
+    CommercialBpmTaskConsumer.validate(result, "pde-construction-approval");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("privateValidationChecks"))
+        .put("paymentDisabled", false);
+    assertThatThrownBy(
+            () -> CommercialBpmTaskConsumer.validate(result, "pde-construction-approval"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("check reprovado");
+  }
+
   /** Rejeita autoaprovação vazia que liberaria o processo sem gate real. */
   @Test
   void rejectsCommercialReviewWithoutEvidence() throws Exception {
@@ -86,15 +120,66 @@ class CommercialBpmTaskConsumerTest {
         .isTrue();
   }
 
-  /** Seleciona o contrato independente de revisão dos entregáveis do PDE. */
+  /** Seleciona o contrato independente da validação privada do PDE. */
   @Test
   void selectsVersionedPdeDeliverablesContract() {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.promptResourceFor("pde-construction-approval"))
-        .isEqualTo("prompts/bpm/pde-deliverables-review.md");
+        .isEqualTo("prompts/bpm/pde-private-validation-review-v2.md");
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
-        .isEqualTo("prompts/bpm/pde-deliverables-review-schema.json");
+        .isEqualTo("prompts/bpm/pde-private-validation-review-v2-schema.json");
+  }
+
+  /** Usa somente o contexto privado da tarefa e não carrega entregáveis globais de outro PDE. */
+  @Test
+  void composesPrivateValidationPromptWithoutGlobalProductArtifacts() throws Exception {
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    CommercialBpmTaskConsumer consumer =
+        new CommercialBpmTaskConsumer(
+            properties,
+            "codex",
+            "gpt-5.6-sol",
+            "/workspace-inexistente",
+            "/workspace-inexistente",
+            json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            402L,
+            "processCode",
+            "pde-construction-approval",
+            "activityId",
+            "commercialIntegrityReview",
+            "sourceReference",
+            "product:19@private-validation-v1",
+            "taskTarget",
+            Map.of(
+                "productId",
+                19L,
+                "productSlug",
+                "pde-planejado-301",
+                "experienceVersion",
+                "private-validation-v1"),
+            "processContext",
+            Map.of(
+                "completedHumanActivities",
+                java.util.List.of(
+                    Map.of(
+                        "activityId",
+                        "privateReading2",
+                        "participantReference",
+                        "PV-1A2B3C4D5E6F"))));
+
+    String prompt = consumer.prompt(task);
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "PV-1A2B3C4D5E6F",
+            "critérios precisam ter sido declarados antes do uso",
+            "não são venda ou receita")
+        .doesNotContain(
+            "versionedArtifactEvidence", "Kit Manual de Atendimento", "15 respostas", "Rigel");
   }
 
   /** Impede que Têmis consuma novamente a atividade histórica de autoria da comunicação. */

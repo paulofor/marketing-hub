@@ -203,7 +203,15 @@ try {
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.route("**/api/**", async (route) => {
       const pathname = new URL(route.request().url()).pathname;
-      if (pathname === "/api/products/value-chain-positions/9") {
+      if (pathname === "/api/products/value-chain-positions/9/summary") {
+        await route.fulfill({
+          json: {
+            ...position,
+            productName: product.name,
+            productInternalName: product.internalName,
+          },
+        });
+      } else if (pathname === "/api/products/value-chain-positions/9") {
         await route.fulfill({ json: position });
       } else if (pathname === "/api/products/value-chain-positions") {
         await route.fulfill({ json: [position] });
@@ -227,6 +235,10 @@ try {
       page.getByRole("heading", { name: "Histórico da cadeia de valor" }),
     ).toBeVisible();
     await expect(page.getByText("Etapa 4 de 6")).toBeVisible();
+    await expect(page.getByText("Sob demanda")).toHaveCount(2);
+    await page
+      .getByRole("button", { name: "Carregar histórico detalhado" })
+      .click();
     await expect(
       page.getByText("Próxima atividade", { exact: true }),
     ).toBeVisible();

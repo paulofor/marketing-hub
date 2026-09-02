@@ -53,9 +53,16 @@ export default function OpportunityDossiersPage() {
     <div className="container-fluid py-4">
       <PageTitle>Oportunidades</PageTitle>
       <p className="text-muted">
-        Argos pesquisa; Atena, Psique, Plutus e Hermes avaliam; somente uma
-        decisão humana converte a oportunidade em Plano Comercial.
+        Argos pesquisa; Atena seleciona no máximo uma candidata para protótipo
+        privado; Plutus limita a economia e Dédalo projeta o harness. A
+        priorização comercial final só ocorre depois de duas leituras privadas.
       </p>
+      <div className="alert alert-info" role="note">
+        <strong>Fluxo protegido:</strong> dossiê factual → estratégia para
+        protótipo → economia → harness → produto PLANNED em STOP → duas leituras
+        privadas → decisão final. Nenhuma etapa anterior conta como venda ou
+        autoriza publicação e gasto.
+      </div>
       <div className="row g-4">
         <div className="col-xl-4">
           <form className="card card-body" onSubmit={submit}>
@@ -342,9 +349,27 @@ export default function OpportunityDossiersPage() {
                 ))}
               </div>
               {current.convertedPlanId && (
-                <p className="alert alert-success mt-3">
-                  Plano Comercial #{current.convertedPlanId} criado e vinculado.
-                </p>
+                <div className="alert alert-success mt-3">
+                  <p className="mb-2">
+                    Plano Comercial #{current.convertedPlanId} criado e
+                    vinculado para prototipação privada.
+                  </p>
+                  {current.createdProductId ? (
+                    <a
+                      className="btn btn-sm btn-outline-success"
+                      href={`/products/${current.createdProductId}/value-chain-history`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir cadeia do produto #{current.createdProductId}
+                    </a>
+                  ) : (
+                    <small>
+                      Aguardando Dédalo concluir a arquitetura e o backend criar
+                      o produto PLANNED.
+                    </small>
+                  )}
+                </div>
               )}
             </section>
           )}

@@ -2,11 +2,13 @@
 
 ## Resumo executivo
 
-Há novidades relevantes nesta rodada. O sinal mais forte é que **distribuição, recorrência e capacidade de fechar a transação estão se tornando parte do próprio produto**. Quatro movimentos merecem atenção: a Rezolve Ai mostra tração financeira real em infraestrutura de comércio agêntico; a eDreams mostra que assinatura pode transformar um serviço transacional em relacionamento recorrente e multi-produto; a Later confirma que creator marketing está migrando de alcance para vendas mensuráveis; e dados da Worldpanel mostram que, no Brasil, o WhatsApp já é um canal material de comércio eletrônico.
+Há novidades relevantes nesta rodada. O sinal mais forte é que **distribuição, recorrência e capacidade de fechar a transação estão se tornando parte do próprio produto**. Quatro movimentos merecem atenção: a Rezolve Ai mostra tração financeira em infraestrutura de comércio agêntico, embora parte importante do salto de receita venha de aquisições; a eDreams mostra que assinatura pode transformar um serviço transacional em relacionamento recorrente e multi-produto; a Later confirma que creator marketing está migrando de alcance para vendas mensuráveis; e dados da Worldpanel mostram que, no Brasil, o WhatsApp já é um canal material de comércio eletrônico.
 
-## 1. Rezolve Ai: comércio agêntico começa a mostrar receita real
+## 1. Rezolve Ai: comércio agêntico ganha escala, mas o crescimento não é puramente orgânico
 
 A Rezolve Ai reportou em 1º de setembro de 2026 receita de **US$ 130,8 milhões no primeiro semestre**, alta de aproximadamente **1.970%** contra US$ 6,3 milhões no mesmo período de 2025. A base de clientes passou de pouco mais de 950 no fim de 2025 para **mais de 1.640 clientes empresariais**. A companhia mantém orientação de aproximadamente US$ 360 milhões de receita em 2026 e meta de pelo menos US$ 500 milhões de ARR ao final do ano.
+
+Há uma ressalva importante: o salto de 1.970% **não deve ser lido como crescimento orgânico puro**. A Rezolve concluiu a aquisição da Reward em fevereiro por aproximadamente US$ 229 milhões; a Reward contribuiu US$ 37,6 milhões de receita entre 10 de fevereiro e 30 de junho, e outras aquisições também ampliaram a base. O dado continua relevante como evidência de escala comercial, mas não prova sozinho que a adoção orgânica do produto cresceu 21 vezes.
 
 O que funciona: a empresa não vende apenas um chatbot para varejistas. Sua proposta cobre descoberta, engajamento, checkout, pagamentos, dados e infraestrutura para agentes executarem transações. A distribuição é especialmente importante: Microsoft, Google, TCS e Tech Mahindra funcionam como rotas de entrada em grandes empresas, reduzindo a necessidade de montar toda a distribuição diretamente.
 
@@ -16,11 +18,13 @@ Monetização: software, serviços profissionais, loyalty/platform services e, c
 
 Canal de aquisição/distribuição: parceiros corporativos e marketplaces/ecossistemas de Microsoft, Google, TCS e Tech Mahindra.
 
-Interpretação: este é um dos sinais mais fortes até agora de que **agentic commerce pode sair da demonstração e virar infraestrutura econômica**. A oportunidade transferível para produtos menores não é competir com a Rezolve, mas construir uma camada vertical que conheça catálogo, regras, estoque, preço, histórico e pagamentos de um nicho e permita que agentes externos executem ações reais.
+Interpretação: o caso é relevante porque mostra que **agentic commerce está sendo empacotado como infraestrutura operacional real**, com dados, checkout e pagamentos, e não apenas como interface conversacional. A oportunidade transferível para produtos menores não é competir com a Rezolve, mas construir uma camada vertical que conheça catálogo, regras, estoque, preço, histórico e pagamentos de um nicho e permita que agentes externos executem ações reais.
 
 Oportunidade: criar uma infraestrutura de “commerce agent” para um mercado brasileiro específico — por exemplo, clínicas, salões, escolas, prestadores residenciais ou pequenos e-commerces — em que o agente possa consultar disponibilidade, recomendar, gerar orçamento, cobrar e acompanhar o pós-venda.
 
-Fonte: https://rezolve.com/press-releases/rezolve-ai-reports-130-8-million-h1-revenue-up-nearly-21-fold-as-google-validates-its-infrastructure-strategy-for-the-agentic-economy/
+Fontes:
+- https://rezolve.com/press-releases/rezolve-ai-reports-130-8-million-h1-revenue-up-nearly-21-fold-as-google-validates-its-infrastructure-strategy-for-the-agentic-economy/
+- https://www.stocktitan.net/sec-filings/RZLV/6-k-rezolve-ai-plc-current-report-foreign-issuer-0548c68841bd.html
 
 ## 2. eDreams Prime: assinatura transforma compra ocasional em relacionamento contínuo
 

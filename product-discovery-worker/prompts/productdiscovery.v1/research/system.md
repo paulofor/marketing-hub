@@ -31,3 +31,21 @@ do trabalho da IA. Se as evidências não sustentarem esse encaixe, omita a cand
 
 Escores, anúncios, seguidores, temperatura, reviews e ofertas são sinais; nenhum deles comprova
 venda isoladamente. Preserve conflitos e lacunas no risco comercial.
+
+Use `DOSSIER_READY` quando a candidata já tiver situação de compra distinta, pelo menos duas rotas
+públicas independentes, pelo menos uma oferta comparável e um anúncio ativo aderente observado no
+Instagram entre seus próprios `evidenceIds`, além de encaixe plausível como experiência digital com
+IA. O mínimo de ofertas comparáveis informado no contexto é um gate acumulado do ciclo, não uma
+quantidade que cada candidata precise citar. Esse estado
+significa somente que Argos reuniu material suficiente para Atena planejar e validar um protótipo;
+não significa mercado escolhido, venda comprovada ou aprovação de campanha. A ausência de teste
+privado, pagamento ou avanço ao checkout deve permanecer como risco, mas não deve sozinha rebaixar
+um dossiê que passou pelos gates factuais desta etapa.
+
+Avalie alto risco na entrega proposta pela candidata. Menções a tratamento, finanças, conflitos ou
+outros riscos nas fontes, nas dores observadas ou nas ressalvas não tornam automaticamente outra
+candidata sensível; promessa médica, terapêutica, jurídica, de investimento ou de retorno na saída
+do PDE continua exigindo `HUMAN_REVIEW`.
+
+Seja conciso: descreva cada campo uma única vez e evite repetir listas de fontes fora de
+`evidenceIds`.

@@ -33,12 +33,28 @@ const UNMET_TERMS = [
 
 const HIGH_RISK_TERMS = [
   "cura",
-  "tratamento",
+  "tratamento médico",
+  "tratamento medico",
+  "tratamento de saúde",
+  "tratamento de saude",
+  "plano de tratamento",
+  "prescrição",
+  "prescricao",
   "diagnóstico médico",
   "diagnostico medico",
+  "aconselhamento médico",
+  "aconselhamento medico",
+  "terapia",
   "renda garantida",
   "lucro garantido",
+  "ganho garantido",
+  "retorno garantido",
+  "recomendação de investimento",
+  "recomendacao de investimento",
+  "aconselhamento financeiro",
   "processo judicial",
+  "aconselhamento jurídico",
+  "aconselhamento juridico",
 ];
 
 const COMMERCIAL_INTENT_TERMS = [
@@ -174,6 +190,23 @@ const COMMERCIAL_SIGNAL_TEMPLATES = [
   "{base} antes e depois resultado",
 ];
 
+const PAID_ALTERNATIVE_TEMPLATES = [
+  "{base} curso online preço",
+  "{base} programa online preço",
+  "{base} aplicativo assinatura preço",
+  "{base} mentoria online preço",
+  "{base} consultoria online preço",
+  "{base} produto digital comprar",
+];
+
+const PUBLIC_OFFER_SOURCE_TEMPLATES = [
+  "site:apps.apple.com/br {base} premium assinatura",
+  "site:play.google.com/store/apps {base} premium assinatura",
+  "site:hotmart.com/pt-br/marketplace/produtos {base}",
+  "site:udemy.com/course {base}",
+  "site:kiwify.com.br {base} curso online",
+];
+
 const SCIENTIFIC_RESEARCH_TEMPLATES = [
   "{base} scientific study mechanism",
   "{base} peer reviewed study mechanism",
@@ -232,11 +265,7 @@ export const SEARCH_PROVIDERS = {
 };
 
 export function buildSearchQueries(job) {
-  const base = compactSearchBase(
-    normalizeSearchText(
-      [job.theme, job.targetAudience].filter(Boolean).join(" "),
-    ),
-  );
+  const base = marketFocusSearchBase(job);
   const domainQueries = inferDomainPainQueries(base);
   const genericQueries = CONSUMER_LANGUAGE_TEMPLATES.map((template) =>
     template.replace("{base}", base),
@@ -249,6 +278,12 @@ export function buildSearchQueries(job) {
   );
   const commercialSignalQueries = COMMERCIAL_SIGNAL_TEMPLATES.map((template) =>
     template.replace("{base}", base),
+  );
+  const paidAlternativeQueries = PAID_ALTERNATIVE_TEMPLATES.map((template) =>
+    template.replace("{base}", base),
+  );
+  const publicOfferSourceQueries = PUBLIC_OFFER_SOURCE_TEMPLATES.map(
+    (template) => template.replace("{base}", base),
   );
   const genericScientificQueries = SCIENTIFIC_RESEARCH_TEMPLATES.map(
     (template) => template.replace("{base}", base),
@@ -270,23 +305,123 @@ export function buildSearchQueries(job) {
     job.referenceSources,
     base,
   );
+  const directed = classifyDirectedQueries(job.directedQueries);
 
   return deduplicateQueries([
-    ...(Array.isArray(job.directedQueries)
-      ? job.directedQueries.slice(0, 8)
-      : []),
-    ...referenceSourceQueries,
-    ...instagramB2cQueries,
+    ...directed.commercial.slice(0, 3),
+    ...paidAlternativeQueries.slice(0, 4),
+    ...directed.scientific.slice(0, 2),
+    ...scientificResearchQueries.slice(0, 2),
+    ...publicOfferSourceQueries.slice(0, 4),
+    ...directed.instagram.slice(0, 2),
+    ...instagramB2cQueries.slice(0, 2),
+    ...directed.other.slice(0, 4),
+    ...referenceSourceQueries.slice(0, 2),
     ...domainQueries.slice(0, 2),
     ...commercialSignalQueries.slice(0, 2),
-    ...scientificResearchQueries.slice(0, 3),
+    ...directed.commercial.slice(3),
+    ...paidAlternativeQueries.slice(4),
+    ...publicOfferSourceQueries.slice(4),
+    ...directed.scientific.slice(2),
+    ...scientificResearchQueries.slice(2),
+    ...directed.instagram.slice(2),
+    ...instagramB2cQueries.slice(2),
+    ...directed.other.slice(4),
+    ...referenceSourceQueries.slice(2),
     ...domainQueries.slice(2),
     ...commercialSignalQueries.slice(2),
-    ...scientificResearchQueries.slice(2),
     ...genericQueries,
     ...marketSignalQueries,
     ...sourceDiscoveryQueries,
   ]);
+}
+
+/** Distribui as consultas dirigidas por finalidade para nenhuma família factual ficar no fim da fila. */
+function classifyDirectedQueries(queries) {
+  const classified = {
+    commercial: [],
+    scientific: [],
+    instagram: [],
+    other: [],
+  };
+  for (const query of Array.isArray(queries) ? queries : []) {
+    const text = String(query || "");
+    if (
+      /pre[cç]o|comprar|contratar|quanto custa|curso|programa|assinatura|mensalidade|mentoria|consultoria|produto digital|oferta|checkout|hotmart|clickbank|pagar/i.test(
+        text,
+      )
+    ) {
+      classified.commercial.push(text);
+    } else if (
+      /scientific|study|peer.?review|systematic review|artigo cient[ií]fico|estudo cient[ií]fico|revis[aã]o sistem[aá]tica|pubmed|scielo|doi\.org/i.test(
+        text,
+      )
+    ) {
+      classified.scientific.push(text);
+    } else if (/instagram|reels?|meta ad|biblioteca meta/i.test(text)) {
+      classified.instagram.push(text);
+    } else {
+      classified.other.push(text);
+    }
+  }
+  return classified;
+}
+
+/** Exige composição comercial e científica somente na descoberta factual ampla. */
+function requiresBalancedDiscoveryCoverage(job) {
+  return String(job?.researchMode || "").toUpperCase() === "DISCOVER_MARKETS";
+}
+
+/** Resume a cobertura que determina se a busca já pode encerrar sem perder fontes essenciais. */
+function summarizeFactualSearchCoverage(results) {
+  const uniqueResults = deduplicateResults(results || []);
+  return {
+    publicComparableOffers: extractPublicComparableOffers(uniqueResults).length,
+    scientificArticles: uniqueResults.filter(isScientificArticleCandidate)
+      .length,
+    instagramResults: uniqueResults.filter(isInstagramSearchResult).length,
+  };
+}
+
+/** Reserva espaço no relatório para ofertas, ciência e Instagram antes de preencher com relatos gerais. */
+function selectBalancedSearchResults(results, maxSearchResults) {
+  const uniqueResults = deduplicateResults(results || []);
+  const selected = [];
+  const selectedUrls = new Set();
+  const append = (items, limit) => {
+    for (const item of items) {
+      if (selected.length >= maxSearchResults || limit <= 0) break;
+      if (selectedUrls.has(item.url)) continue;
+      selected.push(item);
+      selectedUrls.add(item.url);
+      limit -= 1;
+    }
+  };
+
+  append(
+    uniqueResults.filter(isPublicComparableOffer),
+    Math.min(12, maxSearchResults),
+  );
+  append(
+    uniqueResults.filter(isScientificArticleCandidate),
+    Math.min(6, maxSearchResults - selected.length),
+  );
+  append(
+    uniqueResults.filter(isInstagramSearchResult),
+    Math.min(4, maxSearchResults - selected.length),
+  );
+  append(uniqueResults, maxSearchResults - selected.length);
+  return selected;
+}
+
+/** Reconhece menções públicas ao canal sem confundi-las com a observação da Biblioteca Meta. */
+function isInstagramSearchResult(result) {
+  return (
+    safeDomain(result?.url).includes("instagram.com") ||
+    /\binstagram\b|\breels?\b/i.test(
+      `${result?.title || ""} ${result?.snippet || ""}`,
+    )
+  );
 }
 
 export function resolveSearchConfig(env = process.env) {
@@ -341,6 +476,9 @@ export async function searchInternet(job, options = {}) {
   const minSearchQueries = Number(options.minSearchQueries || 6);
   const maxSearchQueries = Number(options.maxSearchQueries || 14);
   const maxResultsPerQuery = Number(options.maxResultsPerQuery || 3);
+  const minimumPublicComparableOffers = Number(
+    options.minimumPublicComparableOffers || 10,
+  );
   const queries = buildSearchQueries(job).slice(0, maxSearchQueries);
   const collected = [];
   const providerErrors = [];
@@ -366,9 +504,14 @@ export async function searchInternet(job, options = {}) {
     }
     collected.push(...queryResults.slice(0, maxResultsPerQuery));
     const uniqueResults = deduplicateResults(collected);
+    const factualCoverage = summarizeFactualSearchCoverage(uniqueResults);
     if (
       attemptedQueries >= minSearchQueries &&
-      uniqueResults.length >= maxSearchResults
+      uniqueResults.length >= maxSearchResults &&
+      (!requiresBalancedDiscoveryCoverage(job) ||
+        (factualCoverage.publicComparableOffers >=
+          minimumPublicComparableOffers &&
+          factualCoverage.scientificArticles > 0))
     ) {
       break;
     }
@@ -387,7 +530,17 @@ export async function searchInternet(job, options = {}) {
     );
   }
   if (collected.length === 0) return [];
-  return deduplicateResults(collected).slice(0, maxSearchResults);
+  const selected = selectBalancedSearchResults(collected, maxSearchResults);
+  const coverage = summarizeFactualSearchCoverage(selected);
+  logger.info?.(
+    "[product-discovery-worker] factual search coverage queries=%s results=%s publicOffers=%s scientific=%s instagram=%s",
+    attemptedQueries,
+    selected.length,
+    coverage.publicComparableOffers,
+    coverage.scientificArticles,
+    coverage.instagramResults,
+  );
+  return selected;
 }
 
 export function normalizeBraveResponse(payload) {
@@ -433,17 +586,18 @@ export function normalizeSerpApiResponse(payload) {
 
 /** Converte páginas comerciais públicas em alternativas comparáveis para formatos fora de marketplaces. */
 export function extractPublicComparableOffers(results) {
-  const byDomain = new Map();
+  const byIdentity = new Map();
   for (const result of results || []) {
     if (!isPublicComparableOffer(result)) continue;
     const domain = safeDomain(result.url);
-    if (!domain || byDomain.has(domain)) continue;
+    const identity = publicOfferIdentity(result.url);
+    if (!domain || !identity || byIdentity.has(identity)) continue;
     const priceMatch = `${result.title} ${result.snippet}`.match(
       /R\$\s?\d+(?:[.,]\d{1,2})?/i,
     );
-    byDomain.set(domain, {
+    byIdentity.set(identity, {
       marketplace: "PUBLIC_WEB",
-      referenceId: domain,
+      referenceId: identity,
       title: result.title,
       url: result.url,
       description: result.snippet,
@@ -463,7 +617,7 @@ export function extractPublicComparableOffers(results) {
         "Página comercial comprova uma alternativa ofertada, não vendas, satisfação ou tração.",
     });
   }
-  return [...byDomain.values()];
+  return [...byIdentity.values()];
 }
 
 function isPublicComparableOffer(result) {
@@ -472,6 +626,8 @@ function isPublicComparableOffer(result) {
   const url = new URL(result.url);
   const domain = url.hostname.toLowerCase();
   const path = url.pathname.toLowerCase();
+  const text = `${result.title} ${result.snippet}`.toLowerCase();
+  if (isOfficialAppStoreOffer(domain, path, text)) return true;
   if (
     /(^|\.)(reddit|youtube|facebook|instagram|tiktok|quora)\.com$/.test(
       domain,
@@ -479,7 +635,7 @@ function isPublicComparableOffer(result) {
     /(^|\.)(blog\.|capterra\.|getapp\.|techtudo\.|portalinsights\.|neon\.)/.test(
       domain,
     ) ||
-    /\/(blog|artigo|articles|noticia|news|perguntas|perguntas-frequentes|faq|guia|recursos|directory|listas|post|comparar)(\/|$)/.test(
+    /\/(blog|artigo|articles|noticia|noticias|news|diversos|cotidiano|materia|perguntas|perguntas-frequentes|faq|guia|recursos|directory|listas|post|comparar)(\/|$)/.test(
       path,
     ) ||
     /\.(pdf|doc|docx)$/i.test(path) ||
@@ -488,7 +644,6 @@ function isPublicComparableOffer(result) {
   ) {
     return false;
   }
-  const text = `${result.title} ${result.snippet}`.toLowerCase();
   if (/or[cç]amento pessoal|planejador.*or[cç]amento pessoal/.test(text))
     return false;
   const commercialSignal =
@@ -500,13 +655,50 @@ function isPublicComparableOffer(result) {
       text,
     );
   const broadOfferSignal =
-    /comprar agora|assine|inscreva-se|matr[ií]cula|curso online|programa online|consultoria|mentoria|produto digital/.test(
+    /comprar agora|assine|inscreva-se|matr[ií]cula|cursos? online|cursos? (?:de|em) |programa online|consultoria|mentoria|produto digital/.test(
       text,
     ) ||
-    /\/(produto|products?|curso|courses?|programa|planos?|pricing|checkout)(\/|$)/.test(
+    /\/(produto|products?|cursos?|courses?|programa|planos?|pricing|checkout)(\/|$)/.test(
       path,
     );
   return commercialSignal && (productSignal || broadOfferSignal);
+}
+
+/** Reconhece cada app oficial como alternativa própria, mesmo dentro do mesmo domínio de loja. */
+function isOfficialAppStoreOffer(domain, path, text) {
+  const officialListing =
+    (domain === "play.google.com" && path === "/store/apps/details") ||
+    (domain === "apps.apple.com" && /\/app\//.test(path));
+  return (
+    officialListing &&
+    /premium|assinatura|compras? (?:no|dentro do) app|in.?app|pago|gratuito|gr[aá]tis|r\$/.test(
+      text,
+    )
+  );
+}
+
+/** Mantém domínio para ofertas comuns e usa o identificador do produto nas lojas compartilhadas. */
+function publicOfferIdentity(value) {
+  try {
+    const url = new URL(value);
+    const domain = url.hostname.replace(/^www\./, "").toLowerCase();
+    if (domain === "play.google.com" && url.pathname === "/store/apps/details") {
+      const appId = url.searchParams.get("id");
+      return appId ? `${domain}:${appId}`.slice(0, 255) : domain;
+    }
+    if (domain === "apps.apple.com") {
+      const appId = url.pathname.match(/\/id(\d+)(?:\/|$)/)?.[1];
+      return appId ? `${domain}:id${appId}` : domain;
+    }
+    if (
+      /(^|\.)(hotmart\.com|udemy\.com|kiwify\.com\.br)$/.test(domain)
+    ) {
+      return `${domain}:${url.pathname.replace(/\/$/, "")}`.slice(0, 255);
+    }
+    return domain;
+  } catch {
+    return "";
+  }
 }
 
 export function analyzeSearchResults(
@@ -536,7 +728,7 @@ export function analyzeSearchResults(
     .toLowerCase();
   const painHits = countHits(combined, PAIN_TERMS);
   const unmetHits = countHits(combined, UNMET_TERMS);
-  const highRiskHits = countHits(combined, HIGH_RISK_TERMS);
+  const corpusHighRiskMentions = countHits(combined, HIGH_RISK_TERMS);
   const commercialIntentHits = countHits(
     commercialCombined,
     COMMERCIAL_INTENT_TERMS,
@@ -589,38 +781,10 @@ export function analyzeSearchResults(
   ).size;
   const scaleScore = Math.min(35, independentDomains * 7 + painHits * 3);
   const unmetScore = Math.min(30, unmetHits * 5);
-  const pdeScore = highRiskHits > 0 ? 5 : 25;
   const scientificEvidenceScore = Math.min(10, scientificArticles.length * 3);
   const commercialScore = Math.min(15, commercialIntentHits * 3);
-  const score = Math.min(
-    100,
-    scaleScore +
-      unmetScore +
-      pdeScore +
-      scientificEvidenceScore +
-      commercialScore,
-  );
-  const decision =
-    evidence.length === 0
-      ? "RESEARCH_MORE"
-      : !marketplaceGatePassed
-        ? "RESEARCH_MORE"
-      : !instagramB2cGatePassed
-          ? "RESEARCH_MORE"
-          : highRiskHits > 0
-            ? "HUMAN_REVIEW"
-            : purchaseMomentGate.required &&
-                !purchaseMomentGate.finalPrioritizationEligible
-              ? "RESEARCH_MORE"
-              : scientificArticles.length === 0
-                ? "RESEARCH_MORE"
-                : commercialIntentHits === 0
-                  ? "RESEARCH_MORE"
-                  : score >= 70 && independentDomains >= 2
-                    ? "APPROVE"
-                    : score >= 45
-                      ? "RESEARCH_MORE"
-                      : "REJECT";
+  const scoreWithoutPdeFit =
+    scaleScore + unmetScore + scientificEvidenceScore + commercialScore;
   const mechanismEvidence =
     scientificArticles.length > 0
       ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
@@ -637,25 +801,70 @@ export function analyzeSearchResults(
         ? `As fontes comerciais não passaram pelo gate de qualidade: ${purchaseMomentGate.reasons.join(" ")}`
         : purchaseMomentGate.required
           ? "A pesquisa está pronta para protótipo privado, mas ainda não possui duas leituras consistentes de microvalor, uso do resultado pronto sem montagem, preferência sobre o gratuito e avanço ao checkout."
-          : highRiskHits > 0
-            ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
-            : scientificArticles.length === 0
-              ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
-              : commercialIntentHits === 0
-                ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
-                : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
+          : scientificArticles.length === 0
+            ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
+            : commercialIntentHits === 0
+              ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
+              : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
-  return {
-    decisionSummary: `${options.analysisSummary ? `${options.analysisSummary} ` : ""}Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, ${metaCoverageSummary}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${decision}.`,
-    opportunities: opportunityBlueprints.map((blueprint) => {
+  const opportunities = opportunityBlueprints.map((blueprint) => {
       const evidenceIds = new Set(blueprint.evidenceIds || []);
       const referenced = (items) =>
         (items || []).filter((item) => evidenceIds.has(item.evidenceId));
-      const maturity = effectiveCandidateMaturity(blueprint.maturity, {
+      const referencedPublicEvidence = referenced(evidence);
+      const referencedMarketplaceOffers = referenced(comparableMarketplaceOffers);
+      const referencedMetaAdEvidence = referenced(metaAdEvidence);
+      const candidatePublicDomains = new Set(
+        referencedPublicEvidence
+          .map((item) => safeDomain(item.url))
+          .filter(Boolean),
+      );
+      const candidateHighRiskHits = countCandidateDeliveryRisk(blueprint);
+      const score = Math.min(
+        100,
+        scoreWithoutPdeFit + (candidateHighRiskHits > 0 ? 5 : 25),
+      );
+      const candidateEvidenceReady =
+        candidatePublicDomains.size >= 2 &&
+        referencedMarketplaceOffers.length > 0 &&
+        referencedMetaAdEvidence.some(
+          (item) => item.active && metaAdIncludesInstagram(item),
+        );
+      const candidateDecision = factualCandidateDecision({
+        evidenceCount: evidence.length,
         marketplaceGatePassed,
         instagramB2cGatePassed,
-        decision,
+        candidateHighRiskHits,
+        purchaseMomentGate,
+        scientificArticleCount: scientificArticles.length,
+        commercialIntentHits,
+        score,
+        independentDomains,
       });
+      const maturity = effectiveCandidateMaturity(blueprint.maturity, {
+        discoveryMode: job.researchMode === "DISCOVER_MARKETS",
+        directedMarketplaceResearch,
+        instagramB2cRequired,
+        marketplaceGatePassed,
+        instagramB2cGatePassed,
+        candidateEvidenceReady,
+        scientificEvidenceReady: scientificArticles.length > 0,
+        commercialEvidenceReady: commercialIntentHits > 0,
+        score,
+        decision: candidateDecision,
+      });
+      const decision =
+        maturity === "HUMAN_REVIEW"
+          ? "HUMAN_REVIEW"
+          : maturity === "REJECTED"
+            ? "REJECT"
+            : maturity === "DOSSIER_READY"
+              ? candidateDecision
+              : "RESEARCH_MORE";
+      const candidateRisk =
+        candidateHighRiskHits > 0
+          ? "A entrega proposta contém sinal de alto risco e exige revisão humana antes de qualquer experimento."
+          : "";
       return {
         name: blueprint.name,
         primaryAudience: blueprint.primaryAudience,
@@ -666,7 +875,8 @@ export function analyzeSearchResults(
         unmetnessEvidence: blueprint.unmetnessEvidence,
         pdeExperience: `Fronteira factual para avaliação da Atena: ${blueprint.pdeValueBoundary} Entrada mínima: ${blueprint.pdeDeliveryFit.minimumInput} Trabalho da IA nos bastidores: ${blueprint.pdeDeliveryFit.aiBackstageWork} Resultado digital pronto: ${blueprint.pdeDeliveryFit.readyDigitalOutcome} Base científica candidata: ${mechanismEvidence}`,
         firstCampaignAngle: null,
-        commercialRisk: `${blueprint.commercialRisk} ${commercialRisk}`.trim(),
+        commercialRisk:
+          `${blueprint.commercialRisk} ${candidateRisk} ${commercialRisk}`.trim(),
         evidenceJson: JSON.stringify({
           candidateEvidence: {
             purchaseSituation: blueprint.purchaseSituation,
@@ -679,9 +889,9 @@ export function analyzeSearchResults(
             maturity,
           },
           referencedEvidence: {
-            publicEvidence: referenced(evidence),
-            marketplaceOffers: referenced(comparableMarketplaceOffers),
-            metaAdEvidence: referenced(metaAdEvidence),
+            publicEvidence: referencedPublicEvidence,
+            marketplaceOffers: referencedMarketplaceOffers,
+            metaAdEvidence: referencedMetaAdEvidence,
             repositoryEvidence: referenced(options.repositoryEvidence),
           },
           publicEvidence: evidence,
@@ -697,19 +907,36 @@ export function analyzeSearchResults(
           purchaseMomentGate,
           scientificArticles,
           commercialIntentHits,
+          candidateReadiness: {
+            independentPublicPaths: candidatePublicDomains.size,
+            referencedComparableOffers: referencedMarketplaceOffers.length,
+            referencedActiveInstagramAds: referencedMetaAdEvidence.filter(
+              (item) => item.active && metaAdIncludesInstagram(item),
+            ).length,
+            highRiskHits: candidateHighRiskHits,
+          },
         }),
         score,
         maturity,
-        decision:
-          maturity === "HUMAN_REVIEW"
-            ? "HUMAN_REVIEW"
-            : maturity === "REJECTED"
-              ? "REJECT"
-              : maturity === "DOSSIER_READY"
-                ? decision
-                : "RESEARCH_MORE",
+        decision,
       };
-    }),
+    });
+  const decision = aggregateOpportunityDecision(opportunities, {
+    evidenceCount: evidence.length,
+    marketplaceGatePassed,
+    instagramB2cGatePassed,
+  });
+  const dossierReadyCount = opportunities.filter(
+    (opportunity) => opportunity.maturity === "DOSSIER_READY",
+  ).length;
+  const maturitySummary =
+    dossierReadyCount > 0
+      ? `${dossierReadyCount} DOSSIER_READY`
+      : decision;
+
+  return {
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, ${metaCoverageSummary}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Maturidade factual: ${maturitySummary}.`,
+    opportunities,
     evidenceReport: {
       researchMode: job.researchMode || "VALIDATE_MARKET",
       marketType: job.marketType || "UNSPECIFIED",
@@ -727,6 +954,7 @@ export function analyzeSearchResults(
         unmetHits,
         commercialIntentHits,
         scientificArticleCount: scientificArticles.length,
+        corpusHighRiskMentions,
       },
       gates: {
         marketplaceGatePassed,
@@ -735,6 +963,74 @@ export function analyzeSearchResults(
       },
     },
   };
+}
+
+/** Decide a candidata sem propagar riscos encontrados apenas nas fontes das demais. */
+function factualCandidateDecision({
+  evidenceCount,
+  marketplaceGatePassed,
+  instagramB2cGatePassed,
+  candidateHighRiskHits,
+  purchaseMomentGate,
+  scientificArticleCount,
+  commercialIntentHits,
+  score,
+  independentDomains,
+}) {
+  if (evidenceCount === 0) return "RESEARCH_MORE";
+  if (!marketplaceGatePassed || !instagramB2cGatePassed) {
+    return "RESEARCH_MORE";
+  }
+  if (candidateHighRiskHits > 0) return "HUMAN_REVIEW";
+  if (
+    purchaseMomentGate.required &&
+    !purchaseMomentGate.finalPrioritizationEligible
+  ) {
+    return "RESEARCH_MORE";
+  }
+  if (scientificArticleCount === 0 || commercialIntentHits === 0) {
+    return "RESEARCH_MORE";
+  }
+  if (score >= 70 && independentDomains >= 2) return "APPROVE";
+  return score >= 45 ? "RESEARCH_MORE" : "REJECT";
+}
+
+/** Conta risco somente na entrega proposta, não em dores, ressalvas ou corpus de mercado. */
+function countCandidateDeliveryRisk(blueprint = {}) {
+  const delivery = [
+    blueprint.name,
+    blueprint.pdeDeliveryFit?.aiBackstageWork,
+    blueprint.pdeDeliveryFit?.readyDigitalOutcome,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return countHits(delivery, HIGH_RISK_TERMS);
+}
+
+/** Resume decisões individuais sem deixar uma candidata sensível contaminar as demais. */
+function aggregateOpportunityDecision(
+  opportunities,
+  { evidenceCount, marketplaceGatePassed, instagramB2cGatePassed },
+) {
+  if (
+    evidenceCount === 0 ||
+    !marketplaceGatePassed ||
+    !instagramB2cGatePassed ||
+    opportunities.length === 0
+  ) {
+    return "RESEARCH_MORE";
+  }
+  if (opportunities.some((item) => item.decision === "APPROVE")) {
+    return "APPROVE";
+  }
+  if (opportunities.every((item) => item.decision === "HUMAN_REVIEW")) {
+    return "HUMAN_REVIEW";
+  }
+  if (opportunities.every((item) => item.decision === "REJECT")) {
+    return "REJECT";
+  }
+  return "RESEARCH_MORE";
 }
 
 /** Traduz os estados técnicos da Biblioteca Meta para uma conclusão comercial auditável. */
@@ -780,16 +1076,40 @@ function metaAdIncludesInstagram(ad) {
 /** Impede que uma classificação do modelo ultrapasse os gates factuais recalculados pelo worker. */
 function effectiveCandidateMaturity(
   declaredMaturity,
-  { marketplaceGatePassed, instagramB2cGatePassed, decision },
+  {
+    discoveryMode,
+    directedMarketplaceResearch,
+    instagramB2cRequired,
+    marketplaceGatePassed,
+    instagramB2cGatePassed,
+    candidateEvidenceReady,
+    scientificEvidenceReady,
+    commercialEvidenceReady,
+    score,
+    decision,
+  },
 ) {
   const declared = declaredMaturity || "SIGNAL";
   if (decision === "HUMAN_REVIEW") return "HUMAN_REVIEW";
   if (decision === "REJECT") return "REJECTED";
-  if (
-    declared === "DOSSIER_READY" &&
-    (!marketplaceGatePassed || !instagramB2cGatePassed)
-  ) {
+  if (["HUMAN_REVIEW", "REJECTED"].includes(declared)) return declared;
+  const globalGatesPassed =
+    (!directedMarketplaceResearch || marketplaceGatePassed) &&
+    (!instagramB2cRequired || instagramB2cGatePassed) &&
+    scientificEvidenceReady &&
+    commercialEvidenceReady;
+  const discoveryGatesPassed =
+    globalGatesPassed && (!discoveryMode || candidateEvidenceReady);
+  if (declared === "DOSSIER_READY" && !discoveryGatesPassed) {
     return "RESEARCHABLE";
+  }
+  if (
+    discoveryMode &&
+    declared === "RESEARCHABLE" &&
+    discoveryGatesPassed &&
+    score >= 45
+  ) {
+    return "DOSSIER_READY";
   }
   return declared;
 }
@@ -837,6 +1157,20 @@ function compactSearchBase(value) {
     .split(/\s+/)
     .filter(Boolean);
   return words.slice(0, 18).join(" ").slice(0, 140).trim();
+}
+
+/** Retira o recorte demográfico das consultas quando o briefing já declara um foco amplo. */
+function marketFocusSearchBase(job = {}) {
+  const theme = normalizeSearchText(job.theme);
+  const declaredFocus = theme.match(/\bfoco em\s+(.+)$/i)?.[1];
+  if (declaredFocus) {
+    return compactSearchBase(declaredFocus.replace(/[.!?]+$/, ""));
+  }
+  return compactSearchBase(
+    normalizeSearchText(
+      [job.theme, job.targetAudience].filter(Boolean).join(" "),
+    ),
+  );
 }
 
 /** Pesquisa fontes editoriais declaradas por domínio sem acessar área autenticada. */

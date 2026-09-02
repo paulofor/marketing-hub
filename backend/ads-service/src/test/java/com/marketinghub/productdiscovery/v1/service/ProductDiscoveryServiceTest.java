@@ -371,6 +371,57 @@ class ProductDiscoveryServiceTest {
         .hasMessageContaining("10 ofertas reais comparaveis");
   }
 
+  /** Deve reconhecer dez páginas comerciais públicas depois da normalização canônica. */
+  @Test
+  void acceptsPublicWebOffersInDirectedMarketplaceGate() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(31L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-31");
+    cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
+    when(cycleRepository.findById(31L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(31L)).thenReturn(List.of());
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+    String offers =
+        java.util.stream.IntStream.range(0, 10)
+            .mapToObj(
+                index ->
+                    "{\"marketplace\":\"PUBLIC_WEB\",\"referenceId\":\"public-"
+                        + index
+                        + "\",\"title\":\"Programa digital "
+                        + index
+                        + "\",\"producer\":\"Produtor público\"}")
+            .collect(java.util.stream.Collectors.joining(","));
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Teste",
+            "Publico",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "{\"marketplaceOffers\":[" + offers + "]}",
+            new BigDecimal("70"),
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY,
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            31L,
+            new ProductDiscoveryResultRequest(
+                "lease-31", "Dossiê pronto para Atena", List.of(opportunity)));
+
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
+    verify(opportunityRepository).save(any(ProductDiscoveryOpportunity.class));
+  }
+
   /** Deve contar snapshots repetidos do mesmo produto como uma única oferta comparável. */
   @Test
   void blocksDuplicatedMarketplaceSnapshotsFromInflatingEvidence() {

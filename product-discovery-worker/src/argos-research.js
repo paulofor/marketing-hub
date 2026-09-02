@@ -26,8 +26,9 @@ export async function synthesizeMarketCandidates(context, options = {}) {
   const model = options.model || process.env.ARGOS_CODEX_MODEL;
   const reasoningEffort =
     options.reasoningEffort ||
+    process.env.ARGOS_CODEX_SYNTHESIS_REASONING_EFFORT ||
     process.env.ARGOS_CODEX_REASONING_EFFORT ||
-    "high";
+    "medium";
   let execution;
   try {
     await writeFile(schema, schemaContract);
@@ -52,9 +53,13 @@ export async function synthesizeMarketCandidates(context, options = {}) {
     const execute = options.execute || executeCodexWithInput;
     execution = await execute(command, args, prompt.fullPrompt, {
       timeoutMs: Number(
-        options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000,
+        options.timeoutMs ||
+          process.env.ARGOS_CODEX_SYNTHESIS_TIMEOUT_MS ||
+          process.env.ARGOS_CODEX_TIMEOUT_MS ||
+          600000,
       ),
       maxBuffer: 10 * 1024 * 1024,
+      phaseName: "síntese factual",
     });
     let rawResponse;
     try {
@@ -229,15 +234,141 @@ async function buildResearchPrompt(context) {
 /** Limita o contexto ao briefing, plano e fatos que podem ser citados pelo schema. */
 function sanitizedContext(context) {
   return {
-    job: context.job,
-    plan: context.plan,
-    publicEvidence: context.publicEvidence,
-    repositoryEvidence: context.repositoryEvidence,
-    repositoryCoverage: context.repositoryCoverage,
-    marketplaceOffers: context.marketplaceOffers,
-    metaAdEvidence: context.metaAdEvidence,
-    metaCoverage: context.metaCoverage,
+    job: compactJob(context.job),
+    plan: compactPlan(context.plan),
+    publicEvidence: (context.publicEvidence || []).map(compactPublicEvidence),
+    repositoryEvidence: (context.repositoryEvidence || []).map(
+      compactRepositoryEvidence,
+    ),
+    repositoryCoverage: (context.repositoryCoverage || []).map((item) => ({
+      collection: item.collection,
+      status: item.status,
+      documentCount: Number(item.documentCount || 0),
+    })),
+    marketplaceOffers: (context.marketplaceOffers || []).map(
+      compactMarketplaceOffer,
+    ),
+    metaAdEvidence: (context.metaAdEvidence || []).map(compactMetaAd),
+    metaCoverage: (context.metaCoverage || []).map(compactMetaCoverage),
   };
+}
+
+/** Evita duplicar no prompt o acervo e a auditoria que já possuem blocos próprios. */
+function compactJob(job = {}) {
+  return {
+    cycleId: job.cycleId,
+    theme: job.theme,
+    targetAudience: job.targetAudience,
+    country: job.country,
+    language: job.language,
+    acquisitionChannel: job.acquisitionChannel,
+    commercialConstraints: job.commercialConstraints,
+    forbiddenCategories: job.forbiddenCategories,
+    objective: job.objective,
+    researchMode: job.researchMode,
+    marketType: job.marketType,
+    referenceSources: job.referenceSources,
+    marketExpansionContext: job.marketExpansionContext,
+  };
+}
+
+/** Mantém na síntese somente a intenção do plano e os gates necessários à classificação. */
+function compactPlan(plan = {}) {
+  return {
+    researchLens: plan.researchLens,
+    expansionAxis: plan.expansionAxis,
+    expansionRationale: plan.expansionRationale,
+    questions: (plan.questions || []).slice(0, 12).map((item) =>
+      truncateForPrompt(item, 350),
+    ),
+    metaAdRequests: plan.metaAdRequests || [],
+    minimumComparableOffers: plan.minimumComparableOffers,
+  };
+}
+
+/** Preserva identidade, URL e linguagem pública dentro de um orçamento previsível. */
+function compactPublicEvidence(item = {}) {
+  return {
+    evidenceId: item.evidenceId,
+    sourceType: item.sourceType,
+    title: truncateForPrompt(item.title, 300),
+    url: item.url,
+    snippet: truncateForPrompt(item.snippet, 700),
+  };
+}
+
+/** Resume a inspiração versionada sem remover a referência auditável do arquivo. */
+function compactRepositoryEvidence(item = {}) {
+  return {
+    evidenceId: item.evidenceId,
+    sourceType: item.sourceType,
+    path: item.path,
+    collection: item.collection,
+    title: truncateForPrompt(item.title, 300),
+    date: item.date,
+    excerpt: truncateForPrompt(item.excerpt, 900),
+  };
+}
+
+/** Resume a alternativa paga mantendo os sinais factuais usados na decisão. */
+function compactMarketplaceOffer(item = {}) {
+  return {
+    evidenceId: item.evidenceId,
+    sourceType: item.sourceType,
+    marketplace: item.marketplace,
+    referenceId: item.referenceId,
+    title: truncateForPrompt(item.title, 300),
+    url: item.url,
+    description: truncateForPrompt(item.description, 700),
+    producer: truncateForPrompt(item.producer, 200),
+    price: item.price,
+    tractionSignal: item.tractionSignal,
+    rating: item.rating,
+    reviewCount: item.reviewCount,
+    rankingPosition: item.rankingPosition,
+    collectedAt: item.collectedAt,
+    evidenceConfidence: item.evidenceConfidence,
+  };
+}
+
+/** Resume o anúncio observado sem transportar o payload bruto da interface da Meta. */
+function compactMetaAd(item = {}) {
+  return {
+    evidenceId: item.evidenceId,
+    sourceType: item.sourceType,
+    referenceId: item.referenceId,
+    title: truncateForPrompt(item.title, 300),
+    url: item.url,
+    description: truncateForPrompt(item.description, 700),
+    producer: truncateForPrompt(item.producer, 200),
+    publisherPlatforms: item.publisherPlatforms,
+    active: item.active,
+    commercialSignal: item.commercialSignal,
+    longevityDays: item.longevityDays,
+    collectedAt: item.collectedAt,
+  };
+}
+
+/** Mantém a cobertura necessária para o modelo distinguir observado, vazio e indisponível. */
+function compactMetaCoverage(item = {}) {
+  return {
+    attemptNumber: item.attemptNumber,
+    query: item.query,
+    country: item.country,
+    publisherPlatform: item.publisherPlatform,
+    sourceStatus: item.sourceStatus,
+    collectionMode: item.collectionMode,
+    adsObserved: item.adsObserved,
+    activeAds: item.activeAds,
+    advertisersObserved: item.advertisersObserved,
+    latestObservationAt: item.latestObservationAt,
+    interpretation: truncateForPrompt(item.interpretation, 500),
+  };
+}
+
+/** Aplica teto por campo no prompt sem alterar os fatos completos persistidos no relatório. */
+function truncateForPrompt(value, maxChars) {
+  return Array.from(String(value || "").trim()).slice(0, maxChars).join("");
 }
 
 /** Consolida as famílias de evidência em uma única identidade verificável. */

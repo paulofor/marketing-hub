@@ -188,7 +188,55 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   assert.equal(result.model, "modelo-teste");
   assert.equal(result.mode, "CODEX");
   assert.equal(result.prompt, receivedInput);
-  assert.equal(result.reasoningEffort, "high");
+  assert.equal(result.reasoningEffort, "medium");
+});
+
+test("planejamento resume a biblioteca viva sem transportar artigos integrais", async () => {
+  let receivedInput;
+  const expected = deterministicPlan({
+    theme: "beleza e bem-estar",
+    targetAudience: "mulheres de 35 a 60 anos",
+  }).plan;
+
+  const result = await planDirectedResearch(
+    {
+      cycleId: 57,
+      theme: "beleza e bem-estar",
+      targetAudience: "mulheres de 35 a 60 anos",
+      researchLibraryContext: {
+        evidence: [
+          {
+            evidenceId: "R1",
+            collection: "pesquisas",
+            title: "Sinal de mercado",
+            excerpt: `TRECHO-INICIAL ${"x".repeat(12000)} TRECHO-FINAL`,
+          },
+        ],
+        coverage: [
+          { collection: "pesquisas", status: "AVAILABLE", documentCount: 50 },
+        ],
+        documents: [
+          { content: `ARTIGO-INTEGRAL-NAO-DEVE-IR ${"y".repeat(50000)}` },
+        ],
+      },
+    },
+    {
+      enabled: true,
+      execute: async (_command, args, input) => {
+        receivedInput = input;
+        await writeFile(
+          args[args.indexOf("--output-last-message") + 1],
+          JSON.stringify(expected),
+        );
+      },
+    },
+  );
+
+  assert.equal(result.reasoningEffort, "medium");
+  assert.match(receivedInput, /TRECHO-INICIAL/);
+  assert.doesNotMatch(receivedInput, /TRECHO-FINAL/);
+  assert.doesNotMatch(receivedInput, /ARTIGO-INTEGRAL-NAO-DEVE-IR/);
+  assert.ok(receivedInput.length < 30000);
 });
 
 test("planejamento recebe lacunas anteriores para criar lente adjacente", async () => {
@@ -307,6 +355,26 @@ test("executor preserva timeout como causa da falha", async () => {
       spawnProcess: () => child,
     }),
     /excedeu o timeout de 5 ms/,
+  );
+});
+
+test("executor identifica a fase factual que excedeu o timeout", async () => {
+  const child = new EventEmitter();
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.stdout.setEncoding = () => {};
+  child.stderr.setEncoding = () => {};
+  child.stdin = new EventEmitter();
+  child.stdin.end = () => {};
+  child.kill = () => {};
+
+  await assert.rejects(
+    executeCodexWithInput("codex", ["exec", "-"], "contexto", {
+      timeoutMs: 5,
+      phaseName: "síntese factual",
+      spawnProcess: () => child,
+    }),
+    /Síntese factual de Argos excedeu o timeout de 5 ms/,
   );
 });
 

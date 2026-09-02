@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  canonicalMarketplaceOfferKey,
+  enforceMarketplaceHandoffGate,
   executeBoundedMarketResearch,
   isNovelExpansionPlan,
   resolveMarketResearchAttempts,
@@ -112,6 +114,37 @@ test("preserva RESEARCH_MORE depois de três rodadas com progresso", async () =>
   );
   assert.equal(execution.report.opportunities[0].decision, "RESEARCH_MORE");
   assert.equal(execution.report.evidenceReport.marketExpansion.maxAttempts, 3);
+});
+
+test("usa a mesma identidade comercial do backend antes de abrir handoff", () => {
+  const first = canonicalMarketplaceOfferKey({
+    marketplace: "HOTMART",
+    referenceId: "snapshot-a",
+    title: "Método Finanças em Dia",
+    producer: "Empresa Ágil",
+  });
+  const repeatedSnapshot = canonicalMarketplaceOfferKey({
+    marketplace: "hotmart",
+    referenceId: "snapshot-b",
+    title: "Metodo Financas em Dia!",
+    producer: "empresa agil",
+  });
+  assert.equal(first, repeatedSnapshot);
+
+  const incomplete = report({ ready: true });
+  incomplete.opportunities[0].evidenceJson = JSON.stringify({
+    candidateEvidence: { maturity: "DOSSIER_READY" },
+  });
+  enforceMarketplaceHandoffGate(incomplete, 7, 10);
+
+  assert.equal(incomplete.opportunities[0].maturity, "RESEARCHABLE");
+  assert.equal(incomplete.opportunities[0].decision, "RESEARCH_MORE");
+  assert.match(incomplete.opportunities[0].commercialRisk, /7 de 10 ofertas/);
+  assert.equal(
+    JSON.parse(incomplete.opportunities[0].evidenceJson).candidateEvidence
+      .maturity,
+    "RESEARCHABLE",
+  );
 });
 
 test("não coleta outra vez quando o plano repete a lente", async () => {

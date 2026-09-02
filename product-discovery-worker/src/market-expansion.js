@@ -84,12 +84,12 @@ export async function executeBoundedMarketResearch(job, options) {
     marketplaceOfferItems = mergeUnique(
       marketplaceOfferItems,
       collected.marketplaceOffers || [],
-      commercialEvidenceKey,
+      canonicalMarketplaceOfferKey,
     );
     metaAdItems = mergeUnique(
       metaAdItems,
       collected.metaAdEvidence || [],
-      commercialEvidenceKey,
+      metaAdEvidenceKey,
     );
     metaCoverage = mergeLatest(
       metaCoverage,
@@ -154,6 +154,11 @@ export async function executeBoundedMarketResearch(job, options) {
       repositoryEvidence: options.repositoryEvidence || [],
       repositoryCoverage: options.repositoryCoverage || [],
     });
+    enforceMarketplaceHandoffGate(
+      finalReport,
+      marketplaceOffers.length,
+      directed.plan.minimumComparableOffers,
+    );
     const ready = dossierReadyCount(finalReport);
 
     if (ready > 0) {
@@ -442,10 +447,85 @@ function publicEvidenceKey(item) {
   return normalize(item.url || `${item.title}:${item.snippet}`);
 }
 
-function commercialEvidenceKey(item) {
+export function canonicalMarketplaceOfferKey(item) {
+  const marketplace = canonicalOfferIdentityPart(item.marketplace);
+  const title = canonicalOfferIdentityPart(item.title);
+  const producer = canonicalOfferIdentityPart(item.producer);
+  const referenceId = canonicalOfferIdentityPart(item.referenceId);
+  if (title) return `${marketplace}:title:${title}:producer:${producer}`;
+  return referenceId ? `${marketplace}:reference:${referenceId}` : "";
+}
+
+/** Mantém anúncios distintos por referência sem aplicar a deduplicação comercial de ofertas. */
+function metaAdEvidenceKey(item) {
   return normalize(
-    `${item.marketplace || "UNKNOWN"}:${item.referenceId || item.url || item.title}`,
+    `${item.referenceId || item.url || item.title}:${item.producer || ""}`,
   );
+}
+
+/** Replica a normalização do backend para o worker não abrir um handoff que será recusado. */
+function canonicalOfferIdentityPart(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+/** Recalcula o gate na fronteira do callback mesmo quando uma análise futura vier permissiva. */
+export function enforceMarketplaceHandoffGate(
+  report,
+  comparableOfferCount,
+  minimumComparableOffers = 10,
+) {
+  const minimum = Math.max(10, Number(minimumComparableOffers || 10));
+  if (comparableOfferCount >= minimum) return report;
+  const reason = `Foram confirmadas ${comparableOfferCount} de ${minimum} ofertas comparáveis únicas; o handoff permanece bloqueado para enriquecimento.`;
+  for (const opportunity of report?.opportunities || []) {
+    if (
+      opportunity.maturity !== "DOSSIER_READY" &&
+      opportunity.decision !== "APPROVE"
+    ) {
+      continue;
+    }
+    opportunity.maturity = "RESEARCHABLE";
+    opportunity.decision = "RESEARCH_MORE";
+    opportunity.commercialRisk = appendUniqueText(
+      opportunity.commercialRisk,
+      reason,
+    );
+    opportunity.evidenceJson = demoteEvidenceMaturity(
+      opportunity.evidenceJson,
+    );
+  }
+  if (report?.evidenceReport?.gates) {
+    report.evidenceReport.gates.marketplaceGatePassed = false;
+  }
+  if (report && !String(report.decisionSummary || "").includes(reason)) {
+    report.decisionSummary = appendUniqueText(report.decisionSummary, reason);
+  }
+  return report;
+}
+
+/** Mantém a maturidade do JSON auditável coerente com a candidata devolvida pelo callback. */
+function demoteEvidenceMaturity(value) {
+  if (!value) return value;
+  try {
+    const evidence = JSON.parse(value);
+    if (evidence.candidateEvidence) {
+      evidence.candidateEvidence.maturity = "RESEARCHABLE";
+    }
+    return JSON.stringify(evidence);
+  } catch {
+    return value;
+  }
+}
+
+/** Acrescenta uma causa funcional sem repetir o mesmo texto em ampliações sucessivas. */
+function appendUniqueText(current, addition) {
+  const text = String(current || "").trim();
+  return text.includes(addition) ? text : `${text} ${addition}`.trim();
 }
 
 function metaCoverageKey(item) {

@@ -12,11 +12,13 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
   const expected = validSynthesis();
   let prompt;
   let schema;
+  let executionOptions;
   const result = await synthesizeMarketCandidates(context, {
     enabled: true,
     model: "modelo-teste",
-    execute: async (_command, args, input) => {
+    execute: async (_command, args, input, options) => {
       prompt = input;
+      executionOptions = options;
       schema = JSON.parse(
         await readFile(args[args.indexOf("--output-schema") + 1], "utf8"),
       );
@@ -33,11 +35,18 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
 
   assert.equal(schema.additionalProperties, false);
   assert.equal(schema.properties.candidates.items.additionalProperties, false);
+  assert.equal(schema.properties.decisionSummary.maxLength, 1500);
+  assert.equal(
+    schema.properties.candidates.items.properties.observedLanguage.maxItems,
+    8,
+  );
   assert.match(prompt, /DISCOVER_MARKETS/);
   assert.match(prompt, /P1/);
   assert.match(prompt, /R1/);
   assert.doesNotMatch(prompt, /{{[^}]+}}/);
   assert.deepEqual(result.synthesis, expected);
+  assert.equal(result.reasoningEffort, "medium");
+  assert.equal(executionOptions.phaseName, "síntese factual");
   assert.deepEqual(result.usage, {
     inputTokens: 300,
     cachedInputTokens: 100,
@@ -48,6 +57,34 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
     [...new Set(result.accessedUrls.map((item) => item.accessMethod))],
     ["WEB_SEARCH"],
   );
+});
+
+test("síntese não duplica biblioteca e limita trechos extensos no prompt", async () => {
+  const context = researchContext();
+  context.job.researchLibraryContext = {
+    documents: [
+      { content: `BIBLIOTECA-DUPLICADA ${"z".repeat(60000)}` },
+    ],
+  };
+  context.repositoryEvidence[0].excerpt =
+    `RECORTE-PRESERVADO ${"x".repeat(12000)} RECORTE-CORTADO`;
+  let prompt;
+
+  await synthesizeMarketCandidates(context, {
+    enabled: true,
+    execute: async (_command, args, input) => {
+      prompt = input;
+      await writeFile(
+        args[args.indexOf("--output-last-message") + 1],
+        JSON.stringify(validSynthesis()),
+      );
+    },
+  });
+
+  assert.match(prompt, /RECORTE-PRESERVADO/);
+  assert.doesNotMatch(prompt, /RECORTE-CORTADO/);
+  assert.doesNotMatch(prompt, /BIBLIOTECA-DUPLICADA/);
+  assert.ok(prompt.length < 30000);
 });
 
 test("auditoria de busca pública usa método aceito pelo contrato do backend", async () => {

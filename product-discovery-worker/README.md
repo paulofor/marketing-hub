@@ -98,6 +98,13 @@ executa o mesmo carregamento usado pelo worker. Ausência, arquivo vazio ou falt
 de permissão bloqueiam o deploy sem imprimir a credencial. Preflights, recriação
 e limpeza possuem limites próprios para não monopolizar a fila do VPS.
 
+Antes de autenticar no registry ou substituir o container, o deploy exige duas
+leituras consecutivas de capacidade segura do VPS, incluindo carga, memória,
+pressão de I/O e resposta do Docker. O login no GHCR repete somente falhas
+transitórias conhecidas e rejeita imediatamente credenciais inválidas. Se a
+recriação exceder o prazo, a segunda tentativa apenas reconcilia o projeto sem
+forçar outra recriação completa.
+
 ## Health operacional
 
 O worker expõe `GET /healthz` e `GET /health` na porta interna `8080`. Em

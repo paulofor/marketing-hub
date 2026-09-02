@@ -3040,6 +3040,16 @@ Use este checklist quando o problema estiver em algum loop acima:
   como autenticação. O Lead Portal usa prazo real de 15 minutos para iniciar, aborta cedo se um
   container encerrar e reserva sete minutos para restaurar as imagens anteriores. O contrato central
   proíbe `docker compose pull` direto e testes com doubles cobrem recuperação, limite e erro fatal.
+- **Recorrência confirmada em 2026-09-02:** as duas tentativas do run `33576448224` aprovaram testes e
+  imagem. A primeira autenticou e validou a busca, mas o `docker compose up` excedeu 300 segundos; a
+  segunda encerrou no login do GHCR com `context deadline exceeded`. No host, 957 MB de RAM,
+  aproximadamente 1,95 GB de swap e 43–92% de espera de I/O confirmaram que o retry restrito ao
+  `pull` deixava duas operações anteriores e posteriores sem proteção.
+- **Fechamento complementar em Argos:** o workflow agora bloqueia antes da mutação até confirmar duas
+  leituras estáveis de carga, memória, pressão de I/O e resposta do Docker; o login repete somente
+  falhas transitórias e falha imediatamente em autenticação inválida; uma recriação interrompida é
+  reconciliada sem repetir `--force-recreate`. Testes com doubles protegem segredo, classificação,
+  limites, ordem das etapas e ausência de atalhos diretos no workflow.
 - **Estado operacional observado:** Argos terminou saudável (`UP`, Brave configurado) mesmo após o
   cancelamento do runner; Product AI e FEO permaneceram parados; o backend do Lead Portal permaneceu
   `unhealthy`. A correção deste loop é versionada e não autoriza publicação fora de PR.

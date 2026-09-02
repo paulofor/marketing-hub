@@ -3052,6 +3052,19 @@ Use este checklist quando o problema estiver em algum loop acima:
   falhas transitórias e falha imediatamente em autenticação inválida; uma recriação interrompida é
   reconciliada sem repetir `--force-recreate`. Testes com doubles protegem segredo, classificação,
   limites, ordem das etapas e ausência de atalhos diretos no workflow.
+- **Recorrência do contrato confirmada em 2026-09-02:** os runs `33587553802` e `33587604519`
+  falharam antes de qualquer deploy porque o gate passava `load` como nome de variável ao GNU Awk;
+  `load` é reservado nessa implementação. O helper agora usa nomes portáveis e o teste bloqueia a
+  reintrodução literal do identificador reservado.
+- **Causa estrutural e redistribuição:** uma nova leitura por SSH encontrou somente 157 MB disponíveis,
+  pressão de I/O `avg10=97,37%`, pressão de memória `avg10=84,19%` e treze containers no VPS de
+  957 MB. O VPS de agentes `163.245.202.80` apresentou seis CPUs, cerca de 3,7 GB disponíveis e
+  carga `0,15`. Entre elevar limites, mover toda a frota ou isolar Argos, foi escolhida a terceira
+  opção: menor superfície de segredos e portas, alívio do executor com Chromium e preservação dos
+  serviços públicos no host antigo.
+- **Prevenção da regressão de capacidade:** o contrato da fila retira Argos do grupo do host antigo,
+  exige deploy e credencial canônica no VPS de agentes e rejeita qualquer retorno ao IP legado. MCP,
+  health, logfile, inventário de hosts e cânone passam a usar o mesmo destino.
 - **Estado operacional observado:** Argos terminou saudável (`UP`, Brave configurado) mesmo após o
   cancelamento do runner; Product AI e FEO permaneceram parados; o backend do Lead Portal permaneceu
   `unhealthy`. A correção deste loop é versionada e não autoriza publicação fora de PR.

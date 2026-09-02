@@ -14,7 +14,6 @@ QUEUE_TEST_WORKFLOWS=(
   ".github/workflows/ops-monitor-worker-ci.yml"
   ".github/workflows/pde-monitor-worker-ci.yml"
   ".github/workflows/product-ai-worker-ci.yml"
-  ".github/workflows/product-discovery-worker-ci.yml"
   ".github/workflows/scientific-research-worker-ci.yml"
 )
 
@@ -71,5 +70,26 @@ while IFS= read -r workflow; do
     exit 1
   fi
 done < <(grep -rlF "${QUEUE_TEST_GROUP}" "${QUEUE_TEST_ROOT}/.github/workflows" | sort)
+
+ARGOS_WORKFLOW="${QUEUE_TEST_ROOT}/.github/workflows/product-discovery-worker-ci.yml"
+ARGOS_QUEUE_GROUP="group: deploy-vps-163-245-202-80"
+if ! grep -Fq "${ARGOS_QUEUE_GROUP}" "${ARGOS_WORKFLOW}" \
+  || ! grep -Fq "DEPLOY_HOST: 163.245.202.80" "${ARGOS_WORKFLOW}" \
+  || ! grep -Fq 'secrets.GROWTH_OPERATOR_VPS_SSH_KEY' "${ARGOS_WORKFLOW}"; then
+  echo "Argos deve permanecer no VPS de agentes com sua credencial de deploy canônica." >&2
+  exit 1
+fi
+if grep -Fq "${QUEUE_TEST_GROUP}" "${ARGOS_WORKFLOW}" \
+  || grep -Fq "DEPLOY_HOST: 191.252.120.96" "${ARGOS_WORKFLOW}"; then
+  echo "Argos não pode voltar ao VPS de 957 MB." >&2
+  exit 1
+fi
+
+argos_queue_block="$(grep -F -A2 "${ARGOS_QUEUE_GROUP}" "${ARGOS_WORKFLOW}" || true)"
+if ! grep -Fq "queue: max" <<<"${argos_queue_block}" \
+  || ! grep -Fq "cancel-in-progress: false" <<<"${argos_queue_block}"; then
+  echo "A fila de deploy do Argos não preserva execuções pendentes e ativas." >&2
+  exit 1
+fi
 
 echo "Contrato da fila de deploy do host compartilhado validado."

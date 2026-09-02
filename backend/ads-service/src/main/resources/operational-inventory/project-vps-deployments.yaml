@@ -71,6 +71,18 @@ hosts:
     costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
     physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
     notes: "Host ainda aparece como proxy público Clube MUSA no inventário versionado; histórico recente aponta migração operacional para 191.252.102.54."
+  - host: "163.245.202.80"
+    providerName: null
+    providerEvidence: "Pendente: contrato comercial do provedor não disponível no repositório"
+    cpu: "6 vCPU"
+    memoryGb: 6
+    diskGb: 59
+    operatingSystem: "Ubuntu 24.04 LTS"
+    monthlyCostBrl: null
+    billingCycle: null
+    costEvidence: "Pendente: contrato financeiro ou fatura do provedor não disponível"
+    physicalSpecsEvidence: "Diagnóstico SSH somente leitura em 2026-09-02: 6 CPUs, 5,65 GiB de RAM e disco raiz de 59 GB"
+    notes: "Host dos agentes premium e do Product Discovery Worker/Argos após redistribuição de capacidade."
 
 deployments:
   - workflowFile: ".github/workflows/deploy-containers.yml"
@@ -137,6 +149,18 @@ deployments:
     remotePath: "/opt/marketinghub/containers"
     secretReferences:
       - "VPS_SSH_CHAVE"
+      - "SSH_PRIVATE_KEY"
+    triggerMode: "automatico"
+  - workflowFile: ".github/workflows/product-discovery-worker-ci.yml"
+    workflowName: "Product Discovery Worker CI"
+    jobName: "deploy"
+    deployHost: "163.245.202.80"
+    deployUser: "root"
+    remotePath: "${{ secrets.PRODUCT_DISCOVERY_WORKER_REMOTE_PATH || '/root/product-discovery-worker' }}"
+    secretReferences:
+      - "GROWTH_OPERATOR_VPS_SSH_KEY"
+      - "VPS_SSH_CHAVE"
+      - "VPS_SSH_KEY"
       - "SSH_PRIVATE_KEY"
     triggerMode: "automatico"
   - workflowFile: "deploy/docker-compose.yml"

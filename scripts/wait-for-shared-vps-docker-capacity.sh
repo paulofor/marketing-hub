@@ -71,8 +71,8 @@ is_numeric_snapshot() {
 }
 
 is_resource_capacity_available() {
-  awk -v load="$load_average" -v limit="$load_limit" \
-    'BEGIN { exit !(load <= limit) }' \
+  awk -v measured_load="$load_average" -v load_ceiling="$load_limit" \
+    'BEGIN { exit !(measured_load <= load_ceiling) }' \
     && [[ "$available_mb" -ge "$capacity_min_available_mb" ]] \
     && [[ "$io_pressure" -le "$capacity_max_io_pressure" ]]
 }

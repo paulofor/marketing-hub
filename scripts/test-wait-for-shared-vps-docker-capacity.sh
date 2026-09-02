@@ -5,6 +5,12 @@ test_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 test_tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$test_tmp_dir"' EXIT
 
+if grep -Eq 'awk[[:space:]]+-v[[:space:]]+load=' \
+  "$test_root/scripts/wait-for-shared-vps-docker-capacity.sh"; then
+  echo "O gate reutiliza o nome reservado load do GNU Awk." >&2
+  exit 1
+fi
+
 mkdir -p "$test_tmp_dir/bin" "$test_tmp_dir/proc/pressure"
 cat >"$test_tmp_dir/bin/docker" <<'DOCKER_DOUBLE'
 #!/usr/bin/env bash

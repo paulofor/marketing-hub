@@ -418,7 +418,7 @@ public class ModuleLogService {
             case "experiment-strategist-worker" -> properties.logs().experimentStrategistWorkerPath();
             case "product-discovery-worker" -> System.getenv().getOrDefault(
                     "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH",
-                    "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile");
+                    "http://163.245.202.80:18081/ops-product-discovery-observability-v1/logfile");
             case "meta-ad-approver-worker" -> properties.logs().metaAdApproverWorkerPath();
             case "iris-image-studio", "themis-image-studio" -> properties.logs().themisImageStudioPath();
             case "growth-operator-worker" -> System.getenv().getOrDefault(

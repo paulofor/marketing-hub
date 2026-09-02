@@ -28,9 +28,9 @@ class ModuleLogDefaultsContractTest {
     private static final String IRIS_IMAGE_STUDIO_LOG_URL =
             "http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile";
     private static final String PRODUCT_DISCOVERY_WORKER_LOG_URL =
-            "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile";
+            "http://163.245.202.80:18081/ops-product-discovery-observability-v1/logfile";
     private static final String PRODUCT_DISCOVERY_WORKER_HEALTH_URL =
-            "http://191.252.120.96:18081/healthz";
+            "http://163.245.202.80:18081/healthz";
     private static final String GROWTH_OPERATOR_WORKER_LOG_URL =
             "http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile";
     private static final String GROWTH_OPERATOR_WORKER_HEALTH_URL =

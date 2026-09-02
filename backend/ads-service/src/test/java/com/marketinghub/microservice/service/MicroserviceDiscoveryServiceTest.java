@@ -151,13 +151,14 @@ class MicroserviceDiscoveryServiceTest {
 
     List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
 
-    assertEquals(7, deployments.size());
+    assertEquals(8, deployments.size());
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.210.83")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.102.54")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.200.7")));
+    assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.202.80")));
   }
 
   /** Deve expor o cadastro físico e financeiro dos hosts VPS no inventário operacional. */
@@ -173,7 +174,7 @@ class MicroserviceDiscoveryServiceTest {
 
     var inventory = service.discoverOperationalInventory();
 
-    assertEquals(6, inventory.hosts().size());
+    assertEquals(7, inventory.hosts().size());
     assertTrue(
         inventory.hosts().stream()
             .anyMatch(
@@ -187,6 +188,13 @@ class MicroserviceDiscoveryServiceTest {
                 host ->
                     host.host().equals("191.252.210.83")
                         && host.notes().contains("docker_ops confirmou")));
+    assertTrue(
+        inventory.hosts().stream()
+            .anyMatch(
+                host ->
+                    host.host().equals("163.245.202.80")
+                        && host.cpu().equals("6 vCPU")
+                        && host.memoryGb().equals(6)));
   }
 
   /** Deve priorizar dados editados no banco sem perder hosts do inventário versionado. */
@@ -208,7 +216,7 @@ class MicroserviceDiscoveryServiceTest {
 
     var inventory = service.discoverOperationalInventory();
 
-    assertEquals(6, inventory.hosts().size());
+    assertEquals(7, inventory.hosts().size());
     assertTrue(
         inventory.hosts().stream()
             .anyMatch(

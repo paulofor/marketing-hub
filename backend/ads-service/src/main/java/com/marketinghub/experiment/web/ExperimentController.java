@@ -142,10 +142,10 @@ public class ExperimentController {
     return mapper.toDto(service.commercialize(id));
   }
 
-  /** Busca os detalhes de um experimento pelo identificador. */
+  /** Busca os detalhes e as provas visuais aprovadas de um experimento pelo identificador. */
   @GetMapping("/{id}")
   public ExperimentDto get(@PathVariable Long id) {
-    com.marketinghub.experiment.Experiment experiment = service.get(id);
+    com.marketinghub.experiment.Experiment experiment = service.getForDetail(id);
     return costReconciliationService.enrich(experiment, mapper.toDto(experiment));
   }
 

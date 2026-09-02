@@ -516,6 +516,7 @@
 - Fechamento complementar em Argos (2026-08-22): o executor usava `execFile` como se a opção `input` enviasse o prompt ao stdin; a API a ignorava, o Codex aguardava indefinidamente e o worker mascarava o timeout como ausência de `output.json`. Na retomada, a sandbox oferecia `BRAVE_API_KEY`, mas o worker aceitava somente `BRAVE_SEARCH_API_KEY`, bloqueando a coleta mesmo com credencial disponível. Argos agora abre o processo com stdin explícito, escreve e encerra a entrada, preserva timeout e falha de processo como causa primária, distingue ausência real de saída e aceita os dois nomes governados da credencial Brave sem expô-la. Testes de contrato cobrem entrada, diagnóstico, seleção do provedor e health seguro.
 - Fechamento complementar em Dédalo (2026-08-12): a execução do experimento #88 já havia sido gravada como `FALHA` por uma versão antiga do worker antes da política de preservar a lease em timeout. Como a recuperação consultava apenas `PROCESSANDO`, esse registro terminal nunca voltava à fila. O backend agora reconhece exclusivamente o erro legado de timeout, limpa o estado terminal e permite uma única retomada auditável; o marcador persistido impede repetição infinita.
 - Fechamento complementar no AI Worker (2026-08-14): o experimento #88 permaneceu `PLANNED` com execuções de `landing-page-image-planning` em `INICIADO`, embora o endpoint `pending` respondesse três itens em aproximadamente 582 KB. O worker possuía 31 rotinas `@Scheduled` sobre o agendador padrão de uma única thread; uma integração bloqueante podia impedir todas as filas independentes de executar. O executor passa a usar pool concorrente configurável, com mínimo de duas threads e teste preventivo, preservando isolamento entre etapas.
+- Fechamento complementar no AI Worker (2026-09-02): o job de ângulo da campanha do sucessor Facebook #91 permaneceu `PENDING`, embora o endpoint `pending` respondesse imediatamente e o health estivesse `UP`. A mesma imagem, iniciada sem backlog, consumiu a fila no primeiro minuto; em produção, timeouts de integrações independentes disputavam as 16 threads compartilhadas e impediam o scheduler comercial de iniciar. A fila de conteúdo de experimento passa a ter agendador exclusivo, protegido por teste de contrato, e o workflow aceita retomada manual pelo fluxo oficial sem commit artificial.
 - Fechamento complementar no BPM de Dédalo (2026-08-15): a tarefa #30 era reservada pela fila genérica e materializada em GeraLanding por uma segunda chamada HTTP; durante publicação parcial, a primeira chamada funcionou e a segunda retornou 404, deixando a atividade `IN_PROGRESS` sem execução técnica. Reserva e materialização passam a ocorrer em uma única transação e endpoint do backend, que também retoma de forma idempotente a lease já reservada.
 - Fechamento complementar de retomada do BPM de Dédalo (2026-08-15): depois de um deploy, a execução técnica `agent-task:30` permanecia `PROCESSANDO` porque a recuperação por troca de build reconhecia somente homologações comerciais legadas. A política agora inclui explicitamente ciclos BPM `agent-task:*`, preserva a tarefa e a entrada congelada e permite que somente o novo build retome a lease; teste unitário impede que uma tarefa BPM volte a aguardar o timeout genérico de 45 minutos.
 - Fechamento complementar de qualidade no BPM de landing (2026-08-15): concluir a geração de HTML liberava Psique antes do Quality Review, e atividades automáticas do diagrama sem tarefa persistida podiam bloquear sucessoras para sempre. A tarefa de Dédalo agora permanece ativa durante correções e só termina após aprovação técnica independente; o sequenciador atravessa atividades automáticas sem tarefa própria e continua exigindo a conclusão das tarefas humanas/agentes realmente cadastradas.
@@ -1153,6 +1154,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - validar antes de `/campaigns` e `/adcreatives` que a Page selecionada no experimento está conectada ao `instagram_user_id` usado pelo criativo, bloqueando pares incompatíveis com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`.
   - em 2026-08-08, a leitura operacional de pausas passou a consultar diretamente os campos canônicos `stop_requested_at`/`stop_completed_at`, evitando que uma solicitação persistida ficasse invisível ao Facebook Ads Worker; o diagnóstico da tela também passou a reconhecer o snapshot profissional de targeting enviado à Meta quando a publicação usa o pacote manual aprovado, sem exigir vínculo opcional com um playbook de ad set.
   - em 2026-08-08, criativos novos passaram a exigir revisão multimodal auditável antes da aprovação humana, impedindo que peças incompletas ou sem CTA cheguem à fila de publicação apenas por mudança manual de status.
+  - em 2026-09-02, o sucessor Facebook #91 do Vega preservava produto, URL e checkout homologados no #90, mas a prontidão exigia novamente um manifesto GeraLanding e a tela não recebia o `PRODUCT_PROOF` aprovado do plano. O backend agora reutiliza somente a evidência imutável de superfície PDE quando produto, destino e checkout coincidem exatamente, mantém criativo e métricas segregados e entrega à geração apenas `PRODUCT_PROOF` ou `DELIVERY` aprovado do mesmo plano; testes bloqueiam qualquer divergência.
 - **Módulos envolvidos**:
   - `backend/ads-service`;
   - `facebook-ads-worker`;
@@ -3183,3 +3185,19 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de serviço proíbem a consulta de tarefas completas na listagem, o contrato
   HTTP valida limite/cursor e o frontend comprova que a execução antiga não é requisitada antes do
   clique. O cânone exige paginação e proíbe `LONGTEXT` em polling de cards administrativos.
+
+## LOOP-AI-WORKER-IMAGEM-RECOMPILA-BACKEND — imagem esgota disco depois dos testes verdes
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** backend, AI Worker, Facebook Ads Worker e frontend passaram localmente,
+  mas a imagem do AI Worker falhou com `no space left on device` ao criar novamente o repositório
+  Maven inteiro dentro do estágio Docker.
+- **Causa-raiz confirmada no Dockerfile e no workflow:** o job de testes já instalava os contratos
+  do backend e empacotava `ai-worker/target/app.jar`, porém o job de imagem descartava esse artefato,
+  copiava todo o backend e repetia compilação, downloads e empacotamento dentro da imagem.
+- **Correção sistêmica:** o job de testes preserva o JAR da mesma revisão; o job Docker restaura esse
+  artefato e a imagem de runtime apenas o incorpora, seguindo o mesmo contrato já adotado pelo
+  backend e frontend.
+- **Prevenção:** contrato versionado exige a ordem pacote, upload, download e imagem; bloqueia
+  qualquer retorno de `FROM maven` ou `COPY backend/ads-service` no Dockerfile e confirma que o JAR
+  está incluído de forma explícita no contexto Docker.

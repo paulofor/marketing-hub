@@ -34,4 +34,18 @@ class SchedulingConfigTest {
             scheduler.shutdown();
         }
     }
+
+    /** Garante que a fila comercial tenha uma thread exclusiva e não dispute o pool compartilhado. */
+    @Test
+    void shouldConfigureDedicatedExperimentPipelineScheduler() {
+        ThreadPoolTaskScheduler scheduler = new SchedulingConfig().experimentPipelineTaskScheduler();
+        scheduler.initialize();
+
+        try {
+            assertThat(scheduler.getScheduledThreadPoolExecutor().getCorePoolSize()).isEqualTo(1);
+            assertThat(scheduler.getThreadNamePrefix()).isEqualTo("experiment-pipeline-scheduled-");
+        } finally {
+            scheduler.shutdown();
+        }
+    }
 }

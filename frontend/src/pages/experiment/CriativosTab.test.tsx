@@ -258,7 +258,7 @@ describe("CriativosTab", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the real landing examples selected by Temis before image generation", async () => {
+  it("shows the approved real landing examples before image generation", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {
         return Promise.resolve({ data: [] });
@@ -310,11 +310,72 @@ describe("CriativosTab", () => {
     );
 
     expect(
-      await screen.findByLabelText("Referências reais selecionadas por Têmis"),
+      await screen.findByLabelText("Referências reais aprovadas"),
     ).toBeInTheDocument();
     expect(screen.getByText(/Exemplo de post/)).toHaveAttribute(
       "href",
       expect.stringContaining("/uploads/post-real.png"),
+    );
+    expect(
+      screen.getByRole("button", { name: "Gerar anúncios do pipeline" }),
+    ).toBeEnabled();
+  });
+
+  it("uses approved product proof from the commercial plan without GeraLanding", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            adCopy: JSON.stringify({
+              adCopy: {
+                primaryTextVariants: [
+                  { label: "dor", primaryText: "Você se arruma e falta algo" },
+                ],
+              },
+            }),
+            adImageBriefing: JSON.stringify({
+              adImageBriefing: {
+                briefings: [
+                  {
+                    mustMatchAdVariant: "dor",
+                    visualBriefing: "Espelho antes de sair",
+                  },
+                ],
+              },
+            }),
+            commercialPlanVisualAssets: JSON.stringify({
+              assets: [
+                {
+                  url: "https://v7.clubemusa.com.br/assets/musa-editorial-presenca.png",
+                  label: "MUSA v7 — espelho antes de sair",
+                  purpose: "PRODUCT_PROOF",
+                  purposesJson: '["PRODUCT_PROOF"]',
+                },
+              ],
+            }),
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByLabelText("Referências reais aprovadas"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/MUSA v7 — espelho antes de sair/)).toHaveAttribute(
+      "href",
+      "https://v7.clubemusa.com.br/assets/musa-editorial-presenca.png",
     );
     expect(
       screen.getByRole("button", { name: "Gerar anúncios do pipeline" }),
@@ -452,7 +513,9 @@ describe("CriativosTab", () => {
       </QueryClientProvider>,
     );
 
-    await userEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Editar" }),
+    );
     await userEvent.clear(screen.getByLabelText("Headline"));
     await userEvent.type(
       screen.getByLabelText("Headline"),

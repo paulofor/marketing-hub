@@ -13,7 +13,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @ConditionalOnProperty(value = "worker.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 public class SchedulingConfig {
 
-    /** Cria um pool dedicado para impedir que uma integração lenta paralise todas as filas independentes. */
+    /** Cria o pool compartilhado para executar concorrentemente as filas independentes do worker. */
     @Bean(name = "taskScheduler")
     public ThreadPoolTaskScheduler taskScheduler(
             @Value("${worker.scheduling.pool-size:16}") int poolSize
@@ -21,6 +21,17 @@ public class SchedulingConfig {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setPoolSize(Math.max(2, poolSize));
         scheduler.setThreadNamePrefix("ai-worker-scheduled-");
+        scheduler.setWaitForTasksToCompleteOnShutdown(true);
+        scheduler.setAwaitTerminationSeconds(30);
+        return scheduler;
+    }
+
+    /** Cria o agendador exclusivo da fila comercial de conteúdo dos experimentos. */
+    @Bean(name = "experimentPipelineTaskScheduler")
+    public ThreadPoolTaskScheduler experimentPipelineTaskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("experiment-pipeline-scheduled-");
         scheduler.setWaitForTasksToCompleteOnShutdown(true);
         scheduler.setAwaitTerminationSeconds(30);
         return scheduler;

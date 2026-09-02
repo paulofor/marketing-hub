@@ -6,10 +6,13 @@ on:
     paths:
       - 'ai-worker/**'
       - '.github/workflows/ai-worker.yml'
+      - 'scripts/test-ai-worker-image-contract.sh'
   pull_request:
     paths:
       - 'ai-worker/**'
       - '.github/workflows/ai-worker.yml'
+      - 'scripts/test-ai-worker-image-contract.sh'
+  workflow_dispatch:
 
 jobs:
   test:
@@ -55,6 +58,16 @@ jobs:
         run: mvn -B -s settings.xml test
       - name: Build
         run: mvn -B -s settings.xml package -DskipTests
+      - name: Validate tested image contract
+        working-directory: .
+        run: scripts/test-ai-worker-image-contract.sh
+      - name: Preserve tested worker package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-worker-jar
+          path: ai-worker/target/app.jar
+          if-no-files-found: error
+          retention-days: 1
 
   docker:
     runs-on: ubuntu-latest
@@ -72,6 +85,11 @@ jobs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+      - name: Restore tested worker package
+        uses: actions/download-artifact@v4
+        with:
+          name: ai-worker-jar
+          path: ai-worker/target
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry
@@ -91,14 +109,11 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ai-worker
           file: ai-worker/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GITHUB_ACTOR=${{ github.actor }}
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/ai-worker:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/ai-worker:buildcache,mode=max
       - name: Expose image tag

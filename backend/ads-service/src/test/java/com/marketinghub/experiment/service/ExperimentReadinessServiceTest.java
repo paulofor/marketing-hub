@@ -727,6 +727,79 @@ class ExperimentReadinessServiceTest {
     assertThat(summary.hasCompleteTargeting()).isTrue();
   }
 
+  /** Reutiliza a homologação da superfície PDE no sucessor Facebook sem herdar seu criativo. */
+  @Test
+  void shouldReuseAuditedPdeDestinationForFacebookSuccessor() {
+    Long experimentId = 91L;
+    Product product = Product.builder().id(4L).build();
+    Experiment source = buildExperiment(90L, 79L);
+    source.setProduct(product);
+    source.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    source.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    source.setFollowUpActionUrl("https://v7.clubemusa.com.br");
+    source.setCommercialCheckoutUrl("https://go.pepper.com.br/owm6x");
+
+    Experiment successor = buildExperiment(experimentId, 79L);
+    successor.setProduct(product);
+    successor.setSourceExperiment(source);
+    successor.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    successor.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    successor.setFollowUpActionUrl("https://v7.clubemusa.com.br");
+    successor.setCommercialCheckoutUrl("https://go.pepper.com.br/owm6x");
+    completeCommercialContract(successor);
+
+    when(experimentService.get(experimentId)).thenReturn(successor);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    when(directPdeActivationService.isReadyForActivation(
+            org.mockito.ArgumentMatchers.any(Experiment.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0) == source);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(service.computeMissingConfiguration(successor)).isEmpty();
+  }
+
+  /** Mantém o bloqueio quando o sucessor altera o checkout homologado pelo experimento anterior. */
+  @Test
+  void shouldRejectPdeSuccessorDestinationReuseWhenCheckoutChanges() {
+    Product product = Product.builder().id(4L).build();
+    Experiment source = buildExperiment(90L, 79L);
+    source.setProduct(product);
+    source.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    source.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    source.setFollowUpActionUrl("https://v7.clubemusa.com.br");
+    source.setCommercialCheckoutUrl("https://go.pepper.com.br/owm6x");
+
+    Experiment successor = buildExperiment(91L, 79L);
+    successor.setProduct(product);
+    successor.setSourceExperiment(source);
+    successor.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    successor.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    successor.setFollowUpActionUrl("https://v7.clubemusa.com.br");
+    successor.setCommercialCheckoutUrl("https://checkout.example/outro");
+    completeCommercialContract(successor);
+
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(91L, CreativeStatus.READY))
+        .thenReturn(true);
+    when(directPdeActivationService.isReadyForActivation(
+            org.mockito.ArgumentMatchers.any(Experiment.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0) == source);
+    when(landingAssetService.hasRequiredApprovedAssetReferences(91L, null)).thenReturn(false);
+    mockPublishableSelection(91L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    assertThat(service.computeMissingConfiguration(successor))
+        .contains("landingApprovedProductEvidence");
+  }
+
   /** Libera abordagem PDE direta pelo run homologado sem inventar um criativo de mídia paga. */
   @Test
   void shouldUseReadyProductionRunForDirectPdeReadiness() {

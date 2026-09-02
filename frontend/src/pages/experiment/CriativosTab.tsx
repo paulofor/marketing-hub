@@ -116,6 +116,48 @@ const selectLandingCreativeReferences = (
   }
 };
 
+const selectCommercialPlanProductEvidence = (
+  manifest?: string | null,
+): LandingCreativeReference[] => {
+  if (!manifest?.trim()) return [];
+  try {
+    const parsed = JSON.parse(manifest) as {
+      assets?: Array<Record<string, unknown>>;
+    };
+    if (!Array.isArray(parsed.assets)) return [];
+    return parsed.assets
+      .map((asset, index) => {
+        const url = String(asset.url ?? "").trim();
+        const purpose = String(asset.purpose ?? "").toUpperCase();
+        let purposes: string[] = [];
+        try {
+          const parsedPurposes = JSON.parse(
+            String(asset.purposesJson ?? "[]"),
+          ) as unknown;
+          purposes = Array.isArray(parsedPurposes)
+            ? parsedPurposes.map((item) => String(item).toUpperCase())
+            : [];
+        } catch {
+          purposes = [];
+        }
+        const isProductEvidence = [purpose, ...purposes].some((item) =>
+          ["PRODUCT_PROOF", "DELIVERY"].includes(item),
+        );
+        return {
+          key: `commercial-plan-reference-${index}-${url}`,
+          label: String(asset.label ?? `Prova real ${index + 1}`),
+          url,
+          score: isProductEvidence ? 100 : 0,
+          isProductEvidence,
+        };
+      })
+      .filter((asset) => asset.isProductEvidence && asset.url)
+      .slice(0, 3);
+  } catch {
+    return [];
+  }
+};
+
 const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
   {
     label: "Regras de mensagem",
@@ -373,11 +415,27 @@ export default function CriativosTab({
     : 0;
   const pipelinePairs = Math.min(pipelineVariantCount, pipelineBriefingCount);
   const pipelineAvailable = pipelinePairs > 0;
-  const landingCreativeReferences = useMemo(
-    () => selectLandingCreativeReferences(experiment?.landingPageImageAssets),
-    [experiment?.landingPageImageAssets],
-  );
-  const hasLandingCreativeReferences = landingCreativeReferences.length > 0;
+  const approvedCreativeReferences = useMemo(() => {
+    const references = [
+      ...selectCommercialPlanProductEvidence(
+        experiment?.commercialPlanVisualAssets,
+      ),
+      ...selectLandingCreativeReferences(experiment?.landingPageImageAssets),
+    ];
+    return references
+      .filter(
+        (reference, index) =>
+          references.findIndex(
+            (candidate) => candidate.url === reference.url,
+          ) === index,
+      )
+      .sort((left, right) => right.score - left.score)
+      .slice(0, 3);
+  }, [
+    experiment?.commercialPlanVisualAssets,
+    experiment?.landingPageImageAssets,
+  ]);
+  const hasApprovedCreativeReferences = approvedCreativeReferences.length > 0;
   const pendingCreativeRequests = experiment?.creativesToGenerate ?? 0;
   const creativeGenerationStatus =
     experiment?.creativeGenerationStatus ?? "IDLE";
@@ -404,7 +462,7 @@ export default function CriativosTab({
     pipelineInProgress ||
     pendingCreativeRequests > 0 ||
     !pipelineAvailable ||
-    !hasLandingCreativeReferences;
+    !hasApprovedCreativeReferences;
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [versioning, setVersioning] = useState<Creative | null>(null);
@@ -1340,16 +1398,16 @@ export default function CriativosTab({
             <p className="mb-0 small text-muted">
               Encontramos {pipelinePairs}{" "}
               {pipelinePairs === 1 ? "variação" : "variações"} com texto e
-              briefing estruturados. O Worker AI usará o modelo gpt-image-2 para
-              gerar as imagens alinhadas ao experimento usando obrigatoriamente
-              os exemplos reais selecionados por Têmis abaixo.
+              briefing estruturados. O Worker AI combinará esse material com as
+              provas reais aprovadas da Biblioteca Audiovisual abaixo para
+              materializar os anúncios.
             </p>
-            {hasLandingCreativeReferences ? (
+            {hasApprovedCreativeReferences ? (
               <div
                 className="d-flex flex-wrap gap-2 mt-2"
-                aria-label="Referências reais selecionadas por Têmis"
+                aria-label="Referências reais aprovadas"
               >
-                {landingCreativeReferences.map((reference) => (
+                {approvedCreativeReferences.map((reference) => (
                   <a
                     key={reference.key}
                     href={resolveAssetUrl(reference.url)}
@@ -1363,9 +1421,9 @@ export default function CriativosTab({
               </div>
             ) : (
               <div className="alert alert-warning py-2 mt-2 mb-0" role="alert">
-                Têmis não encontrou exemplos reais concluídos por Dédalo. A
-                geração está bloqueada para não consumir uma tentativa sem prova
-                visual do produto.
+                A Biblioteca Audiovisual não possui PRODUCT_PROOF ou DELIVERY
+                aprovado. A geração está bloqueada para não consumir uma
+                tentativa sem prova visual do produto.
               </div>
             )}
           </div>

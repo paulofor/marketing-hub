@@ -137,7 +137,8 @@ export default function IndependentBusinessProcessExecutionsPage() {
     createIndependentExecutionRequestKey,
   );
   const catalog = catalogQuery.data ?? [];
-  const executions = executionsQuery.data ?? [];
+  const executions =
+    executionsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const selectedProcess = useMemo(
     () =>
       catalog.find((item) => item.processDefinitionId === selectedProcessId),
@@ -394,7 +395,7 @@ export default function IndependentBusinessProcessExecutionsPage() {
               {executionsQuery.isLoading ? (
                 <p>Carregando histórico...</p>
               ) : null}
-              {executionsQuery.isError ? (
+              {executionsQuery.isError && executions.length === 0 ? (
                 <div className="alert alert-danger">
                   Falha ao carregar o histórico.
                 </div>
@@ -443,6 +444,33 @@ export default function IndependentBusinessProcessExecutionsPage() {
                   </p>
                 ) : null}
               </div>
+              {executionsQuery.isFetchNextPageError ? (
+                <div className="alert alert-warning mt-3 mb-0" role="alert">
+                  Não foi possível carregar as execuções anteriores. Tente
+                  novamente.
+                </div>
+              ) : null}
+              {executionsQuery.hasNextPage ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-primary w-100 mt-3"
+                  disabled={executionsQuery.isFetchingNextPage}
+                  onClick={() => void executionsQuery.fetchNextPage()}
+                >
+                  {executionsQuery.isFetchingNextPage ? (
+                    <>
+                      <RefreshCw
+                        className="independent-process-spin me-2"
+                        size={16}
+                        aria-hidden="true"
+                      />
+                      Carregando...
+                    </>
+                  ) : (
+                    "Carregar execuções anteriores"
+                  )}
+                </button>
+              ) : null}
             </div>
           </aside>
         </section>
@@ -882,9 +910,8 @@ function PdeOpportunityFlowReport({
                     {attempt.metaCollectionMode ? (
                       <span>
                         Modo:{" "}
-                        {metaCollectionModeLabels[
-                          attempt.metaCollectionMode
-                        ] ?? attempt.metaCollectionMode}
+                        {metaCollectionModeLabels[attempt.metaCollectionMode] ??
+                          attempt.metaCollectionMode}
                       </span>
                     ) : null}
                     <span>
@@ -929,8 +956,8 @@ function PdeOpportunityFlowReport({
                   : source.status === "OBSERVED_EMPTY"
                     ? "COMPLETED"
                     : ["MISSING", "UNAVAILABLE"].includes(source.status)
-                    ? "BLOCKED"
-                    : source.status,
+                      ? "BLOCKED"
+                      : source.status,
               )}`}
             >
               {flowStatusLabels[source.status] ?? source.status}

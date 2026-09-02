@@ -14,6 +14,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
+import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryIndependentStatusProjection;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -69,6 +70,33 @@ public class ProductDiscoveryIndependentExecutionReportService
   @Override
   public String processCode() {
     return PROCESS_CODE;
+  }
+
+  /**
+   * Resolve o estado funcional dos cards sem carregar prompts, evidências ou candidatas completas.
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Map<String, String> summaryStatuses(Map<String, String> technicalStatuses) {
+    if (technicalStatuses.isEmpty()) return Map.of();
+    Map<Long, String> referencesByCycle = new LinkedHashMap<>();
+    technicalStatuses
+        .keySet()
+        .forEach(reference -> referencesByCycle.put(cycleId(reference), reference));
+    Map<Long, ProductDiscoveryIndependentStatusProjection> snapshotsByCycle = new LinkedHashMap<>();
+    cycleRepository
+        .findIndependentStatusSnapshotsByIds(referencesByCycle.keySet())
+        .forEach(snapshot -> snapshotsByCycle.put(snapshot.getCycleId(), snapshot));
+    Map<String, String> statuses = new LinkedHashMap<>();
+    referencesByCycle.forEach(
+        (id, reference) -> {
+          ProductDiscoveryIndependentStatusProjection snapshot = snapshotsByCycle.get(id);
+          if (snapshot == null) {
+            throw new IllegalArgumentException("Ciclo de Argos não foi encontrado.");
+          }
+          statuses.put(reference, summaryStatus(snapshot, technicalStatuses.get(reference)));
+        });
+    return Map.copyOf(statuses);
   }
 
   /** Consolida fontes, candidatas, gates, dossiês e produto na linhagem do ciclo. */
@@ -607,6 +635,22 @@ public class ProductDiscoveryIndependentExecutionReportService
     return cycle.getStatus() == ProductDiscoveryCycleStatus.COMPLETED ? "PENDING" : "IN_PROGRESS";
   }
 
+  /** Mantém na projeção leve as mesmas regras funcionais usadas pelo relatório detalhado. */
+  private String summaryStatus(
+      ProductDiscoveryIndependentStatusProjection snapshot, String technicalStatus) {
+    if (ProductDiscoveryCycleStatus.FAILED.name().equals(snapshot.getCycleStatus())) {
+      return "BLOCKED";
+    }
+    if (List.of("BLOCKED", "IN_PROGRESS", "PENDING").contains(technicalStatus)) {
+      return technicalStatus;
+    }
+    boolean completedCycle =
+        ProductDiscoveryCycleStatus.COMPLETED.name().equals(snapshot.getCycleStatus());
+    if (completedCycle && snapshot.getReadyOpportunityCount() == 0) return "BLOCKED";
+    if (snapshot.getProductCount() > 0) return "COMPLETED";
+    return completedCycle ? "PENDING" : "IN_PROGRESS";
+  }
+
   /** Indexa a tentativa mais recente de cada atividade da mesma execução. */
   private Map<String, AgentTask> latestTasks(List<AgentTask> tasks) {
     Map<String, AgentTask> latest = new LinkedHashMap<>();
@@ -638,13 +682,18 @@ public class ProductDiscoveryIndependentExecutionReportService
 
   /** Exige uma referência canônica de ciclo para impedir mistura entre execuções. */
   private ProductDiscoveryCycle requiredCycle(String sourceReference) {
-    if (sourceReference == null || !sourceReference.startsWith(SOURCE_PREFIX)) {
-      throw new IllegalArgumentException("Execução independente não referencia um ciclo de Argos.");
-    }
-    Long cycleId = Long.valueOf(sourceReference.substring(SOURCE_PREFIX.length()));
+    Long cycleId = cycleId(sourceReference);
     return cycleRepository
         .findById(cycleId)
         .orElseThrow(() -> new IllegalArgumentException("Ciclo de Argos não foi encontrado."));
+  }
+
+  /** Extrai a identidade canônica do ciclo sem consultar seus campos extensos. */
+  private Long cycleId(String sourceReference) {
+    if (sourceReference == null || !sourceReference.startsWith(SOURCE_PREFIX)) {
+      throw new IllegalArgumentException("Execução independente não referencia um ciclo de Argos.");
+    }
+    return Long.valueOf(sourceReference.substring(SOURCE_PREFIX.length()));
   }
 
   /** Interpreta JSON opcional e registra corrupção histórica sem esconder a execução inteira. */

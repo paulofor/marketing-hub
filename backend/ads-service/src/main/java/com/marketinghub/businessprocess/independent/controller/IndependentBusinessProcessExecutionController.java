@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Responsabilidade: expor o cockpit de processos executáveis sem produto. */
@@ -38,11 +39,13 @@ public class IndependentBusinessProcessExecutionController {
     return service.catalog();
   }
 
-  /** Lista o histórico consolidado sem transformar execução em venda ou receita. */
+  /** Lista uma página leve do histórico sem transformar execução em venda ou receita. */
   @GetMapping
-  @Operation(summary = "Lista execuções independentes recentes")
-  public List<IndependentBusinessProcessExecutionSummaryResponse> list() {
-    return service.list();
+  @Operation(summary = "Lista execuções independentes recentes por cursor")
+  public List<IndependentBusinessProcessExecutionSummaryResponse> list(
+      @RequestParam(name = "limit", defaultValue = "10") int limit,
+      @RequestParam(name = "beforeId", required = false) Long beforeId) {
+    return service.list(limit, beforeId);
   }
 
   /** Exibe a trilha auditável de atividades e tentativas de uma execução. */

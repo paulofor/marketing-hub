@@ -29,6 +29,27 @@ public interface ProductDiscoveryCycleRepository
   List<ProductDiscoveryCycle> findTop5ByStatusInOrderByUpdatedAtAsc(
       Collection<ProductDiscoveryCycleStatus> statuses);
 
+  /** Consolida em lote apenas estado, candidatas prontas e produtos para a lista independente. */
+  @Query(
+      value =
+          """
+          SELECT cycle.id AS cycleId,
+                 cycle.status AS cycleStatus,
+                 (SELECT COUNT(*)
+                    FROM product_discovery_opportunity opportunity
+                   WHERE opportunity.cycle_id = cycle.id
+                     AND opportunity.maturity_status = 'DOSSIER_READY') AS readyOpportunityCount,
+                 (SELECT COUNT(*)
+                    FROM opportunity_dossier dossier
+                   WHERE dossier.product_discovery_cycle_id = cycle.id
+                     AND dossier.created_product_id IS NOT NULL) AS productCount
+            FROM product_discovery_cycle cycle
+           WHERE cycle.id IN (:cycleIds)
+          """,
+      nativeQuery = true)
+  List<ProductDiscoveryIndependentStatusProjection> findIndependentStatusSnapshotsByIds(
+      @Param("cycleIds") Collection<Long> cycleIds);
+
   /** Reserva ciclos novos ou recupera execuções cujo lease expirou sem callback terminal. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(

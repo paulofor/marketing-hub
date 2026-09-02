@@ -181,10 +181,21 @@ paths:
                   $ref: "#/components/schemas/IndependentBusinessProcessCatalog"
   /api/independent-business-process-executions:
     get:
-      summary: Lista as cinquenta execuções independentes mais recentes
+      summary: Lista execuções independentes por cursor, sem antecipar o detalhe auditável
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Quantidade da página; o padrão é 10 e o limite absoluto é 50.
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+        - name: beforeId
+          in: query
+          required: false
+          description: Busca somente execuções com identificador anterior ao cursor informado.
+          schema: { type: integer, format: int64, minimum: 1 }
       responses:
         "200":
-          description: Estado, progresso, consumo e causa persistida de cada execução
+          description: Página leve com estado, progresso, consumo e causa persistida
           content:
             application/json:
               schema:
@@ -192,6 +203,7 @@ paths:
                 maxItems: 50
                 items:
                   $ref: "#/components/schemas/IndependentBusinessProcessExecutionSummary"
+        "400": { description: Limite ou cursor fora do contrato }
     post:
       summary: Inicia idempotentemente um processo sem vínculo com produto
       requestBody:

@@ -5,12 +5,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
+import com.marketinghub.businessprocess.BusinessProcessActivitySummarySnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.independent.IndependentBusinessProcessExecution;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessCatalogResponse;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputFieldResponse;
 import com.marketinghub.businessprocess.independent.service.executions.IndependentBusinessProcessActivityResponse;
+import com.marketinghub.businessprocess.independent.service.executions.IndependentBusinessProcessExecutionListSnapshot;
 import com.marketinghub.businessprocess.independent.service.executions.IndependentBusinessProcessExecutionResponse;
 import com.marketinghub.businessprocess.independent.service.executions.IndependentBusinessProcessExecutionSummaryResponse;
 import com.marketinghub.businessprocess.independent.service.executions.IndependentBusinessProcessTaskResponse;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -118,13 +122,64 @@ public class IndependentBusinessProcessExecutionService {
         .toList();
   }
 
-  /** Lista as cinquenta solicitações materializadas mais recentes com estado consolidado. */
+  /** Lista uma página leve por cursor, mantendo prompts, evidências e relatórios para o detalhe. */
   @Transactional(readOnly = true)
-  public List<IndependentBusinessProcessExecutionSummaryResponse> list() {
-    return executionRepository
-        .findTop50BySourceReferenceIsNotNullOrderByCreatedAtDescIdDesc()
-        .stream()
-        .map(this::summary)
+  public List<IndependentBusinessProcessExecutionSummaryResponse> list(int limit, Long beforeId) {
+    if (limit < 1 || limit > 50) {
+      throw invalid("O histórico aceita entre 1 e 50 execuções por página.");
+    }
+    if (beforeId != null && beforeId < 1) {
+      throw invalid("O cursor do histórico deve ser um identificador positivo.");
+    }
+    PageRequest page = PageRequest.of(0, limit);
+    List<IndependentBusinessProcessExecutionListSnapshot> executions =
+        beforeId == null
+            ? executionRepository.findListSnapshots(page)
+            : executionRepository.findListSnapshotsBeforeId(beforeId, page);
+    if (executions.isEmpty()) return List.of();
+
+    List<String> sourceReferences =
+        executions.stream()
+            .map(IndependentBusinessProcessExecutionListSnapshot::sourceReference)
+            .toList();
+    Map<String, List<AgentTaskIndependentExecutionSummarySnapshot>> tasksByReference =
+        taskRepository
+            .findIndependentExecutionSummarySnapshotsBySourceReferences(sourceReferences)
+            .stream()
+            .collect(
+                Collectors.groupingBy(
+                    AgentTaskIndependentExecutionSummarySnapshot::sourceReference,
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+    Set<Long> processDefinitionIds =
+        executions.stream()
+            .map(IndependentBusinessProcessExecutionListSnapshot::processDefinitionId)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    Map<Long, List<BusinessProcessActivitySummarySnapshot>> activitiesByProcess =
+        activityRepository.findSummarySnapshotsByProcessDefinitionIds(processDefinitionIds).stream()
+            .collect(
+                Collectors.groupingBy(
+                    BusinessProcessActivitySummarySnapshot::processDefinitionId,
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+    List<IndependentBusinessProcessSummaryContext> contexts =
+        executions.stream()
+            .map(
+                execution ->
+                    summaryContext(
+                        execution,
+                        tasksByReference.getOrDefault(execution.sourceReference(), List.of()),
+                        activitiesByProcess.getOrDefault(
+                            execution.processDefinitionId(), List.of())))
+            .toList();
+    Map<String, String> businessStatuses = resolveBusinessStatuses(contexts);
+    return contexts.stream()
+        .map(
+            context ->
+                summary(
+                    context,
+                    businessStatuses.getOrDefault(
+                        context.execution().sourceReference(), context.technicalStatus())))
         .toList();
   }
 
@@ -294,20 +349,18 @@ public class IndependentBusinessProcessExecutionService {
     return provider == null ? null : provider.report(execution.getSourceReference());
   }
 
-  /** Consolida o resumo quando a listagem não precisa devolver cada tentativa. */
-  private IndependentBusinessProcessExecutionSummaryResponse summary(
-      IndependentBusinessProcessExecution execution) {
-    List<AgentTask> tasks = tasks(execution);
-    List<IndependentBusinessProcessActivityResponse> activities = activities(execution, tasks);
-    return summary(execution, tasks, activities);
-  }
-
   /** Consolida progresso, consumo e estado terminal sem atribuir métricas comerciais. */
   private IndependentBusinessProcessExecutionSummaryResponse summary(
       IndependentBusinessProcessExecution execution,
       List<AgentTask> tasks,
       List<IndependentBusinessProcessActivityResponse> activities) {
-    String status = businessStatus(execution, aggregateExecutionStatus(activities));
+    String status =
+        businessStatus(
+            execution,
+            aggregateExecutionStatus(
+                activities.stream()
+                    .map(IndependentBusinessProcessActivityResponse::status)
+                    .toList()));
     int completed =
         (int) activities.stream().filter(item -> "COMPLETED".equals(item.status())).count();
     BigDecimal cost =
@@ -356,6 +409,118 @@ public class IndependentBusinessProcessExecutionService {
                 .max(Instant::compareTo)
                 .orElse(null)
             : null);
+  }
+
+  /** Consolida a resposta da listagem usando exclusivamente projeções sem campos extensos. */
+  private IndependentBusinessProcessExecutionSummaryResponse summary(
+      IndependentBusinessProcessSummaryContext context, String status) {
+    IndependentBusinessProcessExecutionListSnapshot execution = context.execution();
+    List<AgentTaskIndependentExecutionSummarySnapshot> tasks = context.tasks();
+    BigDecimal cost =
+        tasks.stream()
+            .map(AgentTaskIndependentExecutionSummarySnapshot::estimatedCostUsd)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO.setScale(8), BigDecimal::add);
+    boolean hasCost = tasks.stream().anyMatch(task -> task.estimatedCostUsd() != null);
+    boolean completeCost =
+        !tasks.isEmpty()
+            && tasks.stream()
+                .allMatch(
+                    task ->
+                        "ESTIMATED".equals(task.costEstimationStatus())
+                            || "NOT_APPLICABLE".equals(task.costEstimationStatus()));
+    return new IndependentBusinessProcessExecutionSummaryResponse(
+        execution.id(),
+        UUID.fromString(execution.requestKey()),
+        execution.processDefinitionId(),
+        execution.processCode(),
+        execution.processName(),
+        execution.processVersionNumber(),
+        execution.sourceReference(),
+        execution.displayName(),
+        execution.requestedByName(),
+        read(execution.inputJson(), "entrada", execution.id()),
+        status,
+        context.activityStatuses().size(),
+        (int) context.activityStatuses().stream().filter("COMPLETED"::equals).count(),
+        sumSnapshotLong(tasks, AgentTaskIndependentExecutionSummarySnapshot::inputTokens),
+        sumSnapshotLong(tasks, AgentTaskIndependentExecutionSummarySnapshot::cachedInputTokens),
+        sumSnapshotLong(tasks, AgentTaskIndependentExecutionSummarySnapshot::outputTokens),
+        hasCost ? cost.setScale(8) : null,
+        completeCost ? "COMPLETE" : hasCost ? "PARTIAL" : "NOT_REPORTED",
+        latestSnapshotError(tasks),
+        execution.createdAt(),
+        tasks.stream()
+            .map(AgentTaskIndependentExecutionSummarySnapshot::receivedAt)
+            .filter(Objects::nonNull)
+            .min(Instant::compareTo)
+            .orElse(null),
+        isTerminal(status)
+            ? tasks.stream()
+                .map(AgentTaskIndependentExecutionSummarySnapshot::updatedAt)
+                .filter(Objects::nonNull)
+                .max(Instant::compareTo)
+                .orElse(null)
+            : null);
+  }
+
+  /** Prepara progresso e estado técnico de um item antes da resolução funcional em lote. */
+  private IndependentBusinessProcessSummaryContext summaryContext(
+      IndependentBusinessProcessExecutionListSnapshot execution,
+      List<AgentTaskIndependentExecutionSummarySnapshot> tasks,
+      List<BusinessProcessActivitySummarySnapshot> definitions) {
+    Map<String, List<AgentTaskIndependentExecutionSummarySnapshot>> byActivity =
+        new LinkedHashMap<>();
+    tasks.forEach(
+        task ->
+            byActivity
+                .computeIfAbsent(snapshotActivityKey(task), ignored -> new ArrayList<>())
+                .add(task));
+    List<String> activityStatuses = new ArrayList<>();
+    definitions.forEach(
+        definition -> {
+          List<AgentTaskIndependentExecutionSummarySnapshot> attempts =
+              byActivity.remove(definition.activityId());
+          activityStatuses.add(
+              aggregateSnapshotTaskStatus(attempts == null ? List.of() : attempts));
+        });
+    byActivity
+        .values()
+        .forEach(attempts -> activityStatuses.add(aggregateSnapshotTaskStatus(attempts)));
+    List<String> stableStatuses = List.copyOf(activityStatuses);
+    return new IndependentBusinessProcessSummaryContext(
+        execution, tasks, stableStatuses, aggregateExecutionStatus(stableStatuses));
+  }
+
+  /** Resolve por provedor apenas os estados funcionais da página atual. */
+  private Map<String, String> resolveBusinessStatuses(
+      List<IndependentBusinessProcessSummaryContext> contexts) {
+    Map<String, List<IndependentBusinessProcessSummaryContext>> byProcess =
+        contexts.stream()
+            .collect(
+                Collectors.groupingBy(
+                    context -> context.execution().processCode(),
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+    Map<String, String> statuses = new LinkedHashMap<>();
+    byProcess.forEach(
+        (processCode, processContexts) -> {
+          Map<String, String> technicalStatuses = new LinkedHashMap<>();
+          processContexts.forEach(
+              context ->
+                  technicalStatuses.put(
+                      context.execution().sourceReference(), context.technicalStatus()));
+          IndependentBusinessProcessExecutionReportProvider provider =
+              reportProviders.get(processCode);
+          Map<String, String> resolved =
+              provider == null
+                  ? technicalStatuses
+                  : provider.summaryStatuses(Map.copyOf(technicalStatuses));
+          technicalStatuses.forEach(
+              (reference, technicalStatus) ->
+                  statuses.put(reference, resolved.getOrDefault(reference, technicalStatus)));
+        });
+    return Map.copyOf(statuses);
   }
 
   /** Ordena as tentativas reais e preserva atividades ainda não iniciadas no relatório. */
@@ -453,13 +618,35 @@ public class IndependentBusinessProcessExecutionService {
     return "IN_PROGRESS";
   }
 
+  /** Usa a identidade da atividade sem carregar o conteúdo auditável da tentativa. */
+  private String snapshotActivityKey(AgentTaskIndependentExecutionSummarySnapshot task) {
+    return task.processActivityId() == null ? "unmapped" : task.processActivityId();
+  }
+
+  /** Consolida as tentativas leves pela ocorrência mais recente de cada agente. */
+  private String aggregateSnapshotTaskStatus(
+      List<AgentTaskIndependentExecutionSummarySnapshot> attempts) {
+    if (attempts.isEmpty()) return "NOT_STARTED";
+    Map<String, AgentTaskIndependentExecutionSummarySnapshot> latestByAgent = new LinkedHashMap<>();
+    attempts.stream()
+        .sorted(Comparator.comparing(AgentTaskIndependentExecutionSummarySnapshot::id))
+        .forEach(task -> latestByAgent.put(task.assignedAgentKey(), task));
+    List<String> statuses =
+        latestByAgent.values().stream()
+            .map(AgentTaskIndependentExecutionSummarySnapshot::status)
+            .toList();
+    if (statuses.contains("IN_PROGRESS")) return "IN_PROGRESS";
+    if (statuses.contains("BLOCKED")) return "BLOCKED";
+    if (statuses.contains("PENDING")) return "PENDING";
+    if (statuses.stream().allMatch("COMPLETED"::equals)) return "COMPLETED";
+    if (statuses.stream().allMatch("CANCELLED"::equals)) return "CANCELLED";
+    return "IN_PROGRESS";
+  }
+
   /**
    * Consolida o processo sem permitir que uma atividade antiga concluída esconda bloqueio atual.
    */
-  private String aggregateExecutionStatus(
-      List<IndependentBusinessProcessActivityResponse> activities) {
-    List<String> statuses =
-        activities.stream().map(IndependentBusinessProcessActivityResponse::status).toList();
+  private String aggregateExecutionStatus(List<String> statuses) {
     if (statuses.contains("BLOCKED")) return "BLOCKED";
     if (statuses.contains("IN_PROGRESS")) return "IN_PROGRESS";
     if (statuses.contains("PENDING")) return "PENDING";
@@ -479,6 +666,14 @@ public class IndependentBusinessProcessExecutionService {
     return values.isEmpty() ? null : values.stream().mapToLong(Long::longValue).sum();
   }
 
+  /** Soma um contador da projeção leve somente quando ele foi realmente medido. */
+  private Long sumSnapshotLong(
+      List<AgentTaskIndependentExecutionSummarySnapshot> tasks,
+      Function<AgentTaskIndependentExecutionSummarySnapshot, Long> mapper) {
+    List<Long> values = tasks.stream().map(mapper).filter(Objects::nonNull).toList();
+    return values.isEmpty() ? null : values.stream().mapToLong(Long::longValue).sum();
+  }
+
   /** Retorna a falha mais recente para orientar a ação sem depender de logs técnicos. */
   private String latestError(List<AgentTask> tasks) {
     return tasks.stream()
@@ -488,6 +683,19 @@ public class IndependentBusinessProcessExecutionService {
                     AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(AgentTask::getId))
         .map(AgentTask::getExecutionError)
+        .orElse(null);
+  }
+
+  /** Retorna a falha mais recente da projeção leve sem consultar o payload da tarefa. */
+  private String latestSnapshotError(List<AgentTaskIndependentExecutionSummarySnapshot> tasks) {
+    return tasks.stream()
+        .filter(task -> task.executionError() != null && !task.executionError().isBlank())
+        .max(
+            Comparator.comparing(
+                    AgentTaskIndependentExecutionSummarySnapshot::updatedAt,
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(AgentTaskIndependentExecutionSummarySnapshot::id))
+        .map(AgentTaskIndependentExecutionSummarySnapshot::executionError)
         .orElse(null);
   }
 
@@ -582,4 +790,11 @@ public class IndependentBusinessProcessExecutionService {
   private ResponseStatusException conflict(String message) {
     return new ResponseStatusException(HttpStatus.CONFLICT, message);
   }
+
+  /** Agrupa as projeções necessárias para montar um card sem hidratar o detalhe auditável. */
+  private record IndependentBusinessProcessSummaryContext(
+      IndependentBusinessProcessExecutionListSnapshot execution,
+      List<AgentTaskIndependentExecutionSummarySnapshot> tasks,
+      List<String> activityStatuses,
+      String technicalStatus) {}
 }

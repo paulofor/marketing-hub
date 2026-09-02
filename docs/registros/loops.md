@@ -3156,3 +3156,20 @@ Use este checklist quando o problema estiver em algum loop acima:
   operacional, prontidão sem limite e gasto em R$ 99,99/R$ 100,00 nos dois lados da integração. A
   matriz ponta a ponta separa criação, aprovação, publicação, gasto e venda e impede que o teto do
   plano seja interpretado como orçamento Meta.
+
+## LOOP-BPM-INDEPENDENTE-HISTORICO-LONGTEXT — listagem relê auditoria completa em polling
+
+- **Data:** 2026-09-02.
+- **Sintoma:** `/business-process-executions` entregava o shell, mas o histórico demorava vários
+  segundos e voltava a consultar o backend a cada cinco segundos enquanto existia execução pendente.
+- **Causa-raiz confirmada no navegador, código, banco e histórico:** com apenas 17 execuções, a lista
+  fazia uma consulta por execução, hidratava cerca de 1,21 milhão de caracteres de prompts e 624 mil
+  de evidências e reconstruía o relatório funcional completo de cada ciclo. O JSON devolvido tinha
+  somente cerca de 20 KB; o desperdício acontecia dentro do backend antes da resposta.
+- **Correção sistêmica:** a entrada inicial passa a conter dez cards e as páginas anteriores são
+  buscadas por cursor sob demanda. Backend projeta execuções, tarefas e atividades em três consultas
+  leves em lote; o estado funcional especializado usa uma projeção agregada própria. Prompt,
+  resultado, evidência, diagrama e relatório integral permanecem disponíveis somente no detalhe.
+- **Prevenção:** testes de serviço proíbem a consulta de tarefas completas na listagem, o contrato
+  HTTP valida limite/cursor e o frontend comprova que a execução antiga não é requisitada antes do
+  clique. O cânone exige paginação e proíbe `LONGTEXT` em polling de cards administrativos.

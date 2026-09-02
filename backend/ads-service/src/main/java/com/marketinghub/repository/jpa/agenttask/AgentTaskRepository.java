@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.agenttask;
 
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -59,6 +60,34 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
 
   /** Lista todo o histórico operacional de uma entidade para montar a instância BPM. */
   List<AgentTask> findBySourceReferenceOrderByCreatedAtAscIdAsc(String sourceReference);
+
+  /**
+   * Lista em lote somente estado, consumo e horários usados no resumo de execuções independentes.
+   */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot(
+        task.id,
+        task.sourceReference,
+        task.processActivityId,
+        task.status,
+        assignedAgent.agentKey,
+        task.executionError,
+        task.inputTokens,
+        task.cachedInputTokens,
+        task.outputTokens,
+        task.estimatedCostUsd,
+        task.costEstimationStatus,
+        task.receivedAt,
+        task.updatedAt)
+      from AgentTask task
+      join task.assignedAgent assignedAgent
+      where task.sourceReference in :sourceReferences
+      order by task.sourceReference asc, task.id asc
+      """)
+  List<AgentTaskIndependentExecutionSummarySnapshot>
+      findIndependentExecutionSummarySnapshotsBySourceReferences(
+          @Param("sourceReferences") List<String> sourceReferences);
 
   /** Lista somente os campos necessários para medir o histórico exato de um experimento. */
   @Query(

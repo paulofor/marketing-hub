@@ -12,11 +12,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
+import com.marketinghub.businessprocess.BusinessProcessActivitySummarySnapshot;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.independent.IndependentBusinessProcessExecution;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputFieldResponse;
 import com.marketinghub.businessprocess.independent.service.catalog.IndependentBusinessProcessInputOptionResponse;
+import com.marketinghub.businessprocess.independent.service.executions.IndependentBusinessProcessExecutionListSnapshot;
 import com.marketinghub.businessprocess.independent.service.startExecution.StartIndependentBusinessProcessExecutionRequest;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
@@ -217,6 +220,83 @@ class IndependentBusinessProcessExecutionServiceTest {
         .singleElement()
         .satisfies(item -> assertThat(item.executionAvailable()).isFalse());
     assertThat(catalog.getFirst().executionAvailabilityReason()).contains("não implementado");
+  }
+
+  /** Lista somente projeções leves e preserva estado, custo e cursor sem ler LONGTEXT da tarefa. */
+  @Test
+  void listsLightweightExecutionPage() {
+    IndependentBusinessProcessExecutionListSnapshot execution =
+        new IndependentBusinessProcessExecutionListSnapshot(
+            91L,
+            "b82df168-e383-4acd-8ca4-ab858b39fd3e",
+            52L,
+            "pde-opportunity-discovery",
+            "Descoberta de oportunidades PDE",
+            6,
+            "product-discovery-cycle:77",
+            "agenda vazia para manicures",
+            "Operação",
+            "{\"theme\":\"agenda vazia para manicures\"}",
+            NOW);
+    AgentTaskIndependentExecutionSummarySnapshot task =
+        new AgentTaskIndependentExecutionSummarySnapshot(
+            271L,
+            execution.sourceReference(),
+            "marketEvidence",
+            "PENDING",
+            "market-radar",
+            null,
+            120L,
+            20L,
+            10L,
+            new BigDecimal("0.00100000"),
+            "ESTIMATED",
+            NOW.plusSeconds(5),
+            NOW.plusSeconds(30));
+    when(executions.findListSnapshots(any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(List.of(execution));
+    when(tasks.findIndependentExecutionSummarySnapshotsBySourceReferences(
+            List.of(execution.sourceReference())))
+        .thenReturn(List.of(task));
+    when(activities.findSummarySnapshotsByProcessDefinitionIds(java.util.Set.of(52L)))
+        .thenReturn(List.of(new BusinessProcessActivitySummarySnapshot(52L, "marketEvidence")));
+
+    var result = service(List.of(handler)).list(11, null);
+
+    assertThat(result)
+        .singleElement()
+        .satisfies(
+            item -> {
+              assertThat(item.id()).isEqualTo(91L);
+              assertThat(item.status()).isEqualTo("PENDING");
+              assertThat(item.inputTokens()).isEqualTo(120L);
+              assertThat(item.estimatedCostUsd()).isEqualByComparingTo("0.00100000");
+              assertThat(item.finishedAt()).isNull();
+            });
+    verify(tasks, never())
+        .findBySourceReferenceOrderByCreatedAtAscIdAsc(execution.sourceReference());
+  }
+
+  /** Valida o cursor antes de consultar e usa a página histórica apoiada pelo identificador. */
+  @Test
+  void validatesAndUsesHistoryCursor() {
+    assertThatThrownBy(() -> service(List.of(handler)).list(0, null))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("entre 1 e 50");
+    assertThatThrownBy(() -> service(List.of(handler)).list(10, 0L))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("positivo");
+    when(executions.findListSnapshotsBeforeId(
+            org.mockito.ArgumentMatchers.eq(91L),
+            any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(List.of());
+
+    assertThat(service(List.of(handler)).list(11, 91L)).isEmpty();
+
+    verify(executions)
+        .findListSnapshotsBeforeId(
+            org.mockito.ArgumentMatchers.eq(91L),
+            any(org.springframework.data.domain.Pageable.class));
   }
 
   /** Consolida bloqueio, causa e ausência de custo sem convertê-los em sucesso comercial. */

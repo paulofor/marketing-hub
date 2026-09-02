@@ -2,6 +2,7 @@ package com.marketinghub.businessprocess.independent.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -23,6 +24,26 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Responsabilidade: comprovar as rotas HTTP do cockpit de processos independentes. */
 class IndependentBusinessProcessExecutionControllerTest {
+
+  /** Encaminha limite e cursor para a leitura paginada sem antecipar o detalhe histórico. */
+  @Test
+  void listsExecutionPageByCursor() throws Exception {
+    var service = mock(IndependentBusinessProcessExecutionService.class);
+    when(service.list(11, 91L)).thenReturn(List.of());
+    var mockMvc =
+        MockMvcBuilders.standaloneSetup(new IndependentBusinessProcessExecutionController(service))
+            .build();
+
+    mockMvc
+        .perform(
+            get("/api/independent-business-process-executions")
+                .param("limit", "11")
+                .param("beforeId", "91"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray());
+
+    verify(service).list(11, 91L);
+  }
 
   /** Expõe disponibilidade e campos declarados pelo backend no catálogo operacional. */
   @Test

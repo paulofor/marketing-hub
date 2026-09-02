@@ -19,15 +19,43 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
+import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryIndependentStatusProjection;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: validar o relatório legível da descoberta autônoma até o produto. */
 class ProductDiscoveryIndependentExecutionReportServiceTest {
+
+  /** Resolve o estado do card pela projeção leve sem montar candidatas ou evidências. */
+  @Test
+  void resolvesLightweightSummaryStatus() {
+    ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
+    ProductDiscoveryOpportunityRepository opportunities =
+        mock(ProductDiscoveryOpportunityRepository.class);
+    OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ProductDiscoveryIndependentStatusProjection snapshot =
+        mock(ProductDiscoveryIndependentStatusProjection.class);
+    when(snapshot.getCycleId()).thenReturn(42L);
+    when(snapshot.getCycleStatus()).thenReturn(ProductDiscoveryCycleStatus.COMPLETED.name());
+    when(snapshot.getReadyOpportunityCount()).thenReturn(0L);
+    when(snapshot.getProductCount()).thenReturn(0L);
+    when(cycles.findIndependentStatusSnapshotsByIds(java.util.Set.of(42L)))
+        .thenReturn(List.of(snapshot));
+    ProductDiscoveryIndependentExecutionReportService service =
+        new ProductDiscoveryIndependentExecutionReportService(
+            cycles, opportunities, dossiers, tasks, new ObjectMapper());
+
+    Map<String, String> statuses =
+        service.summaryStatuses(Map.of("product-discovery-cycle:42", "COMPLETED"));
+
+    assertThat(statuses).containsEntry("product-discovery-cycle:42", "BLOCKED");
+  }
 
   /** Expõe fontes, seleção, gates e produto sem exigir leitura de JSON técnico. */
   @Test

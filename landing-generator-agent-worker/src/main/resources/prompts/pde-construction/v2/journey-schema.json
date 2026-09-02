@@ -57,7 +57,6 @@
           "type": "array",
           "minItems": 5,
           "maxItems": 5,
-          "uniqueItems": true,
           "items": { "type": "string", "enum": ["EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED"] }
         },
         "checkoutMode": { "type": "string", "const": "SIMULATED_NO_CHARGE" },

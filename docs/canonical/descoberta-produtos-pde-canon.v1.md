@@ -753,8 +753,13 @@ Por decisão de 2026-09-02, o avanço canônico depois de Argos é:
 1. Argos entrega candidatas factuais `DOSSIER_READY`, sem declarar venda ou prontidão comercial;
 2. Atena usa `MARKET_STRATEGY_V3`, compara exatamente três alternativas e seleciona no máximo uma
    candidata como `READY_FOR_PRIVATE_VALIDATION`;
-3. Plutus limita a hipótese econômica e impede que preço, orçamento ou custo ainda desconhecido
-   sejam apresentados como resultado observado;
+3. Plutus usa `PDE_PRIVATE_ECONOMICS_V1` para limitar a hipótese econômica. Quando ainda não existe
+   preço canônico, deve comparar exatamente três preços de checkout simulado explicitamente
+   rotulados como hipótese, escolher um único cenário e reconciliar preço menos custo variável. O
+   parecer mantém em zero CAC, orçamento comercial, tráfego, conversão, meta de vendas e receita,
+   usa prazo ISO `YYYY-MM-DD`, exige duas leituras e declara `commercialSpendAuthorized: false`;
+   preço, orçamento ou custo ainda desconhecido nunca podem ser apresentados como resultado
+   observado;
 4. Dédalo projeta um protótipo privado com entrada simples, resultado pronto em até dez minutos,
    harness orientado à experiência e cinco sinais instrumentados: início, conclusão, utilidade,
    preferência e tentativa de checkout simulado sem cobrança;
@@ -797,6 +802,12 @@ deve oferecer o comando explícito **Retomar com Atena**. Esse comando backend-o
 ciclo, as candidatas e as evidências atuais, resolve a versão publicada da cadeia comercial e abre
 idempotentemente apenas o handoff de validação privada. Ele não cria outro ciclo de Argos, não
 altera a maturidade factual e não autoriza produto público, contato, cobrança, campanha ou gasto.
+Se a atividade concluída de Atena ainda usar contrato anterior ao `MARKET_STRATEGY_V3`, retentar
+somente Plutus é proibido: o backend deve preservar as tentativas anteriores, cancelar apenas as
+atividades ainda reabríveis e criar uma nova ocorrência sequencial de Atena, Plutus e Dédalo na
+versão publicada. Enquanto a nova ocorrência de Atena não terminar, nenhuma sucessora pode ser
+reservada. Descrições de Plutus e Dédalo não devem repetir o corpus bruto de Argos; os resultados
+estruturados das predecessoras chegam pelo contexto canônico do processo.
 
 O critério desta primeira validação é deliberadamente estrito: como cada leitura tem denominador
 um, a taxa mínima de cada sinal é `1`. Checkout simulado mede disposição de avançar no momento de
@@ -808,4 +819,6 @@ autoridade de todos esses cálculos e transições.
 A tela de processos independentes deve mostrar a cadeia completa, as 2–3 candidatas, fontes Web,
 Meta e `/pesquisas`, dossiê, parecer por agente, decisão, custo, bloqueio, próxima ação e produto
 resultante. JSON técnico pode continuar disponível para auditoria, mas não substitui o relatório em
-linguagem de negócio.
+linguagem de negócio. Uma falha de tentativa superada permanece visível dentro da auditoria da
+respectiva tarefa, mas o resumo da execução só pode expô-la como causa atual enquanto o estado
+funcional vigente for `BLOCKED`.

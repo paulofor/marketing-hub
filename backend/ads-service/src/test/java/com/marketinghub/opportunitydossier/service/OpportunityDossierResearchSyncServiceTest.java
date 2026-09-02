@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -58,6 +59,85 @@ class OpportunityDossierResearchSyncServiceTest {
         .containsOnly("product-discovery-cycle:42");
     assertThat(tasks.getAllValues().get(0).description())
         .contains("Guarda-roupa cápsula 40+", "Viagem solo 40+", "DOSSIER_READY");
+    assertThat(tasks.getAllValues().get(1).description())
+        .contains("MARKET_STRATEGY_V3", "contexto do processo")
+        .doesNotContain("Guarda-roupa cápsula 40+");
+    assertThat(tasks.getAllValues().get(2).description())
+        .contains("economia aprovada por Plutus", "contexto do processo")
+        .doesNotContain("Viagem solo 40+");
+  }
+
+  /** Reinicia Atena e as sucessoras quando a tentativa concluída usa o contrato v2 obsoleto. */
+  @Test
+  void restartsCommercialChainWhenCompletedAtenaContractIsStale() {
+    Fixture fixture = new Fixture();
+    ProductDiscoveryOpportunity candidate =
+        opportunity(
+            16L, "Rotina de pele madura", ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    when(fixture.taskRepository.findBySourceReferenceOrderByCreatedAtAscIdAsc(
+            "product-discovery-cycle:42"))
+        .thenReturn(
+            List.of(
+                task(
+                    321L,
+                    "marketStrategy",
+                    "COMPLETED",
+                    """
+                    {"marketStrategicContract":{"contractVersion":"MARKET_STRATEGY_V2","status":"READY_FOR_OPERATION"}}
+                    """),
+                task(322L, "economics", "BLOCKED", null),
+                task(323L, "productArchitecture", "PENDING", null)));
+
+    fixture.service().synchronize(42L, List.of(candidate));
+
+    verify(fixture.agentTaskService)
+        .cancelActiveTasksBySourceReference(
+            "product-discovery-cycle:42",
+            "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
+    verify(fixture.agentTaskService, times(3)).createByHuman(any(CreateAgentTaskRequest.class));
+    verify(fixture.agentTaskService, never()).retryBlockedByHumanOrRefreshPending(any());
+  }
+
+  /** Preserva a cadeia quando a tentativa mais recente já usa estratégia privada v3. */
+  @Test
+  void preservesCommercialChainWhenAtenaContractIsCurrent() {
+    Fixture fixture = new Fixture();
+    ProductDiscoveryOpportunity candidate =
+        opportunity(
+            17L, "Presença antes de sair", ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    when(fixture.taskRepository.findBySourceReferenceOrderByCreatedAtAscIdAsc(
+            "product-discovery-cycle:42"))
+        .thenReturn(
+            List.of(
+                task(
+                    324L,
+                    "marketStrategy",
+                    "COMPLETED",
+                    """
+                    {
+                      "marketStrategicContract":{
+                        "contractVersion":"MARKET_STRATEGY_V3",
+                        "status":"READY_FOR_PRIVATE_VALIDATION",
+                        "privateValidationPlan":{
+                          "minimumIndependentReadings":2,
+                          "requiredSignals":[
+                            "EXPERIENCE_STARTED",
+                            "VALUE_MOMENT",
+                            "READY_RESULT_USED",
+                            "PREFERRED_OVER_FREE",
+                            "CHECKOUT_STARTED"
+                          ]
+                        }
+                      }
+                    }
+                    """)));
+
+    fixture.service().synchronize(42L, List.of(candidate));
+
+    verify(fixture.agentTaskService, never()).cancelActiveTasksBySourceReference(any(), any());
+    verify(fixture.agentTaskService, times(3))
+        .retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class));
+    verify(fixture.agentTaskService, never()).createByHuman(any());
   }
 
   /** Preserva sinais imaturos em dossiês sem avançar Atena, Plutus ou Dédalo. */
@@ -143,6 +223,17 @@ class OpportunityDossierResearchSyncServiceTest {
     return opportunity;
   }
 
+  /** Cria uma tentativa histórica suficiente para validar a recuperação da cadeia. */
+  private static AgentTask task(Long id, String activityId, String status, String resultJson) {
+    AgentTask task = new AgentTask();
+    task.setId(id);
+    task.setProcessActivityId(activityId);
+    task.setStatus(status);
+    task.setSourceReference("product-discovery-cycle:42");
+    task.setResultJson(resultJson);
+    return task;
+  }
+
   /** Agrupa os colaboradores simulados e o serviço sob teste. */
   private static final class Fixture {
     private final OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
@@ -157,6 +248,7 @@ class OpportunityDossierResearchSyncServiceTest {
     private Fixture() {
       BusinessProcessDefinition process = new BusinessProcessDefinition();
       process.setId(88L);
+      process.setVersionNumber(6);
       when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
               "pde-commercial-plan-offer", "PUBLISHED"))
           .thenReturn(Optional.of(process));

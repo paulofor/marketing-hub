@@ -287,6 +287,56 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(handoff.reason()).contains("sem repetir a pesquisa de Argos");
   }
 
+  /** Orienta reinício desde Atena quando a seleção concluída ainda usa o contrato v2. */
+  @Test
+  void exposesCurrentAtenaRestartForCompletedStaleStrategy() {
+    ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
+    ProductDiscoveryOpportunityRepository opportunities =
+        mock(ProductDiscoveryOpportunityRepository.class);
+    OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ProductDiscoveryCycle cycle = cycle();
+    ProductDiscoveryOpportunity ready =
+        opportunity(
+            504L,
+            cycle,
+            "Rotina individual de pele madura",
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    OpportunityDossier dossier =
+        OpportunityDossier.builder()
+            .id(304L)
+            .title(ready.getName())
+            .status(OpportunityDossierStatus.UNDER_REVIEW)
+            .productDiscoveryCycle(cycle)
+            .productDiscoveryOpportunity(ready)
+            .build();
+    when(cycles.findById(42L)).thenReturn(Optional.of(cycle));
+    when(opportunities.findAllByCycleIdOrderByScoreDesc(42L)).thenReturn(List.of(ready));
+    when(dossiers.findAllByProductDiscoveryCycleIdOrderByIdAsc(42L)).thenReturn(List.of(dossier));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:42"))
+        .thenReturn(
+            List.of(
+                task(
+                    720L,
+                    "marketStrategy",
+                    "Atena",
+                    "COMPLETED",
+                    """
+                    {"marketStrategicContract":{"contractVersion":"MARKET_STRATEGY_V2","status":"READY_FOR_OPERATION"}}
+                    """),
+                task(721L, "economics", "Plutus", "BLOCKED", "{\"decision\":\"REJECT\"}")));
+    ProductDiscoveryIndependentExecutionReportService service =
+        new ProductDiscoveryIndependentExecutionReportService(
+            cycles, opportunities, dossiers, tasks, new ObjectMapper());
+
+    var handoff = service.report("product-discovery-cycle:42").privateValidationHandoff();
+
+    assertThat(handoff.available()).isTrue();
+    assertThat(handoff.status()).isEqualTo("STALE_STRATEGY_CONTRACT");
+    assertThat(handoff.actionLabel()).isEqualTo("Reiniciar com Atena atual");
+    assertThat(handoff.reason()).contains("preservará Argos", "Atena, Plutus e Dédalo");
+  }
+
   /** Cria o ciclo concluído com as quatro fontes cobertas. */
   private ProductDiscoveryCycle cycle() {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();

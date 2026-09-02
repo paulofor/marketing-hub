@@ -3,6 +3,7 @@ package com.marketinghub.opportunitydossier.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
@@ -33,6 +34,13 @@ public class OpportunityDossierResearchSyncService {
   private static final Logger log =
       LoggerFactory.getLogger(OpportunityDossierResearchSyncService.class);
   private static final String COMMERCIAL_PROCESS_CODE = "pde-commercial-plan-offer";
+  private static final List<String> PRIVATE_VALIDATION_SIGNALS =
+      List.of(
+          "EXPERIENCE_STARTED",
+          "VALUE_MOMENT",
+          "READY_RESULT_USED",
+          "PREFERRED_OVER_FREE",
+          "CHECKOUT_STARTED");
   private final OpportunityDossierRepository dossierRepository;
   private final OpportunityEvidenceRepository evidenceRepository;
   private final AgentTaskRepository taskRepository;
@@ -273,6 +281,14 @@ public class OpportunityDossierResearchSyncService {
                         "Processo comercial PDE publicado não foi encontrado para o handoff."));
     String sourceReference = "product-discovery-cycle:" + cycleId;
     String context = taskContext(cycleId, candidates);
+    List<AgentTask> existingTasks =
+        taskRepository.findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference);
+    boolean restartFromAtena = requiresCurrentStrategy(process, existingTasks);
+    if (restartFromAtena) {
+      agentTaskService.cancelActiveTasksBySourceReference(
+          sourceReference,
+          "Cadeia reiniciada porque a estratégia concluída usa contrato anterior ao MARKET_STRATEGY_V3.");
+    }
     createTask(
         process,
         sourceReference,
@@ -280,34 +296,36 @@ public class OpportunityDossierResearchSyncService {
         "marketStrategy",
         "Atena · selecionar protótipo privado do ciclo #" + cycleId,
         "Escolha no máximo um dossiê factual para prototipação privada, predeclare duas leituras e preserve os fatos de Argos. A falta dessas leituras ainda não bloqueia esta atividade. Contexto: "
-            + context);
+            + context,
+        restartFromAtena);
     createTask(
         process,
         sourceReference,
         "financial-agent",
         "economics",
         "Plutus · validar economia do ciclo #" + cycleId,
-        "Valide preço como hipótese, margem, CAC, orçamento e risco somente para o dossiê escolhido por Atena. Contexto factual: "
-            + context);
+        "Use somente a seleção MARKET_STRATEGY_V3 mais recente de Atena, entregue pelo contexto do processo. Valide preço de checkout simulado como hipótese, custo e travas da validação privada; não autorize campanha, gasto, pagamento ou venda.",
+        restartFromAtena);
     createTask(
         process,
         sourceReference,
         "landing-generator",
         "productArchitecture",
         "Dédalo · projetar protótipo e harness do ciclo #" + cycleId,
-        "Projete primeiro o protótipo privado instrumentado e o harness PDE somente para o dossiê escolhido por Atena. Contexto factual: "
-            + context);
+        "Use a estratégia vigente de Atena e a economia aprovada por Plutus, entregues pelo contexto do processo. Projete somente o protótipo privado instrumentado e o harness PDE da candidata escolhida.",
+        restartFromAtena);
   }
 
-  /** Cria uma atividade regular sem duplicá-la em callbacks ou reanálises. */
+  /** Cria uma atividade regular e abre nova ocorrência somente após contrato anterior obsoleto. */
   private void createTask(
       BusinessProcessDefinition process,
       String sourceReference,
       String agentKey,
       String activityId,
       String title,
-      String description) {
-    agentTaskService.retryBlockedByHumanOrRefreshPending(
+      String description,
+      boolean forceNewAttempt) {
+    CreateAgentTaskRequest request =
         new CreateAgentTaskRequest(
             agentKey,
             "Marketing Hub",
@@ -318,7 +336,49 @@ public class OpportunityDossierResearchSyncService {
             process.getId(),
             activityId,
             false,
-            null));
+            null);
+    if (forceNewAttempt) {
+      agentTaskService.createByHuman(request);
+    } else {
+      agentTaskService.retryBlockedByHumanOrRefreshPending(request);
+    }
+  }
+
+  /** Detecta estratégia concluída por runtime antigo antes de repetir apenas a etapa posterior. */
+  private boolean requiresCurrentStrategy(
+      BusinessProcessDefinition process, List<AgentTask> existingTasks) {
+    if (process.getVersionNumber() == null || process.getVersionNumber() < 6) return false;
+    AgentTask latestStrategy =
+        existingTasks.stream()
+            .filter(task -> "marketStrategy".equals(task.getProcessActivityId()))
+            .max(java.util.Comparator.comparing(AgentTask::getId))
+            .orElse(null);
+    if (latestStrategy == null || !"COMPLETED".equals(latestStrategy.getStatus())) return false;
+    try {
+      JsonNode result = objectMapper.readTree(latestStrategy.getResultJson());
+      JsonNode contract = result.path("marketStrategicContract");
+      JsonNode plan = contract.path("privateValidationPlan");
+      return !"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+          || !"READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+          || plan.path("minimumIndependentReadings").asInt(0) != 2
+          || !hasExactPrivateSignals(plan.path("requiredSignals"));
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao validar contrato concluído de Atena. taskId={} sourceReference={}",
+          latestStrategy.getId(),
+          latestStrategy.getSourceReference(),
+          ex);
+      return true;
+    }
+  }
+
+  /** Confirma os cinco sinais canônicos antes de considerar a estratégia atual. */
+  private boolean hasExactPrivateSignals(JsonNode values) {
+    if (!values.isArray() || values.size() != PRIVATE_VALIDATION_SIGNALS.size()) return false;
+    List<String> signals = new ArrayList<>();
+    values.forEach(value -> signals.add(value.asText()));
+    return signals.stream().distinct().count() == PRIVATE_VALIDATION_SIGNALS.size()
+        && signals.containsAll(PRIVATE_VALIDATION_SIGNALS);
   }
 
   /** Serializa o dossiê factual entregue aos agentes sem esconder a evidência original. */

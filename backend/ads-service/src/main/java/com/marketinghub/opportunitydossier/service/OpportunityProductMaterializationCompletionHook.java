@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskCompletionHook;
 import com.marketinghub.agenttask.CompleteAgentTaskRequest;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.opportunitydossier.OpportunityDossier;
 import com.marketinghub.opportunitydossier.OpportunityDossierStatus;
 import com.marketinghub.planning.CommercialPlan;
@@ -18,6 +19,7 @@ import com.marketinghub.product.service.ProductService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import java.math.BigDecimal;
@@ -45,6 +47,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
   private final OpportunityDossierRepository dossierRepository;
   private final AgentTaskRepository taskRepository;
   private final ProductTypeDefinitionRepository productTypeRepository;
+  private final MarketNicheRepository marketNicheRepository;
   private final CommercialPlanService commercialPlanService;
   private final ProductService productService;
   private final ObjectMapper objectMapper;
@@ -54,12 +57,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       OpportunityDossierRepository dossierRepository,
       AgentTaskRepository taskRepository,
       ProductTypeDefinitionRepository productTypeRepository,
+      MarketNicheRepository marketNicheRepository,
       CommercialPlanService commercialPlanService,
       ProductService productService,
       ObjectMapper objectMapper) {
     this.dossierRepository = dossierRepository;
     this.taskRepository = taskRepository;
     this.productTypeRepository = productTypeRepository;
+    this.marketNicheRepository = marketNicheRepository;
     this.commercialPlanService = commercialPlanService;
     this.productService = productService;
     this.objectMapper = objectMapper;
@@ -125,17 +130,17 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       OpportunityDossier dossier, JsonNode strategy, JsonNode economics, JsonNode metrics) {
     return commercialPlanService.create(
         new CreateCommercialPlanRequest(
-            dossier.getTitle(),
+            limit(dossier.getTitle(), 191),
             null,
             null,
             null,
             text(strategy, "desiredOutcome"),
-            firstText(text(strategy, "buyer"), dossier.getTargetAudience()),
-            firstText(text(strategy, "problem"), dossier.getMainPain()),
-            text(strategy, "offerThesis"),
+            limit(firstText(text(strategy, "buyer"), dossier.getTargetAudience()), 512),
+            limit(firstText(text(strategy, "problem"), dossier.getMainPain()), 512),
+            limit(text(strategy, "offerThesis"), 512),
             null,
             "Instagram",
-            text(metrics, "primary"),
+            limit(text(metrics, "primary"), 191),
             text(metrics, "continueCriteria"),
             text(metrics, "stopCriteria"),
             requiredDate(text(economics, "deadline")),
@@ -157,7 +162,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             0,
             "Construir e homologar a experiência PDE antes de qualquer publicação.",
             "Produto planejado; construção funcional, comunicação e homologação ainda pendentes.",
-            dossier.getKnownRisks()));
+            limit(dossier.getKnownRisks(), 512)));
   }
 
   /** Cria o cadastro PDE planejado com a linhagem factual, estratégica e econômica completa. */
@@ -174,12 +179,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
         productTypeRepository
             .findByCode("PDE")
             .orElseThrow(() -> new IllegalStateException("Tipo canônico PDE não foi encontrado."));
+    MarketNiche marketNiche = resolveMarketNiche(dossier, strategy);
     CreateProductRequest product = new CreateProductRequest();
     String plannedName = dossier.getTitle() + " · PDE planejado #" + dossier.getId();
     product.setSlug("pde-planejado-" + dossier.getId());
     product.setName(limit(plannedName, 191));
     product.setInternalName(limit(plannedName, 191));
     product.setProductTypeId(pdeType.getId());
+    product.setMarketNicheId(marketNiche.getId());
     product.setProductFormat(limit(text(architecture, "format"), 64));
     product.setDeliveryMode("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
     product.setRevenueModel("HIPÓTESE_A_VALIDAR");
@@ -216,6 +223,29 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     productService.updateAutomaticExecution(saved.getId(), false, "pde-discovery-handoff");
     saved.setAutomaticExecutionEnabled(false);
     return saved;
+  }
+
+  /** Reutiliza ou cria o nicho aprovado por Atena para manter atribuição comercial do produto. */
+  private MarketNiche resolveMarketNiche(OpportunityDossier dossier, JsonNode strategy) {
+    String fallback =
+        dossier.getProductDiscoveryCycle() == null
+            ? dossier.getTitle()
+            : dossier.getProductDiscoveryCycle().getTheme();
+    String name = limit(firstText(text(strategy, "segment"), fallback), 191);
+    return marketNicheRepository
+        .findFirstByNameIgnoreCaseOrderByIdAsc(name)
+        .orElseGet(
+            () ->
+                marketNicheRepository.save(
+                    MarketNiche.builder()
+                        .name(name)
+                        .description(
+                            "Nicho materializado a partir do dossiê factual #"
+                                + dossier.getId()
+                                + " e da estratégia aprovada por Atena.")
+                        .totalCost(BigDecimal.ZERO)
+                        .totalRevenue(BigDecimal.ZERO)
+                        .build()));
   }
 
   /** Monta a definição de construção e validação privada que governa o produto planejado. */

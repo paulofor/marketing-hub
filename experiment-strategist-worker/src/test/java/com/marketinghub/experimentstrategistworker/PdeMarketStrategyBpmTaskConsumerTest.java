@@ -100,13 +100,16 @@ class PdeMarketStrategyBpmTaskConsumerTest {
   /** Confirma que o schema v7 permanece estrito em todos os objetos aninhados. */
   @Test
   void keepsVersionedSchemaStrictAndComplete() throws Exception {
-    JsonNode schema =
-        objectMapper.readTree(
-            Files.readString(
-                Path.of(
-                    "src/main/resources/prompts/pde-commercial-plan/v7/market-strategy-schema.json")));
+    String rawSchema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/pde-commercial-plan/v7/market-strategy-schema.json"));
+    JsonNode schema = objectMapper.readTree(rawSchema);
 
     assertStrictObjects(schema);
+    org.assertj.core.api.Assertions.assertThat(rawSchema)
+        .as("o schema enviado ao Codex não pode usar palavras rejeitadas pelo Structured Outputs")
+        .doesNotContain("\"uniqueItems\"", "\"anyOf\"", "\"oneOf\"", "\"allOf\"");
   }
 
   /** Percorre objetos do schema e exige propriedades fechadas e integralmente obrigatórias. */

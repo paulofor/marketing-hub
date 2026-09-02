@@ -6,6 +6,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.dto.MarketNicheListItemProjection;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,12 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar nichos de mercado no banco de dados. */
 public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> {
+  /**
+   * Localiza de forma determinística o primeiro nicho com o nome aprovado, evitando criar outro
+   * cadastro equivalente durante a materialização de um produto.
+   */
+  Optional<MarketNiche> findFirstByNameIgnoreCaseOrderByIdAsc(String name);
+
   /**
    * Lista os nichos para a tela administrativa com agregados de hipóteses do pipeline e
    * experimentos.

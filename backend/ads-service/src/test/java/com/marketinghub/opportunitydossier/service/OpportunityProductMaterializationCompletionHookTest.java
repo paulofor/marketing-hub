@@ -14,6 +14,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskCompletionHook;
 import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.opportunitydossier.OpportunityDossier;
 import com.marketinghub.opportunitydossier.OpportunityDossierStatus;
 import com.marketinghub.planning.CommercialPlan;
@@ -27,6 +28,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import java.util.List;
@@ -55,6 +57,7 @@ class OpportunityProductMaterializationCompletionHookTest {
     verify(fixture.productService).createProduct(product.capture());
     verify(fixture.productService).updateAutomaticExecution(901L, false, "pde-discovery-handoff");
     assertThat(product.getValue().getCommercialStatus()).isEqualTo("PLANNED");
+    assertThat(product.getValue().getMarketNicheId()).isEqualTo(601L);
     assertThat(product.getValue().getDeliveryMode()).isEqualTo("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
     assertThat(product.getValue().getValidationDefinitionVersion())
         .isEqualTo("PDE_PRIVATE_VALIDATION_V1");
@@ -74,6 +77,33 @@ class OpportunityProductMaterializationCompletionHookTest {
     assertThat(fixture.dossier.getStatus()).isEqualTo(OpportunityDossierStatus.CONVERTED_TO_PLAN);
     assertThat(fixture.dossier.getCreatedProduct()).isSameAs(fixture.product);
     assertThat(fixture.product.getAutomaticExecutionEnabled()).isFalse();
+  }
+
+  /** Cria um nicho auditável quando a estratégia aprovada ainda não existe no catálogo. */
+  @Test
+  void materializesMissingApprovedMarketNiche() {
+    Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    when(fixture.marketNicheRepository.findFirstByNameIgnoreCaseOrderByIdAsc(
+            "Moda e bem-estar 40+"))
+        .thenReturn(Optional.empty());
+    when(fixture.marketNicheRepository.save(any(MarketNiche.class)))
+        .thenAnswer(
+            invocation -> {
+              MarketNiche niche = invocation.getArgument(0);
+              niche.setId(602L);
+              return niche;
+            });
+
+    fixture.hook.apply(fixture.architectureTask, fixture.architectureRequest());
+
+    ArgumentCaptor<CreateProductRequest> product =
+        ArgumentCaptor.forClass(CreateProductRequest.class);
+    verify(fixture.productService).createProduct(product.capture());
+    assertThat(product.getValue().getMarketNicheId()).isEqualTo(602L);
+    ArgumentCaptor<MarketNiche> niche = ArgumentCaptor.forClass(MarketNiche.class);
+    verify(fixture.marketNicheRepository).save(niche.capture());
+    assertThat(niche.getValue().getName()).isEqualTo("Moda e bem-estar 40+");
+    assertThat(niche.getValue().getDescription()).contains("dossiê factual #301", "Atena");
   }
 
   /** Retorna sucesso idempotente sem criar outro produto quando o dossiê já foi convertido. */
@@ -128,6 +158,11 @@ class OpportunityProductMaterializationCompletionHookTest {
   void limitsProductColumnsGeneratedByAgents() {
     Fixture fixture = new Fixture(ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
     fixture.dossier.setTitle("Mercado ".repeat(30));
+    fixture.economicsTask.setResultJson(
+        fixture
+            .economicsTask
+            .getResultJson()
+            .replace("Vendas aprovadas", "Métrica privada detalhada ".repeat(20)));
 
     fixture.hook.apply(
         fixture.architectureTask,
@@ -136,6 +171,11 @@ class OpportunityProductMaterializationCompletionHookTest {
     ArgumentCaptor<CreateProductRequest> product =
         ArgumentCaptor.forClass(CreateProductRequest.class);
     verify(fixture.productService).createProduct(product.capture());
+    ArgumentCaptor<CreateCommercialPlanRequest> plan =
+        ArgumentCaptor.forClass(CreateCommercialPlanRequest.class);
+    verify(fixture.commercialPlanService).create(plan.capture());
+    assertThat(plan.getValue().name()).hasSize(191);
+    assertThat(plan.getValue().mainMetric()).hasSize(191);
     assertThat(product.getValue().getName()).hasSize(191);
     assertThat(product.getValue().getInternalName()).hasSize(191);
     assertThat(product.getValue().getProductFormat()).hasSize(64);
@@ -150,12 +190,14 @@ class OpportunityProductMaterializationCompletionHookTest {
     private final AgentTaskRepository taskRepository = mock(AgentTaskRepository.class);
     private final ProductTypeDefinitionRepository productTypeRepository =
         mock(ProductTypeDefinitionRepository.class);
+    private final MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
     private final CommercialPlanService commercialPlanService = mock(CommercialPlanService.class);
     private final ProductService productService = mock(ProductService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final OpportunityDossier dossier;
     private final CommercialPlan plan = CommercialPlan.builder().id(801L).build();
     private final Product product = Product.builder().id(901L).build();
+    private final AgentTask economicsTask;
     private final AgentTask architectureTask;
     private final OpportunityProductMaterializationCompletionHook hook;
 
@@ -191,15 +233,18 @@ class OpportunityProductMaterializationCompletionHookTest {
       Agent dedalo = Agent.builder().agentKey("landing-generator").build();
       AgentTask strategy =
           task(701L, process, atena, "marketStrategy", strategyResult(privateValidationReady));
-      AgentTask economics = task(702L, process, plutus, "economics", economicsResult());
+      economicsTask = task(702L, process, plutus, "economics", economicsResult());
       architectureTask = task(703L, process, dedalo, "productArchitecture", null);
       architectureTask.setStatus("IN_PROGRESS");
       when(taskRepository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
               88L, "product-discovery-cycle:42"))
-          .thenReturn(List.of(strategy, economics, architectureTask));
+          .thenReturn(List.of(strategy, economicsTask, architectureTask));
       when(dossierRepository.findById(301L)).thenReturn(Optional.of(dossier));
       when(productTypeRepository.findByCode("PDE"))
           .thenReturn(Optional.of(ProductTypeDefinition.builder().id(7L).code("PDE").build()));
+      when(marketNicheRepository.findFirstByNameIgnoreCaseOrderByIdAsc("Moda e bem-estar 40+"))
+          .thenReturn(
+              Optional.of(MarketNiche.builder().id(601L).name("Moda e bem-estar 40+").build()));
       when(commercialPlanService.create(any())).thenReturn(plan);
       when(productService.createProduct(any())).thenReturn(product);
       hook =
@@ -207,6 +252,7 @@ class OpportunityProductMaterializationCompletionHookTest {
               dossierRepository,
               taskRepository,
               productTypeRepository,
+              marketNicheRepository,
               commercialPlanService,
               productService,
               objectMapper);

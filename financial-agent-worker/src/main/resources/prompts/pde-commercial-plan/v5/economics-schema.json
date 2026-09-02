@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "activity",
+    "mode",
+    "decision",
+    "scenarios",
+    "economics",
+    "metrics",
+    "assumptions",
+    "requiredChanges",
+    "rationale",
+    "sources"
+  ],
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "enum": ["PDE_PRIVATE_ECONOMICS_V1"]
+    },
+    "activity": { "type": "string", "enum": ["economics"] },
+    "mode": {
+      "type": "string",
+      "enum": ["PRIVATE_VALIDATION_HYPOTHESIS"]
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVE", "ADJUST", "REJECT"]
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "priceBrl",
+          "variableCostBrl",
+          "maxCacBrl",
+          "targetSales",
+          "benefit",
+          "risk",
+          "recommended"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "priceBrl": { "type": "number", "exclusiveMinimum": 0 },
+          "variableCostBrl": { "type": "number", "minimum": 0 },
+          "maxCacBrl": { "type": "number", "const": 0 },
+          "targetSales": { "type": "integer", "const": 0 },
+          "benefit": { "type": "string" },
+          "risk": { "type": "string" },
+          "recommended": { "type": "boolean" }
+        }
+      }
+    },
+    "economics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offerPriceBrl",
+        "variableCostPerSaleBrl",
+        "contributionPerSaleBrl",
+        "contributionMarginPercent",
+        "maxCacBrl",
+        "fixedInitialCostBrl",
+        "maxBudgetBrl",
+        "expectedTraffic",
+        "expectedConversionPercent",
+        "expectedRefundPercent",
+        "targetSales",
+        "targetRevenueBrl",
+        "deadline",
+        "commercialSpendAuthorized",
+        "privateReadingsTarget"
+      ],
+      "properties": {
+        "offerPriceBrl": { "type": "number", "exclusiveMinimum": 0 },
+        "variableCostPerSaleBrl": { "type": "number", "minimum": 0 },
+        "contributionPerSaleBrl": { "type": "number" },
+        "contributionMarginPercent": { "type": "number" },
+        "maxCacBrl": { "type": "number", "const": 0 },
+        "fixedInitialCostBrl": { "type": "number", "minimum": 0 },
+        "maxBudgetBrl": { "type": "number", "const": 0 },
+        "expectedTraffic": { "type": "integer", "const": 0 },
+        "expectedConversionPercent": { "type": "number", "const": 0 },
+        "expectedRefundPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "targetSales": { "type": "integer", "const": 0 },
+        "targetRevenueBrl": { "type": "number", "const": 0 },
+        "deadline": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "commercialSpendAuthorized": { "type": "boolean", "const": false },
+        "privateReadingsTarget": { "type": "integer", "const": 2 }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary",
+        "leading",
+        "delivery",
+        "continueCriteria",
+        "adjustCriteria",
+        "stopCriteria"
+      ],
+      "properties": {
+        "primary": { "type": "string" },
+        "leading": { "type": "array", "items": { "type": "string" } },
+        "delivery": { "type": "array", "items": { "type": "string" } },
+        "continueCriteria": { "type": "string" },
+        "adjustCriteria": { "type": "string" },
+        "stopCriteria": { "type": "string" }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "requiredChanges": { "type": "array", "items": { "type": "string" } },
+    "rationale": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "url", "supports"],
+        "properties": {
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "supports": { "type": "string" }
+        }
+      }
+    }
+  }
+}

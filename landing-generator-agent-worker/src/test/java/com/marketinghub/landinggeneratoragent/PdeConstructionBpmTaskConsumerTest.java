@@ -110,11 +110,13 @@ class PdeConstructionBpmTaskConsumerTest {
                 "venda-entrega-satisfacao-cliente", "materialization"));
 
     for (String schema : schemas) {
-      JsonNode root =
-          json.readTree(
-              new ClassPathResource(schema)
-                  .getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+      String rawSchema =
+          new ClassPathResource(schema).getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+      JsonNode root = json.readTree(rawSchema);
       assertStrictObjects(root, schema);
+      assertThat(rawSchema)
+          .as("schema %s deve ser aceito pelo Structured Outputs", schema)
+          .doesNotContain("\"uniqueItems\"", "\"anyOf\"", "\"oneOf\"", "\"allOf\"");
     }
   }
 

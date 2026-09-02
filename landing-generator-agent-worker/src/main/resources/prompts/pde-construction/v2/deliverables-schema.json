@@ -55,7 +55,6 @@
           "type": "array",
           "minItems": 5,
           "maxItems": 5,
-          "uniqueItems": true,
           "items": { "type": "string", "enum": ["EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED"] }
         },
         "excludedScope": { "type": "array", "minItems": 3, "maxItems": 12, "items": { "type": "string", "minLength": 5, "maxLength": 300 } }

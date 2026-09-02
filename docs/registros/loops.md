@@ -3306,3 +3306,66 @@ Use este checklist quando o problema estiver em algum loop acima:
   relevante está parado. O endpoint bloqueia ciclo incompleto ou sem dossiê pronto, trava o registro
   durante o comando e reutiliza idempotentemente as evidências na versão publicada. Assim, o legado
   avança sem repetir Argos nem duplicar tarefas em andamento.
+
+## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** a tarefa #322 da execução #25/ciclo #64 recebeu uma seleção concluída de
+  Atena em `MARKET_STRATEGY_V2/READY_FOR_OPERATION`. Plutus respondeu funcionalmente `REJECT`, mas
+  preencheu `deadline` com uma explicação textual; o parser tentou convertê-la diretamente em data e
+  transformou a rejeição comercial em `DateTimeParseException`. Retentar somente Plutus manteria a
+  incompatibilidade e Dédalo seria recusado na materialização.
+- **Causa-raiz confirmada no banco, logs e contratos:** a versão 6 do processo já exigia validação
+  privada, porém o runtime antigo de Atena produziu o contrato v2; o comando de retomada considerava
+  qualquer tarefa `COMPLETED` como vigente. O prompt financeiro v4 proibia propor preço quando não
+  existia preço canônico, embora o fluxo privado exija exatamente uma hipótese de checkout simulado,
+  e seu schema aceitava qualquer texto no prazo. As três tarefas ainda duplicavam cerca de 180 mil
+  caracteres do corpus de Argos.
+- **Correção sistêmica:** o backend detecta o contrato concluído obsoleto, preserva o histórico,
+  cancela somente atividades reabríveis e cria novas ocorrências sequenciais desde Atena. Plutus v5
+  recusa estratégia diferente de `MARKET_STRATEGY_V3` antes de chamar o modelo, usa prazo ISO e
+  separa preço hipotético de observação; CAC, orçamento, tráfego, vendas e receita ficam zerados. As
+  sucessoras consomem o contexto estruturado do BPM sem repetir o corpus bruto.
+- **Prevenção:** testes de backend protegem reinício, idempotência e relatório; testes do worker
+  protegem a fronteira Atena → Plutus, data ISO, cenário único, duas leituras e ausência de efeitos
+  comerciais. O schema versionado bloqueia gasto, meta de vendas ou receita na validação privada,
+  e o catálogo do harness registra prompt e schema v5 para impedir versão executável sem auditoria.
+
+## LOOP-SCHEMA-CODEX-UNIQUEITEMS-INCOMPATIVEL — atividade termina antes da inferência
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** as retentativas de Atena #324 e #325 terminaram antes da inferência com
+  HTTP 400 `invalid_json_schema`; o runtime apontou `uniqueItems` no contrato v7.
+- **Causa-raiz:** schemas novos de Atena e Dédalo usavam `uniqueItems`, palavra-chave rejeitada pelo
+  Structured Outputs do runtime Codex, embora a regra funcional de unicidade já existisse nos
+  validadores Java.
+- **Correção sistêmica:** a unicidade continua obrigatória na fronteira Java e a palavra
+  incompatível foi removida de todos os schemas executáveis atuais de Atena e Dédalo.
+- **Prevenção:** testes percorrem esses schemas e bloqueiam `uniqueItems`, `anyOf`, `oneOf` e
+  `allOf` antes da construção da imagem ou da execução de uma tarefa.
+
+## LOOP-MATERIALIZACAO-PDE-CAMPO-INDEXADO-SEM-LIMITE — contrato válido falha ao criar plano
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** Dédalo gerou a arquitetura da tarefa #323, mas o callback repetiu HTTP
+  500 e o MySQL 5.7 registrou `Data too long for column 'main_metric'`.
+- **Causa-raiz:** a saída integral de Plutus preservou uma métrica de 213 caracteres, enquanto
+  `commercial_plan.main_metric` aceita 191; o hook limitava campos do produto, mas não os campos
+  indexados equivalentes do plano.
+- **Correção sistêmica:** a materialização limita nome, público, dor, oferta, métrica e risco às
+  capacidades canônicas do plano, mantendo os contratos integrais nas auditorias e no harness.
+- **Prevenção:** teste de materialização usa textos maiores que as colunas e comprova os limites
+  antes de qualquer persistência física.
+
+## LOOP-EXECUCAO-CONCLUIDA-EXIBE-ERRO-SUPERADO — resumo contradiz retentativa bem-sucedida
+
+- **Data:** 2026-09-02.
+- **Sintoma confirmado:** depois de Dédalo concluir na tarefa #331 e materializar o produto da
+  execução #25, o resumo permaneceu exibindo como causa atual o erro preservado da tarefa #330.
+- **Causa-raiz:** o agregador calculava corretamente o estado pela tentativa mais recente, mas o
+  campo `latestError` buscava a última mensagem de erro em todo o histórico, sem considerar que a
+  ocorrência havia sido superada.
+- **Correção sistêmica:** o resumo completo e a listagem leve expõem causa somente quando o estado
+  funcional vigente é `BLOCKED`; a tentativa antiga e seu erro continuam intactos na auditoria.
+- **Prevenção:** testes cobrem falha seguida de retentativa concluída nos dois contratos de leitura e
+  exigem estado `COMPLETED` sem causa atual.

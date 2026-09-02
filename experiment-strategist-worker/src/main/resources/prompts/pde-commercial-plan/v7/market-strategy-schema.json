@@ -160,7 +160,6 @@
                 "territories": {
                   "type": "array",
                   "minItems": 1,
-                  "uniqueItems": true,
                   "items": {
                     "type": "string",
                     "enum": [
@@ -174,13 +173,11 @@
                 "evidenceSourceIds": {
                   "type": "array",
                   "minItems": 2,
-                  "uniqueItems": true,
                   "items": { "type": "string" }
                 },
                 "evidencePathways": {
                   "type": "array",
                   "minItems": 2,
-                  "uniqueItems": true,
                   "items": { "type": "string" }
                 },
                 "readyMadeOutcome": { "type": "string" },
@@ -202,7 +199,6 @@
             "requiredSignals": {
               "type": "array",
               "minItems": 5,
-              "uniqueItems": true,
               "items": {
                 "type": "string",
                 "enum": [

@@ -81,7 +81,6 @@
             "instrumentationEvents": {
               "type": "array",
               "minItems": 5,
-              "uniqueItems": true,
               "items": {
                 "type": "string",
                 "enum": [

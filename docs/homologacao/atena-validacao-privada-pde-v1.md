@@ -33,10 +33,13 @@ construção e anterior a qualquer publicação, contato, gasto ou venda.
 | Entrada | execução possui duas candidatas `DOSSIER_READY` | dossiês, fontes e lacunas persistidos | Atena compara três alternativas e escolhe no máximo uma |
 | Retomada legada | ciclo concluído nas execuções #22–#24 e Atena antiga bloqueada | botão `Retomar com Atena` chama o comando backend do mesmo ciclo | reutilizar evidências e abrir v6 sem nova pesquisa de Argos |
 | Idempotência da retomada | gate atual já está pendente ou em execução | botão oculto e tarefa vigente preservada | nenhuma duplicata, novo ciclo ou custo de Argos |
+| Contrato predecessor obsoleto | Atena terminou em `MARKET_STRATEGY_V2` e Plutus bloqueou | relatório oferece reinício com Atena atual; tentativas antigas são preservadas | nova ocorrência sequencial v3 sem repetir Argos |
 | Retomada inválida | ciclo incompleto ou sem `DOSSIER_READY` | HTTP 409/422 com causa de negócio | nenhuma tarefa comercial criada |
 | Atena | resposta `MARKET_STRATEGY_V3` | estratégia e plano com exatamente duas leituras | somente `READY_FOR_PRIVATE_VALIDATION` pode avançar |
 | Validação Atena | resposta antiga ou plano incompleto | erro auditável e resposta bruta preservada | rejeitar `READY_FOR_OPERATION`, quantidade diferente de duas ou sinais ausentes |
-| Plutus | candidata selecionada chega ao gate econômico | preço como hipótese, custo, teto e riscos | aprovação não vira receita, orçamento ou gasto |
+| Plutus | candidata selecionada chega ao gate econômico | `PDE_PRIVATE_ECONOMICS_V1`, três preços hipotéticos de checkout simulado, um cenário recomendado, prazo ISO e duas leituras | CAC, orçamento, tráfego, vendas e receita permanecem zero; aprovação não vira gasto |
+| Contrato Atena → Plutus | processo v6 recebe estratégia v2, plano incompleto ou sinais divergentes | falha antes da chamada do modelo e orientação para retomar Atena | nenhum token adicional nem retentativa isolada de Plutus |
+| Contexto das sucessoras | Plutus e Dédalo são abertos depois de Atena | descrições curtas e resultados estruturados no contexto BPM | corpus bruto de Argos não é duplicado em cada tarefa |
 | Dédalo | arquitetura inclui protótipo privado | entrada simples, resultado pronto, harness, até dez minutos e cinco sinais | checkout permanece simulado e sem cobrança |
 | Validação Dédalo | protótipo excede escopo | erro e artefato preservados | rejeitar tempo maior que dez minutos ou instrumentação incompleta |
 | Materialização | três gates aprovados | um produto ligado ao dossiê e ao plano | estado `PLANNED`, execução `STOP` e definição `PDE_PRIVATE_VALIDATION_V1` |

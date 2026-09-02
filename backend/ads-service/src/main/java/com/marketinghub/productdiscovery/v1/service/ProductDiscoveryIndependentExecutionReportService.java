@@ -170,6 +170,17 @@ public class ProductDiscoveryIndependentExecutionReportService
           "PRODUCT_PLANNED",
           "O produto planejado já existe; o avanço continua pela cadeia do produto.");
     }
+    AgentTask strategy = latestTasks.get("marketStrategy");
+    if (strategy != null
+        && "COMPLETED".equals(strategy.getStatus())
+        && !hasCurrentPrivateValidationStrategy(strategy)) {
+      return new IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff(
+          true,
+          cycle.getId(),
+          "STALE_STRATEGY_CONTRACT",
+          "Reiniciar com Atena atual",
+          "A seleção histórica usa um contrato anterior; a nova tentativa preservará Argos e reiniciará Atena, Plutus e Dédalo na versão vigente.");
+    }
     for (String activityId : List.of("marketStrategy", "economics", "productArchitecture")) {
       AgentTask task = latestTasks.get(activityId);
       if (task == null || List.of("BLOCKED", "CANCELLED").contains(task.getStatus())) {
@@ -197,6 +208,16 @@ public class ProductDiscoveryIndependentExecutionReportService
       Long cycleId, String status, String reason) {
     return new IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff(
         false, cycleId, status, "Retomar com Atena", reason);
+  }
+
+  /** Reconhece somente a estratégia capaz de sustentar as duas leituras privadas atuais. */
+  private boolean hasCurrentPrivateValidationStrategy(AgentTask task) {
+    JsonNode contract =
+        read(task.getResultJson(), "resultado", task.getId()).path("marketStrategicContract");
+    JsonNode plan = contract.path("privateValidationPlan");
+    return "MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+        && "READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+        && plan.path("minimumIndependentReadings").asInt(0) == 2;
   }
 
   /** Substitui códigos técnicos legados por uma leitura compreensível da cobertura Meta. */

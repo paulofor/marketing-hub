@@ -15,10 +15,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
@@ -34,6 +37,7 @@ import reactor.netty.http.client.HttpClient;
 @Component
 @ConditionalOnProperty(prefix = "video.providers.post-production", name = "enabled", havingValue = "true")
 public class PostProductionVideoProvider implements VideoProvider {
+    private static final Logger log = LoggerFactory.getLogger(PostProductionVideoProvider.class);
     private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
     private static final MediaType TEXT_VTT = MediaType.valueOf("text/vtt");
     private static final int MAX_VIDEO_DOWNLOAD_BYTES = 150 * 1024 * 1024;
@@ -91,9 +95,11 @@ public class PostProductionVideoProvider implements VideoProvider {
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
-            caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".txt");
+            double durationSeconds = probeDurationSeconds(source, metadata, job.id());
+            CaptionTimeline captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
+            caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
-            Files.writeString(caption, wrapCaption(captionText), StandardCharsets.UTF_8);
+            Files.writeString(caption, buildAss(captionTimeline), StandardCharsets.UTF_8);
             VoiceOverAudio voiceOverAudio = null;
             Map<String, Object> audioReview = Map.of("mode", "CAPTION_ONLY", "status", "NOT_REQUESTED");
             if (StringUtils.hasText(voiceOverScript)) {
@@ -102,7 +108,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Voz off em português gerada por "
                         + voiceOverAudio.providerLabel());
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda, voz e trilha leve");
-                runFfmpegWithVoice(source, voice, caption, output);
+                runFfmpegWithVoice(source, voice, caption, output, durationSeconds);
                 audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
             } else {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda grande sem voz off");
@@ -119,12 +125,22 @@ public class PostProductionVideoProvider implements VideoProvider {
                     TEXT_VTT,
                     AssetType.CAPTION,
                     ProviderAssetRole.CAPTION,
-                    buildVtt(captionText));
-            Map<String, Object> resultMetadata = resultMetadata(job, metadata, captionText, voiceOverScript, audioReview);
+                    buildVtt(captionTimeline));
+            Map<String, Object> resultMetadata = resultMetadata(
+                    job, metadata, captionText, voiceOverScript, audioReview, captionTimeline);
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Vídeo finalizado para venda");
             return new ProviderArtifacts("post-production-" + job.id(), video, null, captions, resultMetadata);
         } catch (IOException ex) {
+            log.error("Falha de arquivo na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "Falha de arquivo na pós-produção", ex);
+        } catch (VideoProviderException ex) {
+            log.error("Falha operacional na pós-produção; jobId={} profileId={} code={}",
+                    job.id(), profile.id(), ex.getCode(), ex);
+            throw ex;
+        } catch (RuntimeException ex) {
+            log.error("Falha inesperada na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
+            throw new VideoProviderException(
+                    "VIDEO_POST_PRODUCTION_FAILED", "Falha inesperada na pós-produção", ex);
         } finally {
             deleteIfExists(source);
             deleteIfExists(voice);
@@ -206,25 +222,34 @@ public class PostProductionVideoProvider implements VideoProvider {
     /** Compõe o MP4 final apenas com legenda queimada, preservando o vídeo fonte. */
     private void runFfmpegCaptionOnly(Path source, Path caption, Path output) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
-        String videoFilter = captionDrawText(config, caption);
+        String videoFilter = captionSubtitles(caption);
         runProcess(List.of(
                 config.getFfmpegPath(),
                 "-y",
                 "-i", source.toAbsolutePath().toString(),
                 "-vf", videoFilter,
                 "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-crf", "20",
                 "-pix_fmt", "yuv420p",
                 "-an",
+                "-movflags", "+faststart",
                 output.toAbsolutePath().toString()),
                 "ffmpeg falhou ao aplicar legenda no vídeo");
     }
 
     /** Compõe o MP4 final com legenda queimada, voz e trilha discreta. */
-    private void runFfmpegWithVoice(Path source, Path voice, Path caption, Path output) {
+    private void runFfmpegWithVoice(Path source,
+                                    Path voice,
+                                    Path caption,
+                                    Path output,
+                                    double durationSeconds) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
-        String videoFilter = captionDrawText(config, caption);
-        String filter = "[2:a]volume=0.035,apad[music];[1:a]volume=1.0[voice];"
-                + "[voice][music]amix=inputs=2:duration=first:dropout_transition=0[aout];"
+        String videoFilter = captionSubtitles(caption);
+        String filter = "[2:a]volume=0.018,afade=t=in:st=0:d=1,afade=t=out:st="
+                + Math.max(1, durationSeconds - 1) + ":d=1[music];[1:a]volume=1.0[voice];"
+                + "[voice][music]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
+                + "[mixed]loudnorm=I=-17:TP=-2:LRA=7[aout];"
                 + "[0:v]" + videoFilter + "[vout]";
         runProcess(List.of(
                 config.getFfmpegPath(),
@@ -232,25 +257,29 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-i", source.toAbsolutePath().toString(),
                 "-i", voice.toAbsolutePath().toString(),
                 "-f", "lavfi",
-                "-i", "sine=frequency=392:sample_rate=44100",
+                "-i", "sine=frequency=220:sample_rate=44100:duration=" + durationSeconds,
                 "-filter_complex", filter,
                 "-map", "[vout]",
                 "-map", "[aout]",
                 "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-crf", "20",
                 "-pix_fmt", "yuv420p",
                 "-c:a", "aac",
-                "-shortest",
+                "-t", formatFfmpegDuration(durationSeconds),
+                "-movflags", "+faststart",
                 output.toAbsolutePath().toString()),
                 "ffmpeg falhou ao finalizar vídeo para venda");
     }
 
-    /** Monta o filtro visual de legenda grande para leitura em telas mobile. */
-    private String captionDrawText(VideoManagementProperties.PostProduction config, Path caption) {
-        String drawText = "drawtext=fontfile='%s':textfile='%s':fontcolor=white:fontsize=42:"
-                + "line_spacing=10:borderw=4:bordercolor=black@0.75:box=1:boxcolor=black@0.35:"
-                + "boxborderw=18:x=(w-text_w)/2:y=h-(text_h+140)";
-        return drawText.formatted(
-                escapeFilterPath(config.getFontFile()),
+    /** Formata a duração limite usada para impedir que filtros de áudio mantenham o render aberto. */
+    private String formatFfmpegDuration(double durationSeconds) {
+        return java.math.BigDecimal.valueOf(durationSeconds).stripTrailingZeros().toPlainString();
+    }
+
+    /** Monta o filtro de legendas temporizadas para leitura em telas mobile. */
+    private String captionSubtitles(Path caption) {
+        return "subtitles=filename='%s':charenc=UTF-8".formatted(
                 escapeFilterPath(caption.toAbsolutePath().toString()));
     }
 
@@ -268,9 +297,11 @@ public class PostProductionVideoProvider implements VideoProvider {
             }
             return output;
         } catch (IOException ex) {
+            log.error("Falha ao iniciar processo de pós-produção; operation={}", failureMessage, ex);
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", failureMessage, ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
+            log.warn("Processo de pós-produção interrompido; operation={}", failureMessage, ex);
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", failureMessage, ex);
         }
     }
@@ -283,6 +314,7 @@ public class PostProductionVideoProvider implements VideoProvider {
         try {
             return objectMapper.readTree(job.metadataJson());
         } catch (IOException ex) {
+            log.warn("Metadata de pós-produção inválida; jobId={}", job.id(), ex);
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "Metadata de pós-produção inválida", ex);
         }
     }
@@ -332,10 +364,111 @@ public class PostProductionVideoProvider implements VideoProvider {
         return result.toString();
     }
 
-    /** Gera legenda VTT simples para auditoria e players que suportarem caption externa. */
-    private byte[] buildVtt(String captionText) {
-        String vtt = "WEBVTT\n\n00:00:00.000 --> 00:00:30.000\n" + wrapCaption(captionText) + "\n";
-        return vtt.getBytes(StandardCharsets.UTF_8);
+    /** Mede a duração real do vídeo para sincronizar legenda, áudio e auditoria. */
+    private double probeDurationSeconds(Path source, JsonNode metadata, Long jobId) {
+        try {
+            String value = runProcess(List.of(
+                    properties.getProviders().getPostProduction().getFfprobePath(),
+                    "-v", "error",
+                    "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    source.toAbsolutePath().toString()),
+                    "ffprobe falhou ao medir vídeo fonte").trim();
+            double duration = Double.parseDouble(value);
+            if (duration > 0 && Double.isFinite(duration)) {
+                return duration;
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Duração do vídeo não pôde ser medida; jobId={}", jobId, ex);
+        }
+        double fallback = metadata.path("targetDurationSeconds").asDouble(30);
+        return fallback > 0 && Double.isFinite(fallback) ? fallback : 30;
+    }
+
+    /** Divide uma legenda por barras verticais e distribui os trechos pelo vídeo. */
+    private CaptionTimeline buildCaptionTimeline(String captionText, double durationSeconds) {
+        List<String> segments = java.util.Arrays.stream(captionText.split("\\s*\\|\\s*"))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .limit(12)
+                .toList();
+        if (segments.isEmpty()) {
+            segments = List.of(captionText.trim());
+        }
+        double segmentDuration = durationSeconds / segments.size();
+        List<CaptionCue> cues = new ArrayList<>();
+        for (int index = 0; index < segments.size(); index++) {
+            double start = index * segmentDuration;
+            double end = index == segments.size() - 1 ? durationSeconds : (index + 1) * segmentDuration;
+            cues.add(new CaptionCue(start, end, segments.get(index)));
+        }
+        return new CaptionTimeline(durationSeconds, cues);
+    }
+
+    /** Gera ASS com caixa legível e margens seguras para Reels e Stories. */
+    private String buildAss(CaptionTimeline timeline) {
+        StringBuilder ass = new StringBuilder("""
+                [Script Info]
+                ScriptType: v4.00+
+                PlayResX: 720
+                PlayResY: 1280
+                WrapStyle: 0
+
+                [V4+ Styles]
+                Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+                Style: Default,DejaVu Sans,48,&H00FFFFFF,&H00FFFFFF,&H90000000,&H78000000,-1,0,0,0,100,100,0,0,3,2,0,2,54,54,170,1
+
+                [Events]
+                Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+                """);
+        for (CaptionCue cue : timeline.cues()) {
+            ass.append("Dialogue: 0,")
+                    .append(formatAssTime(cue.startSeconds())).append(',')
+                    .append(formatAssTime(cue.endSeconds())).append(",Default,,0,0,0,,")
+                    .append(escapeAssText(wrapCaption(cue.text()))).append('\n');
+        }
+        return ass.toString();
+    }
+
+    /** Gera VTT temporizado para auditoria e players com legenda externa. */
+    private byte[] buildVtt(CaptionTimeline timeline) {
+        StringBuilder vtt = new StringBuilder("WEBVTT\n\n");
+        for (int index = 0; index < timeline.cues().size(); index++) {
+            CaptionCue cue = timeline.cues().get(index);
+            vtt.append(index + 1).append('\n')
+                    .append(formatVttTime(cue.startSeconds())).append(" --> ")
+                    .append(formatVttTime(cue.endSeconds())).append('\n')
+                    .append(wrapCaption(cue.text())).append("\n\n");
+        }
+        return vtt.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** Formata segundos no relógio centesimal do formato ASS. */
+    private String formatAssTime(double seconds) {
+        long centiseconds = Math.max(0, Math.round(seconds * 100));
+        return "%d:%02d:%02d.%02d".formatted(
+                centiseconds / 360000,
+                (centiseconds / 6000) % 60,
+                (centiseconds / 100) % 60,
+                centiseconds % 100);
+    }
+
+    /** Formata segundos no relógio milissegundo do formato VTT. */
+    private String formatVttTime(double seconds) {
+        long milliseconds = Math.max(0, Math.round(seconds * 1000));
+        return "%02d:%02d:%02d.%03d".formatted(
+                milliseconds / 3600000,
+                (milliseconds / 60000) % 60,
+                (milliseconds / 1000) % 60,
+                milliseconds % 1000);
+    }
+
+    /** Escapa texto de legenda para não permitir comandos ASS vindos do formulário. */
+    private String escapeAssText(String text) {
+        return text.replace("\\", "\\\\")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace("\n", "\\N");
     }
 
     /** Revisa o áudio final com métricas objetivas e decisão comercial para mobile. */
@@ -353,6 +486,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                     "ffmpeg falhou ao revisar áudio final");
             return buildAudioReview(outputText, voiceOverScript, voiceOverAudio);
         } catch (RuntimeException ex) {
+            log.warn("Revisão automática de áudio indisponível; output={}", output, ex);
             Map<String, Object> review = new LinkedHashMap<>();
             review.put("status", "REVIEW_UNAVAILABLE");
             review.put("label", "Revisão de áudio indisponível");
@@ -468,19 +602,29 @@ public class PostProductionVideoProvider implements VideoProvider {
                                                JsonNode sourceMetadata,
                                                String captionText,
                                                String voiceOverScript,
-                                               Map<String, Object> audioReview) {
+                                               Map<String, Object> audioReview,
+                                               CaptionTimeline captionTimeline) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
         metadata.put("provider_job_id", "post-production-" + job.id());
         metadata.put("post_production_mode", StringUtils.hasText(voiceOverScript) ? "VOICE_AND_CAPTION" : "CAPTION_ONLY");
-        metadata.put("duration_seconds", 30);
+        metadata.put("duration_seconds", captionTimeline.durationSeconds());
+        boolean hasAudio = StringUtils.hasText(voiceOverScript);
+        metadata.put("has_audio", hasAudio);
+        metadata.put("audio_streams", hasAudio ? 1 : 0);
         metadata.put("audio", Map.of(
                 "voice_over", StringUtils.hasText(voiceOverScript),
                 "language", "pt-BR",
                 "music", StringUtils.hasText(voiceOverScript) ? "synthetic_light_bed" : "none",
                 "review", audioReview));
-        metadata.put("captions", Map.of("burned_in", true, "vtt_asset", true, "text", captionText));
+        metadata.put("captions", Map.of(
+                "burned_in", true,
+                "vtt_asset", true,
+                "text", captionText,
+                "cue_count", captionTimeline.cues().size(),
+                "timed", captionTimeline.cues().size() > 1));
         metadata.put("voice_over_script", StringUtils.hasText(voiceOverScript) ? voiceOverScript : null);
+        metadata.put("cta_text", sourceMetadata.path("post_production").path("cta_text").asText(null));
         metadata.put("source_experiment_video_asset_id", sourceMetadata.path("experimentVideoAssetId").asLong());
         metadata.put("finished_at", Instant.now().toString());
         return metadata;
@@ -503,12 +647,13 @@ public class PostProductionVideoProvider implements VideoProvider {
         }
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // Arquivo temporário residual não deve mascarar o resultado do job.
+        } catch (IOException ex) {
+            log.warn("Falha ao remover arquivo temporário da pós-produção; path={}", path, ex);
         }
     }
 
     /** Resolve a chave OpenAI por valor direto ou arquivo de secret montado no container. */
+    /** Resolve a credencial de TTS sem expor seu conteúdo em log ou metadata. */
     private String resolveOpenAiApiKey() {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         if (StringUtils.hasText(config.getOpenAiApiKey())) {
@@ -524,9 +669,16 @@ public class PostProductionVideoProvider implements VideoProvider {
             }
             return Files.readString(path).trim();
         } catch (IOException ex) {
+            log.error("Falha ao ler secret OpenAI para TTS; file={}", config.getOpenAiApiKeyFile(), ex);
             throw new UncheckedIOException("Não foi possível ler OPENAI_API_KEY_FILE para TTS", ex);
         }
     }
+
+    /** Representa um trecho de legenda e sua janela exata de exibição. */
+    private record CaptionCue(double startSeconds, double endSeconds, String text) { }
+
+    /** Agrupa a duração física do vídeo e todas as legendas temporizadas. */
+    private record CaptionTimeline(double durationSeconds, List<CaptionCue> cues) { }
 
     /** Descreve o arquivo de voz off gerado para auditoria da pós-produção. */
     private record VoiceOverAudio(Path file, String provider, String model, String voice) {

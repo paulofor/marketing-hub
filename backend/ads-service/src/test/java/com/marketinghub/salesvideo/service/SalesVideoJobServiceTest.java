@@ -474,6 +474,11 @@ class SalesVideoJobServiceTest {
             .executionMode(com.marketinghub.salesvideo.SalesVideoExecutionMode.TEST)
             .status(SalesVideoStatus.VIDEO_READY)
             .streamPlaybackUrl("https://cdn.example.com/source.mp4")
+            .metadataJson(
+                "{\"videoProductionCycleId\":7,\"videoProjectId\":3,\"experimentId\":91,"
+                    + "\"generation_strategy\":\"DETERMINISTIC_EDITORIAL_MOTION_FROM_APPROVED_ASSETS\","
+                    + "\"cut_plan\":[{\"role\":\"HOOK_DOR\"}],"
+                    + "\"post_production\":{\"cta_text\":\"Ver meu plano\"}}")
             .requestedAt(Instant.parse("2026-07-24T10:00:00Z"))
             .build();
     RequestSalesVideoPostProductionRequest request = new RequestSalesVideoPostProductionRequest();
@@ -500,6 +505,12 @@ class SalesVideoJobServiceTest {
       assertThat(result.getProviderName()).isEqualTo("MUSA_POST_PRODUCTION");
       assertThat(result.getMetadataJson()).contains("sourceVideoUrl");
       assertThat(result.getMetadataJson()).contains("voiceOverScript");
+      assertThat(result.getMetadataJson())
+          .contains(
+              "\"videoProductionCycleId\":7",
+              "\"videoProjectId\":3",
+              "\"experimentId\":91",
+              "\"cut_plan\"");
       assertThat(result.getAuditSnapshotJson()).contains("\"sourceJobId\":20432");
     } finally {
       TenantContextHolder.clear();

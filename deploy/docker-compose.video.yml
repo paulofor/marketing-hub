@@ -31,6 +31,7 @@ services:
       VIDEO_PROVIDERS_POST_PRODUCTION_OPENAI_TTS_ENABLED: ${VIDEO_PROVIDERS_POST_PRODUCTION_OPENAI_TTS_ENABLED:-true}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
+      APOLLO_PLANNER_MODEL: ${APOLLO_PLANNER_MODEL:-gpt-5.6-sol}
       OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-5.6}
       OPENAI_IMAGE_TOOL_MODEL: ${OPENAI_IMAGE_TOOL_MODEL:-gpt-image-2}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
@@ -51,11 +52,41 @@ services:
     ports:
       - "${VIDEO_MANAGEMENT_PORT:-8095}:8095"
     volumes:
-      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
-      - ${GEMINI_API_KEY_HOST_FILE:-/root/infra/gemini-token/gemini_api_key}:/run/secrets/gemini_api_key:ro
-      - ${LUMA_API_KEY_HOST_FILE:-/root/infra/luma-token/luma_api_key}:/run/secrets/luma_api_key:ro
-      - ${KLING_API_KEY_HOST_FILE:-/root/infra/kling-token/kling_api_key}:/run/secrets/kling_api_key:ro
-      - ${HEYGEN_API_KEY_HOST_FILE:-/root/infra/heygen-token/heygen_api_key}:/run/secrets/heygen_api_key:ro
-      - ${RUNWAY_API_KEY_HOST_FILE:-/root/infra/runaway-token/runaway_api_key}:/run/secrets/runway_api_key:ro
+      - type: bind
+        source: ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}
+        target: /run/secrets/openai_api_key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GEMINI_API_KEY_HOST_FILE:-/root/infra/gemini-token/gemini_api_key}
+        target: /run/secrets/gemini_api_key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${LUMA_API_KEY_HOST_FILE:-/root/infra/luma-token/luma_api_key}
+        target: /run/secrets/luma_api_key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${KLING_API_KEY_HOST_FILE:-/root/infra/kling-token/kling_api_key}
+        target: /run/secrets/kling_api_key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HEYGEN_API_KEY_HOST_FILE:-/root/infra/heygen-token/heygen_api_key}
+        target: /run/secrets/heygen_api_key
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${RUNWAY_API_KEY_HOST_FILE:-/root/infra/runaway-token/runaway_api_key}
+        target: /run/secrets/runway_api_key
+        read_only: true
+        bind:
+          create_host_path: false
       - ${APOLLO_CODEX_HOME_HOST_DIR:-/root/infra/apollo-codex-home}:/root/.codex
       - ./volumes/video-management/logs:/app/logs

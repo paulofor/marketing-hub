@@ -110,6 +110,16 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsHeroVideo).toBe(false);
   });
 
+  it("oferece movimento editorial auditavel sem custo de provider", () => {
+    const provider = findSalesVideoProviderOption("EDITORIAL_MOTION");
+
+    expect(provider).toBeDefined();
+    expect(provider?.supportsHeroVideo).toBe(true);
+    expect(provider?.supportsSceneAssembly).toBe(false);
+    expect(provider?.maxDirectDurationSeconds).toBe(60);
+    expect(provider?.recommendedUse).toContain("custo de provider zero");
+  });
+
   it("direciona a compra de creditos da Runway ao portal da API", () => {
     expect(findSalesVideoProviderOption("RUNWAY")?.creditsUrl).toBe(
       "https://dev.runwayml.com/",
@@ -198,6 +208,10 @@ describe("videoProviderCatalog", () => {
     expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(
       8,
     );
+    expect(
+      findSalesVideoProviderOption("EDITORIAL_MOTION")
+        ?.maxDirectDurationSeconds,
+    ).toBe(60);
     expect(
       findSalesVideoProviderOption("HEYGEN")?.maxDirectDurationSeconds,
     ).toBe(600);

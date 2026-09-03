@@ -872,6 +872,7 @@ public class SalesVideoJobService {
       String sourceVideoUrl,
       RequestSalesVideoPostProductionRequest request) {
     Map<String, Object> metadata = new LinkedHashMap<>();
+    preserveGovernedLineage(sourceJob, metadata);
     metadata.put("sourceJobId", sourceJob.getId());
     metadata.put("sourceVideoUrl", sourceVideoUrl);
     metadata.put("voiceOverScript", request.getVoiceOverScript());
@@ -883,6 +884,43 @@ public class SalesVideoJobService {
         "commercialIntent",
         "Finalizar video bruto com audio, legenda e trilha para experimento de venda.");
     return writeJson(metadata, "Falha ao serializar metadata de pós-produção.");
+  }
+
+  /**
+   * Preserva os identificadores e o plano narrativo do ciclo para que o vídeo final volte ao
+   * experimento que o originou.
+   */
+  private void preserveGovernedLineage(SalesVideoJob sourceJob, Map<String, Object> target) {
+    if (!StringUtils.hasText(sourceJob.getMetadataJson())) {
+      return;
+    }
+    try {
+      JsonNode source = objectMapper.readTree(sourceJob.getMetadataJson());
+      List.of(
+              "videoProductionCycleId",
+              "videoProjectId",
+              "studio_project_id",
+              "productId",
+              "experimentId",
+              "campaign_key",
+              "generation_strategy",
+              "cut_plan",
+              "post_production")
+          .forEach(
+              field -> {
+                if (source.has(field)) {
+                  target.put(field, source.get(field));
+                }
+              });
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao preservar linhagem governada na pós-produção; sourceJobId={}",
+          sourceJob.getId(),
+          ex);
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Metadata do vídeo fonte não permite preservar a linhagem do experimento.");
+    }
   }
 
   /** Monta snapshot de auditoria para rastrear a origem do vídeo finalizado. */

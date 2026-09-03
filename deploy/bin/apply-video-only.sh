@@ -8,9 +8,30 @@ IMAGE_TAG=${IMAGE_TAG:-latest}
 VIDEO_PULL=${VIDEO_PULL:-false}
 VIDEO_BACKEND_BASE_URL=${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168}
 IMAGE_TAR_LOADED=false
+OPENAI_API_KEY_HOST_FILE=${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}
+GEMINI_API_KEY_HOST_FILE=${GEMINI_API_KEY_HOST_FILE:-/root/infra/gemini-token/gemini_api_key}
+LUMA_API_KEY_HOST_FILE=${LUMA_API_KEY_HOST_FILE:-/root/infra/luma-token/luma_api_key}
+KLING_API_KEY_HOST_FILE=${KLING_API_KEY_HOST_FILE:-/root/infra/kling-token/kling_api_key}
+HEYGEN_API_KEY_HOST_FILE=${HEYGEN_API_KEY_HOST_FILE:-/root/infra/heygen-token/heygen_api_key}
+RUNWAY_API_KEY_HOST_FILE=${RUNWAY_API_KEY_HOST_FILE:-/root/infra/runaway-token/runaway_api_key}
 
 mkdir -p "${DEPLOY_DIR}"
 cd "${DEPLOY_DIR}"
+
+required_secret_files=(
+  "${OPENAI_API_KEY_HOST_FILE}"
+  "${GEMINI_API_KEY_HOST_FILE}"
+  "${LUMA_API_KEY_HOST_FILE}"
+  "${KLING_API_KEY_HOST_FILE}"
+  "${HEYGEN_API_KEY_HOST_FILE}"
+  "${RUNWAY_API_KEY_HOST_FILE}"
+)
+for secret_file in "${required_secret_files[@]}"; do
+  if [[ ! -f "${secret_file}" || ! -s "${secret_file}" ]]; then
+    echo "[apply-video-only.sh] Erro: secret obrigatório ausente ou inválido em ${secret_file}; container atual preservado." >&2
+    exit 1
+  fi
+done
 
 if [[ -f "${VIDEO_TAR}" ]]; then
   docker load -i "${VIDEO_TAR}"
@@ -66,6 +87,12 @@ cleanup_previous_tags() {
 VIDEO_MGMT_IMAGE="${VIDEO_MGMT_IMAGE}" \
 VIDEO_MGMT_IMAGE_TAG="${VIDEO_MGMT_IMAGE_TAG}" \
 VIDEO_BACKEND_BASE_URL="${VIDEO_BACKEND_BASE_URL}" \
+OPENAI_API_KEY_HOST_FILE="${OPENAI_API_KEY_HOST_FILE}" \
+GEMINI_API_KEY_HOST_FILE="${GEMINI_API_KEY_HOST_FILE}" \
+LUMA_API_KEY_HOST_FILE="${LUMA_API_KEY_HOST_FILE}" \
+KLING_API_KEY_HOST_FILE="${KLING_API_KEY_HOST_FILE}" \
+HEYGEN_API_KEY_HOST_FILE="${HEYGEN_API_KEY_HOST_FILE}" \
+RUNWAY_API_KEY_HOST_FILE="${RUNWAY_API_KEY_HOST_FILE}" \
 docker compose -f docker-compose.video.yml up -d --no-deps video-management
 
 cleanup_previous_tags "${VIDEO_MGMT_IMAGE}" "${VIDEO_MGMT_IMAGE_TAG}"

@@ -14,10 +14,13 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoScriptStatus;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -88,7 +91,8 @@ class KlingVideoProviderTest {
         assertThat(createRequest.getBody().readUtf8())
                 .contains("\"model_name\":\"kling-v2-1-master\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
-                .contains("Método MUSA")
+                .contains("MUSA experimento 68")
+                .contains("elegante, íntima e prática")
                 .contains("No seductive pose")
                 .contains("Very sharp image, crisp focus and constant soft natural daylight");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/videos/text2video/kling-task-123");
@@ -247,6 +251,75 @@ class KlingVideoProviderTest {
         Files.deleteIfExists(keyFile);
     }
 
+    /** Deve gerar três cenas distintas, conciliar cada task e montar um único vídeo de trinta segundos. */
+    @Test
+    void shouldRenderAndAssembleThreeSceneCommercialVideo() throws Exception {
+        byte[] clip = validMp4();
+        for (int scene = 1; scene <= 3; scene++) {
+            String taskId = "kling-scene-" + scene;
+            server.enqueue(json("""
+                    {"code":0,"message":"SUCCEED","data":{"task_id":"%s","task_status":"submitted"}}
+                    """.formatted(taskId)));
+            server.enqueue(json("""
+                    {
+                      "code": 0,
+                      "message": "SUCCEED",
+                      "data": {
+                        "task_id": "%s",
+                        "task_status": "succeed",
+                        "task_result": {"videos": [{"url": "%s/download/%s.mp4"}]}
+                      }
+                    }
+                    """.formatted(taskId, server.url("/").toString().replaceAll("/$", ""), taskId)));
+            server.enqueue(mp4Response(clip));
+        }
+        KlingVideoProvider provider = new KlingVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        List<String> financialEvents = new ArrayList<>();
+        ProgressCallback callback = new ProgressCallback() {
+            /** Ignora a mensagem simples porque este teste verifica o contrato estruturado. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Preserva os eventos financeiros emitidos por cada cena Kling. */
+            @Override
+            public void onProgress(Integer percent,
+                                   SalesVideoStatus status,
+                                   String message,
+                                   String detailsJson) {
+                financialEvents.add(detailsJson);
+            }
+        };
+
+        ProviderArtifacts artifacts = provider.render(multiSceneJob(), profile(), callback);
+
+        assertThat(artifacts.providerJobId())
+                .isEqualTo("kling-scene-1,kling-scene-2,kling-scene-3");
+        assertThat(artifacts.videoFile().content()).isNotEmpty();
+        assertThat(artifacts.metadata())
+                .containsEntry("duration_seconds", 30)
+                .containsEntry("scene_count", 3)
+                .containsEntry("assembled_locally", true)
+                .containsEntry("cost_usd", new java.math.BigDecimal("1.20"));
+        assertThat(financialEvents).hasSize(6);
+        assertThat(financialEvents.stream().filter(value -> value.contains("PROVIDER_TASK_ACCEPTED"))).hasSize(3);
+        assertThat(financialEvents.stream().filter(value -> value.contains("PROVIDER_TASK_SETTLED"))).hasSize(3);
+
+        for (int scene = 1; scene <= 3; scene++) {
+            RecordedRequest create = server.takeRequest();
+            String body = create.getBody().readUtf8();
+            String prompt = new ObjectMapper().readTree(body).path("prompt").asText();
+            assertThat(create.getPath()).isEqualTo("/v1/videos/image2video");
+            assertThat(body).contains("Scene " + scene + " of 3");
+            assertThat(body).contains("cena específica " + scene);
+            assertThat(prompt).contains("No embedded text");
+            assertThat(prompt.length()).isLessThanOrEqualTo(KlingVideoProvider.MAX_PROMPT_CHARACTERS);
+            assertThat(prompt.getBytes(StandardCharsets.UTF_8).length)
+                    .isLessThanOrEqualTo(KlingVideoProvider.MAX_PROMPT_UTF8_BYTES);
+            assertThat(server.takeRequest().getPath()).isEqualTo("/v1/videos/image2video/kling-scene-" + scene);
+            assertThat(server.takeRequest().getPath()).isEqualTo("/download/kling-scene-" + scene + ".mp4");
+        }
+    }
+
     /** Cria uma resposta JSON para a API Kling simulada. */
     private MockResponse json(String body) {
         return new MockResponse()
@@ -257,12 +330,34 @@ class KlingVideoProviderTest {
 
     /** Cria uma resposta MP4 mínima com assinatura ftyp. */
     private MockResponse mp4Response() {
+        return mp4Response(new byte[] {
+                0, 0, 0, 32, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0
+        });
+    }
+
+    /** Cria uma resposta MP4 com o conteúdo informado pelo cenário de teste. */
+    private MockResponse mp4Response(byte[] content) {
         return new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "video/mp4")
-                .setBody(new Buffer().write(new byte[] {
-                        0, 0, 0, 32, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0
-                }));
+                .setBody(new Buffer().write(content));
+    }
+
+    /** Gera um clipe MP4 mínimo e íntegro para exercitar a montagem real pelo ffmpeg. */
+    private byte[] validMp4() throws Exception {
+        Path output = Files.createTempFile("kling-provider-test", ".mp4");
+        try {
+            Process process = new ProcessBuilder(
+                    "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=32x32:d=0.2",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", output.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            process.getInputStream().readAllBytes();
+            assertThat(process.waitFor()).isZero();
+            return Files.readAllBytes(output);
+        } finally {
+            Files.deleteIfExists(output);
+        }
     }
 
     /** Configura o provider Kling apontando para a API simulada. */
@@ -403,6 +498,37 @@ class KlingVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria um job governado por Plutus com três cenas e cortes distintos do storyboard. */
+    private SalesVideoJob multiSceneJob() {
+        SalesVideoJob base = jobWithSourceImage();
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                """
+                        {
+                          "videoProductionCycleId": 7,
+                          "sceneCount": 3,
+                          "provider_strategy": {"expected_clip_duration_seconds": 10},
+                          "image_to_video": {
+                            "enabled": true,
+                            "source_image_url": "https://assets.example/musa-approved.png"
+                          },
+                          "cut_plan": [
+                            {"order":1,"duration_seconds":5,"role":"HOOK_DOR","visual_objective":"cena específica 1 %s","continuity_anchor":"mesma personagem"},
+                            {"order":2,"duration_seconds":5,"role":"MECANISMO","visual_objective":"cena específica 1","continuity_anchor":"mesma personagem"},
+                            {"order":3,"duration_seconds":5,"role":"MECANISMO","visual_objective":"cena específica 2","continuity_anchor":"mesma personagem"},
+                            {"order":4,"duration_seconds":5,"role":"RESULTADO","visual_objective":"cena específica 2","continuity_anchor":"mesma personagem"},
+                            {"order":5,"duration_seconds":5,"role":"PROVA","visual_objective":"cena específica 3","continuity_anchor":"mesma personagem"},
+                            {"order":6,"duration_seconds":5,"role":"CTA","visual_objective":"cena específica 3","continuity_anchor":"mesma personagem"}
+                          ]
+                        }
+                        """.formatted("detalhe visual específico ".repeat(400)),
+                base.createdAt(), base.updatedAt());
     }
 
     /** Cria a combinação real do Estúdio: cena MECANISMO isolada com imagem-base aprovada. */

@@ -49,6 +49,19 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     supportsOpenAiReferenceImage: true,
   },
   {
+    key: "editorial-motion",
+    label: "Movimento editorial local",
+    providerName: "EDITORIAL_MOTION",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Criativo vertical com imagens aprovadas, movimento de câmera e custo de provider zero; ideal como fallback auditável antes da pós-produção.",
+    clipDurationSeconds: 24,
+    maxDirectDurationSeconds: 60,
+    supportsHeroVideo: true,
+    supportsSceneAssembly: false,
+    supportsOpenAiReferenceImage: false,
+  },
+  {
     key: "kling-3-0",
     label: "Kling 3.0",
     providerName: "KLING_3_0",

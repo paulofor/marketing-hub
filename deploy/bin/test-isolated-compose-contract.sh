@@ -20,6 +20,8 @@ grep -Fq 'VIDEO_REFERENCE_ANALYSIS_BUDGET_LIMIT_USD: "0.75"' <<<"${video_config}
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD: "0.25"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD: "4.00"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD: "20.00"' <<<"${video_config}"
+grep -Fq 'APOLLO_PLANNER_MODEL: gpt-5.6-sol' <<<"${video_config}"
+grep -Fq 'create_host_path: false' <<<"${video_config}"
 MYSQL_PASS=contract-test MCP_GITHUB_TOKEN=contract-test docker compose -f docker-compose.mcp.yml config --quiet
 
 grep -Fq 'MCP_GITHUB_ENABLED: ${MCP_GITHUB_ENABLED:-true}' docker-compose.mcp.yml
@@ -63,6 +65,7 @@ if grep -q 'docker compose up' bin/apply-mcp-only.sh; then
 fi
 
 grep -q 'docker compose -f docker-compose.video.yml up' bin/apply-video-only.sh
+grep -Fq '[[ ! -f "${secret_file}" || ! -s "${secret_file}" ]]' bin/apply-video-only.sh
 
 grep -q 'docker pull "${VIDEO_IMAGE}:${IMAGE_TAG}"' bin/apply-video-only.sh
 

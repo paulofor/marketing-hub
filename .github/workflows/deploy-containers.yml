@@ -634,6 +634,34 @@ jobs:
           printf '%s' "${GHCR_TOKEN}" | ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
             "docker login ghcr.io --username '${{ github.actor }}' --password-stdin"
 
+      - name: Reconcile OpenAI planner secret
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+          OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          secret_file=/root/infra/openai-token/openai_api_key
+          if [[ -z "${OPENAI_API_KEY}" ]]; then
+            ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
+              "test -f '${secret_file}' && test -s '${secret_file}'"
+            exit 0
+          fi
+          printf '%s' "${OPENAI_API_KEY}" | ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} '
+            set -eu
+            secret_dir=/root/infra/openai-token
+            secret_file=${secret_dir}/openai_api_key
+            install -d -m 700 "${secret_dir}"
+            if [ -d "${secret_file}" ]; then
+              rmdir "${secret_file}"
+            fi
+            temporary_file=${secret_dir}/.openai_api_key.tmp.$$
+            umask 077
+            dd of="${temporary_file}" status=none
+            test -s "${temporary_file}"
+            chmod 600 "${temporary_file}"
+            mv "${temporary_file}" "${secret_file}"
+          '
+
       - name: Apply video-management stack
         env:
           GIT_SHA: ${{ github.sha }}

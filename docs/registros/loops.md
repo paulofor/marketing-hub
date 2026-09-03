@@ -3394,6 +3394,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de controller rejeitam diretório como credencial, o contrato de deploy exige
   binds sem criação implícita e arquivos válidos, e a suíte do planejador protege o identificador do
   modelo. Falha nessa fronteira permanece anterior a qualquer cobrança, publicação ou campanha.
+- **Recorrência no CI em 2026-09-03:** os jobs de vídeo e MCP do run `33727749239`/`33727749050`
+  falharam antes dos testes porque o contrato procurava `create_host_path: false` na saída
+  normalizada. O Docker Compose 2.38.2 do runner aceita o campo no descritor, mas omite booleanos
+  falsos ao renderizar `docker compose config`; a sandbox com Compose 5.5.0 preservava o campo e
+  mascarava a incompatibilidade.
+- **Fechamento da recorrência:** `config --quiet` continua validando o schema e o contrato passa a
+  verificar, no YAML fonte, cada um dos seis binds de segredo e seu `create_host_path: false`. A
+  mesma suíte é executada com a versão 2.38.2 do runner e com a versão local antes da publicação.
 - **Fechamento do falso positivo no mesmo piloto:** a retentativa #21217 produziu storyboard válido,
   mas o gate tratou “sem revelar interface legível” como ordem para inserir interface. O detector
   agora bloqueia somente verbos positivos de geração de texto e aceita proibições explícitas; teste

@@ -6,6 +6,49 @@ cd "${DEPLOY_DIR}"
 
 unset LEAD_PORTAL_PAYMENTS_AUTH_TOKEN
 
+assert_bind_does_not_create_host_path() {
+  local expected_target="$1"
+
+  if awk -v expected_target="${expected_target}" '
+    function finish_bind() {
+      if (inside_bind && target_matches && disables_host_path_creation) {
+        found = 1
+      }
+    }
+
+    /^[[:space:]]*- type:[[:space:]]*bind[[:space:]]*$/ {
+      finish_bind()
+      inside_bind = 1
+      target_matches = 0
+      disables_host_path_creation = 0
+      next
+    }
+
+    inside_bind && /^[[:space:]]*- / {
+      finish_bind()
+      inside_bind = 0
+    }
+
+    inside_bind && $0 ~ "^[[:space:]]*target:[[:space:]]*" expected_target "[[:space:]]*$" {
+      target_matches = 1
+    }
+
+    inside_bind && /^[[:space:]]*create_host_path:[[:space:]]*false[[:space:]]*$/ {
+      disables_host_path_creation = 1
+    }
+
+    END {
+      finish_bind()
+      exit found ? 0 : 1
+    }
+  ' docker-compose.video.yml; then
+    return
+  fi
+
+  echo "[CONTRATO] O bind ${expected_target} deve declarar create_host_path: false no próprio descritor." >&2
+  exit 1
+}
+
 OPENAI_API_KEY=contract-test docker compose -f docker-compose.video.yml config --quiet
 video_config="$(OPENAI_API_KEY=contract-test docker compose -f docker-compose.video.yml config)"
 grep -Fq 'BACKEND_URL: http://191.252.181.168' <<<"${video_config}"
@@ -21,7 +64,20 @@ grep -Fq 'VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD: "0.25"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD: "4.00"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD: "20.00"' <<<"${video_config}"
 grep -Fq 'APOLLO_PLANNER_MODEL: gpt-5.6-sol' <<<"${video_config}"
-grep -Fq 'create_host_path: false' <<<"${video_config}"
+
+# O Compose 2.38.2 dos runners hospedados aceita a opção, mas omite valores
+# booleanos falsos ao renderizar `config`. Validamos cada bind na fonte e
+# mantemos `config --quiet` acima como verificação do schema do Compose.
+for secret_target in \
+  /run/secrets/openai_api_key \
+  /run/secrets/gemini_api_key \
+  /run/secrets/luma_api_key \
+  /run/secrets/kling_api_key \
+  /run/secrets/heygen_api_key \
+  /run/secrets/runway_api_key; do
+  assert_bind_does_not_create_host_path "${secret_target}"
+done
+
 MYSQL_PASS=contract-test MCP_GITHUB_TOKEN=contract-test docker compose -f docker-compose.mcp.yml config --quiet
 
 grep -Fq 'MCP_GITHUB_ENABLED: ${MCP_GITHUB_ENABLED:-true}' docker-compose.mcp.yml

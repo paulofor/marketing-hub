@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import VideoProviderManagementPage from "./VideoProviderManagementPage";
 
 vi.mock("../../api/salesVideo/useSalesVideoProviderScores", () => ({
@@ -26,6 +26,10 @@ vi.mock("../../api/salesVideo/useSalesVideoProviderModels", () => ({
       id: index + 1,
       code: providerName.toLowerCase(),
       displayName: providerName.replace(/_/g, " "),
+      manufacturerName: providerName.includes("VEO") ? "Google" : "Runway",
+      aggregatorName: "Runway",
+      providerAccountKey: "RUNWAY_PRIMARY",
+      routeKey: providerName,
       providerName,
       providerFamily: "EXTERNAL_VIDEO_MODULE",
       adapterKey: "RUNWAY",
@@ -63,6 +67,8 @@ vi.mock("../../api/planning/useProviderCreditPurchases", () => ({
   }),
 }));
 
+afterEach(cleanup);
+
 describe("VideoProviderManagementPage links", () => {
   const renderPage = () =>
     render(
@@ -97,5 +103,13 @@ describe("VideoProviderManagementPage links", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/data e hora/i)).toBeRequired();
     expect(screen.getByLabelText(/créditos adquiridos/i)).toBeRequired();
+  });
+
+  it("separa fabricante, agregador, conta e rota em cada opção", () => {
+    renderPage();
+
+    expect(screen.getAllByText("Runway").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("RUNWAY_PRIMARY")).toHaveLength(6);
+    expect(screen.getAllByText("RUNWAY").length).toBeGreaterThan(0);
   });
 });

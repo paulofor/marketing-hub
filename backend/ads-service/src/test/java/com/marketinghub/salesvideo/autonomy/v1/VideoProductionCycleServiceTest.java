@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
@@ -20,13 +21,16 @@ import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoStatus;
+import com.marketinghub.salesvideo.VideoCreditReservation;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.VideoProviderPreflight;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.service.SalesVideoService;
+import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
@@ -49,6 +53,7 @@ class VideoProductionCycleServiceTest {
   @Mock private SalesVideoService salesVideoService;
   @Mock private FinancialAgentService financialAgentService;
   @Mock private StudioCostLedgerService studioCostLedgerService;
+  @Mock private VideoProviderFinancialPreflightService providerPreflightService;
   private VideoProductionCycleService service;
   private final AtomicLong ids = new AtomicLong(10);
 
@@ -64,6 +69,7 @@ class VideoProductionCycleServiceTest {
             salesVideoService,
             financialAgentService,
             studioCostLedgerService,
+            providerPreflightService,
             new ObjectMapper().findAndRegisterModules());
     lenient()
         .when(studioCostLedgerService.cycleLedger(any()))
@@ -71,6 +77,7 @@ class VideoProductionCycleServiceTest {
     lenient()
         .when(financialAgentService.intelligence(any()))
         .thenReturn(java.util.Map.of("coverage", "COMPLETE"));
+    lenient().when(providerPreflightService.financialContext(any())).thenReturn(java.util.Map.of());
     lenient()
         .when(repository.save(any(VideoProductionCycle.class)))
         .thenAnswer(
@@ -81,51 +88,27 @@ class VideoProductionCycleServiceTest {
             });
   }
 
-  /** Comprova que a abertura cria uma tarefa para Plutus e não cria render. */
+  /** Comprova que a abertura cria somente o preflight e não antecipa Plutus ou Apolo. */
   @Test
   void shouldOpenFinancialGateBeforeAnyProviderJob() {
     when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
-    when(taskService.createGateByAgent(any(), any()))
-        .thenReturn(
-            new AgentTaskResponse(
-                99L,
-                4L,
-                "financial-agent",
-                "Plutus",
-                "AGENT",
-                8L,
-                "videomaker",
-                "Apolo",
-                "Avaliar",
-                "Ciclo",
-                "HIGH",
-                "PENDING",
-                "cycle",
-                "GATE_DECISION",
-                "VIDEO_BUDGET_APPROVAL",
-                "PENDING",
-                null,
-                null,
-                Instant.now(),
-                Instant.now()));
-
     var result =
         service.create(
             new VideoProductionCycleContracts.CreateRequest(
-                7L, new BigDecimal("12.50"), "Validar gancho", "Retencao superior", "usuario@mkt"));
+                7L,
+                new BigDecimal("12.50"),
+                "DRAFT_INSTAGRAM",
+                "Validar gancho",
+                "Retencao superior",
+                "usuario@mkt"));
 
-    assertThat(result.status()).isEqualTo("PENDING_FINANCIAL_REVIEW");
+    assertThat(result.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT");
     assertThat(result.learningObjective()).isEqualTo("Validar gancho");
     assertThat(result.successCriterion()).isEqualTo("Retencao superior");
     assertThat(result.financialSnapshot()).contains("incrementalLedger", "segregated");
     assertThat(result.salesVideoJobId()).isNull();
-    ArgumentCaptor<CreateAgentTaskByAgentRequest> task =
-        ArgumentCaptor.forClass(CreateAgentTaskByAgentRequest.class);
-    verify(taskService)
-        .createGateByAgent(
-            task.capture(), org.mockito.ArgumentMatchers.eq("VIDEO_BUDGET_APPROVAL"));
-    assertThat(task.getValue().requestedByAgentKey()).isEqualTo("videomaker");
-    assertThat(task.getValue().assignedAgentKey()).isEqualTo("financial-agent");
+    verify(providerPreflightService).open(result.id(), "DRAFT_INSTAGRAM");
+    verify(taskService, never()).createGateByAgent(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
@@ -137,35 +120,12 @@ class VideoProductionCycleServiceTest {
     when(projectRepository.findById(7L)).thenReturn(Optional.of(legacy));
     when(financialAgentService.unassignedStudioIntelligence(76L))
         .thenReturn(java.util.Map.of("coverage", "PARTIAL"));
-    when(taskService.createGateByAgent(any(), any()))
-        .thenReturn(
-            new AgentTaskResponse(
-                100L,
-                3L,
-                "financial-agent",
-                "Plutus",
-                "AGENT",
-                8L,
-                "videomaker",
-                "Apolo",
-                "Avaliar",
-                "Ciclo",
-                "HIGH",
-                "PENDING",
-                "cycle",
-                "GATE_DECISION",
-                "VIDEO_BUDGET_APPROVAL",
-                "PENDING",
-                null,
-                null,
-                Instant.now(),
-                Instant.now()));
-
     var result =
         service.create(
             new VideoProductionCycleContracts.CreateRequest(
                 7L,
                 new BigDecimal("40.00"),
+                "FINAL_CAMPAIGN",
                 "Validar prova",
                 "Prova compreensivel",
                 "usuario@mkt"));
@@ -176,15 +136,61 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** Cria o gate de Plutus somente depois de o executor devolver um preflight utilizável. */
+  @Test
+  void shouldOpenPlutusGateOnlyAfterReadyProviderPreflight() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
+    VideoProviderPreflight preflight = new VideoProviderPreflight();
+    preflight.setStatus("READY");
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+    when(providerPreflightService.complete(any(), any())).thenReturn(preflight);
+    when(taskService.createGateByAgent(any(), any())).thenReturn(financialGateTask());
+
+    var result =
+        service.completeProviderPreflight(
+            11L, org.mockito.Mockito.mock(VideoProviderPreflightContracts.ResultRequest.class));
+
+    assertThat(result.status()).isEqualTo("PENDING_FINANCIAL_REVIEW");
+    assertThat(result.agentTaskId()).isEqualTo(99L);
+    ArgumentCaptor<CreateAgentTaskByAgentRequest> task =
+        ArgumentCaptor.forClass(CreateAgentTaskByAgentRequest.class);
+    verify(taskService)
+        .createGateByAgent(
+            task.capture(),
+            org.mockito.ArgumentMatchers.eq("VIDEO_PROVIDER_COST_BENEFIT_APPROVAL"));
+    assertThat(task.getValue().requestedByAgentKey()).isEqualTo("videomaker");
+    assertThat(task.getValue().assignedAgentKey()).isEqualTo("financial-agent");
+    verify(providerPreflightService).reserve(cycle);
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Mantém bloqueio técnico visível quando saldo, quota ou dry run não forem utilizáveis. */
+  @Test
+  void shouldNotOpenPlutusGateAfterBlockedProviderPreflight() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
+    VideoProviderPreflight preflight = new VideoProviderPreflight();
+    preflight.setStatus("BLOCKED");
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+    when(providerPreflightService.complete(any(), any())).thenReturn(preflight);
+
+    var result =
+        service.completeProviderPreflight(
+            11L, org.mockito.Mockito.mock(VideoProviderPreflightContracts.ResultRequest.class));
+
+    assertThat(result.status()).isEqualTo("PROVIDER_PREFLIGHT_BLOCKED");
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Comprova que somente a identidade técnica de Plutus decide o gate. */
   @Test
   void shouldRejectDecisionFromAnotherAgent() {
     assertThatThrownBy(
-            () ->
-                service.decide(
-                    11L,
-                    new VideoProductionCycleContracts.FinancialDecisionRequest(
-                        "APPROVED", "parecer", "videomaker")))
+            () -> service.decide(11L, financialDecision("APPROVED", "parecer", "videomaker")))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("403");
     verify(salesVideoService, never()).requestRender(any(), any());
@@ -196,19 +202,20 @@ class VideoProductionCycleServiceTest {
     VideoProductionCycle cycle = cycle();
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
     when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+    when(providerPreflightService.hasActiveReservation(11L)).thenReturn(true);
 
     var result =
         service.decide(
             11L,
-            new VideoProductionCycleContracts.FinancialDecisionRequest(
-                "REJECTED", "Custo acima do limite aprovado.", "financial-agent"));
+            financialDecision("REJECTED", "Custo acima do limite aprovado.", "financial-agent"));
 
     assertThat(result.status()).isEqualTo("FINANCIAL_BLOCKED");
     assertThat(result.knownCostUsd()).isEqualByComparingTo(BigDecimal.ZERO);
+    verify(providerPreflightService).releaseUnusedReservation(11L);
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
-  /** Comprova que Apolo não volta à Luma mesmo quando um plano legado ainda a menciona. */
+  /** Comprova que Apolo repete o payload validado pelo router após a reserva de créditos. */
   @Test
   void shouldQueueApprovedCycleWithSeedanceInsteadOfLegacyLuma() {
     VideoProductionCycle cycle = cycle();
@@ -220,6 +227,15 @@ class VideoProductionCycleServiceTest {
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
     when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
     when(salesVideoService.requestRender(any(), any())).thenReturn(job);
+    VideoCreditReservation reservation = activeReservation();
+    when(providerPreflightService.reserve(cycle)).thenReturn(reservation);
+    when(providerPreflightService.requireActiveReservation(11L)).thenReturn(reservation);
+    when(providerPreflightService.payloadSha256(11L)).thenReturn("abc123");
+    when(providerPreflightService.routerConfigId(11L)).thenReturn("final-campaign");
+    when(providerPreflightService.executionRequests(11L))
+        .thenReturn("[{\"configId\":\"final-campaign\",\"input\":{}}]");
+    when(providerPreflightService.selectedRoutes(11L))
+        .thenReturn("[{\"routerConfigId\":\"final-campaign\",\"priceCeilingCredits\":500}]");
     service.setResearchIntelligenceMapper(
         new VideoProjectResearchIntelligenceMapper(
             new com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService()));
@@ -227,19 +243,24 @@ class VideoProductionCycleServiceTest {
     var result =
         service.decide(
             11L,
-            new VideoProductionCycleContracts.FinancialDecisionRequest(
-                "APPROVED", "Teto e ledger incremental válidos.", "financial-agent"));
+            financialDecision("APPROVED", "Teto e ledger incremental válidos.", "financial-agent"));
 
     ArgumentCaptor<RequestVideoRenderRequest> render =
         ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
-    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
+    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_ROUTER");
     assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(10);
     assertThat(render.getValue().getMetadataJson())
         .contains(
             "\"providerClipDurationSeconds\":15",
             "\"sceneCount\":4",
             "\"cutCount\":15",
+            "\"providerCreditReservationId\":77",
+            "\"providerReservedCredits\":500",
+            "\"providerReservationExpiresAt\"",
+            "\"providerPreflightPayloadSha256\":\"abc123\"",
+            "\"runwayRouterConfigId\":\"final-campaign\"",
+            "\"runwaySelectedRoutesJson\"",
             "\"text_rendering\":\"DETERMINISTIC_OVERLAY\"",
             "\"contractVersion\":\"HARNESS_RESEARCH_INTELLIGENCE_V1\"",
             "\"agentKey\":\"videomaker\"",
@@ -248,15 +269,13 @@ class VideoProductionCycleServiceTest {
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
   }
 
-  /** Substitui job Luma falho por Seedance sem pedir nova decisão financeira. */
+  /** Bloqueia um job pago falho para impedir nova geração sem preflight e reserva novos. */
   @Test
-  void shouldReconcileFailedLegacyJobWithAuditableScenePlan() {
+  void shouldBlockFailedLegacyJobInsteadOfCreatingAnotherPaidRender() {
     VideoProductionCycle cycle = cycle();
     cycle.setStatus("QUEUED_FOR_APOLLO");
     cycle.setFinancialDecision("APPROVED");
     cycle.setSalesVideoJobId(20536L);
-    VideoProject project = project();
-    project.setTargetDurationSeconds(30);
     SalesVideoJob failed = new SalesVideoJob();
     failed.setId(20536L);
     failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
@@ -264,24 +283,16 @@ class VideoProductionCycleServiceTest {
     failed.setFailureCode("PROVIDER_PAYMENT_REQUIRED");
     failed.setFailureDetail("Provider respondeu HTTP 402.");
     failed.setFinishedAt(Instant.parse("2026-08-13T10:00:00Z"));
-    SalesVideoJobDto replacement = new SalesVideoJobDto();
-    replacement.setId(30001L);
     when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
             "QUEUED_FOR_APOLLO", "APPROVED"))
         .thenReturn(java.util.List.of(cycle));
     when(jobRepository.findById(20536L)).thenReturn(Optional.of(failed));
-    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
-    when(salesVideoService.requestRender(any(), any())).thenReturn(replacement);
 
     service.reconcileApolloQueue();
 
-    ArgumentCaptor<RequestVideoRenderRequest> render =
-        ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
-    verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
-    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
-    assertThat(render.getValue().getMetadataJson())
-        .contains("\"sceneCount\":2", "\"cutCount\":8", "\"replacesFailedJobId\":20536");
-    assertThat(cycle.getSalesVideoJobId()).isEqualTo(30001L);
+    verify(salesVideoService, never()).requestRender(any(), any());
+    assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
+    assertThat(cycle.getSalesVideoJobId()).isEqualTo(20536L);
     assertThat(cycle.getLastFailedJobId()).isEqualTo(20536L);
     assertThat(cycle.getLastApolloFailureCode()).isEqualTo("PROVIDER_PAYMENT_REQUIRED");
     assertThat(cycle.getLastApolloFailureDetail()).isEqualTo("Provider respondeu HTTP 402.");
@@ -309,6 +320,24 @@ class VideoProductionCycleServiceTest {
 
     assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
     assertThat(cycle.getLastFailedJobId()).isEqualTo(21125L);
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Bloqueia ciclo legado sem job em vez de lançá-lo sem preflight para o executor. */
+  @Test
+  void shouldBlockLegacyQueuedCycleWithoutActiveReservation() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(providerPreflightService.hasActiveReservation(11L)).thenReturn(false);
+
+    service.reconcileApolloQueue();
+
+    assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
+    assertThat(cycle.getLastApolloFailureCode()).isEqualTo("PROVIDER_PREFLIGHT_REQUIRED");
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
@@ -381,6 +410,33 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** Persiste o prompt e a resposta de Plutus sem decidir nem enfileirar Apolo. */
+  @Test
+  void shouldAuditPlutusReviewBeforeFinancialDecision() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setAgentTaskId(99L);
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    AgentTaskExecutionAuditRequest audit =
+        new AgentTaskExecutionAuditRequest(
+            "MODEL",
+            "gpt-5.6-sol",
+            "high",
+            "agente\n\natividade",
+            "agente",
+            "atividade",
+            java.util.List.of());
+
+    service.auditFinancialReview(
+        11L,
+        new VideoProductionCycleContracts.FinancialReviewAuditRequest(
+            "{\"decision\":\"APPROVED\"}", audit, java.util.List.of()));
+
+    verify(taskService)
+        .recordPendingGateModelResult(
+            "financial-agent", 99L, "{\"decision\":\"APPROVED\"}", audit, java.util.List.of());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Cria o projeto mínimo de teste com perfil operacional. */
   private VideoProject project() {
     return VideoProject.builder()
@@ -407,5 +463,57 @@ class VideoProductionCycleServiceTest {
     cycle.setCreatedAt(Instant.now());
     cycle.setUpdatedAt(Instant.now());
     return cycle;
+  }
+
+  /** Cria uma decisão financeira com os campos recomendados do preflight preenchidos. */
+  private VideoProductionCycleContracts.FinancialDecisionRequest financialDecision(
+      String decision, String reason, String agentKey) {
+    return new VideoProductionCycleContracts.FinancialDecisionRequest(
+        decision,
+        reason,
+        agentKey,
+        "Runway",
+        "router/final-campaign",
+        new BigDecimal("4.00"),
+        "Dry run oficial e teto do ciclo.",
+        "NO_PURCHASE",
+        BigDecimal.ZERO,
+        null);
+  }
+
+  /** Cria uma reserva ativa usada para comprovar o bloqueio anterior à fila de Apolo. */
+  private VideoCreditReservation activeReservation() {
+    VideoCreditReservation reservation = new VideoCreditReservation();
+    reservation.setId(77L);
+    reservation.setStatus("RESERVED");
+    reservation.setReservedCredits(new BigDecimal("500"));
+    reservation.setReservedCostUsd(new BigDecimal("5.00"));
+    reservation.setExpiresAt(Instant.now().plusSeconds(600));
+    return reservation;
+  }
+
+  /** Cria a tarefa de gate devolvida pela mesa de agentes após o preflight. */
+  private AgentTaskResponse financialGateTask() {
+    return new AgentTaskResponse(
+        99L,
+        4L,
+        "financial-agent",
+        "Plutus",
+        "AGENT",
+        8L,
+        "videomaker",
+        "Apolo",
+        "Avaliar",
+        "Ciclo",
+        "HIGH",
+        "PENDING",
+        "cycle",
+        "GATE_DECISION",
+        "VIDEO_PROVIDER_COST_BENEFIT_APPROVAL",
+        "PENDING",
+        null,
+        null,
+        Instant.now(),
+        Instant.now());
   }
 }

@@ -7,6 +7,7 @@ MODELO:
 
 Regras:
 - diferencie fabricante do modelo e plataforma de acesso;
+- trate `aggregatorName` como agregador, `providerAccountKey` como conta de créditos e `routeKey` como rota cobrada; não atribua ao fabricante o preço de outro agregador;
 - registre o preço realmente cobrado nessa plataforma, mesmo que o mesmo modelo custe diferente em outra;
 - preserve modalidade, duração, resolução e presença de áudio;
 - converta a moeda para USD somente se a fonte fornecer USD; não invente câmbio;

@@ -40,9 +40,12 @@ que será efetivamente enviado. O fluxo obrigatório é:
    input da chamada real e registra modelo resolvido, elegibilidade e custo previsto;
 4. o backend persiste o snapshot e entrega a Plutus saldo, quotas, preço, custo previsto, histórico
    de qualidade e resultado comercial;
-5. Plutus filtra rotas inviáveis, recomenda uma rota e decide entre usar saldo, aguardar reset de
-   quota, solicitar recarga, usar fallback homologado ou bloquear;
-6. Apolo só recebe o job depois do gate de Plutus e de uma reserva atômica do custo previsto.
+5. quando o preflight estiver integralmente apto, o backend cria uma reserva preventiva local sem
+   consumo; Plutus filtra rotas inviáveis, recomenda a rota já resolvida e decide entre usar saldo,
+   aguardar reset de quota, solicitar recarga, usar fallback homologado ou bloquear;
+6. Apolo só recebe o job depois do gate de Plutus e enquanto a reserva atômica da soma dos tetos
+   duros por geração permanecer válida; rejeição libera a reserva, e a estimativa continua visível,
+   mas nunca reduz a proteção financeira.
 
 O snapshot deve registrar, no mínimo, plataforma, conta sem segredo, natureza do saldo, créditos
 oficiais, créditos reconciliados, reservas do Marketing Hub, saldo disponível, tier, concorrência,
@@ -53,9 +56,14 @@ desconhecido nunca pode ser convertido em zero.
 
 Para Runway, o primeiro adapter de preflight deve usar a leitura oficial da organização e do uso e,
 quando aplicável, o Model Router em `dryRun`, sem gerar asset nem consumir créditos de geração. O
-snapshot de saldo deve ter no máximo cinco minutos no momento da reserva. A reserva evita que dois
+snapshot de saldo deve ter no máximo cinco minutos no momento da reserva preventiva. A reserva evita que dois
 jobs do Marketing Hub comprometam o mesmo saldo; ela não é débito do provider e deve ser liquidada
 ou liberada pelo resultado real.
+
+O Router deve possuir `maxCreditsPerGeneration.video` explícito. O backend valida cada modelo
+resolvido contra o catálogo interno: lifecycle `ACTIVE`, adapter, preço, licença comercial e QA
+precisam estar verificados. A resposta paga é comparada com o dry run; qualquer drift de modelo,
+fabricante, configuração, preferência, teto ou custo encerra o lote sem abrir a próxima cena.
 
 ## Recomendação de Plutus
 
@@ -71,8 +79,16 @@ e motivo. Quando faltar saldo, deve informar a recarga mínima para o lote aprov
 da conta. Essa indicação é orientação somente leitura: compra, autobilling, transferência de créditos
 ou aumento de teto continuam exigindo autorização humana explícita.
 
-Estados canônicos do preflight: `READY`, `LOW_BALANCE`, `INSUFFICIENT_BALANCE`,
-`QUOTA_EXHAUSTED`, `CREDENTIAL_INVALID`, `PRICE_STALE`, `PROVIDER_UNAVAILABLE` e `UNKNOWN`.
+Estados persistidos do preflight: `PENDING`, `READY`, `READY_WITH_BLOCKER`, `BLOCKED` e `EXPIRED`.
+A causa operacional fica em código próprio, incluindo saldo insuficiente, quota diária, concorrência,
+configuração ausente, rota não homologada, teto inseguro, credencial inválida ou provider indisponível.
+Bloqueios com snapshot e dry run completos seguem para parecer de Plutus; falhas que impedem obter
+evidência confiável permanecem bloqueadas antes do gate.
+
+No parecer, `RECHARGE_REQUIRED` é exclusivo de saldo disponível insuficiente e deve conter a
+diferença exata. Bloqueios conhecidos de teto, quota, licença ou qualidade usam `NO_PURCHASE`;
+`BLOCKED_UNKNOWN` é reservado a quota ausente em um snapshot restante íntegro. Essa separação evita
+que uma incerteza operacional seja apresentada como recomendação de compra.
 
 ## Resultado esperado
 

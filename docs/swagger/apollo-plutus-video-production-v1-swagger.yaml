@@ -12,15 +12,16 @@ paths:
           application/json:
             schema:
               type: object
-              required: [videoProjectId, budgetLimitUsd, learningObjective, successCriterion, requestedBy]
+              required: [videoProjectId, budgetLimitUsd, productionProfile, learningObjective, successCriterion, requestedBy]
               properties:
                 videoProjectId: {type: integer, format: int64}
                 budgetLimitUsd: {type: number, minimum: 0.01}
+                productionProfile: {type: string, enum: [DRAFT_INSTAGRAM, FINAL_CAMPAIGN]}
                 learningObjective: {type: string, minLength: 1}
                 successCriterion: {type: string, minLength: 1}
                 requestedBy: {type: string, minLength: 1}
       responses:
-        '201': {description: Ciclo enviado a Plutus}
+        '201': {description: Ciclo enviado ao preflight oficial do agregador}
   /api/sales-videos/projects/{projectId}/autonomy/v1/cycles:
     get:
       summary: Lista os ciclos auditáveis do projeto
@@ -32,12 +33,90 @@ paths:
     get:
       summary: Lista a caixa financeira pendente de Plutus
       responses:
-        '200': {description: Ciclos bloqueados aguardando decisão}
-  /api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-decision:
+        '200': {description: Ciclos com snapshot e eventual resposta bruta para retomada idempotente}
+  /api/internal/sales-videos/autonomy/v1/provider-preflight/pending:
+    get:
+      summary: Lista ciclos aguardando snapshot oficial e dry run do executor
+      responses:
+        '200': {description: Contexto sanitizado para o preflight do agregador}
+  /api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/provider-preflight-result:
     post:
-      summary: Registra decisão de Plutus e enfileira Apolo apenas quando aprovada
+      summary: Persiste saldo, quota, rotas e custo sem reservar ou gerar
       parameters:
         - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, accountKey, sourceUrl, observedAt]
+              properties:
+                status: {type: string, enum: [READY, BLOCKED]}
+                accountKey: {type: string}
+                routerConfigId: {type: string, nullable: true}
+                payloadSha256: {type: string, nullable: true}
+                executionRequestsJson: {type: string, nullable: true}
+                organizationSnapshotJson: {type: string, nullable: true}
+                routingResponseJson: {type: string, nullable: true}
+                selectedRoutesJson: {type: string, nullable: true}
+                estimatedCredits: {type: number, nullable: true}
+                officialBalanceCredits: {type: number, nullable: true}
+                maxMonthlyCreditSpend: {type: integer, format: int64, nullable: true}
+                quotaSnapshotJson: {type: string, nullable: true}
+                usageSnapshotJson: {type: string, nullable: true}
+                failureCode: {type: string, nullable: true}
+                failureDetail: {type: string, nullable: true}
+                sourceUrl: {type: string, format: uri}
+                observedAt: {type: string, format: date-time}
+      responses:
+        '200': {description: Preflight persistido e, quando completo, encaminhado a Plutus}
+        '400': {description: Snapshot ou hash inválido}
+        '409': {description: Resultado divergente ou conta incompatível}
+  /api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-review-audit:
+    post:
+      summary: Audita prompt, resposta bruta e uso do modelo antes de aplicar o parecer de Plutus
+      parameters:
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rawModelResponse, executionAudit]
+              properties:
+                rawModelResponse: {type: string, minLength: 1}
+                executionAudit: {type: object}
+                modelUsages:
+                  type: array
+                  items: {type: object}
+      responses:
+        '204': {description: Interação auditada sem avançar o ciclo}
+        '409': {description: Gate não pendente ou resposta divergente já persistida}
+  /api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-decision:
+    post:
+      summary: Registra decisão de Plutus, reserva créditos e só então enfileira Apolo
+      parameters:
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reason, decidedByAgentKey, recommendedAggregator, recommendedRoute, estimatedCostUsd, costBenefitBasis, creditAction]
+              properties:
+                decision: {type: string, enum: [APPROVED, REJECTED]}
+                reason: {type: string, minLength: 1}
+                decidedByAgentKey: {type: string, enum: [financial-agent]}
+                recommendedAggregator: {type: string}
+                recommendedRoute: {type: string}
+                estimatedCostUsd: {type: number, minimum: 0}
+                costBenefitBasis: {type: string, minLength: 1}
+                creditAction: {type: string, enum: [NO_PURCHASE, RECHARGE_REQUIRED, BLOCKED_UNKNOWN]}
+                recommendedRechargeCredits: {type: number, minimum: 0, nullable: true}
+                rechargeUrl: {type: string, format: uri, nullable: true}
       responses:
         '200': {description: Ciclo decidido}
         '403': {description: Identidade diferente de Plutus}

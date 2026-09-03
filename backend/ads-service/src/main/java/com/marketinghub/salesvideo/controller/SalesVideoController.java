@@ -91,6 +91,12 @@ public class SalesVideoController {
     return salesVideoService.listProviderModels();
   }
 
+  /** Entrega a Plutus preços pendentes por rota interna sem depender de tenant administrativo. */
+  @GetMapping("/api/internal/sales-videos/provider-models/pricing/pending")
+  public List<SalesVideoProviderModelDto> listProviderModelsPendingPricing() {
+    return salesVideoService.listProviderModelsPendingPricing();
+  }
+
   /** Atualiza a curadoria de um modelo sem permitir ativação incompleta. */
   @PatchMapping("/api/sales-videos/provider-models/{modelId}")
   public SalesVideoProviderModelDto updateProviderModel(

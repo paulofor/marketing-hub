@@ -142,43 +142,21 @@ public class FinancialCodexRunner {
     return audit;
   }
 
-  /** Avalia um teto de vídeo sem movimentar dinheiro e devolve somente a decisão estruturada. */
-  public Map<String, Object> reviewVideoCycle(VideoProductionCycleReview cycle)
+  /** Avalia um teto de vídeo e devolve decisão e auditoria da mesma interação de modelo. */
+  public VideoCycleReviewResult reviewVideoCycle(VideoProductionCycleReview cycle)
       throws IOException, InterruptedException {
     Path output = Files.createTempFile("financial-video-cycle-", ".json");
     Path processOutput = Files.createTempFile("financial-video-cycle-process-", ".log");
     Path schema = materialize("prompts/financial-agent/v1/video-cycle-review-schema.json", ".json");
     try {
-      List<String> command =
-          new ArrayList<>(
-              List.of(
-                  properties.getCodexCommand(),
-                  "exec",
-                  "-",
-                  "--skip-git-repo-check",
-                  "--sandbox",
-                  "read-only",
-                  "--cd",
-                  properties.getRepositoryPath(),
-                  "--output-schema",
-                  schema.toString(),
-                  "--output-last-message",
-                  output.toString(),
-                  "--color",
-                  "never"));
-      if (properties.getModel() != null && !properties.getModel().isBlank()) {
-        command.add("--model");
-        command.add(properties.getModel());
-      }
+      List<String> command = buildVideoReviewCommand(output, schema);
       Process process =
           new ProcessBuilder(command)
               .redirectErrorStream(true)
               .redirectOutput(processOutput.toFile())
               .start();
-      String prompt =
-          read("prompts/financial-agent/v1/video-cycle-review.md")
-              .replace("{{CYCLE}}", objectMapper.writeValueAsString(cycle));
-      process.getOutputStream().write(prompt.getBytes(StandardCharsets.UTF_8));
+      PromptComposition prompt = buildVideoPromptComposition(cycle);
+      process.getOutputStream().write(prompt.fullPrompt().getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
         process.destroyForcibly();
@@ -188,19 +166,120 @@ public class FinancialCodexRunner {
         throw new IllegalStateException(
             "Codex financeiro falhou no ciclo: " + Files.readString(processOutput));
       }
-      JsonNode result = objectMapper.readTree(Files.readString(output));
-      if (!result.hasNonNull("decision") || !result.hasNonNull("reason")) {
-        throw new IllegalArgumentException("Parecer financeiro de vídeo incompleto.");
-      }
-      return Map.of(
-          "decision", result.get("decision").asText(),
-          "reason", result.get("reason").asText(),
-          "decidedByAgentKey", "financial-agent");
+      String raw = Files.readString(output);
+      Map<String, Object> decision = videoDecision(raw);
+      TokenUsage usage = readTokenUsage(processOutput);
+      LinkedHashMap<String, Object> executionAudit = new LinkedHashMap<>();
+      executionAudit.put("executionMode", "MODEL");
+      executionAudit.put("modelCode", properties.getModel());
+      executionAudit.put("reasoningEffort", properties.requiredReasoningEffort());
+      executionAudit.put("promptSent", prompt.fullPrompt());
+      executionAudit.put("agentPromptPart", prompt.agentPromptPart());
+      executionAudit.put("activityPromptPart", prompt.activityPromptPart());
+      executionAudit.put("accessedUrls", List.of());
+      executionAudit.put("requestedServiceTier", configuredServiceTier());
+      executionAudit.put("effectiveServiceTier", "STANDARD");
+      executionAudit.put("serviceTierExceptionReason", properties.getServiceTierExceptionReason());
+      LinkedHashMap<String, Object> audit = new LinkedHashMap<>();
+      audit.put("rawModelResponse", raw);
+      audit.put("executionAudit", executionAudit);
+      audit.put(
+          "modelUsages",
+          usage.informed()
+              ? List.of(
+                  Map.of(
+                      "modelCode", properties.getModel(),
+                      "serviceTier", "STANDARD",
+                      "inputTokens", usage.inputTokens(),
+                      "cachedInputTokens", usage.cachedInputTokens(),
+                      "outputTokens", usage.outputTokens()))
+              : List.of());
+      return new VideoCycleReviewResult(decision, audit);
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processOutput);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /** Converte uma resposta já auditada em decisão sem invocar novamente o modelo. */
+  public Map<String, Object> videoDecision(String raw) throws IOException {
+    JsonNode result = objectMapper.readTree(raw);
+    if (!result.hasNonNull("decision")
+        || !result.hasNonNull("reason")
+        || !result.hasNonNull("recommendedAggregator")
+        || !result.hasNonNull("recommendedRoute")
+        || !result.hasNonNull("estimatedCostUsd")
+        || !result.hasNonNull("costBenefitBasis")
+        || !result.hasNonNull("creditAction")) {
+      throw new IllegalArgumentException("Parecer financeiro de vídeo incompleto.");
+    }
+    LinkedHashMap<String, Object> decision = new LinkedHashMap<>();
+    decision.put("decision", result.get("decision").asText());
+    decision.put("reason", result.get("reason").asText());
+    decision.put("decidedByAgentKey", "financial-agent");
+    decision.put("recommendedAggregator", result.get("recommendedAggregator").asText());
+    decision.put("recommendedRoute", result.get("recommendedRoute").asText());
+    decision.put("estimatedCostUsd", result.get("estimatedCostUsd").decimalValue());
+    decision.put("costBenefitBasis", result.get("costBenefitBasis").asText());
+    decision.put("creditAction", result.get("creditAction").asText());
+    decision.put(
+        "recommendedRechargeCredits",
+        result.path("recommendedRechargeCredits").isNumber()
+            ? result.get("recommendedRechargeCredits").decimalValue()
+            : null);
+    decision.put(
+        "rechargeUrl",
+        result.path("rechargeUrl").isTextual() ? result.get("rechargeUrl").asText() : null);
+    return decision;
+  }
+
+  /** Monta o comando de gate sem pesquisa externa e com telemetria JSON auditável. */
+  List<String> buildVideoReviewCommand(Path output, Path schema) {
+    List<String> command =
+        new ArrayList<>(
+            List.of(
+                properties.getCodexCommand(),
+                "exec",
+                "-",
+                "--skip-git-repo-check",
+                "--sandbox",
+                "read-only",
+                "--cd",
+                properties.getRepositoryPath(),
+                "--output-schema",
+                schema.toString(),
+                "--output-last-message",
+                output.toString(),
+                "--json",
+                "--color",
+                "never",
+                "--config",
+                "approval_policy=\"never\"",
+                "--config",
+                "service_tier=\"" + configuredServiceTier() + "\"",
+                "--config",
+                "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
+    if (properties.getModel() != null && !properties.getModel().isBlank()) {
+      command.add("--model");
+      command.add(properties.getModel());
+    }
+    return command;
+  }
+
+  /** Separa a regra estável de Plutus do snapshot variável do ciclo. */
+  PromptComposition buildVideoPromptComposition(VideoProductionCycleReview cycle)
+      throws IOException {
+    String template = read("prompts/financial-agent/v1/video-cycle-review.md");
+    String marker = "Ciclo e snapshot:";
+    int markerIndex = template.indexOf(marker);
+    if (markerIndex < 0 || !template.contains("{{CYCLE}}")) {
+      throw new IllegalStateException("Prompt de revisão de vídeo sem marcador versionado.");
+    }
+    String agentPromptPart = template.substring(0, markerIndex).trim();
+    String activityPromptPart = marker + "\n" + objectMapper.writeValueAsString(cycle);
+    return new PromptComposition(
+        agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }
 
   /** Pesquisa somente fontes oficiais e devolve preço comparável com resposta bruta auditável. */

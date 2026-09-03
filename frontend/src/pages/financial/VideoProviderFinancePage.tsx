@@ -21,7 +21,9 @@ const statusClass = {
 } as const;
 
 function credits(value: number | null) {
-  return value === null ? "Não determinável" : value.toLocaleString("pt-BR");
+  return value === null
+    ? "Não determinável"
+    : `${value.toLocaleString("pt-BR")} créditos`;
 }
 
 function instant(value: string | null) {
@@ -48,9 +50,9 @@ export default function VideoProviderFinancePage() {
       <div className="alert alert-info d-flex gap-2 align-items-start">
         <CircleDollarSign size={20} aria-hidden="true" />
         <span>
-          O saldo é estimado pelas recargas registradas menos o consumo do
-          ledger. Uma recusa do provedor prevalece sobre a estimativa. Esta tela
-          não compra créditos nem ativa recarga automática.
+          O snapshot oficial da conta prevalece quando recente. Recargas e
+          ledger continuam visíveis para reconciliação histórica. Esta tela não
+          compra créditos nem ativa recarga automática.
         </span>
       </div>
 
@@ -92,7 +94,9 @@ export default function VideoProviderFinancePage() {
                   <div>
                     <h2 className="h5 mb-1">{balance.provider}</h2>
                     <small className="text-muted">
-                      Estimativa financeira auditável
+                      {balance.aggregatorName && balance.accountKey
+                        ? `${balance.aggregatorName} · ${balance.accountKey}`
+                        : "Estimativa financeira auditável"}
                     </small>
                   </div>
                   <span className={`badge ${statusClass[balance.status]}`}>
@@ -101,6 +105,34 @@ export default function VideoProviderFinancePage() {
                 </div>
 
                 <dl className="row mb-3">
+                  <dt className="col-7">Snapshot oficial</dt>
+                  <dd className="col-5 text-end fw-semibold">
+                    {balance.officialSnapshotStatus}
+                  </dd>
+                  <dt className="col-7">Saldo oficial</dt>
+                  <dd className="col-5 text-end fw-semibold">
+                    {credits(balance.officialBalanceCredits)}
+                  </dd>
+                  <dt className="col-7">Reservado no Hub</dt>
+                  <dd className="col-5 text-end">
+                    {credits(balance.reservedCredits)}
+                  </dd>
+                  <dt className="col-7">Disponível após reservas</dt>
+                  <dd className="col-5 text-end fw-semibold">
+                    {credits(balance.officialAvailableCredits)}
+                  </dd>
+                  <dt className="col-7">Limite mensal de compra</dt>
+                  <dd className="col-5 text-end">
+                    {credits(balance.maxMonthlyCreditSpend)}
+                  </dd>
+                  <dt className="col-7">Observado oficialmente</dt>
+                  <dd className="col-5 text-end">
+                    {instant(balance.officialObservedAt)}
+                  </dd>
+                  <dt className="col-7">Validade do snapshot</dt>
+                  <dd className="col-5 text-end">
+                    {instant(balance.officialExpiresAt)}
+                  </dd>
                   <dt className="col-7">Cenas aceitas pelo provedor</dt>
                   <dd className="col-5 text-end fw-semibold">
                     {balance.acceptedSceneRequests.toLocaleString("pt-BR")}
@@ -189,10 +221,24 @@ export default function VideoProviderFinancePage() {
                   <div className="alert alert-light border">
                     Capacidade de referência:{" "}
                     <strong>
-                      {credits(balance.estimatedReferenceClips)} clipes
+                      {balance.estimatedReferenceClips === null
+                        ? "não determinável"
+                        : `${balance.estimatedReferenceClips.toLocaleString("pt-BR")} clipes`}
                     </strong>
-                    {` de ${balance.referenceClipSeconds}s em ${balance.referenceModel} (${balance.referenceClipCredits} créditos por clipe).`}
+                    {balance.referenceClipSeconds !== null &&
+                    balance.referenceClipCredits !== null
+                      ? ` de ${balance.referenceClipSeconds}s em ${balance.referenceModel} (${balance.referenceClipCredits} créditos por clipe).`
+                      : ` para ${balance.referenceModel} enquanto custo ou consumo permanecer incompleto.`}
                   </div>
+                ) : null}
+
+                {balance.quotaSnapshotJson ? (
+                  <details className="mb-3">
+                    <summary>Ver quota oficial por modelo</summary>
+                    <pre className="text-wrap small mt-2">
+                      {balance.quotaSnapshotJson}
+                    </pre>
+                  </details>
                 ) : null}
 
                 {balance.lastCreditFailureAt ? (
@@ -220,6 +266,17 @@ export default function VideoProviderFinancePage() {
                     rel="noopener noreferrer"
                   >
                     Conferir no portal do provedor{" "}
+                    <ExternalLink size={14} aria-hidden="true" />
+                  </a>
+                ) : null}
+                {balance.officialSourceUrl ? (
+                  <a
+                    className="d-block mt-2"
+                    href={balance.officialSourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Fonte oficial do saldo e quota{" "}
                     <ExternalLink size={14} aria-hidden="true" />
                   </a>
                 ) : null}

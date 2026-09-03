@@ -257,7 +257,8 @@ public class VideoManagementProperties {
                 "RUNWAY", "RUNWAY_GEN_4_5", "RUNWAY_SEEDANCE_2", "RUNWAY_SEEDANCE_2_5", "RUNWAY_HAILUO_3",
                 "RUNWAY_GROK_IMAGINE_1_5",
                 "RUNWAY_ACT_TWO",
-                "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1", "RUNWAY_VEO_3_1_FAST", "RUNAWAY"));
+                "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1", "RUNWAY_VEO_3_1_FAST", "RUNWAY_ROUTER",
+                "RUNAWAY"));
 
         /**
          * Base URL oficial da API Runway.
@@ -280,6 +281,10 @@ public class VideoManagementProperties {
         private String createPath = "/v1/image_to_video";
         private String textCreatePath = "/v1/text_to_video";
         private String characterPerformancePath = "/v1/character_performance";
+        private String organizationPath = "/v1/organization";
+        private String routerGeneratePath = "/v1/generate/video";
+        private String draftRouterConfigId = "marketing-hub-instagram-draft-v1";
+        private String finalRouterConfigId = "marketing-hub-campaign-final-v1";
         private String statusPathTemplate = "/v1/tasks/{taskId}";
         private String ratio = "720:1280";
         private int durationSeconds = 10;

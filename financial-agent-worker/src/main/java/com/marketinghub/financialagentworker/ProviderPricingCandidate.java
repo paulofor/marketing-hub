@@ -7,6 +7,10 @@ import java.time.Instant;
 public record ProviderPricingCandidate(
     Long id,
     String displayName,
+    String manufacturerName,
+    String aggregatorName,
+    String providerAccountKey,
+    String routeKey,
     String providerName,
     String externalModelId,
     String documentationUrl,

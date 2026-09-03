@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.service.provider;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
@@ -16,12 +17,16 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HexFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -95,24 +100,68 @@ public class RunwayVideoProvider implements VideoProvider {
         progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Enviando prompt para Runway");
 
         JsonNode jobMetadata = readMetadata(job);
-        int sceneCount = Math.max(1, jobMetadata.path("sceneCount").asInt(1));
+        List<Map<String, Object>> routerRequests = routerRequests(job, jobMetadata);
+        boolean routed = !routerRequests.isEmpty();
+        List<JsonNode> selectedRoutes = routed
+                ? validateRoutedPlan(job, jobMetadata, routerRequests)
+                : List.of();
+        BigDecimal reservedCredits = routed
+                ? jobMetadata.path("providerReservedCredits").decimalValue()
+                : BigDecimal.ZERO;
+        int sceneCount = routed
+                ? routerRequests.size()
+                : Math.max(1, jobMetadata.path("sceneCount").asInt(1));
         List<ProviderFile> scenes = new ArrayList<>();
         List<String> taskIds = new ArrayList<>();
         Map<String, Object> payload = null;
         JsonNode finalStatus = null;
+        String lastModel = null;
+        int lastClipDuration = 0;
+        int totalDurationSeconds = 0;
+        BigDecimal totalEstimatedCredits = BigDecimal.ZERO;
         for (int scene = 1; scene <= sceneCount; scene++) {
-            payload = buildPayload(job, profile, script, scene, sceneCount);
+            if (routed) {
+                requireFreshReservation(job, jobMetadata);
+            }
+            payload = routed
+                    ? new LinkedHashMap<>(routerRequests.get(scene - 1))
+                    : buildPayload(job, profile, script, scene, sceneCount);
             boolean characterPerformance = "act_two".equals(payload.get("model"));
-            if (sceneCount > 1 && !characterPerformance) {
+            if (!routed && sceneCount > 1 && !characterPerformance) {
                 payload.put("promptText", sceneDirective(scene, sceneCount) + " " + payload.get("promptText"));
             }
-            String taskId = submitRender(job, payload);
+            JsonNode submission = submitRender(job, payload);
+            String taskId = firstText(submission, "/id", "/taskId", "/task_id");
             taskIds.add(taskId);
-            String model = String.valueOf(payload.get("model"));
-            int durationSeconds = characterPerformance
-                    ? resolveDuration(job, properties.getProviders().getRunway(), jobMetadata)
-                    : ((Number) payload.get("duration")).intValue();
-            int estimatedCredits = estimateCredits(model, durationSeconds);
+            RoutedSubmission routedSubmission = routed
+                    ? validateRoutedSubmission(
+                            job,
+                            scene,
+                            payload,
+                            selectedRoutes.get(scene - 1),
+                            submission,
+                            totalEstimatedCredits,
+                            reservedCredits,
+                            sceneCount,
+                            progressCallback)
+                    : null;
+            String model = routed ? routedSubmission.model() : String.valueOf(payload.get("model"));
+            int durationSeconds = routed
+                    ? ((Number) ((Map<?, ?>) payload.get("input")).get("duration")).intValue()
+                    : characterPerformance
+                            ? resolveDuration(job, properties.getProviders().getRunway(), jobMetadata)
+                            : ((Number) payload.get("duration")).intValue();
+            BigDecimal estimatedCredits = routed
+                    ? routedSubmission.estimatedCredits()
+                    : BigDecimal.valueOf(estimateCredits(model, durationSeconds));
+            if (!StringUtils.hasText(model) || estimatedCredits.signum() <= 0) {
+                throw new VideoProviderException("PROVIDER_AUDIT_FAILED",
+                        "Runway Router não confirmou modelo e custo antes de processar a task");
+            }
+            lastModel = model;
+            lastClipDuration = durationSeconds;
+            totalDurationSeconds += durationSeconds;
+            totalEstimatedCredits = totalEstimatedCredits.add(estimatedCredits);
             progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
                     "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
                     providerTaskDetails(taskId, model, scene, sceneCount, durationSeconds, estimatedCredits));
@@ -127,7 +176,9 @@ public class RunwayVideoProvider implements VideoProvider {
 
         ProviderFile video = scenes.size() == 1 ? scenes.getFirst() : assembleScenes(job, scenes);
         String taskId = String.join(",", taskIds);
-        Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus, sceneCount);
+        Map<String, Object> metadata = metadata(
+                job, taskId, payload, finalStatus, sceneCount, lastModel, lastClipDuration,
+                totalDurationSeconds, totalEstimatedCredits);
         metadata.put("scene_count", sceneCount);
         metadata.put("assembled_locally", sceneCount > 1);
         progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Runway finalizada com MP4 disponível");
@@ -187,10 +238,12 @@ public class RunwayVideoProvider implements VideoProvider {
         }
     }
 
-    /** Cria a tarefa image-to-video ou text-to-video na Runway. */
-    private String submitRender(SalesVideoJob job, Map<String, Object> payload) {
+    /** Cria a tarefa direta ou roteada e devolve a decisão de modelo e custo da Runway. */
+    private JsonNode submitRender(SalesVideoJob job, Map<String, Object> payload) {
         String path;
-        if ("act_two".equals(payload.get("model"))) {
+        if (payload.containsKey("configId") && payload.containsKey("input")) {
+            path = properties.getProviders().getRunway().getRouterGeneratePath();
+        } else if ("act_two".equals(payload.get("model"))) {
             path = properties.getProviders().getRunway().getCharacterPerformancePath();
         } else {
             path = payload.containsKey("promptImage")
@@ -216,7 +269,190 @@ public class RunwayVideoProvider implements VideoProvider {
             throw new VideoProviderException("PROVIDER_RENDER_FAILED",
                     "Runway não retornou id de tarefa para o job " + job.id());
         }
-        return taskId;
+        return response;
+    }
+
+    /** Lê e verifica as requisições exatas aprovadas no dry run antes da primeira task faturável. */
+    private List<Map<String, Object>> routerRequests(SalesVideoJob job, JsonNode metadata) {
+        String raw = metadata.path("runwayRouterRequestsJson").asText(null);
+        if (!StringUtils.hasText(raw)) return List.of();
+        String expectedHash = metadata.path("providerPreflightPayloadSha256").asText("").trim();
+        if (!StringUtils.hasText(expectedHash) || !expectedHash.equalsIgnoreCase(sha256(raw))) {
+            throw new VideoProviderException("PROVIDER_PREFLIGHT_HASH_MISMATCH",
+                    "Payload Runway do job diverge do dry run aprovado; jobId=" + job.id());
+        }
+        try {
+            List<Map<String, Object>> requests = objectMapper.readValue(raw, new TypeReference<>() {});
+            if (requests.isEmpty()
+                    || requests.stream().anyMatch(request ->
+                            request.get("configId") == null
+                                    || !StringUtils.hasText(request.get("configId").toString())
+                                    || !(request.get("input") instanceof Map<?, ?>))) {
+                throw new VideoProviderException("PROVIDER_INVALID_REQUEST",
+                        "Preflight Runway não contém requisições roteáveis.");
+            }
+            return requests;
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao ler payload congelado do Runway Router; jobId={}", job.id(), ex);
+            throw new VideoProviderException("PROVIDER_INVALID_REQUEST",
+                    "Payload congelado do Runway Router contém JSON inválido.", ex);
+        }
+    }
+
+    /** Valida teto reservado, conta e decisão de cada cena antes da primeira chamada faturável. */
+    private List<JsonNode> validateRoutedPlan(
+            SalesVideoJob job, JsonNode metadata, List<Map<String, Object>> requests) {
+        String raw = metadata.path("runwaySelectedRoutesJson").asText(null);
+        BigDecimal reserved = metadata.path("providerReservedCredits").decimalValue();
+        if (!StringUtils.hasText(raw)
+                || !metadata.path("providerCreditReservationId").canConvertToLong()
+                || metadata.path("providerCreditReservationId").asLong() <= 0
+                || !metadata.path("providerReservedCredits").isNumber()
+                || reserved.signum() <= 0) {
+            throw new VideoProviderException(
+                    "PROVIDER_RESERVATION_INVALID",
+                    "Job roteado não possui reserva e rotas financeiras auditáveis; jobId=" + job.id());
+        }
+        try {
+            JsonNode routes = objectMapper.readTree(raw);
+            if (!routes.isArray() || routes.size() != requests.size()) {
+                throw new VideoProviderException(
+                        "PROVIDER_PREFLIGHT_ROUTE_MISMATCH",
+                        "Quantidade de rotas difere das requisições aprovadas; jobId=" + job.id());
+            }
+            BigDecimal maximum = BigDecimal.ZERO;
+            List<JsonNode> result = new ArrayList<>();
+            for (int index = 0; index < routes.size(); index++) {
+                JsonNode route = routes.get(index);
+                String requestConfig = String.valueOf(requests.get(index).get("configId"));
+                BigDecimal estimate = route.path("estimatedCredits").decimalValue();
+                BigDecimal ceiling = route.path("priceCeilingCredits").decimalValue();
+                if (!requestConfig.equals(route.path("routerConfigId").asText())
+                        || !("RUNWAY_ROUTER:" + requestConfig).equals(route.path("batchRouteId").asText())
+                        || !"Runway".equals(route.path("aggregator").asText())
+                        || !"RUNWAY_PRIMARY".equals(route.path("accountKey").asText())
+                        || !route.path("manufacturer").isTextual()
+                        || route.path("manufacturer").asText().isBlank()
+                        || !route.path("model").isTextual()
+                        || route.path("model").asText().isBlank()
+                        || !route.path("optimizeFor").isTextual()
+                        || route.path("optimizeFor").asText().isBlank()
+                        || !route.path("estimatedCredits").isNumber()
+                        || !route.path("priceCeilingCredits").isNumber()
+                        || estimate.signum() <= 0
+                        || ceiling.signum() <= 0
+                        || estimate.compareTo(ceiling) > 0) {
+                    throw new VideoProviderException(
+                            "PROVIDER_PREFLIGHT_ROUTE_MISMATCH",
+                            "Rota financeira do preflight está incompleta; jobId=" + job.id());
+                }
+                maximum = maximum.add(ceiling);
+                result.add(route);
+            }
+            if (maximum.compareTo(reserved) > 0) {
+                throw new VideoProviderException(
+                        "PROVIDER_RESERVATION_INVALID",
+                        "Reserva não cobre os tetos das rotas aprovadas; jobId=" + job.id());
+            }
+            return result;
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao ler rotas aprovadas do Runway Router; jobId={}", job.id(), ex);
+            throw new VideoProviderException(
+                    "PROVIDER_PREFLIGHT_ROUTE_MISMATCH",
+                    "Rotas aprovadas contêm JSON inválido.",
+                    ex);
+        }
+    }
+
+    /** Confere a resposta cobrável com o dry run e interrompe antes de qualquer cena seguinte. */
+    private RoutedSubmission validateRoutedSubmission(
+            SalesVideoJob job,
+            int scene,
+            Map<String, Object> request,
+            JsonNode expected,
+            JsonNode submission,
+            BigDecimal consumedBefore,
+            BigDecimal reservedCredits,
+            int sceneCount,
+            ProgressCallback progressCallback) {
+        JsonNode routing = submission.path("routing");
+        JsonNode settings = routing.path("resolvedSettings");
+        BigDecimal estimated = routing.path("estimatedCost").path("credits").decimalValue();
+        BigDecimal ceiling = settings.path("priceCeiling").decimalValue();
+        String configId = String.valueOf(request.get("configId"));
+        boolean matches = submission.path("dryRun").isBoolean()
+                && !submission.path("dryRun").asBoolean()
+                && routing.isObject()
+                && routing.path("configId").asText().equals(configId)
+                && routing.path("configId").asText().equals(expected.path("routerConfigId").asText())
+                && routing.path("model").asText().equals(expected.path("model").asText())
+                && routing.path("provider").asText().equals(expected.path("manufacturer").asText())
+                && routing.path("resolvedInput").isObject()
+                && settings.path("optimizeFor").asText().equals(expected.path("optimizeFor").asText())
+                && settings.path("priceCeiling").isNumber()
+                && ceiling.compareTo(expected.path("priceCeilingCredits").decimalValue()) == 0
+                && routing.path("estimatedCost").path("credits").isNumber()
+                && estimated.signum() > 0
+                && estimated.compareTo(ceiling) <= 0
+                && consumedBefore.add(estimated).compareTo(reservedCredits) <= 0;
+        if (!matches) {
+            String taskId = firstText(submission, "/id", "/taskId", "/task_id");
+            String observedModel = routing.path("model").asText(expected.path("model").asText());
+            int durationSeconds = ((Number) ((Map<?, ?>) request.get("input")).get("duration")).intValue();
+            BigDecimal auditedCredits =
+                    routing.path("estimatedCost").path("credits").isNumber() && estimated.signum() > 0
+                            ? estimated
+                            : expected.path("estimatedCredits").decimalValue();
+            progressCallback.onProgress(
+                    10 + (scene * 65 / sceneCount),
+                    SalesVideoStatus.VIDEO_PROCESSING,
+                    "Runway aceitou a cena, mas divergiu do preflight; taskId=" + taskId,
+                    providerTaskDetails(
+                            taskId,
+                            observedModel,
+                            scene,
+                            sceneCount,
+                            durationSeconds,
+                            auditedCredits));
+            log.error(
+                    "Runway Router divergiu do preflight após aceitar task; jobId={} scene={} taskId={} response={}",
+                    job.id(),
+                    scene,
+                    taskId,
+                    submission);
+            throw new VideoProviderException(
+                    "PROVIDER_ROUTING_DRIFT",
+                    "A resposta faturável da Runway divergiu do dry run ou da reserva; nenhuma cena adicional será criada.");
+        }
+        return new RoutedSubmission(routing.path("model").asText(), estimated);
+    }
+
+    /** Impede início ou continuação de lote pago depois da validade da reserva financeira. */
+    private void requireFreshReservation(SalesVideoJob job, JsonNode metadata) {
+        String value = metadata.path("providerReservationExpiresAt").asText(null);
+        try {
+            if (!StringUtils.hasText(value) || !Instant.parse(value).isAfter(Instant.now())) {
+                throw new VideoProviderException(
+                        "PROVIDER_RESERVATION_EXPIRED",
+                        "A reserva financeira expirou antes da chamada Runway; jobId=" + job.id());
+            }
+        } catch (java.time.format.DateTimeParseException ex) {
+            log.error("Validade da reserva Runway inválida; jobId={} value={}", job.id(), value, ex);
+            throw new VideoProviderException(
+                    "PROVIDER_RESERVATION_INVALID", "Validade da reserva financeira inválida.", ex);
+        }
+    }
+
+    /** Calcula o SHA-256 do texto exato persistido pelo preflight. */
+    private String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256")
+                            .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException ex) {
+            log.error("SHA-256 indisponível ao validar payload Runway", ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "SHA-256 indisponível.", ex);
+        }
     }
 
     /** Aguarda a tarefa Runway chegar em sucesso ou falha objetiva. */
@@ -225,7 +461,7 @@ public class RunwayVideoProvider implements VideoProvider {
                                         int scene,
                                         int sceneCount,
                                         int durationSeconds,
-                                        int estimatedCredits,
+                                        BigDecimal estimatedCredits,
                                         ProgressCallback progressCallback) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         for (int attempt = 1; attempt <= config.getMaxPollAttempts(); attempt++) {
@@ -257,7 +493,7 @@ public class RunwayVideoProvider implements VideoProvider {
                 progressCallback.onProgress(80, SalesVideoStatus.VIDEO_PROCESSING,
                         "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
                         providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
-                                charged ? estimatedCredits : 0,
+                                charged ? estimatedCredits : BigDecimal.ZERO,
                                 charged ? "CONTRACTUAL_CHARGE" : "CONTRACTUAL_REFUND",
                                 "CONTRACTUAL_RATE_CARD",
                                 charged ? "PROVIDER_RATE_CARD_AND_SAFETY_FAILURE"
@@ -506,19 +742,19 @@ public class RunwayVideoProvider implements VideoProvider {
                                          String taskId,
                                          Map<String, Object> request,
                                          JsonNode finalStatus,
-                                         int sceneCount) {
+                                         int sceneCount,
+                                         String model,
+                                         int clipDurationSeconds,
+                                         int totalDurationSeconds,
+                                         BigDecimal totalEstimatedCredits) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "RUNWAY");
         metadata.put("provider_job_id", taskId);
-        String model = String.valueOf(request.get("model"));
-        int clipDurationSeconds = "act_two".equals(model)
-                ? resolveDuration(job, properties.getProviders().getRunway(), readMetadata(job))
-                : ((Number) request.get("duration")).intValue();
         metadata.put("model", model);
         metadata.put("ratio", properties.getProviders().getRunway().getRatio());
-        metadata.put("duration_seconds", clipDurationSeconds * sceneCount);
+        metadata.put("duration_seconds", totalDurationSeconds);
         metadata.put("clip_duration_seconds", clipDurationSeconds);
-        metadata.put("cost_usd", estimateCostUsd(model, clipDurationSeconds, sceneCount));
+        metadata.put("cost_usd", totalEstimatedCredits.multiply(new BigDecimal("0.01")));
         metadata.put("cost_scope", "ALL_SCENES");
         metadata.put("pricing_source", "Runway API charges credits per second by model; see official pricing");
         metadata.put("request", request);
@@ -557,7 +793,7 @@ public class RunwayVideoProvider implements VideoProvider {
                                        int scene,
                                        int sceneCount,
                                        int durationSeconds,
-                                       int estimatedCredits) {
+                                       BigDecimal estimatedCredits) {
         try {
             Map<String, Object> details = new LinkedHashMap<>();
             details.put("eventType", "PROVIDER_TASK_ACCEPTED");
@@ -568,7 +804,7 @@ public class RunwayVideoProvider implements VideoProvider {
             details.put("plannedSceneCount", sceneCount);
             details.put("durationSeconds", durationSeconds);
             details.put("estimatedCredits", estimatedCredits);
-            details.put("estimatedCostUsd", BigDecimal.valueOf(estimatedCredits).multiply(new BigDecimal("0.01")));
+            details.put("estimatedCostUsd", estimatedCredits.multiply(new BigDecimal("0.01")));
             return objectMapper.writeValueAsString(details);
         } catch (JsonProcessingException ex) {
             log.error("Falha ao serializar consumo da task Runway; taskId={}", taskId, ex);
@@ -582,7 +818,7 @@ public class RunwayVideoProvider implements VideoProvider {
                                                  int scene,
                                                  int sceneCount,
                                                  int durationSeconds,
-                                                 int billedCredits,
+                                                 BigDecimal billedCredits,
                                                  String settlementStatus,
                                                  String settlementBasis,
                                                  String billingEvidence) {
@@ -596,7 +832,7 @@ public class RunwayVideoProvider implements VideoProvider {
             details.put("plannedSceneCount", sceneCount);
             details.put("durationSeconds", durationSeconds);
             details.put("billedCredits", billedCredits);
-            details.put("billedCostUsd", BigDecimal.valueOf(billedCredits).multiply(new BigDecimal("0.01")));
+            details.put("billedCostUsd", billedCredits.multiply(new BigDecimal("0.01")));
             details.put("settlementStatus", settlementStatus);
             details.put("settlementBasis", settlementBasis);
             details.put("billingEvidence", billingEvidence);
@@ -742,6 +978,9 @@ public class RunwayVideoProvider implements VideoProvider {
                     "metadataJson inválido para job Runway " + job.id(), ex);
         }
     }
+
+    /** Representa modelo e custo confirmados pela resposta cobrável do Router. */
+    private record RoutedSubmission(String model, BigDecimal estimatedCredits) {}
 
     /** Resolve base URL configurada para a API Runway. */
     private String resolveBaseUrl() {

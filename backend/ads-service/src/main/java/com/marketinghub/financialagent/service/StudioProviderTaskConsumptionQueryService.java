@@ -2,6 +2,7 @@ package com.marketinghub.financialagent.service;
 
 import com.marketinghub.financialagent.StudioProviderTaskConsumption;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +30,16 @@ public class StudioProviderTaskConsumptionQueryService {
         .toList();
   }
 
+  /**
+   * Resume eficiência por modelo sem expor a entidade ou o repository fora do módulo financeiro.
+   */
+  @Transactional(readOnly = true)
+  public List<ProviderRouteEfficiencyView> summarizeEfficiencyByProvider(String provider) {
+    return repository.summarizeEfficiencyByProvider(provider).stream()
+        .map(this::toRouteEfficiencyView)
+        .toList();
+  }
+
   /** Converte uma entidade financeira no contrato mínimo necessário aos consumidores. */
   private ProviderTaskConsumptionView toView(StudioProviderTaskConsumption task) {
     return new ProviderTaskConsumptionView(
@@ -46,6 +57,29 @@ public class StudioProviderTaskConsumptionQueryService {
         task.getCommercialEvaluatedBy(),
         task.getCommercialEvaluatedAt(),
         task.getAcceptedAt());
+  }
+
+  /** Converte a projeção agregada do banco em contrato financeiro imutável. */
+  private ProviderRouteEfficiencyView toRouteEfficiencyView(Object[] row) {
+    return new ProviderRouteEfficiencyView(
+        String.valueOf(row[0]),
+        number(row, 1).longValue(),
+        number(row, 2).longValue(),
+        decimal(row, 3),
+        number(row, 4).longValue(),
+        decimal(row, 5));
+  }
+
+  /** Converte um campo numérico agregado preservando zero real. */
+  private Number number(Object[] row, int index) {
+    return row[index] instanceof Number value ? value : 0L;
+  }
+
+  /** Converte custo agregado para decimal sem inferir custo ausente. */
+  private BigDecimal decimal(Object[] row, int index) {
+    if (row[index] instanceof BigDecimal value) return value;
+    if (row[index] instanceof Number value) return new BigDecimal(value.toString());
+    return BigDecimal.ZERO;
   }
 
   /** Persiste a avaliação comercial editorial de uma task produzida. */

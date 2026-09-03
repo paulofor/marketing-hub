@@ -1,0 +1,266 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-01-provider-model-identities
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: sales_video_provider_model
+              columnName: manufacturer_name
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_provider_model
+                ADD COLUMN manufacturer_name VARCHAR(120) NULL AFTER display_name,
+                ADD COLUMN aggregator_name VARCHAR(120) NULL AFTER manufacturer_name,
+                ADD COLUMN provider_account_key VARCHAR(80) NULL AFTER aggregator_name,
+                ADD COLUMN route_key VARCHAR(120) NULL AFTER provider_account_key;
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-02-provider-model-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: sales_video_provider_model
+            columnName: route_key
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE sales_video_provider_model
+              SET manufacturer_name = COALESCE(manufacturer_name, CASE
+                    WHEN adapter_key = 'RUNWAY' AND external_model_id LIKE 'seedance%' THEN 'ByteDance'
+                    WHEN adapter_key = 'RUNWAY' AND external_model_id LIKE 'hailuo%' THEN 'MiniMax'
+                    WHEN adapter_key = 'RUNWAY' AND external_model_id LIKE 'veo%' THEN 'Google'
+                    WHEN adapter_key = 'RUNWAY' AND external_model_id LIKE 'grok%' THEN 'xAI'
+                    WHEN adapter_key = 'RUNWAY' THEN 'Runway'
+                    WHEN adapter_key = 'LUMA' THEN 'Luma AI'
+                    WHEN adapter_key = 'KLING' THEN 'Kuaishou'
+                    WHEN adapter_key = 'VEO' THEN 'Google'
+                    WHEN adapter_key = 'HEYGEN' THEN 'HeyGen'
+                    ELSE adapter_key
+                  END),
+                  aggregator_name = COALESCE(
+                    aggregator_name,
+                    CASE WHEN adapter_key = 'RUNWAY' THEN 'Runway' ELSE adapter_key END),
+                  provider_account_key = COALESCE(
+                    provider_account_key,
+                    CASE WHEN adapter_key = 'RUNWAY' THEN 'RUNWAY_PRIMARY' ELSE NULL END),
+                  route_key = COALESCE(route_key, code);
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-03-provider-model-required
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: sales_video_provider_model
+            columnName: route_key
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_provider_model
+                MODIFY COLUMN manufacturer_name VARCHAR(120) NOT NULL,
+                MODIFY COLUMN aggregator_name VARCHAR(120) NOT NULL,
+                MODIFY COLUMN route_key VARCHAR(120) NOT NULL;
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-04-cycle-recommendation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: video_production_cycle
+              columnName: recommended_aggregator
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_production_cycle
+                ADD COLUMN recommended_aggregator VARCHAR(120) NULL,
+                ADD COLUMN recommended_route VARCHAR(191) NULL,
+                ADD COLUMN estimated_cost_usd DECIMAL(12,6) NULL,
+                ADD COLUMN cost_benefit_basis LONGTEXT NULL,
+                ADD COLUMN credit_action VARCHAR(32) NULL,
+                ADD COLUMN recommended_recharge_credits DECIMAL(14,4) NULL,
+                ADD COLUMN recharge_url VARCHAR(500) NULL;
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-05-provider-account
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: video_provider_account
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_provider_account (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                aggregator_name VARCHAR(120) NOT NULL,
+                account_key VARCHAR(80) NOT NULL,
+                display_name VARCHAR(191) NOT NULL,
+                credit_unit_usd DECIMAL(12,6) NOT NULL,
+                official_balance_credits DECIMAL(14,4) NULL,
+                reserved_credits DECIMAL(14,4) NOT NULL DEFAULT 0,
+                max_monthly_credit_spend BIGINT NULL,
+                quota_snapshot_json LONGTEXT NULL,
+                usage_snapshot_json LONGTEXT NULL,
+                snapshot_status VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN',
+                snapshot_observed_at DATETIME NULL,
+                snapshot_expires_at DATETIME NULL,
+                source_url VARCHAR(500) NOT NULL,
+                recharge_url VARCHAR(500) NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_video_provider_account_key (account_key),
+                INDEX idx_video_provider_account_aggregator (aggregator_name)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-06-provider-account-seed
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: video_provider_account
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO video_provider_account
+                (aggregator_name, account_key, display_name, credit_unit_usd, official_balance_credits,
+                 reserved_credits, max_monthly_credit_spend, snapshot_status, source_url, recharge_url,
+                 created_at, updated_at)
+              VALUES
+                ('Runway', 'RUNWAY_PRIMARY', 'Runway · conta principal', 0.010000, NULL,
+                 0, NULL, 'UNKNOWN', 'https://api.dev.runwayml.com/v1/organization',
+                 'https://dev.runwayml.com/', NOW(), NOW())
+              ON DUPLICATE KEY UPDATE account_key = VALUES(account_key);
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-07-provider-preflight
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: video_provider_preflight
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_provider_preflight (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                video_production_cycle_id BIGINT NOT NULL,
+                provider_account_id BIGINT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                production_profile VARCHAR(32) NOT NULL,
+                router_config_id VARCHAR(80) NULL,
+                payload_sha256 CHAR(64) NULL,
+                execution_requests_json LONGTEXT NULL,
+                organization_snapshot_json LONGTEXT NULL,
+                routing_response_json LONGTEXT NULL,
+                selected_routes_json LONGTEXT NULL,
+                estimated_credits DECIMAL(14,4) NULL,
+                estimated_cost_usd DECIMAL(12,6) NULL,
+                official_balance_credits DECIMAL(14,4) NULL,
+                reserved_credits_snapshot DECIMAL(14,4) NULL,
+                available_credits_snapshot DECIMAL(14,4) NULL,
+                max_monthly_credit_spend BIGINT NULL,
+                quota_snapshot_json LONGTEXT NULL,
+                failure_code VARCHAR(80) NULL,
+                failure_detail LONGTEXT NULL,
+                source_url VARCHAR(500) NOT NULL,
+                observed_at DATETIME NULL,
+                expires_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_video_provider_preflight_cycle (video_production_cycle_id),
+                INDEX idx_video_provider_preflight_status (status, created_at),
+                CONSTRAINT fk_video_provider_preflight_cycle
+                  FOREIGN KEY (video_production_cycle_id) REFERENCES video_production_cycle(id),
+                CONSTRAINT fk_video_provider_preflight_account
+                  FOREIGN KEY (provider_account_id) REFERENCES video_provider_account(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-09-03-runway-plutus-provider-preflight-v1-08-credit-reservation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: video_credit_reservation
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_credit_reservation (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                video_production_cycle_id BIGINT NOT NULL,
+                provider_preflight_id BIGINT NOT NULL,
+                provider_account_id BIGINT NOT NULL,
+                status VARCHAR(24) NOT NULL,
+                reserved_credits DECIMAL(14,4) NOT NULL,
+                reserved_cost_usd DECIMAL(12,6) NOT NULL,
+                actual_credits DECIMAL(14,4) NULL,
+                actual_cost_usd DECIMAL(12,6) NULL,
+                expires_at DATETIME NOT NULL,
+                reserved_at DATETIME NOT NULL,
+                settled_at DATETIME NULL,
+                released_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_video_credit_reservation_cycle (video_production_cycle_id),
+                UNIQUE KEY uk_video_credit_reservation_preflight (provider_preflight_id),
+                INDEX idx_video_credit_reservation_account (provider_account_id, status),
+                CONSTRAINT fk_video_credit_reservation_cycle
+                  FOREIGN KEY (video_production_cycle_id) REFERENCES video_production_cycle(id),
+                CONSTRAINT fk_video_credit_reservation_preflight
+                  FOREIGN KEY (provider_preflight_id) REFERENCES video_provider_preflight(id),
+                CONSTRAINT fk_video_credit_reservation_account
+                  FOREIGN KEY (provider_account_id) REFERENCES video_provider_account(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

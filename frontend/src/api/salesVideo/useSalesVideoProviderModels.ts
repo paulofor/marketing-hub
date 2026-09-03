@@ -5,6 +5,10 @@ export type SalesVideoProviderModel = {
   id: number;
   code: string;
   displayName: string;
+  manufacturerName: string;
+  aggregatorName: string;
+  providerAccountKey?: string | null;
+  routeKey: string;
   providerName: string;
   providerFamily: "OPENAI" | "EXTERNAL_VIDEO_MODULE";
   adapterKey: string;

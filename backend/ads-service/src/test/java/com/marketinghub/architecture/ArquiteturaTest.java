@@ -3918,7 +3918,9 @@ class ArquiteturaTest {
                           || targetName.equals(
                               "com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService")
                           || targetName.equals(
-                              "com.marketinghub.financialagent.service.ProviderTaskConsumptionView");
+                              "com.marketinghub.financialagent.service.ProviderTaskConsumptionView")
+                          || targetName.equals(
+                              "com.marketinghub.financialagent.service.ProviderRouteEfficiencyView");
                   if (!valid) {
                     String message =
                         "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem="

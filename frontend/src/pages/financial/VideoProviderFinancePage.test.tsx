@@ -46,6 +46,18 @@ vi.mock("../../api/financial/useVideoProviderCreditBalances", () => ({
           },
         ],
         creditsUrl: "https://dev.runwayml.com/",
+        aggregatorName: "Runway",
+        accountKey: "RUNWAY_PRIMARY",
+        officialSnapshotStatus: "READY",
+        officialBalanceCredits: 500,
+        reservedCredits: 50,
+        officialAvailableCredits: 450,
+        maxMonthlyCreditSpend: 10000,
+        quotaSnapshotJson:
+          '{"models":[{"model":"gen4_turbo","remainingDailyGenerations":19}]}',
+        officialObservedAt: "2026-09-03T16:00:00Z",
+        officialExpiresAt: "2026-09-03T16:05:00Z",
+        officialSourceUrl: "https://api.dev.runwayml.com/v1/organization",
       },
     ],
     isLoading: false,
@@ -68,6 +80,10 @@ describe("VideoProviderFinancePage", () => {
     expect(screen.getByText(/job #20993/i)).toBeInTheDocument();
     expect(screen.getByText(/0 clipes/i)).toBeInTheDocument();
     expect(screen.getByText("13")).toBeInTheDocument();
+    expect(screen.getByText("Runway · RUNWAY_PRIMARY")).toBeInTheDocument();
+    expect(screen.getByText("500 créditos")).toBeInTheDocument();
+    expect(screen.getByText("450 créditos")).toBeInTheDocument();
+    expect(screen.getByText(/remainingDailyGenerations/)).toBeInTheDocument();
     expect(screen.getByText("1/3")).toBeInTheDocument();
     expect(screen.getByText("task-abc")).toBeInTheDocument();
     expect(screen.getByText(/seedance2_5/)).toBeInTheDocument();
@@ -80,6 +96,9 @@ describe("VideoProviderFinancePage", () => {
     expect(screen.queryByText(/MUSA/i)).not.toBeInTheDocument();
     const portal = screen.getByRole("link", { name: /conferir no portal/i });
     expect(portal).toHaveAttribute("target", "_blank");
+    expect(
+      screen.getByRole("link", { name: /fonte oficial do saldo e quota/i }),
+    ).toHaveAttribute("target", "_blank");
 
     await userEvent.click(
       screen.getByRole("button", { name: /atualizar monitor/i }),

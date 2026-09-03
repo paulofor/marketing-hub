@@ -10,8 +10,10 @@ import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepos
 import com.marketinghub.repository.jpa.financialagent.StudioProviderCreditPurchaseRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProviderAccountRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobEvent;
+import com.marketinghub.salesvideo.VideoProviderAccount;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -41,10 +43,11 @@ public class ProviderCreditPurchaseService {
   private final StudioCostLedgerEntryRepository ledgerRepository;
   private final SalesVideoJobRepository videoJobRepository;
   private final SalesVideoJobEventRepository videoJobEventRepository;
+  private final VideoProviderAccountRepository providerAccountRepository;
 
   /** Inicializa o serviço com o repositório canônico das recargas. */
   ProviderCreditPurchaseService(StudioProviderCreditPurchaseRepository repository) {
-    this(repository, null, null, null);
+    this(repository, null, null, null, null);
   }
 
   /** Inicializa o serviço com recargas, consumos e recusas operacionais. */
@@ -53,11 +56,13 @@ public class ProviderCreditPurchaseService {
       StudioProviderCreditPurchaseRepository repository,
       StudioCostLedgerEntryRepository ledgerRepository,
       SalesVideoJobRepository videoJobRepository,
-      SalesVideoJobEventRepository videoJobEventRepository) {
+      SalesVideoJobEventRepository videoJobEventRepository,
+      VideoProviderAccountRepository providerAccountRepository) {
     this.repository = repository;
     this.ledgerRepository = ledgerRepository;
     this.videoJobRepository = videoJobRepository;
     this.videoJobEventRepository = videoJobEventRepository;
+    this.providerAccountRepository = providerAccountRepository;
   }
 
   /** Registra uma recarga idempotente com os dados comprovados pelo usuário. */
@@ -131,6 +136,20 @@ public class ProviderCreditPurchaseService {
     boolean runway = "RUNWAY".equals(provider);
     List<VideoProviderSceneRequestResponse> sceneRequests =
         runway ? sceneRequests(provider) : List.of();
+    VideoProviderAccount account =
+        runway && providerAccountRepository != null
+            ? providerAccountRepository.findByAccountKey("RUNWAY_PRIMARY").orElse(null)
+            : null;
+    BigDecimal officialAvailable =
+        account == null || account.getOfficialBalanceCredits() == null
+            ? null
+            : account
+                .getOfficialBalanceCredits()
+                .subtract(
+                    account.getReservedCredits() == null
+                        ? BigDecimal.ZERO
+                        : account.getReservedCredits())
+                .max(BigDecimal.ZERO);
     return new VideoProviderCreditBalanceResponse(
         provider,
         status,
@@ -150,7 +169,18 @@ public class ProviderCreditPurchaseService {
         unknownCosts,
         sceneRequests.size(),
         sceneRequests,
-        runway ? "https://dev.runwayml.com/" : null);
+        account != null ? account.getRechargeUrl() : runway ? "https://dev.runwayml.com/" : null,
+        account == null ? null : account.getAggregatorName(),
+        account == null ? null : account.getAccountKey(),
+        account == null ? "UNKNOWN" : account.getSnapshotStatus(),
+        account == null ? null : account.getOfficialBalanceCredits(),
+        account == null ? null : account.getReservedCredits(),
+        officialAvailable,
+        account == null ? null : account.getMaxMonthlyCreditSpend(),
+        account == null ? null : account.getQuotaSnapshotJson(),
+        account == null ? null : account.getSnapshotObservedAt(),
+        account == null ? null : account.getSnapshotExpiresAt(),
+        account == null ? null : account.getSourceUrl());
   }
 
   /** Deduplica progresso e heartbeat para contar somente cenas realmente aceitas. */

@@ -421,6 +421,7 @@ public class SalesVideoJobService {
     }
     jobRepository.save(job);
     syncStudioCostLedger(job, resolvedCostUsd, explicitCostUsd != null);
+    settleApolloReservation(job);
     syncExperimentVideoAsset(job, request, durationSeconds);
     syncFailedExperimentVideoAsset(job, completionFailureRequest(request));
     maybeUpdateProfileStatus(job, finalStatus);
@@ -535,6 +536,7 @@ public class SalesVideoJobService {
           request.getFailureDetail());
     }
     syncStudioCostLedger(job, null, false);
+    settleApolloReservation(job);
     syncFailedExperimentVideoAsset(job, request);
     maybeUpdateProfileStatus(job, newStatus);
     registerEvent(
@@ -559,6 +561,7 @@ public class SalesVideoJobService {
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
     syncStudioCostLedger(job, null, false);
+    settleApolloReservation(job);
     maybeUpdateProfileStatus(job, SalesVideoStatus.VIDEO_FAILED);
     registerEvent(
         job,
@@ -568,6 +571,12 @@ public class SalesVideoJobService {
         request.getMessage(),
         request.getDetailsJson());
     return toDto(job);
+  }
+
+  /** Libera a parcela não consumida e preserva custo real quando um job termina. */
+  private void settleApolloReservation(SalesVideoJob job) {
+    if (apolloBudgetMonitorService == null) return;
+    apolloBudgetMonitorService.settleReservation(readVideoProductionCycleId(job.getMetadataJson()));
   }
 
   /** Cria novo job de reprocessamento preservando o contrato operacional do job original. */

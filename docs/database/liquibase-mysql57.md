@@ -70,6 +70,14 @@ estrangeira, deduplicação por experimento e reaplicação do changelog:
 bash backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql57.sh
 ```
 
+O preflight financeiro Runway/Plutus possui fixture física própria. Ela valida as identidades de
+fabricante, modelo, agregador, conta e rota, os campos `DATETIME`, chaves estrangeiras, unicidade da
+reserva, retomada após DDL sem ledger e reaplicação idempotente:
+
+```bash
+bash backend/ads-service/scripts/validate-runway-plutus-provider-preflight-mysql57.sh
+```
+
 A homologação comercial MUSA v7 possui fixture física versionada. Ela valida produto e slot com o
 mesmo contrato JSON, identidade do checkout Pepper, reaplicação, rollback da reconciliação financeira
 e compatibilidade real com MySQL 5.7:

@@ -304,7 +304,7 @@ public class StudioCostLedgerService {
     if (taskConsumptionRepository == null) {
       return Map.of("taskCount", 0L, "credits", 0L, "costUsd", BigDecimal.ZERO);
     }
-    Long credits = taskConsumptionRepository.sumEstimatedCreditsByVideoProductionCycleId(cycleId);
+    Long credits = taskConsumptionRepository.sumMonitoredCreditsByVideoProductionCycleId(cycleId);
     BigDecimal cost =
         taskConsumptionRepository.sumMonitoredCostUsdByVideoProductionCycleId(cycleId);
     return Map.of(

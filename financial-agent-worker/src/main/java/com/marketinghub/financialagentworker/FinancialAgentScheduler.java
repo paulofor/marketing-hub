@@ -33,7 +33,15 @@ public class FinancialAgentScheduler {
     try {
       VideoProductionCycleReview cycle = pendingVideoCycleWithoutStarvation();
       if (cycle != null) {
-        backend.decideVideoCycle(cycle.id(), runner.reviewVideoCycle(cycle));
+        if (cycle.financialReviewRawResponse() != null
+            && !cycle.financialReviewRawResponse().isBlank()) {
+          backend.decideVideoCycle(
+              cycle.id(), runner.videoDecision(cycle.financialReviewRawResponse()));
+        } else {
+          VideoCycleReviewResult result = runner.reviewVideoCycle(cycle);
+          backend.recordVideoCycleAudit(cycle.id(), result.audit());
+          backend.decideVideoCycle(cycle.id(), result.decision());
+        }
         return;
       }
       if (properties.getCommercialPlanId() != null) {

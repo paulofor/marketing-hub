@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -128,6 +129,87 @@ class FinancialCodexRunnerTest {
             "não compare o total histórico sem plano com o teto incremental",
             "US$ 20 no total",
             "no máximo US$ 10 por vídeo",
-            "rastreabilidade do custo incremental novo");
+            "rastreabilidade do custo incremental novo",
+            "preflight READY e reserva preventiva ainda vigente",
+            "RUNWAY_ROUTER:<routerConfigId>",
+            "recarga mínima");
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/financial-agent/v1/video-cycle-review-schema.json"));
+    assertThat(schema)
+        .contains(
+            "recommendedAggregator",
+            "recommendedRoute",
+            "estimatedCostUsd",
+            "costBenefitBasis",
+            "RECHARGE_REQUIRED",
+            "recommendedRechargeCredits",
+            "rechargeUrl");
+  }
+
+  /** Mantém o gate de vídeo sem web e com tier, raciocínio e telemetria declarados. */
+  @Test
+  void comandoDeVideoDeveSerAuditavelESomenteSnapshot() {
+    FinancialAgentProperties properties = new FinancialAgentProperties();
+    properties.setCodexCommand("codex");
+    properties.setRepositoryPath("/workspace/marketing-hub");
+    properties.setModel("gpt-5.6-sol");
+    FinancialCodexRunner runner = new FinancialCodexRunner(properties, new ObjectMapper());
+
+    var command = runner.buildVideoReviewCommand(Path.of("/tmp/out"), Path.of("/tmp/schema"));
+
+    assertThat(command).contains("--json", "service_tier=\"default\"");
+    assertThat(command).contains("model_reasoning_effort=\"high\"");
+    assertThat(command).doesNotContain("--search");
+  }
+
+  /** Separa regra e atividade sem perder o snapshot nem duplicar chamada de modelo. */
+  @Test
+  void promptDeVideoDevePreservarComposicaoAuditavel() throws Exception {
+    FinancialCodexRunner runner =
+        new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+    VideoProductionCycleReview cycle =
+        new VideoProductionCycleReview(
+            91L,
+            37L,
+            4L,
+            3L,
+            91L,
+            "PENDING_FINANCIAL_REVIEW",
+            new BigDecimal("10.00"),
+            BigDecimal.ZERO,
+            "{\"providerPreflight\":{\"status\":\"READY\"}}",
+            322L,
+            null);
+
+    FinancialCodexRunner.PromptComposition prompt = runner.buildVideoPromptComposition(cycle);
+
+    assertThat(prompt.fullPrompt())
+        .contains(prompt.agentPromptPart(), prompt.activityPromptPart(), "providerPreflight");
+    assertThat(prompt.fullPrompt().indexOf(prompt.agentPromptPart()))
+        .isLessThan(prompt.fullPrompt().indexOf(prompt.activityPromptPart()));
+  }
+
+  /** Reconstrói a decisão persistida para retomar sem novo consumo de modelo. */
+  @Test
+  void deveReutilizarRespostaFinanceiraJaAuditada() throws Exception {
+    FinancialCodexRunner runner =
+        new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+
+    var decision =
+        runner.videoDecision(
+            "{\"decision\":\"APPROVED\",\"reason\":\"Saldo e teto válidos.\","
+                + "\"recommendedAggregator\":\"Runway\","
+                + "\"recommendedRoute\":\"RUNWAY_ROUTER:final\","
+                + "\"estimatedCostUsd\":1.25,"
+                + "\"costBenefitBasis\":\"Dry run oficial dentro do teto.\","
+                + "\"creditAction\":\"NO_PURCHASE\","
+                + "\"recommendedRechargeCredits\":null,\"rechargeUrl\":null}");
+
+    assertThat(decision)
+        .containsEntry("decision", "APPROVED")
+        .containsEntry("recommendedAggregator", "Runway")
+        .containsEntry("estimatedCostUsd", new BigDecimal("1.25"));
   }
 }

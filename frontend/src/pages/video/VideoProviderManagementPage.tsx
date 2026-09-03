@@ -176,6 +176,13 @@ export default function VideoProviderManagementPage() {
             <p className="video-provider-page__use">{option.recommendedUse}</p>
 
             <dl className="video-provider-page__facts">
+              <Fact label="Fabricante" value={model.manufacturerName} />
+              <Fact label="Agregador" value={model.aggregatorName} />
+              <Fact
+                label="Conta de créditos"
+                value={model.providerAccountKey ?? "Não vinculada"}
+              />
+              <Fact label="Rota" value={model.routeKey} />
               <Fact
                 label="Preço pesquisado"
                 value={formatProviderPrice(model)}

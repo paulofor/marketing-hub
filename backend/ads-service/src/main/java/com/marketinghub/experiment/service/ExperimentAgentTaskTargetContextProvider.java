@@ -194,7 +194,27 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
             canonicalCheckout
                 .map(CanonicalCheckout::checkoutUrl)
                 .orElse(experiment == null ? null : experiment.getCommercialCheckoutUrl()),
-            commercialPrice(experiment, product, canonicalCheckout)));
+            commercialPrice(experiment, product, canonicalCheckout),
+            pdeContext(product, processCode)));
+  }
+
+  /** Entrega o contrato PDE estruturado somente à construção privada do próprio produto. */
+  private JsonNode pdeContext(Product product, String processCode) {
+    if (!isPrivateValidation(product, processCode) || blank(product.getPdeExperienceJson())) {
+      return null;
+    }
+    try {
+      JsonNode context = objectMapper.readTree(product.getPdeExperienceJson());
+      return context.isObject() ? context : null;
+    } catch (Exception ex) {
+      log.error(
+          "Contrato PDE privado inválido ao montar contexto da tarefa. productId={} productSlug={} processCode={}",
+          product.getId(),
+          product.getSlug(),
+          processCode,
+          ex);
+      return null;
+    }
   }
 
   /** Usa o preço da versão PDE e bloqueia qualquer experimento comercial divergente. */

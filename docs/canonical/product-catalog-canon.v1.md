@@ -41,6 +41,11 @@ Mapa inicial aprovado em 2026-08-23:
 - produto `8`, Especialista no WhatsApp: Altair;
 - produto `9`, Kit WhatsApp Pronto: Rigel.
 
+Atribuição posterior aprovada em 2026-09-03:
+
+- produto `10`, orientação digital individualizada de rotina para pele madura: Mira; tipo
+  `AI_PRODUCT`, internamente Safira. A aplicação web privada é formato de validação, não um tipo PWA.
+
 ## Classificação extensível por tipo
 
 Todo produto pode ser vinculado a uma definição do catálogo de tipos por `product_type_id`. O

@@ -46,7 +46,7 @@
   consulta por rodada, enquanto o backend congelava `meta_ad_investigation_id` no ciclo inteiro e
   reutilizava a primeira busca nas rodadas 2 e 3. A consulta congelada também reunia idade,
   sintomas e categorias demais; no mesmo coletor ela retornou zero cards, enquanto `beleza e
-  bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12 cards cada.
+bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12 cards cada.
 - **Correção sistêmica complementar:** cada tentativa passa a ter vínculo persistido e imutável com
   sua própria investigação, callback e auditoria do Chromium. A escada Meta usa de dois a cinco
   termos, começa ampla e muda para alternativa paga adjacente. O schema de síntese recusa candidata
@@ -2703,7 +2703,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Recorrência de atestação fechada em 2026-09-01:** a evolução tipada do catálogo e do checkout
   alterou provas legítimas do MUSA e do Rigel, enquanto os manifestos v3 também continuavam acoplados
   ao changelog mestre e a este registro global. Os checks de Íris e Psique falharam com `SHA-256
-  divergente` antes de alcançar os testes funcionais. Os manifestos v3 permanecem imutáveis como
+divergente` antes de alcançar os testes funcionais. Os manifestos v3 permanecem imutáveis como
   baseline e as versões v4 declaram somente o delta comercial executável, referenciam a baseline por
   hash e excluem arquivos globais mutáveis. Assim, uma pesquisa, changeset alheio ou novo registro de
   loop não invalida novamente a prova de cada produto.
@@ -2798,7 +2798,7 @@ Use este checklist quando o problema estiver em algum loop acima:
   abriram os ciclos 45, 46 e 47, mas as tarefas 285–287 bloquearam antes do planejamento com
   `Permission denied` ao ler `/home/node/.codex/config.toml`. O deploy criava o volume da sessão com
   modo `0700` e proprietário `root`, embora a imagem execute como `node`. O primeiro `docker compose
-  run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comandos posteriores e
+run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comandos posteriores e
   permitia um workflow verde sem `compose up` nem health final. O publicador agora deriva UID/GID da
   imagem, reconcilia a árvore da sessão sem seguir links simbólicos, comprova leitura, escrita e
   identidade Codex dentro da imagem, executa ambos os preflights com `-T` e `</dev/null>` e força a
@@ -3104,7 +3104,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Validação operacional:** a imagem `task296-transport-v2` recuperou o ciclo #53 após o lease
   expirar, concluiu a tarefa #297 com três lentes auditadas e três oportunidades persistidas e
   encerrou em `ATTEMPT_LIMIT_REACHED`, sem novo erro de callback. A tela apresentou `CONCLUÍDA COM
-  LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate comercial.
+LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate comercial.
 
 ## LOOP-HERMES-AMOSTRA-DIRETA-SEM-CONTRATO — retentativa paga sem evidência nova
 
@@ -3438,3 +3438,23 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes ligam ciclo, projeto, experimento, job, asset, áudio e proporção 9:16 e
   comprovam que a conclusão não gera autoaprovação. O worker registra `has_audio` e a quantidade de
   streams para o gate não depender de inferência textual.
+
+## LOOP-DEDALO-CONSTRUCAO-SEM-CONTEXTO-PDE — contrato existe, mas a tarefa recebe só identidade
+
+- **Data:** 2026-09-03.
+- **Sintoma confirmado:** a tarefa #333 do produto #10/Mira recebeu ID, nome, versão e preço, porém
+  `processContextJson` continha apenas atividades vazias e `researchIntelligence` estava nulo.
+  Dédalo consumiu 23.391 tokens de entrada e bloqueou a jornada por ausência de público, dor,
+  momento, harness, protótipo, entrada e resultado pronto.
+- **Causa-raiz confirmada no banco e no histórico:** o produto já preservava 26.225 bytes em
+  `pde_experience_json`, originados da arquitetura aprovada na tarefa #331. O provedor de alvo
+  extraía somente a identidade comercial e nunca anexava esse contrato à primeira atividade do
+  processo de construção, que por definição ainda não possui predecessoras concluídas.
+- **Correção sistêmica:** o backend entrega `pdeContext` estruturado apenas às tarefas de construção
+  privada do próprio produto. Dédalo usa esse caminho canônico, trata a biblioteca de pesquisa como
+  apoio opcional, define direção sensorial e acessibilidade dentro de sua autoridade e não exige as
+  leituras humanas que pertencem às atividades posteriores.
+- **Prevenção:** o worker recusa contexto ausente ou incompleto antes de chamar o modelo, validando
+  versão, estratégia, economia sem gasto, harness, protótipo, momento de compra, resultado pronto,
+  cinco eventos, checkout simulado e limite de publicação. Testes protegem exposição segregada,
+  contexto completo e ausência fora do processo privado.

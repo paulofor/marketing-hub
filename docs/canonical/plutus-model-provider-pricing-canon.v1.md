@@ -60,6 +60,12 @@ snapshot de saldo deve ter no máximo cinco minutos no momento da reserva preven
 jobs do Marketing Hub comprometam o mesmo saldo; ela não é débito do provider e deve ser liquidada
 ou liberada pelo resultado real.
 
+O operador pode solicitar um preflight isolado para verificar a conta antes de decidir sobre recarga
+ou produção. Nesse modo, o backend persiste o snapshot e o resultado do Router, mas não cria reserva,
+parecer de Plutus nem job de geração. Mesmo um resultado `READY` termina como diagnóstico somente
+leitura. Para produzir depois, deve ser aberto um novo ciclo financeiro com teto explicitamente
+autorizado e novo snapshot vigente.
+
 O Router deve possuir `maxCreditsPerGeneration.video` explícito. O backend valida cada modelo
 resolvido contra o catálogo interno: lifecycle `ACTIVE`, adapter, preço, licença comercial e QA
 precisam estar verificados. A resposta paga é comparada com o dry run; qualquer drift de modelo,

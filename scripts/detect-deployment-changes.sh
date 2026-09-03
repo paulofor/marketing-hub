@@ -5,6 +5,7 @@ BASE_REVISION="${1:?Informe a revisão base efetivamente publicada.}"
 HEAD_REVISION="${2:-HEAD}"
 OUTPUT_FILE="${3:-${GITHUB_OUTPUT:-}}"
 FRONTEND_BASE_REVISION="${4:-${BASE_REVISION}}"
+VIDEO_BASE_REVISION="${5:-${BASE_REVISION}}"
 
 if ! git cat-file -e "${BASE_REVISION}^{commit}" 2>/dev/null; then
   printf '[ARQUITETURA] revisão publicada inválida ou ausente no histórico: %s\n' "${BASE_REVISION}" >&2
@@ -33,6 +34,20 @@ if [[ "${frontend_revision_known}" == "true" ]]; then
     "${FRONTEND_BASE_REVISION}" "${frontend_changed_files}"
 fi
 
+video_revision_known=true
+if ! git cat-file -e "${VIDEO_BASE_REVISION}^{commit}" 2>/dev/null; then
+  video_revision_known=false
+  printf 'Revisão publicada do executor de vídeo indisponível (%s); a imagem será reconstruída por segurança.\n' \
+    "${VIDEO_BASE_REVISION}" >&2
+fi
+
+video_changed_files=""
+if [[ "${video_revision_known}" == "true" ]]; then
+  video_changed_files="$(git diff --name-only "${VIDEO_BASE_REVISION}" "${HEAD_REVISION}")"
+  printf 'Arquivos alterados desde a revisão observada do executor de vídeo (%s):\n%s\n' \
+    "${VIDEO_BASE_REVISION}" "${video_changed_files}"
+fi
+
 backend=false
 frontend=false
 video=false
@@ -43,19 +58,33 @@ video_deploy_descriptor=false
 while IFS= read -r file; do
   [[ -z "${file}" ]] && continue
   case "${file}" in
-    .github/workflows/deploy-containers.yml) backend=true; frontend=true; video=true; app_deploy_descriptor=true; video_deploy_descriptor=true ;;
-    .dockerignore) backend=true; frontend=true; video=true ;;
+    .github/workflows/deploy-containers.yml) backend=true; frontend=true; app_deploy_descriptor=true ;;
+    .dockerignore) backend=true; frontend=true ;;
     backend/settings.xml) backend=true ;;
     backend/ads-service/*) backend=true ;;
     pesquisas/*) backend=true ;;
     frontend/*) frontend=true ;;
-    video-management-service/*) video=true ;;
-    deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;
     deploy/bin/*) app_deploy_sync=true ;;
     deploy/docker-compose.yml) app_deploy_descriptor=true ;;
     deploy/nginx/*) app_deploy_descriptor=true ;;
   esac
 done <<< "${changed_files}"
+
+if [[ "${video_revision_known}" != "true" ]]; then
+  video=true
+else
+  while IFS= read -r file; do
+    [[ -z "${file}" ]] && continue
+    case "${file}" in
+      .github/workflows/deploy-containers.yml) video=true; video_deploy_descriptor=true ;;
+      .dockerignore) video=true ;;
+      video-management-service/*) video=true ;;
+      deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;
+      deploy/bin/reconcile-video-planner-secret.sh) video_deploy_descriptor=true ;;
+      deploy/docker-compose.video.yml) video_deploy_descriptor=true ;;
+    esac
+  done <<< "${video_changed_files}"
+fi
 
 if [[ "${frontend_revision_known}" != "true" ]]; then
   frontend=true

@@ -3407,6 +3407,32 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   mas o gate tratou “sem revelar interface legível” como ordem para inserir interface. O detector
   agora bloqueia somente verbos positivos de geração de texto e aceita proibições explícitas; teste
   protege simultaneamente os dois sentidos antes de qualquer chamada paga.
+- **Recorrência operacional em 2026-09-03:** o deploy que introduziu o preflight Runway construiu a
+  imagem do executor, mas parou antes da aplicação porque o diretório legado da credencial OpenAI
+  continha dados e `rmdir` recusou removê-lo. Como somente a revisão global do APP era persistida, o
+  deploy verde seguinte considerou o código de vídeo já coberto e pulou o módulo, mantendo em
+  produção a imagem `66ddd8d0` sem o consumidor da nova fila.
+- **Fechamento sistêmico da recorrência:** a recuperação da credencial move o diretório inválido para
+  um backup explícito antes de gravar atomicamente o arquivo, sem apagar seu conteúdo. O deploy de
+  vídeo passa a manter marcador próprio somente depois de confirmar container saudável, endpoint de
+  status e imagem esperada. A detecção compara o executor com esse marcador independente e, quando
+  ele está ausente, usa o SHA da imagem em execução ou força reconstrução segura. Testes simulam
+  sucesso parcial do APP seguido por falha de vídeo e exigem a retomada no push seguinte.
+
+## LOOP-VIDEO-PREFLIGHT-ACIONA-PRODUCAO — diagnóstico pode evoluir para consumo
+
+- **Data:** 2026-09-03.
+- **Sintoma confirmado:** a tela explicava que o `dryRun` não cobrava, mas oferecia somente o comando
+  de produção completa. Se a conta tivesse saldo, um preflight apto criaria reserva, gate de Plutus e
+  poderia enfileirar Apolo, embora o objetivo do operador fosse apenas verificar configuração e
+  saldo antes de comprar créditos.
+- **Causa-raiz:** diagnóstico e intenção de produzir compartilhavam endpoint e estado inicial; a
+  diferença existia apenas na expectativa humana, não no contrato persistido.
+- **Correção sistêmica:** o Estúdio possui um endpoint e estados exclusivos de preflight isolado.
+  O callback persiste saldo, quota, rota e custo estimado e encerra o ciclo mesmo em `READY`, sem
+  reserva, Plutus ou job. Produzir depois exige novo ciclo com teto financeiro explícito.
+- **Prevenção:** testes backend e frontend comprovam o endpoint próprio e proíbem reserva, tarefa de
+  agente e renderização nos resultados apto e bloqueado.
 
 ## LOOP-VIDEO-POSTPRODUCAO-AUDIO-INFINITO — render termina visualmente, mas job não conclui
 

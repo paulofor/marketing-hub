@@ -42,6 +42,7 @@ import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRende
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
 import {
   useCreateVideoProductionCycle,
+  useCreateVideoProviderPreflight,
   useVideoProductionCycles,
 } from "../../api/salesVideo/useVideoProductionCycles";
 import {
@@ -1110,6 +1111,8 @@ export default function AudioVideoStudioPage() {
   const evaluateStoryboardScene = useEvaluateStoryboardScene(editableProjectId);
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
+  const createProviderPreflight =
+    useCreateVideoProviderPreflight(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
   const [cycleProductionProfile, setCycleProductionProfile] = useState<
     "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN"
@@ -2635,39 +2638,83 @@ export default function AudioVideoStudioPage() {
                         }
                       />
                     </label>
-                    <button
-                      type="button"
-                      disabled={
-                        createProductionCycle.isPending ||
-                        !Number.isFinite(Number(cycleBudgetUsd)) ||
-                        Number(cycleBudgetUsd) <= 0 ||
-                        !cycleLearningObjective.trim() ||
-                        !cycleSuccessCriterion.trim()
-                      }
-                      onClick={() =>
-                        createProductionCycle.mutate({
-                          budgetLimitUsd: Number(cycleBudgetUsd),
-                          productionProfile: cycleProductionProfile,
-                          learningObjective: cycleLearningObjective.trim(),
-                          successCriterion: cycleSuccessCriterion.trim(),
-                          requestedBy: "Usuário do Marketing Hub",
-                        })
-                      }
-                    >
-                      {createProductionCycle.isPending ? (
-                        <span className="spinner-border spinner-border-sm" />
-                      ) : null}
-                      Solicitar produção a Apolo sob controle de Plutus
-                    </button>
-                    <small>
-                      O teto não é meta de gasto. O preflight consulta e simula
-                      sem cobrança; Plutus avalia antes de qualquer geração
-                      paga. O ledger registra apenas custos novos deste ciclo.
-                      Apolo trabalha em TEST e não publica.
-                    </small>
-                    {createProductionCycle.isError ? (
-                      <p role="alert">Não foi possível abrir o ciclo.</p>
-                    ) : null}
+                    <div className="audio-video-studio-page__cycle-actions">
+                      <div className="audio-video-studio-page__cycle-action">
+                        <button
+                          className="audio-video-studio-page__secondary-action"
+                          type="button"
+                          disabled={
+                            createProviderPreflight.isPending ||
+                            createProductionCycle.isPending ||
+                            !Number.isFinite(Number(cycleBudgetUsd)) ||
+                            Number(cycleBudgetUsd) <= 0 ||
+                            !cycleLearningObjective.trim() ||
+                            !cycleSuccessCriterion.trim()
+                          }
+                          onClick={() =>
+                            createProviderPreflight.mutate({
+                              budgetLimitUsd: Number(cycleBudgetUsd),
+                              productionProfile: cycleProductionProfile,
+                              learningObjective: cycleLearningObjective.trim(),
+                              successCriterion: cycleSuccessCriterion.trim(),
+                              requestedBy: "Usuário do Marketing Hub",
+                            })
+                          }
+                        >
+                          {createProviderPreflight.isPending ? (
+                            <span className="spinner-border spinner-border-sm" />
+                          ) : null}
+                          Executar somente preflight sem gerar vídeo
+                        </button>
+                        <small>
+                          Consulta saldo e quota e executa o dry run oficial.
+                          Não reserva créditos, não aciona Plutus e não cria job
+                          de geração.
+                        </small>
+                        {createProviderPreflight.isError ? (
+                          <p role="alert">
+                            Não foi possível executar o preflight.
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="audio-video-studio-page__cycle-action">
+                        <button
+                          className="audio-video-studio-page__primary-action"
+                          type="button"
+                          disabled={
+                            createProductionCycle.isPending ||
+                            createProviderPreflight.isPending ||
+                            !Number.isFinite(Number(cycleBudgetUsd)) ||
+                            Number(cycleBudgetUsd) <= 0 ||
+                            !cycleLearningObjective.trim() ||
+                            !cycleSuccessCriterion.trim()
+                          }
+                          onClick={() =>
+                            createProductionCycle.mutate({
+                              budgetLimitUsd: Number(cycleBudgetUsd),
+                              productionProfile: cycleProductionProfile,
+                              learningObjective: cycleLearningObjective.trim(),
+                              successCriterion: cycleSuccessCriterion.trim(),
+                              requestedBy: "Usuário do Marketing Hub",
+                            })
+                          }
+                        >
+                          {createProductionCycle.isPending ? (
+                            <span className="spinner-border spinner-border-sm" />
+                          ) : null}
+                          Solicitar produção a Apolo sob controle de Plutus
+                        </button>
+                        <small>
+                          O teto não é meta de gasto. O preflight consulta e
+                          simula sem cobrança; Plutus avalia antes de qualquer
+                          geração paga. O ledger registra apenas custos novos
+                          deste ciclo. Apolo trabalha em TEST e não publica.
+                        </small>
+                        {createProductionCycle.isError ? (
+                          <p role="alert">Não foi possível abrir o ciclo.</p>
+                        ) : null}
+                      </div>
+                    </div>
                     {productionCycles.data?.[0] ? (
                       <div>
                         <p>

@@ -481,6 +481,37 @@
   overflow-wrap: anywhere;
 }
 
+.audio-video-studio-page__cycle-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0.85rem 0;
+}
+
+.audio-video-studio-page__cycle-action {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.audio-video-studio-page__cycle-action button {
+  width: 100%;
+  white-space: normal;
+}
+
+.audio-video-studio-page__cycle-action small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #526070;
+  line-height: 1.4;
+}
+
+.audio-video-studio-page__cycle-action p {
+  margin: 0;
+}
+
 .audio-video-studio-page__provider-card svg {
   color: #7a2444;
 }
@@ -1571,7 +1602,8 @@
   }
 
   .audio-video-studio-page__research-library-summary,
-  .audio-video-studio-page__research-filters {
+  .audio-video-studio-page__research-filters,
+  .audio-video-studio-page__cycle-actions {
     grid-template-columns: 1fr;
   }
 

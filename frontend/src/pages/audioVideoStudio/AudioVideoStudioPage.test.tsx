@@ -1059,6 +1059,24 @@ describe("AudioVideoStudioPage", () => {
     );
     await user.click(
       screen.getByRole("button", {
+        name: /executar somente preflight sem gerar vídeo/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/sales-videos/autonomy/v1/provider-preflights",
+        expect.objectContaining({
+          videoProjectId: 1,
+          budgetLimitUsd: 2,
+          productionProfile: "DRAFT_INSTAGRAM",
+          learningObjective: "Validar novo gancho",
+          successCriterion: "Aumentar retenção",
+        }),
+      ),
+    );
+    await user.click(
+      screen.getByRole("button", {
         name: /solicitar produção a Apolo sob controle de Plutus/i,
       }),
     );

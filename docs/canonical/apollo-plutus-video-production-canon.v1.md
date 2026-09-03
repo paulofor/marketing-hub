@@ -45,6 +45,12 @@ imutáveis, mas não cria ou altera allowlists automaticamente. Somente modelos 
 preço, licença comercial e QA verificados no catálogo do Marketing Hub podem superar o gate; modelo
 novo escolhido pelo Router permanece bloqueado até homologação explícita.
 
+Por decisão operacional de 2026-09-03, o Estúdio também deve oferecer um preflight isolado. Esse
+comando consulta saldo e quota e executa o `dryRun`, mas encerra o ciclo sem criar reserva, tarefa de
+Plutus ou job de Apolo, ainda que a conta possua saldo. O teto informado nesse modo é somente um
+limite analítico para avaliar o Router e não constitui autorização financeira. Produção e preflight
+isolado devem usar endpoints e estados distintos para impedir que uma verificação avance por engano.
+
 O parecer de Plutus deve registrar prompt, resposta bruta, modelo e uso antes do callback funcional.
 Se o callback falhar, a próxima leitura reutiliza a resposta auditada e não consome uma segunda
 interação de IA.

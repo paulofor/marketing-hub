@@ -112,6 +112,61 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** Mantém o preflight isolado sem reserva, gate de Plutus ou job pago. */
+  @Test
+  void shouldCompleteProviderPreflightOnlyWithoutFinancialProgression() {
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+    var opened =
+        service.createProviderPreflight(
+            new VideoProductionCycleContracts.CreateRequest(
+                7L,
+                new BigDecimal("10.00"),
+                "FINAL_CAMPAIGN",
+                "Confirmar configuração Runway",
+                "Saldo, quota e custo estimado visíveis",
+                "usuario@mkt"));
+    VideoProductionCycle cycle = cycle();
+    cycle.setId(opened.id());
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT_ONLY");
+    VideoProviderPreflight preflight = new VideoProviderPreflight();
+    preflight.setStatus("READY");
+    when(repository.findById(opened.id())).thenReturn(Optional.of(cycle));
+    when(providerPreflightService.complete(any(), any())).thenReturn(preflight);
+
+    var completed =
+        service.completeProviderPreflight(
+            opened.id(),
+            org.mockito.Mockito.mock(VideoProviderPreflightContracts.ResultRequest.class));
+
+    assertThat(opened.status()).isEqualTo("PENDING_PROVIDER_PREFLIGHT_ONLY");
+    assertThat(completed.status()).isEqualTo("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+    verify(providerPreflightService).open(opened.id(), "FINAL_CAMPAIGN");
+    verify(providerPreflightService, never()).reserve(any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Mantém falha de autenticação visível sem transformar preflight isolado em produção. */
+  @Test
+  void shouldBlockProviderPreflightOnlyWithoutFinancialProgression() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT_ONLY");
+    VideoProviderPreflight preflight = new VideoProviderPreflight();
+    preflight.setStatus("BLOCKED");
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
+    when(providerPreflightService.complete(any(), any())).thenReturn(preflight);
+
+    var completed =
+        service.completeProviderPreflight(
+            11L, org.mockito.Mockito.mock(VideoProviderPreflightContracts.ResultRequest.class));
+
+    assertThat(completed.status()).isEqualTo("PROVIDER_PREFLIGHT_ONLY_BLOCKED");
+    verify(providerPreflightService, never()).reserve(any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Comprova que um projeto legado usa custos não atribuídos sem falhar nem inventar plano. */
   @Test
   void shouldOpenLegacyProjectWithUnassignedFinancialSnapshot() {

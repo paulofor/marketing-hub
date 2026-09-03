@@ -50,6 +50,7 @@ assert_bind_does_not_create_host_path() {
 }
 
 OPENAI_API_KEY=contract-test docker compose -f docker-compose.video.yml config --quiet
+bash bin/test-video-planner-secret-recovery.sh
 video_config="$(OPENAI_API_KEY=contract-test docker compose -f docker-compose.video.yml config)"
 grep -Fq 'BACKEND_URL: http://191.252.181.168' <<<"${video_config}"
 grep -Fq 'AGENT_HEALTH_KEY: videomaker' <<<"${video_config}"
@@ -151,10 +152,14 @@ fi
 # recuperado não termine verde mantendo código antigo no container de vídeo.
 grep -Fq 'deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;' \
   ../scripts/detect-deployment-changes.sh
+grep -Fq 'deploy/bin/reconcile-video-planner-secret.sh) video_deploy_descriptor=true ;;' \
+  ../scripts/detect-deployment-changes.sh
 
 # Alterar o próprio workflow pode modificar qualquer contrato de build/deploy.
 # Todos os artefatos devem ser reconstruídos para validar a revisão publicada.
-grep -Fq '.github/workflows/deploy-containers.yml) backend=true; frontend=true; video=true; app_deploy_descriptor=true; video_deploy_descriptor=true ;;' \
+grep -Fq '.github/workflows/deploy-containers.yml) backend=true; frontend=true; app_deploy_descriptor=true ;;' \
+  ../scripts/detect-deployment-changes.sh
+grep -Fq '.github/workflows/deploy-containers.yml) video=true; video_deploy_descriptor=true ;;' \
   ../scripts/detect-deployment-changes.sh
 
 # O workflow deve consumir a fonte canônica de detecção em vez de manter uma
@@ -165,11 +170,16 @@ normalized_deploy_workflow="$(
     ../.github/workflows/deploy-containers.yml \
     | tr -s '[:space:]' ' '
 )"
-if ! grep -Fq 'bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}" "${deployed_frontend_revision}"' \
+if ! grep -Fq 'bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}" "${deployed_frontend_revision}" "${deployed_video_revision}"' \
   <<<"${normalized_deploy_workflow}"; then
-  echo "[CONTRATO] O workflow deve chamar o detector canônico com as revisões APP e frontend." >&2
+  echo "[CONTRATO] O workflow deve chamar o detector canônico com as revisões APP, frontend e vídeo." >&2
   exit 1
 fi
+
+grep -Fq '.deployed-video-revision' ../.github/workflows/deploy-containers.yml
+grep -Fq 'Require healthy video management revision' ../.github/workflows/deploy-containers.yml
+grep -Fq 'reconcile-video-planner-secret.sh' ../.github/workflows/deploy-containers.yml
+grep -Fq 'mv "${SECRET_FILE}" "${LEGACY_DIRECTORY}"' bin/reconcile-video-planner-secret.sh
 
 # Código de vídeo só pode chegar ao host quando a imagem do mesmo SHA tiver
 # sido construída e publicada. Mudanças apenas de descritor continuam válidas.

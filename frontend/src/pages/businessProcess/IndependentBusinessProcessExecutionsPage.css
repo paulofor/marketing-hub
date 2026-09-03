@@ -538,6 +538,46 @@
   align-items: center;
 }
 
+.independent-process-report__handoff {
+  align-items: center;
+  background: linear-gradient(135deg, #eef4ff, #f8fbff);
+  border: 1px solid #b9cdf8;
+  border-radius: 16px;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin: 20px 0;
+  padding: 20px;
+}
+
+.independent-process-report__handoff span {
+  color: #335da8;
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.independent-process-report__handoff h4 {
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+}
+
+.independent-process-report__handoff p {
+  color: #526174;
+  margin: 0;
+  max-width: 760px;
+}
+
+.independent-process-report__handoff button {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
 .independent-process-report__section-heading {
   display: flex;
   gap: 9px;
@@ -1025,6 +1065,7 @@
   }
   .independent-process-flow-overview__heading,
   .independent-process-report__header,
+  .independent-process-report__handoff,
   .independent-process-candidate > header,
   .independent-process-candidate__next-action {
     align-items: stretch;
@@ -1038,6 +1079,10 @@
     grid-template-columns: 1fr;
   }
   .independent-process-blocked-guidance .btn {
+    width: 100%;
+  }
+  .independent-process-report__handoff .btn {
+    justify-content: center;
     width: 100%;
   }
   .independent-process-flow-overview__step-wrap,

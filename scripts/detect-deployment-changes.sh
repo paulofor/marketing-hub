@@ -47,6 +47,7 @@ while IFS= read -r file; do
     .dockerignore) backend=true; frontend=true; video=true ;;
     backend/settings.xml) backend=true ;;
     backend/ads-service/*) backend=true ;;
+    pesquisas/*) backend=true ;;
     frontend/*) frontend=true ;;
     video-management-service/*) video=true ;;
     deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;

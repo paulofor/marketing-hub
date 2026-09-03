@@ -9,9 +9,10 @@ trap 'rm -rf "${TEST_REPO}"' EXIT
 git -C "${TEST_REPO}" init -q
 git -C "${TEST_REPO}" config user.email test@sandbox.local
 git -C "${TEST_REPO}" config user.name "Deploy Contract Test"
-mkdir -p "${TEST_REPO}/backend/ads-service" "${TEST_REPO}/frontend"
+mkdir -p "${TEST_REPO}/backend/ads-service" "${TEST_REPO}/frontend" "${TEST_REPO}/pesquisas/video"
 printf 'base\n' > "${TEST_REPO}/backend/ads-service/app.txt"
 printf 'base\n' > "${TEST_REPO}/frontend/app.txt"
+printf '# Artigo base\n' > "${TEST_REPO}/pesquisas/video/2026-09-01-base.md"
 git -C "${TEST_REPO}" add .
 git -C "${TEST_REPO}" commit -qm base
 deployed_revision="$(git -C "${TEST_REPO}" rev-parse HEAD)"
@@ -73,5 +74,24 @@ unknown_frontend_output="${TEST_REPO}/unknown-frontend-output"
 )
 
 grep -Fxq 'frontend=true' "${unknown_frontend_output}"
+
+printf '# Novo artigo diario\n' > "${TEST_REPO}/pesquisas/video/2026-09-02-novo.md"
+git -C "${TEST_REPO}" add pesquisas/video/2026-09-02-novo.md
+git -C "${TEST_REPO}" commit -qm 'novo artigo de pesquisa'
+research_revision="$(git -C "${TEST_REPO}" rev-parse HEAD)"
+research_output="${TEST_REPO}/research-output"
+
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${head_revision}" \
+    "${research_revision}" \
+    "${research_output}" \
+    "${head_revision}"
+)
+
+grep -Fxq 'backend=true' "${research_output}"
+grep -Fxq 'frontend=false' "${research_output}"
+grep -Fxq 'app_deploy=true' "${research_output}"
 
 printf 'Contrato de retomada de modulos pendentes validado.\n'

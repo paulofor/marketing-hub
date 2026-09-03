@@ -99,7 +99,7 @@ public class CommercialBpmTaskConsumer {
         2);
   }
 
-  /** Reserva em PLAY e revisa uma atividade liberada sem decidir a próxima etapa. */
+  /** Reserva em PLAY e revisa a atividade com integridade comercial e pesquisa rastreável. */
   @Scheduled(cron = "45 */1 * * * *")
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
@@ -110,13 +110,25 @@ public class CommercialBpmTaskConsumer {
       if (task == null) return;
       execution = execute(task);
       JsonNode result = execution.result();
-      validate(result);
+      validate(result, processCode(task));
+      ResearchIntelligenceUsageValidator.validate(
+          task,
+          AGENT_KEY,
+          jsonTextValues(result.path("evidence")),
+          !"BLOCKED".equals(result.path("decision").asText()));
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
     } catch (Exception ex) {
       log.error("Falha no gate comercial BPM de Têmis. taskId={}", taskId(task), ex);
       fail(task, ex, execution);
     }
+  }
+
+  /** Converte um array JSON textual em evidências usadas pelo gate determinístico. */
+  private static List<String> jsonTextValues(JsonNode values) {
+    List<String> result = new ArrayList<>();
+    values.forEach(value -> result.add(value.asText()));
+    return result;
   }
 
   /** Reserva somente gates independentes de integridade comercial em ordem explícita. */
@@ -389,7 +401,7 @@ public class CommercialBpmTaskConsumer {
   /** Compõe o núcleo independente de Têmis com o gate e o contexto avaliados. */
   private PromptComposition promptComposition(Map<String, Object> task) throws IOException {
     Map<String, Object> promptContext = new HashMap<>(task);
-    if ("pde-construction-approval".equals(processCode(task))) {
+    if ("pde-construction-approval".equals(processCode(task)) && !isPrivateValidationTask(task)) {
       promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
     } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
       promptContext.put(
@@ -410,7 +422,7 @@ public class CommercialBpmTaskConsumer {
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
-      case "pde-construction-approval" -> "prompts/bpm/pde-deliverables-review.md";
+      case "pde-construction-approval" -> "prompts/bpm/pde-private-validation-review-v2.md";
       default -> "prompts/bpm/landing-commercial-review.md";
     };
   }
@@ -421,7 +433,8 @@ public class CommercialBpmTaskConsumer {
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";
-      case "pde-construction-approval" -> "prompts/bpm/pde-deliverables-review-schema.json";
+      case "pde-construction-approval" ->
+          "prompts/bpm/pde-private-validation-review-v2-schema.json";
       default -> "prompts/bpm/landing-commercial-review-schema.json";
     };
   }
@@ -430,6 +443,14 @@ public class CommercialBpmTaskConsumer {
   private String processCode(Map<String, Object> task) {
     Object value = task.get("processCode");
     return value == null ? "" : value.toString();
+  }
+
+  /** Reconhece a validação privada para não importar entregáveis globais de outro produto. */
+  private boolean isPrivateValidationTask(Map<String, Object> task) {
+    Object value = task.get("sourceReference");
+    String sourceReference = value == null ? "" : value.toString();
+    return sourceReference.startsWith("product:")
+        && sourceReference.contains("@private-validation-v1");
   }
 
   /** Exige decisão, evidências e nota de preço coerente quando o contrato a declarar. */
@@ -446,6 +467,32 @@ public class CommercialBpmTaskConsumer {
         && result.has("priceClarityScore")
         && result.path("priceClarityScore").asInt() < 80) {
       throw new IllegalArgumentException("Gate de Têmis aprovou preço com nota inferior a 80/100");
+    }
+  }
+
+  /** Exige que uma aprovação privada confirme todos os controles comerciais do schema. */
+  static void validate(JsonNode result, String processCode) {
+    validate(result);
+    if (!"pde-construction-approval".equals(processCode)) return;
+    JsonNode checks = result.path("privateValidationChecks");
+    List<String> requiredChecks =
+        List.of(
+            "sameProductAndVersion",
+            "criteriaPredeclared",
+            "twoDistinctParticipants",
+            "fiveSignalsPassedTwice",
+            "firstPartyEvents",
+            "privateAndUnpublished",
+            "paymentDisabled",
+            "zeroMediaSpend",
+            "privacyPreserved");
+    if (!checks.isObject()
+        || requiredChecks.stream().anyMatch(check -> !checks.path(check).isBoolean())) {
+      throw new IllegalArgumentException("Parecer privado de Têmis sem checks estruturados");
+    }
+    if ("APPROVED".equals(result.path("decision").asText())
+        && requiredChecks.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
+      throw new IllegalArgumentException("Têmis aprovou a validação privada com check reprovado");
     }
   }
 

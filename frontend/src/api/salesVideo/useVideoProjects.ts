@@ -62,6 +62,7 @@ export function useUpdateVideoProject() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales-video-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["sales-video-project"] });
     },
   });
 }

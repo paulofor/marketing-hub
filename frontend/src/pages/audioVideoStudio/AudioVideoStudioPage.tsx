@@ -80,6 +80,7 @@ function learningMetrics(value?: string) {
 type StudioBriefing = {
   productId: string;
   commercialPlanId: string;
+  experimentId: string;
   campaignKey: string;
   videoCategory: string;
   contextType: string;
@@ -87,6 +88,7 @@ type StudioBriefing = {
   targetChannel: string;
   format: string;
   title: string;
+  objective: string;
   story: string;
   product: string;
   audience: string;
@@ -733,6 +735,7 @@ const exampleStory =
 const defaultBriefing: StudioBriefing = {
   productId: "",
   commercialPlanId: "",
+  experimentId: "",
   campaignKey: "musa-video-manifesto-presenca-digital",
   videoCategory: "LONG_FORM",
   contextType: "PDE",
@@ -740,6 +743,8 @@ const defaultBriefing: StudioBriefing = {
   targetChannel: "PDE_AND_SOCIAL",
   format: "VERTICAL_9_16",
   title: "MUSA - video manifesto de presenca digital",
+  objective:
+    "Testar uma narrativa audiovisual para aumentar desejo, confianca e acao no Metodo MUSA.",
   story: exampleStory,
   product: "Metodo MUSA",
   audience: "Mulheres que vendem sua imagem, conhecimento ou atendimento",
@@ -803,6 +808,7 @@ const defaultBriefing: StudioBriefing = {
 const musaV7Briefing: StudioBriefing = {
   productId: "4",
   commercialPlanId: "",
+  experimentId: "",
   campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
   videoCategory: "COMMERCIAL_SHORT",
   contextType: "PDE",
@@ -810,6 +816,8 @@ const musaV7Briefing: StudioBriefing = {
   targetChannel: "PDE_HERO_DIAGNOSTIC",
   format: "VERTICAL_9_16",
   title: "MUSA v7 - O espelho antes de sair",
+  objective:
+    "Qualificar mulheres que reconhecem a dor do espelho e conduzi-las ao diagnostico MUSA sem quebrar a promessa da campanha.",
   story:
     "Antes de sair, uma mulher urbana se olha no espelho e percebe que nao precisa comprar uma vida nova. Ela precisa ajustar pequenos sinais da presenca que ja quer comunicar: limpar ruido visual, escolher uma peca-sinal, alinhar cor, acabamento e postura. O video conduz essa passagem de duvida discreta para clareza elegante e termina no diagnostico gratuito do Plano MUSA de 7 dias.",
   product: "Metodo MUSA - Presenca Elegante em 7 Dias",
@@ -875,7 +883,48 @@ const musaV7Briefing: StudioBriefing = {
   status: "READY_FOR_SCRIPT",
 };
 
+const vega91Briefing: StudioBriefing = {
+  ...musaV7Briefing,
+  experimentId: "91",
+  campaignKey: "vega-91-instagram-research-intelligence-v1",
+  targetChannel: "INSTAGRAM_REELS_STORIES",
+  title: "Vega #91 - O espelho antes de sair",
+  objective:
+    "Transformar o reconhecimento íntimo diante do espelho em clique qualificado para o diagnóstico MUSA, com um criativo vertical orientado por pesquisa e medido até a venda.",
+  strategyGroupKey: "vega-91-instagram-v1",
+  strategyRole: "CAMPAIGN_QUALIFICATION",
+  commercialHypothesis:
+    "Se o Reels espelhar a dúvida discreta antes de sair, demonstrar um microajuste acessível e preservar a continuidade até o diagnóstico, aumentará a chegada qualificada sem depender de luxo ou promessa absoluta.",
+  scientificBasis:
+    "Aplicar somente cartões rastreáveis das coleções video, prazer-audio-visual, neuromarketing e momentos-de-compra-b2c. Artigos orientam decisões, mas não contam como venda, prova do produto ou autorização de publicação.",
+  measurementPlan:
+    "Segregar QA de humanos e medir retenção 3s, VIDEO_25/50/75/100, clique no CTA, diagnóstico iniciado e concluído, paywall, checkout, pagamento aprovado, reembolso, custo por venda e retrabalho do ativo.",
+  resultsSnapshot:
+    "Piloto ainda não publicado: aguardando ativo aprovado e eventos humanos segregados do experimento 91.",
+};
+
+function researchAuthorityLabel(authority: string) {
+  const labels: Record<string, string> = {
+    PRODUCTION_ADVISORY: "orienta produção",
+    COMMUNICATION_ADVISORY: "orienta comunicação",
+    REVIEW_CRITERIA_ONLY: "somente revisão",
+  };
+  return labels[authority] ?? authority;
+}
+
+function researchCardCountLabel(count: number) {
+  return count === 1 ? "1 cartão" : `${count} cartões`;
+}
+
 const studioPresets: StudioPreset[] = [
+  {
+    key: "vega-91-research-pilot",
+    label: "Vega #91 · piloto Instagram",
+    badge: "Piloto com pesquisa",
+    description:
+      "Criativo Reels/Stories reutilizando cartões rastreáveis no harness de Apolo, Íris, Psique e Têmis.",
+    briefing: vega91Briefing,
+  },
   {
     key: "musa-v7",
     label: "MUSA v7 hero cinematografico",
@@ -900,6 +949,7 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     commercialPlanId: project.commercialPlanId
       ? String(project.commercialPlanId)
       : "",
+    experimentId: project.experimentId ? String(project.experimentId) : "",
     campaignKey: project.campaignKey || "",
     videoCategory: project.videoCategory || defaultBriefing.videoCategory,
     contextType: project.contextType || defaultBriefing.contextType,
@@ -907,6 +957,7 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     targetChannel: project.targetChannel || defaultBriefing.targetChannel,
     format: project.format || defaultBriefing.format,
     title: project.title,
+    objective: project.objective,
     story: project.storyText || project.objective,
     product: project.contextType || defaultBriefing.product,
     audience:
@@ -1262,7 +1313,7 @@ export default function AudioVideoStudioPage() {
   const buildProjectPayload = (): VideoProjectPayload => ({
     productId: parseOptionalNumber(briefing.productId)!,
     commercialPlanId: parseOptionalNumber(briefing.commercialPlanId)!,
-    experimentId: selectedProject?.experimentId,
+    experimentId: parseOptionalNumber(briefing.experimentId),
     salesVideoProfileId: parseOptionalNumber(salesVideoProfileId),
     campaignKey:
       briefing.campaignKey || selectedProject?.campaignKey || undefined,
@@ -1272,9 +1323,7 @@ export default function AudioVideoStudioPage() {
     targetChannel: briefing.targetChannel || "PDE_AND_SOCIAL",
     format: briefing.format || "VERTICAL_9_16",
     title: briefing.title,
-    objective:
-      selectedProject?.objective ||
-      "Testar uma narrativa audiovisual para aumentar desejo, confianca e acao no Metodo MUSA.",
+    objective: briefing.objective,
     storyText: briefing.story,
     funnelStage: briefing.funnelStage || "AWARENESS",
     primaryMetric: briefing.primaryMetric || "DIAGNOSTIC_START",
@@ -1675,6 +1724,17 @@ export default function AudioVideoStudioPage() {
               />
             </label>
             <label>
+              ID do experimento
+              <input
+                value={briefing.experimentId}
+                onChange={updateBriefing("experimentId")}
+              />
+              <small>
+                Mantém atribuição, auditoria e métricas separadas por
+                experimento.
+              </small>
+            </label>
+            <label>
               Perfil de vídeo para Apolo
               <select
                 aria-label="Perfil de vídeo para Apolo"
@@ -1784,6 +1844,14 @@ export default function AudioVideoStudioPage() {
           <label>
             Titulo do projeto
             <input value={briefing.title} onChange={updateBriefing("title")} />
+          </label>
+          <label>
+            Objetivo comercial do vídeo
+            <textarea
+              value={briefing.objective}
+              onChange={updateBriefing("objective")}
+              rows={3}
+            />
           </label>
           <label>
             Historia inicial
@@ -2295,6 +2363,95 @@ export default function AudioVideoStudioPage() {
                   />
                 </label>
               </div>
+              {selectedProject?.researchIntelligence ? (
+                <div className="audio-video-studio-page__panel audio-video-studio-page__research-intelligence">
+                  <div className="audio-video-studio-page__research-heading">
+                    <div>
+                      <p className="audio-video-studio-page__eyebrow">
+                        Contexto seletivo e auditável
+                      </p>
+                      <h2>Biblioteca de Inteligência do Harness v1</h2>
+                    </div>
+                    <span>
+                      {selectedProject.researchIntelligence.totalAvailableCards}{" "}
+                      artigos compilados
+                    </span>
+                  </div>
+                  <p>
+                    Cada agente recebe no máximo quatro cartões curtos. Os
+                    artigos orientam decisões, mas não contam como venda, prova
+                    do produto ou autorização de gasto e publicação.
+                  </p>
+                  <small className="audio-video-studio-page__research-fingerprint">
+                    Seleção{" "}
+                    {selectedProject.researchIntelligence.contractVersion}
+                    {" · "}
+                    {selectedProject.researchIntelligence.contextFingerprint.slice(
+                      0,
+                      12,
+                    )}
+                  </small>
+                  <div className="audio-video-studio-page__research-routes">
+                    {selectedProject.researchIntelligence.routes.map(
+                      (route) => (
+                        <details
+                          key={route.agentKey}
+                          className="audio-video-studio-page__research-route"
+                        >
+                          <summary>
+                            <span>
+                              <strong>{route.agentName}</strong>
+                              <small>{route.purpose}</small>
+                            </span>
+                            <span>
+                              {researchCardCountLabel(route.cards.length)} ·{" "}
+                              {researchAuthorityLabel(route.authority)}
+                            </span>
+                          </summary>
+                          <p>{route.selectionReason}</p>
+                          <div className="audio-video-studio-page__research-cards">
+                            {route.cards.map((card) => (
+                              <article key={card.cardId}>
+                                <span>
+                                  {card.collection} · {card.cardId}
+                                </span>
+                                <strong>{card.title}</strong>
+                                <p>{card.finding}</p>
+                                <small>
+                                  Fonte: {card.sourcePath} · SHA{" "}
+                                  {card.sourceSha256.slice(0, 12)}
+                                  {card.validUntil
+                                    ? ` · válida até ${card.validUntil}`
+                                    : ""}
+                                </small>
+                              </article>
+                            ))}
+                          </div>
+                        </details>
+                      ),
+                    )}
+                  </div>
+                  <ul>
+                    {selectedProject.researchIntelligence.limitations.map(
+                      (limitation) => (
+                        <li key={limitation}>{limitation}</li>
+                      ),
+                    )}
+                  </ul>
+                </div>
+              ) : briefing.experimentId === "91" ? (
+                <div className="audio-video-studio-page__panel audio-video-studio-page__research-intelligence">
+                  <p className="audio-video-studio-page__eyebrow">
+                    Piloto Vega #91
+                  </p>
+                  <h2>Pesquisa será selecionada ao criar o projeto</h2>
+                  <p>
+                    O backend compilará os artigos e entregará a cada agente
+                    somente a rota aderente. Salve o blueprint para ver cartões,
+                    fontes e hashes desta seleção.
+                  </p>
+                </div>
+              ) : null}
             </section>
             <div
               className="audio-video-studio-page__stage-heading"

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "activity",
+    "decision",
+    "alternatives",
+    "selectedApproach",
+    "productArchitecture",
+    "assumptions",
+    "requiredChanges",
+    "rationale",
+    "sources"
+  ],
+  "properties": {
+    "activity": { "type": "string", "enum": ["productArchitecture"] },
+    "decision": { "type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"] },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": { "type": "string" },
+          "benefit": { "type": "string" },
+          "risk": { "type": "string" },
+          "effort": { "type": "string" },
+          "fit": { "type": "string" }
+        }
+      }
+    },
+    "selectedApproach": { "type": "string" },
+    "productArchitecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "strategyReference",
+        "economicsReference",
+        "customerInput",
+        "valueJourney",
+        "deliverables",
+        "accessAndContinuity",
+        "nonAudiovisualSurfaces",
+        "audiovisualRequired",
+        "privatePrototype",
+        "completionCriteria",
+        "blockingCriteria"
+      ],
+      "properties": {
+        "format": { "type": "string" },
+        "strategyReference": { "type": "string" },
+        "economicsReference": { "type": "string" },
+        "customerInput": { "type": "array", "items": { "type": "string" } },
+        "valueJourney": { "type": "array", "items": { "type": "string" } },
+        "deliverables": { "type": "array", "items": { "type": "string" } },
+        "accessAndContinuity": { "type": "array", "items": { "type": "string" } },
+        "nonAudiovisualSurfaces": { "type": "array", "items": { "type": "string" } },
+        "audiovisualRequired": { "type": "boolean" },
+        "privatePrototype": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scope",
+            "simpleInput",
+            "readyResult",
+            "maxValueTimeMinutes",
+            "instrumentationEvents",
+            "checkoutMode",
+            "excludedFromPrototype"
+          ],
+          "properties": {
+            "scope": { "type": "string" },
+            "simpleInput": { "type": "string" },
+            "readyResult": { "type": "string" },
+            "maxValueTimeMinutes": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "instrumentationEvents": {
+              "type": "array",
+              "minItems": 5,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "EXPERIENCE_STARTED",
+                  "VALUE_MOMENT",
+                  "READY_RESULT_USED",
+                  "PREFERRED_OVER_FREE",
+                  "CHECKOUT_STARTED"
+                ]
+              }
+            },
+            "checkoutMode": { "type": "string", "enum": ["SIMULATED_NO_CHARGE"] },
+            "excludedFromPrototype": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "completionCriteria": { "type": "array", "items": { "type": "string" } },
+        "blockingCriteria": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "requiredChanges": { "type": "array", "items": { "type": "string" } },
+    "rationale": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reference", "evidence"],
+        "properties": {
+          "reference": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    }
+  }
+}

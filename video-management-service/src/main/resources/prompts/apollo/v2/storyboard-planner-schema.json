@@ -1,9 +1,15 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["creativeRationale", "cuts"],
+  "required": ["creativeRationale", "researchApplicationRationale", "appliedCardIds", "cuts"],
   "properties": {
     "creativeRationale": {"type": "string", "minLength": 10},
+    "researchApplicationRationale": {"type": "string", "minLength": 10},
+    "appliedCardIds": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {"type": "string", "pattern": "^RI1-[0-9A-F]{12}$"}
+    },
     "cuts": {
       "type": "array",
       "minItems": 5,

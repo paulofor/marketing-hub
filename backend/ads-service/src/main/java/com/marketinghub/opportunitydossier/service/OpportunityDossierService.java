@@ -324,6 +324,7 @@ public class OpportunityDossierService {
         dossier.getHumanDecisionBy(),
         dossier.getHumanDecisionAt(),
         dossier.getConvertedPlan() == null ? null : dossier.getConvertedPlan().getId(),
+        dossier.getCreatedProduct() == null ? null : dossier.getCreatedProduct().getId(),
         dossier.getProductDiscoveryCycle() == null
             ? null
             : dossier.getProductDiscoveryCycle().getId(),

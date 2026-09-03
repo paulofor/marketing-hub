@@ -18,6 +18,9 @@ public interface OpportunityDossierRepository extends JpaRepository<OpportunityD
   Optional<OpportunityDossier> findByProductDiscoveryOpportunityId(
       Long productDiscoveryOpportunityId);
 
+  /** Localiza a linhagem factual do produto planejado materializado pela descoberta. */
+  Optional<OpportunityDossier> findByCreatedProductId(Long createdProductId);
+
   /** Reutiliza a candidata de mesmo ciclo e título após uma reanálise auditável de Argos. */
   Optional<OpportunityDossier> findFirstByProductDiscoveryCycleIdAndTitleIgnoreCase(
       Long productDiscoveryCycleId, String title);

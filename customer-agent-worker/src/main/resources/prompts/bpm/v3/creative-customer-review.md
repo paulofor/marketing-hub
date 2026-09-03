@@ -31,5 +31,11 @@ antecede a decisão, a tensão entre desejo e receio e a sensação imaginada de
 produto. Delimite que se trata de reação simulada a partir da persona e das evidências, não de venda
 ou satisfação observada.
 
+Quando `researchIntelligence` estiver presente, use somente a rota `customer-agent` como critérios
+consultivos de revisão. Aplique pelo menos um cartão de cada coleção entregue e cite os `cardId`
+usados no array `evidence`, explicando qual percepção, fluidez, prazer ou risco cada um ajudou a
+avaliar. Pixels, movimento, áudio e eventos reais sempre prevalecem; artigo não autoriza aprovação,
+não comprova satisfação e não pode preencher modalidade ausente. Não cite cartão não entregue.
+
 Contexto da tarefa:
 {{TASK_CONTEXT}}

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskCompletionHook;
 import com.marketinghub.agenttask.CompleteAgentTaskRequest;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.opportunitydossier.OpportunityDossier;
 import com.marketinghub.opportunitydossier.OpportunityDossierStatus;
 import com.marketinghub.planning.CommercialPlan;
@@ -18,9 +19,11 @@ import com.marketinghub.product.service.ProductService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityMaturity;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.opportunitydossier.OpportunityDossierRepository;
 import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.slf4j.Logger;
@@ -34,9 +37,17 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       LoggerFactory.getLogger(OpportunityProductMaterializationCompletionHook.class);
   private static final String PROCESS_CODE = "pde-commercial-plan-offer";
   private static final String SOURCE_PREFIX = "product-discovery-cycle:";
+  private static final List<String> PRIVATE_VALIDATION_SIGNALS =
+      List.of(
+          "EXPERIENCE_STARTED",
+          "VALUE_MOMENT",
+          "READY_RESULT_USED",
+          "PREFERRED_OVER_FREE",
+          "CHECKOUT_STARTED");
   private final OpportunityDossierRepository dossierRepository;
   private final AgentTaskRepository taskRepository;
   private final ProductTypeDefinitionRepository productTypeRepository;
+  private final MarketNicheRepository marketNicheRepository;
   private final CommercialPlanService commercialPlanService;
   private final ProductService productService;
   private final ObjectMapper objectMapper;
@@ -46,12 +57,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       OpportunityDossierRepository dossierRepository,
       AgentTaskRepository taskRepository,
       ProductTypeDefinitionRepository productTypeRepository,
+      MarketNicheRepository marketNicheRepository,
       CommercialPlanService commercialPlanService,
       ProductService productService,
       ObjectMapper objectMapper) {
     this.dossierRepository = dossierRepository;
     this.taskRepository = taskRepository;
     this.productTypeRepository = productTypeRepository;
+    this.marketNicheRepository = marketNicheRepository;
     this.commercialPlanService = commercialPlanService;
     this.productService = productService;
     this.objectMapper = objectMapper;
@@ -80,12 +93,14 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
           requiredSelectedDossier(task.getSourceReference(), strategyResult);
       if (dossier.getCreatedProduct() != null) return CompletionDisposition.COMPLETE;
       JsonNode strategy = strategyResult.path("marketStrategicContract");
+      requirePrivateValidationReadiness(strategy);
       JsonNode economicsResult = completedResult(tasks, "economics");
       JsonNode economics = economicsResult.path("economics");
       JsonNode metrics = economicsResult.path("metrics");
       JsonNode architectureResult = objectMapper.readTree(request.resultJson());
       requireApprove(architectureResult, "Dédalo");
       JsonNode architecture = architectureResult.path("productArchitecture");
+      requirePrivatePrototypeReadiness(architecture);
 
       CommercialPlan plan = createPlan(dossier, strategy, economics, metrics);
       Product product =
@@ -115,17 +130,17 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       OpportunityDossier dossier, JsonNode strategy, JsonNode economics, JsonNode metrics) {
     return commercialPlanService.create(
         new CreateCommercialPlanRequest(
-            dossier.getTitle(),
+            limit(dossier.getTitle(), 191),
             null,
             null,
             null,
             text(strategy, "desiredOutcome"),
-            firstText(text(strategy, "buyer"), dossier.getTargetAudience()),
-            firstText(text(strategy, "problem"), dossier.getMainPain()),
-            text(strategy, "offerThesis"),
+            limit(firstText(text(strategy, "buyer"), dossier.getTargetAudience()), 512),
+            limit(firstText(text(strategy, "problem"), dossier.getMainPain()), 512),
+            limit(text(strategy, "offerThesis"), 512),
             null,
             "Instagram",
-            text(metrics, "primary"),
+            limit(text(metrics, "primary"), 191),
             text(metrics, "continueCriteria"),
             text(metrics, "stopCriteria"),
             requiredDate(text(economics, "deadline")),
@@ -147,7 +162,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             0,
             "Construir e homologar a experiência PDE antes de qualquer publicação.",
             "Produto planejado; construção funcional, comunicação e homologação ainda pendentes.",
-            dossier.getKnownRisks()));
+            limit(dossier.getKnownRisks(), 512)));
   }
 
   /** Cria o cadastro PDE planejado com a linhagem factual, estratégica e econômica completa. */
@@ -164,19 +179,21 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
         productTypeRepository
             .findByCode("PDE")
             .orElseThrow(() -> new IllegalStateException("Tipo canônico PDE não foi encontrado."));
+    MarketNiche marketNiche = resolveMarketNiche(dossier, strategy);
     CreateProductRequest product = new CreateProductRequest();
     String plannedName = dossier.getTitle() + " · PDE planejado #" + dossier.getId();
     product.setSlug("pde-planejado-" + dossier.getId());
     product.setName(limit(plannedName, 191));
     product.setInternalName(limit(plannedName, 191));
     product.setProductTypeId(pdeType.getId());
+    product.setMarketNicheId(marketNiche.getId());
     product.setProductFormat(limit(text(architecture, "format"), 64));
     product.setDeliveryMode("EXPERIÊNCIA_PERSONALIZADA_POR_IA");
     product.setRevenueModel("HIPÓTESE_A_VALIDAR");
     product.setValueUnit(limit(firstArrayText(architecture.path("deliverables")), 191));
     product.setValueEvidenceMetric(
         limit(firstText(firstArrayText(metrics.path("delivery")), text(metrics, "primary")), 191));
-    product.setValidationDefinitionVersion("PDE_DISCOVERY_HANDOFF_V1");
+    product.setValidationDefinitionVersion("PDE_PRIVATE_VALIDATION_V1");
     product.setValidationDefinitionJson(
         objectMapper.writeValueAsString(
             validationDefinition(strategy, economics, metrics, architecture)));
@@ -188,7 +205,8 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
             + dossier.getId()
             + " e plano #"
             + plan.getId()
-            + ". Não está publicado nem autorizado para campanha ou gasto.");
+            + ". Próximo gate: construir o protótipo privado e obter duas leituras independentes."
+            + " Não está publicado nem autorizado para contato, campanha, pagamento ou gasto.");
     product.setSevenDayJourney(objectMapper.writeValueAsString(architecture.path("valueJourney")));
     product.setTargetAudience(firstText(text(strategy, "buyer"), dossier.getTargetAudience()));
     product.setNiche(text(strategy, "segment"));
@@ -207,15 +225,46 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     return saved;
   }
 
-  /** Monta a definição modular mínima exigida pelo cadastro de produto. */
+  /** Reutiliza ou cria o nicho aprovado por Atena para manter atribuição comercial do produto. */
+  private MarketNiche resolveMarketNiche(OpportunityDossier dossier, JsonNode strategy) {
+    String fallback =
+        dossier.getProductDiscoveryCycle() == null
+            ? dossier.getTitle()
+            : dossier.getProductDiscoveryCycle().getTheme();
+    String name = limit(firstText(text(strategy, "segment"), fallback), 191);
+    return marketNicheRepository
+        .findFirstByNameIgnoreCaseOrderByIdAsc(name)
+        .orElseGet(
+            () ->
+                marketNicheRepository.save(
+                    MarketNiche.builder()
+                        .name(name)
+                        .description(
+                            "Nicho materializado a partir do dossiê factual #"
+                                + dossier.getId()
+                                + " e da estratégia aprovada por Atena.")
+                        .totalCost(BigDecimal.ZERO)
+                        .totalRevenue(BigDecimal.ZERO)
+                        .build()));
+  }
+
+  /** Monta a definição de construção e validação privada que governa o produto planejado. */
   private ObjectNode validationDefinition(
       JsonNode strategy, JsonNode economics, JsonNode metrics, JsonNode architecture) {
+    Instant frozenAt = Instant.now();
     ObjectNode definition = objectMapper.createObjectNode();
     definition.set("problem", valueNode(strategy, "problem"));
     definition.set("promise", valueNode(strategy, "desiredOutcome"));
     definition.set("mechanism", valueNode(strategy, "valueMechanism"));
     definition.set("format", valueNode(architecture, "format"));
     definition.set("delivery", architecture.deepCopy());
+    definition.set("privateValidationPlan", strategy.path("privateValidationPlan").deepCopy());
+    ((ObjectNode) definition.path("privateValidationPlan"))
+        .put("criteriaDeclaredAt", frozenAt.toString())
+        .put("sourceQualityEvaluatedAt", frozenAt.toString());
+    definition.set("privatePrototype", architecture.path("privatePrototype").deepCopy());
+    definition.put("purchaseMomentStatus", "WAITING_PRIVATE_PROTOTYPE");
+    definition.put("finalCommercialPrioritizationEligible", false);
     definition.set("economics", economics.deepCopy());
     definition.set("successEvidence", metrics.path("delivery").deepCopy());
     definition.set("decisionRules", metrics.deepCopy());
@@ -232,6 +281,7 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
       JsonNode architectureResult) {
     ObjectNode experience = objectMapper.createObjectNode();
     experience.put("contractVersion", "PDE_HARNESS_PLAN_V1");
+    experience.put("experienceVersion", "private-validation-v1");
     experience.put("status", "PLANNED");
     ObjectNode lineage = experience.putObject("lineage");
     lineage.put("cycleId", dossier.getProductDiscoveryCycle().getId());
@@ -242,10 +292,109 @@ public class OpportunityProductMaterializationCompletionHook implements AgentTas
     experience.set("economics", economics.deepCopy());
     experience.set("metrics", metrics.deepCopy());
     experience.set("harness", architectureResult.path("productArchitecture").deepCopy());
+    experience.set("privateValidationPlan", strategy.path("privateValidationPlan").deepCopy());
     experience.put(
         "publicationBoundary",
-        "Planejamento sem autorização de construção, publicação, campanha, orçamento ou gasto.");
+        "Planejamento e construção privada sem autorização de contato, publicação, campanha, pagamento, orçamento ou gasto.");
     return experience;
+  }
+
+  /** Exige que Atena tenha liberado somente o protótipo, nunca a operação comercial. */
+  private void requirePrivateValidationReadiness(JsonNode strategy) {
+    JsonNode validationPlan = strategy.path("privateValidationPlan");
+    if (!"MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
+        || !"READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())
+        || !validationPlan.isObject()
+        || validationPlan.path("minimumIndependentReadings").asInt(0) != 2
+        || validationPlan.path("minimumEligibleParticipantsPerReading").asInt(0) != 1
+        || !hasExactSignals(validationPlan.path("requiredSignals"))
+        || !unitRate(validationPlan, "minimumExperienceStartRate")
+        || !unitRate(validationPlan, "minimumValueMomentRate")
+        || !unitRate(validationPlan, "minimumReadyResultUseRate")
+        || !unitRate(validationPlan, "minimumPrototypePreferenceRate")
+        || !unitRate(validationPlan, "minimumCheckoutStartRate")
+        || validationPlan.path("sourceMaxAgeDays").asInt(0) < 1
+        || validationPlan.path("sourceMaxAgeDays").asInt(0) > 90
+        || validationPlan.path("prototypeObjective").asText().isBlank()
+        || !completePurchaseScene(validationPlan.path("purchaseScene"))
+        || !canonicalHumanValueDelivery(validationPlan.path("humanValueDelivery"))
+        || validationPlan.path("strongestFreeAlternative").asText().isBlank()
+        || validationPlan.path("prototypeAdvantage").asText().isBlank()
+        || validationPlan.path("publicationBoundary").asText().isBlank()
+        || (validationPlan.path("sourceRefreshRequired").asBoolean(false)
+            && validationPlan.path("sourceRefreshAction").asText().isBlank())) {
+      throw new IllegalStateException(
+          "Atena não liberou um plano válido para protótipo e duas leituras privadas.");
+    }
+  }
+
+  /** Confirma que Dédalo entregou um protótipo privado limitado, observável e sem cobrança. */
+  private void requirePrivatePrototypeReadiness(JsonNode architecture) {
+    JsonNode prototype = architecture.path("privatePrototype");
+    int maxValueTimeMinutes = prototype.path("maxValueTimeMinutes").asInt(0);
+    if (!prototype.isObject()
+        || prototype.path("scope").asText().isBlank()
+        || prototype.path("simpleInput").asText().isBlank()
+        || prototype.path("readyResult").asText().isBlank()
+        || maxValueTimeMinutes < 1
+        || maxValueTimeMinutes > 10
+        || !hasExactSignals(prototype.path("instrumentationEvents"))
+        || !"SIMULATED_NO_CHARGE".equals(prototype.path("checkoutMode").asText())
+        || !prototype.path("excludedFromPrototype").isArray()) {
+      throw new IllegalStateException(
+          "Dédalo não entregou um protótipo privado limitado e instrumentado.");
+    }
+  }
+
+  /** Exige os cinco sinais canônicos exatamente uma vez. */
+  private boolean hasExactSignals(JsonNode signals) {
+    if (!signals.isArray() || signals.size() != PRIVATE_VALIDATION_SIGNALS.size()) return false;
+    List<String> values = new java.util.ArrayList<>();
+    signals.forEach(signal -> values.add(signal.asText()));
+    return values.stream().distinct().count() == PRIVATE_VALIDATION_SIGNALS.size()
+        && values.containsAll(PRIVATE_VALIDATION_SIGNALS);
+  }
+
+  /** Exige taxa integral porque cada uma das duas leituras representa uma pessoa. */
+  private boolean unitRate(JsonNode plan, String field) {
+    return plan.path(field).isNumber() && Double.compare(plan.path(field).asDouble(), 1d) == 0;
+  }
+
+  /** Confirma os seis fatos necessários para interpretar o momento concreto de compra. */
+  private boolean completePurchaseScene(JsonNode scene) {
+    return hasText(scene, "trigger")
+        && hasText(scene, "deadline")
+        && hasText(scene, "costOfError")
+        && hasText(scene, "budgetEvidence")
+        && hasText(scene, "failedAttempt")
+        && hasText(scene, "currentPaidBehavior");
+  }
+
+  /** Confirma que a candidata preserva valor humano e entrega pronta sem transferir a IA. */
+  private boolean canonicalHumanValueDelivery(JsonNode delivery) {
+    return delivery.isObject()
+        && delivery.path("territories").isArray()
+        && !delivery.path("territories").isEmpty()
+        && delivery.path("evidenceSourceIds").isArray()
+        && delivery.path("evidenceSourceIds").size() >= 2
+        && delivery.path("evidencePathways").isArray()
+        && delivery.path("evidencePathways").size() >= 2
+        && hasText(delivery, "desiredTransformation")
+        && hasText(delivery, "readyMadeOutcome")
+        && hasText(delivery, "minimumCustomerInput")
+        && hasText(delivery, "automationBoundary")
+        && !delivery.path("requiresPromptEngineering").asBoolean(true)
+        && !delivery.path("requiresManualAssembly").asBoolean(true)
+        && delivery.path("usableWithoutAiKnowledge").asBoolean(false)
+        && delivery.path("customerStepsToValue").asInt(0) >= 1
+        && delivery.path("customerStepsToValue").asInt(0) <= 5
+        && delivery.path("timeToUsableResultMinutes").asInt(0) >= 1
+        && delivery.path("timeToUsableResultMinutes").asInt(0) <= 10;
+  }
+
+  /** Verifica texto obrigatório em um objeto de contrato. */
+  private boolean hasText(JsonNode value, String field) {
+    return value.isObject() && !value.path(field).asText("").trim().isBlank();
   }
 
   /** Localiza a candidata escolhida por Atena e comprova sua pertença ao ciclo em execução. */

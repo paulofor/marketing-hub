@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.3.0
+  version: 1.4.0
 paths:
   /api/agent-tasks/process-instances:
     get:
@@ -552,6 +552,11 @@ components:
           allOf:
             - $ref: "#/components/schemas/ExecutionResource"
         processContextJson: { type: string }
+        researchIntelligence:
+          nullable: true
+          description: Seleção compacta da Biblioteca de Inteligência aplicável à atividade audiovisual.
+          allOf:
+            - $ref: "#/components/schemas/ResearchIntelligenceSelection"
     ExecutionResource:
       type: object
       required:
@@ -562,6 +567,83 @@ components:
         resourceType: { type: string }
         executorReference: { type: string }
         usageInstructions: { type: string }
+    ResearchIntelligenceSelection:
+      type: object
+      required:
+        [
+          contractVersion,
+          contextFingerprint,
+          totalAvailableCards,
+          routes,
+          limitations,
+        ]
+      properties:
+        contractVersion:
+          type: string
+          enum: [HARNESS_RESEARCH_INTELLIGENCE_V1]
+        contextFingerprint: { type: string, pattern: "^[0-9a-f]{64}$" }
+        totalAvailableCards: { type: integer, minimum: 1 }
+        routes:
+          type: array
+          items: { $ref: "#/components/schemas/ResearchIntelligenceRoute" }
+        limitations:
+          type: array
+          items: { type: string }
+    ResearchIntelligenceRoute:
+      type: object
+      required:
+        [agentKey, agentName, purpose, authority, selectionReason, cards]
+      properties:
+        agentKey: { type: string }
+        agentName: { type: string }
+        purpose: { type: string }
+        authority:
+          type: string
+          enum:
+            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY]
+        selectionReason: { type: string }
+        cards:
+          type: array
+          maxItems: 4
+          items: { $ref: "#/components/schemas/ResearchIntelligenceCard" }
+    ResearchIntelligenceCard:
+      type: object
+      required:
+        [
+          cardId,
+          collection,
+          title,
+          finding,
+          mechanism,
+          commercialApplication,
+          evidenceStrength,
+          publishedOn,
+          validUntil,
+          experimentHypothesis,
+          risks,
+          limits,
+          sourcePath,
+          sourceSha256,
+          evidenceKind,
+        ]
+      properties:
+        cardId: { type: string, pattern: "^RI1-[0-9A-F]{12}$" }
+        collection: { type: string }
+        title: { type: string }
+        finding: { type: string }
+        mechanism: { type: string }
+        commercialApplication: { type: string }
+        evidenceStrength: { type: string }
+        publishedOn: { type: string, format: date, nullable: true }
+        validUntil: { type: string, format: date, nullable: true }
+        experimentHypothesis: { type: string }
+        risks: { type: string }
+        limits: { type: string }
+        sourcePath: { type: string }
+        sourceSha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+        evidenceKind:
+          type: string
+          enum: [EXTERNAL_RESEARCH]
     ModelUsage:
       type: object
       required:

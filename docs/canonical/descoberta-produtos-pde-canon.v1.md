@@ -746,7 +746,79 @@ comparar a candidata com o benchmark, ativar experimento, publicar, contatar pes
 Essa separação evita o ciclo impossível de exigir uso de um protótipo antes de Dédalo poder projetar
 o harness que dará origem a ele.
 
+### Handoff operacional para validação privada
+
+Por decisão de 2026-09-02, o avanço canônico depois de Argos é:
+
+1. Argos entrega candidatas factuais `DOSSIER_READY`, sem declarar venda ou prontidão comercial;
+2. Atena usa `MARKET_STRATEGY_V3`, compara exatamente três alternativas e seleciona no máximo uma
+   candidata como `READY_FOR_PRIVATE_VALIDATION`;
+3. Plutus usa `PDE_PRIVATE_ECONOMICS_V1` para limitar a hipótese econômica. Quando ainda não existe
+   preço canônico, deve comparar exatamente três preços de checkout simulado explicitamente
+   rotulados como hipótese, escolher um único cenário e reconciliar preço menos custo variável. O
+   parecer mantém em zero CAC, orçamento comercial, tráfego, conversão, meta de vendas e receita,
+   usa prazo ISO `YYYY-MM-DD`, exige duas leituras e declara `commercialSpendAuthorized: false`;
+   preço, orçamento ou custo ainda desconhecido nunca podem ser apresentados como resultado
+   observado;
+4. Dédalo projeta um protótipo privado com entrada simples, resultado pronto em até dez minutos,
+   harness orientado à experiência e cinco sinais instrumentados: início, conclusão, utilidade,
+   preferência e tentativa de checkout simulado sem cobrança;
+5. o backend materializa um único produto `PLANNED`, em `STOP`, e o posiciona no processo
+   `pde-construction-approval`, sem autorização para contato, publicação, campanha, pagamento ou
+   gasto;
+6. o usuário libera explicitamente, na cadeia do produto, somente a construção privada. Antes de
+   existir experimento, as tarefas dessa etapa usam a referência canônica `product:<id>` e o contexto
+   PDE persistido no próprio produto; nenhum executor pode inventar um experimento apenas para obter
+   contexto;
+7. com fontes comerciais vigentes e o protótipo utilizável, o Hub executa as duas leituras privadas
+   predeclaradas. Antes da primeira pessoa, uma atividade humana deve aceitar a URL privada, versão,
+   instrumentação, referência e data da fonte, acesso restrito e homologação desktop/mobile,
+   mantendo pagamento, publicação e mídia desativados;
+8. cada leitura representa exatamente uma pessoa consentida e usa somente um código aleatório no
+   formato `PV-` seguido de doze caracteres hexadecimais. O backend registra e recalcula, a partir
+   de eventos próprios da mesma versão, os cinco sinais `EXPERIENCE_STARTED`, `VALUE_MOMENT`,
+   `READY_RESULT_USED`, `PREFERRED_OVER_FREE` e `CHECKOUT_STARTED`; dado pessoal em claro não faz
+   parte do contrato;
+9. uma leitura em que qualquer sinal seja negativo fica `BLOCKED`, preservada para auditoria e
+   repetível depois de ajuste no protótipo. Ela não pode ser convertida em aprovação por texto,
+   intenção ou decisão do modelo;
+10. depois de duas leituras aprovadas e de pessoas distintas, Psique revisa experiência humana e
+    Têmis revisa integridade comercial usando apenas `taskTarget`, tarefas e atividades humanas da
+    mesma referência `product:<id>@private-validation-v1`; artefatos globais de outro produto são
+    proibidos;
+11. o backend exige decisões explícitas de aprovação de Psique e Têmis, recalcula contagens, taxas,
+    temporalidade, versão e vigência das fontes e só então expõe a priorização comercial final. A
+    aprovação move o produto para preparação de comunicação ainda em `STOP`; não cria experimento,
+    checkout real, contato, campanha, gasto, pagamento, venda ou receita.
+
+Resultado `READY_FOR_OPERATION`, menos ou mais de duas leituras, protótipo sem instrumentação ou
+tempo de valor superior a dez minutos devem ser rejeitados na fronteira do executor. O relatório da
+execução deve mostrar separadamente seleção, economia, arquitetura e Validação do Momento de Compra,
+além de abrir o histórico da cadeia do produto planejado. Tarefa antiga bloqueada por ausência de
+uso, preferência ou checkout, quando já existe candidata `DOSSIER_READY`, deve orientar nova
+execução de Atena no contrato v3; repetir Argos sem nova lacuna factual desperdiça pesquisa e não
+remove a circularidade. Para ciclos concluídos sob uma versão anterior, a tela da própria execução
+deve oferecer o comando explícito **Retomar com Atena**. Esse comando backend-owned reutiliza o
+ciclo, as candidatas e as evidências atuais, resolve a versão publicada da cadeia comercial e abre
+idempotentemente apenas o handoff de validação privada. Ele não cria outro ciclo de Argos, não
+altera a maturidade factual e não autoriza produto público, contato, cobrança, campanha ou gasto.
+Se a atividade concluída de Atena ainda usar contrato anterior ao `MARKET_STRATEGY_V3`, retentar
+somente Plutus é proibido: o backend deve preservar as tentativas anteriores, cancelar apenas as
+atividades ainda reabríveis e criar uma nova ocorrência sequencial de Atena, Plutus e Dédalo na
+versão publicada. Enquanto a nova ocorrência de Atena não terminar, nenhuma sucessora pode ser
+reservada. Descrições de Plutus e Dédalo não devem repetir o corpus bruto de Argos; os resultados
+estruturados das predecessoras chegam pelo contexto canônico do processo.
+
+O critério desta primeira validação é deliberadamente estrito: como cada leitura tem denominador
+um, a taxa mínima de cada sinal é `1`. Checkout simulado mede disposição de avançar no momento de
+compra, mas continua sendo apenas evidência privada; nunca deve alimentar pagamento aprovado,
+receita, CAC ou venda. Fontes precisam ter `sourceMaxAgeDays` entre 1 e 90, data real de avaliação e
+aceitação posterior à declaração dos critérios. O backend, e não o frontend ou o modelo, é a
+autoridade de todos esses cálculos e transições.
+
 A tela de processos independentes deve mostrar a cadeia completa, as 2–3 candidatas, fontes Web,
 Meta e `/pesquisas`, dossiê, parecer por agente, decisão, custo, bloqueio, próxima ação e produto
 resultante. JSON técnico pode continuar disponível para auditoria, mas não substitui o relatório em
-linguagem de negócio.
+linguagem de negócio. Uma falha de tentativa superada permanece visível dentro da auditoria da
+respectiva tarefa, mas o resumo da execução só pode expô-la como causa atual enquanto o estado
+funcional vigente for `BLOCKED`.

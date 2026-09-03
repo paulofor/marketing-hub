@@ -397,6 +397,70 @@ describe("ProductValueChainHistoryPage", () => {
     );
   });
 
+  it("releases only private construction for a planned product", async () => {
+    const user = userEvent.setup();
+    const plannedSummary = {
+      ...summary,
+      commercialStatus: "PLANNED",
+      processDefinitionId: 66,
+      processCode: "pde-construction-approval",
+      processName: "Construção e aprovação independente do PDE",
+      processVersion: 5,
+      sequenceNumber: 3,
+    };
+    let enabled = false;
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/value-chain-positions/9/summary") {
+        return Promise.resolve({ data: plannedSummary });
+      }
+      if (url === "/api/products/9/automatic-execution") {
+        return Promise.resolve({
+          data: {
+            productId: 9,
+            automaticExecutionEnabled: enabled,
+            automaticExecutionStatus: enabled ? "PLAY" : "STOP",
+          },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+    (axios.put as any).mockImplementation((url: string, body: any) => {
+      enabled = body.automaticExecutionEnabled;
+      return Promise.resolve({
+        data: {
+          productId: 9,
+          automaticExecutionEnabled: enabled,
+          automaticExecutionStatus: "PLAY",
+        },
+      });
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("region", {
+        name: "Próximo passo da validação privada",
+      }),
+    ).toHaveTextContent("não autoriza contato, publicação, campanha");
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Liberar construção privada",
+      }),
+    );
+    expect(axios.put).toHaveBeenCalledWith(
+      "/api/products/9/automatic-execution",
+      { automaticExecutionEnabled: true },
+    );
+    expect(
+      await screen.findByRole("link", {
+        name: "Abrir atividades da construção",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/66/activities",
+    );
+  });
+
   it("shows the backend successor after the final subprocess is completed", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {

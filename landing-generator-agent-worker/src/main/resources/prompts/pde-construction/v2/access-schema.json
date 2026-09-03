@@ -1,0 +1,69 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "rationale", "alternatives", "selectedApproach", "accessContract", "acceptanceCriteria", "requiredChanges"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["READY", "BLOCKED"] },
+    "rationale": { "type": "string", "minLength": 20, "maxLength": 1200 },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "salesFit"],
+        "properties": {
+          "name": { "type": "string", "minLength": 3, "maxLength": 120 },
+          "benefit": { "type": "string", "minLength": 10, "maxLength": 500 },
+          "risk": { "type": "string", "minLength": 10, "maxLength": 500 },
+          "effort": { "type": "string", "minLength": 3, "maxLength": 300 },
+          "salesFit": { "type": "string", "minLength": 10, "maxLength": 500 }
+        }
+      }
+    },
+    "selectedApproach": { "type": "string", "minLength": 20, "maxLength": 500 },
+    "accessContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["privateEntry", "accessRestriction", "sessionIsolation", "intake", "progress", "resultDelivery", "resume", "support", "privacy", "testSegregation", "observability", "errorStates", "browserCriteria"],
+      "properties": {
+        "privateEntry": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "accessRestriction": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "sessionIsolation": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "intake": { "type": "string", "minLength": 20, "maxLength": 1200 },
+        "progress": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "resultDelivery": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "resume": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "support": { "type": "string", "minLength": 20, "maxLength": 800 },
+        "privacy": { "type": "string", "minLength": 20, "maxLength": 1000 },
+        "testSegregation": { "type": "string", "minLength": 20, "maxLength": 700 },
+        "observability": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "type": "string", "enum": ["EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED"] }
+        },
+        "errorStates": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "participantMessage", "recoveryAction", "blocksProgress"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+              "participantMessage": { "type": "string", "minLength": 10, "maxLength": 400 },
+              "recoveryAction": { "type": "string", "minLength": 10, "maxLength": 500 },
+              "blocksProgress": { "type": "boolean" }
+            }
+          }
+        },
+        "browserCriteria": { "type": "array", "minItems": 3, "maxItems": 10, "items": { "type": "string", "minLength": 10, "maxLength": 300 } }
+      }
+    },
+    "acceptanceCriteria": { "type": "array", "minItems": 6, "maxItems": 16, "items": { "type": "string", "minLength": 10, "maxLength": 400 } },
+    "requiredChanges": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 5, "maxLength": 500 } }
+  }
+}

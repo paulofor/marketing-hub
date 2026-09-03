@@ -2024,3 +2024,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-01-agent-task-history-source-index.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-02-atena-private-validation-handoff-v1.yaml
+      relativeToChangelogFile: true

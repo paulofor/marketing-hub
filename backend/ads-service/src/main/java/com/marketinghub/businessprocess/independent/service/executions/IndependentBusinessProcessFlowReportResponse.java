@@ -13,9 +13,14 @@ public record IndependentBusinessProcessFlowReportResponse(
     int candidateCount,
     int dossierReadyCount,
     int plannedProductCount,
+    PrivateValidationHandoff privateValidationHandoff,
     List<SourceCoverage> sourceCoverage,
     MarketExpansion marketExpansion,
     List<Candidate> candidates) {
+
+  /** Expõe a disponibilidade backend-owned da retomada sem delegar decisão ao navegador. */
+  public record PrivateValidationHandoff(
+      boolean available, Long cycleId, String status, String actionLabel, String reason) {}
 
   /** Resume a cobertura factual de uma origem pesquisada por Argos. */
   public record SourceCoverage(

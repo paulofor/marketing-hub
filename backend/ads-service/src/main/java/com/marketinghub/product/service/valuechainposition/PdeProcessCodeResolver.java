@@ -16,6 +16,7 @@ public class PdeProcessCodeResolver {
           Map.entry("IDEIA_PRIORIZADA_PARA_TESTE", "pde-commercial-plan-offer"),
           Map.entry("PLANO_COMERCIAL", "pde-commercial-plan-offer"),
           Map.entry("PLANO_COMERCIAL_E_OFERTA", "pde-commercial-plan-offer"),
+          Map.entry("PLANNED", "pde-construction-approval"),
           Map.entry("CONSTRUCAO_E_APROVACAO", "pde-construction-approval"),
           Map.entry("COMUNICACAO_E_JORNADA", "pde-communication-sales-journey"),
           Map.entry("COMUNICACAO_E_JORNADA_DE_VENDA", "pde-communication-sales-journey"),

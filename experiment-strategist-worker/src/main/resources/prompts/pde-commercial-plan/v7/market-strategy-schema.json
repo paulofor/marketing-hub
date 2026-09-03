@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "activity",
+    "decision",
+    "selectedDossierId",
+    "selectedOpportunityId",
+    "alternatives",
+    "selectedAlternative",
+    "marketStrategicContract",
+    "assumptions",
+    "requiredChanges",
+    "rationale",
+    "sources"
+  ],
+  "properties": {
+    "activity": { "type": "string", "enum": ["marketStrategy"] },
+    "decision": { "type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"] },
+    "selectedDossierId": { "type": ["integer", "null"] },
+    "selectedOpportunityId": { "type": ["integer", "null"] },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": { "type": "string" },
+          "benefit": { "type": "string" },
+          "risk": { "type": "string" },
+          "effort": { "type": "string" },
+          "fit": { "type": "string" }
+        }
+      }
+    },
+    "selectedAlternative": { "type": "string" },
+    "marketStrategicContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "status",
+        "segment",
+        "buyer",
+        "problem",
+        "desiredOutcome",
+        "behavioralDrivers",
+        "competitorAlternatives",
+        "competitiveGap",
+        "positioning",
+        "offerThesis",
+        "valueMechanism",
+        "included",
+        "excluded",
+        "causalHypothesis",
+        "primaryMetric",
+        "continueCriteria",
+        "adjustCriteria",
+        "stopCriteria",
+        "evidenceReferences",
+        "privateValidationPlan"
+      ],
+      "properties": {
+        "contractVersion": { "type": "string", "enum": ["MARKET_STRATEGY_V3"] },
+        "status": {
+          "type": "string",
+          "enum": ["READY_FOR_PRIVATE_VALIDATION", "INSUFFICIENT_EVIDENCE"]
+        },
+        "segment": { "type": "string" },
+        "buyer": { "type": "string" },
+        "problem": { "type": "string" },
+        "desiredOutcome": { "type": "string" },
+        "behavioralDrivers": { "type": "array", "items": { "type": "string" } },
+        "competitorAlternatives": { "type": "array", "items": { "type": "string" } },
+        "competitiveGap": { "type": "string" },
+        "positioning": { "type": "string" },
+        "offerThesis": { "type": "string" },
+        "valueMechanism": { "type": "string" },
+        "included": { "type": "array", "items": { "type": "string" } },
+        "excluded": { "type": "array", "items": { "type": "string" } },
+        "causalHypothesis": { "type": "string" },
+        "primaryMetric": { "type": "string" },
+        "continueCriteria": { "type": "string" },
+        "adjustCriteria": { "type": "string" },
+        "stopCriteria": { "type": "string" },
+        "evidenceReferences": { "type": "array", "items": { "type": "string" } },
+        "privateValidationPlan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hypothesis",
+            "prototypeObjective",
+            "purchaseScene",
+            "strongestFreeAlternative",
+            "prototypeAdvantage",
+            "humanValueDelivery",
+            "minimumIndependentReadings",
+            "minimumEligibleParticipantsPerReading",
+            "requiredSignals",
+            "minimumExperienceStartRate",
+            "minimumValueMomentRate",
+            "minimumReadyResultUseRate",
+            "minimumPrototypePreferenceRate",
+            "minimumCheckoutStartRate",
+            "sourceMaxAgeDays",
+            "continueCriteria",
+            "adjustCriteria",
+            "stopCriteria",
+            "sourceRefreshRequired",
+            "sourceRefreshAction",
+            "publicationBoundary"
+          ],
+          "properties": {
+            "hypothesis": { "type": "string" },
+            "prototypeObjective": { "type": "string" },
+            "purchaseScene": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "trigger",
+                "deadline",
+                "costOfError",
+                "budgetEvidence",
+                "failedAttempt",
+                "currentPaidBehavior"
+              ],
+              "properties": {
+                "trigger": { "type": "string" },
+                "deadline": { "type": "string" },
+                "costOfError": { "type": "string" },
+                "budgetEvidence": { "type": "string" },
+                "failedAttempt": { "type": "string" },
+                "currentPaidBehavior": { "type": "string" }
+              }
+            },
+            "strongestFreeAlternative": { "type": "string" },
+            "prototypeAdvantage": { "type": "string" },
+            "humanValueDelivery": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "territories",
+                "desiredTransformation",
+                "evidenceSourceIds",
+                "evidencePathways",
+                "readyMadeOutcome",
+                "minimumCustomerInput",
+                "requiresPromptEngineering",
+                "requiresManualAssembly",
+                "usableWithoutAiKnowledge",
+                "customerStepsToValue",
+                "timeToUsableResultMinutes",
+                "automationBoundary"
+              ],
+              "properties": {
+                "territories": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "AFFECTION_AND_BELONGING",
+                      "RECOGNITION",
+                      "EFFORT_RELIEF"
+                    ]
+                  }
+                },
+                "desiredTransformation": { "type": "string" },
+                "evidenceSourceIds": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": { "type": "string" }
+                },
+                "evidencePathways": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": { "type": "string" }
+                },
+                "readyMadeOutcome": { "type": "string" },
+                "minimumCustomerInput": { "type": "string" },
+                "requiresPromptEngineering": { "type": "boolean", "const": false },
+                "requiresManualAssembly": { "type": "boolean", "const": false },
+                "usableWithoutAiKnowledge": { "type": "boolean", "const": true },
+                "customerStepsToValue": { "type": "integer", "minimum": 1, "maximum": 5 },
+                "timeToUsableResultMinutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10
+                },
+                "automationBoundary": { "type": "string" }
+              }
+            },
+            "minimumIndependentReadings": { "type": "integer", "const": 2 },
+            "minimumEligibleParticipantsPerReading": { "type": "integer", "const": 1 },
+            "requiredSignals": {
+              "type": "array",
+              "minItems": 5,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "EXPERIENCE_STARTED",
+                  "VALUE_MOMENT",
+                  "READY_RESULT_USED",
+                  "PREFERRED_OVER_FREE",
+                  "CHECKOUT_STARTED"
+                ]
+              }
+            },
+            "minimumExperienceStartRate": { "type": "number", "const": 1 },
+            "minimumValueMomentRate": { "type": "number", "const": 1 },
+            "minimumReadyResultUseRate": { "type": "number", "const": 1 },
+            "minimumPrototypePreferenceRate": { "type": "number", "const": 1 },
+            "minimumCheckoutStartRate": { "type": "number", "const": 1 },
+            "sourceMaxAgeDays": { "type": "integer", "minimum": 1, "maximum": 90 },
+            "continueCriteria": { "type": "string" },
+            "adjustCriteria": { "type": "string" },
+            "stopCriteria": { "type": "string" },
+            "sourceRefreshRequired": { "type": "boolean" },
+            "sourceRefreshAction": { "type": "string" },
+            "publicationBoundary": { "type": "string" }
+          }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "requiredChanges": { "type": "array", "items": { "type": "string" } },
+    "rationale": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "title", "evidence"],
+        "properties": {
+          "url": { "type": "string" },
+          "title": { "type": "string" },
+          "evidence": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -28,8 +28,20 @@ public class PdeEconomicsBpmTaskConsumer {
   private static final String AGENT_KEY = "financial-agent";
   private static final String PROCESS_CODE = "pde-commercial-plan-offer";
   private static final String ACTIVITY_ID = "economics";
-  private static final String PROMPT = "prompts/pde-commercial-plan/v4/economics.md";
-  private static final String SCHEMA = "prompts/pde-commercial-plan/v4/economics-schema.json";
+  private static final String LEGACY_PROMPT = "prompts/pde-commercial-plan/v4/economics.md";
+  private static final String LEGACY_SCHEMA =
+      "prompts/pde-commercial-plan/v4/economics-schema.json";
+  private static final String PRIVATE_VALIDATION_PROMPT =
+      "prompts/pde-commercial-plan/v5/economics.md";
+  private static final String PRIVATE_VALIDATION_SCHEMA =
+      "prompts/pde-commercial-plan/v5/economics-schema.json";
+  private static final List<String> PRIVATE_VALIDATION_SIGNALS =
+      List.of(
+          "EXPERIENCE_STARTED",
+          "VALUE_MOMENT",
+          "READY_RESULT_USED",
+          "PREFERRED_OVER_FREE",
+          "CHECKOUT_STARTED");
   private final RestClient backend;
   private final FinancialAgentProperties properties;
   private final ObjectMapper objectMapper;
@@ -55,8 +67,9 @@ public class PdeEconomicsBpmTaskConsumer {
     try {
       task = claim();
       if (task == null) return;
+      validateTaskContract(task);
       execution = execute(task);
-      validate(execution.result());
+      validate(execution.result(), isPrivateValidationTask(task));
       if ("APPROVE".equals(execution.result().path("decision").asText())) {
         complete(task, execution);
       } else {
@@ -91,7 +104,7 @@ public class PdeEconomicsBpmTaskConsumer {
   Execution execute(Map<String, Object> task) throws IOException, InterruptedException {
     Path output = Files.createTempFile("plutus-pde-economics-", ".json");
     Path processLog = Files.createTempFile("plutus-pde-economics-", ".jsonl");
-    Path schema = materialize(SCHEMA, ".json");
+    Path schema = materialize(schemaResource(task), ".json");
     PromptComposition prompt = prompt(task);
     try {
       Process process =
@@ -161,8 +174,19 @@ public class PdeEconomicsBpmTaskConsumer {
   private PromptComposition prompt(Map<String, Object> task) throws IOException {
     String agent = read("prompts/financial-agent/v1/agent-core.md");
     String activity =
-        read(PROMPT).replace("{{TASK_CONTEXT}}", objectMapper.writeValueAsString(task));
+        read(promptResource(task))
+            .replace("{{TASK_CONTEXT}}", objectMapper.writeValueAsString(task));
     return new PromptComposition(agent + "\n\n" + activity, agent, activity);
+  }
+
+  /** Seleciona a atividade econômica compatível com a versão imutável do processo. */
+  private String promptResource(Map<String, Object> task) {
+    return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_PROMPT : LEGACY_PROMPT;
+  }
+
+  /** Seleciona o schema econômico compatível com a versão imutável do processo. */
+  private String schemaResource(Map<String, Object> task) {
+    return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_SCHEMA : LEGACY_SCHEMA;
   }
 
   /** Persiste economia, evidência, auditoria e tokens antes de liberar Dédalo. */
@@ -219,9 +243,11 @@ public class PdeEconomicsBpmTaskConsumer {
           "blockerGuidance",
           Map.of(
               "category",
-              "TECHNICAL_FAILURE",
+              isStrategyContractDrift(ex) ? "CONTRACT_DRIFT" : "TECHNICAL_FAILURE",
               "recommendedAction",
-              "Corrija a falha técnica registrada e reinicie a atividade de Plutus.",
+              isStrategyContractDrift(ex)
+                  ? "Retome a execução com Atena para gerar MARKET_STRATEGY_V3 antes de reiniciar Plutus."
+                  : "Corrija a falha técnica registrada e reinicie a atividade de Plutus.",
               "helpLinks",
               List.of(taskLink())));
       backend
@@ -269,7 +295,7 @@ public class PdeEconomicsBpmTaskConsumer {
             "agent",
             "Plutus",
             "promptVersion",
-            "pde-commercial-plan-v4",
+            isPrivateValidationTask(task) ? "pde-commercial-plan-v5" : "pde-commercial-plan-v4",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -284,8 +310,18 @@ public class PdeEconomicsBpmTaskConsumer {
             properties.getServiceTierExceptionReason()));
   }
 
-  /** Rejeita economia sem cenários, números reconciliáveis, prazo ou regra de decisão. */
+  /** Rejeita economia legada sem cenários, números reconciliáveis, prazo ou regra de decisão. */
   static void validate(JsonNode result) {
+    validate(result, false);
+  }
+
+  /** Rejeita economia privada que antecipe venda, aquisição, orçamento ou gasto. */
+  static void validatePrivateValidation(JsonNode result) {
+    validate(result, true);
+  }
+
+  /** Valida o envelope comum e aplica as travas específicas da versão do processo. */
+  private static void validate(JsonNode result, boolean privateValidation) {
     JsonNode economics = result.path("economics");
     if (!List.of("APPROVE", "ADJUST", "REJECT").contains(result.path("decision").asText())
         || result.path("scenarios").size() != 3
@@ -294,7 +330,11 @@ public class PdeEconomicsBpmTaskConsumer {
         || result.path("rationale").asText().isBlank()) {
       throw new IllegalArgumentException("Economia PDE fora do contrato versionado de Plutus.");
     }
-    LocalDate.parse(economics.path("deadline").asText());
+    try {
+      LocalDate.parse(economics.path("deadline").asText());
+    } catch (java.time.format.DateTimeParseException ex) {
+      throw new IllegalArgumentException("Prazo econômico deve usar a data ISO YYYY-MM-DD.", ex);
+    }
     BigDecimal price = economics.path("offerPriceBrl").decimalValue();
     BigDecimal variable = economics.path("variableCostPerSaleBrl").decimalValue();
     BigDecimal contribution = economics.path("contributionPerSaleBrl").decimalValue();
@@ -307,6 +347,106 @@ public class PdeEconomicsBpmTaskConsumer {
         && contribution.compareTo(BigDecimal.ZERO) <= 0) {
       throw new IllegalArgumentException("Plutus não pode aprovar contribuição não positiva.");
     }
+    if (privateValidation)
+      validatePrivateValidationEnvelope(result, economics, price, contribution);
+  }
+
+  /** Confirma que a hipótese privada não foi convertida em operação ou resultado comercial. */
+  private static void validatePrivateValidationEnvelope(
+      JsonNode result, JsonNode economics, BigDecimal price, BigDecimal contribution) {
+    long recommendedScenarios =
+        java.util.stream.StreamSupport.stream(result.path("scenarios").spliterator(), false)
+            .filter(scenario -> scenario.path("recommended").asBoolean(false))
+            .count();
+    boolean zeroCommercialTargets =
+        economics.path("maxCacBrl").decimalValue().compareTo(BigDecimal.ZERO) == 0
+            && economics.path("maxBudgetBrl").decimalValue().compareTo(BigDecimal.ZERO) == 0
+            && economics.path("expectedTraffic").asInt(-1) == 0
+            && economics.path("expectedConversionPercent").decimalValue().compareTo(BigDecimal.ZERO)
+                == 0
+            && economics.path("targetSales").asInt(-1) == 0
+            && economics.path("targetRevenueBrl").decimalValue().compareTo(BigDecimal.ZERO) == 0;
+    if (!"PDE_PRIVATE_ECONOMICS_V1".equals(result.path("contractVersion").asText())
+        || !"PRIVATE_VALIDATION_HYPOTHESIS".equals(result.path("mode").asText())
+        || economics.path("commercialSpendAuthorized").asBoolean(true)
+        || economics.path("privateReadingsTarget").asInt(0) != 2
+        || !zeroCommercialTargets
+        || recommendedScenarios != 1) {
+      throw new IllegalArgumentException(
+          "Economia privada antecipou operação comercial ou não escolheu um cenário único.");
+    }
+    if ("APPROVE".equals(result.path("decision").asText())
+        && (price.compareTo(BigDecimal.ZERO) <= 0
+            || contribution.compareTo(BigDecimal.ZERO) <= 0)) {
+      throw new IllegalArgumentException(
+          "Hipótese privada aprovada exige preço de teste e contribuição positivos.");
+    }
+  }
+
+  /** Exige estratégia v3 antes de consumir tokens no processo de validação privada. */
+  private void validateTaskContract(Map<String, Object> task) throws IOException {
+    if (!isPrivateValidationTask(task)) return;
+    Object rawContext = task.get("processContextJson");
+    JsonNode context =
+        rawContext instanceof String text
+            ? objectMapper.readTree(text)
+            : objectMapper.valueToTree(rawContext);
+    validatePrivateStrategyContract(context);
+  }
+
+  /** Valida o contrato predecessor isoladamente para impedir regressão entre Atena e Plutus. */
+  static void validatePrivateStrategyContract(JsonNode context) {
+    JsonNode contract = privateStrategyContract(context);
+    JsonNode plan = contract.path("privateValidationPlan");
+    if (!"MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+        || !"READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+        || plan.path("minimumIndependentReadings").asInt(0) != 2
+        || !hasExactPrivateSignals(plan.path("requiredSignals"))) {
+      throw new IllegalArgumentException(
+          "Contrato de Atena incompatível com a validação privada: MARKET_STRATEGY_V3 é obrigatório.");
+    }
+  }
+
+  /** Localiza a estratégia mais recente no envelope real de predecessoras do processo. */
+  private static JsonNode privateStrategyContract(JsonNode context) {
+    JsonNode direct = context.path("marketStrategicContract");
+    if (direct.isObject()) return direct;
+    JsonNode latest = com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    long latestTaskId = Long.MIN_VALUE;
+    for (JsonNode completed : context.path("completedActivities")) {
+      if (!"marketStrategy".equals(completed.path("activityId").asText())) continue;
+      JsonNode candidate = completed.path("result").path("marketStrategicContract");
+      long taskId = completed.path("taskId").asLong(Long.MIN_VALUE);
+      if (candidate.isObject() && taskId > latestTaskId) {
+        latest = candidate;
+        latestTaskId = taskId;
+      }
+    }
+    return latest;
+  }
+
+  /** Confirma os cinco sinais canônicos da validação privada sem aceitar aliases. */
+  private static boolean hasExactPrivateSignals(JsonNode values) {
+    if (!values.isArray() || values.size() != PRIVATE_VALIDATION_SIGNALS.size()) return false;
+    List<String> signals = new ArrayList<>();
+    values.forEach(value -> signals.add(value.asText()));
+    return signals.stream().distinct().count() == PRIVATE_VALIDATION_SIGNALS.size()
+        && signals.containsAll(PRIVATE_VALIDATION_SIGNALS);
+  }
+
+  /** Identifica o processo em que preço e checkout ainda são somente hipóteses privadas. */
+  private static boolean isPrivateValidationTask(Map<String, Object> task) {
+    Object version = task == null ? null : task.get("processVersion");
+    return version instanceof Number number
+        && number.intValue() >= 6
+        && sourceReference(task).startsWith("product-discovery-cycle:");
+  }
+
+  /** Distingue incompatibilidade entre etapas de uma falha técnica genérica do executor. */
+  private boolean isStrategyContractDrift(Exception ex) {
+    return ex != null
+        && ex.getMessage() != null
+        && ex.getMessage().startsWith("Contrato de Atena incompatível");
   }
 
   /** Lê o último total cumulativo de tokens realmente informado. */

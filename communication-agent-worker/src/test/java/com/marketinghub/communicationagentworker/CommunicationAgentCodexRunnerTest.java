@@ -212,7 +212,9 @@ class CommunicationAgentCodexRunnerTest {
             "Têmis",
             "Hermes",
             "exatamente três alternativas",
-            "sensorial");
+            "sensorial",
+            "HARNESS_RESEARCH_INTELLIGENCE_V1",
+            "functionalOutput.evidenceSelection");
     assertThat(schema.path("additionalProperties").asBoolean()).isFalse();
     assertThat(schema.path("required")).hasSize(16);
     assertThat(schema.toString())

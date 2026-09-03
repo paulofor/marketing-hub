@@ -26,4 +26,15 @@ public interface HumanProductProcessActivityHandler {
       Product product,
       String sourceReference,
       ProductProcessActivityExecutionRequest request);
+
+  /** Permite que o domínio registre uma tentativa válida que ainda não atingiu seu objetivo. */
+  default HumanProductProcessActivityCompletion completeApproval(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activityDefinition,
+      Product product,
+      String sourceReference,
+      ProductProcessActivityExecutionRequest request) {
+    approve(process, activityDefinition, product, sourceReference, request);
+    return HumanProductProcessActivityCompletion.completed(request.structuredEvidence());
+  }
 }

@@ -134,16 +134,90 @@ public class ProductDiscoveryIndependentExecutionReportService
     List<IndependentBusinessProcessFlowReportResponse.SourceCoverage> sourceCoverage =
         sourceCoverage(cycle, evidenceReport, opportunities);
     return new IndependentBusinessProcessFlowReportResponse(
-        "PDE_OPPORTUNITY_TO_PRODUCT_V1",
+        "PDE_OPPORTUNITY_TO_PRIVATE_VALIDATION_V2",
         reportStatus(cycle, List.copyOf(latestTasks.values()), ready, products),
         businessHeadline(cycle, sourceCoverage),
         firstText(cycle.getAcquisitionChannel(), "Instagram"),
         opportunities.size(),
         ready,
         products,
+        privateValidationHandoff(cycle, latestTasks, ready, products),
         sourceCoverage,
         marketExpansion(evidenceReport),
         candidates);
+  }
+
+  /** Decide no backend se o ciclo pode retomar a validação privada sem repetir Argos. */
+  private IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff
+      privateValidationHandoff(
+          ProductDiscoveryCycle cycle,
+          Map<String, AgentTask> latestTasks,
+          int ready,
+          int products) {
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.COMPLETED) {
+      return handoffUnavailable(
+          cycle.getId(), "WAITING_RESEARCH", "A pesquisa factual ainda não foi concluída.");
+    }
+    if (ready == 0) {
+      return handoffUnavailable(
+          cycle.getId(),
+          "NO_READY_DOSSIER",
+          "Argos ainda não formou um dossiê factual pronto para protótipo privado.");
+    }
+    if (products > 0) {
+      return handoffUnavailable(
+          cycle.getId(),
+          "PRODUCT_PLANNED",
+          "O produto planejado já existe; o avanço continua pela cadeia do produto.");
+    }
+    AgentTask strategy = latestTasks.get("marketStrategy");
+    if (strategy != null
+        && "COMPLETED".equals(strategy.getStatus())
+        && !hasCurrentPrivateValidationStrategy(strategy)) {
+      return new IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff(
+          true,
+          cycle.getId(),
+          "STALE_STRATEGY_CONTRACT",
+          "Reiniciar com Atena atual",
+          "A seleção histórica usa um contrato anterior; a nova tentativa preservará Argos e reiniciará Atena, Plutus e Dédalo na versão vigente.");
+    }
+    for (String activityId : List.of("marketStrategy", "economics", "productArchitecture")) {
+      AgentTask task = latestTasks.get(activityId);
+      if (task == null || List.of("BLOCKED", "CANCELLED").contains(task.getStatus())) {
+        return new IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff(
+            true,
+            cycle.getId(),
+            "AVAILABLE",
+            "Retomar com Atena",
+            "Os dossiês atuais podem seguir pela versão vigente sem repetir a pesquisa de Argos.");
+      }
+      if ("COMPLETED".equals(task.getStatus())) continue;
+      return handoffUnavailable(
+          cycle.getId(),
+          "IN_PROGRESS",
+          "O handoff privado já possui uma atividade pendente ou em execução.");
+    }
+    return handoffUnavailable(
+        cycle.getId(),
+        "MATERIALIZATION_PENDING",
+        "Os gates terminaram e o backend ainda precisa materializar o produto planejado.");
+  }
+
+  /** Cria uma indisponibilidade funcional com rótulo estável para a tela administrativa. */
+  private IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff handoffUnavailable(
+      Long cycleId, String status, String reason) {
+    return new IndependentBusinessProcessFlowReportResponse.PrivateValidationHandoff(
+        false, cycleId, status, "Retomar com Atena", reason);
+  }
+
+  /** Reconhece somente a estratégia capaz de sustentar as duas leituras privadas atuais. */
+  private boolean hasCurrentPrivateValidationStrategy(AgentTask task) {
+    JsonNode contract =
+        read(task.getResultJson(), "resultado", task.getId()).path("marketStrategicContract");
+    JsonNode plan = contract.path("privateValidationPlan");
+    return "MARKET_STRATEGY_V3".equals(contract.path("contractVersion").asText())
+        && "READY_FOR_PRIVATE_VALIDATION".equals(contract.path("status").asText())
+        && plan.path("minimumIndependentReadings").asInt(0) == 2;
   }
 
   /** Substitui códigos técnicos legados por uma leitura compreensível da cobertura Meta. */
@@ -232,7 +306,7 @@ public class ProductDiscoveryIndependentExecutionReportService
         : objectMapper.createObjectNode();
   }
 
-  /** Converte uma candidata na visão gerencial com seus cinco estágios. */
+  /** Converte uma candidata na visão gerencial até a validação privada posterior. */
   private IndependentBusinessProcessFlowReportResponse.Candidate candidate(
       ProductDiscoveryOpportunity opportunity,
       OpportunityDossier dossier,
@@ -254,7 +328,7 @@ public class ProductDiscoveryIndependentExecutionReportService
     stages.add(
         candidateStage(
             "ATENA",
-            "Priorização de mercado",
+            "Escolha para protótipo privado",
             "Atena",
             tasks.get("marketStrategy"),
             selected,
@@ -276,6 +350,7 @@ public class ProductDiscoveryIndependentExecutionReportService
             selected,
             selectedDossierId));
     stages.add(productStage(dossier, selected, selectedDossierId));
+    stages.add(privateValidationStage(dossier, selected, selectedDossierId, evidence));
     return new IndependentBusinessProcessFlowReportResponse.Candidate(
         opportunity.getId(),
         opportunity.getName(),
@@ -388,6 +463,60 @@ public class ProductDiscoveryIndependentExecutionReportService
         null,
         null,
         dossier == null ? null : dossier.getUpdatedAt());
+  }
+
+  /** Expõe o gate privado sem interpretar pesquisa ou anúncio como uso real do produto. */
+  private IndependentBusinessProcessFlowReportResponse.Stage privateValidationStage(
+      OpportunityDossier dossier, boolean selected, Long selectedDossierId, JsonNode evidence) {
+    if (selectedDossierId != null && !selected) {
+      return new IndependentBusinessProcessFlowReportResponse.Stage(
+          "PURCHASE_MOMENT",
+          "Validação privada do Momento de Compra",
+          "Backend · Psique · Têmis",
+          "NOT_SELECTED",
+          "NOT_SELECTED",
+          "A validação fica preservada para uma rodada futura desta candidata.",
+          null,
+          null,
+          null,
+          dossier == null ? null : dossier.getUpdatedAt());
+    }
+    if (dossier == null || dossier.getCreatedProduct() == null) {
+      return new IndependentBusinessProcessFlowReportResponse.Stage(
+          "PURCHASE_MOMENT",
+          "Validação privada do Momento de Compra",
+          "Backend · Psique · Têmis",
+          "WAITING",
+          "AGUARDAR_PROTOTIPO",
+          "Aguardando produto PLANNED e protótipo privado utilizável.",
+          null,
+          null,
+          null,
+          dossier == null ? null : dossier.getUpdatedAt());
+    }
+    JsonNode gate = evidence.path("purchaseMomentGate");
+    boolean completed =
+        "PASS".equals(gate.path("status").asText())
+            && gate.path("sourceQualityPassed").asBoolean(false)
+            && gate.path("finalPrioritizationEligible").asBoolean(false);
+    boolean sourceQualityPassed = gate.path("sourceQualityPassed").asBoolean(false);
+    return new IndependentBusinessProcessFlowReportResponse.Stage(
+        "PURCHASE_MOMENT",
+        "Validação privada do Momento de Compra",
+        "Backend · Psique · Têmis",
+        completed ? "COMPLETED" : "WAITING",
+        completed ? "CONTINUAR" : "AGUARDAR_VALIDACAO",
+        completed
+            ? "Duas leituras privadas consistentes e os gates independentes foram comprovados."
+            : "O produto planejado ainda precisa de protótipo utilizável e duas leituras privadas independentes; checkout de teste não conta como venda.",
+        null,
+        null,
+        completed
+            ? null
+            : sourceQualityPassed
+                ? "Construir o protótipo privado e registrar duas leituras acima dos critérios predeclarados."
+                : "Atualizar as fontes comerciais antes das leituras e construir o protótipo privado em paralelo.",
+        dossier.getUpdatedAt());
   }
 
   /** Converte uma tarefa persistida em gate legível, com decisão e bloqueio reais. */
@@ -604,11 +733,21 @@ public class ProductDiscoveryIndependentExecutionReportService
       return "Candidata preservada para comparação futura; o ciclo atual priorizou outro dossiê.";
     }
     if (dossier != null && dossier.getCreatedProduct() != null) {
-      return "Abrir o produto planejado, construir o protótipo privado e validar o Momento de Compra antes da priorização comercial final.";
+      JsonNode gate =
+          read(opportunity.getEvidenceJson(), "evidência", opportunity.getId())
+              .path("purchaseMomentGate");
+      if (!gate.path("sourceQualityPassed").asBoolean(false)) {
+        return "Abrir a cadeia de valor do produto, atualizar as fontes comerciais e construir o protótipo privado; depois registrar duas leituras independentes.";
+      }
+      return "Abrir a cadeia de valor do produto, construir o protótipo privado e registrar duas leituras independentes antes da priorização comercial final.";
     }
     for (String activity : List.of("marketStrategy", "economics", "productArchitecture")) {
       AgentTask task = tasks.get(activity);
       if (task != null && "BLOCKED".equals(task.getStatus())) {
+        if ("marketStrategy".equals(activity)
+            && opportunity.getMaturity() == ProductDiscoveryOpportunityMaturity.DOSSIER_READY) {
+          return "Retentar Atena com o contrato de protótipo privado: uso, preferência e checkout são gates posteriores, não pré-requisitos da estratégia.";
+        }
         return firstText(
             task.getBlockerAction(), "Corrigir o bloqueio persistido e reiniciar o gate.");
       }

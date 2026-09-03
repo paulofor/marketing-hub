@@ -25,6 +25,7 @@ import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
+import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -63,7 +64,7 @@ class VideoProductionCycleServiceTest {
             salesVideoService,
             financialAgentService,
             studioCostLedgerService,
-            new ObjectMapper());
+            new ObjectMapper().findAndRegisterModules());
     lenient()
         .when(studioCostLedgerService.cycleLedger(any()))
         .thenReturn(java.util.Map.of("segregated", true));
@@ -219,6 +220,9 @@ class VideoProductionCycleServiceTest {
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
     when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
     when(salesVideoService.requestRender(any(), any())).thenReturn(job);
+    service.setResearchIntelligenceMapper(
+        new VideoProjectResearchIntelligenceMapper(
+            new com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService()));
 
     var result =
         service.decide(
@@ -236,7 +240,10 @@ class VideoProductionCycleServiceTest {
             "\"providerClipDurationSeconds\":15",
             "\"sceneCount\":4",
             "\"cutCount\":15",
-            "\"text_rendering\":\"DETERMINISTIC_OVERLAY\"");
+            "\"text_rendering\":\"DETERMINISTIC_OVERLAY\"",
+            "\"contractVersion\":\"HARNESS_RESEARCH_INTELLIGENCE_V1\"",
+            "\"agentKey\":\"videomaker\"",
+            "\"sourceSha256\"");
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
   }

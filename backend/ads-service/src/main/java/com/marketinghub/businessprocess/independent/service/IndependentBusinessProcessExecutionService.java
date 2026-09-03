@@ -395,7 +395,7 @@ public class IndependentBusinessProcessExecutionService {
         sumLong(tasks, AgentTask::getOutputTokens),
         hasCost ? cost.setScale(8) : null,
         completeCost ? "COMPLETE" : hasCost ? "PARTIAL" : "NOT_REPORTED",
-        latestError(tasks),
+        visibleLatestError(status, tasks),
         execution.getCreatedAt(),
         tasks.stream()
             .map(AgentTask::getReceivedAt)
@@ -448,7 +448,7 @@ public class IndependentBusinessProcessExecutionService {
         sumSnapshotLong(tasks, AgentTaskIndependentExecutionSummarySnapshot::outputTokens),
         hasCost ? cost.setScale(8) : null,
         completeCost ? "COMPLETE" : hasCost ? "PARTIAL" : "NOT_REPORTED",
-        latestSnapshotError(tasks),
+        visibleLatestSnapshotError(status, tasks),
         execution.createdAt(),
         tasks.stream()
             .map(AgentTaskIndependentExecutionSummarySnapshot::receivedAt)
@@ -686,6 +686,11 @@ public class IndependentBusinessProcessExecutionService {
         .orElse(null);
   }
 
+  /** Exibe a causa somente enquanto ela representa o bloqueio funcional vigente. */
+  private String visibleLatestError(String status, List<AgentTask> tasks) {
+    return "BLOCKED".equals(status) ? latestError(tasks) : null;
+  }
+
   /** Retorna a falha mais recente da projeção leve sem consultar o payload da tarefa. */
   private String latestSnapshotError(List<AgentTaskIndependentExecutionSummarySnapshot> tasks) {
     return tasks.stream()
@@ -697,6 +702,12 @@ public class IndependentBusinessProcessExecutionService {
                 .thenComparing(AgentTaskIndependentExecutionSummarySnapshot::id))
         .map(AgentTaskIndependentExecutionSummarySnapshot::executionError)
         .orElse(null);
+  }
+
+  /** Evita que a listagem trate erro de tentativa superada como estado atual da execução. */
+  private String visibleLatestSnapshotError(
+      String status, List<AgentTaskIndependentExecutionSummarySnapshot> tasks) {
+    return "BLOCKED".equals(status) ? latestSnapshotError(tasks) : null;
   }
 
   /** Reconhece os estados que encerram a tentativa atual da execução. */

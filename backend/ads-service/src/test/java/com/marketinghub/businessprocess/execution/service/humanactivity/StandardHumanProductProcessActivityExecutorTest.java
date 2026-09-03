@@ -59,7 +59,8 @@ class StandardHumanProductProcessActivityExecutorTest {
                 "Paulo Operador",
                 "Os gates e o teto foram revisados e estão adequados.",
                 "experiment-run:12",
-                "CONFIRM:pde-commercial-homologation-activation:authorization"));
+                "CONFIRM:pde-commercial-homologation-activation:authorization",
+                java.util.Map.of("sampleCode", "reading_01")));
 
     ArgumentCaptor<BusinessProcessActivityInstance> reserved =
         ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
@@ -77,6 +78,78 @@ class StandardHumanProductProcessActivityExecutorTest {
     var evidence = new ObjectMapper().readTree(saved.getValue().getObjectiveEvidenceJson());
     assertThat(evidence.path("operatorName").asText()).isEqualTo("Paulo Operador");
     assertThat(evidence.path("evidenceReference").asText()).isEqualTo("experiment-run:12");
+    assertThat(evidence.path("structuredEvidence").path("sampleCode").asText())
+        .isEqualTo("reading_01");
+  }
+
+  /**
+   * Preserva evidência recalculada quando uma tentativa válida não atinge o critério do domínio.
+   */
+  @Test
+  void recordsSpecializedApprovalAttemptAsBlocked() throws Exception {
+    BusinessProcessDefinition process = process();
+    BusinessProcessActivityDefinition activity = activity(process);
+    Product product = Product.builder().id(9L).build();
+    HumanProductProcessActivityHandler handler = mock(HumanProductProcessActivityHandler.class);
+    StandardHumanProductProcessActivityExecutor specializedExecutor =
+        new StandardHumanProductProcessActivityExecutor(
+            instances,
+            predecessors,
+            new ObjectMapper(),
+            List.of(handler),
+            Clock.fixed(NOW, ZoneOffset.UTC));
+    when(handler.supports(process, activity)).thenReturn(true);
+    when(handler.readiness(process, activity, product, "experiment:89"))
+        .thenReturn(
+            new HumanProductProcessActivityReadiness(
+                true,
+                "Leitura liberada.",
+                "Registrar leitura",
+                "Registre os sinais.",
+                "Leitura privada",
+                "Confirmo os sinais observados.",
+                "CONFIRM:pde-commercial-homologation-activation:authorization",
+                null,
+                9L,
+                List.of()));
+    when(handler.completeApproval(
+            org.mockito.ArgumentMatchers.eq(process),
+            org.mockito.ArgumentMatchers.eq(activity),
+            org.mockito.ArgumentMatchers.eq(product),
+            org.mockito.ArgumentMatchers.eq("experiment:89"),
+            any(ProductProcessActivityExecutionRequest.class)))
+        .thenReturn(
+            HumanProductProcessActivityCompletion.blocked(
+                "Leitura preservada abaixo do critério.",
+                "O checkout simulado não foi iniciado.",
+                java.util.Map.of("criteriaPassed", false, "checkoutStarted", 0)));
+    when(predecessors.readiness(process, activity, "experiment:89"))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Predecessoras prontas."));
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            590L, "experiment:89"))
+        .thenReturn(Optional.empty());
+
+    HumanProductProcessActivityExecutionResult result =
+        specializedExecutor.execute(
+            process,
+            activity,
+            product,
+            "experiment:89",
+            decision("APPROVE", "A leitura privada foi observada integralmente."));
+
+    ArgumentCaptor<BusinessProcessActivityInstance> saved =
+        ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).save(saved.capture());
+    assertThat(result.operationalState()).isEqualTo("BLOCKED");
+    assertThat(result.objectiveAchieved()).isFalse();
+    assertThat(saved.getValue().getBlockedReason()).contains("checkout simulado");
+    assertThat(
+            new ObjectMapper()
+                .readTree(saved.getValue().getObjectiveEvidenceJson())
+                .path("structuredEvidence")
+                .path("criteriaPassed")
+                .asBoolean())
+        .isFalse();
   }
 
   /** Permite revisar e aceitar sem redigitar a auditoria já resolvida pelo backend. */
@@ -108,6 +181,13 @@ class StandardHumanProductProcessActivityExecutorTest {
                 List.of(),
                 HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
                 "experiment:89; experiment-run:9/run-number:2; commercial-plan:4"));
+    when(handler.completeApproval(
+            org.mockito.ArgumentMatchers.eq(process),
+            org.mockito.ArgumentMatchers.eq(activity),
+            any(Product.class),
+            org.mockito.ArgumentMatchers.eq("experiment:89"),
+            any(ProductProcessActivityExecutionRequest.class)))
+        .thenReturn(HumanProductProcessActivityCompletion.completed(java.util.Map.of()));
     when(predecessors.readiness(process, activity, "experiment:89"))
         .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Predecessoras prontas."));
     when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(

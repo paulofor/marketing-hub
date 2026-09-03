@@ -4,12 +4,18 @@ import {
   Clock3,
   GitBranch,
   ListTree,
+  Play,
   RefreshCw,
+  ShieldCheck,
   Workflow,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { formatCommercialStatus } from "../../api/product/productStatus";
+import {
+  useProductAutomaticExecution,
+  useProductAutomaticExecutionControl,
+} from "../../api/product/useProductAutomaticExecution";
 import { useProductProcessCommits } from "../../api/product/useProductProcessCommits";
 import {
   sortProductStageMeasurements,
@@ -105,6 +111,12 @@ export default function ProductValueChainHistoryPage() {
   );
   const commitsQuery = useProductProcessCommits(productId, historyRequested);
   const summary = summaryQuery.data;
+  const privateConstruction = summary?.commercialStatus === "PLANNED";
+  const executionControlQuery = useProductAutomaticExecutionControl(
+    productId,
+    privateConstruction,
+  );
+  const automaticExecution = useProductAutomaticExecution();
   const position = positionQuery.data;
   const measurements = [
     ...(position?.processMeasurements ?? []),
@@ -179,6 +191,61 @@ export default function ProductValueChainHistoryPage() {
         </div>
       ) : (
         <>
+          {privateConstruction ? (
+            <section
+              className="alert alert-info"
+              aria-label="Próximo passo da validação privada"
+            >
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                  <h2 className="h5 mb-1">
+                    <ShieldCheck size={18} aria-hidden="true" /> Construção
+                    privada antes da venda
+                  </h2>
+                  <p className="mb-0">
+                    O produto está planejado. Libere apenas a construção do
+                    protótipo; isso não autoriza contato, publicação, campanha,
+                    cobrança ou gasto.
+                  </p>
+                </div>
+                {executionControlQuery.isLoading ? (
+                  <button type="button" className="btn btn-primary" disabled>
+                    Verificando STOP...
+                  </button>
+                ) : executionControlQuery.data?.automaticExecutionEnabled ? (
+                  <Link
+                    className="btn btn-primary"
+                    to={`/products/${summary.productId}/value-chain-history/processes/${summary.processDefinitionId}/activities`}
+                  >
+                    <ListTree size={16} aria-hidden="true" /> Abrir atividades
+                    da construção
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={automaticExecution.isPending}
+                    onClick={() =>
+                      automaticExecution.mutate({
+                        productId: summary.productId,
+                        automaticExecutionEnabled: true,
+                      })
+                    }
+                  >
+                    <Play size={16} aria-hidden="true" />
+                    {automaticExecution.isPending
+                      ? "Liberando construção..."
+                      : "Liberar construção privada"}
+                  </button>
+                )}
+              </div>
+              {executionControlQuery.isError || automaticExecution.isError ? (
+                <p className="text-danger mb-0 mt-2" role="alert">
+                  Não foi possível consultar ou liberar a construção privada.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
           <section
             className="product-value-chain-history__summary"
             aria-label="Resumo da posição atual"

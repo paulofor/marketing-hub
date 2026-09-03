@@ -118,6 +118,42 @@ class ExperimentAgentTaskTargetContextProviderTest {
     assertThat(pde.unitPriceBrl()).isEqualByComparingTo("349.00");
   }
 
+  /** Usa a versão privada aceita sem exigir slot público ou checkout comercial real. */
+  @Test
+  void resolvesAcceptedPrivatePrototypeWithoutProductionContract() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    Product product =
+        Product.builder()
+            .id(19L)
+            .slug("pde-planejado-301")
+            .name("PDE privado")
+            .internalName("PDE privado #301")
+            .validationDefinitionVersion("PDE_PRIVATE_VALIDATION_V1")
+            .validationDefinitionJson(
+                """
+                {"privatePrototypeAcceptance":{"status":"READY",
+                  "privateAccessUrl":"https://private.local/prototype"}}
+                """)
+            .pdeExperienceJson("{\"experienceVersion\":\"private-validation-v1\"}")
+            .currentPriceBrl(new BigDecimal("97.00"))
+            .build();
+    when(products.findById(19L)).thenReturn(Optional.of(product));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+
+    var target =
+        provider
+            .resolve("product:19@private-validation-v1", "pde-construction-approval")
+            .orElseThrow();
+
+    assertThat(target.publicUrl()).isEqualTo("https://private.local/prototype");
+    assertThat(target.commercialCheckoutProvider()).isNull();
+    assertThat(target.commercialCheckoutReference()).isNull();
+    assertThat(target.commercialCheckoutUrl()).isNull();
+    assertThat(target.unitPriceBrl()).isEqualByComparingTo("97.00");
+  }
+
   /** Bloqueia uma revisão que combine o checkout versionado com preço de outro experimento. */
   @Test
   void rejectsVersionedCheckoutWithDivergentExperimentPrice() {

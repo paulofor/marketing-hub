@@ -100,6 +100,20 @@ audit_autonomous_handoff_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_private_validation_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-02-atena-private-validation-handoff-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_private_validation_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-02-atena-private-validation-handoff-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 trap audit_cleanup EXIT
 audit_cleanup
 
@@ -576,6 +590,102 @@ audit_assert_equal \
           'fk_opportunity_dossier_discovery_opportunity',
           'fk_opportunity_dossier_created_product'
         ))
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-02-atena-private-validation-handoff-v1-%';" \
+  >/dev/null 2>&1
+audit_private_validation_update
+audit_assert_equal \
+  "processos e cadeia da validação privada" \
+  "1:1:10:1:6" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM business_process_definition
+      WHERE process_code = 'pde-commercial-plan-offer'
+        AND version_number = 6 AND status = 'PUBLISHED'), ':',
+    (SELECT COUNT(*) FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval'
+        AND version_number = 6 AND status = 'PUBLISHED'), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 6), ':',
+    (SELECT COUNT(*) FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery'
+        AND version_number = 10 AND status = 'PUBLISHED'), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain
+        ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery'
+        AND chain.version_number = 10)
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-02-atena-private-validation-handoff-v1-%';" \
+  >/dev/null 2>&1
+audit_private_validation_update
+audit_assert_equal \
+  "retomada da validação privada sem duplicidade" \
+  "1:1:10:1:6:3" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM business_process_definition
+      WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 6), ':',
+    (SELECT COUNT(*) FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 6), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 6), ':',
+    (SELECT COUNT(*) FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 10), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain
+        ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery'
+        AND chain.version_number = 10), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-02-atena-private-validation-handoff-v1-%')
+  );")"
+
+audit_private_validation_command "rollbackCount 3"
+audit_assert_equal \
+  "rollback da validação privada" \
+  "RETIRED:RETIRED:RETIRED:0" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 6), ':',
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 6), ':',
+    (SELECT status FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 10), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-02-atena-private-validation-handoff-v1-%')
+  );")"
+
+audit_private_validation_update
+audit_assert_equal \
+  "reaplicação publica a validação privada" \
+  "PUBLISHED:PUBLISHED:PUBLISHED:10:6" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 6), ':',
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 6), ':',
+    (SELECT status FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 10), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 6), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain
+        ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery'
+        AND chain.version_number = 10)
   );")"
 
 echo "Auditoria BPM da descoberta PDE aprovada no MySQL 5.7."

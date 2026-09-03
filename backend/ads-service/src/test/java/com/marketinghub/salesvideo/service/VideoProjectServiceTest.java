@@ -9,10 +9,13 @@ import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.VideoProjectStatus;
 import com.marketinghub.salesvideo.dto.CreateVideoProjectRequest;
+import com.marketinghub.salesvideo.dto.ResearchIntelligenceSelectionDto;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
+import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class VideoProjectServiceTest {
   @Mock private VideoProjectRepository repository;
+  @Mock private VideoProjectResearchIntelligenceMapper researchIntelligenceMapper;
 
   private VideoProjectService service;
 
@@ -33,6 +37,7 @@ class VideoProjectServiceTest {
   void setUp() {
     TenantContextHolder.set(new TenantContext("tenant-musa", "editor@marketinghub.io", false));
     service = new VideoProjectService(repository);
+    service.setResearchIntelligenceMapper(researchIntelligenceMapper);
   }
 
   @AfterEach
@@ -403,5 +408,52 @@ class VideoProjectServiceTest {
 
     assertThatThrownBy(() -> service.createProject(request))
         .hasMessageContaining("Bíblia visual completa");
+  }
+
+  /** Mantém a listagem leve e entrega os cartões somente ao abrir o detalhe do projeto. */
+  @Test
+  void shouldLoadResearchIntelligenceOnlyOnProjectDetail() {
+    VideoProject project =
+        VideoProject.builder()
+            .id(91L)
+            .tenantId("tenant-musa")
+            .productId(4L)
+            .experimentId(91L)
+            .contextType("PDE")
+            .productionMode("CINEMATIC_SCENE_BLUEPRINT")
+            .targetChannel("INSTAGRAM_REELS_STORIES")
+            .format("VERTICAL_9_16")
+            .title("Vega #91 - O espelho antes de sair")
+            .objective("Gerar clique qualificado para o diagnóstico")
+            .status(VideoProjectStatus.READY_FOR_SCRIPT)
+            .build();
+    ResearchIntelligenceSelectionDto selection =
+        new ResearchIntelligenceSelectionDto(
+            "HARNESS_RESEARCH_INTELLIGENCE_V1",
+            "a".repeat(64),
+            56,
+            List.of(
+                route("communication-director"),
+                route("videomaker"),
+                route("customer-agent"),
+                route("meta-ad-approver")),
+            List.of("Artigos não comprovam venda."));
+    given(repository.findByTenantIdOrderByUpdatedAtDesc("tenant-musa"))
+        .willReturn(List.of(project));
+    given(repository.findById(91L)).willReturn(Optional.of(project));
+    given(researchIntelligenceMapper.selectForVideoProject(project)).willReturn(selection);
+
+    assertThat(service.listProjects())
+        .singleElement()
+        .extracting(VideoProjectDto::researchIntelligence)
+        .isNull();
+    assertThat(service.getProject(91L).researchIntelligence()).isNotNull();
+    assertThat(service.getProject(91L).researchIntelligence().routes()).hasSize(4);
+  }
+
+  /** Cria uma rota mínima pertencente ao contrato do próprio SalesVideo. */
+  private ResearchIntelligenceSelectionDto.Route route(String agentKey) {
+    return new ResearchIntelligenceSelectionDto.Route(
+        agentKey, agentKey, "Orientar vídeo", "REVIEW_CRITERIA_ONLY", "Seleção local", List.of());
   }
 }

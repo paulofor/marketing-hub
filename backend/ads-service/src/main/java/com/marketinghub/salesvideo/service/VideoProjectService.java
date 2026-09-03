@@ -8,9 +8,11 @@ import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
+import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import java.util.List;
 import java.util.Objects;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +27,20 @@ public class VideoProjectService {
   public static final int MINIMUM_LONG_FORM_DURATION_SECONDS = 180;
 
   private final VideoProjectRepository repository;
+  private VideoProjectResearchIntelligenceMapper researchIntelligenceMapper;
 
   /** Inicializa o serviço com o repositório canônico de projetos de vídeo. */
   public VideoProjectService(VideoProjectRepository repository) {
     this.repository = repository;
+  }
+
+  /**
+   * Conecta a biblioteca comum sem quebrar testes unitários que instanciam o serviço diretamente.
+   */
+  @Autowired
+  public void setResearchIntelligenceMapper(
+      VideoProjectResearchIntelligenceMapper researchIntelligenceMapper) {
+    this.researchIntelligenceMapper = researchIntelligenceMapper;
   }
 
   /** Lista os projetos de vídeo do tenant atual. */
@@ -36,7 +48,7 @@ public class VideoProjectService {
   public List<VideoProjectDto> listProjects() {
     String tenantId = TenantContextHolder.requireTenant();
     return repository.findByTenantIdOrderByUpdatedAtDesc(tenantId).stream()
-        .map(VideoProjectService::toDto)
+        .map(project -> toDto(project, false))
         .toList();
   }
 
@@ -110,13 +122,13 @@ public class VideoProjectService {
             .createdBy(trimToNull(request.createdBy()))
             .updatedBy(trimToNull(request.createdBy()))
             .build();
-    return toDto(repository.save(project));
+    return toDto(repository.save(project), true);
   }
 
   /** Consulta um projeto de vídeo do tenant atual. */
   @Transactional(readOnly = true)
   public VideoProjectDto getProject(Long projectId) {
-    return toDto(loadProject(projectId));
+    return toDto(loadProject(projectId), true);
   }
 
   /** Atualiza a definição editorial de um projeto de vídeo. */
@@ -180,7 +192,7 @@ public class VideoProjectService {
     project.setQualityGate(trimToNull(request.qualityGate()));
     project.setStatus(validatedStatus(request.status(), request));
     project.setUpdatedBy(trimToNull(request.updatedBy()));
-    return toDto(repository.save(project));
+    return toDto(repository.save(project), true);
   }
 
   /** Carrega um projeto garantindo isolamento por tenant. */
@@ -368,8 +380,8 @@ public class VideoProjectService {
         || status == VideoProjectStatus.APPROVED;
   }
 
-  /** Converte a entidade do projeto de vídeo para contrato REST. */
-  private static VideoProjectDto toDto(VideoProject project) {
+  /** Converte o projeto para REST e evita ampliar a listagem com contexto usado só no detalhe. */
+  private VideoProjectDto toDto(VideoProject project, boolean includeResearchIntelligence) {
     return new VideoProjectDto(
         project.getId(),
         project.getTenantId(),
@@ -426,6 +438,9 @@ public class VideoProjectService {
         project.getCreatedBy(),
         project.getUpdatedBy(),
         project.getCreatedAt(),
-        project.getUpdatedAt());
+        project.getUpdatedAt(),
+        !includeResearchIntelligence || researchIntelligenceMapper == null
+            ? null
+            : researchIntelligenceMapper.selectForVideoProject(project));
   }
 }

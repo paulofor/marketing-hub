@@ -21,6 +21,7 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaObservationRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoverySupervisedMetaSessionService;
+import com.marketinghub.productdiscovery.v1.service.resumePrivateValidationHandoff.ProductDiscoveryPrivateValidationHandoffResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -77,6 +78,13 @@ public class ProductDiscoveryController {
   @GetMapping("/product-discovery/v1/cycles/{cycleId}")
   public ResponseEntity<ProductDiscoveryCycleDetailResponse> getCycle(@PathVariable Long cycleId) {
     return ResponseEntity.ok(service.getCycle(cycleId));
+  }
+
+  /** Retoma com Atena os dossiês atuais sem criar outra execução de pesquisa de Argos. */
+  @PostMapping("/product-discovery/v1/cycles/{cycleId}/private-validation-handoff")
+  public ResponseEntity<ProductDiscoveryPrivateValidationHandoffResponse>
+      resumePrivateValidationHandoff(@PathVariable Long cycleId) {
+    return ResponseEntity.ok(service.resumePrivateValidationHandoff(cycleId));
   }
 
   /** Retorna o ranking gerencial por maturidade comercial para priorização de descoberta. */

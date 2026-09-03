@@ -319,6 +319,91 @@ class IndependentBusinessProcessExecutionServiceTest {
     assertThat(result.execution().costCoverage()).isEqualTo("NOT_REPORTED");
   }
 
+  /** Preserva a falha na tentativa antiga sem apresentá-la como bloqueio após a retentativa. */
+  @Test
+  void hidesSupersededErrorAfterSuccessfulRetry() {
+    BusinessProcessDefinition process = process("INDEPENDENT", "PUBLISHED");
+    IndependentBusinessProcessExecution execution = execution(process);
+    AgentTask blocked = task(process, "BLOCKED", "Falha histórica preservada.");
+    blocked.setId(270L);
+    blocked.setUpdatedAt(NOW.plusSeconds(20));
+    AgentTask completed = task(process, "COMPLETED", null);
+    when(executions.findById(91L)).thenReturn(Optional.of(execution));
+    when(activities.findAllByProcessDefinitionIdOrderByIdAsc(52L))
+        .thenReturn(List.of(activity(process)));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc(execution.getSourceReference()))
+        .thenReturn(List.of(blocked, completed));
+
+    var result = service(List.of(handler)).get(91L);
+
+    assertThat(result.execution().status()).isEqualTo("COMPLETED");
+    assertThat(result.execution().latestError()).isNull();
+    assertThat(result.activities().getFirst().tasks().getFirst().executionError())
+        .isEqualTo("Falha histórica preservada.");
+  }
+
+  /** Oculta também na projeção leve a falha superada pela ocorrência posterior concluída. */
+  @Test
+  void lightweightListHidesSupersededErrorAfterSuccessfulRetry() {
+    IndependentBusinessProcessExecutionListSnapshot execution =
+        new IndependentBusinessProcessExecutionListSnapshot(
+            91L,
+            "b82df168-e383-4acd-8ca4-ab858b39fd3e",
+            52L,
+            "pde-opportunity-discovery",
+            "Descoberta de oportunidades PDE",
+            6,
+            "product-discovery-cycle:77",
+            "agenda vazia para manicures",
+            "Operação",
+            "{\"theme\":\"agenda vazia para manicures\"}",
+            NOW);
+    AgentTaskIndependentExecutionSummarySnapshot blocked =
+        new AgentTaskIndependentExecutionSummarySnapshot(
+            270L,
+            execution.sourceReference(),
+            "marketEvidence",
+            "BLOCKED",
+            "market-radar",
+            "Falha histórica preservada.",
+            null,
+            null,
+            null,
+            null,
+            "NOT_REPORTED",
+            NOW.plusSeconds(5),
+            NOW.plusSeconds(20));
+    AgentTaskIndependentExecutionSummarySnapshot completed =
+        new AgentTaskIndependentExecutionSummarySnapshot(
+            271L,
+            execution.sourceReference(),
+            "marketEvidence",
+            "COMPLETED",
+            "market-radar",
+            null,
+            null,
+            null,
+            null,
+            null,
+            "NOT_REPORTED",
+            NOW.plusSeconds(25),
+            NOW.plusSeconds(30));
+    when(executions.findListSnapshots(any(org.springframework.data.domain.Pageable.class)))
+        .thenReturn(List.of(execution));
+    when(tasks.findIndependentExecutionSummarySnapshotsBySourceReferences(
+            List.of(execution.sourceReference())))
+        .thenReturn(List.of(blocked, completed));
+    when(activities.findSummarySnapshotsByProcessDefinitionIds(java.util.Set.of(52L)))
+        .thenReturn(List.of(new BusinessProcessActivitySummarySnapshot(52L, "marketEvidence")));
+
+    var result = service(List.of(handler)).list(11, null);
+
+    assertThat(result)
+        .singleElement()
+        .satisfies(item -> assertThat(item.status()).isEqualTo("COMPLETED"));
+    assertThat(result.getFirst().latestError()).isNull();
+  }
+
   /** Expõe a auditoria completa da tarefa no mesmo contrato do detalhe independente. */
   @Test
   void reportsCompletePersistedTaskAudit() {

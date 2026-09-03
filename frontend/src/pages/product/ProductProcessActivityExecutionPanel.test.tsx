@@ -106,6 +106,140 @@ describe("ProductProcessActivityExecutionPanel", () => {
     });
   });
 
+  it("records a private reading with pseudonymous identity and five explicit signals", () => {
+    renderPanel(privateReadingActivity());
+
+    fireEvent.change(screen.getByLabelText(/Responsável pelo registro/), {
+      target: { value: "Paulo Operador" },
+    });
+    fireEvent.change(screen.getByLabelText(/Código pseudonimizado/), {
+      target: { value: "PV-A1B2C3D4E5F6" },
+    });
+    for (const label of [
+      "Iniciou a experiência",
+      "Chegou ao momento de valor",
+      "Usou o resultado pronto",
+      "Preferiu ao melhor caminho gratuito",
+      "Escolheu avançar no checkout simulado",
+    ]) {
+      fireEvent.change(screen.getByLabelText(label), {
+        target: { value: label.includes("checkout") ? "NO" : "YES" },
+      });
+    }
+    fireEvent.change(screen.getByLabelText(/Observação da leitura/), {
+      target: {
+        value: "A pessoa concluiu com pouco esforço e usou o resultado.",
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/Evidência auditável/), {
+      target: { value: "private-session:local-01" },
+    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /a pessoa consentiu/ }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /eventos próprios desta versão/ }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Registrar leitura privada" }),
+    );
+
+    expect(onExecute).toHaveBeenCalledWith({
+      activityId: "privateReading1",
+      decision: {
+        decision: "APPROVE",
+        operatorName: "Paulo Operador",
+        justification:
+          "A pessoa concluiu com pouco esforço e usou o resultado.",
+        evidenceReference: "private-session:local-01",
+        confirmationToken: "CONFIRM:pde-construction-approval:privateReading1",
+        structuredEvidence: {
+          participantReference: "PV-A1B2C3D4E5F6",
+          consentConfirmed: true,
+          firstPartyEvidenceConfirmed: true,
+          signals: {
+            EXPERIENCE_STARTED: true,
+            VALUE_MOMENT: true,
+            READY_RESULT_USED: true,
+            PREFERRED_OVER_FREE: true,
+            CHECKOUT_STARTED: false,
+          },
+        },
+      },
+    });
+  });
+
+  it("accepts a usable private prototype without enabling publication or payment", () => {
+    renderPanel(privatePrototypeActivity());
+
+    fireEvent.change(screen.getByLabelText(/Responsável pela validação/), {
+      target: { value: "Paulo Operador" },
+    });
+    fireEvent.change(screen.getByLabelText(/Versão do protótipo/), {
+      target: { value: "private-v1" },
+    });
+    fireEvent.change(screen.getByLabelText(/URL privada acessível/), {
+      target: { value: "https://private.local/prototype" },
+    });
+    fireEvent.change(screen.getByLabelText(/Referência da instrumentação/), {
+      target: { value: "events:local-01" },
+    });
+    fireEvent.change(screen.getByLabelText(/Fonte comercial vigente/), {
+      target: { value: "source-snapshot:local-01" },
+    });
+    fireEvent.change(screen.getByLabelText(/Data da verificação da fonte/), {
+      target: { value: "2026-09-02T09:00" },
+    });
+    fireEvent.change(screen.getByLabelText(/Resultado da homologação/), {
+      target: { value: "Jornada privada validada no desktop e no celular." },
+    });
+    fireEvent.change(
+      screen.getByLabelText(/Evidência auditável da homologação/),
+      {
+        target: { value: "homologation:local-01" },
+      },
+    );
+    for (const label of [
+      /acesso está restrito/,
+      /pagamento real está desativado/,
+      /produto não está publicado/,
+      /Não houve mídia/,
+      /cinco eventos próprios/,
+      /testada no desktop/,
+      /testada no celular/,
+    ]) {
+      fireEvent.click(screen.getByRole("checkbox", { name: label }));
+    }
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar protótipo privado" }),
+    );
+
+    expect(onExecute).toHaveBeenCalledWith({
+      activityId: "prototypeAcceptance",
+      decision: expect.objectContaining({
+        decision: "APPROVE",
+        operatorName: "Paulo Operador",
+        evidenceReference: "homologation:local-01",
+        confirmationToken:
+          "CONFIRM:pde-construction-approval:prototypeAcceptance",
+        structuredEvidence: expect.objectContaining({
+          prototypeVersion: "private-v1",
+          privateAccessUrl: "https://private.local/prototype",
+          instrumentationReference: "events:local-01",
+          sourceEvidenceReference: "source-snapshot:local-01",
+          sourceEvaluatedAt: expect.stringContaining("2026-09-02T"),
+          privateAccessConfirmed: true,
+          paymentDisabled: true,
+          publicationDisabled: true,
+          noMediaSpendConfirmed: true,
+          firstPartyEventsConfirmed: true,
+          desktopValidated: true,
+          mobileValidated: true,
+        }),
+      }),
+    });
+  });
+
   it("opens the official subprocess instead of inventing a local command", () => {
     renderPanel({
       ...baseActivity(),
@@ -258,6 +392,56 @@ describe("ProductProcessActivityExecutionPanel", () => {
           detail: "Evidência aprovada pelo backend.",
           recommendation: "Preserve a evidência.",
         })),
+      },
+    };
+  }
+
+  function privateReadingActivity(): ProductProcessActivityExecutionGroup {
+    return {
+      ...baseActivity(),
+      activityId: "privateReading1",
+      activityName: "Registrar primeira leitura privada",
+      activityOwnerName: "Operador humano",
+      executionControl: {
+        executorType: "HUMAN",
+        interactionType: "APPROVAL",
+        actionLabel: "Registrar leitura privada",
+        description: "Registre somente evidência observada.",
+        actionAvailable: true,
+        availabilityReason: "Protótipo privado pronto.",
+        confirmationRequired: true,
+        confirmationTitle: "Primeira leitura privada",
+        confirmationMessage:
+          "Confirmo que a pessoa consentiu e que os sinais são observados.",
+        confirmationToken: "CONFIRM:pde-construction-approval:privateReading1",
+        workspaceCode: "PDE_PRIVATE_READING",
+        workspaceReferenceId: 9,
+        requirements: [],
+      },
+    };
+  }
+
+  function privatePrototypeActivity(): ProductProcessActivityExecutionGroup {
+    return {
+      ...baseActivity(),
+      activityId: "prototypeAcceptance",
+      activityName: "Confirmar protótipo privado utilizável",
+      activityOwnerName: "Operador humano",
+      executionControl: {
+        executorType: "HUMAN",
+        interactionType: "APPROVAL",
+        actionLabel: "Confirmar protótipo privado",
+        description: "Registre a versão privada realmente utilizável.",
+        actionAvailable: true,
+        availabilityReason: "Plano e arquitetura congelados.",
+        confirmationRequired: true,
+        confirmationTitle: "Protótipo privado utilizável",
+        confirmationMessage: "Confirmo as travas privadas.",
+        confirmationToken:
+          "CONFIRM:pde-construction-approval:prototypeAcceptance",
+        workspaceCode: "PDE_PRIVATE_PROTOTYPE_ACCEPTANCE",
+        workspaceReferenceId: 9,
+        requirements: [],
       },
     };
   }

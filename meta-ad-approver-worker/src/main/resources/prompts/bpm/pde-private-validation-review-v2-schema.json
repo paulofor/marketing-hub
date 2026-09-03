@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "commercialRationale",
+    "score",
+    "contractChecks",
+    "privateValidationChecks",
+    "evidence",
+    "requiredChanges"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVED", "ADJUST", "BLOCKED"]
+    },
+    "commercialRationale": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 1800
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "contractChecks": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "passed", "evidence"],
+        "properties": {
+          "code": { "type": "string" },
+          "passed": { "type": "boolean" },
+          "evidence": { "type": "string", "minLength": 5, "maxLength": 700 }
+        }
+      }
+    },
+    "privateValidationChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sameProductAndVersion",
+        "criteriaPredeclared",
+        "twoDistinctParticipants",
+        "fiveSignalsPassedTwice",
+        "firstPartyEvents",
+        "privateAndUnpublished",
+        "paymentDisabled",
+        "zeroMediaSpend",
+        "privacyPreserved"
+      ],
+      "properties": {
+        "sameProductAndVersion": { "type": "boolean" },
+        "criteriaPredeclared": { "type": "boolean" },
+        "twoDistinctParticipants": { "type": "boolean" },
+        "fiveSignalsPassedTwice": { "type": "boolean" },
+        "firstPartyEvents": { "type": "boolean" },
+        "privateAndUnpublished": { "type": "boolean" },
+        "paymentDisabled": { "type": "boolean" },
+        "zeroMediaSpend": { "type": "boolean" },
+        "privacyPreserved": { "type": "boolean" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 24,
+      "items": { "type": "string", "minLength": 10, "maxLength": 700 }
+    },
+    "requiredChanges": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "type": "string", "minLength": 5, "maxLength": 700 }
+    }
+  }
+}

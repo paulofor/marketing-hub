@@ -332,6 +332,16 @@ try {
           });
         } else if (pathname === "/api/products/9") {
           await route.fulfill({ json: product });
+        } else if (
+          pathname === "/api/products/value-chain-positions/9/summary"
+        ) {
+          await route.fulfill({
+            json: {
+              ...position,
+              productName: product.name,
+              productInternalName: product.internalName,
+            },
+          });
         } else if (pathname === "/api/products/value-chain-positions/9") {
           await route.fulfill({ json: position });
         } else if (pathname === "/api/products/9/process-commits") {
@@ -353,6 +363,9 @@ try {
     await expect(
       page.getByRole("heading", { name: "Histórico da cadeia de valor" }),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Carregar histórico detalhado" })
+      .click();
     await page.getByRole("link", { name: "Atividades e tarefas" }).click();
     await expect(page).toHaveURL(
       /\/products\/9\/value-chain-history\/processes\/18\/activities$/,

@@ -139,6 +139,8 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(report.candidateCount()).isEqualTo(2);
     assertThat(report.dossierReadyCount()).isEqualTo(2);
     assertThat(report.plannedProductCount()).isEqualTo(1);
+    assertThat(report.privateValidationHandoff().available()).isFalse();
+    assertThat(report.privateValidationHandoff().status()).isEqualTo("PRODUCT_PLANNED");
     assertThat(report.sourceCoverage())
         .extracting(item -> item.sourceCode() + ":" + item.itemCount())
         .contains("WEB:1", "META:1", "PESQUISAS:1", "MARKETPLACE:1");
@@ -153,7 +155,11 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
         .isEqualTo("NO_MATCHING_ACTIVE_ADS");
     var winner = report.candidates().get(0);
     assertThat(winner.productId()).isEqualTo(901L);
-    assertThat(winner.nextAction()).contains("Abrir o produto planejado");
+    assertThat(winner.nextAction()).contains("Abrir a cadeia de valor", "duas leituras");
+    assertThat(winner.stages())
+        .filteredOn(item -> "PURCHASE_MOMENT".equals(item.stageCode()))
+        .extracting(item -> item.status() + ":" + item.decision())
+        .containsExactly("WAITING:AGUARDAR_VALIDACAO");
     assertThat(winner.sources()).extracting(item -> item.sourceType()).contains("WEB", "META");
     assertThat(report.candidates().get(1).stages())
         .filteredOn(item -> "ATENA".equals(item.stageCode()))
@@ -221,6 +227,8 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
     assertThat(report.status()).isEqualTo("BLOCKED");
     assertThat(report.candidates().get(0).nextAction()).contains("aprofundar");
     assertThat(report.plannedProductCount()).isZero();
+    assertThat(report.privateValidationHandoff().available()).isFalse();
+    assertThat(report.privateValidationHandoff().status()).isEqualTo("NO_READY_DOSSIER");
     assertThat(report.sourceCoverage())
         .filteredOn(item -> "META".equals(item.sourceCode()))
         .extracting(item -> item.status() + ":" + item.summary())
@@ -232,6 +240,101 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
         .isEqualTo(
             "A cobertura Meta ficou indisponível; zero anúncios não prova ausência de mercado. Ciclo com cobertura da Biblioteca Meta não executada por falha de integração, 11 evidências públicas auxiliares de Instagram.");
     assertThat(report.headline()).doesNotContain("UNAVAILABLE");
+  }
+
+  /** Libera no backend a retomada do legado quando Atena bloqueou antes de criar o protótipo. */
+  @Test
+  void exposesPrivateValidationResumeForBlockedLegacyHandoff() {
+    ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
+    ProductDiscoveryOpportunityRepository opportunities =
+        mock(ProductDiscoveryOpportunityRepository.class);
+    OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ProductDiscoveryCycle cycle = cycle();
+    ProductDiscoveryOpportunity ready =
+        opportunity(
+            503L,
+            cycle,
+            "Ritual privado de presença",
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    OpportunityDossier dossier =
+        OpportunityDossier.builder()
+            .id(303L)
+            .title(ready.getName())
+            .status(OpportunityDossierStatus.UNDER_REVIEW)
+            .productDiscoveryCycle(cycle)
+            .productDiscoveryOpportunity(ready)
+            .build();
+    when(cycles.findById(42L)).thenReturn(Optional.of(cycle));
+    when(opportunities.findAllByCycleIdOrderByScoreDesc(42L)).thenReturn(List.of(ready));
+    when(dossiers.findAllByProductDiscoveryCycleIdOrderByIdAsc(42L)).thenReturn(List.of(dossier));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:42"))
+        .thenReturn(
+            List.of(
+                task(710L, "marketStrategy", "Atena", "BLOCKED", "{\"decision\":\"ADJUST\"}"),
+                task(711L, "economics", "Plutus", "PENDING", null),
+                task(712L, "productArchitecture", "Dédalo", "PENDING", null)));
+    ProductDiscoveryIndependentExecutionReportService service =
+        new ProductDiscoveryIndependentExecutionReportService(
+            cycles, opportunities, dossiers, tasks, new ObjectMapper());
+
+    var handoff = service.report("product-discovery-cycle:42").privateValidationHandoff();
+
+    assertThat(handoff.available()).isTrue();
+    assertThat(handoff.cycleId()).isEqualTo(42L);
+    assertThat(handoff.status()).isEqualTo("AVAILABLE");
+    assertThat(handoff.actionLabel()).isEqualTo("Retomar com Atena");
+    assertThat(handoff.reason()).contains("sem repetir a pesquisa de Argos");
+  }
+
+  /** Orienta reinício desde Atena quando a seleção concluída ainda usa o contrato v2. */
+  @Test
+  void exposesCurrentAtenaRestartForCompletedStaleStrategy() {
+    ProductDiscoveryCycleRepository cycles = mock(ProductDiscoveryCycleRepository.class);
+    ProductDiscoveryOpportunityRepository opportunities =
+        mock(ProductDiscoveryOpportunityRepository.class);
+    OpportunityDossierRepository dossiers = mock(OpportunityDossierRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ProductDiscoveryCycle cycle = cycle();
+    ProductDiscoveryOpportunity ready =
+        opportunity(
+            504L,
+            cycle,
+            "Rotina individual de pele madura",
+            ProductDiscoveryOpportunityMaturity.DOSSIER_READY);
+    OpportunityDossier dossier =
+        OpportunityDossier.builder()
+            .id(304L)
+            .title(ready.getName())
+            .status(OpportunityDossierStatus.UNDER_REVIEW)
+            .productDiscoveryCycle(cycle)
+            .productDiscoveryOpportunity(ready)
+            .build();
+    when(cycles.findById(42L)).thenReturn(Optional.of(cycle));
+    when(opportunities.findAllByCycleIdOrderByScoreDesc(42L)).thenReturn(List.of(ready));
+    when(dossiers.findAllByProductDiscoveryCycleIdOrderByIdAsc(42L)).thenReturn(List.of(dossier));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:42"))
+        .thenReturn(
+            List.of(
+                task(
+                    720L,
+                    "marketStrategy",
+                    "Atena",
+                    "COMPLETED",
+                    """
+                    {"marketStrategicContract":{"contractVersion":"MARKET_STRATEGY_V2","status":"READY_FOR_OPERATION"}}
+                    """),
+                task(721L, "economics", "Plutus", "BLOCKED", "{\"decision\":\"REJECT\"}")));
+    ProductDiscoveryIndependentExecutionReportService service =
+        new ProductDiscoveryIndependentExecutionReportService(
+            cycles, opportunities, dossiers, tasks, new ObjectMapper());
+
+    var handoff = service.report("product-discovery-cycle:42").privateValidationHandoff();
+
+    assertThat(handoff.available()).isTrue();
+    assertThat(handoff.status()).isEqualTo("STALE_STRATEGY_CONTRACT");
+    assertThat(handoff.actionLabel()).isEqualTo("Reiniciar com Atena atual");
+    assertThat(handoff.reason()).contains("preservará Argos", "Atena, Plutus e Dédalo");
   }
 
   /** Cria o ciclo concluído com as quatro fontes cobertas. */
@@ -334,6 +437,12 @@ class ProductDiscoveryIndependentExecutionReportServiceTest {
             "currentAlternatives":["Consultoria de imagem"],
             "residualEffort":"Montar as combinações",
             "instagramFitEvidence":"Transformação visual demonstrável"
+          },
+          "purchaseMomentGate":{
+            "required":true,
+            "status":"WAITING_SOURCE_QUALITY",
+            "sourceQualityPassed":false,
+            "finalPrioritizationEligible":false
           },
           "publicEvidence":[{"url":"https://example.test/study","title":"Estudo","snippet":"Dor observada"}],
           "marketplaceOffers":[{"url":"https://example.test/offer","title":"Oferta","tractionSignal":"avaliações"}],

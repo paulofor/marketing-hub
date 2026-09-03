@@ -483,7 +483,7 @@ describe("AudioVideoStudioPage", () => {
       (screen.getByLabelText(/id do experimento/i) as HTMLInputElement).value,
     ).toBe("91");
     expect(
-      screen.getByText(/pesquisa será selecionada ao criar/i),
+      screen.getByText(/pesquisa será selecionada para qualquer projeto/i),
     ).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /criar blueprint/i }));

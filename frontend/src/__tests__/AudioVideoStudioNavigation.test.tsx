@@ -92,6 +92,18 @@ describe("audio video studio navigation", () => {
     expect(link.getAttribute("href")).toBe("/audio-video-studio/projects");
   });
 
+  it("has global harness library submenu link", () => {
+    setup(<App />, ["/"]);
+
+    const link = screen.getByRole("link", {
+      name: /biblioteca do harness/i,
+    });
+
+    expect(link.getAttribute("href")).toBe(
+      "/audio-video-studio/research-library",
+    );
+  });
+
   it("has studio videos analysis submenu link", () => {
     setup(<App />, ["/"]);
 

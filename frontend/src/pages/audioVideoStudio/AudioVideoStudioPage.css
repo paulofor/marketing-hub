@@ -1277,6 +1277,18 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.audio-video-studio-page__research-catalog-link {
+  width: fit-content;
+  color: #6d28d9;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.audio-video-studio-page__research-catalog-link:hover,
+.audio-video-studio-page__research-catalog-link:focus-visible {
+  text-decoration: underline;
+}
+
 .audio-video-studio-page__research-routes,
 .audio-video-studio-page__research-cards {
   display: grid;
@@ -1329,6 +1341,177 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: #475569;
+}
+
+.audio-video-studio-page__research-library-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.audio-video-studio-page__research-library-summary > div,
+.audio-video-studio-page__research-policy-grid article {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  background: #faf8ff;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__research-library-summary span,
+.audio-video-studio-page__research-library-summary small,
+.audio-video-studio-page__research-policy-grid span,
+.audio-video-studio-page__research-policy-grid small {
+  color: #64748b;
+}
+
+.audio-video-studio-page__research-library-summary strong {
+  color: #5b21b6;
+  font-size: 1.65rem;
+}
+
+.audio-video-studio-page__research-policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.7rem;
+}
+
+.audio-video-studio-page__research-policy-grid article {
+  background: #fff;
+}
+
+.audio-video-studio-page__research-policy-grid article > svg {
+  color: #7c3aed;
+}
+
+.audio-video-studio-page__research-policy-grid p {
+  margin: 0;
+  color: #475569;
+}
+
+.audio-video-studio-page__research-library-link,
+.audio-video-studio-page__research-load-more {
+  width: fit-content;
+}
+
+.audio-video-studio-page__research-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) repeat(3, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.audio-video-studio-page__research-filters label {
+  display: grid;
+  gap: 0.35rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.audio-video-studio-page__research-filters label > span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.audio-video-studio-page__research-filters input,
+.audio-video-studio-page__research-filters select {
+  min-width: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.7rem 0.75rem;
+  color: #0f172a;
+}
+
+.audio-video-studio-page__research-result-count {
+  margin: 1rem 0 0.75rem;
+  color: #64748b;
+}
+
+.audio-video-studio-page__research-library-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.85rem;
+}
+
+.audio-video-studio-page__research-library-cards > article {
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  min-width: 0;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+  background: #fff;
+  padding: 1rem;
+}
+
+.audio-video-studio-page__research-library-cards header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.audio-video-studio-page__research-library-cards header > span {
+  color: #6d28d9;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audio-video-studio-page__research-library-cards header > small {
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__research-library-cards
+  header
+  > small[data-status="active"] {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.audio-video-studio-page__research-library-cards
+  header
+  > small[data-status="expired"] {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.audio-video-studio-page__research-library-cards p,
+.audio-video-studio-page__research-library-cards dl,
+.audio-video-studio-page__research-library-cards dd {
+  margin: 0;
+}
+
+.audio-video-studio-page__research-library-cards details summary {
+  cursor: pointer;
+  color: #6d28d9;
+  font-weight: 700;
+}
+
+.audio-video-studio-page__research-library-cards dl {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.audio-video-studio-page__research-library-cards dt {
+  color: #334155;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__research-library-cards dd,
+.audio-video-studio-page__research-library-cards article > small {
+  overflow-wrap: anywhere;
+  color: #64748b;
+}
+
+.audio-video-studio-page__research-load-more {
+  margin-top: 1rem;
 }
 
 .audio-video-studio-page__checklist {
@@ -1385,6 +1568,11 @@
   .audio-video-studio-page__research-heading,
   .audio-video-studio-page__research-route summary {
     flex-direction: column;
+  }
+
+  .audio-video-studio-page__research-library-summary,
+  .audio-video-studio-page__research-filters {
+    grid-template-columns: 1fr;
   }
 
   .audio-video-studio-page__research-heading > span,

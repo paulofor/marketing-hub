@@ -120,4 +120,16 @@ describe("MainNavigation", () => {
         .every((link) => link.getAttribute("href") === "/agent-learning"),
     ).toBe(true);
   });
+
+  it("oferece acesso global à biblioteca do harness", () => {
+    render(
+      <MemoryRouter>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Biblioteca do Harness" }),
+    ).toHaveAttribute("href", "/audio-video-studio/research-library");
+  });
 });

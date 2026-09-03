@@ -23,6 +23,7 @@ import {
   Image,
   Instagram,
   List,
+  Library,
   MessageSquare,
   Mic2,
   Send,
@@ -209,6 +210,11 @@ const NAV_SECTIONS: NavSection[] = [
             to: "/audio-video-studio/projects",
             label: "Lista de projetos",
             icon: List,
+          },
+          {
+            to: "/audio-video-studio/research-library",
+            label: "Biblioteca do Harness",
+            icon: Library,
           },
           {
             to: "/audio-video-studio/videos-analysis",

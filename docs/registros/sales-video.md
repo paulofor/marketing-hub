@@ -294,3 +294,16 @@
 - Pós-produção: o mix final tem duração física limitada ao vídeo, codificação `veryfast`, legenda
   ASS/VTT temporizada e normalização para -17 LUFS com margem de -2 dBTP. O teste de contrato exige
   o limite e impede reintroduzir `apad`, que anteriormente mantinha o ffmpeg aberto sem fim.
+
+## 2026-09-03 — Biblioteca do Harness global para projetos audiovisuais
+
+- Decisão de produto: os cartões pertencem ao Marketing Hub e devem atender todo projeto
+  audiovisual existente ou futuro; Vega #91 permanece apenas como a primeira homologação.
+- Separação de responsabilidades: a tela global expõe o catálogo versionado e as políticas dos
+  agentes; o detalhe do projeto mostra somente a seleção contextual efetivamente aplicável.
+- Execução: criação, abertura e jobs de projetos continuam selecionando cartões pelo briefing, sem
+  condição por ID de projeto, produto ou experimento; cada job preserva IDs e hashes usados.
+- Prevenção: testes usam também um projeto futuro fora do Vega, e a navegação oferece acesso direto
+  ao catálogo global sem carregar o acervo inteiro nas telas de produção.
+- Limite comercial: artigos orientam hipóteses e revisões, mas não contam como prova, aprovação,
+  publicação, gasto ou venda.

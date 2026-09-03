@@ -296,10 +296,16 @@ suas evidencias quando forem usados. Em todos os casos, o artigo e evidencia ext
 nao aprova a peca, nao comprova demanda, nao autoriza publicacao e nao substitui retencao, CTA,
 checkout, pagamento, entrega ou custo reconciliado.
 
-A primeira homologacao usa o video Instagram do Vega #91. O mecanismo e reutilizavel por qualquer
-projeto e tarefa futura; nao pode conter condicao de negocio exclusiva para o ID 91. Com o volume
-atual, selecao por colecao, data e relevancia lexical e suficiente; banco vetorial so pode ser
-introduzido depois de ganho comercial mensuravel que justifique custo e complexidade.
+A primeira homologacao usa o video Instagram do Vega #91, mas a biblioteca pertence ao Marketing
+Hub, nao ao piloto nem a um projeto. Todo projeto audiovisual existente ou criado no futuro deve
+receber automaticamente uma selecao contextual no detalhe e nos jobs dos agentes aplicaveis, sem
+condicao de negocio exclusiva para ID de projeto, produto ou experimento. O catalogo global deve ser
+consultavel fora do detalhe de um projeto; o detalhe preserva somente o subconjunto efetivamente
+selecionado para aquele contexto. Nao se deve copiar o catalogo integral para cada projeto: a fonte
+versionada continua unica, enquanto cada job persiste sua selecao e os hashes usados para auditoria.
+
+Com o volume atual, selecao por colecao, data e relevancia lexical e suficiente; banco vetorial so
+pode ser introduzido depois de ganho comercial mensuravel que justifique custo e complexidade.
 
 #### Microconteudo seriado como hipotese opcional
 

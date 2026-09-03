@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Video Studio API
-  version: 1.1.0
+  version: 1.2.0
   description: Contratos administrativos para criação e edição de projetos de vídeo do Marketing Hub.
 servers:
   - url: http://191.252.181.168:8000
@@ -9,7 +9,21 @@ servers:
 tags:
   - name: VideoStudio
     description: Briefings persistidos para vídeos de produtos, campanhas, PDEs e orgânicos.
+  - name: ResearchIntelligence
+    description: Catálogo global de cartões e roteamento contextual para os agentes do harness.
 paths:
+  /api/research-intelligence/v1/catalog:
+    get:
+      tags: [ResearchIntelligence]
+      summary: Consulta a Biblioteca de Inteligência global do Marketing Hub.
+      description: O catálogo é independente de projeto; cada projeto e job recebe somente sua seleção contextual.
+      responses:
+        "200":
+          description: Cartões compilados e políticas de roteamento vigentes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchIntelligenceCatalog"
   /api/sales-videos/projects:
     get:
       tags: [VideoStudio]
@@ -617,6 +631,56 @@ components:
         limitations:
           type: array
           items: { type: string }
+    ResearchIntelligenceCatalog:
+      type: object
+      required:
+        - contractVersion
+        - evaluatedOn
+        - totalCompiledCards
+        - activeCards
+        - agentPolicies
+        - cards
+        - limitations
+      properties:
+        contractVersion:
+          type: string
+          enum: [HARNESS_RESEARCH_INTELLIGENCE_V1]
+        evaluatedOn: { type: string, format: date }
+        totalCompiledCards: { type: integer, minimum: 1 }
+        activeCards: { type: integer, minimum: 0 }
+        agentPolicies:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResearchIntelligenceAgentPolicy"
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResearchIntelligenceCard"
+        limitations:
+          type: array
+          items: { type: string }
+    ResearchIntelligenceAgentPolicy:
+      type: object
+      required:
+        - agentKey
+        - agentName
+        - purpose
+        - authority
+        - collections
+        - maxCardsPerContext
+      properties:
+        agentKey: { type: string }
+        agentName: { type: string }
+        purpose: { type: string }
+        authority:
+          type: string
+          enum:
+            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY]
+        collections:
+          type: array
+          minItems: 1
+          items: { type: string }
+        maxCardsPerContext: { type: integer, minimum: 1, maximum: 4 }
     ResearchIntelligenceRoute:
       type: object
       required:

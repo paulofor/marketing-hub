@@ -2375,7 +2375,7 @@ export default function AudioVideoStudioPage() {
                   <div className="audio-video-studio-page__research-heading">
                     <div>
                       <p className="audio-video-studio-page__eyebrow">
-                        Contexto seletivo e auditável
+                        Seleção contextual deste projeto
                       </p>
                       <h2>Biblioteca de Inteligência do Harness v1</h2>
                     </div>
@@ -2389,6 +2389,12 @@ export default function AudioVideoStudioPage() {
                     artigos orientam decisões, mas não contam como venda, prova
                     do produto ou autorização de gasto e publicação.
                   </p>
+                  <Link
+                    className="audio-video-studio-page__research-catalog-link"
+                    to="/audio-video-studio/research-library"
+                  >
+                    Ver o catálogo global usado por todos os projetos
+                  </Link>
                   <small className="audio-video-studio-page__research-fingerprint">
                     Seleção{" "}
                     {selectedProject.researchIntelligence.contractVersion}
@@ -2446,17 +2452,23 @@ export default function AudioVideoStudioPage() {
                     )}
                   </ul>
                 </div>
-              ) : briefing.experimentId === "91" ? (
+              ) : !editableProjectId ? (
                 <div className="audio-video-studio-page__panel audio-video-studio-page__research-intelligence">
                   <p className="audio-video-studio-page__eyebrow">
-                    Piloto Vega #91
+                    Biblioteca global do Marketing Hub
                   </p>
-                  <h2>Pesquisa será selecionada ao criar o projeto</h2>
+                  <h2>Pesquisa será selecionada para qualquer projeto</h2>
                   <p>
                     O backend compilará os artigos e entregará a cada agente
-                    somente a rota aderente. Salve o blueprint para ver cartões,
-                    fontes e hashes desta seleção.
+                    somente a rota aderente ao contexto. Salve o blueprint para
+                    ver cartões, fontes e hashes da seleção deste projeto.
                   </p>
+                  <Link
+                    className="audio-video-studio-page__research-catalog-link"
+                    to="/audio-video-studio/research-library"
+                  >
+                    Explorar a biblioteca completa
+                  </Link>
                 </div>
               ) : null}
             </section>

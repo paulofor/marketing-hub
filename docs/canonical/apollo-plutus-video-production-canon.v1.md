@@ -7,15 +7,31 @@ Apolo é o executor criativo dos vídeos do Estúdio. Plutus é o gate financeir
 ## Fluxo canônico
 
 1. Um usuário solicita pelo Estúdio um ciclo associado a produto, planejamento, projeto e perfil de vídeo.
-2. O backend persiste o ciclo como `PENDING_FINANCIAL_REVIEW` e abre na mesa de Plutus uma tarefa de gate `VIDEO_BUDGET_APPROVAL`, com Apolo como solicitante.
-3. Plutus decide pelo contrato formal do gate; alterar apenas o status da tarefa não libera provider nem consumo.
-4. Nenhum job de provider existe antes da decisão financeira.
-5. Somente a identidade técnica `financial-agent` pode registrar `APPROVED` ou `REJECTED`, sempre com motivo auditável.
-6. Uma aprovação cria em modo `TEST` o job do executor oficial de vídeo, vinculado ao ciclo e ao teto em USD. Uma rejeição termina em `FINANCIAL_BLOCKED`.
-7. Apolo planeja, gera, inspeciona e devolve o candidato. O provider não decide próxima etapa.
-8. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto ou quando o custo do ciclo atual estiver desconhecido. Cobertura histórica incompleta deve gerar pendência de conciliação, mas não bloqueia sozinha um ciclo de descoberta com teto explícito, ledger segregado e custo incremental rastreável.
-9. QA independente decide qualidade. Apolo não aprova o próprio trabalho.
-10. Quando o job vinculado terminar em falha, o backend deve preservar no ciclo o job, código, detalhe e horário da falha antes de reconciliar uma nova tentativa. O painel deve exibir a falha anterior e o novo job separadamente; o estado `QUEUED_FOR_APOLLO` nunca pode ocultar um job terminal falho.
+2. O backend persiste o ciclo como `PENDING_PROVIDER_PREFLIGHT` e publica a pendência de consulta da conta e das rotas candidatas para o executor de vídeo.
+3. O executor realiza somente leituras e simulações sem cobrança, e reporta ao backend o snapshot sanitizado de saldo, quota, elegibilidade e custo previsto.
+4. Com o snapshot vigente, o backend move o ciclo para `PENDING_FINANCIAL_REVIEW` e abre na mesa de Plutus uma tarefa de gate `VIDEO_BUDGET_APPROVAL`, com Apolo como solicitante.
+5. Plutus decide pelo contrato formal do gate; alterar apenas o status da tarefa não libera provider nem consumo.
+6. Nenhum job pago de provider existe antes da decisão financeira.
+7. Somente a identidade técnica `financial-agent` pode registrar `APPROVED` ou `REJECTED`, sempre com motivo auditável.
+8. Uma aprovação reserva o custo previsto e cria em modo `TEST` o job do executor oficial de vídeo, vinculado ao ciclo e ao teto em USD. Uma rejeição termina em `FINANCIAL_BLOCKED`.
+9. Apolo planeja, gera, inspeciona e devolve o candidato. O provider não decide próxima etapa.
+10. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto ou quando o custo do ciclo atual estiver desconhecido. Cobertura histórica incompleta deve gerar pendência de conciliação, mas não bloqueia sozinha um ciclo de descoberta com teto explícito, ledger segregado e custo incremental rastreável.
+11. QA independente decide qualidade. Apolo não aprova o próprio trabalho.
+12. Quando o job vinculado terminar em falha, o backend deve preservar no ciclo o job, código, detalhe e horário da falha antes de reconciliar uma nova tentativa. O painel deve exibir a falha anterior e o novo job separadamente; o estado `QUEUED_FOR_APOLLO` nunca pode ocultar um job terminal falho.
+
+## Preflight de conta e rota
+
+Por decisão comercial de 2026-09-03, o gate de Plutus deve receber antes da decisão financeira um
+snapshot operacional sem custo produzido pelo executor de vídeo. O snapshot separa modelo,
+agregador, conta de créditos e rota, e comprova saldo, quota, concorrência, preço vigente,
+elegibilidade do payload e custo previsto. A especificação completa está em
+`plutus-model-provider-pricing-canon.v1.md`.
+
+O executor consulta a plataforma porque já possui o segredo operacional; o backend somente publica
+a pendência e persiste o resultado; Plutus compara e decide; Apolo executa após aprovação. Plutus
+não deve receber segredo nem chamar o provider de render diretamente. Falta de saldo pode gerar uma
+recomendação de recarga ao usuário, mas nunca compra automática, autobilling ou criação antecipada
+de job pago.
 
 ## Contrato financeiro da fase de descoberta
 

@@ -102,6 +102,7 @@ public class PdeConstructionBpmTaskConsumer {
       task = claimNext();
       if (task == null) return;
       BpmContract contract = contractFor(task);
+      validateTaskContext(task, contract, json);
       execution = execute(task);
       validate(execution.result(), contract);
       if (contract.successDecision().equals(execution.result().path("decision").asText())) {
@@ -466,6 +467,52 @@ public class PdeConstructionBpmTaskConsumer {
             || result.path("qualityChecks").isEmpty()
             || !result.path("accessHandoff").isObject())) {
       throw new IllegalArgumentException("Personalização contratada incompleta");
+    }
+  }
+
+  /** Bloqueia antes do modelo quando a construção privada não recebe o contrato PDE completo. */
+  static void validateTaskContext(
+      Map<String, Object> task, BpmContract contract, ObjectMapper json) {
+    if (!"pde-construction-approval".equals(contract.processCode())) return;
+    JsonNode target = json.valueToTree(task).path("taskTarget");
+    JsonNode context = target.path("pdeContext");
+    JsonNode market = context.path("marketStrategy");
+    JsonNode economics = context.path("economics");
+    JsonNode harness = context.path("harness");
+    JsonNode prototype = harness.path("privatePrototype");
+    JsonNode validation = context.path("privateValidationPlan");
+    JsonNode valueDelivery = validation.path("humanValueDelivery");
+    boolean complete =
+        context.isObject()
+            && !context.path("contractVersion").asText().isBlank()
+            && !context.path("experienceVersion").asText().isBlank()
+            && context
+                .path("experienceVersion")
+                .asText()
+                .equals(target.path("experienceVersion").asText())
+            && market.isObject()
+            && !market.path("buyer").asText().isBlank()
+            && !market.path("problem").asText().isBlank()
+            && !market.path("desiredOutcome").asText().isBlank()
+            && !market.path("valueMechanism").asText().isBlank()
+            && economics.isObject()
+            && !economics.path("commercialSpendAuthorized").asBoolean(true)
+            && harness.isObject()
+            && prototype.isObject()
+            && !prototype.path("simpleInput").asText().isBlank()
+            && !prototype.path("readyResult").asText().isBlank()
+            && prototype.path("maxValueTimeMinutes").asInt(0) >= 1
+            && prototype.path("maxValueTimeMinutes").asInt(0) <= 10
+            && hasExactPrivateSignals(prototype.path("instrumentationEvents"))
+            && "SIMULATED_NO_CHARGE".equals(prototype.path("checkoutMode").asText())
+            && validation.path("purchaseScene").isObject()
+            && !validation.path("purchaseScene").path("trigger").asText().isBlank()
+            && !valueDelivery.path("minimumCustomerInput").asText().isBlank()
+            && !valueDelivery.path("readyMadeOutcome").asText().isBlank()
+            && !context.path("publicationBoundary").asText().isBlank();
+    if (!complete) {
+      throw new IllegalArgumentException(
+          "Contrato PDE privado ausente ou incompleto no contexto enviado pelo backend");
     }
   }
 

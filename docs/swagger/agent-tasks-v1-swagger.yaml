@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.4.0
+  version: 1.5.0
 paths:
   /api/agent-tasks/process-instances:
     get:
@@ -551,12 +551,38 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/ExecutionResource"
+        taskTarget:
+          nullable: true
+          description: Identidade comercial segregada e eventual contrato PDE da própria tarefa.
+          allOf:
+            - $ref: "#/components/schemas/TaskTarget"
         processContextJson: { type: string }
         researchIntelligence:
           nullable: true
           description: Seleção compacta da Biblioteca de Inteligência aplicável à atividade audiovisual.
           allOf:
             - $ref: "#/components/schemas/ResearchIntelligenceSelection"
+    TaskTarget:
+      type: object
+      required: [sourceReference, productId, productSlug, experienceVersion]
+      properties:
+        sourceReference: { type: string }
+        experimentId: { type: integer, format: int64, nullable: true }
+        productId: { type: integer, format: int64 }
+        productSlug: { type: string }
+        productName: { type: string, nullable: true }
+        productInternalName: { type: string, nullable: true }
+        experienceVersion: { type: string }
+        publicUrl: { type: string, format: uri, nullable: true }
+        commercialCheckoutProvider: { type: string, nullable: true }
+        commercialCheckoutReference: { type: string, nullable: true }
+        commercialCheckoutUrl: { type: string, format: uri, nullable: true }
+        unitPriceBrl: { type: number, nullable: true }
+        pdeContext:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Contrato PDE versionado, exposto somente à construção privada do próprio produto.
     ExecutionResource:
       type: object
       required:

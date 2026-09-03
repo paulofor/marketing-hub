@@ -135,7 +135,18 @@ class ExperimentAgentTaskTargetContextProviderTest {
                 {"privatePrototypeAcceptance":{"status":"READY",
                   "privateAccessUrl":"https://private.local/prototype"}}
                 """)
-            .pdeExperienceJson("{\"experienceVersion\":\"private-validation-v1\"}")
+            .pdeExperienceJson(
+                """
+                {"contractVersion":"PDE_HARNESS_PLAN_V1",
+                 "experienceVersion":"private-validation-v1",
+                 "marketStrategy":{"buyer":"Mulher com produtos de skincare",
+                   "problem":"Organizar recomendações dispersas em uma rotina pessoal"},
+                 "economics":{"commercialSpendAuthorized":false},
+                 "harness":{"privatePrototype":{"simpleInput":"Lista de produtos",
+                   "readyResult":"Rotina pronta"}},
+                 "privateValidationPlan":{"purchaseScene":{"trigger":"Antes de usar os itens"}},
+                 "publicationBoundary":"Construção privada sem publicação ou cobrança"}
+                """)
             .currentPriceBrl(new BigDecimal("97.00"))
             .build();
     when(products.findById(19L)).thenReturn(Optional.of(product));
@@ -152,6 +163,41 @@ class ExperimentAgentTaskTargetContextProviderTest {
     assertThat(target.commercialCheckoutReference()).isNull();
     assertThat(target.commercialCheckoutUrl()).isNull();
     assertThat(target.unitPriceBrl()).isEqualByComparingTo("97.00");
+    assertThat(target.pdeContext().path("contractVersion").asText())
+        .isEqualTo("PDE_HARNESS_PLAN_V1");
+    assertThat(target.pdeContext().path("marketStrategy").path("buyer").asText())
+        .isEqualTo("Mulher com produtos de skincare");
+    assertThat(
+            target
+                .pdeContext()
+                .path("harness")
+                .path("privatePrototype")
+                .path("readyResult")
+                .asText())
+        .isEqualTo("Rotina pronta");
+  }
+
+  /** Não amplia prompts comerciais com o contrato privado fora da construção governada. */
+  @Test
+  void omitsPrivatePdeContextOutsideConstructionProcess() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    Product product =
+        Product.builder()
+            .id(19L)
+            .slug("pde-planejado-301")
+            .validationDefinitionVersion("PDE_PRIVATE_VALIDATION_V1")
+            .pdeExperienceJson(
+                "{\"contractVersion\":\"PDE_HARNESS_PLAN_V1\",\"experienceVersion\":\"private-validation-v1\"}")
+            .build();
+    when(products.findById(19L)).thenReturn(Optional.of(product));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+
+    var target =
+        provider.resolve("product:19@private-validation-v1", "product-research").orElseThrow();
+
+    assertThat(target.pdeContext()).isNull();
   }
 
   /** Bloqueia uma revisão que combine o checkout versionado com preço de outro experimento. */

@@ -1,5 +1,19 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-03 — Produto 10 recebe identidade e inicia construção privada
+
+- Estado confirmado: o produto planejado do dossiê #36 entrou no processo 3 de 6, ainda sem
+  publicação, campanha, cobrança ou venda.
+- Identidade: o codinome interno passa a ser `Mira`; o tipo passa de `PDE` genérico para
+  `AI_PRODUCT`, internamente Safira, porque geração e personalização por IA constituem o mecanismo
+  de valor e a aplicação web de sessão única é apenas o formato.
+- Execução: a tela abriu a tarefa #333 de Dédalo para construir a jornada privada. A tentativa
+  bloqueou porque o backend enviou identidade e preço, mas omitiu o contrato PDE já persistido.
+- Correção: o contrato versionado passa a acompanhar somente as tarefas privadas do mesmo produto;
+  o worker o valida antes de consumir modelo e não exige as duas leituras antes da construção.
+- Métrica: concluir a jornada, os componentes e o acesso antes de duas leituras consentidas; nenhum
+  desses marcos substitui pagamento aprovado ou receita.
+
 ## 2026-09-01 — Argos amplia o mercado de forma controlada dentro da mesma execução
 
 - Evidência: a execução #11 encontrou três dores potenciais, mas somente uma de dez ofertas e nenhum

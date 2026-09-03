@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -126,8 +127,77 @@ class PdeConstructionBpmTaskConsumerTest {
     String prompt = read("prompts/pde-construction/v2/journey.md");
 
     assertThat(prompt)
-        .contains("experiência digital", "SIMULATED_NO_CHARGE", "TASK_CONTEXT")
+        .contains(
+            "experiência digital",
+            "SIMULATED_NO_CHARGE",
+            "TASK_CONTEXT.taskTarget.pdeContext",
+            "researchIntelligence",
+            "Não exija leituras humanas já realizadas")
         .doesNotContain("Kit WhatsApp", "15 respostas", "pós-compra");
+  }
+
+  /** Aceita o contexto privado completo e segregado antes de chamar o modelo. */
+  @Test
+  void acceptsCompletePrivatePdeContext() throws Exception {
+    Map<String, Object> task =
+        json.readValue(
+            """
+            {"taskTarget":{"experienceVersion":"private-validation-v1","pdeContext":{
+              "contractVersion":"PDE_HARNESS_PLAN_V1",
+              "experienceVersion":"private-validation-v1",
+              "marketStrategy":{"buyer":"Pessoa compradora definida",
+                "problem":"Dor recorrente definida","desiredOutcome":"Resultado pronto",
+                "valueMechanism":"Transformação orientada por IA"},
+              "economics":{"commercialSpendAuthorized":false},
+              "harness":{"privatePrototype":{"simpleInput":"Entrada simples",
+                "readyResult":"Resultado pessoal pronto","maxValueTimeMinutes":10,
+                "instrumentationEvents":["EXPERIENCE_STARTED","VALUE_MOMENT",
+                  "READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"],
+                "checkoutMode":"SIMULATED_NO_CHARGE"}},
+              "privateValidationPlan":{"purchaseScene":{"trigger":"Momento de compra"},
+                "humanValueDelivery":{"minimumCustomerInput":"Contexto mínimo",
+                  "readyMadeOutcome":"Entrega utilizável"}},
+              "publicationBoundary":"Construção privada sem publicação ou gasto"
+            }}}
+            """,
+            Map.class);
+
+    PdeConstructionBpmTaskConsumer.validateTaskContext(
+        task,
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval", "journey", "prompt", "schema", "v2", "READY"),
+        json);
+  }
+
+  /** Recusa o handoff incompleto antes que ele consuma tokens do modelo. */
+  @Test
+  void rejectsMissingPrivatePdeContextBeforeModel() {
+    Map<String, Object> task =
+        Map.of("taskTarget", Map.of("experienceVersion", "private-validation-v1"));
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateTaskContext(
+                    task,
+                    new PdeConstructionBpmTaskConsumer.BpmContract(
+                        "pde-construction-approval", "journey", "prompt", "schema", "v2", "READY"),
+                    json))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Contrato PDE privado");
+  }
+
+  /** Mantém as três atividades privadas presas ao contrato e sem prova humana antecipada. */
+  @Test
+  void keepsEveryPrivateConstructionPromptBoundToCanonicalContext() throws Exception {
+    for (String resource :
+        List.of(
+            "prompts/pde-construction/v2/journey.md",
+            "prompts/pde-construction/v2/deliverables.md",
+            "prompts/pde-construction/v2/access.md")) {
+      assertThat(read(resource))
+          .contains("TASK_CONTEXT.taskTarget.pdeContext", "researchIntelligence")
+          .containsIgnoringCase("não exija leituras humanas já realizadas");
+    }
   }
 
   /** Aceita somente jornada com decisão comparada, cinco etapas e critérios verificáveis. */

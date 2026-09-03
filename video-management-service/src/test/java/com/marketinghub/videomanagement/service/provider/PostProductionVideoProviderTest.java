@@ -27,6 +27,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 /** Responsabilidade: validar a pós-produção local de vídeos de venda. */
 class PostProductionVideoProviderTest {
     private MockWebServer server;
+    private Path ffmpegArguments;
 
     /** Inicializa o servidor HTTP usado para entregar o MP4 fonte. */
     @BeforeEach
@@ -56,14 +57,28 @@ class PostProductionVideoProviderTest {
         assertThat(artifacts.videoFile().assetType()).isEqualTo(AssetType.VIDEO);
         assertThat(artifacts.videoFile().fileName()).isEqualTo("sales-video-55-musa-final.mp4");
         assertThat(artifacts.captionFile().assetType()).isEqualTo(AssetType.CAPTION);
-        assertThat(new String(artifacts.captionFile().content())).contains("WEBVTT", "Pare de se sentir comum");
+        assertThat(new String(artifacts.captionFile().content()))
+                .contains("WEBVTT", "Pare de se sentir comum", "00:00:12.000 --> 00:00:24.000")
+                .doesNotContain("|");
         assertThat(artifacts.metadata())
                 .containsEntry("provider", "MUSA_POST_PRODUCTION")
-                .containsEntry("duration_seconds", 30)
+                .containsEntry("duration_seconds", 24.0)
+                .containsEntry("has_audio", true)
+                .containsEntry("audio_streams", 1)
+                .containsEntry("cta_text", "Ver meu plano MUSA")
                 .containsKey("audio")
                 .containsKey("captions");
+        assertThat(artifacts.metadata().get("captions").toString())
+                .contains("cue_count=2", "timed=true");
         assertThat(artifacts.metadata().get("audio").toString())
                 .contains("BLOCKED_FOR_CAMPAIGN", "synthetic_local");
+        assertThat(Files.readString(ffmpegArguments))
+                .contains(
+                        "-t\n24\n",
+                        "-preset\nveryfast\n",
+                        "-movflags\n+faststart\n",
+                        "loudnorm=I=-17:TP=-2:LRA=7")
+                .doesNotContain("apad");
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
     }
 
@@ -110,6 +125,8 @@ class PostProductionVideoProviderTest {
         assertThat(new String(artifacts.captionFile().content())).contains("WEBVTT", "Legenda grande");
         assertThat(artifacts.metadata())
                 .containsEntry("post_production_mode", "CAPTION_ONLY")
+                .containsEntry("has_audio", false)
+                .containsEntry("audio_streams", 0)
                 .containsKey("audio");
         assertThat(artifacts.metadata().get("audio").toString())
                 .contains("voice_over=false", "mode=CAPTION_ONLY", "NOT_REQUESTED")
@@ -135,6 +152,7 @@ class PostProductionVideoProviderTest {
         properties.getProviders().getPostProduction().setEnabled(true);
         properties.getProviders().getPostProduction().setEspeakPath(fakeEspeak().toString());
         properties.getProviders().getPostProduction().setFfmpegPath(fakeFfmpeg().toString());
+        properties.getProviders().getPostProduction().setFfprobePath(fakeFfprobe().toString());
         properties.getProviders().getPostProduction().setFontFile("/tmp/fake-font.ttf");
         return properties;
     }
@@ -159,9 +177,11 @@ class PostProductionVideoProviderTest {
 
     /** Cria um script executável que simula ffmpeg escrevendo MP4 final. */
     private Path fakeFfmpeg() throws Exception {
+        ffmpegArguments = Files.createTempFile("fake-ffmpeg-post-arguments", ".txt");
         Path script = Files.createTempFile("fake-ffmpeg-post", ".sh");
         Files.writeString(script, """
                 #!/bin/sh
+                printf '%%s\\n' "$@" >> '%s'
                 output=""
                 for arg in "$@"; do
                   output="$arg"
@@ -173,7 +193,15 @@ class PostProductionVideoProviderTest {
                 fi
                 printf '\\000\\000\\000\\040ftypisom\\000\\000\\002\\000' > "$output"
                 exit 0
-                """);
+                """.formatted(ffmpegArguments));
+        script.toFile().setExecutable(true);
+        return script;
+    }
+
+    /** Cria um ffprobe fake que informa duração vertical de vinte e quatro segundos. */
+    private Path fakeFfprobe() throws Exception {
+        Path script = Files.createTempFile("fake-ffprobe-post", ".sh");
+        Files.writeString(script, "#!/bin/sh\nprintf '24.000000\\n'\n");
         script.toFile().setExecutable(true);
         return script;
     }
@@ -211,7 +239,8 @@ class PostProductionVideoProviderTest {
                           "experimentVideoAssetId": 5,
                           "sourceVideoUrl": "/source/musa.mp4",
                           "voiceOverScript": "Você se arruma e sente que falta presença. Veja seu plano MUSA.",
-                          "captionText": "Pare de se sentir comum no espelho. Veja seu plano MUSA de 7 dias."
+                          "captionText": "Pare de se sentir comum no espelho. | Veja seu plano MUSA de 7 dias.",
+                          "post_production": {"cta_text": "Ver meu plano MUSA"}
                         }
                         """,
                 Instant.now(),

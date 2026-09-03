@@ -13,15 +13,19 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,8 +42,11 @@ import reactor.netty.http.client.HttpClient;
 @ConditionalOnProperty(prefix = "video.providers.kling", name = "enabled", havingValue = "true")
 public class KlingVideoProvider implements VideoProvider {
     private static final Logger log = LoggerFactory.getLogger(KlingVideoProvider.class);
+    private static final String COMMERCIAL_PROMPT_PATH = "prompts/sales-video/kling-commercial-v1.md";
     private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
     private static final int MAX_VIDEO_DOWNLOAD_BYTES = 100 * 1024 * 1024;
+    static final int MAX_PROMPT_CHARACTERS = 2500;
+    static final int MAX_PROMPT_UTF8_BYTES = 2500;
 
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
@@ -89,24 +96,50 @@ public class KlingVideoProvider implements VideoProvider {
                                     ProgressCallback progressCallback) {
         requireApiKey();
         SalesVideoScript script = ensureScript(profile);
-        progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Enviando prompt para Kling");
+        JsonNode jobMetadata = readMetadata(job);
+        int sceneCount = resolveSceneCount(jobMetadata);
+        List<ProviderFile> scenes = new ArrayList<>();
+        List<Map<String, Object>> sceneMetadata = new ArrayList<>();
+        List<String> taskIds = new ArrayList<>();
+        Map<String, Object> lastPayload = null;
+        JsonNode lastStatus = null;
+        for (int scene = 1; scene <= sceneCount; scene++) {
+            progressCallback.onProgress(5 + ((scene - 1) * 75 / sceneCount),
+                    SalesVideoStatus.VIDEO_PROCESSING,
+                    "Enviando cena %d/%d para Kling".formatted(scene, sceneCount));
+            Map<String, Object> payload = buildPayload(job, profile, script, scene, sceneCount);
+            boolean imageToVideo = isImageToVideoPayload(payload);
+            String taskId = submitRender(job, payload, imageToVideo);
+            int durationSeconds = parseDurationSeconds(String.valueOf(payload.get("duration")));
+            int estimatedCredits = estimateCredits(durationSeconds);
+            taskIds.add(taskId);
+            progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
+                    "Kling aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                    providerTaskDetails(taskId, scene, sceneCount, durationSeconds, estimatedCredits));
 
-        Map<String, Object> payload = buildPayload(job, profile, script);
-        boolean imageToVideo = isImageToVideoPayload(payload);
-        String taskId = submitRender(job, payload, imageToVideo);
-        progressCallback.onProgress(30, SalesVideoStatus.VIDEO_PROCESSING, "Kling aceitou o taskId: " + taskId);
-
-        JsonNode finalStatus = waitUntilCompleted(taskId, imageToVideo, progressCallback);
-        String videoUrl = resolveVideoUrl(finalStatus);
-        if (!StringUtils.hasText(videoUrl)) {
-            throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Kling não retornou URL do vídeo gerado");
+            JsonNode finalStatus = waitUntilCompleted(taskId, imageToVideo, progressCallback);
+            progressCallback.onProgress(10 + (scene * 70 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
+                    "Kling liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                    providerTaskSettlementDetails(taskId, scene, sceneCount, durationSeconds, estimatedCredits));
+            String videoUrl = resolveVideoUrl(finalStatus);
+            if (!StringUtils.hasText(videoUrl)) {
+                throw new VideoProviderException("PROVIDER_RENDER_FAILED",
+                        "Kling não retornou URL da cena " + scene);
+            }
+            scenes.add(downloadVideo(job, videoUrl));
+            sceneMetadata.add(sceneMetadata(scene, taskId, payload, finalStatus));
+            lastPayload = payload;
+            lastStatus = finalStatus;
         }
 
-        progressCallback.onProgress(85, SalesVideoStatus.VIDEO_PROCESSING, "Baixando MP4 gerado pelo Kling");
-        ProviderFile video = downloadVideo(job, videoUrl);
-        Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus);
-        progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Kling finalizado com MP4 disponível");
-        return new ProviderArtifacts(taskId, video, null, null, metadata);
+        progressCallback.onProgress(86, SalesVideoStatus.VIDEO_PROCESSING, "Montando vídeo final Kling");
+        ProviderFile video = scenes.size() == 1 ? scenes.getFirst() : assembleScenes(job, scenes);
+        String providerJobId = String.join(",", taskIds);
+        Map<String, Object> metadata = metadata(
+                job, providerJobId, lastPayload, lastStatus, sceneCount, sceneMetadata);
+        progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING,
+                "Kling finalizado com MP4 integral disponível");
+        return new ProviderArtifacts(providerJobId, video, null, null, metadata);
     }
 
     /** Cria a tarefa text-to-video ou image-to-video no Kling. */
@@ -182,12 +215,16 @@ public class KlingVideoProvider implements VideoProvider {
     }
 
     /** Monta payload text-to-video ou image-to-video com prompt comercial e parâmetros do provider. */
-    private Map<String, Object> buildPayload(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
+    private Map<String, Object> buildPayload(SalesVideoJob job,
+                                             SalesVideoProfile profile,
+                                             SalesVideoScript script,
+                                             int scene,
+                                             int sceneCount) {
         VideoManagementProperties.Kling config = properties.getProviders().getKling();
         JsonNode metadata = readMetadata(job);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model_name", config.getModel());
-        payload.put("prompt", buildPrompt(job, profile, script));
+        payload.put("prompt", buildPrompt(job, profile, script, scene, sceneCount));
         payload.put("negative_prompt", config.getNegativePrompt());
         payload.put("aspect_ratio", config.getAspectRatio());
         payload.put("mode", config.getMode());
@@ -214,38 +251,95 @@ public class KlingVideoProvider implements VideoProvider {
                 "/promptImage");
     }
 
-    /** Monta prompt orientado ao PDE MUSA e às diretivas visuais do job. */
-    private String buildPrompt(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
+    /** Monta o prompt versionado a partir do produto, da pessoa e do roteiro persistidos. */
+    private String buildPrompt(SalesVideoJob job,
+                               SalesVideoProfile profile,
+                               SalesVideoScript script,
+                               int scene,
+                               int sceneCount) {
         JsonNode metadata = readMetadata(job);
         String visualDirectives = visualProviderDirectives(metadata);
         String scenes = "SCENE_BY_SCENE_MONTAGE".equalsIgnoreCase(
                         metadata.path("generation_strategy").asText(""))
                 && metadata.path("scene").isObject()
                 ? metadata.path("scene").toString()
-                : metadata.path("assembly_plan").path("scenes").isMissingNode()
-                        ? "Recognizable pain, plausible mechanism, personal value and CTA."
-                        : metadata.path("assembly_plan").path("scenes").toString();
-        return """
-                Vertical 9:16 short-form sales video for Método MUSA - Presença Elegante em 7 Dias.
-                Language: %s.
-                Title: %s.
-                Audience: Brazilian urban women who want accessible sophistication, less effort and more intentional presence.
-                Product promise: build a more elegant, coherent and possible presence in 7 days with practical micro-actions using what she already owns.
-                Approved hook: %s.
-                Approved script context: %s.
-                Approved CTA: %s.
-                Scene plan: %s.
-                Provider-specific visual directives: %s.
-                Must feel practical, respectful and relatable. Show wardrobe decisions, removing visual noise, choosing one discreet signal piece, adjusting color, finish and posture.
-                Do not sensualize the woman. No seductive posing, no body-focused framing, no provocative gaze, no luxury ostentation, no embedded text and no logo.
-                """.formatted(
-                nullToDefault(profile.language(), "pt-BR"),
-                nullToDefault(profile.title(), "Sales video"),
-                nullToDefault(script.hookText(), ""),
-                script.scriptText(),
-                nullToDefault(script.ctaText(), ""),
-                scenes,
-                visualDirectives);
+                : plannedSceneBrief(metadata, scene, sceneCount);
+        try {
+            String prompt = new ClassPathResource(COMMERCIAL_PROMPT_PATH)
+                    .getContentAsString(StandardCharsets.UTF_8)
+                    .replace("{{SCENE_NUMBER}}", String.valueOf(scene))
+                    .replace("{{SCENE_COUNT}}", String.valueOf(sceneCount))
+                    .replace("{{SCENE_BRIEF}}", compactPromptField(scenes, 850))
+                    .replace("{{LANGUAGE}}", compactPromptField(nullToDefault(profile.language(), "pt-BR"), 12))
+                    .replace("{{TITLE}}", compactPromptField(nullToDefault(profile.title(), "Vídeo comercial"), 60))
+                    .replace("{{PERSONA_NAME}}", compactPromptField(
+                            nullToDefault(profile.personaName(), "Pessoa do público-alvo"), 60))
+                    .replace("{{PERSONA_STYLE}}", compactPromptField(
+                            nullToDefault(profile.personaStyle(), "Contexto real do público-alvo"), 100))
+                    .replace("{{APPROVED_HOOK}}", compactPromptField(nullToDefault(script.hookText(), ""), 100))
+                    .replace("{{APPROVED_SCRIPT}}", compactPromptField(script.scriptText(), 140))
+                    .replace("{{APPROVED_CTA}}", compactPromptField(nullToDefault(script.ctaText(), ""), 80))
+                    .replace("{{VISUAL_DIRECTIVES}}", compactPromptField(visualDirectives, 220));
+            int promptBytes = prompt.getBytes(StandardCharsets.UTF_8).length;
+            if (prompt.length() > MAX_PROMPT_CHARACTERS || promptBytes > MAX_PROMPT_UTF8_BYTES) {
+                throw new VideoProviderException(
+                        "PROVIDER_PROMPT_INVALID",
+                        "Prompt Kling excedeu o contrato local de %d caracteres/%d bytes"
+                                .formatted(MAX_PROMPT_CHARACTERS, MAX_PROMPT_UTF8_BYTES));
+            }
+            return prompt;
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Não foi possível carregar prompt comercial Kling", ex);
+        }
+    }
+
+    /** Normaliza e limita um campo do prompt sem remover as regras de segurança do template. */
+    private String compactPromptField(String value, int maxCharacters) {
+        String normalized = nullToDefault(value, "").replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= maxCharacters) {
+            return normalized;
+        }
+        return normalized.substring(0, Math.max(1, maxCharacters - 1)).trim() + "…";
+    }
+
+    /** Seleciona somente os cortes ou cenas do clipe atual para evitar repetição narrativa. */
+    private String plannedSceneBrief(JsonNode metadata, int scene, int sceneCount) {
+        JsonNode cuts = metadata.path("cut_plan");
+        if (cuts.isArray() && !cuts.isEmpty()) {
+            int start = (scene - 1) * cuts.size() / sceneCount;
+            int end = Math.max(start + 1, scene * cuts.size() / sceneCount);
+            List<String> selected = new ArrayList<>();
+            for (int index = start; index < Math.min(end, cuts.size()); index++) {
+                JsonNode cut = cuts.get(index);
+                selected.add("Corte %d (%ds, %s): %s Continuidade: %s".formatted(
+                        cut.path("order").asInt(index + 1),
+                        cut.path("duration_seconds").asInt(3),
+                        cut.path("role").asText("MECANISMO"),
+                        compactPromptField(cut.path("visual_objective").asText("ação visual única"), 180),
+                        compactPromptField(
+                                cut.path("continuity_anchor")
+                                        .asText("mesma personagem, figurino, ambiente e luz"),
+                                45)));
+            }
+            return String.join(" ", selected);
+        }
+        JsonNode assemblyScenes = metadata.path("assembly_plan").path("scenes");
+        if (!assemblyScenes.isArray() || assemblyScenes.isEmpty()) {
+            return "Recognizable pain, plausible mechanism, personal value and CTA.";
+        }
+        int start = (scene - 1) * assemblyScenes.size() / sceneCount;
+        int end = Math.max(start + 1, scene * assemblyScenes.size() / sceneCount);
+        List<String> selected = new ArrayList<>();
+        for (int index = start; index < Math.min(end, assemblyScenes.size()); index++) {
+            JsonNode item = assemblyScenes.get(index);
+            selected.add("%s — %s: %s; ação: %s; câmera: %s".formatted(
+                    item.path("role").asText("CENA"),
+                    compactPromptField(item.path("title").asText(""), 50),
+                    compactPromptField(item.path("message").asText(""), 100),
+                    compactPromptField(item.path("action").asText(""), 100),
+                    compactPromptField(item.path("camera").asText(""), 50)));
+        }
+        return String.join(" ", selected);
     }
 
     /** Extrai diretivas visuais enviadas pelo Marketing Hub. */
@@ -285,22 +379,162 @@ public class KlingVideoProvider implements VideoProvider {
     private Map<String, Object> metadata(SalesVideoJob job,
                                          String taskId,
                                          Map<String, Object> request,
-                                         JsonNode finalStatus) {
+                                         JsonNode finalStatus,
+                                         int sceneCount,
+                                         List<Map<String, Object>> scenes) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "KLING_3_0");
         metadata.put("provider_job_id", taskId);
         metadata.put("model", properties.getProviders().getKling().getModel());
         metadata.put("aspect_ratio", properties.getProviders().getKling().getAspectRatio());
         metadata.put("mode", properties.getProviders().getKling().getMode());
-        metadata.put("duration_seconds", parseDurationSeconds(request.get("duration").toString()));
+        int clipDurationSeconds = parseDurationSeconds(request.get("duration").toString());
+        metadata.put("duration_seconds", clipDurationSeconds * sceneCount);
+        metadata.put("clip_duration_seconds", clipDurationSeconds);
+        metadata.put("scene_count", sceneCount);
+        metadata.put("assembled_locally", sceneCount > 1);
         metadata.put("modality", isImageToVideoPayload(request) ? "image_to_video" : "text_to_video");
-        metadata.put("cost_usd", estimateCostUsd(request));
+        metadata.put("cost_usd", estimateCostUsd(request).multiply(BigDecimal.valueOf(sceneCount)));
+        metadata.put("cost_scope", "ALL_SCENES");
         metadata.put("pricing_source", "Kling API pricing varies by model, mode, resolution and duration");
         metadata.put("request", request);
         metadata.put("final_status", objectMapper.convertValue(finalStatus, Map.class));
+        metadata.put("scenes", scenes);
         metadata.put("polled_at", Instant.now().toString());
         metadata.put("source_job_id", job.id());
         return metadata;
+    }
+
+    /** Resolve a quantidade de clipes paga e aprovada no contrato do Estúdio. */
+    int resolveSceneCount(JsonNode metadata) {
+        return Math.max(1, metadata.path("sceneCount").asInt(1));
+    }
+
+    /** Consolida o request e o retorno bruto de cada cena sem perder a correlação do provider. */
+    private Map<String, Object> sceneMetadata(int scene,
+                                              String taskId,
+                                              Map<String, Object> request,
+                                              JsonNode finalStatus) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("scene_number", scene);
+        metadata.put("provider_task_id", taskId);
+        metadata.put("request", request);
+        metadata.put("final_status", objectMapper.convertValue(finalStatus, Map.class));
+        return metadata;
+    }
+
+    /** Concatena clipes Kling homogêneos para entregar a duração integral aprovada por Plutus. */
+    private ProviderFile assembleScenes(SalesVideoJob job, List<ProviderFile> scenes) {
+        List<Path> temporaryFiles = new ArrayList<>();
+        try {
+            Path manifest = Files.createTempFile("kling-scenes-" + job.id(), ".txt");
+            temporaryFiles.add(manifest);
+            StringBuilder entries = new StringBuilder();
+            for (ProviderFile scene : scenes) {
+                Path file = Files.createTempFile("kling-scene-" + job.id(), ".mp4");
+                Files.write(file, scene.content());
+                temporaryFiles.add(file);
+                entries.append("file '").append(file.toAbsolutePath()).append("'\n");
+            }
+            Files.writeString(manifest, entries);
+            Path output = Files.createTempFile("kling-montage-" + job.id(), ".mp4");
+            temporaryFiles.add(output);
+            Process process = new ProcessBuilder(
+                    properties.getProviders().getPostProduction().getFfmpegPath(),
+                    "-y", "-f", "concat", "-safe", "0", "-i", manifest.toString(),
+                    "-c", "copy", "-movflags", "+faststart", output.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            byte[] processOutput = process.getInputStream().readAllBytes();
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED",
+                        "ffmpeg falhou ao montar cenas Kling; exitCode=%d output=%s"
+                                .formatted(exitCode, new String(processOutput, java.nio.charset.StandardCharsets.UTF_8)));
+            }
+            return new ProviderFile("sales-video-" + job.id() + "-kling.mp4",
+                    VIDEO_MP4, AssetType.VIDEO, ProviderAssetRole.VIDEO, Files.readAllBytes(output));
+        } catch (IOException ex) {
+            throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED", "Falha ao montar cenas Kling", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED", "Montagem Kling interrompida", ex);
+        } finally {
+            temporaryFiles.forEach(this::deleteIfExists);
+        }
+    }
+
+    /** Remove somente arquivos temporários criados pela montagem deste job. */
+    private void deleteIfExists(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException ex) {
+            log.warn("Não foi possível remover arquivo temporário Kling; path={}", path, ex);
+        }
+    }
+
+    /** Converte a estimativa conservadora do Kling em créditos de um centavo. */
+    private int estimateCredits(int durationSeconds) {
+        return estimateCostUsd(Map.of("duration", String.valueOf(durationSeconds)))
+                .movePointRight(2)
+                .intValueExact();
+    }
+
+    /** Serializa a reserva financeira de uma cena aceita pelo provider. */
+    private String providerTaskDetails(String taskId,
+                                       int scene,
+                                       int sceneCount,
+                                       int durationSeconds,
+                                       int estimatedCredits) {
+        return writeProviderTaskDetails(
+                "PROVIDER_TASK_ACCEPTED", taskId, scene, sceneCount, durationSeconds,
+                estimatedCredits, "ACCEPTED", "ESTIMATED_AT_ACCEPTANCE");
+    }
+
+    /** Serializa a liquidação conservadora de uma cena concluída pelo provider. */
+    private String providerTaskSettlementDetails(String taskId,
+                                                  int scene,
+                                                  int sceneCount,
+                                                  int durationSeconds,
+                                                  int billedCredits) {
+        return writeProviderTaskDetails(
+                "PROVIDER_TASK_SETTLED", taskId, scene, sceneCount, durationSeconds,
+                billedCredits, "SUCCEEDED", "PROVIDER_COMPLETION_WITH_CATALOG_PRICE");
+    }
+
+    /** Monta o evento financeiro idempotente consumido pelo ledger central. */
+    private String writeProviderTaskDetails(String eventType,
+                                            String taskId,
+                                            int scene,
+                                            int sceneCount,
+                                            int durationSeconds,
+                                            int credits,
+                                            String settlementStatus,
+                                            String settlementBasis) {
+        try {
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("eventType", eventType);
+            details.put("provider", "KLING");
+            details.put("providerTaskId", taskId);
+            details.put("model", properties.getProviders().getKling().getModel());
+            details.put("sceneNumber", scene);
+            details.put("plannedSceneCount", sceneCount);
+            details.put("durationSeconds", durationSeconds);
+            if ("PROVIDER_TASK_ACCEPTED".equals(eventType)) {
+                details.put("estimatedCredits", credits);
+                details.put("estimatedCostUsd", BigDecimal.valueOf(credits).movePointLeft(2));
+            } else {
+                details.put("billedCredits", credits);
+                details.put("billedCostUsd", BigDecimal.valueOf(credits).movePointLeft(2));
+                details.put("settlementStatus", settlementStatus);
+                details.put("settlementBasis", settlementBasis);
+                details.put("billingEvidence", "Kling concluiu a task; custo conciliado pela tabela do adapter.");
+            }
+            return objectMapper.writeValueAsString(details);
+        } catch (IOException ex) {
+            log.error("Falha ao serializar consumo Kling; taskId={}", taskId, ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Falha ao auditar consumo Kling", ex);
+        }
     }
 
     /** Calcula custo aproximado conservador para teste Kling standard. */

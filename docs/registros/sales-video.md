@@ -259,3 +259,38 @@
 - Controle de gasto: o analisador nasce desligado no Compose; ativação de `VIDEO_REFERENCE_ANALYSIS_ENABLED` é decisão operacional explícita. Testes usam OpenAI simulada, e a request produtiva usa Flex, schema raiz `object` e `store=false`.
 - Auditoria preventiva: resposta ausente, JSON inválido, sugestão injustificada de novo agente ou falha de integração preservam artefatos, request e response disponíveis antes de liberar retry.
 - Correção de CI em 2026-08-25: o build isolado do `video-management-service` falhava antes da imagem porque o runner não instalava `ffmpeg`, embora a suíte de inspeção execute os binários reais e a imagem produtiva já os contenha. O workflow agora instala a ferramenta antes dos testes e o contrato de deploy bloqueia a recorrência dessa divergência entre CI e runtime.
+
+## 2026-09-03 — Piloto audiovisual do Vega #91
+
+- Gargalo inicial: o experimento Facebook #91 não possuía vídeo para revisão; campanha, gasto e
+  publicação permanecem bloqueados enquanto o ativo não passar pelo gate humano.
+- Evidência operacional: o projeto #3 e o ciclo #7 foram criados no Estúdio com a Biblioteca de
+  Inteligência do Harness, teto de US$ 10 e oito cortes narrativos. Hailuo ficou sem credencial,
+  Kling recusou saldo e Veo recusou cota; nenhuma dessas tentativas abriu task de geração ou custo
+  de vídeo no provedor.
+- Decisão: preservar o planejamento de Apolo e montar um criativo editorial determinístico com seis
+  imagens MUSA já aprovadas. O job bruto #21225 terminou com oito movimentos/cortes, 24 segundos,
+  720x1280 e custo de render zero; nenhum ativo foi fabricado fora do fluxo versionado.
+- Resultado: o job final #21231 incorporou voz pt-BR natural OpenAI, trilha discreta, sete legendas
+  temporizadas queimadas e VTT. A revisão automática mediu -16,9 LUFS e pico real de -1,1 dBFS,
+  classificando o áudio como `APPROVED_FOR_TEST`. MP4, capa e VTT foram persistidos no Hub.
+- Vínculo comercial: o MP4 final foi registrado como ativo #37, slot `AD`, `READY/PENDING`, do
+  experimento #91. O backend passa a realizar esse retorno automaticamente nos próximos ciclos,
+  preservando a linhagem mesmo quando a finalização nasce de uma recuperação do Estúdio.
+- Limite comercial preservado: o vídeo continua sem publicação Meta e sem gasto de mídia. A revisão
+  humana e qualquer liberação de campanha permanecem gates separados; artigo, asset técnico e
+  aprovação automática não contam como venda.
+- Reuso: o prompt visual Kling deixou de conter produto e público MUSA no código; agora é um recurso
+  versionado preenchido com título, pessoa, estilo, roteiro, CTA e storyboard do projeto persistido.
+- Controle comercial: Plutus continua sendo a fonte do teto; cada cena aceita e liquidada é
+  auditada separadamente, o custo total é reconciliado no ciclo e nenhum artigo de pesquisa conta
+  como prova, venda ou autorização de publicação.
+- Prevenção operacional: segredos de provider precisam ser arquivos regulares e não vazios, health
+  verifica a credencial de fato e o deploy falha antes de substituir o container quando essa
+  condição não é atendida.
+- Gate editorial: frases como “sem revelar interface legível” são proibições e não solicitações de
+  texto. O validador distingue negação de ordens positivas e continua bloqueando texto solicitado
+  dentro da geração.
+- Pós-produção: o mix final tem duração física limitada ao vídeo, codificação `veryfast`, legenda
+  ASS/VTT temporizada e normalização para -17 LUFS com margem de -2 dBTP. O teste de contrato exige
+  o limite e impede reintroduzir `apad`, que anteriormente mantinha o ffmpeg aberto sem fim.

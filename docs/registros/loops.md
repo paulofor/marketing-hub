@@ -3375,3 +3375,57 @@ Use este checklist quando o problema estiver em algum loop acima:
   funcional vigente é `BLOCKED`; a tentativa antiga e seu erro continuam intactos na auditoria.
 - **Prevenção:** testes cobrem falha seguida de retentativa concluída nos dois contratos de leitura e
   exigem estado `COMPLETED` sem causa atual.
+
+## LOOP-APOLO-SECRET-MONTADO-COMO-DIRETORIO — preflight saudável, planejamento impossível
+
+- **Data:** 2026-09-03.
+- **Sintoma confirmado:** o ciclo audiovisual #7 do Vega #91 foi aprovado por Plutus, mas a tarefa
+  #332 terminou em `APOLLO_STORYBOARD_BLOCKED` antes de chamar qualquer provider. O health do
+  Estúdio ainda apresentava OpenAI como configurada.
+- **Causa-raiz confirmada no log e no descritor de deploy:** o bind curto do Compose criou
+  `/run/secrets/openai_api_key` como diretório quando o arquivo de origem não existia no host. O
+  status verificava somente se o caminho estava preenchido e o planejador tentou ler o diretório
+  como arquivo. O modelo padrão do planejador também apontava para o identificador inexistente
+  `gpt-5.6`, embora o runtime disponibilize a variante `gpt-5.6-sol`.
+- **Correção sistêmica:** os seis segredos de providers usam bind longo com
+  `create_host_path: false`; o preflight exige arquivo regular, legível e não vazio antes de alterar
+  o container; o workflow provisiona o segredo do planejador de modo atômico; health mede a
+  disponibilidade real da credencial; e Apolo usa `gpt-5.6-sol` por padrão.
+- **Prevenção:** testes de controller rejeitam diretório como credencial, o contrato de deploy exige
+  binds sem criação implícita e arquivos válidos, e a suíte do planejador protege o identificador do
+  modelo. Falha nessa fronteira permanece anterior a qualquer cobrança, publicação ou campanha.
+- **Fechamento do falso positivo no mesmo piloto:** a retentativa #21217 produziu storyboard válido,
+  mas o gate tratou “sem revelar interface legível” como ordem para inserir interface. O detector
+  agora bloqueia somente verbos positivos de geração de texto e aceita proibições explícitas; teste
+  protege simultaneamente os dois sentidos antes de qualquer chamada paga.
+
+## LOOP-VIDEO-POSTPRODUCAO-AUDIO-INFINITO — render termina visualmente, mas job não conclui
+
+- **Data:** 2026-09-03.
+- **Sintoma confirmado:** o job #21226 do Vega #91 chegou à composição final, mas permaneceu em
+  `VIDEO_PROCESSING`; o processo ffmpeg continuava ativo além dos 24 segundos do vídeo.
+- **Causa-raiz confirmada localmente:** o filtro aplicava `apad` à voz e depois usava
+  `amix=duration=longest`. A voz se tornava infinita e, portanto, `-shortest` nunca encontrava o fim
+  do áudio. O primeiro ajuste expôs ainda volume baixo e, depois, pico próximo de clipping.
+- **Correção sistêmica:** a voz não recebe preenchimento infinito, o comando limita explicitamente a
+  saída à duração medida do vídeo, usa codificação rápida e normaliza o mix para -17 LUFS com teto
+  de -2 dBTP. As tentativas com falha ficam preservadas e a retentativa reutiliza o vídeo bruto.
+- **Prevenção:** teste do provider exige `-t`, `veryfast`, `faststart` e `loudnorm`, e proíbe `apad`.
+  O job #21231 confirmou 24 segundos, -16,9 LUFS, pico -1,1 dBFS e áudio apto para teste.
+
+## LOOP-VIDEO-FINAL-ORFAO-DO-EXPERIMENTO — Estúdio conclui a peça sem liberar sua revisão comercial
+
+- **Data:** 2026-09-03.
+- **Sintoma confirmado:** o job final #21231 estava `VIDEO_READY`, mas o experimento #91 continuava
+  com zero vídeos. O ciclo #7 ainda apontava para a tentativa antiga #21216 e permanecia
+  `APOLLO_BLOCKED`; portanto a peça não aparecia na biblioteca para revisão.
+- **Causa-raiz:** a pós-produção substituía os metadados do job fonte por um payload reduzido e
+  perdia `videoProductionCycleId`, `videoProjectId` e `experimentId`. A sincronização atualizava
+  somente ativos de experimento criados antes do render e não reconciliava um projeto iniciado no
+  Estúdio.
+- **Correção sistêmica:** a pós-produção preserva a linhagem governada; na conclusão, o backend
+  recupera também a ancestralidade para compatibilidade, cria idempotentemente o ativo final,
+  mantém a revisão humana `PENDING` e move ciclo e projeto para `READY_FOR_REVIEW` sem publicar.
+- **Prevenção:** testes ligam ciclo, projeto, experimento, job, asset, áudio e proporção 9:16 e
+  comprovam que a conclusão não gera autoaprovação. O worker registra `has_audio` e a quantidade de
+  streams para o gate não depender de inferência textual.

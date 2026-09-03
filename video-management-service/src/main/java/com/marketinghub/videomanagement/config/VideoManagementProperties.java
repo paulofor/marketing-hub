@@ -79,7 +79,7 @@ public class VideoManagementProperties {
         private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
         private String apiKey;
         private String apiKeyFile;
-        private String model = "gpt-5.6";
+        private String model = "gpt-5.6-sol";
         @NotNull
         private CodexShadow codexShadow = new CodexShadow();
     }
@@ -141,6 +141,9 @@ public class VideoManagementProperties {
 
         @NotNull
         private Veo veo = new Veo();
+
+        @NotNull
+        private EditorialMotion editorialMotion = new EditorialMotion();
 
         @NotNull
         private PostProduction postProduction = new PostProduction();
@@ -408,6 +411,25 @@ public class VideoManagementProperties {
 
         @Min(1)
         private int maxPollAttempts = 120;
+    }
+
+    /** Configura o gerador editorial local que anima imagens aprovadas sem custo de provider. */
+    @Getter
+    @Setter
+    public static class EditorialMotion {
+        private boolean enabled = false;
+
+        /** Nomes que identificam jobs de montagem editorial a partir de imagens aprovadas. */
+        @NotNull
+        private List<String> acceptedNames = new ArrayList<>(List.of("EDITORIAL_MOTION", "LOCAL_EDITORIAL"));
+
+        private String ffmpegPath = "ffmpeg";
+        private int width = 720;
+        private int height = 1280;
+        private int framesPerSecond = 30;
+        private int maxCuts = 12;
+        private int maxDurationSeconds = 60;
+        private int maxImageBytes = 10 * 1024 * 1024;
     }
 
     /** Configura a montagem, normalização e entrega dos vídeos renderizados. */

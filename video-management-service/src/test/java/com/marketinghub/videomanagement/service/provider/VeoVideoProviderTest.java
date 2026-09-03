@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -155,6 +157,111 @@ class VeoVideoProviderTest {
         Files.deleteIfExists(keyFile);
     }
 
+    /** Deve animar a imagem aprovada em três cenas, conciliar custo e montar o vídeo integral. */
+    @Test
+    void shouldRenderThreeGovernedScenesFromApprovedImage() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "image/png")
+                .setBody(new Buffer().write(new byte[] {(byte) 0x89, 'P', 'N', 'G'})));
+        byte[] clip = validMp4();
+        for (int scene = 1; scene <= 3; scene++) {
+            server.enqueue(json("{\"name\":\"operations/vega-scene-%d\"}".formatted(scene)));
+            server.enqueue(json("""
+                    {
+                      "done": true,
+                      "response": {
+                        "generateVideoResponse": {
+                          "generatedSamples": [
+                            {"video": {"uri": "%s/download/vega-scene-%d"}}
+                          ]
+                        }
+                      }
+                    }
+                    """.formatted(server.url("/").toString().replaceAll("/$", ""), scene)));
+            server.enqueue(new MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "video/mp4")
+                    .setBody(new Buffer().write(clip)));
+        }
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getVeo().setModel("veo-3.1-fast-generate-preview");
+        VeoVideoProvider provider = new VeoVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+        List<String> financialEvents = new ArrayList<>();
+        ProgressCallback callback = new ProgressCallback() {
+            /** Ignora progresso simples porque este cenário valida os eventos estruturados. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Guarda reservas e liquidações financeiras emitidas por cena. */
+            @Override
+            public void onProgress(Integer percent,
+                                   SalesVideoStatus status,
+                                   String message,
+                                   String detailsJson) {
+                financialEvents.add(detailsJson);
+            }
+        };
+
+        ProviderArtifacts artifacts = provider.render(multiSceneJob("10"), profile(), callback);
+
+        assertThat(artifacts.providerJobId())
+                .isEqualTo("operations/vega-scene-1,operations/vega-scene-2,operations/vega-scene-3");
+        assertThat(artifacts.videoFile().content()).isNotEmpty();
+        assertThat(artifacts.metadata())
+                .containsEntry("duration_seconds", 24)
+                .containsEntry("scene_count", 3)
+                .containsEntry("assembled_locally", true)
+                .containsEntry("modality", "image_to_video")
+                .containsEntry("cost_usd", new java.math.BigDecimal("2.4000"));
+        assertThat(financialEvents).hasSize(6);
+        assertThat(financialEvents.stream().filter(event -> event.contains("PROVIDER_TASK_ACCEPTED"))).hasSize(3);
+        assertThat(financialEvents.stream().filter(event -> event.contains("PROVIDER_TASK_SETTLED"))).hasSize(3);
+        assertThat(server.takeRequest().getPath()).isEqualTo("/approved-vega.png");
+        for (int scene = 1; scene <= 3; scene++) {
+            RecordedRequest create = server.takeRequest();
+            assertThat(create.getPath())
+                    .isEqualTo("/models/veo-3.1-fast-generate-preview:predictLongRunning");
+            assertThat(create.getBody().readUtf8())
+                    .contains("Scene " + scene + " of 3")
+                    .contains("ação Vega " + scene)
+                    .contains("\"image\":{")
+                    .contains("\"bytesBase64Encoded\":")
+                    .doesNotContain("inlineData")
+                    .contains("\"personGeneration\":\"allow_adult\"");
+            assertThat(server.takeRequest().getPath()).isEqualTo("/operations/vega-scene-" + scene);
+            assertThat(server.takeRequest().getPath()).isEqualTo("/download/vega-scene-" + scene);
+        }
+    }
+
+    /** Deve bloquear antes do provider quando as cenas excederem o teto aprovado. */
+    @Test
+    void shouldRejectMultiSceneCostAbovePersistedBudget() {
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getVeo().setModel("veo-3.1-fast-generate-preview");
+        VeoVideoProvider provider = new VeoVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(multiSceneJob("1.00"), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("excede teto");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Deve preservar a causa segura devolvida pelo VEO para orientar correção sem nova tentativa cega. */
+    @Test
+    void shouldExposeSafeProviderErrorBody() {
+        server.enqueue(new MockResponse()
+                .setResponseCode(400)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":{\"message\":\"durationSeconds must be a string\"}}"));
+        VeoVideoProvider provider = new VeoVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("HTTP 400")
+                .hasMessageContaining("durationSeconds must be a string");
+    }
+
     /** Cria uma resposta JSON para a Gemini API simulada. */
     private MockResponse json(String body) {
         return new MockResponse()
@@ -171,6 +278,23 @@ class VeoVideoProviderTest {
                 .setBody(new Buffer().write(new byte[] {
                         0, 0, 0, 32, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm', 0, 0, 2, 0
                 }));
+    }
+
+    /** Gera um MP4 pequeno e íntegro para exercitar a montagem real por ffmpeg. */
+    private byte[] validMp4() throws Exception {
+        Path output = Files.createTempFile("veo-provider-test", ".mp4");
+        try {
+            Process process = new ProcessBuilder(
+                    "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=32x32:d=0.2",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", output.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            process.getInputStream().readAllBytes();
+            assertThat(process.waitFor()).isZero();
+            return Files.readAllBytes(output);
+        } finally {
+            Files.deleteIfExists(output);
+        }
     }
 
     /** Configura o provider VEO apontando para a API simulada. */
@@ -224,6 +348,37 @@ class VeoVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria o contrato do Estúdio com três cenas e imagem-base aprovada. */
+    private SalesVideoJob multiSceneJob(String budgetLimitUsd) {
+        SalesVideoJob base = job("VEO");
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                """
+                        {
+                          "videoProductionCycleId": 7,
+                          "budgetLimitUsd": %s,
+                          "sceneCount": 3,
+                          "image_to_video": {
+                            "enabled": true,
+                            "source_image_url": "%sapproved-vega.png"
+                          },
+                          "cut_plan": [
+                            {"order":1,"role":"HOOK_DOR","visual_objective":"ação Vega 1","continuity_anchor":"mesma personagem"},
+                            {"order":2,"role":"MECANISMO","visual_objective":"ação Vega 1","continuity_anchor":"mesma personagem"},
+                            {"order":3,"role":"MECANISMO","visual_objective":"ação Vega 2","continuity_anchor":"mesma personagem"},
+                            {"order":4,"role":"RESULTADO","visual_objective":"ação Vega 2","continuity_anchor":"mesma personagem"},
+                            {"order":5,"role":"PROVA","visual_objective":"ação Vega 3","continuity_anchor":"mesma personagem"},
+                            {"order":6,"role":"CTA","visual_objective":"ação Vega 3","continuity_anchor":"mesma personagem"}
+                          ]
+                        }
+                        """.formatted(budgetLimitUsd, server.url("/").toString()),
+                base.createdAt(), base.updatedAt());
     }
 
     /** Cria um perfil com roteiro aprovado para o VEO. */

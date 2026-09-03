@@ -257,9 +257,17 @@ public class ApolloStoryboardPlanner {
         return 12;
     }
 
-    /** Detecta instruções que deveriam permanecer na pós-produção determinística. */
+    /** Detecta ordens positivas de texto sem confundir proibições visuais com solicitação. */
     private boolean containsEmbeddedTextInstruction(String objective) {
-        return objective.matches(".*\\b(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b.*");
+        String normalized = normalize(objective);
+        String withoutProhibitions = normalized.replaceAll(
+                "\\b(sem|nao|não|evitar)\\s+(?:[a-z0-9áàâãéêíóôõúç]+\\s+){0,3}"
+                        + "(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b",
+                " ");
+        return withoutProhibitions.matches(
+                ".*\\b(mostrar|exibir|incluir|aplicar|gerar|inserir|desenhar|revelar)\\b"
+                        + "(?:\\s+[a-z0-9áàâãéêíóôõúç]+){0,4}\\s+"
+                        + "\\b(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b.*");
     }
 
     /** Normaliza texto para comparação de redundância e termos proibidos. */

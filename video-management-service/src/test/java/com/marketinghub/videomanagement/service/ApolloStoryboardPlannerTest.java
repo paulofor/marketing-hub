@@ -54,6 +54,19 @@ class ApolloStoryboardPlannerTest {
         assertThat(decision.reason()).contains("texto solicitado");
     }
 
+    /** Aceita proibições de texto e interface sem convertê-las em ordem positiva ao provider. */
+    @Test
+    void shouldAllowExplicitProhibitionOfEmbeddedText() throws Exception {
+        JsonNode safePlan = plan(false);
+        ((com.fasterxml.jackson.databind.node.ObjectNode) safePlan.path("cuts").get(4))
+                .put("visualObjective", "Tocar o celular sem revelar interface legível e sem mostrar texto");
+
+        ApolloStoryboardPlanner.GateDecision decision = planner.validate(
+                metadata("20.00"), safePlan, "RUNWAY_SEEDANCE_2_5");
+
+        assertThat(decision.approved()).isTrue();
+    }
+
     /** Aprova o storyboard quando Apolo aplica ao menos um cartão de cada coleção entregue. */
     @Test
     void shouldApproveDeliveredResearchCardsAcrossCollections() throws Exception {

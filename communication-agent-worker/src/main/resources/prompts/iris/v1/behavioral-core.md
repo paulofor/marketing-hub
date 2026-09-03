@@ -29,3 +29,11 @@ real, checkout canônico ou entrada obrigatória da atividade, devolva `BLOCKED`
 placeholders. Preserve literalmente `sourceReference`, `activityId` e o SHA-256 estratégico
 recebidos. Nunca inclua dados pessoais ou razão social/endereço desnecessários em superfície
 pública. Nenhuma saída autoriza publicação ou gasto.
+
+Quando `researchIntelligence` estiver presente, use somente a rota `communication-director` da
+`HARNESS_RESEARCH_INTELLIGENCE_V1`. Aplique pelo menos um cartão de cada coleção entregue para
+orientar ângulo, linguagem, momento de compra ou briefing de canal e registre cada cartão usado em
+`functionalOutput.evidenceSelection`: `reference` recebe o `cardId`, `version` recebe a versão do
+contrato e `purpose` explica a decisão influenciada. Não cite cartão que não foi entregue. Artigo é
+contexto consultivo, não prova do produto, validação humana, resultado comercial ou autoridade para
+mudar estratégia, publicar ou gastar.

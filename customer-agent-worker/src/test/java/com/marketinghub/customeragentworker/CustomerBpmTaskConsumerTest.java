@@ -208,7 +208,9 @@ class CustomerBpmTaskConsumerTest {
             "formato e canal declarados",
             "PRODUCT_PROOF",
             "dois primeiros segundos",
-            "purchaseEmotion")
+            "purchaseEmotion",
+            "researchIntelligence",
+            "cardId")
         .doesNotContain("nail designer", "posts e stories prontos");
   }
 

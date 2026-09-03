@@ -1,5 +1,6 @@
 package com.marketinghub.agenttask;
 
+import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceSelectionResponse;
 import java.time.Instant;
 
 /** Responsabilidade: entregar ao executor uma atividade BPM elegível e auditável. */
@@ -16,7 +17,8 @@ public record AgentTaskPendingResponse(
     Instant receivedAt,
     AgentTaskExecutionResourceResponse executionResource,
     AgentTaskTargetResponse taskTarget,
-    String processContextJson) {
+    String processContextJson,
+    ResearchIntelligenceSelectionResponse researchIntelligence) {
 
   /** Preserva integrações internas anteriores ao recurso opcional da atividade. */
   public AgentTaskPendingResponse(
@@ -44,6 +46,7 @@ public record AgentTaskPendingResponse(
         receivedAt,
         null,
         null,
-        processContextJson);
+        processContextJson,
+        null);
   }
 }

@@ -3235,6 +3235,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   prompt, verificam o nome da fase no timeout e simulam volume precoce para provar que ofertas e
   ciência permanecem no conjunto final. Os gates de dez ofertas, cobertura Meta observada e entrega
   PDE com IA não foram relaxados.
+- **Extensão preventiva ao vídeo em 2026-09-02:** a integração da pesquisa com Íris, Apolo, Psique e
+  Têmis não replica o corpus do Argos. O backend compila um cartão limitado por artigo, seleciona no
+  máximo quatro por rota e entrega a cada executor apenas as coleções de sua responsabilidade. IDs,
+  datas, validade, caminhos e hashes permanecem auditáveis; gates determinísticos rejeitam cartão
+  alheio ou coleção omitida antes de geração paga. Testes cobrem o piloto Vega #91 e qualquer projeto
+  audiovisual futuro, preservando artigos como orientação externa, nunca como venda ou aprovação.
 - **Recorrência observada na execução #19:** depois da compactação, a coleta chegou a 77 fatos,
   doze ofertas, oito artigos científicos e sete anúncios aderentes, mas um termo sensível presente
   no corpus amplo rebaixou globalmente as três candidatas para `HUMAN_REVIEW`; a síntese bruta havia

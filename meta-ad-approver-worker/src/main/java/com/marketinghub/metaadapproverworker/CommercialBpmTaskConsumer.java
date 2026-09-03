@@ -99,7 +99,7 @@ public class CommercialBpmTaskConsumer {
         2);
   }
 
-  /** Reserva em PLAY e revisa uma atividade liberada sem decidir a próxima etapa. */
+  /** Reserva em PLAY e revisa a atividade com integridade comercial e pesquisa rastreável. */
   @Scheduled(cron = "45 */1 * * * *")
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
@@ -111,12 +111,24 @@ public class CommercialBpmTaskConsumer {
       execution = execute(task);
       JsonNode result = execution.result();
       validate(result, processCode(task));
+      ResearchIntelligenceUsageValidator.validate(
+          task,
+          AGENT_KEY,
+          jsonTextValues(result.path("evidence")),
+          !"BLOCKED".equals(result.path("decision").asText()));
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
     } catch (Exception ex) {
       log.error("Falha no gate comercial BPM de Têmis. taskId={}", taskId(task), ex);
       fail(task, ex, execution);
     }
+  }
+
+  /** Converte um array JSON textual em evidências usadas pelo gate determinístico. */
+  private static List<String> jsonTextValues(JsonNode values) {
+    List<String> result = new ArrayList<>();
+    values.forEach(value -> result.add(value.asText()));
+    return result;
   }
 
   /** Reserva somente gates independentes de integridade comercial em ordem explícita. */

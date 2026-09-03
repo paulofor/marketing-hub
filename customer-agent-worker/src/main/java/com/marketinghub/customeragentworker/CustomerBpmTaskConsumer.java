@@ -113,7 +113,7 @@ public class CustomerBpmTaskConsumer {
     return value.trim();
   }
 
-  /** Reserva em PLAY e avalia uma atividade liberada sem escolher a próxima etapa do processo. */
+  /** Reserva em PLAY e avalia a atividade com evidência visual e pesquisa rastreável. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
@@ -127,6 +127,11 @@ public class CustomerBpmTaskConsumer {
       execution = execute(task, visualEvidence.uploaded());
       JsonNode result = execution.result();
       validate(result, processCode(task));
+      ResearchIntelligenceUsageValidator.validate(
+          task,
+          AGENT_KEY,
+          jsonTextValues(result.path("evidence")),
+          !"BLOCKED".equals(result.path("decision").asText()));
       validateVisualAudit(result, visualEvidence.uploaded());
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
@@ -136,6 +141,13 @@ public class CustomerBpmTaskConsumer {
     } finally {
       deleteVisualWorkDirectory(visualEvidence, taskId(task));
     }
+  }
+
+  /** Converte um array JSON textual em evidências usadas pelo gate determinístico. */
+  private static List<String> jsonTextValues(JsonNode values) {
+    List<String> result = new ArrayList<>();
+    values.forEach(value -> result.add(value.asText()));
+    return result;
   }
 
   /** Reserva primeiro criativos e depois landings sem misturar contratos de avaliação. */

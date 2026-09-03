@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Video Studio API
-  version: 1.0.0
+  version: 1.1.0
   description: Contratos administrativos para criação e edição de projetos de vídeo do Marketing Hub.
 servers:
   - url: http://191.252.181.168:8000
@@ -350,7 +350,8 @@ components:
         error: { type: string }
         artifacts: { type: object, additionalProperties: true, nullable: true }
         rawRequest: { type: object, additionalProperties: true, nullable: true }
-        rawResponse: { type: object, additionalProperties: true, nullable: true }
+        rawResponse:
+          { type: object, additionalProperties: true, nullable: true }
         model: { type: string, nullable: true }
     CreateVideoReferenceRequest:
       type: object
@@ -586,3 +587,83 @@ components:
         updatedBy: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        researchIntelligence:
+          allOf:
+            - $ref: "#/components/schemas/ResearchIntelligenceSelection"
+          nullable: true
+          description: Seleção completa somente no detalhe, criação e atualização do projeto.
+    ResearchIntelligenceSelection:
+      type: object
+      required:
+        [
+          contractVersion,
+          contextFingerprint,
+          totalAvailableCards,
+          routes,
+          limitations,
+        ]
+      properties:
+        contractVersion:
+          type: string
+          enum: [HARNESS_RESEARCH_INTELLIGENCE_V1]
+        contextFingerprint:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        totalAvailableCards: { type: integer, minimum: 1 }
+        routes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResearchIntelligenceRoute"
+        limitations:
+          type: array
+          items: { type: string }
+    ResearchIntelligenceRoute:
+      type: object
+      required:
+        [agentKey, agentName, purpose, authority, selectionReason, cards]
+      properties:
+        agentKey: { type: string }
+        agentName: { type: string }
+        purpose: { type: string }
+        authority:
+          type: string
+          enum:
+            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY]
+        selectionReason: { type: string }
+        cards:
+          type: array
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/ResearchIntelligenceCard"
+    ResearchIntelligenceCard:
+      type: object
+      required:
+        - cardId
+        - collection
+        - title
+        - finding
+        - mechanism
+        - commercialApplication
+        - evidenceStrength
+        - experimentHypothesis
+        - risks
+        - limits
+        - sourcePath
+        - sourceSha256
+        - evidenceKind
+      properties:
+        cardId: { type: string, pattern: "^RI1-[0-9A-F]{12}$" }
+        collection: { type: string }
+        title: { type: string }
+        finding: { type: string, maxLength: 700 }
+        mechanism: { type: string, maxLength: 700 }
+        commercialApplication: { type: string, maxLength: 700 }
+        evidenceStrength: { type: string, maxLength: 500 }
+        publishedOn: { type: string, format: date, nullable: true }
+        validUntil: { type: string, format: date, nullable: true }
+        experimentHypothesis: { type: string, maxLength: 700 }
+        risks: { type: string, maxLength: 700 }
+        limits: { type: string }
+        sourcePath: { type: string, pattern: "^pesquisas/" }
+        sourceSha256: { type: string, pattern: "^[0-9a-f]{64}$" }
+        evidenceKind: { type: string, enum: [EXTERNAL_RESEARCH] }

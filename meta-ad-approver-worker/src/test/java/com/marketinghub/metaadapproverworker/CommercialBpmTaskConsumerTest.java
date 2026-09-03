@@ -101,7 +101,12 @@ class CommercialBpmTaskConsumerTest {
             CommercialBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-commercial-review-schema.json");
     org.assertj.core.api.Assertions.assertThat(read("prompts/bpm/creative-commercial-review.md"))
-        .contains("PRODUCT_PROOF", "Só aplique limites da Meta", "contato direto consentido")
+        .contains(
+            "PRODUCT_PROOF",
+            "Só aplique limites da Meta",
+            "contato direto consentido",
+            "researchIntelligence",
+            "cardId")
         .doesNotContain("demonstra inequivocamente o kit digital");
   }
 

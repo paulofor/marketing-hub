@@ -20,12 +20,14 @@ import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
+import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,7 @@ public class VideoProductionCycleService {
   private final FinancialAgentService financialAgentService;
   private final StudioCostLedgerService studioCostLedgerService;
   private final ObjectMapper objectMapper;
+  private VideoProjectResearchIntelligenceMapper researchIntelligenceMapper;
 
   /** Configura persistência, caixas de entrada e o executor canônico de vídeo. */
   public VideoProductionCycleService(
@@ -65,6 +68,13 @@ public class VideoProductionCycleService {
     this.financialAgentService = financialAgentService;
     this.studioCostLedgerService = studioCostLedgerService;
     this.objectMapper = objectMapper;
+  }
+
+  /** Conecta a biblioteca comum usada para auditar o contexto entregue a Apolo. */
+  @Autowired
+  public void setResearchIntelligenceMapper(
+      VideoProjectResearchIntelligenceMapper researchIntelligenceMapper) {
+    this.researchIntelligenceMapper = researchIntelligenceMapper;
   }
 
   /** Abre um ciclo bloqueado e solicita a avaliação financeira de Plutus. */
@@ -316,6 +326,11 @@ public class VideoProductionCycleService {
       metadata.put("cutCount", cuts.size());
       metadata.put("assemblyRequired", duration > providerClipDuration);
       metadata.put("generation_strategy", "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
+      if (researchIntelligenceMapper != null) {
+        metadata.put(
+            "researchIntelligence",
+            researchIntelligenceMapper.selectForVideoAgent(project, APOLLO_KEY));
+      }
       metadata.put("cut_plan", cuts);
       metadata.put(
           "post_production",

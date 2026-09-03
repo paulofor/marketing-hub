@@ -274,6 +274,33 @@ persistidos no backend.
 
 Cada video comercial deve preservar a hipotese, funcao no funil, framework, evidencias cientificas, limites da promessa, plano de medicao, resultados reais, decisao e proxima versao. Pecas complementares usam o mesmo `strategyGroupKey`: o video de campanha qualifica pela dor e o hero do PDE aprofunda mecanismo e jornada, mantendo `message match`. Resultados estimados nunca podem ser registrados como venda; a decisao permitida e `COLLECTING`, `CONTINUE`, `ADJUST` ou `STOP`.
 
+### Biblioteca de Inteligencia do Harness v1
+
+Por decisao de 2026-09-02, artigos versionados em `/pesquisas` devem chegar a producao de video como
+cartoes curtos de decisao, nunca como pastas inteiras ou repeticao integral do Markdown no prompt. O
+backend compila path, colecao, data, SHA-256, achado, mecanismo declarado, aplicacao, forca da
+evidencia, validade, hipotese, riscos e limites; seleciona deterministicamente no maximo quatro
+cartoes validos por agente, exclui fontes vencidas e entrega um objeto tipado ao executor.
+
+O roteamento inicial e:
+
+- Apolo: `video` e `prazer-audio-visual`, para roteiro, ritmo, audio, continuidade e escolha tecnica;
+- Iris: `neuromarketing` e `momentos-de-compra-b2c`, para mensagem e briefing de canal;
+- Psique: `neuromarketing` e `prazer-audio-visual`, somente como criterios de percepcao;
+- Temis: as quatro colecoes anteriores, somente como criterios de verificacao e limites.
+
+Todo job de Apolo deve persistir os cartoes entregues e o plano estruturado deve declarar os IDs que
+realmente aplicou. ID inexistente, ausencia de aplicacao ou omissao de uma colecao entregue bloqueia
+antes de qualquer provider pago. Iris deve citar os cartoes aplicados em `evidenceSelection`; Psique e Temis devem cita-los em
+suas evidencias quando forem usados. Em todos os casos, o artigo e evidencia externa ou inspiracao:
+nao aprova a peca, nao comprova demanda, nao autoriza publicacao e nao substitui retencao, CTA,
+checkout, pagamento, entrega ou custo reconciliado.
+
+A primeira homologacao usa o video Instagram do Vega #91. O mecanismo e reutilizavel por qualquer
+projeto e tarefa futura; nao pode conter condicao de negocio exclusiva para o ID 91. Com o volume
+atual, selecao por colecao, data e relevancia lexical e suficiente; banco vetorial so pode ser
+introduzido depois de ganho comercial mensuravel que justifique custo e complexidade.
+
 #### Microconteudo seriado como hipotese opcional
 
 Uma sequencia curta pode ser testada quando a oferta exigir mais contexto do que uma unica peca

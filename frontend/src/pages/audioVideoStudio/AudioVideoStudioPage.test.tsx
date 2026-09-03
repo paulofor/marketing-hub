@@ -469,6 +469,117 @@ describe("AudioVideoStudioPage", () => {
     );
   });
 
+  it("cria o piloto reutilizavel do Vega vinculado ao experimento 91", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: /vega #91 · piloto instagram/i,
+      }),
+    );
+
+    expect(
+      (screen.getByLabelText(/id do experimento/i) as HTMLInputElement).value,
+    ).toBe("91");
+    expect(
+      screen.getByText(/pesquisa será selecionada ao criar/i),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /criar blueprint/i }));
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/sales-videos/projects",
+        expect.objectContaining({
+          productId: 4,
+          experimentId: 91,
+          campaignKey: "vega-91-instagram-research-intelligence-v1",
+          targetChannel: "INSTAGRAM_REELS_STORIES",
+          title: "Vega #91 - O espelho antes de sair",
+          measurementPlan: expect.stringContaining("pagamento aprovado"),
+        }),
+      );
+    });
+  });
+
+  it("mostra as rotas, fontes e limites da pesquisa no detalhe do projeto", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            experimentId: 91,
+            contextType: "PDE",
+            productionMode: "CINEMATIC_SCENE_BLUEPRINT",
+            targetChannel: "INSTAGRAM_REELS_STORIES",
+            format: "VERTICAL_9_16",
+            title: "Vega #91 - O espelho antes de sair",
+            objective: "Gerar clique qualificado",
+            targetDurationSeconds: 30,
+            status: "READY_FOR_SCRIPT",
+            researchIntelligence: {
+              contractVersion: "HARNESS_RESEARCH_INTELLIGENCE_V1",
+              contextFingerprint: "a".repeat(64),
+              totalAvailableCards: 61,
+              limitations: [
+                "Cartões são evidência externa; não comprovam demanda ou venda.",
+              ],
+              routes: [
+                {
+                  agentKey: "videomaker",
+                  agentName: "Apolo",
+                  purpose: "Orientar roteiro, ritmo e áudio.",
+                  authority: "PRODUCTION_ADVISORY",
+                  selectionReason: "Coleções video e prazer-audio-visual.",
+                  cards: [
+                    {
+                      cardId: "RI1-AAAAAAAAAAAA",
+                      collection: "video",
+                      title: "Gancho e recompensa visual",
+                      finding: "O primeiro quadro precisa materializar a dor.",
+                      mechanism: "Antecipação visual",
+                      commercialApplication: "Abrir no espelho",
+                      evidenceStrength: "Fonte externa",
+                      publishedOn: "2026-08-31",
+                      validUntil: "2026-10-15",
+                      experimentHypothesis: "Melhorar retenção de 3 segundos",
+                      risks: "Generalização",
+                      limits: "Não substitui evento humano",
+                      sourcePath: "pesquisas/video/2026-08-31-exemplo.md",
+                      sourceSha256: "b".repeat(64),
+                      evidenceKind: "EXTERNAL_RESEARCH",
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: /biblioteca de inteligência do harness v1/i,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText(/61 artigos compilados/i)).toBeTruthy();
+    expect(screen.getByText(/1 cartão · orienta produção/i)).toBeTruthy();
+    expect(screen.getByText(/gancho e recompensa visual/i)).toBeTruthy();
+    expect(
+      screen.getByText(/pesquisas\/video\/2026-08-31-exemplo\.md/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/não comprovam demanda ou venda/i)).toBeTruthy();
+  });
+
   it("destaca a etapa inicial com classe de cor propria", async () => {
     setup();
 

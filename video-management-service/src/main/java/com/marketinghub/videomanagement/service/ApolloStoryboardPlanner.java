@@ -124,6 +124,8 @@ public class ApolloStoryboardPlanner {
         if (!cuts.isArray() || cuts.size() < 5 || cuts.size() != originalCount) {
             return GateDecision.blocked("quantidade de cortes diferente do plano aprovado");
         }
+        String researchIssue = researchApplicationIssue(metadata, plan);
+        if (researchIssue != null) return GateDecision.blocked(researchIssue);
         int targetDuration = metadata.path("targetDurationSeconds").asInt(0);
         int totalDuration = 0;
         Set<String> roles = new HashSet<>();
@@ -164,6 +166,38 @@ public class ApolloStoryboardPlanner {
             return GateDecision.blocked("custo previsto de US$ %s excede o teto de US$ %s".formatted(cost, limit));
         }
         return new GateDecision(true, "aprovado", credits, cost, limit);
+    }
+
+    /** Valida que Apolo aplicou somente cartões entregues e cobriu cada coleção selecionada. */
+    private String researchApplicationIssue(JsonNode metadata, JsonNode plan) {
+        JsonNode intelligence = metadata.path("researchIntelligence");
+        if (intelligence.isMissingNode() || intelligence.isNull()) return null;
+        Map<String, String> collectionByCard = new java.util.LinkedHashMap<>();
+        for (JsonNode route : intelligence.path("routes")) {
+            if (!"videomaker".equals(route.path("agentKey").asText())) continue;
+            for (JsonNode card : route.path("cards")) {
+                collectionByCard.put(card.path("cardId").asText(), card.path("collection").asText());
+            }
+        }
+        if (collectionByCard.isEmpty()) return "biblioteca de pesquisa entregue sem cartões de Apolo";
+        JsonNode applied = plan.path("appliedCardIds");
+        if (!applied.isArray() || applied.isEmpty()) {
+            return "storyboard não declarou os cartões de pesquisa aplicados";
+        }
+        Set<String> appliedCollections = new HashSet<>();
+        for (JsonNode cardId : applied) {
+            String collection = collectionByCard.get(cardId.asText());
+            if (collection == null) return "storyboard citou cartão de pesquisa não entregue";
+            appliedCollections.add(collection);
+        }
+        Set<String> deliveredCollections = new HashSet<>(collectionByCard.values());
+        if (!appliedCollections.containsAll(deliveredCollections)) {
+            return "storyboard não aplicou ao menos um cartão de cada coleção entregue";
+        }
+        if (!StringUtils.hasText(plan.path("researchApplicationRationale").asText())) {
+            return "storyboard não explicou a aplicação da pesquisa";
+        }
+        return null;
     }
 
     /** Bloqueia a IA e o provider quando roteiro, duração ou plano-base ainda não estão prontos. */

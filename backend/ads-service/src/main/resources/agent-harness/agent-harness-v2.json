@@ -214,6 +214,16 @@
           ]
         },
         {
+          "code": "research-intelligence",
+          "title": "Biblioteca de Inteligência do Harness v1",
+          "description": "Cartões consultivos selecionados para a revisão perceptiva de vídeos e criativos.",
+          "items": [
+            { "key": "collections", "label": "Coleções", "value": "neuromarketing · prazer-audio-visual", "description": "O backend entrega até quatro cartões aderentes ao contexto, cobrindo cada coleção disponível.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/researchintelligence/v1/service/ResearchIntelligenceService.java" },
+            { "key": "use", "label": "Uso permitido", "value": "critérios de percepção, fluidez, prazer e risco", "description": "Psique cita os IDs aplicados, mas pixels, áudio, movimento e eventos reais prevalecem.", "sourceReference": "customer-agent-worker/src/main/resources/prompts/bpm/v3/creative-customer-review.md" },
+            { "key": "authority", "label": "Autoridade", "value": "REVIEW_CRITERIA_ONLY", "description": "Artigos não comprovam satisfação, não preenchem modalidade ausente e não autorizam aprovação.", "sourceReference": "docs/canonical/audio-video-studio-canon.v1.md" }
+          ]
+        },
+        {
           "code": "executor",
           "title": "Executor e implantação",
           "description": "Unidade responsável por executar Psique de forma independente.",
@@ -531,6 +541,16 @@
           ]
         },
         {
+          "code": "research-intelligence",
+          "title": "Biblioteca de Inteligência do Harness v1",
+          "description": "Cartões consultivos usados como critérios de integridade do criativo.",
+          "items": [
+            { "key": "collections", "label": "Coleções", "value": "vídeo · prazer audiovisual · neuromarketing · momentos de compra", "description": "O backend seleciona até quatro cartões e preserva ID, data, validade, caminho e hash da fonte.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/researchintelligence/v1/service/ResearchIntelligenceService.java" },
+            { "key": "use", "label": "Uso permitido", "value": "limites, riscos, coerência e alegações", "description": "Têmis cita somente cartões entregues e mantém o ativo real e os direitos como fontes primárias.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review.md" },
+            { "key": "authority", "label": "Autoridade", "value": "REVIEW_CRITERIA_ONLY", "description": "Artigos não substituem política da Meta, prova do produto nem autorização humana.", "sourceReference": "docs/canonical/audio-video-studio-canon.v1.md" }
+          ]
+        },
+        {
           "code": "executor",
           "title": "Executor e implantação",
           "description": "Unidade independente responsável exclusivamente pelas revisões de Têmis.",
@@ -739,6 +759,16 @@
           ]
         },
         {
+          "code": "research-intelligence",
+          "title": "Biblioteca de Inteligência do Harness v1",
+          "description": "Cartões consultivos para transformar achados em ângulo e briefing de canal.",
+          "items": [
+            { "key": "collections", "label": "Coleções", "value": "neuromarketing · momentos-de-compra-b2c", "description": "O backend entrega até quatro cartões aderentes, sem despejar artigos completos no prompt.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/researchintelligence/v1/service/ResearchIntelligenceService.java" },
+            { "key": "use", "label": "Uso permitido", "value": "mensagem · ângulo · momento · briefing de canal", "description": "Íris registra ID, versão e finalidade de cada cartão aplicado na seleção de evidências.", "sourceReference": "communication-agent-worker/src/main/resources/prompts/iris/v1/behavioral-core.md" },
+            { "key": "authority", "label": "Autoridade", "value": "COMMUNICATION_ADVISORY", "description": "Pesquisa não altera estratégia, preço ou produto e não autoriza publicação ou gasto.", "sourceReference": "docs/canonical/audio-video-studio-canon.v1.md" }
+          ]
+        },
+        {
           "code": "executor",
           "title": "Executor e implantação",
           "description": "Unidades independentes responsáveis por comunicação e imagem comercial de Íris.",
@@ -910,6 +940,17 @@
             { "key": "owns", "label": "Apolo decide", "value": "roteiro técnico · cenas · áudio · montagem · legendas · entrega audiovisual", "description": "Materializa o briefing aprovado em jobs auditáveis e reprodutíveis.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
             { "key": "input", "label": "Entrada obrigatória", "value": "estratégia aprovada · briefing de Dédalo · provas autorizadas", "description": "Alterações substantivas voltam para o agente proprietário antes da renderização.", "sourceReference": "video-management-service/src/main/resources/prompts/apollo/v2/production-mission.md" },
             { "key": "forbidden", "label": "Apolo não decide", "value": "mercado · posicionamento · preço · landing · integridade · publicação", "description": "Têmis revisa integridade e a autorização de gasto/publicação permanece humana.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "research-intelligence",
+          "title": "Biblioteca de Inteligência do Harness v1",
+          "description": "Cartões consultivos aplicados ao planejamento audiovisual antes do provider pago.",
+          "items": [
+            { "key": "collections", "label": "Coleções", "value": "vídeo · prazer-audio-visual", "description": "O backend entrega até quatro cartões aderentes ao briefing e preserva o hash integral das fontes.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/researchintelligence/v1/service/ResearchIntelligenceService.java" },
+            { "key": "use", "label": "Uso permitido", "value": "roteiro · ritmo · áudio · cenas · continuidade", "description": "Apolo declara os IDs aplicados e explica a influência no storyboard estruturado.", "sourceReference": "video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner.md" },
+            { "key": "gate", "label": "Gate determinístico", "value": "cartão entregue · coleção coberta · racional registrado", "description": "Referência inválida ou coleção ignorada bloqueia antes de qualquer renderização paga.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/service/ApolloStoryboardPlanner.java" },
+            { "key": "authority", "label": "Autoridade", "value": "PRODUCTION_ADVISORY", "description": "Pesquisa não comprova demanda ou venda e não autoriza gasto ou publicação.", "sourceReference": "docs/canonical/audio-video-studio-canon.v1.md" }
           ]
         },
         {

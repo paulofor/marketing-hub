@@ -13,6 +13,7 @@ import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstance
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
+import com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -100,6 +101,9 @@ public class AgentTaskService {
   private final Clock clock;
   private final MarketStrategicContextProvider marketStrategicContextProvider;
   private final AgentTaskTargetContextProvider taskTargetContextProvider;
+
+  @Autowired(required = false)
+  private ResearchIntelligenceService researchIntelligenceService;
 
   @Autowired(required = false)
   private CommunicationMaterializationContextProvider communicationMaterializationContextProvider =
@@ -1663,9 +1667,14 @@ public class AgentTaskService {
     return pendingResponse(claimedBy(agentKey, taskId));
   }
 
-  /** Converte uma tarefa reservada no contrato estável entregue ao executor. */
+  /** Converte uma tarefa reservada e inclui somente a rota de pesquisa do executor responsável. */
   private AgentTaskPendingResponse pendingResponse(AgentTask task) {
     BusinessProcessDefinition process = task.getProcessDefinition();
+    AgentTaskTargetResponse taskTarget =
+        taskTargetContextProvider
+            .resolve(task.getSourceReference(), process.getProcessCode())
+            .orElse(null);
+    String processContextJson = processContext(task);
     return new AgentTaskPendingResponse(
         task.getId(),
         task.getAssignedAgent().getAgentKey(),
@@ -1678,10 +1687,19 @@ public class AgentTaskService {
         task.getSourceReference(),
         task.getReceivedAt(),
         executionResource(task),
-        taskTargetContextProvider
-            .resolve(task.getSourceReference(), process.getProcessCode())
-            .orElse(null),
-        processContext(task));
+        taskTarget,
+        processContextJson,
+        researchIntelligenceService == null
+            ? null
+            : researchIntelligenceService.selectForAgentTask(
+                task.getAssignedAgent().getAgentKey(),
+                process.getProcessCode(),
+                task.getProcessActivityId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getSourceReference(),
+                processContextJson,
+                String.valueOf(taskTarget)));
   }
 
   /** Resolve o recurso exigido pela atividade e entrega instruções oficiais ao executor correto. */

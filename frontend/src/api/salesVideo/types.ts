@@ -379,6 +379,41 @@ export type VideoProjectStatus =
   | "APPROVED"
   | "ARCHIVED";
 
+export interface ResearchIntelligenceCard {
+  cardId: string;
+  collection: string;
+  title: string;
+  finding: string;
+  mechanism: string;
+  commercialApplication: string;
+  evidenceStrength: string;
+  publishedOn?: string | null;
+  validUntil?: string | null;
+  experimentHypothesis: string;
+  risks: string;
+  limits: string;
+  sourcePath: string;
+  sourceSha256: string;
+  evidenceKind: "EXTERNAL_RESEARCH";
+}
+
+export interface ResearchIntelligenceRoute {
+  agentKey: string;
+  agentName: string;
+  purpose: string;
+  authority: string;
+  selectionReason: string;
+  cards: ResearchIntelligenceCard[];
+}
+
+export interface ResearchIntelligenceSelection {
+  contractVersion: "HARNESS_RESEARCH_INTELLIGENCE_V1";
+  contextFingerprint: string;
+  totalAvailableCards: number;
+  routes: ResearchIntelligenceRoute[];
+  limitations: string[];
+}
+
 export interface VideoProject {
   id: number;
   tenantId?: string | null;
@@ -436,6 +471,7 @@ export interface VideoProject {
   updatedBy?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  researchIntelligence?: ResearchIntelligenceSelection | null;
 }
 
 export interface VideoProjectPayload {

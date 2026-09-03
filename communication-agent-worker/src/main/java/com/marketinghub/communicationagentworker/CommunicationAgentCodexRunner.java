@@ -243,7 +243,29 @@ public class CommunicationAgentCodexRunner {
             "Íris não pode concluir com saída vazia ou prova ausente.");
       }
       validateActivityOutput(output, contract.outputType());
+      validateResearchIntelligence(task, output);
     }
+  }
+
+  /** Confirma que a seleção de evidências registra somente cartões entregues na versão corrente. */
+  private static void validateResearchIntelligence(
+      Map<String, Object> task, JsonNode functionalOutput) {
+    if (task.get("researchIntelligence") == null) return;
+    JsonNode intelligence = new ObjectMapper().valueToTree(task.get("researchIntelligence"));
+    String contractVersion = intelligence.path("contractVersion").asText();
+    List<String> researchEvidence = new ArrayList<>();
+    for (JsonNode evidence : functionalOutput.path("evidenceSelection")) {
+      String reference = evidence.path("reference").asText();
+      if (!reference.startsWith("RI1-")) continue;
+      if (!contractVersion.equals(evidence.path("version").asText())) {
+        throw new IllegalArgumentException(
+            "Íris registrou cartão de pesquisa com versão de contrato divergente.");
+      }
+      researchEvidence.add(
+          reference + " " + evidence.path("purpose").asText() + " " + contractVersion);
+    }
+    ResearchIntelligenceUsageValidator.validate(
+        task, "communication-director", researchEvidence, true);
   }
 
   /** Bloqueia contratos ausentes antes de consumir modelo ou criar uma saída incompleta. */

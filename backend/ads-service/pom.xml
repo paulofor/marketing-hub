@@ -156,6 +156,14 @@
           <include>video-management-service/src/main/resources/prompts/**/*.json</include>
         </includes>
       </resource>
+      <resource>
+        <targetPath>research-library</targetPath>
+        <filtering>false</filtering>
+        <directory>${project.basedir}/../..</directory>
+        <includes>
+          <include>pesquisas/**/*.md</include>
+        </includes>
+      </resource>
     </resources>
     <plugins>
       <plugin>

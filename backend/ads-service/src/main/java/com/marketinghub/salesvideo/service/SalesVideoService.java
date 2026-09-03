@@ -96,6 +96,11 @@ public class SalesVideoService {
     return providerCatalogService.list();
   }
 
+  /** Expõe internamente a Plutus somente os modelos cujo preço precisa ser renovado. */
+  public List<SalesVideoProviderModelDto> listProviderModelsPendingPricing() {
+    return providerCatalogService.pendingPricingResearch();
+  }
+
   /** Atualiza curadoria e gates de homologação de um modelo de vídeo. */
   public SalesVideoProviderModelDto updateProviderModel(
       Long modelId, UpdateSalesVideoProviderModelRequest request) {

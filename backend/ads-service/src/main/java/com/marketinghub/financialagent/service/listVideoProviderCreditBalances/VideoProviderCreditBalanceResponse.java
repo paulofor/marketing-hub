@@ -24,4 +24,15 @@ public record VideoProviderCreditBalanceResponse(
     long unknownCostAttempts,
     long acceptedSceneRequests,
     List<VideoProviderSceneRequestResponse> sceneRequests,
-    String creditsUrl) {}
+    String creditsUrl,
+    String aggregatorName,
+    String accountKey,
+    String officialSnapshotStatus,
+    BigDecimal officialBalanceCredits,
+    BigDecimal reservedCredits,
+    BigDecimal officialAvailableCredits,
+    Long maxMonthlyCreditSpend,
+    String quotaSnapshotJson,
+    Instant officialObservedAt,
+    Instant officialExpiresAt,
+    String officialSourceUrl) {}

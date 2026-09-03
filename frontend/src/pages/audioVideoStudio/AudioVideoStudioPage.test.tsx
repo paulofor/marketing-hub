@@ -946,4 +946,134 @@ describe("AudioVideoStudioPage", () => {
       ),
     ).toBeTruthy();
   });
+
+  it("mostra o preflight e envia o perfil reutilizável escolhido para o novo ciclo", async () => {
+    const user = userEvent.setup();
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            salesVideoProfileId: 55,
+            videoCategory: "COMMERCIAL_SHORT",
+            contextType: "PDE",
+            productionMode: "STORY_FIRST_AUDIO_VIDEO",
+            targetChannel: "INSTAGRAM",
+            format: "VERTICAL_9_16",
+            title: "Vega #91",
+            objective: "Converter para diagnóstico",
+            targetDurationSeconds: 10,
+            status: "READY_FOR_SCRIPT",
+          },
+        });
+      }
+      if (url === "/api/sales-videos/projects/1/autonomy/v1/cycles") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 11,
+              videoProjectId: 1,
+              status: "FINANCIAL_BLOCKED",
+              budgetLimitUsd: 2,
+              knownCostUsd: 0,
+              learningObjective: "Validar retenção",
+              successCriterion: "CTA superior",
+              providerPreflight: {
+                id: 31,
+                status: "READY_WITH_BLOCKER",
+                productionProfile: "FINAL_CAMPAIGN",
+                aggregatorName: "Runway",
+                accountKey: "RUNWAY_PRIMARY",
+                routerConfigId: "marketing-hub-campaign-final-v1",
+                estimatedCredits: 80,
+                estimatedCostUsd: 0.8,
+                officialBalanceCredits: 50,
+                reservedCreditsSnapshot: 10,
+                availableCreditsSnapshot: 40,
+                maxMonthlyCreditSpend: 10000,
+                quotaSnapshotJson:
+                  '{"models":[{"model":"gen4_turbo","remainingDailyGenerations":19}]}',
+                failureCode: "INSUFFICIENT_AVAILABLE_CREDITS",
+                failureDetail: "Faltam 40 créditos para o lote.",
+                sourceUrl: "https://api.dev.runwayml.com/v1/organization",
+              },
+              financialDecision: "REJECTED",
+              financialReason: "Saldo insuficiente.",
+              recommendedAggregator: "Runway",
+              recommendedRoute: "RUNWAY_ROUTER:marketing-hub-campaign-final-v1",
+              estimatedCostUsd: 0.8,
+              costBenefitBasis: "Dry run oficial da rota final.",
+              creditAction: "RECHARGE_REQUIRED",
+              recommendedRechargeCredits: 40,
+              rechargeUrl: "https://dev.runwayml.com/",
+              monitoredTaskCount: 0,
+              monitoredCredits: 0,
+              budgetMonitorStatus: "WATCHING",
+              providerClipDurationSeconds: 10,
+              generationClipCount: 1,
+              editCutCount: 4,
+              textAppliedInPostProduction: true,
+              createdAt: "2026-09-03T16:00:00Z",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    expect(
+      await screen.findByRole("region", {
+        name: /preflight financeiro do provider/i,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText(/Runway · RUNWAY_PRIMARY/)).toBeTruthy();
+    expect(screen.getByText(/Faltam 40 créditos/)).toBeTruthy();
+    expect(
+      screen.getByRole("region", {
+        name: /parecer de custo-benefício de Plutus/i,
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /abrir conta indicada por Plutus/i }),
+    ).toHaveAttribute("target", "_blank");
+
+    await user.clear(screen.getByLabelText("Teto do ciclo em USD"));
+    await user.type(screen.getByLabelText("Teto do ciclo em USD"), "2");
+    await user.selectOptions(
+      screen.getByLabelText("Perfil de produção do ciclo"),
+      "DRAFT_INSTAGRAM",
+    );
+    await user.type(
+      screen.getByLabelText("Objetivo de aprendizado"),
+      "Validar novo gancho",
+    );
+    await user.type(
+      screen.getByLabelText("Critério de sucesso"),
+      "Aumentar retenção",
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: /solicitar produção a Apolo sob controle de Plutus/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/sales-videos/autonomy/v1/cycles",
+        expect.objectContaining({
+          videoProjectId: 1,
+          budgetLimitUsd: 2,
+          productionProfile: "DRAFT_INSTAGRAM",
+          learningObjective: "Validar novo gancho",
+          successCriterion: "Aumentar retenção",
+        }),
+      ),
+    );
+  });
 });

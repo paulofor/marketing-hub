@@ -276,6 +276,7 @@ elif scope == "changed":
     commands = [
         ["git", "diff", "--name-only", "HEAD", "--", str(root)],
         ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD", "--", str(root)],
+        ["git", "ls-files", "--others", "--exclude-standard", "--", str(root)],
     ]
     for command in commands:
         result = subprocess.run(command, check=False, text=True, capture_output=True)

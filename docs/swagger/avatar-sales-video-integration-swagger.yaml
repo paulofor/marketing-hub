@@ -22,6 +22,11 @@ tags:
     description: Endpoints de leitura de perfil usados pelo módulo de vídeo.
 
 paths:
+  /api/internal/sales-videos/provider-models/pricing/pending:
+    get:
+      summary: Lista para Plutus os preços ausentes ou vencidos sem contexto de tenant
+      responses:
+        '200': {description: Rotas pendentes de pesquisa oficial}
   /api/internal/sales-videos/provider-models/{modelId}/pricing:
     patch:
       summary: Registra evidência oficial de preço pesquisada por Plutus
@@ -63,11 +68,15 @@ paths:
                 type: array
                 items:
                   type: object
-                  required: [id, code, displayName, providerName, adapterKey, externalModelId, lifecycleStatus]
+                  required: [id, code, displayName, manufacturerName, aggregatorName, routeKey, providerName, adapterKey, externalModelId, lifecycleStatus]
                   properties:
                     id: {type: integer, format: int64}
                     code: {type: string}
                     displayName: {type: string}
+                    manufacturerName: {type: string}
+                    aggregatorName: {type: string}
+                    providerAccountKey: {type: string, nullable: true}
+                    routeKey: {type: string}
                     providerName: {type: string}
                     adapterKey: {type: string}
                     externalModelId: {type: string}

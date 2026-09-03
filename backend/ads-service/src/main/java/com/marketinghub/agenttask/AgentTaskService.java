@@ -626,6 +626,54 @@ public class AgentTaskService {
     return response(saved);
   }
 
+  /** Persiste a interação de modelo do gate pendente sem antecipar sua decisão funcional. */
+  @Transactional
+  public void recordPendingGateModelResult(
+      String agentKey,
+      Long taskId,
+      String rawModelResponse,
+      AgentTaskExecutionAuditRequest audit,
+      List<AgentTaskModelUsageRequest> modelUsages) {
+    AgentTask task = task(taskId);
+    if (!task.getAssignedAgent().getAgentKey().equals(agentKey.trim())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tarefa pertence a outro agente.");
+    }
+    if (!"GATE_DECISION".equals(task.getTaskKind()) || !"PENDING".equals(task.getGateStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O gate não está pendente para auditoria.");
+    }
+    if (trimToNull(task.getResultJson()) != null) {
+      if (task.getResultJson().equals(rawModelResponse)) return;
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O gate já possui outra resposta de modelo auditada.");
+    }
+    applyExecutionAudit(task, audit);
+    if (!"MODEL".equals(task.getExecutionMode())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O parecer de Plutus deve declarar execução de modelo.");
+    }
+    task.setResultJson(rawModelResponse);
+    applyModelUsage(task, modelUsages);
+    requireExecutionAuditShape(task, false);
+    Instant now = Instant.now(clock);
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Devolve a resposta já auditada para impedir nova chamada de modelo após falha de rede. */
+  @Transactional(readOnly = true)
+  public String pendingGateModelResult(String agentKey, Long taskId) {
+    AgentTask task = task(taskId);
+    if (!task.getAssignedAgent().getAgentKey().equals(agentKey.trim())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tarefa pertence a outro agente.");
+    }
+    if (!"GATE_DECISION".equals(task.getTaskKind())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "A tarefa não representa um gate.");
+    }
+    return task.getResultJson();
+  }
+
   /** Lista exclusivamente as tarefas destinadas ao agente solicitado. */
   @Transactional(readOnly = true)
   public List<AgentTaskResponse> inbox(String agentKey) {

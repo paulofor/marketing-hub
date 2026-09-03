@@ -33,6 +33,13 @@ public class SalesVideoProviderCatalogService {
     return repository.findAllByOrderByDisplayNameAsc().stream().map(this::toDto).toList();
   }
 
+  /** Lista para Plutus somente preços ausentes ou vencidos sem exigir contexto de tenant. */
+  public List<SalesVideoProviderModelDto> pendingPricingResearch() {
+    return list().stream()
+        .filter(model -> "PENDING".equals(model.pricingResearchStatus()) || model.pricingStale())
+        .toList();
+  }
+
   /** Atualiza a curadoria e impede ativação antes de todos os gates e do adaptador real. */
   public SalesVideoProviderModelDto update(Long id, UpdateSalesVideoProviderModelRequest request) {
     SalesVideoProviderModel model =
@@ -101,6 +108,10 @@ public class SalesVideoProviderCatalogService {
         model.getId(),
         model.getCode(),
         model.getDisplayName(),
+        model.getManufacturerName(),
+        model.getAggregatorName(),
+        model.getProviderAccountKey(),
+        model.getRouteKey(),
         model.getProviderName(),
         model.getProviderFamily(),
         model.getAdapterKey(),

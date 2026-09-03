@@ -12,4 +12,6 @@ public record VideoProductionCycleReview(
     String status,
     BigDecimal budgetLimitUsd,
     BigDecimal knownCostUsd,
-    String financialSnapshot) {}
+    String financialSnapshot,
+    Long agentTaskId,
+    String financialReviewRawResponse) {}

@@ -355,12 +355,21 @@
 
 .audio-video-studio-page__briefing {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
+  min-width: 0;
+}
+
+.audio-video-studio-page__briefing-grid,
+.audio-video-studio-page__briefing label {
+  min-width: 0;
 }
 
 .audio-video-studio-page__visual-bible {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
+  min-width: 0;
   border-color: #bfdbfe;
   background: #f8fafc;
   padding: 0.9rem;
@@ -368,7 +377,9 @@
 
 .audio-video-studio-page__stage-section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
+  min-width: 0;
   border-top: 1px solid #cbd5e1;
   padding-top: 1rem;
 }
@@ -379,7 +390,9 @@
 
 .audio-video-studio-page__asset-section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
+  min-width: 0;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
@@ -423,6 +436,49 @@
 .audio-video-studio-page__provider-card--selected {
   border-color: #7a2444;
   background: #fff8f3;
+}
+
+.audio-video-studio-page__provider-preflight {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--bs-border-color, #d8dee8);
+  border-radius: 0.75rem;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.audio-video-studio-page__provider-preflight h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.audio-video-studio-page__provider-preflight dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.audio-video-studio-page__provider-preflight dl > div {
+  min-width: 0;
+}
+
+.audio-video-studio-page__provider-preflight dt {
+  color: #526070;
+  font-size: 0.78rem;
+}
+
+.audio-video-studio-page__provider-preflight dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.audio-video-studio-page__provider-preflight pre {
+  max-width: 100%;
+  max-height: 14rem;
+  padding: 0.75rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .audio-video-studio-page__provider-card svg {
@@ -686,6 +742,9 @@
 .audio-video-studio-page__briefing input,
 .audio-video-studio-page__briefing select,
 .audio-video-studio-page__briefing textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -748,6 +807,7 @@
 .audio-video-studio-page__stage-heading div {
   display: grid;
   gap: 0.18rem;
+  min-width: 0;
 }
 
 .audio-video-studio-page__stage-heading h2 {
@@ -757,8 +817,10 @@
 
 .audio-video-studio-page__stage-heading p,
 .audio-video-studio-page__stage-heading span {
+  min-width: 0;
   max-width: 780px;
   margin: 0;
+  overflow-wrap: anywhere;
   color: #334155;
   line-height: 1.4;
 }

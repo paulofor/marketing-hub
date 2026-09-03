@@ -49,6 +49,17 @@ export type VideoProviderCreditBalance = {
     acceptedAt: string;
   }>;
   creditsUrl: string | null;
+  aggregatorName: string | null;
+  accountKey: string | null;
+  officialSnapshotStatus: string;
+  officialBalanceCredits: number | null;
+  reservedCredits: number | null;
+  officialAvailableCredits: number | null;
+  maxMonthlyCreditSpend: number | null;
+  quotaSnapshotJson: string | null;
+  officialObservedAt: string | null;
+  officialExpiresAt: string | null;
+  officialSourceUrl: string | null;
 };
 
 /** Consulta a fonte financeira transversal dos saldos de provedores de vídeo. */

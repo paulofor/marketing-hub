@@ -59,6 +59,14 @@ Para acompanhar os logs dos jobs, mantenha `video.jobs.polling-enabled=true` e v
 | `KLING_API_KEY_FILE` | Arquivo montado com a chave Kling usada pelo fallback de vídeo. | `/run/secrets/kling_api_key` |
 | `HEYGEN_API_KEY_FILE` | Arquivo montado com a chave HeyGen para o adapter HeyGen. | `/run/secrets/heygen_api_key` |
 | `RUNWAY_API_KEY_FILE` | Arquivo montado com a chave Runway para o módulo de vídeo. | `/run/secrets/runway_api_key` |
+| `VIDEO_PROVIDERS_RUNWAY_DRAFT_ROUTER_CONFIG_ID` | Slug imutável da configuração Runway Model Router homologada para rascunhos com foco em custo. | `marketing-hub-instagram-draft-v1` |
+| `VIDEO_PROVIDERS_RUNWAY_FINAL_ROUTER_CONFIG_ID` | Slug imutável da configuração Runway Model Router homologada para peças finais com foco em qualidade. | `marketing-hub-campaign-final-v1` |
+
+Os dois slugs precisam existir no mesmo projeto Runway da chave montada. Crie-os uma única vez no
+Developer Portal (ou pela API administrativa), com allowlist formada apenas por modelos ativos no
+catálogo do Hub e com `maxCreditsPerGeneration.video` explícito. O executor nunca cria, altera ou
+remove routers automaticamente: configuração ausente, modelo sem licença/QA ou teto nulo bloqueia
+antes da geração paga.
 
 ### Nota operacional sobre VEO
 

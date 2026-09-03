@@ -1241,6 +1241,40 @@ class AgentTaskServiceTest {
         .hasMessageContaining("não pode ser reaberto");
   }
 
+  /**
+   * Audita o modelo de um gate pendente e reutiliza a mesma resposta sem somar custo duas vezes.
+   */
+  @Test
+  void recordsPendingGateModelResultIdempotently() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent plutus = agent(4L, "financial-agent", "Plutus");
+    AgentTask task = new AgentTask();
+    task.setId(52L);
+    task.setAssignedAgent(plutus);
+    task.setTaskKind("GATE_DECISION");
+    task.setGateCode("VIDEO_PROVIDER_COST_BENEFIT_APPROVAL");
+    task.setGateStatus("PENDING");
+    task.setStatus("PENDING");
+    task.setCreatedAt(Instant.parse("2026-09-03T15:00:00Z"));
+    task.setUpdatedAt(task.getCreatedAt());
+    when(repository.findById(52L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    AgentTaskExecutionAuditRequest audit =
+        new AgentTaskExecutionAuditRequest(
+            "MODEL", "gpt-5.6-sol", "high", "regra\n\ncontexto", "regra", "contexto", List.of());
+    String raw = "{\"decision\":\"APPROVED\"}";
+
+    service.recordPendingGateModelResult("financial-agent", 52L, raw, audit, List.of());
+    service.recordPendingGateModelResult("financial-agent", 52L, raw, audit, List.of());
+
+    assertThat(task.getExecutionMode()).isEqualTo("MODEL");
+    assertThat(task.getExecutionPrompt()).isEqualTo("regra\n\ncontexto");
+    assertThat(task.getResultJson()).isEqualTo(raw);
+    assertThat(service.pendingGateModelResult("financial-agent", 52L)).isEqualTo(raw);
+    verify(repository).save(task);
+  }
+
   /** Reserva somente a primeira atividade do processo e registra o recebimento real. */
   @Test
   void claimsFirstEligibleProcessTask() {

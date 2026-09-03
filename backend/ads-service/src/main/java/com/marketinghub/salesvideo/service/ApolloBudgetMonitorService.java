@@ -5,6 +5,7 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProductionCycle;
+import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.springframework.stereotype.Component;
@@ -17,15 +18,18 @@ public class ApolloBudgetMonitorService {
   private final VideoProductionCycleRepository cycleRepository;
   private final StudioCostLedgerService ledgerService;
   private final SalesVideoJobRepository jobRepository;
+  private final VideoProviderFinancialPreflightService providerPreflightService;
 
   /** Inicializa o monitor com as fontes canônicas de ciclo e consumo por task. */
   public ApolloBudgetMonitorService(
       VideoProductionCycleRepository cycleRepository,
       StudioCostLedgerService ledgerService,
-      SalesVideoJobRepository jobRepository) {
+      SalesVideoJobRepository jobRepository,
+      VideoProviderFinancialPreflightService providerPreflightService) {
     this.cycleRepository = cycleRepository;
     this.ledgerService = ledgerService;
     this.jobRepository = jobRepository;
+    this.providerPreflightService = providerPreflightService;
   }
 
   /** Recalcula o ciclo após cada task aceita ou liquidada e persiste o alerta operacional. */
@@ -59,6 +63,15 @@ public class ApolloBudgetMonitorService {
             });
   }
 
+  /** Liquida a reserva quando o job chega a um estado terminal, mesmo sem consumo cobrado. */
+  @Transactional
+  public void settleReservation(Long cycleId) {
+    if (cycleId == null) return;
+    java.util.Map<String, Object> consumption = ledgerService.cycleProviderConsumption(cycleId);
+    providerPreflightService.settle(
+        cycleId, decimal(consumption.get("credits")), (BigDecimal) consumption.get("costUsd"));
+  }
+
   /** Aplica a fotografia financeira idempotente e decide se o teto foi violado. */
   private void reconcileCycle(
       VideoProductionCycle cycle, Long jobId, String providerTaskId, Instant observedAt) {
@@ -69,6 +82,8 @@ public class ApolloBudgetMonitorService {
     BigDecimal taskCost = (BigDecimal) consumption.get("costUsd");
     BigDecimal ledgerCost = ledgerService.cycleKnownLedgerCostUsd(cycle.getId());
     BigDecimal cost = greatest(taskCost, ledgerCost);
+    providerPreflightService.observeConsumption(
+        cycle.getId(), BigDecimal.valueOf(credits == null ? 0L : credits), cost);
     cycle.setMonitoredTaskCount(taskCount);
     cycle.setMonitoredCredits(credits == null ? 0L : credits);
     cycle.setKnownCostUsd(cost == null ? BigDecimal.ZERO : cost);
@@ -120,6 +135,11 @@ public class ApolloBudgetMonitorService {
     BigDecimal tasks = taskCost == null ? BigDecimal.ZERO : taskCost;
     BigDecimal ledger = ledgerCost == null ? BigDecimal.ZERO : ledgerCost;
     return tasks.max(ledger);
+  }
+
+  /** Converte créditos agregados sem truncar casas decimais fornecidas pelo provider. */
+  private BigDecimal decimal(Object value) {
+    return value instanceof Number number ? new BigDecimal(number.toString()) : BigDecimal.ZERO;
   }
 
   /** Evita texto nulo no alerta persistido. */

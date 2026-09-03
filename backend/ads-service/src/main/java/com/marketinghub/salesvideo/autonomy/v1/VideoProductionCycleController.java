@@ -29,10 +29,33 @@ public class VideoProductionCycleController {
     return service.list(projectId);
   }
 
+  /** Entrega ao executor os ciclos que ainda exigem saldo, quota e dry run oficiais. */
+  @GetMapping("/api/internal/sales-videos/autonomy/v1/provider-preflight/pending")
+  public List<VideoProviderPreflightContracts.PendingResponse> pendingProviderPreflight() {
+    return service.pendingProviderPreflight();
+  }
+
+  /** Recebe o snapshot sanitizado e o dry run sem permitir decisão financeira ao executor. */
+  @PostMapping("/api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/provider-preflight-result")
+  public VideoProductionCycleContracts.Response completeProviderPreflight(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody VideoProviderPreflightContracts.ResultRequest request) {
+    return service.completeProviderPreflight(cycleId, request);
+  }
+
   /** Entrega a Plutus apenas ciclos ainda bloqueados financeiramente. */
   @GetMapping("/api/internal/sales-videos/autonomy/v1/financial-review/pending")
-  public List<VideoProductionCycleContracts.Response> pending() {
+  public List<VideoProductionCycleContracts.FinancialReviewPendingResponse> pending() {
     return service.pendingFinancialReview();
+  }
+
+  /** Persiste a chamada de Plutus antes de aplicar sua decisão ao gate financeiro. */
+  @PostMapping("/api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-review-audit")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void auditFinancialReview(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody VideoProductionCycleContracts.FinancialReviewAuditRequest request) {
+    service.auditFinancialReview(cycleId, request);
   }
 
   /** Recebe a decisão financeira e enfileira Apolo somente quando aprovada. */

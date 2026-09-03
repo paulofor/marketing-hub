@@ -27,6 +27,18 @@ public class SalesVideoProviderModel {
   @Column(name = "display_name", nullable = false, length = 140)
   private String displayName;
 
+  @Column(name = "manufacturer_name", nullable = false, length = 120)
+  private String manufacturerName;
+
+  @Column(name = "aggregator_name", nullable = false, length = 120)
+  private String aggregatorName;
+
+  @Column(name = "provider_account_key", length = 80)
+  private String providerAccountKey;
+
+  @Column(name = "route_key", nullable = false, length = 120)
+  private String routeKey;
+
   @Column(name = "provider_name", nullable = false, unique = true, length = 80)
   private String providerName;
 

@@ -15,13 +15,17 @@ import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
+import com.marketinghub.salesvideo.VideoCreditReservation;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.VideoProviderPreflight;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
 import com.marketinghub.salesvideo.service.SalesVideoService;
+import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightData;
+import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,7 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class VideoProductionCycleService {
   private static final String PLUTUS_KEY = "financial-agent";
   private static final String APOLLO_KEY = "videomaker";
-  private static final String MUSA_PROVIDER = "RUNWAY_SEEDANCE_2_5";
+  private static final String RUNWAY_ROUTER = "RUNWAY_ROUTER";
   private static final String APOLLO_BLOCKED = "APOLLO_BLOCKED";
   private final VideoProductionCycleRepository repository;
   private final VideoProjectRepository projectRepository;
@@ -47,6 +51,7 @@ public class VideoProductionCycleService {
   private final SalesVideoService salesVideoService;
   private final FinancialAgentService financialAgentService;
   private final StudioCostLedgerService studioCostLedgerService;
+  private final VideoProviderFinancialPreflightService providerPreflightService;
   private final ObjectMapper objectMapper;
   private VideoProjectResearchIntelligenceMapper researchIntelligenceMapper;
 
@@ -59,6 +64,7 @@ public class VideoProductionCycleService {
       SalesVideoService salesVideoService,
       FinancialAgentService financialAgentService,
       StudioCostLedgerService studioCostLedgerService,
+      VideoProviderFinancialPreflightService providerPreflightService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.projectRepository = projectRepository;
@@ -67,6 +73,7 @@ public class VideoProductionCycleService {
     this.salesVideoService = salesVideoService;
     this.financialAgentService = financialAgentService;
     this.studioCostLedgerService = studioCostLedgerService;
+    this.providerPreflightService = providerPreflightService;
     this.objectMapper = objectMapper;
   }
 
@@ -77,7 +84,7 @@ public class VideoProductionCycleService {
     this.researchIntelligenceMapper = researchIntelligenceMapper;
   }
 
-  /** Abre um ciclo bloqueado e solicita a avaliação financeira de Plutus. */
+  /** Abre um ciclo bloqueado e solicita primeiro o preflight oficial do agregador. */
   @Transactional
   public VideoProductionCycleContracts.Response create(
       VideoProductionCycleContracts.CreateRequest request) {
@@ -93,7 +100,7 @@ public class VideoProductionCycleService {
     cycle.setCommercialPlanId(project.getCommercialPlanId());
     cycle.setExperimentId(project.getExperimentId());
     cycle.setRequestedBy(request.requestedBy().trim());
-    cycle.setStatus("PENDING_FINANCIAL_REVIEW");
+    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
     cycle.setBudgetLimitUsd(request.budgetLimitUsd());
     cycle.setKnownCostUsd(BigDecimal.ZERO);
     cycle.setLearningObjective(request.learningObjective().trim());
@@ -101,30 +108,74 @@ public class VideoProductionCycleService {
     cycle.setCreatedAt(now);
     cycle.setUpdatedAt(now);
     cycle = repository.save(cycle);
-    AgentTaskResponse task =
-        taskService.createGateByAgent(
-            new CreateAgentTaskByAgentRequest(
-                APOLLO_KEY,
-                PLUTUS_KEY,
-                "Avaliar orçamento do ciclo de vídeo #" + cycle.getId(),
-                "Validar teto de US$ "
-                    + cycle.getBudgetLimitUsd()
-                    + " para o projeto "
-                    + project.getTitle()
-                    + ". Nenhum provider pode ser acionado antes da aprovação.",
-                "HIGH",
-                "video-production-cycle:" + cycle.getId()),
-            "VIDEO_BUDGET_APPROVAL");
-    cycle.setAgentTaskId(task.id());
+    providerPreflightService.open(cycle.getId(), request.productionProfile());
+    return response(repository.save(cycle));
+  }
+
+  /** Lista os ciclos cujo saldo, quota e payload ainda precisam de dry run no executor. */
+  @Transactional(readOnly = true)
+  public List<VideoProviderPreflightContracts.PendingResponse> pendingProviderPreflight() {
+    return providerPreflightService.pending().stream()
+        .map(
+            preflight -> {
+              VideoProductionCycle cycle = cycle(preflight.getVideoProductionCycleId());
+              return providerPreflightPendingResponse(
+                  providerPreflightService.pendingResponse(
+                      preflight, cycle, project(cycle.getVideoProjectId())));
+            })
+        .toList();
+  }
+
+  /** Recebe o preflight e só então cria a tarefa financeira de Plutus. */
+  @Transactional
+  public VideoProductionCycleContracts.Response completeProviderPreflight(
+      Long cycleId, VideoProviderPreflightContracts.ResultRequest request) {
+    VideoProductionCycle cycle = cycle(cycleId);
+    if (!List.of("PENDING_PROVIDER_PREFLIGHT", "PROVIDER_PREFLIGHT_BLOCKED")
+        .contains(cycle.getStatus())) {
+      return response(cycle);
+    }
+    VideoProviderPreflight preflight =
+        providerPreflightService.complete(cycle, providerPreflightResult(request));
+    cycle.setUpdatedAt(Instant.now());
+    if (!List.of("READY", "READY_WITH_BLOCKER").contains(preflight.getStatus())) {
+      cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+      return response(repository.save(cycle));
+    }
+    if ("READY".equals(preflight.getStatus())) {
+      providerPreflightService.reserve(cycle);
+    }
+    if (cycle.getAgentTaskId() == null) {
+      cycle.setAgentTaskId(createFinancialGate(cycle, project(cycle.getVideoProjectId())).id());
+    }
+    cycle.setStatus("PENDING_FINANCIAL_REVIEW");
     return response(repository.save(cycle));
   }
 
   /** Lista a fila canônica que Plutus pode avaliar. */
   @Transactional(readOnly = true)
-  public List<VideoProductionCycleContracts.Response> pendingFinancialReview() {
+  public List<VideoProductionCycleContracts.FinancialReviewPendingResponse>
+      pendingFinancialReview() {
     return repository.findByStatusOrderByCreatedAtAsc("PENDING_FINANCIAL_REVIEW").stream()
-        .map(this::response)
+        .map(this::financialReviewPendingResponse)
         .toList();
+  }
+
+  /** Audita a interação de Plutus sem permitir que o callback avance o ciclo. */
+  @Transactional
+  public void auditFinancialReview(
+      Long cycleId, VideoProductionCycleContracts.FinancialReviewAuditRequest request) {
+    VideoProductionCycle cycle = cycle(cycleId);
+    if (!"PENDING_FINANCIAL_REVIEW".equals(cycle.getStatus()) || cycle.getAgentTaskId() == null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O ciclo não possui revisão financeira pendente.");
+    }
+    taskService.recordPendingGateModelResult(
+        PLUTUS_KEY,
+        cycle.getAgentTaskId(),
+        request.rawModelResponse(),
+        request.executionAudit(),
+        request.modelUsages());
   }
 
   /** Aplica a decisão de Plutus e, quando aprovada, cria o job de Apolo. */
@@ -143,22 +194,29 @@ public class VideoProductionCycleService {
     if (!List.of("APPROVED", "REJECTED").contains(decision)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Decisão financeira inválida.");
     }
-    cycle.setFinancialDecision(decision);
-    cycle.setFinancialReason(request.reason().trim());
-    cycle.setFinancialDecidedAt(Instant.now());
-    cycle.setUpdatedAt(Instant.now());
-    taskService.decideGate(
-        cycle.getAgentTaskId(), new DecideAgentGateRequest(PLUTUS_KEY, decision, request.reason()));
+    providerPreflightService.validateFinancialDecision(
+        cycle, providerFinancialDecision(request), decision);
     if ("REJECTED".equals(decision)) {
+      if (providerPreflightService.hasActiveReservation(cycle.getId())) {
+        providerPreflightService.releaseUnusedReservation(cycle.getId());
+      }
+      recordFinancialDecision(cycle, decision, request);
+      taskService.decideGate(
+          cycle.getAgentTaskId(),
+          new DecideAgentGateRequest(PLUTUS_KEY, decision, request.reason()));
       cycle.setStatus("FINANCIAL_BLOCKED");
       return response(repository.save(cycle));
     }
+    providerPreflightService.reserve(cycle);
+    recordFinancialDecision(cycle, decision, request);
+    taskService.decideGate(
+        cycle.getAgentTaskId(), new DecideAgentGateRequest(PLUTUS_KEY, decision, request.reason()));
     VideoProject project = project(cycle.getVideoProjectId());
     queueApollo(cycle, project, null);
     return response(repository.save(cycle));
   }
 
-  /** Reconcilia ciclos aprovados cujo job terminal falhou, sem reabrir o gate de Plutus. */
+  /** Reconcilia somente filas sem job; falhas pagas exigem novo preflight e nunca geram retry. */
   @Transactional
   public void reconcileApolloQueue() {
     repository
@@ -176,12 +234,20 @@ public class VideoProductionCycleService {
                   repository.save(cycle);
                   return;
                 }
-                if (mustBlockAutomaticReplacement(previous)) {
-                  cycle.setStatus(APOLLO_BLOCKED);
-                  cycle.setUpdatedAt(Instant.now());
-                  repository.save(cycle);
-                  return;
-                }
+                cycle.setStatus(APOLLO_BLOCKED);
+                cycle.setUpdatedAt(Instant.now());
+                repository.save(cycle);
+                return;
+              }
+              if (!providerPreflightService.hasActiveReservation(cycle.getId())) {
+                cycle.setStatus(APOLLO_BLOCKED);
+                cycle.setLastApolloFailureCode("PROVIDER_PREFLIGHT_REQUIRED");
+                cycle.setLastApolloFailureDetail(
+                    "Ciclo legado sem preflight e reserva vigentes; abra um novo ciclo pelo Estúdio.");
+                cycle.setLastApolloFailureAt(Instant.now());
+                cycle.setUpdatedAt(Instant.now());
+                repository.save(cycle);
+                return;
               }
               queueApollo(cycle, project(cycle.getVideoProjectId()), previous);
               repository.save(cycle);
@@ -226,28 +292,6 @@ public class VideoProductionCycleService {
     return null;
   }
 
-  /**
-   * Interrompe consumo após rejeição financeira/não recuperável ou depois da primeira substituição
-   * automática; material já renderizado deve seguir para avaliação, nunca para descarte e novo
-   * gasto.
-   */
-  private boolean mustBlockAutomaticReplacement(SalesVideoJob failedJob) {
-    String code = failedJob.getFailureCode() == null ? "" : failedJob.getFailureCode();
-    String detail = failedJob.getFailureDetail() == null ? "" : failedJob.getFailureDetail();
-    String metadata = failedJob.getMetadataJson() == null ? "" : failedJob.getMetadataJson();
-    String provider = failedJob.getProviderName() == null ? "" : failedJob.getProviderName();
-    if (provider.toUpperCase(java.util.Locale.ROOT).contains("LUMA")
-        && !metadata.contains("\"replacesFailedJobId\"")) {
-      return false;
-    }
-    return failedJob.getAsset() != null
-        || metadata.contains("\"replacesFailedJobId\"")
-        || code.contains("PAYMENT")
-        || code.contains("CREDIT")
-        || detail.contains("retryable=false")
-        || detail.toLowerCase(java.util.Locale.ROOT).contains("not enough credits");
-  }
-
   /** Persiste o diagnóstico do job terminal antes de criar uma substituição segura. */
   private void recordApolloFailure(VideoProductionCycle cycle, SalesVideoJob failedJob) {
     cycle.setLastFailedJobId(failedJob.getId());
@@ -257,13 +301,14 @@ public class VideoProductionCycleService {
         failedJob.getFinishedAt() == null ? Instant.now() : failedJob.getFinishedAt());
   }
 
-  /** Cria o job canônico de Apolo com plano de cenas e rastreabilidade do job substituído. */
+  /** Cria o job canônico de Apolo somente com reserva ativa e payload previamente validado. */
   private void queueApollo(
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
+    providerPreflightService.requireActiveReservation(cycle.getId());
     RequestVideoRenderRequest render = new RequestVideoRenderRequest();
     render.setRequestedBy("Apolo");
     render.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
-    render.setProviderName(preferredProvider(project));
+    render.setProviderName(RUNWAY_ROUTER);
     render.setExecutionMode(SalesVideoExecutionMode.TEST);
     render.setTargetDurationSeconds(Math.min(10, project.getTargetDurationSeconds()));
     render.setMetadataJson(metadata(cycle, project, previous));
@@ -299,12 +344,12 @@ public class VideoProductionCycleService {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
   }
 
-  /** Seleciona o provider permitido pelo plano comercial, sem reintroduzir Luma. */
+  /** Identifica o modelo preferido apenas para dimensionar clipes antes do roteamento externo. */
   private String preferredProvider(VideoProject project) {
     String plan = project.getProviderPlan();
     if (plan != null && plan.contains("RUNWAY_SEEDANCE_2_5")) return "RUNWAY_SEEDANCE_2_5";
     if (plan != null && plan.contains("RUNWAY_HAILUO_3")) return "RUNWAY_HAILUO_3";
-    return MUSA_PROVIDER;
+    return "RUNWAY_SEEDANCE_2_5";
   }
 
   /** Monta metadados auditáveis sem autorizar publicação. */
@@ -312,6 +357,8 @@ public class VideoProductionCycleService {
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     try {
       LinkedHashMap<String, Object> metadata = new LinkedHashMap<>();
+      VideoCreditReservation reservation =
+          providerPreflightService.requireActiveReservation(cycle.getId());
       int duration = project.getTargetDurationSeconds();
       int providerClipDuration = providerClipDurationSeconds(preferredProvider(project));
       List<LinkedHashMap<String, Object>> cuts = cutPlan(project, duration);
@@ -319,6 +366,17 @@ public class VideoProductionCycleService {
       metadata.put("videoProjectId", project.getId());
       metadata.put("budgetLimitUsd", cycle.getBudgetLimitUsd());
       metadata.put("financialApprovedBy", "Plutus");
+      metadata.put("providerCreditReservationId", reservation.getId());
+      metadata.put("providerReservedCredits", reservation.getReservedCredits());
+      metadata.put("providerReservedCostUsd", reservation.getReservedCostUsd());
+      metadata.put("providerReservationExpiresAt", reservation.getExpiresAt());
+      metadata.put(
+          "providerPreflightPayloadSha256", providerPreflightService.payloadSha256(cycle.getId()));
+      metadata.put("runwayRouterConfigId", providerPreflightService.routerConfigId(cycle.getId()));
+      metadata.put(
+          "runwayRouterRequestsJson", providerPreflightService.executionRequests(cycle.getId()));
+      metadata.put(
+          "runwaySelectedRoutesJson", providerPreflightService.selectedRoutes(cycle.getId()));
       metadata.put("publicationAllowed", false);
       metadata.put("targetDurationSeconds", duration);
       metadata.put("providerClipDurationSeconds", providerClipDuration);
@@ -429,6 +487,118 @@ public class VideoProductionCycleService {
     return value == null ? "" : value;
   }
 
+  /** Converte o contrato HTTP validado no dado interno consumido pelo preflight financeiro. */
+  private VideoProviderFinancialPreflightData.Result providerPreflightResult(
+      VideoProviderPreflightContracts.ResultRequest request) {
+    return new VideoProviderFinancialPreflightData.Result(
+        request.status(),
+        request.accountKey(),
+        request.routerConfigId(),
+        request.payloadSha256(),
+        request.executionRequestsJson(),
+        request.organizationSnapshotJson(),
+        request.routingResponseJson(),
+        request.selectedRoutesJson(),
+        request.estimatedCredits(),
+        request.officialBalanceCredits(),
+        request.maxMonthlyCreditSpend(),
+        request.quotaSnapshotJson(),
+        request.usageSnapshotJson(),
+        request.failureCode(),
+        request.failureDetail(),
+        request.sourceUrl(),
+        request.observedAt());
+  }
+
+  /** Converte a decisão HTTP de Plutus no subconjunto necessário ao domínio financeiro. */
+  private VideoProviderFinancialPreflightData.FinancialDecision providerFinancialDecision(
+      VideoProductionCycleContracts.FinancialDecisionRequest request) {
+    return new VideoProviderFinancialPreflightData.FinancialDecision(
+        request.recommendedAggregator(),
+        request.recommendedRoute(),
+        request.estimatedCostUsd(),
+        request.creditAction(),
+        request.recommendedRechargeCredits(),
+        request.rechargeUrl());
+  }
+
+  /** Converte a pendência interna no contrato exposto ao executor de vídeo. */
+  private VideoProviderPreflightContracts.PendingResponse providerPreflightPendingResponse(
+      VideoProviderFinancialPreflightData.Pending value) {
+    return new VideoProviderPreflightContracts.PendingResponse(
+        value.preflightId(),
+        value.cycleId(),
+        value.aggregatorName(),
+        value.accountKey(),
+        value.productionProfile(),
+        value.maxCredits(),
+        value.targetDurationSeconds(),
+        value.providerClipDurationSeconds(),
+        value.generationClipCount(),
+        value.aspectRatio(),
+        value.resolution(),
+        value.audio(),
+        value.title(),
+        value.objective(),
+        value.hookText(),
+        value.scriptText(),
+        value.scenePlan(),
+        value.characterBible(),
+        value.environmentBible(),
+        value.visualStyleGuide(),
+        value.continuityRules(),
+        value.learningObjective(),
+        value.successCriterion());
+  }
+
+  /** Converte snapshot e reserva internos para o relatório público do ciclo. */
+  private VideoProviderPreflightContracts.SnapshotResponse providerPreflightSnapshot(Long cycleId) {
+    VideoProviderFinancialPreflightData.Snapshot value = providerPreflightService.snapshot(cycleId);
+    if (value == null) return null;
+    return new VideoProviderPreflightContracts.SnapshotResponse(
+        value.id(),
+        value.status(),
+        value.productionProfile(),
+        value.aggregatorName(),
+        value.accountKey(),
+        value.routerConfigId(),
+        value.payloadSha256(),
+        value.selectedRoutesJson(),
+        value.estimatedCredits(),
+        value.estimatedCostUsd(),
+        value.maximumAuthorizedCredits(),
+        value.maximumAuthorizedCostUsd(),
+        value.officialBalanceCredits(),
+        value.reservedCreditsSnapshot(),
+        value.availableCreditsSnapshot(),
+        value.maxMonthlyCreditSpend(),
+        value.quotaSnapshotJson(),
+        value.failureCode(),
+        value.failureDetail(),
+        value.sourceUrl(),
+        value.rechargeUrl(),
+        value.observedAt(),
+        value.expiresAt(),
+        providerReservation(value.reservation()));
+  }
+
+  /** Converte a reserva interna no contrato sanitizado exibido pelo Marketing Hub. */
+  private VideoProviderPreflightContracts.ReservationResponse providerReservation(
+      VideoProviderFinancialPreflightData.Reservation value) {
+    if (value == null) return null;
+    return new VideoProviderPreflightContracts.ReservationResponse(
+        value.id(),
+        value.status(),
+        value.reservedCredits(),
+        value.reservedCostUsd(),
+        value.actualCredits(),
+        value.actualCostUsd(),
+        value.expiresAt(),
+        value.reservedAt(),
+        value.settledAt(),
+        value.releasedAt());
+  }
+
   /** Converte a entidade no contrato externo. */
   private VideoProductionCycleContracts.Response response(VideoProductionCycle cycle) {
     VideoProject project = project(cycle.getVideoProjectId());
@@ -445,9 +615,17 @@ public class VideoProductionCycleService {
         cycle.getKnownCostUsd(),
         cycle.getLearningObjective(),
         cycle.getSuccessCriterion(),
+        providerPreflightSnapshot(cycle.getId()),
         financialSnapshot(cycle),
         cycle.getFinancialDecision(),
         cycle.getFinancialReason(),
+        cycle.getRecommendedAggregator(),
+        cycle.getRecommendedRoute(),
+        cycle.getEstimatedCostUsd(),
+        cycle.getCostBenefitBasis(),
+        cycle.getCreditAction(),
+        cycle.getRecommendedRechargeCredits(),
+        cycle.getRechargeUrl(),
         cycle.getSalesVideoJobId(),
         cycle.getLastFailedJobId(),
         cycle.getLastApolloFailureCode(),
@@ -468,6 +646,25 @@ public class VideoProductionCycleService {
         cycle.getUpdatedAt());
   }
 
+  /** Monta a fila interna de Plutus sem carregar a resposta bruta nas telas administrativas. */
+  private VideoProductionCycleContracts.FinancialReviewPendingResponse
+      financialReviewPendingResponse(VideoProductionCycle cycle) {
+    return new VideoProductionCycleContracts.FinancialReviewPendingResponse(
+        cycle.getId(),
+        cycle.getVideoProjectId(),
+        cycle.getProductId(),
+        cycle.getCommercialPlanId(),
+        cycle.getExperimentId(),
+        cycle.getStatus(),
+        cycle.getBudgetLimitUsd(),
+        cycle.getKnownCostUsd(),
+        financialSnapshot(cycle),
+        cycle.getAgentTaskId(),
+        cycle.getAgentTaskId() == null
+            ? null
+            : taskService.pendingGateModelResult(PLUTUS_KEY, cycle.getAgentTaskId()));
+  }
+
   /** Congela para Plutus a mesma inteligência financeira oficial do planejamento. */
   private String financialSnapshot(VideoProductionCycle cycle) {
     try {
@@ -479,9 +676,43 @@ public class VideoProductionCycleService {
       snapshot.put("learningObjective", cycle.getLearningObjective());
       snapshot.put("successCriterion", cycle.getSuccessCriterion());
       snapshot.put("incrementalLedger", studioCostLedgerService.cycleLedger(cycle.getId()));
+      snapshot.putAll(providerPreflightService.financialContext(cycle.getId()));
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("Não foi possível congelar o contexto financeiro.", ex);
     }
+  }
+
+  /** Cria o gate financeiro somente depois de saldo, quota e custo do payload existirem. */
+  private AgentTaskResponse createFinancialGate(VideoProductionCycle cycle, VideoProject project) {
+    return taskService.createGateByAgent(
+        new CreateAgentTaskByAgentRequest(
+            APOLLO_KEY,
+            PLUTUS_KEY,
+            "Avaliar custo-benefício do ciclo de vídeo #" + cycle.getId(),
+            "Comparar rota, saldo, quota, custo previsto e histórico para o projeto "
+                + project.getTitle()
+                + ". Nenhuma chamada paga ao provider pode ocorrer antes da reserva.",
+            "HIGH",
+            "video-production-cycle:" + cycle.getId()),
+        "VIDEO_PROVIDER_COST_BENEFIT_APPROVAL");
+  }
+
+  /** Persiste a decisão financeira antes de qualquer transição de estado do ciclo. */
+  private void recordFinancialDecision(
+      VideoProductionCycle cycle,
+      String decision,
+      VideoProductionCycleContracts.FinancialDecisionRequest request) {
+    cycle.setFinancialDecision(decision);
+    cycle.setFinancialReason(request.reason().trim());
+    cycle.setRecommendedAggregator(request.recommendedAggregator());
+    cycle.setRecommendedRoute(request.recommendedRoute());
+    cycle.setEstimatedCostUsd(request.estimatedCostUsd());
+    cycle.setCostBenefitBasis(request.costBenefitBasis());
+    cycle.setCreditAction(request.creditAction());
+    cycle.setRecommendedRechargeCredits(request.recommendedRechargeCredits());
+    cycle.setRechargeUrl(request.rechargeUrl());
+    cycle.setFinancialDecidedAt(Instant.now());
+    cycle.setUpdatedAt(Instant.now());
   }
 }

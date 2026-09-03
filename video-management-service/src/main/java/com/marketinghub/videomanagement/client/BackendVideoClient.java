@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.client;
 
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
+import com.marketinghub.videomanagement.client.dto.ProviderPreflightJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.client.payload.JobClaimPayload;
@@ -10,6 +11,7 @@ import com.marketinghub.videomanagement.client.payload.JobFailurePayload;
 import com.marketinghub.videomanagement.client.payload.JobHeartbeatPayload;
 import com.marketinghub.videomanagement.client.payload.ApolloLearningObservationPayload;
 import com.marketinghub.videomanagement.client.payload.JobProgressPayload;
+import com.marketinghub.videomanagement.client.payload.ProviderPreflightResultPayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
 import com.marketinghub.videomanagement.service.VideoJobObservabilityService;
@@ -33,6 +35,8 @@ import java.util.function.Supplier;
 @Component
 public class BackendVideoClient {
     private static final ParameterizedTypeReference<List<SalesVideoJob>> JOB_LIST_TYPE =
+            new ParameterizedTypeReference<>() {};
+    private static final ParameterizedTypeReference<List<ProviderPreflightJob>> PREFLIGHT_LIST_TYPE =
             new ParameterizedTypeReference<>() {};
 
     private final Logger log = LoggerFactory.getLogger(BackendVideoClient.class);
@@ -58,6 +62,51 @@ public class BackendVideoClient {
             log.warn("Reconciliação de Apolo indisponível; consultando jobs já persistidos sem criar novos jobs", ex);
         }
         return fetchJobsByStatus(SalesVideoStatus.VIDEO_REQUESTED, limit);
+    }
+
+    /** Consulta o preflight mais antigo sem acessar banco ou rota administrativa de tenant. */
+    public ProviderPreflightJob fetchPendingProviderPreflight() {
+        try {
+            List<ProviderPreflightJob> pending = executeWithRetry(
+                    "list provider preflights",
+                    () -> authorized(webClient.get()
+                            .uri("/api/internal/sales-videos/autonomy/v1/provider-preflight/pending"))
+                            .retrieve()
+                            .onStatus(status -> !status.is2xxSuccessful(), response ->
+                                    mapError("Erro ao listar preflights de vídeo", response))
+                            .bodyToMono(PREFLIGHT_LIST_TYPE)
+                            .blockOptional()
+                            .orElse(Collections.emptyList()));
+            return pending.isEmpty() ? null : pending.getFirst();
+        } catch (BackendIntegrationException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Falha ao consultar preflight de provider no backend", ex);
+            throw wrap("Falha ao consultar preflight de provider", ex);
+        }
+    }
+
+    /** Persiste o resultado do preflight sem permitir que o executor reserve créditos. */
+    public void reportProviderPreflight(Long cycleId, ProviderPreflightResultPayload payload) {
+        try {
+            executeWithRetry("report provider preflight", () -> {
+                authorized(webClient.post()
+                                .uri(
+                                        "/api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/provider-preflight-result",
+                                        cycleId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(payload))
+                        .retrieve()
+                        .onStatus(status -> !status.is2xxSuccessful(), response ->
+                                mapError("Erro ao reportar preflight do ciclo " + cycleId, response))
+                        .toBodilessEntity()
+                        .block();
+                return null;
+            });
+        } catch (Exception ex) {
+            log.error("Falha ao reportar preflight; cycleId={}", cycleId, ex);
+            throw wrap("Falha ao reportar preflight do ciclo " + cycleId, ex);
+        }
     }
 
     /** Solicita ao backend a reconciliação idempotente dos ciclos aprovados antes do polling. */

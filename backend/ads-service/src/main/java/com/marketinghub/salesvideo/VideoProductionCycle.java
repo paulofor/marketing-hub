@@ -55,6 +55,27 @@ public class VideoProductionCycle {
   @Column(name = "financial_decided_at")
   private Instant financialDecidedAt;
 
+  @Column(name = "recommended_aggregator", length = 120)
+  private String recommendedAggregator;
+
+  @Column(name = "recommended_route", length = 191)
+  private String recommendedRoute;
+
+  @Column(name = "estimated_cost_usd", precision = 12, scale = 6)
+  private BigDecimal estimatedCostUsd;
+
+  @Column(name = "cost_benefit_basis", columnDefinition = "LONGTEXT")
+  private String costBenefitBasis;
+
+  @Column(name = "credit_action", length = 32)
+  private String creditAction;
+
+  @Column(name = "recommended_recharge_credits", precision = 14, scale = 4)
+  private BigDecimal recommendedRechargeCredits;
+
+  @Column(name = "recharge_url", length = 500)
+  private String rechargeUrl;
+
   @Column(name = "sales_video_job_id")
   private Long salesVideoJobId;
 

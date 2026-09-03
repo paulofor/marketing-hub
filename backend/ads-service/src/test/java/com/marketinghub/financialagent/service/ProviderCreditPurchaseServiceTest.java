@@ -12,8 +12,10 @@ import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepos
 import com.marketinghub.repository.jpa.financialagent.StudioProviderCreditPurchaseRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProviderAccountRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobEvent;
+import com.marketinghub.salesvideo.VideoProviderAccount;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -82,6 +84,7 @@ class ProviderCreditPurchaseServiceTest {
     StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
     SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
     SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
+    VideoProviderAccountRepository accounts = mock(VideoProviderAccountRepository.class);
     StudioProviderCreditPurchase purchase = new StudioProviderCreditPurchase();
     purchase.setProvider("RUNWAY");
     purchase.setPurchasedAt(Instant.parse("2026-08-13T12:00:00Z"));
@@ -97,9 +100,17 @@ class ProviderCreditPurchaseServiceTest {
         .thenReturn(List.of());
     when(events.findAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
     when(events.findExplicitAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
+    VideoProviderAccount account = new VideoProviderAccount();
+    account.setAggregatorName("Runway");
+    account.setAccountKey("RUNWAY_PRIMARY");
+    account.setSnapshotStatus("READY");
+    account.setOfficialBalanceCredits(new BigDecimal("900"));
+    account.setReservedCredits(new BigDecimal("200"));
+    account.setSourceUrl("https://api.dev.runwayml.com/v1/organization");
+    when(accounts.findByAccountKey("RUNWAY_PRIMARY")).thenReturn(Optional.of(account));
 
     var balance =
-        new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
+        new ProviderCreditPurchaseService(purchases, ledger, jobs, events, accounts)
             .listVideoProviderBalances()
             .getFirst();
 
@@ -107,6 +118,9 @@ class ProviderCreditPurchaseServiceTest {
     assertThat(balance.estimatedConsumedCredits()).isEqualTo(200L);
     assertThat(balance.estimatedAvailableCredits()).isEqualTo(800L);
     assertThat(balance.estimatedReferenceClips()).isEqualTo(16L);
+    assertThat(balance.officialBalanceCredits()).isEqualByComparingTo("900");
+    assertThat(balance.reservedCredits()).isEqualByComparingTo("200");
+    assertThat(balance.officialAvailableCredits()).isEqualByComparingTo("700");
   }
 
   /** Confirma que a recusa real posterior à recarga prevalece sobre a estimativa. */
@@ -117,6 +131,7 @@ class ProviderCreditPurchaseServiceTest {
     StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
     SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
     SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
+    VideoProviderAccountRepository accounts = mock(VideoProviderAccountRepository.class);
     StudioProviderCreditPurchase purchase = new StudioProviderCreditPurchase();
     purchase.setPurchasedAt(Instant.parse("2026-08-13T12:00:00Z"));
     purchase.setCreditsPurchased(20);
@@ -134,7 +149,7 @@ class ProviderCreditPurchaseServiceTest {
     when(events.findExplicitAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
 
     var balance =
-        new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
+        new ProviderCreditPurchaseService(purchases, ledger, jobs, events, accounts)
             .listVideoProviderBalances()
             .getFirst();
 
@@ -151,6 +166,7 @@ class ProviderCreditPurchaseServiceTest {
     StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
     SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
     SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
+    VideoProviderAccountRepository accounts = mock(VideoProviderAccountRepository.class);
     SalesVideoJob job = new SalesVideoJob();
     job.setId(21105L);
     job.setMetadataJson("{\"videoProductionCycleId\":6}");
@@ -181,7 +197,7 @@ class ProviderCreditPurchaseServiceTest {
     when(events.findSettledSceneEvents("RUNWAY")).thenReturn(List.of(settled));
 
     var balance =
-        new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
+        new ProviderCreditPurchaseService(purchases, ledger, jobs, events, accounts)
             .listVideoProviderBalances()
             .getFirst();
 

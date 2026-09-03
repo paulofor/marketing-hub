@@ -109,6 +109,7 @@ video:
         - RUNWAY_HAILUO_3
         - RUNWAY_GROK_IMAGINE_1_5
         - RUNWAY_ACT_TWO
+        - RUNWAY_ROUTER
         - RUNAWAY
       base-url: https://api.dev.runwayml.com
       api-key: ${RUNWAY_API_KEY:${VIDEO_PROVIDERS_RUNWAY_API_KEY:}}
@@ -117,6 +118,10 @@ video:
       model: ${VIDEO_PROVIDERS_RUNWAY_MODEL:gen4.5}
       create-path: /v1/image_to_video
       character-performance-path: /v1/character_performance
+      organization-path: /v1/organization
+      router-generate-path: /v1/generate/video
+      draft-router-config-id: ${VIDEO_PROVIDERS_RUNWAY_DRAFT_ROUTER_CONFIG_ID:marketing-hub-instagram-draft-v1}
+      final-router-config-id: ${VIDEO_PROVIDERS_RUNWAY_FINAL_ROUTER_CONFIG_ID:marketing-hub-campaign-final-v1}
       status-path-template: /v1/tasks/{taskId}
       ratio: "720:1280"
       duration-seconds: ${VIDEO_PROVIDERS_RUNWAY_DURATION_SECONDS:10}

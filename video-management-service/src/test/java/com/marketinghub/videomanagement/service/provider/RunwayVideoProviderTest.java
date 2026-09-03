@@ -15,11 +15,17 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoScriptStatus;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.math.BigDecimal;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -94,6 +100,132 @@ class RunwayVideoProviderTest {
                 .contains("added only in post-production");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/tasks/runway-task-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/runway-task-123.mp4");
+    }
+
+    /** Repete a requisição aprovada pelo dry run sem o marcador transitório nem mudança de payload. */
+    @Test
+    void shouldRenderTheExactPreflightedRouterRequest() throws Exception {
+        server.enqueue(json("""
+                {
+                  "id":"router-task-123",
+                  "dryRun":false,
+                  "routing": {
+                    "provider":"Runway",
+                    "model":"gen4_turbo",
+                    "configId":"marketing-hub-campaign-final-v1",
+                    "resolvedSettings":{"optimizeFor":"quality","priceCeiling":100},
+                    "resolvedInput":{"duration":10,"aspectRatio":"9:16","resolution":"720p"},
+                    "estimatedCost":{"credits":50}
+                  }
+                }
+                """));
+        server.enqueue(json("""
+                {
+                  "id":"router-task-123",
+                  "status":"SUCCEEDED",
+                  "output":["%s/download/router-task-123.mp4"]
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
+
+        ProviderArtifacts artifacts = provider.render(routerJob(false), profile(), new ProgressCallback() {
+            /** Ignora progresso textual e preserva somente os eventos financeiros do adapter. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Captura aceite e liquidação vinculados ao modelo escolhido pelo router. */
+            @Override
+            public void onProgress(
+                    Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvents.add(detailsJson);
+            }
+        });
+
+        RecordedRequest create = server.takeRequest();
+        assertThat(create.getPath()).isEqualTo("/v1/generate/video");
+        JsonNode body = new ObjectMapper().readTree(create.getBody().readUtf8());
+        assertThat(body.has("dryRun")).isFalse();
+        assertThat(body.path("configId").asText())
+                .isEqualTo("marketing-hub-campaign-final-v1");
+        assertThat(body.path("input").path("duration").asInt()).isEqualTo(10);
+        assertThat(body.path("input").path("promptText").asText()).isEqualTo("Cena Vega estável");
+        assertThat(financialEvents).anySatisfy(event -> assertThat(event)
+                .contains("\"providerTaskId\":\"router-task-123\"")
+                .contains("\"model\":\"gen4_turbo\"")
+                .contains("\"estimatedCredits\":50"));
+        assertThat(artifacts.metadata())
+                .containsEntry("model", "gen4_turbo")
+                .containsEntry("cost_usd", new BigDecimal("0.50"));
+    }
+
+    /** Bloqueia payload alterado depois do dry run antes de criar qualquer task faturável. */
+    @Test
+    void shouldRejectRouterPayloadWhoseHashWasChanged() {
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(routerJob(true), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_PREFLIGHT_HASH_MISMATCH");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Bloqueia antes da rede quando a reserva venceu enquanto o job aguardava a fila. */
+    @Test
+    void shouldRejectExpiredReservationBeforePaidRouterRequest() throws Exception {
+        RunwayVideoProvider provider =
+                new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(
+                        routerJob(false, Instant.now().minusSeconds(1)),
+                        profile(),
+                        (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_RESERVATION_EXPIRED");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Registra a task aceita e bloqueia continuação quando o Router muda após o dry run. */
+    @Test
+    void shouldStopAfterPaidRouterResponseDriftsFromPreflight() throws Exception {
+        server.enqueue(json("""
+                {
+                  "id":"router-drift-task",
+                  "dryRun":false,
+                  "routing": {
+                    "provider":"Google",
+                    "model":"veo3.1",
+                    "configId":"marketing-hub-campaign-final-v1",
+                    "resolvedSettings":{"optimizeFor":"quality","priceCeiling":100},
+                    "resolvedInput":{"duration":10},
+                    "estimatedCost":{"credits":80}
+                  }
+                }
+                """));
+        RunwayVideoProvider provider =
+                new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
+
+        assertThatThrownBy(() -> provider.render(routerJob(false), profile(), new ProgressCallback() {
+            /** Ignora progresso textual neste cenário de deriva. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Preserva o aceite financeiro ocorrido antes do bloqueio. */
+            @Override
+            public void onProgress(
+                    Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvents.add(detailsJson);
+            }
+        }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_ROUTING_DRIFT");
+
+        assertThat(server.getRequestCount()).isEqualTo(1);
+        assertThat(financialEvents).singleElement().asString()
+                .contains("\"providerTaskId\":\"router-drift-task\"")
+                .contains("\"estimatedCredits\":80");
     }
 
     /** Deve classificar saldo insuficiente com código financeiro estável e não recuperável. */
@@ -491,6 +623,54 @@ class RunwayVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria um job roteado com o payload exato e o hash congelados pelo backend. */
+    private SalesVideoJob routerJob(boolean tamperedHash) throws Exception {
+        return routerJob(tamperedHash, Instant.now().plusSeconds(600));
+    }
+
+    /** Cria um job roteado permitindo controlar a validade financeira do cenário. */
+    private SalesVideoJob routerJob(boolean tamperedHash, Instant reservationExpiresAt)
+            throws Exception {
+        SalesVideoJob base = job("RUNWAY_ROUTER");
+        LinkedHashMap<String, Object> input = new LinkedHashMap<>();
+        input.put("promptText", "Cena Vega estável");
+        input.put("negativePrompt", "flicker, jitter, embedded text");
+        input.put("duration", 10);
+        input.put("aspectRatio", "9:16");
+        input.put("resolution", "720p");
+        input.put("audio", false);
+        String requests = new ObjectMapper().writeValueAsString(List.of(Map.of(
+                "configId", "marketing-hub-campaign-final-v1",
+                "input", input)));
+        String hash = HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256").digest(requests.getBytes(StandardCharsets.UTF_8)));
+        String routes = new ObjectMapper().writeValueAsString(List.of(Map.of(
+                "manufacturer", "Runway",
+                "model", "gen4_turbo",
+                "aggregator", "Runway",
+                "accountKey", "RUNWAY_PRIMARY",
+                "routerConfigId", "marketing-hub-campaign-final-v1",
+                "batchRouteId", "RUNWAY_ROUTER:marketing-hub-campaign-final-v1",
+                "optimizeFor", "quality",
+                "estimatedCredits", 50,
+                "priceCeilingCredits", 100)));
+        String metadata = new ObjectMapper().writeValueAsString(Map.of(
+                "runwayRouterRequestsJson", requests,
+                "runwaySelectedRoutesJson", routes,
+                "providerPreflightPayloadSha256", tamperedHash ? "0".repeat(64) : hash,
+                "providerCreditReservationId", 91,
+                "providerReservedCredits", 100,
+                "providerReservedCostUsd", 1,
+                "providerReservationExpiresAt", reservationExpiresAt.toString()));
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                metadata, base.createdAt(), base.updatedAt());
     }
 
     /** Cria uma cena Runway sem imagem-base para validar a modalidade text-to-video. */

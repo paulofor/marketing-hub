@@ -55,6 +55,18 @@ public class FinancialAgentBackendClient {
         .toBodilessEntity();
   }
 
+  /** Persiste prompt, resposta e tokens de Plutus antes de decidir o gate do ciclo. */
+  public void recordVideoCycleAudit(Long cycleId, Map<String, Object> audit) {
+    client
+        .post()
+        .uri(
+            "/api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-review-audit",
+            cycleId)
+        .body(audit)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Solicita ao backend a conciliacao diaria idempotente do plano configurado. */
   public void ensureDaily(Long planId) {
     client
@@ -107,7 +119,7 @@ public class FinancialAgentBackendClient {
     List<ProviderPricingCandidate> models =
         client
             .get()
-            .uri("/api/sales-videos/provider-models")
+            .uri("/api/internal/sales-videos/provider-models/pricing/pending")
             .retrieve()
             .body(new org.springframework.core.ParameterizedTypeReference<>() {});
     if (models == null) return null;

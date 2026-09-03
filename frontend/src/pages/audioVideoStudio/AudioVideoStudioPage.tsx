@@ -77,6 +77,10 @@ function learningMetrics(value?: string) {
   }
 }
 
+function providerInstant(value?: string) {
+  return value ? new Date(value).toLocaleString("pt-BR") : "—";
+}
+
 type StudioBriefing = {
   productId: string;
   commercialPlanId: string;
@@ -1107,6 +1111,9 @@ export default function AudioVideoStudioPage() {
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
+  const [cycleProductionProfile, setCycleProductionProfile] = useState<
+    "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN"
+  >("FINAL_CAMPAIGN");
   const [cycleLearningObjective, setCycleLearningObjective] = useState("");
   const [cycleSuccessCriterion, setCycleSuccessCriterion] = useState("");
   const [salesVideoProfileId, setSalesVideoProfileId] = useState("");
@@ -2577,6 +2584,26 @@ export default function AudioVideoStudioPage() {
                       />
                     </label>
                     <label>
+                      Perfil de produção *
+                      <select
+                        aria-label="Perfil de produção do ciclo"
+                        value={cycleProductionProfile}
+                        onChange={(event) =>
+                          setCycleProductionProfile(
+                            event.target.value as
+                              "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN",
+                          )
+                        }
+                      >
+                        <option value="DRAFT_INSTAGRAM">
+                          Rascunho Instagram · otimizar custo
+                        </option>
+                        <option value="FINAL_CAMPAIGN">
+                          Final de campanha · otimizar qualidade
+                        </option>
+                      </select>
+                    </label>
+                    <label>
                       Objetivo de aprendizado *
                       <textarea
                         aria-label="Objetivo de aprendizado"
@@ -2608,6 +2635,7 @@ export default function AudioVideoStudioPage() {
                       onClick={() =>
                         createProductionCycle.mutate({
                           budgetLimitUsd: Number(cycleBudgetUsd),
+                          productionProfile: cycleProductionProfile,
                           learningObjective: cycleLearningObjective.trim(),
                           successCriterion: cycleSuccessCriterion.trim(),
                           requestedBy: "Usuário do Marketing Hub",
@@ -2620,9 +2648,10 @@ export default function AudioVideoStudioPage() {
                       Solicitar produção a Apolo sob controle de Plutus
                     </button>
                     <small>
-                      O teto não é meta de gasto. Plutus avalia antes de
-                      qualquer provider; o ledger registra apenas custos novos
-                      deste ciclo. Apolo trabalha em TEST e não publica.
+                      O teto não é meta de gasto. O preflight consulta e simula
+                      sem cobrança; Plutus avalia antes de qualquer geração
+                      paga. O ledger registra apenas custos novos deste ciclo.
+                      Apolo trabalha em TEST e não publica.
                     </small>
                     {createProductionCycle.isError ? (
                       <p role="alert">Não foi possível abrir o ciclo.</p>
@@ -2646,6 +2675,200 @@ export default function AudioVideoStudioPage() {
                           edição. Texto, legenda e CTA são aplicados na
                           pós-produção.
                         </p>
+                        {productionCycles.data[0].providerPreflight ? (
+                          <section
+                            className="audio-video-studio-page__provider-preflight"
+                            aria-label="Preflight financeiro do provider"
+                          >
+                            <h3>Preflight do agregador</h3>
+                            <p>
+                              <strong>
+                                {
+                                  productionCycles.data[0].providerPreflight
+                                    .aggregatorName
+                                }{" "}
+                                ·{" "}
+                                {
+                                  productionCycles.data[0].providerPreflight
+                                    .accountKey
+                                }
+                              </strong>
+                              {" · "}
+                              {
+                                productionCycles.data[0].providerPreflight
+                                  .status
+                              }
+                            </p>
+                            <dl>
+                              <div>
+                                <dt>Custo previsto</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .estimatedCredits ?? "—"}{" "}
+                                  créditos · US${" "}
+                                  {productionCycles.data[0].providerPreflight.estimatedCostUsd?.toFixed(
+                                    2,
+                                  ) ?? "—"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Reserva máxima protegida</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .maximumAuthorizedCredits ?? "—"}{" "}
+                                  créditos · US${" "}
+                                  {productionCycles.data[0].providerPreflight.maximumAuthorizedCostUsd?.toFixed(
+                                    2,
+                                  ) ?? "—"}
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Saldo oficial</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .officialBalanceCredits ?? "—"}{" "}
+                                  créditos
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Reservado por outros ciclos no snapshot</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .reservedCreditsSnapshot ?? "—"}{" "}
+                                  créditos
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Disponível para este ciclo</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .availableCreditsSnapshot ?? "—"}{" "}
+                                  créditos
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Limite mensal de compra da conta</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .maxMonthlyCreditSpend ?? "—"}{" "}
+                                  créditos
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Configuração do router</dt>
+                                <dd>
+                                  {productionCycles.data[0].providerPreflight
+                                    .routerConfigId ?? "Aguardando dry run"}
+                                </dd>
+                              </div>
+                              {productionCycles.data[0].providerPreflight
+                                .reservation ? (
+                                <div>
+                                  <dt>Reserva preventiva do ciclo</dt>
+                                  <dd>
+                                    {
+                                      productionCycles.data[0].providerPreflight
+                                        .reservation.status
+                                    }
+                                    {" · "}
+                                    {
+                                      productionCycles.data[0].providerPreflight
+                                        .reservation.reservedCredits
+                                    }{" "}
+                                    créditos
+                                    {productionCycles.data[0].providerPreflight
+                                      .reservation.actualCredits != null
+                                      ? ` · ${productionCycles.data[0].providerPreflight.reservation.actualCredits} consumidos`
+                                      : ""}
+                                    {" · "}
+                                    {productionCycles.data[0].providerPreflight
+                                      .reservation.settledAt
+                                      ? `liquidada em ${providerInstant(productionCycles.data[0].providerPreflight.reservation.settledAt)}`
+                                      : productionCycles.data[0]
+                                            .providerPreflight.reservation
+                                            .releasedAt
+                                        ? `liberada em ${providerInstant(productionCycles.data[0].providerPreflight.reservation.releasedAt)}`
+                                        : `válida até ${providerInstant(productionCycles.data[0].providerPreflight.reservation.expiresAt)}`}
+                                  </dd>
+                                </div>
+                              ) : null}
+                            </dl>
+                            {productionCycles.data[0].providerPreflight
+                              .failureDetail ? (
+                              <p role="alert">
+                                <strong>
+                                  {productionCycles.data[0].providerPreflight
+                                    .failureCode ?? "Bloqueio"}
+                                  :
+                                </strong>{" "}
+                                {
+                                  productionCycles.data[0].providerPreflight
+                                    .failureDetail
+                                }
+                              </p>
+                            ) : null}
+                            {productionCycles.data[0].providerPreflight
+                              .quotaSnapshotJson ? (
+                              <details>
+                                <summary>Ver saldo de quota por modelo</summary>
+                                <pre>
+                                  {
+                                    productionCycles.data[0].providerPreflight
+                                      .quotaSnapshotJson
+                                  }
+                                </pre>
+                              </details>
+                            ) : null}
+                            {productionCycles.data[0].providerPreflight
+                              .sourceUrl ? (
+                              <a
+                                href={
+                                  productionCycles.data[0].providerPreflight
+                                    .sourceUrl
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Conferir fonte oficial da conta
+                              </a>
+                            ) : null}
+                          </section>
+                        ) : null}
+                        {productionCycles.data[0].recommendedAggregator ? (
+                          <section
+                            className="audio-video-studio-page__provider-preflight"
+                            aria-label="Parecer de custo-benefício de Plutus"
+                          >
+                            <h3>Parecer de Plutus</h3>
+                            <p>
+                              <strong>
+                                {productionCycles.data[0].recommendedAggregator}
+                                {" · "}
+                                {productionCycles.data[0].recommendedRoute}
+                              </strong>
+                            </p>
+                            <p>{productionCycles.data[0].costBenefitBasis}</p>
+                            <p>
+                              Ação de crédito:{" "}
+                              <strong>
+                                {productionCycles.data[0].creditAction}
+                              </strong>
+                              {productionCycles.data[0]
+                                .recommendedRechargeCredits != null
+                                ? ` · recarga mínima sugerida: ${productionCycles.data[0].recommendedRechargeCredits} créditos`
+                                : ""}
+                            </p>
+                            {productionCycles.data[0].rechargeUrl ? (
+                              <a
+                                href={productionCycles.data[0].rechargeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Abrir conta indicada por Plutus
+                              </a>
+                            ) : null}
+                          </section>
+                        ) : null}
                         <p
                           role={
                             productionCycles.data[0].budgetMonitorStatus ===

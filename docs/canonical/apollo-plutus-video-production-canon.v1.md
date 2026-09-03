@@ -9,11 +9,11 @@ Apolo é o executor criativo dos vídeos do Estúdio. Plutus é o gate financeir
 1. Um usuário solicita pelo Estúdio um ciclo associado a produto, planejamento, projeto e perfil de vídeo.
 2. O backend persiste o ciclo como `PENDING_PROVIDER_PREFLIGHT` e publica a pendência de consulta da conta e das rotas candidatas para o executor de vídeo.
 3. O executor realiza somente leituras e simulações sem cobrança, e reporta ao backend o snapshot sanitizado de saldo, quota, elegibilidade e custo previsto.
-4. Com o snapshot vigente, o backend move o ciclo para `PENDING_FINANCIAL_REVIEW` e abre na mesa de Plutus uma tarefa de gate `VIDEO_BUDGET_APPROVAL`, com Apolo como solicitante.
+4. Com o snapshot vigente, o backend move o ciclo para `PENDING_FINANCIAL_REVIEW` e abre na mesa de Plutus uma tarefa de gate `VIDEO_PROVIDER_COST_BENEFIT_APPROVAL`, com Apolo como solicitante.
 5. Plutus decide pelo contrato formal do gate; alterar apenas o status da tarefa não libera provider nem consumo.
 6. Nenhum job pago de provider existe antes da decisão financeira.
 7. Somente a identidade técnica `financial-agent` pode registrar `APPROVED` ou `REJECTED`, sempre com motivo auditável.
-8. Uma aprovação reserva o custo previsto e cria em modo `TEST` o job do executor oficial de vídeo, vinculado ao ciclo e ao teto em USD. Uma rejeição termina em `FINANCIAL_BLOCKED`.
+8. Um preflight integralmente apto reserva preventivamente a soma dos tetos duros por geração — nunca apenas a estimativa otimista — sem criar job ou consumir o provider. A aprovação de Plutus usa essa reserva ainda vigente e cria em modo `TEST` o job do executor oficial de vídeo; uma rejeição libera a reserva e termina em `FINANCIAL_BLOCKED`.
 9. Apolo planeja, gera, inspeciona e devolve o candidato. O provider não decide próxima etapa.
 10. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto ou quando o custo do ciclo atual estiver desconhecido. Cobertura histórica incompleta deve gerar pendência de conciliação, mas não bloqueia sozinha um ciclo de descoberta com teto explícito, ledger segregado e custo incremental rastreável.
 11. QA independente decide qualidade. Apolo não aprova o próprio trabalho.
@@ -32,6 +32,22 @@ a pendência e persiste o resultado; Plutus compara e decide; Apolo executa apó
 não deve receber segredo nem chamar o provider de render diretamente. Falta de saldo pode gerar uma
 recomendação de recarga ao usuário, mas nunca compra automática, autobilling ou criação antecipada
 de job pago.
+
+O payload faturável deve ser estruturalmente equivalente ao payload do dry run, exceto pela ausência de
+`dryRun`. Cada rota persiste modelo, fabricante, agregador, conta, configuração, preferência,
+estimativa e teto. A resposta faturável deve repetir modelo, fabricante, configuração, preferência e
+teto; divergência interrompe as cenas restantes e preserva a task já aceita para conciliação. A
+reserva precisa estar vigente no início de cada cena, reservas vencidas sem consumo devem ser
+liberadas sob lock da conta e nenhum retry pago automático é permitido.
+
+Configurações Runway são recursos externos previamente provisionados. O código referencia slugs
+imutáveis, mas não cria ou altera allowlists automaticamente. Somente modelos `ACTIVE` com adapter,
+preço, licença comercial e QA verificados no catálogo do Marketing Hub podem superar o gate; modelo
+novo escolhido pelo Router permanece bloqueado até homologação explícita.
+
+O parecer de Plutus deve registrar prompt, resposta bruta, modelo e uso antes do callback funcional.
+Se o callback falhar, a próxima leitura reutiliza a resposta auditada e não consome uma segunda
+interação de IA.
 
 ## Contrato financeiro da fase de descoberta
 

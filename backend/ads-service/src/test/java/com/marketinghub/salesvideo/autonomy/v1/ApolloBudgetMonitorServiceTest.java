@@ -11,6 +11,7 @@ import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.service.ApolloBudgetMonitorService;
+import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,9 @@ class ApolloBudgetMonitorServiceTest {
             java.util.Map.of("taskCount", 2L, "credits", 600L, "costUsd", new BigDecimal("6.00")));
     when(ledger.cycleKnownLedgerCostUsd(6L)).thenReturn(new BigDecimal("6.00"));
 
-    new ApolloBudgetMonitorService(cycles, ledger, jobs).reconcile(6L, 21105L, "task-2");
+    new ApolloBudgetMonitorService(
+            cycles, ledger, jobs, mock(VideoProviderFinancialPreflightService.class))
+        .reconcile(6L, 21105L, "task-2");
 
     assertThat(cycle.getBudgetMonitorStatus()).isEqualTo("WATCHING");
     assertThat(cycle.getBudgetAlertCode()).isEqualTo("NEW_PROVIDER_TASK");
@@ -56,7 +59,9 @@ class ApolloBudgetMonitorServiceTest {
     when(ledger.cycleKnownLedgerCostUsd(6L)).thenReturn(new BigDecimal("6.00"));
     when(jobs.findById(21105L)).thenReturn(Optional.of(job));
 
-    new ApolloBudgetMonitorService(cycles, ledger, jobs).reconcile(6L, 21105L, "task-2");
+    new ApolloBudgetMonitorService(
+            cycles, ledger, jobs, mock(VideoProviderFinancialPreflightService.class))
+        .reconcile(6L, 21105L, "task-2");
 
     assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
     assertThat(cycle.getBudgetMonitorStatus()).isEqualTo("BLOCKED");
@@ -79,7 +84,9 @@ class ApolloBudgetMonitorServiceTest {
         .thenReturn(java.util.Map.of("taskCount", 0L, "credits", 0L, "costUsd", BigDecimal.ZERO));
     when(ledger.cycleKnownLedgerCostUsd(6L)).thenReturn(new BigDecimal("1.20"));
 
-    new ApolloBudgetMonitorService(cycles, ledger, jobs).reconcile(6L, 21105L, "legacy-job");
+    new ApolloBudgetMonitorService(
+            cycles, ledger, jobs, mock(VideoProviderFinancialPreflightService.class))
+        .reconcile(6L, 21105L, "legacy-job");
 
     assertThat(cycle.getKnownCostUsd()).isEqualByComparingTo("1.20");
     assertThat(cycle.getBudgetMonitorStatus()).isEqualTo("WATCHING");
@@ -94,7 +101,8 @@ class ApolloBudgetMonitorServiceTest {
     VideoProductionCycle cycle = cycle("20.00");
     when(cycles.findById(6L)).thenReturn(Optional.of(cycle));
 
-    new ApolloBudgetMonitorService(cycles, ledger, jobs)
+    new ApolloBudgetMonitorService(
+            cycles, ledger, jobs, mock(VideoProviderFinancialPreflightService.class))
         .blockForInsufficientCredits(6L, 21105L, "not enough credits");
 
     assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");

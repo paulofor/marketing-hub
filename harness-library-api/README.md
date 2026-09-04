@@ -4,6 +4,10 @@ API JSON externa para cadastrar e curar cartões da Biblioteca do Harness. Ela n
 escrita e leitura passa pelo backend principal do Marketing Hub, que continua responsável por
 versionamento, estados, validade, roteamento e auditoria.
 
+O guia operacional explica o objetivo comercial dos cards, o papel de Íris, Apolo, Psique e Têmis e
+o ciclo completo de cadastro com `curl`:
+<a href="docs/guia-uso-api-cards.md" target="_blank" rel="noopener noreferrer">Guia de uso da API de cards</a>.
+
 ## Fluxo editorial
 
 1. `POST /v1/cards` cria uma nova versão em `DRAFT`.

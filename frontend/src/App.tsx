@@ -192,6 +192,7 @@ import CreativeVideoReviewPage from "./pages/creative/CreativeVideoReviewPage";
 import WinningAdsLibraryPage from "./pages/creative/WinningAdsLibraryPage";
 import AudioVideoStudioPage from "./pages/audioVideoStudio/AudioVideoStudioPage";
 import AudioVideoStudioProjectsPage from "./pages/audioVideoStudio/AudioVideoStudioProjectsPage";
+import ResearchIntelligenceLibraryPage from "./pages/audioVideoStudio/ResearchIntelligenceLibraryPage";
 import AudioVideoStudioVideoAnalysisResultPage from "./pages/audioVideoStudio/AudioVideoStudioVideoAnalysisResultPage";
 import AudioVideoStudioVideosAnalysisPage from "./pages/audioVideoStudio/AudioVideoStudioVideosAnalysisPage";
 import PdeVideoProductionPage from "./pages/pdeVideoProduction/PdeVideoProductionPage";
@@ -560,6 +561,10 @@ export default function App() {
               <Route
                 path="/audio-video-studio/projects"
                 element={<AudioVideoStudioProjectsPage />}
+              />
+              <Route
+                path="/audio-video-studio/research-library"
+                element={<ResearchIntelligenceLibraryPage />}
               />
               <Route
                 path="/audio-video-studio/videos-analysis"

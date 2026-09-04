@@ -42,6 +42,7 @@ import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRende
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
 import {
   useCreateVideoProductionCycle,
+  useCreateVideoProviderPreflight,
   useVideoProductionCycles,
 } from "../../api/salesVideo/useVideoProductionCycles";
 import {
@@ -1110,6 +1111,8 @@ export default function AudioVideoStudioPage() {
   const evaluateStoryboardScene = useEvaluateStoryboardScene(editableProjectId);
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
+  const createProviderPreflight =
+    useCreateVideoProviderPreflight(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
   const [cycleProductionProfile, setCycleProductionProfile] = useState<
     "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN"
@@ -2375,7 +2378,7 @@ export default function AudioVideoStudioPage() {
                   <div className="audio-video-studio-page__research-heading">
                     <div>
                       <p className="audio-video-studio-page__eyebrow">
-                        Contexto seletivo e auditável
+                        Seleção contextual deste projeto
                       </p>
                       <h2>Biblioteca de Inteligência do Harness v1</h2>
                     </div>
@@ -2389,6 +2392,12 @@ export default function AudioVideoStudioPage() {
                     artigos orientam decisões, mas não contam como venda, prova
                     do produto ou autorização de gasto e publicação.
                   </p>
+                  <Link
+                    className="audio-video-studio-page__research-catalog-link"
+                    to="/audio-video-studio/research-library"
+                  >
+                    Ver o catálogo global usado por todos os projetos
+                  </Link>
                   <small className="audio-video-studio-page__research-fingerprint">
                     Seleção{" "}
                     {selectedProject.researchIntelligence.contractVersion}
@@ -2446,17 +2455,23 @@ export default function AudioVideoStudioPage() {
                     )}
                   </ul>
                 </div>
-              ) : briefing.experimentId === "91" ? (
+              ) : !editableProjectId ? (
                 <div className="audio-video-studio-page__panel audio-video-studio-page__research-intelligence">
                   <p className="audio-video-studio-page__eyebrow">
-                    Piloto Vega #91
+                    Biblioteca global do Marketing Hub
                   </p>
-                  <h2>Pesquisa será selecionada ao criar o projeto</h2>
+                  <h2>Pesquisa será selecionada para qualquer projeto</h2>
                   <p>
                     O backend compilará os artigos e entregará a cada agente
-                    somente a rota aderente. Salve o blueprint para ver cartões,
-                    fontes e hashes desta seleção.
+                    somente a rota aderente ao contexto. Salve o blueprint para
+                    ver cartões, fontes e hashes da seleção deste projeto.
                   </p>
+                  <Link
+                    className="audio-video-studio-page__research-catalog-link"
+                    to="/audio-video-studio/research-library"
+                  >
+                    Explorar a biblioteca completa
+                  </Link>
                 </div>
               ) : null}
             </section>
@@ -2623,39 +2638,83 @@ export default function AudioVideoStudioPage() {
                         }
                       />
                     </label>
-                    <button
-                      type="button"
-                      disabled={
-                        createProductionCycle.isPending ||
-                        !Number.isFinite(Number(cycleBudgetUsd)) ||
-                        Number(cycleBudgetUsd) <= 0 ||
-                        !cycleLearningObjective.trim() ||
-                        !cycleSuccessCriterion.trim()
-                      }
-                      onClick={() =>
-                        createProductionCycle.mutate({
-                          budgetLimitUsd: Number(cycleBudgetUsd),
-                          productionProfile: cycleProductionProfile,
-                          learningObjective: cycleLearningObjective.trim(),
-                          successCriterion: cycleSuccessCriterion.trim(),
-                          requestedBy: "Usuário do Marketing Hub",
-                        })
-                      }
-                    >
-                      {createProductionCycle.isPending ? (
-                        <span className="spinner-border spinner-border-sm" />
-                      ) : null}
-                      Solicitar produção a Apolo sob controle de Plutus
-                    </button>
-                    <small>
-                      O teto não é meta de gasto. O preflight consulta e simula
-                      sem cobrança; Plutus avalia antes de qualquer geração
-                      paga. O ledger registra apenas custos novos deste ciclo.
-                      Apolo trabalha em TEST e não publica.
-                    </small>
-                    {createProductionCycle.isError ? (
-                      <p role="alert">Não foi possível abrir o ciclo.</p>
-                    ) : null}
+                    <div className="audio-video-studio-page__cycle-actions">
+                      <div className="audio-video-studio-page__cycle-action">
+                        <button
+                          className="audio-video-studio-page__secondary-action"
+                          type="button"
+                          disabled={
+                            createProviderPreflight.isPending ||
+                            createProductionCycle.isPending ||
+                            !Number.isFinite(Number(cycleBudgetUsd)) ||
+                            Number(cycleBudgetUsd) <= 0 ||
+                            !cycleLearningObjective.trim() ||
+                            !cycleSuccessCriterion.trim()
+                          }
+                          onClick={() =>
+                            createProviderPreflight.mutate({
+                              budgetLimitUsd: Number(cycleBudgetUsd),
+                              productionProfile: cycleProductionProfile,
+                              learningObjective: cycleLearningObjective.trim(),
+                              successCriterion: cycleSuccessCriterion.trim(),
+                              requestedBy: "Usuário do Marketing Hub",
+                            })
+                          }
+                        >
+                          {createProviderPreflight.isPending ? (
+                            <span className="spinner-border spinner-border-sm" />
+                          ) : null}
+                          Executar somente preflight sem gerar vídeo
+                        </button>
+                        <small>
+                          Consulta saldo e quota e executa o dry run oficial.
+                          Não reserva créditos, não aciona Plutus e não cria job
+                          de geração.
+                        </small>
+                        {createProviderPreflight.isError ? (
+                          <p role="alert">
+                            Não foi possível executar o preflight.
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="audio-video-studio-page__cycle-action">
+                        <button
+                          className="audio-video-studio-page__primary-action"
+                          type="button"
+                          disabled={
+                            createProductionCycle.isPending ||
+                            createProviderPreflight.isPending ||
+                            !Number.isFinite(Number(cycleBudgetUsd)) ||
+                            Number(cycleBudgetUsd) <= 0 ||
+                            !cycleLearningObjective.trim() ||
+                            !cycleSuccessCriterion.trim()
+                          }
+                          onClick={() =>
+                            createProductionCycle.mutate({
+                              budgetLimitUsd: Number(cycleBudgetUsd),
+                              productionProfile: cycleProductionProfile,
+                              learningObjective: cycleLearningObjective.trim(),
+                              successCriterion: cycleSuccessCriterion.trim(),
+                              requestedBy: "Usuário do Marketing Hub",
+                            })
+                          }
+                        >
+                          {createProductionCycle.isPending ? (
+                            <span className="spinner-border spinner-border-sm" />
+                          ) : null}
+                          Solicitar produção a Apolo sob controle de Plutus
+                        </button>
+                        <small>
+                          O teto não é meta de gasto. O preflight consulta e
+                          simula sem cobrança; Plutus avalia antes de qualquer
+                          geração paga. O ledger registra apenas custos novos
+                          deste ciclo. Apolo trabalha em TEST e não publica.
+                        </small>
+                        {createProductionCycle.isError ? (
+                          <p role="alert">Não foi possível abrir o ciclo.</p>
+                        ) : null}
+                      </div>
+                    </div>
                     {productionCycles.data?.[0] ? (
                       <div>
                         <p>

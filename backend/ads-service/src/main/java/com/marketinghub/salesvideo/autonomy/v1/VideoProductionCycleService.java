@@ -88,6 +88,19 @@ public class VideoProductionCycleService {
   @Transactional
   public VideoProductionCycleContracts.Response create(
       VideoProductionCycleContracts.CreateRequest request) {
+    return create(request, "PENDING_PROVIDER_PREFLIGHT");
+  }
+
+  /** Abre uma verificação isolada que nunca reserva créditos nem enfileira geração. */
+  @Transactional
+  public VideoProductionCycleContracts.Response createProviderPreflight(
+      VideoProductionCycleContracts.CreateRequest request) {
+    return create(request, "PENDING_PROVIDER_PREFLIGHT_ONLY");
+  }
+
+  /** Persiste o contexto comum e abre o preflight oficial no modo solicitado. */
+  private VideoProductionCycleContracts.Response create(
+      VideoProductionCycleContracts.CreateRequest request, String initialStatus) {
     VideoProject project = project(request.videoProjectId());
     if (project.getSalesVideoProfileId() == null) {
       throw new ResponseStatusException(
@@ -100,7 +113,7 @@ public class VideoProductionCycleService {
     cycle.setCommercialPlanId(project.getCommercialPlanId());
     cycle.setExperimentId(project.getExperimentId());
     cycle.setRequestedBy(request.requestedBy().trim());
-    cycle.setStatus("PENDING_PROVIDER_PREFLIGHT");
+    cycle.setStatus(initialStatus);
     cycle.setBudgetLimitUsd(request.budgetLimitUsd());
     cycle.setKnownCostUsd(BigDecimal.ZERO);
     cycle.setLearningObjective(request.learningObjective().trim());
@@ -126,12 +139,16 @@ public class VideoProductionCycleService {
         .toList();
   }
 
-  /** Recebe o preflight e só então cria a tarefa financeira de Plutus. */
+  /** Recebe o preflight e respeita o modo isolado antes de qualquer reserva ou tarefa paga. */
   @Transactional
   public VideoProductionCycleContracts.Response completeProviderPreflight(
       Long cycleId, VideoProviderPreflightContracts.ResultRequest request) {
     VideoProductionCycle cycle = cycle(cycleId);
-    if (!List.of("PENDING_PROVIDER_PREFLIGHT", "PROVIDER_PREFLIGHT_BLOCKED")
+    boolean preflightOnly = "PENDING_PROVIDER_PREFLIGHT_ONLY".equals(cycle.getStatus());
+    if (!List.of(
+            "PENDING_PROVIDER_PREFLIGHT",
+            "PROVIDER_PREFLIGHT_BLOCKED",
+            "PENDING_PROVIDER_PREFLIGHT_ONLY")
         .contains(cycle.getStatus())) {
       return response(cycle);
     }
@@ -139,7 +156,12 @@ public class VideoProductionCycleService {
         providerPreflightService.complete(cycle, providerPreflightResult(request));
     cycle.setUpdatedAt(Instant.now());
     if (!List.of("READY", "READY_WITH_BLOCKER").contains(preflight.getStatus())) {
-      cycle.setStatus("PROVIDER_PREFLIGHT_BLOCKED");
+      cycle.setStatus(
+          preflightOnly ? "PROVIDER_PREFLIGHT_ONLY_BLOCKED" : "PROVIDER_PREFLIGHT_BLOCKED");
+      return response(repository.save(cycle));
+    }
+    if (preflightOnly) {
+      cycle.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
       return response(repository.save(cycle));
     }
     if ("READY".equals(preflight.getStatus())) {

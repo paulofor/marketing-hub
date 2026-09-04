@@ -1,5 +1,7 @@
 package com.marketinghub.researchintelligence.v1.service;
 
+import com.marketinghub.researchintelligence.v1.service.catalog.ResearchIntelligenceAgentPolicyResponse;
+import com.marketinghub.researchintelligence.v1.service.catalog.ResearchIntelligenceCatalogResponse;
 import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceCardResponse;
 import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceRouteResponse;
 import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceSelectionResponse;
@@ -80,6 +82,17 @@ public class ResearchIntelligenceService {
   ResearchIntelligenceService(Clock clock) {
     this.clock = Objects.requireNonNull(clock);
     this.catalog = loadCatalog(new PathMatchingResourcePatternResolver());
+  }
+
+  /** Expõe a fonte global única e as políticas que atendem qualquer projeto audiovisual. */
+  public ResearchIntelligenceCatalogResponse getCatalog() {
+    LocalDate evaluatedOn = LocalDate.now(clock);
+    List<ResearchIntelligenceCardResponse> cards = catalog.stream().map(this::response).toList();
+    List<ResearchIntelligenceAgentPolicyResponse> policies =
+        VIDEO_AGENT_ORDER.stream().map(this::agentPolicy).toList();
+    int activeCards = (int) catalog.stream().filter(this::isCurrent).count();
+    return new ResearchIntelligenceCatalogResponse(
+        CONTRACT_VERSION, evaluatedOn, catalog.size(), activeCards, policies, cards, LIMITATIONS);
   }
 
   /** Seleciona as quatro rotas consultivas que governam um projeto de vídeo. */
@@ -211,6 +224,17 @@ public class ResearchIntelligenceService {
         authority(agentKey),
         "Coleções " + String.join(", ", collections) + "; até quatro cartões por aderência e data.",
         selected.stream().limit(MAX_CARDS_PER_ROUTE).map(this::response).toList());
+  }
+
+  /** Descreve o roteamento global de um agente sem associá-lo a projeto específico. */
+  private ResearchIntelligenceAgentPolicyResponse agentPolicy(String agentKey) {
+    return new ResearchIntelligenceAgentPolicyResponse(
+        agentKey,
+        agentName(agentKey),
+        purpose(agentKey),
+        authority(agentKey),
+        COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of()),
+        MAX_CARDS_PER_ROUTE);
   }
 
   /** Exclui evidência vencida antes de formar qualquer contexto de agente. */

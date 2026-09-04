@@ -414,6 +414,25 @@ export interface ResearchIntelligenceSelection {
   limitations: string[];
 }
 
+export interface ResearchIntelligenceAgentPolicy {
+  agentKey: string;
+  agentName: string;
+  purpose: string;
+  authority: string;
+  collections: string[];
+  maxCardsPerContext: number;
+}
+
+export interface ResearchIntelligenceCatalog {
+  contractVersion: "HARNESS_RESEARCH_INTELLIGENCE_V1";
+  evaluatedOn: string;
+  totalCompiledCards: number;
+  activeCards: number;
+  agentPolicies: ResearchIntelligenceAgentPolicy[];
+  cards: ResearchIntelligenceCard[];
+  limitations: string[];
+}
+
 export interface VideoProject {
   id: number;
   tenantId?: string | null;

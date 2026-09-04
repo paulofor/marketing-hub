@@ -18,6 +18,8 @@ Comprovar localmente que nenhum job pago de Apolo é criado antes de o Marketing
 | Área | Cenário | Resultado esperado |
 |---|---|---|
 | Caminho feliz | Criar ciclo final 9:16, receber organização com saldo/quota, executar `dryRun`, reservar preventivamente e Plutus aprovar | Um único job é criado depois do parecer; payload real é idêntico ao preflight, exceto por `dryRun` |
+| Preflight isolado | Solicitar somente diagnóstico com saldo suficiente e Router apto | Snapshot termina visível sem reserva, tarefa de Plutus ou job de Apolo |
+| Preflight isolado bloqueado | Credencial, configuração, saldo ou quota impedir o diagnóstico | Causa fica visível; nenhuma reserva, tarefa financeira ou geração é criada |
 | Rejeição financeira | Plutus rejeitar um preflight apto | Reserva preventiva é liberada sem consumo e nenhum job é criado |
 | Prova do dry run | Resposta do router omitir `dryRun: true` | Callback recusado; nenhuma evidência de simulação é aceita como autorização financeira |
 | Roteamento | Duas cenas retornarem modelos/fabricantes distintos via Runway | Agregador e conta permanecem Runway; fabricante/modelo ficam registrados por cena |
@@ -40,6 +42,8 @@ Comprovar localmente que nenhum job pago de Apolo é criado antes de o Marketing
 | Drift faturável | Resposta paga mudar modelo, configuração, preferência, teto ou custo | Task aceita fica auditada e as cenas restantes são bloqueadas |
 | Métricas | Consultar relatório do ciclo | Exibe saldo oficial, reservado/disponível, quota, custo previsto/realizado e decisão |
 | Compatibilidade | Conta futura de outro agregador | Contrato aceita nova conta/rota sem alterar a governança do ciclo |
+| Retomada do deploy | Backend/frontend publicarem, mas o deploy do executor de vídeo falhar | Revisão própria do executor permanece pendente e o próximo run obrigatoriamente retoma seu deploy |
+| Recuperação de segredo | Bind legado do planejador existir como diretório não vazio | Diretório é preservado em backup e substituído atomicamente por arquivo `0600` sem apagar evidência |
 | Desktop | Chromium em viewport desktop | Preflight legível, botão com spinner e nenhum overflow horizontal |
 | Mobile | Chromium em iPhone 15 Pro e Pixel 7 | Saldo, quota, recomendação e bloqueio legíveis; ações utilizáveis por toque |
 
@@ -61,6 +65,35 @@ Após a última correção, duas rodadas locais completas e consecutivas termina
 | Jornadas visuais | desktop, iPhone 15 Pro e Pixel 7 aprovados | desktop, iPhone 15 Pro e Pixel 7 aprovados |
 
 O servidor Runway foi substituído por um test double que comprovou saldo conhecido, saldo insuficiente, quota, concorrência, `dryRun`, idempotência, drift faturável e sanitização da resposta. Não houve chamada à conta produtiva, compra de créditos, geração paga ou publicação.
+
+### Extensão operacional após o deploy parcial
+
+A verificação produtiva de 2026-09-03 confirmou que backend e frontend já estavam na revisão
+`2737a554`, mas o executor de vídeo permanecia na imagem `66ddd8d0`. O deploy anterior parou ao
+encontrar o bind da credencial do planejador como diretório não vazio; uma publicação posterior
+avançou o marcador global e deixou de retomar o executor. O banco continuava com zero preflights e a
+conta Runway em `UNKNOWN`, sem saldo oficial ou reserva.
+
+A correção passou a manter revisão independente do executor, recuperar o diretório legado sem apagar
+evidência e só marcar a publicação após confirmar imagem, health e endpoint. Também foi criado o
+preflight isolado do Estúdio, que termina sem reserva, Plutus ou job mesmo quando o Router responde
+`READY`.
+
+Depois de corrigir o agrupamento visual das duas ações, duas rodadas locais completas e consecutivas
+terminaram sem falhas:
+
+| Validação da extensão por rodada | Rodada 1 | Rodada 2 |
+|---|---:|---:|
+| Backend — Maven, Spotless, testes unitários, integração e ArchUnit | 2.282 testes; 0 falhas | 2.282 testes; 0 falhas |
+| Video Management Service | 100 testes; 0 falhas | 100 testes; 0 falhas |
+| Frontend — Vitest, TypeScript e build | 472 testes; 0 falhas | 472 testes; 0 falhas |
+| Deploy e GitHub Actions | retomada parcial, segredo, ShellCheck e 38 workflows aprovados | retomada parcial, segredo, ShellCheck e 38 workflows aprovados |
+| Imagens reproduzíveis | backend, frontend e executor construídos | backend, frontend e executor construídos |
+| Jornada do Estúdio | desktop, iPhone 15 Pro e Pixel 7; endpoint isolado sem chamada de produção | desktop, iPhone 15 Pro e Pixel 7; endpoint isolado sem chamada de produção |
+
+Não existem alterações Liquibase nesta extensão. A integração Runway permaneceu substituída pelos
+test doubles já contratados; a confirmação das duas configurações reais só deve ocorrer após o novo
+executor estar publicado pelo fluxo versionado.
 
 ## Critérios de conclusão
 

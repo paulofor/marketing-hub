@@ -17,7 +17,7 @@ public final class VideoProductionCycleContracts {
   /** Impede instanciação do agrupador de contratos. */
   private VideoProductionCycleContracts() {}
 
-  /** Solicita um ciclo sem autorizar consumo financeiro. */
+  /** Solicita um ciclo com teto financeiro ou um preflight com teto apenas analítico. */
   public record CreateRequest(
       @NotNull Long videoProjectId,
       @NotNull @DecimalMin(value = "0.01") BigDecimal budgetLimitUsd,

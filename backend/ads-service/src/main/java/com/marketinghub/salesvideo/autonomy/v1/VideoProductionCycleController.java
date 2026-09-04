@@ -23,6 +23,14 @@ public class VideoProductionCycleController {
     return service.create(request);
   }
 
+  /** Executa somente saldo, quota e dry run, sem reserva, Plutus ou geração paga. */
+  @PostMapping("/api/sales-videos/autonomy/v1/provider-preflights")
+  @ResponseStatus(HttpStatus.CREATED)
+  public VideoProductionCycleContracts.Response createProviderPreflight(
+      @Valid @RequestBody VideoProductionCycleContracts.CreateRequest request) {
+    return service.createProviderPreflight(request);
+  }
+
   /** Lista ciclos de um projeto para acompanhamento administrativo. */
   @GetMapping("/api/sales-videos/projects/{projectId}/autonomy/v1/cycles")
   public List<VideoProductionCycleContracts.Response> list(@PathVariable Long projectId) {

@@ -23,9 +23,9 @@ class ResearchIntelligenceServiceTest {
     service = new ResearchIntelligenceService();
   }
 
-  /** Entrega ao Vega #91 rotas pequenas, rastreáveis e específicas por responsabilidade. */
+  /** Entrega a qualquer projeto rotas pequenas, rastreáveis e específicas por responsabilidade. */
   @Test
-  void shouldSelectAuditableCardsForVega91Video() {
+  void shouldSelectAuditableCardsForAnyVideoProject() {
     var selection = service.selectForVideoProject(vega91());
 
     assertThat(selection.contractVersion()).isEqualTo(ResearchIntelligenceService.CONTRACT_VERSION);
@@ -55,6 +55,30 @@ class ResearchIntelligenceServiceTest {
     assertThat(selection.limitations()).anyMatch(limit -> limit.contains("não comprovam demanda"));
   }
 
+  /** Expõe o catálogo global uma única vez, separado das seleções de cada projeto. */
+  @Test
+  void shouldExposeGlobalCatalogForCurrentAndFutureProjects() {
+    var catalog = service.getCatalog();
+
+    assertThat(catalog.contractVersion()).isEqualTo(ResearchIntelligenceService.CONTRACT_VERSION);
+    assertThat(catalog.totalCompiledCards()).isGreaterThanOrEqualTo(56);
+    assertThat(catalog.activeCards())
+        .isPositive()
+        .isLessThanOrEqualTo(catalog.totalCompiledCards());
+    assertThat(catalog.cards()).hasSize(catalog.totalCompiledCards());
+    assertThat(catalog.agentPolicies())
+        .extracting("agentKey")
+        .containsExactly(
+            "communication-director", "videomaker", "customer-agent", "meta-ad-approver");
+    assertThat(catalog.agentPolicies())
+        .allSatisfy(
+            policy -> {
+              assertThat(policy.collections()).isNotEmpty();
+              assertThat(policy.maxCardsPerContext())
+                  .isEqualTo(ResearchIntelligenceService.MAX_CARDS_PER_ROUTE);
+            });
+  }
+
   /** Mantém seleção e impressão digital estáveis enquanto briefing e fontes não mudarem. */
   @Test
   void shouldKeepSelectionStableAndFingerprintTheContext() {
@@ -66,6 +90,35 @@ class ResearchIntelligenceServiceTest {
     assertThat(second).isEqualTo(first);
     assertThat(service.selectForVideoProject(other).contextFingerprint())
         .isNotEqualTo(first.contextFingerprint());
+  }
+
+  /**
+   * Seleciona a biblioteca para um projeto futuro sem depender do produto ou experimento piloto.
+   */
+  @Test
+  void shouldRouteResearchForFutureProjectWithoutVegaIdentifiers() {
+    VideoProject futureProject =
+        VideoProject.builder()
+            .id(847L)
+            .productId(10L)
+            .experimentId(203L)
+            .title("Clareza financeira em uma rotina de cinco minutos")
+            .objective("Converter atenção em diagnóstico financeiro")
+            .storyText("Um homem organiza decisões financeiras pelo celular")
+            .targetChannel("YOUTUBE_SHORTS")
+            .funnelStage("AWARENESS")
+            .commercialHypothesis("Visualizar a próxima ação reduz esforço percebido")
+            .scriptText("Dor, mecanismo, demonstração e CTA")
+            .scenePlan("Rotina; diagnóstico; resultado; CTA")
+            .build();
+
+    var selection = service.selectForVideoProject(futureProject);
+
+    assertThat(selection.routes()).hasSize(4);
+    assertThat(selection.routes())
+        .allSatisfy(route -> assertThat(route.cards()).hasSizeBetween(2, 4));
+    assertThat(selection.contextFingerprint())
+        .isNotEqualTo(service.selectForVideoProject(vega91()).contextFingerprint());
   }
 
   /** Não injeta pesquisa audiovisual em tarefas fora do domínio e limita a rota do agente. */

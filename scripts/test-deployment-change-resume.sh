@@ -9,9 +9,10 @@ trap 'rm -rf "${TEST_REPO}"' EXIT
 git -C "${TEST_REPO}" init -q
 git -C "${TEST_REPO}" config user.email test@sandbox.local
 git -C "${TEST_REPO}" config user.name "Deploy Contract Test"
-mkdir -p "${TEST_REPO}/backend/ads-service" "${TEST_REPO}/frontend" "${TEST_REPO}/pesquisas/video"
+mkdir -p "${TEST_REPO}/backend/ads-service" "${TEST_REPO}/frontend" "${TEST_REPO}/pesquisas/video" "${TEST_REPO}/video-management-service"
 printf 'base\n' > "${TEST_REPO}/backend/ads-service/app.txt"
 printf 'base\n' > "${TEST_REPO}/frontend/app.txt"
+printf 'base\n' > "${TEST_REPO}/video-management-service/app.txt"
 printf '# Artigo base\n' > "${TEST_REPO}/pesquisas/video/2026-09-01-base.md"
 git -C "${TEST_REPO}" add .
 git -C "${TEST_REPO}" commit -qm base
@@ -93,5 +94,79 @@ research_output="${TEST_REPO}/research-output"
 grep -Fxq 'backend=true' "${research_output}"
 grep -Fxq 'frontend=false' "${research_output}"
 grep -Fxq 'app_deploy=true' "${research_output}"
+
+video_deployed_revision="${research_revision}"
+printf 'video pendente\n' >> "${TEST_REPO}/video-management-service/app.txt"
+printf 'backend publicado no mesmo push\n' >> "${TEST_REPO}/backend/ads-service/app.txt"
+git -C "${TEST_REPO}" commit -qam 'app publicado e video falhou'
+partial_app_revision="$(git -C "${TEST_REPO}" rev-parse HEAD)"
+
+printf 'backend posterior\n' >> "${TEST_REPO}/backend/ads-service/app.txt"
+git -C "${TEST_REPO}" commit -qam 'backend posterior ao deploy parcial'
+video_recovery_head="$(git -C "${TEST_REPO}" rev-parse HEAD)"
+video_recovery_output="${TEST_REPO}/video-recovery-output"
+
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${partial_app_revision}" \
+    "${video_recovery_head}" \
+    "${video_recovery_output}" \
+    "${partial_app_revision}" \
+    "${video_deployed_revision}"
+)
+
+grep -Fxq 'backend=true' "${video_recovery_output}"
+grep -Fxq 'video=true' "${video_recovery_output}"
+grep -Fxq 'video_deploy=true' "${video_recovery_output}"
+
+video_current_output="${TEST_REPO}/video-current-output"
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${partial_app_revision}" \
+    "${video_recovery_head}" \
+    "${video_current_output}" \
+    "${partial_app_revision}" \
+    "${video_recovery_head}"
+)
+
+grep -Fxq 'video=false' "${video_current_output}"
+
+video_unknown_output="${TEST_REPO}/video-unknown-output"
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${partial_app_revision}" \
+    "${video_recovery_head}" \
+    "${video_unknown_output}" \
+    "${partial_app_revision}" \
+    "UNKNOWN"
+)
+
+grep -Fxq 'video=true' "${video_unknown_output}"
+grep -Fxq 'video_deploy=true' "${video_unknown_output}"
+
+printf 'ajuste no reconciliador\n' > "${TEST_REPO}/deploy-placeholder"
+mkdir -p "${TEST_REPO}/deploy/bin"
+mv "${TEST_REPO}/deploy-placeholder" \
+  "${TEST_REPO}/deploy/bin/reconcile-video-planner-secret.sh"
+git -C "${TEST_REPO}" add deploy/bin/reconcile-video-planner-secret.sh
+git -C "${TEST_REPO}" commit -qm 'ajusta reconciliador do segredo de video'
+video_descriptor_head="$(git -C "${TEST_REPO}" rev-parse HEAD)"
+video_descriptor_output="${TEST_REPO}/video-descriptor-output"
+
+(
+  cd "${TEST_REPO}"
+  bash "${DETECT_SCRIPT}" \
+    "${video_recovery_head}" \
+    "${video_descriptor_head}" \
+    "${video_descriptor_output}" \
+    "${video_recovery_head}" \
+    "${video_recovery_head}"
+)
+
+grep -Fxq 'video=false' "${video_descriptor_output}"
+grep -Fxq 'video_deploy=true' "${video_descriptor_output}"
 
 printf 'Contrato de retomada de modulos pendentes validado.\n'

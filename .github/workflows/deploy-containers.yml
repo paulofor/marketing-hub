@@ -53,6 +53,19 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${APP_VPS_IP}" >> ~/.ssh/known_hosts
 
+      - name: Add VIDEO VPS to known_hosts
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VIDEO_VPS_IP}" >> ~/.ssh/known_hosts; then
+              exit 0
+            fi
+            sleep $((attempt * 10))
+          done
+          echo "Não foi possível coletar a chave SSH da VIDEO VPS ${VIDEO_VPS_IP}:22." >&2
+          exit 1
+
       - id: filter
         name: Detect affected deployment targets
         shell: bash
@@ -94,12 +107,27 @@ jobs:
             sleep $((attempt * 5))
           done
 
+          deployed_video_revision="UNKNOWN"
+          for attempt in 1 2 3; do
+            if video_state="$(ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "if test -f ${DEPLOY_DIR}/.deployed-video-revision; then cat ${DEPLOY_DIR}/.deployed-video-revision; else docker inspect marketinghub-video-management --format '{{.Config.Image}}' 2>/dev/null || printf MISSING; fi")"; then
+              if [[ "${video_state}" =~ ^[0-9a-f]{40}$ ]]; then
+                deployed_video_revision="${video_state}"
+              elif [[ "${video_state}" =~ :([0-9a-f]{40})$ ]]; then
+                deployed_video_revision="${BASH_REMATCH[1]}"
+              fi
+              break
+            fi
+            sleep $((attempt * 5))
+          done
+
           printf 'Revisão observada do frontend: %s\n' "${deployed_frontend_revision}"
+          printf 'Revisão observada do executor de vídeo: %s\n' "${deployed_video_revision}"
           bash scripts/detect-deployment-changes.sh \
             "${base}" \
             "${GITHUB_SHA}" \
             "${GITHUB_OUTPUT}" \
-            "${deployed_frontend_revision}"
+            "${deployed_frontend_revision}" \
+            "${deployed_video_revision}"
 
       - name: Validate transactional app deploy contract
         run: |
@@ -646,21 +674,8 @@ jobs:
               "test -f '${secret_file}' && test -s '${secret_file}'"
             exit 0
           fi
-          printf '%s' "${OPENAI_API_KEY}" | ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} '
-            set -eu
-            secret_dir=/root/infra/openai-token
-            secret_file=${secret_dir}/openai_api_key
-            install -d -m 700 "${secret_dir}"
-            if [ -d "${secret_file}" ]; then
-              rmdir "${secret_file}"
-            fi
-            temporary_file=${secret_dir}/.openai_api_key.tmp.$$
-            umask 077
-            dd of="${temporary_file}" status=none
-            test -s "${temporary_file}"
-            chmod 600 "${temporary_file}"
-            mv "${temporary_file}" "${secret_file}"
-          '
+          printf '%s' "${OPENAI_API_KEY}" | ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
+            "OPENAI_API_KEY_HOST_FILE='${secret_file}' /bin/bash '${DEPLOY_DIR}/bin/reconcile-video-planner-secret.sh'"
 
       - name: Apply video-management stack
         env:
@@ -681,6 +696,39 @@ jobs:
           retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-video-only.sh"
           retry timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
             "IMAGE_TAG=${GIT_SHA} VIDEO_PULL=${{ needs.detect-changes.outputs.video }} VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"
+
+      - name: Require healthy video management revision
+        env:
+          GIT_SHA: ${{ github.sha }}
+          VIDEO_CHANGED: ${{ needs.detect-changes.outputs.video }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
+            "EXPECTED_IMAGE='${VIDEO_IMAGE}:${GIT_SHA}' VIDEO_CHANGED='${VIDEO_CHANGED}' /bin/bash -s" <<'REMOTE'
+          set -euo pipefail
+          for attempt in $(seq 1 24); do
+            health="$(docker inspect marketinghub-video-management --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || true)"
+            image="$(docker inspect marketinghub-video-management --format '{{.Config.Image}}' 2>/dev/null || true)"
+            if [[ "${health}" == "healthy" ]] \
+              && [[ "${VIDEO_CHANGED}" != "true" || "${image}" == "${EXPECTED_IMAGE}" ]] \
+              && curl -fsS --max-time 10 http://127.0.0.1:8095/api/status >/dev/null; then
+              printf 'Executor de vídeo saudável com imagem %s.\n' "${image}"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Executor de vídeo não confirmou saúde e revisão dentro do prazo." >&2
+          docker inspect marketinghub-video-management --format 'status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{end}} image={{.Config.Image}}' 2>/dev/null || true
+          exit 1
+          REMOTE
+
+      - name: Mark successful VIDEO revision
+        env:
+          GIT_SHA: ${{ github.sha }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
+            "printf '%s\n' '${GIT_SHA}' > '${DEPLOY_DIR}/.deployed-video-revision.tmp' && mv '${DEPLOY_DIR}/.deployed-video-revision.tmp' '${DEPLOY_DIR}/.deployed-video-revision'"
 
       - name: Remove temporary GitHub Container Registry credentials
         if: always() && needs.detect-changes.outputs.video == 'true'

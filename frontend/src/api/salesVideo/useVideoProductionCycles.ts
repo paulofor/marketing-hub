@@ -112,3 +112,27 @@ export function useCreateVideoProductionCycle(projectId?: number) {
       }),
   });
 }
+
+/** Executa saldo, quota e dry run sem reservar créditos ou gerar vídeo. */
+export function useCreateVideoProviderPreflight(projectId?: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      budgetLimitUsd: number;
+      productionProfile: "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN";
+      learningObjective: string;
+      successCriterion: string;
+      requestedBy: string;
+    }) => {
+      const { data } = await axios.post<VideoProductionCycle>(
+        "/api/sales-videos/autonomy/v1/provider-preflights",
+        { videoProjectId: projectId, ...payload },
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["video-production-cycles", projectId],
+      }),
+  });
+}

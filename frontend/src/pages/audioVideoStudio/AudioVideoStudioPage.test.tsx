@@ -483,7 +483,7 @@ describe("AudioVideoStudioPage", () => {
       (screen.getByLabelText(/id do experimento/i) as HTMLInputElement).value,
     ).toBe("91");
     expect(
-      screen.getByText(/pesquisa será selecionada ao criar/i),
+      screen.getByText(/pesquisa será selecionada para qualquer projeto/i),
     ).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /criar blueprint/i }));
@@ -1056,6 +1056,24 @@ describe("AudioVideoStudioPage", () => {
     await user.type(
       screen.getByLabelText("Critério de sucesso"),
       "Aumentar retenção",
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: /executar somente preflight sem gerar vídeo/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/sales-videos/autonomy/v1/provider-preflights",
+        expect.objectContaining({
+          videoProjectId: 1,
+          budgetLimitUsd: 2,
+          productionProfile: "DRAFT_INSTAGRAM",
+          learningObjective: "Validar novo gancho",
+          successCriterion: "Aumentar retenção",
+        }),
+      ),
     );
     await user.click(
       screen.getByRole("button", {

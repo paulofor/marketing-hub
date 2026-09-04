@@ -2687,6 +2687,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   v4 como baseline imutável, reatestam o catálogo candidato e repetem as provas específicas de cada
   produto; os testes exigem que somente v5 e sua baseline v4 entrem no prompt, sem reabrir versões
   históricas ou misturar produtos.
+- **Paridade entre revisores fechada em 2026-09-04:** a mesma atualização alinhou os testes de Têmis,
+  mas deixou os contratos de Psique esperando v4 e v3. O PR #5106 foi mesclado com o check do
+  Customer Agent já vermelho e o `main` repetiu as duas falhas determinísticas. Os testes de Psique
+  agora exigem a mesma cadeia vigente v5 → v4, rejeitam v3 e continuam verificando segregação por
+  produto e o teto preventivo do prompt. Assim, os dois revisores validam o mesmo pacote comercial
+  sem reintroduzir evidência histórica apenas para satisfazer o CI.
 - **Recorrência de Psique fechada em 2026-09-01:** as tarefas #283 e #299 da Vega receberam,
   respectivamente, 1.285.136 e 1.320.451 caracteres e falharam antes do primeiro turno. O manifesto
   v1 transportava integralmente arquivos amplos e redundantes — incluindo o registro global de

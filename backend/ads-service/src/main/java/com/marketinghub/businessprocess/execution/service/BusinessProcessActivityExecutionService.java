@@ -32,6 +32,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.service.ProductOriginExecutionReferenceResolver;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -86,6 +87,7 @@ public class BusinessProcessActivityExecutionService {
   private final GeraLandingStageExecutionRepository landingExecutionRepository;
   private final ProductRepository productRepository;
   private final ExperimentRepository experimentRepository;
+  private final ProductOriginExecutionReferenceResolver originExecutionReferenceResolver;
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
   private final List<BackendProductProcessActivityExecutor> backendActivityExecutors;
@@ -104,6 +106,7 @@ public class BusinessProcessActivityExecutionService {
       GeraLandingStageExecutionRepository landingExecutionRepository,
       ProductRepository productRepository,
       ExperimentRepository experimentRepository,
+      ProductOriginExecutionReferenceResolver originExecutionReferenceResolver,
       AgentTaskService agentTaskService,
       ObjectMapper objectMapper,
       List<BackendProductProcessActivityExecutor> backendActivityExecutors,
@@ -118,11 +121,46 @@ public class BusinessProcessActivityExecutionService {
     this.landingExecutionRepository = landingExecutionRepository;
     this.productRepository = productRepository;
     this.experimentRepository = experimentRepository;
+    this.originExecutionReferenceResolver = originExecutionReferenceResolver;
     this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
     this.backendActivityExecutors = List.copyOf(backendActivityExecutors);
     this.humanActivityExecutors = List.copyOf(humanActivityExecutors);
     this.agentActivityReadinessProviders = List.copyOf(agentActivityReadinessProviders);
+  }
+
+  /** Mantém testes legados isolados da consulta de linhagem factual do produto. */
+  BusinessProcessActivityExecutionService(
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
+      AgentTaskRepository taskRepository,
+      AgentTaskActivityCoverageRepository activityCoverageRepository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
+      CommercialPlanRepository commercialPlanRepository,
+      GeraLandingStageExecutionRepository landingExecutionRepository,
+      ProductRepository productRepository,
+      ExperimentRepository experimentRepository,
+      AgentTaskService agentTaskService,
+      ObjectMapper objectMapper,
+      List<BackendProductProcessActivityExecutor> backendActivityExecutors,
+      List<HumanProductProcessActivityExecutor> humanActivityExecutors,
+      List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders) {
+    this(
+        processRepository,
+        activityDefinitionRepository,
+        taskRepository,
+        activityCoverageRepository,
+        activityInstanceRepository,
+        commercialPlanRepository,
+        landingExecutionRepository,
+        productRepository,
+        experimentRepository,
+        null,
+        agentTaskService,
+        objectMapper,
+        backendActivityExecutors,
+        humanActivityExecutors,
+        agentActivityReadinessProviders);
   }
 
   /** Mantém testes que configuram executores backend e gates de agente sem decisão humana. */
@@ -266,12 +304,21 @@ public class BusinessProcessActivityExecutionService {
     Product product = requiredProduct(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<Experiment> productExperiments = productExperiments(productId);
+    String originExecutionReference = originExecutionReference(productId);
     List<AgentTask> tasks =
         productProcessTasks(
-            productPlans, productExperiments, productId, selectedProcess.getProcessCode());
+            productPlans,
+            productExperiments,
+            productId,
+            originExecutionReference,
+            selectedProcess.getProcessCode());
     List<BusinessProcessActivityInstance> instances =
         productProcessActivityInstances(
-            productPlans, productExperiments, productId, selectedProcess.getProcessCode());
+            productPlans,
+            productExperiments,
+            productId,
+            originExecutionReference,
+            selectedProcess.getProcessCode());
     List<BusinessProcessActivityDefinition> selectedActivities =
         activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
 
@@ -432,11 +479,21 @@ public class BusinessProcessActivityExecutionService {
     }
     List<Experiment> productExperiments = productExperiments(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
+    String originExecutionReference = originExecutionReference(productId);
     List<AgentTask> processTasks =
-        productProcessTasks(productPlans, productExperiments, productId, process.getProcessCode());
+        productProcessTasks(
+            productPlans,
+            productExperiments,
+            productId,
+            originExecutionReference,
+            process.getProcessCode());
     List<BusinessProcessActivityInstance> processInstances =
         productProcessActivityInstances(
-            productPlans, productExperiments, productId, process.getProcessCode());
+            productPlans,
+            productExperiments,
+            productId,
+            originExecutionReference,
+            process.getProcessCode());
     String currentSourceReference = currentExecutionReference(processTasks, processInstances);
     String sourceReference =
         currentSourceReference == null
@@ -919,13 +976,22 @@ public class BusinessProcessActivityExecutionService {
     return compatible.stream().findFirst();
   }
 
-  /** Busca tarefas do produto, de seus planos e experimentos sem misturar outro processo. */
+  /** Busca tarefas da origem, do produto, de seus planos e experimentos sem misturar processo. */
   private List<AgentTask> productProcessTasks(
       List<CommercialPlan> productPlans,
       List<Experiment> productExperiments,
       Long productId,
+      String originExecutionReference,
       String processCode) {
     Map<Long, AgentTask> uniqueTasks = new LinkedHashMap<>();
+    if (originExecutionReference != null) {
+      taskRepository
+          .findBySourceReferenceOrderByCreatedAtAscIdAsc(originExecutionReference)
+          .stream()
+          .filter(task -> task.getProcessDefinition() != null)
+          .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
+          .forEach(task -> uniqueTasks.put(task.getId(), task));
+    }
     for (CommercialPlan plan : productPlans) {
       taskRepository
           .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
@@ -957,13 +1023,22 @@ public class BusinessProcessActivityExecutionService {
         .toList();
   }
 
-  /** Busca ocorrências BPM do produto, dos planos e experimentos, inclusive sem tarefa. */
+  /**
+   * Busca ocorrências BPM da origem, do produto, dos planos e experimentos, inclusive sem tarefa.
+   */
   private List<BusinessProcessActivityInstance> productProcessActivityInstances(
       List<CommercialPlan> productPlans,
       List<Experiment> productExperiments,
       Long productId,
+      String originExecutionReference,
       String processCode) {
     Map<Long, BusinessProcessActivityInstance> uniqueInstances = new LinkedHashMap<>();
+    if (originExecutionReference != null) {
+      activityInstanceRepository
+          .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+              processCode, originExecutionReference)
+          .forEach(instance -> uniqueInstances.put(instance.getId(), instance));
+    }
     for (CommercialPlan plan : productPlans) {
       activityInstanceRepository
           .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
@@ -989,6 +1064,12 @@ public class BusinessProcessActivityExecutionService {
                     BusinessProcessActivityInstance::getId,
                     Comparator.nullsLast(Comparator.reverseOrder())))
         .toList();
+  }
+
+  /** Resolve a execução independente que criou o produto sem fabricar vínculo para legados. */
+  private String originExecutionReference(Long productId) {
+    if (originExecutionReferenceResolver == null) return null;
+    return originExecutionReferenceResolver.resolve(productId).orElse(null);
   }
 
   /** Reúne o vínculo principal e as atividades adicionais cobertas por cada tarefa composta. */

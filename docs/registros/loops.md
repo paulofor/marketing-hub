@@ -4,6 +4,25 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-CADEIA-PRODUTO-ORIGEM-INDEPENDENTE-OCULTA — produto avança com predecessores vazios
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** Mira, produto #10, aparecia no processo 3 em andamento enquanto os
+  processos 1 e 2 eram mostrados como não realizados, embora a execução independente #25 tivesse
+  concluído Argos, Atena, Plutus e Dédalo antes da materialização.
+- **Causa-raiz confirmada no endpoint e no banco:** o resumo do produto buscava tarefas apenas por
+  referências de produto, Plano Comercial e experimento. A linhagem relacional já persistida no
+  dossiê #36 apontava para o ciclo de descoberta #64, mas a referência
+  `product-discovery-cycle:64` não era consultada. Somente o período do processo 3 havia sido criado,
+  porque o produto ainda não existia durante os processos anteriores.
+- **Correção sistêmica:** um resolvedor comum percorre `produto → dossiê → ciclo`, projeta a
+  referência original e a adiciona tanto às medições da cadeia quanto ao detalhe de atividades e
+  tarefas. O backend continua derivando conclusão somente de tarefas e transições persistidas; não
+  marca predecessores como concluídos apenas pela posição atual.
+- **Prevenção:** testes de contrato reproduzem Mira no ciclo #64 e exigem a sequência
+  `COMPLETED → COMPLETED → CURRENT`, além de comprovar que a tarefa #331 permanece navegável pelo
+  produto. Produtos legados sem vínculo continuam explicitamente `PLANNED`.
+
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 
 - **Data:** 2026-09-01.

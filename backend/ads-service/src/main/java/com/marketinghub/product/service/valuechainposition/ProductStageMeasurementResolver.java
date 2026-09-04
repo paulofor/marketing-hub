@@ -9,6 +9,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductProcessPeriod;
+import com.marketinghub.product.service.ProductOriginExecutionReferenceResolver;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
@@ -45,6 +46,7 @@ public class ProductStageMeasurementResolver {
       Set.of("html", "customer", "commercial");
 
   private final ProductProcessPeriodRepository periodRepository;
+  private final ProductOriginExecutionReferenceResolver originExecutionReferenceResolver;
   private final CommercialPlanRepository commercialPlanRepository;
   private final ExperimentRepository experimentRepository;
   private final AgentTaskRepository taskRepository;
@@ -56,6 +58,7 @@ public class ProductStageMeasurementResolver {
   @Autowired
   public ProductStageMeasurementResolver(
       ProductProcessPeriodRepository periodRepository,
+      ProductOriginExecutionReferenceResolver originExecutionReferenceResolver,
       CommercialPlanRepository commercialPlanRepository,
       ExperimentRepository experimentRepository,
       AgentTaskRepository taskRepository,
@@ -63,6 +66,7 @@ public class ProductStageMeasurementResolver {
       ObjectMapper objectMapper) {
     this(
         periodRepository,
+        originExecutionReferenceResolver,
         commercialPlanRepository,
         experimentRepository,
         taskRepository,
@@ -74,6 +78,7 @@ public class ProductStageMeasurementResolver {
   /** Permite testar consolidações temporais com um instante fixo. */
   ProductStageMeasurementResolver(
       ProductProcessPeriodRepository periodRepository,
+      ProductOriginExecutionReferenceResolver originExecutionReferenceResolver,
       CommercialPlanRepository commercialPlanRepository,
       ExperimentRepository experimentRepository,
       AgentTaskRepository taskRepository,
@@ -81,6 +86,7 @@ public class ProductStageMeasurementResolver {
       ObjectMapper objectMapper,
       Clock clock) {
     this.periodRepository = periodRepository;
+    this.originExecutionReferenceResolver = originExecutionReferenceResolver;
     this.commercialPlanRepository = commercialPlanRepository;
     this.experimentRepository = experimentRepository;
     this.taskRepository = taskRepository;
@@ -583,6 +589,13 @@ public class ProductStageMeasurementResolver {
     List<Long> planIds = commercialPlanRepository.findIdsByProductId(product.getId());
     Map<Long, AgentTaskMeasurementSnapshot> commercialPlanTasks = new LinkedHashMap<>();
     Map<Long, AgentTaskMeasurementSnapshot> tasks = new LinkedHashMap<>();
+    originExecutionReferenceResolver
+        .resolve(product.getId())
+        .ifPresent(
+            sourceReference ->
+                taskRepository
+                    .findMeasurementSnapshotsBySourceReference(sourceReference)
+                    .forEach(task -> tasks.put(task.id(), task)));
     for (Long planId : planIds) {
       taskRepository
           .findMeasurementSnapshotsBySourceReferenceStartingWith("commercial-plan:" + planId + "@")

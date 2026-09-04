@@ -29,6 +29,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.service.ProductOriginExecutionReferenceResolver;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -378,6 +379,89 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(result.activities().get(0).tasks().getFirst().productInternalName())
         .isEqualTo("Rigel");
     assertThat(result.activities()).allMatch(activity -> activity.executionControl() != null);
+  }
+
+  /** Mostra no produto as atividades da execução independente que materializou Mira. */
+  @Test
+  void returnsOriginExecutionActivitiesForMaterializedProduct() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductOriginExecutionReferenceResolver origins =
+        mock(ProductOriginExecutionReferenceResolver.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            origins,
+            null,
+            new ObjectMapper(),
+            List.of(),
+            List.of(),
+            List.of());
+    BusinessProcessDefinition planning = selectedProcess();
+    planning.setId(67L);
+    planning.setProcessCode("pde-commercial-plan-offer");
+    planning.setName("Estratégia, economia e protótipo privado do PDE");
+    planning.setVersionNumber(6);
+    planning.setStatus("PUBLISHED");
+    BusinessProcessActivityDefinition architecture =
+        activity(711L, planning, "productArchitecture", "Desenhar arquitetura do produto");
+    Product mira = Product.builder().id(10L).internalName("Mira").build();
+    mira.setAutomaticExecutionEnabled(true);
+    AgentTask dedalo = executionTask(331L);
+    dedalo.setProcessDefinition(planning);
+    dedalo.setProcessActivityId("productArchitecture");
+    dedalo.setProcessActivityName("Desenhar arquitetura do produto");
+    dedalo.setSourceReference("product-discovery-cycle:64");
+    BusinessProcessActivityInstance completed =
+        activityInstance(
+            182L, architecture, "COMPLETED", true, null, Instant.parse("2026-09-02T22:02:10Z"));
+    completed.setSourceReference("product-discovery-cycle:64");
+    dedalo.setActivityInstance(completed);
+    when(processes.findById(67L)).thenReturn(Optional.of(planning));
+    when(products.findById(10L)).thenReturn(Optional.of(mira));
+    when(commercialPlans.findByProductId(10L)).thenReturn(List.of());
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(10L)).thenReturn(List.of());
+    when(origins.resolve(10L)).thenReturn(Optional.of("product-discovery-cycle:64"));
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(67L))
+        .thenReturn(List.of(architecture));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:64"))
+        .thenReturn(List.of(dedalo));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-commercial-plan-offer", "product-discovery-cycle:64"))
+        .thenReturn(List.of(completed));
+
+    var result = executionService.productProcessExecutions(67L, 10L);
+
+    assertThat(result.productInternalName()).isEqualTo("Mira");
+    assertThat(result.currentExecutionReference()).isEqualTo("product-discovery-cycle:64");
+    assertThat(result.operationalState()).isEqualTo("COMPLETED");
+    assertThat(result.objectiveAchieved()).isTrue();
+    assertThat(result.uniqueTaskCount()).isOne();
+    assertThat(result.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.activityId()).isEqualTo("productArchitecture");
+              assertThat(activity.tasks())
+                  .extracting(execution -> execution.taskId())
+                  .containsExactly(331L);
+            });
+    verify(tasks).findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:64");
   }
 
   /** Expõe o comando backend bloqueado sem quebrar a tela de produto ainda sem experimento. */

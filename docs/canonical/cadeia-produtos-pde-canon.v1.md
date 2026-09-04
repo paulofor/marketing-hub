@@ -615,6 +615,14 @@ não atingido e registro de commit desabilitado; a interface não completa a cad
 confunde composição planejada com execução real. Subprocessos do processo atual aparecem na posição
 hierárquica correspondente, sem deslocar os macroprocessos seguintes para fora da visão.
 
+Quando o produto for materializado por uma execução independente, sua existência começar no terceiro
+macroprocesso não apaga os dois anteriores. O backend deve percorrer a linhagem relacional persistida
+`produto → dossiê → ciclo de descoberta`, incluir no histórico do produto as tarefas e ocorrências da
+referência original e derivar entrada e saída somente dessas evidências. Assim, processos 1 e 2 ficam
+`COMPLETED` quando a execução original e a entrada persistida no processo 3 comprovarem a transição;
+sem esse vínculo factual, permanecem `PLANNED`. A mesma linhagem deve alimentar o detalhe de
+atividades e tarefas, preservando tentativas, custos e falhas anteriores sem duplicá-los.
+
 O histórico nunca termina visualmente em um estágio concluído quando a composição publicada possui
 continuação. O backend deve anexar o próximo subprocesso ainda não iniciado ou expor a próxima
 atividade do processo pai; a tela apresenta esse item como próximo passo, sem convertê-lo em

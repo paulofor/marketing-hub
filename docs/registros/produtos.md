@@ -1,5 +1,17 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-04 — Linhagem factual de Mira recompõe os processos anteriores
+
+- Evidência: a execução independente #25 e o ciclo #64 concluíram Argos no processo 1 e
+  Atena–Plutus–Dédalo no processo 2 antes de criar o produto #10 no processo 3.
+- Causa da divergência visual: o histórico do produto consultava referências de produto, plano e
+  experimento, mas não a referência independente preservada pelo dossiê #36.
+- Correção: o backend passa a resolver essa linhagem relacional e expor tarefas, transições e custos
+  anteriores no resumo e no detalhe. Mira deve aparecer como `1 concluído → 2 concluído → 3 em
+  andamento`, sem inferir conclusão para produtos que não tenham evidência persistida.
+- Verdade comercial: a correção recupera auditoria e evita decisões fora de ordem; não representa
+  publicação, pagamento ou venda.
+
 ## 2026-09-03 — Produto 10 recebe identidade e inicia construção privada
 
 - Estado confirmado: o produto planejado do dossiê #36 entrou no processo 3 de 6, ainda sem

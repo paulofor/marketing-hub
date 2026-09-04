@@ -2,6 +2,7 @@ package com.marketinghub.product.service.valuechainposition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductProcessPeriod;
+import com.marketinghub.product.service.ProductOriginExecutionReferenceResolver;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
@@ -24,11 +26,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: comprovar a consolidação temporal e financeira exibida nos cards. */
 class ProductStageMeasurementResolverTest {
   private final ProductProcessPeriodRepository periods = mock(ProductProcessPeriodRepository.class);
+  private final ProductOriginExecutionReferenceResolver origins =
+      mock(ProductOriginExecutionReferenceResolver.class);
   private final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
   private final ExperimentRepository experiments = mock(ExperimentRepository.class);
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
@@ -37,12 +42,70 @@ class ProductStageMeasurementResolverTest {
   private final ProductStageMeasurementResolver resolver =
       new ProductStageMeasurementResolver(
           periods,
+          origins,
           plans,
           experiments,
           tasks,
           ledger,
           new ObjectMapper(),
           Clock.fixed(Instant.parse("2026-08-25T12:00:00Z"), ZoneOffset.UTC));
+
+  /** Recompõe em Mira os processos concluídos pela execução independente que criou o produto. */
+  @Test
+  void measuresProductOriginProcessesBeforeItsPersistedCurrentPeriod() {
+    Product mira = Product.builder().id(10L).internalName("Mira").build();
+    BusinessProcessDefinition discovery = process(52L, "pde-opportunity-discovery", null);
+    BusinessProcessDefinition planning = process(67L, "pde-commercial-plan-offer", null);
+    BusinessProcessDefinition construction = process(68L, "pde-construction-approval", null);
+    AgentTask argos = task(320L, discovery, "2026-09-02T20:28:09Z", null, "COMPLETED");
+    argos.setSourceReference("product-discovery-cycle:64");
+    AgentTask atena = task(327L, planning, "2026-09-02T21:35:00Z", "0.19940000", "COMPLETED");
+    atena.setSourceReference("product-discovery-cycle:64");
+    AgentTask dedalo = task(331L, planning, "2026-09-02T21:55:00Z", "0.18678800", "COMPLETED");
+    dedalo.setSourceReference("product-discovery-cycle:64");
+    ProductProcessPeriod currentPeriod = new ProductProcessPeriod();
+    currentPeriod.setProduct(mira);
+    currentPeriod.setProcessDefinition(construction);
+    currentPeriod.setProcessCodeSnapshot("pde-construction-approval");
+    currentPeriod.setProcessNameSnapshot("Protótipo, leituras privadas e aprovação do PDE");
+    currentPeriod.setSequenceNumber(3);
+    currentPeriod.setEnteredAt(Instant.parse("2026-09-02T22:02:17Z"));
+    currentPeriod.setEntryEvidence("PRODUCT_CREATED");
+    when(origins.resolve(10L)).thenReturn(Optional.of("product-discovery-cycle:64"));
+    when(plans.findIdsByProductId(10L)).thenReturn(List.of());
+    when(experiments.findIdsByProductIdOrderByUpdatedAtDescIdDesc(10L)).thenReturn(List.of());
+    when(tasks.findMeasurementSnapshotsBySourceReference("product-discovery-cycle:64"))
+        .thenReturn(snapshots(List.of(argos, atena, dedalo)));
+    when(periods.findByProductIdOrderByEnteredAtAscIdAsc(10L)).thenReturn(List.of(currentPeriod));
+    when(ledger.findByProductIdOrderByCreatedAtAsc(10L)).thenReturn(List.of());
+    ProductStageMeasurementResolver miraResolver =
+        new ProductStageMeasurementResolver(
+            periods,
+            origins,
+            plans,
+            experiments,
+            tasks,
+            ledger,
+            new ObjectMapper(),
+            Clock.fixed(Instant.parse("2026-09-04T12:00:00Z"), ZoneOffset.UTC));
+
+    List<ProductStageMeasurementResponse> result =
+        miraResolver.resolveProcessMeasurements(
+            mira,
+            List.of(item(discovery, 1), item(planning, 2), item(construction, 3)),
+            construction);
+
+    assertThat(result)
+        .extracting(ProductStageMeasurementResponse::trackingStatus)
+        .containsExactly("COMPLETED", "COMPLETED", "CURRENT");
+    assertThat(result.getFirst().enteredAt()).isEqualTo(argos.getCreatedAt());
+    assertThat(result.getFirst().exitedAt()).isEqualTo(atena.getCreatedAt());
+    assertThat(result.get(1).exitedAt()).isEqualTo(currentPeriod.getEnteredAt());
+    assertThat(result.get(1).objectiveAchieved()).isTrue();
+    assertThat(result.get(1).knownEstimatedCostUsd()).isEqualByComparingTo("0.38618800");
+    assertThat(result.get(2).entryEvidence()).isEqualTo("PRODUCT_CREATED");
+    verify(tasks).findMeasurementSnapshotsBySourceReference("product-discovery-cycle:64");
+  }
 
   /** Soma custos conhecidos, preserva lacunas e corrige o backfill pela primeira execução. */
   @Test

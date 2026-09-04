@@ -81,6 +81,10 @@ devem ser configurados antes de encaminhar tráfego público; até lá não exis
 Health e métricas usam a porta de gerenciamento `9103`, vinculada somente ao loopback do container e
 não publicada pela imagem.
 
+O container executa com a identidade não privilegiada fixa `10001:10001`. No host, os dois arquivos de
+secret pertencem à mesma identidade e usam modo `0400`; o CI inicia a imagem com essa topologia antes
+de permitir a publicação. Não altere os arquivos para leitura global e não execute o gateway como root.
+
 ## Secrets obrigatórios
 
 - `HARNESS_LIBRARY_API_KEY`: autentica clientes de curl no gateway;

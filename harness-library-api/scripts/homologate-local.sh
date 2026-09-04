@@ -214,8 +214,8 @@ compose exec -T harness-library-api curl -fsS http://127.0.0.1:9103/actuator/pro
 
 CONTAINER_ID="$(compose ps -q harness-library-api)"
 RUNTIME_USER="$(docker inspect --format '{{.Config.User}}' "${CONTAINER_ID}")"
-[[ -n "${RUNTIME_USER}" && "${RUNTIME_USER}" != "0" && "${RUNTIME_USER}" != "root" ]] \
-  || fail "gateway executou como root"
+[[ "${RUNTIME_USER}" == "10001:10001" ]] \
+  || fail "gateway não preservou a identidade fixa 10001:10001"
 IMAGE_ID="$(docker inspect --format '{{.Image}}' "${CONTAINER_ID}")"
 IMAGE_METADATA="$(docker image inspect "${IMAGE_ID}")"
 grep -Fq "${PUBLIC_KEY}" <<<"${IMAGE_METADATA}" && fail "API key foi incorporada à imagem"

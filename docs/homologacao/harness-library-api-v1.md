@@ -59,7 +59,8 @@ memória e disco no inventário operacional; a porta `8103` permanece em loopbac
 | Métricas | Consultar Actuator/Prometheus na porta interna | Contadores HTTP distinguem status e latência; a porta pública não expõe métricas. |
 | Persistência | Reiniciar gateway | Nenhum dado se perde, pois ele não possui estado; backend conserva auditoria. |
 | MySQL 5.7 | Aplicar o changelog dedicado em schema vazio, simular DDL sem ledger e reaplicar | Tabelas, índices e FKs são íntegros, o dado existente é preservado e schema parcial é rejeitado. |
-| Imagem | Construir Dockerfile versionado e executar como usuário sem root | Health responde e nenhum secret está presente na imagem. |
+| Imagem | Construir Dockerfile versionado e executar como `10001:10001` | Health responde e nenhum secret está presente na imagem. |
+| Secrets no runtime | Montar os dois arquivos como `10001:10001`, modo `0400`, em container read-only | Gateway lê ambos, fica saudável e o conteúdo não aparece em imagem ou log. |
 | Rede | Subir compose de produção sem domínio | Porta exposta apenas em `127.0.0.1:8103`; acesso público direto não existe. |
 | GitHub Actions | PR e push em `main` | Testa e constrói no PR; somente `main` pode produzir imagem e executar deploy. |
 
@@ -92,7 +93,30 @@ Após a última correção, duas rodadas completas e consecutivas terminaram sem
 | Frontend consumidor do catálogo | TypeScript, 474 testes e build de produção aprovados. |
 | Liquibase/MySQL 5.7 físico | Dois changesets aplicados; retomada, idempotência, FKs, índices, `DATETIME` e rejeição de schema parcial aprovadas. |
 | E2E em containers novos | Cadastro, revisão, ativação, consulta global, versionamento, idempotência, arquivamento, validade, autenticação, limite de payload, observabilidade, reinício e backend indisponível aprovados. |
-| Imagem e entrega | Usuário sem root, secrets externos à imagem, porta pública em loopback, tag imutável, Actionlint e contratos de deploy aprovados. |
+| Imagem e entrega | Usuário fixo `10001:10001`, secrets externos `0400` legíveis somente pelo processo, porta pública em loopback, tag imutável, Actionlint e contratos de deploy aprovados. |
 
 Os avisos de integração presentes na saída pertencem a testes negativos deliberados. Todos os comandos
 terminaram com código zero. A topologia efêmera foi removida com volumes e órfãos ao fim de cada prova.
+
+## Evidência da correção de entrega — 2026-09-04
+
+O primeiro deploy manual real (`33879692088`) revelou uma lacuna que a matriz original não simulava:
+os secrets eram criados como `root:root/0600`, mas a imagem executava com usuário não privilegiado. A
+correção fixou a identidade `10001:10001`, manteve os arquivos em `0400` e acrescentou à matriz o
+runtime read-only com os mesmos mounts protegidos da produção.
+
+Depois dessa última correção, duas novas rodadas completas e consecutivas terminaram sem falhas. Em
+cada rodada passaram:
+
+- Actionlint de todos os workflows e contratos de fila, retry e entrega;
+- 124 testes do Product Discovery Worker, incluindo credencial e publicação no VPS compartilhado;
+- 9 testes da API externa e build da imagem imutável;
+- 15 testes direcionados do contrato backend da Biblioteca;
+- dois changesets físicos no MySQL 5.7, com retomada e reaplicação idempotente;
+- runtime não privilegiado com os dois secrets sintéticos `10001:10001/0400`;
+- ciclo E2E completo de cadastro, revisão, ativação, versionamento, arquivamento, segurança e
+  observabilidade.
+
+Os reruns dos três agentes e do deploy principal que já podiam ser recuperados operacionalmente
+terminaram verdes. A correção do runtime Harness permanece local até passar pelo fluxo obrigatório de
+Pull Request; nenhum container foi substituído manualmente no host.

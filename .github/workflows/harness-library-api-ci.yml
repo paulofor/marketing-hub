@@ -88,10 +88,11 @@ jobs:
         run: |
           set -euo pipefail
           configured_user="$(docker image inspect harness-library-api:test --format '{{.Config.User}}')"
-          if [ -z "${configured_user}" ] || [ "${configured_user}" = "0" ] || [ "${configured_user}" = "root" ]; then
-            echo "A imagem deve executar com usuário sem privilégios." >&2
+          if [ "${configured_user}" != "10001:10001" ]; then
+            echo "A imagem deve executar com a identidade fixa 10001:10001." >&2
             exit 1
           fi
+          bash harness-library-api/scripts/validate-secret-file-runtime.sh harness-library-api:test
 
   test-e2e:
     name: Test complete JSON lifecycle
@@ -189,10 +190,10 @@ jobs:
             'install -m 700 -d /root/infra/harness-library/secrets'
           printf '%s' "${HARNESS_LIBRARY_API_KEY}" \
             | ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
-                'umask 077; dd of=/root/infra/harness-library/secrets/api_key.tmp status=none; test "$(wc -c < /root/infra/harness-library/secrets/api_key.tmp)" -ge 32; mv /root/infra/harness-library/secrets/api_key.tmp /root/infra/harness-library/secrets/api_key; chmod 600 /root/infra/harness-library/secrets/api_key'
+                'umask 077; dd of=/root/infra/harness-library/secrets/api_key.tmp status=none; test "$(wc -c < /root/infra/harness-library/secrets/api_key.tmp)" -ge 32; mv /root/infra/harness-library/secrets/api_key.tmp /root/infra/harness-library/secrets/api_key; chown 10001:10001 /root/infra/harness-library/secrets/api_key; chmod 0400 /root/infra/harness-library/secrets/api_key'
           printf '%s' "${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY}" \
             | ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
-                'umask 077; dd of=/root/infra/harness-library/secrets/internal_signing_key.tmp status=none; test "$(wc -c < /root/infra/harness-library/secrets/internal_signing_key.tmp)" -ge 32; mv /root/infra/harness-library/secrets/internal_signing_key.tmp /root/infra/harness-library/secrets/internal_signing_key; chmod 600 /root/infra/harness-library/secrets/internal_signing_key'
+                'umask 077; dd of=/root/infra/harness-library/secrets/internal_signing_key.tmp status=none; test "$(wc -c < /root/infra/harness-library/secrets/internal_signing_key.tmp)" -ge 32; mv /root/infra/harness-library/secrets/internal_signing_key.tmp /root/infra/harness-library/secrets/internal_signing_key; chown 10001:10001 /root/infra/harness-library/secrets/internal_signing_key; chmod 0400 /root/infra/harness-library/secrets/internal_signing_key'
       - name: Deploy immutable image in loopback
         run: |
           set -euo pipefail

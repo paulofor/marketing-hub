@@ -2,6 +2,7 @@ services:
   harness-library-api:
     image: ${HARNESS_LIBRARY_API_IMAGE:?HARNESS_LIBRARY_API_IMAGE is required}
     container_name: harness-library-api
+    user: "10001:10001"
     restart: unless-stopped
     read_only: true
     tmpfs:

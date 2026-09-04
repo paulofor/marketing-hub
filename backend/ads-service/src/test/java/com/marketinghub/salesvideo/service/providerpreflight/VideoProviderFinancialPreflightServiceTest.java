@@ -26,7 +26,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: proteger saldo oficial, dry run, decisão de Plutus e reserva de vídeo. */
 @ExtendWith(MockitoExtension.class)
 class VideoProviderFinancialPreflightServiceTest {
+  private static final Instant NOW = Instant.parse("2026-09-04T19:00:00Z");
   @Mock private VideoProviderAccountRepository accountRepository;
   @Mock private VideoProviderPreflightRepository preflightRepository;
   @Mock private VideoCreditReservationRepository reservationRepository;
@@ -61,7 +64,8 @@ class VideoProviderFinancialPreflightServiceTest {
             reservationRepository,
             providerModelRepository,
             taskConsumptionQueryService,
-            new ObjectMapper().findAndRegisterModules());
+            new ObjectMapper().findAndRegisterModules(),
+            Clock.fixed(NOW, ZoneOffset.UTC));
     account = account();
     preflight = preflight();
     lenient()
@@ -98,6 +102,42 @@ class VideoProviderFinancialPreflightServiceTest {
     assertThat(account.getOfficialBalanceCredits()).isEqualByComparingTo("80.0000");
     assertThat(account.getSnapshotStatus()).isEqualTo("READY");
     verify(accountRepository).save(account);
+  }
+
+  /**
+   * Usa o recebimento do backend como início do TTL quando o executor está 78 segundos adiantado.
+   */
+  @Test
+  void shouldAcceptBoundedExecutorClockSkewWithoutShorteningSnapshotValidity() {
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    when(preflightRepository.save(any(VideoProviderPreflight.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    VideoProviderFinancialPreflightData.Result skewed =
+        withObservedAt(readyResult("25.0000", "80.0000"), NOW.plusSeconds(78));
+
+    VideoProviderPreflight result = service.complete(cycle(), skewed);
+
+    assertThat(result.getStatus()).isEqualTo("READY");
+    assertThat(result.getObservedAt()).isEqualTo(NOW.plusSeconds(78));
+    assertThat(result.getUpdatedAt()).isEqualTo(NOW);
+    assertThat(result.getExpiresAt()).isEqualTo(NOW.plusSeconds(300));
+    assertThat(account.getSnapshotExpiresAt()).isEqualTo(NOW.plusSeconds(300));
+  }
+
+  /** Recusa relógio anormal sem persistir um snapshot que poderia ampliar a validade. */
+  @Test
+  void shouldRejectExecutorClockSkewBeyondSafetyWindow() {
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    VideoProviderFinancialPreflightData.Result unsafe =
+        withObservedAt(readyResult("25.0000", "80.0000"), NOW.plusSeconds(301));
+
+    assertThatThrownBy(() -> service.complete(cycle(), unsafe))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Desvio de relógio");
+    verify(accountRepository, never()).save(any(VideoProviderAccount.class));
+    verify(preflightRepository, never()).save(any(VideoProviderPreflight.class));
   }
 
   /** Mantém o snapshot utilizável para Plutus, mas bloqueia geração quando falta saldo. */
@@ -292,10 +332,10 @@ class VideoProviderFinancialPreflightServiceTest {
     preflight.setEstimatedCredits(new BigDecimal("25.0000"));
     preflight.setEstimatedCostUsd(new BigDecimal("0.250000"));
     preflight.setSelectedRoutesJson(selectedRoutes("25.0000", "30.0000"));
-    preflight.setExpiresAt(Instant.now().plusSeconds(120));
+    preflight.setExpiresAt(NOW.plusSeconds(120));
     account.setOfficialBalanceCredits(new BigDecimal("80.0000"));
     account.setSnapshotStatus("READY");
-    account.setSnapshotExpiresAt(Instant.now().plusSeconds(120));
+    account.setSnapshotExpiresAt(NOW.plusSeconds(120));
     when(reservationRepository.findByVideoProductionCycleIdForUpdate(11L))
         .thenReturn(Optional.empty());
     when(accountRepository.findByVideoProductionCycleIdForUpdate(11L))
@@ -330,7 +370,7 @@ class VideoProviderFinancialPreflightServiceTest {
     expired.setProviderAccountId(5L);
     expired.setStatus("RESERVED");
     expired.setReservedCredits(new BigDecimal("20.0000"));
-    expired.setExpiresAt(Instant.now().minusSeconds(1));
+    expired.setExpiresAt(NOW.minusSeconds(1));
     account.setReservedCredits(new BigDecimal("30.0000"));
     when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
         .thenReturn(Optional.of(account));
@@ -401,12 +441,12 @@ class VideoProviderFinancialPreflightServiceTest {
   @Test
   void shouldKeepReadyStatusWhilePreventiveReservationIsActive() {
     preflight.setStatus("READY");
-    preflight.setExpiresAt(Instant.now().minusSeconds(1));
+    preflight.setExpiresAt(NOW.minusSeconds(1));
     preflight.setSelectedRoutesJson(selectedRoutes("25.0000", "30.0000"));
     VideoCreditReservation reservation = new VideoCreditReservation();
     reservation.setId(91L);
     reservation.setStatus("RESERVED");
-    reservation.setExpiresAt(Instant.now().plusSeconds(120));
+    reservation.setExpiresAt(NOW.plusSeconds(120));
     when(accountRepository.findById(5L)).thenReturn(Optional.of(account));
     when(reservationRepository.findByVideoProductionCycleId(11L))
         .thenReturn(Optional.of(reservation));
@@ -533,7 +573,7 @@ class VideoProviderFinancialPreflightServiceTest {
         null,
         null,
         "https://api.dev.runwayml.com/v1/organization",
-        Instant.now());
+        NOW);
   }
 
   /** Monta um preflight Product UGC coerente com a tarifa oficial de quinze segundos em 1080p. */
@@ -578,7 +618,7 @@ class VideoProviderFinancialPreflightServiceTest {
         null,
         null,
         "https://api.dev.runwayml.com/v1/organization",
-        Instant.now());
+        NOW);
   }
 
   /** Substitui somente a resposta de roteamento preservando o restante do callback simulado. */
@@ -602,6 +642,29 @@ class VideoProviderFinancialPreflightServiceTest {
         request.failureDetail(),
         request.sourceUrl(),
         request.observedAt());
+  }
+
+  /** Substitui somente o relógio do executor para testar o contrato entre hosts. */
+  private VideoProviderFinancialPreflightData.Result withObservedAt(
+      VideoProviderFinancialPreflightData.Result request, Instant observedAt) {
+    return new VideoProviderFinancialPreflightData.Result(
+        request.status(),
+        request.accountKey(),
+        request.routerConfigId(),
+        request.payloadSha256(),
+        request.executionRequestsJson(),
+        request.organizationSnapshotJson(),
+        request.routingResponseJson(),
+        request.selectedRoutesJson(),
+        request.estimatedCredits(),
+        request.officialBalanceCredits(),
+        request.maxMonthlyCreditSpend(),
+        request.quotaSnapshotJson(),
+        request.usageSnapshotJson(),
+        request.failureCode(),
+        request.failureDetail(),
+        request.sourceUrl(),
+        observedAt);
   }
 
   /** Monta a rota persistida com custo previsto e teto duro separados. */

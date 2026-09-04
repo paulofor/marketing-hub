@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${MODULE_ROOT}/docker-compose.runway-plutus-provider-preflight-mysql57.yml"
-COMPOSE_PROJECT="aihub-3b1bd9ac-f97e-43f2-8cdd-cdbeb5e43c49-feb0ca303a"
+COMPOSE_PROJECT="${RUNWAY_PREFLIGHT_COMPOSE_PROJECT:-aihub-3b1bd9ac-f97e-43f2-8cdd-cdbeb5e43c49-feb0ca303a}"
 CHANGELOG_PREFIX="2026-09-03-runway-plutus-provider-preflight-v1-"
 
 compose() {

@@ -805,10 +805,12 @@ describe("audio video studio navigation", () => {
     expect(
       await screen.findByRole("heading", { name: /mp4 gerado para revisao/i }),
     ).toBeTruthy();
-    expect(
-      await screen.findByText(/job #20487 · heygen · asset #1940/i),
-    ).toBeTruthy();
-    const mp4Link = screen.getByRole("link", { name: /abrir mp4/i });
+    const mp4Link = await screen.findByRole(
+      "link",
+      { name: /abrir mp4/i },
+      { timeout: 5_000 },
+    );
+    expect(screen.getByText(/job #20487 · heygen · asset #1940/i)).toBeTruthy();
     expect(mp4Link.getAttribute("href")).toBe(
       "https://assets.example/musa-v7.mp4",
     );

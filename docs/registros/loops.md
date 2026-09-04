@@ -3471,6 +3471,24 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** testes backend e frontend comprovam o endpoint próprio e proíbem reserva, tarefa de
   agente e renderização nos resultados apto e bloqueado.
 
+## LOOP-VIDEO-PREFLIGHT-RELOGIO-DISTRIBUIDO — callback íntegro recusado por relógios distintos
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** o ciclo isolado #8 do Vega #91 bloqueou corretamente a referência do PDE
+  ainda indisponível. Depois da publicação dessa imagem, o ciclo #9 validou as duas referências,
+  consultou a Runway, comprovou saldo de 2.020 créditos e custo de 648 créditos, mas o backend recusou
+  repetidamente o callback com `Snapshot oficial vencido ou observado no futuro`. Nenhuma reserva ou
+  geração foi criada.
+- **Causa-raiz confirmada pelos logs históricos:** o relógio do host do executor estava cerca de 78
+  segundos adiantado em relação ao host do backend, enquanto o contrato aceitava no máximo 60
+  segundos e derivava o vencimento do horário informado pelo executor.
+- **Correção sistêmica:** o backend passa a usar seu próprio horário de recebimento como início
+  canônico do TTL de cinco minutos, preserva o horário do executor apenas para auditoria, registra
+  aviso acima de 60 segundos e continua recusando desvios superiores a cinco minutos.
+- **Prevenção:** testes com relógio fixo reproduzem exatamente os 78 segundos observados, comprovam
+  cinco minutos integrais de validade a partir do recebimento e recusam desvio anormal sem persistir
+  conta ou preflight. O fluxo continua bloqueando gasto até callback, reserva e decisão de Plutus.
+
 ## LOOP-VIDEO-POSTPRODUCAO-AUDIO-INFINITO — render termina visualmente, mas job não conclui
 
 - **Data:** 2026-09-03.

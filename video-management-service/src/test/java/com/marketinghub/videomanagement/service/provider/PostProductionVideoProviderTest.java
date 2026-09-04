@@ -1,6 +1,7 @@
 package com.marketinghub.videomanagement.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
@@ -28,6 +29,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 class PostProductionVideoProviderTest {
     private MockWebServer server;
     private Path ffmpegArguments;
+    private double narrationSegmentDurationSeconds = 4.0;
 
     /** Inicializa o servidor HTTP usado para entregar o MP4 fonte. */
     @BeforeEach
@@ -93,21 +95,70 @@ class PostProductionVideoProviderTest {
         VideoManagementProperties properties = properties();
         properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
         properties.getProviders().getPostProduction().setOpenAiApiKey("test-key");
-        properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
+        properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/v1").toString()));
         PostProductionVideoProvider provider =
                 new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
 
         ProviderArtifacts artifacts = provider.render(job(), profile(), (percent, status, message) -> { });
 
         assertThat(artifacts.metadata().get("audio").toString())
-                .contains("OPENAI_TTS", "natural_tts_candidate")
+                .contains(
+                        "OPENAI_TTS",
+                        "natural_tts_candidate",
+                        "ai_generated_disclosure=true",
+                        "Voz gerada por IA")
                 .doesNotContain("synthetic_local");
+        assertThat(artifacts.auditFiles()).singleElement().satisfies(file -> {
+            assertThat(file.assetType()).isEqualTo(AssetType.AUDIO);
+            assertThat(file.role()).isEqualTo(ProviderAssetRole.AUDIO_AUDIT);
+            assertThat(file.fileName()).isEqualTo("sales-video-55-tts-segment-01.mp3");
+            assertThat(file.content()).containsExactly(1, 2, 3, 4);
+        });
+        assertThat(artifacts.metadata().get("tts_interactions").toString())
+                .contains(
+                        "raw_request",
+                        "BINARY_AUDIT_ASSET",
+                        "9f64a747e1b97f131fabb6b447296c9b6f0201e79fb3c5356e6c77e89b6a806a",
+                        "PENDING_PROVIDER_RECONCILIATION",
+                        "NOT_SUPPORTED_BY_AUDIO_SPEECH_ENDPOINT")
+                .doesNotContain("test-key");
+        assertThat(artifacts.metadata())
+                .containsEntry("tts_cost_reconciliation_status", "PENDING_PROVIDER_RECONCILIATION");
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
         var openAiRequest = server.takeRequest();
-        assertThat(openAiRequest.getPath()).isEqualTo("/audio/speech");
+        assertThat(openAiRequest.getPath()).isEqualTo("/v1/audio/speech");
         assertThat(openAiRequest.getHeader("Authorization")).isEqualTo("Bearer test-key");
         assertThat(openAiRequest.getBody().readUtf8())
-                .contains("gpt-4o-mini-tts", "nova", "Você se arruma");
+                .contains(
+                        "gpt-4o-mini-tts-2025-12-15",
+                        "marin",
+                        "Você se arruma",
+                        "ritmo de anúncio mobile");
+    }
+
+    /** Preserva request e resposta textual quando o provedor de voz recusa a chamada. */
+    @Test
+    void shouldAuditOpenAiTtsFailureWithoutRetrying() throws Exception {
+        server.enqueue(mp4Response());
+        server.enqueue(new MockResponse()
+                .setResponseCode(429)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":{\"message\":\"rate limited\"}}"));
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        properties.getProviders().getPostProduction().setOpenAiApiKey("test-key");
+        properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/v1").toString()));
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "OPENAI_TTS_FAILED")
+                .hasMessageContaining("status=429")
+                .hasMessageContaining("rawRequest=")
+                .hasMessageContaining("rate limited")
+                .hasMessageNotContaining("test-key");
+        assertThat(server.getRequestCount()).isEqualTo(2);
     }
 
     /** Deve aplicar legenda sem exigir TTS quando a pós-produção não pedir voz off. */
@@ -133,6 +184,103 @@ class PostProductionVideoProviderTest {
                 .doesNotContain("OPENAI_TTS", "ESPEAK_NG");
         assertThat(server.getRequestCount()).isEqualTo(1);
         assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
+    }
+
+    /** Reprova texto divergente antes de baixar mídia ou consumir um provedor de voz. */
+    @Test
+    void shouldRejectCaptionThatDoesNotMatchNarration() throws Exception {
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(
+                        governedTextJob(false), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "APOLLO_CAPTION_NARRATION_MISMATCH");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Aprova pontuação e pausas diferentes quando a sequência de palavras é idêntica. */
+    @Test
+    void shouldApproveTheSameNormalizedCaptionAndNarration() throws Exception {
+        server.enqueue(mp4Response());
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(
+                governedTextJob(true), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata().get("caption_narration_sync").toString())
+                .contains(
+                        "APPROVED",
+                        "NORMALIZED_EXACT_SEQUENCE",
+                        "word_count=10",
+                        "timing_status=APPROVED",
+                        "timing_method=SEGMENT_AUDIO_DURATION",
+                        "segment_count=2",
+                        "synthetic_music_bed=false");
+        assertThat(new String(artifacts.captionFile().content()))
+                .contains(
+                        "00:00:00.000 --> 00:00:04.000",
+                        "00:00:04.000 --> 00:00:24.000");
+        assertThat(Files.readString(ffmpegArguments))
+                .contains("concat=n=2:v=0:a=1[aout]")
+                .doesNotContain("sine=frequency=220");
+    }
+
+    /** Gera cada frase premium em uma chamada de voz para medir seus limites reais. */
+    @Test
+    void shouldGenerateOneNaturalVoiceSegmentForEachCaptionCue() throws Exception {
+        server.enqueue(mp4Response());
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "audio/mpeg")
+                .setBody(new Buffer().write(new byte[] {1, 2, 3, 4})));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "audio/mpeg")
+                .setBody(new Buffer().write(new byte[] {5, 6, 7, 8})));
+        VideoManagementProperties properties = properties();
+        properties.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        properties.getProviders().getPostProduction().setOpenAiApiKey("test-key");
+        properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties, new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(
+                governedTextJob(true), profile(), (percent, status, message) -> { });
+
+        assertThat(server.takeRequest().getPath()).isEqualTo("/source/musa.mp4");
+        var firstSegment = server.takeRequest();
+        var secondSegment = server.takeRequest();
+        assertThat(firstSegment.getPath()).isEqualTo("/audio/speech");
+        assertThat(firstSegment.getBody().readUtf8()).contains("Você se arruma, mas falta presença");
+        assertThat(secondSegment.getPath()).isEqualTo("/audio/speech");
+        assertThat(secondSegment.getBody().readUtf8()).contains("Faça o diagnóstico gratuito");
+        assertThat(artifacts.metadata().get("audio").toString())
+                .contains("OPENAI_TTS", "music=none");
+        assertThat(artifacts.auditFiles())
+                .extracting(ProviderFile::fileName)
+                .containsExactly(
+                        "sales-video-55-tts-segment-01.mp3",
+                        "sales-video-55-tts-segment-02.mp3");
+        assertThat(artifacts.metadata().get("tts_interactions").toString())
+                .contains("segment_index=1", "segment_index=2", "output_duration_seconds=4.0");
+    }
+
+    /** Reprova copy cuja voz medida seria truncada pelo fim do vídeo. */
+    @Test
+    void shouldRejectNarrationLongerThanTheVideo() throws Exception {
+        narrationSegmentDurationSeconds = 13.0;
+        server.enqueue(mp4Response());
+        PostProductionVideoProvider provider =
+                new PostProductionVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(
+                        governedTextJob(true), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "APOLLO_NARRATION_DURATION_EXCEEDED")
+                .hasMessageContaining("26.000s")
+                .hasMessageContaining("24.000s");
     }
 
     /** Cria uma resposta MP4 mínima para o download fonte. */
@@ -201,7 +349,15 @@ class PostProductionVideoProviderTest {
     /** Cria um ffprobe fake que informa duração vertical de vinte e quatro segundos. */
     private Path fakeFfprobe() throws Exception {
         Path script = Files.createTempFile("fake-ffprobe-post", ".sh");
-        Files.writeString(script, "#!/bin/sh\nprintf '24.000000\\n'\n");
+        Files.writeString(script, """
+                #!/bin/sh
+                source=""
+                for argument in "$@"; do source="$argument"; done
+                case "$source" in
+                  *voiceover*) printf '%f\n' ;;
+                  *) printf '24.000000\n' ;;
+                esac
+                """.formatted(narrationSegmentDurationSeconds));
         script.toFile().setExecutable(true);
         return script;
     }
@@ -282,6 +438,30 @@ class PostProductionVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria pós-produção governada com copy única ou propositalmente divergente. */
+    private SalesVideoJob governedTextJob(boolean matching) {
+        SalesVideoJob base = job();
+        String narration = matching
+                ? "Você se arruma, mas falta presença. Faça o diagnóstico gratuito!"
+                : "Você se arruma e compre um produto diferente.";
+        String metadata = """
+                {
+                  "sourceVideoUrl":"/source/musa.mp4",
+                  "captionText":"Você se arruma, mas falta presença | Faça o diagnóstico gratuito",
+                  "voiceOverScript":"%s",
+                  "technicalQualityGate":{"captionMustMatchNarration":true},
+                  "post_production":{"cta_text":"Faça o diagnóstico gratuito"}
+                }
+                """.formatted(narration);
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                metadata, base.createdAt(), base.updatedAt());
     }
 
     /** Cria um perfil mínimo para a execução do provider. */

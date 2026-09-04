@@ -39,6 +39,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/** Responsabilidade: validar claim, execução, gates técnicos e callbacks de jobs de vídeo. */
 @ExtendWith(MockitoExtension.class)
 class VideoJobProcessorTest {
 
@@ -71,6 +72,7 @@ class VideoJobProcessorTest {
 
     private VideoJobProcessor processor;
 
+    /** Inicializa o processador com dependências simuladas e o gate técnico real. */
     @BeforeEach
     void setUp() {
         VideoManagementProperties properties = new VideoManagementProperties();
@@ -83,9 +85,11 @@ class VideoJobProcessorTest {
                 properties,
                 new ObjectMapper(),
                 apolloStoryboardPlanner,
-                learningReporter);
+                learningReporter,
+                new ApolloTechnicalVideoQualityGate(new ObjectMapper(), properties));
     }
 
+    /** Conclui o job e envia os ativos quando provider e gate retornam sucesso. */
     @Test
     void shouldCompleteJobWhenProviderSucceeds() {
         SalesVideoJob job = job();
@@ -111,6 +115,7 @@ class VideoJobProcessorTest {
         verify(backendClient, never()).failJob(any(), any());
     }
 
+    /** Registra falha funcional quando nenhum provider atende ao contrato do job. */
     @Test
     void shouldFailJobWhenNoProviderIsFound() {
         SalesVideoJob job = job();
@@ -126,6 +131,7 @@ class VideoJobProcessorTest {
         assertThat(failureCaptor.getValue().retryReason()).isEqualTo("OTHER");
     }
 
+    /** Interrompe a execução sem falha quando outro worker já assumiu o job. */
     @Test
     void shouldSkipProcessingWhenClaimIsDuplicated() {
         SalesVideoJob job = job();
@@ -139,6 +145,7 @@ class VideoJobProcessorTest {
         verify(backendClient, never()).completeJob(any(), any());
     }
 
+    /** Cria o job mínimo usado nos cenários de processamento. */
     private SalesVideoJob job() {
         return new SalesVideoJob(
                 1L,
@@ -170,6 +177,7 @@ class VideoJobProcessorTest {
                 Instant.now());
     }
 
+    /** Cria o perfil mínimo vinculado ao job de teste. */
     private SalesVideoProfile profile() {
         SalesVideoScript script = new SalesVideoScript(
                 10L,

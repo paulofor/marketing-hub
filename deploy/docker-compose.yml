@@ -10,6 +10,7 @@ services:
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=60 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/backend-oom.hprof}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
+      HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE: ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE:-/run/secrets/harness_library_internal_signing_key}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       MOIS_SALES_PAGE_BACKFILL_ENABLED: ${MOIS_SALES_PAGE_BACKFILL_ENABLED:-false}
       LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:?LEAD_PORTAL_PAYMENTS_AUTH_TOKEN is required}
@@ -37,6 +38,7 @@ services:
       - ./volumes/backend/uploads:/app/uploads
       - ./volumes/backend/logs:/app/logs
       - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
+      - ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE:-/root/infra/harness-library/secrets/internal_signing_key}:/run/secrets/harness_library_internal_signing_key:ro
 
   backend-log-reader:
     image: nginx:1.27-alpine
@@ -81,6 +83,7 @@ services:
       VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD: ${VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD:-0.25}
       VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD: ${VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD:-4.00}
       VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD: ${VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD:-20.00}
+      VIDEO_PDE_AUDIOVISUAL_ENABLED: ${VIDEO_PDE_AUDIOVISUAL_ENABLED:-true}
       VIDEO_PROVIDERS_VEO_ENABLED: ${VIDEO_PROVIDERS_VEO_ENABLED:-true}
       VIDEO_PROVIDERS_LUMA_ENABLED: ${VIDEO_PROVIDERS_LUMA_ENABLED:-true}
       VIDEO_PROVIDERS_LUMA_OPENAI_REFERENCE_IMAGE_ENABLED: ${VIDEO_PROVIDERS_LUMA_OPENAI_REFERENCE_IMAGE_ENABLED:-true}
@@ -94,8 +97,8 @@ services:
       OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-5.6}
       OPENAI_IMAGE_TOOL_MODEL: ${OPENAI_IMAGE_TOOL_MODEL:-gpt-image-2}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_TTS_MODEL: ${OPENAI_TTS_MODEL:-gpt-4o-mini-tts}
-      OPENAI_TTS_VOICE: ${OPENAI_TTS_VOICE:-nova}
+      OPENAI_TTS_MODEL: ${OPENAI_TTS_MODEL:-gpt-4o-mini-tts-2025-12-15}
+      OPENAI_TTS_VOICE: ${OPENAI_TTS_VOICE:-marin}
       GEMINI_API_KEY_FILE: ${GEMINI_API_KEY_FILE:-/run/secrets/gemini_api_key}
       LUMA_API_KEY_FILE: ${LUMA_API_KEY_FILE:-/run/secrets/luma_api_key}
       KLING_API_KEY_FILE: ${KLING_API_KEY_FILE:-/run/secrets/kling_api_key}

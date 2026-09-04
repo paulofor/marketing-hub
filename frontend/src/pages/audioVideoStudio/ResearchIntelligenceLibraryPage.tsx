@@ -49,9 +49,7 @@ export default function ResearchIntelligenceLibraryPage() {
   const [search, setSearch] = useState("");
   const [collection, setCollection] = useState("");
   const [agent, setAgent] = useState("");
-  const [status, setStatus] = useState<"ACTIVE" | "ALL" | "EXPIRED">(
-    "ACTIVE",
-  );
+  const [status, setStatus] = useState<"ACTIVE" | "ALL" | "EXPIRED">("ACTIVE");
   const [visibleCards, setVisibleCards] = useState(INITIAL_CARD_LIMIT);
   const catalog = catalogQuery.data;
 
@@ -113,7 +111,7 @@ export default function ResearchIntelligenceLibraryPage() {
             <div>
               <span>Fonte global única</span>
               <strong>{catalog.totalCompiledCards}</strong>
-              <small>cartões compilados de /pesquisas</small>
+              <small>cartões versionados no catálogo global</small>
             </div>
             <div>
               <span>Elegíveis hoje</span>
@@ -140,8 +138,9 @@ export default function ResearchIntelligenceLibraryPage() {
             <p>
               O catálogo não pertence ao Vega #91. Ao abrir, criar ou executar
               qualquer projeto audiovisual, o backend seleciona até quatro
-              cartões por agente conforme o contexto. O job persiste a seleção
-              e os hashes usados para auditoria.
+              cartões por agente conforme o contexto. O job persiste a seleção e
+              os hashes usados para auditoria. Fontes Markdown e cartões
+              aprovados pela API externa usam a mesma seleção canônica.
             </p>
             <div className="audio-video-studio-page__research-policy-grid">
               {catalog.agentPolicies.map((policy) => (
@@ -151,7 +150,8 @@ export default function ResearchIntelligenceLibraryPage() {
                   <span>{authorityLabel(policy.authority)}</span>
                   <p>{policy.purpose}</p>
                   <small>
-                    {policy.collections.join(" · ")} · até {policy.maxCardsPerContext}
+                    {policy.collections.join(" · ")} · até{" "}
+                    {policy.maxCardsPerContext}
                   </small>
                 </article>
               ))}
@@ -300,7 +300,9 @@ export default function ResearchIntelligenceLibraryPage() {
               <button
                 className="audio-video-studio-page__secondary-action audio-video-studio-page__research-load-more"
                 type="button"
-                onClick={() => setVisibleCards((current) => current + INITIAL_CARD_LIMIT)}
+                onClick={() =>
+                  setVisibleCards((current) => current + INITIAL_CARD_LIMIT)
+                }
               >
                 Exibir mais cartões
               </button>

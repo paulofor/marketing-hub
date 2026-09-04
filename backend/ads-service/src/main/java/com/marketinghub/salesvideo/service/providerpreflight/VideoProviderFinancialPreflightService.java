@@ -22,6 +22,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -106,18 +107,24 @@ public class VideoProviderFinancialPreflightService {
     int targetDuration = Math.max(2, project.getTargetDurationSeconds());
     int clipDuration = providerClipDuration(project.getProviderPlan());
     int clips = Math.max(1, (targetDuration + clipDuration - 1) / clipDuration);
+    boolean productUgc = isProductUgc(project.getProviderPlan());
     return new VideoProviderFinancialPreflightData.Pending(
         preflight.getId(),
         cycle.getId(),
         account.getAggregatorName(),
         account.getAccountKey(),
         preflight.getProductionProfile(),
+        project.getProviderPlan(),
         cycle.getBudgetLimitUsd().divide(account.getCreditUnitUsd(), 4, RoundingMode.DOWN),
         targetDuration,
         clipDuration,
         clips,
-        "9:16",
-        "720p",
+        productUgc
+            ? ("DRAFT_INSTAGRAM".equals(preflight.getProductionProfile())
+                ? "720:1280"
+                : "1080:1920")
+            : "9:16",
+        productUgc && "FINAL_CAMPAIGN".equals(preflight.getProductionProfile()) ? "1080p" : "720p",
         false,
         project.getTitle(),
         project.getObjective(),
@@ -126,8 +133,18 @@ public class VideoProviderFinancialPreflightService {
         project.getScenePlan(),
         project.getCharacterBible(),
         project.getEnvironmentBible(),
+        project.getObjectBible(),
         project.getVisualStyleGuide(),
         project.getContinuityRules(),
+        project.getCaptionPlan(),
+        project.getCtaText(),
+        project.getCharacterPerformanceType(),
+        project.getCharacterPerformanceUri(),
+        project.getReferencePerformanceUri(),
+        project.getPerformanceConsentEvidence(),
+        project.getPerformanceRightsEvidence(),
+        project.getEditingNotes(),
+        project.getQualityGate(),
         cycle.getLearningObjective(),
         cycle.getSuccessCriterion());
   }
@@ -270,7 +287,8 @@ public class VideoProviderFinancialPreflightService {
         accountRepository
             .findById(preflight.getProviderAccountId())
             .orElseThrow(() -> conflict("Conta agregadora do preflight não encontrada."));
-    String expectedRoute = "RUNWAY_ROUTER:" + preflight.getRouterConfigId();
+    String expectedRoute =
+        routePrefix(preflight.getRouterConfigId()) + preflight.getRouterConfigId();
     if (!account.getAggregatorName().equalsIgnoreCase(request.recommendedAggregator().trim())
         || !expectedRoute.equalsIgnoreCase(request.recommendedRoute().trim())) {
       throw badRequest("A recomendação de Plutus diverge da conta ou da rota do dry run.");
@@ -597,6 +615,9 @@ public class VideoProviderFinancialPreflightService {
               != request.maxMonthlyCreditSpend()) {
         throw badRequest("Saldo ou limite informado diverge do snapshot oficial bruto.");
       }
+      if (request.routerConfigId().trim().startsWith("product_ugc@")) {
+        return validateProductUgcContract(request, requests, responses, selected, account);
+      }
       BigDecimal estimated = BigDecimal.ZERO;
       BigDecimal maximum = BigDecimal.ZERO;
       java.util.LinkedHashSet<String> unavailableModels = new java.util.LinkedHashSet<>();
@@ -668,6 +689,119 @@ public class VideoProviderFinancialPreflightService {
       log.error("Falha ao validar contrato de rotas do preflight; cycleId={}", cycle.getId(), ex);
       throw badRequest("Preflight contém JSON de rota inválido.");
     }
+  }
+
+  /** Valida a receita Product UGC contra versão, payload e tarifa oficiais pinados. */
+  private RouteTotals validateProductUgcContract(
+      VideoProviderFinancialPreflightData.Result request,
+      JsonNode requests,
+      JsonNode responses,
+      JsonNode selected,
+      VideoProviderAccount account) {
+    if (requests.size() != 1 || responses.size() != 1 || selected.size() != 1) {
+      throw badRequest("Product UGC exige exatamente uma requisição, uma simulação e uma rota.");
+    }
+    String configId = request.routerConfigId().trim();
+    JsonNode executionRequest = requests.get(0);
+    JsonNode evidence = responses.get(0);
+    JsonNode route = selected.get(0);
+    int duration = executionRequest.path("duration").asInt(0);
+    String ratio = executionRequest.path("ratio").asText();
+    BigDecimal expectedCredits = productUgcCredits(duration, ratio);
+    boolean valid =
+        "product_ugc@2026-06".equals(configId)
+            && "2026-06".equals(executionRequest.path("version").asText())
+            && isHttpsText(executionRequest.path("characterImage").path("uri"))
+            && isHttpsText(executionRequest.path("productImage").path("uri"))
+            && executionRequest.path("productInfo").isTextual()
+            && executionRequest.path("productInfo").asText().length() <= 2500
+            && executionRequest.path("userConcept").isTextual()
+            && executionRequest.path("userConcept").asText().length() <= 3500
+            && duration >= 4
+            && duration <= 15
+            && Set.of("720:1280", "1080:1920").contains(ratio)
+            && executionRequest.path("audio").isBoolean()
+            && !executionRequest.path("audio").asBoolean()
+            && "DETERMINISTIC_RATE_CARD".equals(evidence.path("simulation").asText())
+            && "product_ugc".equals(evidence.path("recipe").asText())
+            && "2026-06".equals(evidence.path("version").asText())
+            && evidence.path("estimatedCost").path("credits").isNumber()
+            && expectedCredits.compareTo(
+                    evidence.path("estimatedCost").path("credits").decimalValue())
+                == 0
+            && "Runway".equals(route.path("manufacturer").asText())
+            && "product_ugc".equals(route.path("model").asText())
+            && account.getAggregatorName().equals(route.path("aggregator").asText())
+            && account.getAccountKey().equals(route.path("accountKey").asText())
+            && configId.equals(route.path("routerConfigId").asText())
+            && ("RUNWAY_PRODUCT_UGC:" + configId).equals(route.path("batchRouteId").asText())
+            && "QUALITY".equals(route.path("optimizeFor").asText())
+            && route.path("estimatedCredits").isNumber()
+            && route.path("priceCeilingCredits").isNumber()
+            && expectedCredits.compareTo(route.path("estimatedCredits").decimalValue()) == 0
+            && expectedCredits.compareTo(route.path("priceCeilingCredits").decimalValue()) == 0
+            && validProductUgcReferenceEvidence(route.path("referenceImages"))
+            && expectedCredits.compareTo(request.estimatedCredits()) == 0;
+    if (!valid) {
+      throw badRequest("Contrato Product UGC diverge da versão, referências ou tarifa pinadas.");
+    }
+    SalesVideoProviderModel catalogModel =
+        providerModelRepository
+            .findByAdapterKeyAndExternalModelId("RUNWAY", "product_ugc")
+            .orElse(null);
+    boolean unavailable =
+        catalogModel == null
+            || !"ACTIVE".equals(catalogModel.getLifecycleStatus())
+            || !catalogModel.isAdapterVerified()
+            || !catalogModel.isPricingVerified()
+            || !catalogModel.isCommercialLicenseVerified()
+            || !catalogModel.isQualityGateVerified();
+    return new RouteTotals(expectedCredits, unavailable ? List.of("product_ugc") : List.of());
+  }
+
+  /** Exige provas raster imutáveis das duas referências antes de reservar créditos Product UGC. */
+  private boolean validProductUgcReferenceEvidence(JsonNode references) {
+    if (!references.isArray() || references.size() != 2) {
+      return false;
+    }
+    Set<String> roles = new HashSet<>();
+    for (JsonNode reference : references) {
+      String role = reference.path("role").asText();
+      String contentType = reference.path("contentType").asText();
+      int width = reference.path("width").asInt(0);
+      int height = reference.path("height").asInt(0);
+      double ratio = height <= 0 ? 0 : width / (double) height;
+      boolean valid =
+          Set.of("CHARACTER_IMAGE", "PRODUCT_IMAGE").contains(role)
+              && StringUtils.hasText(reference.path("sourceHost").asText())
+              && Set.of("image/png", "image/jpeg").contains(contentType)
+              && reference.path("contentLength").asLong(0) > 0
+              && width > 0
+              && height > 0
+              && ratio >= 0.4
+              && ratio <= 4.0
+              && reference.path("sha256").asText().matches("[0-9a-f]{64}");
+      if (!valid || !roles.add(role)) {
+        return false;
+      }
+    }
+    return roles.equals(Set.of("CHARACTER_IMAGE", "PRODUCT_IMAGE"));
+  }
+
+  /** Calcula os créditos da receita conforme duração e resolução oficiais da versão 2026-06. */
+  private BigDecimal productUgcCredits(int duration, String ratio) {
+    if (duration < 4 || duration > 15 || !Set.of("720:1280", "1080:1920").contains(ratio)) {
+      return BigDecimal.valueOf(-1);
+    }
+    boolean fullHd = "1080:1920".equals(ratio);
+    int base = fullHd ? 208 : 192;
+    int additional = fullHd ? 40 : 36;
+    return BigDecimal.valueOf(base + (long) additional * (duration - 4));
+  }
+
+  /** Confirma referência HTTPS preenchida no payload congelado. */
+  private boolean isHttpsText(JsonNode node) {
+    return node.isTextual() && node.asText().startsWith("https://");
   }
 
   /** Soma os tetos duros por geração preservados nas rotas validadas. */
@@ -837,9 +971,23 @@ public class VideoProviderFinancialPreflightService {
   /** Resolve a duração máxima de clipe permitida pelo plano sem escolher o modelo externo. */
   private int providerClipDuration(String providerPlan) {
     String plan = providerPlan == null ? "" : providerPlan.toUpperCase(Locale.ROOT);
+    if (plan.contains("(RUNWAY_PRODUCT_UGC)")) return 15;
     if (plan.contains("VEO_3_1")) return 8;
     if (plan.contains("SEEDANCE_2")) return 15;
     return 10;
+  }
+
+  /** Identifica a receita Product UGC sem inferir escolha a partir de texto comercial livre. */
+  private boolean isProductUgc(String providerPlan) {
+    return providerPlan != null
+        && providerPlan.toUpperCase(Locale.ROOT).contains("(RUNWAY_PRODUCT_UGC)");
+  }
+
+  /** Resolve o prefixo financeiro da rota pinada ou do Model Router. */
+  private String routePrefix(String configId) {
+    return configId != null && configId.startsWith("product_ugc@")
+        ? "RUNWAY_PRODUCT_UGC:"
+        : "RUNWAY_ROUTER:";
   }
 
   /** Normaliza o perfil financeiro e impede opções implícitas de custo. */

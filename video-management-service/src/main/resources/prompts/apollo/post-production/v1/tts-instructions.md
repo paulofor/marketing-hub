@@ -1,0 +1,1 @@
+Fale em português do Brasil com voz feminina natural, elegante, acolhedora e confiante. Use ritmo de anúncio mobile, articulação nítida e pausas breves entre ideias. Evite voz robótica, dramatização exagerada ou urgência artificial. Entregue o convite final com clareza e segurança.

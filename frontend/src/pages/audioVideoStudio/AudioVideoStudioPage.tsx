@@ -692,6 +692,35 @@ export function actTwoConfigurationIssue(project: VideoProject) {
   return "";
 }
 
+export function productUgcConfigurationIssue(project: VideoProject) {
+  if (project.characterPerformanceType !== "image") {
+    return "Selecione uma imagem autorizada da apresentadora.";
+  }
+  if (!project.characterPerformanceUri?.startsWith("https://")) {
+    return "Informe a URL HTTPS da imagem autorizada da apresentadora.";
+  }
+  if (!project.referencePerformanceUri?.startsWith("https://")) {
+    return "Informe a URL HTTPS da tela limpa do PDE.";
+  }
+  if (!project.performanceConsentEvidence?.trim()) {
+    return "Registre a evidência de consentimento da apresentadora.";
+  }
+  if (!project.performanceRightsEvidence?.trim()) {
+    return "Registre os direitos das imagens da apresentadora e do PDE.";
+  }
+  if (
+    !project.targetDurationSeconds ||
+    project.targetDurationSeconds < 4 ||
+    project.targetDurationSeconds > 15
+  ) {
+    return "Product UGC exige duração entre 4 e 15 segundos.";
+  }
+  if (!project.captionPlan?.trim() || !project.ctaText?.trim()) {
+    return "Aprovar o texto exato da narração, das legendas e do CTA antes do preflight.";
+  }
+  return "";
+}
+
 export function readStudioSceneOrder(
   metadataJson?: string | null,
   auditSnapshotJson?: string | null,
@@ -906,6 +935,31 @@ const vega91Briefing: StudioBriefing = {
     "Segregar QA de humanos e medir retenção 3s, VIDEO_25/50/75/100, clique no CTA, diagnóstico iniciado e concluído, paywall, checkout, pagamento aprovado, reembolso, custo por venda e retrabalho do ativo.",
   resultsSnapshot:
     "Piloto ainda não publicado: aguardando ativo aprovado e eventos humanos segregados do experimento 91.",
+  productionMode: "RUNWAY_PRODUCT_UGC_PREMIUM_V1",
+  targetDurationSeconds: "15",
+  environmentBible:
+    "Ambiente real, claro e elegante, sem espelho ou superfícies reflexivas. Enquadramento vertical estável em tripé e luz natural suave.",
+  objectBible:
+    "Tela limpa do diagnóstico MUSA e do Plano MUSA de 7 dias. O produto é uma experiência digital com IA, nunca caixa, frasco ou objeto físico.",
+  providerPlan:
+    "Provider escolhido no Estudio: Runway Product UGC Premium (RUNWAY_PRODUCT_UGC).\nReceita pinada product_ugc@2026-06, 15s, 1080:1920, áudio nativo desligado e pós-produção determinística por Apolo.",
+  characterPerformanceType: "image",
+  characterPerformanceUri:
+    "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/products/video-images/2026/07/25/product-metodo-musa-7-dias/017574b8b785-img-cd4ba01f-7bda-49c9-a4dd-5b6348bb6240.png",
+  referencePerformanceUri:
+    "https://v7.clubemusa.com.br/assets/musa-product-ugc-reference.png",
+  performanceConsentEvidence:
+    "Referência sintética Clara MUSA, imagem #2 / asset #1925 aprovada no Marketing Hub; nenhuma pessoa real é representada.",
+  performanceRightsEvidence:
+    "Referência de personagem #1925 aprovada e tela MUSA gerada pelo script versionado scripts/generate-musa-product-ugc-reference.mjs.",
+  voiceoverPlan:
+    "Usar exatamente o mesmo texto das legendas, com voz feminina pt-BR natural, segura e íntima; não criar frases adicionais.",
+  captionPlan:
+    "Você se arruma, mas sente que falta presença? | O MUSA usa IA para criar um plano pessoal de sete dias com suas roupas. | Faça o diagnóstico gratuito.",
+  editingNotes:
+    "Tomada contínua estável, sem espelho, celular refletido ou texto gerado. Apolo adiciona voz, legenda e CTA a partir da mesma fonte após o gate de tremor.",
+  qualityGate:
+    "Aprovar somente com tomada contínua sem tremor, apresentadora e tela naturais, texto exibido idêntico à narração, áudio compreensível, CTA claro e revisões independentes de Psique, Têmis e humano.",
 };
 
 function researchAuthorityLabel(authority: string) {
@@ -1180,6 +1234,10 @@ export default function AudioVideoStudioPage() {
     () => findProviderFromPlan(briefing.providerPlan),
     [briefing.providerPlan],
   );
+  const providerConfigurationIssue =
+    selectedProvider.providerName === "RUNWAY_PRODUCT_UGC" && selectedProject
+      ? productUgcConfigurationIssue(selectedProject)
+      : "";
   const durationIssue = durationValidationMessage(
     briefing.videoCategory,
     targetDurationSeconds,
@@ -1305,6 +1363,18 @@ export default function AudioVideoStudioPage() {
   const applyProviderOption = (option: SalesVideoProviderOption) => {
     setBriefing((current) => ({
       ...current,
+      targetDurationSeconds:
+        option.providerName === "RUNWAY_PRODUCT_UGC"
+          ? "15"
+          : current.targetDurationSeconds,
+      productionMode:
+        option.providerName === "RUNWAY_PRODUCT_UGC"
+          ? "RUNWAY_PRODUCT_UGC_PREMIUM_V1"
+          : current.productionMode,
+      characterPerformanceType:
+        option.providerName === "RUNWAY_PRODUCT_UGC"
+          ? "image"
+          : current.characterPerformanceType,
       providerPlan: [
         `Provider escolhido no Estudio: ${option.label} (${option.providerName}).`,
         `Uso recomendado: ${option.recommendedUse}`,
@@ -1647,22 +1717,28 @@ export default function AudioVideoStudioPage() {
         </div>
       </section>
 
-      {!isEditingProject ? (
-        <section className="audio-video-studio-page__preset-grid">
-          {studioPresets.map((preset) => (
-            <button
-              className="audio-video-studio-page__preset"
-              key={preset.key}
-              type="button"
-              onClick={() => applyPreset(preset)}
-            >
-              <span>{preset.badge}</span>
-              <strong>{preset.label}</strong>
-              <small>{preset.description}</small>
-            </button>
-          ))}
-        </section>
-      ) : null}
+      <section
+        className="audio-video-studio-page__preset-grid"
+        aria-label="Presets de producao audiovisual"
+      >
+        {studioPresets.map((preset) => (
+          <button
+            className="audio-video-studio-page__preset"
+            key={preset.key}
+            type="button"
+            onClick={() => applyPreset(preset)}
+            title={
+              isEditingProject
+                ? "Aplicar ao formulario atual; a alteracao so e persistida ao salvar o projeto."
+                : undefined
+            }
+          >
+            <span>{preset.badge}</span>
+            <strong>{preset.label}</strong>
+            <small>{preset.description}</small>
+          </button>
+        ))}
+      </section>
 
       <section className="audio-video-studio-page__section">
         <div className="audio-video-studio-page__section-heading">
@@ -2384,12 +2460,12 @@ export default function AudioVideoStudioPage() {
                     </div>
                     <span>
                       {selectedProject.researchIntelligence.totalAvailableCards}{" "}
-                      artigos compilados
+                      cartões no catálogo global
                     </span>
                   </div>
                   <p>
-                    Cada agente recebe no máximo quatro cartões curtos. Os
-                    artigos orientam decisões, mas não contam como venda, prova
+                    Cada agente recebe no máximo quatro cartões curtos. As
+                    fontes orientam decisões, mas não contam como venda, prova
                     do produto ou autorização de gasto e publicação.
                   </p>
                   <Link
@@ -2462,9 +2538,10 @@ export default function AudioVideoStudioPage() {
                   </p>
                   <h2>Pesquisa será selecionada para qualquer projeto</h2>
                   <p>
-                    O backend compilará os artigos e entregará a cada agente
-                    somente a rota aderente ao contexto. Salve o blueprint para
-                    ver cartões, fontes e hashes da seleção deste projeto.
+                    O backend reunirá fontes Markdown e cartões aprovados pela
+                    API externa, entregando a cada agente somente a rota
+                    aderente ao contexto. Salve o blueprint para ver cartões,
+                    fontes e hashes da seleção deste projeto.
                   </p>
                   <Link
                     className="audio-video-studio-page__research-catalog-link"
@@ -2584,7 +2661,7 @@ export default function AudioVideoStudioPage() {
                   </p>
                 ) : null}
                 {selectedProject ? (
-                  <div>
+                  <div className="audio-video-studio-page__cycle-form">
                     <label>
                       Teto do ciclo em USD *
                       <input
@@ -2649,7 +2726,8 @@ export default function AudioVideoStudioPage() {
                             !Number.isFinite(Number(cycleBudgetUsd)) ||
                             Number(cycleBudgetUsd) <= 0 ||
                             !cycleLearningObjective.trim() ||
-                            !cycleSuccessCriterion.trim()
+                            !cycleSuccessCriterion.trim() ||
+                            Boolean(providerConfigurationIssue)
                           }
                           onClick={() =>
                             createProviderPreflight.mutate({
@@ -2667,9 +2745,10 @@ export default function AudioVideoStudioPage() {
                           Executar somente preflight sem gerar vídeo
                         </button>
                         <small>
-                          Consulta saldo e quota e executa o dry run oficial.
-                          Não reserva créditos, não aciona Plutus e não cria job
-                          de geração.
+                          Consulta saldo e limites sem cobrança. O Model Router
+                          usa dry run oficial; receitas pinadas sem dry run usam
+                          tarifa oficial determinística. Não reserva créditos,
+                          não aciona Plutus e não cria job de geração.
                         </small>
                         {createProviderPreflight.isError ? (
                           <p role="alert">
@@ -2687,7 +2766,8 @@ export default function AudioVideoStudioPage() {
                             !Number.isFinite(Number(cycleBudgetUsd)) ||
                             Number(cycleBudgetUsd) <= 0 ||
                             !cycleLearningObjective.trim() ||
-                            !cycleSuccessCriterion.trim()
+                            !cycleSuccessCriterion.trim() ||
+                            Boolean(providerConfigurationIssue)
                           }
                           onClick={() =>
                             createProductionCycle.mutate({
@@ -2715,6 +2795,13 @@ export default function AudioVideoStudioPage() {
                         ) : null}
                       </div>
                     </div>
+                    {providerConfigurationIssue ? (
+                      <p role="alert">
+                        <strong>Preflight bloqueado:</strong>{" "}
+                        {providerConfigurationIssue} Salve o projeto antes de
+                        tentar novamente.
+                      </p>
+                    ) : null}
                     {productionCycles.data?.[0] ? (
                       <div>
                         <p>
@@ -2814,7 +2901,7 @@ export default function AudioVideoStudioPage() {
                                 </dd>
                               </div>
                               <div>
-                                <dt>Configuração do router</dt>
+                                <dt>Rota ou receita validada</dt>
                                 <dd>
                                   {productionCycles.data[0].providerPreflight
                                     .routerConfigId ?? "Aguardando dry run"}
@@ -3004,28 +3091,37 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
-              {selectedProvider.providerName === "RUNWAY_ACT_TWO" ? (
+              {selectedProvider.providerName === "RUNWAY_ACT_TWO" ||
+              selectedProvider.providerName === "RUNWAY_PRODUCT_UGC" ? (
                 <article className="audio-video-studio-page__project-card">
-                  <strong>Gate de performance autorizada</strong>
+                  <strong>
+                    {selectedProvider.providerName === "RUNWAY_PRODUCT_UGC"
+                      ? "Gate de referências Product UGC"
+                      : "Gate de performance autorizada"}
+                  </strong>
                   <p>
                     Estes dados ficam no projeto e bloqueiam a chamada paga se
-                    estiverem ausentes. Use somente personagem, voz, movimento e
-                    gravacao próprios ou licenciados.
+                    estiverem ausentes. Use somente pessoa e imagens próprias ou
+                    licenciadas.
                   </p>
                   <div className="audio-video-studio-page__briefing-grid">
                     <label>
-                      Tipo da personagem *
+                      Tipo da apresentadora *
                       <select
                         value={briefing.characterPerformanceType}
                         onChange={updateBriefing("characterPerformanceType")}
                         required
                       >
                         <option value="image">Imagem autorizada</option>
-                        <option value="video">Video autorizado</option>
+                        {selectedProvider.providerName === "RUNWAY_ACT_TWO" ? (
+                          <option value="video">Video autorizado</option>
+                        ) : null}
                       </select>
                     </label>
                     <label>
-                      URL HTTPS da personagem *
+                      {selectedProvider.providerName === "RUNWAY_PRODUCT_UGC"
+                        ? "URL HTTPS da apresentadora *"
+                        : "URL HTTPS da personagem *"}
                       <input
                         type="url"
                         value={briefing.characterPerformanceUri}
@@ -3035,28 +3131,36 @@ export default function AudioVideoStudioPage() {
                       />
                     </label>
                     <label>
-                      URL HTTPS da performance *
+                      {selectedProvider.providerName === "RUNWAY_PRODUCT_UGC"
+                        ? "URL HTTPS da tela limpa do PDE *"
+                        : "URL HTTPS da performance *"}
                       <input
                         type="url"
                         value={briefing.referencePerformanceUri}
                         onChange={updateBriefing("referencePerformanceUri")}
-                        placeholder="https://.../performance-autorizada.mp4"
+                        placeholder={
+                          selectedProvider.providerName === "RUNWAY_PRODUCT_UGC"
+                            ? "https://.../tela-musa-aprovada.png"
+                            : "https://.../performance-autorizada.mp4"
+                        }
                         required
                       />
                     </label>
-                    <label>
-                      Duracao medida da performance *
-                      <input
-                        type="number"
-                        min="3"
-                        max="30"
-                        value={briefing.referencePerformanceDurationSeconds}
-                        onChange={updateBriefing(
-                          "referencePerformanceDurationSeconds",
-                        )}
-                        required
-                      />
-                    </label>
+                    {selectedProvider.providerName === "RUNWAY_ACT_TWO" ? (
+                      <label>
+                        Duracao medida da performance *
+                        <input
+                          type="number"
+                          min="3"
+                          max="30"
+                          value={briefing.referencePerformanceDurationSeconds}
+                          onChange={updateBriefing(
+                            "referencePerformanceDurationSeconds",
+                          )}
+                          required
+                        />
+                      </label>
+                    ) : null}
                     <label>
                       Evidencia de consentimento *
                       <input
@@ -3067,7 +3171,9 @@ export default function AudioVideoStudioPage() {
                       />
                     </label>
                     <label>
-                      Evidencia dos direitos da performance *
+                      {selectedProvider.providerName === "RUNWAY_PRODUCT_UGC"
+                        ? "Evidencia dos direitos das referências *"
+                        : "Evidencia dos direitos da performance *"}
                       <input
                         value={briefing.performanceRightsEvidence}
                         onChange={updateBriefing("performanceRightsEvidence")}
@@ -3077,12 +3183,16 @@ export default function AudioVideoStudioPage() {
                     </label>
                   </div>
                   <small>
-                    Act-Two permanece em homologacao. Salvar o projeto nao
-                    autoriza gasto, publicacao ou uso de pessoa reconhecivel.
+                    Salvar o projeto nao autoriza gasto, publicacao ou uso de
+                    pessoa reconhecivel. Product UGC exige imagem da pessoa e
+                    captura real da experiencia digital; nao use espelho nem
+                    represente o PDE como objeto fisico.
                   </small>
                 </article>
               ) : null}
-              {isEditingProject && selectedProject ? (
+              {isEditingProject &&
+              selectedProject &&
+              selectedProvider.providerName !== "RUNWAY_PRODUCT_UGC" ? (
                 <div className="audio-video-studio-page__scene-production">
                   <div className="audio-video-studio-page__section-heading">
                     <h3>Geracao plano a plano</h3>

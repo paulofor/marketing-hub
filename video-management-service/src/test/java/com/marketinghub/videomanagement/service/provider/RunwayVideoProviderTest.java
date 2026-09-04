@@ -2,6 +2,11 @@ package com.marketinghub.videomanagement.service.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -158,6 +163,107 @@ class RunwayVideoProviderTest {
         assertThat(artifacts.metadata())
                 .containsEntry("model", "gen4_turbo")
                 .containsEntry("cost_usd", new BigDecimal("0.50"));
+    }
+
+    /** Executa Product UGC uma única vez com versão, custo e referências já congelados. */
+    @Test
+    void shouldRenderTheExactProductUgcRecipeRequest() throws Exception {
+        server.enqueue(json("{\"id\":\"product-ugc-task-91\"}"));
+        server.enqueue(json("""
+                {
+                  "id":"product-ugc-task-91",
+                  "status":"SUCCEEDED",
+                  "output":["%s/download/product-ugc-task-91.mp4"]
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        RunwayReferenceImageInspector referenceInspector = readyReferenceInspector();
+        RunwayVideoProvider provider =
+                new RunwayVideoProvider(
+                        properties(), new ObjectMapper(), WebClient.builder(), referenceInspector);
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
+
+        ProviderArtifacts artifacts = provider.render(productUgcJob(), profile(), new ProgressCallback() {
+            /** Ignora mensagens sem detalhes financeiros. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Preserva aceite e liquidação da única receita faturável. */
+            @Override
+            public void onProgress(
+                    Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvents.add(detailsJson);
+            }
+        });
+
+        RecordedRequest create = server.takeRequest();
+        assertThat(create.getPath()).isEqualTo("/v1/recipes/product_ugc");
+        JsonNode body = new ObjectMapper().readTree(create.getBody().readUtf8());
+        assertThat(body.path("version").asText()).isEqualTo("2026-06");
+        assertThat(body.path("duration").asInt()).isEqualTo(15);
+        assertThat(body.path("ratio").asText()).isEqualTo("1080:1920");
+        assertThat(body.path("audio").asBoolean()).isFalse();
+        assertThat(body.path("characterImage").path("uri").asText())
+                .isEqualTo("https://assets.example/apresentadora.png");
+        assertThat(body.path("productImage").path("uri").asText())
+                .isEqualTo("https://assets.example/musa-pde.png");
+        assertThat(financialEvents).anySatisfy(event -> assertThat(event)
+                .contains("\"providerTaskId\":\"product-ugc-task-91\"")
+                .contains("\"estimatedCredits\":648"));
+        assertThat(artifacts.metadata())
+                .containsEntry("model", "product_ugc")
+                .containsEntry("recipe_version", "2026-06")
+                .containsEntry("resolution", "1080p")
+                .containsEntry("cost_usd", new BigDecimal("6.48"));
+        verify(referenceInspector)
+                .requireMatches(
+                        org.mockito.ArgumentMatchers.any(JsonNode.class),
+                        org.mockito.ArgumentMatchers.anyList());
+        assertThat(server.takeRequest().getPath()).isEqualTo("/v1/tasks/product-ugc-task-91");
+        assertThat(server.takeRequest().getPath()).isEqualTo("/download/product-ugc-task-91.mp4");
+        assertThat(server.getRequestCount()).isEqualTo(3);
+    }
+
+    /** Recusa referência alterada antes de iniciar a única chamada Product UGC faturável. */
+    @Test
+    void shouldRejectProductUgcWhenReferenceChangedAfterPreflight() throws Exception {
+        RunwayReferenceImageInspector inspector = mock(RunwayReferenceImageInspector.class);
+        when(inspector.inspectProductUgc(anyString(), anyString()))
+                .thenThrow(
+                        new VideoProviderException(
+                                "PROVIDER_REFERENCE_DRIFT",
+                                "A referência do PDE mudou depois do preflight."));
+        RunwayVideoProvider provider =
+                new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder(), inspector);
+
+        assertThatThrownBy(
+                        () ->
+                                provider.render(
+                                        productUgcJob(),
+                                        profile(),
+                                        (percent, status, message) -> {}))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_REFERENCE_DRIFT");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
+    /** Bloqueia Product UGC sem o identificador da reserva antes de baixar referências ou consumir créditos. */
+    @Test
+    void shouldRejectProductUgcWithoutReservationIdBeforeExternalCalls() throws Exception {
+        RunwayReferenceImageInspector inspector = mock(RunwayReferenceImageInspector.class);
+        RunwayVideoProvider provider =
+                new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder(), inspector);
+
+        assertThatThrownBy(
+                        () ->
+                                provider.render(
+                                        productUgcJob(false),
+                                        profile(),
+                                        (percent, status, message) -> {}))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_RESERVATION_INVALID");
+        verifyNoInteractions(inspector);
+        assertThat(server.getRequestCount()).isZero();
     }
 
     /** Bloqueia payload alterado depois do dry run antes de criar qualquer task faturável. */
@@ -671,6 +777,107 @@ class RunwayVideoProviderTest {
                 base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
                 base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
                 metadata, base.createdAt(), base.updatedAt());
+    }
+
+    /** Cria um job Product UGC com payload, rota, direitos e reserva imutáveis. */
+    private SalesVideoJob productUgcJob() throws Exception {
+        return productUgcJob(true);
+    }
+
+    /** Cria um job Product UGC permitindo provar o bloqueio sem reserva identificada. */
+    private SalesVideoJob productUgcJob(boolean includeReservationId) throws Exception {
+        SalesVideoJob base = job("RUNWAY_PRODUCT_UGC");
+        LinkedHashMap<String, Object> request = new LinkedHashMap<>();
+        request.put("version", "2026-06");
+        request.put("characterImage", Map.of("uri", "https://assets.example/apresentadora.png"));
+        request.put("productImage", Map.of("uri", "https://assets.example/musa-pde.png"));
+        request.put("productInfo", "MUSA é uma experiência digital com IA.");
+        request.put("userConcept", "Tomada contínua estável, sem espelho e sem texto nativo.");
+        request.put("duration", 15);
+        request.put("ratio", "1080:1920");
+        request.put("audio", false);
+        String requests = new ObjectMapper().writeValueAsString(List.of(request));
+        String hash = HexFormat.of().formatHex(
+                MessageDigest.getInstance("SHA-256")
+                        .digest(requests.getBytes(StandardCharsets.UTF_8)));
+        LinkedHashMap<String, Object> route = new LinkedHashMap<>();
+        route.put("scene", 1);
+        route.put("manufacturer", "Runway");
+        route.put("model", "product_ugc");
+        route.put("aggregator", "Runway");
+        route.put("accountKey", "RUNWAY_PRIMARY");
+        route.put("routerConfigId", "product_ugc@2026-06");
+        route.put("batchRouteId", "RUNWAY_PRODUCT_UGC:product_ugc@2026-06");
+        route.put("optimizeFor", "QUALITY");
+        route.put("estimatedCredits", 648);
+        route.put("priceCeilingCredits", 648);
+        route.put("durationSeconds", 15);
+        route.put("resolution", "1080p");
+        route.put(
+                "referenceImages",
+                referenceEvidence().stream()
+                        .map(
+                                evidence ->
+                                        Map.of(
+                                                "role", evidence.role(),
+                                                "sourceHost", evidence.sourceHost(),
+                                                "contentType", evidence.contentType(),
+                                                "contentLength", evidence.contentLength(),
+                                                "width", evidence.width(),
+                                                "height", evidence.height(),
+                                                "sha256", evidence.sha256()))
+                        .toList());
+        String routes = new ObjectMapper().writeValueAsString(List.of(route));
+        LinkedHashMap<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("runwayRouterRequestsJson", requests);
+        metadata.put("runwaySelectedRoutesJson", routes);
+        metadata.put("runwayRouterConfigId", "product_ugc@2026-06");
+        metadata.put("providerPreflightPayloadSha256", hash);
+        if (includeReservationId) {
+            metadata.put("providerCreditReservationId", 91);
+        }
+        metadata.put("providerReservedCredits", 648);
+        metadata.put("providerReservedCostUsd", 6.48);
+        metadata.put("providerReservationExpiresAt", Instant.now().plusSeconds(600).toString());
+        metadata.put("referenceGovernance", Map.of(
+                "presenterConsentEvidence", "consentimento-91",
+                "referenceRightsEvidence", "direitos-91",
+                "productIsDigitalExperience", true));
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                new ObjectMapper().writeValueAsString(metadata), base.createdAt(), base.updatedAt());
+    }
+
+    /** Simula o mesmo par de imagens raster congelado no preflight Product UGC. */
+    private RunwayReferenceImageInspector readyReferenceInspector() {
+        RunwayReferenceImageInspector inspector = mock(RunwayReferenceImageInspector.class);
+        when(inspector.inspectProductUgc(anyString(), anyString())).thenReturn(referenceEvidence());
+        return inspector;
+    }
+
+    /** Fornece evidências imutáveis da apresentadora e da experiência digital. */
+    private List<RunwayReferenceImageInspector.Evidence> referenceEvidence() {
+        return List.of(
+                new RunwayReferenceImageInspector.Evidence(
+                        "CHARACTER_IMAGE",
+                        "assets.example",
+                        "image/png",
+                        1000,
+                        1080,
+                        1920,
+                        "a".repeat(64)),
+                new RunwayReferenceImageInspector.Evidence(
+                        "PRODUCT_IMAGE",
+                        "assets.example",
+                        "image/png",
+                        900,
+                        1080,
+                        1920,
+                        "b".repeat(64)));
     }
 
     /** Cria uma cena Runway sem imagem-base para validar a modalidade text-to-video. */

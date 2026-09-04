@@ -488,6 +488,26 @@
   margin: 0.85rem 0;
 }
 
+.audio-video-studio-page__cycle-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.audio-video-studio-page__cycle-form > label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.audio-video-studio-page__cycle-form input,
+.audio-video-studio-page__cycle-form select,
+.audio-video-studio-page__cycle-form textarea {
+  width: 100%;
+  min-width: 0;
+}
+
 .audio-video-studio-page__cycle-action {
   display: grid;
   min-width: 0;
@@ -1015,7 +1035,9 @@
 
 .audio-video-studio-page__project-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.4rem;
+  min-width: 0;
   padding: 1rem;
 }
 

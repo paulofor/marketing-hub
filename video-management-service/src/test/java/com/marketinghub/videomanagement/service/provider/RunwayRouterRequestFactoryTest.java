@@ -49,10 +49,11 @@ class RunwayRouterRequestFactoryTest {
     /** Cria contexto mínimo e independente de produto para o factory. */
     private ProviderPreflightJob job(String profile, int duration, int clipDuration, int clips) {
         return new ProviderPreflightJob(
-                31L, 11L, "Runway", "RUNWAY_PRIMARY", profile, new BigDecimal("500"),
+                31L, 11L, "Runway", "RUNWAY_PRIMARY", profile, null, new BigDecimal("500"),
                 duration, clipDuration, clips, "9:16", "720p", false,
                 "Projeto reutilizável", "Validar comunicação", "Gancho", "Roteiro",
-                "Dor\nMecanismo\nResultado", "Personagem", "Ambiente", "Estilo", "Continuidade",
+                "Dor\nMecanismo\nResultado", "Personagem", "Ambiente", "PDE", "Estilo", "Continuidade",
+                "Legenda", "CTA", null, null, null, null, null, "Edição", "Qualidade",
                 "Aprender", "Melhorar retenção");
     }
 }

@@ -31,6 +31,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,9 +42,11 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: coordenar o gate de Plutus e a entrega de ciclos aprovados a Apolo. */
 @Service
 public class VideoProductionCycleService {
+  private static final Logger log = LoggerFactory.getLogger(VideoProductionCycleService.class);
   private static final String PLUTUS_KEY = "financial-agent";
   private static final String APOLLO_KEY = "videomaker";
   private static final String RUNWAY_ROUTER = "RUNWAY_ROUTER";
+  private static final String RUNWAY_PRODUCT_UGC = "RUNWAY_PRODUCT_UGC";
   private static final String APOLLO_BLOCKED = "APOLLO_BLOCKED";
   private final VideoProductionCycleRepository repository;
   private final VideoProjectRepository projectRepository;
@@ -102,6 +106,7 @@ public class VideoProductionCycleService {
   private VideoProductionCycleContracts.Response create(
       VideoProductionCycleContracts.CreateRequest request, String initialStatus) {
     VideoProject project = project(request.videoProjectId());
+    validateProviderPlan(project);
     if (project.getSalesVideoProfileId() == null) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O projeto precisa de um perfil de vídeo antes do ciclo autônomo.");
@@ -327,12 +332,16 @@ public class VideoProductionCycleService {
   private void queueApollo(
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     providerPreflightService.requireActiveReservation(cycle.getId());
+    String provider = isProductUgc(project.getProviderPlan()) ? RUNWAY_PRODUCT_UGC : RUNWAY_ROUTER;
     RequestVideoRenderRequest render = new RequestVideoRenderRequest();
     render.setRequestedBy("Apolo");
     render.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
-    render.setProviderName(RUNWAY_ROUTER);
+    render.setProviderName(provider);
     render.setExecutionMode(SalesVideoExecutionMode.TEST);
-    render.setTargetDurationSeconds(Math.min(10, project.getTargetDurationSeconds()));
+    render.setTargetDurationSeconds(
+        RUNWAY_PRODUCT_UGC.equals(provider)
+            ? project.getTargetDurationSeconds()
+            : Math.min(10, project.getTargetDurationSeconds()));
     render.setMetadataJson(metadata(cycle, project, previous));
     SalesVideoJobDto job =
         salesVideoService.requestRender(project.getSalesVideoProfileId(), render);
@@ -369,6 +378,7 @@ public class VideoProductionCycleService {
   /** Identifica o modelo preferido apenas para dimensionar clipes antes do roteamento externo. */
   private String preferredProvider(VideoProject project) {
     String plan = project.getProviderPlan();
+    if (isProductUgc(plan)) return RUNWAY_PRODUCT_UGC;
     if (plan != null && plan.contains("RUNWAY_SEEDANCE_2_5")) return "RUNWAY_SEEDANCE_2_5";
     if (plan != null && plan.contains("RUNWAY_HAILUO_3")) return "RUNWAY_HAILUO_3";
     return "RUNWAY_SEEDANCE_2_5";
@@ -382,10 +392,16 @@ public class VideoProductionCycleService {
       VideoCreditReservation reservation =
           providerPreflightService.requireActiveReservation(cycle.getId());
       int duration = project.getTargetDurationSeconds();
-      int providerClipDuration = providerClipDurationSeconds(preferredProvider(project));
-      List<LinkedHashMap<String, Object>> cuts = cutPlan(project, duration);
+      String provider = preferredProvider(project);
+      boolean productUgc = RUNWAY_PRODUCT_UGC.equals(provider);
+      int providerClipDuration = providerClipDurationSeconds(provider);
+      List<LinkedHashMap<String, Object>> cuts =
+          productUgc ? List.of() : cutPlan(project, duration);
       metadata.put("videoProductionCycleId", cycle.getId());
       metadata.put("videoProjectId", project.getId());
+      metadata.put("productId", cycle.getProductId());
+      metadata.put("commercialPlanId", cycle.getCommercialPlanId());
+      metadata.put("experimentId", cycle.getExperimentId());
       metadata.put("budgetLimitUsd", cycle.getBudgetLimitUsd());
       metadata.put("financialApprovedBy", "Plutus");
       metadata.put("providerCreditReservationId", reservation.getId());
@@ -402,36 +418,136 @@ public class VideoProductionCycleService {
       metadata.put("publicationAllowed", false);
       metadata.put("targetDurationSeconds", duration);
       metadata.put("providerClipDurationSeconds", providerClipDuration);
-      metadata.put("sceneCount", (duration + providerClipDuration - 1) / providerClipDuration);
-      metadata.put("cutCount", cuts.size());
-      metadata.put("assemblyRequired", duration > providerClipDuration);
-      metadata.put("generation_strategy", "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
+      metadata.put(
+          "sceneCount",
+          productUgc ? 1 : (duration + providerClipDuration - 1) / providerClipDuration);
+      metadata.put(
+          "cutCount", productUgc ? captionSegments(project.getCaptionPlan()) : cuts.size());
+      metadata.put("assemblyRequired", !productUgc && duration > providerClipDuration);
+      metadata.put(
+          "generation_strategy",
+          productUgc
+              ? "RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION"
+              : "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
       if (researchIntelligenceMapper != null) {
         metadata.put(
             "researchIntelligence",
             researchIntelligenceMapper.selectForVideoAgent(project, APOLLO_KEY));
       }
       metadata.put("cut_plan", cuts);
-      metadata.put(
-          "post_production",
-          java.util.Map.of(
-              "text_rendering", "DETERMINISTIC_OVERLAY",
-              "provider_embedded_text_allowed", false,
-              "caption_plan", nullToEmpty(project.getCaptionPlan()),
-              "cta_text", nullToEmpty(project.getCtaText()),
-              "editing_notes", nullToEmpty(project.getEditingNotes())));
+      LinkedHashMap<String, Object> postProduction = new LinkedHashMap<>();
+      postProduction.put("text_rendering", "DETERMINISTIC_OVERLAY");
+      postProduction.put("provider_embedded_text_allowed", false);
+      postProduction.put("caption_plan", nullToEmpty(project.getCaptionPlan()));
+      postProduction.put("cta_text", nullToEmpty(project.getCtaText()));
+      postProduction.put("editing_notes", nullToEmpty(project.getEditingNotes()));
+      metadata.put("post_production", postProduction);
+      if (productUgc) {
+        LinkedHashMap<String, Object> technicalGate = new LinkedHashMap<>();
+        technicalGate.put("continuousTakeRequired", true);
+        technicalGate.put("maximumMeanMotionDelta", new BigDecimal("1.25"));
+        technicalGate.put("maximumPeakMotionDelta", new BigDecimal("12.0"));
+        technicalGate.put("forbidMirrorOrReflection", true);
+        technicalGate.put("captionMustMatchNarration", true);
+        metadata.put("technicalQualityGate", technicalGate);
+        LinkedHashMap<String, Object> referenceGovernance = new LinkedHashMap<>();
+        referenceGovernance.put(
+            "presenterConsentEvidence", project.getPerformanceConsentEvidence().trim());
+        referenceGovernance.put(
+            "referenceRightsEvidence", project.getPerformanceRightsEvidence().trim());
+        referenceGovernance.put("productIsDigitalExperience", true);
+        metadata.put("referenceGovernance", referenceGovernance);
+        LinkedHashMap<String, Object> finalization = new LinkedHashMap<>();
+        finalization.put("enabled", true);
+        finalization.put("voiceOverScript", narrationFromCaption(project.getCaptionPlan()));
+        finalization.put("captionText", project.getCaptionPlan().trim());
+        finalization.put("soundtrackPlan", nullToEmpty(project.getSoundtrackPlan()));
+        finalization.put("ctaText", nullToEmpty(project.getCtaText()));
+        finalization.put("requiredReviewers", List.of("Psique", "Temis", "HUMAN"));
+        metadata.put("premiumFinalization", finalization);
+      }
       if (previous != null) metadata.put("replacesFailedJobId", previous.getId());
       return objectMapper.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {
+      log.error("Falha ao serializar contrato do ciclo premium; cycleId={}", cycle.getId(), ex);
       throw new IllegalStateException("Não foi possível auditar o ciclo de vídeo.", ex);
     }
   }
 
   /** Resolve a duração de geração por modelo sem tratá-la como duração de cada corte editorial. */
   private int providerClipDurationSeconds(String provider) {
+    if (RUNWAY_PRODUCT_UGC.equals(provider)) return 15;
     if (provider != null && provider.contains("SEEDANCE_2")) return 15;
     if (provider != null && provider.contains("VEO_3_1")) return 8;
     return 10;
+  }
+
+  /** Valida o contrato da receita premium antes de abrir preflight ou tarefa de agente. */
+  private void validateProviderPlan(VideoProject project) {
+    if (!isProductUgc(project.getProviderPlan())) return;
+    Integer duration = project.getTargetDurationSeconds();
+    if (duration == null || duration < 4 || duration > 15) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Product UGC exige duração entre 4 e 15 segundos.");
+    }
+    if (!"image".equalsIgnoreCase(project.getCharacterPerformanceType())
+        || !isHttps(project.getCharacterPerformanceUri())
+        || !isHttps(project.getReferencePerformanceUri())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Product UGC exige imagem HTTPS da apresentadora e tela HTTPS do PDE.");
+    }
+    if (project.getPerformanceConsentEvidence() == null
+        || project.getPerformanceConsentEvidence().isBlank()
+        || project.getPerformanceRightsEvidence() == null
+        || project.getPerformanceRightsEvidence().isBlank()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Product UGC exige consentimento e direitos auditáveis das referências.");
+    }
+    if (project.getCaptionPlan() == null
+        || project.getCaptionPlan().isBlank()
+        || project.getCtaText() == null
+        || project.getCtaText().isBlank()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Product UGC exige texto final e CTA aprovados.");
+    }
+  }
+
+  /** Identifica a escolha explícita da receita no plano persistido do projeto. */
+  private boolean isProductUgc(String providerPlan) {
+    return providerPlan != null
+        && providerPlan.toUpperCase(java.util.Locale.ROOT).contains("(RUNWAY_PRODUCT_UGC)");
+  }
+
+  /** Confirma referência pública HTTPS antes de entregar o contrato ao executor. */
+  private boolean isHttps(String value) {
+    if (value == null || value.isBlank()) return false;
+    try {
+      java.net.URI uri = java.net.URI.create(value.trim());
+      return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null;
+    } catch (IllegalArgumentException ex) {
+      log.warn("Referência Product UGC inválida; value={}", value, ex);
+      return false;
+    }
+  }
+
+  /** Conta os trechos que usarão a mesma linha narrativa na voz e na legenda. */
+  private int captionSegments(String captionPlan) {
+    if (captionPlan == null || captionPlan.isBlank()) return 0;
+    return (int)
+        java.util.Arrays.stream(captionPlan.split("\\s*\\|\\s*"))
+            .map(String::trim)
+            .filter(value -> !value.isBlank())
+            .count();
+  }
+
+  /** Deriva a narração do texto exibido, sem permitir uma segunda copy divergente. */
+  private String narrationFromCaption(String captionPlan) {
+    return java.util.Arrays.stream(captionPlan.split("\\s*\\|\\s*"))
+        .map(String::trim)
+        .filter(value -> !value.isBlank())
+        .collect(java.util.stream.Collectors.joining(" "));
   }
 
   /** Cria cortes comerciais curtos que serão agrupados nos clipes cobrados pelo provider. */
@@ -553,6 +669,7 @@ public class VideoProductionCycleService {
         value.aggregatorName(),
         value.accountKey(),
         value.productionProfile(),
+        value.providerPlan(),
         value.maxCredits(),
         value.targetDurationSeconds(),
         value.providerClipDurationSeconds(),
@@ -567,8 +684,18 @@ public class VideoProductionCycleService {
         value.scenePlan(),
         value.characterBible(),
         value.environmentBible(),
+        value.objectBible(),
         value.visualStyleGuide(),
         value.continuityRules(),
+        value.captionPlan(),
+        value.ctaText(),
+        value.characterPerformanceType(),
+        value.characterPerformanceUri(),
+        value.referencePerformanceUri(),
+        value.performanceConsentEvidence(),
+        value.performanceRightsEvidence(),
+        value.editingNotes(),
+        value.qualityGate(),
         value.learningObjective(),
         value.successCriterion());
   }
@@ -625,6 +752,7 @@ public class VideoProductionCycleService {
   private VideoProductionCycleContracts.Response response(VideoProductionCycle cycle) {
     VideoProject project = project(cycle.getVideoProjectId());
     int duration = project.getTargetDurationSeconds();
+    boolean productUgc = RUNWAY_PRODUCT_UGC.equals(preferredProvider(project));
     int providerClipDuration = providerClipDurationSeconds(preferredProvider(project));
     return new VideoProductionCycleContracts.Response(
         cycle.getId(),
@@ -660,9 +788,9 @@ public class VideoProductionCycleService {
         cycle.getBudgetAlertDetail(),
         cycle.getBudgetAlertAt(),
         providerClipDuration,
-        (duration + providerClipDuration - 1) / providerClipDuration,
-        cutPlan(project, duration).size(),
-        true,
+        productUgc ? 1 : (duration + providerClipDuration - 1) / providerClipDuration,
+        productUgc ? captionSegments(project.getCaptionPlan()) : cutPlan(project, duration).size(),
+        !productUgc && duration > providerClipDuration,
         cycle.getAgentTaskId(),
         cycle.getCreatedAt(),
         cycle.getUpdatedAt());
@@ -701,6 +829,7 @@ public class VideoProductionCycleService {
       snapshot.putAll(providerPreflightService.financialContext(cycle.getId()));
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
+      log.error("Falha ao congelar contexto financeiro de Plutus; cycleId={}", cycle.getId(), ex);
       throw new IllegalStateException("Não foi possível congelar o contexto financeiro.", ex);
     }
   }

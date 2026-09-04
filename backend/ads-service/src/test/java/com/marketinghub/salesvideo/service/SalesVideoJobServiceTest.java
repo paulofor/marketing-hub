@@ -127,7 +127,7 @@ class SalesVideoJobServiceTest {
         .contains(
             "O ativo ainda é um clipe bruto ou uma montagem sem pós-produção final.",
             "A narração em português do Brasil não foi incorporada.",
-            "A peça não deriva de uma montagem narrativa auditável.");
+            "A peça não deriva de uma fonte visual narrativa auditável.");
   }
 
   /** Aprova somente a peça final com montagem, áudio, legenda, CTA, HLS e revisão humana. */
@@ -165,6 +165,166 @@ class SalesVideoJobServiceTest {
 
     assertThat(result.getCommercialReadinessStatus()).isEqualTo("READY");
     assertThat(result.getCommercialReadinessBlockers()).isEmpty();
+  }
+
+  /** Encadeia Product UGC aprovado na pós-produção preservando os gates técnicos de Apolo. */
+  @Test
+  void shouldEnqueuePremiumFinalizationForProductUgc() {
+    TenantContextHolder.set(new TenantContext("tenant-a", "operator@tenant.io", false));
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(10L)
+            .tenantId("tenant-a")
+            .targetDurationSeconds(15)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .build();
+    SalesVideoJob source =
+        SalesVideoJob.builder()
+            .id(20522L)
+            .tenantId("tenant-a")
+            .profile(profile)
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("RUNWAY_PRODUCT_UGC")
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .executionMode(SalesVideoExecutionMode.TEST)
+            .requestedBy("Apolo")
+            .requestedAt(Instant.parse("2026-09-04T10:00:00Z"))
+            .metadataJson(
+                "{\"videoProductionCycleId\":91,\"experimentId\":91,"
+                    + "\"technicalQualityGate\":{\"continuousTakeRequired\":true,"
+                    + "\"captionMustMatchNarration\":true},"
+                    + "\"referenceGovernance\":{\"productIsDigitalExperience\":true},"
+                    + "\"premiumFinalization\":{\"enabled\":true,"
+                    + "\"captionText\":\"Você se arruma | Faça o diagnóstico gratuito\","
+                    + "\"voiceOverScript\":\"Você se arruma | Faça o diagnóstico gratuito\"}}")
+            .build();
+    Asset sourceAsset =
+        Asset.builder().id(903L).url("https://cdn.example.com/vega-91-ugc.mp4").build();
+    given(jobRepository.findById(20522L)).willReturn(Optional.of(source));
+    given(assetRepository.findById(903L)).willReturn(Optional.of(sourceAsset));
+    given(jobRepository.save(any(SalesVideoJob.class)))
+        .willAnswer(
+            invocation -> {
+              SalesVideoJob saved = invocation.getArgument(0);
+              if (saved.getId() == null) saved.setId(20523L);
+              return saved;
+            });
+    given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+    JobCompletionRequest request = new JobCompletionRequest();
+    request.setStatus(SalesVideoStatus.VIDEO_READY);
+    request.setAssetId(903L);
+    request.setStreamPlaybackUrl("https://cdn.example.com/vega-91-ugc.mp4");
+    request.setMetadataJson(
+        "{\"duration_seconds\":15,\"cost_usd\":6.48,"
+            + "\"technicalQualityGate\":{\"captionMustMatchNarration\":false},"
+            + "\"apollo_technical_quality\":{\"stability_status\":\"APPROVED\"}}");
+
+    try {
+      service.complete(20522L, request);
+
+      org.mockito.ArgumentCaptor<SalesVideoJob> jobs =
+          org.mockito.ArgumentCaptor.forClass(SalesVideoJob.class);
+      verify(jobRepository, org.mockito.Mockito.atLeastOnce()).save(jobs.capture());
+      SalesVideoJob postProduction =
+          jobs.getAllValues().stream()
+              .filter(job -> "MUSA_POST_PRODUCTION".equals(job.getProviderName()))
+              .findFirst()
+              .orElseThrow();
+      assertThat(postProduction.getRetryOfJob()).isSameAs(source);
+      assertThat(source.getMetadataJson()).contains("\"captionMustMatchNarration\":true");
+      assertThat(postProduction.getMetadataJson())
+          .contains(
+              "\"technicalQualityGate\"",
+              "\"captionMustMatchNarration\":true",
+              "\"referenceGovernance\"",
+              "\"apollo_technical_quality\"",
+              "Você se arruma | Faça o diagnóstico gratuito");
+    } finally {
+      TenantContextHolder.clear();
+    }
+  }
+
+  /** Reconhece pós-produção completa cuja fonte auditável é uma tomada Product UGC. */
+  @Test
+  void shouldApproveCommerciallyCompleteProductUgcPostProduction() {
+    long profileId = 10L;
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(profileId)
+            .humanReviewApprovedAt(Instant.parse("2026-09-04T12:00:00Z"))
+            .build();
+    SalesVideoScript script = SalesVideoScript.builder().ctaText("Faça o diagnóstico").build();
+    SalesVideoJob ugc =
+        SalesVideoJob.builder().id(20524L).providerName("RUNWAY_PRODUCT_UGC").build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(20525L)
+            .profile(profile)
+            .script(script)
+            .retryOfJob(ugc)
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://cdn.example.com/vega-91.m3u8")
+            .vttAsset(Asset.builder().id(904L).build())
+            .metadataJson(
+                "{\"audio\":{\"voice_over\":true,\"language\":\"pt-BR\","
+                    + "\"review\":{\"status\":\"APPROVED_FOR_TEST\"}},"
+                    + "\"captions\":{\"burned_in\":true,\"vtt_asset\":true},"
+                    + "\"caption_narration_sync\":{\"status\":\"APPROVED\","
+                    + "\"timing_status\":\"APPROVED\"},"
+                    + "\"apollo_technical_quality\":{\"stability_status\":\"APPROVED\"}}")
+            .build();
+    given(profileRepository.findById(profileId)).willReturn(Optional.of(profile));
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)).willReturn(List.of(job));
+
+    SalesVideoJobDto result = service.listJobsByProfile(profileId).get(0);
+
+    assertThat(result.getCommercialReadinessStatus()).isEqualTo("READY");
+    assertThat(result.getCommercialReadinessBlockers()).isEmpty();
+  }
+
+  /** Bloqueia Product UGC finalizado quando as três causas de rejeição não foram medidas. */
+  @Test
+  void shouldBlockProductUgcWithoutPremiumQualityEvidence() {
+    long profileId = 10L;
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(profileId)
+            .humanReviewApprovedAt(Instant.parse("2026-09-04T12:00:00Z"))
+            .build();
+    SalesVideoScript script = SalesVideoScript.builder().ctaText("Faça o diagnóstico").build();
+    SalesVideoJob ugc =
+        SalesVideoJob.builder().id(20526L).providerName("RUNWAY_PRODUCT_UGC").build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(20527L)
+            .profile(profile)
+            .script(script)
+            .retryOfJob(ugc)
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://cdn.example.com/vega-91.m3u8")
+            .vttAsset(Asset.builder().id(905L).build())
+            .metadataJson(
+                "{\"audio\":{\"voice_over\":true,\"language\":\"pt-BR\"},"
+                    + "\"captions\":{\"burned_in\":true,\"vtt_asset\":true}}")
+            .build();
+    given(profileRepository.findById(profileId)).willReturn(Optional.of(profile));
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)).willReturn(List.of(job));
+
+    SalesVideoJobDto result = service.listJobsByProfile(profileId).get(0);
+
+    assertThat(result.getCommercialReadinessStatus()).isEqualTo("BLOCKED");
+    assertThat(result.getCommercialReadinessBlockers())
+        .containsExactly(
+            "Apolo ainda não aprovou a estabilidade da tomada contínua.",
+            "Texto, locução e tempo de exibição ainda não possuem sincronismo aprovado.",
+            "O áudio premium ainda não passou no gate técnico para teste comercial.");
   }
 
   /** Garante que a tela de produto lista todos os jobs do produto no tenant atual. */

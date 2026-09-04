@@ -324,6 +324,81 @@ class VideoProductionCycleServiceTest {
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
   }
 
+  /** Enfileira Product UGC como tomada única e preserva copy, direitos e gates de Apolo. */
+  @Test
+  void shouldQueuePremiumProductUgcWithDeterministicFinalization() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setExperimentId(91L);
+    VideoProject project = productUgcProject();
+    SalesVideoJobDto job = new SalesVideoJobDto();
+    job.setId(391L);
+    VideoCreditReservation reservation = activeReservation();
+    reservation.setReservedCredits(new BigDecimal("648"));
+    reservation.setReservedCostUsd(new BigDecimal("6.48"));
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestRender(any(), any())).thenReturn(job);
+    when(providerPreflightService.reserve(cycle)).thenReturn(reservation);
+    when(providerPreflightService.requireActiveReservation(11L)).thenReturn(reservation);
+    when(providerPreflightService.payloadSha256(11L)).thenReturn("ugc-hash");
+    when(providerPreflightService.routerConfigId(11L)).thenReturn("product_ugc@2026-06");
+    when(providerPreflightService.executionRequests(11L)).thenReturn("[{\"version\":\"2026-06\"}]");
+    when(providerPreflightService.selectedRoutes(11L))
+        .thenReturn("[{\"batchRouteId\":\"RUNWAY_PRODUCT_UGC:product_ugc@2026-06\"}]");
+    service.setResearchIntelligenceMapper(
+        new VideoProjectResearchIntelligenceMapper(
+            new com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService()));
+
+    VideoProductionCycleContracts.Response result =
+        service.decide(
+            11L,
+            financialDecision("APPROVED", "Tarifa pinada e saldo válidos.", "financial-agent"));
+
+    ArgumentCaptor<RequestVideoRenderRequest> render =
+        ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
+    verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
+    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_PRODUCT_UGC");
+    assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(15);
+    assertThat(render.getValue().getMetadataJson())
+        .contains(
+            "\"experimentId\":91",
+            "RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION",
+            "\"continuousTakeRequired\":true",
+            "\"captionMustMatchNarration\":true",
+            "\"forbidMirrorOrReflection\":true",
+            "\"assemblyRequired\":false",
+            "\"productIsDigitalExperience\":true",
+            "\"requiredReviewers\":[\"Psique\",\"Temis\",\"HUMAN\"]",
+            "\"contractVersion\":\"HARNESS_RESEARCH_INTELLIGENCE_V1\"",
+            "\"collection\":\"video\"",
+            "\"collection\":\"prazer-audio-visual\"",
+            "Você se arruma, mas ainda sente que falta presença? Faça o diagnóstico gratuito.");
+    assertThat(result.generationClipCount()).isEqualTo(1);
+    assertThat(result.editCutCount()).isEqualTo(2);
+  }
+
+  /** Bloqueia Product UGC sem referências e direitos antes de abrir o preflight. */
+  @Test
+  void shouldRejectProductUgcWithoutGovernedReferences() {
+    VideoProject project = productUgcProject();
+    project.setPerformanceRightsEvidence(null);
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new VideoProductionCycleContracts.CreateRequest(
+                        7L,
+                        new BigDecimal("7.00"),
+                        "FINAL_CAMPAIGN",
+                        "Validar UGC",
+                        "Ativo estável",
+                        "usuario@mkt")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("direitos auditáveis");
+    verify(providerPreflightService, never()).open(any(), any());
+  }
+
   /** Bloqueia um job pago falho para impedir nova geração sem preflight e reserva novos. */
   @Test
   void shouldBlockFailedLegacyJobInsteadOfCreatingAnotherPaidRender() {
@@ -503,6 +578,24 @@ class VideoProductionCycleServiceTest {
         .title("MUSA v7")
         .targetDurationSeconds(15)
         .build();
+  }
+
+  /** Cria um projeto premium reutilizável com as duas referências governadas. */
+  private VideoProject productUgcProject() {
+    VideoProject project = project();
+    project.setExperimentId(91L);
+    project.setProviderPlan(
+        "Provider escolhido no Estudio: Runway Product UGC Premium (RUNWAY_PRODUCT_UGC).");
+    project.setCharacterPerformanceType("image");
+    project.setCharacterPerformanceUri("https://assets.example/apresentadora.png");
+    project.setReferencePerformanceUri("https://assets.example/musa-pde.png");
+    project.setPerformanceConsentEvidence("consentimento-91");
+    project.setPerformanceRightsEvidence("direitos-91");
+    project.setCaptionPlan(
+        "Você se arruma, mas ainda sente que falta presença? | Faça o diagnóstico gratuito.");
+    project.setCtaText("Faça o diagnóstico gratuito");
+    project.setSoundtrackPlan("Trilha leve");
+    return project;
   }
 
   /** Cria um ciclo pendente sem qualquer consumo. */

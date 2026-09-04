@@ -1,0 +1,12 @@
+{
+  "contractVersion": "MUSA_PRODUCT_UGC_REFERENCE_V1",
+  "source": "src/video-reference-assets/musa-product-ugc-reference.svg",
+  "generatedBy": "scripts/generate-musa-product-ugc-reference.mjs",
+  "renderer": "ffmpeg",
+  "fontFamily": "DejaVu Sans",
+  "output": "public/assets/musa-product-ugc-reference.png",
+  "width": 1080,
+  "height": 1920,
+  "purpose": "Referência limpa da experiência digital MUSA para a receita Product UGC da Runway",
+  "sha256": "a1aa5963d2b1956055710bc81be90bfc4adafee27cc8f86a80638a4d6a5383d8"
+}

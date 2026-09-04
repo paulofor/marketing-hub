@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Video Studio API
-  version: 1.2.0
+  version: 1.3.0
   description: Contratos administrativos para criação e edição de projetos de vídeo do Marketing Hub.
 servers:
   - url: http://191.252.181.168:8000
@@ -728,6 +728,8 @@ components:
         experimentHypothesis: { type: string, maxLength: 700 }
         risks: { type: string, maxLength: 700 }
         limits: { type: string }
-        sourcePath: { type: string, pattern: "^pesquisas/" }
+        sourcePath:
+          type: string
+          description: Caminho Markdown empacotado ou referência da fonte cadastrada e revisada.
         sourceSha256: { type: string, pattern: "^[0-9a-f]{64}$" }
         evidenceKind: { type: string, enum: [EXTERNAL_RESEARCH] }

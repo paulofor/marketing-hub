@@ -1,0 +1,30 @@
+services:
+  harness-library-api:
+    image: ${HARNESS_LIBRARY_API_IMAGE:?HARNESS_LIBRARY_API_IMAGE is required}
+    container_name: harness-library-api
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      MARKETING_HUB_BACKEND_URL: ${MARKETING_HUB_BACKEND_URL:-http://191.252.181.168}
+      HARNESS_LIBRARY_API_KEY_FILE: /run/secrets/harness_library_api_key
+      HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE: /run/secrets/harness_library_internal_signing_key
+      JAVA_TOOL_OPTIONS: ${HARNESS_LIBRARY_JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=65 -XX:+ExitOnOutOfMemoryError}
+    ports:
+      - "127.0.0.1:${HARNESS_LIBRARY_API_PORT:-8103}:8103"
+    volumes:
+      - ${HARNESS_LIBRARY_API_KEY_HOST_FILE:-/root/infra/harness-library/secrets/api_key}:/run/secrets/harness_library_api_key:ro
+      - ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE:-/root/infra/harness-library/secrets/internal_signing_key}:/run/secrets/harness_library_internal_signing_key:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9103/actuator/health/liveness"]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 25s
+    deploy:
+      resources:
+        limits:
+          memory: 384M

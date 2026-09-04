@@ -50,6 +50,9 @@ Princípios gerais:
 - `market-research-service`  
   Serviço de apoio à pesquisa de mercado.
 
+- `harness-library-api`
+  API JSON externa e sem banco para cadastro e curadoria versionada dos cartões do Harness.
+
 - `mcp-server`  
   Serviço auxiliar para consultas e operações suportadas via MCP.
 
@@ -97,6 +100,7 @@ ai-worker/                   worker de IA
 oprm/                        módulo de rotina/persona/ocupação
 mds/                         módulo de mechanism discovery
 market-research-service/     pesquisa de mercado
+harness-library-api/         API externa da Biblioteca do Harness
 facebook-ads-worker/         integrações com anúncios
 email-service/               envio e renderização de e-mails
 lead-portal/                 portal do lead
@@ -107,6 +111,7 @@ deploy/                      arquivos de deploy em containers
 docs/                        documentação e cânones
 AGENTS.md                    contrato operacional principal
 docker-compose.yml           compose raiz para serviços auxiliares
+```
 
 ## Troubleshooting rápido (Frontend / Sandbox)
 

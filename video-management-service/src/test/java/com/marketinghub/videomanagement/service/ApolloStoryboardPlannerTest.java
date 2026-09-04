@@ -1,26 +1,36 @@
 package com.marketinghub.videomanagement.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.client.ApolloPlanningAiClient;
+import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
+import com.marketinghub.videomanagement.client.dto.SalesVideoJobType;
+import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
+import com.marketinghub.videomanagement.client.dto.SalesVideoProviderFamily;
+import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
+import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import com.marketinghub.videomanagement.service.provider.ProgressCallback;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.mock;
 
 /** Responsabilidade: comprovar o gate determinístico anterior ao consumo audiovisual de Apolo. */
 class ApolloStoryboardPlannerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ApolloStoryboardPlanner planner;
+    private ApolloPlanningAiClient aiClient;
 
     /** Cria o planejador sem executar integrações externas. */
     @BeforeEach
     void setUp() {
-        planner = new ApolloStoryboardPlanner(new VideoManagementProperties(), objectMapper,
-                mock(ApolloPlanningAiClient.class));
+        aiClient = mock(ApolloPlanningAiClient.class);
+        planner = new ApolloStoryboardPlanner(new VideoManagementProperties(), objectMapper, aiClient);
     }
 
     /** Aprova um storyboard distinto cujo custo previsto permanece dentro do teto. */
@@ -105,6 +115,35 @@ class ApolloStoryboardPlannerTest {
         assertThat(decision.reason()).contains("cada coleção");
     }
 
+    /** Aprova Product UGC por receita pinada sem criar cortes ou chamar outra IA. */
+    @Test
+    void shouldApprovePinnedProductUgcWithoutCallingPlanningAi() throws Exception {
+        SalesVideoJob result = planner.planAndApprove(
+                productUgcJob(productUgcMetadata(true).toString()),
+                mock(SalesVideoProfile.class),
+                mock(ProgressCallback.class));
+
+        JsonNode metadata = objectMapper.readTree(result.metadataJson());
+        assertThat(metadata.path("apollo_planner_status").asText())
+                .isEqualTo("APPROVED_PINNED_RECIPE");
+        assertThat(metadata.path("expectedCredits").asInt()).isEqualTo(648);
+        assertThat(metadata.path("expectedCostUsd").decimalValue()).isEqualByComparingTo("6.48");
+        assertThat(metadata.at("/apollo_planner_request/appliedCardIds").size()).isEqualTo(2);
+        verifyNoInteractions(aiClient);
+    }
+
+    /** Bloqueia Product UGC quando o harness não entrega as duas coleções de Apolo. */
+    @Test
+    void shouldBlockProductUgcWithoutAudiovisualResearchCoverage() throws Exception {
+        assertThatThrownBy(() -> planner.planAndApprove(
+                productUgcJob(productUgcMetadata(false).toString()),
+                mock(SalesVideoProfile.class),
+                mock(ProgressCallback.class)))
+                .hasMessageContaining("prazer audiovisual");
+
+        verifyNoInteractions(aiClient);
+    }
+
     /** Monta o contexto financeiro e editorial já aprovado no backend. */
     private JsonNode metadata(String budget) throws Exception {
         return objectMapper.readTree("""
@@ -125,6 +164,68 @@ class ApolloStoryboardPlannerTest {
                    ]}
                  ]}}
                 """);
+    }
+
+    /** Monta o contrato completo da receita premium com ou sem a segunda coleção obrigatória. */
+    private JsonNode productUgcMetadata(boolean completeResearch) throws Exception {
+        String secondCard = completeResearch
+                ? ",{\"cardId\":\"RI1-BBBBBBBBBBBB\",\"collection\":\"prazer-audio-visual\"}"
+                : "";
+        return objectMapper.readTree("""
+                {"videoProductionCycleId":91,"budgetLimitUsd":10.00,
+                 "providerReservedCredits":648,"providerReservedCostUsd":6.48,
+                 "runwayRouterConfigId":"product_ugc@2026-06",
+                 "runwayRouterRequestsJson":"[{\\"version\\":\\"2026-06\\",\\"duration\\":15,\\"ratio\\":\\"1080:1920\\"}]",
+                 "generation_strategy":"RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION",
+                 "targetDurationSeconds":15,"sceneCount":1,"assemblyRequired":false,
+                 "technicalQualityGate":{"continuousTakeRequired":true,
+                   "captionMustMatchNarration":true,"forbidMirrorOrReflection":true,
+                   "maximumMeanMotionDelta":1.25,"maximumPeakMotionDelta":12.0},
+                 "referenceGovernance":{"productIsDigitalExperience":true,
+                   "presenterConsentEvidence":"consent-91","referenceRightsEvidence":"rights-91"},
+                 "premiumFinalization":{"enabled":true,
+                   "captionText":"Você se arruma | Faça o diagnóstico gratuito",
+                   "voiceOverScript":"Você se arruma Faça o diagnóstico gratuito",
+                   "requiredReviewers":["Psique","Temis","HUMAN"]},
+                 "researchIntelligence":{"contractVersion":"HARNESS_RESEARCH_INTELLIGENCE_V1","routes":[
+                   {"agentKey":"videomaker","cards":[
+                     {"cardId":"RI1-AAAAAAAAAAAA","collection":"video"}%s
+                   ]}
+                 ]}}
+                """.formatted(secondCard));
+    }
+
+    /** Cria um job Product UGC autônomo sem depender do backend durante o teste. */
+    private SalesVideoJob productUgcJob(String metadata) {
+        Instant now = Instant.parse("2026-09-04T12:00:00Z");
+        return new SalesVideoJob(
+                91L,
+                57L,
+                14L,
+                "tenant-a",
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "RUNWAY_PRODUCT_UGC",
+                null,
+                SalesVideoJobType.RENDER,
+                SalesVideoStatus.VIDEO_REQUESTED,
+                0,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                "Apolo",
+                now,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                metadata,
+                now,
+                now);
     }
 
     /** Registra no plano os IDs que a resposta estruturada declara ter aplicado. */

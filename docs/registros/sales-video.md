@@ -307,3 +307,14 @@
   ao catálogo global sem carregar o acervo inteiro nas telas de produção.
 - Limite comercial: artigos orientam hipóteses e revisões, mas não contam como prova, aprovação,
   publicação, gasto ou venda.
+
+## 2026-09-04 — Atividade audiovisual opcional da construção PDE
+
+- Evidência: a tarefa #336 de Mira permaneceu pendente porque o executor de Apolo não consumia a fila
+  BPM especializada, apesar de o contrato do produto declarar `audiovisualRequired=false`.
+- Decisão: Apolo consulta a fila canônica e usa somente o booleano versionado da arquitetura. O valor
+  `false` conclui a atividade com custo zero e sem artefato fictício; `true` exige autorização e
+  orçamento no Estúdio; ausência bloqueia para correção do contrato.
+- Prevenção: nenhum texto livre, componente classificado como áudio ou tarefa duplicada pode induzir
+  geração. Testes protegem o endpoint especializado, a decisão determinística e a ausência de chamada
+  a Runway, preservando integralmente os créditos do agregador quando vídeo não é necessário.

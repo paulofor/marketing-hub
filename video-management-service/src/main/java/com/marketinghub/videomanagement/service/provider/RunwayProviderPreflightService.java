@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -38,17 +39,24 @@ public class RunwayProviderPreflightService {
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final RunwayRouterRequestFactory requestFactory;
+    private final RunwayProductUgcRequestFactory productUgcRequestFactory;
+    private final RunwayReferenceImageInspector referenceImageInspector;
     private final WebClient webClient;
 
     /** Configura o cliente oficial, o gerador determinístico de payload e a auditoria JSON. */
+    @Autowired
     public RunwayProviderPreflightService(
             VideoManagementProperties properties,
             ObjectMapper objectMapper,
             RunwayRouterRequestFactory requestFactory,
+            RunwayProductUgcRequestFactory productUgcRequestFactory,
+            RunwayReferenceImageInspector referenceImageInspector,
             WebClient.Builder builder) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.requestFactory = requestFactory;
+        this.productUgcRequestFactory = productUgcRequestFactory;
+        this.referenceImageInspector = referenceImageInspector;
         this.webClient = builder.baseUrl(properties.getProviders().getRunway().getBaseUrl().toString()).build();
     }
 
@@ -76,10 +84,41 @@ public class RunwayProviderPreflightService {
             return blocked(job, null, "PROVIDER_AUTH_ERROR",
                     "A credencial Runway não está configurada no executor.", sourceUrl, observedAt);
         }
+        if (productUgcRequestFactory.supports(job)) {
+            try {
+                requirePremiumVoiceConfigured();
+            } catch (IOException | VideoProviderException ex) {
+                log.error(
+                        "Finalização premium indisponível antes do preflight Runway; cycleId={} code={}",
+                        job.cycleId(),
+                        ex instanceof VideoProviderException providerException
+                                ? providerException.getCode()
+                                : "APOLLO_PREMIUM_AUDIO_UNAVAILABLE",
+                        ex);
+                return blocked(
+                        job,
+                        null,
+                        "APOLLO_PREMIUM_AUDIO_UNAVAILABLE",
+                        ex instanceof VideoProviderException
+                                ? ex.getMessage()
+                                : "Não foi possível ler a credencial de voz natural de Apolo.",
+                        sourceUrl,
+                        observedAt);
+            }
+        }
         try {
+            List<RunwayReferenceImageInspector.Evidence> referenceImages =
+                    productUgcRequestFactory.supports(job)
+                            ? referenceImageInspector.inspectProductUgc(
+                                    job.characterPerformanceUri(), job.referencePerformanceUri())
+                            : List.of();
             JsonNode organization = getOrganization(job, apiKey);
             requireOrganizationContract(organization);
             JsonNode sanitizedOrganization = sanitizeOrganization(organization);
+            if (productUgcRequestFactory.supports(job)) {
+                return executeProductUgc(
+                        job, sanitizedOrganization, sourceUrl, referenceImages);
+            }
             List<Map<String, Object>> requests = requestFactory.build(job);
             String executionRequestsJson = objectMapper.writeValueAsString(requests);
             String payloadSha256 = sha256(executionRequestsJson);
@@ -144,6 +183,19 @@ public class RunwayProviderPreflightService {
                             : null,
                     sourceUrl,
                     Instant.now());
+        } catch (VideoProviderException ex) {
+            log.error(
+                    "Referência Product UGC bloqueou o preflight; cycleId={} code={}",
+                    job.cycleId(),
+                    ex.getCode(),
+                    ex);
+            return blocked(
+                    job,
+                    null,
+                    ex.getCode(),
+                    ex.getMessage(),
+                    sourceUrl,
+                    Instant.now());
         } catch (WebClientResponseException ex) {
             String body = sanitize(ex.getResponseBodyAsString());
             log.error(
@@ -161,6 +213,89 @@ public class RunwayProviderPreflightService {
                     ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage(),
                     sourceUrl, Instant.now());
         }
+    }
+
+    /** Simula a receita Product UGC pela tarifa oficial pinada, sem chamar seu endpoint faturável. */
+    private ProviderPreflightResultPayload executeProductUgc(
+            ProviderPreflightJob job,
+            JsonNode organization,
+            String sourceUrl,
+            List<RunwayReferenceImageInspector.Evidence> referenceImages)
+            throws JsonProcessingException {
+        List<Map<String, Object>> requests = productUgcRequestFactory.build(job);
+        String executionRequestsJson = objectMapper.writeValueAsString(requests);
+        String payloadSha256 = sha256(executionRequestsJson);
+        BigDecimal estimatedCredits = productUgcRequestFactory.estimatedCredits(job);
+        Map<String, Object> routingEvidence = new LinkedHashMap<>();
+        routingEvidence.put("simulation", "DETERMINISTIC_RATE_CARD");
+        routingEvidence.put("recipe", RunwayProductUgcRequestFactory.RECIPE_NAME);
+        routingEvidence.put("version", RunwayProductUgcRequestFactory.RECIPE_VERSION);
+        routingEvidence.put("estimatedCost", Map.of("credits", estimatedCredits));
+        routingEvidence.put(
+                "referenceImages",
+                referenceImages.stream().map(referenceImageInspector::audit).toList());
+        routingEvidence.put(
+                "basis",
+                "Tarifa oficial pinada; a receita Product UGC não publica contrato de dryRun.");
+        routingEvidence.put("promptAndResponseContract", productUgcRequestFactory.contractAudit());
+        Map<String, Object> selectedRoute = new LinkedHashMap<>();
+        selectedRoute.put("scene", 1);
+        selectedRoute.put("manufacturer", "Runway");
+        selectedRoute.put("model", RunwayProductUgcRequestFactory.RECIPE_NAME);
+        selectedRoute.put("aggregator", job.aggregatorName());
+        selectedRoute.put("accountKey", job.accountKey());
+        selectedRoute.put("routerConfigId", RunwayProductUgcRequestFactory.CONFIGURATION_ID);
+        selectedRoute.put(
+                "batchRouteId",
+                RunwayProductUgcRequestFactory.PROVIDER_NAME
+                        + ":"
+                        + RunwayProductUgcRequestFactory.CONFIGURATION_ID);
+        selectedRoute.put("optimizeFor", "QUALITY");
+        selectedRoute.put("priceCeilingCredits", estimatedCredits);
+        selectedRoute.put("estimatedCredits", estimatedCredits);
+        selectedRoute.put("durationSeconds", job.targetDurationSeconds());
+        selectedRoute.put("resolution", productUgcRequestFactory.resolution(job));
+        selectedRoute.put(
+                "referenceImages",
+                referenceImages.stream().map(referenceImageInspector::audit).toList());
+        selectedRoute.put("promptAndResponseContract", productUgcRequestFactory.contractAudit());
+        Map<String, Object> quota = new LinkedHashMap<>();
+        quota.put("recipe", RunwayProductUgcRequestFactory.RECIPE_NAME);
+        quota.put("version", RunwayProductUgcRequestFactory.RECIPE_VERSION);
+        quota.put("status", "ACCOUNT_SNAPSHOT_READY");
+        quota.put(
+                "recipeQuotaContract",
+                "A API pública não expõe quota específica da receita; falha externa bloqueia retry pago automático.");
+        boolean unsafeCeiling = estimatedCredits.compareTo(job.maxCredits()) > 0;
+        BigDecimal balance = organization.path("creditBalance").decimalValue();
+        log.info(
+                "Preflight Product UGC concluído; cycleId={} account={} version={} credits={} balance={} source={}",
+                job.cycleId(),
+                job.accountKey(),
+                RunwayProductUgcRequestFactory.RECIPE_VERSION,
+                estimatedCredits,
+                balance,
+                sourceUrl);
+        return new ProviderPreflightResultPayload(
+                "READY",
+                job.accountKey(),
+                RunwayProductUgcRequestFactory.CONFIGURATION_ID,
+                payloadSha256,
+                executionRequestsJson,
+                organization.toString(),
+                objectMapper.writeValueAsString(List.of(routingEvidence)),
+                objectMapper.writeValueAsString(List.of(selectedRoute)),
+                estimatedCredits,
+                balance,
+                organization.path("tier").path("maxMonthlyCreditSpend").longValue(),
+                objectMapper.writeValueAsString(quota),
+                organization.path("usage").toString(),
+                unsafeCeiling ? "PROVIDER_RECIPE_CEILING_UNSAFE" : null,
+                unsafeCeiling
+                        ? "A tarifa pinada da receita ultrapassa o teto em créditos autorizado para o ciclo."
+                        : null,
+                sourceUrl,
+                Instant.now());
     }
 
     /** Consulta saldo, tier e uso pela API oficial da organização. */
@@ -400,6 +535,29 @@ public class RunwayProviderPreflightService {
         if (!StringUtils.hasText(runway.getApiKeyFile())) return null;
         String key = Files.readString(Path.of(runway.getApiKeyFile().trim())).trim();
         return StringUtils.hasText(key) ? key : null;
+    }
+
+    /** Exige voz natural configurada antes de reservar ou consumir créditos do vídeo premium. */
+    private void requirePremiumVoiceConfigured() throws IOException {
+        VideoManagementProperties.PostProduction postProduction =
+                properties.getProviders().getPostProduction();
+        if (!postProduction.isEnabled()
+                || !postProduction.isOpenAiTtsEnabled()
+                || !StringUtils.hasText(postProduction.getOpenAiTtsModel())
+                || !StringUtils.hasText(postProduction.getOpenAiTtsVoice())) {
+            throw new VideoProviderException(
+                    "APOLLO_PREMIUM_AUDIO_UNAVAILABLE",
+                    "A pós-produção com voz natural de Apolo não está habilitada.");
+        }
+        String apiKey = postProduction.getOpenAiApiKey();
+        if (!StringUtils.hasText(apiKey) && StringUtils.hasText(postProduction.getOpenAiApiKeyFile())) {
+            apiKey = Files.readString(Path.of(postProduction.getOpenAiApiKeyFile().trim())).trim();
+        }
+        if (!StringUtils.hasText(apiKey)) {
+            throw new VideoProviderException(
+                    "APOLLO_PREMIUM_AUDIO_UNAVAILABLE",
+                    "A credencial de voz natural de Apolo não está configurada no executor.");
+        }
     }
 
     /** Classifica erros HTTP oficiais em causas operacionais estáveis. */

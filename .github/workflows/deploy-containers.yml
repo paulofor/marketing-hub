@@ -482,6 +482,20 @@ jobs:
           echo "Nao foi possivel coletar a chave SSH da APP VPS ${APP_VPS_IP}:22 apos novas tentativas."
           exit 1
 
+      - name: Provision Harness Library internal signing key
+        env:
+          HARNESS_LIBRARY_INTERNAL_SIGNING_KEY: ${{ secrets.HARNESS_LIBRARY_INTERNAL_SIGNING_KEY }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          set -euo pipefail
+          if [ "${#HARNESS_LIBRARY_INTERNAL_SIGNING_KEY}" -lt 32 ]; then
+            echo "Erro: HARNESS_LIBRARY_INTERNAL_SIGNING_KEY ausente ou menor que 32 caracteres no ambiente production." >&2
+            exit 1
+          fi
+          printf '%s' "${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY}" \
+            | ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+                'set -euo pipefail; install -m 700 -d /root/infra/harness-library/secrets; temporary=/root/infra/harness-library/secrets/internal_signing_key.tmp; umask 077; dd of="${temporary}" status=none; test "$(wc -c < "${temporary}")" -ge 32; mv "${temporary}" /root/infra/harness-library/secrets/internal_signing_key; chmod 600 /root/infra/harness-library/secrets/internal_signing_key'
+
       - name: Copy deployment descriptors
         env:
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes

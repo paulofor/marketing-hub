@@ -9,13 +9,17 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -88,27 +92,56 @@ public class PostProductionVideoProvider implements VideoProvider {
         String sourceVideoUrl = requiredText(metadata, "sourceVideoUrl");
         String captionText = requiredText(metadata, "captionText");
         String voiceOverScript = optionalText(metadata, "voiceOverScript");
+        Map<String, Object> textSyncReview =
+                validateCaptionNarrationSync(metadata, captionText, voiceOverScript);
         Path source = null;
         Path voice = null;
         Path caption = null;
         Path output = null;
+        List<Map<String, Object>> ttsInteractions = List.of();
+        List<ProviderFile> ttsAuditFiles = List.of();
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
             double durationSeconds = probeDurationSeconds(source, metadata, job.id());
-            CaptionTimeline captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
-            caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
-            output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
-            Files.writeString(caption, buildAss(captionTimeline), StandardCharsets.UTF_8);
+            CaptionTimeline captionTimeline;
             VoiceOverAudio voiceOverAudio = null;
             Map<String, Object> audioReview = Map.of("mode", "CAPTION_ONLY", "status", "NOT_REQUESTED");
             if (StringUtils.hasText(voiceOverScript)) {
-                voiceOverAudio = generateVoiceOver(voiceOverScript, job.id());
+                if (captionNarrationTimingRequired(metadata)) {
+                    SynchronizedNarration synchronizedNarration =
+                            generateSynchronizedNarration(captionText, durationSeconds, job.id());
+                    voiceOverAudio = synchronizedNarration.audio();
+                    captionTimeline = synchronizedNarration.timeline();
+                    textSyncReview = mergeTimingReview(textSyncReview, synchronizedNarration);
+                    ttsInteractions = synchronizedNarration.interactions();
+                    ttsAuditFiles = synchronizedNarration.rawResponseFiles();
+                } else {
+                    voiceOverAudio = generateVoiceOver(voiceOverScript, job.id(), 1);
+                    captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
+                    ttsInteractions = List.of(voiceOverAudio.interaction());
+                    ttsAuditFiles = voiceOverAudio.rawResponseFile() == null
+                            ? List.of()
+                            : List.of(voiceOverAudio.rawResponseFile());
+                }
                 voice = voiceOverAudio.file();
                 progressCallback.onProgress(35, SalesVideoStatus.VIDEO_PROCESSING, "Voz off em português gerada por "
                         + voiceOverAudio.providerLabel());
-                progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda, voz e trilha leve");
-                runFfmpegWithVoice(source, voice, caption, output, durationSeconds);
+            } else {
+                captionTimeline = buildCaptionTimeline(captionText, durationSeconds);
+            }
+            caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
+            output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
+            Files.writeString(caption, buildAss(captionTimeline, voiceOverAudio != null), StandardCharsets.UTF_8);
+            if (voiceOverAudio != null) {
+                progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e voz premium sincronizadas");
+                runFfmpegWithVoice(
+                        source,
+                        voice,
+                        caption,
+                        output,
+                        durationSeconds,
+                        !captionNarrationTimingRequired(metadata));
                 audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
             } else {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda grande sem voz off");
@@ -127,9 +160,17 @@ public class PostProductionVideoProvider implements VideoProvider {
                     ProviderAssetRole.CAPTION,
                     buildVtt(captionTimeline));
             Map<String, Object> resultMetadata = resultMetadata(
-                    job, metadata, captionText, voiceOverScript, audioReview, captionTimeline);
+                    job,
+                    metadata,
+                    captionText,
+                    voiceOverScript,
+                    audioReview,
+                    textSyncReview,
+                    captionTimeline,
+                    ttsInteractions);
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Vídeo finalizado para venda");
-            return new ProviderArtifacts("post-production-" + job.id(), video, null, captions, resultMetadata);
+            return new ProviderArtifacts(
+                    "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
         } catch (IOException ex) {
             log.error("Falha de arquivo na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "Falha de arquivo na pós-produção", ex);
@@ -167,44 +208,214 @@ public class PostProductionVideoProvider implements VideoProvider {
     }
 
     /** Gera a voz off usando OpenAI TTS quando configurado, com fallback local explícito. */
-    private VoiceOverAudio generateVoiceOver(String voiceOverScript, Long jobId) throws IOException {
+    private VoiceOverAudio generateVoiceOver(String voiceOverScript, Long jobId, int segmentIndex) throws IOException {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         if (config.isOpenAiTtsEnabled() && StringUtils.hasText(resolveOpenAiApiKey())) {
             Path voice = Files.createTempFile("sales-video-" + jobId + "-voiceover-openai", "."
                     + config.getOpenAiTtsResponseFormat());
-            runOpenAiTts(voiceOverScript, voice);
-            return new VoiceOverAudio(voice, "OPENAI_TTS", config.getOpenAiTtsModel(), config.getOpenAiTtsVoice());
+            TtsResponse response = runOpenAiTts(voiceOverScript, voice, jobId, segmentIndex);
+            return new VoiceOverAudio(
+                    voice,
+                    "OPENAI_TTS",
+                    config.getOpenAiTtsModel(),
+                    config.getOpenAiTtsVoice(),
+                    response.interaction(),
+                    response.rawResponseFile());
         }
         Path voice = Files.createTempFile("sales-video-" + jobId + "-voiceover-espeak", ".wav");
         runEspeak(voiceOverScript, voice);
-        return new VoiceOverAudio(voice, "ESPEAK_NG", "espeak-ng", config.getEspeakVoice());
+        return new VoiceOverAudio(
+                voice,
+                "ESPEAK_NG",
+                "espeak-ng",
+                config.getEspeakVoice(),
+                localVoiceInteraction(voiceOverScript, jobId, segmentIndex),
+                null);
+    }
+
+    /** Gera cada trecho exatamente como exibido e usa a duração física do áudio como relógio da legenda. */
+    private SynchronizedNarration generateSynchronizedNarration(
+            String captionText, double videoDurationSeconds, Long jobId) throws IOException {
+        List<String> segments = captionSegments(captionText);
+        List<VoiceOverAudio> segmentAudios = new ArrayList<>();
+        Path combined = null;
+        try {
+            List<Double> durations = new ArrayList<>();
+            for (int index = 0; index < segments.size(); index++) {
+                VoiceOverAudio audio = generateVoiceOver(segments.get(index), jobId, index + 1);
+                double duration = probeNarrationDurationSeconds(audio.file(), jobId, index + 1);
+                audio = audio.withMeasuredDuration(duration);
+                segmentAudios.add(audio);
+                durations.add(duration);
+            }
+            double narrationDuration = durations.stream().mapToDouble(Double::doubleValue).sum();
+            if (narrationDuration > videoDurationSeconds + 0.05) {
+                throw new VideoProviderException(
+                        "APOLLO_NARRATION_DURATION_EXCEEDED",
+                        "A narração segmentada dura %.3fs e ultrapassa o vídeo de %.3fs; encurte a copy antes de renderizar."
+                                .formatted(narrationDuration, videoDurationSeconds));
+            }
+            VoiceOverAudio first = segmentAudios.getFirst();
+            VoiceOverAudio result;
+            if (segmentAudios.size() == 1) {
+                result = first;
+            } else {
+                combined = Files.createTempFile("sales-video-" + jobId + "-voiceover-synchronized", ".wav");
+                concatenateNarrationSegments(segmentAudios, combined);
+                result = new VoiceOverAudio(
+                        combined,
+                        first.provider(),
+                        first.model(),
+                        first.voice(),
+                        first.interaction(),
+                        null);
+            }
+            CaptionTimeline timeline = synchronizedCaptionTimeline(
+                    segments, durations, videoDurationSeconds);
+            if (segmentAudios.size() > 1) {
+                segmentAudios.forEach(value -> deleteIfExists(value.file()));
+            }
+            return new SynchronizedNarration(
+                    result,
+                    timeline,
+                    List.copyOf(durations),
+                    narrationDuration,
+                    segmentAudios.stream().map(VoiceOverAudio::interaction).toList(),
+                    segmentAudios.stream()
+                            .map(VoiceOverAudio::rawResponseFile)
+                            .filter(java.util.Objects::nonNull)
+                            .toList());
+        } catch (IOException | RuntimeException ex) {
+            segmentAudios.forEach(value -> deleteIfExists(value.file()));
+            deleteIfExists(combined);
+            if (ex instanceof VideoProviderException providerException) {
+                log.error(
+                        "Gate de narração segmentada bloqueou a pós-produção; jobId={} code={}",
+                        jobId,
+                        providerException.getCode(),
+                        providerException);
+                throw providerException;
+            }
+            log.error("Falha ao sincronizar narração segmentada; jobId={}", jobId, ex);
+            throw ex;
+        }
+    }
+
+    /** Concatena os trechos de voz sem sobreposição para preservar seus limites medidos. */
+    private void concatenateNarrationSegments(List<VoiceOverAudio> segments, Path output) {
+        List<String> command = new ArrayList<>();
+        command.add(properties.getProviders().getPostProduction().getFfmpegPath());
+        command.add("-y");
+        for (VoiceOverAudio segment : segments) {
+            command.add("-i");
+            command.add(segment.file().toAbsolutePath().toString());
+        }
+        StringBuilder filter = new StringBuilder();
+        for (int index = 0; index < segments.size(); index++) {
+            filter.append('[').append(index).append(":a]");
+        }
+        filter.append("concat=n=").append(segments.size()).append(":v=0:a=1[aout]");
+        command.addAll(List.of(
+                "-filter_complex", filter.toString(),
+                "-map", "[aout]",
+                "-ac", "1",
+                "-ar", "44100",
+                "-c:a", "pcm_s16le",
+                output.toAbsolutePath().toString()));
+        runProcess(command, "ffmpeg falhou ao concatenar a narração segmentada");
     }
 
     /** Gera o áudio de voz off usando a API de Speech da OpenAI. */
-    private void runOpenAiTts(String voiceOverScript, Path voiceFile) throws IOException {
+    private TtsResponse runOpenAiTts(
+            String voiceOverScript, Path voiceFile, Long jobId, int segmentIndex) throws IOException {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", config.getOpenAiTtsModel());
         payload.put("voice", config.getOpenAiTtsVoice());
         payload.put("input", voiceOverScript);
         payload.put("response_format", config.getOpenAiTtsResponseFormat());
-        if (StringUtils.hasText(config.getOpenAiTtsInstructions())) {
-            payload.put("instructions", config.getOpenAiTtsInstructions());
+        payload.put("instructions", openAiTtsInstructions(config));
+        String endpoint = config.getOpenAiBaseUrl().toString().replaceFirst("/+$", "") + "/audio/speech";
+        String rawRequest = objectMapper.writeValueAsString(payload);
+        log.info(
+                "Enviando request OpenAI TTS; jobId={} segment={} url={} request={}",
+                jobId,
+                segmentIndex,
+                endpoint,
+                rawRequest);
+        ResponseEntity<byte[]> response;
+        try {
+            response = openAiWebClient.post()
+                    .uri("/audio/speech")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + resolveOpenAiApiKey())
+                    .accept(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(payload)
+                    .exchangeToMono(clientResponse -> clientResponse.toEntity(byte[].class))
+                    .block();
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha ao chamar OpenAI TTS; jobId={} segment={} url={}",
+                    jobId,
+                    segmentIndex,
+                    endpoint,
+                    ex);
+            throw new VideoProviderException(
+                    "OPENAI_TTS_FAILED",
+                    "OpenAI TTS indisponível; jobId=%s; segment=%d; url=%s; rawRequest=%s"
+                            .formatted(jobId, segmentIndex, endpoint, rawRequest),
+                    ex);
         }
-        ResponseEntity<byte[]> response = openAiWebClient.post()
-                .uri("/audio/speech")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + resolveOpenAiApiKey())
-                .accept(MediaType.APPLICATION_OCTET_STREAM)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payload)
-                .retrieve()
-                .toEntity(byte[].class)
-                .block();
         byte[] content = response == null ? null : response.getBody();
+        int statusCode = response == null ? 0 : response.getStatusCode().value();
+        if (response == null || !response.getStatusCode().is2xxSuccessful()) {
+            String rawResponse = readableResponse(content);
+            log.error(
+                    "OpenAI TTS recusou request; jobId={} segment={} url={} status={} response={}",
+                    jobId,
+                    segmentIndex,
+                    endpoint,
+                    statusCode,
+                    rawResponse);
+            throw new VideoProviderException(
+                    "OPENAI_TTS_FAILED",
+                    "OpenAI TTS recusou a locução; jobId=%s; segment=%d; url=%s; status=%d; rawRequest=%s; rawResponse=%s"
+                            .formatted(jobId, segmentIndex, endpoint, statusCode, rawRequest, rawResponse));
+        }
         if (content == null || content.length == 0) {
             throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "OpenAI TTS retornou áudio vazio");
         }
         Files.write(voiceFile, content);
+        String responseSha256 = sha256(content);
+        MediaType responseType = response.getHeaders().getContentType() == null
+                ? MediaType.APPLICATION_OCTET_STREAM
+                : response.getHeaders().getContentType();
+        String auditFileName = "sales-video-%d-tts-segment-%02d.%s".formatted(
+                jobId, segmentIndex, config.getOpenAiTtsResponseFormat());
+        ProviderFile rawResponseFile = new ProviderFile(
+                auditFileName,
+                responseType,
+                AssetType.AUDIO,
+                ProviderAssetRole.AUDIO_AUDIT,
+                content);
+        Map<String, Object> interaction = openAiVoiceInteraction(
+                jobId,
+                segmentIndex,
+                endpoint,
+                payload,
+                response,
+                auditFileName,
+                responseSha256,
+                content.length);
+        log.info(
+                "Resposta OpenAI TTS recebida; jobId={} segment={} url={} status={} bytes={} sha256={}",
+                jobId,
+                segmentIndex,
+                endpoint,
+                statusCode,
+                content.length,
+                responseSha256);
+        return new TtsResponse(interaction, rawResponseFile);
     }
 
     /** Gera o áudio de voz off usando binário versionado na imagem do worker. */
@@ -217,6 +428,99 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-w", voiceFile.toAbsolutePath().toString(),
                 voiceOverScript),
                 "espeak-ng falhou ao gerar voz off");
+    }
+
+    /** Registra a interação externa sem confundir tarifa publicada com custo efetivamente reconciliado. */
+    private Map<String, Object> openAiVoiceInteraction(
+            Long jobId,
+            int segmentIndex,
+            String endpoint,
+            Map<String, Object> rawRequest,
+            ResponseEntity<byte[]> response,
+            String responseAssetFileName,
+            String responseSha256,
+            int responseBytes) {
+        Map<String, Object> rawResponse = new LinkedHashMap<>();
+        rawResponse.put("representation", "BINARY_AUDIT_ASSET");
+        rawResponse.put("asset_file_name", responseAssetFileName);
+        rawResponse.put("content_type", String.valueOf(response.getHeaders().getContentType()));
+        rawResponse.put("bytes", responseBytes);
+        rawResponse.put("sha256", responseSha256);
+        rawResponse.put("request_id", response.getHeaders().getFirst("x-request-id"));
+
+        Map<String, Object> pricing = new LinkedHashMap<>();
+        pricing.put("status", "PENDING_PROVIDER_RECONCILIATION");
+        pricing.put("cost_usd", null);
+        pricing.put("input_usd_per_million_text_tokens", 0.60);
+        pricing.put("output_usd_per_million_audio_tokens", 12.00);
+        pricing.put("catalog_source", "OPENAI_GPT_4O_MINI_TTS_2026_09_04");
+        pricing.put("reason", "O endpoint de Speech devolve áudio binário sem usage por request.");
+
+        Map<String, Object> interaction = new LinkedHashMap<>();
+        interaction.put("interaction_type", "TEXT_TO_SPEECH");
+        interaction.put("provider", "OPENAI");
+        interaction.put("job_id", jobId);
+        interaction.put("segment_index", segmentIndex);
+        interaction.put("endpoint", endpoint);
+        interaction.put("status", "COMPLETED");
+        interaction.put("model", rawRequest.get("model"));
+        interaction.put("service_tier", "NOT_SUPPORTED_BY_AUDIO_SPEECH_ENDPOINT");
+        interaction.put("raw_request", new LinkedHashMap<>(rawRequest));
+        interaction.put("raw_response", rawResponse);
+        interaction.put("input_character_count", String.valueOf(rawRequest.get("input")).length());
+        interaction.put("usage_status", "PENDING_PROVIDER_RECONCILIATION");
+        interaction.put("pricing", pricing);
+        interaction.put("completed_at", Instant.now().toString());
+        return interaction;
+    }
+
+    /** Registra que o fallback local não realizou chamada externa nem gerou custo de provedor. */
+    private Map<String, Object> localVoiceInteraction(String text, Long jobId, int segmentIndex) {
+        Map<String, Object> interaction = new LinkedHashMap<>();
+        interaction.put("interaction_type", "LOCAL_TEXT_TO_SPEECH");
+        interaction.put("provider", "ESPEAK_NG");
+        interaction.put("job_id", jobId);
+        interaction.put("segment_index", segmentIndex);
+        interaction.put("status", "COMPLETED_LOCAL_ONLY");
+        interaction.put("input_character_count", text.length());
+        interaction.put("cost_status", "NOT_APPLICABLE");
+        interaction.put("cost_usd", 0);
+        return interaction;
+    }
+
+    /** Converte resposta textual de erro em evidência limitada para o callback persistido. */
+    private String readableResponse(byte[] content) {
+        if (content == null || content.length == 0) {
+            return "<empty>";
+        }
+        String value = new String(content, StandardCharsets.UTF_8);
+        return value.length() <= 16_384 ? value : value.substring(0, 16_384) + "...[truncated]";
+    }
+
+    /** Calcula a identidade SHA-256 do binário bruto recebido do provedor de voz. */
+    private String sha256(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException ex) {
+            log.error("SHA-256 indisponível durante a auditoria da resposta OpenAI TTS", ex);
+            throw new IllegalStateException("SHA-256 indisponível para auditoria de TTS", ex);
+        }
+    }
+
+    /** Carrega a direção vocal versionada, preservando override operacional explícito quando houver. */
+    private String openAiTtsInstructions(VideoManagementProperties.PostProduction config) {
+        if (StringUtils.hasText(config.getOpenAiTtsInstructions())) {
+            return config.getOpenAiTtsInstructions().trim();
+        }
+        String path = config.getOpenAiTtsInstructionsPath();
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(path)) {
+            if (input == null) throw new IOException("Recurso ausente: " + path);
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8).trim();
+        } catch (IOException ex) {
+            log.error("Falha ao carregar direção vocal versionada; path={}", path, ex);
+            throw new VideoProviderException(
+                    "OPENAI_TTS_CONTRACT_INVALID", "Direção vocal de Apolo não foi empacotada.", ex);
+        }
     }
 
     /** Compõe o MP4 final apenas com legenda queimada, preservando o vídeo fonte. */
@@ -243,21 +547,29 @@ public class PostProductionVideoProvider implements VideoProvider {
                                     Path voice,
                                     Path caption,
                                     Path output,
-                                    double durationSeconds) {
+                                    double durationSeconds,
+                                    boolean includeSyntheticBed) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
         String videoFilter = captionSubtitles(caption);
-        String filter = "[2:a]volume=0.018,afade=t=in:st=0:d=1,afade=t=out:st="
-                + Math.max(1, durationSeconds - 1) + ":d=1[music];[1:a]volume=1.0[voice];"
-                + "[voice][music]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
-                + "[mixed]loudnorm=I=-17:TP=-2:LRA=7[aout];"
-                + "[0:v]" + videoFilter + "[vout]";
-        runProcess(List.of(
+        String audioFilter;
+        List<String> command = new ArrayList<>(List.of(
                 config.getFfmpegPath(),
                 "-y",
                 "-i", source.toAbsolutePath().toString(),
-                "-i", voice.toAbsolutePath().toString(),
-                "-f", "lavfi",
-                "-i", "sine=frequency=220:sample_rate=44100:duration=" + durationSeconds,
+                "-i", voice.toAbsolutePath().toString()));
+        if (includeSyntheticBed) {
+            command.addAll(List.of(
+                    "-f", "lavfi",
+                    "-i", "sine=frequency=220:sample_rate=44100:duration=" + durationSeconds));
+            audioFilter = "[2:a]volume=0.018,afade=t=in:st=0:d=1,afade=t=out:st="
+                    + Math.max(1, durationSeconds - 1) + ":d=1[music];[1:a]volume=1.0[voice];"
+                    + "[voice][music]amix=inputs=2:duration=longest:dropout_transition=0[mixed];"
+                    + "[mixed]loudnorm=I=-17:TP=-2:LRA=7[aout];";
+        } else {
+            audioFilter = "[1:a]volume=1.0,loudnorm=I=-17:TP=-2:LRA=7[aout];";
+        }
+        String filter = audioFilter + "[0:v]" + videoFilter + "[vout]";
+        command.addAll(List.of(
                 "-filter_complex", filter,
                 "-map", "[vout]",
                 "-map", "[aout]",
@@ -268,8 +580,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "-c:a", "aac",
                 "-t", formatFfmpegDuration(durationSeconds),
                 "-movflags", "+faststart",
-                output.toAbsolutePath().toString()),
-                "ffmpeg falhou ao finalizar vídeo para venda");
+                output.toAbsolutePath().toString()));
+        runProcess(command, "ffmpeg falhou ao finalizar vídeo para venda");
     }
 
     /** Formata a duração limite usada para impedir que filtros de áudio mantenham o render aberto. */
@@ -385,16 +697,36 @@ public class PostProductionVideoProvider implements VideoProvider {
         return fallback > 0 && Double.isFinite(fallback) ? fallback : 30;
     }
 
+    /** Mede a duração de um trecho narrado e falha fechado para não inventar timestamps. */
+    private double probeNarrationDurationSeconds(Path source, Long jobId, int segment) {
+        try {
+            String value = runProcess(List.of(
+                    properties.getProviders().getPostProduction().getFfprobePath(),
+                    "-v", "error",
+                    "-show_entries", "format=duration",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    source.toAbsolutePath().toString()),
+                    "ffprobe falhou ao medir trecho narrado").trim();
+            double duration = Double.parseDouble(value);
+            if (duration > 0 && Double.isFinite(duration)) {
+                return duration;
+            }
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha ao medir trecho narrado; jobId={} segment={}", jobId, segment, ex);
+            throw new VideoProviderException(
+                    "APOLLO_NARRATION_TIMING_UNAVAILABLE",
+                    "Apolo não conseguiu medir o trecho narrado " + segment + ".",
+                    ex);
+        }
+        throw new VideoProviderException(
+                "APOLLO_NARRATION_TIMING_UNAVAILABLE",
+                "O trecho narrado " + segment + " não possui duração válida.");
+    }
+
     /** Divide uma legenda por barras verticais e distribui os trechos pelo vídeo. */
     private CaptionTimeline buildCaptionTimeline(String captionText, double durationSeconds) {
-        List<String> segments = java.util.Arrays.stream(captionText.split("\\s*\\|\\s*"))
-                .map(String::trim)
-                .filter(StringUtils::hasText)
-                .limit(12)
-                .toList();
-        if (segments.isEmpty()) {
-            segments = List.of(captionText.trim());
-        }
+        List<String> segments = captionSegments(captionText);
         double segmentDuration = durationSeconds / segments.size();
         List<CaptionCue> cues = new ArrayList<>();
         for (int index = 0; index < segments.size(); index++) {
@@ -405,8 +737,50 @@ public class PostProductionVideoProvider implements VideoProvider {
         return new CaptionTimeline(durationSeconds, cues);
     }
 
+    /** Separa os trechos editoriais preservando exatamente a ordem da copy aprovada. */
+    private List<String> captionSegments(String captionText) {
+        List<String> segments = java.util.Arrays.stream(captionText.split("\\s*\\|\\s*"))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .limit(12)
+                .toList();
+        return segments.isEmpty() ? List.of(captionText.trim()) : segments;
+    }
+
+    /** Constrói cues nos limites físicos de cada áudio e mantém o CTA visível até o fim. */
+    private CaptionTimeline synchronizedCaptionTimeline(
+            List<String> segments, List<Double> durations, double videoDurationSeconds) {
+        List<CaptionCue> cues = new ArrayList<>();
+        double cursor = 0;
+        for (int index = 0; index < segments.size(); index++) {
+            double start = cursor;
+            cursor += durations.get(index);
+            double end = index == segments.size() - 1 ? videoDurationSeconds : cursor;
+            cues.add(new CaptionCue(start, end, segments.get(index)));
+        }
+        return new CaptionTimeline(videoDurationSeconds, cues);
+    }
+
+    /** Identifica o contrato premium que exige relógio derivado do áudio de cada trecho. */
+    private boolean captionNarrationTimingRequired(JsonNode metadata) {
+        return metadata.at("/technicalQualityGate/captionMustMatchNarration").asBoolean(false);
+    }
+
+    /** Acrescenta ao gate textual a evidência temporal medida de cada trecho narrado. */
+    private Map<String, Object> mergeTimingReview(
+            Map<String, Object> textReview, SynchronizedNarration narration) {
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>(textReview);
+        result.put("timing_status", "APPROVED");
+        result.put("timing_method", "SEGMENT_AUDIO_DURATION");
+        result.put("segment_count", narration.segmentDurationsSeconds().size());
+        result.put("segment_durations_seconds", narration.segmentDurationsSeconds());
+        result.put("narration_duration_seconds", narration.narrationDurationSeconds());
+        result.put("synthetic_music_bed", false);
+        return result;
+    }
+
     /** Gera ASS com caixa legível e margens seguras para Reels e Stories. */
-    private String buildAss(CaptionTimeline timeline) {
+    private String buildAss(CaptionTimeline timeline, boolean aiVoiceDisclosureRequired) {
         StringBuilder ass = new StringBuilder("""
                 [Script Info]
                 ScriptType: v4.00+
@@ -417,10 +791,17 @@ public class PostProductionVideoProvider implements VideoProvider {
                 [V4+ Styles]
                 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
                 Style: Default,DejaVu Sans,48,&H00FFFFFF,&H00FFFFFF,&H90000000,&H78000000,-1,0,0,0,100,100,0,0,3,2,0,2,54,54,170,1
+                Style: Disclosure,DejaVu Sans,22,&H00FFFFFF,&H00FFFFFF,&H90000000,&H78000000,0,0,0,0,100,100,0,0,3,1,0,8,54,54,70,1
 
                 [Events]
                 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 """);
+        if (aiVoiceDisclosureRequired) {
+            ass.append("Dialogue: 1,")
+                    .append(formatAssTime(0)).append(',')
+                    .append(formatAssTime(timeline.durationSeconds()))
+                    .append(",Disclosure,,0,0,0,,Voz gerada por IA\n");
+        }
         for (CaptionCue cue : timeline.cues()) {
             ass.append("Dialogue: 0,")
                     .append(formatAssTime(cue.startSeconds())).append(',')
@@ -603,7 +984,9 @@ public class PostProductionVideoProvider implements VideoProvider {
                                                String captionText,
                                                String voiceOverScript,
                                                Map<String, Object> audioReview,
-                                               CaptionTimeline captionTimeline) {
+                                               Map<String, Object> textSyncReview,
+                                               CaptionTimeline captionTimeline,
+                                               List<Map<String, Object>> ttsInteractions) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
         metadata.put("provider_job_id", "post-production-" + job.id());
@@ -615,7 +998,13 @@ public class PostProductionVideoProvider implements VideoProvider {
         metadata.put("audio", Map.of(
                 "voice_over", StringUtils.hasText(voiceOverScript),
                 "language", "pt-BR",
-                "music", StringUtils.hasText(voiceOverScript) ? "synthetic_light_bed" : "none",
+                "ai_generated_disclosure", StringUtils.hasText(voiceOverScript),
+                "ai_generated_disclosure_text", StringUtils.hasText(voiceOverScript)
+                        ? "Voz gerada por IA"
+                        : "",
+                "music", "SEGMENT_AUDIO_DURATION".equals(textSyncReview.get("timing_method"))
+                        ? "none"
+                        : StringUtils.hasText(voiceOverScript) ? "synthetic_light_bed" : "none",
                 "review", audioReview));
         metadata.put("captions", Map.of(
                 "burned_in", true,
@@ -623,11 +1012,57 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "text", captionText,
                 "cue_count", captionTimeline.cues().size(),
                 "timed", captionTimeline.cues().size() > 1));
+        metadata.put("caption_narration_sync", textSyncReview);
+        metadata.put("tts_interactions", ttsInteractions);
+        metadata.put(
+                "tts_cost_reconciliation_status",
+                ttsInteractions.stream().anyMatch(value -> "OPENAI".equals(value.get("provider")))
+                        ? "PENDING_PROVIDER_RECONCILIATION"
+                        : "NOT_APPLICABLE");
         metadata.put("voice_over_script", StringUtils.hasText(voiceOverScript) ? voiceOverScript : null);
         metadata.put("cta_text", sourceMetadata.path("post_production").path("cta_text").asText(null));
         metadata.put("source_experiment_video_asset_id", sourceMetadata.path("experimentVideoAssetId").asLong());
         metadata.put("finished_at", Instant.now().toString());
         return metadata;
+    }
+
+    /** Exige que a narração repita a mesma sequência normalizada exibida nas legendas. */
+    private Map<String, Object> validateCaptionNarrationSync(
+            JsonNode metadata, String captionText, String voiceOverScript) {
+        boolean required =
+                metadata.at("/technicalQualityGate/captionMustMatchNarration").asBoolean(false);
+        if (!required) {
+            return Map.of("status", "NOT_REQUIRED");
+        }
+        if (!StringUtils.hasText(voiceOverScript)) {
+            throw new VideoProviderException(
+                    "APOLLO_CAPTION_NARRATION_MISMATCH",
+                    "O gate de Apolo exige narração para o mesmo texto exibido.");
+        }
+        String normalizedCaption = normalizeSpokenText(captionText);
+        String normalizedNarration = normalizeSpokenText(voiceOverScript);
+        if (!normalizedCaption.equals(normalizedNarration)) {
+            throw new VideoProviderException(
+                    "APOLLO_CAPTION_NARRATION_MISMATCH",
+                    "O texto exibido diverge da sequência narrada; gere ambos a partir da mesma fonte.");
+        }
+        return Map.of(
+                "status", "APPROVED",
+                "method", "NORMALIZED_EXACT_SEQUENCE",
+                "word_count", normalizedCaption.isBlank() ? 0 : normalizedCaption.split(" ").length);
+    }
+
+    /** Normaliza pausas, pontuação e acentos sem permitir troca ou omissão de palavras. */
+    private String normalizeSpokenText(String value) {
+        String decomposed =
+                java.text.Normalizer.normalize(
+                    value == null ? "" : value.replace('|', ' '), java.text.Normalizer.Form.NFD);
+        return decomposed
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N}]+", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
     }
 
     /** Normaliza nome de provider para comparação estável. */
@@ -652,7 +1087,6 @@ public class PostProductionVideoProvider implements VideoProvider {
         }
     }
 
-    /** Resolve a chave OpenAI por valor direto ou arquivo de secret montado no container. */
     /** Resolve a credencial de TTS sem expor seu conteúdo em log ou metadata. */
     private String resolveOpenAiApiKey() {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
@@ -680,8 +1114,35 @@ public class PostProductionVideoProvider implements VideoProvider {
     /** Agrupa a duração física do vídeo e todas as legendas temporizadas. */
     private record CaptionTimeline(double durationSeconds, List<CaptionCue> cues) { }
 
+    /** Preserva áudio contínuo, cues e medições produzidos pelo sincronismo de Apolo. */
+    private record SynchronizedNarration(
+            VoiceOverAudio audio,
+            CaptionTimeline timeline,
+            List<Double> segmentDurationsSeconds,
+            double narrationDurationSeconds,
+            List<Map<String, Object>> interactions,
+            List<ProviderFile> rawResponseFiles) { }
+
+    /** Agrupa o registro da chamada TTS e o binário bruto que será persistido como ativo. */
+    private record TtsResponse(
+            Map<String, Object> interaction,
+            ProviderFile rawResponseFile) { }
+
     /** Descreve o arquivo de voz off gerado para auditoria da pós-produção. */
-    private record VoiceOverAudio(Path file, String provider, String model, String voice) {
+    private record VoiceOverAudio(
+            Path file,
+            String provider,
+            String model,
+            String voice,
+            Map<String, Object> interaction,
+            ProviderFile rawResponseFile) {
+        /** Acrescenta a duração medida sem alterar a evidência original do provedor. */
+        VoiceOverAudio withMeasuredDuration(double durationSeconds) {
+            Map<String, Object> measured = new LinkedHashMap<>(interaction);
+            measured.put("output_duration_seconds", durationSeconds);
+            return new VoiceOverAudio(file, provider, model, voice, measured, rawResponseFile);
+        }
+
         /** Retorna o rótulo operacional do provedor de voz. */
         String providerLabel() {
             return provider + "/" + voice;

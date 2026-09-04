@@ -87,6 +87,10 @@ class ArquiteturaTest {
     void executorDeveUsarContratosInternosCanonicosDoBackend() throws IOException {
         String backendClient = Files.readString(Path.of("src/main/java/com/marketinghub/videomanagement/client/BackendVideoClient.java"));
         String assetClient = Files.readString(Path.of("src/main/java/com/marketinghub/videomanagement/client/VideoAssetClient.java"));
+        String pdeAudiovisualClient = Files.readString(Path.of(
+                "src/main/java/com/marketinghub/videomanagement/pdeaudiovisualv1/ApolloPdeAudiovisualBackendClient.java"));
+        String pdeAudiovisualConsumer = Files.readString(Path.of(
+                "src/main/java/com/marketinghub/videomanagement/pdeaudiovisualv1/ApolloPdeAudiovisualBpmTaskConsumer.java"));
 
         assertThat(backendClient)
                 .as("[ARQUITETURA] O executor deve iniciar consumo pela fila interna de jobs de vídeo.")
@@ -102,6 +106,19 @@ class ArquiteturaTest {
         assertThat(assetClient)
                 .as("[ARQUITETURA] Assets finais do provider devem voltar ao backend pelo contrato interno de assets.")
                 .contains("/internal/video/assets");
+        assertThat(pdeAudiovisualClient)
+                .as("[ARQUITETURA] Apolo deve consumir a atividade audiovisual somente pela fila BPM especializada.")
+                .contains("/api/internal/agent-tasks/{agent}/stage-executions/pending")
+                .contains("processCode={processCode}")
+                .contains("activityId={activityId}")
+                .contains("executionResourceCode={executionResourceCode}")
+                .contains("pde-construction-approval")
+                .contains("video-management-service")
+                .contains("/stage-executions/{taskId}/result")
+                .contains("/stage-executions/{taskId}/failure");
+        assertThat(pdeAudiovisualConsumer)
+                .as("[ARQUITETURA] A decisão BPM opcional não deve chamar provider nem avançar a cadeia localmente.")
+                .doesNotContain("Runway", "VideoProvider", "nextStageCode");
     }
 
     /** Protege o módulo contra avanço interno de pipeline sem contrato completo no backend. */

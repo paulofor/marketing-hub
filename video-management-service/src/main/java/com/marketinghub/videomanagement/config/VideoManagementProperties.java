@@ -44,6 +44,18 @@ public class VideoManagementProperties {
     @NotNull
     private ReferenceAnalysis referenceAnalysis = new ReferenceAnalysis();
 
+    @NotNull
+    private PdeAudiovisual pdeAudiovisual = new PdeAudiovisual();
+
+    /** Configura o consumo BPM da atividade audiovisual da construção privada de PDEs. */
+    @Getter
+    @Setter
+    public static class PdeAudiovisual {
+        private boolean enabled = false;
+        @NotNull
+        private Duration backendTimeout = Duration.ofSeconds(10);
+    }
+
     /** Configura a etapa v1 que transforma vídeos de referência em receitas executáveis por Apolo. */
     @Getter
     @Setter
@@ -258,6 +270,7 @@ public class VideoManagementProperties {
                 "RUNWAY_GROK_IMAGINE_1_5",
                 "RUNWAY_ACT_TWO",
                 "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1", "RUNWAY_VEO_3_1_FAST", "RUNWAY_ROUTER",
+                "RUNWAY_PRODUCT_UGC",
                 "RUNAWAY"));
 
         /**
@@ -281,6 +294,7 @@ public class VideoManagementProperties {
         private String createPath = "/v1/image_to_video";
         private String textCreatePath = "/v1/text_to_video";
         private String characterPerformancePath = "/v1/character_performance";
+        private String productUgcPath = "/v1/recipes/product_ugc";
         private String organizationPath = "/v1/organization";
         private String routerGeneratePath = "/v1/generate/video";
         private String draftRouterConfigId = "marketing-hub-instagram-draft-v1";
@@ -458,9 +472,11 @@ public class VideoManagementProperties {
         private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
         private String openAiApiKey;
         private String openAiApiKeyFile;
-        private String openAiTtsModel = "gpt-4o-mini-tts";
-        private String openAiTtsVoice = "nova";
+        private String openAiTtsModel = "gpt-4o-mini-tts-2025-12-15";
+        private String openAiTtsVoice = "marin";
         private String openAiTtsResponseFormat = "mp3";
-        private String openAiTtsInstructions = "Fale em português do Brasil com voz feminina natural, elegante, acolhedora e confiante. Ritmo de anúncio mobile, sem soar robótica, sem dramatização exagerada e com CTA claro.";
+        private String openAiTtsInstructions;
+        private String openAiTtsInstructionsPath =
+                "prompts/apollo/post-production/v1/tts-instructions.md";
     }
 }

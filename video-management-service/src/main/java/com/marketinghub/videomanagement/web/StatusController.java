@@ -34,6 +34,11 @@ public class StatusController {
                 "pollingEnabled", properties.getJobs().isPollingEnabled(),
                 "pollIntervalSeconds", properties.getJobs().getPollInterval().getSeconds(),
                 "batchSize", properties.getJobs().getBatchSize(),
+                "pdeAudiovisual", Map.of(
+                        "enabled", properties.getPdeAudiovisual().isEnabled(),
+                        "processCode", "pde-construction-approval",
+                        "activityId", "audiovisual",
+                        "executionResourceCode", "video-management-service"),
                 "apolloPlanner", Map.of(
                         "enabled", properties.getApolloPlanner().isEnabled(),
                         "model", properties.getApolloPlanner().getModel(),

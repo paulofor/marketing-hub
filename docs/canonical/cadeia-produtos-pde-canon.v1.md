@@ -690,6 +690,15 @@ mobile e as travas de publicação, pagamento e mídia. Cada leitura usa código
 `PV-XXXXXXXXXXXX`, consentimento e eventos próprios da mesma versão; qualquer um dos cinco sinais
 negativo preserva a tentativa como `BLOCKED` e exige ajuste antes de repetir.
 
+Por decisão de 2026-09-04, Apolo deve consumir a atividade `audiovisual` pela fila BPM canônica com
+o recurso especializado `video-management-service`. Quando o contrato versionado declarar
+`pdeContext.harness.audiovisualRequired=false`, o executor conclui a própria atividade de forma
+determinística, registra ausência de artefato e custo zero e não chama IA nem provider. Quando o
+campo for `true`, a atividade só pode produzir após existir autorização e orçamento governado no
+Estúdio; campo ausente ou inválido bloqueia como contrato incompleto. O backend continua sendo a
+única autoridade para liberar `access`, e nenhuma dessas decisões pode ser inferida por texto livre,
+formato de componente ou tarefa duplicada.
+
 Psique e Têmis não podem consultar prova global de outro produto nesse fluxo. Seus pareceres devem
 ser explícitos e posteriores às duas leituras. O backend recalcula os sinais, taxas, pessoas
 distintas, ordem temporal, vigência da fonte e vínculo da versão antes da decisão humana final. O

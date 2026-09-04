@@ -54,8 +54,9 @@ class VideoProviderPreflightPollerTest {
     private ProviderPreflightJob job() {
         return new ProviderPreflightJob(
                 31L, 11L, "Runway", "RUNWAY_PRIMARY", "FINAL_CAMPAIGN",
-                new BigDecimal("100"), 10, 10, 1, "9:16", "720p", false,
-                "Vega", null, null, null, null, null, null, null, null, null, null);
+                null, new BigDecimal("100"), 10, 10, 1, "9:16", "720p", false,
+                "Vega", null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null);
     }
 
     /** Cria o retorno mínimo já produzido pelo adapter simulado. */

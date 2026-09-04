@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.HexFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -51,15 +52,23 @@ public class RunwayVideoProvider implements VideoProvider {
 
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
+    private final RunwayReferenceImageInspector referenceImageInspector;
+    private final RunwayProductUgcRequestFactory productUgcRequestFactory;
     private final WebClient webClient;
     private final WebClient downloadWebClient;
 
     /** Inicializa o provider Runway com configuração, mapper JSON e clients HTTP. */
-    public RunwayVideoProvider(VideoManagementProperties properties,
-                               ObjectMapper objectMapper,
-                               WebClient.Builder webClientBuilder) {
+    @Autowired
+    public RunwayVideoProvider(
+            VideoManagementProperties properties,
+            ObjectMapper objectMapper,
+            WebClient.Builder webClientBuilder,
+            RunwayReferenceImageInspector referenceImageInspector,
+            RunwayProductUgcRequestFactory productUgcRequestFactory) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.referenceImageInspector = referenceImageInspector;
+        this.productUgcRequestFactory = productUgcRequestFactory;
         this.webClient = webClientBuilder
                 .baseUrl(resolveBaseUrl())
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
@@ -73,6 +82,33 @@ public class RunwayVideoProvider implements VideoProvider {
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
                 .build();
+    }
+
+    /** Mantém a construção direta dos testes legados com a mesma inspeção usada em produção. */
+    RunwayVideoProvider(
+            VideoManagementProperties properties,
+            ObjectMapper objectMapper,
+            WebClient.Builder webClientBuilder) {
+        this(
+                properties,
+                objectMapper,
+                webClientBuilder,
+                new RunwayReferenceImageInspector(webClientBuilder.clone()),
+                new RunwayProductUgcRequestFactory());
+    }
+
+    /** Permite substituir somente o inspetor de referências nos testes de segurança de rede. */
+    RunwayVideoProvider(
+            VideoManagementProperties properties,
+            ObjectMapper objectMapper,
+            WebClient.Builder webClientBuilder,
+            RunwayReferenceImageInspector referenceImageInspector) {
+        this(
+                properties,
+                objectMapper,
+                webClientBuilder,
+                referenceImageInspector,
+                new RunwayProductUgcRequestFactory(true));
     }
 
     /** Verifica se o job de render pertence ao provider Runway. */
@@ -100,6 +136,9 @@ public class RunwayVideoProvider implements VideoProvider {
         progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Enviando prompt para Runway");
 
         JsonNode jobMetadata = readMetadata(job);
+        if (RunwayProductUgcRequestFactory.PROVIDER_NAME.equals(normalize(job.providerName()))) {
+            return renderProductUgc(job, jobMetadata, progressCallback);
+        }
         List<Map<String, Object>> routerRequests = routerRequests(job, jobMetadata);
         boolean routed = !routerRequests.isEmpty();
         List<JsonNode> selectedRoutes = routed
@@ -185,6 +224,80 @@ public class RunwayVideoProvider implements VideoProvider {
         return new ProviderArtifacts(taskId, video, null, null, metadata);
     }
 
+    /** Executa uma única receita Product UGC já precificada e congelada pelo preflight. */
+    private ProviderArtifacts renderProductUgc(
+            SalesVideoJob job, JsonNode metadata, ProgressCallback progressCallback) {
+        Map<String, Object> request = productUgcRequest(job, metadata);
+        JsonNode route = productUgcRoute(job, metadata, request);
+        BigDecimal reservedCredits = requireProductUgcReservation(job, metadata);
+        JsonNode requestNode = objectMapper.valueToTree(request);
+        List<RunwayReferenceImageInspector.Evidence> currentReferences =
+                referenceImageInspector.inspectProductUgc(
+                        requestNode.path("characterImage").path("uri").asText(),
+                        requestNode.path("productImage").path("uri").asText());
+        referenceImageInspector.requireMatches(route.path("referenceImages"), currentReferences);
+        BigDecimal estimatedCredits = route.path("estimatedCredits").decimalValue();
+        if (reservedCredits.compareTo(estimatedCredits) < 0) {
+            throw new VideoProviderException(
+                    "PROVIDER_RESERVATION_INVALID",
+                    "A reserva não cobre a receita Product UGC; jobId=" + job.id());
+        }
+        progressCallback.onProgress(
+                10,
+                SalesVideoStatus.VIDEO_PROCESSING,
+                "Enviando receita Product UGC premium para Runway");
+        JsonNode submission = submitRender(job, request);
+        String taskId = productUgcRequestFactory.requireAcceptedTaskId(submission);
+        int duration = ((Number) request.get("duration")).intValue();
+        progressCallback.onProgress(
+                35,
+                SalesVideoStatus.VIDEO_PROCESSING,
+                "Runway aceitou a receita Product UGC; taskId=" + taskId,
+                providerTaskDetails(
+                        taskId,
+                        RunwayProductUgcRequestFactory.RECIPE_NAME,
+                        1,
+                        1,
+                        duration,
+                        estimatedCredits));
+        JsonNode finalStatus =
+                waitUntilCompleted(
+                        taskId,
+                        RunwayProductUgcRequestFactory.RECIPE_NAME,
+                        1,
+                        1,
+                        duration,
+                        estimatedCredits,
+                        progressCallback);
+        String videoUrl = productUgcRequestFactory.requireCompletedVideoUrl(finalStatus);
+        ProviderFile video = downloadVideo(job, videoUrl);
+        Map<String, Object> result =
+                metadata(
+                        job,
+                        taskId,
+                        request,
+                        finalStatus,
+                        1,
+                        RunwayProductUgcRequestFactory.RECIPE_NAME,
+                        duration,
+                        duration,
+                        estimatedCredits);
+        result.put("recipe", RunwayProductUgcRequestFactory.RECIPE_NAME);
+        result.put("recipe_version", RunwayProductUgcRequestFactory.RECIPE_VERSION);
+        result.put("ratio", request.get("ratio"));
+        result.put(
+                "resolution",
+                "1080:1920".equals(request.get("ratio")) ? "1080p" : "720p");
+        result.put("audio_generated_by_provider", false);
+        result.put("pricing_source", "RUNWAY_PRODUCT_UGC_2026_06_RATE_CARD");
+        result.put("prompt_and_response_contract", productUgcRequestFactory.contractAudit());
+        progressCallback.onProgress(
+                95,
+                SalesVideoStatus.VIDEO_PROCESSING,
+                "Product UGC concluído e pronto para os gates técnicos de Apolo");
+        return new ProviderArtifacts(taskId, video, null, null, result);
+    }
+
     /** Define uma função narrativa distinta por cena para evitar clipes genéricos e repetitivos. */
     private String sceneDirective(int scene, int sceneCount) {
         String[] roles = {
@@ -241,7 +354,9 @@ public class RunwayVideoProvider implements VideoProvider {
     /** Cria a tarefa direta ou roteada e devolve a decisão de modelo e custo da Runway. */
     private JsonNode submitRender(SalesVideoJob job, Map<String, Object> payload) {
         String path;
-        if (payload.containsKey("configId") && payload.containsKey("input")) {
+        if (RunwayProductUgcRequestFactory.PROVIDER_NAME.equals(normalize(job.providerName()))) {
+            path = properties.getProviders().getRunway().getProductUgcPath();
+        } else if (payload.containsKey("configId") && payload.containsKey("input")) {
             path = properties.getProviders().getRunway().getRouterGeneratePath();
         } else if ("act_two".equals(payload.get("model"))) {
             path = properties.getProviders().getRunway().getCharacterPerformancePath();
@@ -270,6 +385,133 @@ public class RunwayVideoProvider implements VideoProvider {
                     "Runway não retornou id de tarefa para o job " + job.id());
         }
         return response;
+    }
+
+    /** Lê o payload Product UGC congelado e impede campos, versões ou referências divergentes. */
+    private Map<String, Object> productUgcRequest(SalesVideoJob job, JsonNode metadata) {
+        String raw = metadata.path("runwayRouterRequestsJson").asText(null);
+        String expectedHash = metadata.path("providerPreflightPayloadSha256").asText("").trim();
+        if (!StringUtils.hasText(raw)
+                || !StringUtils.hasText(expectedHash)
+                || !expectedHash.equalsIgnoreCase(sha256(raw))) {
+            throw new VideoProviderException(
+                    "PROVIDER_PREFLIGHT_HASH_MISMATCH",
+                    "Payload Product UGC diverge do preflight aprovado; jobId=" + job.id());
+        }
+        try {
+            List<Map<String, Object>> requests = objectMapper.readValue(raw, new TypeReference<>() {});
+            if (requests.size() != 1) {
+                throw new VideoProviderException(
+                        "PROVIDER_INVALID_REQUEST", "Product UGC exige uma única requisição congelada.");
+            }
+            Map<String, Object> request = requests.getFirst();
+            JsonNode node = objectMapper.valueToTree(request);
+            java.util.Set<String> expectedFields = java.util.Set.of(
+                    "version",
+                    "characterImage",
+                    "productImage",
+                    "productInfo",
+                    "userConcept",
+                    "duration",
+                    "ratio",
+                    "audio");
+            java.util.Set<String> actualFields = new java.util.LinkedHashSet<>();
+            node.fieldNames().forEachRemaining(actualFields::add);
+            int duration = node.path("duration").asInt(0);
+            boolean valid = expectedFields.equals(actualFields)
+                    && RunwayProductUgcRequestFactory.RECIPE_VERSION.equals(node.path("version").asText())
+                    && isHttps(node.path("characterImage").path("uri").asText())
+                    && isHttps(node.path("productImage").path("uri").asText())
+                    && node.path("productInfo").isTextual()
+                    && node.path("productInfo").asText().length() <= 2500
+                    && node.path("userConcept").isTextual()
+                    && node.path("userConcept").asText().length() <= 3500
+                    && duration >= 4
+                    && duration <= 15
+                    && java.util.Set.of("720:1280", "1080:1920").contains(node.path("ratio").asText())
+                    && node.path("audio").isBoolean()
+                    && !node.path("audio").asBoolean()
+                    && StringUtils.hasText(metadata.at("/referenceGovernance/presenterConsentEvidence").asText())
+                    && StringUtils.hasText(metadata.at("/referenceGovernance/referenceRightsEvidence").asText())
+                    && metadata.at("/referenceGovernance/productIsDigitalExperience").asBoolean(false);
+            if (!valid) {
+                throw new VideoProviderException(
+                        "PROVIDER_INVALID_REQUEST",
+                        "Contrato Product UGC está incompleto ou diverge da versão pinada.");
+            }
+            return request;
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao ler payload Product UGC; jobId={}", job.id(), ex);
+            throw new VideoProviderException(
+                    "PROVIDER_INVALID_REQUEST", "Payload Product UGC contém JSON inválido.", ex);
+        }
+    }
+
+    /** Confere a rota fixa, a tarifa oficial e a reserva antes da chamada faturável. */
+    private JsonNode productUgcRoute(
+            SalesVideoJob job, JsonNode metadata, Map<String, Object> request) {
+        String raw = metadata.path("runwaySelectedRoutesJson").asText(null);
+        try {
+            JsonNode routes = objectMapper.readTree(raw);
+            if (!routes.isArray() || routes.size() != 1) {
+                throw new VideoProviderException(
+                        "PROVIDER_PREFLIGHT_ROUTE_MISMATCH",
+                        "Product UGC exige uma rota financeira auditada.");
+            }
+            JsonNode route = routes.get(0);
+            int duration = ((Number) request.get("duration")).intValue();
+            String ratio = String.valueOf(request.get("ratio"));
+            BigDecimal expectedCredits = productUgcCredits(duration, ratio);
+            String configId = RunwayProductUgcRequestFactory.CONFIGURATION_ID;
+            boolean valid = configId.equals(metadata.path("runwayRouterConfigId").asText())
+                    && configId.equals(route.path("routerConfigId").asText())
+                    && (RunwayProductUgcRequestFactory.PROVIDER_NAME + ":" + configId)
+                            .equals(route.path("batchRouteId").asText())
+                    && "Runway".equals(route.path("aggregator").asText())
+                    && "RUNWAY_PRIMARY".equals(route.path("accountKey").asText())
+                    && "Runway".equals(route.path("manufacturer").asText())
+                    && RunwayProductUgcRequestFactory.RECIPE_NAME.equals(route.path("model").asText())
+                    && "QUALITY".equals(route.path("optimizeFor").asText())
+                    && route.path("estimatedCredits").isNumber()
+                    && route.path("priceCeilingCredits").isNumber()
+                    && expectedCredits.compareTo(route.path("estimatedCredits").decimalValue()) == 0
+                    && expectedCredits.compareTo(route.path("priceCeilingCredits").decimalValue()) == 0;
+            if (!valid) {
+                throw new VideoProviderException(
+                        "PROVIDER_PREFLIGHT_ROUTE_MISMATCH",
+                        "Rota Product UGC diverge da tarifa ou versão aprovadas.");
+            }
+            return route;
+        } catch (JsonProcessingException | IllegalArgumentException ex) {
+            log.error("Falha ao validar rota Product UGC; jobId={}", job.id(), ex);
+            if (ex instanceof VideoProviderException providerException) throw providerException;
+            throw new VideoProviderException(
+                    "PROVIDER_PREFLIGHT_ROUTE_MISMATCH", "Rota Product UGC contém JSON inválido.", ex);
+        }
+    }
+
+    /** Calcula a tarifa fixa Product UGC para conferir o preflight no executor. */
+    private BigDecimal productUgcCredits(int duration, String ratio) {
+        boolean fullHd = "1080:1920".equals(ratio);
+        int base = fullHd ? 208 : 192;
+        int additional = fullHd ? 40 : 36;
+        return BigDecimal.valueOf(base + (long) additional * (duration - 4));
+    }
+
+    /** Exige reserva identificada, positiva e vigente antes de consultar referências ou consumir créditos. */
+    private BigDecimal requireProductUgcReservation(SalesVideoJob job, JsonNode metadata) {
+        JsonNode reservationId = metadata.path("providerCreditReservationId");
+        JsonNode reservedCredits = metadata.path("providerReservedCredits");
+        if (!reservationId.canConvertToLong()
+                || reservationId.asLong() <= 0
+                || !reservedCredits.isNumber()
+                || reservedCredits.decimalValue().signum() <= 0) {
+            throw new VideoProviderException(
+                    "PROVIDER_RESERVATION_INVALID",
+                    "Product UGC não possui reserva financeira identificada e positiva; jobId=" + job.id());
+        }
+        requireFreshReservation(job, metadata);
+        return reservedCredits.decimalValue();
     }
 
     /** Lê e verifica as requisições exatas aprovadas no dry run antes da primeira task faturável. */

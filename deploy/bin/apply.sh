@@ -20,9 +20,16 @@ BACKEND_HEALTH_INTERVAL=${BACKEND_HEALTH_INTERVAL:-5}
 BACKEND_MAX_RESTARTS=${BACKEND_MAX_RESTARTS:-2}
 BACKEND_HEALTH_SUCCESSES_REQUIRED=${BACKEND_HEALTH_SUCCESSES_REQUIRED:-2}
 PAYMENTS_AUTH_TOKEN_VALUE=${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:-}
+HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE=${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE:-/root/infra/harness-library/secrets/internal_signing_key}
 
 if [[ ${#PAYMENTS_AUTH_TOKEN_VALUE} -lt 32 ]]; then
   printf '[apply.sh] Erro: LEAD_PORTAL_PAYMENTS_AUTH_TOKEN ausente ou menor que 32 caracteres.\n' >&2
+  exit 1
+fi
+
+if [[ ! -s "${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE}" ]] \
+  || [[ "$(wc -c < "${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE}")" -lt 32 ]]; then
+  printf '[apply.sh] Erro: secret interno da Biblioteca do Harness ausente ou menor que 32 caracteres.\n' >&2
   exit 1
 fi
 
@@ -295,6 +302,14 @@ if [[ "${backend_token_length:-0}" -lt 32 ]]; then
   exit 1
 fi
 log "Token administrativo do serviço de pagamentos confirmado no backend (conteúdo protegido)."
+
+backend_harness_secret_length="$(docker exec marketinghub-backend /bin/sh -c \
+  'if test -r /run/secrets/harness_library_internal_signing_key; then wc -c < /run/secrets/harness_library_internal_signing_key; else printf 0; fi')"
+if [[ "${backend_harness_secret_length:-0}" -lt 32 ]]; then
+  log "Erro: backend recriado sem secret interno válido da Biblioteca do Harness."
+  exit 1
+fi
+log "Secret interno da Biblioteca do Harness confirmado no backend (conteúdo protegido)."
 
 cleanup_previous_tags "${BACKEND_IMAGE}" "latest"
 cleanup_previous_tags "${FRONTEND_IMAGE}" "latest"

@@ -31,6 +31,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
+    concurrency:
+      group: deploy-vps-163-245-202-80
+      queue: max
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - name: Add agent VPS SSH key

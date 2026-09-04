@@ -3556,3 +3556,42 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   `executionResourceCode`; testes funcionais protegem custo zero, nenhuma chamada Runway, ausência de
   tarefa duplicada e avanço decidido somente pelo backend. A rotina possui thread própria no pool
   mínimo para não ficar oculta por integrações longas.
+
+## LOOP-ACTIONS-VPS-AGENTES-PRUNE-CONCORRENTE — deploy remove imagem de outro agente
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** o rerun `33876229991` do Product Discovery Worker puxou e validou a imagem
+  imutável, mas falhou ao recriar Argos com `NotFound: content digest ... not found`. No mesmo
+  intervalo, os reruns `33876229997` e `33876229984` publicavam Meta Ad Approver e Customer Agent no
+  mesmo host `163.245.202.80`.
+- **Causa-raiz confirmada pelo histórico e pelos workflows:** o último deploy isolado de Argos havia
+  passado. Os três deploys atuais usavam grupos de concorrência distintos, e o Meta Ad Approver
+  executava `docker builder prune -af` e `docker image prune -af` antes de criar seus containers.
+  Nesse intervalo, a imagem recém-puxada de Argos ainda não pertencia a container algum e podia ser
+  removida, deixando o metadado local apontando para conteúdo inexistente. Repetir apenas o `compose
+  up` trataria a consequência e manteria a corrida.
+- **Correção sistêmica:** todos os workflows que publicam no VPS de agentes compartilham a fila
+  `deploy-vps-163-245-202-80`, preservam execuções pendentes e ativas e o Meta Ad Approver deixa de
+  executar prune agressivo antes da publicação.
+- **Prevenção:** o contrato da fila enumera cada workflow autorizado nesse host, exige o grupo dentro
+  do job `deploy`, rejeita `docker builder/image/system prune -af` e falha quando um novo publicador
+  usa o host sem entrar na lista protegida.
+
+## LOOP-HARNESS-API-SECRET-ILEGIVEL-NONROOT — container seguro não consegue ler credencial
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** o deploy manual `33879692088` construiu e publicou a imagem da API da
+  Biblioteca do Harness, mas o container ficou `unhealthy`; o log terminava antes de iniciar o Spring
+  porque `HARNESS_LIBRARY_API_KEY` não podia ser lida.
+- **Causa-raiz confirmada no workflow e reproduzida localmente:** a imagem executava com usuário
+  sistêmico não privilegiado, enquanto o deploy criava os bind mounts como `root:root` e modo `0600`.
+  Testes anteriores validavam apenas que o usuário não era root e que os secrets não estavam na
+  imagem; nunca iniciavam o container com a propriedade e o modo usados no host.
+- **Alternativas avaliadas:** executar como root ampliaria privilégios; tornar os arquivos legíveis
+  globalmente reduziria a proteção; fixar UID/GID e entregar os arquivos somente a essa identidade
+  mantém o menor privilégio. Foi escolhida a terceira opção.
+- **Correção sistêmica:** imagem e Compose fixam `10001:10001`; o workflow transfere atomicamente,
+  atribui os dois arquivos a essa identidade e aplica modo `0400` antes de subir o container.
+- **Prevenção:** o CI agora cria secrets sintéticos com a mesma propriedade e permissão, inicia a
+  imagem read-only e não privilegiada e só aprova quando health e leitura dos dois arquivos passam
+  sem expor conteúdo. O contrato também bloqueia divergência entre Dockerfile, Compose e workflow.

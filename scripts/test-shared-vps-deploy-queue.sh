@@ -71,24 +71,61 @@ while IFS= read -r workflow; do
   fi
 done < <(grep -rlF "${QUEUE_TEST_GROUP}" "${QUEUE_TEST_ROOT}/.github/workflows" | sort)
 
+AGENT_QUEUE_GROUP="group: deploy-vps-163-245-202-80"
+AGENT_QUEUE_WORKFLOWS=(
+  ".github/workflows/agent-executor-admin-controller-ci.yml"
+  ".github/workflows/communication-agent-worker-ci.yml"
+  ".github/workflows/customer-agent-worker-ci.yml"
+  ".github/workflows/experiment-strategist-worker-ci.yml"
+  ".github/workflows/financial-agent-worker-ci.yml"
+  ".github/workflows/growth-operator-worker-ci.yml"
+  ".github/workflows/landing-generator-agent-worker-ci.yml"
+  ".github/workflows/meta-ad-approver-worker-ci.yml"
+  ".github/workflows/product-discovery-worker-ci.yml"
+)
+
+for relative_workflow in "${AGENT_QUEUE_WORKFLOWS[@]}"; do
+  workflow="${QUEUE_TEST_ROOT}/${relative_workflow}"
+  if [[ ! -f "${workflow}" ]]; then
+    echo "Workflow do VPS de agentes ausente: ${relative_workflow}" >&2
+    exit 1
+  fi
+
+  deploy_block="$(awk '
+    /^  deploy:/ { in_deploy = 1 }
+    in_deploy && /^  [[:alnum:]_-]+:/ && !/^  deploy:/ { exit }
+    in_deploy { print }
+  ' "${workflow}")"
+  queue_block="$(grep -F -A2 "${AGENT_QUEUE_GROUP}" <<<"${deploy_block}" || true)"
+  if ! grep -Fq "${AGENT_QUEUE_GROUP}" <<<"${queue_block}" \
+    || ! grep -Fq "queue: max" <<<"${queue_block}" \
+    || ! grep -Fq "cancel-in-progress: false" <<<"${queue_block}"; then
+    echo "Deploy fora da fila única do VPS de agentes: ${relative_workflow}" >&2
+    exit 1
+  fi
+  if ! grep -Fq "163.245.202.80" "${workflow}" \
+    || ! grep -Fq 'secrets.GROWTH_OPERATOR_VPS_SSH_KEY' "${workflow}"; then
+    echo "Workflow fora do host ou da credencial canônica dos agentes: ${relative_workflow}" >&2
+    exit 1
+  fi
+  if grep -Eq 'docker (builder|image|system) prune -af' "${workflow}"; then
+    echo "Prune agressivo pode apagar imagem puxada por outro agente: ${relative_workflow}" >&2
+    exit 1
+  fi
+done
+
+while IFS= read -r workflow; do
+  relative_workflow="${workflow#"${QUEUE_TEST_ROOT}/"}"
+  if [[ ! " ${AGENT_QUEUE_WORKFLOWS[*]} " =~ " ${relative_workflow} " ]]; then
+    echo "Novo workflow na fila do VPS de agentes sem registro no contrato: ${relative_workflow}" >&2
+    exit 1
+  fi
+done < <(grep -rlF "${AGENT_QUEUE_GROUP}" "${QUEUE_TEST_ROOT}/.github/workflows" | sort)
+
 ARGOS_WORKFLOW="${QUEUE_TEST_ROOT}/.github/workflows/product-discovery-worker-ci.yml"
-ARGOS_QUEUE_GROUP="group: deploy-vps-163-245-202-80"
-if ! grep -Fq "${ARGOS_QUEUE_GROUP}" "${ARGOS_WORKFLOW}" \
-  || ! grep -Fq "DEPLOY_HOST: 163.245.202.80" "${ARGOS_WORKFLOW}" \
-  || ! grep -Fq 'secrets.GROWTH_OPERATOR_VPS_SSH_KEY' "${ARGOS_WORKFLOW}"; then
-  echo "Argos deve permanecer no VPS de agentes com sua credencial de deploy canônica." >&2
-  exit 1
-fi
 if grep -Fq "${QUEUE_TEST_GROUP}" "${ARGOS_WORKFLOW}" \
   || grep -Fq "DEPLOY_HOST: 191.252.120.96" "${ARGOS_WORKFLOW}"; then
   echo "Argos não pode voltar ao VPS de 957 MB." >&2
-  exit 1
-fi
-
-argos_queue_block="$(grep -F -A2 "${ARGOS_QUEUE_GROUP}" "${ARGOS_WORKFLOW}" || true)"
-if ! grep -Fq "queue: max" <<<"${argos_queue_block}" \
-  || ! grep -Fq "cancel-in-progress: false" <<<"${argos_queue_block}"; then
-  echo "A fila de deploy do Argos não preserva execuções pendentes e ativas." >&2
   exit 1
 fi
 

@@ -110,6 +110,7 @@ video:
         - RUNWAY_GROK_IMAGINE_1_5
         - RUNWAY_ACT_TWO
         - RUNWAY_ROUTER
+        - RUNWAY_PRODUCT_UGC
         - RUNAWAY
       base-url: https://api.dev.runwayml.com
       api-key: ${RUNWAY_API_KEY:${VIDEO_PROVIDERS_RUNWAY_API_KEY:}}
@@ -118,6 +119,7 @@ video:
       model: ${VIDEO_PROVIDERS_RUNWAY_MODEL:gen4.5}
       create-path: /v1/image_to_video
       character-performance-path: /v1/character_performance
+      product-ugc-path: /v1/recipes/product_ugc
       organization-path: /v1/organization
       router-generate-path: /v1/generate/video
       draft-router-config-id: ${VIDEO_PROVIDERS_RUNWAY_DRAFT_ROUTER_CONFIG_ID:marketing-hub-instagram-draft-v1}
@@ -205,10 +207,11 @@ video:
       open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
       open-ai-api-key: ${OPENAI_API_KEY:}
       open-ai-api-key-file: ${OPENAI_API_KEY_FILE:}
-      open-ai-tts-model: ${OPENAI_TTS_MODEL:gpt-4o-mini-tts}
-      open-ai-tts-voice: ${OPENAI_TTS_VOICE:nova}
+      open-ai-tts-model: ${OPENAI_TTS_MODEL:gpt-4o-mini-tts-2025-12-15}
+      open-ai-tts-voice: ${OPENAI_TTS_VOICE:marin}
       open-ai-tts-response-format: ${OPENAI_TTS_RESPONSE_FORMAT:mp3}
-      open-ai-tts-instructions: ${OPENAI_TTS_INSTRUCTIONS:Fale em português do Brasil com voz feminina natural, elegante, acolhedora e confiante. Ritmo de anúncio mobile, sem soar robótica, sem dramatização exagerada e com CTA claro.}
+      open-ai-tts-instructions: ${OPENAI_TTS_INSTRUCTIONS:}
+      open-ai-tts-instructions-path: ${OPENAI_TTS_INSTRUCTIONS_PATH:prompts/apollo/post-production/v1/tts-instructions.md}
 
 management:
   endpoints:

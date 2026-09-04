@@ -74,6 +74,9 @@ class VideoProviderFinancialPreflightServiceTest {
         .when(providerModelRepository.findByAdapterKeyAndExternalModelId("RUNWAY", "gen4_turbo"))
         .thenReturn(Optional.of(activeProviderModel()));
     lenient()
+        .when(providerModelRepository.findByAdapterKeyAndExternalModelId("RUNWAY", "product_ugc"))
+        .thenReturn(Optional.of(activeProductUgcModel()));
+    lenient()
         .when(taskConsumptionQueryService.summarizeEfficiencyByProvider("RUNWAY"))
         .thenReturn(java.util.List.of());
   }
@@ -216,6 +219,69 @@ class VideoProviderFinancialPreflightServiceTest {
     assertThatThrownBy(() -> service.complete(cycle(), unproved))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Rota do dry run diverge");
+    verify(accountRepository, never()).save(any(VideoProviderAccount.class));
+  }
+
+  /** Aceita Product UGC somente com payload, tarifa e rota pinados em 2026-06. */
+  @Test
+  void shouldValidatePinnedProductUgcRateCardWithoutPretendingDryRun() {
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    when(accountRepository.findById(5L)).thenReturn(Optional.of(account));
+    when(preflightRepository.save(any(VideoProviderPreflight.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    VideoProviderPreflight result = service.complete(productUgcCycle(), productUgcResult());
+
+    assertThat(result.getStatus()).isEqualTo("READY");
+    assertThat(result.getRouterConfigId()).isEqualTo("product_ugc@2026-06");
+    assertThat(result.getEstimatedCredits()).isEqualByComparingTo("648");
+    assertThat(result.getEstimatedCostUsd()).isEqualByComparingTo("6.480000");
+    assertThat(result.getAvailableCreditsSnapshot()).isEqualByComparingTo("2010");
+    assertThatCode(
+            () ->
+                service.validateFinancialDecision(
+                    productUgcCycle(),
+                    new VideoProviderFinancialPreflightData.FinancialDecision(
+                        "Runway",
+                        "RUNWAY_PRODUCT_UGC:product_ugc@2026-06",
+                        new BigDecimal("6.480000"),
+                        "NO_PURCHASE",
+                        BigDecimal.ZERO,
+                        null),
+                    "REJECTED"))
+        .doesNotThrowAnyException();
+  }
+
+  /** Recusa referência que não tenha sido comprovada como imagem raster antes da reserva. */
+  @Test
+  void shouldRejectProductUgcWithoutValidRasterReferenceEvidence() {
+    when(accountRepository.findByAccountKeyForUpdate("RUNWAY_PRIMARY"))
+        .thenReturn(Optional.of(account));
+    VideoProviderFinancialPreflightData.Result valid = productUgcResult();
+    VideoProviderFinancialPreflightData.Result invalid =
+        new VideoProviderFinancialPreflightData.Result(
+            valid.status(),
+            valid.accountKey(),
+            valid.routerConfigId(),
+            valid.payloadSha256(),
+            valid.executionRequestsJson(),
+            valid.organizationSnapshotJson(),
+            valid.routingResponseJson(),
+            valid.selectedRoutesJson().replace("image/png", "text/html"),
+            valid.estimatedCredits(),
+            valid.officialBalanceCredits(),
+            valid.maxMonthlyCreditSpend(),
+            valid.quotaSnapshotJson(),
+            valid.usageSnapshotJson(),
+            valid.failureCode(),
+            valid.failureDetail(),
+            valid.sourceUrl(),
+            valid.observedAt());
+
+    assertThatThrownBy(() -> service.complete(productUgcCycle(), invalid))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Contrato Product UGC diverge");
     verify(accountRepository, never()).save(any(VideoProviderAccount.class));
   }
 
@@ -385,6 +451,13 @@ class VideoProviderFinancialPreflightServiceTest {
     return cycle;
   }
 
+  /** Cria ciclo cujo teto cobre uma receita premium, sem torná-lo meta de gasto. */
+  private VideoProductionCycle productUgcCycle() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setBudgetLimitUsd(new BigDecimal("7.00"));
+    return cycle;
+  }
+
   /** Cria a conta Runway com conversão oficial de um centavo por crédito. */
   private VideoProviderAccount account() {
     VideoProviderAccount value = new VideoProviderAccount();
@@ -408,6 +481,13 @@ class VideoProviderFinancialPreflightServiceTest {
     model.setPricingVerified(true);
     model.setCommercialLicenseVerified(true);
     model.setQualityGateVerified(true);
+    return model;
+  }
+
+  /** Cria a curadoria integral da receita Product UGC versionada. */
+  private SalesVideoProviderModel activeProductUgcModel() {
+    SalesVideoProviderModel model = activeProviderModel();
+    model.setExternalModelId("product_ugc");
     return model;
   }
 
@@ -449,6 +529,51 @@ class VideoProviderFinancialPreflightServiceTest {
         new BigDecimal(officialBalance),
         5000L,
         "{\"models\":[]}",
+        "{\"models\":{}}",
+        null,
+        null,
+        "https://api.dev.runwayml.com/v1/organization",
+        Instant.now());
+  }
+
+  /** Monta um preflight Product UGC coerente com a tarifa oficial de quinze segundos em 1080p. */
+  private VideoProviderFinancialPreflightData.Result productUgcResult() {
+    String requests =
+        "[{\"version\":\"2026-06\",\"characterImage\":{\"uri\":\"https://assets.example/creator.png\"},"
+            + "\"productImage\":{\"uri\":\"https://assets.example/musa.png\"},"
+            + "\"productInfo\":\"Experiência digital MUSA\",\"userConcept\":\"Tomada estável\","
+            + "\"duration\":15,\"ratio\":\"1080:1920\",\"audio\":false}]";
+    String response =
+        "[{\"simulation\":\"DETERMINISTIC_RATE_CARD\",\"recipe\":\"product_ugc\","
+            + "\"version\":\"2026-06\",\"estimatedCost\":{\"credits\":648}}]";
+    String routes =
+        "[{\"manufacturer\":\"Runway\",\"model\":\"product_ugc\","
+            + "\"aggregator\":\"Runway\",\"accountKey\":\"RUNWAY_PRIMARY\","
+            + "\"routerConfigId\":\"product_ugc@2026-06\","
+            + "\"batchRouteId\":\"RUNWAY_PRODUCT_UGC:product_ugc@2026-06\","
+            + "\"optimizeFor\":\"QUALITY\",\"estimatedCredits\":648,"
+            + "\"priceCeilingCredits\":648,\"referenceImages\":["
+            + "{\"role\":\"CHARACTER_IMAGE\",\"sourceHost\":\"assets.example\","
+            + "\"contentType\":\"image/png\",\"contentLength\":1000,"
+            + "\"width\":1080,\"height\":1920,"
+            + "\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},"
+            + "{\"role\":\"PRODUCT_IMAGE\",\"sourceHost\":\"assets.example\","
+            + "\"contentType\":\"image/png\",\"contentLength\":900,"
+            + "\"width\":1080,\"height\":1920,"
+            + "\"sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}]}]";
+    return new VideoProviderFinancialPreflightData.Result(
+        "READY",
+        "RUNWAY_PRIMARY",
+        "product_ugc@2026-06",
+        sha256(requests),
+        requests,
+        "{\"creditBalance\":2020,\"tier\":{\"maxMonthlyCreditSpend\":5000},\"usage\":{\"models\":{}}}",
+        response,
+        routes,
+        new BigDecimal("648"),
+        new BigDecimal("2020"),
+        5000L,
+        "{\"recipe\":\"product_ugc\",\"status\":\"ACCOUNT_SNAPSHOT_READY\"}",
         "{\"models\":{}}",
         null,
         null,

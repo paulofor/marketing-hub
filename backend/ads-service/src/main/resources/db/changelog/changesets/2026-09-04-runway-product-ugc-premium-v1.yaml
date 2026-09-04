@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-04-runway-product-ugc-premium-v1-01-provider-route
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: sales_video_provider_model
+        - columnExists:
+            tableName: sales_video_provider_model
+            columnName: route_key
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO sales_video_provider_model
+                (code, display_name, manufacturer_name, aggregator_name, provider_account_key,
+                 route_key, provider_name, provider_family, adapter_key, external_model_id,
+                 recommended_use, lifecycle_status, clip_duration_seconds, max_direct_duration_seconds,
+                 supports_hero_video, supports_scene_assembly, requires_source_image, credits_url,
+                 documentation_url, adapter_verified, pricing_verified, commercial_license_verified,
+                 quality_gate_verified, pricing_amount_usd, pricing_unit, pricing_quantity,
+                 pricing_resolution, pricing_includes_audio, pricing_source_url,
+                 pricing_observed_at, pricing_research_status, pricing_research_notes,
+                 pricing_research_model, notes, created_at, updated_at)
+              VALUES
+                ('runway-product-ugc-2026-06', 'Runway Product UGC 2026-06', 'Runway', 'Runway',
+                 'RUNWAY_PRIMARY', 'RUNWAY_PRODUCT_UGC:product_ugc@2026-06',
+                 'RUNWAY_PRODUCT_UGC', 'EXTERNAL_VIDEO_MODULE', 'RUNWAY', 'product_ugc',
+                 'Criativo UGC vertical premium com apresentadora e tela real de uma experiência digital.',
+                 'ACTIVE', 15, 15, 1, 0, 1, 'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/recipes/product-ugc/', 1, 1, 1, 1,
+                 6.480000, 'VIDEO', 1.0000, '1080:1920 / 15s', 0,
+                 'https://docs.dev.runwayml.com/guides/pricing/', NOW(), 'VERIFIED',
+                 'Preço comparável da saída final de 15 segundos; o runtime recalcula durações menores pela tarifa da receita.',
+                 'DETERMINISTIC_OFFICIAL_RATE_CARD',
+                 'Receita pinada em 2026-06; áudio nativo desligado, preflight por tarifa fixa, gate de tremor e revisão humana obrigatória.',
+                 NOW(), NOW())
+              ON DUPLICATE KEY UPDATE
+                display_name = VALUES(display_name),
+                manufacturer_name = VALUES(manufacturer_name),
+                aggregator_name = VALUES(aggregator_name),
+                provider_account_key = VALUES(provider_account_key),
+                route_key = VALUES(route_key),
+                external_model_id = VALUES(external_model_id),
+                recommended_use = VALUES(recommended_use),
+                lifecycle_status = VALUES(lifecycle_status),
+                adapter_verified = VALUES(adapter_verified),
+                pricing_verified = VALUES(pricing_verified),
+                commercial_license_verified = VALUES(commercial_license_verified),
+                quality_gate_verified = VALUES(quality_gate_verified),
+                pricing_amount_usd = VALUES(pricing_amount_usd),
+                pricing_unit = VALUES(pricing_unit),
+                pricing_quantity = VALUES(pricing_quantity),
+                pricing_resolution = VALUES(pricing_resolution),
+                pricing_includes_audio = VALUES(pricing_includes_audio),
+                pricing_source_url = VALUES(pricing_source_url),
+                pricing_observed_at = VALUES(pricing_observed_at),
+                pricing_research_status = VALUES(pricing_research_status),
+                pricing_research_notes = VALUES(pricing_research_notes),
+                pricing_research_model = VALUES(pricing_research_model),
+                notes = VALUES(notes),
+                updated_at = VALUES(updated_at);

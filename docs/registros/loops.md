@@ -3465,6 +3465,60 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   comprovam que a conclusão não gera autoaprovação. O worker registra `has_audio` e a quantidade de
   streams para o gate não depender de inferência textual.
 
+## LOOP-VIDEO-QA-TEXTO-TREMOR-REFERENCIA — arquivo técnico chega à revisão com falhas perceptíveis
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** o ativo #37 do experimento #91 foi rejeitado porque o texto exibido
+  divergia da locução, a imagem tremia em alguns trechos e a composição de celular diante do espelho
+  parecia irreal.
+- **Causa-raiz confirmada pelo job e pelo projeto:** a montagem editorial aceitava `captionText` e
+  `voiceOverScript` independentes, não executava um gate objetivo de estabilidade e reutilizava como
+  prova uma imagem mestre inadequada à demonstração do PDE.
+- **Correção sistêmica:** voz, legenda queimada e VTT passam a compartilhar a mesma sequência
+  normalizada; tomadas contínuas recebem inspeção de movimento antes do upload; e a rota Product UGC
+  exige referências separadas de apresentadora e da experiência digital, sem espelho ou produto
+  físico inventado.
+- **Fechamento do planejador:** o contrato anterior de Apolo exigia ao menos cinco cortes e uma
+  resposta de IA mesmo para uma receita que só aceita tomada única. A rota pinada agora possui
+  validação determinística própria, usa os cartões de vídeo e prazer audiovisual já selecionados,
+  confere versão, reserva, referências, copy e revisores e não inventa storyboard incompatível.
+- **Fechamento da referência:** o preset do Vega não possuía as duas URLs nem sua proveniência. A
+  personagem sintética aprovada e uma representação limpa do PDE gerada por código versionado são
+  preenchidas pelo Estúdio; o build do PDE recria a imagem e registra seu hash antes da publicação.
+- **Fechamento operacional:** o preset era exibido somente ao criar projeto, embora o Vega #91 já
+  possuísse projeto persistido. Presets agora também podem preencher um projeto existente sem
+  persistência implícita. O formulário financeiro restringe suas colunas à largura disponível para
+  continuar operável em iPhone e Pixel.
+- **Fechamento do build:** a imagem Alpine possuía FFmpeg sem decoder SVG. O Dockerfile instala um
+  rasterizador SVG explícito e o gerador mantém fallback controlado fora do container, impedindo que
+  a referência versionada desapareça apenas no pipeline de produção.
+- **Fechamento da tipografia:** a primeira inspeção do PNG recriado no container revelou todos os
+  textos em quadrados, pois o SVG pedia Arial e a imagem Alpine não possuía uma fonte compatível. O
+  build agora instala DejaVu Sans, o SVG a declara em cada elemento textual e o gerador bloqueia a
+  produção quando a família não está disponível ou algum texto usa outra fonte.
+- **Fechamento do fallback SPA:** antes do novo build existir em produção, a futura URL do raster do
+  PDE respondia `200` com `text/html`. Validar somente HTTPS e extensão permitiria reservar créditos
+  e chamar a receita paga com uma página HTML. O executor agora baixa e decodifica apresentadora e
+  PDE antes do snapshot Runway, persiste tipo, tamanho, dimensões e SHA-256 sanitizados e repete a
+  inspeção imediatamente antes da chamada faturável. Mudança de bytes, fallback HTML ou mídia
+  inválida bloqueia sem consumir créditos.
+- **Fechamento do sincronismo temporal:** a primeira correção garantia palavras iguais, porém ainda
+  dividia o vídeo igualmente pelo número de frases. Como os trechos possuem comprimentos diferentes,
+  conteúdo correto podia aparecer cedo ou tarde. Apolo agora sintetiza cada trecho da mesma fonte,
+  mede sua duração física com `ffprobe`, concatena a voz na ordem aprovada e usa esses limites no ASS
+  e no VTT. Narração maior que o vídeo bloqueia, e a versão premium remove o tom senoidal legado em
+  vez de apresentá-lo como trilha.
+- **Fechamento da locução premium:** o endpoint de Speech devolve áudio binário sem uso individual,
+  e o fluxo anterior registrava apenas nome do modelo e voz. O executor agora fixa snapshot e voz de
+  melhor qualidade, salva cada resposta bruta como ativo `AUDIO_AUDIT`, preserva request, hash,
+  tamanho e status, mantém custo pendente até reconciliação oficial e inclui o disclosure de voz
+  gerada por IA. Falhas HTTP preservam request e resposta textual e não abrem retry automático.
+- **Prevenção:** testes bloqueiam diferença lexical, referência ausente, versão móvel da receita,
+  custo divergente, timestamps divididos artificialmente e movimento abrupto. Falha preserva a
+  tentativa, não aprova o ativo e não abre nova geração paga sem outro ciclo e parecer de Plutus. A
+  homologação também reconstrói e inspeciona a tipografia da imagem PDE dentro do Docker e aplica o
+  preset ao projeto existente em desktop e celulares.
+
 ## LOOP-DEDALO-CONSTRUCAO-SEM-CONTEXTO-PDE — contrato existe, mas a tarefa recebe só identidade
 
 - **Data:** 2026-09-03.

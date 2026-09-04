@@ -2030,3 +2030,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-03-runway-plutus-provider-preflight-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-04-runway-product-ugc-premium-v1.yaml
+      relativeToChangelogFile: true

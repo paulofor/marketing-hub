@@ -55,6 +55,7 @@ public class VideoAssetUploader {
                         : extractContinuityFrame(job, artifacts.videoFile());
         Long posterAssetId = upload(job, artifacts, continuityFrame);
         Long captionAssetId = upload(job, artifacts, artifacts.captionFile());
+        artifacts.auditFiles().forEach(file -> upload(job, artifacts, file));
         return new UploadedAssets(videoAssetId, posterAssetId, captionAssetId);
     }
 

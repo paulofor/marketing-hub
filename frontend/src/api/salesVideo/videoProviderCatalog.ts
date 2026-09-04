@@ -103,6 +103,20 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     creditsUrl: "https://dev.runwayml.com/",
   },
   {
+    key: "runway-product-ugc-2026-06",
+    label: "Runway Product UGC Premium",
+    providerName: "RUNWAY_PRODUCT_UGC",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Anúncio vertical premium com apresentadora autorizada e tela real do PDE; usa tomada única, pós-produção determinística e gate de estabilidade.",
+    clipDurationSeconds: 15,
+    maxDirectDurationSeconds: 15,
+    supportsHeroVideo: true,
+    supportsSceneAssembly: false,
+    supportsOpenAiReferenceImage: false,
+    creditsUrl: "https://dev.runwayml.com/",
+  },
+  {
     key: "runway-seedance-2",
     label: "Seedance 2.0 via Runway",
     providerName: "RUNWAY_SEEDANCE_2",

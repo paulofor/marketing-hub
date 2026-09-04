@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://marketinghub.local/schemas/apollo/product-ugc/v1/response-schema.json",
+  "title": "Runway Product UGC task responses",
+  "oneOf": [
+    { "$ref": "#/$defs/accepted" },
+    { "$ref": "#/$defs/completed" }
+  ],
+  "$defs": {
+    "accepted": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "completed": {
+      "type": "object",
+      "required": ["id", "status", "output"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "status": { "const": "SUCCEEDED" },
+        "output": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "format": "uri" }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

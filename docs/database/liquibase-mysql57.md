@@ -72,7 +72,9 @@ bash backend/ads-service/scripts/validate-experiment-direct-contact-sample-mysql
 
 O preflight financeiro Runway/Plutus possui fixture física própria. Ela valida as identidades de
 fabricante, modelo, agregador, conta e rota, os campos `DATETIME`, chaves estrangeiras, unicidade da
-reserva, retomada após DDL sem ledger e reaplicação idempotente:
+reserva, retomada após DDL sem ledger, a receita Product UGC com tarifa pinada e reaplicação
+idempotente. O script fixa o projeto Compose isolado
+`aihub-3b1bd9ac-f97e-43f2-8cdd-cdbeb5e43c49-feb0ca303a` reservado para esta sandbox:
 
 ```bash
 bash backend/ads-service/scripts/validate-runway-plutus-provider-preflight-mysql57.sh

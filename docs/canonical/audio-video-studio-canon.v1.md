@@ -93,6 +93,13 @@ Cada entrada deve preservar produto, plano e experimento quando conhecidos, tipo
 
 Custo reportado pelo provedor prevalece; estimativa so pode usar tabela versionada e deve ser identificada como estimativa. Quando nao existir preco confiavel, o custo permanece nulo e reduz a cobertura. Nunca registrar zero apenas porque o provider nao retornou valor. Cada retry e nova chamada externa e uma tentativa financeira independente; atualizacoes de status da mesma tentativa nao podem duplicar custo.
 
+Respostas binarias de IA usadas na pós-produção, como cada trecho de voz, devem ser preservadas como
+ativos de auditoria ligados ao job, em vez de codificadas dentro do JSON do histórico. O metadata
+registra request sanitizado, endpoint, modelo, status, tipo, bytes, SHA-256 e identidade do ativo.
+Quando o endpoint não informar uso ou custo individual, Plutus mantém a reconciliação pendente; a
+tarifa pública serve como referência, nunca como confirmação de débito. Voz sintética deve ser
+identificada claramente ao público no próprio vídeo ou em disclosure inseparável da peça.
+
 O backend principal **nao deve** implementar integracao direta com providers de video, clientes
 HTTP/SDKs de renderizacao, adaptadores Luma, Kling, HeyGen, Runway, Veo ou qualquer executor de
 provider. Essas responsabilidades pertencem ao modulo executor de video, atualmente tratado como
@@ -124,6 +131,30 @@ O prompt comercial de cada cena deve ser editavel no Marketing Hub e persistido 
 Cada clipe deve perseguir uma unica conclusao visual. Para cenas com personagem, figurino, produto ou ambiente recorrente, o fluxo deve priorizar `image_to_video` com uma imagem inicial aprovada e registrar no job o asset efetivamente enviado. A imagem fixa governa identidade, enquadramento e composicao inicial; o prompt governa principalmente movimento, camera, microacao e restricoes. Texto, legenda e CTA continuam pertencendo a pos-producao deterministica.
 
 Toda cena aceita por um provedor pago deve aparecer no modulo financeiro transversal, deduplicada por job e ordem da cena, com ciclo, horario e identificador externo quando disponivel. A contagem deve representar solicitacoes aceitas pelo provedor, nunca pollings, heartbeats ou jobs recusados antes da criacao. O clipe gerado deve permanecer sem texto embutido; copy, legenda e CTA sao aplicados somente na pos-producao deterministica para permitir correcao sem nova geracao paga.
+
+Por decisão de 2026-09-04, Apolo deve bloquear qualquer finalização em que a locução e a legenda
+não contenham a mesma sequência normalizada de palavras. A legenda temporizada pode usar pausas e
+quebras visuais, mas não pode resumir, substituir ou acrescentar frases que a pessoa não ouve. A
+mesma fonte textual deve originar TTS, legenda queimada e VTT, e o resultado do gate deve permanecer
+auditável no job. Igualdade textual não basta para declarar sincronismo: em peças premium, cada
+trecho delimitado deve ser narrado separadamente, sua duração física deve definir o início da
+legenda seguinte e a última chamada deve permanecer visível até o fim do vídeo. Duração de áudio
+ausente ou maior que o vídeo bloqueia a finalização em vez de inventar timestamps ou cortar a voz.
+O primeiro Product UGC usa voz limpa sem o antigo tom senoidal sintético; música só pode voltar com
+um asset licenciado e auditável.
+
+Como Product UGC é uma chamada paga e o criativo depende de voz natural para ficar utilizável, o
+preflight deve verificar a capacidade completa de pós-produção antes de reservar créditos: serviço
+habilitado, modelo e voz versionados e credencial TTS disponível. Essa verificação confirma apenas
+configuração local e não transforma custo de voz sem uso retornado pelo provedor em zero.
+
+Vídeos de tomada contínua também devem passar por inspeção determinística de estabilidade antes de
+serem apresentados como candidatos. Saltos bruscos, tremor, flicker ou deformação temporal acima do
+limite versionado bloqueiam o arquivo e preservam as métricas para diagnóstico. O gate técnico de
+Apolo não aprova o próprio criativo: Psique, Têmis e a decisão humana continuam independentes.
+Declarar seus nomes no contrato registra os gates futuros, mas não representa parecer executado. O
+arquivo tecnicamente apto deve permanecer candidato pendente até que as revisões reais sejam
+persistidas pelo subprocesso canônico de criação e aprovação de criativos.
 
 ## Primeiro escopo
 
@@ -217,6 +248,25 @@ evidencia de consentimento e evidencia dos direitos da performance. A duracao me
 ledger; nunca deve ser inferida por um valor padrao. As evidencias juridicas nao sao enviadas ao
 provider, mas bloqueiam localmente a chamada quando ausentes. O modelo permanece impedido em
 producao ate licenca comercial e gate de qualidade serem homologados.
+
+Para criativos sociais que demonstram um PDE, o Estúdio pode usar a receita Runway Product UGC
+como rota reutilizável `RUNWAY_PRODUCT_UGC`. A referência de produto deve mostrar a experiência
+digital em tela limpa, nunca um objeto físico inventado. A rota exige imagem HTTPS da apresentadora,
+imagem HTTPS do PDE, consentimento e direitos auditáveis, versão datada fixada, duração entre 4 e 15
+segundos e proporção oficial. `unsafe-latest` é proibido. Como a receita não oferece `dryRun`
+documentado, o preflight calcula deterministicamente o custo pela tabela oficial versionada e
+consulta saldo e quota antes da reserva; nunca chama a receita durante o diagnóstico. A primeira
+execução premium usa áudio nativo desligado e pós-produção a partir de uma única fonte de locução e
+legenda, reduzindo risco de texto divergente. Nenhuma peça avança para campanha sem QA técnico,
+Psique, Têmis e aprovação humana.
+
+Quando a referência do PDE for produzida pelo próprio Marketing Hub, sua fonte visual e o gerador
+devem ficar versionados no módulo do produto, o build deve recriar o raster publicado e um manifesto
+deve registrar dimensões e SHA-256. Antes do preflight, o executor deve baixar e decodificar as duas
+referências, confirmar `image/png` ou `image/jpeg`, dimensões, proporção e SHA-256; extensão de arquivo
+não basta, pois uma SPA pode responder HTML com status `200`. A inspeção deve ser repetida
+imediatamente antes da chamada faturável e qualquer mudança deve bloquear o job. Imagem criada
+manualmente fora do fluxo versionado não pode ser usada como referência de produção.
 
 ## Etapas premium de producao com IA
 

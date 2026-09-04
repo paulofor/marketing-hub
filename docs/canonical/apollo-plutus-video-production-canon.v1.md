@@ -34,7 +34,10 @@ recomendação de recarga ao usuário, mas nunca compra automática, autobilling
 de job pago.
 
 O payload faturável deve ser estruturalmente equivalente ao payload do dry run, exceto pela ausência de
-`dryRun`. Cada rota persiste modelo, fabricante, agregador, conta, configuração, preferência,
+`dryRun`. Receitas oficiais que não documentem `dryRun` só podem entrar pelo mesmo fluxo quando a
+versão estiver fixada, o payload exato estiver congelado e o custo máximo puder ser recalculado
+deterministicamente no backend a partir de duração, proporção e tabela oficial versionada, sem chamar
+o endpoint faturável no preflight. Cada rota persiste modelo ou receita, fabricante, agregador, conta, configuração, preferência,
 estimativa e teto. A resposta faturável deve repetir modelo, fabricante, configuração, preferência e
 teto; divergência interrompe as cenas restantes e preserva a task já aceita para conciliação. A
 reserva precisa estar vigente no início de cada cena, reservas vencidas sem consumo devem ser
@@ -44,6 +47,26 @@ Configurações Runway são recursos externos previamente provisionados. O códi
 imutáveis, mas não cria ou altera allowlists automaticamente. Somente modelos `ACTIVE` com adapter,
 preço, licença comercial e QA verificados no catálogo do Marketing Hub podem superar o gate; modelo
 novo escolhido pelo Router permanece bloqueado até homologação explícita.
+
+Por decisão de 2026-09-04, `RUNWAY_PRODUCT_UGC` é a primeira rota de receita. Ela usa
+`product_ugc@2026-06`, uma imagem licenciada da apresentadora, uma captura limpa do PDE, no máximo 15
+segundos e áudio nativo desligado. Plutus reserva o custo contratual integral antes de Apolo; a
+pós-produção deriva locução, legenda queimada e VTT da mesma sequência de palavras. Falha de
+estabilidade, divergência entre texto e voz, ausência de duração por trecho ou narração maior que o
+vídeo bloqueia o candidato e jamais abre retentativa paga automática. Os limites das legendas
+premium vêm das durações físicas dos próprios trechos narrados, não de divisões iguais ou estimadas.
+Para a locução natural, o executor usa o snapshot versionado `gpt-4o-mini-tts-2025-12-15` e a voz
+`marin`, mantendo o texto aprovado como fonte única. Cada chamada por trecho persiste o request sem
+segredo e o binário bruto da resposta como ativo de áudio ligado ao job, com tipo, tamanho, request
+ID quando existir e SHA-256. Como o endpoint de Speech não devolve uso por request, o custo fica
+`PENDING_PROVIDER_RECONCILIATION`; tabela pública não autoriza estimar débito como zero. O vídeo
+exibe de forma legível que a voz foi gerada por IA. O endpoint não aceita `service_tier`, e essa
+exceção funcional deve constar na auditoria em vez de enviar campo não suportado.
+
+Quando a rota paga depender dessa finalização premium, o preflight deve confirmar previamente que
+pós-produção, TTS natural, modelo, voz e credencial estão configurados. A ausência de qualquer item
+bloqueia antes da reserva e da chamada Runway; concluir o vídeo visual sem capacidade de produzir o
+áudio aprovado criaria um custo irrecuperável e não é permitido.
 
 Por decisão operacional de 2026-09-03, o Estúdio também deve oferecer um preflight isolado. Esse
 comando consulta saldo e quota e executa o `dryRun`, mas encerra o ciclo sem criar reserva, tarefa de

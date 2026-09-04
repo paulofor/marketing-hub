@@ -13,6 +13,7 @@ import axios from "axios";
 import AudioVideoStudioPage, {
   actTwoConfigurationIssue,
   buildStudioSceneMetadata,
+  productUgcConfigurationIssue,
   readStudioSceneOrder,
   findProviderFromPlan,
   resolveStudioSceneRole,
@@ -156,6 +157,39 @@ describe("selecao de clipes por cena", () => {
         performanceRightsEvidence: "direitos-9",
       } as any),
     ).toMatch(/consentimento/i);
+  });
+
+  it("libera Product UGC somente com referencias, direitos e texto aprovados", () => {
+    const project = {
+      characterPerformanceType: "image",
+      characterPerformanceUri:
+        "https://assets.example/apresentadora-autorizada.png",
+      referencePerformanceUri: "https://assets.example/tela-musa.png",
+      performanceConsentEvidence: "consentimento-ugc-91",
+      performanceRightsEvidence: "direitos-ugc-91",
+      targetDurationSeconds: 15,
+      captionPlan:
+        "Você se arruma, mas ainda sente que falta presença? | Faça o diagnóstico gratuito.",
+      ctaText: "Faça o diagnóstico gratuito.",
+    } as any;
+
+    expect(productUgcConfigurationIssue(project)).toBe("");
+    expect(
+      productUgcConfigurationIssue({
+        ...project,
+        performanceRightsEvidence: "",
+      }),
+    ).toMatch(/direitos/i);
+    expect(
+      SALES_VIDEO_PROVIDER_OPTIONS.find(
+        (option) => option.providerName === "RUNWAY_PRODUCT_UGC",
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        maxDirectDurationSeconds: 15,
+        supportsSceneAssembly: false,
+      }),
+    );
   });
 });
 
@@ -334,7 +368,7 @@ describe("AudioVideoStudioPage", () => {
     expect(
       screen.getByLabelText(/evidencia dos direitos da performance/i),
     ).toBeRequired();
-    expect(screen.getByText(/permanece em homologacao/i)).toBeTruthy();
+    expect(screen.getAllByText(/permanece em homologa/i)).not.toHaveLength(0);
   });
 
   it("mostra baseline, candidata, custo, memoria e decisao do piloto de Apolo", async () => {
@@ -497,10 +531,74 @@ describe("AudioVideoStudioPage", () => {
           campaignKey: "vega-91-instagram-research-intelligence-v1",
           targetChannel: "INSTAGRAM_REELS_STORIES",
           title: "Vega #91 - O espelho antes de sair",
+          targetDurationSeconds: 15,
+          characterPerformanceType: "image",
+          characterPerformanceUri: expect.stringContaining(
+            "/products/video-images/",
+          ),
+          referencePerformanceUri:
+            "https://v7.clubemusa.com.br/assets/musa-product-ugc-reference.png",
+          performanceConsentEvidence: expect.stringContaining("sintética"),
+          performanceRightsEvidence: expect.stringContaining("versionado"),
+          providerPlan: expect.stringContaining("RUNWAY_PRODUCT_UGC"),
           measurementPlan: expect.stringContaining("pagamento aprovado"),
         }),
       );
     });
+  });
+
+  it("permite aplicar o preset premium do Vega ao projeto existente", async () => {
+    const user = userEvent.setup();
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            experimentId: 91,
+            productionMode: "STORY_FIRST_AUDIO_VIDEO",
+            targetChannel: "INSTAGRAM_REELS_STORIES",
+            format: "VERTICAL_9_16",
+            title: "Vega #91 - plano rejeitado",
+            objective: "Converter para o diagnostico",
+            targetDurationSeconds: 30,
+            status: "READY_FOR_REVIEW",
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: /vega #91 · piloto instagram/i,
+      }),
+    );
+    expect(
+      (screen.getByLabelText(/duracao alvo/i) as HTMLInputElement).value,
+    ).toBe("15");
+
+    await user.click(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    );
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/sales-videos/projects/1",
+        expect.objectContaining({
+          productId: 4,
+          experimentId: 91,
+          targetDurationSeconds: 15,
+          providerPlan: expect.stringContaining("RUNWAY_PRODUCT_UGC"),
+          referencePerformanceUri:
+            "https://v7.clubemusa.com.br/assets/musa-product-ugc-reference.png",
+        }),
+      ),
+    );
   });
 
   it("mostra as rotas, fontes e limites da pesquisa no detalhe do projeto", async () => {

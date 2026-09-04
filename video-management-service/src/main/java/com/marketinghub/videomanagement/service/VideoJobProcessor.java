@@ -25,11 +25,11 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
-@Service
 /** Responsabilidade: executar um job de vídeo com claim, preflight, provider e callback auditável. */
+@Service
 public class VideoJobProcessor {
     private final Logger log = LoggerFactory.getLogger(VideoJobProcessor.class);
     private final BackendVideoClient backendClient;
@@ -40,6 +40,7 @@ public class VideoJobProcessor {
     private final ObjectMapper objectMapper;
     private final ApolloStoryboardPlanner apolloStoryboardPlanner;
     private final ApolloGovernedLearningReporter learningReporter;
+    private final ApolloTechnicalVideoQualityGate technicalVideoQualityGate;
 
     /** Configura dependências de execução, observabilidade e planejamento prévio. */
     public VideoJobProcessor(BackendVideoClient backendClient,
@@ -49,7 +50,8 @@ public class VideoJobProcessor {
                              VideoManagementProperties properties,
                              ObjectMapper objectMapper,
                              ApolloStoryboardPlanner apolloStoryboardPlanner,
-                             ApolloGovernedLearningReporter learningReporter) {
+                             ApolloGovernedLearningReporter learningReporter,
+                             ApolloTechnicalVideoQualityGate technicalVideoQualityGate) {
         this.backendClient = backendClient;
         this.providerRegistry = providerRegistry;
         this.assetUploader = assetUploader;
@@ -58,6 +60,7 @@ public class VideoJobProcessor {
         this.objectMapper = objectMapper;
         this.apolloStoryboardPlanner = apolloStoryboardPlanner;
         this.learningReporter = learningReporter;
+        this.technicalVideoQualityGate = technicalVideoQualityGate;
     }
 
     /** Executa um job e impede o provider quando o planejamento ou gate prévio falhar. */
@@ -79,6 +82,7 @@ public class VideoJobProcessor {
                     .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
             ProviderArtifacts artifacts = provider.render(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));
+            artifacts = technicalVideoQualityGate.validate(job, artifacts);
             if (artifacts.videoFile() == null) {
                 throw new VideoProviderException("Provider não retornou o asset principal de vídeo");
             }
@@ -99,7 +103,7 @@ public class VideoJobProcessor {
             observabilityService.recordRenderLatency(job.providerName(), computeLatency(job));
             log.info("Job {} concluído com vídeo {}", job.id(), uploadedAssets.videoAssetId());
         } catch (VideoProviderException ex) {
-            log.warn("Falha ao processar job {}: {}", job.id(), ex.getMessage());
+            log.warn("Falha ao processar job {}; code={}", job.id(), ex.getCode(), ex);
             observabilityService.incrementJobsFailed(job.providerName(), ex.getCode());
             if (isExpiredFailure(ex)) {
                 observabilityService.incrementAssetExpired(job.providerName());
@@ -118,12 +122,15 @@ public class VideoJobProcessor {
             }
         } catch (BackendIntegrationException ex) {
             if (isDuplicateClaim(ex) || isNotFound(ex)) {
-                log.info("Job {} não será processado neste worker (status={}): {}",
-                        job.id(), ex.getStatusCode(), ex.getMessage());
+                log.info(
+                        "Job {} não será processado neste worker; status={}",
+                        job.id(),
+                        ex.getStatusCode(),
+                        ex);
                 observabilityService.incrementClaimConflict(job.providerName());
                 return;
             }
-            log.error("Falha de integração com backend ao processar job {}: {}", job.id(), ex.getMessage());
+            log.error("Falha de integração com backend ao processar job {}", job.id(), ex);
             safeFailJob(job.id(), "BACKEND_INTEGRATION_ERROR", ex.getMessage(), "Falha ao comunicar com backend");
         } catch (Exception ex) {
             log.error("Erro inesperado ao processar job {}", job.id(), ex);
@@ -131,6 +138,7 @@ public class VideoJobProcessor {
         }
     }
 
+    /** Tenta assumir o job e diferencia conflito esperado de falha real de integração. */
     private boolean claimJob(SalesVideoJob job) {
         try {
             backendClient.claimJob(job.id(), new JobClaimPayload(properties.getWorkerId(),
@@ -138,9 +146,14 @@ public class VideoJobProcessor {
             return true;
         } catch (BackendIntegrationException ex) {
             if (isDuplicateClaim(ex) || isNotFound(ex)) {
-                log.info("Claim recusado para job {} (status={}): {}", job.id(), ex.getStatusCode(), ex.getMessage());
+                log.info(
+                        "Claim recusado para job {}; status={}",
+                        job.id(),
+                        ex.getStatusCode(),
+                        ex);
                 return false;
             }
+            log.error("Falha de integração ao assumir job {}; status={}", job.id(), ex.getStatusCode(), ex);
             throw ex;
         }
     }
@@ -159,6 +172,7 @@ public class VideoJobProcessor {
         return backendClient.fetchProfile(job.profileId());
     }
 
+    /** Registra a falha terminal sem encobrir eventual indisponibilidade do callback. */
     private void safeFailJob(Long jobId,
                              String code,
                              String detail,
@@ -172,7 +186,7 @@ public class VideoJobProcessor {
                     false,
                     "OTHER"));
         } catch (Exception failEx) {
-            log.error("Falha ao registrar erro do job {} no backend: {}", jobId, failEx.getMessage());
+            log.error("Falha ao registrar erro do job {} no backend", jobId, failEx);
         }
     }
 

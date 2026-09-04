@@ -471,7 +471,11 @@ public class SalesVideoJobService {
               "continuity",
               "post_production",
               "provider_strategy",
-              "image_to_video")
+              "image_to_video",
+              "technicalQualityGate",
+              "referenceGovernance",
+              "premiumFinalization",
+              "researchIntelligence")
           .forEach(
               field -> {
                 if (requested.has(field)) {
@@ -485,10 +489,11 @@ public class SalesVideoJobService {
     }
   }
 
-  /** Enfileira a finalização premium após a montagem cinematográfica concluir com sucesso. */
+  /** Enfileira a finalização premium após a fonte visual governada concluir com sucesso. */
   private void enqueuePremiumFinalization(SalesVideoJob job, String requestedJobMetadata) {
     if (job.getStatus() != SalesVideoStatus.VIDEO_READY
-        || !"MUSA_VIDEO_MONTAGE".equalsIgnoreCase(job.getProviderName())
+        || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(job.getProviderName())
+            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.getProviderName()))
         || !StringUtils.hasText(requestedJobMetadata)) {
       return;
     }
@@ -789,8 +794,13 @@ public class SalesVideoJobService {
       blockers.add("O CTA final não possui evidência persistida no roteiro ou na pós-produção.");
     }
     SalesVideoJob sourceJob = job.getRetryOfJob();
-    if (sourceJob == null || !"MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())) {
-      blockers.add("A peça não deriva de uma montagem narrativa auditável.");
+    if (sourceJob == null
+        || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())
+            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName()))) {
+      blockers.add("A peça não deriva de uma fonte visual narrativa auditável.");
+    }
+    if (sourceJob != null && "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName())) {
+      addProductUgcQualityBlockers(metadata, blockers);
     }
     if (job.getProfile() == null || job.getProfile().getHumanReviewApprovedAt() == null) {
       blockers.add("A revisão humana final ainda não foi aprovada.");
@@ -808,6 +818,24 @@ public class SalesVideoJobService {
     } catch (JsonProcessingException ex) {
       log.warn("Metadata inválido bloqueou gate comercial; jobId={}", job.getId(), ex);
       return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
+  }
+
+  /** Exige as medições finais que atacam as causas da rejeição anterior do Product UGC. */
+  private void addProductUgcQualityBlockers(JsonNode metadata, List<String> blockers) {
+    if (!"APPROVED"
+        .equalsIgnoreCase(
+            metadata.path("apollo_technical_quality").path("stability_status").asText())) {
+      blockers.add("Apolo ainda não aprovou a estabilidade da tomada contínua.");
+    }
+    JsonNode synchronization = metadata.path("caption_narration_sync");
+    if (!"APPROVED".equalsIgnoreCase(synchronization.path("status").asText())
+        || !"APPROVED".equalsIgnoreCase(synchronization.path("timing_status").asText())) {
+      blockers.add("Texto, locução e tempo de exibição ainda não possuem sincronismo aprovado.");
+    }
+    if (!"APPROVED_FOR_TEST"
+        .equalsIgnoreCase(metadata.path("audio").path("review").path("status").asText())) {
+      blockers.add("O áudio premium ainda não passou no gate técnico para teste comercial.");
     }
   }
 
@@ -914,7 +942,12 @@ public class SalesVideoJobService {
               "campaign_key",
               "generation_strategy",
               "cut_plan",
-              "post_production")
+              "post_production",
+              "technicalQualityGate",
+              "referenceGovernance",
+              "premiumFinalization",
+              "researchIntelligence",
+              "apollo_technical_quality")
           .forEach(
               field -> {
                 if (source.has(field)) {
@@ -1219,8 +1252,8 @@ public class SalesVideoJobService {
             return duration;
           }
         }
-      } catch (JsonProcessingException ignored) {
-        // O metadata inválido será tratado pelos validadores próprios do contrato do job.
+      } catch (JsonProcessingException ex) {
+        log.warn("Metadata inválido ao resolver duração do render; jobId={}", job.getId(), ex);
       }
     }
     return job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;

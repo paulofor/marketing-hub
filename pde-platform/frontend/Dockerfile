@@ -2,9 +2,9 @@ FROM node:20-alpine AS build
 WORKDIR /app
 ARG VITE_PDE_ENABLE_DEV_ACCESS=false
 ENV VITE_PDE_ENABLE_DEV_ACCESS=${VITE_PDE_ENABLE_DEV_ACCESS}
-RUN apk add --no-cache ffmpeg
 COPY package.json package-lock.json* ./
-RUN npm install --include=dev
+RUN npm ci --include=dev --no-audit --no-fund
+RUN apk add --no-cache ffmpeg font-dejavu rsvg-convert
 COPY . .
 RUN npm run build
 

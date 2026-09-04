@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,8 @@ public class VideoProviderFinancialPreflightService {
       LoggerFactory.getLogger(VideoProviderFinancialPreflightService.class);
   private static final String RUNWAY_ACCOUNT_KEY = "RUNWAY_PRIMARY";
   private static final Duration SNAPSHOT_TTL = Duration.ofMinutes(5);
+  private static final Duration EXPECTED_EXECUTOR_CLOCK_SKEW = Duration.ofSeconds(60);
+  private static final Duration MAX_EXECUTOR_CLOCK_SKEW = Duration.ofMinutes(5);
   private static final Duration RESERVATION_TTL = Duration.ofMinutes(60);
   private static final Set<String> PROFILES = Set.of("DRAFT_INSTAGRAM", "FINAL_CAMPAIGN");
   private final VideoProviderAccountRepository accountRepository;
@@ -52,8 +56,10 @@ public class VideoProviderFinancialPreflightService {
   private final SalesVideoProviderModelRepository providerModelRepository;
   private final StudioProviderTaskConsumptionQueryService taskConsumptionQueryService;
   private final ObjectMapper objectMapper;
+  private final Clock clock;
 
   /** Configura as fontes canônicas da conta, do preflight e da reserva financeira. */
+  @Autowired
   public VideoProviderFinancialPreflightService(
       VideoProviderAccountRepository accountRepository,
       VideoProviderPreflightRepository preflightRepository,
@@ -61,12 +67,32 @@ public class VideoProviderFinancialPreflightService {
       SalesVideoProviderModelRepository providerModelRepository,
       StudioProviderTaskConsumptionQueryService taskConsumptionQueryService,
       ObjectMapper objectMapper) {
+    this(
+        accountRepository,
+        preflightRepository,
+        reservationRepository,
+        providerModelRepository,
+        taskConsumptionQueryService,
+        objectMapper,
+        Clock.systemUTC());
+  }
+
+  /** Configura as fontes e o relógio controlável usado nos testes do contrato temporal. */
+  VideoProviderFinancialPreflightService(
+      VideoProviderAccountRepository accountRepository,
+      VideoProviderPreflightRepository preflightRepository,
+      VideoCreditReservationRepository reservationRepository,
+      SalesVideoProviderModelRepository providerModelRepository,
+      StudioProviderTaskConsumptionQueryService taskConsumptionQueryService,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.accountRepository = accountRepository;
     this.preflightRepository = preflightRepository;
     this.reservationRepository = reservationRepository;
     this.providerModelRepository = providerModelRepository;
     this.taskConsumptionQueryService = taskConsumptionQueryService;
     this.objectMapper = objectMapper;
+    this.clock = clock;
   }
 
   /** Abre o preflight idempotente do ciclo sem consultar ou consumir o agregador. */
@@ -77,7 +103,7 @@ public class VideoProviderFinancialPreflightService {
         .orElseGet(
             () -> {
               VideoProviderAccount account = account(RUNWAY_ACCOUNT_KEY);
-              Instant now = Instant.now();
+              Instant now = Instant.now(clock);
               VideoProviderPreflight preflight = new VideoProviderPreflight();
               preflight.setVideoProductionCycleId(cycleId);
               preflight.setProviderAccountId(account.getId());
@@ -165,18 +191,19 @@ public class VideoProviderFinancialPreflightService {
     if (!account.getSourceUrl().equals(request.sourceUrl().trim())) {
       throw badRequest("A fonte do snapshot diverge da API oficial configurada para a conta.");
     }
-    Instant now = Instant.now();
-    releaseExpiredReservations(account, now);
-    Instant expiresAt = request.observedAt().plus(SNAPSHOT_TTL);
+    Instant receivedAt = Instant.now(clock);
+    validateObservationTime(cycle.getId(), request.observedAt(), receivedAt);
+    releaseExpiredReservations(account, receivedAt);
+    Instant expiresAt = receivedAt.plus(SNAPSHOT_TTL);
     String requestedStatus = request.status().trim().toUpperCase(Locale.ROOT);
     if (!Set.of("READY", "BLOCKED").contains(requestedStatus)) {
       throw badRequest("Estado de preflight inválido.");
     }
-    applyRawResult(preflight, request, expiresAt, now);
+    applyRawResult(preflight, request, expiresAt, receivedAt);
     if ("READY".equals(requestedStatus)) {
-      validateReadyResult(request, now, expiresAt);
+      validateReadyResult(request);
       RouteTotals routes = validateContractualRoutes(request, cycle, account);
-      updateOfficialAccountSnapshot(account, request, expiresAt, now);
+      updateOfficialAccountSnapshot(account, request, expiresAt, receivedAt);
       BigDecimal reserved = nonNull(account.getReservedCredits());
       BigDecimal available =
           request.officialBalanceCredits().subtract(reserved).max(BigDecimal.ZERO);
@@ -210,13 +237,13 @@ public class VideoProviderFinancialPreflightService {
     } else {
       preflight.setStatus("BLOCKED");
       if (StringUtils.hasText(request.payloadSha256())) {
-        validateReadyResult(request, now, expiresAt);
+        validateReadyResult(request);
         validateContractualRoutes(request, cycle, account);
-        updateOfficialAccountSnapshot(account, request, expiresAt, now);
+        updateOfficialAccountSnapshot(account, request, expiresAt, receivedAt);
       }
       account.setSnapshotStatus("BLOCKED");
-      account.setSnapshotExpiresAt(now);
-      account.setUpdatedAt(now);
+      account.setSnapshotExpiresAt(receivedAt);
+      account.setUpdatedAt(receivedAt);
       accountRepository.save(account);
     }
     return preflightRepository.save(preflight);
@@ -226,7 +253,7 @@ public class VideoProviderFinancialPreflightService {
   @Transactional
   public VideoCreditReservation reserve(VideoProductionCycle cycle) {
     VideoProviderAccount account = accountByCycleForUpdate(cycle.getId());
-    Instant now = Instant.now();
+    Instant now = Instant.now(clock);
     releaseExpiredReservations(account, now);
     VideoCreditReservation existing =
         reservationRepository.findByVideoProductionCycleIdForUpdate(cycle.getId()).orElse(null);
@@ -343,7 +370,7 @@ public class VideoProviderFinancialPreflightService {
             .findByVideoProductionCycleId(cycleId)
             .orElseThrow(() -> conflict("O ciclo não possui reserva de créditos."));
     if (!Set.of("RESERVED", "CONSUMING").contains(reservation.getStatus())
-        || !reservation.getExpiresAt().isAfter(Instant.now())) {
+        || !reservation.getExpiresAt().isAfter(Instant.now(clock))) {
       throw conflict("A reserva de créditos do ciclo não está ativa.");
     }
     return reservation;
@@ -352,7 +379,7 @@ public class VideoProviderFinancialPreflightService {
   /** Informa se um ciclo legado ainda possui reserva válida sem lançar erro na reconciliação. */
   @Transactional(readOnly = true)
   public boolean hasActiveReservation(Long cycleId) {
-    Instant now = Instant.now();
+    Instant now = Instant.now(clock);
     return reservationRepository
         .findByVideoProductionCycleId(cycleId)
         .filter(value -> Set.of("RESERVED", "CONSUMING").contains(value.getStatus()))
@@ -370,7 +397,7 @@ public class VideoProviderFinancialPreflightService {
     if (!"RESERVED".equals(reservation.getStatus())) {
       throw conflict("Uma reserva com consumo iniciado não pode ser liberada como não utilizada.");
     }
-    Instant now = Instant.now();
+    Instant now = Instant.now(clock);
     account.setReservedCredits(
         nonNull(account.getReservedCredits())
             .subtract(nonNull(reservation.getReservedCredits()))
@@ -395,7 +422,7 @@ public class VideoProviderFinancialPreflightService {
               reservation.setStatus("CONSUMING");
               reservation.setActualCredits(nonNull(credits));
               reservation.setActualCostUsd(nonNull(costUsd));
-              reservation.setUpdatedAt(Instant.now());
+              reservation.setUpdatedAt(Instant.now(clock));
               reservationRepository.save(reservation);
             });
   }
@@ -414,7 +441,7 @@ public class VideoProviderFinancialPreflightService {
     if (!account.getId().equals(reservation.getProviderAccountId())) {
       throw conflict("A reserva não pertence à conta travada para o ciclo.");
     }
-    Instant now = Instant.now();
+    Instant now = Instant.now(clock);
     account.setReservedCredits(
         nonNull(account.getReservedCredits())
             .subtract(reservation.getReservedCredits())
@@ -536,7 +563,7 @@ public class VideoProviderFinancialPreflightService {
       VideoProviderPreflight preflight,
       VideoProviderFinancialPreflightData.Result request,
       Instant expiresAt,
-      Instant now) {
+      Instant receivedAt) {
     preflight.setRouterConfigId(trim(request.routerConfigId()));
     preflight.setPayloadSha256(trim(request.payloadSha256()));
     preflight.setExecutionRequestsJson(trim(request.executionRequestsJson()));
@@ -552,16 +579,11 @@ public class VideoProviderFinancialPreflightService {
     preflight.setSourceUrl(request.sourceUrl().trim());
     preflight.setObservedAt(request.observedAt());
     preflight.setExpiresAt(expiresAt);
-    preflight.setUpdatedAt(now);
+    preflight.setUpdatedAt(receivedAt);
   }
 
-  /** Exige um retorno completo, recente e internamente consistente para o estado READY. */
-  private void validateReadyResult(
-      VideoProviderFinancialPreflightData.Result request, Instant now, Instant expiresAt) {
-    if (!expiresAt.isAfter(now.minusSeconds(1))
-        || request.observedAt().isAfter(now.plusSeconds(60))) {
-      throw badRequest("Snapshot oficial vencido ou observado no futuro.");
-    }
+  /** Exige um retorno completo e internamente consistente para o estado READY. */
+  private void validateReadyResult(VideoProviderFinancialPreflightData.Result request) {
     if (!StringUtils.hasText(request.routerConfigId())
         || !StringUtils.hasText(request.payloadSha256())
         || !StringUtils.hasText(request.executionRequestsJson())
@@ -587,6 +609,25 @@ public class VideoProviderFinancialPreflightService {
     String actualHash = sha256(request.executionRequestsJson());
     if (!actualHash.equalsIgnoreCase(request.payloadSha256().trim())) {
       throw badRequest("Hash do payload de execução diverge do dry run.");
+    }
+  }
+
+  /** Usa o recebimento do backend como validade e recusa somente desvios de relógio anormais. */
+  private void validateObservationTime(Long cycleId, Instant observedAt, Instant receivedAt) {
+    if (observedAt == null) {
+      throw badRequest("Snapshot oficial não informou o horário de observação.");
+    }
+    Duration skew = Duration.between(receivedAt, observedAt).abs();
+    if (skew.compareTo(MAX_EXECUTOR_CLOCK_SKEW) > 0) {
+      throw badRequest("Desvio de relógio do executor excede a janela segura do preflight.");
+    }
+    if (skew.compareTo(EXPECTED_EXECUTOR_CLOCK_SKEW) > 0) {
+      log.warn(
+          "Preflight recebido com desvio de relógio; cycleId={} observedAt={} receivedAt={} skewSeconds={}",
+          cycleId,
+          observedAt,
+          receivedAt,
+          skew.toSeconds());
     }
   }
 
@@ -828,7 +869,7 @@ public class VideoProviderFinancialPreflightService {
       VideoProviderAccount account,
       VideoProviderFinancialPreflightData.Result request,
       Instant expiresAt,
-      Instant now) {
+      Instant receivedAt) {
     account.setOfficialBalanceCredits(request.officialBalanceCredits());
     account.setMaxMonthlyCreditSpend(request.maxMonthlyCreditSpend());
     account.setQuotaSnapshotJson(request.quotaSnapshotJson());
@@ -837,7 +878,7 @@ public class VideoProviderFinancialPreflightService {
     account.setSnapshotObservedAt(request.observedAt());
     account.setSnapshotExpiresAt(expiresAt);
     account.setSourceUrl(request.sourceUrl().trim());
-    account.setUpdatedAt(now);
+    account.setUpdatedAt(receivedAt);
     accountRepository.save(account);
   }
 
@@ -876,10 +917,11 @@ public class VideoProviderFinancialPreflightService {
         reservation != null
             && Set.of("RESERVED", "CONSUMING").contains(reservation.getStatus())
             && reservation.getExpiresAt() != null
-            && reservation.getExpiresAt().isAfter(Instant.now());
+            && reservation.getExpiresAt().isAfter(Instant.now(clock));
     if (!activeReservation
         && List.of("READY", "READY_WITH_BLOCKER").contains(preflight.getStatus())
-        && (preflight.getExpiresAt() == null || !preflight.getExpiresAt().isAfter(Instant.now()))) {
+        && (preflight.getExpiresAt() == null
+            || !preflight.getExpiresAt().isAfter(Instant.now(clock)))) {
       return "EXPIRED";
     }
     return preflight.getStatus();

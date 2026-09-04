@@ -85,6 +85,8 @@ pós-produção continua bloqueando qualquer voz real que ultrapasse o arquivo.
 | Build da referência | FFmpeg da imagem Alpine não possui decoder SVG | `rsvg-convert` recria PNG e manifesto dentro da imagem Docker versionada |
 | Tipografia da referência | Fonte pedida pelo SVG não existe na imagem Alpine | Build instala DejaVu Sans; gerador exige essa família em todos os textos e bloqueia glyphs ausentes |
 | Observabilidade | Job concluído ou falho | Request, response, versão, refs, hash, créditos, custo, duração e gate técnico auditáveis sem segredo |
+| Relógio distribuído | Executor observa o saldo até 5 minutos antes ou depois do relógio do backend | Backend preserva o horário observado para auditoria, usa o próprio recebimento para o TTL e aceita o callback sem ampliar a validade |
+| Relógio distribuído | Diferença absoluta entre executor e backend maior que 5 minutos | Callback bloqueado como desvio anormal, sem reserva ou geração paga |
 | Revisão | Arquivo tecnicamente apto | Fica pendente; Psique e Têmis devem produzir pareceres reais no subprocesso criativo, e a aprovação humana continua obrigatória |
 | Métricas | Ativo aprovado para experimento | Medir 3s, 25/50/75/100%, CTA, diagnóstico, checkout, pagamento, reembolso e custo |
 | Segregação | Homologação local e experimento 91 | Tráfego/testes não entram como humanos, vendas ou receita |
@@ -121,6 +123,36 @@ Após a última correção, duas rodadas completas e consecutivas foram executad
   7, com Product UGC, referências, copy única, gates contra a rejeição anterior, zero overflow e zero
   erro de console.
 
-A referência sintética já publicada respondeu como PNG 941 × 1672. Antes deste código ser publicado,
-a futura URL da referência limpa do PDE ainda responde com o HTML da SPA; por isso nenhuma geração
-real foi iniciada e nenhum dos 2.020 créditos informados foi consumido durante a homologação.
+A referência sintética da personagem respondeu como PNG 941 × 1672. Após a publicação do preset, a
+referência limpa do PDE passou a responder como `image/png` em 1080 × 1920. Nenhuma geração real foi
+iniciada e nenhum dos 2.020 créditos informados foi consumido durante essa homologação.
+
+## Retomada operacional do experimento 91 em 2026-09-04
+
+O comando de preflight isolado foi executado pela tela do projeto #3 e criou o ciclo #9 com teto de
+US$ 6,48. A integração real consultou a organização Runway, confirmou saldo de 2.020 créditos,
+calculou 648 créditos para a receita `product_ugc` e validou as duas referências. O callback,
+entretanto, permaneceu pendente porque o relógio do executor estava 78 segundos adiantado em relação
+ao backend e o contrato publicado recusava qualquer diferença futura superior a 60 segundos.
+
+O banco produtivo confirmou o ciclo `PENDING_PROVIDER_PREFLIGHT_ONLY`, preflight `PENDING`, custo
+conhecido zero, nenhum `sales_video_job_id`, nenhuma reserva e saldo reservado zero. O backend passou
+a usar seu próprio recebimento como início do TTL, preservando o horário observado para auditoria e
+recusando somente diferenças anormais superiores a cinco minutos. O teste da tela que aguardava
+apenas o título estático também passou a esperar o link funcional do MP4, removendo a intermitência
+observada sob carga paralela.
+
+Depois dessas correções, duas rodadas locais completas e consecutivas passaram:
+
+- 2.299 testes do backend, com zero falhas e zero erros, por rodada;
+- 138 testes do executor de vídeo, com zero falhas e zero erros, por rodada;
+- 139 arquivos e 474 testes do frontend, com zero falhas, por rodada;
+- Spotless, TypeScript, build administrativo e Actionlint canônico por rodada;
+- Liquibase aplicado, retomado e reaplicado fisicamente no MySQL 5.7 por rodada;
+- quatro imagens Docker construídas por rodada: backend, executor, frontend e PDE;
+- referência do PDE reproduzida dentro da imagem em 1080 × 1920 e filtros `vidstabdetect` e
+  `vidstabtransform` confirmados no executor;
+- projeto #3 aberto sem erro ou overflow em Chromium desktop, iPhone 15 Pro e Pixel 7 por rodada.
+
+A correção ainda precisa passar pelo fluxo de PR e deploy antes de o ciclo #9 poder concluir. Até
+lá, não deve ser criado um ciclo de produção: isso manteria outra pendência e não autorizaria gasto.

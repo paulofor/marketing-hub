@@ -1,0 +1,44 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v5",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-09-04T19:15:00Z",
+  "status": "READY_FOR_LOCAL_REVALIDATION",
+  "revalidationReason": "Reatestar o contrato do Rigel após a inclusão segregada do protótipo privado de Mira no catálogo compartilhado, sem alterar identidade, oferta ou política comercial do Rigel.",
+  "scope": "Compatibilidade do catálogo compartilhado com Rigel e preservação das provas comerciais específicas da homologação v4.",
+  "boundary": "Esta atestação não cria contato, venda, pagamento, gasto, publicação ou autorização comercial.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
+      "sha256": "00baa20ff2b24c97013017b28854e1cb5df26ac44dad73374bef0c48bc46c288",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Baseline comercial v4 preservada; a v5 revalida somente a evolução segregada do catálogo compartilhado."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/dto/ProductExperienceResponse.java",
+      "sha256": "5a74ccbbb24d325b0172858e6b6d65f509eaa441aba491d2562145c25a0b1a84"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "3141a1d97b1abf6f7e97bd839e434dad2fdd082abc9a4472cd818cb5d3202655"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java",
+      "sha256": "b18c3ea018936b4f315a0ba141b884e4cc424b2cab4e6c50ab96c6379119345d"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "6d5e086d3bd30c629fd122e6011fdf5df2a18915ffa740bd9e777177b7609787"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialContractPolicyTest.java",
+      "sha256": "58685985b1e4d50ac67f8db017a683d55d6afb5abcf79d0422b2405edfbf6821"
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "contractVersion": "musa-v7-commercial-homologation.v5",
+  "processCode": "pde-commercial-homologation-activation",
+  "processVersion": 5,
+  "activityId": "pdeGate",
+  "sourceReference": "product:4@musa-pde-entry-v7-espelho-antes-de-sair",
+  "product": {
+    "id": 4,
+    "internalName": "Vega",
+    "commercialName": "Método MUSA - Presença Elegante em 7 Dias",
+    "slug": "metodo-musa-7-dias",
+    "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+    "commercialPlanId": 3,
+    "publicUrl": "https://v7.clubemusa.com.br/"
+  },
+  "offer": {
+    "priceBrl": 67,
+    "currency": "BRL",
+    "billingModel": "ONE_TIME",
+    "accessDays": 90,
+    "renewal": false,
+    "checkoutUrl": "https://go.pepper.com.br/owm6x",
+    "checkoutProvider": "PEPPER",
+    "checkoutReference": "owm6x",
+    "promise": "Organizar em sete dias escolhas práticas de presença elegante prioritariamente com o que a cliente já possui, sem promessa de transformação garantida."
+  },
+  "changeScope": {
+    "baseManifest": "pde-platform/contracts/musa-v7-commercial-homologation-v4.json",
+    "reason": "Reatestar o MUSA após a inclusão segregada do protótipo privado de Mira no catálogo compartilhado, sem alterar o contrato, preço, checkout ou experiência do MUSA.",
+    "includedChanges": [
+      "Compatibilidade do catálogo compartilhado com a identidade privada de Mira",
+      "Preservação integral do contrato funcional e comercial do MUSA",
+      "Provas executáveis de catálogo, jornada, checkout e segregação"
+    ],
+    "excludedMutableReferences": [
+      "docs/registros/loops.md",
+      "backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml"
+    ]
+  },
+  "measurementContract": {
+    "authoritativeSaleEvent": "PURCHASE_COMPLETED",
+    "authoritativeDeliveryEvent": "DELIVERY_COMPLETED",
+    "humanMetricsExcludeTestTraffic": true,
+    "deduplicationRequired": true,
+    "testTrafficClass": "INTERNAL_QA"
+  },
+  "decisionRules": {
+    "continue": "Continuar somente com compra, acesso, entrega e contribuição positiva reconciliados.",
+    "adjust": "Ajustar uma variável quando houver tráfego humano sem passagem ao momento de valor, paywall ou checkout.",
+    "stop": "Parar diante de gasto não autorizado, preço divergente, venda sem entrega, falha de privacidade ou reembolso não reconciliado."
+  },
+  "localValidationObservation": {
+    "status": "READY_FOR_LOCAL_REVALIDATION",
+    "humanSalesApproved": 0,
+    "externalSpendBrl": 0,
+    "boundary": "Esta atestação corrige o contrato versionado e não autoriza publicação, contato, mídia, gasto ou contabilização de venda."
+  },
+  "homologationEvidence": [
+    {
+      "path": "pde-platform/contracts/musa-v7-commercial-homologation-v4.json",
+      "sha256": "26d6e362a3d8428735c2b0be7dc92fa7823cd95429298cae84aedadffa668251",
+      "role": "Baseline comercial integral e imutável aprovada antes da evolução segregada do catálogo.",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Manifesto v4 preservado como histórico; a v5 revalida somente a compatibilidade do catálogo compartilhado e repete as provas específicas vigentes."
+    },
+    {
+      "path": "pde-platform/frontend/src/musaExperiences.ts",
+      "sha256": "85fd592d3502c64effc5ba24299add0ef28279ee517f3a4cc0e39a17eaad0a66",
+      "role": "Contrato funcional da experiência MUSA v7 com checkout homologado."
+    },
+    {
+      "path": "pde-platform/backend/src/main/resources/contracts/musa-v7-product-v1.json",
+      "sha256": "5b2c197f857c3e95bbd96854df2f4419f616f7d59cb0024a7c67ac1529ec9b23",
+      "role": "Contrato canônico do produto, preço e checkout Pepper."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/dto/ProductExperienceResponse.java",
+      "sha256": "5a74ccbbb24d325b0172858e6b6d65f509eaa441aba491d2562145c25a0b1a84",
+      "role": "DTO tipado que preserva a identidade comercial da experiência."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "3141a1d97b1abf6f7e97bd839e434dad2fdd082abc9a4472cd818cb5d3202655",
+      "role": "Catálogo que mantém o checkout canônico do MUSA e isola a identidade privada de Mira."
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "6d5e086d3bd30c629fd122e6011fdf5df2a18915ffa740bd9e777177b7609787",
+      "role": "Prova de desserialização, fallback, segregação e preservação do checkout."
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-local-integration.spec.ts",
+      "sha256": "933da11fac446c7c5381c97beff76e56fbf41f71cf3700a8ea43e5a82041c090",
+      "role": "Jornada MUSA segregada e exercitada em dispositivos responsivos."
+    },
+    {
+      "path": "pde-platform/frontend/tests/musa-entry.visual.spec.ts",
+      "sha256": "3e3197a48f189ebe8d2e9230c787d9ca46347bfc91d7228cd3c0386a87d8fab7",
+      "role": "Prova visual do preço, CTA e atribuição do checkout."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/pde/service/PdeCommercialCheckoutContractResolver.java",
+      "sha256": "40789a132b801e0142b2f95a2ba4a28d5fcaad81049cf5b13de542fd19f5c070",
+      "role": "Resolvedor único da identidade comercial versionada."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdeCommercialCheckoutContractResolverTest.java",
+      "sha256": "909ba95e3e647f7c574954e90d70d8dfe319d033da2fca39e343cff967b3103d",
+      "role": "Contrato preventivo de preço, URL, provedor e cobrança."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentCommercialCheckoutService.java",
+      "sha256": "3ced4f4ca62e9bd2ad2c2f65e4378b4fddb60af57778e61f93d4ba09b48b8435",
+      "role": "Reconciliação idempotente que preserva o checkout Pepper homologado."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/experiment/service/ExperimentCommercialCheckoutServiceTest.java",
+      "sha256": "2c3f5c09bd978ec3a9354ed9ec49907f7d481775e47f59eb6b03bf590fbf3b4f",
+      "role": "Prova de que o fallback não cria checkout concorrente."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/product/service/commercialoffer/PublicProductCommercialOfferService.java",
+      "sha256": "3958f9ba25529ce182696c9d609148e699e00f92cd9b38f5852c796d6d24723f",
+      "role": "Oferta pública que usa a identidade comercial da versão homologada."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/product/service/commercialoffer/PublicProductCommercialOfferServiceTest.java",
+      "sha256": "cbfb1d31161445971f222f12f58e4904eaf016f55c4d1f355d8396db45758473",
+      "role": "Prova de bloqueio de checkout administrativo obsoleto."
+    },
+    {
+      "path": "backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentAgentTaskTargetContextProvider.java",
+      "sha256": "69cbce0ef9d724de5e1c8bf5a3fc4ce476d612305d9742c808840e5cfbb52ab7",
+      "role": "Contexto de tarefa ligado à mesma versão, preço e checkout."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/experiment/service/ExperimentAgentTaskTargetContextProviderTest.java",
+      "sha256": "19427f97792d530ff5bcbc71eb9e437e443c8ac03e1a198d87c1f006725e972f",
+      "role": "Prova de segregação entre landing, produto e revisão PDE."
+    }
+  ]
+}

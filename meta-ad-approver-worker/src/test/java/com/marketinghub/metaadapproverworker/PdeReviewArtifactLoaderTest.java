@@ -172,7 +172,8 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v4.json");
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v5.json");
   }
 
   /** Entrega à revisão independente somente a prova comercial declarada e íntegra. */
@@ -413,19 +414,22 @@ class PdeReviewArtifactLoaderTest {
     assertThat(rigel)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
+            "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
+        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
         .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json")
         .doesNotContain("pde-platform/contracts/musa-v7-commercial-homologation-v1.json");
     assertThat(vega)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/musa-v7-commercial-homologation-v5.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v4.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v3.json",
             "pde-platform/frontend/src/musaExperiences.ts")
         .doesNotContain(
             "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v2.json",
+            "pde-platform/contracts/musa-v7-commercial-homologation-v3.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");

@@ -80,6 +80,14 @@ idempotente. O script fixa o projeto Compose isolado
 bash backend/ads-service/scripts/validate-runway-plutus-provider-preflight-mysql57.sh
 ```
 
+A API externa da Biblioteca do Harness possui migração física isolada. Ela valida as duas tabelas
+versionadas, campos `DATETIME`, chave estrangeira, unicidade de versão e idempotência, retomada após
+DDL aplicado sem ledger, rejeição de schema parcial e reaplicação sem duplicidade:
+
+```bash
+bash backend/ads-service/scripts/validate-harness-library-api-mysql57.sh
+```
+
 A homologação comercial MUSA v7 possui fixture física versionada. Ela valida produto e slot com o
 mesmo contrato JSON, identidade do checkout Pepper, reaplicação, rollback da reconciliação financeira
 e compatibilidade real com MySQL 5.7:

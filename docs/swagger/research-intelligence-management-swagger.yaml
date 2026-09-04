@@ -1,0 +1,185 @@
+openapi: 3.0.3
+info:
+  title: Research Intelligence Management Internal API
+  version: 1.0.0
+  description: Contrato interno assinado usado exclusivamente pelo gateway da Biblioteca do Harness.
+servers:
+  - url: http://191.252.181.168
+security:
+  - HarnessTimestamp: []
+    HarnessRequestId: []
+    HarnessContentHash: []
+    HarnessSignature: []
+    Actor: []
+paths:
+  /api/internal/research-intelligence/v1/cards:
+    post:
+      summary: Persiste a próxima versão em rascunho.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterCard" }
+      responses:
+        "201":
+          description: Versão persistida.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardVersion" }
+        "400": { description: Contrato inválido. }
+        "401": { description: Assinatura inválida ou expirada. }
+        "409": { description: Chave idempotente usada com outro payload. }
+        "503": { description: Secret interno não configurado. }
+    get:
+      summary: Lista versões persistidas.
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [DRAFT, IN_REVIEW, ACTIVE, ARCHIVED] }
+        - name: collection
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 100 }
+      responses:
+        "200": { description: Lista filtrada. }
+        "401": { description: Assinatura inválida ou expirada. }
+  /api/internal/research-intelligence/v1/cards/{cardKey}/versions/{version}:
+    get:
+      summary: Consulta uma versão específica.
+      parameters:
+        - $ref: "#/components/parameters/CardKey"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200":
+          description: Versão encontrada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardVersion" }
+        "404": { description: Versão inexistente. }
+  /api/internal/research-intelligence/v1/cards/{cardKey}/versions/{version}/submit-review:
+    post:
+      summary: Move DRAFT para IN_REVIEW.
+      parameters:
+        - $ref: "#/components/parameters/CardKey"
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody: { $ref: "#/components/requestBodies/Transition" }
+      responses:
+        {
+          "200": { description: Estado resultante. },
+          "409": { description: Transição inválida. },
+        }
+  /api/internal/research-intelligence/v1/cards/{cardKey}/versions/{version}/activate:
+    post:
+      summary: Move IN_REVIEW para ACTIVE e arquiva a versão ativa anterior.
+      parameters:
+        - $ref: "#/components/parameters/CardKey"
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody: { $ref: "#/components/requestBodies/Transition" }
+      responses:
+        {
+          "200": { description: Estado resultante. },
+          "409": { description: Transição inválida ou cartão vencido. },
+        }
+  /api/internal/research-intelligence/v1/cards/{cardKey}/versions/{version}/archive:
+    post:
+      summary: Move ACTIVE para ARCHIVED.
+      parameters:
+        - $ref: "#/components/parameters/CardKey"
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody: { $ref: "#/components/requestBodies/Transition" }
+      responses:
+        {
+          "200": { description: Estado resultante. },
+          "409": { description: Transição inválida. },
+        }
+components:
+  securitySchemes:
+    HarnessTimestamp: { type: apiKey, in: header, name: X-Harness-Timestamp }
+    HarnessRequestId: { type: apiKey, in: header, name: X-Harness-Request-Id }
+    HarnessContentHash:
+      { type: apiKey, in: header, name: X-Harness-Content-SHA256 }
+    HarnessSignature: { type: apiKey, in: header, name: X-Harness-Signature }
+    Actor: { type: apiKey, in: header, name: X-Actor }
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 128 }
+    CardKey:
+      name: cardKey
+      in: path
+      required: true
+      schema: { type: string }
+    Version:
+      name: version
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+  requestBodies:
+    Transition:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason: { type: string, minLength: 1, maxLength: 500 }
+  schemas:
+    RegisterCard:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          cardKey,
+          collection,
+          title,
+          finding,
+          mechanism,
+          commercialApplication,
+          evidenceStrength,
+          publishedOn,
+          validUntil,
+          experimentHypothesis,
+          risks,
+          limits,
+          sourceKind,
+          sourceUri,
+          sourceTitle,
+          sourceSha256,
+        ]
+      properties:
+        cardKey: { type: string }
+        collection: { type: string }
+        title: { type: string }
+        finding: { type: string }
+        mechanism: { type: string }
+        commercialApplication: { type: string }
+        evidenceStrength: { type: string }
+        publishedOn: { type: string, format: date }
+        validUntil: { type: string, format: date }
+        experimentHypothesis: { type: string }
+        risks: { type: string }
+        limits: { type: string }
+        sourceKind: { type: string, enum: [URL, PDF, MARKDOWN, TEXT] }
+        sourceUri: { type: string }
+        sourceTitle: { type: string }
+        sourceSha256: { type: string, pattern: "^[0-9a-f]{64}$" }
+    CardVersion:
+      type: object
+      additionalProperties: true
+      required: [cardKey, version, cardId, status, effectiveStatus]
+      properties:
+        cardKey: { type: string }
+        version: { type: integer }
+        cardId: { type: string }
+        status: { type: string }
+        effectiveStatus: { type: string }

@@ -1,0 +1,159 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-04-harness-library-api-v1-01-card-root
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - or:
+            - not:
+                tableExists:
+                  tableName: research_intelligence_card
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'research_intelligence_card') = 4
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'research_intelligence_card'
+                            AND COLUMN_NAME IN ('created_at', 'updated_at')
+                            AND DATA_TYPE = 'datetime'
+                            AND IS_NULLABLE = 'NO') = 2
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.TABLE_CONSTRAINTS
+                          WHERE CONSTRAINT_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'research_intelligence_card'
+                            AND CONSTRAINT_TYPE = 'PRIMARY KEY') = 1,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS research_intelligence_card (
+                card_key VARCHAR(120) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                row_version BIGINT NOT NULL DEFAULT 0,
+                PRIMARY KEY (card_key)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE research_intelligence_card;
+
+  - changeSet:
+      id: 2026-09-04-harness-library-api-v1-02-card-version
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: research_intelligence_card
+        - or:
+            - not:
+                tableExists:
+                  tableName: research_intelligence_card_version
+            - sqlCheck:
+                expectedResult: 1
+                sql: |
+                  SELECT IF(
+                    (SELECT COUNT(*)
+                       FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = 'research_intelligence_card_version') = 35
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.COLUMNS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'research_intelligence_card_version'
+                            AND COLUMN_NAME IN (
+                              'created_at', 'review_submitted_at', 'activated_at',
+                              'archived_at', 'updated_at'
+                            )
+                            AND DATA_TYPE = 'datetime') = 5
+                    AND (SELECT COUNT(DISTINCT INDEX_NAME)
+                           FROM information_schema.STATISTICS
+                          WHERE TABLE_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'research_intelligence_card_version'
+                            AND INDEX_NAME IN (
+                              'uk_research_intelligence_card_version',
+                              'uk_research_intelligence_card_id',
+                              'uk_research_intelligence_idempotency'
+                            )
+                            AND NON_UNIQUE = 0) = 3
+                    AND (SELECT COUNT(*)
+                           FROM information_schema.REFERENTIAL_CONSTRAINTS
+                          WHERE CONSTRAINT_SCHEMA = DATABASE()
+                            AND TABLE_NAME = 'research_intelligence_card_version'
+                            AND CONSTRAINT_NAME =
+                              'fk_research_intelligence_card_version_root') = 1,
+                    1,
+                    0
+                  );
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS research_intelligence_card_version (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                card_key VARCHAR(120) NOT NULL,
+                version_number INT NOT NULL,
+                card_id VARCHAR(32) NOT NULL,
+                status VARCHAR(24) NOT NULL,
+                collection_key VARCHAR(80) NOT NULL,
+                title VARCHAR(240) NOT NULL,
+                finding TEXT NOT NULL,
+                mechanism TEXT NOT NULL,
+                commercial_application TEXT NOT NULL,
+                evidence_strength VARCHAR(500) NOT NULL,
+                published_on DATE NOT NULL,
+                valid_until DATE NOT NULL,
+                experiment_hypothesis TEXT NOT NULL,
+                risks TEXT NOT NULL,
+                limits_text TEXT NOT NULL,
+                source_kind VARCHAR(24) NOT NULL,
+                source_uri VARCHAR(1024) NOT NULL,
+                source_title VARCHAR(240) NOT NULL,
+                source_sha256 CHAR(64) NOT NULL,
+                idempotency_key VARCHAR(128) NOT NULL,
+                payload_sha256 CHAR(64) NOT NULL,
+                created_by VARCHAR(120) NOT NULL,
+                created_at DATETIME NOT NULL,
+                review_submitted_by VARCHAR(120) NULL,
+                review_submitted_at DATETIME NULL,
+                review_note VARCHAR(500) NULL,
+                activated_by VARCHAR(120) NULL,
+                activated_at DATETIME NULL,
+                activation_note VARCHAR(500) NULL,
+                archived_by VARCHAR(120) NULL,
+                archived_at DATETIME NULL,
+                archive_note VARCHAR(500) NULL,
+                updated_at DATETIME NOT NULL,
+                row_version BIGINT NOT NULL DEFAULT 0,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_research_intelligence_card_version (card_key, version_number),
+                UNIQUE KEY uk_research_intelligence_card_id (card_id),
+                UNIQUE KEY uk_research_intelligence_idempotency (idempotency_key),
+                INDEX idx_research_intelligence_status (status, valid_until),
+                INDEX idx_research_intelligence_collection (collection_key, status),
+                CONSTRAINT fk_research_intelligence_card_version_root
+                  FOREIGN KEY (card_key) REFERENCES research_intelligence_card(card_key)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE research_intelligence_card_version;

@@ -1,0 +1,41 @@
+server:
+  port: 8103
+  shutdown: graceful
+
+spring:
+  application:
+    name: harness-library-api
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+
+management:
+  server:
+    port: 9103
+    address: 127.0.0.1
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+harness-library:
+  api-key: ${HARNESS_LIBRARY_API_KEY:}
+  api-key-file: ${HARNESS_LIBRARY_API_KEY_FILE:}
+  backend-base-url: ${MARKETING_HUB_BACKEND_URL:http://191.252.181.168}
+  internal-signing-key: ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY:}
+  internal-signing-key-file: ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE:}
+  connect-timeout: ${HARNESS_LIBRARY_CONNECT_TIMEOUT:5s}
+  read-timeout: ${HARNESS_LIBRARY_READ_TIMEOUT:15s}
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} requestId=%X{requestId:-none} - %msg%n"

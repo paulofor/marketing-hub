@@ -2460,12 +2460,12 @@ export default function AudioVideoStudioPage() {
                     </div>
                     <span>
                       {selectedProject.researchIntelligence.totalAvailableCards}{" "}
-                      artigos compilados
+                      cartões no catálogo global
                     </span>
                   </div>
                   <p>
-                    Cada agente recebe no máximo quatro cartões curtos. Os
-                    artigos orientam decisões, mas não contam como venda, prova
+                    Cada agente recebe no máximo quatro cartões curtos. As
+                    fontes orientam decisões, mas não contam como venda, prova
                     do produto ou autorização de gasto e publicação.
                   </p>
                   <Link
@@ -2538,9 +2538,10 @@ export default function AudioVideoStudioPage() {
                   </p>
                   <h2>Pesquisa será selecionada para qualquer projeto</h2>
                   <p>
-                    O backend compilará os artigos e entregará a cada agente
-                    somente a rota aderente ao contexto. Salve o blueprint para
-                    ver cartões, fontes e hashes da seleção deste projeto.
+                    O backend reunirá fontes Markdown e cartões aprovados pela
+                    API externa, entregando a cada agente somente a rota
+                    aderente ao contexto. Salve o blueprint para ver cartões,
+                    fontes e hashes da seleção deste projeto.
                   </p>
                   <Link
                     className="audio-video-studio-page__research-catalog-link"

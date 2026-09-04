@@ -1,13 +1,21 @@
 package com.marketinghub.researchintelligence.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.marketinghub.repository.jpa.researchintelligence.ResearchIntelligenceCardVersionRepository;
+import com.marketinghub.researchintelligence.v1.ResearchIntelligenceCardStatus;
+import com.marketinghub.researchintelligence.v1.ResearchIntelligenceCardVersion;
+import com.marketinghub.researchintelligence.v1.ResearchIntelligenceSourceKind;
 import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceRouteResponse;
 import com.marketinghub.salesvideo.VideoProject;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -164,6 +172,32 @@ class ResearchIntelligenceServiceTest {
             });
   }
 
+  /** Inclui somente versões persistidas ativas no catálogo global consumido pelos agentes. */
+  @Test
+  void shouldMergeActivePersistedVersionIntoGlobalCatalog() {
+    Clock clock = Clock.fixed(Instant.parse("2026-09-04T12:00:00Z"), ZoneOffset.UTC);
+    ResearchIntelligenceCardVersionRepository repository =
+        mock(ResearchIntelligenceCardVersionRepository.class);
+    ResearchIntelligenceCardVersion active = persistedVersion(clock);
+    active.submitForReview("reviewer", "Revisado", LocalDateTime.now(clock));
+    active.activate("reviewer", "Aprovado", LocalDateTime.now(clock));
+    when(repository.findByStatusOrderByCardKeyAscVersionNumberAsc(
+            ResearchIntelligenceCardStatus.ACTIVE))
+        .thenReturn(List.of(active));
+    service = new ResearchIntelligenceService(clock, repository);
+
+    var catalog = service.getCatalog();
+
+    assertThat(catalog.cards())
+        .filteredOn(card -> card.cardId().equals("RI1-CCCCCCCCCCCC"))
+        .singleElement()
+        .satisfies(
+            card -> {
+              assertThat(card.sourcePath()).isEqualTo("urn:test:card");
+              assertThat(card.evidenceKind()).isEqualTo("EXTERNAL_RESEARCH");
+            });
+  }
+
   /** Localiza uma rota obrigatória da seleção de teste. */
   private ResearchIntelligenceRouteResponse route(
       java.util.List<ResearchIntelligenceRouteResponse> routes, String agentKey) {
@@ -176,6 +210,33 @@ class ResearchIntelligenceServiceTest {
   /** Resume as coleções cobertas por uma rota. */
   private Set<String> collections(ResearchIntelligenceRouteResponse route) {
     return route.cards().stream().map(card -> card.collection()).collect(Collectors.toSet());
+  }
+
+  /** Monta uma versão persistida para comprovar a união com o catálogo empacotado. */
+  private ResearchIntelligenceCardVersion persistedVersion(Clock clock) {
+    return new ResearchIntelligenceCardVersion(
+        "homologacao-card",
+        1,
+        "RI1-CCCCCCCCCCCC",
+        "video",
+        "Demonstração clara",
+        "Mostrar reduz ambiguidade.",
+        "Concretização visual.",
+        "Comparar retenção e CTA.",
+        "Hipótese externa.",
+        LocalDate.of(2026, 9, 4),
+        LocalDate.of(2026, 10, 19),
+        "A demonstração aumentará CTA.",
+        "Generalização.",
+        "Pagamento comprova venda.",
+        ResearchIntelligenceSourceKind.TEXT,
+        "urn:test:card",
+        "Fonte sintética",
+        "a".repeat(64),
+        "idem-version-1",
+        "b".repeat(64),
+        "codex-homologacao",
+        LocalDateTime.now(clock));
   }
 
   /** Monta o briefing persistido do piloto sem criar exceção específica para seu ID. */

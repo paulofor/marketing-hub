@@ -1,0 +1,71 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ads
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - harness-library-mysql:/var/lib/mysql
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/ads-service/Dockerfile
+      args:
+        BACKEND_BUILD_COMMIT: local-homologation
+        BACKEND_BUILD_BRANCH: local-homologation
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ads
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_POOL_MAX_SIZE: 4
+      DB_POOL_MIN_IDLE: 1
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create
+      SPRING_LIQUIBASE_ENABLED: "false"
+      SPRING_TASK_SCHEDULING_ENABLED: "false"
+      HARNESS_LIBRARY_INTERNAL_SIGNING_KEY: local-internal-signing-key-0000000000000001
+      LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: local-payments-token-000000000000000000001
+      OUTBOX_SCHEDULER_BATCH_SIZE: 1
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/ops-mh-observability-v2/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  harness-library-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_REVISION: local-homologation
+    environment:
+      HARNESS_LIBRARY_API_KEY: local-public-api-key-000000000000000000001
+      HARNESS_LIBRARY_INTERNAL_SIGNING_KEY: local-internal-signing-key-0000000000000001
+      MARKETING_HUB_BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18103:8103"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9103/actuator/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  harness-library-mysql:

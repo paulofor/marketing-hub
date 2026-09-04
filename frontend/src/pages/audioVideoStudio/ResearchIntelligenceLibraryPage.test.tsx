@@ -94,9 +94,17 @@ describe("ResearchIntelligenceLibraryPage", () => {
     expect(axios.get).toHaveBeenCalledWith(
       "/api/research-intelligence/v1/catalog",
     );
-    expect(await screen.findByText("Apolo", { selector: "strong" })).toBeTruthy();
+    expect(
+      await screen.findByText("Apolo", { selector: "strong" }),
+    ).toBeTruthy();
     expect(screen.getByText("Todos", { selector: "strong" })).toBeTruthy();
     expect(screen.getByText(/projetos atuais e futuros/i)).toBeTruthy();
+    expect(
+      screen.getByText(/cartões versionados no catálogo global/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/cartões aprovados pela API externa/i),
+    ).toBeTruthy();
     expect(screen.getByText(/gancho visual reconhecível/i)).toBeTruthy();
     expect(screen.queryByText(/artigo histórico vencido/i)).toBeNull();
   });

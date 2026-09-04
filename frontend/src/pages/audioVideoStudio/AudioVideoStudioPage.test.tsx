@@ -669,7 +669,7 @@ describe("AudioVideoStudioPage", () => {
         name: /biblioteca de inteligência do harness v1/i,
       }),
     ).toBeTruthy();
-    expect(screen.getByText(/61 artigos compilados/i)).toBeTruthy();
+    expect(screen.getByText(/61 cartões no catálogo global/i)).toBeTruthy();
     expect(screen.getByText(/1 cartão · orienta produção/i)).toBeTruthy();
     expect(screen.getByText(/gancho e recompensa visual/i)).toBeTruthy();
     expect(

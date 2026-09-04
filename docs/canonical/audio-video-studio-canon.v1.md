@@ -357,6 +357,40 @@ versionada continua unica, enquanto cada job persiste sua selecao e os hashes us
 Com o volume atual, selecao por colecao, data e relevancia lexical e suficiente; banco vetorial so
 pode ser introduzido depois de ganho comercial mensuravel que justifique custo e complexidade.
 
+#### Cadastro externo e curadoria dos cartões
+
+Por decisão de 2026-09-04, a Biblioteca de Inteligência também deve aceitar cartões cadastrados por
+uma API JSON independente da interface administrativa do Marketing Hub. Essa API é uma porta de
+entrada operacional: o backend principal continua sendo a única fonte de verdade, o único módulo que
+acessa o banco e o responsável por validar, versionar, ativar, arquivar e entregar os cartões aos
+agentes. O módulo externo não mantém banco paralelo, não recompila o catálogo e não decide qual etapa
+ou agente usará uma evidência.
+
+Todo cartão cadastrado deve preservar chave lógica, versão imutável, coleção, achado, mecanismo,
+aplicação comercial, força da evidência, hipótese de experimento, riscos, limites, data de publicação,
+validade, tipo, endereço, título e SHA-256 da fonte, além dos atores e horários de criação, revisão,
+ativação e arquivamento. A fonte não é buscada automaticamente pela API, evitando SSRF e a promoção
+de conteúdo remoto não verificado; quem cadastra deve calcular e enviar o hash do material realmente
+revisado.
+
+O ciclo permitido é `DRAFT -> IN_REVIEW -> ACTIVE -> ARCHIVED`. Uma nova submissão para a mesma
+chave cria outra versão em rascunho e mantém a versão ativa anterior disponível até a aprovação da
+substituta. A ativação arquiva a versão ativa anterior na mesma transação. Cartões vencidos continuam
+auditáveis na administração, mas não entram no contexto de nenhum agente. Somente as coleções
+canônicas roteadas podem ser ativadas; coleção desconhecida deve falhar de forma explícita.
+
+A API externa deve exigir chave própria, ator explícito e `Idempotency-Key` em toda mutação. A chamada
+entre o módulo externo e o backend deve ser assinada com HMAC-SHA-256, timestamp curto, request ID e
+hash do corpo, sem transmitir o segredo de assinatura. Secrets devem ser montados por arquivo, nunca
+incluídos na imagem, no repositório ou em logs. Antes de existir domínio com HTTPS, o container deve
+escutar somente em loopback no host escolhido; publicar a porta em HTTP aberto é proibido.
+
+O primeiro host operacional planejado é `163.245.200.7`, por possuir a maior folga observada de
+memória e disco entre os hosts inventariados. O serviço deve usar a porta interna `8103`, imagem
+imutável gerada por GitHub Actions e deploy somente a partir de `main`. A liberação pública depende de
+domínio, DNS, TLS e provisionamento humano dos dois secrets. Health técnico não substitui o teste de
+cadastro, revisão, ativação e leitura pelo catálogo global.
+
 #### Microconteudo seriado como hipotese opcional
 
 Uma sequencia curta pode ser testada quando a oferta exigir mais contexto do que uma unica peca

@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MicroserviceDiscoveryServiceTest {
   @Mock private VpsHostInventoryRepository hostInventoryRepository;
 
+  /** Deve descobrir serviços e portas publicados no arquivo Compose configurado. */
   @Test
   void shouldDiscoverServicesFromComposeFile() throws IOException {
     Path composeFile = Files.createTempFile("compose", ".yml");
@@ -75,6 +76,7 @@ class MicroserviceDiscoveryServiceTest {
     Files.deleteIfExists(composeFile);
   }
 
+  /** Deve retornar uma lista vazia quando o arquivo Compose não existe. */
   @Test
   void shouldReturnEmptyListWhenFileDoesNotExist() {
     MicroserviceDiscoveryService service =
@@ -89,6 +91,7 @@ class MicroserviceDiscoveryServiceTest {
     assertTrue(discovered.isEmpty());
   }
 
+  /** Deve descobrir o inventário de implantação diretamente dos workflows disponíveis. */
   @Test
   void shouldDiscoverDeploymentInventoryFromWorkflows() throws IOException {
     Path workflowsPath = Files.createTempDirectory("workflows");
@@ -139,7 +142,7 @@ class MicroserviceDiscoveryServiceTest {
     assertEquals("manual", deployment.triggerMode());
   }
 
-  /** Deve usar o inventário fallback quando os workflows não estão disponíveis. */
+  /** Deve usar o inventário fallback completo quando os workflows não estão disponíveis. */
   @Test
   void shouldUseFallbackDeploymentInventoryWhenWorkflowsAreUnavailable() {
     MicroserviceDiscoveryService service =
@@ -151,7 +154,7 @@ class MicroserviceDiscoveryServiceTest {
 
     List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
 
-    assertEquals(8, deployments.size());
+    assertEquals(10, deployments.size());
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));
@@ -159,6 +162,23 @@ class MicroserviceDiscoveryServiceTest {
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.102.54")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.200.7")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("163.245.202.80")));
+    assertTrue(
+        deployments.stream()
+            .anyMatch(
+                dto ->
+                    dto.workflowFile().equals(".github/workflows/harness-library-api-ci.yml")
+                        && dto.jobName().equals("deploy-loopback")
+                        && dto.deployHost().equals("163.245.200.7")
+                        && dto.triggerMode().equals("manual")));
+    assertTrue(
+        deployments.stream()
+            .anyMatch(
+                dto ->
+                    dto.workflowFile()
+                            .equals(".github/workflows/harness-library-api-publication.yml")
+                        && dto.jobName().equals("publish-or-renew")
+                        && dto.deployHost().equals("163.245.200.7")
+                        && dto.triggerMode().equals("manual-inicial-e-renovacao-semanal")));
   }
 
   /** Deve expor o cadastro físico e financeiro dos hosts VPS no inventário operacional. */
@@ -188,6 +208,15 @@ class MicroserviceDiscoveryServiceTest {
                 host ->
                     host.host().equals("191.252.210.83")
                         && host.notes().contains("docker_ops confirmou")));
+    assertTrue(
+        inventory.hosts().stream()
+            .anyMatch(
+                host ->
+                    host.host().equals("163.245.200.7")
+                        && host.cpu().equals("6 vCPU")
+                        && host.memoryGb().equals(6)
+                        && host.diskGb().equals(59)
+                        && host.notes().contains("mkthub.api.br")));
     assertTrue(
         inventory.hosts().stream()
             .anyMatch(

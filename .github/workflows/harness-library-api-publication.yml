@@ -1,0 +1,178 @@
+name: Publish Harness Library API HTTPS
+run-name: Harness Library HTTPS · ${{ github.event_name == 'schedule' && 'renew' || inputs.operation }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Publicar o domínio pela primeira vez ou renovar o certificado já ativo"
+        required: true
+        type: choice
+        default: publish
+        options:
+          - publish
+          - renew
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-vps-163-245-200-7
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  publish-or-renew:
+    name: Publish or renew fixed HTTPS endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      DEPLOY_HOST: 163.245.200.7
+      DEPLOY_USER: root
+      API_REMOTE_ROOT: /root/harness-library-api
+      PUBLIC_PROXY_REMOTE_ROOT: /root/lead-portal-payments-service
+      PUBLIC_DOMAIN: mkthub.api.br
+      PUBLIC_URL: https://mkthub.api.br
+      PUBLIC_NETWORK: public-net
+      OPERATION: ${{ github.event_name == 'schedule' && 'renew' || inputs.operation }}
+      HARNESS_LIBRARY_API_KEY: ${{ secrets.HARNESS_LIBRARY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY != '' && secrets.LEAD_PORTAL_PAYMENTS_VPS_SSH_KEY || secrets.VPS_SSH_CHAVE }}
+        run: |
+          set -euo pipefail
+          test -n "${VPS_SSH_KEY}" || { echo "Chave SSH do host selecionado ausente." >&2; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 30 -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          echo "SSH_ARGS=-i $HOME/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o ConnectTimeout=30" >> "${GITHUB_ENV}"
+
+      - name: Resolve activation state
+        id: activation
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
+            if ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              "test -f '${API_REMOTE_ROOT}/public-https-enabled'"; then
+              echo "enabled=true" >> "${GITHUB_OUTPUT}"
+            else
+              echo "enabled=false" >> "${GITHUB_OUTPUT}"
+              echo "Renovação ignorada: a publicação inicial ainda não foi ativada."
+            fi
+            exit 0
+          fi
+
+          if [ "${OPERATION}" = "renew" ] && ! ssh ${SSH_ARGS} \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" "test -f '${API_REMOTE_ROOT}/public-https-enabled'"; then
+            echo "A renovação manual exige uma publicação inicial concluída." >&2
+            exit 1
+          fi
+          echo "enabled=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate fixed domain and API key
+        if: steps.activation.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          test "${PUBLIC_DOMAIN}" = "mkthub.api.br"
+          test "${PUBLIC_URL}" = "https://mkthub.api.br"
+          test "${#HARNESS_LIBRARY_API_KEY}" -ge 32 \
+            || { echo "HARNESS_LIBRARY_API_KEY ausente ou curta." >&2; exit 1; }
+
+      - name: Validate DNS before touching the public proxy
+        if: steps.activation.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          ipv4_addresses="$(getent ahostsv4 "${PUBLIC_DOMAIN}" 2>/dev/null | awk '{print $1}' | sort -u || true)"
+          if ! grep -Fxq "${DEPLOY_HOST}" <<<"${ipv4_addresses}"; then
+            echo "DNS de ${PUBLIC_DOMAIN} ainda não aponta para ${DEPLOY_HOST}." >&2
+            printf '%s\n' "${ipv4_addresses:-sem registro A}" >&2
+            exit 1
+          fi
+          unexpected_ipv4="$(grep -Fvx "${DEPLOY_HOST}" <<<"${ipv4_addresses}" || true)"
+          test -z "${unexpected_ipv4}" \
+            || { echo "DNS também aponta para IPv4 inesperado: ${unexpected_ipv4}" >&2; exit 1; }
+          if getent ahostsv6 "${PUBLIC_DOMAIN}" | grep -q .; then
+            echo "Registro AAAA não homologado para este host; remova-o antes da publicação." >&2
+            exit 1
+          fi
+
+      - name: Sync versioned publication assets
+        if: steps.activation.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          asset_root="${API_REMOTE_ROOT}/publication"
+          ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "install -m 700 -d '${asset_root}'"
+          rsync -az -e "ssh ${SSH_ARGS}" \
+            harness-library-api/scripts/publish-public-https.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${asset_root}/publish-public-https.sh"
+          ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "chmod 700 '${asset_root}/publish-public-https.sh'"
+
+          if [ "${OPERATION}" = "publish" ]; then
+            rsync -az -e "ssh ${SSH_ARGS}" \
+              lead-portal-payments-service/nginx.conf \
+              "${DEPLOY_USER}@${DEPLOY_HOST}:${asset_root}/nginx.conf"
+            rsync -az -e "ssh ${SSH_ARGS}" \
+              lead-portal-payments-service/docker/proxy/ensure-certs.sh \
+              "${DEPLOY_USER}@${DEPLOY_HOST}:${asset_root}/ensure-certs.sh"
+          fi
+
+      - name: Publish route or renew certificate
+        if: steps.activation.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "HARNESS_LIBRARY_PUBLIC_DOMAIN='${PUBLIC_DOMAIN}' \
+             HARNESS_LIBRARY_PUBLIC_NETWORK='${PUBLIC_NETWORK}' \
+             HARNESS_LIBRARY_REMOTE_ROOT='${API_REMOTE_ROOT}' \
+             PUBLIC_PROXY_REMOTE_ROOT='${PUBLIC_PROXY_REMOTE_ROOT}' \
+             HARNESS_LIBRARY_PUBLICATION_OPERATION='${OPERATION}' \
+             bash '${API_REMOTE_ROOT}/publication/publish-public-https.sh'"
+
+      - name: Validate public HTTPS contract
+        if: steps.activation.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          redirect_headers="$(curl --noproxy '*' --fail --silent --show-error --head --max-time 20 \
+            "http://${PUBLIC_DOMAIN}/v1/cards")"
+          grep -Fiq "location: ${PUBLIC_URL}/v1/cards" <<<"${redirect_headers}"
+
+          unauthenticated_code="$(curl --noproxy '*' --silent --show-error --max-time 20 \
+            --output /dev/null --write-out '%{http_code}' \
+            "${PUBLIC_URL}/v1/cards")"
+          test "${unauthenticated_code}" = "401" \
+            || { echo "Chamada sem chave deveria retornar 401; status=${unauthenticated_code}." >&2; exit 1; }
+
+          authenticated_body="$(curl --noproxy '*' --fail --silent --show-error --max-time 30 \
+            -H "X-API-Key: ${HARNESS_LIBRARY_API_KEY}" \
+            -H 'X-Actor: github-actions-publication' \
+            "${PUBLIC_URL}/v1/cards?limit=1")"
+          jq -e '.returnedItems >= 0 and (.items | type == "array")' \
+            >/dev/null <<<"${authenticated_body}"
+
+          actuator_code="$(curl --noproxy '*' --silent --show-error --max-time 20 \
+            --output /dev/null --write-out '%{http_code}' \
+            "${PUBLIC_URL}/actuator/health")"
+          test "${actuator_code}" = "404" \
+            || { echo "Actuator público deveria retornar 404; status=${actuator_code}." >&2; exit 1; }
+
+          curl --noproxy '*' --silent --show-error --head --max-time 20 "${PUBLIC_URL}/v1/cards" \
+            | tr -d '\r' | grep -Fiq 'strict-transport-security: max-age=31536000'
+
+          if curl --noproxy '*' --fail --silent --show-error --max-time 5 \
+            "http://${DEPLOY_HOST}:8103/v1/cards" >/dev/null 2>&1; then
+            echo "A porta de origem 8103 ficou acessível publicamente." >&2
+            exit 1
+          fi
+
+      - name: Record inactive scheduled renewal
+        if: steps.activation.outputs.enabled != 'true'
+        run: echo "O domínio ainda não foi ativado; nenhuma mudança externa foi realizada."

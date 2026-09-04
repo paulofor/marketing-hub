@@ -19,6 +19,8 @@ services:
     volumes:
       - ${HARNESS_LIBRARY_API_KEY_HOST_FILE:-/root/infra/harness-library/secrets/api_key}:/run/secrets/harness_library_api_key:ro
       - ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE:-/root/infra/harness-library/secrets/internal_signing_key}:/run/secrets/harness_library_internal_signing_key:ro
+    networks:
+      - harness-library-public
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9103/actuator/health/liveness"]
       interval: 20s
@@ -29,3 +31,8 @@ services:
       resources:
         limits:
           memory: 384M
+
+networks:
+  harness-library-public:
+    external: true
+    name: ${HARNESS_LIBRARY_PUBLIC_NETWORK:-public-net}

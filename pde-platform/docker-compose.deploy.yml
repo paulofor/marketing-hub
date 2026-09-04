@@ -27,6 +27,8 @@ services:
       PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?PDE_INTERNAL_API_TOKEN is required for PDE internal operations}
       PDE_MERCADO_PAGO_INTERNAL_TOKEN: ${PDE_MERCADO_PAGO_INTERNAL_TOKEN:?PDE_MERCADO_PAGO_INTERNAL_TOKEN is required for paid entitlement ingestion}
       PDE_INTERNAL_QA_ENABLED: "false"
+      PDE_MIRA_PRIVATE_ACCESS_1: ${PDE_MIRA_PRIVATE_ACCESS_1:?PDE_MIRA_PRIVATE_ACCESS_1 is required for Mira private validation}
+      PDE_MIRA_PRIVATE_ACCESS_2: ${PDE_MIRA_PRIVATE_ACCESS_2:?PDE_MIRA_PRIVATE_ACCESS_2 is required for Mira private validation}
       PDE_APP_BASE_URL: ${PDE_APP_BASE_URL:-https://v5.clubemusa.com.br}
       PDE_PEPPER_API_TOKEN: ${PDE_PEPPER_API_TOKEN:?PDE_PEPPER_API_TOKEN is required for Pepper paid transaction sync}
       PDE_PEPPER_OFFER_HASHES: ${PDE_PEPPER_OFFER_HASHES:-owm6x,c8mnn}

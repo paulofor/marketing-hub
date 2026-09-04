@@ -23,7 +23,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: recover-public-proxy
+  group: deploy-vps-163-245-200-7
+  queue: max
   cancel-in-progress: false
 
 jobs:

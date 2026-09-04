@@ -17,8 +17,12 @@ grep -Fq 'run-name: Recover public proxy · ${{ inputs.request_id }}' "${workflo
   echo '[ARQUITETURA] run da recuperação deve ser correlacionável pelo request_id.' >&2
   exit 1
 }
-grep -Fq 'group: recover-public-proxy' "${workflow}" || {
-  echo '[ARQUITETURA] recuperações do proxy devem ser serializadas.' >&2
+grep -Fq 'group: deploy-vps-163-245-200-7' "${workflow}" || {
+  echo '[ARQUITETURA] recuperações do proxy devem usar a fila única do host.' >&2
+  exit 1
+}
+grep -Fq 'queue: max' "${workflow}" || {
+  echo '[ARQUITETURA] recuperações pendentes do proxy devem ser preservadas.' >&2
   exit 1
 }
 grep -Fq 'DEPLOY_HOST: 163.245.200.7' "${workflow}" || {

@@ -44,7 +44,8 @@ public class ProductCatalogService {
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
             "metodo-musa-7-dias", createMusaProduct(),
-            "pausa-de-transicao", createTransitionPauseProduct());
+            "pausa-de-transicao", createTransitionPauseProduct(),
+            "mira-private-validation", createMiraPrivateProduct());
     private final RestClient.Builder restClientBuilder;
     private final List<String> marketingHubBaseUrls;
     private final String experienceVersionOverride;
@@ -136,6 +137,9 @@ public class ProductCatalogService {
             ProductExperienceResponse product,
             String host,
             String requestedExperienceVersion) {
+        if (!"metodo-musa-7-dias".equals(product.slug())) {
+            return product;
+        }
         String selectedExperienceVersion = resolveHostExperienceVersion(host);
         if (!StringUtils.hasText(selectedExperienceVersion)) {
             selectedExperienceVersion = requestedExperienceVersion;
@@ -438,6 +442,28 @@ public class ProductCatalogService {
                         List.of("auto-hipnose comprovada", "tratamento", "resultado garantido"),
                         List.of()),
                 "Não há oferta comercial nesta fase experimental.");
+    }
+
+    /** Cria a identidade mínima de Mira necessária para persistir eventos privados segregados. */
+    private static ProductExperienceResponse createMiraPrivateProduct() {
+        return new ProductExperienceResponse(
+                "mira-private-validation",
+                "mira-private-v1",
+                "mira-private-validation",
+                "mira-private-validation-v1",
+                "Mira",
+                "Organizar produtos informados em uma rotina simples e consultável.",
+                "Mulheres de 35 a 60 anos em duas leituras privadas consentidas.",
+                "Checkout simulado de R$ 49 — sem cobrança",
+                new ThemeDto("#8b3d68", "#d49ab6", "#fff9fb", ""),
+                new DiagnosticDto("Entrada privada", "Informe apenas dados documentados dos produtos.", List.of()),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                null,
+                "A leitura termina antes de qualquer pagamento, publicação ou venda.");
     }
 
     /** Carrega o contrato canônico da v7 usado tanto para paridade quanto para fallback seguro. */

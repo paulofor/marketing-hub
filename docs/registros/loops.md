@@ -2982,6 +2982,12 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   O run antigo foi cancelado antes da substituição; a árvore órfã identificada pelo mesmo SHA foi
   encerrada com `TERM`, e o container produtivo anterior permaneceu `UP`, com Brave configurado e
   polling concluído.
+- **Extensão preventiva ao VPS público em 2026-09-04:** a API externa do Harness passou a compartilhar
+  o host `163.245.200.7` com PDE, pagamentos e o proxy TLS. Os workflows de deploy, publicação HTTPS,
+  recuperação do proxy e PDE agora usam a mesma fila `deploy-vps-163-245-200-7`, preservam todas as
+  pendências e não cancelam a execução ativa. O prune agressivo do workflow de pagamentos foi
+  removido. O contrato central enumera os cinco workflows e bloqueia novo operador desse host fora
+  da fila, evitando que emissão de certificado, reload do proxy e troca de imagem disputem o daemon.
 
 ## LOOP-MUSA-CHECKOUT-CANONICO-FORA-DO-DTO — contrato válido derruba o backend no CI
 
@@ -3313,6 +3319,25 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   relevante está parado. O endpoint bloqueia ciclo incompleto ou sem dossiê pronto, trava o registro
   durante o comando e reutiliza idempotentemente as evidências na versão publicada. Assim, o legado
   avança sem repetir Argos nem duplicar tarefas em andamento.
+
+## LOOP-DEDALO-CONTRATO-MARCADO-COMO-PROTOTIPO — desenho somente leitura avança como implementação
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** a tarefa #337 de Mira concluiu “Implementar acesso privado e
+  continuidade”, mas sua própria saída listava como `requiredChanges` a implementação dos acessos,
+  sessões, persistência e eventos. A atividade humana seguinte pedia uma URL utilizável que não
+  existia.
+- **Causa-raiz confirmada:** o executor de Dédalo roda deliberadamente com filesystem somente
+  leitura e produz um contrato de construção; o processo, entretanto, tratava `READY` desse contrato
+  como materialização funcional. Assim, documento e software recebiam o mesmo significado.
+- **Correção sistêmica:** o PDE Platform recebe uma superfície privada versionada de Mira, com dois
+  acessos segregados, acesso interno de QA separado, sessão retomável, entrada documentada, gate de
+  segurança, resultado estável, cinco eventos idempotentes e checkout apenas simulado. O catálogo
+  passa a reconhecer os sinais privados e preserva a versão própria de produtos que não são MUSA.
+- **Prevenção:** testes unitários cobrem acesso inválido, bloqueio clínico, ordenação contextual,
+  idempotência e retomada; a homologação abre a experiência real em desktop e celular, confirma
+  ausência de cobrança/publicação/mídia e só então permite preencher o gate humano. A URL com segredo
+  usa `no-store`, `no-referrer`, `noindex` e não entra em access log.
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 

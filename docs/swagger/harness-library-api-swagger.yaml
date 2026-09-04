@@ -6,8 +6,8 @@ info:
     Porta JSON externa e sem banco para cadastrar, revisar, ativar, consultar e arquivar versões de
     cartões da Biblioteca do Harness. O backend principal permanece a fonte de verdade.
 servers:
-  - url: https://harness-library.example.com
-    description: Domínio HTTPS a ser definido antes da exposição pública.
+  - url: https://mkthub.api.br
+    description: Domínio público canônico, ativado somente depois dos gates de DNS, health e TLS.
 security:
   - ApiKey: []
     Actor: []

@@ -34,6 +34,11 @@ pde:
       fallback-experience-version: ${PDE_PEPPER_FALLBACK_EXPERIENCE_VERSION:musa-pde-entry-v7-espelho-antes-de-sair}
     mercado-pago:
       internal-token: ${PDE_MERCADO_PAGO_INTERNAL_TOKEN:}
+  mira-private:
+    storage-path: ${PDE_MIRA_PRIVATE_STORAGE_PATH:/data/pde/mira-private-sessions.json}
+    participant-one-token: ${PDE_MIRA_PRIVATE_ACCESS_1:}
+    participant-two-token: ${PDE_MIRA_PRIVATE_ACCESS_2:}
+    qa-token: ${PDE_MIRA_PRIVATE_QA_TOKEN:}
   assisted-operation:
     enabled: ${PDE_ASSISTED_OPERATION_ENABLED:false}
     token: ${PDE_ASSISTED_OPERATION_TOKEN:}

@@ -3314,6 +3314,25 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   durante o comando e reutiliza idempotentemente as evidências na versão publicada. Assim, o legado
   avança sem repetir Argos nem duplicar tarefas em andamento.
 
+## LOOP-DEDALO-CONTRATO-MARCADO-COMO-PROTOTIPO — desenho somente leitura avança como implementação
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** a tarefa #337 de Mira concluiu “Implementar acesso privado e
+  continuidade”, mas sua própria saída listava como `requiredChanges` a implementação dos acessos,
+  sessões, persistência e eventos. A atividade humana seguinte pedia uma URL utilizável que não
+  existia.
+- **Causa-raiz confirmada:** o executor de Dédalo roda deliberadamente com filesystem somente
+  leitura e produz um contrato de construção; o processo, entretanto, tratava `READY` desse contrato
+  como materialização funcional. Assim, documento e software recebiam o mesmo significado.
+- **Correção sistêmica:** o PDE Platform recebe uma superfície privada versionada de Mira, com dois
+  acessos segregados, acesso interno de QA separado, sessão retomável, entrada documentada, gate de
+  segurança, resultado estável, cinco eventos idempotentes e checkout apenas simulado. O catálogo
+  passa a reconhecer os sinais privados e preserva a versão própria de produtos que não são MUSA.
+- **Prevenção:** testes unitários cobrem acesso inválido, bloqueio clínico, ordenação contextual,
+  idempotência e retomada; a homologação abre a experiência real em desktop e celular, confirma
+  ausência de cobrança/publicação/mídia e só então permite preencher o gate humano. A URL com segredo
+  usa `no-store`, `no-referrer`, `noindex` e não entra em access log.
+
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 
 - **Data:** 2026-09-02.

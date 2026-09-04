@@ -44,6 +44,18 @@ public class VideoManagementProperties {
     @NotNull
     private ReferenceAnalysis referenceAnalysis = new ReferenceAnalysis();
 
+    @NotNull
+    private PdeAudiovisual pdeAudiovisual = new PdeAudiovisual();
+
+    /** Configura o consumo BPM da atividade audiovisual da construção privada de PDEs. */
+    @Getter
+    @Setter
+    public static class PdeAudiovisual {
+        private boolean enabled = false;
+        @NotNull
+        private Duration backendTimeout = Duration.ofSeconds(10);
+    }
+
     /** Configura a etapa v1 que transforma vídeos de referência em receitas executáveis por Apolo. */
     @Getter
     @Setter

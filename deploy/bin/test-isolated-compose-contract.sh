@@ -64,6 +64,7 @@ grep -Fq 'VIDEO_REFERENCE_ANALYSIS_BUDGET_LIMIT_USD: "0.75"' <<<"${video_config}
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD: "0.25"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD: "4.00"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD: "20.00"' <<<"${video_config}"
+grep -Fq 'VIDEO_PDE_AUDIOVISUAL_ENABLED: "true"' <<<"${video_config}"
 grep -Fq 'APOLLO_PLANNER_MODEL: gpt-5.6-sol' <<<"${video_config}"
 
 # O Compose 2.38.2 dos runners hospedados aceita a opção, mas omite valores

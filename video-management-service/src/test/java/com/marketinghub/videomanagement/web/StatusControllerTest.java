@@ -23,6 +23,7 @@ class StatusControllerTest {
             properties.getApolloPlanner().setApiKeyFile(directory.toString());
             properties.getProviders().getKling().setApiKey("");
             properties.getProviders().getKling().setApiKeyFile(directory.toString());
+            properties.getPdeAudiovisual().setEnabled(true);
             StatusController controller = new StatusController(properties);
 
             assertThat(apolloPlanner(controller.status()).get("apiKeyConfigured")).isEqualTo(false);
@@ -37,6 +38,11 @@ class StatusControllerTest {
             assertThat(provider(controller.status(), "editorialMotion"))
                     .containsEntry("maxDurationSeconds", 60)
                     .containsEntry("providerCostUsd", 0);
+            assertThat(pdeAudiovisual(controller.status()))
+                    .containsEntry("enabled", true)
+                    .containsEntry("processCode", "pde-construction-approval")
+                    .containsEntry("activityId", "audiovisual")
+                    .containsEntry("executionResourceCode", "video-management-service");
         } finally {
             Files.deleteIfExists(secret);
             Files.deleteIfExists(directory);
@@ -54,5 +60,11 @@ class StatusControllerTest {
     private Map<String, Object> provider(Map<String, Object> status, String providerName) {
         Map<String, Object> providers = (Map<String, Object>) status.get("providers");
         return (Map<String, Object>) providers.get(providerName);
+    }
+
+    /** Extrai o diagnóstico sanitizado do consumidor audiovisual BPM. */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> pdeAudiovisual(Map<String, Object> status) {
+        return (Map<String, Object>) status.get("pdeAudiovisual");
     }
 }

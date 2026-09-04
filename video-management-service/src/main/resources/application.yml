@@ -12,7 +12,7 @@ apollo:
 
 video:
   scheduling:
-    pool-size: ${VIDEO_SCHEDULING_POOL_SIZE:3}
+    pool-size: ${VIDEO_SCHEDULING_POOL_SIZE:4}
   backend-base-url: http://191.252.181.168
   worker-id: vm-service-local
   auth-token: ""
@@ -55,6 +55,9 @@ video:
     max-download-bytes: ${VIDEO_REFERENCE_ANALYSIS_MAX_DOWNLOAD_BYTES:536870912}
     scene-threshold: ${VIDEO_REFERENCE_ANALYSIS_SCENE_THRESHOLD:0.22}
     allow-private-source-urls: false
+  pde-audiovisual:
+    enabled: ${VIDEO_PDE_AUDIOVISUAL_ENABLED:false}
+    backend-timeout: ${VIDEO_PDE_AUDIOVISUAL_BACKEND_TIMEOUT:PT10S}
   providers:
     luma:
       enabled: false

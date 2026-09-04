@@ -3538,3 +3538,21 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   versão, estratégia, economia sem gasto, harness, protótipo, momento de compra, resultado pronto,
   cinco eventos, checkout simulado e limite de publicação. Testes protegem exposição segregada,
   contexto completo e ausência fora do processo privado.
+
+## LOOP-APOLO-BPM-AUDIOVISUAL-SEM-CONSUMIDOR — atividade opcional permanece pendente
+
+- **Data:** 2026-09-04.
+- **Sintoma confirmado:** a tarefa #336 de Mira permaneceu `PENDING` desde 2026-09-03, embora jornada
+  e componentes já estivessem concluídos e o contrato declarasse que audiovisual não era necessário.
+- **Causa-raiz confirmada no código, banco e logs:** o processo v6 atribuía a atividade ao recurso
+  `video-management-service`, e o backend publicava a fila especializada, mas o executor de Apolo não
+  possuía consumidor desse contrato. O serviço saudável consultava jobs e referências, nunca
+  `/api/internal/agent-tasks/videomaker/stage-executions/pending`.
+- **Correção sistêmica:** Apolo passa a consumir exatamente a fila BPM do processo, atividade e
+  recurso. O booleano canônico `pdeContext.harness.audiovisualRequired` decide de forma determinística:
+  `false` conclui sem artefato, modelo ou provider; `true` exige produção previamente autorizada no
+  Estúdio; ausência bloqueia como evidência contratual incompleta.
+- **Prevenção:** testes de arquitetura exigem o endpoint `pending` com `processCode`, `activityId` e
+  `executionResourceCode`; testes funcionais protegem custo zero, nenhuma chamada Runway, ausência de
+  tarefa duplicada e avanço decidido somente pelo backend. A rotina possui thread própria no pool
+  mínimo para não ficar oculta por integrações longas.

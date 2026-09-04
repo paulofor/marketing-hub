@@ -229,8 +229,9 @@ PUBLIC_METRICS_CODE="$(compose exec -T harness-library-api curl -sS -o /dev/null
   http://127.0.0.1:8103/actuator/prometheus)"
 [[ "${PUBLIC_METRICS_CODE}" == "404" ]] || fail "métricas ficaram expostas na porta pública"
 
-compose exec -T harness-library-api curl -fsS http://127.0.0.1:9103/actuator/prometheus \
-  | grep -q 'http_server_requests_seconds_count' \
+GATEWAY_METRICS="$(compose exec -T harness-library-api \
+  curl -fsS http://127.0.0.1:9103/actuator/prometheus)"
+grep -Fq 'http_server_requests_seconds_count' <<<"${GATEWAY_METRICS}" \
   || fail "métrica HTTP não foi exposta"
 
 CONTAINER_ID="$(compose ps -q harness-library-api)"

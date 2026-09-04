@@ -176,3 +176,11 @@ passaram:
 O certificado confiável e a resolução pública não podem ser comprovados enquanto o domínio não tiver
 registro `A`. Nenhum teste local criou DNS, emitiu certificado público ou substituiu container
 produtivo. Essas duas provas permanecem como gates explícitos do workflow posterior ao PR e ao deploy.
+
+## Correção de estabilidade do CI — 2026-09-04
+
+O teste de observabilidade consultava o Prometheus com `curl | grep -q` sob `pipefail`. Quando o
+`grep` encontrava a métrica antes do fim da resposta, encerrava o pipe e o `curl` podia retornar
+`SIGPIPE`, produzindo falso negativo apesar da métrica existir. A resposta agora é capturada por
+inteiro antes da asserção, preservando a exigência de `http_server_requests_seconds_count` sem
+intermitência.

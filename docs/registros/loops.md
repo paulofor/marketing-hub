@@ -2681,6 +2681,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   anterior e fez o check de Têmis falhar antes dos testes funcionais. A atestação foi atualizada para
   a mesma revisão canônica validada pelo backend, frontend e Hermes; o teste do repositório continua
   bloqueando qualquer alteração futura do cânone sem a atualização explícita do manifesto.
+- **Recorrência de catálogo fechada em 2026-09-04:** o merge do protótipo privado de Mira evoluiu o
+  `ProductCatalogService`, compartilhado com MUSA e Rigel, mas manteve vigentes os manifestos v4 com
+  o hash anterior. O CI de Têmis bloqueou corretamente o deploy. Os manifestos v5 agora preservam a
+  v4 como baseline imutável, reatestam o catálogo candidato e repetem as provas específicas de cada
+  produto; os testes exigem que somente v5 e sua baseline v4 entrem no prompt, sem reabrir versões
+  históricas ou misturar produtos.
 - **Recorrência de Psique fechada em 2026-09-01:** as tarefas #283 e #299 da Vega receberam,
   respectivamente, 1.285.136 e 1.320.451 caracteres e falharam antes do primeiro turno. O manifesto
   v1 transportava integralmente arquivos amplos e redundantes — incluindo o registro global de

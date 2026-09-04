@@ -262,8 +262,8 @@ class CommercialBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "kit-whatsapp-tasting-homologation-v5.json",
             "kit-whatsapp-tasting-homologation-v4.json",
-            "kit-whatsapp-tasting-homologation-v3.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
@@ -308,8 +308,8 @@ class CommercialBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "musa-v7-commercial-homologation-v5.json",
             "musa-v7-commercial-homologation-v4.json",
-            "musa-v7-commercial-homologation-v3.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",
             "https://go.pepper.com.br/owm6x");

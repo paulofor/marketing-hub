@@ -26,6 +26,18 @@ A entrega deve permitir cadastrar por `curl` sem criar fonte de verdade paralela
 A terceira alternativa foi escolhida. Para o primeiro host, `163.245.200.7` apresenta a maior folga de
 memória e disco no inventário operacional; a porta `8103` permanece em loopback até existir domínio TLS.
 
+Para o domínio informado em 2026-09-04, foram comparadas três formas de exposição:
+
+1. usar `mkthub.api.br` diretamente no proxy HTTPS já existente no host escolhido: reaproveita as
+   portas públicas, mantém uma origem única e não cria custo recorrente adicional;
+2. criar `cards.mkthub.api.br`: torna o nome mais descritivo, mas exige outro registro sem separar mais
+   a aplicação, pois o domínio raiz já foi adquirido exclusivamente para essa API;
+3. contratar um gateway externo: adiciona proteção gerenciada, mas também custo, credencial e outra
+   dependência antes de existir volume que justifique a complexidade.
+
+A primeira alternativa foi escolhida. O proxy compartilhado é apenas a borda TLS; dados, autenticação
+e contrato continuam pertencendo ao módulo independente.
+
 ## Dados segregados de teste
 
 - chave lógica sempre prefixada por `homologacao-`;
@@ -61,7 +73,17 @@ memória e disco no inventário operacional; a porta `8103` permanece em loopbac
 | MySQL 5.7 | Aplicar o changelog dedicado em schema vazio, simular DDL sem ledger e reaplicar | Tabelas, índices e FKs são íntegros, o dado existente é preservado e schema parcial é rejeitado. |
 | Imagem | Construir Dockerfile versionado e executar como `10001:10001` | Health responde e nenhum secret está presente na imagem. |
 | Secrets no runtime | Montar os dois arquivos como `10001:10001`, modo `0400`, em container read-only | Gateway lê ambos, fica saudável e o conteúdo não aparece em imagem ou log. |
-| Rede | Subir compose de produção sem domínio | Porta exposta apenas em `127.0.0.1:8103`; acesso público direto não existe. |
+| Rede | Subir compose de produção | Porta exposta apenas em `127.0.0.1:8103`; container e proxy compartilham somente `public-net`. |
+| DNS | Publicar com `A` ausente, divergente ou múltiplo | Falha antes de alterar o proxy ou solicitar certificado. |
+| DNS | Publicar com `AAAA` não homologado | Falha fechada para não entregar clientes a uma rota IPv6 inexistente. |
+| HTTP | Acessar `http://mkthub.api.br/v1/cards` | Retorna `301` para a mesma rota em HTTPS. |
+| TLS | Emitir certificado para `mkthub.api.br` | Cadeia confiável, SAN correto e validade restante mínima de 30 dias. |
+| Proxy | Acessar HTTPS sem chave e com chave válida | Retorna respectivamente `401` e JSON `200` vindo do backend canônico. |
+| Superfície | Consultar `/actuator/health` pelo domínio | Retorna `404`; health e Prometheus continuam internos. |
+| Limite de borda | Enviar corpo acima de 32 KiB pelo domínio | Proxy ou gateway retorna `413` sem chamar o backend. |
+| Cabeçalhos | Consultar a API por HTTPS | HSTS, `nosniff` e política de referência restritiva estão presentes. |
+| Falha de configuração | Aplicar Nginx inválido ou upstream indisponível | Publicação falha e restaura a configuração anterior sem derrubar os demais domínios. |
+| Renovação | Agenda semanal antes e depois da ativação inicial | Antes, não altera o host; depois, renova de forma idempotente e recarrega somente configuração válida. |
 | GitHub Actions | PR e push em `main` | Testa e constrói no PR; somente `main` pode produzir imagem e executar deploy. |
 
 ## Navegadores e dispositivos
@@ -73,7 +95,8 @@ interface humana. O contrato HTTP é validado em Linux com `curl` e JSON.
 ## Rodadas completas
 
 Uma rodada inclui: testes unitários do backend, testes do gateway, validação Liquibase, build das duas
-aplicações, build/scan básico da imagem, subida local com MySQL 5.7 e execução de todos os cenários
+aplicações, build/scan básico da imagem, subida local com MySQL 5.7, borda TLS com o mesmo Nginx de
+produção e execução de todos os cenários
 aplicáveis da tabela. Se a primeira rodada revelar defeito, após a última correção serão exigidas duas
 rodadas completas e consecutivas sem falhas, reiniciando a contagem a cada novo defeito.
 
@@ -120,3 +143,36 @@ cada rodada passaram:
 Os reruns dos três agentes e do deploy principal que já podiam ser recuperados operacionalmente
 terminaram verdes. A correção do runtime Harness permanece local até passar pelo fluxo obrigatório de
 Pull Request; nenhum container foi substituído manualmente no host.
+
+## Extensão de domínio — estado inicial observado em 2026-09-04
+
+- RDAP do Registro.br: domínio `mkthub.api.br` ativo, criado em 2026-09-04 e válido até 2027-09-04.
+- Delegação: `a.auto.dns.br` e `b.auto.dns.br` respondem como servidores autoritativos.
+- Zona: ainda sem registro `A` ou `AAAA`; HTTP e HTTPS não resolvem.
+- Host `163.245.200.7`: seis CPUs, 5,65 GiB de RAM, 50 GiB livres e proxy nas portas 80/443.
+- Runtime: `harness-library-api` existe na imagem anterior `sha-af50cfa...`, mas reinicia; o deploy que
+  corrigiu a propriedade dos secrets ainda não foi executado.
+
+Os primeiros ensaios encontraram três lacunas no ambiente de homologação e no contrato do inventário:
+o daemon Docker isolado não podia consumir bind mount do workspace, a porta publicada pelo daemon não
+era alcançável pelo namespace da sandbox e o teste do inventário ainda esperava oito deploys. A borda
+de teste passou a ser uma imagem versionada, o domínio local passou a resolver pela rede Compose e o
+inventário agora valida nominalmente as duas implantações do Harness. A capacidade do host foi mantida
+como inteiro no DTO, com o valor físico preciso preservado na evidência textual.
+
+Depois da última correção, duas rodadas completas e consecutivas terminaram sem falhas. Em cada rodada
+passaram:
+
+- 2.297 testes do backend, com zero falhas e zero erros;
+- 9 testes da API externa, com zero falhas e zero erros;
+- 474 testes do frontend, TypeScript e build de produção;
+- Actionlint e contratos de fila compartilhada, entrega, publicação, rollback e recuperação;
+- dois changesets em MySQL 5.7 físico, incluindo retomada, reaplicação e rejeição de schema parcial;
+- ciclo JSON completo através do mesmo Nginx de produção, com HTTP 301, HTTPS, HSTS, `401` sem chave,
+  bloqueio do Actuator, limite de payload, versionamento, auditoria e falha controlada do backend;
+- duas imagens novas do gateway como `10001:10001`, runtime read-only e secrets sintéticos `0400`;
+- recuperação real do proxy saudável, parado e ausente, com bloqueio diante de identidade ambígua.
+
+O certificado confiável e a resolução pública não podem ser comprovados enquanto o domínio não tiver
+registro `A`. Nenhum teste local criou DNS, emitiu certificado público ou substituiu container
+produtivo. Essas duas provas permanecem como gates explícitos do workflow posterior ao PR e ao deploy.

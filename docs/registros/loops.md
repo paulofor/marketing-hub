@@ -2982,6 +2982,12 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   O run antigo foi cancelado antes da substituição; a árvore órfã identificada pelo mesmo SHA foi
   encerrada com `TERM`, e o container produtivo anterior permaneceu `UP`, com Brave configurado e
   polling concluído.
+- **Extensão preventiva ao VPS público em 2026-09-04:** a API externa do Harness passou a compartilhar
+  o host `163.245.200.7` com PDE, pagamentos e o proxy TLS. Os workflows de deploy, publicação HTTPS,
+  recuperação do proxy e PDE agora usam a mesma fila `deploy-vps-163-245-200-7`, preservam todas as
+  pendências e não cancelam a execução ativa. O prune agressivo do workflow de pagamentos foi
+  removido. O contrato central enumera os cinco workflows e bloqueia novo operador desse host fora
+  da fila, evitando que emissão de certificado, reload do proxy e troca de imagem disputem o daemon.
 
 ## LOOP-MUSA-CHECKOUT-CANONICO-FORA-DO-DTO — contrato válido derruba o backend no CI
 

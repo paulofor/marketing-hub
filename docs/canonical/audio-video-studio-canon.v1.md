@@ -391,6 +391,15 @@ imutável gerada por GitHub Actions e deploy somente a partir de `main`. A liber
 domínio, DNS, TLS e provisionamento humano dos dois secrets. Health técnico não substitui o teste de
 cadastro, revisão, ativação e leitura pelo catálogo global.
 
+Por decisão de 2026-09-04, o domínio público canônico dessa API é `https://mkthub.api.br`, sem alias
+`www`. O DNS deve possuir somente registro `A` para `163.245.200.7`; um `AAAA` não homologado bloqueia
+a publicação. O container continua expondo `8103` exclusivamente em loopback e participa da rede
+privada `public-net`; somente o proxy HTTPS compartilhado alcança a origem. A primeira ativação exige
+comando manual, API saudável, handshake autenticado com o backend, certificado válido, teste do
+Nginx e rollback da configuração diante de falha. A renovação semanal só pode atuar depois que a
+ativação inicial deixar marcador operacional no host. Actuator e métricas nunca são publicados pelo
+domínio.
+
 #### Microconteudo seriado como hipotese opcional
 
 Uma sequencia curta pode ser testada quando a oferta exigir mais contexto do que uma unica peca

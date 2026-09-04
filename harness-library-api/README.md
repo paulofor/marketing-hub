@@ -64,6 +64,13 @@ curl --fail-with-body --silent --show-error \
   --data '{"reason":"Fonte e limites conferidos."}'
 ```
 
+Em produção, configure sem gravar a chave no histórico do shell:
+
+```bash
+export HARNESS_LIBRARY_URL=https://mkthub.api.br
+read -rsp 'Harness API key: ' HARNESS_LIBRARY_API_KEY && export HARNESS_LIBRARY_API_KEY
+```
+
 O contrato completo está em `docs/swagger/harness-library-api-swagger.yaml`.
 
 ## Deploy planejado
@@ -73,13 +80,36 @@ O contrato completo está em `docs/swagger/harness-library-api-swagger.yaml`.
 - imagem: `ghcr.io/paulofor/marketing-hub/harness-library-api:sha-<commit>`;
 - compose: `docker-compose.deploy.yml`;
 - workflow: `.github/workflows/harness-library-api-ci.yml`.
+- domínio canônico: `https://mkthub.api.br`.
 
 O workflow testa e publica a imagem imutável após entrada em `main`. O deploy é manual pelo
 `workflow_dispatch` com `deploy=true`, provisiona os secrets como arquivos protegidos, valida health,
-faz uma consulta assinada ao backend e confirma que a porta continua em loopback. O domínio, DNS e TLS
-devem ser configurados antes de encaminhar tráfego público; até lá não existe URL pública segura.
+faz uma consulta assinada ao backend, conecta o container à rede privada `public-net` e confirma que
+a porta continua em loopback.
+
+A publicação HTTPS pertence ao workflow separado
+`.github/workflows/harness-library-api-publication.yml`. A operação manual `publish` somente avança
+quando o registro `A` de `mkthub.api.br` aponta exclusivamente para `163.245.200.7`, a API está
+saudável e o proxy consegue alcançá-la pela rede privada. Ela emite o certificado, testa a configuração
+antes do reload, restaura a versão anterior diante de falha e valida redirecionamento, TLS, HSTS,
+autenticação, backend e bloqueio do Actuator. Depois da primeira ativação, a execução semanal usa
+`renew`; sem o marcador de ativação, a agenda termina sem alterar o host.
+
 Health e métricas usam a porta de gerenciamento `9103`, vinculada somente ao loopback do container e
 não publicada pela imagem.
+
+## DNS no Registro.br
+
+Na zona DNS de `mkthub.api.br`, crie um único registro:
+
+```text
+Nome: @ (ou deixe em branco)
+Tipo: A
+Destino: 163.245.200.7
+```
+
+Não crie `AAAA` nem encaminhamento web. A publicação valida a propagação antes de emitir o
+certificado. O registro do domínio e o DNS não substituem o deploy do container.
 
 O container executa com a identidade não privilegiada fixa `10001:10001`. No host, os dois arquivos de
 secret pertencem à mesma identidade e usam modo `0400`; o CI inicia a imagem com essa topologia antes

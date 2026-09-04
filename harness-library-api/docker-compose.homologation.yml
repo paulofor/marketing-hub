@@ -44,6 +44,10 @@ services:
       timeout: 5s
       retries: 30
       start_period: 40s
+    networks:
+      default:
+        aliases:
+          - lead-portal-payments-service
 
   harness-library-api:
     build:
@@ -67,5 +71,30 @@ services:
       retries: 12
       start_period: 20s
 
+  public-proxy:
+    build:
+      context: ..
+      dockerfile: harness-library-api/tests/public-proxy/Dockerfile
+    environment:
+      SSL_DOMAINS: >-
+        pagamentopalf.site vitrineproduto.online digicomdigital.com.br clubemusa.com.br
+        kit-whatsapp-pronto.digicomdigital.com.br mkthub.api.br
+    depends_on:
+      harness-library-api:
+        condition: service_healthy
+    volumes:
+      - harness-library-proxy-certs:/etc/nginx/certs
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t -q"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      default:
+        aliases:
+          - mkthub.api.br
+
 volumes:
   harness-library-mysql:
+  harness-library-proxy-certs:

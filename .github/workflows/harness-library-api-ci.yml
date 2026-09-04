@@ -12,7 +12,10 @@ on:
       - "docs/canonical/audio-video-studio-canon.v1.md"
       - "docs/homologacao/harness-library-api-v1.md"
       - "docs/swagger/harness-library-api-swagger.yaml"
+      - "lead-portal-payments-service/nginx.conf"
+      - "lead-portal-payments-service/docker/proxy/ensure-certs.sh"
       - ".github/workflows/harness-library-api-ci.yml"
+      - ".github/workflows/harness-library-api-publication.yml"
   push:
     branches: [main]
     paths:
@@ -21,7 +24,10 @@ on:
       - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/researchintelligence/**"
       - "backend/ads-service/src/test/java/com/marketinghub/researchintelligence/**"
       - "backend/ads-service/src/main/resources/db/changelog/**"
+      - "lead-portal-payments-service/nginx.conf"
+      - "lead-portal-payments-service/docker/proxy/ensure-certs.sh"
       - ".github/workflows/harness-library-api-ci.yml"
+      - ".github/workflows/harness-library-api-publication.yml"
   workflow_dispatch:
     inputs:
       deploy:
@@ -146,7 +152,7 @@ jobs:
       contents: read
       packages: read
     concurrency:
-      group: deploy-harness-library-api-163-245-200-7
+      group: deploy-vps-163-245-200-7
       queue: max
       cancel-in-progress: false
     env:
@@ -158,6 +164,7 @@ jobs:
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
       HARNESS_LIBRARY_API_KEY: ${{ secrets.HARNESS_LIBRARY_API_KEY }}
       HARNESS_LIBRARY_INTERNAL_SIGNING_KEY: ${{ secrets.HARNESS_LIBRARY_INTERNAL_SIGNING_KEY }}
+      HARNESS_LIBRARY_PUBLIC_NETWORK: public-net
     steps:
       - uses: actions/checkout@v4
       - name: Validate required secrets
@@ -199,7 +206,7 @@ jobs:
           set -euo pipefail
           printf '%s' "${GHCR_TOKEN}" \
             | ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
-                "set -euo pipefail; registry_auth_dir=\$(mktemp -d /tmp/harness-library-ghcr.XXXXXX); trap 'rm -rf -- \"\${registry_auth_dir}\"' EXIT; export DOCKER_CONFIG=\"\${registry_auth_dir}\"; docker login '${REGISTRY}' -u '${GHCR_USERNAME}' --password-stdin; cd '${REMOTE_PATH}'; export HARNESS_LIBRARY_API_IMAGE='${IMAGE}'; export COMPOSE_PROJECT_NAME=marketinghub-harness-library-api; docker compose -f docker-compose.deploy.yml pull; docker compose -f docker-compose.deploy.yml up -d --remove-orphans --wait --wait-timeout 120"
+                "set -euo pipefail; registry_auth_dir=\$(mktemp -d /tmp/harness-library-ghcr.XXXXXX); trap 'rm -rf -- \"\${registry_auth_dir}\"' EXIT; export DOCKER_CONFIG=\"\${registry_auth_dir}\"; docker login '${REGISTRY}' -u '${GHCR_USERNAME}' --password-stdin; docker network inspect '${HARNESS_LIBRARY_PUBLIC_NETWORK}' >/dev/null 2>&1 || docker network create '${HARNESS_LIBRARY_PUBLIC_NETWORK}'; cd '${REMOTE_PATH}'; export HARNESS_LIBRARY_API_IMAGE='${IMAGE}'; export HARNESS_LIBRARY_PUBLIC_NETWORK='${HARNESS_LIBRARY_PUBLIC_NETWORK}'; export COMPOSE_PROJECT_NAME=marketinghub-harness-library-api; docker compose -f docker-compose.deploy.yml pull; docker compose -f docker-compose.deploy.yml up -d --remove-orphans --wait --wait-timeout 120"
       - name: Validate health and signed backend handshake
         run: |
           set -euo pipefail
@@ -224,3 +231,6 @@ jobs:
             127.0.0.1:8103) ;;
             *) echo "Porta publicada fora do loopback: ${published_binding}" >&2; exit 1 ;;
           esac
+          public_network="$(ssh ${SSH_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "docker inspect harness-library-api --format '{{with index .NetworkSettings.Networks \"${HARNESS_LIBRARY_PUBLIC_NETWORK}\"}}attached{{end}}'")"
+          test "${public_network}" = "attached" \
+            || { echo "API fora da rede privada do proxy público." >&2; exit 1; }

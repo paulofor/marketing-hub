@@ -122,6 +122,44 @@ while IFS= read -r workflow; do
   fi
 done < <(grep -rlF "${AGENT_QUEUE_GROUP}" "${QUEUE_TEST_ROOT}/.github/workflows" | sort)
 
+PUBLIC_HOST_QUEUE_GROUP="group: deploy-vps-163-245-200-7"
+PUBLIC_HOST_QUEUE_WORKFLOWS=(
+  ".github/workflows/harness-library-api-ci.yml"
+  ".github/workflows/harness-library-api-publication.yml"
+  ".github/workflows/lead-portal-payments-ci.yml"
+  ".github/workflows/pde-platform-metodo-musa-ci.yml"
+  ".github/workflows/recover-public-proxy.yml"
+)
+
+for relative_workflow in "${PUBLIC_HOST_QUEUE_WORKFLOWS[@]}"; do
+  workflow="${QUEUE_TEST_ROOT}/${relative_workflow}"
+  if [[ ! -f "${workflow}" ]]; then
+    echo "Workflow do VPS público ausente: ${relative_workflow}" >&2
+    exit 1
+  fi
+
+  queue_block="$(grep -F -A2 "${PUBLIC_HOST_QUEUE_GROUP}" "${workflow}" || true)"
+  if ! grep -Fq "${PUBLIC_HOST_QUEUE_GROUP}" <<<"${queue_block}" \
+    || ! grep -Fq "queue: max" <<<"${queue_block}" \
+    || ! grep -Fq "cancel-in-progress: false" <<<"${queue_block}"; then
+    echo "Operação fora da fila única do VPS público: ${relative_workflow}" >&2
+    exit 1
+  fi
+
+  if grep -Eq 'docker (builder|image|system) prune -af' "${workflow}"; then
+    echo "Prune agressivo pode apagar imagem preparada por outra publicação: ${relative_workflow}" >&2
+    exit 1
+  fi
+done
+
+while IFS= read -r workflow; do
+  relative_workflow="${workflow#"${QUEUE_TEST_ROOT}/"}"
+  if [[ ! " ${PUBLIC_HOST_QUEUE_WORKFLOWS[*]} " =~ " ${relative_workflow} " ]]; then
+    echo "Novo workflow na fila do VPS público sem registro no contrato: ${relative_workflow}" >&2
+    exit 1
+  fi
+done < <(grep -rlF "${PUBLIC_HOST_QUEUE_GROUP}" "${QUEUE_TEST_ROOT}/.github/workflows" | sort)
+
 ARGOS_WORKFLOW="${QUEUE_TEST_ROOT}/.github/workflows/product-discovery-worker-ci.yml"
 if grep -Fq "${QUEUE_TEST_GROUP}" "${ARGOS_WORKFLOW}" \
   || grep -Fq "DEPLOY_HOST: 191.252.120.96" "${ARGOS_WORKFLOW}"; then

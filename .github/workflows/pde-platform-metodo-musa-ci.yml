@@ -259,6 +259,10 @@ jobs:
     permissions:
       contents: read
       packages: read
+    concurrency:
+      group: deploy-vps-163-245-200-7
+      queue: max
+      cancel-in-progress: false
     env:
       DEPLOY_HOST: 163.245.200.7
       DEPLOY_USER: root
@@ -418,8 +422,7 @@ jobs:
                 docker network connect ${PDE_PLATFORM_NETWORK} \"\${proxy_container}\" >/dev/null 2>&1 || true; \
                 docker kill -s HUP \"\${proxy_container}\" >/dev/null 2>&1 || true; \
               fi; \
-            done \
-            && docker image prune -af"
+            done"
       - name: Connect existing public proxy
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \

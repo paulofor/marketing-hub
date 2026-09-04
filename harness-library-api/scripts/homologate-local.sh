@@ -13,6 +13,7 @@ ACTOR="codex-homologacao"
 REQUEST_ID="00000000-0000-4000-8000-000000000001"
 CARD_KEY="homologacao-harness-api-e2e"
 EXPIRED_CARD_KEY="homologacao-harness-api-expired"
+PUBLIC_DOMAIN="mkthub.api.br"
 
 compose() {
   docker compose -p "${COMPOSE_PROJECT}" -f "${COMPOSE_FILE}" "$@"
@@ -47,8 +48,8 @@ invoke_gateway() {
   local idempotency_key="$3"
   local body="$4"
   local command=(
-    exec -T harness-library-api curl -sS -w $'\n%{http_code}'
-    -X "${method}" "http://127.0.0.1:8103${path}"
+    exec -T harness-library-api curl --noproxy '*' --insecure --silent --show-error
+    -w $'\n%{http_code}' -X "${method}" "https://${PUBLIC_DOMAIN}${path}"
     -H "X-API-Key: ${PUBLIC_KEY}"
     -H "X-Actor: ${ACTOR}"
     -H "X-Request-ID: ${REQUEST_ID}"
@@ -88,9 +89,29 @@ fi
 compose up -d --build --wait --wait-timeout 600
 wait_for_gateway
 
-HTTP_CODE="$(compose exec -T harness-library-api curl -sS -o /dev/null -w '%{http_code}' \
-  http://127.0.0.1:8103/v1/cards)"
+REDIRECT_HEADERS="$(compose exec -T harness-library-api \
+  curl --noproxy '*' --silent --show-error --head \
+  "http://${PUBLIC_DOMAIN}/v1/cards")"
+grep -Eq '^HTTP/[0-9.]+ 301' <<<"${REDIRECT_HEADERS}" \
+  || fail "proxy HTTP não redirecionou para HTTPS"
+grep -Fiq "location: https://${PUBLIC_DOMAIN}/v1/cards" <<<"${REDIRECT_HEADERS}" \
+  || fail "proxy HTTP não preservou a rota no redirecionamento"
+
+HTTP_CODE="$(compose exec -T harness-library-api \
+  curl --noproxy '*' --insecure --silent --show-error -o /dev/null -w '%{http_code}' \
+  "https://${PUBLIC_DOMAIN}/v1/cards")"
 [[ "${HTTP_CODE}" == "401" ]] || fail "rota sem API key deveria retornar 401"
+
+HTTPS_HEADERS="$(compose exec -T harness-library-api \
+  curl --noproxy '*' --insecure --silent --show-error --head \
+  "https://${PUBLIC_DOMAIN}/v1/cards")"
+grep -Fiq 'strict-transport-security: max-age=31536000' <<<"${HTTPS_HEADERS}" \
+  || fail "proxy HTTPS não aplicou HSTS"
+
+ACTUATOR_CODE="$(compose exec -T harness-library-api \
+  curl --noproxy '*' --insecure --silent --show-error -o /dev/null -w '%{http_code}' \
+  "https://${PUBLIC_DOMAIN}/actuator/health")"
+[[ "${ACTUATOR_CODE}" == "404" ]] || fail "proxy HTTPS expôs o Actuator"
 
 SOURCE_CONTENT="Fonte sintética segregada para homologar o cadastro externo do Harness v1."
 SOURCE_SHA="$(printf '%s' "${SOURCE_CONTENT}" | sha256sum | awk '{print $1}')"

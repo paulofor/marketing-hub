@@ -62,15 +62,15 @@ hosts:
   - host: "163.245.200.7"
     providerName: null
     providerEvidence: "Pendente: RDAP público não retornou entidade útil na consulta da sandbox"
-    cpu: null
-    memoryGb: null
-    diskGb: null
-    operatingSystem: null
+    cpu: "6 vCPU"
+    memoryGb: 6
+    diskGb: 59
+    operatingSystem: "Ubuntu 24.04 LTS"
     monthlyCostBrl: null
     billingCycle: null
     costEvidence: "Pendente: MCP não expõe contrato financeiro ou fatura do provedor"
-    physicalSpecsEvidence: "Pendente: MCP não expõe CPU, memória e disco deste host sem agente/SSH operacional"
-    notes: "Host ainda aparece como proxy público Clube MUSA no inventário versionado; histórico recente aponta migração operacional para 191.252.102.54."
+    physicalSpecsEvidence: "MCP vps_host_inventory em 2026-09-04: 6 CPUs, 5,65 GiB de RAM, disco raiz de 59 GB com 50 GB livres"
+    notes: "Host do PDE, proxy público Clube MUSA e origem da Harness Library API; DNS público do Harness deve usar mkthub.api.br."
   - host: "163.245.202.80"
     providerName: null
     providerEvidence: "Pendente: contrato comercial do provedor não disponível no repositório"
@@ -118,6 +118,29 @@ deployments:
       - "VPS_SSH_CHAVE"
       - "SSH_PRIVATE_KEY"
     triggerMode: "automatico"
+  - workflowFile: ".github/workflows/harness-library-api-ci.yml"
+    workflowName: "CI - Harness Library API"
+    jobName: "deploy-loopback"
+    deployHost: "163.245.200.7"
+    deployUser: "root"
+    remotePath: "/root/harness-library-api"
+    secretReferences:
+      - "HARNESS_LIBRARY_API_KEY"
+      - "HARNESS_LIBRARY_INTERNAL_SIGNING_KEY"
+      - "PDE_PLATFORM_VPS_SSH_KEY"
+      - "VPS_SSH_CHAVE"
+    triggerMode: "manual"
+  - workflowFile: ".github/workflows/harness-library-api-publication.yml"
+    workflowName: "Publish Harness Library API HTTPS"
+    jobName: "publish-or-renew"
+    deployHost: "163.245.200.7"
+    deployUser: "root"
+    remotePath: "/root/harness-library-api"
+    secretReferences:
+      - "HARNESS_LIBRARY_API_KEY"
+      - "PDE_PLATFORM_VPS_SSH_KEY"
+      - "VPS_SSH_CHAVE"
+    triggerMode: "manual-inicial-e-renovacao-semanal"
   - workflowFile: ".github/workflows/lead-portal-ci.yml"
     workflowName: "CI - Lead Portal"
     jobName: "deploy"

@@ -69,6 +69,8 @@ pós-produção continua bloqueando qualquer voz real que ultrapasse o arquivo.
 | Planejamento | Planejador antigo exige cinco cortes numa receita de tomada única | Apolo valida a receita pinada sem IA nem cortes e preserva os cartões realmente usados |
 | Projeto existente | O projeto #3 ainda contém o plano do ativo rejeitado | O preset Vega #91 fica disponível na edição, preenche a rota premium e só persiste após salvar |
 | Finanças | Saldo disponível menor que 648, quota ausente ou teto menor que US$ 6,48 | Bloqueio e orientação de Plutus, sem geração |
+| Expiração financeira | Reserva vence enquanto o parecer auditado de Plutus ainda aguarda aplicação | Backend libera a reserva, encerra ciclo e gate como bloqueados e a fila segue sem repetir modelo ou criar job |
+| Expiração financeira | Reserva do primeiro ciclo ainda está vigente | Reconciliação preserva a autorização e Plutus continua a decisão normal |
 | Voz premium | TTS natural, modelo, voz ou credencial ausente | Bloqueio no preflight, antes da reserva e da chamada Runway |
 | Integridade | Tipo, bytes, dimensões ou SHA-256 da referência divergem entre preflight e job | Novo download e bloqueio antes da chamada paga |
 | Integração | Runway aceita a task | Request e response sanitizados, task ID, custo contratual e correlação persistidos |

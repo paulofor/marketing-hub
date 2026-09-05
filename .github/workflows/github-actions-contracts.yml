@@ -9,6 +9,12 @@ on:
       - "scripts/docker-compose-up-with-transient-retry.sh"
       - "scripts/docker-login-with-transient-retry.sh"
       - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/docker-build-temporary-image.sh"
+      - "scripts/cleanup-temporary-docker-images.sh"
+      - "scripts/run-docker-homologation.sh"
+      - "scripts/test-docker-temporary-image-cleanup.sh"
+      - "scripts/test-docker-temporary-image-cleanup-e2e.sh"
+      - "scripts/fixtures/temporary-docker-image/Dockerfile"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
@@ -35,6 +41,12 @@ on:
       - "scripts/docker-compose-up-with-transient-retry.sh"
       - "scripts/docker-login-with-transient-retry.sh"
       - "scripts/docker-pull-with-transient-retry.sh"
+      - "scripts/docker-build-temporary-image.sh"
+      - "scripts/cleanup-temporary-docker-images.sh"
+      - "scripts/run-docker-homologation.sh"
+      - "scripts/test-docker-temporary-image-cleanup.sh"
+      - "scripts/test-docker-temporary-image-cleanup-e2e.sh"
+      - "scripts/fixtures/temporary-docker-image/Dockerfile"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
@@ -85,6 +97,11 @@ jobs:
           bash -n scripts/docker-compose-up-with-transient-retry.sh
           bash -n scripts/docker-login-with-transient-retry.sh
           bash -n scripts/docker-pull-with-transient-retry.sh
+          bash -n scripts/docker-build-temporary-image.sh
+          bash -n scripts/cleanup-temporary-docker-images.sh
+          bash -n scripts/run-docker-homologation.sh
+          bash -n scripts/test-docker-temporary-image-cleanup.sh
+          bash -n scripts/test-docker-temporary-image-cleanup-e2e.sh
           bash -n scripts/wait-for-shared-vps-docker-capacity.sh
           bash -n scripts/install-actionlint.sh
           bash -n scripts/run-actionlint.sh
@@ -116,6 +133,12 @@ jobs:
 
       - name: Validar retry transitório do Docker
         run: bash scripts/test-docker-pull-with-transient-retry.sh
+
+      - name: Validar contrato da limpeza Docker temporária
+        run: bash scripts/test-docker-temporary-image-cleanup.sh
+
+      - name: Validar limpeza Docker temporária na engine real
+        run: bash scripts/test-docker-temporary-image-cleanup-e2e.sh
 
       - name: Validar retry transitório do Docker Compose
         run: bash scripts/test-docker-compose-pull-with-transient-retry.sh

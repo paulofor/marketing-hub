@@ -26,6 +26,7 @@ import com.marketinghub.businessprocess.execution.service.humanactivity.HumanPro
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
@@ -617,6 +618,93 @@ class BusinessProcessActivityExecutionServiceTest {
             });
   }
 
+  /**
+   * Mantém a operação no experimento iniciado quando um sucessor planejado possui tarefa bloqueada
+   * mais recente.
+   */
+  @Test
+  void requestsExperimentOptimizationForRunningExperimentInsteadOfPlannedSuccessor() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(66L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("operacao-otimizacao-experimento");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"task-1\",\"type\":\"TASK\","
+            + "\"label\":\"Verificar integridade dos eventos\","
+            + "\"description\":\"Confirma funil e deduplicação antes de otimizar.\","
+            + "\"responsibleAgentKeys\":[\"growth-operator\"]}]}");
+    Product vega = new Product();
+    vega.setId(4L);
+    vega.setInternalName("Vega");
+    vega.setAutomaticExecutionEnabled(true);
+    Experiment planned = new Experiment();
+    planned.setId(91L);
+    planned.setProduct(vega);
+    planned.setStatus(ExperimentStatus.PLANNED);
+    Experiment running = new Experiment();
+    running.setId(90L);
+    running.setProduct(vega);
+    running.setStatus(ExperimentStatus.RUNNING);
+    AgentTask wrongAttempt = executionTask(340L);
+    wrongAttempt.setProcessDefinition(process);
+    wrongAttempt.setProcessActivityId("task-1");
+    wrongAttempt.setProcessActivityName("Verificar integridade dos eventos");
+    wrongAttempt.setSourceReference("experiment:91");
+    wrongAttempt.setStatus("BLOCKED");
+    BusinessProcessActivityDefinition taskOne =
+        activity(610L, process, "task-1", "Verificar integridade dos eventos");
+    taskOne.setDefinitionJson("{\"responsibleAgentKeys\":[\"growth-operator\"]}");
+    when(processes.findById(66L)).thenReturn(Optional.of(process));
+    when(products.findById(4L)).thenReturn(Optional.of(vega));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(4L))
+        .thenReturn(List.of(planned, running));
+    when(commercialPlans.findByProductId(4L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(66L))
+        .thenReturn(List.of(taskOne));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(66L, "task-1"))
+        .thenReturn(Optional.of(taskOne));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:91"))
+        .thenReturn(List.of(wrongAttempt));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:90"))
+        .thenReturn(List.of());
+    when(coverages.findAllByAgentTaskIdIn(List.of(340L))).thenReturn(List.of());
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var history = executionService.productProcessExecutions(66L, 4L);
+    var result = executionService.requestProductActivityExecution(66L, 4L, "task-1");
+
+    assertThat(history.currentExecutionReference()).isEqualTo("experiment:90");
+    assertThat(history.currentActivityState()).isEqualTo("NOT_STARTED");
+    assertThat(result.sourceReference()).isEqualTo("experiment:90");
+    ArgumentCaptor<CreateAgentTaskRequest> request =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
+    assertThat(request.getValue().sourceReference()).isEqualTo("experiment:90");
+  }
+
   /** Inicia a construção privada pelo próprio produto antes de existir experimento comercial. */
   @Test
   void requestsPrivateConstructionWithProductContextBeforeExperiment() {
@@ -782,6 +870,8 @@ class BusinessProcessActivityExecutionServiceTest {
     AgentTaskService agentTasks = mock(AgentTaskService.class);
     AgentProductProcessActivityReadinessProvider readinessProvider =
         mock(AgentProductProcessActivityReadinessProvider.class);
+    AgentProductProcessActivityReadinessProvider secondaryReadinessProvider =
+        mock(AgentProductProcessActivityReadinessProvider.class);
     var executionService =
         new BusinessProcessActivityExecutionService(
             processes,
@@ -796,7 +886,7 @@ class BusinessProcessActivityExecutionServiceTest {
             agentTasks,
             new ObjectMapper(),
             List.of(),
-            List.of(readinessProvider));
+            List.of(readinessProvider, secondaryReadinessProvider));
     BusinessProcessDefinition process = selectedProcess();
     process.setId(63L);
     process.setStatus("PUBLISHED");
@@ -849,17 +939,24 @@ class BusinessProcessActivityExecutionServiceTest {
                 "pde-communication-sales-journey", "experiment:89"))
         .thenReturn(List.of(blockedInstance));
     when(readinessProvider.supports(any(), any())).thenReturn(true);
+    when(secondaryReadinessProvider.supports(any(), any())).thenReturn(true);
     when(readinessProvider.readiness(any(), any(), any(), eq("experiment:89")))
         .thenReturn(
             new AgentProductProcessActivityReadiness(
                 false, "Antes de executar Íris, conclua Plutus."));
+    when(secondaryReadinessProvider.readiness(any(), any(), any(), eq("experiment:89")))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(false, "Amostra consentida pendente."));
 
     var blocked = executionService.productProcessExecutions(63L, 9L);
 
     verify(readinessProvider).supports(any(), any());
     verify(readinessProvider).readiness(any(), any(), any(), eq("experiment:89"));
+    verify(secondaryReadinessProvider).supports(any(), any());
+    verify(secondaryReadinessProvider).readiness(any(), any(), any(), eq("experiment:89"));
     assertThat(blocked.activities().getFirst().executionRequestAvailable()).isFalse();
-    assertThat(blocked.activities().getFirst().executionRequestReason()).contains("Plutus");
+    assertThat(blocked.activities().getFirst().executionRequestReason())
+        .contains("Plutus", "Amostra consentida");
     assertThatThrownBy(
             () ->
                 executionService.requestProductActivityExecution(63L, 9L, "communicationContract"))
@@ -871,6 +968,10 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(
             new AgentProductProcessActivityReadiness(
                 true, "Estratégia, economia, PDE e provas estão prontos para Íris."));
+    when(secondaryReadinessProvider.readiness(any(), any(), any(), eq("experiment:89")))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                true, "A amostra consentida está pronta para revisão."));
     when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
         .thenReturn(mock(AgentTaskResponse.class));
 

@@ -92,6 +92,49 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   três gates diretos e recusam o piso fixo de cem visitas. Teste do backend mantém o Rigel fora das
   etapas Meta e preserva o fluxo pago existente.
 
+## LOOP-BPM-EXPERIMENTO-PLANEJADO-MASCA-OPERACAO — sucessor vira o ciclo atual antes da ativação
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** as tarefas #339 e #340 de `Verificar integridade dos eventos` do Vega
+  foram ligadas ao experimento #91, ainda `PLANNED`, enquanto o experimento #90 permanecia
+  `RUNNING` e com o preflight produtivo aprovado.
+- **Causa-raiz:** a tela escolhia a referência da tarefa mais recente e, na ausência dela, o
+  experimento mais recentemente atualizado. Nenhuma das duas regras distinguia operação autorizada
+  de sucessor ainda planejado.
+- **Correção sistêmica:** o processo de operação resolve primeiro o experimento `RUNNING` e somente
+  depois um ciclo já operado. Tentativas criadas por engano para um sucessor planejado permanecem no
+  histórico, mas não comandam o estado nem a próxima execução.
+- **Prevenção:** teste reproduz #90 ativo, #91 planejado e #340 bloqueado, exigindo que tela e novo
+  request usem `experiment:90` sem apagar a tentativa anterior.
+
+## LOOP-FUNIL-PDE-VERSAO-CONTAMINA-EXPERIMENTO — tráfego antigo aparece como visita comercial
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** os experimentos #90 e #91 exibiam as mesmas 17 entradas, embora não
+  tivessem contato ou campanha atribuída. As 17 sessões da experiência v7 ocorreram antes da criação
+  de ambos e o endpoint analítico por experimento permanecia zerado.
+- **Causa-raiz:** na ausência de UTM, o funil usava o agregado global da versão PDE e seu horário
+  global. Uma versão compartilhada não transporta identidade nem janela temporal do experimento.
+- **Correção sistêmica:** métricas comerciais PDE passam a exigir campanha ou criativo atribuível ao
+  experimento. O agregado por versão continua disponível apenas como diagnóstico técnico; acesso e
+  primeiro uso globais também não são promovidos ao funil.
+- **Prevenção:** testes cobrem canal direto, Facebook sem campanha, UTM divergente, UTM exata e
+  métricas pós-compra globais, mantendo visita, compra e entrega zeradas sem evidência própria.
+
+## LOOP-VIDEO-PLUTUS-RESERVA-EXPIRADA — ciclo antigo monopoliza a fila financeira
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o ciclo #10 permaneceu em `PENDING_FINANCIAL_REVIEW` depois de sua reserva
+  expirar. Plutus reutilizava a resposta auditada, o callback era recusado a cada minuto e o item
+  mais antigo impedia o consumo normal dos ciclos seguintes.
+- **Causa-raiz:** a validade era conferida somente no callback de aprovação; não existia transição
+  backend para encerrar uma autorização vencida antes da leitura da fila.
+- **Correção sistêmica:** antes do polling, o executor solicita reconciliação. Sob locks, o backend
+  libera apenas reserva `RESERVED` vencida e sem consumo, bloqueia ciclo e gate com causa explícita e
+  mantém qualquer reserva vigente intacta.
+- **Prevenção:** testes provam ordem reconciliação → leitura, isolamento diante de indisponibilidade,
+  ausência de job e preservação do parecer bruto para auditoria.
+
 ## LOOP-ARGOS-METODO-AUDITORIA-FORA-DO-CONTRATO — pesquisa conclui e callback final é revertido
 
 - **Data:** 2026-08-31.
@@ -2609,6 +2652,16 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de contrato cobrem bloqueio antes do custo, motivo exato, recusa de tarefa
   financeira genérica, recusa de versão antiga, evidência financeira estruturada e retentativa pela
   tela. Nenhuma atividade pode ter um gate mais permissivo na UI do que no worker.
+- **Recorrência fechada em 2026-09-05:** a atividade `Verificar integridade dos eventos` do Vega
+  criou a tarefa #339 para Hermes, embora o plano 3 possuísse somente pareceres históricos de Atena
+  anteriores ao `MARKET_STRATEGY_V2`. O worker bloqueou corretamente antes do modelo, mas a tela
+  continuou oferecendo uma retentativa com a mesma entrada. Todas as cinco atividades de Hermes no
+  processo de otimização passam a consultar o mesmo contrato estratégico entregue ao worker e
+  validam disponibilidade, versão, SHA-256, estado e fronteira operacional. Enquanto o contrato não
+  existir, a tela orienta solicitar o novo parecer de Atena no plano comercial e não cria outra
+  tarefa. Gates independentes são compostos: `task-2` preserva simultaneamente estratégia e amostra
+  consentida, sem duplicar ou remover proteção. Testes reproduzem o parecer histórico, as
+  divergências de hash e fronteira e dois pré-requisitos concorrentes.
 
 ## LOOP-PDE-ATIVACAO-DIRETA-ESTADOS-DIVERGENTES — preflight aprovado sem avanço comercial
 
@@ -3352,6 +3405,15 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   usa fragmento transitório, `no-store`, `no-referrer` e `noindex`, sem enviar o segredo em request,
   path, query ou access log. O deploy `v7` bloqueia sem o token exclusivo de QA, executa a jornada em
   desktop, iPhone e Pixel e registra eventos `QA_INTERNAL`, sem consumir os dois convites humanos.
+- **Fechamento do runtime produtivo em 2026-09-05:** o deploy `c7e542ba` chegou ao host, mas o smoke
+  parou antes de Mira porque o descritor `iPhone 15 Pro` escolhia WebKit enquanto a configuração
+  global fornecia o executável Chromium. O navegador encerrava antes da navegação, inclusive em
+  execução isolada. O perfil agora fixa `browserName: chromium`, mantendo a emulação móvel, e o
+  contrato de deploy impede a combinação incompatível de retornar.
+- **Fechamento do formulário produtivo em 2026-09-05:** o backend concluiu corretamente o gate, mas
+  o Chromium registrou erro porque o atributo `pattern` colocava hífen não escapado em classe de
+  caracteres sob a flag `v` do padrão HTML atual. A expressão passa a representar o hífen fora da
+  classe e o teste do painel fixa o valor compatível, impedindo validação silenciosamente ignorada.
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 
@@ -3645,6 +3707,24 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   tarefa duplicada e avanço decidido somente pelo backend. A rotina possui thread própria no pool
   mínimo para não ficar oculta por integrações longas.
 
+## LOOP-HARNESS-HTTPS-GETENT-AAAA-FANTASMA — publicação bloqueada sem registro IPv6 real
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** a publicação inicial `33945128796` parou no gate DNS alegando um registro
+  `AAAA`, enquanto o domínio já apontava corretamente para `163.245.200.7` e não possuía IPv6.
+- **Causa-raiz confirmada pelo histórico e pelo DNS:** era a primeira execução do novo workflow, logo
+  não havia publicação anterior bem-sucedida a comparar. Consultas diretas aos RRsets no DNS
+  autoritativo, Cloudflare e Google retornaram um único `A` e nenhum `AAAA`. O workflow usava
+  `getent ahostsv6`, cuja resposta depende da resolução `AF_INET6` do runner e pode incluir endereço
+  IPv4 mapeado/sintetizado; qualquer linha era interpretada como um RR `AAAA` real.
+- **Alternativas avaliadas:** remover o bloqueio aceitaria uma rota IPv6 não atendida; filtrar a saída
+  de `getent` manteria comportamento dependente do sistema; consultar diretamente `A` e `AAAA`
+  preserva o gate e mede a configuração publicada. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** um script versionado consulta os RRsets com `dig`, exige exclusivamente o
+  IPv4 canônico e bloqueia somente `AAAA` efetivamente publicado.
+- **Prevenção:** teste de contrato cobre `A` ausente, divergente e múltiplo, presença real de `AAAA` e
+  proíbe o retorno de `getent ahostsv6` no workflow de publicação.
+
 ## LOOP-ACTIONS-VPS-AGENTES-PRUNE-CONCORRENTE — deploy remove imagem de outro agente
 
 - **Data:** 2026-09-04.
@@ -3665,6 +3745,26 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   do job `deploy`, rejeita `docker builder/image/system prune -af` e falha quando um novo publicador
   usa o host sem entrar na lista protegida.
 
+## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** a engine Docker isolada chegou a 216 imagens e 33,8 GB durante homologações
+  extensas; 6,4 GB estavam imediatamente recuperáveis, mas imagens locais, bases reutilizáveis e
+  artefatos de execuções possuíam tags heterogêneas e quase nunca declaravam ciclo de vida.
+- **Causa-raiz confirmada pelo inventário da engine e pelo histórico:** os fluxos removiam containers,
+  redes e volumes, mas builds ad hoc não declaravam propriedade ou sessão. Consequentemente, não
+  existia critério seguro para automatizar o descarte. O loop de prune concorrente já comprovou que
+  inferir descarte apenas por ausência momentânea de container pode apagar uma imagem entre build e
+  uso.
+- **Alternativas avaliadas:** prune global recuperaria espaço com risco de corrida; workflow agendado
+  em runner efêmero não alcançaria a engine da sandbox; namespace, rótulo, sessão ativa e lock tornam
+  a propriedade verificável. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** helper de build marca imagens temporárias; wrapper mantém a sessão ativa,
+  executa o coletor a cada dez minutos e limpa a própria sessão ao terminar. O coletor exige idade
+  mínima para outras sessões e preserva containers e tags externas.
+- **Prevenção:** cânone operacional, teste com Docker simulado e teste na engine real cobrem validação,
+  concorrência, dry-run, sessão ativa, imagem em uso, tag protegida e coleta final sem prune forçado.
+
 ## LOOP-HARNESS-API-SECRET-ILEGIVEL-NONROOT — container seguro não consegue ler credencial
 
 - **Data:** 2026-09-04.
@@ -3683,3 +3783,46 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** o CI agora cria secrets sintéticos com a mesma propriedade e permissão, inicia a
   imagem read-only e não privilegiada e só aprova quando health e leitura dos dois arquivos passam
   sem expor conteúdo. O contrato também bloqueia divergência entre Dockerfile, Compose e workflow.
+
+## LOOP-ACTIONS-PDE-IPHONE-WEBKIT-COM-CHROMIUM — smoke móvel encerra antes de abrir a página
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado no histórico:** os deploys PDE `33938373609` e `33938819186` publicaram e
+  validaram containers e rotas HTTPS, mas falharam no mesmo projeto `public-iphone-15-pro` com
+  `browserType.launch: Target page, context or browser has been closed`. Desktop e Pixel passaram
+  nas duas execuções, descartando indisponibilidade da aplicação ou do proxy.
+- **Causa-raiz:** o descritor Playwright `iPhone 15 Pro` seleciona WebKit por padrão, enquanto a
+  configuração global do workflow fornecia o executável Chromium instalado no runner. O teste
+  tentava iniciar uma tecnologia com o binário da outra e o processo encerrava antes da navegação.
+- **Alternativas avaliadas:** repetir o workflow manteria a falha determinística; retirar o smoke
+  móvel reduziria a cobertura do produto; instalar e usar WebKit criaria divergência do navegador
+  móvel homologado pelo Marketing Hub. Foi escolhido preservar viewport, user agent, toque e escala
+  do iPhone, declarando explicitamente `browserName: chromium`.
+- **Correção sistêmica:** as configurações pública, local e containerizada do PDE fixam Chromium no
+  projeto do iPhone, mantendo o mesmo executável configurado pelo ambiente.
+- **Prevenção:** o contrato de deploy falha se qualquer uma dessas configurações voltar a combinar o
+  descritor WebKit com executável Chromium. Duas rodadas locais completas e consecutivas, cada uma
+  com MySQL 5.7, backend, frontend e 12 jornadas em desktop, iPhone e Pixel, passaram a partir de
+  volumes vazios.
+
+## LOOP-ACTIONS-META-PLAYWRIGHT-APT-MUTAVEL — imagem falha durante sincronização do espelho
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o run `33935575666` aprovou os 86 testes do Meta Ad Approver e falhou
+  somente no build da imagem, após quase uma hora, porque o índice `noble-updates` retornou tamanho e
+  hash divergentes durante `playwright-core install --with-deps chromium`.
+- **Causa-raiz:** a imagem instalava em tempo de build Node, dependências de navegador e Chromium a
+  partir de índices Ubuntu mutáveis. O mesmo Dockerfile ainda recebia Node 18, abaixo do Node 20
+  exigido por uma dependência do runtime. O check posterior verde apenas comprovou que o espelho se
+  estabilizou; não eliminava a dependência externa instável.
+- **Alternativas avaliadas:** repetir o build manteria a flutuação; adicionar retry reduziria a
+  frequência, mas continuaria baixando navegador e dependências sem necessidade; usar a imagem
+  oficial do Playwright compatível com o pacote fixa navegador, bibliotecas e Node. Foi escolhida a
+  terceira opção, copiando o Java 21 da imagem Temurin versionada.
+- **Correção sistêmica:** o revisor usa `mcr.microsoft.com/playwright:v1.49.0-noble`, alinhado ao
+  `playwright-core` do módulo, recebe o JRE 21 por multi-stage e deixa de executar APT ou download de
+  navegador. O runtime continua não privilegiado e expõe Chromium no caminho canônico do MCP.
+- **Prevenção:** teste de contrato bloqueia retorno de APT, instalação dinâmica do navegador, Node
+  antigo e regravação dispendiosa das camadas do Playwright. Duas rodadas consecutivas aprovaram 86
+  testes, MCP, contratos, 117 evidências, as duas imagens, Compose e a abertura real do Chromium pelo
+  usuário `10001`.

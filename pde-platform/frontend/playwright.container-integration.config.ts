@@ -22,7 +22,7 @@ export default defineConfig({
     },
     {
       name: "local-integration-iphone-15-pro",
-      use: { ...devices["iPhone 15 Pro"] },
+      use: { ...devices["iPhone 15 Pro"], browserName: "chromium" },
     },
     {
       name: "local-integration-pixel-7",

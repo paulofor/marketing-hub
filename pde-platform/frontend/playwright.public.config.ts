@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'public-iphone-15-pro',
-      use: { ...devices['iPhone 15 Pro'] },
+      use: { ...devices['iPhone 15 Pro'], browserName: 'chromium' },
     },
     {
       name: 'public-pixel-7',

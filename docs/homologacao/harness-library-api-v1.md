@@ -184,3 +184,22 @@ O teste de observabilidade consultava o Prometheus com `curl | grep -q` sob `pip
 `SIGPIPE`, produzindo falso negativo apesar da métrica existir. A resposta agora é capturada por
 inteiro antes da asserção, preservando a exigência de `http_server_requests_seconds_count` sem
 intermitência.
+
+## Correção do gate DNS da publicação — 2026-09-05
+
+Depois que o registro `A` passou a resolver publicamente para `163.245.200.7`, a primeira publicação
+HTTPS (`33945128796`) parou antes de alterar o proxy. O runner interpretou a saída de
+`getent ahostsv6` como presença de `AAAA`, embora a consulta direta aos RRsets no DNS autoritativo,
+Cloudflare e Google confirmasse que nenhum registro `AAAA` existia.
+
+A validação passou a consultar diretamente os registros `A` e `AAAA` com `dig`, exigindo o único IPv4
+canônico e bloqueando apenas um RR `AAAA` realmente publicado. O teste de contrato cobre ausência,
+divergência e multiplicidade de `A`, além de presença real de `AAAA`, sem depender do comportamento de
+resolução `AF_INET6` do sistema operacional.
+
+Após a correção, duas rodadas locais completas e consecutivas partiram de volumes vazios e passaram.
+Cada rodada validou Actionlint com suporte à fila ampliada, sintaxe e contratos dos scripts, DNS real e
+cenários negativos, 9 testes do gateway, 15 testes direcionados do backend, migração física no MySQL
+5.7 e o ciclo JSON completo em containers novos. A topologia temporária foi removida ao final de cada
+rodada. A rota pública permaneceu inalterada porque a correção ainda depende do fluxo obrigatório de
+Pull Request antes de uma nova publicação.

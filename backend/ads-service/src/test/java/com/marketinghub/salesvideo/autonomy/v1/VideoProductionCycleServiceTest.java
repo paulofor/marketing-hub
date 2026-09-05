@@ -13,6 +13,7 @@ import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
+import com.marketinghub.agenttask.DecideAgentGateRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.media.Asset;
@@ -564,6 +565,35 @@ class VideoProductionCycleServiceTest {
     verify(taskService)
         .recordPendingGateModelResult(
             "financial-agent", 99L, "{\"decision\":\"APPROVED\"}", audit, java.util.List.of());
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Encerra a revisão cuja reserva expirou e libera a fila sem criar job nem repetir o modelo. */
+  @Test
+  void shouldBlockExpiredFinancialReviewWithoutStarvingNewCycles() {
+    VideoProductionCycle expired = cycle();
+    expired.setId(10L);
+    expired.setAgentTaskId(338L);
+    VideoProductionCycle active = cycle();
+    active.setId(11L);
+    active.setAgentTaskId(339L);
+    when(repository.findByStatusOrderByCreatedAtAsc("PENDING_FINANCIAL_REVIEW"))
+        .thenReturn(java.util.List.of(expired, active));
+    when(providerPreflightService.releaseExpiredUnusedReservation(10L)).thenReturn(true);
+    when(providerPreflightService.releaseExpiredUnusedReservation(11L)).thenReturn(false);
+
+    service.reconcileFinancialReviewQueue();
+
+    ArgumentCaptor<DecideAgentGateRequest> decision =
+        ArgumentCaptor.forClass(DecideAgentGateRequest.class);
+    verify(taskService).decideGate(org.mockito.ArgumentMatchers.eq(338L), decision.capture());
+    assertThat(decision.getValue().decidedByAgentKey()).isEqualTo("financial-agent");
+    assertThat(decision.getValue().decision()).isEqualTo("REJECTED");
+    assertThat(decision.getValue().reason()).contains("reserva preventiva expirou");
+    assertThat(expired.getStatus()).isEqualTo("FINANCIAL_BLOCKED");
+    assertThat(expired.getFinancialDecision()).isEqualTo("REJECTED");
+    assertThat(expired.getCreditAction()).isEqualTo("NO_PURCHASE");
+    assertThat(active.getStatus()).isEqualTo("PENDING_FINANCIAL_REVIEW");
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 

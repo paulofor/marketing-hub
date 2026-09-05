@@ -437,6 +437,55 @@ class VideoProviderFinancialPreflightServiceTest {
     verify(reservationRepository).save(reservation);
   }
 
+  /** Libera somente a reserva preventiva vencida para a fila financeira encerrar o ciclo antigo. */
+  @Test
+  void shouldReleaseExpiredUnusedReservationForFinancialQueueReconciliation() {
+    VideoCreditReservation reservation = new VideoCreditReservation();
+    reservation.setId(91L);
+    reservation.setProviderAccountId(5L);
+    reservation.setStatus("RESERVED");
+    reservation.setReservedCredits(new BigDecimal("30.0000"));
+    reservation.setExpiresAt(NOW.minusSeconds(1));
+    account.setReservedCredits(new BigDecimal("40.0000"));
+    when(accountRepository.findByVideoProductionCycleIdForUpdate(11L))
+        .thenReturn(Optional.of(account));
+    when(reservationRepository.findByVideoProductionCycleIdForUpdate(11L))
+        .thenReturn(Optional.of(reservation));
+
+    boolean released = service.releaseExpiredUnusedReservation(11L);
+
+    assertThat(released).isTrue();
+    assertThat(reservation.getStatus()).isEqualTo("RELEASED");
+    assertThat(reservation.getReleasedAt()).isEqualTo(NOW);
+    assertThat(account.getReservedCredits()).isEqualByComparingTo("10.0000");
+    verify(accountRepository).save(account);
+    verify(reservationRepository).save(reservation);
+  }
+
+  /** Preserva uma reserva vigente durante a reconciliação para Plutus ainda poder decidir. */
+  @Test
+  void shouldKeepActiveReservationDuringFinancialQueueReconciliation() {
+    VideoCreditReservation reservation = new VideoCreditReservation();
+    reservation.setId(91L);
+    reservation.setProviderAccountId(5L);
+    reservation.setStatus("RESERVED");
+    reservation.setReservedCredits(new BigDecimal("30.0000"));
+    reservation.setExpiresAt(NOW.plusSeconds(1));
+    account.setReservedCredits(new BigDecimal("40.0000"));
+    when(accountRepository.findByVideoProductionCycleIdForUpdate(11L))
+        .thenReturn(Optional.of(account));
+    when(reservationRepository.findByVideoProductionCycleIdForUpdate(11L))
+        .thenReturn(Optional.of(reservation));
+
+    boolean released = service.releaseExpiredUnusedReservation(11L);
+
+    assertThat(released).isFalse();
+    assertThat(reservation.getStatus()).isEqualTo("RESERVED");
+    assertThat(account.getReservedCredits()).isEqualByComparingTo("40.0000");
+    verify(accountRepository, never()).save(any());
+    verify(reservationRepository, never()).save(any(VideoCreditReservation.class));
+  }
+
   /** Mantém o preflight autorizável enquanto a reserva criada do snapshot ainda estiver ativa. */
   @Test
   void shouldKeepReadyStatusWhilePreventiveReservationIsActive() {

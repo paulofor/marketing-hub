@@ -48,6 +48,8 @@ public class VideoProductionCycleService {
   private static final String RUNWAY_ROUTER = "RUNWAY_ROUTER";
   private static final String RUNWAY_PRODUCT_UGC = "RUNWAY_PRODUCT_UGC";
   private static final String APOLLO_BLOCKED = "APOLLO_BLOCKED";
+  private static final String EXPIRED_FINANCIAL_REVIEW_REASON =
+      "A reserva preventiva expirou antes da aplicação do parecer de Plutus; abra um novo ciclo para renovar saldo, custo e autorização sem reutilizar o preflight antigo.";
   private final VideoProductionCycleRepository repository;
   private final VideoProjectRepository projectRepository;
   private final SalesVideoJobRepository jobRepository;
@@ -186,6 +188,31 @@ public class VideoProductionCycleService {
     return repository.findByStatusOrderByCreatedAtAsc("PENDING_FINANCIAL_REVIEW").stream()
         .map(this::financialReviewPendingResponse)
         .toList();
+  }
+
+  /** Encerra revisões cuja reserva preventiva venceu para impedir starvation da fila de Plutus. */
+  @Transactional
+  public void reconcileFinancialReviewQueue() {
+    repository.findByStatusOrderByCreatedAtAsc("PENDING_FINANCIAL_REVIEW").stream()
+        .filter(cycle -> providerPreflightService.releaseExpiredUnusedReservation(cycle.getId()))
+        .forEach(this::blockExpiredFinancialReview);
+  }
+
+  /** Preserva o parecer auditado e registra que a autorização financeira perdeu a validade. */
+  private void blockExpiredFinancialReview(VideoProductionCycle cycle) {
+    if (cycle.getAgentTaskId() != null) {
+      taskService.decideGate(
+          cycle.getAgentTaskId(),
+          new DecideAgentGateRequest(PLUTUS_KEY, "REJECTED", EXPIRED_FINANCIAL_REVIEW_REASON));
+    }
+    Instant now = Instant.now();
+    cycle.setFinancialDecision("REJECTED");
+    cycle.setFinancialReason(EXPIRED_FINANCIAL_REVIEW_REASON);
+    cycle.setCreditAction("NO_PURCHASE");
+    cycle.setFinancialDecidedAt(now);
+    cycle.setStatus("FINANCIAL_BLOCKED");
+    cycle.setUpdatedAt(now);
+    repository.save(cycle);
   }
 
   /** Audita a interação de Plutus sem permitir que o callback avance o ciclo. */

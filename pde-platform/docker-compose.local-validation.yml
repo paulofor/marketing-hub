@@ -87,6 +87,7 @@ services:
       PDE_TEST_FRONTEND_URL: http://pde-platform-frontend
       PDE_TEST_CONTRACT_SERVER_URL: http://pde-contract-server:57181
       PDE_TEST_INTERNAL_TOKEN: pde-local-internal-test
+      MIRA_PRIVATE_E2E_TOKEN: mira-qa-local
     depends_on:
       pde-contract-server:
         condition: service_healthy

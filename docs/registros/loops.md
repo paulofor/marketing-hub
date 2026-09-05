@@ -3349,7 +3349,9 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** testes unitários cobrem acesso inválido, bloqueio clínico, ordenação contextual,
   idempotência e retomada; a homologação abre a experiência real em desktop e celular, confirma
   ausência de cobrança/publicação/mídia e só então permite preencher o gate humano. A URL com segredo
-  usa `no-store`, `no-referrer`, `noindex` e não entra em access log.
+  usa fragmento transitório, `no-store`, `no-referrer` e `noindex`, sem enviar o segredo em request,
+  path, query ou access log. O deploy `v7` bloqueia sem o token exclusivo de QA, executa a jornada em
+  desktop, iPhone e Pixel e registra eventos `QA_INTERNAL`, sem consumir os dois convites humanos.
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 

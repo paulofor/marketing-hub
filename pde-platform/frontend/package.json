@@ -17,6 +17,7 @@
     "test:consultant-sdk": "playwright test tests/consultant-sdk-v1.visual.spec.ts --config=playwright.consultant-sdk.config.ts",
     "test:public-diagnostic-smoke": "playwright test tests/public-presence-diagnostic.smoke.spec.ts --config=playwright.public-api.config.ts",
     "test:public-health": "playwright test tests/public-health.spec.ts --config=playwright.public.config.ts",
+    "test:mira-private:public": "playwright test tests/mira-private-prototype.spec.ts --config=playwright.public.config.ts",
     "test:visual": "playwright test",
     "preview": "vite preview --host 0.0.0.0"
   },

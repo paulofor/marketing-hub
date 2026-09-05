@@ -44,4 +44,12 @@ fi
 bash "${script_dir}/test-targeted-production-smokes.sh"
 bash "${script_dir}/test-public-health-commercial-source.sh"
 
+if ! grep -Fq 'PDE_MIRA_PRIVATE_QA_TOKEN: ${{ secrets.PDE_MIRA_PRIVATE_QA_TOKEN }}' "${workflow}" \
+  || ! grep -Fq "export PDE_MIRA_PRIVATE_QA_TOKEN='" "${workflow}" \
+  || ! grep -Fq 'MIRA_PRIVATE_E2E_TOKEN: ${{ secrets.PDE_MIRA_PRIVATE_QA_TOKEN }}' "${workflow}" \
+  || ! grep -Fq 'PDE_MIRA_PRIVATE_QA_TOKEN: ${PDE_MIRA_PRIVATE_QA_TOKEN:?' "${repository_root}/pde-platform/docker-compose.deploy.yml"; then
+  echo '[ARQUITETURA] O deploy PDE deve injetar o acesso de QA de Mira no backend e no smoke produtivo sem reutilizar convites humanos.' >&2
+  exit 1
+fi
+
 echo 'Contrato de isolamento do deploy PDE aprovado.'

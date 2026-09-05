@@ -17,7 +17,9 @@ export default defineConfig({
   },
   use: {
     baseURL,
-    launchOptions: chromiumExecutablePath ? { executablePath: chromiumExecutablePath } : undefined,
+    launchOptions: chromiumExecutablePath
+      ? { executablePath: chromiumExecutablePath, args: ['--no-sandbox'] }
+      : undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -35,8 +37,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'public-mobile',
-      use: { ...devices['Pixel 5'] },
+      name: 'public-iphone-15-pro',
+      use: { ...devices['iPhone 15 Pro'] },
+    },
+    {
+      name: 'public-pixel-7',
+      use: { ...devices['Pixel 7'] },
     },
   ],
 });

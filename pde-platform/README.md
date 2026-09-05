@@ -117,6 +117,8 @@ Deploy de produção:
 - `v6.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v6`, por padrão na porta `5177`.
 - `v7.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v7`, por padrão na porta `5178`.
 - Use `workflow_dispatch` com `frontend_version=v6` para publicar somente a v6, `frontend_version=v5` para publicar somente a v5, `frontend_version=v7` para publicar somente a v7, `frontend_version=all` apenas quando a mudança for comprovadamente comum e aprovada para todas, e `frontend_version=none` quando quiser publicar só backend/worker.
+- O acesso privado de Mira usa `https://v7.clubemusa.com.br/mira-private#access=<token-url-encoded>`; o fragmento é removido antes da primeira chamada HTTP e nunca deve ser substituído por token em path ou query string.
+- O deploy `v7` exige `PDE_MIRA_PRIVATE_QA_TOKEN`, injeta-o apenas no backend e no smoke Playwright e valida a jornada de Mira em desktop, iPhone 15 Pro e Pixel 7 como `QA_INTERNAL`; os dois convites humanos não podem ser reutilizados para QA.
 - O container legado `pde-platform-frontend` não deve ser usado como destino público de versão. Ele é removido automaticamente quando o deploy incluir `frontend_version=v5` ou `frontend_version=all`, para liberar a porta histórica `5176` para `pde-platform-frontend-v5`.
 - Para ambientes de preview ou rollback, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE`, `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE`, `PDE_DEPLOY_FRONTEND_URL` e `PDE_APP_BASE_URL` apenas fora dos subdomínios versionados produtivos.
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.

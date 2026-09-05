@@ -48,3 +48,20 @@ contratos de deploy, Compose de produção, MySQL 5.7 e 12 jornadas reais de nav
 iPhone 15 Pro e Pixel 7. Em cada banco limpo, Mira persistiu exatamente cinco eventos
 `QA_INTERNAL`, zero `PRIVATE_READING` e zero evento de pagamento; o token de QA não apareceu nos
 logs do backend ou do frontend.
+
+## Fechamento do runtime produtivo em 2026-09-05
+
+O primeiro deploy do commit `c7e542ba` publicou corretamente backend e frontend, mas o smoke público
+interrompeu antes da jornada de Mira. O descritor do iPhone 15 Pro selecionava WebKit por padrão ao
+mesmo tempo que a configuração fornecia um executável Chromium; o processo encerrava antes de abrir
+a página, inclusive quando executado isoladamente. O projeto mobile passa a declarar Chromium
+explicitamente, preservando viewport, user agent, toque e escala do iPhone. O contrato de deploy
+impede a reintrodução dessa combinação incompatível.
+
+Na rodada produtiva seguinte, a jornada passou nos três dispositivos e persistiu exatamente os cinco
+eventos `QA_INTERNAL`, sem leitura humana, pagamento, publicação ou gasto. A confirmação pela tela
+foi aceita pelo backend, mas a inspeção do console encontrou o padrão HTML de versão incompatível
+com a flag `v` usada pelo Chromium atual. O campo passa a expressar o hífen fora da classe de
+caracteres, e seu teste de interface protege o contrato. A atividade `prototypeAcceptance` ficou
+`COMPLETED`, a experiência de Mira ficou `PRIVATE_PROTOTYPE_READY` e a próxima atividade liberada é
+`privateReading1`.

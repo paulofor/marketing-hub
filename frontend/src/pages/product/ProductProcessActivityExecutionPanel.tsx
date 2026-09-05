@@ -318,7 +318,7 @@ function PrivatePrototypeAcceptanceForm({
             value={prototypeVersion}
             onChange={(event) => setPrototypeVersion(event.target.value)}
             placeholder="Ex.: private-v1"
-            pattern="[a-z0-9][a-z0-9._-]{2,63}"
+            pattern="[a-z0-9](?:[a-z0-9._]|-){2,63}"
             minLength={3}
             maxLength={64}
             required

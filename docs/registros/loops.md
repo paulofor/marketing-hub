@@ -3352,6 +3352,15 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   usa fragmento transitório, `no-store`, `no-referrer` e `noindex`, sem enviar o segredo em request,
   path, query ou access log. O deploy `v7` bloqueia sem o token exclusivo de QA, executa a jornada em
   desktop, iPhone e Pixel e registra eventos `QA_INTERNAL`, sem consumir os dois convites humanos.
+- **Fechamento do runtime produtivo em 2026-09-05:** o deploy `c7e542ba` chegou ao host, mas o smoke
+  parou antes de Mira porque o descritor `iPhone 15 Pro` escolhia WebKit enquanto a configuração
+  global fornecia o executável Chromium. O navegador encerrava antes da navegação, inclusive em
+  execução isolada. O perfil agora fixa `browserName: chromium`, mantendo a emulação móvel, e o
+  contrato de deploy impede a combinação incompatível de retornar.
+- **Fechamento do formulário produtivo em 2026-09-05:** o backend concluiu corretamente o gate, mas
+  o Chromium registrou erro porque o atributo `pattern` colocava hífen não escapado em classe de
+  caracteres sob a flag `v` do padrão HTML atual. A expressão passa a representar o hífen fora da
+  classe e o teste do painel fixa o valor compatível, impedindo validação silenciosamente ignorada.
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 

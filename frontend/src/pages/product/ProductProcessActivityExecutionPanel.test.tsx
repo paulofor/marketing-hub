@@ -178,6 +178,10 @@ describe("ProductProcessActivityExecutionPanel", () => {
     fireEvent.change(screen.getByLabelText(/Versão do protótipo/), {
       target: { value: "private-v1" },
     });
+    expect(screen.getByLabelText(/Versão do protótipo/)).toHaveAttribute(
+      "pattern",
+      "[a-z0-9](?:[a-z0-9._]|-){2,63}",
+    );
     fireEvent.change(screen.getByLabelText(/URL privada acessível/), {
       target: { value: "https://private.local/prototype" },
     });

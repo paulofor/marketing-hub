@@ -43,15 +43,21 @@ class TemisContainerIsolationContractTest {
         .doesNotContain("nodejs", "npm", "codex", "playwright", "agent-health-report");
   }
 
-  /** Garante que o navegador instalado pelo Playwright esteja no caminho entregue ao MCP. */
+  /** Garante Java 21, Node moderno e Chromium pinado sem depender do espelho APT durante o build. */
   @Test
   void exposesInstalledChromiumAtCanonicalMcpPath() throws Exception {
     String dockerfile = Files.readString(Path.of("Dockerfile"));
 
     assertThat(dockerfile)
         .contains(
-            "npx playwright-core install --with-deps chromium",
-            "ln -s \"$(find /ms-playwright -type f -path '*/chrome-linux/chrome' | sort | tail -n 1)\" /usr/bin/chromium");
+            "FROM eclipse-temurin:21-jre-noble AS java-runtime",
+            "FROM mcr.microsoft.com/playwright:v1.49.0-noble",
+            "COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk",
+            "node --version | grep -Eq '^v2[0-9]\\.'",
+            "find /ms-playwright -type f -path '*/chrome-linux/chrome'",
+            "ln -s \"${chromium_path}\" /usr/bin/chromium")
+        .doesNotContain(
+            "apt-get", "playwright-core install --with-deps", "chmod -R a+rX /ms-playwright");
   }
 
   /** Garante build, health e prova de ausência do segredo no revisor durante o deploy. */

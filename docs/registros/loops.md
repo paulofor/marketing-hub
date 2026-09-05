@@ -3745,3 +3745,46 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** o CI agora cria secrets sintéticos com a mesma propriedade e permissão, inicia a
   imagem read-only e não privilegiada e só aprova quando health e leitura dos dois arquivos passam
   sem expor conteúdo. O contrato também bloqueia divergência entre Dockerfile, Compose e workflow.
+
+## LOOP-ACTIONS-PDE-IPHONE-WEBKIT-COM-CHROMIUM — smoke móvel encerra antes de abrir a página
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado no histórico:** os deploys PDE `33938373609` e `33938819186` publicaram e
+  validaram containers e rotas HTTPS, mas falharam no mesmo projeto `public-iphone-15-pro` com
+  `browserType.launch: Target page, context or browser has been closed`. Desktop e Pixel passaram
+  nas duas execuções, descartando indisponibilidade da aplicação ou do proxy.
+- **Causa-raiz:** o descritor Playwright `iPhone 15 Pro` seleciona WebKit por padrão, enquanto a
+  configuração global do workflow fornecia o executável Chromium instalado no runner. O teste
+  tentava iniciar uma tecnologia com o binário da outra e o processo encerrava antes da navegação.
+- **Alternativas avaliadas:** repetir o workflow manteria a falha determinística; retirar o smoke
+  móvel reduziria a cobertura do produto; instalar e usar WebKit criaria divergência do navegador
+  móvel homologado pelo Marketing Hub. Foi escolhido preservar viewport, user agent, toque e escala
+  do iPhone, declarando explicitamente `browserName: chromium`.
+- **Correção sistêmica:** as configurações pública, local e containerizada do PDE fixam Chromium no
+  projeto do iPhone, mantendo o mesmo executável configurado pelo ambiente.
+- **Prevenção:** o contrato de deploy falha se qualquer uma dessas configurações voltar a combinar o
+  descritor WebKit com executável Chromium. Duas rodadas locais completas e consecutivas, cada uma
+  com MySQL 5.7, backend, frontend e 12 jornadas em desktop, iPhone e Pixel, passaram a partir de
+  volumes vazios.
+
+## LOOP-ACTIONS-META-PLAYWRIGHT-APT-MUTAVEL — imagem falha durante sincronização do espelho
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o run `33935575666` aprovou os 86 testes do Meta Ad Approver e falhou
+  somente no build da imagem, após quase uma hora, porque o índice `noble-updates` retornou tamanho e
+  hash divergentes durante `playwright-core install --with-deps chromium`.
+- **Causa-raiz:** a imagem instalava em tempo de build Node, dependências de navegador e Chromium a
+  partir de índices Ubuntu mutáveis. O mesmo Dockerfile ainda recebia Node 18, abaixo do Node 20
+  exigido por uma dependência do runtime. O check posterior verde apenas comprovou que o espelho se
+  estabilizou; não eliminava a dependência externa instável.
+- **Alternativas avaliadas:** repetir o build manteria a flutuação; adicionar retry reduziria a
+  frequência, mas continuaria baixando navegador e dependências sem necessidade; usar a imagem
+  oficial do Playwright compatível com o pacote fixa navegador, bibliotecas e Node. Foi escolhida a
+  terceira opção, copiando o Java 21 da imagem Temurin versionada.
+- **Correção sistêmica:** o revisor usa `mcr.microsoft.com/playwright:v1.49.0-noble`, alinhado ao
+  `playwright-core` do módulo, recebe o JRE 21 por multi-stage e deixa de executar APT ou download de
+  navegador. O runtime continua não privilegiado e expõe Chromium no caminho canônico do MCP.
+- **Prevenção:** teste de contrato bloqueia retorno de APT, instalação dinâmica do navegador, Node
+  antigo e regravação dispendiosa das camadas do Playwright. Duas rodadas consecutivas aprovaram 86
+  testes, MCP, contratos, 117 evidências, as duas imagens, Compose e a abertura real do Chromium pelo
+  usuário `10001`.

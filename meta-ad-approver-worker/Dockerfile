@@ -4,18 +4,23 @@ COPY pom.xml .
 COPY src src
 RUN mvn -q -DskipTests package
 
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:21-jre-noble AS java-runtime
+
+FROM mcr.microsoft.com/playwright:v1.49.0-noble
 ARG CODEX_VERSION=0.146.0
 WORKDIR /app
+COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk
 COPY package.json package-lock.json /app/
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates \
+RUN node --version | grep -Eq '^v2[0-9]\.' \
+    && java -version \
     && npm install -g @openai/codex@${CODEX_VERSION} \
     && npm ci --omit=dev \
-    && npx playwright-core install --with-deps chromium \
-    && ln -s "$(find /ms-playwright -type f -path '*/chrome-linux/chrome' | sort | tail -n 1)" /usr/bin/chromium \
-    && chmod -R a+rX /ms-playwright \
-    && rm -rf /var/lib/apt/lists/* \
+    && chromium_path="$(find /ms-playwright -type f -path '*/chrome-linux/chrome' | sort | tail -n 1)" \
+    && test -n "${chromium_path}" \
+    && ln -s "${chromium_path}" /usr/bin/chromium \
     && groupadd --gid 10001 approver \
     && useradd --create-home --uid 10001 --gid approver approver
 COPY --from=build /build/target/app.jar /app/app.jar

@@ -37,7 +37,7 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
-/** Finaliza vídeos brutos com legenda queimada e, quando houver roteiro, voz off e trilha leve. */
+/** Finaliza vídeo com referência visual aprovada, legenda e, quando houver roteiro, voz off. */
 @Component
 @ConditionalOnProperty(prefix = "video.providers.post-production", name = "enabled", havingValue = "true")
 public class PostProductionVideoProvider implements VideoProvider {
@@ -50,6 +50,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     private final ObjectMapper objectMapper;
     private final WebClient downloadWebClient;
     private final WebClient openAiWebClient;
+    private final ProductUgcReferenceOverlay productReferenceOverlay;
 
     /** Inicializa o provider de pós-produção com configuração e cliente de download. */
     public PostProductionVideoProvider(VideoManagementProperties properties,
@@ -69,6 +70,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
                 .build();
+        this.productReferenceOverlay =
+                new ProductUgcReferenceOverlay(properties, objectMapper, webClientBuilder);
     }
 
     /** Verifica se o job é uma etapa local de pós-produção. */
@@ -83,7 +86,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Baixa o vídeo fonte, adiciona legenda e aplica voz/trilha quando houver roteiro. */
+    /** Baixa a fonte, corrige cenas de produto e aplica legenda e voz quando houver roteiro. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -95,15 +98,21 @@ public class PostProductionVideoProvider implements VideoProvider {
         Map<String, Object> textSyncReview =
                 validateCaptionNarrationSync(metadata, captionText, voiceOverScript);
         Path source = null;
+        Path preparedSource = null;
         Path voice = null;
         Path caption = null;
         Path output = null;
         List<Map<String, Object>> ttsInteractions = List.of();
         List<ProviderFile> ttsAuditFiles = List.of();
+        Map<String, Object> productReferenceAudit = Map.of();
         try {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
-            double durationSeconds = probeDurationSeconds(source, metadata, job.id());
+            ProductUgcReferenceOverlay.OverlayResult overlay =
+                    productReferenceOverlay.apply(source, metadata, job.id());
+            preparedSource = overlay.videoFile();
+            productReferenceAudit = overlay.audit();
+            double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());
             CaptionTimeline captionTimeline;
             VoiceOverAudio voiceOverAudio = null;
             Map<String, Object> audioReview = Map.of("mode", "CAPTION_ONLY", "status", "NOT_REQUESTED");
@@ -136,7 +145,7 @@ public class PostProductionVideoProvider implements VideoProvider {
             if (voiceOverAudio != null) {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e voz premium sincronizadas");
                 runFfmpegWithVoice(
-                        source,
+                        preparedSource,
                         voice,
                         caption,
                         output,
@@ -145,7 +154,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 audioReview = reviewAudio(output, voiceOverScript, voiceOverAudio);
             } else {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda grande sem voz off");
-                runFfmpegCaptionOnly(source, caption, output);
+                runFfmpegCaptionOnly(preparedSource, caption, output);
             }
             ProviderFile video = new ProviderFile(
                     "sales-video-" + job.id() + "-musa-final.mp4",
@@ -167,7 +176,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                     audioReview,
                     textSyncReview,
                     captionTimeline,
-                    ttsInteractions);
+                    ttsInteractions,
+                    productReferenceAudit);
             progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Vídeo finalizado para venda");
             return new ProviderArtifacts(
                     "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
@@ -184,6 +194,9 @@ public class PostProductionVideoProvider implements VideoProvider {
                     "VIDEO_POST_PRODUCTION_FAILED", "Falha inesperada na pós-produção", ex);
         } finally {
             deleteIfExists(source);
+            if (preparedSource != null && !preparedSource.equals(source)) {
+                deleteIfExists(preparedSource);
+            }
             deleteIfExists(voice);
             deleteIfExists(caption);
             deleteIfExists(output);
@@ -986,7 +999,8 @@ public class PostProductionVideoProvider implements VideoProvider {
                                                Map<String, Object> audioReview,
                                                Map<String, Object> textSyncReview,
                                                CaptionTimeline captionTimeline,
-                                               List<Map<String, Object>> ttsInteractions) {
+                                               List<Map<String, Object>> ttsInteractions,
+                                               Map<String, Object> productReferenceAudit) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "MUSA_POST_PRODUCTION");
         metadata.put("provider_job_id", "post-production-" + job.id());
@@ -1013,6 +1027,9 @@ public class PostProductionVideoProvider implements VideoProvider {
                 "cue_count", captionTimeline.cues().size(),
                 "timed", captionTimeline.cues().size() > 1));
         metadata.put("caption_narration_sync", textSyncReview);
+        if (productReferenceAudit != null && !productReferenceAudit.isEmpty()) {
+            metadata.put("product_reference_overlay", productReferenceAudit);
+        }
         metadata.put("tts_interactions", ttsInteractions);
         metadata.put(
                 "tts_cost_reconciliation_status",

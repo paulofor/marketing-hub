@@ -482,6 +482,20 @@ jobs:
           echo "Nao foi possivel coletar a chave SSH da APP VPS ${APP_VPS_IP}:22 apos novas tentativas."
           exit 1
 
+      - name: Provision PDE private reading integration token
+        env:
+          PDE_INTERNAL_API_TOKEN: ${{ secrets.PDE_INTERNAL_API_TOKEN }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          set -euo pipefail
+          if [ -z "${PDE_INTERNAL_API_TOKEN}" ]; then
+            echo "Erro: configure PDE_INTERNAL_API_TOKEN no ambiente production para a leitura privada de Mira." >&2
+            exit 1
+          fi
+          printf '%s' "${PDE_INTERNAL_API_TOKEN}" \
+            | ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+                'set -euo pipefail; install -m 700 -d /root/infra/pde-private; temporary=$(mktemp /root/infra/pde-private/token.XXXXXX); trap '\''rm -f "$temporary"'\'' EXIT; chmod 600 "$temporary"; cat > "$temporary"; test -s "$temporary"; mv -f "$temporary" /root/infra/pde-private/internal_token'
+
       - name: Provision Harness Library internal signing key
         env:
           HARNESS_LIBRARY_INTERNAL_SIGNING_KEY: ${{ secrets.HARNESS_LIBRARY_INTERNAL_SIGNING_KEY }}

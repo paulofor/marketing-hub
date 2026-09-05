@@ -10,6 +10,9 @@ artefato de outra execução ativa ou evidência necessária ao diagnóstico.
 1. Imagem Docker criada apenas para teste local deve usar o namespace `aihub-homologation/` e os
    rótulos `com.marketinghub.homologation.temporary=true` e
    `com.marketinghub.homologation.session=<sessão>`.
+   A sessão faz parte do nome do repositório Docker: deve usar letras minúsculas, números e
+   separadores válidos. O timestamp automático usa `t` e `z` minúsculos; maiúsculas são recusadas
+   antes do build para evitar `invalid reference format`.
 2. O caminho canônico de build é `scripts/docker-build-temporary-image.sh`, executado dentro de
    `scripts/run-docker-homologation.sh`. O wrapper cria e bloqueia a sessão, inicia a coleta periódica e
    faz uma coleta final ao encerrar, inclusive quando o teste falha.

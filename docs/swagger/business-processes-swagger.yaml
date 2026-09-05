@@ -773,7 +773,8 @@ components:
         workspaceCode:
           type: string
           nullable: true
-          enum: [EXPERIMENT_PREFLIGHT, EXPERIMENT_ACTIVATION]
+          enum: [EXPERIMENT_PREFLIGHT, EXPERIMENT_ACTIVATION, PDE_PRIVATE_PROTOTYPE_ACCEPTANCE, PDE_PRIVATE_READING, PDE_PRIVATE_READING_ASSISTED]
+          description: A leitura assistida importa sinais pelo contrato privado do PDE; o operador confirma a observação humana sem transcrever evidência.
         workspaceReferenceId: { type: integer, format: int64, nullable: true }
         targetProcessDefinitionId:
           { type: integer, format: int64, nullable: true }

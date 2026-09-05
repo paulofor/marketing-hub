@@ -20,6 +20,7 @@ import com.marketinghub.salesvideo.mapper.SalesVideoMapper;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -46,6 +47,7 @@ public class SalesVideoJobService {
   private static final int MAX_MONTAGE_DURATION_SECONDS = 600;
   private static final int MAX_CINEMATIC_SCENES = 12;
   private static final String SHORT_DURATION_FAILURE_CODE = "RENDER_DURATION_SHORT";
+  private static final long JOB_LEASE_MINUTES = 10;
 
   private final SalesVideoJobRepository jobRepository;
   private final SalesVideoJobEventRepository eventRepository;
@@ -201,18 +203,30 @@ public class SalesVideoJobService {
         .toList();
   }
 
+  /** Reserva atomicamente um job novo ou órfão e inicia sua lease operacional. */
   @Transactional
   public SalesVideoJobDto claimJob(Long jobId, JobClaimRequest request) {
-    SalesVideoJob job = loadJob(jobId);
-    if (job.getStartedAt() == null) {
-      job.setStartedAt(Instant.now());
+    SalesVideoJob candidate = loadJob(jobId);
+    SalesVideoStatus previous = candidate.getStatus();
+    Instant claimedAt = Instant.now();
+    int claimed =
+        jobRepository.claimIfAvailable(
+            jobId,
+            SalesVideoStatus.VIDEO_REQUESTED,
+            SalesVideoStatus.VIDEO_PROCESSING,
+            claimedAt,
+            claimedAt.minus(JOB_LEASE_MINUTES, ChronoUnit.MINUTES));
+    if (claimed != 1) {
+      throw VideoModuleException.conflict(
+          VideoModuleErrorCode.JOB_CLAIM_CONFLICT,
+          "Job já reservado, concluído ou indisponível para claim: " + jobId);
     }
-    jobRepository.save(job);
+    SalesVideoJob job = loadJob(jobId);
     registerEvent(
         job,
         SalesVideoJobEventType.CLAIMED,
-        job.getStatus(),
-        job.getStatus(),
+        previous,
+        SalesVideoStatus.VIDEO_PROCESSING,
         "claim por " + request.getWorkerId(),
         request.getMessage());
     return toDto(job);
@@ -294,9 +308,15 @@ public class SalesVideoJobService {
     }
   }
 
+  /** Renova a lease do worker sem alterar o estado funcional do job. */
   @Transactional
   public SalesVideoJobDto heartbeat(Long jobId, JobHeartbeatRequest request) {
     SalesVideoJob job = loadJob(jobId);
+    if (isTerminal(job.getStatus())) {
+      return toDto(job);
+    }
+    job.setUpdatedAt(Instant.now());
+    jobRepository.save(job);
     registerEvent(
         job,
         SalesVideoJobEventType.HEARTBEAT,
@@ -307,9 +327,17 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
+  /** Registra progresso sem permitir que callback atrasado reabra um job terminal. */
   @Transactional
   public SalesVideoJobDto progress(Long jobId, JobProgressRequest request) {
     SalesVideoJob job = loadJob(jobId);
+    if (isTerminal(job.getStatus())) {
+      log.warn(
+          "Progresso atrasado ignorado para job terminal; jobId={} status={}",
+          jobId,
+          job.getStatus());
+      return toDto(job);
+    }
     if (request.getProgressPercent() != null) {
       job.setProgressPercent(Math.max(0, Math.min(100, request.getProgressPercent())));
     }
@@ -387,6 +415,18 @@ public class SalesVideoJobService {
   @Transactional
   public SalesVideoJobDto complete(Long jobId, JobCompletionRequest request) {
     SalesVideoJob job = loadJob(jobId);
+    if (isSuccessfulTerminal(job.getStatus())) {
+      if (sameCompletion(job, request)) {
+        return toDto(job);
+      }
+      throw VideoModuleException.conflict(
+          VideoModuleErrorCode.JOB_CLAIM_CONFLICT, "Job já concluído por outra execução: " + jobId);
+    }
+    if (job.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
+      throw VideoModuleException.conflict(
+          VideoModuleErrorCode.JOB_CLAIM_CONFLICT,
+          "Job já finalizado com falha; solicite novo processamento: " + jobId);
+    }
     String requestedJobMetadata = job.getMetadataJson();
     SalesVideoStatus previous = job.getStatus();
     SalesVideoStatus finalStatus =
@@ -397,6 +437,9 @@ public class SalesVideoJobService {
       finalStatus = SalesVideoStatus.VIDEO_FAILED;
       job.setFailureCode(SHORT_DURATION_FAILURE_CODE);
       job.setFailureDetail(durationValidation.message());
+    } else if (finalStatus != SalesVideoStatus.VIDEO_FAILED) {
+      job.setFailureCode(null);
+      job.setFailureDetail(null);
     }
     BigDecimal explicitCostUsd = request.getCostUsd();
     String completionMetadataJson =
@@ -523,6 +566,16 @@ public class SalesVideoJobService {
   @Transactional
   public SalesVideoJobDto fail(Long jobId, JobFailureRequest request) {
     SalesVideoJob job = loadJob(jobId);
+    if (isSuccessfulTerminal(job.getStatus())) {
+      log.warn(
+          "Falha atrasada ignorada após conclusão do vídeo; jobId={} failureCode={}",
+          jobId,
+          request.getFailureCode());
+      return toDto(job);
+    }
+    if (job.getStatus() == SalesVideoStatus.VIDEO_FAILED) {
+      return toDto(job);
+    }
     SalesVideoStatus previous = job.getStatus();
     SalesVideoStatus newStatus =
         Optional.ofNullable(request.getStatus()).orElse(SalesVideoStatus.VIDEO_FAILED);
@@ -558,6 +611,9 @@ public class SalesVideoJobService {
   @Transactional
   public SalesVideoJobDto expire(Long jobId, JobExpirationRequest request) {
     SalesVideoJob job = loadJob(jobId);
+    if (isTerminal(job.getStatus())) {
+      return toDto(job);
+    }
     SalesVideoStatus previous = job.getStatus();
     if (!StringUtils.hasText(job.getMetadataJson())) {
       job.setMetadataJson(jobCostMetadataService.enrichMetadataJson(job, null, null));
@@ -576,6 +632,30 @@ public class SalesVideoJobService {
         request.getMessage(),
         request.getDetailsJson());
     return toDto(job);
+  }
+
+  /** Identifica estados cujo resultado não pode ser regredido por callbacks atrasados. */
+  private boolean isTerminal(SalesVideoStatus status) {
+    return status == SalesVideoStatus.VIDEO_FAILED || isSuccessfulTerminal(status);
+  }
+
+  /** Identifica sucesso funcional que não pode ser substituído por uma falha atrasada. */
+  private boolean isSuccessfulTerminal(SalesVideoStatus status) {
+    return status == SalesVideoStatus.SCRIPT_READY
+        || status == SalesVideoStatus.STORYBOARD_READY
+        || status == SalesVideoStatus.VIDEO_READY
+        || status == SalesVideoStatus.PUBLISHED
+        || status == SalesVideoStatus.ARCHIVED;
+  }
+
+  /** Reconhece repetição idempotente do mesmo callback de conclusão. */
+  private boolean sameCompletion(SalesVideoJob job, JobCompletionRequest request) {
+    Long existingAssetId = job.getAsset() == null ? null : job.getAsset().getId();
+    if (existingAssetId == null && !StringUtils.hasText(job.getProviderJobId())) {
+      return false;
+    }
+    return java.util.Objects.equals(existingAssetId, request.getAssetId())
+        && java.util.Objects.equals(job.getProviderJobId(), request.getProviderJobId());
   }
 
   /** Libera a parcela não consumida e preserva custo real quando um job termina. */
@@ -941,6 +1021,11 @@ public class SalesVideoJobService {
               "experimentId",
               "campaign_key",
               "generation_strategy",
+              "targetDurationSeconds",
+              "sceneCount",
+              "assemblyRequired",
+              "runwayRouterConfigId",
+              "runwayRouterRequestsJson",
               "cut_plan",
               "post_production",
               "technicalQualityGate",
@@ -954,6 +1039,7 @@ public class SalesVideoJobService {
                   target.put(field, source.get(field));
                 }
               });
+      reconcilePostProductionTechnicalGate(source, target);
     } catch (JsonProcessingException ex) {
       log.error(
           "Falha ao preservar linhagem governada na pós-produção; sourceJobId={}",
@@ -963,6 +1049,26 @@ public class SalesVideoJobService {
           VideoModuleErrorCode.BAD_REQUEST,
           "Metadata do vídeo fonte não permite preservar a linhagem do experimento.");
     }
+  }
+
+  /** Faz o contrato filho refletir a estabilidade já auditada no arquivo Product UGC fonte. */
+  private void reconcilePostProductionTechnicalGate(JsonNode source, Map<String, Object> target) {
+    JsonNode audit = source.path("apollo_technical_quality");
+    if (!"RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION"
+            .equalsIgnoreCase(source.path("generation_strategy").asText())
+        || !"APPROVED".equalsIgnoreCase(audit.path("stability_status").asText())
+        || !audit.path("method").asText().startsWith("FFMPEG_SCENE_AWARE_")) {
+      return;
+    }
+    ObjectNode gate =
+        source.path("technicalQualityGate").isObject()
+            ? ((ObjectNode) source.path("technicalQualityGate")).deepCopy()
+            : objectMapper.createObjectNode();
+    boolean cutsAllowed = audit.path("intentional_scene_cuts_allowed").asBoolean(false);
+    gate.put("continuousTakeRequired", !cutsAllowed);
+    gate.put("intentionalSceneCutsAllowed", cutsAllowed);
+    gate.put("maximumSceneCuts", audit.path("maximum_scene_cuts").asInt(0));
+    target.put("technicalQualityGate", gate);
   }
 
   /** Monta snapshot de auditoria para rastrear a origem do vídeo finalizado. */
@@ -1240,6 +1346,11 @@ public class SalesVideoJobService {
     if (StringUtils.hasText(job.getMetadataJson())) {
       try {
         JsonNode metadata = objectMapper.readTree(job.getMetadataJson());
+        if ("RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION"
+                .equalsIgnoreCase(metadata.path("generation_strategy").asText(""))
+            && metadata.path("targetDurationSeconds").asInt(0) > 0) {
+          return metadata.path("targetDurationSeconds").asInt();
+        }
         if ("SCENE_BY_SCENE_MONTAGE"
                 .equalsIgnoreCase(metadata.path("generation_strategy").asText(""))
             && metadata.path("scene").isObject()) {

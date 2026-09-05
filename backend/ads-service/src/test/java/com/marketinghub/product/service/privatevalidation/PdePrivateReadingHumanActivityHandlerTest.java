@@ -11,6 +11,7 @@ import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.privatereading.service.PdePrivateReadingService;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +24,8 @@ class PdePrivateReadingHumanActivityHandlerTest {
   private final BusinessProcessActivityInstanceRepository instances =
       mock(BusinessProcessActivityInstanceRepository.class);
   private final PdePrivateReadingHumanActivityHandler handler =
-      new PdePrivateReadingHumanActivityHandler(instances, json);
+      new PdePrivateReadingHumanActivityHandler(
+          instances, json, mock(PdePrivateReadingService.class));
 
   /** Libera a primeira leitura quando produto, referência e cinco sinais estão congelados. */
   @Test

@@ -95,7 +95,7 @@ public class ApolloStoryboardPlanner {
         return withMetadata(job, enriched.toString());
     }
 
-    /** Aprova a receita contínua pinada sem inventar cortes ou realizar outra chamada de IA. */
+    /** Aprova a receita pinada com poucos planos estáveis sem realizar outra chamada de IA. */
     private SalesVideoJob approveProductUgc(
             SalesVideoJob job, JsonNode metadata, ProgressCallback progressCallback) {
         progressCallback.onProgress(
@@ -119,7 +119,7 @@ public class ApolloStoryboardPlanner {
         audit.put("recipe", "product_ugc");
         audit.put("version", "2026-06");
         audit.put("researchApplicationRationale",
-                "Cartões de vídeo e prazer audiovisual orientam tomada contínua, ritmo, clareza e recompensa sensorial.");
+                "Cartões de vídeo e prazer audiovisual orientam planos estáveis, ritmo, clareza e recompensa sensorial.");
         ArrayNode cards = audit.putArray("appliedCardIds");
         apolloResearchCards(metadata).forEach(cards::add);
         ObjectNode enriched = metadata.deepCopy();
@@ -138,7 +138,7 @@ public class ApolloStoryboardPlanner {
         return withMetadata(job, enriched.toString());
     }
 
-    /** Confere a receita, a tomada única, as referências, a copy única e as revisões exigidas. */
+    /** Confere a receita, os cortes limitados, as referências, a copy única e as revisões exigidas. */
     private String productUgcIssue(JsonNode metadata) {
         if (!"product_ugc@2026-06".equals(metadata.path("runwayRouterConfigId").asText())
                 || !"RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION"
@@ -147,10 +147,12 @@ public class ApolloStoryboardPlanner {
                 || metadata.path("targetDurationSeconds").asInt() > 15
                 || metadata.path("sceneCount").asInt() != 1
                 || metadata.path("assemblyRequired").asBoolean(true)) {
-            return "receita, duração ou tomada única divergentes";
+            return "receita, duração ou requisição única divergentes";
         }
         JsonNode gate = metadata.path("technicalQualityGate");
-        if (!gate.path("continuousTakeRequired").asBoolean(false)
+        if (gate.path("continuousTakeRequired").asBoolean(true)
+                || !gate.path("intentionalSceneCutsAllowed").asBoolean(false)
+                || gate.path("maximumSceneCuts").asInt() != 4
                 || !gate.path("captionMustMatchNarration").asBoolean(false)
                 || !gate.path("forbidMirrorOrReflection").asBoolean(false)
                 || gate.path("maximumMeanMotionDelta").decimalValue()

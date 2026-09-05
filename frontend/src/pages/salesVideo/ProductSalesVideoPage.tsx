@@ -170,12 +170,18 @@ export default function ProductSalesVideoPage() {
     () => jobList.filter(isExistingVideoJob),
     [jobList],
   );
+  const postProductionSourceJobs = useMemo(
+    () => jobList.filter(isPostProductionSourceJob),
+    [jobList],
+  );
   const selectedVideoJob = useMemo(() => {
     if (selectedJobId) {
-      return existingVideoJobs.find((job) => String(job.id) === selectedJobId);
+      return postProductionSourceJobs.find(
+        (job) => String(job.id) === selectedJobId,
+      );
     }
-    return existingVideoJobs[0];
-  }, [existingVideoJobs, selectedJobId]);
+    return postProductionSourceJobs[0];
+  }, [postProductionSourceJobs, selectedJobId]);
   const { data: selectedVideoAsset } = useAsset(
     selectedVideoJob?.assetId ?? undefined,
   );
@@ -277,18 +283,20 @@ export default function ProductSalesVideoPage() {
   );
 
   useEffect(() => {
-    if (!selectedJobId && existingVideoJobs.length > 0) {
-      setSelectedJobId(String(existingVideoJobs[0].id));
+    if (!selectedJobId && postProductionSourceJobs.length > 0) {
+      setSelectedJobId(String(postProductionSourceJobs[0].id));
     }
     if (
       selectedJobId &&
-      !existingVideoJobs.some((job) => String(job.id) === selectedJobId)
+      !postProductionSourceJobs.some((job) => String(job.id) === selectedJobId)
     ) {
       setSelectedJobId(
-        existingVideoJobs[0] ? String(existingVideoJobs[0].id) : "",
+        postProductionSourceJobs[0]
+          ? String(postProductionSourceJobs[0].id)
+          : "",
       );
     }
-  }, [existingVideoJobs, selectedJobId]);
+  }, [postProductionSourceJobs, selectedJobId]);
 
   useEffect(() => {
     setMontageJobIds((current) =>
@@ -681,12 +689,12 @@ export default function ProductSalesVideoPage() {
               <strong>Vídeos cadastrados</strong>
             </div>
             <div className="product-video-page__profile-list">
-              {existingVideoJobs.length === 0 ? (
+              {postProductionSourceJobs.length === 0 ? (
                 <p className="product-video-page__empty">
                   Nenhum vídeo pronto encontrado para este produto.
                 </p>
               ) : (
-                existingVideoJobs.map((job) => {
+                postProductionSourceJobs.map((job) => {
                   const profile = findProfile(profileList, job.profileId);
                   const objective = describeVideoObjective(profile, job);
                   const visualQuality = assessVideoVisualQuality(profile, job);
@@ -1315,7 +1323,7 @@ export default function ProductSalesVideoPage() {
                 onClick={handleRequestPostProduction}
                 disabled={
                   !selectedVideoJob ||
-                  !isExistingVideoJob(selectedVideoJob) ||
+                  !isPostProductionSourceJob(selectedVideoJob) ||
                   !selectedVideoSourceUrl ||
                   requestPostProduction.isPending
                 }
@@ -1478,6 +1486,16 @@ function isExistingVideoJob(job: SalesVideoJob) {
   return (
     job.status === "VIDEO_READY" &&
     (Boolean(job.streamPlaybackUrl?.trim()) || Boolean(job.assetId))
+  );
+}
+
+/** Permite finalizar o render curto preservado sem liberar outras falhas técnicas. */
+export function isPostProductionSourceJob(job: SalesVideoJob) {
+  return (
+    isExistingVideoJob(job) ||
+    (job.status === "VIDEO_FAILED" &&
+      job.failureCode === "RENDER_DURATION_SHORT" &&
+      Boolean(job.assetId))
   );
 }
 

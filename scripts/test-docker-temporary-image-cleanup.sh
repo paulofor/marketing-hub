@@ -96,6 +96,25 @@ grep -F 'build --label com.marketinghub.homologation.temporary=true' "$calls_fil
 grep -F -- '--label com.marketinghub.homologation.session=build-session' "$calls_file" >/dev/null
 grep -F -- '--tag aihub-homologation/build-session/backend:round-1' "$calls_file" >/dev/null
 
+for invalid_session in 'session-20260905T080631Z' 'bad..session' 'bad--session'; do
+  if PATH="$test_tmp_dir/bin:$PATH" DOCKER_DOUBLE_CALLS="$calls_file" \
+    AIHUB_HOMOLOGATION_SESSION="$invalid_session" \
+    bash "$test_root/scripts/docker-build-temporary-image.sh" backend . >/dev/null 2>&1; then
+    echo "O build aceitou sessão incompatível com nome de repositório Docker." >&2
+    exit 1
+  fi
+done
+
+printf '#!/usr/bin/env bash\nexit 0\n' > "$test_tmp_dir/cleanup-noop"
+chmod +x "$test_tmp_dir/cleanup-noop"
+# A expansão pertence ao shell filho, após o wrapper gerar a sessão.
+# shellcheck disable=SC2016
+env -u AIHUB_HOMOLOGATION_SESSION \
+  AIHUB_DOCKER_CLEANUP_SCRIPT="$test_tmp_dir/cleanup-noop" \
+  AIHUB_HOMOLOGATION_SESSION_DIR="$test_tmp_dir/sessions" \
+  bash "$test_root/scripts/run-docker-homologation.sh" bash -c \
+    '[[ "$AIHUB_HOMOLOGATION_SESSION" =~ ^[a-z0-9]+([._-][a-z0-9]+)*$ ]]' >/dev/null
+
 if PATH="$test_tmp_dir/bin:$PATH" DOCKER_DOUBLE_CALLS="$calls_file" \
   AIHUB_HOMOLOGATION_SESSION="../unsafe" \
   bash "$test_root/scripts/docker-build-temporary-image.sh" backend . \

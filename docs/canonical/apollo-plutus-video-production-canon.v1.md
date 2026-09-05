@@ -114,6 +114,28 @@ Por decisão comercial de 2026-08-13, Apolo não pode selecionar Luma para o MUS
 
 A duração máxima gerada pelo provider não define a duração dos cortes exibidos. Antes de consumir créditos, Apolo deve persistir no Estúdio um plano de cortes com função comercial, duração e objetivo visual por tomada; o executor agrupa esses cortes em clipes compatíveis com a capacidade específica do modelo e a pós-produção realiza a montagem. Texto, legenda, interface, preço e CTA são overlays determinísticos de pós-produção e não podem ser delegados ao modelo de vídeo. A tela deve mostrar separadamente quantidade de clipes cobrados, duração máxima por clipe e quantidade de cortes editoriais.
 
+Na receita Runway Product UGC, uma requisição faturável não equivale a uma tomada física única. A
+receita pode montar até quatro cortes editoriais dentro do mesmo arquivo. O contrato deve limitar
+explicitamente essa quantidade e o gate técnico deve detectar as transições, excluí-las do cálculo
+de tremor e medir estabilidade dentro de cada plano. Uma política que exigir tomada realmente única
+deve reprovar qualquer corte com causa de continuidade própria; nunca classificar a transição
+editorial como tremor nem ampliar os limites de movimento para fazê-la passar.
+
+Texto ou interface renderizados pelo provider de vídeo nunca são fonte de verdade, mesmo quando a
+referência enviada contém a tela correta. Quando o contrato declarar `DETERMINISTIC_OVERLAY` e
+proibir texto embutido, a pós-produção deve detectar os planos de produto e substituí-los pela
+referência HTTPS que passou pelo preflight. O job deve preservar URL, SHA-256, tempos dos cortes e
+planos substituídos. É proibido liberar como premium uma interface com palavras inventadas, erro
+ortográfico ou CTA divergente apenas porque movimento, resolução e áudio passaram nos gates.
+
+O claim de um job de vídeo deve ser atômico: o backend altera `VIDEO_REQUESTED` para
+`VIDEO_PROCESSING` na mesma operação, aceita retomada somente após dez minutos sem heartbeat e
+recusa workers concorrentes com conflito. Heartbeat renova a lease. Depois de qualquer estado final
+de sucesso (`SCRIPT_READY`, `STORYBOARD_READY`, `VIDEO_READY`, `PUBLISHED` ou `ARCHIVED`), callbacks
+atrasados de progresso, conclusão, expiração ou falha não podem regredir o resultado; repetição da
+mesma conclusão só é idempotente quando asset ou identificador do provider comprovam sua identidade,
+e conclusão divergente é recusada.
+
 Por decisão comercial de 2026-08-13, todo render pago de ciclo autônomo deve passar por um planejador de IA de Apolo antes do provider. A IA atua como diretora criativa: transforma o contexto persistido em storyboard estruturado, mas não possui autoridade para aprovar custo, repetir geração ou publicar. O executor valida deterministicamente quantidade e duração dos cortes, diversidade visual, cobertura de dor, resultado, mecanismo e CTA, ausência de texto embutido e custo previsto contra o teto aprovado por Plutus. Ausência de credencial, resposta inválida, redundância ou orçamento excedido bloqueia o provider. Request e response brutos, modelo, plano, custo previsto e decisão do gate devem permanecer auditáveis no job e visíveis no storyboard do Estúdio.
 
 Por decisão comercial de 2026-08-14, novo crédito só pode ser consumido depois de roteiro aprovado com gancho e CTA, duração compatível com a capacidade do modelo, plano de pelo menos cinco cortes e arco narrativo progressivo de gancho até CTA. Cada corte deve declarar fase narrativa e âncora de continuidade; o gate bloqueia retrocesso da história, ausência de prova, quebra de continuidade ou retorno ao plano legado de clipes fixos de dez segundos. A qualidade do modelo de planejamento não substitui esse gate e nenhuma sessão ou API de IA pode repetir gasto automaticamente.

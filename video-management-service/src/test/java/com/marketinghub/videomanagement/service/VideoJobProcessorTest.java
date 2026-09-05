@@ -36,6 +36,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,6 +65,9 @@ class VideoJobProcessorTest {
     @Mock
     private ApolloGovernedLearningReporter learningReporter;
 
+    @Mock
+    private ProductUgcPostProductionContractResolver productUgcContractResolver;
+
     @Captor
     private ArgumentCaptor<JobCompletionPayload> completionCaptor;
 
@@ -86,7 +90,11 @@ class VideoJobProcessorTest {
                 new ObjectMapper(),
                 apolloStoryboardPlanner,
                 learningReporter,
-                new ApolloTechnicalVideoQualityGate(new ObjectMapper(), properties));
+                new ApolloTechnicalVideoQualityGate(new ObjectMapper(), properties),
+                productUgcContractResolver);
+        lenient()
+                .when(productUgcContractResolver.resolve(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     /** Conclui o job e envia os ativos quando provider e gate retornam sucesso. */

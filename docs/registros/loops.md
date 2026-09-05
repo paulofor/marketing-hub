@@ -3415,6 +3415,31 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   caracteres sob a flag `v` do padrão HTML atual. A expressão passa a representar o hífen fora da
   classe e o teste do painel fixa o valor compatível, impedindo validação silenciosamente ignorada.
 
+## LOOP-MIRA-LEITURA-MANUAL-SEM-ACESSO — operador transcreve sinais sem caminho para o protótipo
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** após aceitar o protótipo, Mira permaneceu em 5/10 atividades. A primeira
+  leitura exigia código manual, sinais e referência de evidência, mas não mostrava a URL aceita.
+  MCP confirmou cinco eventos `QA_INTERNAL` e nenhum `PRIVATE_READING`; a falta de leitura humana
+  não pode ser resolvida repetindo QA ou marcando os campos como positivos.
+- **Causa-raiz:** o formulário genérico aceitava declarações manuais, enquanto o protótipo já
+  conhecia participante, consentimento e eventos. Faltava um contrato autenticado para transportar
+  essa prova à atividade e um acesso visível ao protótipo na mesma tela.
+- **Correção local:** assistente de três passos com URL aceita, instruções para o convite individual,
+  importação de prova e uma confirmação humana explícita. Observação é opcional. O backend reconsulta
+  a prova antes de gravar; sinal forjado, QA, outra pessoa/versão, leitura aberta ou integração
+  indisponível bloqueiam. Respostas negativas são preservadas sem aprovação do gate.
+- **Defeitos encontrados na homologação:** navegação apenas pelo fragmento não remontava React e
+  podia manter a primeira sessão ao abrir o segundo convite. O novo convite agora reinicializa a
+  página sem enviar o fragmento ao servidor; retomada restaura a entrada persistida. A consulta
+  interna declara explicitamente o nome do parâmetro de rota, sem depender de `-parameters`.
+- **Prevenção:** testes de contrato do handler/serviço, MockMvc real da rota, formulário React e
+  integração PDE/MySQL 5.7 com desktop, iPhone e Pixel. Incluem falha de rede após salvar entrada,
+  troca de convite na mesma aba, negativas, congelamento da prova e segregação de QA.
+- **Limite:** implementação local não equivale a leitura humana concluída nem a publicação.
+  Ver [cânone](../canonical/mira-leitura-privada-canon.v1.md) e
+  [matriz e resultados](../homologacao/mira-primeira-leitura-assistida-v1.md).
+
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 
 - **Data:** 2026-09-02.
@@ -3826,3 +3851,64 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   antigo e regravação dispendiosa das camadas do Playwright. Duas rodadas consecutivas aprovaram 86
   testes, MCP, contratos, 117 evidências, as duas imagens, Compose e a abertura real do Chromium pelo
   usuário `10001`.
+
+## LOOP-VIDEO-PRODUCT-UGC-CORTE-TRATADO-COMO-TREMOR — transição reprova planos estáveis
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o ciclo #11 do experimento #91 liquidou uma única geração Product UGC de
+  648 créditos, mas o job #21232 foi reprovado com média 1,306 e pico 54,705 no gate de tremor.
+- **Causa-raiz confirmada no arquivo, contrato e documentação oficial:** o MP4 possui três cortes
+  editoriais nítidos, nos quadros 132, 183 e 258. Todos os picos vieram do corte e do quadro imediato;
+  dentro dos quatro planos, média 0,544 e pico 5,112 ficaram abaixo dos limites. O código comparava
+  movimentos de quadros pertencentes a cenas diferentes e o briefing tratava uma requisição da
+  receita Product UGC como se garantisse uma tomada física única.
+- **Alternativas avaliadas:** repetir a mesma chamada consumiria mais créditos sem remover a
+  contradição; ampliar o limite esconderia tremor real; limitar cortes, detectá-los e medir cada
+  plano preserva qualidade e o material já pago. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** Product UGC passa a permitir no máximo quatro cortes intencionais. O gate
+  usa `scdet`, exclui apenas a transição e o quadro de recomposição e mantém os mesmos limites dentro
+  dos planos. Quando outro contrato exigir tomada única, qualquer corte recebe reprovação específica.
+- **Prevenção:** testes cobrem plano estável, tremor interno, corte permitido, excesso de cortes e
+  corte proibido por tomada única; a matriz registra frames, métricas, custo, hash e proibição de
+  retentativa paga automática.
+
+## LOOP-VIDEO-JOB-CLAIM-NAO-EXCLUSIVO — callback tardio sobrescreve vídeo concluído
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o worker produtivo e o worker local assumiram o job #21234 com um segundo
+  de diferença. A execução local concluiu e anexou os assets; depois, a falha do worker antigo mudou
+  o mesmo job de `VIDEO_READY` para `VIDEO_FAILED`.
+- **Causa-raiz confirmada no histórico e no código:** o endpoint de claim preenchia `startedAt` e
+  gravava um evento, mas mantinha `VIDEO_REQUESTED`. O polling continuava oferecendo a mesma linha e
+  callbacks não verificavam se o estado já era terminal.
+- **Alternativas avaliadas:** parar manualmente um worker não previne recorrência; serializar todo o
+  módulo reduz vazão; claim atômico por linha, lease renovada e estados terminais monotônicos resolvem
+  a causa sem acoplar executores. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** o backend muda atomicamente `VIDEO_REQUESTED` para `VIDEO_PROCESSING`,
+  admite retomada apenas após dez minutos sem heartbeat, devolve conflito ao concorrente e ignora
+  falha, expiração ou progresso atrasados depois de qualquer sucesso terminal. Conclusões repetidas
+  só são aceitas quando asset ou identificador do provider permitem comprovar que são idênticas;
+  conclusão divergente nunca regride `SCRIPT_READY`, `STORYBOARD_READY`, `VIDEO_READY`, `PUBLISHED`
+  ou `ARCHIVED`.
+- **Prevenção:** testes cobrem claim exclusivo, conflito do segundo worker, falha tardia, repetição
+  idempotente identificável, callback divergente em todos os estados finais e conclusão sem identidade;
+  o worker já interpreta HTTP 409 como disputa esperada e não chama provider.
+
+## LOOP-VIDEO-PROVIDER-INVENTA-COPY-DA-INTERFACE — arquivo técnico passa com texto falso
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o Product UGC do experimento #91 preservou cores e composição da tela MUSA,
+  mas inventou textos pequenos e exibiu `Más intenção`, apesar da instrução para não reescrever a
+  referência.
+- **Causa-raiz confirmada no arquivo real:** modelo generativo de vídeo não preserva tipografia e
+  palavras com fidelidade determinística. O gate media estabilidade, duração, áudio e sincronismo da
+  legenda principal, mas não comparava todo o texto existente dentro dos pixels do produto.
+- **Alternativas avaliadas:** repetir a Runway gastaria outros 648 créditos sem garantia; aceitar o
+  texto reduziria confiança; substituir somente os planos de produto pela referência aprovada mantém
+  o material humano gerado e garante copy exata. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** quando o contrato proíbe texto do provider, a pós-produção detecta cortes,
+  troca os planos alternados de produto pela imagem HTTPS auditada e grava URL, hash, tempos e planos
+  substituídos. O script de recuperação usa o mesmo princípio sem nova chamada ao provider.
+- **Prevenção:** testes de contrato verificam download único da referência, planos 2 e 4, expressão
+  temporal do ffmpeg, hash e bypass para outras receitas; a homologação exige inspeção visual do
+  arquivo final, e não apenas métricas técnicas.

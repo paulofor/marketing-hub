@@ -11,7 +11,7 @@ image_name="$1"
 shift
 image_tag="${AIHUB_HOMOLOGATION_IMAGE_TAG:-latest}"
 
-if ! [[ "$homologation_session" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$ ]]; then
+if ! [[ "$homologation_session" =~ ^[a-z0-9]+([._-][a-z0-9]+)*$ ]] || [[ ${#homologation_session} -gt 128 ]]; then
   echo "AIHUB_HOMOLOGATION_SESSION deve identificar uma sessão segura e ativa." >&2
   exit 2
 fi

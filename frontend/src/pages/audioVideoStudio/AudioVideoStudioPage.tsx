@@ -957,9 +957,9 @@ const vega91Briefing: StudioBriefing = {
   captionPlan:
     "Você se arruma, mas sente que falta presença? | O MUSA usa IA para criar um plano pessoal de sete dias com suas roupas. | Faça o diagnóstico gratuito.",
   editingNotes:
-    "Tomada contínua estável, sem espelho, celular refletido ou texto gerado. Apolo adiciona voz, legenda e CTA a partir da mesma fonte após o gate de tremor.",
+    "Até quatro planos editoriais estáveis, sem espelho, celular refletido ou texto gerado. Apolo mede tremor dentro de cada plano e adiciona voz, legenda e CTA a partir da mesma fonte.",
   qualityGate:
-    "Aprovar somente com tomada contínua sem tremor, apresentadora e tela naturais, texto exibido idêntico à narração, áudio compreensível, CTA claro e revisões independentes de Psique, Têmis e humano.",
+    "Aprovar somente com no máximo quatro cortes intencionais, planos sem tremor, apresentadora e tela naturais, texto exibido idêntico à narração, áudio compreensível, CTA claro e revisões independentes de Psique, Têmis e humano.",
 };
 
 function researchAuthorityLabel(authority: string) {

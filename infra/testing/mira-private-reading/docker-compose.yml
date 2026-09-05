@@ -1,0 +1,47 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: mira_local
+      MYSQL_ROOT_PASSWORD: mira-local-root
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pmira-local-root"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - mysql-data:/var/lib/mysql
+  mira-backend:
+    image: ${MIRA_LOCAL_BACKEND_IMAGE:?Execute pelo runner local versionado}
+    command: ["java", "-Xmx384m", "-jar", "/app/app.jar"]
+    ports:
+      - "18096:8096"
+    volumes:
+      - pde-data:/data/pde
+    environment:
+      PDE_ACCESS_JDBC_URL: jdbc:mysql://mysql:3306/mira_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      PDE_ACCESS_JDBC_USERNAME: root
+      PDE_ACCESS_JDBC_PASSWORD: mira-local-root
+      PDE_ACCESS_REQUIRE_JDBC: "true"
+      PDE_MARKETING_HUB_BASE_URL: ""
+      PDE_INTERNAL_API_TOKEN: mira-local-internal
+      PDE_MIRA_PRIVATE_ACCESS_1: mira-local-human-one
+      PDE_MIRA_PRIVATE_ACCESS_2: mira-local-human-two
+      PDE_MIRA_PRIVATE_QA_TOKEN: mira-local-qa
+      PDE_SMTP_HOST: sandbox-mail
+      PDE_SMTP_PORT: 1025
+      PDE_MAIL_FROM: teste+mira@sandbox.local
+    depends_on:
+      mysql:
+        condition: service_healthy
+  mira-frontend:
+    image: ${MIRA_LOCAL_FRONTEND_IMAGE:?Execute pelo runner local versionado}
+    ports:
+      - "18076:80"
+    environment:
+      PDE_BACKEND_UPSTREAM: mira-backend:8096
+    depends_on:
+      - mira-backend
+volumes:
+  mysql-data:
+  pde-data:

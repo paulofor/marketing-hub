@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
@@ -22,6 +24,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoRetryReason;
 import com.marketinghub.salesvideo.SalesVideoScript;
 import com.marketinghub.salesvideo.SalesVideoStatus;
+import com.marketinghub.salesvideo.dto.JobClaimRequest;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
 import com.marketinghub.salesvideo.dto.RequestSalesVideoMontageRequest;
@@ -100,6 +103,184 @@ class SalesVideoJobServiceTest {
 
     assertThat(result).hasSize(1).first().extracting(SalesVideoJobDto::getId).isEqualTo(55L);
     assertThat(result.get(0).getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
+  }
+
+  /** Reserva o job uma única vez e publica a transição canônica para processamento. */
+  @Test
+  void shouldClaimJobAtomically() {
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(21234L)
+            .tenantId("default")
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .build();
+    JobClaimRequest request = new JobClaimRequest();
+    request.setWorkerId("video-worker-a");
+    given(jobRepository.findById(21234L)).willReturn(Optional.of(job));
+    given(
+            jobRepository.claimIfAvailable(
+                eq(21234L),
+                eq(SalesVideoStatus.VIDEO_REQUESTED),
+                eq(SalesVideoStatus.VIDEO_PROCESSING),
+                any(Instant.class),
+                any(Instant.class)))
+        .willAnswer(
+            invocation -> {
+              job.setStatus(SalesVideoStatus.VIDEO_PROCESSING);
+              job.setStartedAt(invocation.getArgument(3));
+              return 1;
+            });
+
+    SalesVideoJobDto result = service.claimJob(21234L, request);
+
+    assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_PROCESSING);
+    assertThat(result.getStartedAt()).isNotNull();
+    verify(eventRepository).save(any());
+  }
+
+  /** Recusa um segundo worker enquanto a lease do primeiro ainda está vigente. */
+  @Test
+  void shouldRejectDuplicateClaim() {
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(21234L)
+            .tenantId("default")
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .build();
+    JobClaimRequest request = new JobClaimRequest();
+    request.setWorkerId("video-worker-b");
+    given(jobRepository.findById(21234L)).willReturn(Optional.of(job));
+
+    VideoModuleException error =
+        assertThrows(VideoModuleException.class, () -> service.claimJob(21234L, request));
+
+    assertThat(error.getStatus().value()).isEqualTo(409);
+    assertThat(error.getErrorCode().name()).isEqualTo("JOB_CLAIM_CONFLICT");
+    verify(eventRepository, never()).save(any());
+  }
+
+  /** Preserva o vídeo pronto quando uma execução concorrente reporta falha atrasada. */
+  @Test
+  void shouldIgnoreLateFailureAfterVideoReady() {
+    Asset finalAsset = Asset.builder().id(2773L).build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(21234L)
+            .tenantId("default")
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .asset(finalAsset)
+            .build();
+    JobFailureRequest request = new JobFailureRequest();
+    request.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    request.setFailureCode("APOLLO_VIDEO_STABILITY_REJECTED");
+    request.setFailureDetail("Callback atrasado do worker antigo.");
+    given(jobRepository.findById(21234L)).willReturn(Optional.of(job));
+
+    SalesVideoJobDto result = service.fail(21234L, request);
+
+    assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+    assertThat(result.getAssetId()).isEqualTo(2773L);
+    assertThat(result.getFailureCode()).isNull();
+    verify(jobRepository, never()).save(any());
+    verify(eventRepository, never()).save(any());
+  }
+
+  /** Aceita como idempotente apenas a repetição identificável da mesma conclusão de vídeo. */
+  @Test
+  void shouldAcceptIdenticalCompletionAfterVideoReady() {
+    Asset finalAsset = Asset.builder().id(2780L).build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(21234L)
+            .tenantId("default")
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .providerJobId("post-production-21234-approved-reference")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .asset(finalAsset)
+            .build();
+    JobCompletionRequest request = new JobCompletionRequest();
+    request.setStatus(SalesVideoStatus.VIDEO_READY);
+    request.setAssetId(2780L);
+    request.setProviderJobId("post-production-21234-approved-reference");
+    given(jobRepository.findById(21234L)).willReturn(Optional.of(job));
+
+    SalesVideoJobDto result = service.complete(21234L, request);
+
+    assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+    assertThat(result.getAssetId()).isEqualTo(2780L);
+    verify(jobRepository, never()).save(any());
+    verify(eventRepository, never()).save(any());
+  }
+
+  /** Recusa conclusão tardia divergente em qualquer estado final de sucesso. */
+  @Test
+  void shouldRejectDivergentCompletionAcrossSuccessfulTerminalStates() {
+    List<SalesVideoStatus> terminalStatuses =
+        List.of(
+            SalesVideoStatus.SCRIPT_READY,
+            SalesVideoStatus.STORYBOARD_READY,
+            SalesVideoStatus.VIDEO_READY,
+            SalesVideoStatus.PUBLISHED,
+            SalesVideoStatus.ARCHIVED);
+
+    for (int index = 0; index < terminalStatuses.size(); index++) {
+      long jobId = 22000L + index;
+      SalesVideoJob job =
+          SalesVideoJob.builder()
+              .id(jobId)
+              .tenantId("default")
+              .jobType(SalesVideoJobType.POST_PRODUCTION)
+              .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+              .providerJobId("provider-original-" + index)
+              .status(terminalStatuses.get(index))
+              .asset(Asset.builder().id(2800L + index).build())
+              .build();
+      JobCompletionRequest request = new JobCompletionRequest();
+      request.setAssetId(2900L + index);
+      request.setProviderJobId("provider-atrasado-" + index);
+      given(jobRepository.findById(jobId)).willReturn(Optional.of(job));
+
+      VideoModuleException error =
+          assertThrows(VideoModuleException.class, () -> service.complete(jobId, request));
+
+      assertThat(error.getStatus().value()).isEqualTo(409);
+      assertThat(error.getErrorCode().name()).isEqualTo("JOB_CLAIM_CONFLICT");
+    }
+    verify(jobRepository, never()).save(any());
+    verify(eventRepository, never()).save(any());
+  }
+
+  /** Recusa repetição sem asset ou identificador do provider, pois não há prova de idempotência. */
+  @Test
+  void shouldRejectUnidentifiableCompletionAfterScriptReady() {
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(22010L)
+            .tenantId("default")
+            .jobType(SalesVideoJobType.SCRIPT)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .status(SalesVideoStatus.SCRIPT_READY)
+            .build();
+    JobCompletionRequest request = new JobCompletionRequest();
+    request.setStatus(SalesVideoStatus.SCRIPT_READY);
+    given(jobRepository.findById(22010L)).willReturn(Optional.of(job));
+
+    VideoModuleException error =
+        assertThrows(VideoModuleException.class, () -> service.complete(22010L, request));
+
+    assertThat(error.getStatus().value()).isEqualTo(409);
+    assertThat(error.getErrorCode().name()).isEqualTo("JOB_CLAIM_CONFLICT");
+    verify(jobRepository, never()).save(any());
+    verify(eventRepository, never()).save(any());
   }
 
   /** Bloqueia clipe bruto silencioso mesmo quando o provider concluiu o render. */
@@ -506,6 +687,117 @@ class SalesVideoJobServiceTest {
     verify(completedRenderAssetSync)
         .syncFailedRender(
             org.mockito.Mockito.eq(job), org.mockito.Mockito.any(JobFailureRequest.class));
+  }
+
+  /** Usa a duração contratada da receita Product UGC em vez do alvo legado do perfil. */
+  @Test
+  void shouldAcceptProductUgcUsingPinnedRecipeDuration() {
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(57L)
+            .targetDurationSeconds(22)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(21232L)
+            .profile(profile)
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("RUNWAY_PRODUCT_UGC")
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .failureCode("RENDER_DURATION_SHORT")
+            .failureDetail("Contrato legado comparou o render com 22 segundos.")
+            .metadataJson(
+                "{\"generation_strategy\":\"RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION\","
+                    + "\"targetDurationSeconds\":15}")
+            .build();
+    JobCompletionRequest request = new JobCompletionRequest();
+    request.setStatus(SalesVideoStatus.VIDEO_READY);
+    request.setMetadataJson("{\"duration_seconds\":15,\"resolution\":\"1080x1920\"}");
+    given(jobRepository.findById(21232L)).willReturn(Optional.of(job));
+    given(jobRepository.save(job)).willReturn(job);
+
+    SalesVideoJobDto result = service.complete(21232L, request);
+
+    assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+    assertThat(job.getFailureCode()).isNull();
+    assertThat(job.getFailureDetail()).isNull();
+    verify(completedRenderAssetSync)
+        .syncCompletedRender(
+            org.mockito.Mockito.eq(job),
+            org.mockito.Mockito.eq(request),
+            org.mockito.Mockito.eq(15),
+            org.mockito.Mockito.eq("1080x1920"));
+  }
+
+  /** Restaura no job filho a duração e a política de cortes já auditadas no Product UGC. */
+  @Test
+  void shouldPreserveAuditedProductUgcContractForPostProduction() throws Exception {
+    TenantContextHolder.set(new TenantContext("tenant-a", "seller@example.com", false));
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(57L)
+            .tenantId("tenant-a")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .build();
+    SalesVideoJob sourceJob =
+        SalesVideoJob.builder()
+            .id(21232L)
+            .profile(profile)
+            .tenantId("tenant-a")
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("RUNWAY_PRODUCT_UGC")
+            .executionMode(SalesVideoExecutionMode.TEST)
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://cdn.example.com/vega-91-raw.mp4")
+            .metadataJson(
+                """
+                {
+                  "experimentId":91,
+                  "generation_strategy":"RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION",
+                  "targetDurationSeconds":15,
+                  "sceneCount":1,
+                  "assemblyRequired":false,
+                  "technicalQualityGate":{
+                    "continuousTakeRequired":true,
+                    "maximumMeanMotionDelta":1.25,
+                    "maximumPeakMotionDelta":12.0
+                  },
+                  "apollo_technical_quality":{
+                    "stability_status":"APPROVED",
+                    "continuous_take":false,
+                    "intentional_scene_cuts_allowed":true,
+                    "maximum_scene_cuts":4,
+                    "method":"FFMPEG_SCENE_AWARE_VIDSTAB_GLOBAL_MOTION_DELTA"
+                  }
+                }
+                """)
+            .build();
+    RequestSalesVideoPostProductionRequest request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("operator@tenant.io");
+    request.setCaptionText("Faça o diagnóstico gratuito.");
+    given(jobRepository.findById(21232L)).willReturn(Optional.of(sourceJob));
+    given(jobRepository.save(any(SalesVideoJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+
+    try {
+      SalesVideoJobDto result = service.requestPostProduction(21232L, request);
+      JsonNode metadata = new ObjectMapper().readTree(result.getMetadataJson());
+
+      assertThat(metadata.path("targetDurationSeconds").asInt()).isEqualTo(15);
+      assertThat(metadata.path("technicalQualityGate").path("continuousTakeRequired").asBoolean())
+          .isFalse();
+      assertThat(
+              metadata.path("technicalQualityGate").path("intentionalSceneCutsAllowed").asBoolean())
+          .isTrue();
+      assertThat(metadata.path("technicalQualityGate").path("maximumSceneCuts").asInt())
+          .isEqualTo(4);
+    } finally {
+      TenantContextHolder.clear();
+    }
   }
 
   /** Aceita clipe isolado quando atende à duração da cena, sem compará-lo ao vídeo final. */

@@ -82,6 +82,7 @@ public class MiraPrivatePrototypeService {
                 .orElseGet(() -> new StoredSession(UUID.randomUUID().toString(), participantReference,
                         participantReference.startsWith("QA-") ? "QA_INTERNAL" : "PRIVATE_READING"));
         sessions.put(session.sessionToken, session);
+        if (session.consentedAt == null) session.consentedAt = Instant.now().toString();
         recordOnce(session, "EXPERIENCE_STARTED");
         persist();
         return response(session);
@@ -92,14 +93,21 @@ public class MiraPrivatePrototypeService {
         return response(requiredSession(sessionToken));
     }
 
-    /** Salva faixa etária, objetivo não clínico e rótulos informados. */
+    /** Salva a entrada e aceita sua repetição idêntica sem reutilizar sinais para outro conteúdo. */
     public synchronized SessionResponse saveInput(String sessionToken, InputRequest request) {
         StoredSession session = requiredSession(sessionToken);
-        session.ageRange = request.ageRange();
-        session.objective = request.objective().trim();
-        session.products = request.products().stream()
+        List<ProductInput> products = request.products().stream()
                 .map(product -> new ProductInput(product.name().trim(), product.labelDirections().trim()))
                 .toList();
+        if (session.finishedAt != null || session.events.contains("VALUE_MOMENT")) {
+            if (java.util.Objects.equals(session.ageRange, request.ageRange())
+                    && java.util.Objects.equals(session.objective, request.objective().trim())
+                    && java.util.Objects.equals(session.products, products)) return response(session);
+            throw new IllegalStateException("Esta leitura já possui resultado. Preserve a evidência e use outro convite para uma nova leitura.");
+        }
+        session.ageRange = request.ageRange();
+        session.objective = request.objective().trim();
+        session.products = products;
         session.status = "INPUT_READY";
         session.blocker = null;
         session.routine = List.of();
@@ -110,6 +118,8 @@ public class MiraPrivatePrototypeService {
     /** Ordena apenas instruções documentadas e bloqueia qualquer lacuna clínica ou factual. */
     public synchronized SessionResponse generate(String sessionToken) {
         StoredSession session = requiredSession(sessionToken);
+        if ("READY".equals(session.status)) return response(session);
+        if (session.finishedAt != null) throw new IllegalStateException("A leitura foi encerrada; sua evidência foi preservada.");
         if (session.products == null || session.products.isEmpty()) {
             throw new IllegalArgumentException("Informe ao menos um produto e a orientação documentada do rótulo.");
         }
@@ -144,6 +154,13 @@ public class MiraPrivatePrototypeService {
         if (!"READY".equals(session.status)) {
             throw new IllegalStateException("O resultado precisa estar pronto antes desta ação.");
         }
+        if (session.finishedAt != null) {
+            if (session.events.contains(eventType)) return response(session);
+            throw new IllegalStateException("A leitura já foi encerrada; suas respostas foram preservadas.");
+        }
+        if ("PREFERRED_OVER_FREE".equals(eventType) && !session.events.contains("READY_RESULT_USED")) {
+            throw new IllegalStateException("Consulte o resultado antes de registrar sua preferência.");
+        }
         if ("PREFERRED_OVER_FREE".equals(eventType) && !Boolean.TRUE.equals(request.confirmed())) {
             throw new IllegalArgumentException("A preferência deve refletir uma escolha humana explícita.");
         }
@@ -151,8 +168,40 @@ public class MiraPrivatePrototypeService {
             throw new IllegalStateException("A simulação só fica disponível após a preferência explícita.");
         }
         recordOnce(session, eventType);
+        if ("CHECKOUT_STARTED".equals(eventType)) session.finishedAt = Instant.now().toString();
         persist();
         return response(session);
+    }
+
+    /** Encerra também uma leitura negativa sem fabricar preferência ou intenção de compra. */
+    public synchronized SessionResponse finish(String sessionToken) {
+        StoredSession session = requiredSession(sessionToken);
+        if (session.finishedAt == null) {
+            session.finishedAt = Instant.now().toString();
+            persist();
+        }
+        return response(session);
+    }
+
+    /** Expõe somente prova sanitizada da leitura solicitada, sem acesso, sessão ou dados de entrada. */
+    public synchronized ReadingEvidence readingEvidence(int readingNumber) {
+        if (readingNumber != 1 && readingNumber != 2) {
+            throw new IllegalArgumentException("Informe primeira ou segunda leitura privada.");
+        }
+        String participant = "PV-00000000000" + readingNumber;
+        StoredSession session = sessions.values().stream()
+                .filter(value -> participant.equals(value.participantReference))
+                .filter(value -> "PRIVATE_READING".equals(value.trafficClass))
+                .findFirst().orElse(null);
+        Map<String, Boolean> signals = new LinkedHashMap<>();
+        contract().instrumentationEvents().forEach(event -> signals.put(event, session != null && session.events.contains(event)));
+        return new ReadingEvidence(PRODUCT_SLUG, VERSION, participant,
+                session == null ? "NOT_STARTED" : session.trafficClass,
+                session == null ? null : session.evidenceId,
+                session == null ? null : session.consentedAt,
+                session == null ? null : session.finishedAt,
+                session == null ? null : session.blocker, Map.copyOf(signals),
+                "SIMULATED_NO_CHARGE", false, false, 0);
     }
 
     /** Persiste um bloqueio explicável sem inventar uma rotina. */
@@ -178,7 +227,7 @@ public class MiraPrivatePrototypeService {
         if (session.events.contains(eventType)) return;
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("participantReference", session.participantReference);
-        metadata.put("sessionId", session.sessionToken);
+        metadata.put("sessionId", session.evidenceId);
         metadata.put("experienceVersion", VERSION);
         metadata.put("trafficClass", session.trafficClass);
         metadata.put("checkoutMode", "SIMULATED_NO_CHARGE");
@@ -202,7 +251,7 @@ public class MiraPrivatePrototypeService {
         return new SessionResponse(session.sessionToken, session.participantReference, session.trafficClass,
                 session.status, session.ageRange, session.objective, session.products == null ? List.of() : session.products,
                 session.routine == null ? List.of() : session.routine, session.blocker,
-                List.copyOf(session.events), VERSION, "SIMULATED_NO_CHARGE");
+                List.copyOf(session.events), VERSION, "SIMULATED_NO_CHARGE", session.finishedAt != null);
     }
 
     /** Cria hashes dos acessos sem armazenar segredos brutos. */
@@ -281,13 +330,22 @@ public class MiraPrivatePrototypeService {
     public record SessionResponse(String sessionToken, String participantReference, String trafficClass,
                                   String status, String ageRange, String objective, List<ProductInput> products,
                                   List<RoutineCard> routine, String blocker, List<String> events,
-                                  String prototypeVersion, String checkoutMode) {}
+                                  String prototypeVersion, String checkoutMode, boolean readingFinished) {}
+
+    /** Prova interna pseudonimizada, independente das credenciais que autorizam a sessão. */
+    public record ReadingEvidence(String productSlug, String prototypeVersion, String participantReference,
+                                   String trafficClass, String evidenceId, String consentedAt, String finishedAt,
+                                   String blocker, Map<String, Boolean> signals, String checkoutMode,
+                                   boolean paymentEnabled, boolean published, int mediaSpendBrl) {}
 
     /** Estado interno persistido de uma única sessão segregada. */
     public static final class StoredSession {
         public String sessionToken;
         public String participantReference;
         public String trafficClass;
+        public String evidenceId = UUID.randomUUID().toString();
+        public String consentedAt;
+        public String finishedAt;
         public String status = "CONSENTED";
         public String ageRange;
         public String objective;

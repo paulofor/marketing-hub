@@ -11,6 +11,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE: ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_FILE:-/run/secrets/harness_library_internal_signing_key}
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/pde/
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       MOIS_SALES_PAGE_BACKFILL_ENABLED: ${MOIS_SALES_PAGE_BACKFILL_ENABLED:-false}
       LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: ${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:?LEAD_PORTAL_PAYMENTS_AUTH_TOKEN is required}
@@ -39,6 +40,7 @@ services:
       - ./volumes/backend/logs:/app/logs
       - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
       - ${HARNESS_LIBRARY_INTERNAL_SIGNING_KEY_HOST_FILE:-/root/infra/harness-library/secrets/internal_signing_key}:/run/secrets/harness_library_internal_signing_key:ro
+      - ${PDE_INTERNAL_API_TOKEN_HOST_FILE:-/root/infra/pde-private/internal_token}:/run/secrets/pde/integrations.pde-platform.internal-token:ro
 
   backend-log-reader:
     image: nginx:1.27-alpine

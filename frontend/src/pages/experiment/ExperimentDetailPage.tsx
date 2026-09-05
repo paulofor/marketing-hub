@@ -427,9 +427,13 @@ export default function ExperimentDetailPage() {
     data ? String(data.hypothesisId) : undefined,
   );
   const { data: presets } = useMetricPresets();
-  const initialTab = (location.state as { initialTab?: string } | null)
-    ?.initialTab;
+  const initialTab =
+    new URLSearchParams(location.search).get("tab") ||
+    (location.state as { initialTab?: string } | null)?.initialTab;
   const [tab, setTab] = useState(initialTab || "funnel");
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
@@ -2070,7 +2074,10 @@ export default function ExperimentDetailPage() {
       </div>
       <ExperimentFacebookSuccessorPanel experiment={data} />
       {data.platform === "FACEBOOK" ? (
-        <section className="card mt-3" aria-label="Controle financeiro da mídia">
+        <section
+          className="card mt-3"
+          aria-label="Controle financeiro da mídia"
+        >
           <div className="card-body py-3 d-flex flex-wrap gap-4">
             <div>
               <div className="small text-muted">Orçamento diário</div>

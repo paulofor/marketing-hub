@@ -24,6 +24,7 @@ export interface ExperimentVideoAsset {
   hlsPlaybackUrl?: string | null;
   thumbnailUrl?: string | null;
   durationSeconds?: number | null;
+  hasAudio?: boolean | null;
   aspectRatio?: string | null;
   visualSourceType?: string | null;
   visualSourceKey?: string | null;

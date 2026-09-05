@@ -13,6 +13,7 @@ import com.marketinghub.WebConfig;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.creative.service.video.VideoCreativeService;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.junit.jupiter.api.Test;
@@ -35,10 +36,13 @@ class CreativeControllerCorsTest {
 
   @MockBean private CreativeService creativeService;
 
+  @MockBean private VideoCreativeService videoCreativeService;
+
   @MockBean private CreativeMapper creativeMapper;
 
   @MockBean private AssetRepository assetRepository;
 
+  /** Confirma cabeçalhos CORS no upload comum de imagem. */
   @Test
   void uploadImageRespondsWithCorsHeaders() throws Exception {
     AssetUploadResponse mockResponse =
@@ -64,6 +68,7 @@ class CreativeControllerCorsTest {
             header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, containsString("Location")));
   }
 
+  /** Preserva o contrato CORS ao receber arquivos maiores. */
   @Test
   void uploadLargeImageStillHonorsCorsHeaders() throws Exception {
     AssetUploadResponse largeResponse =
@@ -87,6 +92,7 @@ class CreativeControllerCorsTest {
         .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN));
   }
 
+  /** Autoriza a consulta preliminar de CORS para os endpoints de upload. */
   @Test
   void preflightRequestIncludesCorsMetadata() throws Exception {
     mockMvc

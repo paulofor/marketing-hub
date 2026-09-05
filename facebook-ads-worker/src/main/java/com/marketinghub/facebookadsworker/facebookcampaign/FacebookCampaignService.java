@@ -309,7 +309,7 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Publica uma campanha de experimento validando contratos, página, Instagram, público e criativos antes de criar objetos na Meta.
+     * Publica uma campanha validando período, contratos, identidade, público e criativos antes de criar objetos na Meta.
      */
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
         String campaignId = null;
@@ -317,6 +317,7 @@ public class FacebookCampaignService {
         List<String> createdAdIds = new ArrayList<>();
         boolean publishReported = false;
         try {
+            CampaignSchedule schedule = CampaignSchedule.from(exp.startDate(), exp.endDate(), java.time.Instant.now());
             List<Creative> creatives = resolveCreatives(exp.id());
             if (creatives.isEmpty()) {
                 LOGGER.warn("Skipping experiment {} because no creative is available or could be fetched", exp.id());
@@ -512,7 +513,9 @@ public class FacebookCampaignService {
                 salesConversionRequired ? "PURCHASE" : null,
                 FacebookAdsService.BRAZIL_COUNTRY_CODE,
                 resolvedTargeting.targetingJson(),
-                resolvedTargeting.options()
+                resolvedTargeting.options(),
+                schedule.startTime(),
+                schedule.endTime()
             );
             adSetId = executeFacebookCallWithLogging(
                 exp.publicationJobId(),
@@ -1297,6 +1300,8 @@ public class FacebookCampaignService {
         String facebookPixelId,
         BigDecimal dailyBudget,
         BigDecimal mediaSpendLimit,
+        String startDate,
+        String endDate,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
         FacebookPage facebookPage,
         InstagramAccount instagramAccount,

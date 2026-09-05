@@ -3922,3 +3922,19 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** testes de contrato verificam download único da referência, planos 2 e 4, expressão
   temporal do ffmpeg, hash e bypass para outras receitas; a homologação exige inspeção visual do
   arquivo final, e não apenas métricas técnicas.
+
+## LOOP-VIDEO-APROVADO-SEM-ANUNCIO — peça concluída não pode entrar na revisão de campanha
+
+- **Data:** 2026-09-05.
+- **Evidência:** no experimento #91, a tela e o MCP confirmaram vídeo #38 aprovado, vídeo #37 rejeitado ainda obrigatório, zero criativos e zero campanhas. A biblioteca do produto exige revisão própria de anúncios e não aceita automaticamente a aprovação de um vídeo.
+- **Causa-raiz:** faltava um comando de gestão que transformasse o vídeo aprovado em anúncio e permitisse selecionar explicitamente qual versão rejeitada foi substituída. Repetir a geração ou apenas mudar o status do experimento não resolve esse contrato.
+- **Correção local:** ação na aba Vídeo, endpoint do próprio experimento, vínculo validado por tenant/experimento, substituição explícita auditável e novo anúncio `DRAFT/PENDING`. Gates de Têmis e aprovação final permanecem obrigatórios.
+- **Prevenção:** `VideoCreativeControllerTest` cobre concorrência, repetição, substituição posterior, segregação, gates e rollback; a homologação local abre a interface real contra o backend em desktop, iPhone e Pixel. Referência: `docs/homologacao/vega91-video-to-meta-v1.md`.
+
+## LOOP-META-PERIODO-IGNORADO-PELO-EXECUTOR — teto existe, mas término não chega ao provedor
+
+- **Data:** 2026-09-05.
+- **Evidência:** o backend expõe `startDate/endDate` na fila do publicador, mas o DTO do Facebook Ads Worker não recebia as datas e o payload de ad set não enviava `end_time`. O experimento #91 tinha término em 06/09 e teto de R$ 100. Não houve campanha ou gasto durante o diagnóstico.
+- **Causa-raiz:** perda de parte do contrato de autorização entre backend e integração Meta; o teto financeiro sozinho não limita o período de veiculação.
+- **Correção local:** tradução de datas inclusivas em horário de Brasília para `start_time/end_time`, sem antecipar início futuro; período ausente, invertido ou vencido bloqueia antes da primeira chamada externa.
+- **Prevenção:** `CampaignScheduleTest` valida limites temporais, e `FacebookCampaignServiceTest` inspeciona os parâmetros reais enviados ao servidor Meta simulado e a ausência de chamadas para período vencido. Regra registrada no cânone de publicação Facebook.

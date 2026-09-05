@@ -222,6 +222,19 @@ class FacebookCampaignServiceTest {
         );
     }
 
+    /** Impede que uma autorização vencida chegue a upload, criação ou gasto na Meta. */
+    @Test
+    void rejectsExpiredScheduleBeforeAnyMetaRequest() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Expired QA\",\"startDate\":\"2000-01-01\",\"endDate\":\"2000-01-02\"}]")
+            .addHeader("Content-Type", "application/json"));
+        service.createCampaignsFromExperiments();
+        assertEquals(0, facebook.getRequestCount());
+        takeBackendRequest("experiments-ready");
+        RecordedRequest failure = takeBackendRequestMatching("expired period failure",
+            request -> request.getPath().contains("/status?status=FAILED"));
+        assertEquals("PATCH", failure.getMethod());
+    }
+
     @AfterEach
     void tearDown() throws IOException {
         backend.assertNoUnmatchedRequests();
@@ -337,7 +350,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Verifies that a released experiment publishes the full Facebook campaign hierarchy.
     void createsCampaignHierarchyForEachExperiment() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -405,6 +418,8 @@ class FacebookCampaignServiceTest {
         assertEquals("Exp - Ad Set", adSetPayload.get("name").asText());
         assertEquals("10", adSetPayload.get("campaign_id").asText());
         assertEquals("2500", adSetPayload.get("daily_budget").asText());
+        assertEquals("2099-09-02T03:00:00Z", adSetPayload.get("start_time").asText());
+        assertEquals("2099-09-06T02:59:59Z", adSetPayload.get("end_time").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertFalse(adSetPayload.has("bid_amount"));
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
@@ -454,7 +469,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante que label comercial de botao nao seja enviado como enum tecnico da Meta.
     void normalizesCommercialCallToActionLabelBeforeCreatingAdCreative() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"Abrir a planilha de evidências\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -499,7 +514,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante fallback minimo quando a Meta rejeita o payload completo de adcreative.
     void retriesWithSimpleLinkCreativeWhenFacebookRejectsPrimaryAdCreativePayload() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-adcreative-fallback\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-adcreative-fallback\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -586,7 +601,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante que indisponibilidade temporária da Meta não invalida o experimento.
     void keepsExperimentEligibleWhenFacebookAdCreativeCreationIsTemporarilyUnavailable() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-meta-temporary\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-meta-temporary\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -640,7 +655,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante bloqueio antes da publicacao quando a pagina nao esta conectada ao Instagram do criativo.
     void blocksPublicationWhenSelectedPageIsNotConnectedToCreativeInstagramActor() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"999\",\"name\":\"Página desligada\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"21\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-page-ig-block\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"999\",\"name\":\"Página desligada\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"21\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-page-ig-block\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -683,7 +698,7 @@ class FacebookCampaignServiceTest {
     // Garante que a ausência de limites da Meta gera aviso, mas não bloqueia teste controlado.
     void continuesCampaignCreationWhenReachBoundsAreUnavailable() throws Exception {
         reachEstimateResponseBody = "{\"data\":[{\"users\":1234}]}";
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-warning\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-warning\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -744,7 +759,7 @@ class FacebookCampaignServiceTest {
     // Garante que a campanha não é criada quando o público fica abaixo do alcance mínimo.
     void skipsCampaignCreationWhenReachValidationIsBelowMinimum() throws Exception {
         reachEstimateResponseBody = "{\"data\":[{\"users_lower_bound\":1000,\"users_upper_bound\":50000}]}";
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-low\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-low\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -799,7 +814,7 @@ class FacebookCampaignServiceTest {
     // Garante que público acima do alerta operacional gera aviso, mas não bloqueia teste controlado.
     void continuesCampaignCreationWhenReachValidationIsAboveWarningThresholdWithObjectData() throws Exception {
         reachEstimateResponseBody = "{\"data\":{\"users_lower_bound\":84000000,\"users_upper_bound\":98900000,\"estimate_ready\":true}}";
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-high\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-high\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -859,7 +874,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante que nenhum objeto de anúncio seja criado quando o criativo pronto não tem imagem.
     void blocksCampaignPublicationWhenReadyCreativeHasNoImage() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-no-image\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-no-image\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -892,7 +907,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void retriesAdCreativeCreationWhenFacebookCannotDownloadImageTemporarily() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -941,7 +956,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Verifies cleanup of a Facebook campaign when ad set creation fails.
     void deletesFacebookCampaignWhenAdSetCreationFails() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -991,7 +1006,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante que contrato de recompensa gratuita publica campanha como Leads, sem otimizar para cliques.
     void createsLeadCampaignForSinglePromiseRewardEvenWithWebsiteDestination() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"freeReward\":\"3 mensagens prontas\",\"campaignObjective\":\"LEADS\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"freeReward\":\"3 mensagens prontas\",\"campaignObjective\":\"LEADS\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -1046,7 +1061,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Garante que low-ticket com recompensa secundária continua como venda otimizada para Purchase.
     void createsSalesCampaignForLowTicketProductEvenWithSecondaryReward() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"experimentType\":\"LOW_TICKET_PRODUCT\",\"freeReward\":\"ver amostra gratuita\",\"campaignObjective\":\"SALES\",\"facebookPixelId\":\"pixel-123\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"experimentType\":\"LOW_TICKET_PRODUCT\",\"freeReward\":\"ver amostra gratuita\",\"campaignObjective\":\"SALES\",\"facebookPixelId\":\"pixel-123\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -1103,7 +1118,7 @@ class FacebookCampaignServiceTest {
     @Test
     void usesExperimentStandaloneUrlAsDestinationBeforeCreativeFallback() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("""
-                [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"dailyBudget":25.0,"followUpActionUrl":"https://oportunidadebrasil.shop/api/flows/exp-1-landing-geralanding/page","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"}}]
+                [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-05","mediaSpendLimit":100.0,"dailyBudget":25.0,"followUpActionUrl":"https://oportunidadebrasil.shop/api/flows/exp-1-landing-geralanding/page","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"}}]
                 """)
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("""
@@ -1155,7 +1170,7 @@ class FacebookCampaignServiceTest {
     // Verifies instant form share links are used when the journey requires a form destination.
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{"
-            + "\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"pageId\":\"84\","
+            + "\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"pageId\":\"84\","
             + "\"dailyBudget\":35.5,"
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
@@ -1254,7 +1269,7 @@ class FacebookCampaignServiceTest {
     // Verifies AI-provided instant form identifiers are normalized before Graph API calls.
     void normalizesAiInstantFormIdentifierBeforeCallingFacebook() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{"
-            + "\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"pageId\":\"84\","
+            + "\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"pageId\":\"84\","
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"ai_form_3_1_token\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
@@ -1337,7 +1352,7 @@ class FacebookCampaignServiceTest {
         backend.enqueueResponse(new MockResponse()
             .setBody(
                 """
-                [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"pageId":"84",
+                [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-05","mediaSpendLimit":100.0,"pageId":"84",
                   "facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},
                   "instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"},
                   "facebookInstantForm":{"id":33,"facebookFormId":null,"name":"Lead","status":"DRAFT","approved":true,"published":false,"shareLink":"https://www.facebook.com/ads/leadgen/?id=2468"},
@@ -1443,7 +1458,7 @@ class FacebookCampaignServiceTest {
             "150",
             "BR"
         ));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -1550,7 +1565,7 @@ class FacebookCampaignServiceTest {
 
     @Test
     void marksExperimentAsFailedWhenFacebookReturnsPermissionError() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -1592,7 +1607,7 @@ class FacebookCampaignServiceTest {
     @Test
     // Verifies experiments blocked by permission errors are skipped on later worker cycles.
     void skipsExperimentAfterPermissionErrorEvenIfBackendKeepsReturningIt() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -1666,7 +1681,7 @@ class FacebookCampaignServiceTest {
             new MetaVideoNormalizer(false, "ffmpeg", Duration.ofSeconds(1))
         );
 
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -1683,7 +1698,7 @@ class FacebookCampaignServiceTest {
             .setBody("{\"error\":{\"message\":\"Error validating access token: Session has expired\",\"type\":\"OAuthException\",\"code\":190,\"error_subcode\":463}}")
             .addHeader("Content-Type", "application/json"));
 
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -1765,7 +1780,7 @@ class FacebookCampaignServiceTest {
             new MetaVideoNormalizer(false, "ffmpeg", Duration.ofSeconds(1))
         );
 
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -1783,7 +1798,7 @@ class FacebookCampaignServiceTest {
         adsService.updateAccessToken("renewed-by-backend");
         configurationClient.setConfiguration(configurationWithAccessToken("renewed-by-backend"));
 
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -1863,7 +1878,7 @@ class FacebookCampaignServiceTest {
     void fallsBackToExperimentFacebookPageWhenConfigurationDoesNotProvideOne() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -1921,7 +1936,7 @@ class FacebookCampaignServiceTest {
 
         backend.enqueueResponse(
             new MockResponse()
-                .setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
+                .setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
                 .addHeader("Content-Type", "application/json")
         );
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
@@ -1977,7 +1992,7 @@ class FacebookCampaignServiceTest {
     void createsCampaignUsingApprovedManualTargetingPackageWhenNoAdSetExists() throws Exception {
         backend.enqueueResponse(
             new MockResponse()
-                .setBody("[{\"id\":1,\"name\":\"Exp\",\"mediaSpendLimit\":100.0,\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
+                .setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"associatedFacebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"}}]")
                 .addHeader("Content-Type", "application/json")
         );
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
@@ -2039,7 +2054,7 @@ class FacebookCampaignServiceTest {
         backend.enqueueResponse(
             new MockResponse()
                 .setBody("""
-                    [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"associatedFacebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
+                    [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-05","mediaSpendLimit":100.0,"associatedFacebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
                     """)
                 .addHeader("Content-Type", "application/json")
         );
@@ -2092,7 +2107,7 @@ class FacebookCampaignServiceTest {
     }
 
     /**
-     * Garante que vídeos de criativo são normalizados antes do upload para a Meta.
+     * Garante upload de vídeo, confirmação e limites de R$ 20/dia, R$ 100 e cinco dias autorizados.
      */
     @Test
     void normalizesVideoCreativeBeforeUploadingToMeta() throws Exception {
@@ -2148,7 +2163,7 @@ class FacebookCampaignServiceTest {
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
 
         backend.enqueueResponse(new MockResponse().setBody("""
-            [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"facebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
+            [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-06","dailyBudget":20.0,"mediaSpendLimit":100.0,"facebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
             """).addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("""
             [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY","videoCreative":true,"audibleApprovedVideo":true}]
@@ -2183,8 +2198,12 @@ class FacebookCampaignServiceTest {
         assertArrayEquals(normalizedBytes, upload.getBody().readByteArray());
         RecordedRequest finish = takeFacebookRequest("video finish");
         assertEquals("/v23.0/act_1/video_ads", finish.getPath());
-        takeFacebookRequest("facebook request"); // campaign
-        takeFacebookRequest("facebook request"); // ad set
+        RecordedRequest campaign = takeFacebookRequest("campanha de vídeo");
+        assertEquals("10000", objectMapper.readTree(campaign.getBody().inputStream()).get("spend_cap").asText());
+        RecordedRequest adSet = takeFacebookRequest("conjunto de vídeo");
+        JsonNode adSetPayload = objectMapper.readTree(adSet.getBody().inputStream());
+        assertEquals("2000", adSetPayload.get("daily_budget").asText());
+        assertEquals("2099-09-07T02:59:59Z", adSetPayload.get("end_time").asText());
         RecordedRequest creative = takeFacebookRequest("facebook request");
         JsonNode creativePayload = objectMapper.readTree(creative.getBody().clone().inputStream());
         JsonNode storySpec = creativePayload.get("object_story_spec");
@@ -2192,6 +2211,14 @@ class FacebookCampaignServiceTest {
         assertEquals("video-123", storySpec.get("video_data").get("video_id").asText());
         assertEquals("thumb-hash", storySpec.get("video_data").get("image_hash").asText());
         assertFalse(storySpec.get("video_data").has("link"));
+        RecordedRequest ad = takeFacebookRequest("anúncio de vídeo");
+        assertEquals("/v23.0/act_1/ads", ad.getPath());
+        RecordedRequest report = takeBackendRequestMatching("confirmação de publicação do vídeo",
+            request -> "/api/facebook-campaigns".equals(request.getPath()) && "POST".equals(request.getMethod()));
+        JsonNode reported = objectMapper.readTree(report.getBody().inputStream());
+        assertEquals("ACTIVE", reported.get("status").asText());
+        assertEquals("10", reported.get("id").asText());
+        assertEquals(1, reported.get("ads").size());
     }
 
     /**
@@ -2247,7 +2274,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
 
         backend.enqueueResponse(new MockResponse().setBody("""
-            [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-video-required"}]
+            [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-05","mediaSpendLimit":100.0,"facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-video-required"}]
             """).addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("""
             [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","format":"VIDEO","videoUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY","videoCreative":true,"audibleApprovedVideo":true}]
@@ -2323,7 +2350,7 @@ class FacebookCampaignServiceTest {
     // Garante que vídeo sem áudio aprovado é bloqueado antes de qualquer chamada à Meta.
     void blocksVideoCreativeWithoutAudibleApprovalBeforeFacebookPublication() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("""
-            [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"singlePain":"cliente some depois da manutencao","funnelPromise":"encaixes em 7 dias","primaryCta":"Comprar o Mapa 7D","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-audio-gate"}]
+            [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-05","mediaSpendLimit":100.0,"singlePain":"cliente some depois da manutencao","funnelPromise":"encaixes em 7 dias","primaryCta":"Comprar o Mapa 7D","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-audio-gate"}]
             """).addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("""
             [{"id":101,"experimentId":1,"headline":"Cliente some depois da manutencao","primaryText":"Veja encaixes em 7 dias antes do cliente sumir","format":"VIDEO","videoUrl":"https://cdn.example/video-sem-som.mp4","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY","videoCreative":true,"audibleApprovedVideo":false}]
@@ -2359,7 +2386,7 @@ class FacebookCampaignServiceTest {
     // Garante que copy desalinhada com o contrato comercial é bloqueada antes da Meta.
     void blocksMisalignedCreativeCopyBeforeFacebookPublication() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("""
-            [{"id":1,"name":"Exp","mediaSpendLimit":100.0,"singlePain":"cliente some depois da manutencao","funnelPromise":"encaixes em 7 dias","primaryCta":"Comprar o Mapa 7D","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-copy-gate"}]
+            [{"id":1,"name":"Exp","startDate":"2099-09-02","endDate":"2099-09-05","mediaSpendLimit":100.0,"singlePain":"cliente some depois da manutencao","funnelPromise":"encaixes em 7 dias","primaryCta":"Comprar o Mapa 7D","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"publicationJobId":"job-copy-gate"}]
             """).addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("""
             [{"id":101,"experimentId":1,"headline":"Oferta imperdivel","primaryText":"Clique e veja novidades para mudar sua rotina","imageUrl":"%s","description":"Desc","cta":"LEARN_MORE","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
@@ -2390,11 +2417,11 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
-    // Verifies experiments without a resolvable page are skipped before Facebook publication.
+    // Confirma que a ausência de página bloqueia publicação mesmo com período válido.
     void skipsExperimentWhenNoPageCanBeResolved() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));

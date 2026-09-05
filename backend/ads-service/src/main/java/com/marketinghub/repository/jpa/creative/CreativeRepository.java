@@ -16,6 +16,9 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: consultar e persistir criativos vinculados a experimentos. */
 public interface CreativeRepository extends JpaRepository<Creative, Long> {
+  /** Busca somente anúncios da mesma mídia e experimento para reconhecer comandos repetidos. */
+  List<Creative> findByExperimentIdAndVideoUrl(Long experimentId, String videoUrl);
+
   /** Lista os criativos vinculados ao experimento informado. */
   List<Creative> findByExperimentId(Long experimentId);
 

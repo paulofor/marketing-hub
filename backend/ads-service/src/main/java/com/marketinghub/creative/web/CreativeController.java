@@ -15,9 +15,13 @@ import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
 import com.marketinghub.creative.dto.UpdateCreativeStatusRequest;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.creative.service.video.VideoCreativeRequest;
+import com.marketinghub.creative.service.video.VideoCreativeService;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -40,13 +44,33 @@ public class CreativeController {
   private final CreativeService service;
   private final CreativeMapper mapper;
   private final AssetRepository assetRepository;
+  private final VideoCreativeService videoCreativeService;
 
   /** Inicializa os endpoints com os serviços de criativo, mapeamento e ativos. */
   public CreativeController(
-      CreativeService service, CreativeMapper mapper, AssetRepository assetRepository) {
+      CreativeService service,
+      CreativeMapper mapper,
+      AssetRepository assetRepository,
+      VideoCreativeService videoCreativeService) {
     this.service = service;
     this.mapper = mapper;
     this.assetRepository = assetRepository;
+    this.videoCreativeService = videoCreativeService;
+  }
+
+  /**
+   * Materializa o anúncio de um vídeo aprovado e substitui somente a tentativa reprovada informada.
+   */
+  @Operation(
+      summary = "Usar vídeo aprovado em anúncio",
+      description =
+          "Cria DRAFT/PENDING de forma idempotente; preserva destino, orçamento e gates de revisão. Não gera mídia nem publica campanha.")
+  @PostMapping("/api/experiments/{experimentId}/video-assets/{videoAssetId}/creative")
+  public CreativeDto createFromVideo(
+      @PathVariable Long experimentId,
+      @PathVariable Long videoAssetId,
+      @Valid @RequestBody VideoCreativeRequest request) {
+    return mapper.toDto(videoCreativeService.create(experimentId, videoAssetId, request));
   }
 
   /** Cria um criativo vinculado ao experimento informado. */

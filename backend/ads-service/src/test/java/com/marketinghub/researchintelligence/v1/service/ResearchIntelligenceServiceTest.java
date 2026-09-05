@@ -20,15 +20,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Comprova a compilação e o roteamento determinístico dos artigos para o harness. */
 class ResearchIntelligenceServiceTest {
   private ResearchIntelligenceService service;
 
-  /** Carrega o mesmo catálogo empacotado usado pelo backend em produção. */
+  /** Carrega o catálogo real com data controlada para não depender do dia de execução do CI. */
   @BeforeEach
   void setUp() {
-    service = new ResearchIntelligenceService();
+    service =
+        new ResearchIntelligenceService(
+            Clock.fixed(Instant.parse("2026-09-05T12:00:00Z"), ZoneOffset.UTC));
   }
 
   /** Entrega a qualquer projeto rotas pequenas, rastreáveis e específicas por responsabilidade. */
@@ -160,9 +164,14 @@ class ResearchIntelligenceServiceTest {
             .flatMap(route -> route.cards().stream())
             .toList();
 
-    assertThat(selectedCards)
-        .extracting("collection")
-        .doesNotContain("video", "momentos-de-compra-b2c");
+    var expiredIds =
+        service.getCatalog().cards().stream()
+            .filter(card -> card.validUntil() != null && card.validUntil().isBefore(currentDate))
+            .map(card -> card.cardId())
+            .toList();
+    assertThat(expiredIds).isNotEmpty();
+    assertThat(selectedCards).isNotEmpty();
+    assertThat(selectedCards).extracting("cardId").doesNotContainAnyElementsOf(expiredIds);
     assertThat(selectedCards)
         .allSatisfy(
             card -> {
@@ -170,6 +179,36 @@ class ResearchIntelligenceServiceTest {
                 assertThat(card.validUntil()).isAfterOrEqualTo(currentDate);
               }
             });
+  }
+
+  /**
+   * Mantém a validade inclusiva e exclui o mesmo cartão no dia seguinte, sem depender de novos
+   * artigos.
+   */
+  @ParameterizedTest
+  @CsvSource({"2026-10-18,true", "2026-10-19,true", "2026-10-20,false"})
+  void shouldRespectPersistedCardExpiryBoundary(LocalDate evaluatedOn, boolean eligible) {
+    Clock clock = Clock.fixed(evaluatedOn.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
+    ResearchIntelligenceCardVersionRepository repository =
+        mock(ResearchIntelligenceCardVersionRepository.class);
+    ResearchIntelligenceCardVersion card = persistedVersion(clock);
+    card.submitForReview("reviewer", "Revisado", LocalDateTime.now(clock));
+    card.activate("reviewer", "Aprovado", LocalDateTime.now(clock));
+    when(repository.findByStatusOrderByCardKeyAscVersionNumberAsc(
+            ResearchIntelligenceCardStatus.ACTIVE))
+        .thenReturn(List.of(card));
+    service = new ResearchIntelligenceService(clock, repository);
+    var withoutPersistedCard = new ResearchIntelligenceService(clock).getCatalog();
+
+    assertThat(service.getCatalog().cards()).extracting("cardId").contains("RI1-CCCCCCCCCCCC");
+    assertThat(service.getCatalog().activeCards())
+        .isEqualTo(withoutPersistedCard.activeCards() + (eligible ? 1 : 0));
+    if (!eligible) {
+      assertThat(service.selectForVideoProject(vega91()).routes())
+          .flatExtracting(ResearchIntelligenceRouteResponse::cards)
+          .extracting("cardId")
+          .doesNotContain("RI1-CCCCCCCCCCCC");
+    }
   }
 
   /** Inclui somente versões persistidas ativas no catálogo global consumido pelos agentes. */

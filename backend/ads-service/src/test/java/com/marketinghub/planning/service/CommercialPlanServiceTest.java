@@ -1,6 +1,7 @@
 package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -17,6 +18,7 @@ import com.marketinghub.planning.CommercialPlanSimulation;
 import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
 import com.marketinghub.planning.dto.CreateCommercialPlanSimulationRequest;
+import com.marketinghub.planning.dto.UpdateCommercialPlanRequest;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar as regras centrais do servico de planejamento comercial. */
 @ExtendWith(MockitoExtension.class)
@@ -142,6 +145,55 @@ class CommercialPlanServiceTest {
     assertThat(plan.getApproachesToTest()).isEqualTo(2);
     assertThat(plan.getCustomerConversationsTarget()).isEqualTo(5);
     verify(milestoneRepository, times(9)).save(any());
+  }
+
+  /** Recusa contexto curto acima da coluna canônica antes de chamar o MySQL. */
+  @Test
+  void updateRejectsMainChannelLongerThanCanonicalContract() {
+    CommercialPlan plan = CommercialPlan.builder().id(7L).name("Plano Mira").build();
+    when(planRepository.findById(7L)).thenReturn(Optional.of(plan));
+    UpdateCommercialPlanRequest request =
+        new UpdateCommercialPlanRequest(
+            "Plano Mira",
+            CommercialPlanStatus.DRAFT,
+            null,
+            null,
+            null,
+            "Recrutar duas participantes",
+            "Mulheres de 35 a 60 anos",
+            "Dificuldade para organizar a rotina",
+            "Leitura privada",
+            null,
+            "x".repeat(192),
+            "Duas participantes qualificadas",
+            "Duas participantes consentidas",
+            "Parar em duas qualificadas ou R$ 100",
+            LocalDate.now().plusDays(7),
+            BigDecimal.valueOf(100),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.valueOf(49),
+            BigDecimal.valueOf(14),
+            0,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.TEN,
+            BigDecimal.ZERO,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            "Preparar recrutamento",
+            "Identidade pública pendente",
+            "Aquisição das leitoras não estava definida");
+
+    assertThatThrownBy(() -> service.update(7L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("mainChannel deve ter no maximo 191 caracteres");
+    verify(planRepository, never()).save(any(CommercialPlan.class));
+    verifyNoInteractions(versionService);
   }
 
   /** Deve registrar simulacao corretiva quando o plano ainda tem lacuna comercial. */

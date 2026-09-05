@@ -65,8 +65,12 @@ produto deve declarar isso de forma literal; escrever apenas `Instagram`, `Meta`
   legado do plano pode apontar para ele como contexto operacional de Hermes; isso não altera o canal
   de aquisição decidido nem substitui a escolha explícita do `91` nas ações da campanha paga.
 - Em Mira, as duas leituras privadas continuam como gate de utilidade e segurança anterior à
-  aquisição. Elas não são canal de vendas. Depois da aprovação desse gate, o plano deve preparar um
-  experimento pago próprio para Instagram, com identidade pública separada do codinome interno.
+  aquisição comercial. Elas não são canal de vendas. Uma campanha paga pode preceder o gate somente
+  para recrutar duas participantes qualificadas, em experimento segregado, com R$ 20 por dia, teto
+  total de R$ 100 e pausa automática em duas qualificadas ou no teto. O plano deve medir custo por
+  qualificada e conclusão das leituras sem contabilizar lead, QA ou leitura como venda. Depois da
+  aprovação do gate, um experimento pago distinto deve validar aquisição e vendas, com nova
+  autorização e identidade pública separada do codinome interno.
 - Mesmo quando o contrato técnico usar plataforma `FACEBOOK` por representar a infraestrutura do
   Meta Ads, plano, criativo, campanha e relatório devem explicitar o posicionamento no Instagram.
 - Tráfego orgânico, abordagem direta, QA e leitura privada podem apoiar aprendizado, mas devem ficar

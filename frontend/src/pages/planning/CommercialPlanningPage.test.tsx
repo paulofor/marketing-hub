@@ -820,8 +820,20 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByLabelText("Canal principal")).toHaveValue(
       "Conversas individuais autorizadas",
     );
+    expect(screen.getByLabelText("Canal principal")).toHaveAttribute(
+      "maxlength",
+      "191",
+    );
     expect(screen.getByLabelText("Métrica principal")).toHaveValue(
       "Vendas pagas confirmadas",
+    );
+    expect(screen.getByLabelText("Métrica principal")).toHaveAttribute(
+      "maxlength",
+      "191",
+    );
+    expect(screen.getByLabelText("Público-alvo")).toHaveAttribute(
+      "maxlength",
+      "512",
     );
     expect(screen.getByLabelText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByLabelText("Critério de parada")).toBeTruthy();
@@ -895,6 +907,8 @@ describe("CommercialPlanningPage", () => {
     await user.click(
       screen.getByRole("button", { name: "Novo plano comercial" }),
     );
+
+    expect(screen.getByLabelText("Nome *")).toHaveAttribute("maxlength", "191");
 
     await user.type(
       screen.getByLabelText("Nome *"),

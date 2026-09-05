@@ -3512,6 +3512,11 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   capacidades canônicas do plano, mantendo os contratos integrais nas auditorias e no harness.
 - **Prevenção:** teste de materialização usa textos maiores que as colunas e comprova os limites
   antes de qualquer persistência física.
+- **Recorrência fechada localmente em 2026-09-05:** a edição humana do plano ainda permitia enviar
+  `main_channel` e `main_metric` acima de 191 caracteres e o endpoint devolvia HTTP 500 do MySQL. O
+  frontend passa a aplicar os mesmos limites do schema e o serviço valida criação e atualização
+  antes do repositório, devolvendo erro de contrato sem truncamento silencioso. Testes cobrem os
+  atributos da tela e a rejeição anterior à gravação.
 
 ## LOOP-EXECUCAO-CONCLUIDA-EXIBE-ERRO-SUPERADO — resumo contradiz retentativa bem-sucedida
 

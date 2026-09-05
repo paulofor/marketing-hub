@@ -73,7 +73,7 @@ public class CommercialPlanVersionService {
         .orElseThrow(() -> new IllegalStateException("Plano comercial ainda não possui versão."));
   }
 
-  /** Serializa somente o contexto funcional, sem entidades técnicas ou metadados internos. */
+  /** Serializa contexto funcional e metas numéricas sem entidades ou metadados internos. */
   private String serialize(CommercialPlan plan) {
     Map<String, Object> context = new LinkedHashMap<>();
     context.put("planId", plan.getId());
@@ -98,6 +98,12 @@ public class CommercialPlanVersionService {
     context.put("expectedCacBrl", plan.getExpectedCacBrl());
     context.put("expectedRefundRatePercent", plan.getExpectedRefundRatePercent());
     context.put("fixedOperationalCostBrl", plan.getFixedOperationalCostBrl());
+    context.put("experimentsToCreate", plan.getExperimentsToCreate());
+    context.put("experimentsToPublish", plan.getExperimentsToPublish());
+    context.put("productsToValidate", plan.getProductsToValidate());
+    context.put("productTypesToExplore", plan.getProductTypesToExplore());
+    context.put("approachesToTest", plan.getApproachesToTest());
+    context.put("customerConversationsTarget", plan.getCustomerConversationsTarget());
     context.put("actualTotalCostBrl", plan.getActualTotalCost());
     context.put("actualRevenueBrl", plan.getActualRevenue());
     context.put("currentBlocker", plan.getCurrentBlocker());

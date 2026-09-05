@@ -161,8 +161,8 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             Biblioteca de Imagens e Vídeos
           </h2>
           <p className="text-body-secondary mb-0">
-            Provas reais do produto orientam Íris na comunicação; Psique e
-            Têmis fazem revisões independentes antes do uso.
+            Provas reais do produto orientam Íris na comunicação; Psique e Têmis
+            fazem revisões independentes antes do uso.
           </p>
         </div>
         <div className="border rounded p-3 bg-body-tertiary">
@@ -741,6 +741,18 @@ const statusLabel: Record<CommercialPlanStatus, string> = {
   BLOCKED: "Bloqueado",
   COMPLETED: "Concluído",
   CANCELLED: "Cancelado",
+};
+
+const commercialPlanTextLimits: Partial<
+  Record<keyof SaveCommercialPlanPayload, number>
+> = {
+  name: 191,
+  targetAudience: 512,
+  mainPain: 512,
+  mainOffer: 512,
+  mainLeadMagnet: 512,
+  mainChannel: 191,
+  mainMetric: 191,
 };
 
 function asArray<T>(value: T[] | null | undefined): T[] {
@@ -2027,6 +2039,7 @@ function CommercialPlanListPage({ monthly = false }: { monthly?: boolean }) {
                 <input
                   id="new-commercial-plan-name"
                   className="form-control"
+                  maxLength={commercialPlanTextLimits.name}
                   value={newPlanDraft.name}
                   onChange={(event) =>
                     setNewPlanDraft((current) => ({
@@ -2944,6 +2957,7 @@ function CommercialPlanDetailPage({
                 <input
                   id="new-plan-name"
                   className="form-control"
+                  maxLength={commercialPlanTextLimits.name}
                   required
                   value={newPlanDraft.name}
                   onChange={(event) =>
@@ -3105,6 +3119,7 @@ function CommercialPlanDetailPage({
                 <textarea
                   id={`new-plan-${field}`}
                   className="form-control"
+                  maxLength={commercialPlanTextLimits[field]}
                   rows={2}
                   value={newPlanDraft[field] ?? ""}
                   onChange={(event) =>
@@ -3460,6 +3475,7 @@ function CommercialPlanDetailPage({
                     <textarea
                       id={`planning-${field}`}
                       className="form-control"
+                      maxLength={commercialPlanTextLimits[field]}
                       rows={2}
                       value={planDraft[field] ?? ""}
                       onChange={(event) =>

@@ -46,12 +46,12 @@ class FinancialAgentSchedulerTest {
             322L,
             raw);
     when(backend.pendingVideoCycle()).thenReturn(cycle);
-    when(runner.videoDecision(raw)).thenReturn(Map.of("decision", "APPROVED"));
+    when(runner.videoDecision(raw, cycle)).thenReturn(Map.of("decision", "APPROVED"));
     FinancialAgentScheduler scheduler = new FinancialAgentScheduler(backend, runner, properties);
 
     scheduler.processOne();
 
-    verify(runner).videoDecision(raw);
+    verify(runner).videoDecision(raw, cycle);
     verify(backend).decideVideoCycle(91L, Map.of("decision", "APPROVED"));
     verify(runner, org.mockito.Mockito.never()).reviewVideoCycle(cycle);
   }

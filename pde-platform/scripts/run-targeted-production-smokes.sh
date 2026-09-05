@@ -27,6 +27,16 @@ run_public_diagnostic() {
   )
 }
 
+run_mira_private() {
+  local public_url="$1"
+  : "${MIRA_PRIVATE_E2E_TOKEN:?MIRA_PRIVATE_E2E_TOKEN is required for Mira private production validation}"
+  (
+    cd "${frontend_dir}"
+    PDE_PUBLIC_HEALTH_URL="${public_url}" \
+      "${npm_command}" run test:mira-private:public
+  )
+}
+
 run_musa_consistency() {
   local public_url="$1"
   local experience_version="$2"
@@ -58,6 +68,7 @@ validate_v6() {
 
 validate_v7() {
   run_public_health https://v7.clubemusa.com.br
+  run_mira_private https://v7.clubemusa.com.br
 }
 
 validate_kit_whatsapp() {

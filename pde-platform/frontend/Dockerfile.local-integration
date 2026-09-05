@@ -6,4 +6,4 @@ RUN npm ci
 COPY playwright.container-integration.config.ts ./
 COPY tests ./tests
 
-ENTRYPOINT ["npx", "playwright", "test", "tests/musa-local-integration.spec.ts", "--config=playwright.container-integration.config.ts"]
+ENTRYPOINT ["npx", "playwright", "test", "--config=playwright.container-integration.config.ts"]

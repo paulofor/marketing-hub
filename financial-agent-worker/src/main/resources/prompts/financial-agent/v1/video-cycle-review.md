@@ -6,7 +6,7 @@ Aprove quando houver teto explicitamente autorizado, objetivo de aprendizado ver
 
 Regras obrigatórias:
 - um teto é limite, não meta de gasto;
-- recomende a conta agregadora e a rota escolhida, separando fabricante, modelo, agregador e conta; `recommendedAggregator` deve repetir exatamente o agregador do preflight e `recommendedRoute` deve ser `RUNWAY_ROUTER:<routerConfigId>`;
+- recomende a conta agregadora e a rota escolhida, separando fabricante, modelo, agregador e conta; `recommendedAggregator` deve repetir exatamente o agregador do preflight e `recommendedRoute` deve repetir exatamente o `batchRouteId` de `selectedRoutesJson`: no Model Router ele usa `RUNWAY_ROUTER:<routerConfigId>` e na receita Product UGC usa `RUNWAY_PRODUCT_UGC:<routerConfigId>`;
 - compare custo esperado por material aprovado somente quando o histórico tiver custos e revisões completos; na ausência dessa cobertura, declare a limitação e use o custo do dry run;
 - `NO_PURCHASE` é obrigatório quando o saldo cobre a reserva e também para bloqueios conhecidos de teto, quota, licença ou qualidade; `RECHARGE_REQUIRED` somente para `INSUFFICIENT_AVAILABLE_CREDITS`, quando o snapshot oficial permitir calcular a diferença; `BLOCKED_UNKNOWN` somente para `PROVIDER_QUOTA_UNKNOWN` preservado em um preflight completo;
 - quando recomendar recarga, informe apenas a recarga mínima, calculada pela diferença necessária em créditos, e o link oficial persistido; não compre nem ative cobrança automática;

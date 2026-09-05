@@ -44,6 +44,7 @@ run_target() {
     PDE_SMOKE_CONSISTENCY_SCRIPT="${fake_consistency}" \
     PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
     PDE_SMOKE_INVOCATION_LOG="${invocation_log}" \
+    MIRA_PRIVATE_E2E_TOKEN="mira-qa-test-only" \
     bash "${runner}" "${target}"
 }
 
@@ -64,9 +65,27 @@ if grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-
   exit 1
 fi
 
+run_target v7
+grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}"
+grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t\trun test:mira-private:public' "${invocation_log}"
+if grep -Fq 'v5.clubemusa.com.br' "${invocation_log}" || grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
+  echo '[ARQUITETURA] O deploy direcionado ao v7 validou um produto nao publicado.' >&2
+  exit 1
+fi
+
+if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \
+  PDE_SMOKE_CONSISTENCY_SCRIPT="${fake_consistency}" \
+  PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
+  PDE_SMOKE_INVOCATION_LOG="${invocation_log}" \
+  bash "${runner}" v7; then
+  echo '[ARQUITETURA] O smoke produtivo de Mira aceitou deploy v7 sem o token exclusivo de QA.' >&2
+  exit 1
+fi
+
 run_target all
 test "$(grep -c $'npm\t.*\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}")" -eq 4
 test "$(grep -c $'npm\t.*\t\trun test:public-diagnostic-smoke' "${invocation_log}")" -eq 2
+test "$(grep -c $'npm\t.*\t\trun test:mira-private:public' "${invocation_log}")" -eq 1
 test "$(grep -c '^consistency' "${invocation_log}")" -eq 2
 test "$(grep -c '^rigel-consistency' "${invocation_log}")" -eq 1
 
@@ -74,6 +93,7 @@ if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \
   PDE_SMOKE_CONSISTENCY_SCRIPT="${fake_consistency}" \
   PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
   PDE_SMOKE_INVOCATION_LOG="${invocation_log}" \
+  MIRA_PRIVATE_E2E_TOKEN="mira-qa-test-only" \
   bash "${runner}" desconhecida; then
   echo '[ARQUITETURA] A homologacao aceitou uma versao frontend desconhecida.' >&2
   exit 1

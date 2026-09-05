@@ -3349,7 +3349,9 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** testes unitários cobrem acesso inválido, bloqueio clínico, ordenação contextual,
   idempotência e retomada; a homologação abre a experiência real em desktop e celular, confirma
   ausência de cobrança/publicação/mídia e só então permite preencher o gate humano. A URL com segredo
-  usa `no-store`, `no-referrer`, `noindex` e não entra em access log.
+  usa fragmento transitório, `no-store`, `no-referrer` e `noindex`, sem enviar o segredo em request,
+  path, query ou access log. O deploy `v7` bloqueia sem o token exclusivo de QA, executa a jornada em
+  desktop, iPhone e Pixel e registra eventos `QA_INTERNAL`, sem consumir os dois convites humanos.
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 
@@ -3488,6 +3490,37 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** testes com relógio fixo reproduzem exatamente os 78 segundos observados, comprovam
   cinco minutos integrais de validade a partir do recebimento e recusam desvio anormal sem persistir
   conta ou preflight. O fluxo continua bloqueando gasto até callback, reserva e decisão de Plutus.
+
+## LOOP-VIDEO-PLUTUS-PREFIXO-ROTA-DIVERGENTE — parecer aprovado não libera Product UGC
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado no banco e nos logs:** o ciclo #10 concluiu o preflight com saldo oficial de
+  2.020 créditos, custo de 648 créditos e reserva vigente, mas o callback de Plutus recebeu HTTP 400
+  por divergência de rota. A Runway ainda não havia sido chamada.
+- **Causa-raiz confirmada no prompt e no histórico:** o contrato de Plutus obrigava sempre
+  `RUNWAY_ROUTER:<routerConfigId>`, embora a nova receita pinada persista o `batchRouteId`
+  `RUNWAY_PRODUCT_UGC:product_ugc@2026-06`. O teste repetia apenas o prefixo antigo e não cobria a
+  primeira rota de receita.
+- **Correção sistêmica:** o prompt e o schema exigem o `batchRouteId` exato; o executor financeiro
+  fixa agregador e rota a partir do snapshot congelado tanto na primeira decisão quanto na retomada
+  da resposta auditada, sem nova chamada de modelo.
+- **Prevenção:** teste de contrato reproduz a resposta real com prefixo legado e comprova que o
+  callback usa `RUNWAY_PRODUCT_UGC:product_ugc@2026-06`, mantendo a resposta bruta para auditoria e
+  o backend como validador final.
+
+## LOOP-VIDEO-PRODUCT-UGC-LIMITE-GENERICO — receita de 15 segundos bloqueada como clipe comum
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado no ciclo #10:** depois de corrigida a identidade da rota aprovada por Plutus,
+  o backend recusou a criação do job com a mensagem de que Runway aceita no máximo dez segundos. A
+  reserva de 648 créditos permaneceu intacta e nenhuma chamada paga chegou ao provider.
+- **Causa-raiz:** a política de duração conhecia exceções de modelos Runway, mas não a receita
+  `RUNWAY_PRODUCT_UGC`; por conter `RUNWAY` no nome, ela caía no fallback genérico de dez segundos,
+  embora o contrato pinado `product_ugc@2026-06` aceite quinze.
+- **Correção sistêmica:** a política resolve `RUNWAY_PRODUCT_UGC` antes do fallback do agregador e
+  aplica o teto contratual de quinze segundos sem alterar o limite das demais rotas.
+- **Prevenção:** teste no service percorre a criação real do job Product UGC de quinze segundos e
+  comprova simultaneamente que a rota genérica Runway continua limitada a dez.
 
 ## LOOP-VIDEO-POSTPRODUCAO-AUDIO-INFINITO — render termina visualmente, mas job não conclui
 

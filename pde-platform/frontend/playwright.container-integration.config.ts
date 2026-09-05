@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /** Executa a homologação PDE dentro da rede Compose isolada da sandbox. */
 export default defineConfig({
   testDir: "./tests",
-  testMatch: /musa-local-integration\.spec\.ts/,
+  testMatch: /(musa-local-integration|mira-private-prototype)\.spec\.ts/,
   workers: 1,
   timeout: 60_000,
   expect: {

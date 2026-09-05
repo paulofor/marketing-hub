@@ -22,8 +22,8 @@ const endpoint = "/api/pde/mira/private/v1";
 /** Renderiza o protótipo privado de Mira sem publicação, cobrança ou mídia. */
 export function MiraPrivatePrototype() {
   const [accessToken] = useState(() => {
-    const token = window.location.pathname.split("/").filter(Boolean)[1] || "";
-    if (token) window.history.replaceState({}, "", "/mira-private");
+    const token = new URLSearchParams(window.location.hash.slice(1)).get("access")?.trim() || "";
+    if (window.location.hash) window.history.replaceState({}, "", "/mira-private");
     return token;
   });
   const [session, setSession] = useState<Session | null>(null);

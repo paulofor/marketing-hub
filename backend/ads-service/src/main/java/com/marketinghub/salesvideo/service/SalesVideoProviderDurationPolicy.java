@@ -7,6 +7,7 @@ import java.util.Optional;
 public final class SalesVideoProviderDurationPolicy {
   private static final int KLING_MAX_SECONDS = 10;
   private static final int RUNWAY_MAX_SECONDS = 10;
+  private static final int RUNWAY_PRODUCT_UGC_MAX_SECONDS = 15;
   private static final int RUNWAY_SEEDANCE_2_MAX_SECONDS = 15;
   private static final int RUNWAY_HAILUO_3_MAX_SECONDS = 10;
   private static final int RUNWAY_GROK_IMAGINE_1_5_MAX_SECONDS = 10;
@@ -48,6 +49,9 @@ public final class SalesVideoProviderDurationPolicy {
     if (normalized.contains("LUMA") || normalized.contains("RAY_3_2")) return null;
     if (normalized.contains("KLING")) {
       return new ProviderLimit("Kling", KLING_MAX_SECONDS);
+    }
+    if (normalized.contains("RUNWAY_PRODUCT_UGC") || normalized.contains("PRODUCT_UGC")) {
+      return new ProviderLimit("Runway Product UGC", RUNWAY_PRODUCT_UGC_MAX_SECONDS);
     }
     if (normalized.contains("SEEDANCE_2") || normalized.contains("SEEDANCE2")) {
       return new ProviderLimit("Seedance 2.0 via Runway", RUNWAY_SEEDANCE_2_MAX_SECONDS);

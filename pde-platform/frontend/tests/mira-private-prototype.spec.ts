@@ -7,13 +7,24 @@ test.describe("protótipo privado de Mira", () => {
 
   test("conclui jornada, retoma e não oferece pagamento", async ({ page }, testInfo) => {
     const errors: string[] = [];
+    const requestedUrls: string[] = [];
+    page.on("request", (request) => requestedUrls.push(request.url()));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
     page.on("response", (response) => {
       if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`);
     });
-    await page.goto(`/mira-private/${token}`);
+    const legacyPath = await page.request.get("/mira-private/legacy-token-must-not-be-accepted");
+    expect(legacyPath.status()).toBe(404);
+    const navigation = await page.goto(`/mira-private#access=${encodeURIComponent(token!)}`);
+    expect(navigation).not.toBeNull();
+    expect(await navigation!.headerValue("cache-control")).toContain("no-store");
+    expect(await navigation!.headerValue("referrer-policy")).toBe("no-referrer");
+    expect(await navigation!.headerValue("x-robots-tag")).toContain("noindex");
+    expect(new URL(page.url()).pathname).toBe("/mira-private");
+    await expect.poll(() => new URL(page.url()).hash).toBe("");
+    expect(requestedUrls.every((url) => !url.includes(token!))).toBe(true);
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Começar leitura privada" }).click();
     const entry = page.getByRole("heading", { name: "Conte o mínimo necessário" });
@@ -26,6 +37,9 @@ test.describe("protótipo privado de Mira", () => {
       await page.getByLabel("Como o rótulo orienta usar").nth(1).fill("Usar para limpar e enxaguar");
       await page.getByRole("button", { name: "Gerar rotina segura" }).click();
     }
+    await expect(result).toBeVisible();
+    await expect(page.locator(".mira-routine-grid h2")).toHaveText(["Limpador Sereno", "Hidratante Brisa"]);
+    await page.reload({ waitUntil: "networkidle" });
     await expect(result).toBeVisible();
     await expect(page.locator(".mira-routine-grid h2")).toHaveText(["Limpador Sereno", "Hidratante Brisa"]);
     const use = page.getByRole("button", { name: "Marcar uma parte como consultada" });

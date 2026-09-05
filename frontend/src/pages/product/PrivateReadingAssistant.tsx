@@ -107,22 +107,28 @@ export default function PrivateReadingAssistant({
               {workspace.guidance}
             </div>
           )}
-          <h5>1. Abra o protótipo privado</h5>
+          <h5>1. Entregue o convite privado à participante</h5>
+          <div className="alert alert-info" role="note">
+            O acesso não usa login do Marketing Hub. Abra ou envie o arquivo de
+            convite individual da leitura {workspace.readingNumber}; ao tocar no
+            convite, o código já chega preenchido e protegido. Não copie códigos
+            para esta tela e não reutilize o convite de outra pessoa.
+          </div>
           <a
-            className="btn btn-primary"
+            className="btn btn-outline-primary"
             href={workspace.prototypeUrl}
             target="_blank"
             rel="noopener noreferrer"
             referrerPolicy="no-referrer"
           >
-            <ExternalLink size={16} aria-hidden="true" /> Abrir protótipo de
-            Mira
+            <ExternalLink size={16} aria-hidden="true" /> Abrir somente a tela
+            do protótipo
           </a>
           <p className="mt-2">
-            Use o convite individual da leitura {workspace.readingNumber}. Se
-            recebeu o convite completo, abra esse link; caso tenha apenas o
-            código, cole-o na tela do protótipo. Sem convite, peça o acesso
-            privado ao responsável pelo teste.
+            Este botão serve apenas para conferir que o protótipo está no ar;
+            ele não concede acesso. Se você ainda não recebeu o arquivo de
+            convite, solicite-o ao responsável pela validação privada antes de
+            chamar a participante.
           </p>
           <h5>2. Acompanhe a pessoa usando</h5>
           <p>

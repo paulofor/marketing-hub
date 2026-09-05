@@ -16,6 +16,10 @@ pessoa ou transcreva sinais técnicos.
   o benefício já aprovado, “Sua rotina, organizada com calma”, sem criar uma marca comercial nova.
 - O backend fornece URL e versão do protótipo aceito; convites individuais permanecem privados.
   Não expor segredos do deploy em consultas administrativas, logs, relatório ou URLs HTTP.
+- A atividade deve distinguir visualmente a tela pública do convite: o link simples apenas comprova
+  disponibilidade e não concede acesso. O operador entrega à participante o arquivo de convite
+  individual; esse arquivo abre o protótipo com fragmento transitório, preenche o código localmente e
+  remove o fragmento antes da primeira requisição. A interface não pede transcrição do segredo.
 - A pessoa aceita participar e usa o seu convite. QA permanece `QA_INTERNAL`; somente uma sessão
   `PRIVATE_READING` pode sustentar leitura humana. Duas leituras exigem pessoas independentes.
 - A atividade assistida importa participante, consentimento, sinais, término e referência auditável

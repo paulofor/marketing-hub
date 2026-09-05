@@ -79,9 +79,9 @@ Duas rodadas locais completas e consecutivas, `final-1` e `final-2`, passaram se
 
 | Verificação | Resultado por rodada |
 |---|---|
-| Backend principal | 2.326 testes aprovados; três ignorados preexistentes, sem falhas ou erros |
+| Backend principal | 2.349 testes catalogados: 2.345 aprovados e quatro condicionais ignorados; sem falhas ou erros |
 | Backend PDE | 160 testes aprovados, sem ignorados |
-| Frontend administrativo | 481 testes aprovados em 141 arquivos |
+| Frontend administrativo | 485 testes aprovados em 142 arquivos |
 | Builds | TypeScript/Vite dos dois frontends, JAR PDE e duas imagens Docker PDE construídas localmente |
 | Jornada existente | Três testes de regressão do protótipo, em desktop, iPhone e Pixel |
 | Nova integração | Nos três dispositivos: acesso, consentimento, retomada após falha, leitura positiva, negativa, troca de convite, QA e decisão BPM |
@@ -89,8 +89,7 @@ Duas rodadas locais completas e consecutivas, `final-1` e `final-2`, passaram se
 | Contratos | Actionlint canônico, Spotless dos arquivos alterados no backend principal, ShellCheck, fronteira de API PDE e contratos de deploy/limpeza |
 | Encerramento | Compose removido com volumes e órfãos; as duas imagens temporárias removidas pelo wrapper |
 
-Os três testes ignorados do backend principal pertencem à comparação literal de HTML GeraLanding,
-ao cenário optativo MySQL de Argos/Meta e ao arquivo externo de pacote criativo; não foram
+Os quatro testes ignorados do backend principal são condicionais preexistentes e não foram
 desabilitados por esta alteração. As rotas e os critérios de Mira foram exercitados sem skips.
 
 Logs, contagens e capturas ficam em `tmp/mira-reading-final-1/` e `tmp/mira-reading-final-2/`, fora
@@ -101,3 +100,28 @@ Na reconsulta produtiva, `prototypeAcceptance` permanece `COMPLETED`; `privateRe
 `privateReading2` permanecem `NOT_STARTED`. O MCP continua retornando somente os cinco eventos QA.
 A primeira leitura produtiva depende de uso e opinião de uma pessoa real, aderente ao público e
 consentida; nenhuma aprovação humana foi registrada pelo teste automatizado.
+
+## Continuação de usabilidade — 05/09/2026
+
+A produção já exibe o assistente e não pede os campos manuais antigos, mas o botão principal abre
+somente a URL base. O texto “Abrir protótipo de Mira” fazia parecer que esse link continha o acesso,
+embora o segredo permaneça corretamente fora da API administrativa.
+
+Foram comparados: expor o token estático no Hub, o que reduz passos mas quebra privacidade; criar uma
+nova emissão autenticada de convites, solução melhor para escala mas sem autenticação administrativa
+segura no escopo atual; e tornar explícita a entrega do arquivo já existente, sem transcrever código.
+A terceira opção foi escolhida agora. A atividade começa pelo arquivo individual, explica que ele
+preenche o acesso localmente e chama a URL base de verificação, não de convite.
+
+O convite da primeira participante foi conferido apenas como arquivo `0600`, destino HTTPS e
+fragmento presente, sem abrir a sessão humana. O token exclusivo de QA abriu a versão publicada,
+removeu o fragmento, manteve `noindex/no-referrer` e mostrou a identidade pública “Sua rotina,
+organizada com calma”, sem erro de console. A produção continua com exatamente cinco eventos
+`QA_INTERNAL`; `privateReading1` permanece `NOT_STARTED`. Somente a participante pode consentir,
+usar seus próprios produtos e declarar preferência/intenção; QA ou o modelo não podem fazê-lo.
+
+A continuação foi revalidada nas rodadas `final-1` e `final-2` junto do contrato de Vega. Em cada
+rodada, o backend teve 2.345 testes aprovados e quatro condicionais ignorados; também passaram
+160 testes do PDE e 485 do frontend,
+MySQL 5.7, builds, imagens temporárias e as 12 jornadas locais. Os containers, volumes e três
+imagens temporárias foram removidos ao final.

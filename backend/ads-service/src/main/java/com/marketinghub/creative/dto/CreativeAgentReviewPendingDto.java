@@ -16,5 +16,6 @@ public record CreativeAgentReviewPendingDto(
     String cta,
     String destinationUrl,
     String mediaUrl,
+    CreativeMediaGovernanceEvidenceDto mediaGovernanceEvidence,
     String desireAssociationMapVersion,
     String desireAssociationMapJson) {}

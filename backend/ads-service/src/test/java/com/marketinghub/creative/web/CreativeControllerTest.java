@@ -171,6 +171,49 @@ class CreativeControllerTest {
         .andExpect(jsonPath("$.destinationUrl").value("https://landing.test/experimento"));
   }
 
+  /**
+   * Expõe a governança da mídia exata e mantém status bloqueante quando sua linhagem está
+   * incompleta.
+   */
+  @Test
+  void agentReviewContextCarriesExactVideoGovernance() throws Exception {
+    String videoUrl = "https://cdn.test/video-governado.mp4";
+    CreateCreativeRequest req = new CreateCreativeRequest();
+    req.setFormat("VIDEO");
+    req.setHeadline("Vídeo governado");
+    req.setPrimaryText("Texto");
+    req.setVideoUrl(videoUrl);
+    req.setStatus(CreativeStatus.DRAFT);
+    mockMvc.perform(
+        post("/api/experiments/" + expId + "/creatives")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(req)));
+    videoAssetRepository.saveAndFlush(
+        ExperimentVideoAsset.builder()
+            .experiment(experimentRepository.findById(expId).orElseThrow())
+            .slot(ExperimentVideoSlot.AD)
+            .objective("Validar anúncio")
+            .primaryMetric("purchase")
+            .provider("MUSA_POST_PRODUCTION")
+            .model("tts")
+            .status(ExperimentVideoStatus.READY)
+            .assetUrl(videoUrl)
+            .requestJson("{}")
+            .reviewStatus(ExperimentVideoReviewStatus.APPROVED)
+            .requiredForRelease(true)
+            .build());
+    Long creativeId = repository.findAll().getLast().getId();
+
+    mockMvc
+        .perform(
+            get("/api/internal/creatives/" + creativeId + "/agent-review/context")
+                .param("experimentId", expId.toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.mediaGovernanceEvidence.verificationStatus").value("INCOMPLETE"))
+        .andExpect(jsonPath("$.mediaGovernanceEvidence.experimentVideoAssetId").isNumber())
+        .andExpect(jsonPath("$.mediaGovernanceEvidence.finalArtifact.url").value(videoUrl));
+  }
+
   /** Garante que a API exponha a fila de aprovação de vídeos. */
   @Test
   void listVideoReviewEndpointReturnsVideoCreatives() throws Exception {

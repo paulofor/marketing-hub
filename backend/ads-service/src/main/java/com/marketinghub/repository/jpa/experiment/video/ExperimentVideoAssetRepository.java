@@ -5,6 +5,7 @@ import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -33,6 +34,18 @@ public interface ExperimentVideoAssetRepository extends JpaRepository<Experiment
         "landingVideoSlot"
       })
   List<ExperimentVideoAsset> findByExperimentIdOrderByCreatedAtDesc(Long experimentId);
+
+  /** Localiza o vídeo mais recente do experimento que corresponde exatamente à mídia do anúncio. */
+  @EntityGraph(
+      attributePaths = {
+        "experiment",
+        "salesVideoProfile",
+        "salesVideoJob",
+        "asset",
+        "landingVideoSlot"
+      })
+  Optional<ExperimentVideoAsset> findFirstByExperimentIdAndAssetUrlOrderByIdDesc(
+      Long experimentId, String assetUrl);
 
   /** Busca o ativo de experimento vinculado ao job de vídeo canônico. */
   @EntityGraph(

@@ -1198,6 +1198,13 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - em 2026-08-08, a leitura operacional de pausas passou a consultar diretamente os campos canônicos `stop_requested_at`/`stop_completed_at`, evitando que uma solicitação persistida ficasse invisível ao Facebook Ads Worker; o diagnóstico da tela também passou a reconhecer o snapshot profissional de targeting enviado à Meta quando a publicação usa o pacote manual aprovado, sem exigir vínculo opcional com um playbook de ad set.
   - em 2026-08-08, criativos novos passaram a exigir revisão multimodal auditável antes da aprovação humana, impedindo que peças incompletas ou sem CTA cheguem à fila de publicação apenas por mudança manual de status.
   - em 2026-09-02, o sucessor Facebook #91 do Vega preservava produto, URL e checkout homologados no #90, mas a prontidão exigia novamente um manifesto GeraLanding e a tela não recebia o `PRODUCT_PROOF` aprovado do plano. O backend agora reutiliza somente a evidência imutável de superfície PDE quando produto, destino e checkout coincidem exatamente, mantém criativo e métricas segregados e entrega à geração apenas `PRODUCT_PROOF` ou `DELIVERY` aprovado do mesmo plano; testes bloqueiam qualquer divergência.
+  - em 2026-09-05, o anúncio #524 do Vega chegou a Têmis com o MP4 e a landing corretos, mas sem a
+    linhagem de direitos já persistida no vídeo #38. O parecer bloqueou legitimamente por
+    `MEDIA_RIGHTS_UNVERIFIED`, e repetir a revisão apenas consumiria modelo. O backend passa a
+    resolver o ativo pela URL exata e entrega hashes do arquivo final e fonte, jobs, referência
+    sintética, consentimento, direitos, licença oficial do provedor e aprovação do vídeo em contrato
+    estruturado. Têmis exige `VERIFIED` e correspondência com a mídia inspecionada; nenhuma prova é
+    injetada na copy pública.
 - **Módulos envolvidos**:
   - `backend/ads-service`;
   - `facebook-ads-worker`;
@@ -3449,6 +3456,12 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   aprovado, mantendo os identificadores internos. O contrato de linguagem nas jornadas cobre
   entrada, resultado, erros, negativas e retomada. Ver a
   [matriz de identidade e continuidade](../homologacao/mira-identidade-participante-v1.md).
+- **Recorrência de orientação fechada localmente em 2026-09-05:** a versão publicada já importava os
+  sinais, mas apresentava o link simples como “Abrir protótipo de Mira”, fazendo o operador esperar
+  que o botão também concedesse acesso. O assistente agora começa pela entrega do arquivo individual,
+  explica que o código chega preenchido e protegido e rebaixa o link simples a uma verificação de
+  disponibilidade. Testes impedem a volta de transcrição manual, codinome na experiência ou convite
+  exposto pelo endpoint.
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 

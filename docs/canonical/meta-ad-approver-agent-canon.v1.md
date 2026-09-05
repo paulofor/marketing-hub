@@ -115,6 +115,10 @@ cancela a ferramenta, invalida as evidências e fecha o gate.
 - URL pública de destino válida;
 - screenshots integrais da landing em mobile e desktop;
 - mapa de associações de desejo e limites de verdade, quando disponíveis.
+- para vídeo, governança estruturada ligada à URL e ao SHA-256 do arquivo final: ativo e job
+  canônicos, origem gerada, referência sintética, consentimento aplicável, direitos, curadoria de
+  licença comercial do provedor e aprovação humana do vídeo. Declaração solta, prompt, catálogo ou
+  evidência de outro arquivo não comprovam os direitos da mídia inspecionada.
 
 Sem qualquer evidência obrigatória, o gate permanece fechado.
 

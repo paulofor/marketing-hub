@@ -32,7 +32,7 @@ async function unavailableEvidence() {
       assert.equal(await page.getByRole("button", { name: "Registrar resultado da leitura" }).isDisabled(), true);
       await page.screenshot({ path: `${output}/${name}-consulta-indisponivel.png`, fullPage: true });
       const popup = context.waitForEvent("page");
-      await page.getByRole("link", { name: "Abrir protótipo de Mira" }).click();
+      await page.getByRole("link", { name: "Abrir somente a tela do protótipo" }).click();
       const prototype = await popup;
       await prototype.getByLabel("Código do convite").waitFor();
       await participantLanguage(prototype);
@@ -152,7 +152,8 @@ async function consentAndUse(page, token, positive) {
       });
       const panel = await context.newPage();
       await panel.goto(admin);
-      const link = panel.getByRole("link", { name: "Abrir protótipo de Mira" });
+      await panel.getByRole("note").filter({ hasText: "arquivo de convite individual" }).waitFor();
+      const link = panel.getByRole("link", { name: "Abrir somente a tela do protótipo" });
       await link.waitFor();
       assert.equal(await link.getAttribute("href"), "https://mira.sandbox.local/mira-private");
       if (name === "desktop") assert.equal(await panel.getByRole("button", { name: "Registrar resultado da leitura" }).isDisabled(), true);

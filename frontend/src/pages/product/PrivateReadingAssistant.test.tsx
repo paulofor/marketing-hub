@@ -68,7 +68,7 @@ describe("leitura privada assistida", () => {
   it("mostra o acesso e remove a transcrição de código, métricas e evidência", async () => {
     setup();
     const link = await screen.findByRole("link", {
-      name: /Abrir protótipo de Mira/,
+      name: /Abrir somente a tela do protótipo/,
     });
     expect(link).toHaveAttribute("href", workspace.prototypeUrl);
     expect(link).toHaveAttribute("target", "_blank");
@@ -80,6 +80,12 @@ describe("leitura privada assistida", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(
+      screen.getByText(/o código já chega preenchido e protegido/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/este botão serve apenas para conferir/i),
+    ).toBeInTheDocument();
   });
 
   it("envia somente referência real e confirmação humana explícita", async () => {
@@ -145,7 +151,9 @@ describe("leitura privada assistida", () => {
     });
     await screen.findByRole("alert");
     expect(
-      screen.getByRole("link", { name: /Abrir protótipo de Mira/ }),
+      screen.getByRole("link", {
+        name: /Abrir somente a tela do protótipo/,
+      }),
     ).toHaveAttribute("href", workspace.prototypeUrl);
     expect(screen.getAllByText("Consulta indisponível")).toHaveLength(5);
     expect(screen.queryByText("Observado")).not.toBeInTheDocument();

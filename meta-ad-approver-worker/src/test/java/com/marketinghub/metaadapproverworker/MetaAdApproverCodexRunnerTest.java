@@ -185,6 +185,21 @@ class MetaAdApproverCodexRunnerTest {
             "critério de aceite observável");
   }
 
+  /** Exige que direitos de vídeo estejam ligados ao arquivo final, e não apenas declarados. */
+  @Test
+  void requiresVerifiedMediaGovernanceForVideo() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
+
+    assertThat(prompt)
+        .contains(
+            "mediaGovernanceEvidence",
+            "status precisa ser `VERIFIED`",
+            "URL e o SHA-256",
+            "referência sintética",
+            "licença comercial do provedor",
+            "ligada a outra mídia mantém o gate fechado");
+  }
+
   /** Garante que Têmis devolva critérios sem criar a alternativa que será revisada. */
   @Test
   void requiresReviewOnlyAndIndependentMaterialization() throws Exception {

@@ -104,6 +104,7 @@ public class CreativeService {
   private final CommercialPlanImageStudioJobRepository commercialPlanImageStudioJobRepository;
   private final TemisVisualPlaybookService temisVisualPlaybookService;
   private final TemisVisualLearningService temisVisualLearningService;
+  private final CreativeMediaGovernanceEvidenceService mediaGovernanceEvidenceService;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -439,7 +440,7 @@ public class CreativeService {
     return toAgentReviewContext(creative);
   }
 
-  /** Monta o contexto canônico do Aprovador com mídia e landing efetivas. */
+  /** Monta o contexto canônico do Aprovador com mídia, direitos e landing efetivas. */
   private CreativeAgentReviewPendingDto toAgentReviewContext(Creative creative) {
     Experiment experiment = creative.getExperiment();
     Hypothesis hypothesis = experiment.getHypothesisRef();
@@ -465,6 +466,7 @@ public class CreativeService {
         creative.getCta(),
         resolveAgentReviewDestinationUrl(creative, experiment),
         mediaUrl,
+        mediaGovernanceEvidenceService.resolve(creative),
         desireMapProduct != null ? desireMapProduct.getDesireAssociationMapVersion() : null,
         desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);
   }

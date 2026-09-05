@@ -109,3 +109,47 @@ Métrica esperada: uma campanha autorizada, sem duplicação, com período e tet
 Continuar com gates íntegros e mensuração atribuída; ajustar conforme parecer e resultados;
 parar diante de período vencido, falha de integração, entrega, mensuração ou limite financeiro.
 Nenhum gasto de mídia, nova geração Runway, aquisição, checkout ou venda foi realizado nesta execução.
+
+## Continuação produtiva — prova de direitos do anúncio #524
+
+Após o deploy anterior, a tela materializou o anúncio #524 com o vídeo #38 e preservou o #37 como
+substituído. Têmis inspecionou a mídia e a landing, mas respondeu `ADJUST` por
+`MEDIA_RIGHTS_UNVERIFIED`. O histórico e o banco confirmaram que a prova já existe: arquivo final
+#2780 com SHA-256, fonte Runway #2772 com SHA-256 e task, projeto #3 com referência sintética #1925,
+evidências de direitos/consentimento, catálogo Runway ativo e vídeo #38 aprovado. A falha é de
+transporte do contexto, não de produção ou aquisição de novos direitos.
+
+Alternativas avaliadas: repetir Têmis mantém o mesmo bloqueio e custo; copiar direitos para a
+descrição pública contamina o anúncio; resolver a cadeia persistida pelo arquivo exato adiciona
+esforço moderado e preserva verdade e copy. Foi escolhida a terceira.
+
+Matriz adicional definida antes dos testes:
+
+| Dimensão | Critério |
+| --- | --- |
+| Correspondência | Somente `ExperimentVideoAsset` do mesmo experimento e com URL idêntica ao anúncio. |
+| Integridade | SHA-256 completo do arquivo final e da fonte gerada, sem baixar ou recalcular em memória. |
+| Origem | Projeto, job, referência OpenAI e identificador de geração permanecem auditáveis. |
+| Direitos | Consentimento aplicável, evidência de direitos e curadoria de licença oficial convergem. |
+| Falha segura | URL ausente, outro ativo, JSON inválido ou prova parcial retornam status bloqueante. |
+| Agente | Têmis aceita direitos somente com `VERIFIED` e mídia final correspondente; não usa memória como prova. |
+| Publicação | Nenhum teste local chama Meta, altera status, solicita release ou gasta mídia. |
+| Regressão | Backend, Têmis, frontend, formatação, builds e jornadas responsivas passam. |
+
+O estado produtivo observado nesta continuação é: experimento `PLANNED`, criativo #524
+`DRAFT/ADJUST`, nenhuma campanha persistida e nenhuma solicitação de liberação. A nova revisão real,
+aprovação humana, clique de liberação e confirmação Meta continuam posteriores ao deploy do contrato.
+
+## Resultado da continuação — direitos e acesso privado
+
+Após a última correção, as rodadas locais completas `final-1` e `final-2` passaram consecutivamente,
+sem alteração de código entre elas. Em cada rodada, o backend teve 2.345 testes aprovados e quatro
+condicionais ignorados; também passaram 160 testes do PDE, 485 do frontend e 87 de Têmis, além de
+MySQL 5.7, Spotless, Actionlint, ShellCheck, contratos MCP,
+builds e 12 jornadas em desktop, iPhone 15 Pro e Pixel 7. A prova de Têmis exige a URL e o SHA-256
+da mídia final, sua fonte gerada, referência sintética e licença comercial curada; prova incompleta
+ou pertencente a outro arquivo mantém a revisão bloqueada.
+
+Foram construídas somente imagens temporárias versionadas do PDE e de Têmis. A topologia Compose,
+os volumes e as três imagens foram removidos após cada rodada. Os testes não chamaram Meta, não
+alteraram o experimento, não solicitaram liberação e não geraram gasto.

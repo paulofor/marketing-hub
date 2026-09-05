@@ -17,6 +17,12 @@ Use obrigatoriamente o MCP `meta_ad_approver` antes de decidir:
 3. `inspecionar_landing` para observar o destino em mobile e desktop;
 4. `recuperar_memoria_especializada` e `recuperar_estrategias_promovidas` somente como contexto, nunca como prova.
 
+Para vídeo, valide `mediaGovernanceEvidence`: o status precisa ser `VERIFIED`, a URL e o SHA-256
+do `finalArtifact` precisam identificar a mídia inspecionada e a linhagem deve comprovar a geração,
+a referência sintética, o consentimento aplicável e a licença comercial do provedor. Catálogo,
+prompt ou declaração isolados não substituem a correspondência com o arquivo final. Evidência
+ausente, incompleta ou ligada a outra mídia mantém o gate fechado.
+
 Se uma ferramenta falhar, a mídia não puder ser vista, o destino não abrir, os identificadores
 divergirem ou CTA/URL estiverem ausentes, mantenha o gate fechado. Nunca aprove por descrição
 textual de um ativo que não foi inspecionado.

@@ -116,6 +116,12 @@ Decisão canônica de 2026-08-14: o detalhe do experimento deve exibir um gate c
    - Todo criativo novo deve passar pelo Agente Especialista em Aprovação de Anúncios. O backend mantém o gate fechado enquanto a decisão não for `APPROVED`; decisões `ADJUST`, `REJECTED`, `FAILED`, pendentes ou em processamento nunca podem ser convertidas em `READY` nem publicadas.
    - O módulo independente `meta-ad-approver-worker` opera esse especialista com Codex ChatGPT em sandbox somente leitura e MCP próprio: analisa a versão, persiste o parecer e, em `ADJUST` ou `REJECTED`, solicita ao backend uma nova versão pelo contrato oficial. O backend controla o avanço, limita o ciclo a três correções automáticas, atribui cada custo ao experimento e interrompe em aprovação, falha ou limite. A tela deve exibir estado, tentativa e causa do bloqueio; o agente não concede aprovação humana, não publica e não amplia orçamento.
    - O agente avalia a mídia real junto de copy, oferta, público e destino, com scores separados de atenção, clareza, desejo, credibilidade e ação. Request, response bruto, modelo, decisão, problemas e recomendações devem permanecer persistidos e auditáveis.
+   - Para vídeo, o snapshot entregue a Têmis deve resolver o `ExperimentVideoAsset` pela mesma URL
+     do criativo e transportar `mediaGovernanceEvidence` estruturada. O status somente pode ser
+     `VERIFIED` quando os hashes do arquivo final e da geração fonte, o projeto do mesmo experimento,
+     a referência sintética, os direitos e a licença comercial do provedor convergirem. Evidência
+     incompleta ou associada a outra URL permanece bloqueante; texto de direitos nunca deve ser
+     inserido nos campos públicos do anúncio para contornar o gate.
    - A aprovação do agente não substitui a aprovação humana: ela apenas habilita a decisão humana final. Alterar mídia, copy, CTA ou destino invalida o parecer anterior e abre nova revisão.
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'` e asset visual publicável.
    - Para criativos de formato `IMAGE`, `READY` só é válido quando `creative.image_url` estiver preenchido com uma URL real. Criativo `IMAGE` sem `image_url` deve permanecer bloqueado, não pode contar na prontidão e não pode aparecer como aprovado publicável na UI.

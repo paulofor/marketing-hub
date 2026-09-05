@@ -15,4 +15,7 @@ public interface SalesVideoProviderModelRepository
   /** Localiza a curadoria do modelo selecionado pelo agregador. */
   Optional<SalesVideoProviderModel> findByAdapterKeyAndExternalModelId(
       String adapterKey, String externalModelId);
+
+  /** Localiza a curadoria do provedor exato registrado na linhagem do vídeo. */
+  Optional<SalesVideoProviderModel> findByProviderName(String providerName);
 }

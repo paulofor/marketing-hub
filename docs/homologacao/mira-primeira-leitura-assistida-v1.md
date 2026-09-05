@@ -42,6 +42,11 @@ não substitui a leitura humana produtiva.
 
 ## Limites operacionais constatados
 
+Atualização em 2026-09-05: o usuário cadastrou a chave e o SSH passou a autenticar no host
+`163.245.200.7`. A ausência de acesso descrita abaixo pertence à execução anterior e foi resolvida.
+A investigação seguinte encontrou versões incompatíveis na consulta de leitura, sem consumo dos
+convites humanos. Ver [identidade e continuidade](mira-identidade-participante-v1.md).
+
 SSH para `root@163.245.200.7` respondeu `Permission denied (publickey,password)`. A sandbox não
 possui chave em `~/.ssh` nem agente SSH autenticado. O MCP permite inventário, logs e operações
 restritas, sem transferência de imagem. A publicação autorizada depende de credencial operacional

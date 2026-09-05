@@ -65,13 +65,17 @@ class MiraPrivatePrototypeServiceTest {
         assertThat(blocked.events()).doesNotContain("VALUE_MOMENT");
     }
 
-    /** Rejeita acesso inexistente e checkout antecipado. */
+    /** Rejeita acesso, ação desconhecida e checkout antecipado sem expor o codinome à participante. */
     @Test
     void rejectsInvalidAccessAndPrematureCheckout() {
         MiraPrivatePrototypeService service = service(mock(AccessService.class));
         assertThatThrownBy(() -> service.access(new MiraPrivatePrototypeService.AccessRequest("wrong", true)))
                 .isInstanceOf(SecurityException.class);
         var started = service.access(new MiraPrivatePrototypeService.AccessRequest("qa-secret", true));
+        assertThatThrownBy(() -> service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("UNKNOWN", true)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageNotContaining("Mira");
         assertThatThrownBy(() -> service.event(started.sessionToken(),
                 new MiraPrivatePrototypeService.EventRequest("CHECKOUT_STARTED", true)))
                 .isInstanceOf(IllegalStateException.class);

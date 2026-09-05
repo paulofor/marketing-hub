@@ -3439,6 +3439,16 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Limite:** implementação local não equivale a leitura humana concluída nem a publicação.
   Ver [cânone](../canonical/mira-leitura-privada-canon.v1.md) e
   [matriz e resultados](../homologacao/mira-primeira-leitura-assistida-v1.md).
+- **Recorrência confirmada em 2026-09-05:** SSH passou a autenticar, mas o PDE `c7e542ba`
+  respondeu 404 à consulta interna usada pelo backend principal `aae31df7`. A tela escondia o
+  link aceito ao falhar essa integração. A projeção administrativa agora preserva o acesso com
+  `EVIDENCE_UNAVAILABLE`, sinais vazios e registro bloqueado; a decisão BPM continua revalidando
+  a prova sem fallback. A matriz local para e retoma o container PDE nos três dispositivos.
+- **Identidade da participante:** o protótipo expunha Mira como marca, a versão interna no resultado
+  e instruções sobre Marketing Hub no encerramento. Esses textos passam a apresentar o benefício
+  aprovado, mantendo os identificadores internos. O contrato de linguagem nas jornadas cobre
+  entrada, resultado, erros, negativas e retomada. Ver a
+  [matriz de identidade e continuidade](../homologacao/mira-identidade-participante-v1.md).
 
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 

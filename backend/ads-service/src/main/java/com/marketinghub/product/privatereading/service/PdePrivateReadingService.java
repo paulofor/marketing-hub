@@ -50,7 +50,7 @@ public class PdePrivateReadingService {
     return product != null && Long.valueOf(miraProductId).equals(product.getId());
   }
 
-  /** Retorna acesso e prontidão calculados no backend, sem credenciais dos convites. */
+  /** Mantém o acesso aceito disponível mesmo sem consulta da prova, bloqueando seu registro. */
   @Transactional(readOnly = true)
   public PrivateReadingWorkspace workspace(long productId, String activityId) {
     Product product =
@@ -59,7 +59,31 @@ public class PdePrivateReadingService {
             .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado."));
     requireSupported(product);
     int readingNumber = readingNumber(activityId);
-    PrivateReadingEvidence evidence = checkedEvidence(product, readingNumber);
+    String acceptedUrl = prototypeUrl(product);
+    PrivateReadingEvidence received;
+    try {
+      received = client.fetch(readingNumber);
+    } catch (IllegalStateException ex) {
+      log.error(
+          "Consulta da prova indisponível; acesso aceito preservado; productId={} activityId={} readingNumber={}",
+          productId,
+          activityId,
+          readingNumber,
+          ex);
+      return new PrivateReadingWorkspace(
+          acceptedUrl,
+          acceptance(product).path("prototypeVersion").asText(),
+          activityId,
+          readingNumber,
+          null,
+          null,
+          Map.of(),
+          false,
+          "EVIDENCE_UNAVAILABLE",
+          "O acesso aceito está abaixo, mas não foi possível consultar o resultado. O registro permanece bloqueado. Atualize novamente após restabelecer a integração; nenhum sinal foi presumido.",
+          null);
+    }
+    PrivateReadingEvidence evidence = checkedEvidence(product, readingNumber, received);
     boolean started = "PRIVATE_READING".equals(evidence.trafficClass());
     boolean finished = started && evidence.finishedAt() != null;
     String guidance =
@@ -71,7 +95,7 @@ public class PdePrivateReadingService {
                     ? "A leitura terminou com os cinco sinais. Confirme a observação humana para registrar."
                     : "A leitura terminou com sinais não observados. Registre o resultado para preservar o aprendizado; o avanço ficará bloqueado para ajuste.";
     return new PrivateReadingWorkspace(
-        prototypeUrl(product),
+        acceptedUrl,
         evidence.prototypeVersion(),
         activityId,
         readingNumber,
@@ -121,11 +145,14 @@ public class PdePrivateReadingService {
     return Map.copyOf(result);
   }
 
-  /**
-   * Valida origem, participante, versão, consentimento e fronteiras sem aceitar dados incompletos.
-   */
+  /** Reconsulta a prova no PDE antes de validar a decisão, sem tolerar indisponibilidade. */
   private PrivateReadingEvidence checkedEvidence(Product product, int number) {
-    PrivateReadingEvidence evidence = client.fetch(number);
+    return checkedEvidence(product, number, client.fetch(number));
+  }
+
+  /** Valida origem, participante, versão, consentimento e fronteiras da prova recebida. */
+  private PrivateReadingEvidence checkedEvidence(
+      Product product, int number, PrivateReadingEvidence evidence) {
     if (evidence == null
         || !"mira-private-validation".equals(evidence.productSlug())
         || !acceptance(product)

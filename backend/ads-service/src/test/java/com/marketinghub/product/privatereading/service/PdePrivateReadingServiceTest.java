@@ -94,6 +94,42 @@ class PdePrivateReadingServiceTest {
         .hasMessageContaining("indisponível");
   }
 
+  /**
+   * Mantém o link aceito em falha de integração sem fabricar participante, ausência ou resultado.
+   */
+  @Test
+  void preservesAcceptedAccessWhenEvidenceIsUnavailable() {
+    when(products.findById(10L)).thenReturn(Optional.of(product()));
+    when(client.fetch(1)).thenThrow(new IllegalStateException("PDE indisponível"));
+    var workspace = service.workspace(10, "privateReading1");
+    assertThat(workspace.prototypeUrl()).isEqualTo("https://v7.clubemusa.com.br/mira-private");
+    assertThat(workspace.status()).isEqualTo("EVIDENCE_UNAVAILABLE");
+    assertThat(workspace.canRecord()).isFalse();
+    assertThat(workspace.signals()).isEmpty();
+    assertThat(workspace.participantReference()).isNull();
+    assertThat(workspace.evidenceId()).isNull();
+    assertThat(workspace.finishedAt()).isNull();
+    verify(products, never()).save(any());
+  }
+
+  /** A degradação da consulta não pode ocultar acesso inválido nem aceitar uma prova de QA. */
+  @Test
+  void stillRejectsInvalidAcceptedUrlAndIncompatibleEvidence() {
+    var invalid = product();
+    invalid.setValidationDefinitionJson(
+        invalid
+            .getValidationDefinitionJson()
+            .replace("/mira-private\"", "/mira-private#access=secret\""));
+    when(products.findById(10L)).thenReturn(Optional.of(invalid));
+    assertThatThrownBy(() -> service.workspace(10, "privateReading1"))
+        .hasMessageContaining("acesso aceito");
+    verifyNoInteractions(client);
+    when(products.findById(10L)).thenReturn(Optional.of(product()));
+    when(client.fetch(1)).thenReturn(evidence("QA_INTERNAL", true, true));
+    assertThatThrownBy(() -> service.workspace(10, "privateReading1"))
+        .hasMessageContaining("não corresponde");
+  }
+
   /** Restringe os sinais à identidade canônica do produto e ao participante da atividade. */
   @Test
   void rejectsAnotherProductAndRepeatedSlot() {

@@ -28,15 +28,19 @@ paths:
                   prototypeVersion: {type: string}
                   activityId: {type: string}
                   readingNumber: {type: integer, enum: [1, 2]}
-                  participantReference: {type: string}
+                  participantReference: {type: string, nullable: true}
                   evidenceId: {type: string, nullable: true, description: Referência auditável independente da credencial de sessão.}
-                  signals: {$ref: '#/components/schemas/Signals'}
+                  signals:
+                    description: Cinco sinais verificados; objeto vazio quando EVIDENCE_UNAVAILABLE, sem inferir ausência de leitura.
+                    oneOf:
+                      - {$ref: '#/components/schemas/Signals'}
+                      - {type: object, maxProperties: 0}
                   canRecord: {type: boolean, description: Consentimento e encerramento reais verificados no backend.}
-                  status: {type: string, enum: [NOT_STARTED, IN_PROGRESS, FINISHED]}
+                  status: {type: string, enum: [NOT_STARTED, IN_PROGRESS, FINISHED, EVIDENCE_UNAVAILABLE]}
                   guidance: {type: string}
                   finishedAt: {type: string, format: date-time, nullable: true}
         '400': {description: Produto ou atividade incompatível.}
-        '500': {description: Integração ou prova inválida. Não equivale a zero eventos.}
+        '500': {description: Aceitação ou prova incompatível. Falha de consulta retorna 200 com EVIDENCE_UNAVAILABLE, acesso aceito preservado e canRecord=false.}
   /api/pde/mira/private/v1/internal/readings/{readingNumber}:
     get:
       operationId: getMiraPrivateReadingEvidence

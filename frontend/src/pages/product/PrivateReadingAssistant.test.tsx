@@ -135,6 +135,28 @@ describe("leitura privada assistida", () => {
     expect(screen.getByText("Não observado")).toBeInTheDocument();
   });
 
+  it("preserva o acesso durante indisponibilidade sem reaproveitar sinais nem liberar registro", async () => {
+    const execute = setup({
+      ...workspace,
+      status: "EVIDENCE_UNAVAILABLE",
+      canRecord: false,
+      guidance:
+        "Não foi possível consultar o resultado. O acesso aceito está abaixo.",
+    });
+    await screen.findByRole("alert");
+    expect(
+      screen.getByRole("link", { name: /Abrir protótipo de Mira/ }),
+    ).toHaveAttribute("href", workspace.prototypeUrl);
+    expect(screen.getAllByText("Consulta indisponível")).toHaveLength(5);
+    expect(screen.queryByText("Observado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aguardando")).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Registrar resultado da leitura" }),
+    ).toBeDisabled();
+    expect(execute).not.toHaveBeenCalled();
+  });
+
   it("limpa a confirmação ao atualizar e impede envio durante a consulta", async () => {
     const execute = setup();
     fireEvent.click(await screen.findByRole("checkbox"));

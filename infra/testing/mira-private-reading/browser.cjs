@@ -7,6 +7,51 @@ fs.mkdirSync(output, { recursive: true });
 const api = "http://127.0.0.1:18090";
 const pde = process.env.MIRA_TEST_PDE_URL || "http://127.0.0.1:18076";
 const admin = "http://127.0.0.1:15173/local-validation/mira-reading.html";
+const profiles = [["desktop", { viewport: { width: 1365, height: 1000 } }], ["iphone", devices["iPhone 15 Pro"]], ["pixel", devices["Pixel 7"]]];
+
+async function unavailableEvidence() {
+  const response = await fetch(`${api}/api/products/10/private-readings/privateReading1`);
+  assert.equal(response.status, 200);
+  const workspace = await response.json();
+  assert.equal(workspace.status, "EVIDENCE_UNAVAILABLE");
+  assert.equal(workspace.canRecord, false);
+  assert.deepEqual(workspace.signals, {});
+  assert.equal(workspace.evidenceId, null);
+  const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", args: ["--no-sandbox"] });
+  try {
+    for (const [name, options] of profiles) {
+      const { defaultBrowserType, ...profile } = options;
+      const context = await browser.newContext(profile);
+      await context.route("https://mira.sandbox.local/**", route =>
+        route.fulfill({ status: 302, headers: { location: `${pde}/mira-private` } }));
+      const page = await context.newPage();
+      await page.goto(admin);
+      await page.getByRole("alert").filter({ hasText: "não foi possível consultar" }).waitFor();
+      assert.equal(await page.getByText("Consulta indisponível", { exact: true }).count(), 5);
+      assert.equal(await page.getByRole("checkbox").count(), 0);
+      assert.equal(await page.getByRole("button", { name: "Registrar resultado da leitura" }).isDisabled(), true);
+      await page.screenshot({ path: `${output}/${name}-consulta-indisponivel.png`, fullPage: true });
+      const popup = context.waitForEvent("page");
+      await page.getByRole("link", { name: "Abrir protótipo de Mira" }).click();
+      const prototype = await popup;
+      await prototype.getByLabel("Código do convite").waitFor();
+      await participantLanguage(prototype);
+      await context.close();
+      process.stdout.write(`${name}: acesso aceito preservado com PDE indisponível; registro bloqueado\n`);
+    }
+    const refused = await fetch(`${api}/api/business-processes/68/products/10/activities/privateReading1/execution-requests`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        decision: "APPROVE", confirmationToken: "CONFIRM:pde-construction-approval:privateReading1",
+        structuredEvidence: { evidenceId: "forged", humanReadingConfirmed: true } }),
+    });
+    assert.equal(refused.status, 400);
+  } finally { await browser.close(); }
+}
+
+async function participantLanguage(page) {
+  assert.equal(await page.title(), "Sua rotina, organizada com calma");
+  assert.doesNotMatch(await page.locator(".mira-private-shell").innerText(), /\bMira\b|mira-private-v\d|Marketing Hub|QA_INTERNAL|validação privada/i);
+}
 
 async function evidence(number) {
   const response = await fetch(`${pde}/api/pde/mira/private/v1/internal/readings/${number}`, {
@@ -19,6 +64,7 @@ async function evidence(number) {
 async function consentAndUse(page, token, positive) {
   await page.goto(`${pde}/mira-private#access=${token}`);
   await page.getByRole("heading", { name: "Sua rotina, organizada com calma" }).waitFor();
+  await participantLanguage(page);
   assert.equal(new URL(page.url()).hash, "");
   const button = page.getByRole("button", { name: "Começar leitura privada" });
   assert.equal(await button.isDisabled(), true);
@@ -36,12 +82,14 @@ async function consentAndUse(page, token, positive) {
       await page.getByLabel("Objetivo de autocuidado").fill("Diagnosticar uma doença");
       await generate.click();
       await page.getByRole("alert").filter({ hasText: "conclusão clínica" }).waitFor();
+      await participantLanguage(page);
       await page.getByLabel("Objetivo de autocuidado").fill("Organizar meus produtos");
     }
     if (token === "mira-local-human-one") {
       await page.route("**/api/pde/mira/private/v1/generate", route => route.abort("failed"), { times: 1 });
       await generate.click();
       await page.getByRole("alert").waitFor();
+      await participantLanguage(page);
       await page.reload();
       await page.getByRole("heading", { name: "Conte o mínimo necessário" }).waitFor();
       assert.equal(await page.getByLabel("Nome", { exact: true }).nth(0).inputValue(), "Hidratante sintético local");
@@ -58,6 +106,7 @@ async function consentAndUse(page, token, positive) {
     }
   }
   await page.getByText("Leitura encerrada.", { exact: false }).waitFor();
+  await participantLanguage(page);
   await page.reload();
   await page.getByText("Leitura encerrada.", { exact: false }).waitFor();
   assert.equal(await page.locator('input[autocomplete="cc-number"]').count(), 0);
@@ -65,6 +114,7 @@ async function consentAndUse(page, token, positive) {
 }
 
 (async () => {
+  if (process.argv.includes("--unavailable")) return unavailableEvidence();
   const denied = await fetch(`${pde}/api/pde/mira/private/v1/internal/readings/1`);
   assert.equal(denied.status, 403);
   const navigation = await fetch(`${pde}/mira-private`);
@@ -83,7 +133,7 @@ async function consentAndUse(page, token, positive) {
   assert.equal(fake.status, 400);
   const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", args: ["--no-sandbox"] });
   try {
-    for (const [name, options] of [["desktop", { viewport: { width: 1365, height: 1000 } }], ["iphone", devices["iPhone 15 Pro"]], ["pixel", devices["Pixel 7"]]]) {
+    for (const [name, options] of profiles) {
       const { defaultBrowserType, ...profile } = options;
       const context = await browser.newContext(profile);
       context.setDefaultTimeout(30000);
@@ -110,6 +160,8 @@ async function consentAndUse(page, token, positive) {
       await link.click();
       const prototype = await popupPromise;
       await prototype.getByLabel("Código do convite").waitFor();
+      await participantLanguage(prototype);
+      await prototype.screenshot({ path: `${output}/${name}-entrada.png`, fullPage: true });
       await consentAndUse(prototype, "mira-local-human-one", true);
       await prototype.screenshot({ path: `${output}/${name}-resultado.png`, fullPage: true });
       const first = await evidence(1);

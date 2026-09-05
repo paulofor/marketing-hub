@@ -3707,6 +3707,24 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   tarefa duplicada e avanço decidido somente pelo backend. A rotina possui thread própria no pool
   mínimo para não ficar oculta por integrações longas.
 
+## LOOP-HARNESS-HTTPS-GETENT-AAAA-FANTASMA — publicação bloqueada sem registro IPv6 real
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** a publicação inicial `33945128796` parou no gate DNS alegando um registro
+  `AAAA`, enquanto o domínio já apontava corretamente para `163.245.200.7` e não possuía IPv6.
+- **Causa-raiz confirmada pelo histórico e pelo DNS:** era a primeira execução do novo workflow, logo
+  não havia publicação anterior bem-sucedida a comparar. Consultas diretas aos RRsets no DNS
+  autoritativo, Cloudflare e Google retornaram um único `A` e nenhum `AAAA`. O workflow usava
+  `getent ahostsv6`, cuja resposta depende da resolução `AF_INET6` do runner e pode incluir endereço
+  IPv4 mapeado/sintetizado; qualquer linha era interpretada como um RR `AAAA` real.
+- **Alternativas avaliadas:** remover o bloqueio aceitaria uma rota IPv6 não atendida; filtrar a saída
+  de `getent` manteria comportamento dependente do sistema; consultar diretamente `A` e `AAAA`
+  preserva o gate e mede a configuração publicada. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** um script versionado consulta os RRsets com `dig`, exige exclusivamente o
+  IPv4 canônico e bloqueia somente `AAAA` efetivamente publicado.
+- **Prevenção:** teste de contrato cobre `A` ausente, divergente e múltiplo, presença real de `AAAA` e
+  proíbe o retorno de `getent ahostsv6` no workflow de publicação.
+
 ## LOOP-ACTIONS-VPS-AGENTES-PRUNE-CONCORRENTE — deploy remove imagem de outro agente
 
 - **Data:** 2026-09-04.

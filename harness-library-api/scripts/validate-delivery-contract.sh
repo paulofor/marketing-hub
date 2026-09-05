@@ -12,6 +12,8 @@ PUBLICATION_WORKFLOW_FILE="${REPOSITORY_ROOT}/.github/workflows/harness-library-
 SECRET_RUNTIME_TEST="${MODULE_ROOT}/scripts/validate-secret-file-runtime.sh"
 PUBLICATION_SCRIPT="${MODULE_ROOT}/scripts/publish-public-https.sh"
 PUBLICATION_SCRIPT_TEST="${MODULE_ROOT}/scripts/test-publish-public-https.sh"
+DNS_VALIDATION_SCRIPT="${MODULE_ROOT}/scripts/validate-public-dns.sh"
+DNS_VALIDATION_SCRIPT_TEST="${MODULE_ROOT}/scripts/test-validate-public-dns.sh"
 PUBLIC_PROXY_CONFIG="${REPOSITORY_ROOT}/lead-portal-payments-service/nginx.conf"
 
 fail() {
@@ -68,8 +70,13 @@ grep -Fq 'cancel-in-progress: false' <<<"${deploy_queue}" \
   || fail 'workflow próprio de publicação HTTPS está ausente.'
 grep -Fq 'PUBLIC_DOMAIN: mkthub.api.br' "${PUBLICATION_WORKFLOW_FILE}" \
   || fail 'workflow HTTPS deve fixar o domínio escolhido pelo usuário.'
-grep -Fq 'getent ahostsv4 "${PUBLIC_DOMAIN}"' "${PUBLICATION_WORKFLOW_FILE}" \
-  || fail 'DNS deve ser validado antes de tocar o proxy público.'
+[[ -x "${DNS_VALIDATION_SCRIPT}" && -x "${DNS_VALIDATION_SCRIPT_TEST}" ]] \
+  || fail 'validação executável dos registros DNS está ausente.'
+grep -Fq 'validate-public-dns.sh' "${PUBLICATION_WORKFLOW_FILE}" \
+  || fail 'DNS deve ser validado por RRset antes de tocar o proxy público.'
+if grep -Fq 'getent ahostsv6' "${PUBLICATION_WORKFLOW_FILE}"; then
+  fail 'workflow não pode inferir registro AAAA a partir da resolução AF_INET6 do sistema.'
+fi
 grep -Fq "schedule:" "${PUBLICATION_WORKFLOW_FILE}" \
   || fail 'certificado público deve possuir rotina de renovação.'
 grep -Fq 'public-https-enabled' "${PUBLICATION_WORKFLOW_FILE}" \
@@ -90,5 +97,6 @@ grep -Fq 'restore_proxy_configuration' "${PUBLICATION_SCRIPT}" \
   || fail 'publicação deve restaurar a configuração anterior diante de falha.'
 
 bash "${PUBLICATION_SCRIPT_TEST}"
+bash "${DNS_VALIDATION_SCRIPT_TEST}"
 
 printf 'Contrato da imagem e do deploy da Biblioteca do Harness validado.\n'

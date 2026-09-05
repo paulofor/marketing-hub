@@ -89,19 +89,8 @@ jobs:
         if: steps.activation.outputs.enabled == 'true'
         run: |
           set -euo pipefail
-          ipv4_addresses="$(getent ahostsv4 "${PUBLIC_DOMAIN}" 2>/dev/null | awk '{print $1}' | sort -u || true)"
-          if ! grep -Fxq "${DEPLOY_HOST}" <<<"${ipv4_addresses}"; then
-            echo "DNS de ${PUBLIC_DOMAIN} ainda não aponta para ${DEPLOY_HOST}." >&2
-            printf '%s\n' "${ipv4_addresses:-sem registro A}" >&2
-            exit 1
-          fi
-          unexpected_ipv4="$(grep -Fvx "${DEPLOY_HOST}" <<<"${ipv4_addresses}" || true)"
-          test -z "${unexpected_ipv4}" \
-            || { echo "DNS também aponta para IPv4 inesperado: ${unexpected_ipv4}" >&2; exit 1; }
-          if getent ahostsv6 "${PUBLIC_DOMAIN}" | grep -q .; then
-            echo "Registro AAAA não homologado para este host; remova-o antes da publicação." >&2
-            exit 1
-          fi
+          bash harness-library-api/scripts/validate-public-dns.sh \
+            "${PUBLIC_DOMAIN}" "${DEPLOY_HOST}"
 
       - name: Sync versioned publication assets
         if: steps.activation.outputs.enabled == 'true'

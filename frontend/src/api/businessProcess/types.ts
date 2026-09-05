@@ -431,7 +431,8 @@ export type ProductProcessActivityExecutionControl = {
     | "EXPERIMENT_PREFLIGHT"
     | "EXPERIMENT_ACTIVATION"
     | "PDE_PRIVATE_PROTOTYPE_ACCEPTANCE"
-    | "PDE_PRIVATE_READING";
+    | "PDE_PRIVATE_READING"
+    | "PDE_PRIVATE_READING_ASSISTED";
   workspaceReferenceId?: number;
   targetProcessDefinitionId?: number;
   requirements: ProductProcessActivityRequirement[];

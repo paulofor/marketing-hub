@@ -3415,6 +3415,31 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   caracteres sob a flag `v` do padrão HTML atual. A expressão passa a representar o hífen fora da
   classe e o teste do painel fixa o valor compatível, impedindo validação silenciosamente ignorada.
 
+## LOOP-MIRA-LEITURA-MANUAL-SEM-ACESSO — operador transcreve sinais sem caminho para o protótipo
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** após aceitar o protótipo, Mira permaneceu em 5/10 atividades. A primeira
+  leitura exigia código manual, sinais e referência de evidência, mas não mostrava a URL aceita.
+  MCP confirmou cinco eventos `QA_INTERNAL` e nenhum `PRIVATE_READING`; a falta de leitura humana
+  não pode ser resolvida repetindo QA ou marcando os campos como positivos.
+- **Causa-raiz:** o formulário genérico aceitava declarações manuais, enquanto o protótipo já
+  conhecia participante, consentimento e eventos. Faltava um contrato autenticado para transportar
+  essa prova à atividade e um acesso visível ao protótipo na mesma tela.
+- **Correção local:** assistente de três passos com URL aceita, instruções para o convite individual,
+  importação de prova e uma confirmação humana explícita. Observação é opcional. O backend reconsulta
+  a prova antes de gravar; sinal forjado, QA, outra pessoa/versão, leitura aberta ou integração
+  indisponível bloqueiam. Respostas negativas são preservadas sem aprovação do gate.
+- **Defeitos encontrados na homologação:** navegação apenas pelo fragmento não remontava React e
+  podia manter a primeira sessão ao abrir o segundo convite. O novo convite agora reinicializa a
+  página sem enviar o fragmento ao servidor; retomada restaura a entrada persistida. A consulta
+  interna declara explicitamente o nome do parâmetro de rota, sem depender de `-parameters`.
+- **Prevenção:** testes de contrato do handler/serviço, MockMvc real da rota, formulário React e
+  integração PDE/MySQL 5.7 com desktop, iPhone e Pixel. Incluem falha de rede após salvar entrada,
+  troca de convite na mesma aba, negativas, congelamento da prova e segregação de QA.
+- **Limite:** implementação local não equivale a leitura humana concluída nem a publicação.
+  Ver [cânone](../canonical/mira-leitura-privada-canon.v1.md) e
+  [matriz e resultados](../homologacao/mira-primeira-leitura-assistida-v1.md).
+
 ## LOOP-ATENA-PLUTUS-CONTRATO-PRIVADO-DIVERGENTE — retentativa posterior reutiliza estratégia antiga
 
 - **Data:** 2026-09-02.

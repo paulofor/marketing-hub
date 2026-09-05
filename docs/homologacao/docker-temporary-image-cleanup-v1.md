@@ -37,3 +37,14 @@ consecutivas passaram. Cada rodada executou sintaxe Bash, ShellCheck, Actionlint
 operacionais do workflow e o teste na engine real. Foram comprovados encerramento normal, coleta
 periódica, preservação do status de falha, sessão ativa, container existente, dry-run, tag externa e
 lock concorrente. Ao final, não restou imagem com o rótulo temporário nem container criado pelos testes.
+
+## Recorrência encontrada na leitura de Mira — 2026-09-05
+
+O caminho sem `AIHUB_HOMOLOGATION_SESSION` explícita gerava data com `T` e `Z` maiúsculos. A mesma
+sessão compunha o nome do repositório Docker, que recusava o build com `repository name must be
+lowercase`. Os testes anteriores usavam sessões explícitas e não cobriam esse caminho padrão.
+
+O wrapper agora gera identificadores em minúsculas. Wrapper e helper recusam nomes incompatíveis
+antes do build. O contrato cobre a sessão automática e entradas inválidas, incluindo maiúsculas e
+separadores repetidos. A homologação de Mira exercita o wrapper sem sessão explícita, constrói as
+duas imagens e verifica sua limpeza ao encerrar, sem remover bases ou imagens alheias.

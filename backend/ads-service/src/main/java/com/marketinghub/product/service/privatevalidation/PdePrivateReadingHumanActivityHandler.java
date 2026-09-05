@@ -11,6 +11,7 @@ import com.marketinghub.businessprocess.execution.service.humanactivity.HumanPro
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityRequirement;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.privatereading.service.PdePrivateReadingService;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,12 +43,16 @@ public class PdePrivateReadingHumanActivityHandler implements HumanProductProces
   private static final Pattern PARTICIPANT_REFERENCE = Pattern.compile("^PV-[A-F0-9]{12}$");
   private final BusinessProcessActivityInstanceRepository instances;
   private final ObjectMapper objectMapper;
+  private final PdePrivateReadingService assistedReadings;
 
-  /** Configura as evidências BPM e o leitor do contrato privado persistido. */
+  /** Configura a consulta de prova própria para atividades que possuem protótipo integrado. */
   public PdePrivateReadingHumanActivityHandler(
-      BusinessProcessActivityInstanceRepository instances, ObjectMapper objectMapper) {
+      BusinessProcessActivityInstanceRepository instances,
+      ObjectMapper objectMapper,
+      PdePrivateReadingService assistedReadings) {
     this.instances = instances;
     this.objectMapper = objectMapper;
+    this.assistedReadings = assistedReadings;
   }
 
   /** Reconhece somente as duas leituras privadas do processo de construção PDE. */
@@ -60,7 +65,7 @@ public class PdePrivateReadingHumanActivityHandler implements HumanProductProces
         && ACTIVITIES.contains(activityDefinition.getActivityId());
   }
 
-  /** Expõe o formulário de leitura somente para um produto planejado com contrato válido. */
+  /** Expõe a assistência integrada ou o formulário legado somente com contrato privado válido. */
   @Override
   @Transactional(readOnly = true)
   public HumanProductProcessActivityReadiness readiness(
@@ -99,6 +104,23 @@ public class PdePrivateReadingHumanActivityHandler implements HumanProductProces
                 "Conclua a atividade Confirmar protótipo privado."));
     boolean ready = productReference && privatePlan && prototypeReady;
     String activityId = activityDefinition.getActivityId();
+    if (ready && assistedReadings.supports(product)) {
+      return new HumanProductProcessActivityReadiness(
+          true,
+          "O protótipo aceito está disponível para a leitura privada.",
+          "Registrar resultado da leitura",
+          "Abra o protótipo, acompanhe a pessoa e atualize o resultado. Os sinais e a referência serão buscados automaticamente.",
+          FIRST_READING.equals(activityId)
+              ? "Primeira leitura privada"
+              : "Segunda leitura privada independente",
+          "Confirmo que acompanhei uma pessoa real, aderente ao público e consentida, e revisei o resultado desta leitura.",
+          "CONFIRM:" + PROCESS_CODE + ":" + activityId,
+          "PDE_PRIVATE_READING_ASSISTED",
+          product.getId(),
+          requirements,
+          HumanProductProcessActivityReadiness.REVIEW_AND_ACCEPT,
+          "pde-private-reading:product:" + product.getId() + ":" + activityId);
+    }
     return new HumanProductProcessActivityReadiness(
         ready,
         ready
@@ -152,7 +174,7 @@ public class PdePrivateReadingHumanActivityHandler implements HumanProductProces
         reading);
   }
 
-  /** Rejeita dados pessoais, sinais ausentes, evento não próprio e pessoa repetida. */
+  /** Reconsulta prova integrada quando disponível; rejeita sinais ausentes e pessoa repetida. */
   private Map<String, Object> evaluatedReading(
       BusinessProcessDefinition process,
       BusinessProcessActivityDefinition activityDefinition,
@@ -164,7 +186,11 @@ public class PdePrivateReadingHumanActivityHandler implements HumanProductProces
         || !hasAcceptedPrototype(product)) {
       throw new IllegalStateException("O protótipo privado ainda não está apto à leitura.");
     }
-    Map<String, Object> evidence = request.structuredEvidence();
+    Map<String, Object> evidence =
+        assistedReadings.supports(product)
+            ? assistedReadings.verifiedEvidence(
+                product, activityDefinition.getActivityId(), request.structuredEvidence())
+            : request.structuredEvidence();
     String participantReference = text(evidence.get("participantReference"));
     if (!PARTICIPANT_REFERENCE.matcher(participantReference).matches()) {
       throw new IllegalArgumentException(

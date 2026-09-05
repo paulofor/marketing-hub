@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Mira - leitura privada assistida
+  version: 1.0.0
+  description: |
+    A interface administrativa abre a URL aceita e importa prova privada autenticada do PDE.
+    A conclusão continua no comando BPM existente. Não expõe convites nem credenciais de sessão.
+paths:
+  /api/products/{productId}/private-readings/{activityId}:
+    get:
+      operationId: getPrivateReadingWorkspace
+      summary: Consulta acesso e resultado privado sem iniciar uma leitura
+      parameters:
+        - {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+        - name: activityId
+          in: path
+          required: true
+          schema: {type: string, enum: [privateReading1, privateReading2]}
+      responses:
+        '200':
+          description: Projeção sem segredo, com Cache-Control no-store.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prototypeUrl: {type: string, format: uri, description: URL HTTPS aceita sem convite no fragmento ou query.}
+                  prototypeVersion: {type: string}
+                  activityId: {type: string}
+                  readingNumber: {type: integer, enum: [1, 2]}
+                  participantReference: {type: string}
+                  evidenceId: {type: string, nullable: true, description: Referência auditável independente da credencial de sessão.}
+                  signals: {$ref: '#/components/schemas/Signals'}
+                  canRecord: {type: boolean, description: Consentimento e encerramento reais verificados no backend.}
+                  status: {type: string, enum: [NOT_STARTED, IN_PROGRESS, FINISHED]}
+                  guidance: {type: string}
+                  finishedAt: {type: string, format: date-time, nullable: true}
+        '400': {description: Produto ou atividade incompatível.}
+        '500': {description: Integração ou prova inválida. Não equivale a zero eventos.}
+  /api/pde/mira/private/v1/internal/readings/{readingNumber}:
+    get:
+      operationId: getMiraPrivateReadingEvidence
+      summary: PDE fornece prova sanitizada ao backend principal autenticado
+      security: [{PdeInternalToken: []}]
+      parameters:
+        - {name: readingNumber, in: path, required: true, schema: {type: integer, enum: [1, 2]}}
+      responses:
+        '200':
+          description: Somente a leitura do convite humano solicitado; QA nunca substitui leitura ausente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productSlug: {type: string, enum: [mira-private-validation]}
+                  prototypeVersion: {type: string, enum: [mira-private-v1]}
+                  participantReference: {type: string}
+                  trafficClass: {type: string, enum: [NOT_STARTED, PRIVATE_READING]}
+                  evidenceId: {type: string, nullable: true}
+                  consentedAt: {type: string, format: date-time, nullable: true}
+                  finishedAt: {type: string, format: date-time, nullable: true}
+                  blocker: {type: string, nullable: true}
+                  signals: {$ref: '#/components/schemas/Signals'}
+                  checkoutMode: {type: string, enum: [SIMULATED_NO_CHARGE]}
+                  paymentEnabled: {type: boolean, enum: [false]}
+                  published: {type: boolean, enum: [false]}
+                  mediaSpendBrl: {type: integer, enum: [0]}
+        '403': {description: Segredo interno ausente ou inválido.}
+  /api/pde/mira/private/v1/finish:
+    post:
+      operationId: finishMiraPrivateReading
+      summary: Encerra uma leitura sem fabricar sinais positivos
+      parameters:
+        - {name: X-Mira-Session, in: header, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Retorna o checkpoint privado com readingFinished=true. Repetição é idempotente.}
+        '403': {description: Sessão privada inválida.}
+components:
+  securitySchemes:
+    PdeInternalToken: {type: apiKey, in: header, name: X-PDE-Internal-Token}
+  schemas:
+    Signals:
+      type: object
+      additionalProperties: false
+      required: [EXPERIENCE_STARTED, VALUE_MOMENT, READY_RESULT_USED, PREFERRED_OVER_FREE, CHECKOUT_STARTED]
+      properties:
+        EXPERIENCE_STARTED: {type: boolean}
+        VALUE_MOMENT: {type: boolean}
+        READY_RESULT_USED: {type: boolean}
+        PREFERRED_OVER_FREE: {type: boolean}
+        CHECKOUT_STARTED: {type: boolean}

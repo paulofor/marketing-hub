@@ -8,10 +8,10 @@ fi
 
 script_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cleanup_script="${AIHUB_DOCKER_CLEANUP_SCRIPT:-${script_root}/cleanup-temporary-docker-images.sh}"
-homologation_session="${AIHUB_HOMOLOGATION_SESSION:-session-$(date -u +%Y%m%dT%H%M%SZ)-$$-${RANDOM}}"
+homologation_session="${AIHUB_HOMOLOGATION_SESSION:-session-$(date -u +%Y%m%dt%H%M%Sz)-$$-${RANDOM}}"
 session_directory="${AIHUB_HOMOLOGATION_SESSION_DIR:-${TMPDIR:-/tmp}/marketinghub-docker-homologation-sessions}"
 
-if ! [[ "$homologation_session" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$ ]]; then
+if ! [[ "$homologation_session" =~ ^[a-z0-9]+([._-][a-z0-9]+)*$ ]] || [[ ${#homologation_session} -gt 128 ]]; then
   echo "AIHUB_HOMOLOGATION_SESSION possui formato inválido." >&2
   exit 2
 fi

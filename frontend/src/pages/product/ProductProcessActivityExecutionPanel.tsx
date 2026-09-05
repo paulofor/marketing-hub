@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import type { ProductProcessActivityExecutionCommand } from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
 import ExperimentRunPanel from "../experiment/ExperimentRunPanel";
+import PrivateReadingAssistant from "./PrivateReadingAssistant";
 
 type Props = {
   activity: ProductProcessActivityExecutionGroup;
@@ -163,6 +164,15 @@ function HumanDecisionForm({
   if (control.workspaceCode === "PDE_PRIVATE_PROTOTYPE_ACCEPTANCE") {
     return (
       <PrivatePrototypeAcceptanceForm
+        activity={activity}
+        executing={executing}
+        onExecute={onExecute}
+      />
+    );
+  }
+  if (control.workspaceCode === "PDE_PRIVATE_READING_ASSISTED") {
+    return (
+      <PrivateReadingAssistant
         activity={activity}
         executing={executing}
         onExecute={onExecute}

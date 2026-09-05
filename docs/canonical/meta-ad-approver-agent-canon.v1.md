@@ -102,6 +102,14 @@ alta definição ou três quadros do vídeo e renderizam a landing em mobile e d
 identificador, evidência ausente ou falha de inspeção mantém o gate fechado. O MCP não publica, não
 altera campanha e não acessa banco.
 
+Para vídeo MP4, os três quadros devem ser extraídos do arquivo final por FFmpeg/FFprobe estáticos e
+pinados em 10%, 50% e 90% da duração. Chromium/Playwright fica responsável pela landing, não pela
+decodificação do H.264/AAC. O download temporário é limitado a 64 MiB, recebe permissão `0600` e é
+removido ao final inclusive em erro. Cada processo de decodificação é limitado a 120 segundos. O CI
+e o deploy devem sintetizar um MP4 H.264, extrair os três quadros e capturar HTML dentro do mesmo
+container não-root e somente leitura usado em produção, além de confirmar que um arquivo inválido é
+bloqueado; health de processo sem essas provas não comprova prontidão visual.
+
 Como o Aprovador executa por `codex exec` sem usuário interativo, o runner declara explicitamente
 `approval_policy=never` por configuração explícita, mantendo `sandbox=read-only`. Todas as ferramentas do MCP publicam
 `readOnlyHint: true`, `destructiveHint: false` e `openWorldHint` coerente com o acesso HTTP. É

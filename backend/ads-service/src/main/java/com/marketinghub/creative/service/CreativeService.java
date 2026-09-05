@@ -85,6 +85,9 @@ public class CreativeService {
   private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 8;
   private static final int MAX_AGENT_REVIEW_RECOVERIES = 2;
   private static final Duration AGENT_REVIEW_LEASE_TIMEOUT = Duration.ofMinutes(50);
+  private static final String AGENT_REVIEW_APPROVAL_BLOCK_REASON =
+      "Aprovação bloqueada: Têmis, Agente Especialista em Anúncios, ainda não aprovou o anúncio. "
+          + "Reenvie-o para a revisão independente.";
 
   private final CreativeRepository repository;
   private final ExperimentRepository experimentRepository;
@@ -1050,9 +1053,7 @@ public class CreativeService {
     if (status == CreativeStatus.READY
         && creative.getAgentReviewStatus() != null
         && creative.getAgentReviewStatus() != CreativeAgentReviewStatus.APPROVED) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT,
-          "Aprovação bloqueada: o Agente Especialista em Anúncios ainda não aprovou o criativo.");
+      throw new ResponseStatusException(HttpStatus.CONFLICT, AGENT_REVIEW_APPROVAL_BLOCK_REASON);
     }
   }
 
@@ -1338,6 +1339,9 @@ public class CreativeService {
         creative.getCta(),
         creative.getDestinationUrl(),
         creative.getStatus(),
+        creative.getAgentReviewStatus(),
+        agentReviewSummary(creative),
+        agentReviewApprovalBlockReason(creative),
         creative.getRejectionReason(),
         creative.getReviewedAt(),
         null,
@@ -1381,6 +1385,9 @@ public class CreativeService {
         experiment != null ? experiment.getPrimaryCta() : null,
         null,
         toCreativeStatus(videoAsset.getReviewStatus()),
+        null,
+        null,
+        null,
         videoAsset.getRejectionReason(),
         videoAsset.getReviewedAt(),
         videoAsset.getCreatedAt(),
@@ -1391,6 +1398,33 @@ public class CreativeService {
         videoAsset.getVisualSourceKey(),
         videoAsset.getVisualSourceDescription(),
         videoAsset.getVisualSimilarityOverrideReason());
+  }
+
+  /** Resume o parecer mais recente de Têmis sem expor o payload técnico integral na fila. */
+  private String agentReviewSummary(Creative creative) {
+    if (!StringUtils.hasText(creative.getAgentReviewJson())) {
+      return null;
+    }
+    try {
+      String summary =
+          objectMapper.readTree(creative.getAgentReviewJson()).path("summary").asText();
+      return StringUtils.hasText(summary) ? summary.trim() : null;
+    } catch (JsonProcessingException ex) {
+      log.warn(
+          "Falha ao resumir parecer de Têmis na fila de vídeos. creativeId={} experimentId={}",
+          creative.getId(),
+          creative.getExperiment() == null ? null : creative.getExperiment().getId(),
+          ex);
+      return null;
+    }
+  }
+
+  /** Expõe a mesma trava especialista aplicada pelo comando de aprovação humana. */
+  private String agentReviewApprovalBlockReason(Creative creative) {
+    return creative.getAgentReviewStatus() != null
+            && creative.getAgentReviewStatus() != CreativeAgentReviewStatus.APPROVED
+        ? AGENT_REVIEW_APPROVAL_BLOCK_REASON
+        : null;
   }
 
   /** Mapeia o filtro da tela para o status de revisão dos vídeos de experimento. */

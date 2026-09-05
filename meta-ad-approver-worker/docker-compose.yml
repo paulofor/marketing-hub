@@ -2,6 +2,7 @@ services:
   meta-ad-approver-worker:
     image: ${META_AD_APPROVER_IMAGE:-marketing-hub/meta-ad-approver-worker:local}
     restart: unless-stopped
+    init: true
     build:
       context: .
       args:

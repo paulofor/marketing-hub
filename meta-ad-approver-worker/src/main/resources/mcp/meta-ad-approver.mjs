@@ -2,6 +2,7 @@ import { chromium } from 'playwright-core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { extractRemoteVideoFrames } from './video-frame-extractor.mjs';
 
 const baseUrl = requiredEnv('MCP_MARKETING_HUB_URL').replace(/\/$/, '');
 const creativeId = positiveInteger(requiredEnv('MCP_CREATIVE_ID'), 'MCP_CREATIVE_ID');
@@ -87,19 +88,25 @@ async function inspectMedia(creative, toolName, startedAt) {
     const data = Buffer.from(await response.arrayBuffer()).toString('base64');
     return [text({ audit: audit(toolName, startedAt), mediaType: 'IMAGE', source: url }), { type: 'image', data, mimeType }];
   }
-  return withBrowser(async browser => {
-    const page = await browser.newPage({ viewport: { width: 1080, height: 1080 } });
-    await page.setContent(`<html><body style="margin:0;background:#000;display:grid;place-items:center;height:100vh"><video id="ad" crossorigin="anonymous" muted playsinline style="max-width:100%;max-height:100%" src="${escapeHtml(url)}"></video></body></html>`);
-    await page.waitForFunction("document.querySelector('#ad').readyState >= 2", null, { timeout: 120000 });
-    const duration = await page.locator('#ad').evaluate(video => video.duration);
-    const result = [text({ audit: audit(toolName, startedAt), mediaType: 'VIDEO', source: url, duration })];
-    for (const position of [0.1, 0.5, 0.9]) {
-      await page.locator('#ad').evaluate((video, second) => { video.currentTime = second; }, Math.max(0, duration * position));
-      await page.waitForTimeout(600);
-      result.push({ type: 'image', data: (await page.screenshot({ type: 'jpeg', quality: 86 })).toString('base64'), mimeType: 'image/jpeg' });
-    }
-    return result;
+  const evidence = await extractRemoteVideoFrames(url, {
+    tool: toolName,
+    creativeId,
+    experimentId
   });
+  return [
+    text({
+      audit: audit(toolName, startedAt),
+      mediaType: 'VIDEO',
+      decoder: 'FFMPEG_7_1_1',
+      source: url,
+      duration: evidence.duration
+    }),
+    ...evidence.frames.map(frame => ({
+      type: 'image',
+      data: frame.toString('base64'),
+      mimeType: 'image/jpeg'
+    }))
+  ];
 }
 
 async function inspectLanding(creative, toolName, startedAt) {
@@ -127,10 +134,8 @@ async function waitForCommercialLanding(page) {
 }
 
 async function withBrowser(action) {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim();
   const browser = await chromium.launch({
     headless: true,
-    ...(executablePath ? { executablePath } : {}),
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
   });
   try { return await action(browser); } finally { await browser.close(); }
@@ -141,4 +146,3 @@ function text(value) { return { type: 'text', text: JSON.stringify(value) }; }
 function httpUrl(value, name) { if (!/^https?:\/\//i.test(String(value ?? ''))) throw new Error(`${name} ausente ou inválida`); return String(value); }
 function positiveInteger(value, name) { const parsed = Number(value); if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error(`${name} deve ser inteiro positivo`); return parsed; }
 function requiredEnv(name) { const value = process.env[name]; if (!value) throw new Error(`Variável obrigatória ausente: ${name}`); return value; }
-function escapeHtml(value) { return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); }

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.ads.AdsServiceApplication;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.Experiment;
@@ -230,6 +231,10 @@ class CreativeControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsString(req)))
         .andExpect(status().isOk());
+    var queued = repository.findAll().getFirst();
+    queued.setAgentReviewStatus(CreativeAgentReviewStatus.ADJUST);
+    queued.setAgentReviewJson("{\"summary\":\"Revisão visual precisa ser repetida.\"}");
+    repository.saveAndFlush(queued);
 
     mockMvc
         .perform(get("/api/creatives/video-review").param("status", "DRAFT"))
@@ -238,6 +243,13 @@ class CreativeControllerTest {
         .andExpect(jsonPath("$[0].sourceType").value("CREATIVE"))
         .andExpect(jsonPath("$[0].funnelSlot").value("AD"))
         .andExpect(jsonPath("$[0].status").value("DRAFT"))
+        .andExpect(jsonPath("$[0].agentReviewStatus").value("ADJUST"))
+        .andExpect(
+            jsonPath("$[0].agentReviewSummary").value("Revisão visual precisa ser repetida."))
+        .andExpect(
+            jsonPath("$[0].approvalBlockedReason")
+                .value(
+                    "Aprovação bloqueada: Têmis, Agente Especialista em Anúncios, ainda não aprovou o anúncio. Reenvie-o para a revisão independente."))
         .andExpect(jsonPath("$[0].videoCostUsd").value(0.0450))
         .andExpect(jsonPath("$[0].totalProductionCostUsd").value(0.0450))
         .andExpect(jsonPath("$[0].videoUrl").value("https://cdn.test/video.mp4"));
@@ -273,6 +285,8 @@ class CreativeControllerTest {
         .andExpect(jsonPath("$[0].funnelSlot").value("LANDING_HERO"))
         .andExpect(jsonPath("$[0].headline").value("Video do E002 para rodar campanha"))
         .andExpect(jsonPath("$[0].status").value("DRAFT"))
+        .andExpect(jsonPath("$[0].agentReviewStatus").doesNotExist())
+        .andExpect(jsonPath("$[0].approvalBlockedReason").doesNotExist())
         .andExpect(jsonPath("$[0].videoCostUsd").value(0.0800))
         .andExpect(jsonPath("$[0].audioCostUsd").value(0.0200))
         .andExpect(jsonPath("$[0].totalProductionCostUsd").value(0.1000))

@@ -3957,6 +3957,31 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Correção local:** tradução de datas inclusivas em horário de Brasília para `start_time/end_time`, sem antecipar início futuro; período ausente, invertido ou vencido bloqueia antes da primeira chamada externa.
 - **Prevenção:** `CampaignScheduleTest` valida limites temporais, e `FacebookCampaignServiceTest` inspeciona os parâmetros reais enviados ao servidor Meta simulado e a ausência de chamadas para período vencido. Regra registrada no cânone de publicação Facebook.
 
+## LOOP-TEMIS-VIDEO-RUNTIME-INCOMPATIVEL — parecer bloqueia porque a inspeção visual não inicia
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** a aprovação humana do anúncio #524 retornou HTTP 409. Depois que a prova
+  de direitos passou a chegar corretamente ao contexto, a nova revisão de Têmis permaneceu em
+  `ADJUST` porque `inspecionar_midia` e `inspecionar_landing` encerraram com
+  `chrome_crashpad_handler: --database is required`.
+- **Histórico e reprodução:** Psique já havia resolvido a inicialização da landing usando o headless
+  shell empacotado pelo Playwright. A repetição dessa correção fez o navegador iniciar, mas a prova
+  com o arquivo produtivo revelou um segundo contrato ausente: os Chromium da imagem retornam
+  `MEDIA_ELEMENT_ERROR: Format error` e anunciam suporte vazio a H.264/AAC.
+- **Alternativas avaliadas:** ignorar Têmis abriria risco comercial; trocar por um navegador completo
+  gravável e com codecs aumentaria a superfície e a instabilidade do build; separar os runtimes usa
+  o headless shell para a landing e um decoder estático para o MP4. Foi escolhida a terceira.
+- **Correção sistêmica:** o worker deixa de criar e injetar `/usr/bin/chromium`, mantém o headless
+  shell para HTML e incorpora FFmpeg/FFprobe 7.1.1 por imagem e digest pinados. O vídeo é limitado a
+  64 MiB, salvo apenas em diretório temporário `0600`, inspecionado em 10%, 50% e 90%, com timeout
+  de 120 segundos por processo, e removido no `finally`. A fila humana expõe status, resumo, motivo
+  canônico de bloqueio e nova revisão.
+- **Prevenção:** testes recusam `executablePath`; o CI e o deploy sintetizam H.264, extraem três JPEGs
+  e capturam HTML como usuário não-root em filesystem read-only, recusam arquivo inválido e mantêm o
+  log da falha assíncrona no mesmo contexto do request. A prova adicional abriu o vídeo produtivo de
+  15,083 segundos e a landing mobile/desktop sem mutação. Referência:
+  `docs/homologacao/vega91-aprovacao-video-temis-v1.md`.
+
 ## LOOP-ACTIONS-CARD-VALIDO-TRATADO-COMO-COLECAO-VENCIDA — pesquisa nova bloqueia deploy
 
 - **Data:** 2026-09-05.

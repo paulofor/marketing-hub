@@ -33,3 +33,8 @@ pessoa ou transcreva sinais técnicos.
   anterior. Uma nova rodada precisa de evidência independente, preservando a anterior.
 - Checkout é `SIMULATED_NO_CHARGE`; leitura e QA não são compra, venda, receita ou autorização de
   mídia. O produto permanece `PLANNED` até os gates seguintes.
+- As leituras privadas são um gate anterior à aquisição, não o canal comercial de Mira. Depois de
+  duas leituras independentes aprovarem utilidade e segurança, o canal principal planejado é mídia
+  paga no Instagram via Meta Ads, em experimento próprio e com a identidade pública do produto.
+  Criação ou ativação dessa campanha continua condicionada à comunicação, jornada, checkout,
+  entrega, instrumentação, teto econômico e autorização humana explícita.

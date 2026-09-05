@@ -213,6 +213,8 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 
 - **Lição de investigação — validar o fluxo completo antes de corrigir (obrigatório)**: quando um sintoma indicar falha em qualquer fluxo do sistema, não conclua a causa-raiz apenas pelo estado exibido na tela, pelo primeiro erro visível ou pela hipótese mais provável. Antes de implementar correção, percorra o fluxo ponta a ponta: identifique a origem do dado/comando, confirme o endpoint/contrato usado, reproduza a chamada real com payload equivalente, verifique logs dos módulos envolvidos, valide o registro ou alteração no banco e compare contrato, DTO/entidade e schema real quando houver persistência. Só defina a causa-raiz após confirmar em qual etapa o fluxo quebra. Aprendizado registrado em 2026-06-25: a primeira decisão foi incorreta porque a análise parou em uma hipótese intermediária e não validou a etapa final de persistência do resultado.
 
+- **Imagens Docker temporárias em homologação local (obrigatório)**: siga `docs/canonical/homologacao-local-docker-canon.v1.md`. Imagens ad hoc de teste devem ser criadas por `scripts/docker-build-temporary-image.sh` dentro de `scripts/run-docker-homologation.sh`, para receber namespace, sessão e rótulos descartáveis. O coletor periódico só pode remover referências desse namespace e deve preservar sessões ativas, imagens usadas por containers e qualquer tag externa. É proibido usar `docker image/system/builder prune -af` como limpeza de homologação. Topologias Compose continuam obrigadas a usar o projeto exclusivo informado pela sandbox e a terminar com `down --volumes --remove-orphans`.
+
 - **json** : temos que evitar ao máximo json dentro de json. Ou seja json em campo texto de outro json. 
 
 

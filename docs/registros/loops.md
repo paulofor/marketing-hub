@@ -3745,6 +3745,26 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   do job `deploy`, rejeita `docker builder/image/system prune -af` e falha quando um novo publicador
   usa o host sem entrar na lista protegida.
 
+## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** a engine Docker isolada chegou a 216 imagens e 33,8 GB durante homologações
+  extensas; 6,4 GB estavam imediatamente recuperáveis, mas imagens locais, bases reutilizáveis e
+  artefatos de execuções possuíam tags heterogêneas e quase nunca declaravam ciclo de vida.
+- **Causa-raiz confirmada pelo inventário da engine e pelo histórico:** os fluxos removiam containers,
+  redes e volumes, mas builds ad hoc não declaravam propriedade ou sessão. Consequentemente, não
+  existia critério seguro para automatizar o descarte. O loop de prune concorrente já comprovou que
+  inferir descarte apenas por ausência momentânea de container pode apagar uma imagem entre build e
+  uso.
+- **Alternativas avaliadas:** prune global recuperaria espaço com risco de corrida; workflow agendado
+  em runner efêmero não alcançaria a engine da sandbox; namespace, rótulo, sessão ativa e lock tornam
+  a propriedade verificável. Foi escolhida a terceira alternativa.
+- **Correção sistêmica:** helper de build marca imagens temporárias; wrapper mantém a sessão ativa,
+  executa o coletor a cada dez minutos e limpa a própria sessão ao terminar. O coletor exige idade
+  mínima para outras sessões e preserva containers e tags externas.
+- **Prevenção:** cânone operacional, teste com Docker simulado e teste na engine real cobrem validação,
+  concorrência, dry-run, sessão ativa, imagem em uso, tag protegida e coleta final sem prune forçado.
+
 ## LOOP-HARNESS-API-SECRET-ILEGIVEL-NONROOT — container seguro não consegue ler credencial
 
 - **Data:** 2026-09-04.

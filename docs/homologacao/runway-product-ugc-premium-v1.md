@@ -11,7 +11,7 @@ reprovação do ativo 37.
 - Gargalo real: o ativo 37 foi rejeitado porque a legenda divergia da locução, houve tremor e a
   composição da personagem com celular diante do espelho ficou irreal.
 - Métrica esperada: um candidato de 15 segundos em 1080 × 1920, com conteúdo falado e legenda
-  equivalentes, movimento contínuo dentro do limite técnico, custo integralmente reconciliado e
+  equivalentes, no máximo quatro planos estáveis, custo integralmente reconciliado e
   revisão independente pendente.
 - Continuar: preflight recente, rota apta, reserva de no máximo 648 créditos, arquivo aprovado pelos
   gates técnicos de Apolo e registrado como candidato pendente para o subprocesso independente de
@@ -28,7 +28,8 @@ reprovação do ativo 37.
 2. Gerar vários clipes pelo Model Router: flexível, porém multiplica custo e risco de quebra de
    personagem, ambiente e movimento entre cenas.
 3. Usar a receita Product UGC com apresentadora licenciada e uma imagem limpa do PDE: uma única
-   tomada social, custo determinístico, duas referências explícitas e melhor aderência a Reels.
+   requisição faturável com poucos planos sociais estáveis, custo determinístico, duas referências
+   explícitas e melhor aderência a Reels.
 
 A terceira alternativa é a rota escolhida. O vídeo do provider será silencioso; voz e legenda vêm
 da mesma fonte textual na pós-produção determinística. Cada trecho de voz é medido e define a janela
@@ -66,7 +67,7 @@ pós-produção continua bloqueando qualquer voz real que ultrapasse o arquivo.
 | Referência | Imagem da apresentadora ausente ou tipo diferente de `image` | Bloqueio antes da Runway |
 | Referência | Imagem do PDE ausente, não HTTPS, sem direitos ou URL que devolve HTML | Bloqueio antes de consultar a conta Runway |
 | Contrato | Versão `unsafe-latest`, duração fora de 4–15 ou proporção diferente das permitidas | Bloqueio determinístico |
-| Planejamento | Planejador antigo exige cinco cortes numa receita de tomada única | Apolo valida a receita pinada sem IA nem cortes e preserva os cartões realmente usados |
+| Planejamento | Planejador antigo exige cinco chamadas numa receita faturada uma única vez | Apolo valida a receita pinada sem IA, limita seus cortes internos e preserva os cartões realmente usados |
 | Projeto existente | O projeto #3 ainda contém o plano do ativo rejeitado | O preset Vega #91 fica disponível na edição, preenche a rota premium e só persiste após salvar |
 | Finanças | Saldo disponível menor que 648, quota ausente ou teto menor que US$ 6,48 | Bloqueio e orientação de Plutus, sem geração |
 | Expiração financeira | Reserva vence enquanto o parecer auditado de Plutus ainda aguarda aplicação | Backend libera a reserva, encerra ciclo e gate como bloqueados e a fila segue sem repetir modelo ou criar job |
@@ -81,8 +82,13 @@ pós-produção continua bloqueando qualquer voz real que ultrapasse o arquivo.
 | Áudio | Product UGC premium finalizado sem trilha licenciada | Voz natural normalizada, sem tom senoidal apresentado como música |
 | Auditoria TTS | Speech devolve MP3 sem usage por request | Request sanitizado, resposta binária em ativo `AUDIO_AUDIT`, SHA-256 e custo pendente, nunca zero inferido |
 | Disclosure | A peça usa voz sintética | Texto “Voz gerada por IA” queimado no vídeo durante toda a locução |
-| Continuidade | Tremor, salto ou correção abrupta acima do limite em tomada única | Candidato bloqueado antes do upload final |
-| Continuidade | Movimento suave com câmera estável | Gate registra métricas e permite revisão independente |
+| Continuidade | Tomada realmente única contém corte detectado | Candidato bloqueado com causa de continuidade própria |
+| Continuidade | Product UGC possui até quatro cortes editoriais limpos e planos individualmente estáveis | Transições são auditadas e excluídas do cálculo de tremor |
+| Continuidade | Tremor, salto ou correção abrupta dentro de qualquer plano | Candidato bloqueado antes do upload final |
+| Continuidade | Movimento suave com câmera estável dentro dos planos | Gate registra métricas e permite revisão independente |
+| Copy visual | Provider preserva o layout, mas inventa palavras ou acentuação na tela | Pós-produção substitui integralmente os planos de produto pela referência aprovada no preflight |
+| Concorrência | Dois workers recebem o mesmo job durante o mesmo polling | Claim atômico entrega uma única lease e o segundo worker recebe conflito |
+| Callback tardio | Worker antigo falha depois que outro já concluiu | Estado `VIDEO_READY` e seus assets permanecem monotônicos |
 | Composição | Espelho, celular refletido ou interface ilegível no conceito | Briefing bloqueado; Product UGC usa apresentadora frontal e referência digital limpa gerada pelo build do PDE |
 | Build da referência | FFmpeg da imagem Alpine não possui decoder SVG | `rsvg-convert` recria PNG e manifesto dentro da imagem Docker versionada |
 | Tipografia da referência | Fonte pedida pelo SVG não existe na imagem Alpine | Build instala DejaVu Sans; gerador exige essa família em todos os textos e bloqueia glyphs ausentes |
@@ -128,6 +134,36 @@ Após a última correção, duas rodadas completas e consecutivas foram executad
 A referência sintética da personagem respondeu como PNG 941 × 1672. Após a publicação do preset, a
 referência limpa do PDE passou a responder como `image/png` em 1080 × 1920. Nenhuma geração real foi
 iniciada e nenhum dos 2.020 créditos informados foi consumido durante essa homologação.
+
+## Execução produtiva do ciclo 11 em 2026-09-05
+
+O Estúdio criou uma única task Runway Product UGC de 15 segundos para o experimento 91. A task
+`e83b5648-a2ab-4248-8848-c59b63fd2c3c` concluiu e o ledger liquidou exatamente 648 créditos
+(US$ 6,48), sem segunda geração. O MP4 bruto tem 1080 × 1920, 24 fps, 15,042 segundos, 9.432.580
+bytes e SHA-256 `c372c1774f2d6982e83b1b2ce4ad2b7acadae2fc3733fa1985e38c30988f4ec0`.
+
+O gate antigo reprovou média 1,306 e pico 54,705 porque calculou movimento através das transições.
+A inspeção histórica do arquivo localizou cortes nos quadros 132, 183 e 258; todos os seis deltas
+acima de oito pixels estavam no corte ou no quadro imediato. Separadas essas transições, os 354
+deltas internos resultaram em média 0,544 e pico 5,112, abaixo dos limites 1,25 e 12. A política
+passou a limitar quatro cortes e medir tremor somente dentro dos planos, preservando uma política
+distinta e estrita quando tomada única for realmente exigida.
+
+A pós-produção do job #21234 gerou voz, legendas e MP4, porém a execução produtiva e a execução local
+haviam assumido o mesmo job com um segundo de diferença. O claim antigo apenas registrava evento e
+não alterava estado; por isso a falha tardia do worker antigo sobrescreveu temporariamente a
+conclusão. A correção torna a reserva atômica, renova a lease por heartbeat e impede regressão de
+estado terminal.
+
+A inspeção visual do primeiro MP4 final ainda encontrou palavras inventadas na interface e
+`Más intenção` no lugar de `Mais intenção`. Sem consumir outro crédito Runway ou refazer a voz, os
+planos 2 e 4 foram substituídos pela referência que o preflight havia aprovado, SHA-256
+`5978ccbb9f70c69c27f9b23a5d982dee1aa8848541b02f01fbace1d19aba527e`. O ativo final #2780 tem
+1080 × 1920, H.264 a 24 fps, áudio AAC, 15,084 segundos e SHA-256
+`caa926f67cb514bdd58184148aff12dfd217b98130b2a57945fdd117c7748961`. O ativo de experimento
+#38 está `READY`, ligado ao job #21234, com copy visual exata, legenda sincronizada e reprodução
+aprovada em desktop, iPhone 15 Pro e Pixel 7. Campanha, mídia e publicação permanecem bloqueadas;
+HLS e revisão humana são gates posteriores e separados da produção do arquivo.
 
 ## Retomada operacional do experimento 91 em 2026-09-04
 

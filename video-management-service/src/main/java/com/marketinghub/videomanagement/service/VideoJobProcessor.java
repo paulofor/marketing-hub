@@ -41,6 +41,7 @@ public class VideoJobProcessor {
     private final ApolloStoryboardPlanner apolloStoryboardPlanner;
     private final ApolloGovernedLearningReporter learningReporter;
     private final ApolloTechnicalVideoQualityGate technicalVideoQualityGate;
+    private final ProductUgcPostProductionContractResolver productUgcContractResolver;
 
     /** Configura dependências de execução, observabilidade e planejamento prévio. */
     public VideoJobProcessor(BackendVideoClient backendClient,
@@ -51,7 +52,8 @@ public class VideoJobProcessor {
                              ObjectMapper objectMapper,
                              ApolloStoryboardPlanner apolloStoryboardPlanner,
                              ApolloGovernedLearningReporter learningReporter,
-                             ApolloTechnicalVideoQualityGate technicalVideoQualityGate) {
+                             ApolloTechnicalVideoQualityGate technicalVideoQualityGate,
+                             ProductUgcPostProductionContractResolver productUgcContractResolver) {
         this.backendClient = backendClient;
         this.providerRegistry = providerRegistry;
         this.assetUploader = assetUploader;
@@ -61,6 +63,7 @@ public class VideoJobProcessor {
         this.apolloStoryboardPlanner = apolloStoryboardPlanner;
         this.learningReporter = learningReporter;
         this.technicalVideoQualityGate = technicalVideoQualityGate;
+        this.productUgcContractResolver = productUgcContractResolver;
     }
 
     /** Executa um job e impede o provider quando o planejamento ou gate prévio falhar. */
@@ -74,6 +77,7 @@ public class VideoJobProcessor {
             backendClient.reportHeartbeat(job.id(), new JobHeartbeatPayload(
                     "Job em execução pelo worker " + properties.getWorkerId(), null));
             SalesVideoProfile profile = loadProfile(job);
+            job = productUgcContractResolver.resolve(job);
             SalesVideoJob originalJob = job;
             job = apolloStoryboardPlanner.planAndApprove(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));

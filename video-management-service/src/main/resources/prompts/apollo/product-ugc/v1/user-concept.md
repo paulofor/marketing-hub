@@ -1,6 +1,6 @@
 Create a premium vertical Instagram UGC video for a Brazilian audience. The adult creator is warm, credible, elegant and accessible.
 
-Use one continuous locked-tripod composition with only gentle intentional body and hand movement. The frame must remain stable, sharp and temporally consistent: no shake, jitter, flicker, zoom pulse or warped hands.
+Use a concise sequence of no more than four intentional locked-tripod shots, alternating the creator and the supplied digital-product screen only when it advances the message. Every shot must remain stable, sharp and temporally consistent: no shake, jitter, flicker, zoom pulse or warped hands. Use clean editorial cuts, never camera-whip transitions.
 
 Never use a mirror, reflection, duplicate person or impossible phone reflection. Show the supplied digital-product screen naturally as an AI-powered experience, never as a physical boxed product.
 

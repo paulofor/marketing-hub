@@ -9,12 +9,32 @@ import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repositório dos jobs do módulo de vídeos. */
 public interface SalesVideoJobRepository
     extends JpaRepository<SalesVideoJob, Long>, JpaSpecificationExecutor<SalesVideoJob> {
+
+  /**
+   * Reserva atomicamente um job novo ou uma execução órfã, impedindo dois workers de processarem o
+   * mesmo vídeo.
+   */
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query(
+      "update SalesVideoJob j set j.status = :processingStatus, "
+          + "j.startedAt = coalesce(j.startedAt, :claimedAt), j.updatedAt = :claimedAt "
+          + "where j.id = :jobId and (j.status = :requestedStatus or "
+          + "(j.status = :processingStatus and (j.updatedAt < :staleBefore or "
+          + "(j.updatedAt is null and (j.startedAt < :staleBefore or "
+          + "(j.startedAt is null and j.requestedAt < :staleBefore))))))")
+  int claimIfAvailable(
+      @Param("jobId") Long jobId,
+      @Param("requestedStatus") SalesVideoStatus requestedStatus,
+      @Param("processingStatus") SalesVideoStatus processingStatus,
+      @Param("claimedAt") Instant claimedAt,
+      @Param("staleBefore") Instant staleBefore);
 
   /** Lista jobs de um perfil de vídeo do mais recente para o mais antigo. */
   List<SalesVideoJob> findByProfileIdOrderByRequestedAtDesc(Long profileId);

@@ -6881,3 +6881,23 @@
 - **Correção preparada:** a operação seleciona primeiro o experimento ativo, exige atribuição própria
   para métricas PDE e reconcilia reservas de vídeo expiradas para que um ciclo antigo não paralise
   Plutus. Nenhuma campanha, contato, geração Runway ou gasto foi iniciado.
+
+## 2026-09-05 — Vega #91: vídeo Product UGC premium produzido
+
+- **Gargalo corrigido:** o experimento #91 não possuía criativo premium utilizável após a reprovação
+  do ativo #37. O objetivo foi produzir um único candidato vertical de 15 segundos, sem autorizar
+  campanha, mídia ou publicação.
+- **Execução financeira:** o ciclo #11 criou somente a task Runway
+  `e83b5648-a2ab-4248-8848-c59b63fd2c3c`, liquidada em 648 créditos (US$ 6,48). Não houve segunda
+  geração; partindo do saldo confirmado de 2.020 créditos, o saldo estimado é 1.372 créditos.
+- **Resultado:** o ativo #38 ficou `READY`, vinculado ao job #21234 e ao asset #2780. O arquivo final
+  é vertical 1080 × 1920, H.264/AAC, tem 15,084 segundos e SHA-256
+  `caa926f67cb514bdd58184148aff12dfd217b98130b2a57945fdd117c7748961`.
+- **Qualidade e prevenção:** o gate passou a medir estabilidade dentro de cada plano, sem confundir
+  cortes editoriais com tremor. Como a Runway inventou palavras na interface, os planos de produto
+  foram substituídos deterministicamente pela referência MUSA aprovada no preflight, preservando a
+  apresentadora, a voz e as legendas já produzidas. Claim atômico e callbacks monotônicos impedem
+  dois workers de processarem ou regredirem o mesmo job.
+- **Validação:** reprodução e layout do candidato foram aprovados em desktop, iPhone 15 Pro e Pixel
+  7. Revisão humana e geração HLS continuam gates posteriores; nenhuma impressão, clique, checkout,
+  venda ou gasto de mídia foi registrado por esta produção.

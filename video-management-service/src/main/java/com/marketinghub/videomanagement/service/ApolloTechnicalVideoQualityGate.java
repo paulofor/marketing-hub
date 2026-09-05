@@ -13,21 +13,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-/** Responsabilidade: reprovar tremor abrupto em tomadas contínuas antes do upload comercial. */
+/** Responsabilidade: medir estabilidade dentro de tomadas ou planos antes do upload comercial. */
 @Component
 public class ApolloTechnicalVideoQualityGate {
     private static final Logger log = LoggerFactory.getLogger(ApolloTechnicalVideoQualityGate.class);
     private static final long PROCESS_TIMEOUT_SECONDS = 120;
     private static final double ROTATION_PIXEL_SCALE = 720.0;
+    private static final Pattern SCENE_CUT_FRAME = Pattern.compile("^frame:(\\d+)\\s+.*$");
     private final ObjectMapper objectMapper;
     private final VideoManagementProperties properties;
 
@@ -38,17 +42,33 @@ public class ApolloTechnicalVideoQualityGate {
         this.properties = properties;
     }
 
-    /** Executa o gate apenas quando o backend exige tomada contínua estável. */
+    /** Executa o gate quando o backend exige estabilidade em tomada única ou planos editoriais. */
     public ProviderArtifacts validate(SalesVideoJob job, ProviderArtifacts artifacts) {
         JsonNode gate = technicalGate(job);
-        if (!gate.path("continuousTakeRequired").asBoolean(false)) return artifacts;
+        boolean continuousTakeRequired = gate.path("continuousTakeRequired").asBoolean(false);
+        boolean intentionalSceneCutsAllowed =
+                gate.path("intentionalSceneCutsAllowed").asBoolean(false);
+        if (!continuousTakeRequired && !intentionalSceneCutsAllowed) return artifacts;
         if (artifacts.videoFile() == null || artifacts.videoFile().content().length == 0) {
             throw new VideoProviderException(
                     "APOLLO_VIDEO_STABILITY_UNAVAILABLE", "Apolo não recebeu vídeo para medir estabilidade.");
         }
         double maximumMean = gate.path("maximumMeanMotionDelta").asDouble(1.25);
         double maximumPeak = gate.path("maximumPeakMotionDelta").asDouble(12.0);
+        int maximumSceneCuts = gate.path("maximumSceneCuts").asInt(0);
         StabilityMetrics metrics = measure(job, artifacts.videoFile().content());
+        if (continuousTakeRequired && metrics.detectedSceneCuts() > 0) {
+            throw new VideoProviderException(
+                    "APOLLO_VIDEO_CONTINUITY_REJECTED",
+                    "Apolo reprovou continuidade: a tomada única contém %d corte(s) de cena."
+                            .formatted(metrics.detectedSceneCuts()));
+        }
+        if (intentionalSceneCutsAllowed && metrics.detectedSceneCuts() > maximumSceneCuts) {
+            throw new VideoProviderException(
+                    "APOLLO_VIDEO_SCENE_CUTS_REJECTED",
+                    "Apolo reprovou montagem: foram detectados %d cortes (máximo %d)."
+                            .formatted(metrics.detectedSceneCuts(), maximumSceneCuts));
+        }
         boolean approved = metrics.meanMotionDelta() <= maximumMean
                 && metrics.peakMotionDelta() <= maximumPeak;
         if (!approved) {
@@ -63,17 +83,20 @@ public class ApolloTechnicalVideoQualityGate {
         }
         LinkedHashMap<String, Object> metadata = new LinkedHashMap<>();
         if (artifacts.metadata() != null) metadata.putAll(artifacts.metadata());
-        metadata.put(
-                "apollo_technical_quality",
-                Map.of(
-                        "stability_status", "APPROVED",
-                        "continuous_take", true,
-                        "measured_frames", metrics.measuredFrames(),
-                        "mean_motion_delta", metrics.meanMotionDelta(),
-                        "peak_motion_delta", metrics.peakMotionDelta(),
-                        "maximum_mean_motion_delta", maximumMean,
-                        "maximum_peak_motion_delta", maximumPeak,
-                        "method", "FFMPEG_VIDSTAB_GLOBAL_MOTION_DELTA"));
+        LinkedHashMap<String, Object> technicalQuality = new LinkedHashMap<>();
+        technicalQuality.put("stability_status", "APPROVED");
+        technicalQuality.put("continuous_take", metrics.detectedSceneCuts() == 0);
+        technicalQuality.put("intentional_scene_cuts_allowed", intentionalSceneCutsAllowed);
+        technicalQuality.put("detected_scene_cuts", metrics.detectedSceneCuts());
+        technicalQuality.put("maximum_scene_cuts", maximumSceneCuts);
+        technicalQuality.put("excluded_transition_deltas", metrics.excludedTransitionDeltas());
+        technicalQuality.put("measured_frames", metrics.measuredFrames());
+        technicalQuality.put("mean_motion_delta", metrics.meanMotionDelta());
+        technicalQuality.put("peak_motion_delta", metrics.peakMotionDelta());
+        technicalQuality.put("maximum_mean_motion_delta", maximumMean);
+        technicalQuality.put("maximum_peak_motion_delta", maximumPeak);
+        technicalQuality.put("method", "FFMPEG_SCENE_AWARE_VIDSTAB_GLOBAL_MOTION_DELTA");
+        metadata.put("apollo_technical_quality", technicalQuality);
         return new ProviderArtifacts(
                 artifacts.providerJobId(),
                 artifacts.videoFile(),
@@ -90,8 +113,25 @@ public class ApolloTechnicalVideoQualityGate {
             directory = Files.createTempDirectory("apollo-stability-" + job.id() + "-");
             Path source = directory.resolve("source.mp4");
             Path transforms = directory.resolve("transforms.trf");
+            Path sceneCuts = directory.resolve("scene-cuts.txt");
             Files.write(source, video);
             String ffmpeg = properties.getProviders().getPostProduction().getFfmpegPath();
+            runProcess(
+                    List.of(
+                            ffmpeg,
+                            "-hide_banner",
+                            "-loglevel",
+                            "error",
+                            "-i",
+                            source.toString(),
+                            "-vf",
+                            "scdet=threshold=10,metadata=print:key=lavfi.scd.time:file=" + sceneCuts,
+                            "-an",
+                            "-f",
+                            "null",
+                            "-"),
+                    directory,
+                    "detecção de cortes editoriais");
             runProcess(
                     List.of(
                             ffmpeg,
@@ -128,7 +168,11 @@ public class ApolloTechnicalVideoQualityGate {
                         "APOLLO_VIDEO_STABILITY_UNAVAILABLE",
                         "ffmpeg não produziu as medições globais de estabilidade.");
             }
-            return analyzeTransformLines(Files.readAllLines(globalMotions, StandardCharsets.UTF_8));
+            List<Integer> sceneCutFrames = Files.isRegularFile(sceneCuts)
+                    ? parseSceneCutFrames(Files.readAllLines(sceneCuts, StandardCharsets.UTF_8))
+                    : List.of();
+            return analyzeTransformLines(
+                    Files.readAllLines(globalMotions, StandardCharsets.UTF_8), sceneCutFrames);
         } catch (IOException ex) {
             log.error("Falha ao medir estabilidade do vídeo; jobId={}", job.id(), ex);
             throw new VideoProviderException(
@@ -138,8 +182,13 @@ public class ApolloTechnicalVideoQualityGate {
         }
     }
 
-    /** Converte as transformações globais em média e pico de mudança entre quadros. */
+    /** Converte transformações em média e pico, desconsiderando somente transições de cena. */
     StabilityMetrics analyzeTransformLines(List<String> lines) {
+        return analyzeTransformLines(lines, List.of());
+    }
+
+    /** Mede tremor dentro dos planos e exclui o corte e o quadro imediato de recomposição. */
+    StabilityMetrics analyzeTransformLines(List<String> lines, List<Integer> sceneCutFrames) {
         List<Motion> motions = new ArrayList<>();
         for (String line : lines) {
             String normalized = line == null ? "" : line.trim();
@@ -164,6 +213,13 @@ public class ApolloTechnicalVideoQualityGate {
         double sum = 0;
         double peak = 0;
         int deltas = 0;
+        int excluded = 0;
+        Set<Integer> excludedDeltas = new HashSet<>();
+        sceneCutFrames.forEach(
+                frame -> {
+                    excludedDeltas.add(frame);
+                    excludedDeltas.add(frame + 1);
+                });
         for (int index = 1; index < motions.size(); index++) {
             Motion previous = motions.get(index - 1);
             Motion current = motions.get(index);
@@ -171,11 +227,31 @@ public class ApolloTechnicalVideoQualityGate {
             double deltaY = current.y() - previous.y();
             double deltaRotation = (current.angle() - previous.angle()) * ROTATION_PIXEL_SCALE;
             double delta = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaRotation * deltaRotation);
+            if (excludedDeltas.contains(index)) {
+                excluded++;
+                continue;
+            }
             sum += delta;
             peak = Math.max(peak, delta);
             deltas++;
         }
-        return new StabilityMetrics(motions.size(), sum / deltas, peak);
+        if (deltas < 8) {
+            throw new VideoProviderException(
+                    "APOLLO_VIDEO_STABILITY_UNAVAILABLE",
+                    "A amostra útil possui poucos quadros após separar as transições editoriais.");
+        }
+        return new StabilityMetrics(
+                motions.size(), sum / deltas, peak, sceneCutFrames.size(), excluded);
+    }
+
+    /** Extrai os números de quadro produzidos pelo filtro scdet sem inferir pela duração. */
+    List<Integer> parseSceneCutFrames(List<String> lines) {
+        List<Integer> result = new ArrayList<>();
+        for (String line : lines) {
+            Matcher matcher = SCENE_CUT_FRAME.matcher(line == null ? "" : line.trim());
+            if (matcher.matches()) result.add(Integer.parseInt(matcher.group(1)));
+        }
+        return result;
     }
 
     /** Lê o contrato técnico do job e falha fechado quando o JSON obrigatório está corrompido. */
@@ -254,5 +330,10 @@ public class ApolloTechnicalVideoQualityGate {
     private record Motion(double x, double y, double angle) {}
 
     /** Resume a amostra usada pelo gate para persistência e testes. */
-    record StabilityMetrics(int measuredFrames, double meanMotionDelta, double peakMotionDelta) {}
+    record StabilityMetrics(
+            int measuredFrames,
+            double meanMotionDelta,
+            double peakMotionDelta,
+            int detectedSceneCuts,
+            int excludedTransitionDeltas) {}
 }

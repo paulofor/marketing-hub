@@ -471,7 +471,9 @@ public class VideoProductionCycleService {
       metadata.put("post_production", postProduction);
       if (productUgc) {
         LinkedHashMap<String, Object> technicalGate = new LinkedHashMap<>();
-        technicalGate.put("continuousTakeRequired", true);
+        technicalGate.put("continuousTakeRequired", false);
+        technicalGate.put("intentionalSceneCutsAllowed", true);
+        technicalGate.put("maximumSceneCuts", 4);
         technicalGate.put("maximumMeanMotionDelta", new BigDecimal("1.25"));
         technicalGate.put("maximumPeakMotionDelta", new BigDecimal("12.0"));
         technicalGate.put("forbidMirrorOrReflection", true);

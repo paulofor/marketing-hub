@@ -364,7 +364,9 @@ class VideoProductionCycleServiceTest {
         .contains(
             "\"experimentId\":91",
             "RUNWAY_PRODUCT_UGC_WITH_DETERMINISTIC_POST_PRODUCTION",
-            "\"continuousTakeRequired\":true",
+            "\"continuousTakeRequired\":false",
+            "\"intentionalSceneCutsAllowed\":true",
+            "\"maximumSceneCuts\":4",
             "\"captionMustMatchNarration\":true",
             "\"forbidMirrorOrReflection\":true",
             "\"assemblyRequired\":false",

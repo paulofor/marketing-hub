@@ -233,6 +233,50 @@ class SalesVideoProfileServiceTest {
     assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2_5")).isEqualTo(15);
   }
 
+  /** Aceita os quinze segundos previstos pelo contrato fixado da receita Runway Product UGC. */
+  @Test
+  void shouldAcceptProductUgcAtPinnedRecipeLimit() {
+    SalesVideoProfile profile = profileWithDefaults();
+    profile.setTargetDurationSeconds(15);
+    SalesVideoScript script = approvedScript(profile);
+    RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+    request.setRequestedBy("owner@tenant.io");
+    request.setExecutionMode(SalesVideoExecutionMode.TEST);
+    request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+    request.setProviderName("RUNWAY_PRODUCT_UGC");
+    request.setTargetDurationSeconds(15);
+    SalesVideoJob generatedJob =
+        SalesVideoJob.builder()
+            .id(89L)
+            .profile(profile)
+            .script(script)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("RUNWAY_PRODUCT_UGC")
+            .executionMode(SalesVideoExecutionMode.TEST)
+            .jobType(SalesVideoJobType.RENDER)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .build();
+
+    given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+    given(
+            scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(
+                profile.getId(), SalesVideoScriptStatus.APPROVED))
+        .willReturn(Optional.of(script));
+    given(jobService.createJob(any(), any(), any(), any(), any(), any(), any()))
+        .willReturn(generatedJob);
+    given(jobRepository.save(any(SalesVideoJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    given(profileRepository.save(any(SalesVideoProfile.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+
+    SalesVideoJobDto response = service.requestRender(profile.getId(), request);
+
+    assertThat(response.getId()).isEqualTo(89L);
+    assertThat(response.getProviderName()).isEqualTo("RUNWAY_PRODUCT_UGC");
+    assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_PRODUCT_UGC")).isEqualTo(15);
+    assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY")).isEqualTo(10);
+  }
+
   /** Aceita vídeo Luma longo porque o executor divide o alvo em cenas de até dez segundos. */
   @Test
   void shouldAcceptLongLumaRenderAsSceneMontage() {

@@ -25,7 +25,7 @@ public class FinancialAgentScheduler {
     this.properties = properties;
   }
 
-  /** Processa em PLAY no máximo um relatório por ciclo para controlar custo e auditoria. */
+  /** Processa no máximo um parecer e reutiliza a resposta auditada com a rota canônica do ciclo. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
@@ -36,7 +36,7 @@ public class FinancialAgentScheduler {
         if (cycle.financialReviewRawResponse() != null
             && !cycle.financialReviewRawResponse().isBlank()) {
           backend.decideVideoCycle(
-              cycle.id(), runner.videoDecision(cycle.financialReviewRawResponse()));
+              cycle.id(), runner.videoDecision(cycle.financialReviewRawResponse(), cycle));
         } else {
           VideoCycleReviewResult result = runner.reviewVideoCycle(cycle);
           backend.recordVideoCycleAudit(cycle.id(), result.audit());

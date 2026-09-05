@@ -142,7 +142,7 @@ public class FinancialCodexRunner {
     return audit;
   }
 
-  /** Avalia um teto de vídeo e devolve decisão e auditoria da mesma interação de modelo. */
+  /** Avalia um teto de vídeo e devolve decisão canônica e auditoria da interação de modelo. */
   public VideoCycleReviewResult reviewVideoCycle(VideoProductionCycleReview cycle)
       throws IOException, InterruptedException {
     Path output = Files.createTempFile("financial-video-cycle-", ".json");
@@ -167,7 +167,7 @@ public class FinancialCodexRunner {
             "Codex financeiro falhou no ciclo: " + Files.readString(processOutput));
       }
       String raw = Files.readString(output);
-      Map<String, Object> decision = videoDecision(raw);
+      Map<String, Object> decision = videoDecision(raw, cycle);
       TokenUsage usage = readTokenUsage(processOutput);
       LinkedHashMap<String, Object> executionAudit = new LinkedHashMap<>();
       executionAudit.put("executionMode", "MODEL");
@@ -232,6 +232,52 @@ public class FinancialCodexRunner {
         "rechargeUrl",
         result.path("rechargeUrl").isTextual() ? result.get("rechargeUrl").asText() : null);
     return decision;
+  }
+
+  /** Vincula a decisão auditada à identidade exata da conta e da rota resolvidas pelo preflight. */
+  public Map<String, Object> videoDecision(String raw, VideoProductionCycleReview cycle)
+      throws IOException {
+    Map<String, Object> decision = videoDecision(raw);
+    JsonNode financialSnapshot = objectMapper.readTree(cycle.financialSnapshot());
+    JsonNode providerPreflight = financialSnapshot.path("providerPreflight");
+    String canonicalAggregator = requiredText(providerPreflight, "aggregatorName", "agregador");
+    String selectedRoutesJson =
+        requiredText(providerPreflight, "selectedRoutesJson", "rotas selecionadas");
+    JsonNode selectedRoutes = objectMapper.readTree(selectedRoutesJson);
+    if (!selectedRoutes.isArray() || selectedRoutes.isEmpty()) {
+      throw new IllegalArgumentException("Preflight financeiro sem rota selecionada.");
+    }
+    String canonicalRoute =
+        requiredText(selectedRoutes.get(0), "batchRouteId", "identidade da rota");
+    for (JsonNode selectedRoute : selectedRoutes) {
+      String currentRoute = requiredText(selectedRoute, "batchRouteId", "identidade da rota");
+      if (!canonicalRoute.equalsIgnoreCase(currentRoute)) {
+        throw new IllegalArgumentException(
+            "Preflight financeiro contém identidades de rota incompatíveis.");
+      }
+    }
+    Object modelAggregator = decision.put("recommendedAggregator", canonicalAggregator);
+    Object modelRoute = decision.put("recommendedRoute", canonicalRoute);
+    if (!canonicalAggregator.equalsIgnoreCase(String.valueOf(modelAggregator))
+        || !canonicalRoute.equalsIgnoreCase(String.valueOf(modelRoute))) {
+      log.warn(
+          "Identidade financeira normalizada pelo preflight; cycleId={} modelAggregator={} modelRoute={} canonicalAggregator={} canonicalRoute={}",
+          cycle.id(),
+          modelAggregator,
+          modelRoute,
+          canonicalAggregator,
+          canonicalRoute);
+    }
+    return decision;
+  }
+
+  /** Lê um texto obrigatório do snapshot financeiro sem criar valor implícito. */
+  private String requiredText(JsonNode node, String field, String label) {
+    String value = node.path(field).asText("").trim();
+    if (value.isEmpty()) {
+      throw new IllegalArgumentException("Preflight financeiro sem " + label + ".");
+    }
+    return value;
   }
 
   /** Monta o comando de gate sem pesquisa externa e com telemetria JSON auditável. */

@@ -63,6 +63,12 @@ ID quando existir e SHA-256. Como o endpoint de Speech não devolve uso por requ
 exibe de forma legível que a voz foi gerada por IA. O endpoint não aceita `service_tier`, e essa
 exceção funcional deve constar na auditoria em vez de enviar campo não suportado.
 
+O limite genérico de dez segundos das rotas Runway de clipe não se aplica à receita fixada
+`RUNWAY_PRODUCT_UGC`, cujo contrato aceita até quinze segundos. A validação de duração do backend
+deve resolver primeiro a identidade da receita e somente depois aplicar o fallback genérico do
+agregador; assim, uma aprovação financeira íntegra não é desfeita durante a criação transacional do
+job.
+
 Quando a rota paga depender dessa finalização premium, o preflight deve confirmar previamente que
 pós-produção, TTS natural, modelo, voz e credencial estão configurados. A ausência de qualquer item
 bloqueia antes da reserva e da chamada Runway; concluir o vídeo visual sem capacidade de produzir o
@@ -77,6 +83,13 @@ isolado devem usar endpoints e estados distintos para impedir que uma verificaç
 O parecer de Plutus deve registrar prompt, resposta bruta, modelo e uso antes do callback funcional.
 Se o callback falhar, a próxima leitura reutiliza a resposta auditada e não consome uma segunda
 interação de IA.
+
+A identidade da recomendação não é texto livre do modelo: o executor financeiro deve copiar
+`recommendedAggregator` do agregador persistido no preflight e `recommendedRoute` do `batchRouteId`
+exato das rotas selecionadas. Para Model Router, a rota começa com `RUNWAY_ROUTER:`; para a receita
+Product UGC, começa com `RUNWAY_PRODUCT_UGC:`. A resposta bruta de Plutus permanece auditada, mas o
+callback funcional usa a identidade canônica do snapshot para impedir divergência de prefixo,
+repetição de modelo e reserva parada.
 
 ## Contrato financeiro da fase de descoberta
 

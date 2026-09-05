@@ -132,6 +132,8 @@ class FinancialCodexRunnerTest {
             "rastreabilidade do custo incremental novo",
             "preflight READY e reserva preventiva ainda vigente",
             "RUNWAY_ROUTER:<routerConfigId>",
+            "RUNWAY_PRODUCT_UGC:<routerConfigId>",
+            "batchRouteId",
             "recarga mínima");
     String schema =
         Files.readString(
@@ -141,6 +143,7 @@ class FinancialCodexRunnerTest {
         .contains(
             "recommendedAggregator",
             "recommendedRoute",
+            "batchRouteId",
             "estimatedCostUsd",
             "costBenefitBasis",
             "RECHARGE_REQUIRED",
@@ -211,5 +214,42 @@ class FinancialCodexRunnerTest {
         .containsEntry("decision", "APPROVED")
         .containsEntry("recommendedAggregator", "Runway")
         .containsEntry("estimatedCostUsd", new BigDecimal("1.25"));
+  }
+
+  /** Corrige deterministicamente o prefixo legado usando a rota exata do preflight Product UGC. */
+  @Test
+  void deveVincularParecerPersistidoARotaProductUgcDoPreflight() throws Exception {
+    FinancialCodexRunner runner =
+        new FinancialCodexRunner(new FinancialAgentProperties(), new ObjectMapper());
+    VideoProductionCycleReview cycle =
+        new VideoProductionCycleReview(
+            10L,
+            3L,
+            4L,
+            null,
+            91L,
+            "PENDING_FINANCIAL_REVIEW",
+            new BigDecimal("6.48"),
+            BigDecimal.ZERO,
+            "{\"providerPreflight\":{\"aggregatorName\":\"Runway\","
+                + "\"selectedRoutesJson\":\"[{\\\"batchRouteId\\\":\\\"RUNWAY_PRODUCT_UGC:product_ugc@2026-06\\\"}]\"}}",
+            338L,
+            null);
+
+    var decision =
+        runner.videoDecision(
+            "{\"decision\":\"APPROVED\",\"reason\":\"Saldo e teto válidos.\","
+                + "\"recommendedAggregator\":\"Runway\","
+                + "\"recommendedRoute\":\"RUNWAY_ROUTER:product_ugc@2026-06\","
+                + "\"estimatedCostUsd\":6.48,"
+                + "\"costBenefitBasis\":\"Dry run oficial dentro do teto.\","
+                + "\"creditAction\":\"NO_PURCHASE\","
+                + "\"recommendedRechargeCredits\":null,\"rechargeUrl\":null}",
+            cycle);
+
+    assertThat(decision)
+        .containsEntry("recommendedAggregator", "Runway")
+        .containsEntry("recommendedRoute", "RUNWAY_PRODUCT_UGC:product_ugc@2026-06")
+        .containsEntry("estimatedCostUsd", new BigDecimal("6.48"));
   }
 }

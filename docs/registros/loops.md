@@ -92,6 +92,49 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   três gates diretos e recusam o piso fixo de cem visitas. Teste do backend mantém o Rigel fora das
   etapas Meta e preserva o fluxo pago existente.
 
+## LOOP-BPM-EXPERIMENTO-PLANEJADO-MASCA-OPERACAO — sucessor vira o ciclo atual antes da ativação
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** as tarefas #339 e #340 de `Verificar integridade dos eventos` do Vega
+  foram ligadas ao experimento #91, ainda `PLANNED`, enquanto o experimento #90 permanecia
+  `RUNNING` e com o preflight produtivo aprovado.
+- **Causa-raiz:** a tela escolhia a referência da tarefa mais recente e, na ausência dela, o
+  experimento mais recentemente atualizado. Nenhuma das duas regras distinguia operação autorizada
+  de sucessor ainda planejado.
+- **Correção sistêmica:** o processo de operação resolve primeiro o experimento `RUNNING` e somente
+  depois um ciclo já operado. Tentativas criadas por engano para um sucessor planejado permanecem no
+  histórico, mas não comandam o estado nem a próxima execução.
+- **Prevenção:** teste reproduz #90 ativo, #91 planejado e #340 bloqueado, exigindo que tela e novo
+  request usem `experiment:90` sem apagar a tentativa anterior.
+
+## LOOP-FUNIL-PDE-VERSAO-CONTAMINA-EXPERIMENTO — tráfego antigo aparece como visita comercial
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** os experimentos #90 e #91 exibiam as mesmas 17 entradas, embora não
+  tivessem contato ou campanha atribuída. As 17 sessões da experiência v7 ocorreram antes da criação
+  de ambos e o endpoint analítico por experimento permanecia zerado.
+- **Causa-raiz:** na ausência de UTM, o funil usava o agregado global da versão PDE e seu horário
+  global. Uma versão compartilhada não transporta identidade nem janela temporal do experimento.
+- **Correção sistêmica:** métricas comerciais PDE passam a exigir campanha ou criativo atribuível ao
+  experimento. O agregado por versão continua disponível apenas como diagnóstico técnico; acesso e
+  primeiro uso globais também não são promovidos ao funil.
+- **Prevenção:** testes cobrem canal direto, Facebook sem campanha, UTM divergente, UTM exata e
+  métricas pós-compra globais, mantendo visita, compra e entrega zeradas sem evidência própria.
+
+## LOOP-VIDEO-PLUTUS-RESERVA-EXPIRADA — ciclo antigo monopoliza a fila financeira
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** o ciclo #10 permaneceu em `PENDING_FINANCIAL_REVIEW` depois de sua reserva
+  expirar. Plutus reutilizava a resposta auditada, o callback era recusado a cada minuto e o item
+  mais antigo impedia o consumo normal dos ciclos seguintes.
+- **Causa-raiz:** a validade era conferida somente no callback de aprovação; não existia transição
+  backend para encerrar uma autorização vencida antes da leitura da fila.
+- **Correção sistêmica:** antes do polling, o executor solicita reconciliação. Sob locks, o backend
+  libera apenas reserva `RESERVED` vencida e sem consumo, bloqueia ciclo e gate com causa explícita e
+  mantém qualquer reserva vigente intacta.
+- **Prevenção:** testes provam ordem reconciliação → leitura, isolamento diante de indisponibilidade,
+  ausência de job e preservação do parecer bruto para auditoria.
+
 ## LOOP-ARGOS-METODO-AUDITORIA-FORA-DO-CONTRATO — pesquisa conclui e callback final é revertido
 
 - **Data:** 2026-08-31.
@@ -2609,6 +2652,16 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de contrato cobrem bloqueio antes do custo, motivo exato, recusa de tarefa
   financeira genérica, recusa de versão antiga, evidência financeira estruturada e retentativa pela
   tela. Nenhuma atividade pode ter um gate mais permissivo na UI do que no worker.
+- **Recorrência fechada em 2026-09-05:** a atividade `Verificar integridade dos eventos` do Vega
+  criou a tarefa #339 para Hermes, embora o plano 3 possuísse somente pareceres históricos de Atena
+  anteriores ao `MARKET_STRATEGY_V2`. O worker bloqueou corretamente antes do modelo, mas a tela
+  continuou oferecendo uma retentativa com a mesma entrada. Todas as cinco atividades de Hermes no
+  processo de otimização passam a consultar o mesmo contrato estratégico entregue ao worker e
+  validam disponibilidade, versão, SHA-256, estado e fronteira operacional. Enquanto o contrato não
+  existir, a tela orienta solicitar o novo parecer de Atena no plano comercial e não cria outra
+  tarefa. Gates independentes são compostos: `task-2` preserva simultaneamente estratégia e amostra
+  consentida, sem duplicar ou remover proteção. Testes reproduzem o parecer histórico, as
+  divergências de hash e fronteira e dois pré-requisitos concorrentes.
 
 ## LOOP-PDE-ATIVACAO-DIRETA-ESTADOS-DIVERGENTES — preflight aprovado sem avanço comercial
 

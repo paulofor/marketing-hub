@@ -28,4 +28,18 @@ class VideoProductionCycleControllerTest {
     assertThat(method.getAnnotation(PostMapping.class).value())
         .containsExactly("/api/sales-videos/autonomy/v1/provider-preflights");
   }
+
+  /** Expõe reconciliação explícita antes da leitura da fila sem atribuí-la ao endpoint GET. */
+  @Test
+  void shouldExposeFinancialReviewReconciliationEndpoint() throws Exception {
+    VideoProductionCycleService service = mock(VideoProductionCycleService.class);
+    VideoProductionCycleController controller = new VideoProductionCycleController(service);
+
+    controller.reconcileFinancialReview();
+
+    verify(service).reconcileFinancialReviewQueue();
+    Method method = VideoProductionCycleController.class.getMethod("reconcileFinancialReview");
+    assertThat(method.getAnnotation(PostMapping.class).value())
+        .containsExactly("/api/internal/sales-videos/autonomy/v1/financial-review/reconcile");
+  }
 }

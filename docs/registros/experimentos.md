@@ -6867,3 +6867,17 @@
   checkout e pagamento devem continuar eventos reais e separados.
 - **Limite desta entrega local:** nenhum experimento, campanha, criativo, gasto ou venda produtiva
   foi criado antes do deploy da nova funcionalidade pelo fluxo oficial.
+
+## 2026-09-05 — Vega: integridade operacional sem misturar o sucessor Facebook
+
+- **Identidade confirmada:** o ambiente não possui produto Venus nem tarefa #399. O caso compatível
+  é o Vega, cuja tarefa #339 falhou e cuja retentativa pela tela criou a #340.
+- **Evidência da retentativa:** depois de Atena publicar o `MARKET_STRATEGY_V2`, Hermes executou com
+  modelo e auditoria completos. O bloqueio deixou de ser técnico e mostrou que a tarefa recebeu o
+  experimento #91 `PLANNED`, sem campanha, em vez do #90 `RUNNING` no canal direto.
+- **Integridade das métricas:** os 17 acessos exibidos para #90 e #91 são o agregado histórico da v7,
+  anterior à criação dos experimentos. Nenhum contato consentido, checkout, pagamento ou venda foi
+  comprovado; o placar correto permanece zero.
+- **Correção preparada:** a operação seleciona primeiro o experimento ativo, exige atribuição própria
+  para métricas PDE e reconcilia reservas de vídeo expiradas para que um ciclo antigo não paralise
+  Plutus. Nenhuma campanha, contato, geração Runway ou gasto foi iniciado.

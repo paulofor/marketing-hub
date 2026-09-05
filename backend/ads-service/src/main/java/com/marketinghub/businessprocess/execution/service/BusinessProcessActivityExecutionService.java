@@ -29,6 +29,7 @@ import com.marketinghub.businessprocess.execution.service.recentExecutions.Busin
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
@@ -54,6 +55,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,7 +313,8 @@ public class BusinessProcessActivityExecutionService {
     Map<Long, BusinessProcessActivityExecutionResponse> taskResponses = new LinkedHashMap<>();
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
-    String currentExecutionReference = currentExecutionReference(tasks, instances);
+    String currentExecutionReference =
+        resolveExecutionReference(selectedProcess, product, productExperiments, tasks, instances);
     String readinessSourceReference =
         currentExecutionReference == null
             ? initialSourceReference(selectedProcess, product, productExperiments)
@@ -437,7 +440,9 @@ public class BusinessProcessActivityExecutionService {
     List<BusinessProcessActivityInstance> processInstances =
         productProcessActivityInstances(
             productPlans, productExperiments, productId, process.getProcessCode());
-    String currentSourceReference = currentExecutionReference(processTasks, processInstances);
+    String currentSourceReference =
+        resolveExecutionReference(
+            process, product, productExperiments, processTasks, processInstances);
     String sourceReference =
         currentSourceReference == null
             ? initialSourceReference(process, product, productExperiments)
@@ -495,14 +500,11 @@ public class BusinessProcessActivityExecutionService {
           result.objectiveAchieved(),
           result.message());
     }
-    Optional<AgentProductProcessActivityReadinessProvider> agentReadinessProvider =
-        agentActivityReadinessProvider(process, activityDefinition);
+    List<AgentProductProcessActivityReadinessProvider> agentReadinessProviders =
+        agentActivityReadinessProviders(process, activityDefinition);
     AgentProductProcessActivityReadiness agentReadiness =
-        agentReadinessProvider
-            .map(
-                provider ->
-                    provider.readiness(process, activityDefinition, product, sourceReference))
-            .orElse(null);
+        combinedAgentActivityReadiness(
+            agentReadinessProviders, process, activityDefinition, product, sourceReference);
     if (agentReadiness != null && !agentReadiness.ready()) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, agentReadiness.reason());
     }
@@ -558,6 +560,20 @@ public class BusinessProcessActivityExecutionService {
   /** Resolve a referência inicial sem fabricar experimento para um protótipo ainda privado. */
   private String initialSourceReference(
       BusinessProcessDefinition process, Product product, List<Experiment> productExperiments) {
+    if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
+      Optional<Experiment> running =
+          productExperiments.stream()
+              .filter(experiment -> experiment.getStatus() == ExperimentStatus.RUNNING)
+              .findFirst();
+      Optional<Experiment> alreadyOperated =
+          productExperiments.stream()
+              .filter(experiment -> experiment.getStatus() != ExperimentStatus.PLANNED)
+              .findFirst();
+      return running
+          .or(() -> alreadyOperated)
+          .map(experiment -> "experiment:" + experiment.getId())
+          .orElse(null);
+    }
     if (!productExperiments.isEmpty()) {
       return "experiment:" + productExperiments.getFirst().getId();
     }
@@ -566,6 +582,22 @@ public class BusinessProcessActivityExecutionService {
       return "product:" + product.getId() + "@private-validation-v1";
     }
     return null;
+  }
+
+  /**
+   * Mantém o processo de operação vinculado ao experimento efetivamente iniciado, mesmo quando um
+   * sucessor planejado recebeu por engano uma tentativa mais recente.
+   */
+  private String resolveExecutionReference(
+      BusinessProcessDefinition process,
+      Product product,
+      List<Experiment> productExperiments,
+      List<AgentTask> tasks,
+      List<BusinessProcessActivityInstance> instances) {
+    if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
+      return initialSourceReference(process, product, productExperiments);
+    }
+    return currentExecutionReference(tasks, instances);
   }
 
   /** Prefere o nome interno no título operacional sem expor ausência como texto vazio. */
@@ -901,22 +933,43 @@ public class BusinessProcessActivityExecutionService {
     return compatible.stream().findFirst();
   }
 
-  /** Localiza o único gate de prontidão compatível com a atividade atribuída a agente. */
-  private Optional<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProvider(
+  /** Localiza todos os gates independentes aplicáveis à atividade atribuída a agente. */
+  private List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
-    List<AgentProductProcessActivityReadinessProvider> compatible =
-        agentActivityReadinessProviders.stream()
-            .filter(provider -> provider.supports(process, activityDefinition))
+    return agentActivityReadinessProviders.stream()
+        .filter(provider -> provider.supports(process, activityDefinition))
+        .toList();
+  }
+
+  /** Compõe os gates aplicáveis e preserva todos os motivos de bloqueio sem depender da ordem. */
+  private AgentProductProcessActivityReadiness combinedAgentActivityReadiness(
+      List<AgentProductProcessActivityReadinessProvider> providers,
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activityDefinition,
+      Product product,
+      String sourceReference) {
+    if (providers.isEmpty()) return null;
+    List<AgentProductProcessActivityReadiness> evaluations =
+        providers.stream()
+            .map(
+                provider ->
+                    provider.readiness(process, activityDefinition, product, sourceReference))
             .toList();
-    if (compatible.size() > 1) {
-      throw new IllegalStateException(
-          "Mais de um gate de agente atende à atividade "
-              + activityDefinition.getActivityId()
-              + " do processo "
-              + process.getProcessCode()
-              + ".");
-    }
-    return compatible.stream().findFirst();
+    boolean ready = evaluations.stream().allMatch(AgentProductProcessActivityReadiness::ready);
+    String reason =
+        evaluations.stream()
+            .filter(evaluation -> ready || !evaluation.ready())
+            .map(AgentProductProcessActivityReadiness::reason)
+            .filter(value -> value != null && !value.isBlank())
+            .distinct()
+            .collect(Collectors.joining(" "));
+    return new AgentProductProcessActivityReadiness(
+        ready,
+        reason.isBlank()
+            ? ready
+                ? "Todos os pré-requisitos da atividade estão prontos."
+                : "A atividade possui pré-requisito pendente."
+            : reason);
   }
 
   /** Busca tarefas do produto, de seus planos e experimentos sem misturar outro processo. */
@@ -1091,18 +1144,19 @@ public class BusinessProcessActivityExecutionService {
                       executor.readiness(
                           selectedProcess, definition, product, readinessSourceReference))
               .orElse(null);
-      Optional<AgentProductProcessActivityReadinessProvider> agentReadinessProvider =
+      List<AgentProductProcessActivityReadinessProvider> agentReadinessProviders =
           definition == null
-              ? Optional.empty()
-              : agentActivityReadinessProvider(selectedProcess, definition);
+              ? List.of()
+              : agentActivityReadinessProviders(selectedProcess, definition);
       AgentProductProcessActivityReadiness agentReadiness =
-          agentReadinessProvider
-              .filter(ignored -> hasExecutionContext && readinessSourceReference != null)
-              .map(
-                  provider ->
-                      provider.readiness(
-                          selectedProcess, definition, product, readinessSourceReference))
-              .orElse(null);
+          hasExecutionContext && readinessSourceReference != null
+              ? combinedAgentActivityReadiness(
+                  agentReadinessProviders,
+                  selectedProcess,
+                  definition,
+                  product,
+                  readinessSourceReference)
+              : null;
       boolean backendStateAllowsRequest =
           "NOT_STARTED".equals(situation.operationalState())
               || "BLOCKED".equals(situation.operationalState());
@@ -1138,7 +1192,7 @@ public class BusinessProcessActivityExecutionService {
               backendReadiness,
               humanExecutor.isPresent(),
               humanReadiness,
-              agentReadinessProvider.isPresent(),
+              !agentReadinessProviders.isEmpty(),
               agentReadiness,
               hasExecutionContext,
               productExecutionEnabled);

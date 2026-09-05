@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
@@ -1168,8 +1169,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 0,
                 0,
                 0,
-                0,
-                0,
+                8,
+                7,
                 0,
                 3765490,
                 "2026-07-21T02:00:00Z",
@@ -1232,6 +1233,20 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals("Entrada na tela inicial do PED/MUSA", pdeEntry.getLabel());
     assertEquals(29, pdeEntry.getTotalCount());
     assertEquals(Instant.parse("2026-07-22T23:07:32Z"), pdeEntry.getLastEventAt());
+    assertEquals(
+        0,
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.ABERTURA_EMAIL_COMPRA)
+            .findFirst()
+            .orElseThrow()
+            .getTotalCount());
+    assertEquals(
+        0,
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO)
+            .findFirst()
+            .orElseThrow()
+            .getTotalCount());
   }
 
   /** Valida que o funil PDE atribui entrada quando o PDE envia o ID do anúncio no utm_content. */
@@ -1316,15 +1331,16 @@ class ExperimentFunnelServiceRenderCompleteTest {
   }
 
   /**
-   * Valida que o funil PDE sem campanha publicada usa a versão da URL do experimento e contabiliza
-   * consumo de vídeo.
+   * Valida que o funil PDE sem atribuição própria não herda o agregado histórico da versão
+   * compartilhada.
    */
   @Test
-  void summarizePdeMembershipUsesExperimentVersionAndVideoMetricsBeforeCampaignExists() {
+  void summarizePdeMembershipDoesNotUseVersionMetricsBeforeAttributionExists() {
     Experiment experiment =
         Experiment.builder()
             .id(76L)
             .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
             .followUpActionUrl("https://v6.clubemusa.com.br")
             .build();
     when(experimentRepository.findById(76L)).thenReturn(Optional.of(experiment));
@@ -1414,18 +1430,87 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .findFirst()
             .orElseThrow();
 
-    assertEquals(70, pdeEntry.getTotalCount());
-    assertEquals(34, videoPartial.getTotalCount());
-    assertEquals(12, videoComplete.getTotalCount());
+    assertEquals(0, pdeEntry.getTotalCount());
+    assertEquals(0, videoPartial.getTotalCount());
+    assertEquals(0, videoComplete.getTotalCount());
     verify(pdeAnalyticsClient).fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
   }
 
   /**
-   * Valida que o funil PDE usa a versão do slot quando há código de campanha salvo, mas nenhum UTM
-   * do analytics corresponde ao experimento.
+   * Impede que uma campanha Meta ainda inexistente herde como visitas o histórico compartilhado da
+   * versão PDE publicada.
    */
   @Test
-  void summarizePdeMembershipFallsBackToVersionWhenAttributionDoesNotMatch() {
+  void summarizeFacebookPdeWithoutCampaignDoesNotUseVersionFallback() {
+    Experiment experiment =
+        Experiment.builder()
+            .id(91L)
+            .experimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL)
+            .platform(ExperimentPlatform.FACEBOOK)
+            .followUpActionUrl("https://v7.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.aggregateManualByExperiment(91L, null)).thenReturn(List.of());
+    when(jdbcTemplate.queryForList(
+            any(String.class),
+            eq(String.class),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
+        .thenReturn(List.of());
+    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v7.clubemusa.com.br"))
+        .thenReturn(
+            new PdeAnalyticsSummary(
+                "metodo-musa-7-dias",
+                "musa-pde-entry-v7-product-ugc",
+                132,
+                17,
+                17,
+                17,
+                17,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                500000,
+                "2026-09-04T13:46:00Z",
+                List.of(),
+                List.of(
+                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
+                        "musa-pde-entry-v7-product-ugc", 132, 17, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of()));
+
+    var summary = service.summarize(91L);
+    var diagnostics = service.diagnosePdeCockpitIntegration(91L);
+
+    var pdeEntry =
+        summary.stream()
+            .filter(stage -> stage.getStage() == ExperimentFunnelStage.VISUALIZACAO_FORM)
+            .findFirst()
+            .orElseThrow();
+    assertEquals(0, pdeEntry.getTotalCount());
+    assertNull(pdeEntry.getLastEventAt());
+    assertEquals(false, diagnostics.fallbackUsed());
+    assertEquals("EXPERIMENT_ATTRIBUTION_REQUIRED", diagnostics.fallbackReason());
+  }
+
+  /**
+   * Valida que o funil PDE não troca uma UTM sem correspondência pelo agregado global da versão.
+   */
+  @Test
+  void summarizePdeMembershipDoesNotFallBackWhenAttributionDoesNotMatch() {
     Experiment experiment =
         Experiment.builder()
             .id(77L)
@@ -1507,15 +1592,6 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 List.of(),
                 List.of(),
                 List.of()));
-    when(pdeProductionSlotRepository.findFirstByDomain("v6.clubemusa.com.br"))
-        .thenReturn(
-            Optional.of(
-                PdeProductionSlot.builder()
-                    .domain("v6.clubemusa.com.br")
-                    .publicUrl("https://v6.clubemusa.com.br")
-                    .experienceVersion("musa-pde-entry-v6-video-motivacional")
-                    .build()));
-
     var summary = service.summarize(77L);
 
     var pdeEntry =
@@ -1529,9 +1605,9 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .findFirst()
             .orElseThrow();
 
-    assertEquals(29, pdeEntry.getTotalCount());
-    assertEquals(6, videoComplete.getTotalCount());
-    assertEquals(Instant.parse("2026-07-31T00:51:38Z"), pdeEntry.getLastEventAt());
+    assertEquals(0, pdeEntry.getTotalCount());
+    assertEquals(0, videoComplete.getTotalCount());
+    assertNull(pdeEntry.getLastEventAt());
   }
 
   /**
@@ -1764,9 +1840,9 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(Instant.parse("2026-07-31T00:51:38Z"), pdeEntry.getLastEventAt());
   }
 
-  /** Valida que o diagnóstico do cockpit explica URL, versão PDE e fallback usados no funil. */
+  /** Valida que o diagnóstico explica a versão disponível sem usá-la como dado comercial. */
   @Test
-  void diagnosePdeCockpitIntegrationExplainsVersionFallback() {
+  void diagnosePdeCockpitIntegrationExplainsMissingExperimentAttribution() {
     Experiment experiment =
         Experiment.builder()
             .id(77L)
@@ -1869,8 +1945,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals("musa-pde-entry-v6-video-motivacional", diagnostics.matchedExperienceVersion());
     assertTrue(diagnostics.attributionFilterApplied());
     assertEquals(0, diagnostics.matchedTrafficSources());
-    assertTrue(diagnostics.fallbackUsed());
-    assertEquals("ATTRIBUTION_NOT_MATCHING_VERSION_AVAILABLE", diagnostics.fallbackReason());
+    assertEquals(false, diagnostics.fallbackUsed());
+    assertEquals("EXPERIMENT_ATTRIBUTION_NOT_MATCHING", diagnostics.fallbackReason());
     assertEquals(1, diagnostics.availableExperienceVersions().size());
     assertEquals(29, diagnostics.availableExperienceVersions().get(0).pdeEntries());
   }

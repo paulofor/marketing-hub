@@ -398,6 +398,31 @@ public class VideoProviderFinancialPreflightService {
       throw conflict("Uma reserva com consumo iniciado não pode ser liberada como não utilizada.");
     }
     Instant now = Instant.now(clock);
+    releaseUnusedReservation(account, reservation, now);
+  }
+
+  /**
+   * Libera atomicamente uma reserva preventiva vencida e informa se o ciclo perdeu a autorização.
+   */
+  @Transactional
+  public boolean releaseExpiredUnusedReservation(Long cycleId) {
+    VideoProviderAccount account = accountByCycleForUpdate(cycleId);
+    VideoCreditReservation reservation =
+        reservationRepository.findByVideoProductionCycleIdForUpdate(cycleId).orElse(null);
+    Instant now = Instant.now(clock);
+    if (reservation == null
+        || !"RESERVED".equals(reservation.getStatus())
+        || reservation.getExpiresAt() == null
+        || reservation.getExpiresAt().isAfter(now)) {
+      return false;
+    }
+    releaseUnusedReservation(account, reservation, now);
+    return true;
+  }
+
+  /** Devolve à conta os créditos de uma reserva não consumida sob os locks já adquiridos. */
+  private void releaseUnusedReservation(
+      VideoProviderAccount account, VideoCreditReservation reservation, Instant now) {
     account.setReservedCredits(
         nonNull(account.getReservedCredits())
             .subtract(nonNull(reservation.getReservedCredits()))

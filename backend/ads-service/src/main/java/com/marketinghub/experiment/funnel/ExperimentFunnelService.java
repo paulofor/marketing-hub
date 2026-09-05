@@ -1528,12 +1528,7 @@ public class ExperimentFunnelService {
     }
 
     List<String> attributionCodes = fetchExperimentAttributionCodes(experiment);
-    PdeMembershipMetric metric =
-        aggregatePdeMembershipMetric(
-            summary,
-            attributionCodes,
-            experiment.getFollowUpActionUrl(),
-            !isFakeExperiment(experiment));
+    PdeMembershipMetric metric = aggregatePdeMembershipMetric(summary, attributionCodes);
     mergeMetric(
         stages,
         ExperimentFunnelStage.VISUALIZACAO_FORM,
@@ -1671,22 +1666,13 @@ public class ExperimentFunnelService {
     return fakeCodes.stream().distinct().toList();
   }
 
-  /**
-   * Agrega métricas PDE usando apenas origens de tráfego ligadas à campanha quando os códigos
-   * existem; antes da campanha existir, usa a versão do slot publicado no destino do experimento.
-   */
+  /** Agrega somente métricas PDE que possuem atribuição própria do experimento. */
   private PdeMembershipMetric aggregatePdeMembershipMetric(
-      PdeAnalyticsSummary summary,
-      List<String> attributionCodes,
-      String followUpActionUrl,
-      boolean allowVersionFallback) {
+      PdeAnalyticsSummary summary, List<String> attributionCodes) {
     if (attributionCodes == null
         || attributionCodes.isEmpty()
         || summary.trafficSources() == null) {
-      if (!allowVersionFallback) {
-        return PdeMembershipMetric.empty();
-      }
-      return aggregatePdeMembershipMetricByExperienceVersion(summary, followUpActionUrl);
+      return PdeMembershipMetric.empty();
     }
     long pdeEntries = 0;
     long videoPartial = 0;
@@ -1711,15 +1697,7 @@ public class ExperimentFunnelService {
       subscriptionApproved += source.subscriptionApproved();
       lastEventAt = max(lastEventAt, parsePdeInstant(source.lastEventAt()));
     }
-    if (!matchedAttribution
-        && allowVersionFallback
-        && findMatchingExperienceVersion(summary, followUpActionUrl).isPresent()) {
-      log.warn(
-          "Analytics PDE sem origem UTM correspondente; usando fallback pela versao do slot. followUpActionUrl={} attributionCodes={}",
-          followUpActionUrl,
-          attributionCodes);
-      return aggregatePdeMembershipMetricByExperienceVersion(summary, followUpActionUrl);
-    }
+    if (!matchedAttribution) return PdeMembershipMetric.empty();
     return new PdeMembershipMetric(
         pdeEntries,
         videoPartial,
@@ -1728,47 +1706,12 @@ public class ExperimentFunnelService {
         paywallViewed,
         checkoutIntent,
         subscriptionApproved,
-        summary.accessReleased(),
-        summary.firstUse(),
+        0,
+        0,
         lastEventAt);
   }
 
-  /**
-   * Agrega o funil PDE pela versão comercial quando ainda não há UTMs/campanha gravadas para
-   * atribuição.
-   */
-  private PdeMembershipMetric aggregatePdeMembershipMetricByExperienceVersion(
-      PdeAnalyticsSummary summary, String followUpActionUrl) {
-    Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion =
-        findMatchingExperienceVersion(summary, followUpActionUrl);
-    if (matchingVersion.isPresent()) {
-      PdeAnalyticsSummary.PdeExperienceVersionMetric version = matchingVersion.get();
-      return new PdeMembershipMetric(
-          version.pdeEntries(),
-          version.videoPartial(),
-          version.videoComplete(),
-          version.loginStarted(),
-          version.paywallViewed(),
-          Math.max(version.subscriptionClicked(), version.checkoutStarted()),
-          version.subscriptionApproved(),
-          summary.accessReleased(),
-          summary.firstUse(),
-          parsePdeInstant(summary.lastEventAt()));
-    }
-    return new PdeMembershipMetric(
-        summary.pedEntries(),
-        sumPdeEventTypes(summary, "VIDEO_PROGRESS_25", "VIDEO_PROGRESS_50", "VIDEO_PROGRESS_75"),
-        sumPdeEventTypes(summary, "VIDEO_COMPLETED"),
-        summary.loginStarted(),
-        summary.paywallViewed(),
-        Math.max(summary.subscriptionClicked(), summary.checkoutStarted()),
-        summary.subscriptionApproved(),
-        summary.accessReleased(),
-        summary.firstUse(),
-        parsePdeInstant(summary.lastEventAt()));
-  }
-
-  /** Monta o diagnóstico com a mesma decisão de atribuição e fallback usada no funil PDE. */
+  /** Monta o diagnóstico com a mesma atribuição estrita usada no funil PDE. */
   private ExperimentPdeCockpitDiagnosticsDto buildPdeCockpitDiagnostics(
       Long experimentId,
       String followUpActionUrl,
@@ -1790,9 +1733,6 @@ public class ExperimentFunnelService {
                     source -> source != null && matchesPdeAttribution(source, safeAttributionCodes))
                 .toList()
             : List.of();
-    boolean fallbackUsed =
-        shouldUsePdeDiagnosticFallback(
-            attributionFilterApplied, matchingTrafficSources, matchingVersion);
     return new ExperimentPdeCockpitDiagnosticsDto(
         experimentId,
         true,
@@ -1814,41 +1754,22 @@ public class ExperimentFunnelService {
         matchingTrafficSources.stream()
             .mapToLong(PdeAnalyticsSummary.PdeTrafficSourceMetric::sessions)
             .sum(),
-        fallbackUsed,
-        resolvePdeDiagnosticFallbackReason(
-            attributionFilterApplied, matchingTrafficSources, matchingVersion),
+        false,
+        resolvePdeDiagnosticFallbackReason(attributionFilterApplied, matchingTrafficSources),
         toPdeExperienceVersionDiagnostics(summary),
         null,
         null);
   }
 
-  /** Indica se o diagnóstico deve marcar que o cockpit precisou fugir do filtro por UTM. */
-  private boolean shouldUsePdeDiagnosticFallback(
-      boolean attributionFilterApplied,
-      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources,
-      Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion) {
-    if (!attributionFilterApplied) {
-      return true;
-    }
-    return matchingTrafficSources.isEmpty() && matchingVersion.isPresent();
-  }
-
-  /** Explica o motivo do fallback para facilitar investigação do cockpit zerado. */
+  /** Explica por que o cockpit não encontrou métricas atribuídas ao experimento. */
   private String resolvePdeDiagnosticFallbackReason(
       boolean attributionFilterApplied,
-      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources,
-      Optional<PdeAnalyticsSummary.PdeExperienceVersionMetric> matchingVersion) {
-    if (!attributionFilterApplied && matchingVersion.isPresent()) {
-      return "NO_ATTRIBUTION_CODES_VERSION_MATCH";
-    }
+      List<PdeAnalyticsSummary.PdeTrafficSourceMetric> matchingTrafficSources) {
     if (!attributionFilterApplied) {
-      return "NO_ATTRIBUTION_CODES_GLOBAL_SUMMARY";
-    }
-    if (matchingTrafficSources.isEmpty() && matchingVersion.isPresent()) {
-      return "ATTRIBUTION_NOT_MATCHING_VERSION_AVAILABLE";
+      return "EXPERIMENT_ATTRIBUTION_REQUIRED";
     }
     if (matchingTrafficSources.isEmpty()) {
-      return "ATTRIBUTION_NOT_MATCHING_NO_VERSION";
+      return "EXPERIMENT_ATTRIBUTION_NOT_MATCHING";
     }
     return "ATTRIBUTION_MATCHED";
   }
@@ -1965,18 +1886,6 @@ public class ExperimentFunnelService {
       return Optional.empty();
     }
     return Optional.of(normalized.toLowerCase());
-  }
-
-  /** Soma eventos PDE globais preservando compatibilidade com contratos antigos do backend PDE. */
-  private long sumPdeEventTypes(PdeAnalyticsSummary summary, String... eventTypes) {
-    if (summary.events() == null || eventTypes == null || eventTypes.length == 0) {
-      return 0;
-    }
-    List<String> expected = Arrays.asList(eventTypes);
-    return summary.events().stream()
-        .filter(metric -> metric != null && expected.contains(metric.eventType()))
-        .mapToLong(PdeAnalyticsSummary.PdeEventMetric::total)
-        .sum();
   }
 
   /** Confirma se a origem PDE pertence ao experimento por campanha ou criativo Meta. */

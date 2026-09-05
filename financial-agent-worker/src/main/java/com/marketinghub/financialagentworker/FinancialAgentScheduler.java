@@ -65,6 +65,13 @@ public class FinancialAgentScheduler {
   /** Isola indisponibilidade da fila de vídeo para não bloquear conciliações e demais pareceres. */
   private VideoProductionCycleReview pendingVideoCycleWithoutStarvation() {
     try {
+      backend.reconcileVideoFinancialReviews();
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao reconciliar autorizações vencidas de vídeo; Plutus tentará ler a fila existente",
+          ex);
+    }
+    try {
       return backend.pendingVideoCycle();
     } catch (Exception ex) {
       log.error("Falha ao consultar ciclos de vídeo; Plutus continuará nas demais filas", ex);

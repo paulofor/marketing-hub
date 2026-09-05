@@ -45,6 +45,15 @@ public class FinancialAgentBackendClient {
     return cycles == null || cycles.isEmpty() ? null : cycles.getFirst();
   }
 
+  /** Solicita ao backend o encerramento de autorizações de vídeo já vencidas. */
+  public void reconcileVideoFinancialReviews() {
+    client
+        .post()
+        .uri("/api/internal/sales-videos/autonomy/v1/financial-review/reconcile")
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Persiste a decisão de Plutus sem chamar diretamente Apolo ou qualquer provider. */
   public void decideVideoCycle(Long cycleId, Map<String, Object> decision) {
     client

@@ -57,6 +57,13 @@ public class VideoProductionCycleController {
     return service.pendingFinancialReview();
   }
 
+  /** Encerra reservas vencidas antes de Plutus consultar o próximo ciclo da fila. */
+  @PostMapping("/api/internal/sales-videos/autonomy/v1/financial-review/reconcile")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void reconcileFinancialReview() {
+    service.reconcileFinancialReviewQueue();
+  }
+
   /** Persiste a chamada de Plutus antes de aplicar sua decisão ao gate financeiro. */
   @PostMapping("/api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-review-audit")
   @ResponseStatus(HttpStatus.NO_CONTENT)

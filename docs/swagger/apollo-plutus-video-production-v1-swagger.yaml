@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Ciclos de vídeo de Apolo e Plutus
-  version: 1.0.0
+  version: 1.1.0
 paths:
   /api/sales-videos/autonomy/v1/cycles:
     post:
@@ -53,6 +53,11 @@ paths:
       summary: Lista a caixa financeira pendente de Plutus
       responses:
         '200': {description: Ciclos com snapshot e eventual resposta bruta para retomada idempotente}
+  /api/internal/sales-videos/autonomy/v1/financial-review/reconcile:
+    post:
+      summary: Encerra revisões financeiras cuja reserva expirou sem consumo
+      responses:
+        '204': {description: Reservas expiradas liberadas e ciclos bloqueados de forma auditável}
   /api/internal/sales-videos/autonomy/v1/provider-preflight/pending:
     get:
       summary: Lista ciclos aguardando snapshot oficial e dry run do executor

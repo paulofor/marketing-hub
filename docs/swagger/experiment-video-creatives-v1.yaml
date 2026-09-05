@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Anúncio a partir de vídeo aprovado
+  version: 1.0.0
+paths:
+  /api/experiments/{experimentId}/video-assets/{videoAssetId}/creative:
+    post:
+      summary: Selecionar vídeo aprovado e cadastrar anúncio para revisão
+      description: >-
+        Cria VIDEO DRAFT/PENDING com URL, thumbnail, identidade e destino persistidos.
+        Não chama provedor, não aprova criativo, não publica nem altera orçamento/período.
+        Serializa comandos por experimento e reutiliza anúncio idêntico sem reiniciar parecer.
+        Substituição explícita retira somente a obrigatoriedade do vídeo AD reprovado informado,
+        preservando sua reprovação e registrando a decisão no histórico.
+      parameters:
+        - { name: experimentId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: videoAssetId, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: X-Tenant-ID, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [headline, primaryText]
+              properties:
+                headline: { type: string, maxLength: 255 }
+                primaryText: { type: string, maxLength: 5000 }
+                description: { type: string, maxLength: 255 }
+                replacesVideoAssetId: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: CreativeDto do anúncio criado ou já existente.
+        '400':
+          description: Tenant ou conteúdo obrigatório ausente; URL inválida.
+        '404':
+          description: Experimento ou vídeo não encontrado no escopo informado.
+        '409':
+          description: Experimento liberado, mídia não aprovada, substituição inválida ou alteração de copy que requer nova versão.

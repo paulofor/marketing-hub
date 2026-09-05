@@ -4,7 +4,9 @@ cd "$(dirname "$0")/../../.."
 mira_round="${1:?Informe a identificação da rodada}"
 [[ "$mira_round" =~ ^[a-zA-Z0-9-]+$ ]] || exit 2
 : "${AIHUB_HOMOLOGATION_SESSION:?Execute dentro de scripts/run-docker-homologation.sh}"
-mira_project=aihub-6673ec2c-11f1-432d-86f4-e0afacedad14-ac24ee7437
+: "${MIRA_DOCKER_PROJECT:?Informe o projeto Compose exclusivo desta sandbox}"
+mira_project="$MIRA_DOCKER_PROJECT"
+[[ "$mira_project" =~ ^aihub-[a-z0-9][a-z0-9-]+$ ]] || { echo 'Projeto Compose inválido'; exit 2; }
 mira_output="$PWD/tmp/mira-reading-${mira_round}"
 mkdir -p "$mira_output"
 compose=(docker compose -p "$mira_project" -f infra/testing/mira-private-reading/docker-compose.yml)
@@ -74,6 +76,16 @@ for mira_url in "${MIRA_TEST_PDE_URL}/api/pde/mira/private/v1/contract" \
   done
   [[ "$mira_ready" == true ]] || { echo "Serviço local indisponível: $mira_url"; exit 1; }
 done
+"${compose[@]}" stop --timeout 10 mira-backend >> "$mira_output/compose.log" 2>&1
+node infra/testing/mira-private-reading/browser.cjs "$mira_output/screenshots" --unavailable \
+  > "$mira_output/unavailable-browser.log" 2>&1
+"${compose[@]}" start mira-backend >> "$mira_output/compose.log" 2>&1
+mira_ready=false
+for ((mira_attempt = 0; mira_attempt < 90; mira_attempt++)); do
+  if curl -fsS --max-time 3 "${MIRA_TEST_PDE_URL}/api/pde/mira/private/v1/contract" > /dev/null 2>&1; then mira_ready=true; break; fi
+  sleep 1
+done
+[[ "$mira_ready" == true ]] || { echo 'PDE local não retomou após indisponibilidade simulada'; exit 1; }
 (cd pde-platform/frontend && PDE_PUBLIC_HEALTH_URL="$MIRA_TEST_PDE_URL" \
   MIRA_PRIVATE_E2E_TOKEN=mira-local-qa npm run test:mira-private:public -- --workers=1) \
   > "$mira_output/prototype-regression.log" 2>&1

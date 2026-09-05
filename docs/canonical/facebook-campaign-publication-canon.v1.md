@@ -139,6 +139,8 @@ Se qualquer bloqueio falhar, os cards e checklists da UI devem permanecer bloque
 
 ### 5.2 Teto financeiro e sucessor de canal
 
+- As datas `startDate/endDate` entregues pelo backend devem chegar ao conjunto Meta como `start_time/end_time`. O período comercial é inclusivo em `America/Sao_Paulo`: `endDate` termina às 23:59:59 locais. Início já alcançado permite execução imediata; início futuro não pode ser antecipado. Período ausente, invertido ou vencido bloqueia o publicador antes de upload ou criação externa. O executor não amplia datas por conta própria.
+
 - Todo experimento `FACEBOOK` deve persistir `daily_budget > 0` e `media_spend_limit > 0`. O teto total precisa ser maior ou igual ao orçamento diário.
 - O número inclusivo de dias planejados multiplicado pelo orçamento diário não pode exceder o teto total. A tela e o backend devem validar a mesma regra.
 - `daily_budget` continua pertencendo ao ad set. `media_spend_limit` deve ser enviado em centavos como `spend_cap` nativo da campanha Meta; ele não autoriza `daily_budget` nem `lifetime_budget` na campanha.
@@ -165,6 +167,14 @@ Se qualquer resposta for **não**, a liberação deve ser interrompida até a pe
 Depois que estiver tudo certo e o operador clicar em **Liberar para o Facebook Ads Worker**, o sistema coloca o experimento na fila de publicação e mantém o controle para evitar campanha duplicada do mesmo experimento.
 
 > Esta seção é apenas explicativa para operação; as regras válidas continuam sendo as regras canônicas e técnicas definidas nas seções 5, 6 e 7.
+
+### 5.3 Selecionar vídeo aprovado para anúncio
+
+- A aba Vídeo deve permitir cadastrar um anúncio a partir de um ativo `AD/READY/APPROVED`, com áudio e URL HTTPS, pertencente ao mesmo experimento e tenant. O destino e a mídia são herdados dos registros canônicos; a ação não gera vídeo nem altera orçamento, datas ou status comercial.
+- O operador informa a copy e pode selecionar explicitamente um vídeo `AD/REJECTED` a substituir. Apenas esse registro perde a obrigatoriedade para liberação; sua rejeição, motivo e arquivo permanecem no histórico. Outros slots e requisitos continuam bloqueantes.
+- O anúncio nasce `DRAFT/PENDING` e segue os gates existentes de Têmis e aprovação final. Aprovação do vídeo não aprova automaticamente o anúncio. A seleção é registrada no histórico do experimento com os identificadores dos ativos e do anúncio.
+- Repetições e chamadas concorrentes do mesmo comando não duplicam o anúncio nem reiniciam revisão concluída. Cópia divergente para a mesma mídia exige edição/versionamento pelo fluxo próprio.
+- Contrato de gestão: `POST /api/experiments/{experimentId}/video-assets/{videoAssetId}/creative`, documentado em `docs/swagger/experiment-video-creatives-v1.yaml`. A criação deve ser executada pela interface publicada.
 
 ## 6. Configurações monitoradas (não bloqueantes)
 

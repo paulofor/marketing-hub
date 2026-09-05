@@ -144,12 +144,12 @@ public class MiraPrivatePrototypeService {
         return response(session);
     }
 
-    /** Registra somente ações humanas previstas, idempotentes e sem efeito financeiro. */
+    /** Registra ações previstas sem efeito financeiro e orienta a participante sem expor o codinome. */
     public synchronized SessionResponse event(String sessionToken, EventRequest request) {
         StoredSession session = requiredSession(sessionToken);
         String eventType = request.eventType().trim().toUpperCase();
         if (!ALLOWED_EVENTS.contains(eventType)) {
-            throw new IllegalArgumentException("Evento não permitido no protótipo privado de Mira.");
+            throw new IllegalArgumentException("Esta ação não está disponível na experiência privada.");
         }
         if (!"READY".equals(session.status)) {
             throw new IllegalStateException("O resultado precisa estar pronto antes desta ação.");
@@ -280,14 +280,14 @@ public class MiraPrivatePrototypeService {
                 .replaceAll("\\p{M}", "");
     }
 
-    /** Carrega checkpoints persistidos sem impedir a inicialização quando o arquivo ainda não existe. */
+    /** Carrega checkpoints e mantém detalhes internos somente no log de uma falha de recuperação. */
     private void load() {
         if (!Files.exists(storagePath)) return;
         try {
             sessions.putAll(json.readValue(storagePath.toFile(), new TypeReference<>() {}));
         } catch (Exception ex) {
             log.error("Falha ao carregar sessões privadas de Mira; storagePath={}", storagePath, ex);
-            throw new IllegalStateException("Não foi possível carregar as sessões privadas de Mira.", ex);
+            throw new IllegalStateException("Não foi possível recuperar a experiência privada.", ex);
         }
     }
 

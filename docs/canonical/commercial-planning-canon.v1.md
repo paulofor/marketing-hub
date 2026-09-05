@@ -52,6 +52,29 @@ Pesquisa externa indisponível não é resultado de mercado. Se todas as consult
 
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.
 
+## Canal de aquisição de Mira e Vega
+
+Por decisão comercial de 2026-09-05, a mídia paga no Instagram, operada pelo Meta Ads, é o canal
+principal de aquisição de Mira (produto interno `10`) e Vega (produto interno `4`). O plano de cada
+produto deve declarar isso de forma literal; escrever apenas `Instagram`, `Meta`, `orgânico` ou
+`base própria` não representa integralmente a estratégia aprovada.
+
+- Em Vega, o experimento `91` é o teste pago canônico para Instagram. O experimento direto `90`
+  permanece como validação complementar e não pode fornecer visitas, custos, conversões ou vendas
+  ao resultado do experimento pago. Enquanto somente o `90` estiver `RUNNING`, o campo singular
+  legado do plano pode apontar para ele como contexto operacional de Hermes; isso não altera o canal
+  de aquisição decidido nem substitui a escolha explícita do `91` nas ações da campanha paga.
+- Em Mira, as duas leituras privadas continuam como gate de utilidade e segurança anterior à
+  aquisição. Elas não são canal de vendas. Depois da aprovação desse gate, o plano deve preparar um
+  experimento pago próprio para Instagram, com identidade pública separada do codinome interno.
+- Mesmo quando o contrato técnico usar plataforma `FACEBOOK` por representar a infraestrutura do
+  Meta Ads, plano, criativo, campanha e relatório devem explicitar o posicionamento no Instagram.
+- Tráfego orgânico, abordagem direta, QA e leitura privada podem apoiar aprendizado, mas devem ficar
+  segregados do tráfego pago por produto, experimento, campanha, URL, versão e UTM.
+- Registrar Instagram Ads no plano não autoriza publicação nem gasto. Cada experimento continua
+  dependente de criativo, destino, checkout, entrega, instrumentação, gate econômico, teto persistido
+  e autorização humana explícita antes da ativação.
+
 Gargalo atual, causa-raiz e próxima ação são contratos operacionais completos, não rótulos curtos. Esses campos devem aceitar contexto longo sem truncamento e permitir que especialistas iterem autonomamente na própria sandbox até devolver `APROVADO`, `BLOQUEADO` ou `AJUSTE_NECESSARIO`. Essa autonomia cobre investigação, produção e homologação local; não autoriza gasto, publicação externa, alteração de preço ou mudança de oferta.
 
 ## Separação das experiências administrativas

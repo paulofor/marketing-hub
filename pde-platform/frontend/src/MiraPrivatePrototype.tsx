@@ -69,7 +69,7 @@ export function MiraPrivatePrototype() {
   }, []);
 
   useEffect(() => {
-    document.title = "Mira · validação privada";
+    document.title = "Sua rotina, organizada com calma";
     const robots =
       document.querySelector('meta[name="robots"]') ||
       document.head.appendChild(document.createElement("meta"));
@@ -177,20 +177,34 @@ export function MiraPrivatePrototype() {
   if (!session) {
     return (
       <main className="mira-private-shell">
-        <p className="mira-private-kicker">Mira · validação privada</p>
+        <p className="mira-private-kicker">
+          Sua rotina de cuidados · acesso privado
+        </p>
         <h1>Sua rotina, organizada com calma</h1>
         <p>
-          Use somente informações dos produtos que você já possui. Mira organiza
-          o que está documentado, sem diagnosticar, prescrever ou recomendar
-          compras.
+          Organize os cuidados com os produtos que você já tem, usando as
+          instruções dos rótulos. Sem diagnóstico, prescrição ou recomendação de
+          novas compras.
         </p>
+        <ol aria-label="Como funciona">
+          <li>Separe os produtos que já usa e tenha os rótulos à mão.</li>
+          <li>
+            Informe as orientações de uso e consulte sua rotina organizada.
+          </li>
+          <li>
+            Conte se a experiência ajudou. Respostas negativas também são
+            bem-vindas.
+          </li>
+        </ol>
         <p>
           Abra seu convite individual ou cole abaixo o código recebido. Cada
           convite pertence a uma pessoa; não use o convite de outra
           participante.
         </p>
         <label>
-          Código do convite <span aria-hidden="true">*</span>
+          <span>
+            Código do convite <span aria-hidden="true">*</span>
+          </span>
           <input
             type="password"
             autoComplete="off"
@@ -202,7 +216,7 @@ export function MiraPrivatePrototype() {
         {!accessToken && (
           <div className="mira-private-alert">
             Ainda não recebeu um convite? Peça o acesso privado ao responsável
-            que está acompanhando sua leitura de Mira.
+            que está acompanhando sua experiência.
           </div>
         )}
         <label className="mira-private-consent">
@@ -211,8 +225,8 @@ export function MiraPrivatePrototype() {
             checked={consent}
             onChange={(event) => setConsent(event.target.checked)}
           />{" "}
-          Aceito participar desta leitura privada e registrar eventos de uso
-          pseudonimizados.
+          Aceito participar desta experiência privada e permitir o registro do
+          meu uso com um código de participante, sem informar meu nome.
         </label>
         {error && (
           <div className="mira-private-alert" role="alert">
@@ -227,7 +241,7 @@ export function MiraPrivatePrototype() {
           {busy ? "Preparando…" : "Começar leitura privada"}
         </button>
         <small>
-          Sem pagamento, publicação, anúncio ou contato automatizado.
+          Não há cobrança nem pedido de dados de pagamento nesta experiência.
         </small>
       </main>
     );
@@ -240,9 +254,7 @@ export function MiraPrivatePrototype() {
     const finished = session.readingFinished;
     return (
       <main className="mira-private-shell">
-        <p className="mira-private-kicker">
-          Rotina pronta · {session.prototypeVersion}
-        </p>
+        <p className="mira-private-kicker">Sua rotina de cuidados</p>
         <h1>Uma ordem simples para consultar</h1>
         <p>
           Esta organização usa somente o texto de rótulo informado e não
@@ -320,8 +332,8 @@ export function MiraPrivatePrototype() {
         {finished && (
           <div className="mira-private-success">
             Leitura encerrada. Sua resposta foi preservada. Nenhuma compra foi
-            realizada. Avise a pessoa que acompanha o teste para atualizar o
-            resultado no Marketing Hub.
+            realizada. Obrigada por compartilhar sua opinião. Avise a pessoa que
+            acompanha sua experiência que você terminou.
           </div>
         )}
         {checkout && (
@@ -352,9 +364,9 @@ export function MiraPrivatePrototype() {
       <main className="mira-private-shell">
         <h1>Leitura encerrada</h1>
         <p>
-          Sua dificuldade foi preservada para melhorar Mira. Nenhuma compra foi
-          realizada. Avise a pessoa que acompanha o teste para atualizar o
-          resultado no Marketing Hub.
+          Sua dificuldade foi registrada para melhorar esta experiência. Nenhuma
+          compra foi realizada. Avise a pessoa que acompanha sua experiência que
+          você terminou.
         </p>
       </main>
     );

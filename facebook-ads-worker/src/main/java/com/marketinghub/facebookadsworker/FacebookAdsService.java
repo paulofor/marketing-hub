@@ -372,6 +372,7 @@ public class FacebookAdsService {
         executePost(path, body);
     }
 
+    /** Publica o conjunto com orçamento, segmentação e período autorizados pelo experimento. */
     public String createAdSet(String adAccountId, AdSetRequest request) {
         Objects.requireNonNull(request, "request");
 
@@ -381,6 +382,12 @@ public class FacebookAdsService {
         body.put("name", request.name());
         body.put("campaign_id", request.campaignId());
         body.put("daily_budget", request.dailyBudget());
+        if (hasText(request.startTime())) {
+            body.put("start_time", request.startTime());
+        }
+        if (hasText(request.endTime())) {
+            body.put("end_time", request.endTime());
+        }
         body.put("billing_event", request.billingEvent());
         body.put("optimization_goal", request.optimizationGoal());
         body.put("status", "ACTIVE");
@@ -3464,6 +3471,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
     }
 
+    /** Contrato de publicação do conjunto, incluindo início opcional e término autorizado. */
     public record AdSetRequest(
         String name,
         String campaignId,
@@ -3478,8 +3486,21 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String customEventType,
         String targetCountry,
         String targetingJson,
-        List<TargetingOption> targetingOptions
+        List<TargetingOption> targetingOptions,
+        String startTime,
+        String endTime
     ) {
+        /** Preserva compatibilidade dos consumidores que não representam publicação de experimento. */
+        public AdSetRequest(String name, String campaignId, String dailyBudget, String billingEvent,
+            String optimizationGoal, String destinationType, String bidStrategy, String bidAmount,
+            String pageId, String pixelId, String customEventType, String targetCountry,
+            String targetingJson, List<TargetingOption> targetingOptions) {
+            this(name, campaignId, dailyBudget, billingEvent, optimizationGoal, destinationType,
+                bidStrategy, bidAmount, pageId, pixelId, customEventType, targetCountry,
+                targetingJson, targetingOptions, null, null);
+        }
+
+        /** Normaliza a lista opcional de segmentos sem alterar datas ou orçamento. */
         public AdSetRequest {
             if (targetingOptions == null) {
                 targetingOptions = Collections.emptyList();

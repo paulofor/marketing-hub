@@ -9,8 +9,8 @@ type Workspace = {
   prototypeUrl: string;
   prototypeVersion: string;
   readingNumber: number;
-  participantReference: string;
-  evidenceId?: string;
+  participantReference: string | null;
+  evidenceId?: string | null;
   signals: Record<string, boolean>;
   canRecord: boolean;
   status: string;
@@ -102,6 +102,11 @@ export default function PrivateReadingAssistant({
       )}
       {workspace && (
         <>
+          {workspace.status === "EVIDENCE_UNAVAILABLE" && (
+            <div className="alert alert-warning" role="alert">
+              {workspace.guidance}
+            </div>
+          )}
           <h5>1. Abra o protótipo privado</h5>
           <a
             className="btn btn-primary"
@@ -126,17 +131,21 @@ export default function PrivateReadingAssistant({
             responder sim ou não às perguntas finais. Não há cobrança.
           </p>
           <h5>3. Confira o resultado e registre</h5>
-          <p role="status">{workspace.guidance}</p>
+          {workspace.status !== "EVIDENCE_UNAVAILABLE" && (
+            <p role="status">{workspace.guidance}</p>
+          )}
           <ul aria-label="Resultado importado do protótipo">
             {labels.map(([code, label]) => (
               <li key={code}>
                 {label}:{" "}
                 <strong>
-                  {workspace.signals[code] === true
-                    ? "Observado"
-                    : workspace.status === "FINISHED"
-                      ? "Não observado"
-                      : "Aguardando"}
+                  {workspace.status === "EVIDENCE_UNAVAILABLE"
+                    ? "Consulta indisponível"
+                    : workspace.signals[code] === true
+                      ? "Observado"
+                      : workspace.status === "FINISHED"
+                        ? "Não observado"
+                        : "Aguardando"}
                 </strong>
               </li>
             ))}

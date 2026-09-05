@@ -19,6 +19,13 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar experimentos comerciais. */
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
+  /**
+   * Serializa a seleção de vídeo do experimento para impedir anúncios duplicados por concorrência.
+   */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select e from Experiment e where e.id = :id")
+  Optional<Experiment> findForVideoCreativeSelection(@Param("id") Long id);
+
   /** Lista experimentos administrativos com filtros aplicados diretamente no banco. */
   @EntityGraph(
       attributePaths = {

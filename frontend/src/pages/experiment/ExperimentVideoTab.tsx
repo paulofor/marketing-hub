@@ -19,6 +19,7 @@ import type {
 import { useTenantContext } from "../../utils/tenantContext";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { AdaptiveVideoPlayer } from "../../components/AdaptiveVideoPlayer";
+import ApprovedVideoCreativeAction from "./ApprovedVideoCreativeAction";
 import "./ExperimentVideoTab.css";
 
 interface ExperimentVideoTabProps {
@@ -101,7 +102,11 @@ function normalizeHost(value?: string | null) {
   try {
     return new URL(value.trim()).host.toLowerCase();
   } catch {
-    return value.trim().replace(/^https?:\/\//i, "").split("/")[0].toLowerCase();
+    return value
+      .trim()
+      .replace(/^https?:\/\//i, "")
+      .split("/")[0]
+      .toLowerCase();
   }
 }
 
@@ -263,7 +268,9 @@ export default function ExperimentVideoTab({
           Boolean(resolveExperimentVideoPlaybackUrl(asset)),
       ) ??
       sortedAssets.find(
-        (asset) => asset.status === "READY" && Boolean(resolveExperimentVideoPlaybackUrl(asset)),
+        (asset) =>
+          asset.status === "READY" &&
+          Boolean(resolveExperimentVideoPlaybackUrl(asset)),
       ),
     [sortedAssets],
   );
@@ -316,7 +323,11 @@ export default function ExperimentVideoTab({
       rejectionReason,
       reviewedBy: tenantContext.userEmail,
     });
-    toast.success(reviewStatus === "APPROVED" ? "Vídeo aprovado." : "Vídeo reprovado com motivo.");
+    toast.success(
+      reviewStatus === "APPROVED"
+        ? "Vídeo aprovado."
+        : "Vídeo reprovado com motivo.",
+    );
   }
 
   return (
@@ -327,8 +338,7 @@ export default function ExperimentVideoTab({
             <div>
               <h5 className="card-title mb-1">Painel consolidado de vídeo</h5>
               <p className="text-muted small mb-0">
-                Cruza asset aprovado, criativo Meta e avanço comercial do
-                funil.
+                Cruza asset aprovado, criativo Meta e avanço comercial do funil.
               </p>
             </div>
             <span className="badge text-bg-light border">
@@ -441,9 +451,13 @@ export default function ExperimentVideoTab({
                                   className="experiment-video-performance-card__creative"
                                 >
                                   <span>{creative.creativeKind}</span>
-                                  <span>{creative.adName || creative.adId}</span>
+                                  <span>
+                                    {creative.adName || creative.adId}
+                                  </span>
                                   {creative.metaVideoId ? (
-                                    <span>Vídeo Meta {creative.metaVideoId}</span>
+                                    <span>
+                                      Vídeo Meta {creative.metaVideoId}
+                                    </span>
                                   ) : null}
                                 </div>
                               ))
@@ -561,9 +575,7 @@ export default function ExperimentVideoTab({
                 <div className="experiment-video-preview-card__sales-page-header">
                   <div>
                     <div className="fw-semibold">Página de venda</div>
-                    <div className="text-muted small">
-                      {salesPageLabel}
-                    </div>
+                    <div className="text-muted small">{salesPageLabel}</div>
                   </div>
                   {salesPagePreviewUrl && (
                     <a
@@ -711,6 +723,18 @@ export default function ExperimentVideoTab({
                           onReview={handleVideoReview}
                           pending={updateVideoReview.isPending}
                         />
+                        {asset.slot === "AD" &&
+                          asset.status === "READY" &&
+                          asset.reviewStatus === "APPROVED" &&
+                          asset.hasAudio === true &&
+                          asset.assetUrl && (
+                            <ApprovedVideoCreativeAction
+                              experiment={experiment}
+                              video={asset}
+                              videos={sortedAssets}
+                              locked={alterationLocked}
+                            />
+                          )}
                       </td>
                     </tr>
                   ))
@@ -744,12 +768,15 @@ function ExperimentVideoReviewControls({
   ) => Promise<void>;
   pending: boolean;
 }) {
-  const [rejectionReason, setRejectionReason] = useState(asset.rejectionReason ?? "");
+  const [rejectionReason, setRejectionReason] = useState(
+    asset.rejectionReason ?? "",
+  );
   const canApprove =
     asset.status === "READY" &&
     Boolean(resolveExperimentVideoPlaybackUrl(asset)) &&
     isPdeHeroHlsReady(asset);
-  const canReject = asset.status === "READY" && rejectionReason.trim().length > 0;
+  const canReject =
+    asset.status === "READY" && rejectionReason.trim().length > 0;
 
   useEffect(() => {
     setRejectionReason(asset.rejectionReason ?? "");

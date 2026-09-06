@@ -14,6 +14,7 @@ ASSET_ROOT="${API_ROOT}/publication"
 LETSENCRYPT_ROOT="${TEST_ROOT}/letsencrypt"
 NGINX_CERT_ROOT="${TEST_ROOT}/nginx-certs"
 DOCKER_LOG="${TEST_ROOT}/docker.log"
+CURL_STATE_FILE="${TEST_ROOT}/curl.state"
 OLD_PROXY_CONFIG="${TEST_ROOT}/old-nginx.conf"
 OLD_CERT_SCRIPT="${TEST_ROOT}/old-ensure-certs.sh"
 
@@ -94,7 +95,17 @@ set -euo pipefail
 
 arguments="$*"
 if [[ "${arguments}" == *'http://mkthub.api.br/'* ]]; then
-  printf 'HTTP/1.1 301 Moved Permanently\r\nLocation: https://mkthub.api.br/v1/cards\r\n\r\n'
+  request_count=0
+  if [[ -f "${FAKE_CURL_STATE_FILE}" ]]; then
+    request_count="$(<"${FAKE_CURL_STATE_FILE}")"
+  fi
+  request_count=$((request_count + 1))
+  printf '%s\n' "${request_count}" >"${FAKE_CURL_STATE_FILE}"
+  if ((request_count <= FAKE_CURL_STALE_ATTEMPTS)); then
+    printf 'HTTP/1.1 404 Not Found\r\n\r\n'
+  else
+    printf 'HTTP/1.1 301 Moved Permanently\r\nLocation: https://mkthub.api.br/v1/cards\r\n\r\n'
+  fi
 elif [[ "${arguments}" == *'/actuator/health'* ]]; then
   printf '404'
 elif [[ "${arguments}" == *'--head'* ]]; then
@@ -117,11 +128,19 @@ run_publication() {
   HARNESS_LIBRARY_LETSENCRYPT_STATE_ROOT="${TEST_ROOT}/letsencrypt-state" \
   HARNESS_LIBRARY_LETSENCRYPT_LOG_ROOT="${TEST_ROOT}/letsencrypt-log" \
   HARNESS_LIBRARY_NGINX_CERT_ROOT="${NGINX_CERT_ROOT}" \
+  HARNESS_LIBRARY_PROXY_RELOAD_ATTEMPTS="${PROXY_RELOAD_ATTEMPTS:-30}" \
+  HARNESS_LIBRARY_PROXY_RELOAD_INTERVAL_SECONDS=0 \
+  FAKE_CURL_STATE_FILE="${CURL_STATE_FILE}" \
+  FAKE_CURL_STALE_ATTEMPTS="${FAKE_CURL_STALE_ATTEMPTS:-0}" \
   "$@" "${PUBLICATION_SCRIPT}"
 }
 
-# Caminho feliz: instala a rota somente após health, certificado e teste do Nginx.
-run_publication env HARNESS_LIBRARY_PUBLICATION_OPERATION=publish
+# Caminho feliz: aguarda dois workers antigos e instala a rota somente após o contrato completo.
+rm -f "${CURL_STATE_FILE}"
+FAKE_CURL_STALE_ATTEMPTS=2 PROXY_RELOAD_ATTEMPTS=3 \
+  run_publication env HARNESS_LIBRARY_PUBLICATION_OPERATION=publish
+[[ "$(<"${CURL_STATE_FILE}")" == "3" ]] \
+  || fail 'publicação não aguardou a troca assíncrona dos workers do proxy.'
 cmp -s "${ASSET_ROOT}/nginx.conf" "${PROXY_ROOT}/nginx.conf" \
   || fail 'publicação não instalou a configuração versionada.'
 cmp -s "${ASSET_ROOT}/ensure-certs.sh" "${PROXY_ROOT}/docker/proxy/ensure-certs.sh" \
@@ -145,6 +164,21 @@ cmp -s "${OLD_CERT_SCRIPT}" "${PROXY_ROOT}/docker/proxy/ensure-certs.sh" \
   || fail 'rollback não restaurou a rotina de certificados anterior.'
 [[ ! -e "${API_ROOT}/public-https-enabled" ]] \
   || fail 'falha de publicação deixou marcador de ativação.'
+
+# Recarga que não converge: esgota a sondagem, restaura os arquivos e não ativa o domínio.
+cp "${OLD_PROXY_CONFIG}" "${PROXY_ROOT}/nginx.conf"
+cp "${OLD_CERT_SCRIPT}" "${PROXY_ROOT}/docker/proxy/ensure-certs.sh"
+rm -f "${API_ROOT}/public-https-enabled" "${CURL_STATE_FILE}"
+if FAKE_CURL_STALE_ATTEMPTS=3 PROXY_RELOAD_ATTEMPTS=2 \
+  run_publication env HARNESS_LIBRARY_PUBLICATION_OPERATION=publish >/dev/null 2>&1; then
+  fail 'publicação aceitou uma recarga do proxy que não convergiu.'
+fi
+cmp -s "${OLD_PROXY_CONFIG}" "${PROXY_ROOT}/nginx.conf" \
+  || fail 'falha de convergência não restaurou a configuração anterior.'
+cmp -s "${OLD_CERT_SCRIPT}" "${PROXY_ROOT}/docker/proxy/ensure-certs.sh" \
+  || fail 'falha de convergência não restaurou a rotina de certificados anterior.'
+[[ ! -e "${API_ROOT}/public-https-enabled" ]] \
+  || fail 'falha de convergência deixou marcador de ativação.'
 
 # API indisponível: bloqueia antes de alterar o proxy.
 if FAKE_API_STATE='false unhealthy' run_publication env \

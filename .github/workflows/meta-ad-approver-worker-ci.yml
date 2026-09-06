@@ -114,6 +114,7 @@ jobs:
     needs: test
     concurrency:
       group: deploy-vps-163-245-202-80
+      queue: max
       cancel-in-progress: false
     env:
       OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}

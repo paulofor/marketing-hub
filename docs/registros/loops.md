@@ -3797,6 +3797,12 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** o contrato da fila enumera cada workflow autorizado nesse host, exige o grupo dentro
   do job `deploy`, rejeita `docker builder/image/system prune -af` e falha quando um novo publicador
   usa o host sem entrar na lista protegida.
+- **Recorrência bloqueada em 2026-09-06:** o PR #5115 removeu `queue: max` somente do deploy do Meta
+  Ad Approver, preservando o grupo compartilhado e `cancel-in-progress: false`. O check
+  `GitHub Actions Contracts` detectou a regressão ainda no PR, mas o merge ocorreu com esse check
+  vermelho e repetiu a falha no `main` (run `34023636305`). A fila ampliada foi restaurada no
+  workflow do Meta; o contrato central continua sendo a proteção que impede tratar a fila padrão de
+  uma única pendência como serialização suficiente.
 
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
 

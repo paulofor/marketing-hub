@@ -1751,6 +1751,55 @@ class AccessServiceTest {
                 });
     }
 
+    /** Segrega a validação multiagente de QA genérico e de todas as métricas humanas. */
+    @Test
+    void classifiesAgentValidationAsItsOwnNonCommercialTraffic() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_agent_validation;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-agent-validation.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "mira-private-validation",
+                "VALUE_MOMENT",
+                null,
+                null,
+                "AGENT_VALIDATION",
+                "mira-private-prototype",
+                "http://localhost:5176/mira-private",
+                "127.0.0.1",
+                "MarketingHubAgentValidation/1.0",
+                Map.of(
+                        "sessionId", "synthetic-evidence-1",
+                        "trafficClass", "AGENT_VALIDATION",
+                        "mh_internal_test", true,
+                        "syntheticEvaluation", true,
+                        "humanEvidenceClaimed", false,
+                        "commercialEvidenceClaimed", false)));
+
+        var summary = accessService.summarizeFunnelAnalytics("mira-private-validation");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.rawTotalEvents()).isEqualTo(1);
+        assertThat(summary.humanSessions()).isZero();
+        assertThat(summary.trafficQualityBreakdown())
+                .singleElement()
+                .satisfies(metric -> {
+                    assertThat(metric.trafficQuality()).isEqualTo("AGENT_VALIDATION");
+                    assertThat(metric.events()).isEqualTo(1);
+                });
+    }
+
     /** Mantém a ativação gerada internamente por um acesso DEV fora dos indicadores comerciais. */
     @Test
     void excludesDevAccessEventsWithoutDependingOnPageMarkers() throws SQLException {

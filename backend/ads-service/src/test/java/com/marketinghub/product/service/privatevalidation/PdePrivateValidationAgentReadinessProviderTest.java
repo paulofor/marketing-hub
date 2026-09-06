@@ -37,11 +37,21 @@ class PdePrivateValidationAgentReadinessProviderTest {
     assertThat(readiness.reason()).contains("segunda leitura");
   }
 
+  /** Não reaproveita implicitamente a orquestração v1 em uma versão futura do processo. */
+  @Test
+  void rejectsUnknownFutureProcessVersion() {
+    BusinessProcessDefinition process = process();
+    process.setVersionNumber(8);
+
+    assertThat(provider.supports(process, activity(process, "technicalHomologation"))).isFalse();
+  }
+
   /** Monta o processo privado publicado usado pelo gate. */
   private BusinessProcessDefinition process() {
     BusinessProcessDefinition process = new BusinessProcessDefinition();
     process.setId(66L);
     process.setProcessCode("pde-construction-approval");
+    process.setVersionNumber(6);
     process.setStatus("PUBLISHED");
     return process;
   }

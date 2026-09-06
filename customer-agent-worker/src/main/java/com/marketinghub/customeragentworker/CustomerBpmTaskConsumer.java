@@ -2,6 +2,8 @@ package com.marketinghub.customeragentworker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,7 +41,10 @@ public class CustomerBpmTaskConsumer {
           new BpmContract("creative-production-approval", "customer"),
           new BpmContract("landing-page-generation", "customer"),
           new BpmContract("pde-commercial-homologation-activation", "humanExperienceReview"),
-          new BpmContract("pde-construction-approval", "humanExperienceReview"));
+          new BpmContract("pde-construction-approval", "humanExperienceReview"),
+          new BpmContract("pde-construction-approval", "psiqueAdherent"),
+          new BpmContract("pde-construction-approval", "psiqueRecovery"),
+          new BpmContract("pde-construction-approval", "psiqueSafety"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
@@ -49,6 +54,7 @@ public class CustomerBpmTaskConsumer {
   private final PdeExperienceEvidenceLoader pdeExperienceEvidenceLoader;
   private final BpmVisualEvidenceRunner visualEvidenceRunner;
   private final BpmVisualEvidenceBackendClient visualEvidenceBackendClient;
+  private final PdeAgentValidationHarnessRunner pdeAgentValidationHarnessRunner;
   private final CodexProcessSupervisor processSupervisor;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
@@ -64,6 +70,7 @@ public class CustomerBpmTaskConsumer {
       ObjectMapper json,
       BpmVisualEvidenceRunner visualEvidenceRunner,
       BpmVisualEvidenceBackendClient visualEvidenceBackendClient,
+      PdeAgentValidationHarnessRunner pdeAgentValidationHarnessRunner,
       CodexProcessSupervisor processSupervisor) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.codex = codex;
@@ -78,6 +85,7 @@ public class CustomerBpmTaskConsumer {
     this.json = json;
     this.visualEvidenceRunner = visualEvidenceRunner;
     this.visualEvidenceBackendClient = visualEvidenceBackendClient;
+    this.pdeAgentValidationHarnessRunner = pdeAgentValidationHarnessRunner;
     this.processSupervisor = processSupervisor;
   }
 
@@ -98,6 +106,7 @@ public class CustomerBpmTaskConsumer {
         repositoryPath,
         commercialEvidencePath,
         json,
+        null,
         null,
         null,
         new CodexProcessSupervisor(
@@ -126,13 +135,18 @@ public class CustomerBpmTaskConsumer {
       visualEvidence = prepareVisualEvidence(task);
       execution = execute(task, visualEvidence.uploaded());
       JsonNode result = execution.result();
-      validate(result, processCode(task));
-      ResearchIntelligenceUsageValidator.validate(
-          task,
-          AGENT_KEY,
-          jsonTextValues(result.path("evidence")),
-          !"BLOCKED".equals(result.path("decision").asText()));
-      validateVisualAudit(result, visualEvidence.uploaded());
+      if (isAgentValidationTask(task)) {
+        validateAgentScenario(result, task);
+        validateAgentVisualAudit(result, visualEvidence.uploaded());
+      } else {
+        validate(result, processCode(task));
+        ResearchIntelligenceUsageValidator.validate(
+            task,
+            AGENT_KEY,
+            jsonTextValues(result.path("evidence")),
+            !"BLOCKED".equals(result.path("decision").asText()));
+        validateVisualAudit(result, visualEvidence.uploaded());
+      }
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
     } catch (Exception ex) {
@@ -168,7 +182,9 @@ public class CustomerBpmTaskConsumer {
     return null;
   }
 
-  /** Confirma que o polling conhece apenas uma atividade publicada de experiência humana. */
+  /**
+   * Confirma que o polling conhece apenas as atividades publicadas de responsabilidade de Psique.
+   */
   static boolean supportsContract(String processCode, String activityId) {
     return CONTRACTS.stream()
         .anyMatch(
@@ -189,6 +205,7 @@ public class CustomerBpmTaskConsumer {
   /** Captura e persiste a página pública da tarefa antes de montar o prompt de Psique. */
   private PreparedVisualEvidence prepareVisualEvidence(Map<String, Object> task) throws Exception {
     if (!requiresVisualAudit(processCode(task))) return PreparedVisualEvidence.empty();
+    if (isAgentValidationTask(task)) return prepareAgentScenarioEvidence(task);
     if (visualEvidenceRunner == null || visualEvidenceBackendClient == null) {
       throw new BpmVisualEvidenceRunner.VisualEvidenceException(
           "Captura visual obrigatória de Psique não está configurada.");
@@ -208,7 +225,7 @@ public class CustomerBpmTaskConsumer {
         throw new BpmVisualEvidenceRunner.VisualEvidenceException(
             "Nenhum snapshot visual foi persistido para Psique.");
       }
-      return new PreparedVisualEvidence(bundle, uploaded);
+      return new PreparedVisualEvidence(bundle, uploaded, null);
     } catch (Exception ex) {
       log.error(
           "Falha ao preparar prova visual de Psique. taskId={} processCode={}",
@@ -220,6 +237,84 @@ public class CustomerBpmTaskConsumer {
       throw new BpmVisualEvidenceRunner.VisualEvidenceException(
           "Não foi possível capturar e persistir a prova visual obrigatória de Psique.", ex);
     }
+  }
+
+  /**
+   * Executa um cenário sintético novo antes de solicitar a interpretação independente de Psique.
+   */
+  private PreparedVisualEvidence prepareAgentScenarioEvidence(Map<String, Object> task)
+      throws Exception {
+    if (pdeAgentValidationHarnessRunner == null || visualEvidenceBackendClient == null) {
+      throw new PdeAgentValidationHarnessRunner.HarnessException(
+          "O harness de cenário multiagente não está configurado para Psique.");
+    }
+    Path workDirectory = Files.createTempDirectory("psique-agent-scenario-" + taskId(task) + "-");
+    try {
+      String scenarioCode = scenarioCode(activityId(task));
+      PdeAgentValidationHarnessRunner.HarnessExecution execution =
+          pdeAgentValidationHarnessRunner.run(task, "SCENARIO", scenarioCode, workDirectory);
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded =
+          visualEvidenceBackendClient.uploadArtifacts(
+              taskId(task), execution.visualEvidence().capture().artifacts());
+      JsonNode sanitized = sanitizeAgentScenario(execution.result(), uploaded);
+      task.put("agentScenarioExecution", json.convertValue(sanitized, Object.class));
+      return new PreparedVisualEvidence(execution.visualEvidence(), uploaded, sanitized);
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao preparar cenário multiagente de Psique. taskId={} activityId={}",
+          taskId(task),
+          activityId(task),
+          ex);
+      deleteDirectory(workDirectory, taskId(task));
+      throw ex;
+    }
+  }
+
+  /** Remove caminhos efêmeros e vincula o cenário aos screenshots persistidos. */
+  private JsonNode sanitizeAgentScenario(
+      JsonNode raw, List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded) {
+    ObjectNode result = raw.deepCopy();
+    Map<String, BpmVisualEvidenceBackendClient.UploadedVisualEvidence> byKey =
+        uploaded.stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    BpmVisualEvidenceBackendClient.UploadedVisualEvidence::evidenceKey,
+                    value -> value));
+    result
+        .path("artifacts")
+        .forEach(
+            value -> {
+              ObjectNode artifact = (ObjectNode) value;
+              var persisted = byKey.get(artifact.path("evidenceKey").asText());
+              if (persisted == null) {
+                throw new PdeAgentValidationHarnessRunner.HarnessException(
+                    "Screenshot do cenário de Psique não foi persistido.");
+              }
+              artifact.remove("localPath");
+              artifact.put("artifactId", persisted.id());
+              artifact.put("contentUrl", persisted.contentUrl());
+              artifact.put("sha256", persisted.sha256());
+            });
+    result
+        .path("scenarios")
+        .forEach(
+            value -> {
+              ObjectNode scenario = (ObjectNode) value;
+              ArrayNode ids = scenario.putArray("screenshotEvidenceIds");
+              scenario
+                  .path("screenshotEvidenceKeys")
+                  .forEach(
+                      key -> {
+                        var persisted = byKey.get(key.asText());
+                        if (persisted == null) {
+                          throw new PdeAgentValidationHarnessRunner.HarnessException(
+                              "Referência visual do cenário de Psique não foi persistida.");
+                        }
+                        ids.add(persisted.id());
+                      });
+              scenario.remove("screenshotEvidenceKeys");
+            });
+    return result;
   }
 
   /** Executa o prompt versionado e exige um parecer estruturado sobre a experiência da cliente. */
@@ -236,7 +331,7 @@ public class CustomerBpmTaskConsumer {
     validatePromptSize(prompt.fullPrompt());
     Path output = Files.createTempFile("psique-bpm-result-", ".json");
     Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
-    Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
+    Path schema = materialize(schemaResourceFor(task), ".json");
     List<Map<String, Object>> visualAccesses = visualAccessedUrls(visualEvidence);
     Process process = null;
     try {
@@ -469,7 +564,11 @@ public class CustomerBpmTaskConsumer {
     JsonNode result = execution.result();
     String resultJson = json.writeValueAsString(result);
     Map<String, Object> body = new HashMap<>();
-    body.put("error", "Psique bloqueou o avanço: " + result.path("customerPerspective").asText());
+    String perspective =
+        isAgentValidationTask(task)
+            ? result.path("rootCause").asText()
+            : result.path("customerPerspective").asText();
+    body.put("error", "Psique bloqueou o avanço: " + perspective);
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
     putModelUsage(body, execution.usage());
@@ -518,7 +617,7 @@ public class CustomerBpmTaskConsumer {
     }
     String agentPromptPart = behavioralCoreV4();
     String activityPromptPart =
-        read(promptResourceFor(processCode(task)))
+        read(promptResourceFor(task))
             .replace("{{PSIQUE_BEHAVIORAL_CORE_V4}}", "")
             .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
     return new PromptComposition(
@@ -554,9 +653,29 @@ public class CustomerBpmTaskConsumer {
     };
   }
 
+  /** Seleciona o prompt de cenário quando a referência pertence à validação multiagente. */
+  private String promptResourceFor(Map<String, Object> task) {
+    return isAgentValidationTask(task)
+        ? "prompts/bpm/v5/pde-agent-validation-scenario-review.md"
+        : promptResourceFor(processCode(task));
+  }
+
+  /** Seleciona o schema sintético sem alterar o contrato histórico de leitura privada. */
+  private String schemaResourceFor(Map<String, Object> task) {
+    return isAgentValidationTask(task)
+        ? "prompts/bpm/v5/pde-agent-validation-scenario-review-schema.json"
+        : schemaResourceFor(processCode(task));
+  }
+
   /** Lê o processo congelado no contrato da tarefa reservada. */
   private String processCode(Map<String, Object> task) {
     Object value = task.get("processCode");
+    return value == null ? "" : value.toString();
+  }
+
+  /** Lê a atividade estável da tarefa reservada. */
+  private static String activityId(Map<String, Object> task) {
+    Object value = task.get("activityId");
     return value == null ? "" : value.toString();
   }
 
@@ -565,7 +684,116 @@ public class CustomerBpmTaskConsumer {
     Object value = task.get("sourceReference");
     String sourceReference = value == null ? "" : value.toString();
     return sourceReference.startsWith("product:")
-        && sourceReference.contains("@private-validation-v1");
+        && (sourceReference.contains("@private-validation-v1")
+            || sourceReference.contains("@agent-validation-v1"));
+  }
+
+  /** Reconhece somente as três tarefas sintéticas da versão multiagente. */
+  private boolean isAgentValidationTask(Map<String, Object> task) {
+    Object value = task.get("sourceReference");
+    String sourceReference = value == null ? "" : value.toString();
+    return sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")
+        && Set.of("psiqueAdherent", "psiqueRecovery", "psiqueSafety").contains(activityId(task));
+  }
+
+  /** Mapeia cada atividade publicada para exatamente um cenário canônico. */
+  private static String scenarioCode(String activityId) {
+    return switch (activityId) {
+      case "psiqueAdherent" -> "ADHERENT";
+      case "psiqueRecovery" -> "RECOVERY";
+      case "psiqueSafety" -> "SAFETY";
+      default -> throw new IllegalArgumentException("Atividade sintética de Psique desconhecida.");
+    };
+  }
+
+  /** Exige decisão estruturada sem transformar avaliação sintética em voz de cliente. */
+  static void validateAgentScenario(JsonNode result, Map<String, Object> task) {
+    String expectedScenario = scenarioCode(activityId(task));
+    @SuppressWarnings("unchecked")
+    Map<String, Object> target =
+        task.get("taskTarget") instanceof Map<?, ?> value ? (Map<String, Object>) value : Map.of();
+    String expectedReference = String.valueOf(task.get("sourceReference"));
+    long expectedProductId =
+        target.get("productId") instanceof Number value ? value.longValue() : -1L;
+    String expectedProductSlug = String.valueOf(target.getOrDefault("productSlug", ""));
+    String expectedPrototypeVersion = String.valueOf(target.getOrDefault("experienceVersion", ""));
+    List<String> requiredChecks =
+        List.of(
+            "sameProductAndVersion",
+            "isolatedFreshSession",
+            "functionalOutcomeMatchesScenario",
+            "lowEffortNoPrompting",
+            "accessibilityAndResponsive",
+            "privacyPreserved",
+            "internalTrafficSegregated",
+            "safeLimits",
+            "noExternalSideEffects");
+    JsonNode checks = result.path("checks");
+    if (!"PDE_PSIQUE_AGENT_SCENARIO_V1".equals(result.path("contractVersion").asText())
+        || !expectedScenario.equals(result.path("scenarioCode").asText())
+        || !List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())
+        || !result.path("syntheticEvaluation").asBoolean(false)
+        || result.path("humanEvidenceClaimed").asBoolean(true)
+        || result.path("commercialEvidenceClaimed").asBoolean(true)
+        || !"AGENT_VALIDATION".equals(result.path("trafficClass").asText())
+        || !"mh_internal_test".equals(result.path("internalMarker").asText())
+        || !result
+            .path("sourceReference")
+            .asText()
+            .matches("product:[1-9][0-9]*@agent-validation-v1")
+        || !expectedReference.equals(result.path("sourceReference").asText())
+        || expectedProductId < 1
+        || expectedProductId != result.path("productId").asLong()
+        || expectedProductSlug.isBlank()
+        || !expectedProductSlug.equals(result.path("productSlug").asText())
+        || expectedPrototypeVersion.isBlank()
+        || !expectedPrototypeVersion.equals(result.path("prototypeVersion").asText())
+        || hasExternalSideEffects(result.path("sideEffects"))
+        || !result.path("experienceAssessment").isObject()
+        || result.path("experienceAssessment").path("evidenceBoundary").asText().isBlank()
+        || !checks.isObject()
+        || requiredChecks.stream().anyMatch(check -> !checks.path(check).isBoolean())
+        || result.path("evidence").isEmpty()
+        || !result.path("requiredChanges").isArray()
+        || result.path("rootCause").asText().isBlank()) {
+      throw new IllegalArgumentException("Parecer sintético de Psique está incompleto.");
+    }
+    if ("APPROVED".equals(result.path("decision").asText())
+        && requiredChecks.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
+      throw new IllegalArgumentException("Psique aprovou o cenário com check reprovado.");
+    }
+  }
+
+  /** Detecta qualquer efeito externo declarado no parecer sintético. */
+  private static boolean hasExternalSideEffects(JsonNode effects) {
+    return !effects.isObject()
+        || effects.path("paymentEnabled").asBoolean(true)
+        || effects.path("published").asBoolean(true)
+        || effects.path("campaignCreated").asBoolean(true)
+        || effects.path("mediaSpendBrl").asDouble(-1) != 0;
+  }
+
+  /** Confirma que Psique referenciou todos e somente os screenshots do cenário atual. */
+  static void validateAgentVisualAudit(
+      JsonNode result, List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {
+    if (visualEvidence == null || visualEvidence.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Cenário multiagente de Psique sem screenshot persistido.");
+    }
+    Set<Long> expected =
+        visualEvidence.stream()
+            .map(BpmVisualEvidenceBackendClient.UploadedVisualEvidence::id)
+            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    Set<Long> reported = new LinkedHashSet<>();
+    result.path("visualAudit").path("evidenceIds").forEach(value -> reported.add(value.asLong()));
+    if (!result.path("visualAudit").isObject()
+        || !reported.equals(expected)
+        || result.path("visualAudit").path("visualHierarchy").asText().isBlank()
+        || result.path("visualAudit").path("legibility").asText().isBlank()
+        || result.path("visualAudit").path("affectiveResponse").asText().isBlank()
+        || result.path("visualAudit").path("trustCues").asText().isBlank()) {
+      throw new IllegalArgumentException("Auditoria visual do cenário sintético está incompleta.");
+    }
   }
 
   /** Valida que a decisão inclui evidência, resposta humana e gates internamente coerentes. */
@@ -1077,10 +1305,11 @@ public class CustomerBpmTaskConsumer {
   /** Mantém juntos a captura temporária e os metadados já persistidos no backend. */
   private record PreparedVisualEvidence(
       BpmVisualEvidenceRunner.VisualEvidenceBundle bundle,
-      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded) {
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded,
+      JsonNode scenarioExecution) {
     /** Representa uma atividade que não avalia uma tela digital. */
     private static PreparedVisualEvidence empty() {
-      return new PreparedVisualEvidence(null, List.of());
+      return new PreparedVisualEvidence(null, List.of(), null);
     }
   }
 

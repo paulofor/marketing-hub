@@ -26,8 +26,14 @@ public class BpmVisualEvidenceBackendClient {
   /** Envia todos os snapshots e devolve ids persistidos na mesma ordem da captura. */
   List<UploadedVisualEvidence> upload(
       long taskId, BpmVisualEvidenceRunner.VisualEvidenceBundle bundle) {
+    return uploadArtifacts(taskId, bundle.capture().artifacts());
+  }
+
+  /** Persiste artefatos de um harness multidispositivo sem exigir uma captura mobile monolítica. */
+  List<UploadedVisualEvidence> uploadArtifacts(
+      long taskId, List<BpmVisualEvidenceRunner.VisualArtifact> artifacts) {
     List<UploadedVisualEvidence> uploaded = new ArrayList<>();
-    for (BpmVisualEvidenceRunner.VisualArtifact artifact : bundle.capture().artifacts()) {
+    for (BpmVisualEvidenceRunner.VisualArtifact artifact : artifacts) {
       var body = new LinkedMultiValueMap<String, Object>();
       body.add("captureSessionId", artifact.captureSessionId());
       body.add("evidenceKey", artifact.evidenceKey());

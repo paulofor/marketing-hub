@@ -3,7 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node --test src/test/js/*.test.mjs"
+    "test": "node --test src/test/js/*.test.mjs",
+    "test:pde-agent-validation:local": "node src/main/resources/browser/pde-agent-validation-smoke.mjs"
   },
   "dependencies": {
     "playwright-core": "1.54.2"

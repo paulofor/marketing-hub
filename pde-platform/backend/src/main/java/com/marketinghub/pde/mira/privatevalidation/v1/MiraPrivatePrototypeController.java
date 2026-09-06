@@ -94,6 +94,29 @@ public class MiraPrivatePrototypeController {
         return service.readingEvidence(readingNumber);
     }
 
+    /** Cria uma sessão sintética fresca e segregada para o harness autorizado. */
+    @PostMapping("/internal/agent-validations/sessions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MiraPrivatePrototypeService.SessionResponse startAgentValidation(
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken,
+            @Valid @RequestBody MiraPrivatePrototypeService.AgentSessionRequest request) {
+        authorizer.requireAuthorized(internalToken);
+        log.info(
+                "Payload bruto recebido para homologação multiagente; sourceReference={} scenarioCode={}",
+                request.sourceReference(),
+                request.scenarioCode());
+        return service.startAgentValidation(request);
+    }
+
+    /** Entrega ao harness autorizado a evidência sintética sem credencial de sessão. */
+    @GetMapping("/internal/agent-validations/evidence/{evidenceId}")
+    public MiraPrivatePrototypeService.AgentValidationEvidence agentValidationEvidence(
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken,
+            @PathVariable("evidenceId") String evidenceId) {
+        authorizer.requireAuthorized(internalToken);
+        return service.agentValidationEvidence(evidenceId);
+    }
+
     /** Comprova ausência de publicação, pagamento e mídia na superfície privada. */
     @GetMapping("/safety")
     public Map<String, Object> safety() {

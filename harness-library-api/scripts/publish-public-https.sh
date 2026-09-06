@@ -9,6 +9,8 @@ API_REMOTE_ROOT="${HARNESS_LIBRARY_REMOTE_ROOT:-/root/harness-library-api}"
 PROXY_REMOTE_ROOT="${PUBLIC_PROXY_REMOTE_ROOT:-/root/lead-portal-payments-service}"
 PUBLICATION_ASSET_ROOT="${HARNESS_LIBRARY_PUBLICATION_ASSET_ROOT:-${API_REMOTE_ROOT}/publication}"
 OPERATION="${HARNESS_LIBRARY_PUBLICATION_OPERATION:-publish}"
+PROXY_RELOAD_ATTEMPTS="${HARNESS_LIBRARY_PROXY_RELOAD_ATTEMPTS:-30}"
+PROXY_RELOAD_INTERVAL_SECONDS="${HARNESS_LIBRARY_PROXY_RELOAD_INTERVAL_SECONDS:-1}"
 CERTBOT_EMAIL="${HARNESS_LIBRARY_CERTBOT_EMAIL:-paulofore@gmail.com}"
 CERTBOT_IMAGE="${HARNESS_LIBRARY_CERTBOT_IMAGE:-certbot/certbot:latest}"
 LOCK_FILE="${HARNESS_LIBRARY_PUBLICATION_LOCK_FILE:-/var/lock/marketinghub-deploy-163-245-200-7.lock}"
@@ -28,6 +30,85 @@ PROXY_CONTAINER=""
 fail() {
   printf '[HARNESS-HTTPS] %s\n' "$1" >&2
   exit 1
+}
+
+PROXY_CONTRACT_FAILURE=""
+
+public_proxy_contract_is_active() {
+  local http_headers
+  local unauthenticated_code
+  local actuator_code
+  local https_headers
+
+  if ! http_headers="$(curl --noproxy '*' --silent --show-error --max-time 15 \
+    --resolve "${PUBLIC_DOMAIN}:80:127.0.0.1" \
+    --head "http://${PUBLIC_DOMAIN}/v1/cards")"; then
+    PROXY_CONTRACT_FAILURE="a rota HTTP ainda não respondeu"
+    return 1
+  fi
+  if ! grep -Eq '^HTTP/[0-9.]+ 301' <<<"${http_headers}"; then
+    PROXY_CONTRACT_FAILURE="a rota HTTP ainda não retornou 301"
+    return 1
+  fi
+  if ! grep -Fiq "location: https://${PUBLIC_DOMAIN}/v1/cards" <<<"${http_headers}"; then
+    PROXY_CONTRACT_FAILURE="o redirecionamento HTTP ainda não preservou a rota"
+    return 1
+  fi
+
+  if ! unauthenticated_code="$(curl --noproxy '*' --silent --show-error --max-time 20 \
+    --resolve "${PUBLIC_DOMAIN}:443:127.0.0.1" \
+    --output /dev/null --write-out '%{http_code}' \
+    "https://${PUBLIC_DOMAIN}/v1/cards")"; then
+    PROXY_CONTRACT_FAILURE="a rota HTTPS ainda não apresentou o certificado válido"
+    return 1
+  fi
+  if [[ "${unauthenticated_code}" != "401" ]]; then
+    PROXY_CONTRACT_FAILURE="a rota HTTPS sem chave ainda não retornou 401; status=${unauthenticated_code}"
+    return 1
+  fi
+
+  if ! actuator_code="$(curl --noproxy '*' --silent --show-error --max-time 20 \
+    --resolve "${PUBLIC_DOMAIN}:443:127.0.0.1" \
+    --output /dev/null --write-out '%{http_code}' \
+    "https://${PUBLIC_DOMAIN}/actuator/health")"; then
+    PROXY_CONTRACT_FAILURE="o bloqueio público do Actuator ainda não respondeu"
+    return 1
+  fi
+  if [[ "${actuator_code}" != "404" ]]; then
+    PROXY_CONTRACT_FAILURE="o Actuator ainda não está bloqueado; status=${actuator_code}"
+    return 1
+  fi
+
+  if ! https_headers="$(curl --noproxy '*' --silent --show-error --max-time 20 \
+    --resolve "${PUBLIC_DOMAIN}:443:127.0.0.1" \
+    --head "https://${PUBLIC_DOMAIN}/v1/cards")"; then
+    PROXY_CONTRACT_FAILURE="os cabeçalhos HTTPS ainda não responderam"
+    return 1
+  fi
+  if ! grep -Fiq 'strict-transport-security: max-age=31536000' <<<"${https_headers}"; then
+    PROXY_CONTRACT_FAILURE="o HSTS ainda não foi aplicado"
+    return 1
+  fi
+
+  PROXY_CONTRACT_FAILURE=""
+  return 0
+}
+
+wait_for_public_proxy_contract() {
+  local attempt
+
+  for ((attempt = 1; attempt <= PROXY_RELOAD_ATTEMPTS; attempt++)); do
+    if public_proxy_contract_is_active; then
+      return 0
+    fi
+    printf '[HARNESS-HTTPS] aguardando recarga do proxy (%d/%d): %s\n' \
+      "${attempt}" "${PROXY_RELOAD_ATTEMPTS}" "${PROXY_CONTRACT_FAILURE}" >&2
+    if ((attempt < PROXY_RELOAD_ATTEMPTS)); then
+      sleep "${PROXY_RELOAD_INTERVAL_SECONDS}"
+    fi
+  done
+
+  return 1
 }
 
 restore_proxy_configuration() {
@@ -62,6 +143,10 @@ trap cleanup EXIT
   || fail "o domínio público deve permanecer fixo em mkthub.api.br"
 [[ "${OPERATION}" == "publish" || "${OPERATION}" == "renew" ]] \
   || fail "operação inválida; use publish ou renew"
+[[ "${PROXY_RELOAD_ATTEMPTS}" =~ ^[1-9][0-9]*$ ]] \
+  || fail "quantidade de tentativas da recarga do proxy inválida"
+[[ "${PROXY_RELOAD_INTERVAL_SECONDS}" =~ ^[0-9]+$ ]] \
+  || fail "intervalo da recarga do proxy inválido"
 [[ "${CERTBOT_EMAIL}" == *@* ]] || fail "e-mail do Certbot inválido"
 
 install -d -m 0755 "$(dirname "${LOCK_FILE}")"
@@ -164,33 +249,8 @@ fi
 docker exec "${PROXY_CONTAINER}" nginx -t
 docker exec "${PROXY_CONTAINER}" nginx -s reload
 
-http_headers="$(curl --silent --show-error --max-time 15 \
-  --resolve "${PUBLIC_DOMAIN}:80:127.0.0.1" \
-  --head "http://${PUBLIC_DOMAIN}/v1/cards")"
-grep -Eq '^HTTP/[0-9.]+ 301' <<<"${http_headers}" \
-  || fail "HTTP não redirecionou para HTTPS"
-grep -Fiq "location: https://${PUBLIC_DOMAIN}/v1/cards" <<<"${http_headers}" \
-  || fail "redirecionamento não preservou a rota pública"
-
-unauthenticated_code="$(curl --silent --show-error --max-time 20 \
-  --resolve "${PUBLIC_DOMAIN}:443:127.0.0.1" \
-  --output /dev/null --write-out '%{http_code}' \
-  "https://${PUBLIC_DOMAIN}/v1/cards")"
-[[ "${unauthenticated_code}" == "401" ]] \
-  || fail "a rota HTTPS sem chave deveria retornar 401; status=${unauthenticated_code}"
-
-actuator_code="$(curl --silent --show-error --max-time 20 \
-  --resolve "${PUBLIC_DOMAIN}:443:127.0.0.1" \
-  --output /dev/null --write-out '%{http_code}' \
-  "https://${PUBLIC_DOMAIN}/actuator/health")"
-[[ "${actuator_code}" == "404" ]] \
-  || fail "a porta pública expôs o Actuator; status=${actuator_code}"
-
-https_headers="$(curl --silent --show-error --max-time 20 \
-  --resolve "${PUBLIC_DOMAIN}:443:127.0.0.1" \
-  --head "https://${PUBLIC_DOMAIN}/v1/cards")"
-grep -Fiq 'strict-transport-security: max-age=31536000' <<<"${https_headers}" \
-  || fail "HSTS não foi aplicado à API pública"
+wait_for_public_proxy_contract \
+  || fail "o proxy não aplicou o contrato HTTPS após a recarga: ${PROXY_CONTRACT_FAILURE}"
 
 install -d -m 0700 "${API_REMOTE_ROOT}"
 marker_temporary="${ACTIVATION_MARKER}.tmp"

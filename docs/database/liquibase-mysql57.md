@@ -56,8 +56,8 @@ bash backend/ads-service/scripts/validate-product-type-consultants-v1-mysql57.sh
 A auditoria BPM da descoberta PDE também valida fisicamente o handoff autônomo. A fixture confirma
 o retroativo de maturidade factual, vínculos únicos entre candidata, dossiê e produto, chaves
 estrangeiras, a investigação Meta segregada por tentativa, backfill do navegador legado, retomada
-após DDL aplicado sem registro, os processos v6 e a cadeia v10 da validação privada, rollback,
-republicação e reaplicação sem duplicidade:
+após DDL aplicado sem registro, os processos v6 e v7, a migração imutável de Mira para a validação
+multiagente, as cadeias v10 e v11, rollback, republicação e reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh

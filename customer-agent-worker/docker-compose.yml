@@ -13,6 +13,7 @@ services:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
       CUSTOMER_AGENT_MCP_URL: ${CUSTOMER_AGENT_MCP_URL:-http://host.docker.internal}
       CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?Defina o token interno do PDE para a homologacao multiagente}
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
       AGENT_HEALTH_KEY: customer-agent
       AGENT_HEALTH_VERSION: "5"

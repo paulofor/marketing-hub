@@ -557,7 +557,7 @@ public class BusinessProcessActivityExecutionService {
         : experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(productId);
   }
 
-  /** Resolve a referência inicial sem fabricar experimento para um protótipo ainda privado. */
+  /** Resolve a referência inicial sem fabricar experimento para um protótipo pré-comercial. */
   private String initialSourceReference(
       BusinessProcessDefinition process, Product product, List<Experiment> productExperiments) {
     if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
@@ -581,6 +581,10 @@ public class BusinessProcessActivityExecutionService {
         && "PDE_PRIVATE_VALIDATION_V1".equals(product.getValidationDefinitionVersion())) {
       return "product:" + product.getId() + "@private-validation-v1";
     }
+    if ("pde-construction-approval".equals(process.getProcessCode())
+        && usesPdeAgentValidationV1(product)) {
+      return "product:" + product.getId() + "@agent-validation-v1";
+    }
     return null;
   }
 
@@ -597,7 +601,18 @@ public class BusinessProcessActivityExecutionService {
     if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
       return initialSourceReference(process, product, productExperiments);
     }
+    if ("pde-construction-approval".equals(process.getProcessCode())
+        && usesPdeAgentValidationV1(product)) {
+      return initialSourceReference(process, product, productExperiments);
+    }
     return currentExecutionReference(tasks, instances);
+  }
+
+  /** Limita a referência imutável da execução aos dois estados previstos pelo contrato v1. */
+  private boolean usesPdeAgentValidationV1(Product product) {
+    return product != null
+        && Set.of("PDE_AGENT_VALIDATION_V1", "PDE_AGENT_VALIDATED_V1")
+            .contains(product.getValidationDefinitionVersion());
   }
 
   /** Prefere o nome interno no título operacional sem expor ausência como texto vazio. */

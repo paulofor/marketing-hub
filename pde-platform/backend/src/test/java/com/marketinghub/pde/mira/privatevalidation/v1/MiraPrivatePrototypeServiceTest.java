@@ -107,6 +107,111 @@ class MiraPrivatePrototypeServiceTest {
         assertThatThrownBy(() -> service.readingEvidence(3)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    /** Executa o cenário aderente sem participante, consentimento ou alegação comercial. */
+    @Test
+    void completesIsolatedAgentScenarioWithoutBecomingHumanEvidence() throws Exception {
+        AccessService access = mock(AccessService.class);
+        MiraPrivatePrototypeService service = service(access);
+        var started = service.startAgentValidation(
+                new MiraPrivatePrototypeService.AgentSessionRequest(
+                        "product:10@agent-validation-v1", "ADHERENT"));
+
+        service.saveInput(started.sessionToken(), new MiraPrivatePrototypeService.InputRequest(
+                "45-54", "Organizar meus produtos em uma rotina simples", List.of(
+                new MiraPrivatePrototypeService.ProductInput("Hidratante diário", "Aplicar após a limpeza"),
+                new MiraPrivatePrototypeService.ProductInput("Limpador suave", "Usar para limpar e enxaguar"))));
+        service.generate(started.sessionToken());
+        service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("READY_RESULT_USED", true));
+        var completed = service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("AGENT_SCENARIO_COMPLETED", true));
+        var evidence = service.agentValidationEvidence(started.evidenceId());
+
+        assertThat(started.participantReference()).isNull();
+        assertThat(started.agentValidation()).isTrue();
+        assertThat(completed.readingFinished()).isTrue();
+        assertThat(evidence.trafficClass()).isEqualTo("AGENT_VALIDATION");
+        assertThat(evidence.mhInternalTest()).isTrue();
+        assertThat(evidence.events()).containsExactly(
+                "EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "AGENT_SCENARIO_COMPLETED");
+        assertThat(evidence.sideEffects())
+                .containsEntry("paymentEnabled", false)
+                .containsEntry("published", false)
+                .containsEntry("campaignCreated", false)
+                .containsEntry("mediaSpendBrl", 0);
+        assertThat(evidence.humanEvidenceClaimed()).isFalse();
+        assertThat(evidence.commercialEvidenceClaimed()).isFalse();
+        assertThat(service.readingEvidence(1).trafficClass()).isEqualTo("NOT_STARTED");
+        assertThat(new ObjectMapper().writeValueAsString(evidence))
+                .doesNotContain(started.sessionToken(), "Mira");
+        assertThatThrownBy(() -> service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("PREFERRED_OVER_FREE", true)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** Preserva o acesso humano legado mesmo depois de existir sessão sintética sem participante. */
+    @Test
+    void keepsHistoricalHumanAccessIndependentFromAgentSessions() {
+        MiraPrivatePrototypeService service = service(mock(AccessService.class));
+        service.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "RECOVERY"));
+
+        var human = service.access(new MiraPrivatePrototypeService.AccessRequest("participant-one", true));
+
+        assertThat(human.participantReference()).isEqualTo("PV-000000000001");
+        assertThat(human.agentValidation()).isFalse();
+        assertThat(service.readingEvidence(1).trafficClass()).isEqualTo("PRIVATE_READING");
+    }
+
+    /** Exige bloqueio funcional antes de concluir o cenário sintético de segurança. */
+    @Test
+    void requiresRealSafetyBlockForAgentScenario() {
+        MiraPrivatePrototypeService service = service(mock(AccessService.class));
+        var started = service.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "SAFETY"));
+        service.saveInput(started.sessionToken(), new MiraPrivatePrototypeService.InputRequest(
+                "45-54", "Diagnosticar e tratar manchas", List.of(
+                new MiraPrivatePrototypeService.ProductInput("Limpador suave", "Usar para limpar e enxaguar"))));
+
+        assertThatThrownBy(() -> service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("SAFETY_LIMIT_BLOCKED", true)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(service.generate(started.sessionToken()).status()).isEqualTo("BLOCKED");
+        service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("SAFETY_LIMIT_BLOCKED", true));
+        var completed = service.event(started.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("AGENT_SCENARIO_COMPLETED", true));
+
+        assertThat(completed.readingFinished()).isTrue();
+        assertThat(completed.events())
+                .contains("SAFETY_LIMIT_BLOCKED", "AGENT_SCENARIO_COMPLETED")
+                .doesNotContain("VALUE_MOMENT", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED");
+    }
+
+    /** Impede encerrar ou misturar cenários sintéticos sem a trilha funcional predeclarada. */
+    @Test
+    void rejectsIncompleteOrCrossScenarioAgentEvidence() {
+        MiraPrivatePrototypeService service = service(mock(AccessService.class));
+        var adherent = service.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "ADHERENT"));
+        var recovery = service.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "RECOVERY"));
+
+        assertThatThrownBy(() -> service.finish(adherent.sessionToken()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cenário canônico");
+        assertThatThrownBy(() -> service.event(adherent.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("AGENT_SCENARIO_COMPLETED", true)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("evidência funcional");
+        assertThatThrownBy(() -> service.event(adherent.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("RECOVERY_COMPLETED", true)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> service.event(recovery.sessionToken(),
+                new MiraPrivatePrototypeService.EventRequest("SAFETY_LIMIT_BLOCKED", true)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
     /** Não cria eventos nem sessão de participante sem consentimento explícito. */
     @Test
     void requiresConsentBeforeAnyEvidence() {

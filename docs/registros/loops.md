@@ -4,6 +4,19 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-AGENTE-PROMPT-FORA-DO-CATALOGO — contrato executável fica invisível à auditoria
+
+- **Data:** 2026-09-06.
+- **Sintoma confirmado:** a suíte completa do backend rejeitou a validação multiagente PDE porque os
+  pares prompt/schema `bpm-v5` de Psique e `bpm-v3` de Têmis existiam nos workers, mas não apareciam
+  no catálogo central do comportamento dos agentes.
+- **Causa-raiz:** a implementação versionou corretamente os arquivos no executor, porém não atualizou
+  no mesmo passo o manifesto consumido pela tela e pela auditoria de integridade dos agentes.
+- **Correção sistêmica:** o catálogo passa a publicar os contratos de Psique e Têmis com finalidade,
+  identidade, fronteiras de evidência sintética, tráfego interno e efeitos externos nulos.
+- **Prevenção:** `AgentHarnessCatalogTest` compara todos os prompts e schemas reais de cada worker com
+  o manifesto; qualquer novo arquivo comportamental fora do catálogo bloqueia a suíte completa.
+
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 
 - **Data:** 2026-09-01.

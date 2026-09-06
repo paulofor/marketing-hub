@@ -777,6 +777,91 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(request.getValue().sourceReference()).isEqualTo("product:901@private-validation-v1");
   }
 
+  /** Mantém a ocorrência v7 atual mesmo quando a atividade v6 histórica é mais recente. */
+  @Test
+  void isolatesAgentValidationReferenceFromHistoricalPrivateReading() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(67L);
+    process.setVersionNumber(7);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-construction-approval");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"technicalHomologation\",\"type\":\"TASK\","
+            + "\"label\":\"Homologar tecnicamente\",\"responsibleAgentKeys\":[\"customer-agent\"]}]}");
+    Product product = Product.builder().id(901L).internalName("Mira").build();
+    product.setAutomaticExecutionEnabled(true);
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V1");
+    product.setPdeExperienceJson(
+        "{\"contractVersion\":\"PDE_HARNESS_PLAN_V1\","
+            + "\"experienceVersion\":\"private-validation-v1\"}");
+    BusinessProcessActivityDefinition technical =
+        activity(671L, process, "technicalHomologation", "Homologar tecnicamente");
+    technical.setDefinitionJson("{\"responsibleAgentKeys\":[\"customer-agent\"]}");
+    BusinessProcessDefinition historicalProcess = selectedProcess();
+    historicalProcess.setId(66L);
+    historicalProcess.setVersionNumber(6);
+    historicalProcess.setProcessCode("pde-construction-approval");
+    BusinessProcessActivityDefinition historicalActivity =
+        activity(661L, historicalProcess, "privateReading1", "Registrar primeira leitura");
+    BusinessProcessActivityInstance historical = new BusinessProcessActivityInstance();
+    historical.setId(9001L);
+    historical.setActivityDefinition(historicalActivity);
+    historical.setSourceReference("product:901@private-validation-v1");
+    historical.setStatus("COMPLETED");
+    historical.setCreatedAt(Instant.parse("2026-09-06T12:00:00Z"));
+
+    when(processes.findById(67L)).thenReturn(Optional.of(process));
+    when(products.findById(901L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(901L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(901L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(67L))
+        .thenReturn(List.of(technical));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:901@"))
+        .thenReturn(List.of());
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                "pde-construction-approval", "product:901@"))
+        .thenReturn(List.of(historical));
+
+    var history = executionService.productProcessExecutions(67L, 901L);
+
+    assertThat(history.currentExecutionReference()).isEqualTo("product:901@agent-validation-v1");
+    assertThat(history.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.activityId()).isEqualTo("technicalHomologation");
+              assertThat(activity.operationalState()).isEqualTo("NOT_STARTED");
+            });
+
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V2");
+    var futureVersionHistory = executionService.productProcessExecutions(67L, 901L);
+    assertThat(futureVersionHistory.currentExecutionReference())
+        .isEqualTo("product:901@private-validation-v1");
+  }
+
   /** Executa uma atividade determinística no backend e preserva a referência do ciclo atual. */
   @Test
   void requestsBackendOwnedProductActivityWithoutCreatingAgentTask() {

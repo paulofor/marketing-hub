@@ -198,3 +198,85 @@ test.describe("protótipo privado de Mira", () => {
     });
   });
 });
+
+test.describe("homologação multiagente segregada", () => {
+  test("conclui o cenário interno sem exibir pesquisa ou intenção comercial", async ({
+    page,
+  }) => {
+    let state = {
+      sessionToken: "agent-session-local",
+      participantReference: null,
+      trafficClass: "AGENT_VALIDATION",
+      status: "INPUT_READY",
+      ageRange: "45-54",
+      objective: "Organizar meus produtos em uma rotina simples",
+      products: [
+        { name: "Limpador suave", labelDirections: "Usar para limpar e enxaguar" },
+        { name: "Hidratante diário", labelDirections: "Aplicar após a limpeza" },
+      ],
+      routine: [] as Array<{
+        productName: string;
+        order: number;
+        documentedDirection: string;
+        safetyNote: string;
+      }>,
+      events: ["EXPERIENCE_STARTED"],
+      prototypeVersion: "mira-private-v1",
+      checkoutMode: "SIMULATED_NO_CHARGE",
+      readingFinished: false,
+      agentValidation: true,
+      scenarioCode: "ADHERENT",
+      evidenceId: "evidence-local",
+    };
+    await page.addInitScript(() =>
+      window.sessionStorage.setItem("mira-private-session", "agent-session-local"),
+    );
+    await page.route("**/api/pde/mira/private/v1/**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname.endsWith("/generate")) {
+        state = {
+          ...state,
+          status: "READY",
+          routine: [
+            {
+              productName: "Limpador suave",
+              order: 10,
+              documentedDirection: "Usar para limpar e enxaguar",
+              safetyNote: "Conforme rótulo",
+            },
+            {
+              productName: "Hidratante diário",
+              order: 20,
+              documentedDirection: "Aplicar após a limpeza",
+              safetyNote: "Conforme rótulo",
+            },
+          ],
+          events: [...state.events, "VALUE_MOMENT"],
+        };
+      } else if (url.pathname.endsWith("/events")) {
+        const event = (route.request().postDataJSON() as { eventType: string }).eventType;
+        state = {
+          ...state,
+          events: [...state.events, event],
+          readingFinished: event === "AGENT_SCENARIO_COMPLETED",
+        };
+      }
+      await route.fulfill({ json: state });
+    });
+
+    await page.goto("/mira-private");
+    await expect(page.getByTestId("agent-validation-mode")).toBeVisible();
+    await page.getByRole("button", { name: "Gerar rotina segura" }).click();
+    await page.getByRole("button", { name: "Marcar uma parte como consultada" }).click();
+    await expect(
+      page.getByRole("button", { name: "Sim, prefiro a rotina pronta" }),
+    ).toHaveCount(0);
+    await expect(page.getByText("Você consideraria avançar por R$ 49?" )).toHaveCount(0);
+    await page.getByRole("button", { name: "Concluir cenário interno" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Homologação interna concluída" }),
+    ).toBeVisible();
+    await expect(page.locator(".mira-private-shell")).not.toContainText(/\bMira\b/i);
+    await expect(page.locator('input[autocomplete="cc-number"]')).toHaveCount(0);
+  });
+});

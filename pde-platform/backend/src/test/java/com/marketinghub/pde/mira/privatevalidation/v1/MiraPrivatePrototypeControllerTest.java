@@ -33,4 +33,24 @@ class MiraPrivatePrototypeControllerTest {
                 .andExpect(status().isOk());
         verify(service).readingEvidence(2);
     }
+
+    /** Protege criação e leitura de sessões sintéticas com a credencial interna do PDE. */
+    @Test
+    void protectsAgentValidationEndpoints() {
+        var service = mock(MiraPrivatePrototypeService.class);
+        var controller = new MiraPrivatePrototypeController(service, new InternalApiAuthorizer("local-internal"));
+        var request = new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "ADHERENT");
+
+        assertThatThrownBy(() -> controller.startAgentValidation(null, request))
+                .isInstanceOf(SecurityException.class);
+        assertThatThrownBy(() -> controller.agentValidationEvidence("wrong", "evidence-1"))
+                .isInstanceOf(SecurityException.class);
+        verifyNoInteractions(service);
+
+        controller.startAgentValidation("local-internal", request);
+        controller.agentValidationEvidence("local-internal", "evidence-1");
+        verify(service).startAgentValidation(request);
+        verify(service).agentValidationEvidence("evidence-1");
+    }
 }

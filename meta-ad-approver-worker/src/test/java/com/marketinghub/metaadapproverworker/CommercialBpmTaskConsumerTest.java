@@ -136,6 +136,97 @@ class CommercialBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/pde-private-validation-review-v2-schema.json");
   }
 
+  /** Valida a auditoria multiagente somente com identidade e efeitos externos coerentes. */
+  @Test
+  void validatesVersionedAgentIntegrityContract() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "contractVersion":"PDE_TEMIS_AGENT_VALIDATION_V1",
+              "decision":"APPROVED",
+              "commercialRationale":"As provas sintéticas são íntegras e não alegam resposta do mercado.",
+              "rootCause":"Harness e revisões independentes preservam a mesma versão e as fronteiras.",
+              "sourceReference":"product:10@agent-validation-v1",
+              "productId":10,
+              "productSlug":"orientacao-digital-rotina-pele-madura",
+              "prototypeVersion":"mira-private-v1",
+              "trafficClass":"AGENT_VALIDATION",
+              "internalMarker":"mh_internal_test",
+              "humanEvidenceClaimed":false,
+              "commercialEvidenceClaimed":false,
+              "sideEffects":{"paymentEnabled":false,"published":false,"campaignCreated":false,"mediaSpendBrl":0},
+              "agentValidationChecks":{
+                "sameProductAndVersion":true,"criteriaPredeclared":true,
+                "technicalHarnessPassed":true,"threeScenarioReviewsApproved":true,
+                "syntheticEvidenceLabeled":true,"internalTrafficSegregated":true,
+                "privacyPreserved":true,"paymentDisabled":true,"publicationDisabled":true,
+                "campaignDisabled":true,"zeroMediaSpend":true,"noHumanOrCommercialClaim":true,
+                "strategyFidelity":true
+              },
+              "evidence":["harness","aderente","recuperação","segurança"],
+              "requiredChanges":[]
+            }
+            """);
+
+    Map<String, Object> task =
+        Map.of(
+            "sourceReference",
+            "product:10@agent-validation-v1",
+            "taskTarget",
+            Map.of(
+                "productId",
+                10L,
+                "productSlug",
+                "orientacao-digital-rotina-pele-madura",
+                "experienceVersion",
+                "mira-private-v1"));
+    CommercialBpmTaskConsumer.validateAgentValidation(result, task);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("sideEffects"))
+        .put("campaignCreated", true);
+
+    assertThatThrownBy(() -> CommercialBpmTaskConsumer.validateAgentValidation(result, task))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("incompleto");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("sideEffects"))
+        .put("campaignCreated", false);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result)
+        .put("prototypeVersion", "outra-versao");
+    assertThatThrownBy(() -> CommercialBpmTaskConsumer.validateAgentValidation(result, task))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("incompleto");
+  }
+
+  /** Usa o parecer v3 somente para a referência sintética, mantendo o histórico privado. */
+  @Test
+  void composesAgentIntegrityPromptWithoutHumanApproval() throws Exception {
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    CommercialBpmTaskConsumer consumer =
+        new CommercialBpmTaskConsumer(
+            properties,
+            "codex",
+            "gpt-5.6-sol",
+            "/workspace-inexistente",
+            "/workspace-inexistente",
+            json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 902L,
+            "processCode", "pde-construction-approval",
+            "activityId", "commercialIntegrityReview",
+            "sourceReference", "product:10@agent-validation-v1",
+            "taskTarget", Map.of("productId", 10L, "productSlug", "produto-publico"));
+
+    String prompt = consumer.prompt(task);
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "integridade da validação multiagente PDE v3",
+            "nunca comprova desejo, compra ou satisfação",
+            "commercialEvidenceClaimed")
+        .doesNotContain("duas leituras sustentam");
+  }
+
   /** Usa somente o contexto privado da tarefa e não carrega entregáveis globais de outro PDE. */
   @Test
   void composesPrivateValidationPromptWithoutGlobalProductArtifacts() throws Exception {

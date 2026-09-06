@@ -16,12 +16,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.CollectionUtils;
-
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 /** Prepara e envia os artefatos auditáveis produzidos por cada job de vídeo. */
 @Component
@@ -88,6 +90,8 @@ public class VideoAssetUploader {
         metadata.put("role", file.role().name());
         metadata.put("provider_job_id", artifacts.providerJobId());
         metadata.put("file_name", file.fileName());
+        metadata.put("size_bytes", file.content().length);
+        metadata.put("sha256", sha256(file.content()));
         if (!CollectionUtils.isEmpty(artifacts.metadata())) {
             metadata.put("provider_metadata", artifacts.metadata());
         }
@@ -95,6 +99,18 @@ public class VideoAssetUploader {
             return objectMapper.writeValueAsString(metadata);
         } catch (JsonProcessingException ex) {
             throw new BackendIntegrationException("Não foi possível serializar metadata do asset", ex);
+        }
+    }
+
+    /**
+     * Calcula a identidade imutável do arquivo enviado para vincular revisão e governança aos bytes
+     * reais.
+     */
+    private String sha256(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 indisponível no runtime Java", ex);
         }
     }
 

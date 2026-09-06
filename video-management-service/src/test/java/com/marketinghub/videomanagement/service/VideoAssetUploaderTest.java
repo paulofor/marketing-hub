@@ -74,9 +74,15 @@ class VideoAssetUploaderTest {
         assertThat(result.captionAssetId()).isEqualTo(13L);
         verify(assetClient, org.mockito.Mockito.times(4))
                 .uploadAsset(any(), metadataCaptor.capture());
-        assertThat(metadataCaptor.getAllValues().get(0)).contains("\"job_id\":1");
+        assertThat(metadataCaptor.getAllValues().get(0)).contains(
+                "\"job_id\":1",
+                "\"size_bytes\":1",
+                "\"sha256\":\"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a\"");
         assertThat(metadataCaptor.getAllValues().get(3))
-                .contains("\"role\":\"AUDIO_AUDIT\"", "\"file_name\":\"tts.mp3\"");
+                .contains(
+                        "\"role\":\"AUDIO_AUDIT\"",
+                        "\"file_name\":\"tts.mp3\"",
+                        "\"sha256\":\"e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71\"");
     }
 
     /** Monta um job mínimo para os cenários de upload de artefatos. */

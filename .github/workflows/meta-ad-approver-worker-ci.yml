@@ -87,6 +87,8 @@ jobs:
         run: |
           npm ci --omit=dev
           node --check src/main/resources/mcp/meta-ad-approver.mjs
+          node --check src/main/resources/mcp/landing-evidence.mjs
+          node --check src/main/resources/mcp/video-frame-extractor.mjs
           node --check src/main/resources/mcp/temis-library-review.mjs
           npm run test:mcp-handshake
       - name: Validate container build
@@ -112,7 +114,6 @@ jobs:
     needs: test
     concurrency:
       group: deploy-vps-163-245-202-80
-      queue: max
       cancel-in-progress: false
     env:
       OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
@@ -162,6 +163,8 @@ jobs:
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
+          # Caminhos devem ser resolvidos pelo runner antes do SSH.
+          # shellcheck disable=SC2029
           ssh "${VPS_USER}@${VPS_IP}" "mkdir -p \
             '${REPOSITORY_DIR}/meta-ad-approver-worker' \
             '${REPOSITORY_DIR}/pde-platform/contracts' \
@@ -175,6 +178,8 @@ jobs:
       - name: Rebuild and restart agent
         run: |
           set -euo pipefail
+          # Versões e caminhos devem ser injetados pelo runner no comando remoto.
+          # shellcheck disable=SC2029
           ssh "${VPS_USER}@${VPS_IP}" "
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/meta-ad-approver/codex-home \
             && test -f /root/infra/openai-token/openai_api_key \

@@ -2,6 +2,12 @@
 
 Decisão solicitada em 2026-09-05. Produto interno `10`, plano comercial `7`.
 
+> **Substituição em 2026-09-06:** o recrutamento e as leituras privadas descritos abaixo são
+> históricos e não devem ser executados. A regra vigente é homologação multiagente seguida de um
+> experimento comercial próprio. Consulte
+> [a revisão atual](revisao-cadeia-validacao-pde-multiagente-2026-09-06.md) e
+> [o cânone](../canonical/pde-validacao-multiagente-canon.v1.md).
+
 ## Objetivo e mudança operacional
 
 Construir aquisição pelo Instagram Ads que evolua para compras reais e entrega satisfatória.

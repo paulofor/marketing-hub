@@ -182,10 +182,10 @@ minima, executa o trabalho complexo e devolve uma saida final utilizavel. Afeto 
 de controlar outra pessoa; reconhecimento nao autoriza vergonha, comparacao humilhante ou status
 falso; alivio de esforco nao autoriza esconder trabalho essencial nem prometer resultado garantido.
 
-No prototipo privado, cada leitura deve observar tambem `READY_RESULT_USED`: participante que usou o
-resultado pronto sem prompting ou montagem externa. O criterio minimo dessa taxa deve ser maior que
-zero, declarado antes do uso, calculado sobre quem iniciou a experiencia e aprovado nas duas
-leituras. Interesse, elogio ou entrega gerada sem uso nao substituem esse fato.
+No protótipo, o cenário aderente de Psique deve observar `READY_RESULT_USED`: o agente percorreu e
+usou o resultado pronto sem prompting ou montagem externa. O critério deve ser declarado antes da
+execução e comprovado por eventos do mesmo cenário. Esse sinal valida funcionamento e clareza
+provável; não representa uso, preferência ou intenção de uma pessoa real.
 
 O gate deve rejeitar B2B disfarçado de B2C, curso generico sem microexperiencia, produto que dependa
 de operacao empresarial para gerar valor e ideia cuja aquisicao no Instagram seja apenas uma
@@ -193,12 +193,13 @@ suposicao. Temperatura Hotmart, anuncio ativo, audiencia e pontuacao continuam s
 vendas. Para declarar uma nova oportunidade superior ao benchmark Rigel, a pontuacao auditavel deve
 ser **estritamente maior**, com consenso dos agentes e valor percebido minimo preservado.
 
-## Validacao obrigatoria do momento de compra
+## Validação multiagente obrigatória antes do mercado
 
-Por decisao de 2026-08-26, no recorte B2C para Instagram a priorizacao final deve ser precedida por
-uma etapa independente de **Validacao do Momento de Compra**. Artigos, ofertas, anuncios, reviews,
-temperatura, ranking, score de agente e intencao declarada podem orientar a hipotese, mas nao
-autorizam compara-la com o benchmark nem aprova-la como produto.
+O gate de Momento de Compra criado em 2026-08-26 foi separado pela decisão de 2026-09-06. Antes da
+comunicação, agentes homologam mecanismo, experiência provável e integridade. Depois da ativação,
+eventos de pessoas reais validam momento de compra, preferência e valor entregue. Artigos, ofertas,
+anúncios, reviews, temperatura, ranking, score de agente e intenção estimada podem orientar a
+hipótese, mas não comprovam venda ou satisfação.
 
 Antes dessa etapa, o processo deve qualificar as fontes comerciais. Snapshot Hotmart ou outra fonte
 com placeholder, identidade ou URL incompleta, item sem preco e sem qualquer sinal de tracao, data
@@ -219,37 +220,36 @@ Cada candidata deve registrar uma cena de compra estruturada com:
 - vantagem funcional que o prototipo pretende demonstrar sobre essa alternativa.
 
 Depois da pesquisa e antes do score final, Atena congela a estratégia de mercado da candidata;
-Dedalo pode materializar um prototipo privado, limitado e sem publicacao; Temis traduz a estratégia
-em comunicação; Hermes define somente distribuição, atribuição e mensuração; Psique revisa valor e
-esforco. Os criterios de sucesso devem ser declarados antes do primeiro
-uso e preservar denominadores para, no minimo, inicio da experiencia, chegada ao microvalor,
-preferencia sobre a alternativa gratuita e inicio de checkout. O checkout do prototipo nao realiza
-pagamento e seus eventos devem usar marcador explicito de teste ou validacao privada.
+Dédalo pode materializar um protótipo limitado e sem publicação; Têmis revisa integridade; Hermes
+define somente distribuição, atribuição e mensuração; Psique revisa valor provável e esforço. Os
+critérios de sucesso devem ser declarados antes da primeira execução e cobrir início, microvalor,
+uso do resultado pronto, recuperação de fricção e bloqueio seguro. Todos os eventos usam marcador
+explícito `AGENT_VALIDATION` e não integram o funil comercial.
 
-Somente duas leituras independentes e consistentes, ambas acima dos criterios predeclarados e sem
-bloqueio de Psique ou Temis, liberam a candidata para priorizacao final e comparacao com Rigel. Uma
-leitura favoravel isolada, media que esconda uma leitura reprovada ou nova amostragem do modelo nao
-atende o gate. O backend persiste entradas, contagens, taxas, decisoes, evidencias e motivos e e a
-unica autoridade para liberar a etapa seguinte.
+Somente homologação determinística, três cenários isolados de Psique e revisão independente de
+Têmis, todos acima dos critérios predeclarados, liberam a candidata para priorização final. Parecer
+favorável isolado, média que esconda cenário reprovado ou nova amostragem sem causa corrigida não
+atende o gate. O backend persiste entradas, eventos, decisões, evidências, custos e motivos e é a
+única autoridade para liberar a etapa seguinte.
 
-O contrato persistivel `purchaseMomentGate` deve expor, de forma coerente, `required`, `status`,
-`sourceQualityPassed`, `finalPrioritizationEligible`, `minimumIndependentReadings`, criterios,
-candidatas elegiveis, `humanValueDelivery` e leituras. Em uma aprovacao, o backend nao pode confiar somente nos booleanos
-do worker: deve confirmar o vinculo nominal da candidata, a cena e o prototipo privado, recalcular
-as taxas de inicio, microvalor, uso do resultado pronto, preferencia e checkout pelas contagens,
-exigir IDs distintos, validar a ordem temporal e confirmar as decisoes de Psique e Temis.
-Divergencia entre resumo e fatos bloqueia a conclusao.
+O contrato persistível `agentValidationGate` deve expor, de forma coerente, `required`, `status`,
+`sourceQualityPassed`, `finalPrioritizationEligible`, critérios, candidata elegível,
+`humanValueDelivery` como hipótese, versão do protótipo, cenários e pareceres. Em uma aprovação, o
+backend não pode confiar somente nos booleanos do worker: deve confirmar vínculo nominal, versão,
+cena, eventos, artefatos, IDs distintos, ordem temporal, segregação das métricas e decisões de
+Psique e Têmis. Divergência entre resumo e fatos bloqueia a conclusão.
 
 O resultado deve seguir estas regras:
 
-- `CONTINUAR`: duas leituras aprovadas, preferencia observada e compromisso comercial mensuravel;
-- `AJUSTAR`: existe uso ou microvalor, mas algum criterio predeclarado nao foi atingido;
-- `PARAR`: a alternativa gratuita vence, a fonte e invalida ou existe risco relevante nao
-  controlavel;
-- `AGUARDAR_VALIDACAO`: o prototipo ou as duas leituras ainda nao existem.
+- `CONTINUAR`: três cenários, homologação técnica e integridade aprovados; preparar comunicação;
+- `AJUSTAR`: existe resultado funcional, mas algum critério predeclarado não foi atingido;
+- `PARAR`: a fonte é inválida, o mecanismo não entrega valor funcional ou existe risco relevante
+  não controlável;
+- `AGUARDAR_VALIDACAO`: o protótipo ou alguma evidência multiagente ainda não existe.
 
-Intencao, inicio de checkout de teste e parecer de agente continuam separados de venda. Somente
-pagamento reconciliado no contrato comercial oficial pode contar como venda ou receita.
+Persona sintética, intenção estimada, checkout de teste e parecer de agente continuam separados de
+preferência humana e venda. Somente pagamento reconciliado no contrato comercial oficial pode contar
+como venda ou receita.
 
 ## Colecao viva de momentos de compra B2C
 
@@ -674,12 +674,12 @@ O modulo deve ter pelo menos sete gates:
    exige salto mental grande demais.
 5. Gate de mecanismo: bloqueia aprovacao sem base cientifica candidata verificavel e sem
    limites de promessa coerentes com essa evidencia.
-6. Gate de momento de compra: no recorte B2C/Instagram, bloqueia priorizacao final sem fontes
-   atuais, prototipo privado, criterios predeclarados, duas leituras consistentes, vantagem
-   observada sobre o gratuito e ausencia de bloqueio de Psique ou Temis.
-7. Gate de valor humano e entrega pronta: bloqueia candidata sem territorio sustentado por evidencia,
-   resultado final utilizavel, entrada minima, baixo numero de passos e uso observado sem prompting
-   ou montagem manual.
+6. Gate de validação multiagente: no recorte B2C/Instagram, bloqueia priorização final sem fontes
+   atuais, protótipo instrumentado, critérios predeclarados, homologação técnica, três cenários de
+   Psique e revisão independente de Têmis.
+7. Gate de entrega pronta: bloqueia candidata sem território sustentado por evidência, resultado
+   final utilizável, entrada mínima, baixo número de passos e uso sintético comprovado sem prompting
+   ou montagem manual. Valor humano real continua dependente do experimento comercial.
 
 ## Relacao com outros modulos
 
@@ -740,81 +740,56 @@ ao dossiê, plano e evidências, com execução automática em `STOP`; isso não
 campanha, publicação, orçamento, gasto ou venda.
 
 `DOSSIER_READY`, a escolha de Atena nesta cadeia e a criação do produto `PLANNED` significam
-prontidão para **planejamento e prototipação**, não priorização comercial final. A Validação do
-Momento de Compra continua obrigatória depois que existir protótipo privado utilizável e antes de
-comparar a candidata com o benchmark, ativar experimento, publicar, contatar pessoas ou gastar.
-Essa separação evita o ciclo impossível de exigir uso de um protótipo antes de Dédalo poder projetar
-o harness que dará origem a ele.
+prontidão para **planejamento e prototipação**, não priorização comercial final. A Validação
+Multiagente é obrigatória depois que existir protótipo instrumentado e antes de preparar a
+comunicação. O Momento de Compra só é validado por eventos humanos no experimento comercial
+posterior. Essa separação evita exigir uma resposta de mercado antes de Dédalo poder projetar o
+harness e evita representar cenários sintéticos como pessoas reais.
 
-### Handoff operacional para validação privada
+### Handoff operacional para validação multiagente
 
-Por decisão de 2026-09-02, o avanço canônico depois de Argos é:
+Por decisão de 2026-09-06, o avanço canônico depois de Argos é:
 
 1. Argos entrega candidatas factuais `DOSSIER_READY`, sem declarar venda ou prontidão comercial;
-2. Atena usa `MARKET_STRATEGY_V3`, compara exatamente três alternativas e seleciona no máximo uma
-   candidata como `READY_FOR_PRIVATE_VALIDATION`;
-3. Plutus usa `PDE_PRIVATE_ECONOMICS_V1` para limitar a hipótese econômica. Quando ainda não existe
-   preço canônico, deve comparar exatamente três preços de checkout simulado explicitamente
-   rotulados como hipótese, escolher um único cenário e reconciliar preço menos custo variável. O
-   parecer mantém em zero CAC, orçamento comercial, tráfego, conversão, meta de vendas e receita,
-   usa prazo ISO `YYYY-MM-DD`, exige duas leituras e declara `commercialSpendAuthorized: false`;
-   preço, orçamento ou custo ainda desconhecido nunca podem ser apresentados como resultado
-   observado;
-4. Dédalo projeta um protótipo privado com entrada simples, resultado pronto em até dez minutos,
-   harness orientado à experiência e cinco sinais instrumentados: início, conclusão, utilidade,
-   preferência e tentativa de checkout simulado sem cobrança;
+2. Atena usa `MARKET_STRATEGY_V4`, compara exatamente três alternativas e seleciona no máximo uma
+   candidata como `READY_FOR_AGENT_VALIDATION`;
+3. Plutus limita a hipótese econômica. Quando ainda não existe preço canônico, compara exatamente
+   três preços explicitamente rotulados como hipótese, escolhe um cenário e reconcilia preço menos
+   custo variável. O parecer mantém em zero CAC, orçamento comercial, tráfego, conversão, meta de
+   vendas e receita e declara `commercialSpendAuthorized: false`;
+4. Dédalo projeta um protótipo com entrada simples, resultado pronto em até dez minutos, harness
+   orientado à experiência e eventos instrumentados para início, microvalor, uso do resultado,
+   recuperação e limites de segurança;
 5. o backend materializa um único produto `PLANNED`, em `STOP`, e o posiciona no processo
-   `pde-construction-approval`, sem autorização para contato, publicação, campanha, pagamento ou
-   gasto;
-6. o usuário libera explicitamente, na cadeia do produto, somente a construção privada. Antes de
-   existir experimento, as tarefas dessa etapa usam a referência canônica `product:<id>` e o contexto
-   PDE persistido no próprio produto; nenhum executor pode inventar um experimento apenas para obter
-   contexto;
-7. com fontes comerciais vigentes e o protótipo utilizável, o Hub executa as duas leituras privadas
-   predeclaradas. Antes da primeira pessoa, uma atividade humana deve aceitar a URL privada, versão,
-   instrumentação, referência e data da fonte, acesso restrito e homologação desktop/mobile,
-   mantendo pagamento, publicação e mídia desativados;
-8. cada leitura representa exatamente uma pessoa consentida e usa somente um código aleatório no
-   formato `PV-` seguido de doze caracteres hexadecimais. O backend registra e recalcula, a partir
-   de eventos próprios da mesma versão, os cinco sinais `EXPERIENCE_STARTED`, `VALUE_MOMENT`,
-   `READY_RESULT_USED`, `PREFERRED_OVER_FREE` e `CHECKOUT_STARTED`; dado pessoal em claro não faz
-   parte do contrato;
-9. uma leitura em que qualquer sinal seja negativo fica `BLOCKED`, preservada para auditoria e
-   repetível depois de ajuste no protótipo. Ela não pode ser convertida em aprovação por texto,
-   intenção ou decisão do modelo;
-10. depois de duas leituras aprovadas e de pessoas distintas, Psique revisa experiência humana e
-    Têmis revisa integridade comercial usando apenas `taskTarget`, tarefas e atividades humanas da
-    mesma referência `product:<id>@private-validation-v1`; artefatos globais de outro produto são
-    proibidos;
-11. o backend exige decisões explícitas de aprovação de Psique e Têmis, recalcula contagens, taxas,
-    temporalidade, versão e vigência das fontes e só então expõe a priorização comercial final. A
-    aprovação move o produto para preparação de comunicação ainda em `STOP`; não cria experimento,
-    checkout real, contato, campanha, gasto, pagamento, venda ou receita.
+   `pde-construction-approval` v7 sob `product:<id>@agent-validation-v1`, sem autorização para
+   contato, publicação, campanha, pagamento ou gasto;
+6. Dédalo materializa a versão; o harness homologa desktop, mobile, retomada, falhas, privacidade e
+   eventos com identificadores internos;
+7. Psique executa três cenários isolados — aderente, fricção/recuperação e limite/segurança — usando
+   `AGENT_VALIDATION`, sem participante, convite, consentimento ou identidade humana;
+8. Têmis revisa a integridade da mesma versão e confirma que nenhuma evidência sintética foi
+   apresentada como preferência, depoimento, checkout comercial ou venda;
+9. o backend exige homologação e decisões explícitas de Psique e Têmis, recalcula cenários,
+   temporalidade, versão, vigência das fontes e segregação dos eventos e só então libera a
+   preparação da comunicação. O produto permanece em `STOP`; não cria experimento, contato,
+   campanha, gasto, pagamento, venda ou receita;
+10. depois de comunicação, homologação comercial e autorização financeira, o experimento mede pela
+    primeira vez resposta humana real, desde anúncio atribuído até compra, entrega e satisfação.
 
-Resultado `READY_FOR_OPERATION`, menos ou mais de duas leituras, protótipo sem instrumentação ou
-tempo de valor superior a dez minutos devem ser rejeitados na fronteira do executor. O relatório da
-execução deve mostrar separadamente seleção, economia, arquitetura e Validação do Momento de Compra,
-além de abrir o histórico da cadeia do produto planejado. Tarefa antiga bloqueada por ausência de
-uso, preferência ou checkout, quando já existe candidata `DOSSIER_READY`, deve orientar nova
-execução de Atena no contrato v3; repetir Argos sem nova lacuna factual desperdiça pesquisa e não
-remove a circularidade. Para ciclos concluídos sob uma versão anterior, a tela da própria execução
-deve oferecer o comando explícito **Retomar com Atena**. Esse comando backend-owned reutiliza o
-ciclo, as candidatas e as evidências atuais, resolve a versão publicada da cadeia comercial e abre
-idempotentemente apenas o handoff de validação privada. Ele não cria outro ciclo de Argos, não
-altera a maturidade factual e não autoriza produto público, contato, cobrança, campanha ou gasto.
-Se a atividade concluída de Atena ainda usar contrato anterior ao `MARKET_STRATEGY_V3`, retentar
-somente Plutus é proibido: o backend deve preservar as tentativas anteriores, cancelar apenas as
-atividades ainda reabríveis e criar uma nova ocorrência sequencial de Atena, Plutus e Dédalo na
-versão publicada. Enquanto a nova ocorrência de Atena não terminar, nenhuma sucessora pode ser
-reservada. Descrições de Plutus e Dédalo não devem repetir o corpus bruto de Argos; os resultados
-estruturados das predecessoras chegam pelo contexto canônico do processo.
+Resultado `READY_FOR_OPERATION`, menos de três cenários, protótipo sem instrumentação ou tempo de
+valor superior a dez minutos devem ser rejeitados na fronteira do executor. O relatório mostra
+separadamente seleção, economia, arquitetura e Validação Multiagente e abre o histórico da cadeia do
+produto planejado. Execuções históricas em `MARKET_STRATEGY_V3` ou
+`product:<id>@private-validation-v1` permanecem imutáveis e devem ser migradas por nova ocorrência,
+nunca por conclusão artificial das leituras antigas. Repetir Argos sem nova lacuna factual
+desperdiça pesquisa; a retomada começa em Atena v4 e preserva candidatas e evidências atuais.
 
-O critério desta primeira validação é deliberadamente estrito: como cada leitura tem denominador
-um, a taxa mínima de cada sinal é `1`. Checkout simulado mede disposição de avançar no momento de
-compra, mas continua sendo apenas evidência privada; nunca deve alimentar pagamento aprovado,
-receita, CAC ou venda. Fontes precisam ter `sourceMaxAgeDays` entre 1 e 90, data real de avaliação e
-aceitação posterior à declaração dos critérios. O backend, e não o frontend ou o modelo, é a
-autoridade de todos esses cálculos e transições.
+O critério desta primeira validação é deliberadamente estrito: todos os cenários precisam passar e
+qualquer falha crítica bloqueia a versão. Seus eventos são somente evidência interna; nunca alimentam
+visitante, preferência, checkout, receita, CAC, venda, satisfação ou depoimento. Fontes precisam ter
+`sourceMaxAgeDays` entre 1 e 90, data real de avaliação e execução posterior à declaração dos
+critérios. O backend, e não o frontend ou o modelo, é a autoridade dos cálculos e transições. O
+contrato completo está em `docs/canonical/pde-validacao-multiagente-canon.v1.md`.
 
 A tela de processos independentes deve mostrar a cadeia completa, as 2–3 candidatas, fontes Web,
 Meta e `/pesquisas`, dossiê, parecer por agente, decisão, custo, bloqueio, próxima ação e produto

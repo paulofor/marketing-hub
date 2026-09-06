@@ -52,15 +52,22 @@ class MetaAdApproverCodexRunnerTest {
     Path server = runner.materializeMcp();
     try {
       assertThat(Files.readString(server))
-          .contains("from 'playwright-core'", "from './video-frame-extractor.mjs'");
+          .contains(
+              "from 'playwright-core'",
+              "from './video-frame-extractor.mjs'",
+              "from './landing-evidence.mjs'");
       assertThat(Files.readString(server.getParent().resolve("video-frame-extractor.mjs")))
-          .contains("/usr/local/bin/ffmpeg", "/usr/local/bin/ffprobe");
+          .contains("/usr/local/bin/ffmpeg", "/usr/local/bin/ffprobe", "createHash('sha256')");
+      assertThat(Files.readString(server.getParent().resolve("landing-evidence.mjs")))
+          .contains(
+              "captureCommercialLanding", "commercialCheckout", "interactionPerformed: false");
       assertThat(Files.isSymbolicLink(server.getParent().resolve("node_modules"))).isTrue();
       Path dependencies = Files.readSymbolicLink(server.getParent().resolve("node_modules"));
       assertThat(dependencies.resolve("@modelcontextprotocol/sdk")).isDirectory();
     } finally {
       Files.deleteIfExists(server);
       Files.deleteIfExists(server.getParent().resolve("video-frame-extractor.mjs"));
+      Files.deleteIfExists(server.getParent().resolve("landing-evidence.mjs"));
       Files.deleteIfExists(server.getParent().resolve("node_modules"));
       Files.deleteIfExists(server.getParent());
     }
@@ -165,11 +172,11 @@ class MetaAdApproverCodexRunnerTest {
             "MCP_EXPERIMENT_ID",
             "StdioServerTransport",
             "/agent-review/context?experimentId=",
-            "waitForCommercialLanding(page)",
-            "text.length >= 200",
-            "Preparando uma oferta especial para você...",
+            "captureCommercialLanding(browser, url)",
+            "checkoutObserved: Boolean(checkout)",
             "extractRemoteVideoFrames(url, {",
             "decoder: 'FFMPEG_7_1_1'",
+            "sha256MatchesGovernance",
             "readOnlyHint: true",
             "openWorldHint: true",
             "destructiveHint: false");

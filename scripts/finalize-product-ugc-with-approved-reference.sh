@@ -86,7 +86,7 @@ video_filter+="[clean]subtitles=filename='$captions_absolute':charenc=UTF-8:"
 video_filter+="force_style='FontName=DejaVu Sans,FontSize=10,Bold=1,PrimaryColour=&H00FFFFFF,"
 video_filter+="BackColour=&H90000000,BorderStyle=3,Outline=1,Shadow=0,MarginV=32,Alignment=2',"
 video_filter+="drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:"
-video_filter+="text='Voz gerada por IA':fontcolor=white:fontsize=28:box=1:boxcolor=black@0.55:"
+video_filter+="text='Apresentadora e voz geradas por IA':fontcolor=white:fontsize=28:box=1:boxcolor=black@0.55:"
 video_filter+="x=(w-text_w)/2:y=105[vout]"
 
 ffmpeg -hide_banner -loglevel error -y \

@@ -220,11 +220,12 @@ mas não comprova sozinha uma oportunidade.
 - bloquear fontes Hotmart ou comerciais com placeholder, identidade ou URL incompleta, ausência
   simultânea de preço e sinal de tração, coleta vencida ou indisponibilidade, preservando o último
   snapshot nominal somente como inspiração histórica;
-- antes da priorização final, validar prazo, consequência, tentativa frustrada, comportamento pago e
-  vantagem sobre a alternativa gratuita em protótipo privado com critérios predeclarados;
-- exigir duas leituras independentes e consistentes de início, microvalor, uso do resultado pronto
-  sem montagem, preferência e avanço ao checkout, sem bloqueio de Psique ou Têmis; evento privado ou
-  checkout sem pagamento não é venda;
+- antes da priorização final, validar prazo, consequência, tentativa frustrada e comportamento pago
+  por evidências de mercado, e homologar no protótipo a vantagem funcional proposta sobre a
+  alternativa gratuita;
+- exigir validação multiagente com testes determinísticos, três cenários isolados de Psique e revisão
+  independente de Têmis; resultado sintético, evento interno e checkout sem pagamento não são
+  preferência humana, venda ou receita;
 - derivar hipóteses originais de mecanismo, formato e comunicação, preservando fonte, data, insight,
   evidência de confirmação e limite contra cópia;
 - comprovar escala e recorrência por fontes independentes;
@@ -243,17 +244,18 @@ mas não comprova sozinha uma oportunidade.
 
 **Saída final:** dossiê de oportunidade com matriz rastreável de inspirações e evidências, público,
 dor raiz, lacuna, intenção de compra, perguntas prioritárias, sinais de confiança, ativos de
-distribuição, formatos digitais candidatos, qualidade das fontes, contrato e leituras do protótipo
-privado, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
+distribuição, formatos digitais candidatos, qualidade das fontes, contrato e validação multiagente
+do protótipo, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
 Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
 menos dois caminhos independentes de recorrência, desatendimento e intenção de compra. Artigo de
 tendência ou produto Hotmart permanece como `INSPIRACAO` até essa confirmação e não pode aprovar a
-oportunidade sozinho. No recorte B2C/Instagram, score e comparação com benchmark também exigem duas
-leituras privadas consistentes, vantagem observada sobre a alternativa gratuita e ausência de
-bloqueio de Psique ou Têmis. A candidata também deve provar uso do resultado pronto sem transferir
-ao consumidor o trabalho de operar a IA.
+oportunidade sozinho. No recorte B2C/Instagram, score e comparação com benchmark exigem validação
+multiagente íntegra, vantagem funcional demonstrável sobre a alternativa gratuita e ausência de
+bloqueio de Psique ou Têmis. Preferência, compra e satisfação permanecem hipóteses até surgirem
+eventos humanos do experimento comercial. A candidata também deve entregar resultado pronto sem
+transferir ao consumidor o trabalho de operar a IA.
 
 ## 2. Plano comercial e desenho da oferta PDE
 
@@ -296,7 +298,7 @@ formato escolhido entrega mais valor que as alternativas, o que a cliente recebe
 cada promessa será provada, como será vendido sem depender indefinidamente de um único canal pago e
 qual evidência decide o ciclo.
 
-## 3. Construção e aprovação do PDE
+## 3. Protótipo, validação multiagente e aprovação do PDE
 
 **Objetivo final:** entregar uma versão canônica do PDE, no formato digital aprovado, que uma cliente
 consiga acessar, usar e concluir, percebendo a transformação prometida com qualidade premium.
@@ -331,16 +333,18 @@ consiga acessar, usar e concluir, percebendo a transformação prometida com qua
 conteúdos, telas, automações e entregáveis aplicáveis íntegros, versionados e prontos para venda e
 entrega.
 
-**Gate para avançar:** uma pessoa deve conseguir compreender e verificar a oferta, completar o caminho
-principal e receber valor sem pergunta prioritária sem resposta, prova fabricada, placeholder,
-linguagem interna, dependência manual oculta ou ativo ainda em rascunho. Sofisticação técnica não
-compensa menor utilidade, e simplicidade de produção não compensa uma entrega incapaz de resolver a
-necessidade validada. A Prontidão para Decisão por IA deve alcançar 80 pontos, sem campo crítico
-ausente, mas não substitui a revisão humana nem a prova de valor do produto.
+**Gate para avançar:** a homologação técnica e os três cenários isolados de Psique devem completar o
+caminho principal, produzir resultado utilizável e não encontrar pergunta prioritária sem resposta,
+prova fabricada, placeholder, linguagem interna, dependência manual oculta ou ativo ainda em
+rascunho. Têmis deve aprovar a integridade da mesma versão. Sofisticação técnica não compensa menor
+utilidade, e simplicidade de produção não compensa uma entrega incapaz de resolver a necessidade.
+A Prontidão para Decisão por IA deve alcançar 80 pontos, sem campo crítico ausente, mas nenhum desses
+gates substitui compra, entrega ou satisfação de pessoas reais no experimento comercial.
 
 O processo legado `Fabricação e aprovação do produto` foi aposentado após a auditoria de
 responsabilidades de 2026-08-22. Imagens, arquivos e demais entregáveis são produzidos dentro de
-`Construção e aprovação do PDE`, que já possui os executores e gates necessários. Reabrir um
+`Protótipo, validação multiagente e aprovação do PDE`, que já possui os executores e gates
+necessários. Reabrir um
 subprocesso separado exige uma capacidade reutilizável nova, contrato próprio e evidência de que não
 duplica materialização ou aprovação.
 
@@ -533,7 +537,7 @@ assets produzidos, tarefas concluídas ou impacto estimado não contam como vend
 | ------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------ |
 | Descoberta e priorização       | Ainda não formalizado como processo publicado | Criar processo próprio a partir do cânone de descoberta                  |
 | Plano comercial e oferta       | Ainda não formalizado como processo publicado | Criar processo próprio ligado ao Planejamento Comercial                  |
-| Construção e aprovação do PDE  | Parcial                                       | Criar processo PDE; usar fabricação de imagens/arquivos como subprocesso |
+| Protótipo, validação multiagente e aprovação do PDE | Parcial | Criar processo PDE; usar fabricação de imagens/arquivos como subprocesso |
 | Comunicação e jornada de venda | Coberto por processos especializados          | Reutilizar criativos e landing sob o mesmo Plano Comercial               |
 | Homologação e ativação         | Processo publicado                            | Reutilizar e adaptar gates específicos de PDE quando necessário          |
 | Venda, entrega e decisão       | Processos publicados                          | Reutilizar operação/otimização e venda/entrega/satisfação                |
@@ -662,33 +666,36 @@ visível na execução que iniciou a descoberta.
 O cadastro planejado é o ponto de entrada governado nos macroprocessos de construção e venda, não a
 conclusão da cadeia. Ele não constitui produto pronto, publicação, campanha, gasto, venda ou receita.
 Essa escolha inicial de Atena prioriza somente uma candidata para planejamento, economia e
-arquitetura. A priorização comercial final continua condicionada ao protótipo privado e às duas
-leituras da Validação do Momento de Compra descritas neste cânone.
+arquitetura. A priorização comercial final continua condicionada ao protótipo homologado pela
+Validação Multiagente descrita neste cânone. Preferência e disposição de compra só serão confirmadas
+pelos eventos humanos do experimento comercial posterior.
 
-Por decisão de 2026-09-02, essa entrada usa o processo publicado
-`pde-commercial-plan-offer` v6 e o contrato `MARKET_STRATEGY_V3`. Atena seleciona no máximo uma
-candidata para protótipo privado; Plutus limita a economia; Dédalo declara entrada, saída, tempo de
-valor, instrumentação e exclusões. O produto resultante nasce `PLANNED`, em `STOP`, e deve ser
-resolvido pela tela para o macroprocesso `pde-construction-approval`, nunca apresentado como pronto
-para operação.
+As execuções iniciadas sob a decisão de 2026-09-02 preservam `pde-commercial-plan-offer` v6 e
+`MARKET_STRATEGY_V3` como histórico. Por decisão de 2026-09-06, novas execuções devem usar
+`pde-commercial-plan-offer` v7 e `MARKET_STRATEGY_V4`. Atena seleciona no máximo uma candidata para
+protótipo instrumentado; Plutus limita a economia; Dédalo declara entrada, saída, tempo de valor,
+instrumentação e exclusões. O produto resultante nasce `PLANNED`, em `STOP`, e deve ser resolvido
+pela tela para `pde-construction-approval` v7, nunca apresentado como pronto para operação.
 
-O estado `STOP` exige comando explícito do usuário na tela para liberar somente a construção
-privada. Como ainda não existe experimento comercial, as tarefas desse macroprocesso devem usar a
-referência `product:<id>` e o contexto PDE versionado do produto. Essa liberação não autoriza
-contato, publicação, campanha, cobrança ou gasto e não pode criar experimento artificialmente.
+O estado `STOP` permite liberar a construção e a validação interna sem publicar. Como ainda não
+existe experimento comercial, as novas tarefas usam a referência
+`product:<id>@agent-validation-v1` e o contexto PDE versionado do produto. Essa liberação não
+autoriza contato, publicação, campanha, cobrança ou gasto e não pode criar experimento
+artificialmente.
 
-A execução independente deve acrescentar uma etapa visível de Validação do Momento de Compra após a
-arquitetura. Enquanto as duas leituras privadas não existirem, essa etapa permanece `WAITING` e a
-próxima ação abre o histórico da cadeia do produto. Somente evidência persistida pode concluí-la;
-prompt, dossiê, score, anúncio concorrente, artefato técnico ou intenção estimada não substituem
-leitura humana, checkout, pagamento ou venda.
+A execução independente deve acrescentar uma etapa visível de Validação Multiagente após a
+arquitetura. Enquanto a homologação determinística, os três cenários de Psique e a revisão de Têmis
+não existirem, essa etapa permanece `WAITING` e a próxima ação abre o histórico da cadeia do produto.
+Somente evidência persistida pode concluí-la; prompt, dossiê, score, anúncio concorrente ou parecer
+isolado não substituem checkout, pagamento, entrega ou venda reais.
 
 O macroprocesso de construção deve ordenar `jornada → componentes → audiovisual quando previsto →
-acesso → aceitação do protótipo → leitura 1 → leitura 2 → Psique → Têmis → priorização final`. A
-aceitação registra URL privada, versão, instrumentação, snapshot e data das fontes, testes desktop e
-mobile e as travas de publicação, pagamento e mídia. Cada leitura usa código pseudonimizado
-`PV-XXXXXXXXXXXX`, consentimento e eventos próprios da mesma versão; qualquer um dos cinco sinais
-negativo preserva a tentativa como `BLOCKED` e exige ajuste antes de repetir.
+acesso → homologação técnica → cenários de Psique → Têmis → gate do backend`. A homologação registra
+URL, versão, instrumentação, snapshot e data das fontes, testes desktop e mobile e as travas de
+publicação, pagamento e mídia. Cada cenário usa sessão isolada, marcador `AGENT_VALIDATION` e eventos
+próprios da mesma versão; falha funcional, de segurança ou de integridade preserva a tentativa como
+`BLOCKED` e exige ajuste antes de repetir. Não existem participante, consentimento ou leitura humana
+nessa etapa.
 
 Por decisão de 2026-09-04, Apolo deve consumir a atividade `audiovisual` pela fila BPM canônica com
 o recurso especializado `video-management-service`. Quando o contrato versionado declarar
@@ -700,7 +707,8 @@ Estúdio; campo ausente ou inválido bloqueia como contrato incompleto. O backen
 formato de componente ou tarefa duplicada.
 
 Psique e Têmis não podem consultar prova global de outro produto nesse fluxo. Seus pareceres devem
-ser explícitos e posteriores às duas leituras. O backend recalcula os sinais, taxas, pessoas
-distintas, ordem temporal, vigência da fonte e vínculo da versão antes da decisão humana final. O
-produto aprovado avança apenas para `COMUNICACAO_E_JORNADA`, permanece em `STOP` e continua sem
-experimento, publicação, cobrança, mídia, pagamento, venda ou receita.
+ser explícitos e posteriores à homologação da mesma versão. O backend recalcula cenários, sinais,
+ordem temporal, vigência da fonte, segregação do tráfego interno e vínculo da versão antes do gate.
+O produto aprovado avança apenas para `COMUNICACAO_E_JORNADA`, permanece em `STOP` e continua sem
+experimento, publicação, cobrança, mídia, pagamento, venda ou receita. O contrato detalhado está em
+`docs/canonical/pde-validacao-multiagente-canon.v1.md`.

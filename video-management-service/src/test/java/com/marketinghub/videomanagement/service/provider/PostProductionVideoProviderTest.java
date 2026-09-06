@@ -106,8 +106,14 @@ class PostProductionVideoProviderTest {
                         "OPENAI_TTS",
                         "natural_tts_candidate",
                         "ai_generated_disclosure=true",
-                        "Voz gerada por IA")
+                        "Apresentadora e voz geradas por IA")
                 .doesNotContain("synthetic_local");
+        assertThat(artifacts.metadata().get("synthetic_media_disclosure").toString())
+                .contains(
+                        "required=true",
+                        "presenter_synthetic=true",
+                        "voice_synthetic=true",
+                        "Apresentadora e voz geradas por IA");
         assertThat(artifacts.auditFiles()).singleElement().satisfies(file -> {
             assertThat(file.assetType()).isEqualTo(AssetType.AUDIO);
             assertThat(file.role()).isEqualTo(ProviderAssetRole.AUDIO_AUDIT);
@@ -396,6 +402,10 @@ class PostProductionVideoProviderTest {
                           "sourceVideoUrl": "/source/musa.mp4",
                           "voiceOverScript": "Você se arruma e sente que falta presença. Veja seu plano MUSA.",
                           "captionText": "Pare de se sentir comum no espelho. | Veja seu plano MUSA de 7 dias.",
+                          "referenceGovernance": {
+                            "presenterIsSynthetic": true,
+                            "presenterConsentEvidence": "Referência sintética aprovada; nenhuma pessoa real é representada."
+                          },
                           "post_production": {"cta_text": "Ver meu plano MUSA"}
                         }
                         """,

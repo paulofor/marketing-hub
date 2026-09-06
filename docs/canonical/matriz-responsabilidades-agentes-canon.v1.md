@@ -32,7 +32,7 @@ como nona agente, com executor e contrato próprios. O cânone detalhado está e
 | Dédalo | `landing-generator` | `PDE_CONSTRUCTION` — arquitetura do PDE, experiência funcional, jornada pós-compra, entregáveis, personalização, acesso e prova real do produto | estratégia e economia aprovadas | PDE e provas funcionais versionados | criar comunicação pré-compra, escolher mercado, posicionamento ou preço, aprovar o próprio trabalho ou operar aquisição |
 | Íris | `communication-director` | `COMMUNICATION_MATERIALIZATION` — mensagem, copy, landing, peças estáticas, e-mails, direção sensorial e briefings por canal | estratégia, economia, PDE e provas reais aprovados | pacote de comunicação e superfícies pré-compra versionados | redefinir estratégia, preço ou produto, produzir audiovisual final, revisar o próprio trabalho, publicar ou gastar |
 | Apolo | `videomaker` | `AUDIOVISUAL_PRODUCTION` — roteiro, cenas, áudio, montagem, legendas e entrega técnica de vídeo | estratégia, briefing e provas aprovadas | pacote audiovisual versionado | redefinir estratégia, criar landing, aprovar integridade ou publicar mídia |
-| Psique | `customer-agent` | `HUMAN_EXPERIENCE_REVIEW` — compreensão, reação afetiva, sensorial e estética, prazer, desejo, esforço, confiança e objeções | artefato real e evidências técnicas determinísticas | parecer humano estruturado com evidências e ajustes | inventar fatos de mercado, decidir compliance, alterar preço ou materializar o artefato revisado |
+| Psique | `customer-agent` | `HUMAN_EXPERIENCE_REVIEW` — compreensão, reação afetiva, sensorial e estética, prazer, desejo, esforço, confiança e objeções | artefato real e evidências técnicas determinísticas | parecer estruturado sobre a experiência humana, com evidências e ajustes | inventar fatos de mercado, fingir ser cliente real, decidir compliance, alterar preço ou materializar o artefato revisado |
 | Têmis | `meta-ad-approver` | `COMMERCIAL_INTEGRITY_REVIEW` — verdade, prova, fidelidade à estratégia, direitos, compliance e segurança da comunicação | estratégia, artefato real e relatório técnico | gate independente de integridade com causa e correção requerida | criar copy, imagem, vídeo, landing ou produto; redefinir estratégia; aprovar trabalho produzido sob sua identidade |
 | Hermes | `growth-operator` | `GROWTH_OPERATION` — distribuição, instrumentação, atribuição, funil, gargalo, otimização e decisão de continuar, ajustar ou parar | estratégia imutável, ativos aprovados e eventos reais | contrato operacional e diagnóstico de crescimento | público, problema, desejo, posicionamento, tese de oferta, preço ou construção |
 
@@ -53,8 +53,8 @@ O fluxo canônico é:
 - Psique avalia se a pessoa entende, deseja e percebe valor.
 - Têmis avalia, em atividade diferente, se o material é verdadeiro, comprovável e comercialmente
   seguro. Têmis não produz o ativo que revisa.
-- O backend exige os gates aplicáveis, registra a decisão humana e somente então libera trabalho
-  operacional para Hermes.
+- O backend exige os gates aplicáveis e libera a preparação da comunicação sem intervenção humana.
+  Preço, publicação, campanha e gasto continuam condicionados à autorização humana antes de Hermes.
 - Se eventos contradisserem segmento, desejo, posicionamento ou tese de oferta, Hermes registra a
   evidência e solicita nova execução da Atena; não altera o contrato estratégico.
 
@@ -78,6 +78,12 @@ Toda nova atividade BPM atribuída a agente deve declarar:
 Revisões independentes possuem `activityId` distintos. É proibido representar Psique e Têmis como
 coautores de uma atividade, usar `e`, `ou`, vírgula ou barra para combinar um agente com outro dono,
 ou permitir que recomendação, tarefa, score, impacto estimado ou PR seja contado como venda.
+
+Por decisão de 2026-09-06, Psique pode executar cenários sintéticos isolados no protótipo para
+avaliar a experiência provável, e Têmis revisa a integridade dessa evidência em atividade distinta.
+Essas execuções usam marcador `AGENT_VALIDATION`, nunca identidade ou consentimento de pessoa, e não
+substituem visita, preferência, checkout, compra, entrega ou satisfação reais. O contrato completo
+está em `docs/canonical/pde-validacao-multiagente-canon.v1.md`.
 
 O backend valida esse contrato ao criar, atualizar ou publicar processos. Changelogs que publicam
 processos devem ser homologados fisicamente no MySQL 5.7 e testar que as versões vigentes não contêm

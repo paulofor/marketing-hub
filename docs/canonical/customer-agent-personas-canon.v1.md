@@ -3,7 +3,8 @@
 ## Objetivo
 
 A Biblioteca de Personas mantém hipóteses versionadas e rastreáveis sobre clientes. O Agente
-Cliente usa essas hipóteses para revisar ofertas, vídeos e páginas antes de testes humanos.
+Cliente usa essas hipóteses para revisar produtos, ofertas, vídeos e páginas antes da exposição ao
+mercado. A revisão pode liberar um teste, mas não é validação humana.
 
 ## Fonte e confiança
 

@@ -141,7 +141,10 @@ public class PostProductionVideoProvider implements VideoProvider {
             }
             caption = Files.createTempFile("sales-video-" + job.id() + "-caption", ".ass");
             output = Files.createTempFile("sales-video-" + job.id() + "-final", ".mp4");
-            Files.writeString(caption, buildAss(captionTimeline, voiceOverAudio != null), StandardCharsets.UTF_8);
+            Files.writeString(
+                    caption,
+                    buildAss(captionTimeline, aiDisclosureText(metadata, voiceOverAudio != null)),
+                    StandardCharsets.UTF_8);
             if (voiceOverAudio != null) {
                 progressCallback.onProgress(65, SalesVideoStatus.VIDEO_PROCESSING, "Aplicando legenda e voz premium sincronizadas");
                 runFfmpegWithVoice(
@@ -793,7 +796,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     }
 
     /** Gera ASS com caixa legível e margens seguras para Reels e Stories. */
-    private String buildAss(CaptionTimeline timeline, boolean aiVoiceDisclosureRequired) {
+    private String buildAss(CaptionTimeline timeline, String aiDisclosureText) {
         StringBuilder ass = new StringBuilder("""
                 [Script Info]
                 ScriptType: v4.00+
@@ -809,11 +812,13 @@ public class PostProductionVideoProvider implements VideoProvider {
                 [Events]
                 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 """);
-        if (aiVoiceDisclosureRequired) {
+        if (StringUtils.hasText(aiDisclosureText)) {
             ass.append("Dialogue: 1,")
                     .append(formatAssTime(0)).append(',')
                     .append(formatAssTime(timeline.durationSeconds()))
-                    .append(",Disclosure,,0,0,0,,Voz gerada por IA\n");
+                    .append(",Disclosure,,0,0,0,,")
+                    .append(escapeAssText(aiDisclosureText))
+                    .append('\n');
         }
         for (CaptionCue cue : timeline.cues()) {
             ass.append("Dialogue: 0,")
@@ -822,6 +827,29 @@ public class PostProductionVideoProvider implements VideoProvider {
                     .append(escapeAssText(wrapCaption(cue.text()))).append('\n');
         }
         return ass.toString();
+    }
+
+    /** Declara toda pessoa sintética visível, além da voz, sem atribuí-la a uma pessoa real. */
+    private String aiDisclosureText(JsonNode metadata, boolean aiVoiceDisclosureRequired) {
+        boolean syntheticPresenter = syntheticPresenterDisclosureRequired(metadata);
+        if (syntheticPresenter && aiVoiceDisclosureRequired) {
+            return "Apresentadora e voz geradas por IA";
+        }
+        if (syntheticPresenter) {
+            return "Apresentadora gerada por IA";
+        }
+        return aiVoiceDisclosureRequired ? "Voz gerada por IA" : "";
+    }
+
+    /** Reconhece a natureza sintética por campo estruturado ou evidência governada legada. */
+    private boolean syntheticPresenterDisclosureRequired(JsonNode metadata) {
+        JsonNode governance = metadata.path("referenceGovernance");
+        if (governance.path("presenterIsSynthetic").asBoolean(false)) {
+            return true;
+        }
+        String evidence = governance.path("presenterConsentEvidence").asText("")
+                .toLowerCase(java.util.Locale.ROOT);
+        return evidence.contains("sintét") || evidence.contains("sintet") || evidence.contains("synthetic");
     }
 
     /** Gera VTT temporizado para auditoria e players com legenda externa. */
@@ -1007,19 +1035,23 @@ public class PostProductionVideoProvider implements VideoProvider {
         metadata.put("post_production_mode", StringUtils.hasText(voiceOverScript) ? "VOICE_AND_CAPTION" : "CAPTION_ONLY");
         metadata.put("duration_seconds", captionTimeline.durationSeconds());
         boolean hasAudio = StringUtils.hasText(voiceOverScript);
+        String disclosureText = aiDisclosureText(sourceMetadata, hasAudio);
         metadata.put("has_audio", hasAudio);
         metadata.put("audio_streams", hasAudio ? 1 : 0);
         metadata.put("audio", Map.of(
                 "voice_over", StringUtils.hasText(voiceOverScript),
                 "language", "pt-BR",
-                "ai_generated_disclosure", StringUtils.hasText(voiceOverScript),
-                "ai_generated_disclosure_text", StringUtils.hasText(voiceOverScript)
-                        ? "Voz gerada por IA"
-                        : "",
+                "ai_generated_disclosure", StringUtils.hasText(disclosureText),
+                "ai_generated_disclosure_text", disclosureText,
                 "music", "SEGMENT_AUDIO_DURATION".equals(textSyncReview.get("timing_method"))
                         ? "none"
                         : StringUtils.hasText(voiceOverScript) ? "synthetic_light_bed" : "none",
                 "review", audioReview));
+        metadata.put("synthetic_media_disclosure", Map.of(
+                "required", StringUtils.hasText(disclosureText),
+                "text", disclosureText,
+                "presenter_synthetic", syntheticPresenterDisclosureRequired(sourceMetadata),
+                "voice_synthetic", hasAudio));
         metadata.put("captions", Map.of(
                 "burned_in", true,
                 "vtt_asset", true,

@@ -3982,6 +3982,37 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   15,083 segundos e a landing mobile/desktop sem mutação. Referência:
   `docs/homologacao/vega91-aprovacao-video-temis-v1.md`.
 
+## LOOP-TEMIS-EVIDENCIA-VISUAL-SEM-VINCULO — ferramentas abrem, mas o parecer continua bloqueado
+
+- **Data:** 2026-09-06.
+- **Sintoma confirmado:** após a correção do runtime, a reavaliação do anúncio #524 executou
+  `inspecionar_midia` e `inspecionar_landing` com sucesso, mas retornou `ADJUST`. Têmis não recebeu
+  o SHA-256 calculado dos bytes inspecionados, viu somente “Voz gerada por IA” sobre uma
+  apresentadora sintética e não conseguiu observar a oferta de R$ 67 no checkout. A primeira
+  pós-produção corrigida gerou o anúncio #525, mas continuou incompleta porque o uploader não
+  persistia o SHA-256 do novo arquivo.
+- **Confirmação pelo histórico:** o parecer anterior falhava antes de qualquer inspeção por
+  incompatibilidade de Chrome e codec. A execução de 06/09 abriu vídeo e landing, atribuiu notas de
+  atenção, clareza, desejo e ação acima de 80 e isolou três lacunas novas de evidência. Portanto,
+  repetir a correção de runtime ou liberar o gate não resolveria a causa atual.
+- **Causa-raiz:** o inspetor de vídeo devolvia apenas duração e quadros amostrais; o uploader não
+  calculava a identidade dos artefatos derivados; a pós-produção derivava o disclosure somente da
+  presença de voz; e o inspetor de landing encerrava na primeira dobra, embora a própria resposta
+  JSON do PDE carregasse `commercialCheckout`.
+- **Alternativas:** ignorar os gates teria risco de confiança e conformidade; gerar outro Product
+  UGC consumiria 648 créditos sem corrigir o contrato; refazer deterministicamente apenas o
+  acabamento e completar a evidência preserva o ativo Runway já pago. Foi escolhida a terceira.
+- **Correção sistêmica:** todo upload persiste bytes e SHA-256; o download integral recalcula ambos
+  e confronta a governança; a pós-produção declara apresentadora e voz sintéticas; a landing usa
+  parâmetros segregados de QA, descobre o checkout no contrato carregado e o abre somente para
+  leitura, sem clique, formulário ou pagamento.
+- **Prevenção:** testes unitários exigem hash e tamanho em cada upload; testes de container exigem
+  hash de 64 caracteres, duas capturas da landing, captura do checkout, preço preservado e
+  `interactionPerformed=false`; o cânone passa a exigir vínculo do arquivo e disclosure de toda
+  pessoa sintética. O anúncio #526 encerrou o loop em `READY/APPROVED`, enquanto #524 e #525 foram
+  preservados como substituídos. Matriz:
+  `docs/homologacao/vega91-aprovacao-video-temis-v1.md`.
+
 ## LOOP-ACTIONS-CARD-VALIDO-TRATADO-COMO-COLECAO-VENCIDA — pesquisa nova bloqueia deploy
 
 - **Data:** 2026-09-05.

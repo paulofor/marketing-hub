@@ -11,7 +11,6 @@ on:
       - backend/ads-service/src/test/java/com/marketinghub/pde/**
       - docs/homologacao/**
       - docs/registros/**
-      - .github/workflows/meta-ad-approver-worker-ci.yml
       - scripts/build-commercial-review-evidence.mjs
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/validate-premium-agents.sh
@@ -141,6 +140,11 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+      - name: Ensure free disk space on agent VPS
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Provision OpenAI credential for Íris
         run: |
           set -euo pipefail

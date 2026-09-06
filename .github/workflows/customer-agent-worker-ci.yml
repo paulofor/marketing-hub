@@ -11,7 +11,6 @@ on:
       - backend/ads-service/src/test/java/com/marketinghub/pde/**
       - docs/homologacao/**
       - docs/registros/**
-      - .github/workflows/customer-agent-worker-ci.yml
       - scripts/build-commercial-review-evidence.mjs
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/test-isolated-agent-codex-auth.sh
@@ -133,6 +132,11 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+      - name: Ensure free disk space on agent VPS
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Synchronize versioned worker
         run: |
           set -euo pipefail
@@ -161,7 +165,7 @@ jobs:
                         sh -lc 'test -w /home/operator/.codex && codex login status' >/dev/null 2>&1; then \
                    codex_ready=true; \
                  fi; \
-                 health_body=\$(curl -fsS http://127.0.0.1:8099/ops-customer-agent-observability-v1/health 2>/dev/null || true); \
+                 health_body=\$(curl --fail-with-body --silent --show-error --connect-timeout 5 --max-time 10 http://127.0.0.1:8099/ops-customer-agent-observability-v1/health 2>/dev/null || true); \
                  printf 'readiness attempt=%s container=%s codex=%s health=%s\\n' \
                    \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
                  if [ \"\${status}\" = running ] \

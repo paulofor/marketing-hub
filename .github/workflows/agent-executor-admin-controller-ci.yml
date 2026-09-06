@@ -7,7 +7,6 @@ on:
       - scripts/agent-executor-admin-controller.mjs
       - scripts/test-agent-executor-admin-controller.mjs
       - deploy/agent-executor-admin-controller/**
-      - .github/workflows/agent-executor-admin-controller-ci.yml
   workflow_dispatch:
 
 concurrency:
@@ -46,6 +45,11 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H 163.245.202.80 >> ~/.ssh/known_hosts
+      - name: Ensure free disk space on agent VPS
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Install and validate controller
         run: |
           set -euo pipefail

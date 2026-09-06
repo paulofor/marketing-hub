@@ -7,7 +7,6 @@ on:
     paths:
       - "landing-generator-agent-worker/**"
       - "backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/**"
-      - ".github/workflows/landing-generator-agent-worker-ci.yml"
       - "scripts/test-isolated-agent-codex-auth.sh"
       - "scripts/codex-app-server-device-login.mjs"
 
@@ -64,6 +63,11 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+      - name: Ensure free disk space on agent VPS
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Sincronizar repositório versionado
         run: |
           set -euo pipefail

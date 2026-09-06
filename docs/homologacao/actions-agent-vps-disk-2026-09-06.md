@@ -17,7 +17,7 @@
 
 | Alternativa | Benefício | Risco / esforço | Decisão |
 | --- | --- | --- | --- |
-| Recuperar cache, revisar versões obsoletas individualmente e exigir espaço antes de cada deploy | Recuperação sem trocar aplicação nem apagar dados; baixo esforço | Próximos builds podem baixar dependências novamente; imagens atuais/de recuperação precisam ser preservadas | Escolhida; só a limpeza de cache é automatizada |
+| Recuperar cache, imagens dangling e histórico gerenciado excedente; exigir espaço antes/depois | Recuperação sem trocar aplicação nem apagar dados; baixo esforço | Rebuilds podem baixar camadas; exige allowlist e retenção testadas | Escolhida; duas versões de rollback por agente são preservadas |
 | Mover todos os builds para runner/registry | Reduz armazenamento transitório no VPS | Migração de oito publicadores, credenciais e rollback; escopo maior | Evolução posterior |
 | Ampliar o disco | Aumenta capacidade física | Custo e mudança de infraestrutura; não limita crescimento do cache | Requer decisão se cache não for suficiente |
 
@@ -32,10 +32,14 @@ não se desativa a checagem de disco nem se altera seu caminho para esconder a f
 | Disco cheio com cache recuperável | Double reproduz zero bytes e recuperação | Coleta em duas faixas limitadas; nova medição antes de liberar |
 | Disco continua cheio / inodes esgotados | Double de armazenamento | Bloqueia antes de sincronizar ou recriar containers |
 | Docker, df, lock ou coleta falham | Doubles e timeout | Erro explícito; sem continuação silenciosa |
-| Retenção e escopo | Contrato dos argumentos | Primeira faixa de 24 h/2 GB; segunda somente se necessário de 1 h/1 GB; nenhuma remoção de imagem, container ou volume |
+| Retenção e escopo | Contrato dos argumentos | Cache em duas faixas; nenhuma remoção de container/volume, `--all` ou `docker image rm --force` |
 | Concorrência | Duas sondas locais disputam o lock | Segunda sonda bloqueia; coleta única |
 | Nove workflows | Contrato da fila, ordenação e gatilhos | Sonda antes de sincronizar/build/pull; alteração isolada de YAML não dispara deploy |
 | Engine Docker real | Fixture versionada, imagem e container protegidos | Identidades preservadas após coleta; insuficiência continua bloqueada |
+| Imagem final sem tag | Double reproduz build que substituiu `latest` | Coleta sem `--all`; containers e rollbacks permanecem |
+| Histórico imutável acumulado | Inventário com imagem ativa, três versões antigas, tag não SHA e repositório externo | Preserva ativa e dois rollbacks; remove somente a referência SHA excedente, sem força |
+| Reserva consumida pelo build | Contrato dos nove workflows | Executa a mesma sonda no fim, inclusive após falha, ainda dentro da fila compartilhada |
+| Evidência comercial versionada | Contratos e build do pacote de revisão | Mantém os gatilhos documentais necessários; a retenção suporta rebuild legítimo sem evidência stale |
 | Psique | Suíte Java, testes de captura e contratos existentes | Sem regressão funcional |
 | Sintaxe e integração | ShellCheck, Actionlint e contratos relacionados | Sem falhas |
 | Segregação | Engine local exclusiva, sem credenciais comerciais | Zero IA, mídia, tarefas ou métricas comerciais |
@@ -47,27 +51,51 @@ não implica publicar código novo por SSH ou usar deploy como teste.
 
 ## Resultados
 
-Após a última alteração dos gatilhos de workflow, a homologação completa foi reiniciada.
+Após a última alteração da política de retenção, a homologação completa foi reiniciada.
 Cada rodada inclui:
 
-- 78 testes Java da Psique, sem falhas ou ignorados;
+- 83 testes Java da Psique, sem falhas ou ignorados;
 - dois testes de captura Chromium, incluindo página mobile de 12 dobras e rejeição de rede privada;
-- 16 cenários de disco, recuperação nas duas faixas, retenção, falhas, timeout e exclusão mútua;
+- 23 cenários de disco, cobrindo cache, dangling, histórico gerenciado, retenção, falhas,
+  timeout, inventários inválidos e exclusão mútua;
 - sete testes de coordenação com o backend e contrato de versão dos executores;
 - contratos de arquitetura, imagem, filas, resiliência, retries e limpeza Docker existente;
-- teste da engine real com container ativo, container parado, tag de rollback e volume;
+- build real da imagem da Psique, Chromium empacotado executado como usuário final e captura
+  completa dentro do container read-only;
+- testes da engine real com container ativo, container parado, tag de rollback, volume e ciclo
+  completo das imagens temporárias;
 - sondas HTTP locais 200/UP e 503/DOWN, ShellCheck, Actionlint e revisão do diff.
 
-**Duas rodadas completas consecutivas aprovadas após a última alteração**, registradas na sandbox
-em `tmp/agent-disk-delivery-1/` e `tmp/agent-disk-delivery-2/`, com 23 registros de execução por
-rodada. Todas as linhas da matriz passaram; nenhum critério essencial ficou pendente. Topologia
-Compose encerrada com `down --volumes --remove-orphans`; imagens das sessões de homologação removidas.
-A retirada de imagens da fixture também passou nas duas rodadas, com proteção dos recursos em uso.
+**Duas rodadas completas consecutivas aprovadas após a última alteração**, concluídas em
+2026-09-06 às 20:04 UTC e 20:08 UTC. Todas as linhas da matriz passaram; nenhum critério essencial
+ficou pendente. A segunda rodada reconstruiu a imagem sem o cache descartável, comprovando também
+o caminho de recuperação mais caro. A topologia Compose exclusiva
+`aihub-f915cbc4-ffd4-465a-9d8a-17340f750468-ee4f62ab83` foi encerrada com
+`down --volumes --remove-orphans`; imagens das sessões foram removidas. A coleta real preservou
+em ambas as rodadas o container ativo, o container parado, a tag de rollback e o volume.
 
 A engine da sandbox é remota: o teste real usa um double somente para localizar a medição
 no filesystem local; a coleta Docker, os containers e os volumes são reais na engine exclusiva.
 O comportamento de disco cheio/recuperação é coberto separadamente pelos doubles. No VPS,
 `df` confirmou diretamente a partição real de Docker e containerd.
+
+## Recorrência dos runs 34050283061 e 34050835789
+
+Os dois deploys de Product Discovery falharam no gate com 3.302 MiB e 3.298 MiB livres. Testes e
+imagem do worker haviam passado. A coleta de cache recuperou no máximo 25,25 KiB, enquanto os dois
+deploys anteriores no host reconstruíram Meta Ad Approver e Customer Agent. O comportamento passado
+de builds Compose confirma que imagens finais antigas podem permanecer tagged por SHA ou dangling;
+elas não pertencem ao cache alcançado por `docker builder prune`.
+
+| Alternativa | Benefício | Risco / custo | Decisão |
+| --- | --- | --- | --- |
+| Reduzir o mínimo de 4 GiB | Libera o job imediatamente | Repete disco cheio e indisponibilidade dos agentes | Rejeitada |
+| Aumentar o disco do VPS | Acrescenta folga física | Custo e crescimento continuam sem limite | Evolução futura, se a retenção segura não bastar |
+| Retenção segura antes e depois do deploy | Contém crescimento e recupera automaticamente | Exige allowlist, inventário de containers e testes de rollback | Escolhida |
+
+A sandbox atual não contém a chave privada que o secret do Actions injeta no runner; a tentativa
+SSH foi recusada antes de autenticar. A medição produtiva disponível é a do próprio log autenticado
+do workflow. A correção não será publicada como teste: primeiro passa integralmente na sandbox.
 
 ## Recuperação operacional autorizada
 
@@ -91,14 +119,19 @@ não construiu imagens produtivas e não executou deploy, rerun, restart, commit
    com `availableMb=6933`, mínimo de 4096 e mais de três milhões de inodes livres.
 6. Psique e Íris voltaram a saudáveis. Nenhuma mídia, aquisição, IA ou métrica comercial foi acionada.
 
-A retirada dessas três versões históricas foi uma manutenção pontual e auditada; o automatismo
-novo recupera somente cache e bloqueia se não houver reserva. Os gatilhos foram ajustados para
-não criar imagens por mera alteração no YAML. A prevenção permanece no worktree até o PR do
-usuário. O run `34031778693` continua vermelho como registro histórico da falha original.
+A retirada dessas três versões históricas foi uma manutenção pontual e auditada. O automatismo
+novo tenta, em ordem, cache, imagens dangling e apenas o excedente do histórico SHA dos agentes
+permitidos, preservando duas versões de rollback e bloqueando se a reserva não for recomposta.
+Os gatilhos documentais foram preservados porque alguns desses arquivos integram o pacote comercial
+imutável da Psique e de Têmis; a comparação do commit anterior confirmou alterações reais de código.
+A prevenção permanece no worktree até o PR do usuário. Os runs `34031778693`, `34050283061` e
+`34050835789` continuam vermelhos como registros históricos das falhas anteriores à correção.
 
 ## Fontes
 
 - [Run com falha](https://github.com/paulofor/marketing-hub/actions/runs/34031778693).
 - [Run anterior aprovado](https://github.com/paulofor/marketing-hub/actions/runs/34023636321).
+- [Primeira recorrência no Product Discovery](https://github.com/paulofor/marketing-hub/actions/runs/34050283061).
+- [Recorrência mais recente no Product Discovery](https://github.com/paulofor/marketing-hub/actions/runs/34050835789).
 - [Docker: limpeza de cache com filtro e retenção](https://docs.docker.com/reference/cli/docker/builder/prune/).
 - [Spring Boot 3.2.5: indicador de disco padrão](https://github.com/spring-projects/spring-boot/blob/v3.2.5/spring-boot-project/spring-boot-actuator-autoconfigure/src/main/java/org/springframework/boot/actuate/autoconfigure/system/DiskSpaceHealthIndicatorProperties.java).

@@ -66,7 +66,7 @@ PATH="$test_command_path" AGENT_VPS_DISK_MIN_FREE_MB=99999999 AGENT_VPS_DISK_TIM
   || test_status="$?"
 cat "$test_dir/result.log"
 [[ "$test_status" = 1 ]]
-grep -q 'BLOCKED após coleta limitada' "$test_dir/result.log"
+grep -q 'BLOCKED após coleta controlada' "$test_dir/result.log"
 [[ "$("${compose[@]}" ps --all --quiet | sort)" = "$test_containers_before" ]]
 [[ "$(docker image inspect --format '{{.Id}}' "$AGENT_VPS_DISK_TEST_IMAGE")" = "$test_image_before" ]]
 [[ "$(docker image inspect --format '{{.Id}}' "$AGENT_VPS_DISK_TEST_ROLLBACK_IMAGE")" = "$test_image_before" ]]

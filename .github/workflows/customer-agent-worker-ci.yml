@@ -179,3 +179,9 @@ jobs:
                done; \
             printf '%s\n' 'Falha: Agente Cliente não confirmou versão implantada e acesso ao backend.'; \
             docker compose logs --tail=150 customer-agent-worker; exit 1"
+      - name: Restore free disk space on agent VPS
+        if: always()
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

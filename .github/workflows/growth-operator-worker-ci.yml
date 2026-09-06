@@ -122,3 +122,9 @@ jobs:
           ssh "${VPS_USER}@${VPS_IP}" \
             "docker inspect growth-operator-worker-growth-operator-worker-1 \
               --format 'image={{.Config.Image}} started={{.State.StartedAt}} status={{.State.Status}}'"
+      - name: Restore free disk space on agent VPS
+        if: always()
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

@@ -268,6 +268,13 @@ paths:
     post:
       tags: [Facebook Campaigns]
       summary: Libera experimento para publicação de campanha no Facebook Ads.
+      description: |
+        Retoma também FAILED pelo mesmo experimento após corrigir os gates. Não altera o status
+        para RUNNING; somente o relatório completo de publicação pode fazê-lo. Copy incompatível
+        bloqueia a liberação com causa no readiness, preservando histórico e orçamento.
+        Repetição de clique em pedido PLANNED já liberado é idempotente. Retry de FAILED
+        preserva eventos e início da mensuração. Campanha já vinculada exige gestão da
+        publicação existente e não pode ser apagada por este comando.
       parameters:
         - name: id
           in: path
@@ -275,6 +282,7 @@ paths:
           schema: { type: integer, format: int64 }
       responses:
         '200': { description: Experimento liberado. }
+        '409': { description: Campanha já vinculada ou gate comercial não atendido. }
   /api/facebook-campaigns/experiments-ready:
     get:
       tags: [Facebook Campaigns]
@@ -380,6 +388,8 @@ paths:
         Endpoint de leitura do módulo Facebook. A criação, edição, aprovação e exclusão dos
         criativos continuam pertencendo exclusivamente ao módulo Experimentos; este contrato
         expõe somente os criativos READY que podem ser consumidos pela publicação Facebook.
+        Exclui aprovações legadas com texto principal acima de 125 caracteres Unicode,
+        título acima de 40 ou descrição acima de 25; não trunca nem reescreve o anúncio.
       parameters:
         - $ref: '#/components/parameters/ExperimentId'
       responses:
@@ -1018,6 +1028,20 @@ components:
       additionalProperties: true
       description: Payload do worker com campanha, ad sets, ads, criativos e confirmação de publicação completa na Meta.
       properties:
+        budgetMode:
+          type: string
+          enum: [ADSET]
+          description: O orçamento pertence ao único conjunto do experimento.
+        adSet:
+          type: object
+          additionalProperties: true
+          description: Valores em unidade monetária mínima; diário e vitalício são alternativas exclusivas.
+          properties:
+            dailyBudget: { type: string, nullable: true }
+            lifetimeBudget:
+              type: string
+              nullable: true
+              description: Teto nativo confirmado por releitura da Meta quando o provedor recusa o mínimo de spend_cap; não acumula orçamento dos dias perdidos.
         status:
           type: string
           nullable: true

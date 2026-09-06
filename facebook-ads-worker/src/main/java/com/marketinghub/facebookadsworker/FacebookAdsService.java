@@ -372,7 +372,7 @@ public class FacebookAdsService {
         executePost(path, body);
     }
 
-    /** Publica o conjunto com orçamento, segmentação e período autorizados pelo experimento. */
+    /** Publica o conjunto com orçamento diário ou vitalício exclusivo e período autorizado. */
     public String createAdSet(String adAccountId, AdSetRequest request) {
         Objects.requireNonNull(request, "request");
 
@@ -381,7 +381,15 @@ public class FacebookAdsService {
         Map<String, Object> body = new HashMap<>();
         body.put("name", request.name());
         body.put("campaign_id", request.campaignId());
-        body.put("daily_budget", request.dailyBudget());
+        if (hasText(request.lifetimeBudget())) {
+            if (hasText(request.dailyBudget()) || !hasText(request.endTime())
+                    || new java.math.BigDecimal(request.lifetimeBudget()).signum() <= 0) {
+                throw new IllegalArgumentException("Orçamento vitalício exige término e não pode coexistir com diário.");
+            }
+            body.put("lifetime_budget", request.lifetimeBudget());
+        } else {
+            body.put("daily_budget", request.dailyBudget());
+        }
         if (hasText(request.startTime())) {
             body.put("start_time", request.startTime());
         }
@@ -3471,7 +3479,33 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         }
     }
 
-    /** Contrato de publicação do conjunto, incluindo início opcional e término autorizado. */
+    /** Confirma a trava financeira persistida na Meta antes de criar qualquer anúncio. */
+    public boolean verifyAdSetLifetimeBudget(String adSetId, String campaignId, String expectedBudget, String expectedEnd) {
+        String path = UriComponentsBuilder.fromPath(buildVersionedPath("/" + adSetId))
+                .queryParam("fields", "id,campaign_id,lifetime_budget,daily_budget,end_time")
+                .queryParam("access_token", requireAccessToken()).build(false).toUriString();
+        FacebookApiResponse response = executeGet(path);
+        JsonNode body = response != null ? response.body() : null;
+        if (body == null || !adSetId.equals(body.path("id").asText())
+                || !campaignId.equals(body.path("campaign_id").asText())
+                || !expectedBudget.equals(body.path("lifetime_budget").asText())
+                || body.path("daily_budget").asLong(0) != 0
+                || !Instant.parse(expectedEnd).equals(parseMetaBudgetEnd(body.path("end_time").asText()))) {
+            throw new IllegalStateException("A Meta não confirmou o orçamento vitalício e o término autorizados: adSetId=" + adSetId);
+        }
+        return true;
+    }
+
+    /** Normaliza os formatos ISO de término retornados pela Graph API. */
+    private Instant parseMetaBudgetEnd(String value) {
+        if (value.matches(".*[+-][0-9]{4}$")) {
+            return java.time.OffsetDateTime.parse(value,
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")).toInstant();
+        }
+        return Instant.parse(value);
+    }
+
+    /** Contrato do conjunto com início, término e orçamento vitalício opcional. */
     public record AdSetRequest(
         String name,
         String campaignId,
@@ -3488,8 +3522,18 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String targetingJson,
         List<TargetingOption> targetingOptions,
         String startTime,
-        String endTime
+        String endTime,
+        String lifetimeBudget
     ) {
+        /** Preserva o contrato de orçamento diário já consumido pelo executor. */
+        public AdSetRequest(String name, String campaignId, String dailyBudget, String billingEvent,
+            String optimizationGoal, String destinationType, String bidStrategy, String bidAmount,
+            String pageId, String pixelId, String customEventType, String targetCountry,
+            String targetingJson, List<TargetingOption> targetingOptions, String startTime, String endTime) {
+            this(name, campaignId, dailyBudget, billingEvent, optimizationGoal, destinationType,
+                bidStrategy, bidAmount, pageId, pixelId, customEventType, targetCountry,
+                targetingJson, targetingOptions, startTime, endTime, null);
+        }
         /** Preserva compatibilidade dos consumidores que não representam publicação de experimento. */
         public AdSetRequest(String name, String campaignId, String dailyBudget, String billingEvent,
             String optimizationGoal, String destinationType, String bidStrategy, String bidAmount,

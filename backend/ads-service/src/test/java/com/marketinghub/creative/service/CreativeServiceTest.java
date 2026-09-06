@@ -790,6 +790,35 @@ class CreativeServiceTest {
             java.util.List.of()));
   }
 
+  /** Reproduz o #526 e impede parecer ou aprovação humana que o worker recusaria. */
+  @Test
+  void rejectsOversizedCopyAtAgentAndHumanApprovalWithoutTruncatingHistory() {
+    Experiment experiment = fixtures.createAndSaveExperiment(fixtures.createAndSaveNiche());
+    CreateCreativeRequest request = new CreateCreativeRequest();
+    request.setHeadline("Seu 1º ajuste sem comprar tudo");
+    request.setPrimaryText("x".repeat(202));
+    request.setImageUrl("https://media.test/qa.png");
+    request.setCta("LEARN_MORE");
+    request.setStatus(CreativeStatus.DRAFT);
+    Creative creative = service.create(experiment.getId(), request);
+    assertThatThrownBy(() -> approveByAgent(creative.getId())).hasMessageContaining("202/125");
+    creative.setAgentReviewStatus(CreativeAgentReviewStatus.APPROVED);
+    repository.saveAndFlush(creative);
+    assertThatThrownBy(() -> service.updateStatus(creative.getId(), CreativeStatus.READY))
+        .hasMessageContaining("202/125");
+    assertThat(repository.findById(creative.getId()).orElseThrow().getPrimaryText()).hasSize(202);
+    assertThat(repository.findById(creative.getId()).orElseThrow().getStatus())
+        .isEqualTo(CreativeStatus.DRAFT);
+
+    request.setPrimaryText(
+        "Ruído visual ao se arrumar? Descubra seu 1º ajuste MUSA com o que já tem. Comece agora.");
+    Creative revision = service.createVersion(creative.getId(), request);
+    approveByAgent(revision.getId());
+    assertThat(service.updateStatus(revision.getId(), CreativeStatus.READY).getStatus())
+        .isEqualTo(CreativeStatus.READY);
+    assertThat(revision.getSourceCreative().getId()).isEqualTo(creative.getId());
+  }
+
   /** Garante que a correção crie outro registro e preserve o criativo original. */
   @Test
   void createVersionPreservesOriginalAndResetsCommercialGates() {
@@ -799,6 +828,8 @@ class CreativeServiceTest {
     originalRequest.setFormat("IMAGE");
     originalRequest.setHeadline("Original");
     originalRequest.setPrimaryText("Texto original");
+    originalRequest.setInstagramUserId("qa-instagram");
+    originalRequest.setLeadGenFormId("qa-form");
     originalRequest.setImageUrl("https://cdn.test/original.png");
     originalRequest.setStatus(CreativeStatus.DRAFT);
     Creative original = service.create(exp.getId(), originalRequest);
@@ -812,6 +843,8 @@ class CreativeServiceTest {
     revisionRequest.setStatus(CreativeStatus.READY);
 
     Creative revision = service.createVersion(original.getId(), revisionRequest);
+    assertThat(revision.getInstagramUserId()).isEqualTo("qa-instagram");
+    assertThat(revision.getLeadGenFormId()).isEqualTo("qa-form");
 
     assertThat(revision.getId()).isNotEqualTo(original.getId());
     assertThat(revision.getSourceCreative().getId()).isEqualTo(original.getId());

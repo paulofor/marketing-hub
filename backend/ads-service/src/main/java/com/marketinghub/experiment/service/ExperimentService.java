@@ -653,7 +653,7 @@ public class ExperimentService {
     return repository.findAll();
   }
 
-  /** Lista somente a página administrativa solicitada, aplicando filtros no banco. */
+  /** Lista a página administrativa incluindo falhas recuperáveis, com filtros no banco. */
   public org.springframework.data.domain.Page<Experiment> listAdministrativePage(
       int page, int size, ExperimentStatus status, Long nicheId, String search) {
     java.util.List<ExperimentStatus> finalStatuses =
@@ -661,8 +661,7 @@ public class ExperimentService {
             ExperimentStatus.FINISHED,
             ExperimentStatus.VALIDATED,
             ExperimentStatus.INVALIDATED,
-            ExperimentStatus.INCONCLUSIVE,
-            ExperimentStatus.FAILED);
+            ExperimentStatus.INCONCLUSIVE);
     return repository.findAdministrativePage(
         finalStatuses,
         status,
@@ -1698,12 +1697,11 @@ public class ExperimentService {
   }
 
   /**
-   * Libera o experimento para o Facebook Ads Worker e remove eventos dependentes antes de zerar o
-   * funil.
+   * Libera a primeira publicação ou retoma uma falha sem apagar campanha nem histórico comercial.
    */
   @Transactional
   public Experiment releaseForFacebook(Long id) {
-    Experiment experiment = repository.findById(id).orElseThrow();
+    Experiment experiment = repository.findForFacebookRelease(id).orElseThrow();
     if (experiment.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
@@ -1715,12 +1713,24 @@ public class ExperimentService {
     }
     ensureLowTicketSalesPageWasBuiltByPipeline(experiment);
     ensurePdeMembershipDestinationIsCanonical(experiment);
+    if (facebookAdsCampaignRepository.existsByExperimentId(id)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Este experimento já possui campanha vinculada. Retome ou ajuste a campanha existente;"
+              + " uma nova liberação não pode apagar seu histórico nem criar campanha duplicada.");
+    }
+    if (experiment.getStatus() == ExperimentStatus.PLANNED
+        && experiment.getFacebookReleaseRequestedAt() != null) {
+      return experiment;
+    }
+    boolean firstRelease = experiment.getFacebookReleaseRequestedAt() == null;
     experiment.setStatus(ExperimentStatus.PLANNED);
     experiment.setFacebookReleaseRequestedAt(Instant.now());
-    experiment.setFunnelResetAt(experiment.getFacebookReleaseRequestedAt());
-    removePreviousFacebookPublication(id);
-    experimentLandingAnalyticsEventRepository.deleteByExperimentId(id);
-    experimentFunnelEventRepository.deleteByExperimentId(id);
+    if (firstRelease) {
+      experiment.setFunnelResetAt(experiment.getFacebookReleaseRequestedAt());
+      experimentLandingAnalyticsEventRepository.deleteByExperimentId(id);
+      experimentFunnelEventRepository.deleteByExperimentId(id);
+    }
     return experiment;
   }
 
@@ -1841,29 +1851,6 @@ public class ExperimentService {
       normalized = normalized.substring(0, normalized.length() - 1);
     }
     return normalized;
-  }
-
-  /** Remove a publicação anterior do Facebook e seus dados dependentes para permitir novo ciclo. */
-  private void removePreviousFacebookPublication(Long experimentId) {
-    List<String> campaignIds =
-        facebookAdsCampaignRepository.findByExperimentId(experimentId).stream()
-            .map(campaign -> campaign.getId())
-            .toList();
-    if (campaignIds.isEmpty()) {
-      return;
-    }
-    entityManager
-        .createNativeQuery(
-            "DELETE FROM campaign_strategy_evaluation WHERE campaign_id IN (:campaignIds)")
-        .setParameter("campaignIds", campaignIds)
-        .executeUpdate();
-    entityManager
-        .createNativeQuery("DELETE FROM campaign_strategy WHERE campaign_id IN (:campaignIds)")
-        .setParameter("campaignIds", campaignIds)
-        .executeUpdate();
-    facebookAdsAdRepository.deleteByAdSetCampaignIdIn(campaignIds);
-    facebookAdsAdSetRepository.deleteByCampaignIdIn(campaignIds);
-    facebookAdsCampaignRepository.deleteByExperimentId(experimentId);
   }
 
   private void synchronizeLeadPortalFlow(Experiment experiment) {

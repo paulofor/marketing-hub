@@ -1,5 +1,8 @@
 # AGENTS.md — Facebook Ads Worker
 
+- O objetivo `SALES` explícito prevalece sobre a existência de degustação/recompensa gratuita, inclusive no PDE; manter `OUTCOME_SALES` e conversão `PURCHASE` com pixel obrigatório.
+- Quando a Meta rejeitar `spend_cap` exclusivamente com HTTP 400/código 100/subcódigo 2446307, aplicar o fallback de orçamento vitalício de um único ad set descrito em `docs/canonical/facebook-campaign-publication-canon.v1.md`: sem elevar teto, sem acumular dias perdidos, sem CBO, com releitura do orçamento e término na Meta antes de criar anúncios. Não remover a trava para outros erros.
+
 - 🚨 **Muito importante:** qualquer alteração neste módulo deve ser refletida em todos os arquivos `.md` deste diretório. Mantenha a documentação atualizada.
 - Este projeto utiliza o modelo de dados definido no **backend**.
 - Não duplique ou mantenha modelo de dados aqui; importe-o do backend.

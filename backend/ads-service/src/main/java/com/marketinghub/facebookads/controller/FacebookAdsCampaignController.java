@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.service.CreativePublicationCopyPolicy;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
@@ -277,11 +278,12 @@ public class FacebookAdsCampaignController {
   }
 
   @GetMapping("/experiments/{experimentId}/creatives-ready")
-  // Lista os criativos aprovados para consumo exclusivo do Facebook Ads Worker.
+  // Entrega somente anúncios aprovados cuja copy passa no contrato do Facebook Ads Worker.
   public List<FacebookCreativeConsumptionResponse> listReadyCreativesForFacebook(
       @PathVariable Long experimentId) {
     return creativeRepository.findByExperimentId(experimentId).stream()
         .filter(creative -> creative.getStatus() == CreativeStatus.READY)
+        .filter(creative -> CreativePublicationCopyPolicy.violations(creative).isEmpty())
         .filter(
             creative ->
                 creative.getAgentReviewStatus() == null

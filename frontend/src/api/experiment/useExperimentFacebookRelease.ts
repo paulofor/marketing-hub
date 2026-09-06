@@ -14,6 +14,13 @@ export function useExperimentFacebookRelease(id: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["experiment", id] });
       queryClient.invalidateQueries({ queryKey: ["experiments"] });
+      queryClient.invalidateQueries({ queryKey: ["experiments-summary"] });
+      queryClient.invalidateQueries({
+        queryKey: ["facebook-experiments-ready"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["facebook-campaign-experiments"],
+      });
       queryClient.invalidateQueries({ queryKey: ["experiment-readiness", id] });
       queryClient.invalidateQueries({ queryKey: ["experiment", id, "funnel"] });
     },

@@ -35,6 +35,34 @@ class FacebookAdsServiceTest {
     private FacebookAdsService service;
     private ObjectMapper objectMapper;
 
+    /** Publica orçamento vitalício exclusivo sem perder a data de encerramento. */
+    @Test
+    void publishesLifetimeBudgetWithoutDailyBudget() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        service.createAdSet("1", new FacebookAdsService.AdSetRequest("Vega", "10", null,
+                "IMPRESSIONS", "OFFSITE_CONVERSIONS", "WEBSITE", "LOWEST_COST_WITHOUT_CAP", null,
+                "84", "pixel-91", "PURCHASE", "BR", "{}", List.of(), null,
+                "2026-09-07T02:59:59Z", "2000"));
+        JsonNode body = objectMapper.readTree(takeRequest("conjunto com teto vitalício").getBody().inputStream());
+        assertEquals("2000", body.path("lifetime_budget").asText());
+        assertFalse(body.has("daily_budget"));
+        assertEquals("2026-09-07T02:59:59Z", body.path("end_time").asText());
+    }
+
+    /** Rejeita confirmação financeira divergente, campanha trocada e data ampliada. */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {
+        "{\"id\":\"20\",\"campaign_id\":\"10\",\"lifetime_budget\":\"30000\",\"end_time\":\"2026-09-07T02:59:59Z\"}",
+        "{\"id\":\"20\",\"campaign_id\":\"11\",\"lifetime_budget\":\"2000\",\"end_time\":\"2026-09-07T02:59:59Z\"}",
+        "{\"id\":\"20\",\"campaign_id\":\"10\",\"lifetime_budget\":\"2000\",\"end_time\":\"2026-09-08T02:59:59Z\"}"
+    })
+    void rejectsUnconfirmedNativeBudget(String payload) throws Exception {
+        server.enqueueResponse(new MockResponse().setBody(payload).addHeader("Content-Type", "application/json"));
+        assertThrows(IllegalStateException.class, () -> service.verifyAdSetLifetimeBudget(
+                "20", "10", "2000", "2026-09-07T02:59:59Z"));
+        assertEquals("GET", takeRequest("confirmação da proteção financeira").getMethod());
+    }
+
     @BeforeEach
     void setUp() throws IOException {
         server = new FailFastMockWebServer();

@@ -26,6 +26,11 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   @Query("select e from Experiment e where e.id = :id")
   Optional<Experiment> findForVideoCreativeSelection(@Param("id") Long id);
 
+  /** Serializa liberações para que cliques concorrentes preservem o mesmo pedido de publicação. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select e from Experiment e where e.id = :id")
+  Optional<Experiment> findForFacebookRelease(@Param("id") Long id);
+
   /** Lista experimentos administrativos com filtros aplicados diretamente no banco. */
   @EntityGraph(
       attributePaths = {

@@ -1176,6 +1176,30 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 ## LOOP-FB-PUBLICATION — Publicação Facebook Ads
 
+- **Segundo bloqueio do #91 em 2026-09-06:** após a revisão #527 aprovada de fato,
+  a Meta aceitou o vídeo e rejeitou `spend_cap=10000` com `100/2446307`, exigindo
+  R$ 300 nesse campo. O #88 havia publicado com `OUTCOME_SALES` e sem esse campo
+  (passo #790), enquanto o #91 enviava `OUTCOME_LEADS` por uma heurística de
+  recompensa gratuita (passo #803). A correção preserva o objetivo explícito e,
+  somente para essa recusa, usa orçamento vitalício de um único conjunto limitado
+  ao teto e aos dias restantes. Releitura da Meta confirma orçamento, campanha e
+  término antes dos anúncios; divergência impede publicação. Não elevar teto,
+  retirar a proteção financeira nem transferir orçamento de dias perdidos.
+  Evidências e novas rodadas: `docs/homologacao/vega91-publicacao-recuperacao-v1.md`.
+
+- **Recorrência confirmada em 2026-09-06 (#91):** backend, Têmis e aprovação humana aceitaram
+  copy de 202 caracteres no anúncio #526, mas o publicador respeitou o limite canônico de 125
+  e marcou `FAILED` antes de criar campanha. A lista administrativa ocultou a falha como se
+  fosse encerramento. O #88 possui histórico de publicação completa, descartando falta geral
+  de acesso à Meta. A correção local alinha gates determinísticos de aprovação, readiness e
+  consumo; preserva `FAILED` na lista e no filtro, invalida o cache após retomada e mantém a
+  identidade Instagram ao versionar a copy. A retomada passa a preservar eventos e início da
+  mensuração, serializar cliques repetidos e bloquear nova liberação que apagaria campanha
+  vinculada. O teste anterior que admitia esse apagamento foi corrigido conforme a unicidade
+  já canônica. Testes reproduzem excesso, correção, aprovação,
+  preservação de mídia, consulta de fila e recuperação em desktop e celulares. Resultado
+  produtivo e limitações ficam em `docs/homologacao/vega91-publicacao-recuperacao-v1.md`.
+
 - **Severidade**: CRÍTICO.
 - **Status**: aberto/recorrente.
 - **Sintomas recorrentes**:

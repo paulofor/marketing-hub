@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.creative.service.CreativePublicationCopyPolicy;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
@@ -185,12 +186,17 @@ public class ExperimentReadinessService {
               List.of()));
     }
     if (!commercialMaterialReady) {
+      List<String> copyViolations = publicationCopyViolations(experiment);
       issues.add(
           new ExperimentReadinessIssueDto(
               ExperimentReadinessIssueType.CREATIVE,
-              "Nenhum criativo aprovado",
-              "Este experimento ainda não possui criativos aprovados para publicação.",
-              "Use a aba Criativos para gerar novas peças por IA ou cadastre um criativo manualmente.",
+              copyViolations.isEmpty()
+                  ? "Nenhum criativo aprovado"
+                  : "Copy incompatível com publicação",
+              copyViolations.isEmpty()
+                  ? "Este experimento ainda não possui criativos aprovados para publicação."
+                  : String.join(" ", copyViolations),
+              "Na aba Criativos, crie uma versão corrigida e solicite a revisão de Têmis antes de aprovar.",
               List.of()));
     }
     if (!purchaseIntent && !pdeMembershipFunnel && !hasLeadPortalFlow) {
@@ -594,6 +600,9 @@ public class ExperimentReadinessService {
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     if (!pdeOperationalEvidenceReady && !hasApprovedCreative(experiment)) {
       missing.add("creativeApproval");
+      if (!publicationCopyViolations(experiment).isEmpty()) {
+        missing.add("creativeCopy");
+      }
     }
     if (!pdeOperationalEvidenceReady && !hasApprovedLandingDestination(experiment)) {
       missing.add("landingDestination");
@@ -699,10 +708,7 @@ public class ExperimentReadinessService {
     return experiment == null || experiment.getPlatform() != ExperimentPlatform.DIRECT_ONE_TO_ONE;
   }
 
-  /**
-   * Verifica a aprovação real dos criativos pela fonte canônica: registros READY com imagem
-   * publicável.
-   */
+  /** Verifica registros READY com mídia e copy que também serão aceitas pelo publicador. */
   private boolean hasApprovedCreative(Experiment experiment) {
     if (experiment == null || experiment.getId() == null) {
       return false;
@@ -725,7 +731,19 @@ public class ExperimentReadinessService {
   /** Valida o gate mínimo de publicação Meta para mídia e copy do criativo. */
   private boolean passesPublicationGate(Experiment experiment, Creative creative) {
     return hasPublishableMedia(experiment, creative)
+        && CreativePublicationCopyPolicy.violations(creative).isEmpty()
         && hasCommerciallyAlignedCopy(experiment, creative);
+  }
+
+  /** Explica excessos de copy de anúncios já marcados como prontos, preservando seu histórico. */
+  private List<String> publicationCopyViolations(Experiment experiment) {
+    return creativeRepository.findByExperimentId(experiment.getId()).stream()
+        .filter(creative -> creative.getStatus() == CreativeStatus.READY)
+        .flatMap(
+            creative ->
+                CreativePublicationCopyPolicy.violations(creative).stream()
+                    .map(reason -> "Anúncio #" + creative.getId() + ": " + reason))
+        .toList();
   }
 
   /** Verifica se a mídia do criativo pode ser publicada sem pular a aprovação técnica de vídeo. */

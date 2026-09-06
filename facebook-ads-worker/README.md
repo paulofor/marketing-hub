@@ -763,3 +763,18 @@ O backend agora devolve `publicationJobId` em `GET /api/facebook-campaigns/exper
 ## Audiências Meta Ads de nicho
 
 A etapa de criação de audiência na Meta é executada pelo `MetaAudienceSyncScheduler`. A decisão de público, nome, recorte, elegibilidade e volumes pertence ao módulo OPRM executor; o backend apenas persiste e expõe a fila. O worker consulta o backend em `/api/internal/meta-audiences/pending`, cria uma audiência customizada `CUSTOM` em `/act_<AD_ACCOUNT_ID>/customaudiences`, normaliza/deduplica emails para o requisito técnico da Meta, gera SHA-256 e envia lotes para `/{customAudienceId}/users`. O resultado é reportado ao backend em `/api/internal/meta-audiences/{id}/sync`, preservando `facebookAudienceId`, quantidade sincronizada e falhas operacionais.
+# Recuperação de Vega #91 — 06/09/2026
+
+O objetivo explícito `SALES` agora prevalece sobre a degustação gratuita do PDE.
+A publicação preserva `OUTCOME_SALES`, pixel e `PURCHASE`. O erro Meta
+`100/2446307` revelou mínimo de R$ 300 para `spend_cap` na conta BRL consultada;
+isso não autoriza aumentar o teto de R$ 100 do experimento.
+
+Somente essa recusa explícita permite a alternativa nativa: orçamento vitalício
+de um único conjunto, sem orçamento diário simultâneo, limitado ao teto e ao
+orçamento dos dias ainda autorizados. Para Vega no último dia, são R$ 20. A Meta
+precisa devolver exatamente o orçamento, a campanha e o término esperados antes
+de o worker criar anúncios. Outros erros não removem a proteção financeira.
+O backend recebe `lifetimeBudget` pelo contrato já existente e preserva modo
+`ADSET`. Testes cobrem recusa, publicação completa, divergência de releitura,
+período vencido e segregação de vendas/degustação.

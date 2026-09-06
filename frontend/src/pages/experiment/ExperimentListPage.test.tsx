@@ -510,7 +510,7 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
   });
 
-  it("hides finalized experiments from the main list", async () => {
+  it("keeps failed publications visible while hiding finalized experiments", async () => {
     const experiments = [
       {
         id: "71",
@@ -607,15 +607,20 @@ describe("ExperimentListPage", () => {
     expect(await screen.findByText("Experimento em execução")).toBeTruthy();
     expect(screen.queryByText("Experimento finalizado")).toBeNull();
     expect(screen.queryByText("Experimento invalidado")).toBeNull();
-    expect(screen.queryByText("Experimento com falha")).toBeNull();
+    expect(screen.getByText("Experimento com falha")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Corrigir e retomar" }),
+    ).toBeTruthy();
     expect(screen.queryByRole("option", { name: "FINISHED" })).toBeNull();
-    expect(screen.queryByRole("option", { name: "FAILED" })).toBeNull();
+    expect(
+      screen.getByRole("option", { name: "FAILED — corrigir e retomar" }),
+    ).toBeTruthy();
     expect(
       screen.getByRole("option", { name: "Status não finalizados" }),
     ).toBeTruthy();
     expect(
       screen.getByText((content) =>
-        content.includes("Exibindo 1-1 de 1 experimentos não finalizados"),
+        content.includes("Exibindo 1-2 de 2 experimentos não finalizados"),
       ),
     ).toBeTruthy();
   });

@@ -58,6 +58,11 @@ class VideoCreativeControllerTest {
   @Autowired ExperimentRepository experiments;
   @Autowired ExperimentVideoAssetRepository videos;
   @Autowired CreativeRepository creatives;
+  @Autowired com.marketinghub.repository.jpa.product.ProductRepository products;
+
+  @org.springframework.boot.test.mock.mockito.MockBean
+  com.marketinghub.experiment.funnel.ExperimentFunnelService commercialMetrics;
+
   @SpyBean ExperimentHistoryEventService history;
   @org.springframework.boot.test.web.server.LocalServerPort int port;
   Experiment experiment;
@@ -67,6 +72,25 @@ class VideoCreativeControllerTest {
   /** Cria um experimento e duas versões fictícias em banco exclusivo da homologação. */
   @BeforeEach
   void setup() {
+    // Não há compras nem schema externo de pagamentos na homologação de publicação.
+    org.mockito.Mockito.when(commercialMetrics.approvedRevenue(any()))
+        .thenReturn(java.math.BigDecimal.ZERO);
+    org.mockito.Mockito.when(commercialMetrics.summarizeLandingAnalytics(any()))
+        .thenReturn(
+            new com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                null,
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                null,
+                null,
+                java.util.List.of()));
     experiment = fixtures.createAndSaveExperiment(fixtures.createAndSaveNiche());
     experiment.setStatus(ExperimentStatus.PLANNED);
     experiment.setFollowUpActionUrl("https://landing.test/qa-internal");
@@ -330,5 +354,79 @@ class VideoCreativeControllerTest {
     assertThat(creatives.findByExperimentId(experiment.getId())).hasSize(1);
     assertThat(history.list(experiment.getId())).hasSize(1);
     assertThat(videos.findById(rejected.getId()).orElseThrow().isRequiredForRelease()).isFalse();
+  }
+
+  /** Homologa a recuperação da falha pela interface contra persistência e gates reais locais. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"desktop", "iphone", "pixel"})
+  @org.junit.jupiter.api.condition.EnabledIfSystemProperty(
+      named = "publicationRecovery.browser",
+      matches = "true")
+  void browserRecoversFailedPublicationWithIndependentCopyReview(String device) throws Exception {
+    var product =
+        products.save(
+            com.marketinghub.product.Product.builder()
+                .name("QA recuperação")
+                .slug("qa-recovery-" + experiment.getId())
+                .marketNiche(experiment.getNiche())
+                .build());
+    experiment.setProduct(product);
+    experiment.setStatus(ExperimentStatus.FAILED);
+    experiment = experiments.save(experiment);
+    var original =
+        creatives.save(
+            com.marketinghub.creative.Creative.builder()
+                .experiment(experiment)
+                .headline("QA copy longa")
+                .primaryText("x".repeat(202))
+                .description("Primeiro ajuste")
+                .cta("LEARN_MORE")
+                .format("VIDEO")
+                .status(com.marketinghub.creative.CreativeStatus.READY)
+                .agentReviewStatus(com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED)
+                .videoUrl(approved.getAssetUrl())
+                .imageUrl(approved.getThumbnailUrl())
+                .destinationUrl(experiment.getFollowUpActionUrl())
+                .instagramUserId("qa-instagram")
+                .build());
+    var args =
+        json.writeValueAsString(
+            Map.of(
+                "backend",
+                "http://127.0.0.1:" + port,
+                "experimentId",
+                experiment.getId(),
+                "name",
+                experiment.getName(),
+                "creativeId",
+                original.getId(),
+                "device",
+                device));
+    var output = new java.io.File("target/publication-recovery-" + device + ".log");
+    var process =
+        new ProcessBuilder("node", "frontend/scripts/validate-publication-recovery.cjs", args)
+            .directory(new java.io.File("../.."))
+            .redirectErrorStream(true)
+            .redirectOutput(output)
+            .start();
+    try {
+      assertThat(process.waitFor(150, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+      assertThat(process.exitValue())
+          .withFailMessage(java.nio.file.Files.readString(output.toPath()))
+          .isZero();
+    } finally {
+      if (process.isAlive()) process.destroyForcibly();
+    }
+    var saved = creatives.findByExperimentId(experiment.getId());
+    assertThat(saved).hasSize(2);
+    assertThat(saved.stream().filter(c -> c.getSourceCreative() != null).findFirst().orElseThrow())
+        .satisfies(
+            c -> {
+              assertThat(c.getStatus()).isEqualTo(com.marketinghub.creative.CreativeStatus.READY);
+              assertThat(c.getVideoUrl()).isEqualTo(approved.getAssetUrl());
+              assertThat(c.getInstagramUserId()).isEqualTo("qa-instagram");
+            });
+    assertThat(experiments.findById(experiment.getId()).orElseThrow().getStatus())
+        .isEqualTo(ExperimentStatus.FAILED);
   }
 }

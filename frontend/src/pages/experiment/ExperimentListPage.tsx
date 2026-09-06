@@ -91,9 +91,9 @@ function isCommercialValidationExperiment(experiment: {
     .toUpperCase();
   return Boolean(
     normalizedStatus === "RUNNING" ||
-    normalizedStatus === "VALIDACAO_COMERCIAL" ||
-    normalizedStatus === "COMMERCIAL_VALIDATION" ||
-    normalizedStatus === "COMMERCIAL_VALIDATING",
+      normalizedStatus === "VALIDACAO_COMERCIAL" ||
+      normalizedStatus === "COMMERCIAL_VALIDATION" ||
+      normalizedStatus === "COMMERCIAL_VALIDATING",
   );
 }
 
@@ -138,6 +138,13 @@ export default function ExperimentListPage() {
     onSuccess: async (_, experimentId) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["experiments"] }),
+        queryClient.invalidateQueries({ queryKey: ["experiments-summary"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["facebook-experiments-ready"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["facebook-campaign-experiments"],
+        }),
         queryClient.invalidateQueries({
           queryKey: ["experiment", experimentId],
         }),
@@ -339,6 +346,7 @@ export default function ExperimentListPage() {
             <option value="PAUSED">PAUSED</option>
             <option value="STANDBY">STANDBY</option>
             <option value="USER_STOPPED">USER_STOPPED</option>
+            <option value="FAILED">FAILED — corrigir e retomar</option>
           </select>
         </div>
       </div>
@@ -518,7 +526,7 @@ export default function ExperimentListPage() {
                             aria-hidden="true"
                           />
                         )}
-                        Retry
+                        Corrigir e retomar
                       </button>
                     )}
                   </td>

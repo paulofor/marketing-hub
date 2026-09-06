@@ -10,7 +10,14 @@ const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
       "Venda low-ticket precisa de dor única, prova/preview, promessa, CTA e preço antes de página, criativos e campanha.",
   },
   creativeApproval: { label: "Aprovar pelo menos um criativo" },
-  landingDestination: { label: "Aprovar a landing para definir URL de destino" },
+  creativeCopy: {
+    label: "Corrigir o texto do anúncio antes da publicação",
+    helperText:
+      "Na aba Criativos, crie uma nova versão: texto principal até 125 caracteres, título até 40 e descrição até 25. Reavalie com Têmis e aprove a versão corrigida.",
+  },
+  landingDestination: {
+    label: "Aprovar a landing para definir URL de destino",
+  },
   geraSalesPagePipeline: {
     label: "Publicar página de venda pelo GeraSalesPage",
     helperText:
@@ -53,7 +60,9 @@ const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   },
 };
 
-export function getMissingConfigurationInfo(key: string): MissingConfigurationInfo {
+export function getMissingConfigurationInfo(
+  key: string,
+): MissingConfigurationInfo {
   return missingConfigurationInfo[key] || { label: "Revise o experimento" };
 }
 

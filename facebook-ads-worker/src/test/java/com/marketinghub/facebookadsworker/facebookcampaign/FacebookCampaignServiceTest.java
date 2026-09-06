@@ -347,22 +347,33 @@ class FacebookCampaignServiceTest {
         throw new AssertionError("Expected backend request (" + description + ") matching predicate within 20 attempts.");
     }
 
-    @Test
-    // Verifies that a released experiment publishes the full Facebook campaign hierarchy.
-    void createsCampaignHierarchyForEachExperiment() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+    /** Publica vendas PDE com degustação, incluindo recusa do teto e proteção nativa equivalente. */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void createsCampaignHierarchyForEachExperiment(boolean minimumCapRejected) throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"experimentType\":\"PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL\",\"campaignObjective\":\"SALES\",\"freeReward\":\"Primeiro ajuste gratuito\",\"facebookPixelId\":\"pixel-91\",\"startDate\":\"2099-09-02\",\"endDate\":\"2099-09-05\",\"mediaSpendLimit\":100.0,\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
+        if (minimumCapRejected) {
+            facebook.enqueueResponse(new MockResponse().setResponseCode(400)
+                .setBody("{\"error\":{\"code\":100,\"error_subcode\":2446307,\"error_user_msg\":\"Limite mínimo R$300,00\"}}")
+                .addHeader("Content-Type", "application/json"));
+        }
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
             .addHeader("Content-Type", "application/json"));
+        if (minimumCapRejected) {
+            facebook.enqueueResponse(new MockResponse()
+                .setBody("{\"id\":\"20\",\"campaign_id\":\"10\",\"lifetime_budget\":\"10000\",\"daily_budget\":\"0\",\"end_time\":\"2099-09-05T23:59:59-0300\"}")
+                .addHeader("Content-Type", "application/json"));
+        }
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Primeiro ajuste gratuito\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
@@ -407,29 +418,47 @@ class FacebookCampaignServiceTest {
         RecordedRequest postCampaign = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
         JsonNode campaignPayload = objectMapper.readTree(postCampaign.getBody().inputStream());
-        assertEquals("OUTCOME_TRAFFIC", campaignPayload.get("objective").asText());
+        assertEquals("OUTCOME_SALES", campaignPayload.get("objective").asText());
         assertEquals("10000", campaignPayload.get("spend_cap").asText());
         assertFalse(campaignPayload.has("daily_budget"));
         assertFalse(campaignPayload.has("lifetime_budget"));
+
+        if (minimumCapRejected) {
+            JsonNode retry = objectMapper.readTree(takeFacebookRequest("campanha após recusa explícita").getBody().inputStream());
+            assertFalse(retry.has("spend_cap"));
+            assertFalse(retry.has("daily_budget"));
+            assertFalse(retry.has("lifetime_budget"));
+            assertEquals("OUTCOME_SALES", retry.get("objective").asText());
+        }
 
         RecordedRequest postAdSet = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/adsets", postAdSet.getPath());
         JsonNode adSetPayload = objectMapper.readTree(postAdSet.getBody().inputStream());
         assertEquals("Exp - Ad Set", adSetPayload.get("name").asText());
         assertEquals("10", adSetPayload.get("campaign_id").asText());
-        assertEquals("2500", adSetPayload.get("daily_budget").asText());
+        assertEquals(minimumCapRejected ? "10000" : "2500",
+            adSetPayload.get(minimumCapRejected ? "lifetime_budget" : "daily_budget").asText());
+        assertFalse(adSetPayload.has(minimumCapRejected ? "daily_budget" : "lifetime_budget"));
+        assertEquals("OFFSITE_CONVERSIONS", adSetPayload.get("optimization_goal").asText());
         assertEquals("2099-09-02T03:00:00Z", adSetPayload.get("start_time").asText());
         assertEquals("2099-09-06T02:59:59Z", adSetPayload.get("end_time").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", adSetPayload.get("bid_strategy").asText());
         assertFalse(adSetPayload.has("bid_amount"));
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
-        assertEquals("84", adSetPayload.get("promoted_object").get("page_id").asText());
+        assertEquals("pixel-91", adSetPayload.get("promoted_object").get("pixel_id").asText());
+        assertEquals("PURCHASE", adSetPayload.get("promoted_object").get("custom_event_type").asText());
         JsonNode targeting = adSetPayload.get("targeting");
         assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
         assertFalse(targeting.has("work_positions"));
         assertEquals(1, targeting.get("flexible_spec").size());
         assertEquals("1419795191647433", targeting.get("flexible_spec").get(0).get("work_positions").get(0).get("id").asText());
         assertEquals(0, targeting.get("targeting_automation").get("advantage_audience").asInt());
+
+        if (minimumCapRejected) {
+            RecordedRequest readBack = takeFacebookRequest("confirmação de teto nativo");
+            assertEquals("GET", readBack.getMethod());
+            assertTrue(readBack.getPath().startsWith("/v23.0/20?fields=id,campaign_id,lifetime_budget,daily_budget,end_time"));
+        }
 
         RecordedRequest postCreative = takeFacebookRequest("facebook request");
         assertEquals("/v23.0/act_1/adcreatives", postCreative.getPath());
@@ -438,7 +467,7 @@ class FacebookCampaignServiceTest {
         JsonNode storySpec = creativePayload.get("object_story_spec");
         assertEquals("84", storySpec.get("page_id").asText());
         JsonNode linkData = storySpec.get("link_data");
-        assertEquals("Texto Criativo", linkData.get("message").asText());
+        assertEquals("Primeiro ajuste gratuito", linkData.get("message").asText());
         assertEquals("https://exp.example/landing", linkData.get("link").asText());
         assertEquals("SHOP_NOW", linkData.get("call_to_action").get("type").asText());
         assertEquals("HL", linkData.get("name").asText());
@@ -462,7 +491,8 @@ class FacebookCampaignServiceTest {
         assertEquals("ADSET", backendPayload.get("budgetMode").asText());
         assertEquals("ACTIVE", backendPayload.get("adSet").get("status").asText());
         assertEquals("ACTIVE", backendPayload.get("ad").get("status").asText());
-        assertEquals("2500", backendPayload.get("adSet").get("dailyBudget").asText());
+        assertEquals(minimumCapRejected ? "10000" : "2500",
+            backendPayload.get("adSet").get(minimumCapRejected ? "lifetimeBudget" : "dailyBudget").asText());
         assertTrue(backend.getRequestCount() >= 4);
     }
 

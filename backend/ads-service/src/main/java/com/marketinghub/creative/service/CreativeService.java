@@ -158,7 +158,7 @@ public class CreativeService {
     }
   }
 
-  /** Cria uma revisão editável preservando integralmente o criativo de origem. */
+  /** Cria uma revisão preservando origem e identificadores operacionais ausentes no editor. */
   @Transactional
   public Creative createVersion(Long sourceCreativeId, CreateCreativeRequest request) {
     try {
@@ -179,8 +179,14 @@ public class CreativeService {
               .description(request.getDescription())
               .cta(normalizeMetaCallToAction(request.getCta()))
               .destinationUrl(request.getDestinationUrl())
-              .leadGenFormId(request.getLeadGenFormId())
-              .instagramUserId(request.getInstagramUserId())
+              .leadGenFormId(
+                  StringUtils.hasText(request.getLeadGenFormId())
+                      ? request.getLeadGenFormId()
+                      : source.getLeadGenFormId())
+              .instagramUserId(
+                  StringUtils.hasText(request.getInstagramUserId())
+                      ? request.getInstagramUserId()
+                      : source.getInstagramUserId())
               .status(CreativeStatus.DRAFT)
               .agentReviewStatus(CreativeAgentReviewStatus.PENDING)
               .build();
@@ -519,7 +525,7 @@ public class CreativeService {
     return products.size() == 1 ? products.getFirst() : null;
   }
 
-  /** Persiste o parecer auditável do agente e mantém o anúncio bloqueado quando não aprovado. */
+  /** Persiste o parecer auditável e impede aprovação de copy fora do contrato de publicação. */
   @Transactional
   public Creative applyAgentReview(Long id, CreativeAgentReviewResultRequest request) {
     Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
@@ -537,6 +543,9 @@ public class CreativeService {
     validateScore(request.actionScore());
     validateSpecialistApprovalContract(request, decision);
     validateReviewerDidNotCreateReplacement(request);
+    if (decision == CreativeAgentReviewStatus.APPROVED) {
+      validatePublicationCopy(creative);
+    }
     creative.setAgentReviewStatus(decision);
     creative.setAgentReviewJson(toAgentReviewJson(request));
     creative.setAgentReviewRequestJson(request.requestJson());
@@ -1048,12 +1057,27 @@ public class CreativeService {
     }
   }
 
-  /** Bloqueia aprovação humana enquanto o agente não aprovar o anúncio. */
+  /** Bloqueia aprovação humana sem parecer independente ou com copy incompatível. */
   private void validateAgentReviewGate(Creative creative, CreativeStatus status) {
+    if (status == CreativeStatus.READY) {
+      validatePublicationCopy(creative);
+    }
     if (status == CreativeStatus.READY
         && creative.getAgentReviewStatus() != null
         && creative.getAgentReviewStatus() != CreativeAgentReviewStatus.APPROVED) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, AGENT_REVIEW_APPROVAL_BLOCK_REASON);
+    }
+  }
+
+  /** Repete os limites determinísticos do publicador antes de qualquer aprovação. */
+  private void validatePublicationCopy(Creative creative) {
+    List<String> violations = CreativePublicationCopyPolicy.violations(creative);
+    if (!violations.isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Copy incompatível com publicação: "
+              + String.join(" ", violations)
+              + " Crie uma versão corrigida e reavalie com Têmis.");
     }
   }
 
@@ -1419,8 +1443,14 @@ public class CreativeService {
     }
   }
 
-  /** Expõe a mesma trava especialista aplicada pelo comando de aprovação humana. */
+  /** Expõe as mesmas travas de copy e revisão usadas pelo comando de aprovação humana. */
   private String agentReviewApprovalBlockReason(Creative creative) {
+    List<String> violations = CreativePublicationCopyPolicy.violations(creative);
+    if (!violations.isEmpty()) {
+      return "Copy incompatível com publicação: "
+          + String.join(" ", violations)
+          + " Crie uma versão corrigida na aba Criativos e reavalie com Têmis.";
+    }
     return creative.getAgentReviewStatus() != null
             && creative.getAgentReviewStatus() != CreativeAgentReviewStatus.APPROVED
         ? AGENT_REVIEW_APPROVAL_BLOCK_REASON

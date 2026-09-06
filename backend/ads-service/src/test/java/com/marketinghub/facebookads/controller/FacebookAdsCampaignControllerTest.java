@@ -201,6 +201,25 @@ class FacebookAdsCampaignControllerTest {
         .andExpect(jsonPath("$[2]").doesNotExist());
   }
 
+  /** Não entrega ao worker a aprovação legada cujo texto excede o contrato canônico. */
+  @Test
+  void excludesLegacyApprovedCopyThatPublisherWouldReject() throws Exception {
+    var invalid =
+        Creative.builder()
+            .id(526L)
+            .status(CreativeStatus.READY)
+            .agentReviewStatus(com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED)
+            .primaryText("x".repeat(202))
+            .headline("Primeiro ajuste")
+            .cta("LEARN_MORE")
+            .build();
+    when(creativeRepository.findByExperimentId(91L)).thenReturn(List.of(invalid));
+    mockMvc
+        .perform(get("/api/facebook-campaigns/experiments/91/creatives-ready"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0]").doesNotExist());
+  }
+
   @Test
   void listExperimentsByStatus() throws Exception {
     var niche = MarketNiche.builder().id(10L).name("Test Nicho").build();

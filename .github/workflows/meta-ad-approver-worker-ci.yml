@@ -218,3 +218,9 @@ jobs:
                  sleep 5; \
                done; \
             docker compose logs --tail=150 meta-ad-approver-worker iris-image-studio; exit 1"
+      - name: Restore free disk space on agent VPS
+        if: always()
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

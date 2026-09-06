@@ -3841,6 +3841,24 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   revisadas foram retirados. Disco de 100% para 88%; 6,8 GiB livres; health HTTP 200/UP;
   todos os containers e as versões atuais/de recuperação preservados, sem deploy de código.
 - **Evidências e resultado operacional:** `docs/homologacao/actions-agent-vps-disk-2026-09-06.md`.
+- **Recorrência confirmada em 2026-09-06:** os runs Product Discovery `34050283061` e
+  `34050835789` passaram por testes e build, mas falharam antes da publicação com 3.302 MiB e
+  3.298 MiB livres. As duas faixas de `docker builder prune` recuperaram apenas 25,25 KiB e 0 B.
+  Antes deles, Meta Ad Approver `34050283070` e Customer Agent `34050283035` reconstruíram imagens
+  no próprio VPS. Isso confirmou a lacuna: a sonda tratava cache, mas não imagens finais antigas, e
+  não restaurava a reserva após um build saudável.
+- **Alternativas da recorrência:** reduzir 4 GiB esconderia o risco de indisponibilidade; aumentar o
+  disco teria custo e manteria crescimento ilimitado; retenção verificável fecha a causa sem apagar
+  serviços. Foi escolhida a terceira alternativa.
+- **Fechamento sistêmico da recorrência:** quando cache for insuficiente, a sonda remove primeiro
+  imagens dangling sem container e, somente em último caso, tags SHA antigas de repositórios
+  explicitamente conhecidos. Containers ativos/parados, tags não imutáveis, outros repositórios e
+  duas versões de rollback por agente são preservados. Os nove workflows restauram a reserva no
+  fim da tentativa, ainda serializados pela fila. Os gatilhos documentais de Psique e Têmis foram
+  mantidos, pois parte desses arquivos compõe evidência comercial empacotada no runtime.
+- **Prevenção ampliada:** doubles cobrem inventário, idade, allowlist, imagem ativa, dois rollbacks,
+  falhas e remoção sem força; engine real preserva containers, imagens e volume; contrato dos nove
+  workflows exige sondas antes e depois sem enfraquecer os gatilhos de evidência versionada.
 
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
 

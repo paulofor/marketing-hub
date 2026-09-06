@@ -298,7 +298,10 @@ jobs:
             docker compose "${compose_files[@]}" logs --tail=80 product-discovery-worker
             exit 1
           fi
-
-          timeout --foreground --kill-after=15s 120s \
-            docker image prune -f --filter until=168h
           REMOTE_PUBLISH
+      - name: Restore free disk space on agent VPS
+        if: always()
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

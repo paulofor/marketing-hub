@@ -97,8 +97,19 @@ Respostas binarias de IA usadas na pós-produção, como cada trecho de voz, dev
 ativos de auditoria ligados ao job, em vez de codificadas dentro do JSON do histórico. O metadata
 registra request sanitizado, endpoint, modelo, status, tipo, bytes, SHA-256 e identidade do ativo.
 Quando o endpoint não informar uso ou custo individual, Plutus mantém a reconciliação pendente; a
-tarifa pública serve como referência, nunca como confirmação de débito. Voz sintética deve ser
-identificada claramente ao público no próprio vídeo ou em disclosure inseparável da peça.
+tarifa pública serve como referência, nunca como confirmação de débito. Voz e apresentador sintéticos
+devem ser identificados claramente ao público no próprio vídeo ou em disclosure inseparável da peça;
+informar apenas a voz não basta quando a pessoa visível também foi gerada por IA.
+
+Na revisão independente, o arquivo remoto deve ser baixado integralmente e ter tamanho e SHA-256
+calculados pelo próprio inspetor. O hash calculado precisa coincidir com a governança do artefato
+final. A landing deve ser observada em desktop e celular com tráfego de QA segregado e, quando seu
+contrato carregar checkout comercial, o inspetor deve abrir esse checkout em modo somente leitura,
+sem preencher, clicar, iniciar pagamento ou produzir evento comercial.
+
+Todo upload de artefato feito pelo executor de vídeo deve persistir `size_bytes` e `sha256` calculados
+sobre os mesmos bytes enviados. Um ativo derivado sem essa identidade permanece incompleto para uso
+comercial, ainda que a URL, o provider e o job de origem estejam presentes.
 
 O backend principal **nao deve** implementar integracao direta com providers de video, clientes
 HTTP/SDKs de renderizacao, adaptadores Luma, Kling, HeyGen, Runway, Veo ou qualquer executor de

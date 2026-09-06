@@ -318,3 +318,18 @@
 - Prevenção: nenhum texto livre, componente classificado como áudio ou tarefa duplicada pode induzir
   geração. Testes protegem o endpoint especializado, a decisão determinística e a ausência de chamada
   a Runway, preservando integralmente os créditos do agregador quando vídeo não é necessário.
+
+## 2026-09-06 — Aprovação auditável do vídeo premium de Vega #91
+
+- **Problema:** Têmis mantinha o anúncio em ajuste mesmo depois de o runtime conseguir abrir vídeo e
+  landing; os botões humanos permaneciam bloqueados por falta de evidência verificável.
+- **Causa-raiz:** o arquivo derivado não carregava tamanho e SHA-256, o disclosure citava somente a
+  voz apesar da apresentadora sintética e a inspeção não alcançava o checkout descrito pelo PDE.
+- **Solução:** o executor persiste a identidade de todo artefato; o inspetor recalcula o hash sobre o
+  download, captura três quadros, landing mobile/desktop e checkout somente leitura; a pós-produção
+  declara apresentadora e voz geradas por IA.
+- **Resultado:** ativo #40 e anúncio #526 foram aprovados pela tela com o mesmo SHA-256; as versões
+  #524 e #525 ficaram reprovadas como substituídas. O experimento #91 permanece `PLANNED`, sem
+  campanha Meta e sem gasto de mídia.
+- **Custo preservado:** houve somente pós-produção determinística; nenhuma segunda geração de 648
+  créditos foi solicitada à Runway.

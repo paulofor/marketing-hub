@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { extractRemoteVideoFrames } from './video-frame-extractor.mjs';
+import { captureCommercialLanding } from './landing-evidence.mjs';
 
 const baseUrl = requiredEnv('MCP_MARKETING_HUB_URL').replace(/\/$/, '');
 const creativeId = positiveInteger(requiredEnv('MCP_CREATIVE_ID'), 'MCP_CREATIVE_ID');
@@ -93,13 +94,18 @@ async function inspectMedia(creative, toolName, startedAt) {
     creativeId,
     experimentId
   });
+  const governedSha256 = creative.mediaGovernanceEvidence?.finalArtifact?.sha256 ?? null;
   return [
     text({
       audit: audit(toolName, startedAt),
       mediaType: 'VIDEO',
       decoder: 'FFMPEG_7_1_1',
       source: url,
-      duration: evidence.duration
+      duration: evidence.duration,
+      byteLength: evidence.byteLength,
+      sha256: evidence.sha256,
+      governedSha256,
+      sha256MatchesGovernance: Boolean(governedSha256) && evidence.sha256 === governedSha256
     }),
     ...evidence.frames.map(frame => ({
       type: 'image',
@@ -112,25 +118,28 @@ async function inspectMedia(creative, toolName, startedAt) {
 async function inspectLanding(creative, toolName, startedAt) {
   const url = httpUrl(creative.destinationUrl, 'URL de destino');
   return withBrowser(async browser => {
-    const result = [text({ audit: audit(toolName, startedAt), source: url, views: ['mobile', 'desktop'] })];
-    for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
-      const page = await browser.newPage({ viewport });
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
-      await waitForCommercialLanding(page);
-      result.push({ type: 'image', data: (await page.screenshot({ fullPage: true, type: 'jpeg', quality: 82 })).toString('base64'), mimeType: 'image/jpeg' });
-      await page.close();
+    const evidence = await captureCommercialLanding(browser, url);
+    const checkout = evidence.checkout ? { ...evidence.checkout, screenshot: undefined } : null;
+    const result = [text({
+      audit: audit(toolName, startedAt),
+      source: url,
+      inspectedSource: evidence.landingUrl,
+      views: ['mobile', 'desktop'],
+      checkoutObserved: Boolean(checkout),
+      checkout
+    })];
+    result.push(...evidence.screenshots.map(screenshot => ({
+      type: 'image', data: screenshot.toString('base64'), mimeType: 'image/jpeg'
+    })));
+    if (evidence.checkout?.screenshot) {
+      result.push({
+        type: 'image',
+        data: evidence.checkout.screenshot.toString('base64'),
+        mimeType: 'image/jpeg'
+      });
     }
     return result;
   });
-}
-
-async function waitForCommercialLanding(page) {
-  await page.waitForFunction(() => {
-    const text = document.body?.innerText?.trim() ?? '';
-    const transient = text === 'Preparando uma oferta especial para você...';
-    return !transient && text.length >= 200;
-  }, null, { timeout: 120000 });
-  await page.evaluate(() => document.fonts?.ready);
 }
 
 async function withBrowser(action) {

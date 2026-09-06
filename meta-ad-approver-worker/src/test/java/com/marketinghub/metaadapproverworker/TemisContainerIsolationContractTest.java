@@ -50,6 +50,7 @@ class TemisContainerIsolationContractTest {
     String mcp = Files.readString(Path.of("src/main/resources/mcp/meta-ad-approver.mjs"));
     String extractor =
         Files.readString(Path.of("src/main/resources/mcp/video-frame-extractor.mjs"));
+    String landing = Files.readString(Path.of("src/main/resources/mcp/landing-evidence.mjs"));
 
     assertThat(dockerfile)
         .contains(
@@ -61,7 +62,8 @@ class TemisContainerIsolationContractTest {
             "COPY --from=ffmpeg-runtime /ffprobe /usr/local/bin/ffprobe",
             "node --version | grep -Eq '^v2[0-9]\\.'",
             "COPY browser-runtime-check.mjs /app/browser-runtime-check.mjs",
-            "COPY src/main/resources/mcp/video-frame-extractor.mjs /app/video-frame-extractor.mjs")
+            "COPY src/main/resources/mcp/video-frame-extractor.mjs /app/video-frame-extractor.mjs",
+            "COPY src/main/resources/mcp/landing-evidence.mjs /app/landing-evidence.mjs")
         .doesNotContain(
             "apt-get",
             "playwright-core install --with-deps",
@@ -78,10 +80,19 @@ class TemisContainerIsolationContractTest {
             "'/usr/local/bin/ffmpeg'",
             "'/usr/local/bin/ffprobe'",
             "return await extractVideoFrames(bytes)",
+            "createHash('sha256')",
+            "byteLength: bytes.length",
             "invalidVideoBlocked = true",
             "timeout: PROCESS_TIMEOUT_MS",
             "killSignal: 'SIGKILL'",
             "await rm(directory, { recursive: true, force: true })");
+    assertThat(landing)
+        .contains(
+            "captureCommercialLanding",
+            "commercialCheckout",
+            "mh_preview",
+            "pde_analytics",
+            "interactionPerformed: false");
   }
 
   /** Garante build, health e prova de ausência do segredo no revisor durante o deploy. */

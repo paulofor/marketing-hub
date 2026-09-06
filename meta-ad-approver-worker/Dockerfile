@@ -28,6 +28,7 @@ COPY --from=build /build/target/app.jar /app/app.jar
 COPY agent-health-report.mjs /app/agent-health-report.mjs
 COPY browser-runtime-check.mjs /app/browser-runtime-check.mjs
 COPY src/main/resources/mcp/video-frame-extractor.mjs /app/video-frame-extractor.mjs
+COPY src/main/resources/mcp/landing-evidence.mjs /app/landing-evidence.mjs
 COPY review-evidence /app/commercial-evidence
 USER approver
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -81,6 +82,8 @@ export async function validateVideoDecoder() {
     return {
       duration: evidence.duration,
       frameBytes: evidence.frames.map((frame) => frame.length),
+      byteLength: evidence.byteLength,
+      sha256: evidence.sha256,
       invalidVideoBlocked,
     };
   } finally {
@@ -128,7 +131,12 @@ async function extractVideoFrames(bytes) {
     for (const position of [0.1, 0.5, 0.9]) {
       frames.push(await extractFrame(input, Math.max(0, duration * position)));
     }
-    return { duration, frames };
+    return {
+      duration,
+      frames,
+      byteLength: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    };
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

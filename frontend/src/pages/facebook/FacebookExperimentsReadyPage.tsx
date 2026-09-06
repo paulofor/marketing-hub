@@ -74,7 +74,11 @@ function commercialFlowSteps(experiment: CommercialFlowExperiment) {
     },
     {
       label: "Campanha",
-      status: ready ? "done" : contractMissing || pageMissing ? "pending" : "current",
+      status: ready
+        ? "done"
+        : contractMissing || pageMissing
+          ? "pending"
+          : "current",
       detail: ready
         ? "Pronto para o worker publicar."
         : "Resolver criativo, público, pixel e demais pendências antes de mídia.",
@@ -124,6 +128,12 @@ export default function FacebookExperimentsReadyPage() {
     isRefetching: isRefetchingPlanned,
     refetch: refetchPlanned,
   } = useFacebookCampaignExperiments("PLANNED");
+  const {
+    data: failedExperiments,
+    isError: failedError,
+    refetch: refetchFailed,
+    isRefetching: refreshingFailed,
+  } = useFacebookCampaignExperiments("FAILED");
   const { data: configuration } = useFacebookConfigurationStatus();
   const experiments = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const isEmpty = !isLoading && experiments.length === 0 && !isError;
@@ -139,8 +149,41 @@ export default function FacebookExperimentsReadyPage() {
   return (
     <div>
       <PageTitle>Experimentos prontos para campanha</PageTitle>
+      {failedError && (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível consultar as falhas de publicação. Atualize para
+          tentar novamente.
+        </div>
+      )}
+      {failedExperiments && failedExperiments.length > 0 && (
+        <section
+          className="alert alert-warning"
+          aria-label="Publicações com falha"
+        >
+          <h2 className="h5">Publicações que precisam de correção</h2>
+          <p>
+            Estes experimentos continuam registrados. Corrija a causa e libere
+            novamente pela tela do experimento.
+          </p>
+          <ul className="mb-0">
+            {failedExperiments.map((experiment) => (
+              <li key={experiment.id} className="mb-2">
+                <Link to={`/experiments/${experiment.id}`}>
+                  #{experiment.id} — {experiment.name}
+                </Link>
+                <MissingConfigurationList
+                  items={experiment.missingConfiguration}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {requiresPageSetup ? (
-        <div className="alert alert-warning d-flex align-items-center gap-2" role="alert">
+        <div
+          className="alert alert-warning d-flex align-items-center gap-2"
+          role="alert"
+        >
           <AlertTriangle size={18} />
           <div>
             Configure ao menos uma página do Facebook para liberar as campanhas
@@ -160,10 +203,14 @@ export default function FacebookExperimentsReadyPage() {
           <button
             type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={() => refetch()}
-            disabled={isRefetching}
+            onClick={() =>
+              Promise.all([refetch(), refetchPlanned(), refetchFailed()])
+            }
+            disabled={isRefetching || isRefetchingPlanned || refreshingFailed}
           >
-            {isRefetching ? "Atualizando..." : "Atualizar"}
+            {isRefetching || isRefetchingPlanned || refreshingFailed
+              ? "Atualizando..."
+              : "Atualizar"}
           </button>
         </div>
       </div>
@@ -246,12 +293,15 @@ export default function FacebookExperimentsReadyPage() {
                 <div className="experiments-ready-meta-item">
                   <Target size={16} className="text-primary" />
                   <span>
-                    Narrativa: {experiment.hypothesis || "Sem hipótese vinculada"}
+                    Narrativa:{" "}
+                    {experiment.hypothesis || "Sem hipótese vinculada"}
                   </span>
                 </div>
                 <div className="experiments-ready-meta-item">
                   <Gauge size={16} className="text-primary" />
-                  <span>KPI alvo: {formatCurrency(experiment.kpiTargetCpl)}</span>
+                  <span>
+                    KPI alvo: {formatCurrency(experiment.kpiTargetCpl)}
+                  </span>
                 </div>
                 <div className="experiments-ready-meta-item">
                   <CalendarDays size={16} className="text-primary" />
@@ -314,8 +364,8 @@ export default function FacebookExperimentsReadyPage() {
             <div>
               <h2 className="h6 mb-1">Experimentos com pendências</h2>
               <p className="text-body-secondary mb-0">
-                Veja exatamente o que falta para que cada experimento seja liberado
-                para publicação automática pelo worker.
+                Veja exatamente o que falta para que cada experimento seja
+                liberado para publicação automática pelo worker.
               </p>
             </div>
           </div>
@@ -344,7 +394,9 @@ export default function FacebookExperimentsReadyPage() {
               role="status"
               aria-hidden="true"
             />
-            <span className="text-body-secondary">Carregando pendências...</span>
+            <span className="text-body-secondary">
+              Carregando pendências...
+            </span>
           </div>
         ) : isPendingError ? (
           <div className="alert alert-danger" role="alert">
@@ -398,7 +450,8 @@ export default function FacebookExperimentsReadyPage() {
                   <div>
                     <dt>Janela</dt>
                     <dd>
-                      {formatDate(experiment.startDate)} - {formatDate(experiment.endDate)}
+                      {formatDate(experiment.startDate)} -{" "}
+                      {formatDate(experiment.endDate)}
                     </dd>
                   </div>
                 </dl>

@@ -106,6 +106,46 @@ class ExperimentServiceTest {
 
   private Long testProductId;
 
+  /** Mantém a falha recuperável na lista e no filtro para o operador conseguir retomá-la. */
+  @Test
+  void administrativeListIncludesFailedPublicationAndPreservesFinishedHistory() {
+    MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("QA recuperação").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("QA recuperação")
+                .build());
+    var journey =
+        journeyTemplateRepository.save(JourneyTemplate.builder().name("QA recuperação").build());
+    Experiment failed =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .hypothesisRef(hypothesis)
+                .journeyTemplate(journey)
+                .name("QA Vega falha recuperável")
+                .status(ExperimentStatus.FAILED)
+                .build());
+    experimentRepository.save(
+        Experiment.builder()
+            .niche(niche)
+            .hypothesisRef(hypothesis)
+            .journeyTemplate(journey)
+            .name("QA Vega encerrado")
+            .status(ExperimentStatus.FINISHED)
+            .build());
+    assertThat(service.listAdministrativePage(0, 25, null, niche.getId(), "QA Vega").getContent())
+        .extracting(Experiment::getId)
+        .containsExactly(failed.getId());
+    assertThat(
+            service
+                .listAdministrativePage(0, 25, ExperimentStatus.FAILED, niche.getId(), "QA Vega")
+                .getContent())
+        .extracting(Experiment::getId)
+        .containsExactly(failed.getId());
+  }
+
   /** Cria um produto comercial válido e isolado para cada cenário de criação. */
   @BeforeEach
   void createTestProduct() {
@@ -1694,8 +1734,9 @@ class ExperimentServiceTest {
     experimentRepository.save(reactivated);
   }
 
+  /** Protege campanha existente e preserva eventos e janela de métricas ao retomar uma falha. */
   @Test
-  void releaseForFacebookResetsFunnelAndTimestamp() {
+  void releaseForFacebookProtectsCampaignAndPreservesRetryHistory() {
     MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Release").build());
     var angle =
         angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AR").build());
@@ -1772,6 +1813,18 @@ class ExperimentServiceTest {
     previousCampaign.setBudgetMode(BudgetMode.CAMPAIGN);
     facebookAdsCampaignRepository.save(previousCampaign);
 
+    assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("já possui campanha vinculada");
+    assertThat(facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())).isTrue();
+    assertThat(experimentFunnelEventRepository.count()).isEqualTo(2);
+    assertThat(experimentLandingAnalyticsEventRepository.count()).isEqualTo(1);
+    assertThat(experiment.getFacebookReleaseRequestedAt()).isNull();
+
+    // Remove apenas a fixture local para exercitar a primeira liberação sem campanha anterior.
+    facebookAdsCampaignRepository.delete(previousCampaign);
+    facebookAdsCampaignRepository.flush();
+
     Experiment released = service.releaseForFacebook(experiment.getId());
 
     assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
@@ -1780,6 +1833,39 @@ class ExperimentServiceTest {
     assertThat(experimentLandingAnalyticsEventRepository.count()).isZero();
     assertThat(experimentFunnelEventRepository.count()).isZero();
     assertThat(facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())).isFalse();
+
+    Instant initialRelease = Instant.parse("2026-09-06T17:55:17Z");
+    Instant initialReset = initialRelease;
+    released.setFacebookReleaseRequestedAt(initialRelease);
+    released.setFunnelResetAt(initialReset);
+    experimentRepository.saveAndFlush(released);
+    service.releaseForFacebook(experiment.getId());
+    assertThat(released.getFacebookReleaseRequestedAt()).isEqualTo(initialRelease);
+
+    ExperimentFunnelEvent observedEvent =
+        experimentFunnelEventRepository.save(
+            ExperimentFunnelEvent.builder()
+                .experiment(experiment)
+                .stage(ExperimentFunnelStage.VISUALIZACAO_FORM)
+                .source(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE)
+                .occurredAt(Instant.now())
+                .build());
+    experimentLandingAnalyticsEventRepository.save(
+        ExperimentLandingAnalyticsEvent.builder()
+            .experiment(experiment)
+            .funnelEvent(observedEvent)
+            .eventType("page_view")
+            .occurredAt(observedEvent.getOccurredAt())
+            .build());
+    released.setStatus(ExperimentStatus.FAILED);
+    released.setFacebookReleaseRequestedAt(initialRelease.minusSeconds(60));
+    experimentRepository.saveAndFlush(released);
+    Experiment retried = service.releaseForFacebook(experiment.getId());
+    assertThat(retried.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+    assertThat(retried.getFacebookReleaseRequestedAt()).isAfter(initialRelease.minusSeconds(60));
+    assertThat(retried.getFunnelResetAt()).isEqualTo(initialReset);
+    assertThat(experimentFunnelEventRepository.count()).isEqualTo(1);
+    assertThat(experimentLandingAnalyticsEventRepository.count()).isEqualTo(1);
   }
 
   @Test

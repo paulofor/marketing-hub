@@ -435,7 +435,7 @@ public class FacebookCampaignService {
             boolean leadCampaignRequired = requiresLeadCampaign(exp) || hasLeadFormDestination;
             boolean salesConversionRequired = requiresPurchaseConversionCampaign(exp, leadCampaignRequired);
             if (salesConversionRequired && !StringUtils.hasText(exp.facebookPixelId())) {
-                String reason = "low-ticket sales campaign requires facebookPixelId for Purchase optimization";
+                String reason = "sales campaign requires facebookPixelId for Purchase optimization";
                 LOGGER.warn("Skipping experiment {} because {}", exp.id(), reason);
                 markExperimentAsFailed(exp.id(), reason);
                 return;
@@ -484,6 +484,7 @@ public class FacebookCampaignService {
             );
             creativePayloads = preloadCreativeImagesForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
             validateCreativePayloadsHaveImageHashes(exp, creativePayloads);
+            String lifetimeBudget = null;
             try {
                 campaignId = executeFacebookCallWithLogging(
                     exp.publicationJobId(),
@@ -497,12 +498,25 @@ public class FacebookCampaignService {
                     )
                 );
             } catch (FacebookAccessTokenExpiredException ex) {
+                LOGGER.warn("Token expirado ao criar campanha: experimentId={}", exp.id(), ex);
                 throw ex;
+            } catch (WebClientResponseException ex) {
+                LOGGER.warn("Falha na criação de campanha com teto nativo: experimentId={}, endpoint=/campaigns", exp.id(), ex);
+                if (!isMinimumSpendCapError(ex)) {
+                    throw ex;
+                }
+                lifetimeBudget = CampaignBudgetPolicy.remainingLifetimeBudget(
+                        exp.dailyBudget(), exp.mediaSpendLimit(), exp.startDate(), exp.endDate(), java.time.Instant.now());
+                LOGGER.info("Meta rejeitou o mínimo de spend_cap; proteção migra para o conjunto: experimentId={}, lifetimeBudgetMinor={}, endTime={}",
+                        exp.id(), lifetimeBudget, schedule.endTime());
+                campaignId = executeFacebookCallWithLogging(
+                        exp.publicationJobId(), exp.id(), ExperimentFacebookApiLogContext.CAMPAIGN_CREATION,
+                        () -> facebookAdsService.createCampaign(config.adAccountId(), exp.name(), resolvedCampaignObjective));
             }
             FacebookAdsService.AdSetRequest adSetRequest = new FacebookAdsService.AdSetRequest(
                 adSetName,
                 campaignId,
-                resolveDailyBudget(exp, config),
+                lifetimeBudget == null ? resolveDailyBudget(exp, config) : null,
                 config.adSetBillingEvent(),
                 resolvedOptimizationGoal,
                 resolvedDestinationType,
@@ -515,7 +529,8 @@ public class FacebookCampaignService {
                 resolvedTargeting.targetingJson(),
                 resolvedTargeting.options(),
                 schedule.startTime(),
-                schedule.endTime()
+                schedule.endTime(),
+                lifetimeBudget
             );
             adSetId = executeFacebookCallWithLogging(
                 exp.publicationJobId(),
@@ -523,6 +538,13 @@ public class FacebookCampaignService {
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET,
                 () -> facebookAdsService.createAdSet(config.adAccountId(), adSetRequest)
             );
+            if (lifetimeBudget != null) {
+                String createdAdSetId = adSetId;
+                executeFacebookCallWithLogging(
+                        exp.publicationJobId(), exp.id(), ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET,
+                        () -> facebookAdsService.verifyAdSetLifetimeBudget(createdAdSetId,
+                                adSetRequest.campaignId(), adSetRequest.lifetimeBudget(), adSetRequest.endTime()));
+            }
             List<CreateCampaignRequest.AdCreative> reportedAdCreatives = new ArrayList<>();
             List<CreateCampaignRequest.Ad> reportedAds = new ArrayList<>();
             int creativeIndex = 1;
@@ -601,7 +623,7 @@ public class FacebookCampaignService {
                     adSetRequest.bidStrategy(),
                     adSetRequest.bidAmount(),
                     adSetRequest.dailyBudget(),
-                    null,
+                    adSetRequest.lifetimeBudget(),
                     adSetRequest.targetCountry(),
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
@@ -651,7 +673,8 @@ public class FacebookCampaignService {
                 exp.id(),
                 exp.name(),
                 ex.getMessage(),
-                ex.getErrorDetails()
+                ex.getErrorDetails(),
+                ex
             );
             markExperimentAsFailed(exp.id(), ex.getMessage());
         } catch (FacebookAccessTokenExpiredException ex) {
@@ -684,7 +707,8 @@ public class FacebookCampaignService {
             }
             LOGGER.warn(
                 "Skipping experiment {} because the Facebook access token has expired; it will be retried after updating the token.",
-                exp.id()
+                exp.id(),
+                ex
             );
         } catch (TargetingNormalizationException ex) {
             LOGGER.error(
@@ -993,6 +1017,20 @@ public class FacebookCampaignService {
         return config.adSetDailyBudget();
     }
 
+    /** Reconhece somente a recusa documentada pelo código Meta, sem repetir erros ambíguos de criação. */
+    private boolean isMinimumSpendCapError(WebClientResponseException ex) {
+        if (ex.getStatusCode().value() != 400) {
+            return false;
+        }
+        try {
+            JsonNode error = objectMapper.readTree(ex.getResponseBodyAsString()).path("error");
+            return error.path("code").asInt() == 100 && error.path("error_subcode").asInt() == 2446307;
+        } catch (java.io.IOException parseError) {
+            LOGGER.warn("Resposta Meta não permite identificar recusa do teto: operação=criar-campanha", parseError);
+            return false;
+        }
+    }
+
     /** Converte o teto total autorizado em centavos para o `spend_cap` nativo da campanha Meta. */
     private String resolveMediaSpendLimit(Experiment experiment) {
         BigDecimal mediaSpendLimit = experiment.mediaSpendLimit();
@@ -1248,14 +1286,15 @@ public class FacebookCampaignService {
 
     private record FacebookCampaignStopResultPayload(boolean success, String message) {}
 
-    /** Indica se o contrato comercial do experimento exige campanha otimizada para Leads. */
+    /** Reconhece Leads explícito e usa recompensa como heurística apenas no legado sem objetivo. */
     private boolean requiresLeadCampaign(Experiment experiment) {
         if (experiment == null) {
             return false;
         }
-        return (StringUtils.hasText(experiment.campaignObjective())
-                && "LEADS".equalsIgnoreCase(experiment.campaignObjective().trim()))
-            || (!isLowTicketProduct(experiment) && StringUtils.hasText(experiment.freeReward()));
+        if (StringUtils.hasText(experiment.campaignObjective())) {
+            return "LEADS".equalsIgnoreCase(experiment.campaignObjective().trim());
+        }
+        return !isLowTicketProduct(experiment) && StringUtils.hasText(experiment.freeReward());
     }
 
     /** Indica se o experimento deve priorizar compra low-ticket em vez de lead. */
@@ -1278,10 +1317,9 @@ public class FacebookCampaignService {
         return "OUTCOME_TRAFFIC";
     }
 
-    /** Indica se a campanha deve ser otimizada para compra fora do site. */
+    /** Preserva a otimização para compra de todo objetivo SALES, incluindo degustação PDE. */
     private boolean requiresPurchaseConversionCampaign(Experiment experiment, boolean leadCampaignRequired) {
         return !leadCampaignRequired
-                && isLowTicketProduct(experiment)
                 && experiment != null
                 && StringUtils.hasText(experiment.campaignObjective())
                 && "SALES".equalsIgnoreCase(experiment.campaignObjective().trim());

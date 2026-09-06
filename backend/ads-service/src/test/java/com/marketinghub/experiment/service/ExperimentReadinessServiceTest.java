@@ -70,6 +70,41 @@ class ExperimentReadinessServiceTest {
 
   private ExperimentReadinessService service;
 
+  /** Reproduz o texto de 202 caracteres aprovado no #91 antes do bloqueio do publicador. */
+  @Test
+  void blocksOversizedApprovedCreativeInReadinessAndExplainsRecovery() {
+    Experiment experiment = buildExperiment(91L, 18L);
+    Creative creative =
+        Creative.builder()
+            .id(526L)
+            .experiment(experiment)
+            .status(CreativeStatus.READY)
+            .headline("Primeiro ajuste")
+            .primaryText("x".repeat(202))
+            .cta("LEARN_MORE")
+            .imageUrl("https://media.test/qa.png")
+            .build();
+    when(experimentService.get(91L)).thenReturn(experiment);
+    when(creativeRepository.findByExperimentId(91L)).thenReturn(List.of(creative));
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(91L, CreativeStatus.READY))
+        .thenReturn(true);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(91L, CreativeStatus.READY))
+        .thenReturn(1L);
+    var summary = service.summarize(91L);
+    assertThat(summary.hasCreatives()).isFalse();
+    assertThat(summary.eligibleForRunning()).isFalse();
+    assertThat(summary.issues())
+        .filteredOn(issue -> issue.type() == ExperimentReadinessIssueType.CREATIVE)
+        .singleElement()
+        .satisfies(issue -> assertThat(issue.description()).contains("526", "202/125"));
+    assertThat(service.computeMissingConfiguration(experiment))
+        .contains("creativeApproval", "creativeCopy");
+    creative.setPrimaryText("Primeiro ajuste com o que já tem.");
+    assertThat(service.summarize(91L).hasCreatives()).isTrue();
+    assertThat(service.computeMissingConfiguration(experiment))
+        .doesNotContain("creativeApproval", "creativeCopy");
+  }
+
   @BeforeEach
   void setUp() {
     ExperimentCampaignDestinationPolicy campaignDestinationPolicy =

@@ -1558,7 +1558,7 @@ export default function CriativosTab({
           role="dialog"
           aria-modal="true"
         >
-          <div className="modal-dialog modal-lg">
+          <div className="modal-dialog modal-lg modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
@@ -1576,10 +1576,15 @@ export default function CriativosTab({
                   <input
                     className="form-control"
                     value={versioning.headline}
+                    aria-label="Headline"
                     onChange={(e) =>
                       setVersioning({ ...versioning, headline: e.target.value })
                     }
                   />
+                  <small className="text-muted">
+                    {Array.from(versioning.headline || "").length}/40 caracteres
+                    para publicação.
+                  </small>
                 </label>
                 <label className="form-label">
                   Texto principal
@@ -1587,6 +1592,7 @@ export default function CriativosTab({
                     className="form-control"
                     rows={4}
                     value={versioning.primaryText}
+                    aria-label="Texto principal"
                     onChange={(e) =>
                       setVersioning({
                         ...versioning,
@@ -1594,6 +1600,11 @@ export default function CriativosTab({
                       })
                     }
                   />
+                  <small className="text-muted">
+                    {Array.from(versioning.primaryText || "").length}/125
+                    caracteres para publicação. O texto completo fica preservado
+                    no histórico.
+                  </small>
                 </label>
                 <label className="form-label">
                   URL da imagem

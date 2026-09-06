@@ -179,7 +179,12 @@ export interface Experiment {
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
   creativeGenerationStatus?:
-    "IDLE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED" | "TIMEOUT";
+    | "IDLE"
+    | "REQUESTED"
+    | "PROCESSING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMEOUT";
   creativeGenerationRequestedAt?: string | null;
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;
@@ -244,7 +249,6 @@ export function useExperimentSummary(
           "VALIDATED",
           "INVALIDATED",
           "INCONCLUSIVE",
-          "FAILED",
         ]);
         const filtered = data
           .filter((item) => !finalized.has(item.status))

@@ -29,6 +29,20 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 
 ## 1. Propósito
 
+### Recuperação de falhas de publicação
+
+`FAILED` é falha operacional recuperável e deve permanecer visível, pesquisável e filtrável
+na lista administrativa. A retomada usa o comando canônico `facebook-release`, após a correção
+dos gates, mantendo o experimento, o histórico e o teto autorizado. Falha nunca comprova
+aprendizado comercial concluído nem pode ser convertida diretamente em `RUNNING`.
+
+Os limites canônicos da copy (125/40/25 caracteres Unicode para texto/título/descrição) devem
+ser verificados deterministicamente no backend antes do aceite de parecer `APPROVED`, da
+aprovação humana e da liberação ao publicador. O endpoint `creatives-ready` não pode entregar
+uma aprovação legada incompatível. A interface mostra a causa e orienta nova versão, com
+revisão independente, sem truncar histórico nem gerar vídeo novamente. Identificadores
+operacionais ausentes no editor, como Instagram e formulário Meta, são preservados da origem.
+
 - Garantir que a decisão de publicar campanhas de experimento siga invariantes únicos e rastreáveis no backend.
 - Amarrar UI, worker e integrações ao mesmo contrato para evitar drift entre checklist, botões de liberação e funil.
 - Explicitar dependências externas (Marketing API e domínio de publicação da landing) que condicionam a execução.
@@ -149,9 +163,11 @@ Se qualquer bloqueio falhar, os cards e checklists da UI devem permanecer bloque
 
 - Todo experimento `FACEBOOK` deve persistir `daily_budget > 0` e `media_spend_limit > 0`. O teto total precisa ser maior ou igual ao orçamento diário.
 - O número inclusivo de dias planejados multiplicado pelo orçamento diário não pode exceder o teto total. A tela e o backend devem validar a mesma regra.
-- `daily_budget` continua pertencendo ao ad set. `media_spend_limit` deve ser enviado em centavos como `spend_cap` nativo da campanha Meta; ele não autoriza `daily_budget` nem `lifetime_budget` na campanha.
+- O orçamento continua pertencendo ao ad set. A primeira tentativa usa `daily_budget` no conjunto e `media_spend_limit` em centavos como `spend_cap` na campanha, sem CBO. Se a Meta recusar explicitamente o mínimo do teto (`HTTP 400`, código `100`, subcódigo `2446307`), o executor pode criar a campanha sem esse campo somente com proteção nativa equivalente: um único conjunto com `lifetime_budget`, sem `daily_budget`, limitado ao menor valor entre o teto autorizado e o orçamento diário multiplicado pelos dias ainda disponíveis. Dias perdidos não são acumulados. Nenhum valor ou data é ampliado.
+- Nesse fallback, o orçamento diário cadastrado orienta a média planejada; a trava absoluta é o orçamento vitalício do conjunto. Antes de criar anúncios, o worker deve reler na Meta a campanha vinculada, o orçamento vitalício e o término e confirmar correspondência exata. O callback deve persistir `lifetimeBudget`, mantendo o modo `ADSET`. Falha de confirmação bloqueia anúncios e aciona a limpeza dos objetos incompletos criados nessa tentativa. Outros erros de criação, inclusive respostas ambíguas ou sem o código conhecido, não autorizam nova tentativa sem teto.
 - No primeiro sync em que o gasto acumulado da Meta atingir ou ultrapassar `media_spend_limit`, o Facebook Ads Worker deve solicitar pausa diretamente na Meta antes do callback; o backend deve persistir a métrica, invalidar o experimento, registrar `CAMPAIGN_MEDIA_SPEND_LIMIT_REACHED` e solicitar parada de todas as campanhas vinculadas.
-- A Meta continua sendo a fonte de verdade do gasto. O `spend_cap` é a trava primária no provedor; a pausa do worker e do backend é uma defesa secundária para reconciliar estado e auditoria.
+- A Meta continua sendo a fonte de verdade do gasto. `spend_cap` ou o orçamento vitalício confirmado do único conjunto são as travas primárias no provedor; a pausa do worker e do backend é uma defesa secundária para reconciliar estado e auditoria.
+- O objetivo explícito `SALES` prevalece sobre heurísticas de recompensa gratuita. A degustação de um PDE não transforma sua campanha de vendas em leads: usar `OUTCOME_SALES`, `OFFSITE_CONVERSIONS` e pixel/evento `PURCHASE` quando o destino for o site. A heurística de recompensa fica restrita ao legado sem objetivo explícito; formulário instantâneo mantém seu contrato próprio de leads.
 - Alterar um produto de canal direto para mídia paga não muda o experimento histórico. O Hub deve criar um sucessor `PLANNED` ligado ao mesmo produto, hipótese e plano comercial, preservando proposta, preço, destino e checkout, mas zerando métricas, custos, eventos, campanhas, jobs, liberação, público selecionado e aprovações de criativo. Criativos reutilizados entram em nova revisão `DRAFT`, conforme a regra de ownership deste cânone.
 - O experimento de origem permanece imutável para comparação entre canais. A criação do sucessor não publica, não libera gasto e não altera o estado do experimento anterior.
 
@@ -194,7 +210,7 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 
 ## 7. Contrato de liberação para o Facebook Ads Worker
 
-1. **Ação de liberação** – o botão **Liberar para o Facebook Ads Worker** marca `experiment.status = 'PLANNED'`, define `facebook_release_requested_at = now()` e zera o funil (descarta eventos anteriores à liberação).
+1. **Ação de liberação** – na primeira liberação, o botão **Liberar para o Facebook Ads Worker** marca `experiment.status = 'PLANNED'`, define `facebook_release_requested_at = now()` e zera o funil anterior ao início. Cliques repetidos enquanto o pedido está `PLANNED` são idempotentes. Ao retomar `FAILED`, a liberação preserva eventos e `funnel_reset_at`, mantendo a janela original de mensuração. A seleção é serializada no banco. Se já houver campanha vinculada, esse comando responde `409` e preserva integralmente o vínculo e o histórico; o operador deve usar a gestão da campanha existente, nunca apagar a publicação para criar outra.
 2. **Fila de publicação** – o worker consome `/api/facebook-campaigns/experiments-ready` apenas para experimentos com `status='PLANNED'` **e** `facebook_release_requested_at` preenchido. Alterar o status manualmente não substitui o botão.
 3. **Invariante de unicidade de campanha por experimento** – **é proibido** publicar duas campanhas ativas para o mesmo `experiment_id` na mesma plataforma. Se já existir campanha vinculada ao experimento, uma nova liberação deve operar em modo de atualização/reuso da campanha existente (ad sets/anúncios) e nunca criar uma segunda campanha paralela. Para novas publicações, o backend deve materializar essa proteção em `facebook_ads_campaign.publication_key`, com chave única por experimento e plataforma.
 4. **Reprocessamentos controlados** – um novo disparo de publicação só é permitido após evidência explícita de encerramento da campanha anterior (arquivada/finalizada/erro terminal com limpeza operacional). O reprocessamento mantém o mesmo vínculo canônico de campanha do experimento e não pode duplicar campanha.

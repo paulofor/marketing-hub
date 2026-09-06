@@ -2352,6 +2352,7 @@ public class AccessService {
             case "BOT_SUSPECTED" -> "Robô suspeito";
             case "PLATFORM_CRAWLER" -> "Crawler de plataforma";
             case "INTERNAL_QA" -> "QA interno";
+            case "AGENT_VALIDATION" -> "Validação multiagente";
             default -> "Desconhecido/legado";
         };
     }
@@ -2660,6 +2661,9 @@ public class AccessService {
         String userAgent = normalizeTrafficText(resolveUserAgent(request, metadata));
         String clientIp = blankToNull(request.clientIp());
         String provider = resolveTrafficProvider(clientIp, userAgent);
+        if (isAgentValidationTraffic(metadata)) {
+            return new TrafficClassification("AGENT_VALIDATION", "MULTI_AGENT_TEST_MARKER", provider);
+        }
         if (isExplicitTestTraffic(request, metadata)) {
             return new TrafficClassification("INTERNAL_QA", "EXPLICIT_TEST_MARKER", provider);
         }
@@ -2686,6 +2690,13 @@ public class AccessService {
             return new TrafficClassification("UNKNOWN", "MISSING_USER_AGENT", provider);
         }
         return new TrafficClassification(TRAFFIC_QUALITY_HUMAN, "BROWSER_TRAFFIC", provider);
+    }
+
+    /** Mantém a homologação multiagente fora de QA genérico e de todas as métricas humanas. */
+    private boolean isAgentValidationTraffic(Map<String, Object> metadata) {
+        if (metadata == null) return false;
+        return "AGENT_VALIDATION".equalsIgnoreCase(metadataString(metadata, "trafficClass"))
+                && Boolean.parseBoolean(metadataString(metadata, "mh_internal_test"));
     }
 
     /** Reconhece homologações declaradas antes de classificar eventos finais como comerciais. */

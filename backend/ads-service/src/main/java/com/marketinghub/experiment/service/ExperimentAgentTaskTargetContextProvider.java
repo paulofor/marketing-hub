@@ -175,7 +175,7 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     if (product == null || product.getId() == null || blank(product.getSlug())) {
       return Optional.empty();
     }
-    String experienceVersion = experienceVersion(product);
+    String experienceVersion = experienceVersion(product, processCode);
     if (blank(experienceVersion)) return Optional.empty();
     Optional<CanonicalCheckout> canonicalCheckout =
         canonicalCheckout(experiment, product, processCode);
@@ -263,11 +263,18 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     return blank(product.getPublicUrl()) ? null : product.getPublicUrl().trim();
   }
 
-  /** Identifica a construção privada para impedir uso de slot público ou checkout real. */
+  /** Identifica a homologação pré-comercial para impedir uso de slot ou checkout real. */
   private boolean isPrivateValidation(Product product, String processCode) {
     return "pde-construction-approval".equals(processCode)
         && product.getValidationDefinitionVersion() != null
-        && product.getValidationDefinitionVersion().startsWith("PDE_PRIVATE_VALIDATION_V1");
+        && ("PDE_PRIVATE_VALIDATION_V1".equals(product.getValidationDefinitionVersion())
+            || usesPdeAgentValidationV1(product));
+  }
+
+  /** Reconhece apenas os estados previstos pelo contrato multiagente v1. */
+  private boolean usesPdeAgentValidationV1(Product product) {
+    return "PDE_AGENT_VALIDATION_V1".equals(product.getValidationDefinitionVersion())
+        || "PDE_AGENT_VALIDATED_V1".equals(product.getValidationDefinitionVersion());
   }
 
   /** Lê a URL da versão privada aceita, sem confundi-la com uma publicação produtiva. */
@@ -292,8 +299,28 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     }
   }
 
-  /** Extrai a versão funcional do JSON canônico persistido no produto. */
-  private String experienceVersion(Product product) {
+  /** Usa a versão aceita do protótipo privado e mantém o contrato geral como fallback histórico. */
+  private String experienceVersion(Product product, String processCode) {
+    if (isPrivateValidation(product, processCode)
+        && !blank(product.getValidationDefinitionJson())) {
+      try {
+        JsonNode acceptance =
+            objectMapper
+                .readTree(product.getValidationDefinitionJson())
+                .path("privatePrototypeAcceptance");
+        String accepted = acceptance.path("prototypeVersion").asText(null);
+        if ("READY".equals(acceptance.path("status").asText()) && !blank(accepted)) {
+          return accepted.trim();
+        }
+      } catch (Exception ex) {
+        log.error(
+            "Contrato privado inválido ao resolver versão da tarefa. productId={} productSlug={}",
+            product.getId(),
+            product.getSlug(),
+            ex);
+        return null;
+      }
+    }
     if (blank(product.getPdeExperienceJson())) return null;
     try {
       JsonNode contract = objectMapper.readTree(product.getPdeExperienceJson());

@@ -1,10 +1,11 @@
 openapi: 3.0.3
 info:
-  title: Mira - leitura privada assistida
-  version: 1.0.0
+  title: PDE - leitura privada histórica e validação multiagente
+  version: 2.0.0
   description: |
-    A interface administrativa abre a URL aceita e importa prova privada autenticada do PDE.
-    A conclusão continua no comando BPM existente. Não expõe convites nem credenciais de sessão.
+    Preserva a leitura privada v6 e expõe sessões sintéticas segregadas para o harness v7.
+    Agentes não substituem participantes, preferência, compra, venda ou satisfação humanas.
+    Nenhuma resposta interna expõe convite ou credencial de sessão como evidência.
 paths:
   /api/products/{productId}/private-readings/{activityId}:
     get:
@@ -79,10 +80,115 @@ paths:
       responses:
         '200': {description: Retorna o checkpoint privado com readingFinished=true. Repetição é idempotente.}
         '403': {description: Sessão privada inválida.}
+  /api/pde/mira/private/v1/internal/agent-validations/sessions:
+    post:
+      operationId: startPdeAgentValidationSession
+      summary: Abre uma sessão sintética fresca para um cenário canônico
+      security: [{PdeInternalToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AgentSessionRequest'}
+      responses:
+        '201':
+          description: Sessão isolada marcada como AGENT_VALIDATION; o token serve somente ao navegador do harness.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AgentSessionResponse'}
+        '400': {description: Cenário ou referência fora do contrato v7.}
+        '403': {description: Segredo interno ausente ou inválido.}
+  /api/pde/mira/private/v1/internal/agent-validations/evidence/{evidenceId}:
+    get:
+      operationId: getPdeAgentValidationEvidence
+      summary: Retorna a prova sintética sanitizada sem credencial de sessão
+      security: [{PdeInternalToken: []}]
+      parameters:
+        - {name: evidenceId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Entrada, saída, eventos, bloqueio e efeitos externos nulos do cenário.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AgentValidationEvidence'}
+        '400': {description: Evidência inexistente ou fora da classe sintética.}
+        '403': {description: Segredo interno ausente ou inválido.}
 components:
   securitySchemes:
     PdeInternalToken: {type: apiKey, in: header, name: X-PDE-Internal-Token}
   schemas:
+    AgentSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [sourceReference, scenarioCode]
+      properties:
+        sourceReference:
+          type: string
+          pattern: '^product:[1-9][0-9]*@agent-validation-v1$'
+        scenarioCode:
+          type: string
+          enum: [ADHERENT, RECOVERY, SAFETY]
+    AgentSessionResponse:
+      type: object
+      required: [sessionToken, trafficClass, events, prototypeVersion, agentValidation, scenarioCode, evidenceId]
+      properties:
+        sessionToken: {type: string, format: uuid, writeOnly: true}
+        participantReference: {type: string, nullable: true, enum: [null]}
+        trafficClass: {type: string, enum: [AGENT_VALIDATION]}
+        status: {type: string}
+        events: {type: array, items: {type: string}}
+        prototypeVersion: {type: string, enum: [mira-private-v1]}
+        checkoutMode: {type: string, enum: [SIMULATED_NO_CHARGE]}
+        readingFinished: {type: boolean}
+        agentValidation: {type: boolean, enum: [true]}
+        scenarioCode: {type: string, enum: [ADHERENT, RECOVERY, SAFETY]}
+        evidenceId: {type: string, format: uuid}
+    AgentValidationEvidence:
+      type: object
+      additionalProperties: false
+      required: [productSlug, prototypeVersion, sourceReference, scenarioCode, trafficClass, mhInternalTest, evidenceId, status, products, routine, events, sideEffects, humanEvidenceClaimed, commercialEvidenceClaimed]
+      properties:
+        productSlug: {type: string, enum: [mira-private-validation]}
+        prototypeVersion: {type: string, enum: [mira-private-v1]}
+        sourceReference: {type: string, pattern: '^product:[1-9][0-9]*@agent-validation-v1$'}
+        scenarioCode: {type: string, enum: [ADHERENT, RECOVERY, SAFETY]}
+        trafficClass: {type: string, enum: [AGENT_VALIDATION]}
+        mhInternalTest: {type: boolean, enum: [true]}
+        evidenceId: {type: string, format: uuid}
+        status: {type: string, enum: [CONSENTED, INPUT_READY, READY, BLOCKED]}
+        ageRange: {type: string, nullable: true}
+        objective: {type: string, nullable: true}
+        products: {type: array, items: {$ref: '#/components/schemas/ProductInput'}}
+        routine: {type: array, items: {$ref: '#/components/schemas/RoutineCard'}}
+        blocker: {type: string, nullable: true}
+        events: {type: array, items: {type: string}}
+        finishedAt: {type: string, format: date-time, nullable: true}
+        sideEffects: {$ref: '#/components/schemas/NoExternalSideEffects'}
+        humanEvidenceClaimed: {type: boolean, enum: [false]}
+        commercialEvidenceClaimed: {type: boolean, enum: [false]}
+    ProductInput:
+      type: object
+      required: [name, labelDirections]
+      properties:
+        name: {type: string}
+        labelDirections: {type: string}
+    RoutineCard:
+      type: object
+      required: [productName, order, documentedDirection, safetyNote]
+      properties:
+        productName: {type: string}
+        order: {type: integer}
+        documentedDirection: {type: string}
+        safetyNote: {type: string}
+    NoExternalSideEffects:
+      type: object
+      additionalProperties: false
+      required: [paymentEnabled, published, campaignCreated, mediaSpendBrl]
+      properties:
+        paymentEnabled: {type: boolean, enum: [false]}
+        published: {type: boolean, enum: [false]}
+        campaignCreated: {type: boolean, enum: [false]}
+        mediaSpendBrl: {type: number, enum: [0]}
     Signals:
       type: object
       additionalProperties: false

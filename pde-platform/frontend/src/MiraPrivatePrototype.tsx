@@ -9,7 +9,7 @@ type RoutineCard = {
 };
 type Session = {
   sessionToken: string;
-  participantReference: string;
+  participantReference: string | null;
   trafficClass: string;
   status: string;
   ageRange?: string;
@@ -21,6 +21,9 @@ type Session = {
   prototypeVersion: string;
   checkoutMode: string;
   readingFinished: boolean;
+  agentValidation: boolean;
+  scenarioCode?: string;
+  evidenceId: string;
 };
 
 const endpoint = "/api/pde/mira/private/v1";
@@ -248,12 +251,28 @@ export function MiraPrivatePrototype() {
   }
 
   if (session.status === "READY") {
+    const agentValidation = session.agentValidation;
     const used = session.events.includes("READY_RESULT_USED");
     const preferred = session.events.includes("PREFERRED_OVER_FREE");
     const checkout = session.events.includes("CHECKOUT_STARTED");
     const finished = session.readingFinished;
+    if (agentValidation && finished)
+      return (
+        <main className="mira-private-shell">
+          <h1>Homologação interna concluída</h1>
+          <p>
+            A evidência sintética foi preservada sem compra, publicação, campanha
+            ou gasto.
+          </p>
+        </main>
+      );
     return (
       <main className="mira-private-shell">
+        {agentValidation && (
+          <div className="mira-private-alert" data-testid="agent-validation-mode">
+            Homologação interna automatizada · cenário {session.scenarioCode}
+          </div>
+        )}
         <p className="mira-private-kicker">Sua rotina de cuidados</p>
         <h1>Uma ordem simples para consultar</h1>
         <p>
@@ -277,7 +296,7 @@ export function MiraPrivatePrototype() {
         >
           {used ? "Resultado consultado" : "Marcar uma parte como consultada"}
         </button>
-        {used && (!finished || preferred) && (
+        {used && !agentValidation && (!finished || preferred) && (
           <section className="mira-private-question">
             <h2>
               Isso foi mais útil que organizar conteúdos gratuitos por conta
@@ -294,7 +313,7 @@ export function MiraPrivatePrototype() {
             </button>
           </section>
         )}
-        {used && !preferred && !finished && (
+        {used && !agentValidation && !preferred && !finished && (
           <button
             className="secondary-button"
             disabled={busy}
@@ -303,7 +322,7 @@ export function MiraPrivatePrototype() {
             Não, prefiro a alternativa gratuita
           </button>
         )}
-        {preferred && !finished && !checkout && (
+        {!agentValidation && preferred && !finished && !checkout && (
           <section className="mira-private-question">
             <h2>Você consideraria avançar por R$ 49?</h2>
             <p>
@@ -320,7 +339,7 @@ export function MiraPrivatePrototype() {
             </button>
           </section>
         )}
-        {preferred && !finished && !checkout && (
+        {!agentValidation && preferred && !finished && !checkout && (
           <button
             className="secondary-button"
             disabled={busy}
@@ -336,7 +355,7 @@ export function MiraPrivatePrototype() {
             acompanha sua experiência que você terminou.
           </div>
         )}
-        {checkout && (
+        {!agentValidation && checkout && (
           <>
             <button className="primary-button" disabled>
               Simulação concluída
@@ -355,13 +374,22 @@ export function MiraPrivatePrototype() {
             )}
           </>
         )}
-        {!finished && !used && (
+        {!agentValidation && !finished && !used && (
           <button
             className="secondary-button"
             disabled={busy}
             onClick={() => void finish()}
           >
             Não consegui usar; encerrar leitura
+          </button>
+        )}
+        {agentValidation && used && !finished && (
+          <button
+            className="primary-button"
+            disabled={busy}
+            onClick={() => void record("AGENT_SCENARIO_COMPLETED")}
+          >
+            Concluir cenário interno
           </button>
         )}
         {error && (
@@ -376,17 +404,33 @@ export function MiraPrivatePrototype() {
   if (session.readingFinished)
     return (
       <main className="mira-private-shell">
-        <h1>Leitura encerrada</h1>
-        <p>
-          Sua dificuldade foi registrada para melhorar esta experiência. Nenhuma
-          compra foi realizada. Avise a pessoa que acompanha sua experiência que
-          você terminou.
-        </p>
+        <h1>
+          {session.agentValidation
+            ? "Homologação interna concluída"
+            : "Leitura encerrada"}
+        </h1>
+        {session.agentValidation ? (
+          <p>
+            O limite seguro e sua evidência sintética foram preservados sem
+            compra, publicação, campanha ou gasto.
+          </p>
+        ) : (
+          <p>
+            Sua dificuldade foi registrada para melhorar esta experiência.
+            Nenhuma compra foi realizada. Avise a pessoa que acompanha sua
+            experiência que você terminou.
+          </p>
+        )}
       </main>
     );
 
   return (
     <main className="mira-private-shell">
+      {session.agentValidation && (
+        <div className="mira-private-alert" data-testid="agent-validation-mode">
+          Homologação interna automatizada · cenário {session.scenarioCode}
+        </div>
+      )}
       <p className="mira-private-kicker">Entrada guiada · 3 passos</p>
       <h1>Conte o mínimo necessário</h1>
       <label>
@@ -474,13 +518,25 @@ export function MiraPrivatePrototype() {
       >
         {busy ? "Organizando…" : "Gerar rotina segura"}
       </button>
-      <button
-        className="secondary-button"
-        disabled={busy}
-        onClick={() => void finish()}
-      >
-        Não consegui continuar; encerrar leitura
-      </button>
+      {session.agentValidation && session.status === "BLOCKED" ? (
+        <button
+          className="primary-button"
+          disabled={busy}
+          onClick={() => void record("AGENT_SCENARIO_COMPLETED")}
+        >
+          Concluir cenário de segurança
+        </button>
+      ) : (
+        !session.agentValidation && (
+          <button
+            className="secondary-button"
+            disabled={busy}
+            onClick={() => void finish()}
+          >
+            Não consegui continuar; encerrar leitura
+          </button>
+        )
+      )}
     </main>
   );
 }

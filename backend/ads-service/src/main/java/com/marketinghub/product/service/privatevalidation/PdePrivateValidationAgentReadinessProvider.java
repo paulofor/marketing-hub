@@ -10,9 +10,7 @@ import com.marketinghub.product.Product;
 import java.util.Set;
 import org.springframework.stereotype.Service;
 
-/**
- * Responsabilidade: preservar a ordem dos agentes durante construção e validação privada do PDE.
- */
+/** Responsabilidade: preservar a ordem dos agentes durante construção e homologação do PDE. */
 @Service
 public class PdePrivateValidationAgentReadinessProvider
     implements AgentProductProcessActivityReadinessProvider {
@@ -22,6 +20,10 @@ public class PdePrivateValidationAgentReadinessProvider
           "deliverables",
           "audiovisual",
           "access",
+          "technicalHomologation",
+          "psiqueAdherent",
+          "psiqueRecovery",
+          "psiqueSafety",
           "humanExperienceReview",
           "commercialIntegrityReview");
   private final ProductProcessActivityPredecessorService predecessors;
@@ -32,13 +34,14 @@ public class PdePrivateValidationAgentReadinessProvider
     this.predecessors = predecessors;
   }
 
-  /** Governa somente atividades de agente do processo privado, sem conflitar com gates humanos. */
+  /** Governa as atividades de agente das versões privada e multiagente do processo. */
   @Override
   public boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
     return process != null
         && activityDefinition != null
         && PdePrivateReadingHumanActivityHandler.PROCESS_CODE.equals(process.getProcessCode())
+        && Set.of(6, 7).contains(process.getVersionNumber())
         && AGENT_ACTIVITIES.contains(activityDefinition.getActivityId());
   }
 

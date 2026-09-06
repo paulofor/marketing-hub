@@ -114,6 +114,20 @@ audit_private_validation_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_agent_validation_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-06-pde-agent-validation-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_agent_validation_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-06-pde-agent-validation-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 trap audit_cleanup EXIT
 audit_cleanup
 
@@ -686,6 +700,165 @@ audit_assert_equal \
         ON chain.id = item.chain_definition_id
       WHERE chain.chain_code = 'pde-value-creation-delivery'
         AND chain.version_number = 10)
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "ALTER TABLE product
+        ADD COLUMN slug VARCHAR(191) NULL,
+        ADD COLUMN internal_name VARCHAR(191) NULL,
+        ADD COLUMN commercial_status VARCHAR(60) NULL,
+        ADD COLUMN automatic_execution_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        ADD COLUMN automatic_execution_changed_at DATETIME NULL,
+        ADD COLUMN automatic_execution_changed_by VARCHAR(100) NULL,
+        ADD COLUMN validation_definition_version VARCHAR(32) NULL,
+        ADD COLUMN validation_definition_json LONGTEXT NULL,
+        ADD COLUMN pde_experience_json LONGTEXT NULL,
+        ADD COLUMN updated_at DATETIME NULL;
+      INSERT INTO product
+        (id, name, slug, internal_name, commercial_status,
+         automatic_execution_enabled, validation_definition_version,
+         validation_definition_json, pde_experience_json, updated_at)
+      VALUES
+        (902, 'Sua rotina, organizada com calma',
+         'orientacao-digital-rotina-pele-madura', 'Mira', 'PLANNED', 1,
+         'PDE_PRIVATE_VALIDATION_V1',
+         JSON_OBJECT(
+           'privatePrototypeAcceptance', JSON_OBJECT(
+             'status', 'READY',
+             'privateAccessUrl', 'https://v7.clubemusa.com.br/mira-private',
+             'prototypeVersion', 'mira-private-v1'
+           ),
+           'purchaseMomentStatus', 'WAITING_PRIVATE_READINGS',
+           'finalCommercialPrioritizationEligible', FALSE
+         ),
+         JSON_OBJECT(
+           'contractVersion', 'PDE_HARNESS_PLAN_V1',
+           'experienceVersion', 'mira-private-v1',
+           'status', 'PRIVATE_VALIDATION_READY'
+         ),
+         UTC_TIMESTAMP());
+      INSERT INTO business_process_activity_instance
+        (activity_definition_id, source_reference, occurrence_number, status,
+         entered_at, exited_at, objective_achieved, objective_evidence_json,
+         blocked_reason, known_cost_usd, cost_coverage, evidence_quality,
+         created_at, updated_at)
+      SELECT activity.id, 'product:902@private-validation-v1', 1, 'COMPLETED',
+        UTC_TIMESTAMP(), UTC_TIMESTAMP(), 1,
+        JSON_OBJECT('evidenceType', 'PDE_PRIVATE_HISTORICAL_FIXTURE_V1'),
+        NULL, 0.00000000, 'COMPLETE', 'DIRECT', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+      FROM business_process_activity_definition activity
+      JOIN business_process_definition process
+        ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 6
+        AND activity.activity_id IN ('journey', 'deliverables', 'audiovisual', 'access');" \
+  >/dev/null 2>&1
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-06-pde-agent-validation-v1-%';" \
+  >/dev/null 2>&1
+audit_agent_validation_update
+audit_assert_equal \
+  "migração imutável e publicação da validação multiagente" \
+  "PUBLISHED:RETIRED:10:4:4:PDE_AGENT_VALIDATION_V1:AGENT_VALIDATION:1:false:0:1:6" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 7), ':',
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 6), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval' AND process.version_number = 7), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@private-validation-v1'), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@agent-validation-v1'
+        AND evidence_quality = 'MIGRATED_IMMUTABLE'), ':',
+    (SELECT validation_definition_version FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.trafficClass'))
+      FROM product WHERE id = 902), ':',
+    (SELECT automatic_execution_enabled FROM product WHERE id = 902), ':',
+    (SELECT JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.humanEvidenceClaimed')
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_EXTRACT(validation_definition_json, '$.agentValidationPlan.mediaSpendAuthorizedBrl')
+      FROM product WHERE id = 902), ':',
+    (SELECT COUNT(*) FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery'
+        AND version_number = 11 AND status = 'PUBLISHED'), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery' AND chain.version_number = 11)
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-06-pde-agent-validation-v1-%';" \
+  >/dev/null 2>&1
+audit_agent_validation_update
+audit_assert_equal \
+  "reaplicação multiagente sem duplicar processo, cadeia ou referência" \
+  "1:10:1:6:4:3" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 7), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval' AND process.version_number = 7), ':',
+    (SELECT COUNT(*) FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 11), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery' AND chain.version_number = 11), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-06-pde-agent-validation-v1-%')
+  );")"
+
+audit_agent_validation_command "rollbackCount 3"
+audit_assert_equal \
+  "rollback multiagente restaura v6 sem apagar seu histórico" \
+  "RETIRED:PUBLISHED:RETIRED:PUBLISHED:PDE_PRIVATE_VALIDATION_V1:0:4:0:WAITING_PRIVATE_READINGS:PRIVATE_VALIDATION_READY:0" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 7), ':',
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 6), ':',
+    (SELECT status FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 11), ':',
+    (SELECT status FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 10), ':',
+    (SELECT validation_definition_version FROM product WHERE id = 902), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@private-validation-v1'), ':',
+    (SELECT JSON_CONTAINS_PATH(validation_definition_json, 'one', '$.agentValidationPlan')
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(validation_definition_json, '$.purchaseMomentStatus'))
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.status'))
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_CONTAINS_PATH(pde_experience_json, 'one', '$.validationMode')
+      FROM product WHERE id = 902)
+  );")"
+
+audit_agent_validation_update
+audit_assert_equal \
+  "reaplicação após rollback restaura somente a ocorrência v7" \
+  "PUBLISHED:PDE_AGENT_VALIDATION_V1:4:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 7), ':',
+    (SELECT validation_definition_version FROM product WHERE id = 902), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@private-validation-v1')
   );")"
 
 echo "Auditoria BPM da descoberta PDE aprovada no MySQL 5.7."

@@ -2036,3 +2036,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-04-harness-library-api-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-06-pde-agent-validation-v1.yaml
+      relativeToChangelogFile: true

@@ -109,6 +109,8 @@ jobs:
       group: deploy-vps-163-245-202-80
       queue: max
       cancel-in-progress: false
+    env:
+      PDE_INTERNAL_API_TOKEN: ${{ secrets.PDE_INTERNAL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -153,6 +155,7 @@ jobs:
                    CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home \
                    MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
                    CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
+                   PDE_INTERNAL_API_TOKEN='${PDE_INTERNAL_API_TOKEN}' \
                    AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
             && cd '${REPOSITORY_DIR}/customer-agent-worker' \
             && docker compose up -d --build --remove-orphans \

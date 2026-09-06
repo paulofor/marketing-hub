@@ -177,6 +177,55 @@ class ExperimentAgentTaskTargetContextProviderTest {
         .isEqualTo("Rotina pronta");
   }
 
+  /** Reutiliza a versão privada aceita no ciclo v7 sem abrir checkout ou slot público. */
+  @Test
+  void resolvesAcceptedPrototypeForAgentValidation() {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    Product product =
+        Product.builder()
+            .id(10L)
+            .slug("orientacao-digital-rotina-pele-madura")
+            .name("Sua rotina, organizada com calma")
+            .internalName("Mira")
+            .validationDefinitionVersion("PDE_AGENT_VALIDATION_V1")
+            .validationDefinitionJson(
+                """
+                {"privatePrototypeAcceptance":{"status":"READY",
+                  "privateAccessUrl":"https://v7.clubemusa.com.br/mira-private",
+                  "prototypeVersion":"mira-private-v1"},
+                 "agentValidationPlan":{"trafficClass":"AGENT_VALIDATION"}}
+                """)
+            .pdeExperienceJson(
+                """
+                {"experienceVersion":"private-validation-v1",
+                 "validationMode":"MULTI_AGENT_V1"}
+                """)
+            .build();
+    when(products.findById(10L)).thenReturn(Optional.of(product));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+
+    var target =
+        provider
+            .resolve("product:10@agent-validation-v1", "pde-construction-approval")
+            .orElseThrow();
+
+    assertThat(target.publicUrl()).isEqualTo("https://v7.clubemusa.com.br/mira-private");
+    assertThat(target.experienceVersion()).isEqualTo("mira-private-v1");
+    assertThat(target.commercialCheckoutUrl()).isNull();
+    assertThat(target.pdeContext().path("validationMode").asText()).isEqualTo("MULTI_AGENT_V1");
+    assertThat(target.productInternalName()).isEqualTo("Mira");
+
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V2");
+    var futureVersionTarget =
+        provider
+            .resolve("product:10@agent-validation-v2", "pde-construction-approval")
+            .orElseThrow();
+    assertThat(futureVersionTarget.publicUrl()).isNull();
+    assertThat(futureVersionTarget.pdeContext()).isNull();
+  }
+
   /** Não amplia prompts comerciais com o contrato privado fora da construção governada. */
   @Test
   void omitsPrivatePdeContextOutsideConstructionProcess() {

@@ -232,6 +232,112 @@ class CustomerBpmTaskConsumerTest {
         .isFalse();
   }
 
+  /** Seleciona e valida os três contratos sintéticos sem converter agente em cliente. */
+  @Test
+  void validatesVersionedAgentScenarioContract() throws Exception {
+    for (String activity : List.of("psiqueAdherent", "psiqueRecovery", "psiqueSafety")) {
+      org.assertj.core.api.Assertions.assertThat(
+              CustomerBpmTaskConsumer.supportsContract("pde-construction-approval", activity))
+          .isTrue();
+    }
+    var result =
+        json.readTree(
+            """
+            {
+              "contractVersion":"PDE_PSIQUE_AGENT_SCENARIO_V1",
+              "decision":"APPROVED",
+              "scenarioCode":"ADHERENT",
+              "sourceReference":"product:10@agent-validation-v1",
+              "productId":10,
+              "productSlug":"orientacao-digital-rotina-pele-madura",
+              "prototypeVersion":"mira-private-v1",
+              "trafficClass":"AGENT_VALIDATION",
+              "internalMarker":"mh_internal_test",
+              "syntheticEvaluation":true,
+              "humanEvidenceClaimed":false,
+              "commercialEvidenceClaimed":false,
+              "sideEffects":{"paymentEnabled":false,"published":false,"campaignCreated":false,"mediaSpendBrl":0},
+              "experienceAssessment":{"evidenceBoundary":"Simulação sintética limitada ao cenário e aos pixels persistidos."},
+              "checks":{
+                "sameProductAndVersion":true,"isolatedFreshSession":true,
+                "functionalOutcomeMatchesScenario":true,"lowEffortNoPrompting":true,
+                "accessibilityAndResponsive":true,"privacyPreserved":true,
+                "internalTrafficSegregated":true,"safeLimits":true,"noExternalSideEffects":true
+              },
+              "visualAudit":{
+                "captureSessionId":"capture-1","evidenceIds":[91],
+                "visualHierarchy":"Hierarquia torna a entrada e o resultado reconhecíveis.",
+                "legibility":"Textos e controles permanecem legíveis no dispositivo.",
+                "affectiveResponse":"A composição reduz esforço e transmite calma.",
+                "trustCues":"Limites e origem documental sustentam confiança."
+              },
+              "evidence":["Screenshot persistido 91"],
+              "requiredChanges":[],
+              "rootCause":"A interface conduz a tarefa com entrada curta e limite explícito."
+            }
+            """);
+
+    Map<String, Object> task =
+        Map.of(
+            "activityId",
+            "psiqueAdherent",
+            "sourceReference",
+            "product:10@agent-validation-v1",
+            "taskTarget",
+            Map.of(
+                "productId",
+                10L,
+                "productSlug",
+                "orientacao-digital-rotina-pele-madura",
+                "experienceVersion",
+                "mira-private-v1"));
+    CustomerBpmTaskConsumer.validateAgentScenario(result, task);
+    var screenshot = visualEvidence(91L, "FULL_PAGE", null);
+    CustomerBpmTaskConsumer.validateAgentVisualAudit(result, List.of(screenshot));
+
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result)
+        .put("commercialEvidenceClaimed", true);
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validateAgentScenario(result, task))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("incompleto");
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result)
+        .put("commercialEvidenceClaimed", false)
+        .put("productId", 11);
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validateAgentScenario(result, task))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("incompleto");
+  }
+
+  /** Usa o prompt v5 somente na ocorrência multiagente e preserva o contrato humano histórico. */
+  @Test
+  void composesAgentScenarioPromptWithoutHumanClaims() throws Exception {
+    CustomerBpmTaskConsumer consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000",
+            "codex",
+            "gpt-5.6-sol",
+            "high",
+            "/workspace-inexistente",
+            "/workspace-inexistente",
+            json);
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 901L,
+            "processCode", "pde-construction-approval",
+            "activityId", "psiqueAdherent",
+            "sourceReference", "product:10@agent-validation-v1",
+            "taskTarget", Map.of("productId", 10L, "productSlug", "produto-publico"));
+
+    String prompt = consumer.prompt(task, List.of());
+
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "revisão sintética de cenário PDE v5",
+            "não representa uma cliente",
+            "commercialEvidenceClaimed=false")
+        .doesNotContain("duas leituras humanas persistidas");
+  }
+
   /** Usa somente o alvo e as leituras da tarefa privada, sem herdar provas de outro PDE. */
   @Test
   void composesPrivateValidationPromptWithoutGlobalProductEvidence() throws Exception {

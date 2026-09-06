@@ -110,12 +110,16 @@ public class CommercialBpmTaskConsumer {
       if (task == null) return;
       execution = execute(task);
       JsonNode result = execution.result();
-      validate(result, processCode(task));
-      ResearchIntelligenceUsageValidator.validate(
-          task,
-          AGENT_KEY,
-          jsonTextValues(result.path("evidence")),
-          !"BLOCKED".equals(result.path("decision").asText()));
+      if (isAgentValidationTask(task)) {
+        validateAgentValidation(result, task);
+      } else {
+        validate(result, processCode(task));
+        ResearchIntelligenceUsageValidator.validate(
+            task,
+            AGENT_KEY,
+            jsonTextValues(result.path("evidence")),
+            !"BLOCKED".equals(result.path("decision").asText()));
+      }
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
     } catch (Exception ex) {
@@ -162,7 +166,7 @@ public class CommercialBpmTaskConsumer {
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
     PromptComposition prompt = promptComposition(task);
     validatePromptSize(prompt.fullPrompt());
-    Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
+    Path schema = materialize(schemaResourceFor(task), ".json");
     TokenUsage accumulatedUsage = TokenUsage.empty();
     try {
       for (int attempt = 1; attempt <= maxModelAttempts; attempt++) {
@@ -373,7 +377,11 @@ public class CommercialBpmTaskConsumer {
     JsonNode result = execution.result();
     String resultJson = json.writeValueAsString(result);
     Map<String, Object> body = new HashMap<>();
-    body.put("error", "Têmis bloqueou o avanço: " + result.path("commercialRationale").asText());
+    String rationale =
+        isAgentValidationTask(task)
+            ? result.path("rootCause").asText()
+            : result.path("commercialRationale").asText();
+    body.put("error", "Têmis bloqueou o avanço: " + rationale);
     body.put("resultJson", resultJson);
     body.put("evidenceJson", evidence(task));
     putModelUsage(body, execution.usage());
@@ -410,7 +418,7 @@ public class CommercialBpmTaskConsumer {
     }
     String agentPromptPart = read("prompts/temis/v1/agent-core.md");
     String activityPromptPart =
-        read(promptResourceFor(processCode(task)))
+        read(promptResourceFor(task))
             .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
@@ -439,6 +447,20 @@ public class CommercialBpmTaskConsumer {
     };
   }
 
+  /** Seleciona a auditoria multiagente sem substituir o contrato privado histórico. */
+  private String promptResourceFor(Map<String, Object> task) {
+    return isAgentValidationTask(task)
+        ? "prompts/bpm/pde-agent-validation-review-v3.md"
+        : promptResourceFor(processCode(task));
+  }
+
+  /** Seleciona o schema que proíbe alegações humanas na validação sintética. */
+  private String schemaResourceFor(Map<String, Object> task) {
+    return isAgentValidationTask(task)
+        ? "prompts/bpm/pde-agent-validation-review-v3-schema.json"
+        : schemaResourceFor(processCode(task));
+  }
+
   /** Lê o processo congelado no contrato da tarefa reservada. */
   private String processCode(Map<String, Object> task) {
     Object value = task.get("processCode");
@@ -450,7 +472,16 @@ public class CommercialBpmTaskConsumer {
     Object value = task.get("sourceReference");
     String sourceReference = value == null ? "" : value.toString();
     return sourceReference.startsWith("product:")
-        && sourceReference.contains("@private-validation-v1");
+        && (sourceReference.contains("@private-validation-v1")
+            || sourceReference.contains("@agent-validation-v1"));
+  }
+
+  /** Distingue a ocorrência v7 sem inferir validação humana a partir do mesmo processo. */
+  private boolean isAgentValidationTask(Map<String, Object> task) {
+    Object value = task.get("sourceReference");
+    String sourceReference = value == null ? "" : value.toString();
+    return sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")
+        && "pde-construction-approval".equals(processCode(task));
   }
 
   /** Exige decisão, evidências e nota de preço coerente quando o contrato a declarar. */
@@ -494,6 +525,74 @@ public class CommercialBpmTaskConsumer {
         && requiredChecks.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
       throw new IllegalArgumentException("Têmis aprovou a validação privada com check reprovado");
     }
+  }
+
+  /** Exige revisão integral da técnica e dos três cenários, sem alegação de mercado. */
+  static void validateAgentValidation(JsonNode result, Map<String, Object> task) {
+    @SuppressWarnings("unchecked")
+    Map<String, Object> target =
+        task.get("taskTarget") instanceof Map<?, ?> value ? (Map<String, Object>) value : Map.of();
+    String expectedReference = String.valueOf(task.get("sourceReference"));
+    long expectedProductId =
+        target.get("productId") instanceof Number value ? value.longValue() : -1L;
+    String expectedProductSlug = String.valueOf(target.getOrDefault("productSlug", ""));
+    String expectedPrototypeVersion = String.valueOf(target.getOrDefault("experienceVersion", ""));
+    List<String> requiredChecks =
+        List.of(
+            "sameProductAndVersion",
+            "criteriaPredeclared",
+            "technicalHarnessPassed",
+            "threeScenarioReviewsApproved",
+            "syntheticEvidenceLabeled",
+            "internalTrafficSegregated",
+            "privacyPreserved",
+            "paymentDisabled",
+            "publicationDisabled",
+            "campaignDisabled",
+            "zeroMediaSpend",
+            "noHumanOrCommercialClaim",
+            "strategyFidelity");
+    JsonNode checks = result.path("agentValidationChecks");
+    if (!"PDE_TEMIS_AGENT_VALIDATION_V1".equals(result.path("contractVersion").asText())
+        || !List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())
+        || result.path("commercialRationale").asText().isBlank()
+        || result.path("rootCause").asText().isBlank()
+        || result.path("humanEvidenceClaimed").asBoolean(true)
+        || result.path("commercialEvidenceClaimed").asBoolean(true)
+        || !"AGENT_VALIDATION".equals(result.path("trafficClass").asText())
+        || !"mh_internal_test".equals(result.path("internalMarker").asText())
+        || !result
+            .path("sourceReference")
+            .asText()
+            .matches("product:[1-9][0-9]*@agent-validation-v1")
+        || !expectedReference.equals(result.path("sourceReference").asText())
+        || expectedProductId < 1
+        || expectedProductId != result.path("productId").asLong()
+        || expectedProductSlug.isBlank()
+        || !expectedProductSlug.equals(result.path("productSlug").asText())
+        || expectedPrototypeVersion.isBlank()
+        || !expectedPrototypeVersion.equals(result.path("prototypeVersion").asText())
+        || hasExternalSideEffects(result.path("sideEffects"))
+        || !checks.isObject()
+        || requiredChecks.stream().anyMatch(check -> !checks.path(check).isBoolean())
+        || result.path("evidence").isEmpty()
+        || !result.path("requiredChanges").isArray()) {
+      throw new IllegalArgumentException("Parecer multiagente de Têmis está incompleto.");
+    }
+    if ("APPROVED".equals(result.path("decision").asText())
+        && requiredChecks.stream().anyMatch(check -> !checks.path(check).asBoolean(false))) {
+      throw new IllegalArgumentException(
+          "Têmis aprovou a validação multiagente com check reprovado.");
+    }
+  }
+
+  /** Detecta qualquer efeito externo declarado na revisão multiagente. */
+  private static boolean hasExternalSideEffects(JsonNode effects) {
+    return !effects.isObject()
+        || effects.path("paymentEnabled").asBoolean(true)
+        || effects.path("published").asBoolean(true)
+        || effects.path("campaignCreated").asBoolean(true)
+        || effects.path("mediaSpendBrl").asDouble(-1) != 0;
   }
 
   /** Lê a última medição cumulativa de entrada, cache e saída dos eventos JSONL do Codex. */

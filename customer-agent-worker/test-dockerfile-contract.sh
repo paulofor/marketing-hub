@@ -20,9 +20,17 @@ grep -Fq 'fullPage: true' "${visual_capture}"
 grep -Fq 'scale: "css"' "${visual_capture}"
 grep -Fq 'evidenceType: "FOLD"' "${visual_capture}"
 
+agent_harness="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src/main/resources/browser/pde-agent-validation-harness.mjs"
+test -s "${agent_harness}"
+grep -Fq 'DESKTOP_1440' "${agent_harness}"
+grep -Fq 'IPHONE_15_PRO' "${agent_harness}"
+grep -Fq 'PIXEL_7' "${agent_harness}"
+grep -Fq 'AGENT_VALIDATION' "${agent_harness}"
+
 compose="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/docker-compose.yml"
 grep -Fq 'PLAYWRIGHT_BROWSERS_PATH: /ms-playwright' "${compose}"
 grep -Fq 'CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence' "${compose}"
+grep -Fq 'PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?' "${compose}"
 grep -Fq 'init: true' "${compose}"
 if grep -Fq 'CHROMIUM_BIN: /usr/bin/chromium' "${compose}"; then
   echo "[ARQUITETURA] O worker não pode apontar para um Chromium ausente da imagem." >&2

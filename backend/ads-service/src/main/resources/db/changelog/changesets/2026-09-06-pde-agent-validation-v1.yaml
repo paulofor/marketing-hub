@@ -1,0 +1,340 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-06-pde-agent-validation-v1-1-process
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-construction-approval',
+                'Protótipo, validação multiagente e aprovação do PDE',
+                'Homologar tecnicamente a versão real do PDE, revisar três cenários sintéticos independentes e liberar apenas a preparação comercial com evidência auditável.',
+                'Backend de Construção PDE',
+                'Produto PLANNED em PLAY com estratégia, economia, arquitetura, protótipo versionado e instrumentação segregada.',
+                'PDE liberado para comunicação em STOP ou bloqueado com causa-raiz, sem pessoa fictícia, pagamento, publicação, campanha ou gasto.',
+                7, 'PUBLISHED',
+                'pde-validacao-multiagente-canon.v1 / PDE_AGENT_VALIDATION_V1 / agent-validation-v1',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto planejado liberado","owner":"Backend","description":"O backend inicia uma ocorrência versionada sem reescrever a validação privada histórica."},{"id":"journey","type":"TASK","label":"Construir jornada privada de valor","owner":"Dédalo","description":"Materializa entrada, ações, estado e primeiro resultado útil conforme a arquitetura aprovada.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"deliverables","type":"TASK","label":"Produzir componentes do protótipo PDE","owner":"Dédalo","description":"Produz os componentes funcionais da mesma versão do produto sem reutilizar artefato de outro PDE.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"audiovisual","type":"TASK","label":"Produzir audiovisual quando previsto","owner":"Apolo","description":"Produz somente o audiovisual exigido; a ausência de necessidade deve permanecer explícita.","responsibleAgentKeys":["videomaker"],"responsibilityDomain":"AUDIOVISUAL_PRODUCTION","executionResourceCode":"video-management-service"},{"id":"access","type":"TASK","label":"Implementar acesso, continuidade e instrumentação","owner":"Dédalo","description":"Garante acesso de teste, retomada, privacidade, erros e eventos internos segregados.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"technicalHomologation","type":"TASK","label":"Homologar tecnicamente a versão real","owner":"Harness","description":"Executa caminho feliz, recuperação e segurança em desktop, iPhone e Android, preservando screenshots, eventos, duração e efeitos externos nulos.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"PDE_TECHNICAL_HOMOLOGATION","executionMode":"DETERMINISTIC"},{"id":"psiqueAdherent","type":"TASK","label":"Psique · cenário aderente","owner":"Psique","description":"Avalia em sessão isolada compreensão, esforço, utilidade, confiança, prazer e próximo passo com entrada aderente.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"SYNTHETIC_EXPERIENCE_REVIEW","scenarioCode":"ADHERENT"},{"id":"psiqueRecovery","type":"TASK","label":"Psique · fricção e recuperação","owner":"Psique","description":"Avalia entrada incompleta, erro recuperável, retomada e orientação suficiente sem conhecimento de IA.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"SYNTHETIC_EXPERIENCE_REVIEW","scenarioCode":"RECOVERY"},{"id":"psiqueSafety","type":"TASK","label":"Psique · limite e segurança","owner":"Psique","description":"Avalia pedido fora do escopo e exige bloqueio seguro sem resultado inventado.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"SYNTHETIC_EXPERIENCE_REVIEW","scenarioCode":"SAFETY"},{"id":"commercialIntegrityReview","type":"TASK","label":"Revisar integridade da validação multiagente","owner":"Têmis","description":"Confirma fidelidade, segurança, verdade, privacidade, segregação interna e ausência de alegação humana ou efeito comercial.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"agentValidationGate","type":"TASK","label":"Calcular gate multiagente","owner":"Backend","description":"Valida somente evidências persistidas da mesma versão e libera comunicação em STOP sem publicar, cobrar, criar campanha ou autorizar gasto.","responsibilityDomain":"PDE_AGENT_VALIDATION_GATE","executionMode":"DETERMINISTIC"},{"id":"gate","type":"GATEWAY","label":"Produto apto à comunicação?","owner":"Backend","description":"Exige homologação técnica, três cenários aprovados e revisão independente de Têmis."},{"id":"end","type":"END","label":"Decisão multiagente registrada","owner":"Backend","description":"O mercado continuará sendo a única fonte de preferência, compra, entrega, satisfação e receita."}],"flows":[{"from":"start","to":"journey"},{"from":"journey","to":"deliverables"},{"from":"deliverables","to":"audiovisual"},{"from":"audiovisual","to":"access"},{"from":"access","to":"technicalHomologation"},{"from":"technicalHomologation","to":"psiqueAdherent"},{"from":"technicalHomologation","to":"psiqueRecovery"},{"from":"technicalHomologation","to":"psiqueSafety"},{"from":"psiqueAdherent","to":"commercialIntegrityReview"},{"from":"psiqueRecovery","to":"commercialIntegrityReview"},{"from":"psiqueSafety","to":"commercialIntegrityReview"},{"from":"commercialIntegrityReview","to":"agentValidationGate"},{"from":"agentValidationGate","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM business_process_definition
+                 WHERE process_code = 'pde-construction-approval'
+                   AND version_number = 7
+              );
+
+              UPDATE business_process_definition
+                 SET status = 'PUBLISHED',
+                     published_at = COALESCE(published_at, UTC_TIMESTAMP())
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 7;
+
+              UPDATE business_process_definition
+                 SET status = 'RETIRED'
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number <> 7
+                 AND status = 'PUBLISHED';
+
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id,
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].label'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].description'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].owner'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].executionResourceCode'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].subprocessCode'))),
+                CAST(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, ']')) AS CHAR),
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT 0 AS number UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+                UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11
+                UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14
+              ) sequence
+                ON sequence.number < JSON_LENGTH(JSON_EXTRACT(process.diagram_json, '$.nodes'))
+              LEFT JOIN business_process_activity_definition existing
+                ON existing.process_definition_id = process.id
+               AND BINARY existing.activity_id = BINARY JSON_UNQUOTE(
+                 JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))
+               )
+              WHERE process.process_code = 'pde-construction-approval'
+                AND process.version_number = 7
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].type'))
+                ) = 'TASK'
+                AND existing.id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_definition
+                 SET status = 'RETIRED'
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 7;
+
+              UPDATE business_process_definition
+                 SET status = 'PUBLISHED'
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 6;
+
+  - changeSet:
+      id: 2026-09-06-pde-agent-validation-v1-2-mira-migration
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - tableExists:
+            tableName: business_process_activity_instance
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_activity_instance
+                (activity_definition_id, source_reference, occurrence_number, status,
+                 entered_at, exited_at, objective_achieved, objective_evidence_json,
+                 blocked_reason, known_cost_usd, cost_coverage, evidence_quality,
+                 created_at, updated_at)
+              SELECT new_activity.id,
+                CONCAT('product:', product.id, '@agent-validation-v1'),
+                1, 'COMPLETED', old_instance.entered_at, old_instance.exited_at, 1,
+                JSON_OBJECT(
+                  'evidenceType', 'PDE_AGENT_VALIDATION_MIGRATED_ARTIFACT_V1',
+                  'productId', product.id,
+                  'activityId', new_activity.activity_id,
+                  'historicalProcessVersion', 6,
+                  'historicalActivityInstanceId', old_instance.id,
+                  'historicalSourceReference', old_instance.source_reference,
+                  'migrationMode', 'IMMUTABLE_REFERENCE',
+                  'humanEvidenceClaimed', FALSE,
+                  'commercialEvidenceClaimed', FALSE
+                ),
+                NULL, old_instance.known_cost_usd, old_instance.cost_coverage,
+                'MIGRATED_IMMUTABLE', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM product product
+              JOIN business_process_definition old_process
+                ON old_process.process_code = 'pde-construction-approval'
+               AND old_process.version_number = 6
+              JOIN business_process_definition new_process
+                ON new_process.process_code = 'pde-construction-approval'
+               AND new_process.version_number = 7
+              JOIN business_process_activity_definition old_activity
+                ON old_activity.process_definition_id = old_process.id
+               AND old_activity.activity_id IN ('journey', 'deliverables', 'audiovisual', 'access')
+              JOIN business_process_activity_definition new_activity
+                ON new_activity.process_definition_id = new_process.id
+               AND new_activity.activity_id = old_activity.activity_id
+              JOIN business_process_activity_instance old_instance
+                ON old_instance.activity_definition_id = old_activity.id
+               AND old_instance.source_reference = CONCAT('product:', product.id, '@private-validation-v1')
+               AND old_instance.status = 'COMPLETED'
+               AND old_instance.objective_achieved = 1
+              LEFT JOIN business_process_activity_instance newer_old_instance
+                ON newer_old_instance.activity_definition_id = old_instance.activity_definition_id
+               AND newer_old_instance.source_reference = old_instance.source_reference
+               AND newer_old_instance.occurrence_number > old_instance.occurrence_number
+              LEFT JOIN business_process_activity_instance existing
+                ON existing.activity_definition_id = new_activity.id
+               AND existing.source_reference = CONCAT('product:', product.id, '@agent-validation-v1')
+               AND existing.occurrence_number = 1
+              WHERE product.internal_name = 'Mira'
+                AND product.validation_definition_version = 'PDE_PRIVATE_VALIDATION_V1'
+                AND newer_old_instance.id IS NULL
+                AND existing.id IS NULL;
+
+              UPDATE product
+                 SET validation_definition_version = 'PDE_AGENT_VALIDATION_V1',
+                     validation_definition_json = JSON_SET(
+                       validation_definition_json,
+                       '$.agentValidationPlan',
+                       JSON_OBJECT(
+                         'contractVersion', 'PDE_AGENT_VALIDATION_V1',
+                         'sourceReference', CONCAT('product:', id, '@agent-validation-v1'),
+                         'trafficClass', 'AGENT_VALIDATION',
+                         'internalMarker', 'mh_internal_test',
+                         'requiredScenarios', JSON_ARRAY('ADHERENT', 'RECOVERY', 'SAFETY'),
+                         'requiredDevices', JSON_ARRAY('DESKTOP_1440', 'IPHONE_15_PRO', 'PIXEL_7'),
+                         'maxReadyResultSeconds', 600,
+                         'humanEvidenceClaimed', FALSE,
+                         'commercialEvidenceClaimed', FALSE,
+                         'paymentEnabled', FALSE,
+                         'publicationAuthorized', FALSE,
+                         'campaignAuthorized', FALSE,
+                         'mediaSpendAuthorizedBrl', 0,
+                         'status', 'READY'
+                       ),
+                       '$.purchaseMomentStatus', 'WAITING_MARKET_VALIDATION',
+                       '$.finalCommercialPrioritizationEligible', FALSE,
+                       '$.communicationPreparationEligible', FALSE
+                     ),
+                     pde_experience_json = JSON_SET(
+                       pde_experience_json,
+                       '$.status', 'AGENT_VALIDATION_READY',
+                       '$.validationMode', 'MULTI_AGENT_V1',
+                       '$.agentValidationSourceReference', CONCAT('product:', id, '@agent-validation-v1')
+                     ),
+                     automatic_execution_enabled = 1,
+                     automatic_execution_changed_at = UTC_TIMESTAMP(),
+                     automatic_execution_changed_by = 'pde-agent-validation-v1-migration',
+                     updated_at = UTC_TIMESTAMP()
+               WHERE internal_name = 'Mira'
+                 AND validation_definition_version = 'PDE_PRIVATE_VALIDATION_V1';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE migrated
+                FROM business_process_activity_instance migrated
+                JOIN business_process_activity_definition activity
+                  ON activity.id = migrated.activity_definition_id
+                JOIN business_process_definition process
+                  ON process.id = activity.process_definition_id
+                JOIN product
+                  ON migrated.source_reference = CONCAT('product:', product.id, '@agent-validation-v1')
+               WHERE process.process_code = 'pde-construction-approval'
+                 AND process.version_number = 7
+                 AND product.internal_name = 'Mira'
+                 AND migrated.evidence_quality = 'MIGRATED_IMMUTABLE';
+
+              UPDATE product
+                 SET validation_definition_version = 'PDE_PRIVATE_VALIDATION_V1',
+                     validation_definition_json = JSON_REMOVE(
+                       JSON_SET(
+                         validation_definition_json,
+                         '$.purchaseMomentStatus', 'WAITING_PRIVATE_READINGS',
+                         '$.finalCommercialPrioritizationEligible', FALSE
+                       ),
+                       '$.agentValidationPlan',
+                       '$.agentValidation',
+                       '$.communicationPreparationEligible'
+                     ),
+                     pde_experience_json = JSON_REMOVE(
+                       JSON_SET(pde_experience_json, '$.status', 'PRIVATE_VALIDATION_READY'),
+                       '$.validationMode',
+                       '$.agentValidationSourceReference',
+                       '$.agentValidation'
+                     ),
+                     commercial_status = 'PLANNED',
+                     automatic_execution_enabled = 1,
+                     automatic_execution_changed_at = UTC_TIMESTAMP(),
+                     automatic_execution_changed_by = 'pde-agent-validation-v1-rollback',
+                     updated_at = UTC_TIMESTAMP()
+               WHERE internal_name = 'Mira'
+                 AND validation_definition_version IN (
+                   'PDE_AGENT_VALIDATION_V1', 'PDE_AGENT_VALIDATED_V1'
+                 );
+
+  - changeSet:
+      id: 2026-09-06-pde-agent-validation-v1-3-chain
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_chain_definition
+        - tableExists:
+            tableName: business_process_chain_item
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric,
+                 version_number, status, created_at, published_at)
+              SELECT 'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar evidência em protótipo homologado, comunicação, venda e entrega sem fabricar validação humana.',
+                'PDE vendido e entregue com satisfação após homologação multiagente e validação comercial real.',
+                'Tempo até venda entregue com satisfação',
+                11, 'PUBLISHED', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                  FROM business_process_chain_definition
+                 WHERE chain_code = 'pde-value-creation-delivery'
+                   AND version_number = 11
+              );
+
+              UPDATE business_process_chain_definition
+                 SET status = 'PUBLISHED',
+                     published_at = COALESCE(published_at, UTC_TIMESTAMP())
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number = 11;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number,
+                 value_contribution, created_at)
+              SELECT chain.id, process.id, item.sequence_number, item.value_contribution,
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain
+              JOIN (
+                SELECT 1 AS sequence_number, 'pde-opportunity-discovery' AS process_code,
+                  'Argos entrega inteligência factual sem escolher estratégia.' AS value_contribution
+                UNION ALL SELECT 2, 'pde-commercial-plan-offer',
+                  'Atena seleciona o produto, Plutus limita a economia e Dédalo define o harness.'
+                UNION ALL SELECT 3, 'pde-construction-approval',
+                  'Dédalo materializa; harness, Psique e Têmis homologam sem fabricar resposta humana; o backend libera comunicação em STOP.'
+                UNION ALL SELECT 4, 'pde-communication-sales-journey',
+                  'Íris materializa persuasão pré-compra; Apolo produz audiovisual; Psique e Têmis revisam.'
+                UNION ALL SELECT 5, 'pde-commercial-homologation-activation',
+                  'Preflight e autorização humana decidem ativação e gasto separadamente.'
+                UNION ALL SELECT 6, 'pde-sales-delivery-learning',
+                  'Hermes mede pessoas reais, venda, entrega, satisfação, reembolso e aprendizado.'
+              ) item
+              JOIN business_process_definition process
+                ON process.process_code = item.process_code
+               AND process.status = 'PUBLISHED'
+              LEFT JOIN business_process_chain_item existing
+                ON existing.chain_definition_id = chain.id
+               AND existing.sequence_number = item.sequence_number
+              WHERE chain.chain_code = 'pde-value-creation-delivery'
+                AND chain.version_number = 11
+                AND existing.id IS NULL;
+
+              UPDATE business_process_chain_definition
+                 SET status = 'RETIRED'
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number <> 11
+                 AND status = 'PUBLISHED';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_chain_definition
+                 SET status = 'RETIRED'
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number = 11;
+
+              UPDATE business_process_chain_definition
+                 SET status = 'PUBLISHED'
+               WHERE chain_code = 'pde-value-creation-delivery'
+                 AND version_number = 10;

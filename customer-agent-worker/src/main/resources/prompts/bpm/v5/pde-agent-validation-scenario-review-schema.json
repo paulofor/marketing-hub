@@ -1,0 +1,141 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "decision",
+    "scenarioCode",
+    "sourceReference",
+    "productId",
+    "productSlug",
+    "prototypeVersion",
+    "trafficClass",
+    "internalMarker",
+    "syntheticEvaluation",
+    "humanEvidenceClaimed",
+    "commercialEvidenceClaimed",
+    "sideEffects",
+    "experienceAssessment",
+    "checks",
+    "visualAudit",
+    "evidence",
+    "requiredChanges",
+    "rootCause"
+  ],
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "const": "PDE_PSIQUE_AGENT_SCENARIO_V1"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVED", "ADJUST", "BLOCKED"]
+    },
+    "scenarioCode": {
+      "type": "string",
+      "enum": ["ADHERENT", "RECOVERY", "SAFETY"]
+    },
+    "sourceReference": {"type": "string", "pattern": "^product:[1-9][0-9]*@agent-validation-v1$"},
+    "productId": {"type": "integer", "minimum": 1},
+    "productSlug": {"type": "string", "minLength": 1, "maxLength": 160},
+    "prototypeVersion": {"type": "string", "minLength": 1, "maxLength": 120},
+    "trafficClass": {"type": "string", "const": "AGENT_VALIDATION"},
+    "internalMarker": {"type": "string", "const": "mh_internal_test"},
+    "syntheticEvaluation": {
+      "type": "boolean",
+      "const": true
+    },
+    "humanEvidenceClaimed": {
+      "type": "boolean",
+      "const": false
+    },
+    "commercialEvidenceClaimed": {
+      "type": "boolean",
+      "const": false
+    },
+    "sideEffects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paymentEnabled", "published", "campaignCreated", "mediaSpendBrl"],
+      "properties": {
+        "paymentEnabled": {"type": "boolean", "const": false},
+        "published": {"type": "boolean", "const": false},
+        "campaignCreated": {"type": "boolean", "const": false},
+        "mediaSpendBrl": {"type": "number", "const": 0}
+      }
+    },
+    "experienceAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comprehension",
+        "effort",
+        "utility",
+        "trust",
+        "pleasure",
+        "objections",
+        "nextStepClarity",
+        "evidenceBoundary"
+      ],
+      "properties": {
+        "comprehension": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "effort": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "utility": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "trust": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "pleasure": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "objections": {"type": "array", "items": {"type": "string", "minLength": 3, "maxLength": 500}},
+        "nextStepClarity": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "evidenceBoundary": {"type": "string", "minLength": 20, "maxLength": 1000}
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sameProductAndVersion",
+        "isolatedFreshSession",
+        "functionalOutcomeMatchesScenario",
+        "lowEffortNoPrompting",
+        "accessibilityAndResponsive",
+        "privacyPreserved",
+        "internalTrafficSegregated",
+        "safeLimits",
+        "noExternalSideEffects"
+      ],
+      "properties": {
+        "sameProductAndVersion": {"type": "boolean"},
+        "isolatedFreshSession": {"type": "boolean"},
+        "functionalOutcomeMatchesScenario": {"type": "boolean"},
+        "lowEffortNoPrompting": {"type": "boolean"},
+        "accessibilityAndResponsive": {"type": "boolean"},
+        "privacyPreserved": {"type": "boolean"},
+        "internalTrafficSegregated": {"type": "boolean"},
+        "safeLimits": {"type": "boolean"},
+        "noExternalSideEffects": {"type": "boolean"}
+      }
+    },
+    "visualAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["captureSessionId", "evidenceIds", "visualHierarchy", "legibility", "affectiveResponse", "trustCues"],
+      "properties": {
+        "captureSessionId": {"type": "string", "minLength": 8, "maxLength": 100},
+        "evidenceIds": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}},
+        "visualHierarchy": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "legibility": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "affectiveResponse": {"type": "string", "minLength": 10, "maxLength": 1000},
+        "trustCues": {"type": "string", "minLength": 10, "maxLength": 1000}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 3, "maxLength": 1000}
+    },
+    "requiredChanges": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 3, "maxLength": 1000}
+    },
+    "rootCause": {"type": "string", "minLength": 10, "maxLength": 1200}
+  }
+}

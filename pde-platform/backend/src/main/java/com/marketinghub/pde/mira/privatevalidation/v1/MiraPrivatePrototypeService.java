@@ -37,7 +37,11 @@ public class MiraPrivatePrototypeService {
     private static final Logger log = LoggerFactory.getLogger(MiraPrivatePrototypeService.class);
     private static final String PRODUCT_SLUG = "mira-private-validation";
     private static final String VERSION = "mira-private-v1";
-    private static final Set<String> ALLOWED_EVENTS = Set.of("READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED");
+    private static final Set<String> HUMAN_EVENTS =
+            Set.of("READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED");
+    private static final Set<String> AGENT_EVENTS = Set.of(
+            "READY_RESULT_USED", "RECOVERY_COMPLETED", "SAFETY_LIMIT_BLOCKED", "AGENT_SCENARIO_COMPLETED");
+    private static final Set<String> AGENT_SCENARIOS = Set.of("ADHERENT", "RECOVERY", "SAFETY");
     private final AccessService accessService;
     private final ObjectMapper json;
     private final Path storagePath;
@@ -61,9 +65,30 @@ public class MiraPrivatePrototypeService {
 
     /** Retorna identidade, eventos e fronteiras verificáveis do protótipo. */
     public ContractResponse contract() {
-        return new ContractResponse(PRODUCT_SLUG, VERSION, "Mira", "PLANNED", "SIMULATED_NO_CHARGE",
+        return new ContractResponse(PRODUCT_SLUG, VERSION, "Sua rotina, organizada com calma", "PLANNED",
+                "SIMULATED_NO_CHARGE",
                 List.of("EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED"),
                 false, false, 0);
+    }
+
+    /** Abre uma sessão sintética isolada sem consentimento, participante ou sinal comercial. */
+    public synchronized SessionResponse startAgentValidation(AgentSessionRequest request) {
+        String scenarioCode = request.scenarioCode().trim().toUpperCase();
+        if (!AGENT_SCENARIOS.contains(scenarioCode)) {
+            throw new IllegalArgumentException("Cenário de homologação multiagente inválido.");
+        }
+        String sourceReference = request.sourceReference().trim();
+        if (!sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")) {
+            throw new IllegalArgumentException("A homologação exige a referência multiagente canônica.");
+        }
+        StoredSession session = new StoredSession(UUID.randomUUID().toString(), null, "AGENT_VALIDATION");
+        session.sourceReference = sourceReference;
+        session.scenarioCode = scenarioCode;
+        session.syntheticEvaluation = true;
+        sessions.put(session.sessionToken, session);
+        recordOnce(session, "EXPERIENCE_STARTED");
+        persist();
+        return response(session);
     }
 
     /** Autoriza somente um dos dois acessos privados ou o acesso interno de QA. */
@@ -77,7 +102,7 @@ public class MiraPrivatePrototypeService {
             throw new SecurityException("Acesso privado inválido.");
         }
         StoredSession session = sessions.values().stream()
-                .filter(value -> value.participantReference.equals(participantReference))
+                .filter(value -> java.util.Objects.equals(value.participantReference, participantReference))
                 .findFirst()
                 .orElseGet(() -> new StoredSession(UUID.randomUUID().toString(), participantReference,
                         participantReference.startsWith("QA-") ? "QA_INTERNAL" : "PRIVATE_READING"));
@@ -148,10 +173,25 @@ public class MiraPrivatePrototypeService {
     public synchronized SessionResponse event(String sessionToken, EventRequest request) {
         StoredSession session = requiredSession(sessionToken);
         String eventType = request.eventType().trim().toUpperCase();
-        if (!ALLOWED_EVENTS.contains(eventType)) {
+        boolean agentValidation = isAgentValidation(session);
+        Set<String> allowedEvents = agentValidation ? AGENT_EVENTS : HUMAN_EVENTS;
+        if (!allowedEvents.contains(eventType)) {
             throw new IllegalArgumentException("Esta ação não está disponível na experiência privada.");
         }
-        if (!"READY".equals(session.status)) {
+        if (agentValidation) {
+            validateAgentEvent(session, eventType);
+        }
+        if ("SAFETY_LIMIT_BLOCKED".equals(eventType) && !"BLOCKED".equals(session.status)) {
+            throw new IllegalStateException("O limite de segurança precisa estar comprovadamente bloqueado.");
+        }
+        boolean completedBlockedScenario =
+                agentValidation
+                        && "AGENT_SCENARIO_COMPLETED".equals(eventType)
+                        && "BLOCKED".equals(session.status)
+                        && session.events.contains("SAFETY_LIMIT_BLOCKED");
+        if (!"SAFETY_LIMIT_BLOCKED".equals(eventType)
+                && !completedBlockedScenario
+                && !"READY".equals(session.status)) {
             throw new IllegalStateException("O resultado precisa estar pronto antes desta ação.");
         }
         if (session.finishedAt != null) {
@@ -168,7 +208,9 @@ public class MiraPrivatePrototypeService {
             throw new IllegalStateException("A simulação só fica disponível após a preferência explícita.");
         }
         recordOnce(session, eventType);
-        if ("CHECKOUT_STARTED".equals(eventType)) session.finishedAt = Instant.now().toString();
+        if ("CHECKOUT_STARTED".equals(eventType) || "AGENT_SCENARIO_COMPLETED".equals(eventType)) {
+            session.finishedAt = Instant.now().toString();
+        }
         persist();
         return response(session);
     }
@@ -176,6 +218,9 @@ public class MiraPrivatePrototypeService {
     /** Encerra também uma leitura negativa sem fabricar preferência ou intenção de compra. */
     public synchronized SessionResponse finish(String sessionToken) {
         StoredSession session = requiredSession(sessionToken);
+        if (isAgentValidation(session)) {
+            throw new IllegalStateException("A homologação interna deve concluir o cenário canônico correspondente.");
+        }
         if (session.finishedAt == null) {
             session.finishedAt = Instant.now().toString();
             persist();
@@ -204,6 +249,39 @@ public class MiraPrivatePrototypeService {
                 "SIMULATED_NO_CHARGE", false, false, 0);
     }
 
+    /** Expõe ao harness somente a prova sintética sanitizada da sessão solicitada. */
+    public synchronized AgentValidationEvidence agentValidationEvidence(String evidenceId) {
+        StoredSession session = sessions.values().stream()
+                .filter(this::isAgentValidation)
+                .filter(value -> value.evidenceId.equals(evidenceId == null ? "" : evidenceId.trim()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Evidência multiagente não encontrada."));
+        Map<String, Object> sideEffects = new LinkedHashMap<>();
+        sideEffects.put("paymentEnabled", false);
+        sideEffects.put("published", false);
+        sideEffects.put("campaignCreated", false);
+        sideEffects.put("mediaSpendBrl", 0);
+        return new AgentValidationEvidence(
+                PRODUCT_SLUG,
+                VERSION,
+                session.sourceReference,
+                session.scenarioCode,
+                session.trafficClass,
+                true,
+                session.evidenceId,
+                session.status,
+                session.ageRange,
+                session.objective,
+                session.products == null ? List.of() : List.copyOf(session.products),
+                session.routine == null ? List.of() : List.copyOf(session.routine),
+                session.blocker,
+                List.copyOf(session.events),
+                session.finishedAt,
+                Map.copyOf(sideEffects),
+                false,
+                false);
+    }
+
     /** Persiste um bloqueio explicável sem inventar uma rotina. */
     private SessionResponse blocked(StoredSession session, String blocker) {
         session.status = "BLOCKED";
@@ -226,10 +304,20 @@ public class MiraPrivatePrototypeService {
     private void recordOnce(StoredSession session, String eventType) {
         if (session.events.contains(eventType)) return;
         Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("participantReference", session.participantReference);
+        if (session.participantReference != null) {
+            metadata.put("participantReference", session.participantReference);
+        }
         metadata.put("sessionId", session.evidenceId);
         metadata.put("experienceVersion", VERSION);
         metadata.put("trafficClass", session.trafficClass);
+        if (isAgentValidation(session)) {
+            metadata.put("mh_internal_test", true);
+            metadata.put("syntheticEvaluation", true);
+            metadata.put("sourceReference", session.sourceReference);
+            metadata.put("scenarioCode", session.scenarioCode);
+            metadata.put("humanEvidenceClaimed", false);
+            metadata.put("commercialEvidenceClaimed", false);
+        }
         metadata.put("checkoutMode", "SIMULATED_NO_CHARGE");
         metadata.put("paymentEnabled", false);
         metadata.put("published", false);
@@ -251,7 +339,43 @@ public class MiraPrivatePrototypeService {
         return new SessionResponse(session.sessionToken, session.participantReference, session.trafficClass,
                 session.status, session.ageRange, session.objective, session.products == null ? List.of() : session.products,
                 session.routine == null ? List.of() : session.routine, session.blocker,
-                List.copyOf(session.events), VERSION, "SIMULATED_NO_CHARGE", session.finishedAt != null);
+                List.copyOf(session.events), VERSION, "SIMULATED_NO_CHARGE", session.finishedAt != null,
+                isAgentValidation(session), session.scenarioCode, session.evidenceId);
+    }
+
+    /** Reconhece somente a classe explícita que nunca pode alimentar uma leitura humana. */
+    private boolean isAgentValidation(StoredSession session) {
+        return session != null
+                && "AGENT_VALIDATION".equals(session.trafficClass)
+                && session.syntheticEvaluation;
+    }
+
+    /** Exige a trilha funcional específica antes de concluir cada cenário sintético. */
+    private void validateAgentEvent(StoredSession session, String eventType) {
+        if ("READY_RESULT_USED".equals(eventType)
+                && !Set.of("ADHERENT", "RECOVERY").contains(session.scenarioCode)) {
+            throw new IllegalStateException("Este cenário não pode registrar uso de um resultado pronto.");
+        }
+        if ("RECOVERY_COMPLETED".equals(eventType)
+                && (!"RECOVERY".equals(session.scenarioCode)
+                        || !session.events.contains("READY_RESULT_USED"))) {
+            throw new IllegalStateException("A recuperação exige retomada e uso do resultado no cenário correto.");
+        }
+        if ("SAFETY_LIMIT_BLOCKED".equals(eventType) && !"SAFETY".equals(session.scenarioCode)) {
+            throw new IllegalStateException("O bloqueio de segurança pertence somente ao cenário de segurança.");
+        }
+        if (!"AGENT_SCENARIO_COMPLETED".equals(eventType)) return;
+        boolean adherentComplete = "ADHERENT".equals(session.scenarioCode)
+                && session.events.contains("READY_RESULT_USED");
+        boolean recoveryComplete = "RECOVERY".equals(session.scenarioCode)
+                && session.events.contains("READY_RESULT_USED")
+                && session.events.contains("RECOVERY_COMPLETED");
+        boolean safetyComplete = "SAFETY".equals(session.scenarioCode)
+                && session.events.contains("SAFETY_LIMIT_BLOCKED")
+                && "BLOCKED".equals(session.status);
+        if (!adherentComplete && !recoveryComplete && !safetyComplete) {
+            throw new IllegalStateException("O cenário interno ainda não possui toda a evidência funcional exigida.");
+        }
     }
 
     /** Cria hashes dos acessos sem armazenar segredos brutos. */
@@ -318,11 +442,16 @@ public class MiraPrivatePrototypeService {
     /** Ação humana prevista pelo protocolo privado. */
     public record EventRequest(@NotBlank String eventType, Boolean confirmed) {}
 
+    /** Solicita uma sessão fresca para um dos três cenários sintéticos canônicos. */
+    public record AgentSessionRequest(
+            @NotBlank @Size(max = 200) String sourceReference,
+            @NotBlank @Size(max = 32) String scenarioCode) {}
+
     /** Cartão funcional derivado apenas da informação documentada. */
     public record RoutineCard(String productName, int order, String documentedDirection, String safetyNote) {}
 
     /** Contrato sanitizado da experiência privada. */
-    public record ContractResponse(String productSlug, String prototypeVersion, String productInternalName,
+    public record ContractResponse(String productSlug, String prototypeVersion, String experienceName,
                                    String productStatus, String checkoutMode, List<String> instrumentationEvents,
                                    boolean published, boolean paymentEnabled, int mediaSpendBrl) {}
 
@@ -330,7 +459,8 @@ public class MiraPrivatePrototypeService {
     public record SessionResponse(String sessionToken, String participantReference, String trafficClass,
                                   String status, String ageRange, String objective, List<ProductInput> products,
                                   List<RoutineCard> routine, String blocker, List<String> events,
-                                  String prototypeVersion, String checkoutMode, boolean readingFinished) {}
+                                  String prototypeVersion, String checkoutMode, boolean readingFinished,
+                                  boolean agentValidation, String scenarioCode, String evidenceId) {}
 
     /** Prova interna pseudonimizada, independente das credenciais que autorizam a sessão. */
     public record ReadingEvidence(String productSlug, String prototypeVersion, String participantReference,
@@ -338,12 +468,36 @@ public class MiraPrivatePrototypeService {
                                    String blocker, Map<String, Boolean> signals, String checkoutMode,
                                    boolean paymentEnabled, boolean published, int mediaSpendBrl) {}
 
+    /** Prova sintética completa sem credencial de sessão ou identidade de participante. */
+    public record AgentValidationEvidence(
+            String productSlug,
+            String prototypeVersion,
+            String sourceReference,
+            String scenarioCode,
+            String trafficClass,
+            boolean mhInternalTest,
+            String evidenceId,
+            String status,
+            String ageRange,
+            String objective,
+            List<ProductInput> products,
+            List<RoutineCard> routine,
+            String blocker,
+            List<String> events,
+            String finishedAt,
+            Map<String, Object> sideEffects,
+            boolean humanEvidenceClaimed,
+            boolean commercialEvidenceClaimed) {}
+
     /** Estado interno persistido de uma única sessão segregada. */
     public static final class StoredSession {
         public String sessionToken;
         public String participantReference;
         public String trafficClass;
         public String evidenceId = UUID.randomUUID().toString();
+        public String sourceReference;
+        public String scenarioCode;
+        public boolean syntheticEvaluation;
         public String consentedAt;
         public String finishedAt;
         public String status = "CONSENTED";

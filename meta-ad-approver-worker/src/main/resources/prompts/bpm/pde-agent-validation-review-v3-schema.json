@@ -1,0 +1,90 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "decision",
+    "commercialRationale",
+    "rootCause",
+    "sourceReference",
+    "productId",
+    "productSlug",
+    "prototypeVersion",
+    "trafficClass",
+    "internalMarker",
+    "humanEvidenceClaimed",
+    "commercialEvidenceClaimed",
+    "sideEffects",
+    "agentValidationChecks",
+    "evidence",
+    "requiredChanges"
+  ],
+  "properties": {
+    "contractVersion": {"type": "string", "const": "PDE_TEMIS_AGENT_VALIDATION_V1"},
+    "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "commercialRationale": {"type": "string", "minLength": 20, "maxLength": 1800},
+    "rootCause": {"type": "string", "minLength": 10, "maxLength": 1200},
+    "sourceReference": {"type": "string", "pattern": "^product:[1-9][0-9]*@agent-validation-v1$"},
+    "productId": {"type": "integer", "minimum": 1},
+    "productSlug": {"type": "string", "minLength": 1, "maxLength": 160},
+    "prototypeVersion": {"type": "string", "minLength": 1, "maxLength": 120},
+    "trafficClass": {"type": "string", "const": "AGENT_VALIDATION"},
+    "internalMarker": {"type": "string", "const": "mh_internal_test"},
+    "humanEvidenceClaimed": {"type": "boolean", "const": false},
+    "commercialEvidenceClaimed": {"type": "boolean", "const": false},
+    "sideEffects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paymentEnabled", "published", "campaignCreated", "mediaSpendBrl"],
+      "properties": {
+        "paymentEnabled": {"type": "boolean", "const": false},
+        "published": {"type": "boolean", "const": false},
+        "campaignCreated": {"type": "boolean", "const": false},
+        "mediaSpendBrl": {"type": "number", "const": 0}
+      }
+    },
+    "agentValidationChecks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sameProductAndVersion",
+        "criteriaPredeclared",
+        "technicalHarnessPassed",
+        "threeScenarioReviewsApproved",
+        "syntheticEvidenceLabeled",
+        "internalTrafficSegregated",
+        "privacyPreserved",
+        "paymentDisabled",
+        "publicationDisabled",
+        "campaignDisabled",
+        "zeroMediaSpend",
+        "noHumanOrCommercialClaim",
+        "strategyFidelity"
+      ],
+      "properties": {
+        "sameProductAndVersion": {"type": "boolean"},
+        "criteriaPredeclared": {"type": "boolean"},
+        "technicalHarnessPassed": {"type": "boolean"},
+        "threeScenarioReviewsApproved": {"type": "boolean"},
+        "syntheticEvidenceLabeled": {"type": "boolean"},
+        "internalTrafficSegregated": {"type": "boolean"},
+        "privacyPreserved": {"type": "boolean"},
+        "paymentDisabled": {"type": "boolean"},
+        "publicationDisabled": {"type": "boolean"},
+        "campaignDisabled": {"type": "boolean"},
+        "zeroMediaSpend": {"type": "boolean"},
+        "noHumanOrCommercialClaim": {"type": "boolean"},
+        "strategyFidelity": {"type": "boolean"}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 4,
+      "items": {"type": "string", "minLength": 3, "maxLength": 1000}
+    },
+    "requiredChanges": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 3, "maxLength": 1000}
+    }
+  }
+}

@@ -16,6 +16,11 @@ on:
       - "scripts/test-docker-temporary-image-cleanup-e2e.sh"
       - "scripts/fixtures/temporary-docker-image/Dockerfile"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
+      - "scripts/ensure-agent-vps-disk-space.sh"
+      - "scripts/test-agent-vps-disk-space.sh"
+      - "scripts/test-agent-vps-disk-space-e2e.sh"
+      - "scripts/fixtures/agent-vps-disk/**"
+      - "scripts/test-agent-vps-disk-workflows.mjs"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
       - "scripts/run-actionlint.sh"
@@ -48,6 +53,11 @@ on:
       - "scripts/test-docker-temporary-image-cleanup-e2e.sh"
       - "scripts/fixtures/temporary-docker-image/Dockerfile"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
+      - "scripts/ensure-agent-vps-disk-space.sh"
+      - "scripts/test-agent-vps-disk-space.sh"
+      - "scripts/test-agent-vps-disk-space-e2e.sh"
+      - "scripts/fixtures/agent-vps-disk/**"
+      - "scripts/test-agent-vps-disk-workflows.mjs"
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/install-actionlint.sh"
       - "scripts/run-actionlint.sh"
@@ -103,6 +113,9 @@ jobs:
           bash -n scripts/test-docker-temporary-image-cleanup.sh
           bash -n scripts/test-docker-temporary-image-cleanup-e2e.sh
           bash -n scripts/wait-for-shared-vps-docker-capacity.sh
+          bash -n scripts/ensure-agent-vps-disk-space.sh
+          bash -n scripts/test-agent-vps-disk-space.sh
+          bash -n scripts/test-agent-vps-disk-space-e2e.sh
           bash -n scripts/install-actionlint.sh
           bash -n scripts/run-actionlint.sh
           bash -n scripts/actionlint-shellcheck.sh
@@ -157,3 +170,11 @@ jobs:
 
       - name: Validar resiliência do host compartilhado
         run: bash scripts/test-shared-vps-deploy-resilience.sh
+
+      - name: Validar recuperação limitada de disco dos agentes
+        run: |
+          bash scripts/test-agent-vps-disk-space.sh
+          node scripts/test-agent-vps-disk-workflows.mjs
+
+      - name: Validar preservação de imagens e containers na engine real
+        run: bash scripts/test-agent-vps-disk-space-e2e.sh

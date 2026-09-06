@@ -200,6 +200,11 @@ jobs:
           docker version
           docker compose version
           REMOTE_DOCKER_BOOTSTRAP
+      - name: Ensure free disk space on agent VPS
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Prepare remote directory
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"

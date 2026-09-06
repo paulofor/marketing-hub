@@ -1,0 +1,16 @@
+services:
+  proof:
+    image: ${AGENT_VPS_DISK_TEST_IMAGE:?Defina a imagem de homologação}
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - proof-data:/data
+  rollback:
+    image: ${AGENT_VPS_DISK_TEST_ROLLBACK_IMAGE:?Defina a imagem de rollback sintética}
+    network_mode: none
+    read_only: true
+    entrypoint: ["sleep", "600"]
+volumes:
+  proof-data:

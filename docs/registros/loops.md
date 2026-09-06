@@ -3804,6 +3804,31 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   workflow do Meta; o contrato central continua sendo a proteção que impede tratar a fila padrão de
   uma única pendência como serialização suficiente.
 
+## LOOP-ACTIONS-VPS-AGENTES-DISCO-ESGOTADO — build passa, mas o serviço perde saúde
+
+- **Data:** 2026-09-06.
+- **Evidência:** Customer Agent `34031778693` aprovou testes/build e falhou no health.
+  O run anterior `34023636321` atingiu `UP` na segunda tentativa. MCP e log do Actions
+  apontaram zero bytes em `/app/.`; SSH confirmou `/dev/vda1` em 100% e HTTP 503/DOWN.
+  Não era erro de versão, autenticação, tempo de inicialização ou somente filesystem read-only.
+- **Causa-raiz:** a fila passou a preservar corretamente os deploys, mas cache e versões antigas
+  de imagens se acumularam sem reserva mínima antes dos builds sucessivos no host.
+  `docker system df` identificou 5,93 GB de cache recuperável e diversas versões sem containers.
+- **Correção local:** os nove publicadores passam por sonda de blocos/inodes e coleta limitada
+  de cache sem uso há 24 h com reserva de 2 GB; somente se faltar espaço, uma segunda faixa
+  considera cache sem uso há 1 h com reserva de 1 GB. Nova medição bloqueia insuficiência antes
+  da atualização. O health da Psique preserva o corpo HTTP 503 para diagnóstico.
+  Alteração isolada dos YAMLs dos agentes também deixa de iniciar nove rebuilds desnecessários,
+  estendendo o padrão já validado no `LOOP-ACTIONS-DEPLOY-HOST-COMPARTILHADO-CANCELADO`.
+- **Prevenção:** contrato exige ordem e fila nos nove workflows; doubles cobrem disco cheio,
+  recuperação, falhas, timeout e lock. A engine real verifica preservação de imagem,
+  tag de rollback, containers ativo/parado e volume. Nenhum prune de imagem é reintroduzido.
+- **Cânone:** `docs/canonical/deploy-vps-agentes-canon.v1.md`.
+- **Recuperação operacional:** 2,781 GB de cache e três referências antigas individualmente
+  revisadas foram retirados. Disco de 100% para 88%; 6,8 GiB livres; health HTTP 200/UP;
+  todos os containers e as versões atuais/de recuperação preservados, sem deploy de código.
+- **Evidências e resultado operacional:** `docs/homologacao/actions-agent-vps-disk-2026-09-06.md`.
+
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
 
 - **Data:** 2026-09-05.

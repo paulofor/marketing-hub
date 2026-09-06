@@ -43,21 +43,45 @@ class TemisContainerIsolationContractTest {
         .doesNotContain("nodejs", "npm", "codex", "playwright", "agent-health-report");
   }
 
-  /** Garante Java 21, Node moderno e Chromium pinado sem depender do espelho APT durante o build. */
+  /** Garante Java, navegador e decoder pinados sem depender do espelho APT. */
   @Test
-  void exposesInstalledChromiumAtCanonicalMcpPath() throws Exception {
+  void usesBundledHeadlessShellAndStaticVideoDecoder() throws Exception {
     String dockerfile = Files.readString(Path.of("Dockerfile"));
+    String mcp = Files.readString(Path.of("src/main/resources/mcp/meta-ad-approver.mjs"));
+    String extractor =
+        Files.readString(Path.of("src/main/resources/mcp/video-frame-extractor.mjs"));
 
     assertThat(dockerfile)
         .contains(
             "FROM eclipse-temurin:21-jre-noble AS java-runtime",
+            "FROM mwader/static-ffmpeg:7.1.1@sha256:6769881cc02c80d33e387750a8e144d162adfab2775e934dd97899261dda3a0c AS ffmpeg-runtime",
             "FROM mcr.microsoft.com/playwright:v1.49.0-noble",
             "COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk",
+            "COPY --from=ffmpeg-runtime /ffmpeg /usr/local/bin/ffmpeg",
+            "COPY --from=ffmpeg-runtime /ffprobe /usr/local/bin/ffprobe",
             "node --version | grep -Eq '^v2[0-9]\\.'",
-            "find /ms-playwright -type f -path '*/chrome-linux/chrome'",
-            "ln -s \"${chromium_path}\" /usr/bin/chromium")
+            "COPY browser-runtime-check.mjs /app/browser-runtime-check.mjs",
+            "COPY src/main/resources/mcp/video-frame-extractor.mjs /app/video-frame-extractor.mjs")
         .doesNotContain(
-            "apt-get", "playwright-core install --with-deps", "chmod -R a+rX /ms-playwright");
+            "apt-get",
+            "playwright-core install --with-deps",
+            "chmod -R a+rX /ms-playwright",
+            "chrome-linux/chrome",
+            "/usr/bin/chromium");
+    assertThat(mcp)
+        .contains("await chromium.launch", "extractRemoteVideoFrames(url, {")
+        .doesNotContain("executablePath", "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
+    assertThat(extractor)
+        .contains(
+            "const MAX_VIDEO_BYTES = 64 * 1024 * 1024",
+            "const PROCESS_TIMEOUT_MS = 120000",
+            "'/usr/local/bin/ffmpeg'",
+            "'/usr/local/bin/ffprobe'",
+            "return await extractVideoFrames(bytes)",
+            "invalidVideoBlocked = true",
+            "timeout: PROCESS_TIMEOUT_MS",
+            "killSignal: 'SIGKILL'",
+            "await rm(directory, { recursive: true, force: true })");
   }
 
   /** Garante build, health e prova de ausência do segredo no revisor durante o deploy. */
@@ -69,9 +93,12 @@ class TemisContainerIsolationContractTest {
     assertThat(workflow)
         .contains(
             "Dockerfile.image-studio",
+            "Validate reviewer visual runtime in confinement",
+            "/app/browser-runtime-check.mjs",
             "http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health",
             "http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health",
             "docker compose exec -T iris-image-studio",
+            "docker compose exec -T meta-ad-approver-worker node /app/browser-runtime-check.mjs",
             "test ! -e /run/secrets/openai_api_key");
   }
 

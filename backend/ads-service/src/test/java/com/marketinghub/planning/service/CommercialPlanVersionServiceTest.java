@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CommercialPlanVersionServiceTest {
   @Mock private CommercialPlanVersionRepository repository;
 
-  /** Cria uma versão nova sem contaminar o snapshot com detalhes técnicos da entidade. */
+  /** Congela metas comerciais e numéricas sem contaminar o snapshot com detalhes técnicos. */
   @Test
   void snapshotFreezesSalesAndProfitContext() {
     when(repository.findTopByPlanIdOrderByVersionNumberDesc(7L)).thenReturn(Optional.empty());
@@ -47,12 +47,23 @@ class CommercialPlanVersionServiceTest {
             .mainOffer("Método MUSA")
             .maxBudget(BigDecimal.valueOf(500))
             .targetRevenue(BigDecimal.valueOf(1000))
+            .experimentsToCreate(2)
+            .experimentsToPublish(1)
+            .productsToValidate(1)
+            .productTypesToExplore(1)
+            .approachesToTest(2)
+            .customerConversationsTarget(2)
             .build();
 
     var version = service.snapshot(plan, "USER", "Definição inicial");
 
     assertThat(version.versionNumber()).isEqualTo(1);
-    assertThat(version.snapshotJson()).contains("Vender com lucro", "maxBudgetBrl");
+    assertThat(version.snapshotJson())
+        .contains(
+            "Vender com lucro",
+            "maxBudgetBrl",
+            "\"experimentsToCreate\":2",
+            "\"customerConversationsTarget\":2");
     assertThat(version.snapshotJson()).doesNotContain("hibernateLazyInitializer", "debug");
   }
 }

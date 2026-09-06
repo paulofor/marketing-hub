@@ -2184,6 +2184,19 @@ components:
         status:
           type: string
           enum: [DRAFT, READY, REJECTED]
+        agentReviewStatus:
+          type: string
+          nullable: true
+          enum: [PENDING, PROCESSING, APPROVED, ADJUST, REJECTED, FAILED]
+          description: Parecer independente de Têmis para anúncios; ausente em vídeos de experimento.
+        agentReviewSummary:
+          type: string
+          nullable: true
+          description: Resumo funcional do parecer especialista mais recente.
+        approvalBlockedReason:
+          type: string
+          nullable: true
+          description: Motivo canônico que impede a decisão humana neste momento.
         rejectionReason:
           type: string
     CreateLandingPageRequest:

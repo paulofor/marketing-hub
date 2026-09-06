@@ -37,6 +37,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class CommercialPlanService {
   private static final ObjectMapper JSON = new ObjectMapper();
+  private static final int NAME_MAX_LENGTH = 191;
+  private static final int SUMMARY_MAX_LENGTH = 512;
+  private static final int SHORT_CONTEXT_MAX_LENGTH = 191;
   private static final List<DefaultMilestone> DEFAULT_MILESTONES =
       List.of(
           new DefaultMilestone("NICHE_APPROVED", "Nicho aprovado"),
@@ -77,10 +80,18 @@ public class CommercialPlanService {
     this.versionService = versionService;
   }
 
-  /** Cria um plano de primeira venda e seus marcos comerciais padrao. */
+  /** Valida e cria um plano de primeira venda com seus marcos comerciais padrao. */
   @Transactional
   public CommercialPlan create(CreateCommercialPlanRequest request) {
     validateRequired(request.name(), "name");
+    validateTextContract(
+        request.name(),
+        request.targetAudience(),
+        request.mainPain(),
+        request.mainOffer(),
+        request.mainLeadMagnet(),
+        request.mainChannel(),
+        request.mainMetric());
     validateFinancialAssumptions(
         request.offerPriceBrl(),
         request.variableCostPerSaleBrl(),
@@ -137,11 +148,19 @@ public class CommercialPlanService {
     return syncExecution(saved);
   }
 
-  /** Atualiza os campos comerciais e vinculos principais de um plano. */
+  /** Valida e atualiza os campos comerciais e vinculos principais de um plano. */
   @Transactional
   public CommercialPlan update(Long id, UpdateCommercialPlanRequest request) {
     CommercialPlan plan = getPlan(id);
     validateRequired(request.name(), "name");
+    validateTextContract(
+        request.name(),
+        request.targetAudience(),
+        request.mainPain(),
+        request.mainOffer(),
+        request.mainLeadMagnet(),
+        request.mainChannel(),
+        request.mainMetric());
     validateFinancialAssumptions(
         request.offerPriceBrl(),
         request.variableCostPerSaleBrl(),
@@ -621,6 +640,33 @@ public class CommercialPlanService {
   private void validateRequired(String value, String fieldName) {
     if (isBlank(value)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " e obrigatorio");
+    }
+  }
+
+  /** Valida os limites textuais do contrato antes de alcançar as colunas do MySQL. */
+  private void validateTextContract(
+      String name,
+      String targetAudience,
+      String mainPain,
+      String mainOffer,
+      String mainLeadMagnet,
+      String mainChannel,
+      String mainMetric) {
+    validateMaximumLength(name, "name", NAME_MAX_LENGTH);
+    validateMaximumLength(targetAudience, "targetAudience", SUMMARY_MAX_LENGTH);
+    validateMaximumLength(mainPain, "mainPain", SUMMARY_MAX_LENGTH);
+    validateMaximumLength(mainOffer, "mainOffer", SUMMARY_MAX_LENGTH);
+    validateMaximumLength(mainLeadMagnet, "mainLeadMagnet", SUMMARY_MAX_LENGTH);
+    validateMaximumLength(mainChannel, "mainChannel", SHORT_CONTEXT_MAX_LENGTH);
+    validateMaximumLength(mainMetric, "mainMetric", SHORT_CONTEXT_MAX_LENGTH);
+  }
+
+  /** Recusa texto acima do limite sem truncar silenciosamente o contexto comercial. */
+  private void validateMaximumLength(String value, String fieldName, int maximumLength) {
+    if (value != null && value.length() > maximumLength) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          fieldName + " deve ter no maximo " + maximumLength + " caracteres");
     }
   }
 

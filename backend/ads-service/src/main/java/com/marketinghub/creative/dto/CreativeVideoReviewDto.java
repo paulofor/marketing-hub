@@ -1,5 +1,6 @@
 package com.marketinghub.creative.dto;
 
+import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -34,6 +35,9 @@ public record CreativeVideoReviewDto(
     String cta,
     String destinationUrl,
     CreativeStatus status,
+    CreativeAgentReviewStatus agentReviewStatus,
+    String agentReviewSummary,
+    String approvalBlockedReason,
     String rejectionReason,
     Instant reviewedAt,
     Instant createdAt,

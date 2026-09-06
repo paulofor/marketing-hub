@@ -15,6 +15,8 @@ Objetivo comercial: nenhum video gerado deve entrar em campanha, PDE ou pagina d
 9. O motivo de reprovacao deve ser usado como restricao da proxima geracao, refacao ou pos-producao.
 10. Antes da publicacao Meta, o worker deve bloquear qualquer criativo de video sem `audibleApprovedVideo=true` no contrato vindo do backend.
 11. Antes da publicacao Meta, o worker deve bloquear copy sem mensagem, headline, CTA ou aderencia minima a dor, promessa, recompensa ou CTA do experimento.
+12. Quando o item da fila for um anuncio, a aprovacao humana permanece bloqueada ate Têmis aprovar a midia, a copy e o destino observados; a mesma tela deve explicar o parecer e oferecer a reavaliacao quando a falha for corrigivel.
+13. A revisao visual de Têmis deve usar o headless shell pinado para a landing e FFmpeg/FFprobe estaticos e pinados para extrair tres quadros do MP4; o deploy deve comprovar os dois runtimes no container nao privilegiado e somente leitura antes de declarar o worker saudavel.
 
 ## Decisao de funil
 

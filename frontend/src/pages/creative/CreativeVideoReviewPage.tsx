@@ -4,15 +4,19 @@ import {
   ExternalLink,
   RefreshCcw,
   RotateCcw,
+  Sparkles,
   Video,
   XCircle,
 } from "lucide-react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
 import {
   CreativeVideoReview,
+  CreativeAgentReviewStatus,
   CreativeVideoReviewStatus,
+  useRequestCreativeVideoAgentReview,
   useCreativeVideoReviews,
   useUpdateCreativeVideoReviewStatus,
 } from "../../api/creative/useCreativeVideoReviews";
@@ -54,7 +58,9 @@ function funnelSlotLabel(video: CreativeVideoReview) {
   if (video.funnelSlot && FUNNEL_SLOT_LABELS[video.funnelSlot]) {
     return FUNNEL_SLOT_LABELS[video.funnelSlot];
   }
-  return video.sourceType === "CREATIVE" ? FUNNEL_SLOT_LABELS.AD : "Não informado";
+  return video.sourceType === "CREATIVE"
+    ? FUNNEL_SLOT_LABELS.AD
+    : "Não informado";
 }
 
 function statusClassName(status: CreativeVideoReviewStatus) {
@@ -73,6 +79,31 @@ function primaryMediaUrl(video: CreativeVideoReview) {
 
 function reviewKey(video: CreativeVideoReview) {
   return `${video.sourceType}:${video.id}`;
+}
+
+const AGENT_REVIEW_LABELS: Record<CreativeAgentReviewStatus, string> = {
+  PENDING: "aguardando análise",
+  PROCESSING: "analisando agora",
+  APPROVED: "aprovado",
+  ADJUST: "ajustes necessários",
+  REJECTED: "reprovado",
+  FAILED: "falha técnica",
+};
+
+function canRequestAgentReview(
+  status: CreativeAgentReviewStatus | null | undefined,
+) {
+  return status == null || ["ADJUST", "REJECTED", "FAILED"].includes(status);
+}
+
+function apiErrorMessage(error: unknown, fallback: string) {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    const backendMessage = error.response?.data?.message;
+    if (backendMessage?.trim()) {
+      return backendMessage.trim();
+    }
+  }
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 function toNumber(value: number | string | null | undefined) {
@@ -160,6 +191,7 @@ export default function CreativeVideoReviewPage() {
   const reviewQuery = useCreativeVideoReviews(filter);
   const summaryQuery = useCreativeVideoReviews("ALL");
   const updateStatus = useUpdateCreativeVideoReviewStatus();
+  const requestAgentReview = useRequestCreativeVideoAgentReview();
   const videos = useMemo(() => reviewQuery.data ?? [], [reviewQuery.data]);
   const summaryVideos = useMemo(
     () => summaryQuery.data ?? videos,
@@ -217,9 +249,18 @@ export default function CreativeVideoReviewPage() {
         toast.success("Vídeo voltou para revisão");
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao atualizar vídeo";
-      toast.error(message);
+      toast.error(apiErrorMessage(error, "Falha ao atualizar vídeo"));
+    }
+  };
+
+  const handleAgentReviewRequest = async (video: CreativeVideoReview) => {
+    try {
+      await requestAgentReview.mutateAsync(video.id);
+      toast.success("Anúncio reenviado para a revisão independente de Têmis");
+    } catch (error) {
+      toast.error(
+        apiErrorMessage(error, "Falha ao reenviar o anúncio para Têmis"),
+      );
     }
   };
 
@@ -334,7 +375,8 @@ export default function CreativeVideoReviewPage() {
         >
           {videos.map((video) => {
             const mediaUrl = primaryMediaUrl(video);
-            const isPending = updateStatus.isPending;
+            const isPending =
+              updateStatus.isPending || requestAgentReview.isPending;
             const key = reviewKey(video);
             return (
               <article className="creative-video-review-page__card" key={key}>
@@ -448,6 +490,29 @@ export default function CreativeVideoReviewPage() {
                     </div>
                   ) : null}
 
+                  {video.sourceType === "CREATIVE" &&
+                  video.agentReviewStatus ? (
+                    <div
+                      className={`alert py-2 ${
+                        video.agentReviewStatus === "APPROVED"
+                          ? "alert-success"
+                          : "alert-warning"
+                      }`}
+                      role="status"
+                    >
+                      <strong>
+                        Revisão de Têmis:{" "}
+                        {AGENT_REVIEW_LABELS[video.agentReviewStatus]}.
+                      </strong>
+                      {video.agentReviewSummary ? (
+                        <p className="mb-1">{video.agentReviewSummary}</p>
+                      ) : null}
+                      {video.approvalBlockedReason ? (
+                        <p className="mb-0">{video.approvalBlockedReason}</p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   {video.status === "REJECTED" && video.rejectionReason ? (
                     <div className="creative-video-review-page__rejection">
                       <strong>Motivo da reprovação</strong>
@@ -479,7 +544,12 @@ export default function CreativeVideoReviewPage() {
                       <button
                         type="button"
                         className="btn btn-success btn-sm"
-                        disabled={isPending || !mediaUrl}
+                        disabled={
+                          isPending ||
+                          !mediaUrl ||
+                          Boolean(video.approvalBlockedReason)
+                        }
+                        title={video.approvalBlockedReason ?? undefined}
                         onClick={() => handleStatusChange(video, "READY")}
                       >
                         {isPending ? (
@@ -512,6 +582,28 @@ export default function CreativeVideoReviewPage() {
                         {isPending ? "Atualizando..." : "Voltar para revisão"}
                       </button>
                     )}
+                    {video.sourceType === "CREATIVE" &&
+                    canRequestAgentReview(video.agentReviewStatus) ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline-warning btn-sm"
+                        disabled={isPending}
+                        onClick={() => handleAgentReviewRequest(video)}
+                      >
+                        {requestAgentReview.isPending ? (
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Sparkles size={16} aria-hidden="true" />
+                        )}
+                        {requestAgentReview.isPending
+                          ? "Reenviando..."
+                          : "Reavaliar com Têmis"}
+                      </button>
+                    ) : null}
                     {video.status === "DRAFT" ? (
                       <button
                         type="button"

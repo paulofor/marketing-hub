@@ -37,8 +37,10 @@ class MetaAdApproverCodexRunnerTest {
     assertThat(command).anyMatch(value -> value.startsWith("mcp_servers.meta_ad_approver.args="));
     assertThat(command)
         .contains(
-            "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\"http://backend:8000\",MCP_CREATIVE_ID=\"273\",MCP_EXPERIMENT_ID=\"88\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\",PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=\"/usr/bin/chromium\"}");
-    assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
+            "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\"http://backend:8000\",MCP_CREATIVE_ID=\"273\",MCP_EXPERIMENT_ID=\"88\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\"}");
+    assertThat(command)
+        .doesNotContain(
+            "--dangerously-bypass-approvals-and-sandbox", "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
   }
 
   /** Confirma que o MCP temporário resolve as dependências na imagem ou no módulo local. */
@@ -49,12 +51,16 @@ class MetaAdApproverCodexRunnerTest {
 
     Path server = runner.materializeMcp();
     try {
-      assertThat(Files.readString(server)).contains("from 'playwright-core'");
+      assertThat(Files.readString(server))
+          .contains("from 'playwright-core'", "from './video-frame-extractor.mjs'");
+      assertThat(Files.readString(server.getParent().resolve("video-frame-extractor.mjs")))
+          .contains("/usr/local/bin/ffmpeg", "/usr/local/bin/ffprobe");
       assertThat(Files.isSymbolicLink(server.getParent().resolve("node_modules"))).isTrue();
       Path dependencies = Files.readSymbolicLink(server.getParent().resolve("node_modules"));
       assertThat(dependencies.resolve("@modelcontextprotocol/sdk")).isDirectory();
     } finally {
       Files.deleteIfExists(server);
+      Files.deleteIfExists(server.getParent().resolve("video-frame-extractor.mjs"));
       Files.deleteIfExists(server.getParent().resolve("node_modules"));
       Files.deleteIfExists(server.getParent());
     }
@@ -162,12 +168,14 @@ class MetaAdApproverCodexRunnerTest {
             "waitForCommercialLanding(page)",
             "text.length >= 200",
             "Preparando uma oferta especial para você...",
+            "extractRemoteVideoFrames(url, {",
+            "decoder: 'FFMPEG_7_1_1'",
             "readOnlyHint: true",
             "openWorldHint: true",
             "destructiveHint: false");
     assertThat(mcp)
         .contains("/api/internal/agent-learning/v1/agents/meta-ad-approver/promoted")
-        .doesNotContain("/promotion");
+        .doesNotContain("/promotion", "executablePath", "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
   }
 
   /** Garante que baixa qualidade visual bloqueie e anteceda otimizações secundárias. */

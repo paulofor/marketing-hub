@@ -6901,3 +6901,20 @@
 - **Validação:** reprodução e layout do candidato foram aprovados em desktop, iPhone 15 Pro e Pixel
   7. Revisão humana e geração HLS continuam gates posteriores; nenhuma impressão, clique, checkout,
   venda ou gasto de mídia foi registrado por esta produção.
+
+## 2026-09-05 — Vega #91: bloqueio de aprovação humana diagnosticado
+
+- O botão da fila enviou corretamente `PATCH /api/creatives/video-review/CREATIVE/524/status`, mas o
+  backend respondeu 409 porque o parecer independente permanecia `ADJUST`.
+- A governança do vídeo #38 está `VERIFIED`, com arquivo final, SHA-256, origem sintética, direitos e
+  licença Runway. Uma nova revisão foi solicitada pela tela e confirmou a causa técnica restante:
+  o Chrome completo não iniciava no container somente leitura de Têmis.
+- A primeira reprodução local confirmou que o headless shell corrige a inicialização, mas revelou
+  que tanto ele quanto o Chromium completo empacotado não decodificam o H.264/AAC do MP4. A correção
+  final preserva o headless shell para a landing e usa FFmpeg/FFprobe 7.1.1 pinados para extrair três
+  quadros do vídeo. A fila também passa a explicar o parecer e oferecer a reavaliação sem exigir que
+  o operador descubra outra aba.
+- O container corrigido leu o arquivo produtivo de 15,083 segundos, extraiu três quadros distintos e
+  capturou a landing real em 390×844 e 1440×1000, sempre em modo somente leitura e sem mutação.
+- Nenhuma aprovação foi forçada e nenhuma campanha, impressão, clique, checkout, venda ou gasto de
+  mídia foi criado durante a investigação.

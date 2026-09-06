@@ -96,6 +96,14 @@ jobs:
           touch /tmp/openai_api_key
           mkdir -p /tmp/codex-home
           META_AD_APPROVER_CODEX_HOME=/tmp/codex-home OPENAI_API_KEY_HOST_FILE=/tmp/openai_api_key docker compose -f meta-ad-approver-worker/docker-compose.yml config --quiet
+      - name: Validate reviewer visual runtime in confinement
+        run: |
+          docker run --rm --init --read-only \
+            --tmpfs /tmp:size=256m,noexec,nosuid \
+            --security-opt no-new-privileges:true \
+            --entrypoint node \
+            marketing-hub/meta-ad-approver-worker:${{ github.sha }} \
+            /app/browser-runtime-check.mjs
 
   deploy:
     name: Deploy independent agent
@@ -194,6 +202,7 @@ jobs:
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -s /app/commercial-evidence/commercial-review-bundle-index-v1.json' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -x /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -s /workspace/marketing-hub/pde-platform/contracts/kit-whatsapp-pronto-v1.json && test -s /workspace/marketing-hub/pde-platform/contracts/commercial-journey-event-contract-v1.json && test -s /workspace/marketing-hub/pde-platform/frontend/public/materials/kit-whatsapp-v1/01-comece-aqui.md' \
+                   && docker compose exec -T meta-ad-approver-worker node /app/browser-runtime-check.mjs \
                    && docker compose exec -T meta-ad-approver-worker node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \

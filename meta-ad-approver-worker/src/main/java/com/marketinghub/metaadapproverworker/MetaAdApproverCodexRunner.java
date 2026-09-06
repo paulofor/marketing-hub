@@ -131,22 +131,15 @@ public class MetaAdApproverCodexRunner {
     return command;
   }
 
-  /** Declara ao Codex as variáveis não sensíveis permitidas no processo MCP deste job. */
+  /** Declara ao Codex as variáveis do job e preserva a seleção segura do headless shell. */
   private String mcpEnvironment(MetaAdReviewJob job) {
-    String configuredChromiumExecutable = System.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
-    String chromiumExecutable =
-        configuredChromiumExecutable == null || configuredChromiumExecutable.isBlank()
-            ? "/usr/bin/chromium"
-            : configuredChromiumExecutable;
     return "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\""
         + properties.getMarketingHubUrl()
         + "\",MCP_CREATIVE_ID=\""
         + job.creativeId()
         + "\",MCP_EXPERIMENT_ID=\""
         + job.experimentId()
-        + "\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\",PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=\""
-        + chromiumExecutable
-        + "\"}";
+        + "\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\"}";
   }
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */
@@ -231,7 +224,9 @@ public class MetaAdApproverCodexRunner {
   Path materializeMcp() throws IOException {
     Path directory = Files.createTempDirectory("meta-ad-approver-mcp-");
     Path server = directory.resolve("meta-ad-approver.mjs");
+    Path videoFrameExtractor = directory.resolve("video-frame-extractor.mjs");
     Files.writeString(server, read("mcp/meta-ad-approver.mjs"));
+    Files.writeString(videoFrameExtractor, read("mcp/video-frame-extractor.mjs"));
     Path imageDependencies = Path.of("/app/node_modules/@modelcontextprotocol/sdk");
     Path dependencies =
         Files.isDirectory(imageDependencies)
@@ -248,6 +243,7 @@ public class MetaAdApproverCodexRunner {
   private void deleteMcpRuntime(Path server) throws IOException {
     Path directory = server.getParent();
     Files.deleteIfExists(server);
+    Files.deleteIfExists(directory.resolve("video-frame-extractor.mjs"));
     Files.deleteIfExists(directory.resolve("node_modules"));
     Files.deleteIfExists(directory);
   }

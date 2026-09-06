@@ -65,8 +65,24 @@ produto deve declarar isso de forma literal; escrever apenas `Instagram`, `Meta`
   legado do plano pode apontar para ele como contexto operacional de Hermes; isso não altera o canal
   de aquisição decidido nem substitui a escolha explícita do `91` nas ações da campanha paga.
 - Em Mira, as duas leituras privadas continuam como gate de utilidade e segurança anterior à
-  aquisição. Elas não são canal de vendas. Depois da aprovação desse gate, o plano deve preparar um
-  experimento pago próprio para Instagram, com identidade pública separada do codinome interno.
+  aquisição comercial. Elas não são canal de vendas. Uma campanha paga pode preceder o gate somente
+  para recrutar duas participantes qualificadas, em experimento segregado, com R$ 20 por dia, teto
+  total de R$ 100 e pausa automática em duas qualificadas ou no teto. O plano deve medir custo por
+  qualificada e conclusão das leituras sem contabilizar lead, QA ou leitura como venda. Depois da
+  aprovação do gate, um experimento pago distinto deve validar aquisição e vendas, com nova
+  autorização e identidade pública separada do codinome interno.
+- Na revisão de estratégia de Mira solicitada em 2026-09-05, preparar o criativo e a jornada de
+  Instagram Ads passa a ser a próxima ação concreta, em paralelo à viabilização das leituras. A
+  aquisição não deve pressupor rede pessoal, audiência orgânica própria ou convites distribuídos
+  pelo usuário a conhecidas. O objetivo final continua sendo compra real e entrega satisfatória;
+  o primeiro teste pago autorizado permanece o recrutamento gratuito, com os limites acima.
+  Iniciar pela demonstração estática do benefício e do protótipo real reduz dependências de vídeo.
+  Briefing pode ser preparado imediatamente; produção no Estúdio de Íris exige prova `PRODUCT_PROOF`
+  ou `DELIVERY` aprovada, e publicação exige os gates do experimento correspondente. Preparação
+  antecipada não conclui a etapa 3 nem aprova automaticamente as etapas 4 e 5 da cadeia.
+  Não exigir nova autorização para os mesmos R$ 20/dia e R$ 100 já autorizados para recrutamento;
+  a futura campanha de vendas e custos de produção adicionais precisam de cobertura própria.
+  Direção e briefing: [estratégia de criativo e mídia paga de Mira](../marketing/mira-criativo-midia-paga-2026-09-05.md).
 - Mesmo quando o contrato técnico usar plataforma `FACEBOOK` por representar a infraestrutura do
   Meta Ads, plano, criativo, campanha e relatório devem explicitar o posicionamento no Instagram.
 - Tráfego orgânico, abordagem direta, QA e leitura privada podem apoiar aprendizado, mas devem ficar

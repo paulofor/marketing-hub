@@ -3512,6 +3512,11 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   capacidades canônicas do plano, mantendo os contratos integrais nas auditorias e no harness.
 - **Prevenção:** teste de materialização usa textos maiores que as colunas e comprova os limites
   antes de qualquer persistência física.
+- **Recorrência fechada localmente em 2026-09-05:** a edição humana do plano ainda permitia enviar
+  `main_channel` e `main_metric` acima de 191 caracteres e o endpoint devolvia HTTP 500 do MySQL. O
+  frontend passa a aplicar os mesmos limites do schema e o serviço valida criação e atualização
+  antes do repositório, devolvendo erro de contrato sem truncamento silencioso. Testes cobrem os
+  atributos da tela e a rejeição anterior à gravação.
 
 ## LOOP-EXECUCAO-CONCLUIDA-EXIBE-ERRO-SUPERADO — resumo contradiz retentativa bem-sucedida
 
@@ -3951,3 +3956,63 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Causa-raiz:** perda de parte do contrato de autorização entre backend e integração Meta; o teto financeiro sozinho não limita o período de veiculação.
 - **Correção local:** tradução de datas inclusivas em horário de Brasília para `start_time/end_time`, sem antecipar início futuro; período ausente, invertido ou vencido bloqueia antes da primeira chamada externa.
 - **Prevenção:** `CampaignScheduleTest` valida limites temporais, e `FacebookCampaignServiceTest` inspeciona os parâmetros reais enviados ao servidor Meta simulado e a ausência de chamadas para período vencido. Regra registrada no cânone de publicação Facebook.
+
+## LOOP-TEMIS-VIDEO-RUNTIME-INCOMPATIVEL — parecer bloqueia porque a inspeção visual não inicia
+
+- **Data:** 2026-09-05.
+- **Sintoma confirmado:** a aprovação humana do anúncio #524 retornou HTTP 409. Depois que a prova
+  de direitos passou a chegar corretamente ao contexto, a nova revisão de Têmis permaneceu em
+  `ADJUST` porque `inspecionar_midia` e `inspecionar_landing` encerraram com
+  `chrome_crashpad_handler: --database is required`.
+- **Histórico e reprodução:** Psique já havia resolvido a inicialização da landing usando o headless
+  shell empacotado pelo Playwright. A repetição dessa correção fez o navegador iniciar, mas a prova
+  com o arquivo produtivo revelou um segundo contrato ausente: os Chromium da imagem retornam
+  `MEDIA_ELEMENT_ERROR: Format error` e anunciam suporte vazio a H.264/AAC.
+- **Alternativas avaliadas:** ignorar Têmis abriria risco comercial; trocar por um navegador completo
+  gravável e com codecs aumentaria a superfície e a instabilidade do build; separar os runtimes usa
+  o headless shell para a landing e um decoder estático para o MP4. Foi escolhida a terceira.
+- **Correção sistêmica:** o worker deixa de criar e injetar `/usr/bin/chromium`, mantém o headless
+  shell para HTML e incorpora FFmpeg/FFprobe 7.1.1 por imagem e digest pinados. O vídeo é limitado a
+  64 MiB, salvo apenas em diretório temporário `0600`, inspecionado em 10%, 50% e 90%, com timeout
+  de 120 segundos por processo, e removido no `finally`. A fila humana expõe status, resumo, motivo
+  canônico de bloqueio e nova revisão.
+- **Prevenção:** testes recusam `executablePath`; o CI e o deploy sintetizam H.264, extraem três JPEGs
+  e capturam HTML como usuário não-root em filesystem read-only, recusam arquivo inválido e mantêm o
+  log da falha assíncrona no mesmo contexto do request. A prova adicional abriu o vídeo produtivo de
+  15,083 segundos e a landing mobile/desktop sem mutação. Referência:
+  `docs/homologacao/vega91-aprovacao-video-temis-v1.md`.
+
+## LOOP-ACTIONS-CARD-VALIDO-TRATADO-COMO-COLECAO-VENCIDA — pesquisa nova bloqueia deploy
+
+- **Data:** 2026-09-05.
+- **Evidência:** Build & Deploy `33991538211` falhou somente em
+  `ResearchIntelligenceServiceTest.shouldNeverDeliverExpiredResearchCards`; Argos `33991538203`
+  aprovou seus testes e parou ao aguardar esse backend. O build `33976590320` estava verde;
+  a comparação até `aec022e7` contém somente dois artigos novos, incluindo vídeo de 05/09.
+- **Causa-raiz:** o teste usava 20/10 e proibia toda a coleção `video`, embora a regra de 45 dias
+  mantenha o artigo de 05/09 válido inclusive em 20/10. O filtro de produção estava correto.
+- **Alternativas:** repetir o CI preservaria a falha; retirar o gate perderia proteção; validar IDs
+  vencidos e limites por cartão mantém o catálogo evolutivo e o contrato. Escolhida a terceira.
+- **Correção:** relógio controlado nos testes, exclusão por ID/validade e casos antes, no dia e depois
+  do vencimento de uma versão persistida. Não altera a validade comercial nem o bloqueio de Argos.
+- **Prevenção:** teste continua compilando `/pesquisas`, exige seleção não vazia e ausência de todos
+  os cartões vencidos; o teste de limite verifica também contagem ativa e preservação do histórico.
+- **Homologação:** `docs/homologacao/actions-cards-mira-2026-09-05.md`.
+
+## LOOP-ACTIONS-MIRA-SIMULACAO-LEGADA-DUPLICADA — retomada exibe duas ações concluídas
+
+- **Data:** 2026-09-05.
+- **Evidência:** deploy PDE `33969112059` aprovou build, health e HTTPS, mas os três projetos do smoke
+  falharam por dois botões `Simulação concluída`. A suíte anterior `33965599141` não executou essa
+  publicação direcionada; banco vazio não exercitava o estado legado.
+- **Causa-raiz:** sessão com `CHECKOUT_STARTED` e sem término explícito satisfazia simultaneamente
+  o bloco da pergunta de preço e o bloco da simulação concluída. A interface também ainda oferecia
+  uma resposta negativa incompatível com o sinal já preservado.
+- **Alternativas:** selecionar apenas o primeiro botão esconderia a duplicação; limpar a sessão
+  apagaria evidência; renderizar pelo sinal preservado mantém histórico e corrige a experiência.
+- **Correção:** simulação já registrada não mostra novamente pergunta de preço ou resposta negativa;
+  apenas um botão concluído é renderizado. Término ausente permite `Encerrar leitura` explicitamente,
+  pelo endpoint existente, sem inventar data de encerramento ou emitir eventos ao reabrir a tela.
+- **Prevenção:** o mesmo smoke usado no CI cobre término ausente, falso e verdadeiro, retomada sem
+  mutação, encerramento explícito e unicidade do botão, em Chromium desktop, iPhone e Pixel.
+- **Homologação:** `docs/homologacao/actions-cards-mira-2026-09-05.md`.

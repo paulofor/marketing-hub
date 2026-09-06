@@ -303,7 +303,7 @@ export function MiraPrivatePrototype() {
             Não, prefiro a alternativa gratuita
           </button>
         )}
-        {preferred && !finished && (
+        {preferred && !finished && !checkout && (
           <section className="mira-private-question">
             <h2>Você consideraria avançar por R$ 49?</h2>
             <p>
@@ -320,7 +320,7 @@ export function MiraPrivatePrototype() {
             </button>
           </section>
         )}
-        {preferred && !finished && (
+        {preferred && !finished && !checkout && (
           <button
             className="secondary-button"
             disabled={busy}
@@ -337,9 +337,23 @@ export function MiraPrivatePrototype() {
           </div>
         )}
         {checkout && (
-          <button className="primary-button" disabled>
-            Simulação concluída
-          </button>
+          <>
+            <button className="primary-button" disabled>
+              Simulação concluída
+            </button>
+            {!finished && (
+              <>
+                <p>Nenhuma compra foi realizada.</p>
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => void finish()}
+                >
+                  Encerrar leitura
+                </button>
+              </>
+            )}
+          </>
         )}
         {!finished && !used && (
           <button

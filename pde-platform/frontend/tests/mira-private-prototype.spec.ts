@@ -13,6 +13,77 @@ async function expectParticipantLanguage(page: Page) {
 test.describe("protótipo privado de Mira", () => {
   test.skip(!token, "Exige token interno segregado da rodada local.");
 
+  for (const readingFinished of [undefined, false, true]) {
+    test(`retoma simulação preservada com término ${String(readingFinished)}`, async ({
+      page,
+    }) => {
+      const mutations: string[] = [];
+      const restored = {
+        sessionToken: "local-legacy-session",
+        participantReference: "QA-LOCAL",
+        trafficClass: "QA_INTERNAL",
+        status: "READY",
+        products: [],
+        routine: [
+          {
+            productName: "Hidratante",
+            order: 2,
+            documentedDirection: "Aplicar após a limpeza",
+            safetyNote: "Conforme rótulo",
+          },
+        ],
+        events: [
+          "EXPERIENCE_STARTED",
+          "VALUE_MOMENT",
+          "READY_RESULT_USED",
+          "PREFERRED_OVER_FREE",
+          "CHECKOUT_STARTED",
+        ],
+        prototypeVersion: "mira-private-v1",
+        checkoutMode: "SIMULATED_NO_CHARGE",
+        readingFinished,
+      };
+      await page.addInitScript(() =>
+        window.sessionStorage.setItem(
+          "mira-private-session",
+          "local-legacy-session",
+        ),
+      );
+      await page.route("**/api/pde/mira/private/v1/**", async (route) => {
+        if (route.request().method() !== "GET")
+          mutations.push(route.request().url());
+        await route.fulfill({ json: restored });
+      });
+      await page.goto("/mira-private");
+      const completed = page.getByRole("button", {
+        name: "Simulação concluída",
+        exact: true,
+      });
+      await expect(completed).toHaveCount(1);
+      await expect(completed).toBeDisabled();
+      await expect(
+        page.getByText("Nenhuma compra foi realizada", { exact: false }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Não avançaria por esse valor" }),
+      ).toHaveCount(0);
+      const finish = page.getByRole("button", {
+        name: "Encerrar leitura",
+        exact: true,
+      });
+      await expect(finish).toHaveCount(readingFinished ? 0 : 1);
+      await expectParticipantLanguage(page);
+      await page.reload();
+      await expect(completed).toHaveCount(1);
+      expect(mutations).toEqual([]);
+      if (!readingFinished) {
+        await finish.click();
+        await expect.poll(() => mutations.length).toBe(1);
+        expect(mutations[0]).toMatch(/\/finish$/);
+      }
+    });
+  }
+
   test("conclui jornada, retoma e não oferece pagamento", async ({
     page,
   }, testInfo) => {
@@ -98,6 +169,9 @@ test.describe("protótipo privado de Mira", () => {
       name: "Simular avanço — sem cobrança",
     });
     if (await checkout.count()) await checkout.click();
+    await expect(
+      page.getByRole("button", { name: "Simulação concluída" }),
+    ).toHaveCount(1);
     await expect(
       page.getByRole("button", { name: "Simulação concluída" }),
     ).toBeDisabled();

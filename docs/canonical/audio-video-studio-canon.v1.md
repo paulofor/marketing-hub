@@ -396,6 +396,17 @@ hash do corpo, sem transmitir o segredo de assinatura. Secrets devem ser montado
 incluídos na imagem, no repositório ou em logs. Antes de existir domínio com HTTPS, o container deve
 escutar somente em loopback no host escolhido; publicar a porta em HTTP aberto é proibido.
 
+Por decisão de 2026-09-07, todo JSON de cartão versionado diretamente em
+`pesquisas/<colecao>/cards/` na branch `main` deve ser sincronizado automaticamente pela GitHub Action
+`Publicar cards no Harness Library`. O fluxo deve observar todas as quatro coleções canônicas, exigir
+que a coleção do payload corresponda à pasta, validar contrato, referência e SHA-256 da fonte local
+antes da chamada e derivar a chave idempotente dos bytes do JSON. Um `push` válido dispara a
+sincronização imediata; automações encadeadas podem usar o evento
+`repository_dispatch:harness-library-card-created`, e uma reconciliação diária reapresenta todos os
+arquivos com as mesmas chaves para recuperar eventos perdidos sem criar novas versões. A automação
+somente cadastra ou reconcilia a versão existente; o cartão continua em `DRAFT` até revisão e ativação
+pelos gates editoriais já definidos.
+
 O primeiro host operacional planejado é `163.245.200.7`, por possuir a maior folga observada de
 memória e disco entre os hosts inventariados. O serviço deve usar a porta interna `8103`, imagem
 imutável gerada por GitHub Actions e deploy somente a partir de `main`. A liberação pública depende de

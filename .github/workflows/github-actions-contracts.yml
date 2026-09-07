@@ -35,6 +35,8 @@ on:
       - "scripts/actionlint-shellcheck.sh"
       - "scripts/test-actionlint-queue-support.sh"
       - "scripts/test-actionlint-shellcheck-policy.sh"
+      - "scripts/publish-harness-cards.sh"
+      - "scripts/test-publish-harness-cards.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-up-with-transient-retry.sh"
@@ -86,6 +88,8 @@ on:
       - "scripts/actionlint-shellcheck.sh"
       - "scripts/test-actionlint-queue-support.sh"
       - "scripts/test-actionlint-shellcheck-policy.sh"
+      - "scripts/publish-harness-cards.sh"
+      - "scripts/test-publish-harness-cards.sh"
       - "scripts/test-docker-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-pull-with-transient-retry.sh"
       - "scripts/test-docker-compose-up-with-transient-retry.sh"
@@ -153,6 +157,8 @@ jobs:
           bash -n scripts/actionlint-shellcheck.sh
           bash -n scripts/test-actionlint-queue-support.sh
           bash -n scripts/test-actionlint-shellcheck-policy.sh
+          bash -n scripts/publish-harness-cards.sh
+          bash -n scripts/test-publish-harness-cards.sh
           bash -n scripts/test-docker-pull-with-transient-retry.sh
           bash -n scripts/test-docker-compose-pull-with-transient-retry.sh
           bash -n scripts/test-docker-compose-up-with-transient-retry.sh
@@ -181,6 +187,9 @@ jobs:
 
       - name: Validar política ShellCheck do Actionlint
         run: bash scripts/test-actionlint-shellcheck-policy.sh
+
+      - name: Validar publicação automática dos cards do Harness
+        run: bash scripts/test-publish-harness-cards.sh
 
       - name: Validar retry transitório do Docker
         run: bash scripts/test-docker-pull-with-transient-retry.sh

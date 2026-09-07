@@ -1,0 +1,18 @@
+{
+  "cardKey": "ugc-clientes-confianca",
+  "collection": "neuromarketing",
+  "title": "UGC de clientes merece teste contra criativo polido",
+  "finding": "Na pesquisa revisada, 57% dos consumidores online declararam preferir vídeos caseiros gravados por clientes, contra 22% que preferiram produções profissionais; avaliações e recomendações pessoais também apareceram como sinais fortes de confiança.",
+  "mechanism": "Conteúdo de aparência cotidiana e prova social podem aumentar percepção de autenticidade, proximidade e reduzir incerteza. Esses mecanismos são hipóteses interpretativas; a pesquisa não prova efeito causal em clique ou venda.",
+  "commercialApplication": "No Marketing Hub, testar criativos UGC de cliente real ou demonstração simples contra peças mais produzidas, mantendo oferta, público, orçamento e CTA comparáveis e medindo retenção, CTA, lead, checkout e pagamento.",
+  "evidenceStrength": "Moderada para preferência declarada de formato e confiança; baixa para afirmar que UGC aumenta conversão, pois não houve experimento controlado nem observação direta de vendas.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "Para a mesma oferta e audiência, um criativo UGC autêntico elevará retenção inicial e taxa de CTA e poderá aumentar pagamentos reconciliados em relação a uma peça polida, sem elevar rejeição.",
+  "risks": "UGC artificial ou encenado pode reduzir confiança; uso de imagem exige autorização; prova social pode virar alegação enganosa; peças menos produzidas podem prejudicar percepção de qualidade em alguns nichos.",
+  "limits": "A evidência é autodeclarada, baseada em 800 consumidores online, e não separa categorias de produto, ticket ou estágio do funil. Preferência declarada não equivale a comportamento de compra.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-07-ugc-clientes-confianca.md",
+  "sourceTitle": "Fonte revisada — UGC de clientes e preferência declarada no comércio digital brasileiro",
+  "sourceSha256": "7f176f82ed6f68f9f5647b4a991dc7d1899aa39ba482135c5f427df2f207471e"
+}

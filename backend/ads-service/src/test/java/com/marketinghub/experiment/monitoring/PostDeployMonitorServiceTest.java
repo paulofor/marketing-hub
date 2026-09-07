@@ -192,6 +192,53 @@ class PostDeployMonitorServiceTest {
     assertThat(response.alerts()).anyMatch(alert -> alert.contains("Analytics PDE indisponível"));
   }
 
+  /**
+   * Mantém uma tentativa Meta recuperada na auditoria sem exibi-la como falha operacional atual.
+   */
+  @Test
+  void ignoresMetaFailureWhenSameOperationSucceedsLater() {
+    Experiment experiment = Experiment.builder().id(91L).build();
+    when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
+    when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.empty());
+    when(apiLogService.findLogs(91L, 50))
+        .thenReturn(
+            List.of(
+                facebookLog(943L, 200, null, Instant.parse("2026-09-07T03:14:46.577964Z")),
+                facebookLog(
+                    942L, 400, "400 Bad Request", Instant.parse("2026-09-07T03:14:45.800420Z"))));
+    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any(), any()))
+        .thenReturn(emptyPdeSummary());
+
+    var response = service.summarize(91L, null);
+
+    assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.WAITING_DATA);
+    assertThat(response.logs().totalLogs()).isEqualTo(2);
+    assertThat(response.logs().errorLogs()).isZero();
+    assertThat(response.logs().recentErrors()).isEmpty();
+    assertThat(response.alerts()).noneMatch(alert -> alert.contains("erros recentes"));
+  }
+
+  /** Mantém atenção técnica quando a operação Meta falha e não possui retentativa bem-sucedida. */
+  @Test
+  void keepsMetaFailureActiveWithoutSuccessfulRetry() {
+    Experiment experiment = Experiment.builder().id(91L).build();
+    when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
+    when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.empty());
+    when(apiLogService.findLogs(91L, 50))
+        .thenReturn(
+            List.of(
+                facebookLog(
+                    942L, 400, "400 Bad Request", Instant.parse("2026-09-07T03:14:45.800420Z"))));
+    when(pdeAnalyticsClient.fetchSummary(eq("metodo-musa-7-dias"), any(), any()))
+        .thenReturn(emptyPdeSummary());
+
+    var response = service.summarize(91L, null);
+
+    assertThat(response.decision()).isEqualTo(PostDeployMonitorDecision.TECHNICAL_ATTENTION);
+    assertThat(response.logs().errorLogs()).isEqualTo(1);
+    assertThat(response.logs().recentErrors()).hasSize(1);
+  }
+
   /** Recomenda escala gradual quando há compra aprovada no PDE. */
   @Test
   void recommendsScaleWhenPdeHasApprovedPurchase() {
@@ -557,14 +604,10 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pde().trafficSources())
         .extracting("utmCampaign")
         .containsExactly("120250742286340326");
-    assertThat(response.pde().trafficQualityBreakdown())
-        .extracting("trafficQuality")
-        .contains("HUMAN");
-    assertThat(response.pde().deviceBreakdown())
-        .extracting("deviceType")
-        .contains("mobile", "desktop");
-    assertThat(response.pde().screenSizeBreakdown()).extracting("screenSize").contains("360x690");
-    assertThat(response.pde().recentJourneys()).extracting("sessionId").contains("session-current");
+    assertThat(response.pde().trafficQualityBreakdown()).isEmpty();
+    assertThat(response.pde().deviceBreakdown()).isEmpty();
+    assertThat(response.pde().screenSizeBreakdown()).isEmpty();
+    assertThat(response.pde().recentJourneys()).isEmpty();
     assertThat(response.pde().measurementRecommendation())
         .contains("histórico de outras campanhas fica fora");
   }
@@ -703,5 +746,66 @@ class PostDeployMonitorServiceTest {
         null,
         null,
         Instant.parse("2026-07-21T02:00:01Z"));
+  }
+
+  /** Cria tentativa de publicação Meta para provar recuperação ou falha ainda pendente. */
+  private ExperimentFacebookApiLogDto facebookLog(
+      Long id, Integer statusCode, String errorMessage, Instant requestedAt) {
+    return new ExperimentFacebookApiLogDto(
+        id,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "CAMPAIGN_CREATION",
+        "META",
+        "/v23.0/act_939323521124952/campaigns",
+        "POST",
+        statusCode,
+        errorMessage,
+        requestedAt,
+        requestedAt.plusSeconds(1),
+        1000L,
+        null,
+        null,
+        requestedAt.plusSeconds(1));
+  }
+
+  /** Cria analytics PDE disponível e vazio para isolar a decisão sobre logs Meta. */
+  private PdeAnalyticsSummary emptyPdeSummary() {
+    return new PdeAnalyticsSummary(
+        "metodo-musa-7-dias",
+        "musa-pde-entry-v7-espelho-antes-de-sair",
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
   }
 }

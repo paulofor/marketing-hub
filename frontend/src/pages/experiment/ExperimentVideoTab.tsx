@@ -49,7 +49,10 @@ function formatInteger(value?: number | null) {
   return new Intl.NumberFormat("pt-BR").format(value ?? 0);
 }
 
-function buildExperimentTestUrl(url?: string | null) {
+function buildExperimentTestUrl(
+  url?: string | null,
+  analyticsDisabled = false,
+) {
   const trimmedUrl = url?.trim();
   if (!trimmedUrl) {
     return null;
@@ -58,10 +61,14 @@ function buildExperimentTestUrl(url?: string | null) {
   try {
     const parsedUrl = new URL(trimmedUrl);
     parsedUrl.searchParams.set("mh_test", "1");
+    if (analyticsDisabled) {
+      parsedUrl.searchParams.set("pde_analytics", "off");
+    }
     return parsedUrl.toString();
   } catch {
     const separator = trimmedUrl.includes("?") ? "&" : "?";
-    return `${trimmedUrl}${separator}mh_test=1`;
+    const analyticsParameter = analyticsDisabled ? "&pde_analytics=off" : "";
+    return `${trimmedUrl}${separator}mh_test=1${analyticsParameter}`;
   }
 }
 
@@ -204,17 +211,19 @@ export default function ExperimentVideoTab({
   experiment,
   alterationLocked = false,
 }: ExperimentVideoTabProps) {
+  const isPdeExperiment =
+    experiment.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const { data: videoAssets, isLoading } = useExperimentVideoAssets(
     experiment.id,
   );
-  const geraSalesPagePublications = useGeraSalesPagePublications(experiment.id);
+  const geraSalesPagePublications = useGeraSalesPagePublications(
+    isPdeExperiment ? undefined : experiment.id,
+  );
   const performanceDashboard = useExperimentVideoPerformanceDashboard(
     experiment.id,
   );
   const pdeVersionVideos = useProductPdeVersionVideos(
-    experiment.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
-      ? MUSA_PRODUCT_ID
-      : undefined,
+    isPdeExperiment ? MUSA_PRODUCT_ID : undefined,
   );
   const tenantContext = useTenantContext();
   const updateVideoReview = useUpdateExperimentVideoAssetReview();
@@ -301,7 +310,7 @@ export default function ExperimentVideoTab({
     ) ?? geraSalesPagePublications.data?.[0];
   const salesPagePreviewUrl =
     buildExperimentTestUrl(latestSalesPagePublication?.salesPageUrl) ??
-    buildExperimentTestUrl(experiment.followUpActionUrl);
+    buildExperimentTestUrl(experiment.followUpActionUrl, isPdeExperiment);
   const salesPageLabel = latestSalesPagePublication?.publishedAt
     ? formatDate(latestSalesPagePublication.publishedAt)
     : experiment.followUpActionUrl
@@ -574,7 +583,9 @@ export default function ExperimentVideoTab({
               <div className="experiment-video-preview-card__sales-page">
                 <div className="experiment-video-preview-card__sales-page-header">
                   <div>
-                    <div className="fw-semibold">Página de venda</div>
+                    <div className="fw-semibold">
+                      {isPdeExperiment ? "Experiência PDE" : "Página de venda"}
+                    </div>
                     <div className="text-muted small">{salesPageLabel}</div>
                   </div>
                   {salesPagePreviewUrl && (
@@ -584,16 +595,22 @@ export default function ExperimentVideoTab({
                       rel="noreferrer"
                       className="btn btn-sm btn-outline-primary"
                     >
-                      Abrir página
+                      {isPdeExperiment ? "Abrir experiência" : "Abrir página"}
                     </a>
                   )}
                 </div>
-                {salesPagePreviewUrl ? (
+                {salesPagePreviewUrl && !isPdeExperiment ? (
                   <iframe
                     className="experiment-video-preview-card__sales-page-frame"
                     title={`Página de venda do experimento ${experiment.id}`}
                     src={salesPagePreviewUrl}
                   />
+                ) : salesPagePreviewUrl ? (
+                  <div className="experiment-video-preview-card__empty px-4 text-center">
+                    A experiência PDE abre em nova aba de teste para preservar o
+                    armazenamento do navegador e não gerar navegação dentro do
+                    painel administrativo.
+                  </div>
                 ) : (
                   <div className="experiment-video-preview-card__empty">
                     Página de venda ainda não publicada.

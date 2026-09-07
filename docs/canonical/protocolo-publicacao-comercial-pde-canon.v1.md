@@ -117,6 +117,53 @@ O painel deve diferenciar claramente:
 - historico de versao anterior;
 - resultado comercial limpo.
 
+## Regra do cockpit operacional do experimento
+
+O detalhe de um experimento PDE deve separar visualmente `Operacao atual`, `Ativos`,
+`Planejamento` e `Auditoria`. A operacao atual deve aparecer primeiro e usar o status persistido do
+experimento, da campanha, do conjunto e do anuncio. Checklists, runs e processos anteriores a
+publicacao permanecem acessiveis como auditoria, mas nao podem parecer um bloqueio vigente quando a
+campanha ja foi publicada.
+
+As abas devem respeitar o tipo de experimento. Um `PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL` nao deve
+exibir Landing tradicional, GeraLanding ou teste A/B de pagina como se fossem componentes da
+experiencia PDE, salvo quando existir contrato explicito que os vincule ao experimento. A versao PDE
+e administrada no produto; no experimento ela aparece como destino somente de leitura e com link
+para a fonte canonica.
+
+Uma falha de integracao seguida por sucesso comprovado da mesma operacao continua no historico de
+auditoria, mas deixa de alimentar alerta operacional. Da mesma forma, distribuicao por dispositivo,
+resolucao, qualidade ou jornada sem chave de campanha/criativo nao pode acompanhar totais
+atribuidos ao experimento; o cockpit deve omitir o recorte e explicar a falta de atribuicao.
+
+Metas apresentadas no funil precisam vir de contrato persistido e representar uma unidade comercial
+valida. E proibido somar contagens de etapas diferentes como se fossem outcomes independentes ou
+exibir meta fixa de backtest sem fonte no backend.
+
+Medias de produto, nicho ou mercado tambem so podem aparecer quando vierem de fonte persistida,
+segregada e identificada. A interface nao pode embutir numeros sinteticos como se fossem benchmark
+observado. Depois que o experimento entrar em `RUNNING` ou registrar gasto, comandos destrutivos de
+reset e mutacoes da configuracao publicada devem ficar indisponiveis; novas versoes de ativo podem
+continuar como rascunho auditavel para uma publicacao futura.
+
+Consultas de Landing tradicional, GeraLanding, imagens de framework e GeraSalesPage devem ser
+desabilitadas na origem quando o tipo PDE nao usar esses contratos, e nao apenas ocultadas depois da
+resposta. O preview da experiencia PDE deve abrir como navegacao de teste em nova aba, com analytics
+desativado, em vez de embutir toda a aplicacao em `iframe` de terceiro dentro do painel.
+
+## Regra de inicio da medicao paga
+
+O primeiro lote de impressoes da Meta deve ser persistido antes de qualquer reconciliacao externa e
+nao pode depender de reset do PDE. E proibido apagar eventos historicos do produto quando a primeira
+impressao chegar: nesse momento ja pode existir visita real atribuida a campanha, e uma falha externa
+nao pode reverter alcance, impressoes, cliques ou gasto oficiais.
+
+A separacao entre homologacao e campanha usa identidade persistida, UTM/codigo de campanha e
+criativo, qualidade de trafego e janela comercial. Se uma limpeza controlada ainda for necessaria,
+ela deve ocorrer antes da liberacao da campanha e ser limitada ao experimento/versao alvo; nunca por
+exclusao global tardia. O modo `CAMPAIGN_PERFORMANCE` e derivado da metrica Meta persistida, sem
+destruir a trilha bruta usada para auditoria.
+
 ## Gate antes de `RUNNING`
 
 Um PDE so pode liberar experimento/campanha para `RUNNING` quando todos os pontos abaixo estiverem verdadeiros:

@@ -7,6 +7,7 @@ import {
 
 interface ExperimentPostDeployMonitorTabProps {
   experimentId: string;
+  productId?: number | null;
 }
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -41,10 +42,9 @@ function formatDate(value?: string | null) {
 
 export function formatPdeOperationalDate(value?: string | null) {
   if (!value) return "—";
-  const normalizedValue = value.trim().replace(
-    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z$/i,
-    "$1-03:00",
-  );
+  const normalizedValue = value
+    .trim()
+    .replace(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d+)?Z$/i, "$1-03:00");
   return formatDate(normalizedValue);
 }
 
@@ -89,7 +89,7 @@ function abandonmentLabel(value?: string | null) {
     CONSUMIU_PAGINA_SEM_ACAO: "Consumiu página sem ação",
     SAIU_NA_PRIMEIRA_DOBRA: "Saiu na primeira dobra",
   };
-  return value ? labels[value] ?? value : "—";
+  return value ? (labels[value] ?? value) : "—";
 }
 
 function decisionBadgeClass(decision: PostDeployMonitorDecision) {
@@ -122,10 +122,10 @@ function pdeMeasurementBadgeClass(mode?: string | null) {
 
 export default function ExperimentPostDeployMonitorTab({
   experimentId,
+  productId,
 }: ExperimentPostDeployMonitorTabProps) {
   const monitorQuery = usePostDeployMonitor(experimentId);
   const monitor = monitorQuery.data;
-  const pdeProductionSlots = monitor?.pdeProductionSlots ?? [];
   const trafficSources = monitor?.pde.trafficSources ?? [];
   const trafficQualityBreakdown = monitor?.pde.trafficQualityBreakdown ?? [];
   const recentJourneys = monitor?.pde.recentJourneys ?? [];
@@ -177,7 +177,7 @@ export default function ExperimentPostDeployMonitorTab({
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div>
-              <h5 className="card-title mb-1">Painel pós-deploy</h5>
+              <h5 className="card-title mb-1">Saúde da campanha</h5>
               <p className="text-muted small mb-0">
                 Meta Ads, eventos PDE e logs cruzados automaticamente para
                 decidir se o funil deve continuar, pausar ou escalar.
@@ -348,7 +348,7 @@ export default function ExperimentPostDeployMonitorTab({
                 value={formatNumber(monitor.logs.totalLogs)}
               />
               <Metric
-                label="Erros recentes"
+                label="Falhas não recuperadas"
                 value={formatNumber(monitor.logs.errorLogs)}
               />
               <Metric
@@ -363,7 +363,8 @@ export default function ExperimentPostDeployMonitorTab({
                 </ul>
               ) : (
                 <p className="small text-muted mb-0 mt-3">
-                  Sem erro recente de integração Meta Ads.
+                  Sem falha pendente de integração Meta Ads. Tentativas
+                  recuperadas continuam preservadas na auditoria completa.
                 </p>
               )}
             </div>
@@ -404,14 +405,8 @@ export default function ExperimentPostDeployMonitorTab({
               label="Hub admin"
               value={pdeBuildIdentity?.marketingHubBaseUrl ?? "—"}
             />
-            <Metric
-              label="Commit"
-              value={pdeBuildIdentity?.commitSha ?? "—"}
-            />
-            <Metric
-              label="Branch"
-              value={pdeBuildIdentity?.branch ?? "—"}
-            />
+            <Metric label="Commit" value={pdeBuildIdentity?.commitSha ?? "—"} />
+            <Metric label="Branch" value={pdeBuildIdentity?.branch ?? "—"} />
             <Metric
               label="Imagem"
               value={
@@ -488,7 +483,9 @@ export default function ExperimentPostDeployMonitorTab({
           </p>
           {monitor.pde.deviceBreakdown.length === 0 ? (
             <p className="text-muted small mb-0">
-              Sem sessões suficientes para quebrar por dispositivo.
+              {monitor.pde.sessions === 0
+                ? "Nenhuma sessão atribuída a este experimento para quebrar por dispositivo."
+                : "O agregado global por dispositivo não é exibido sem atribuição à campanha atual."}
             </p>
           ) : (
             <div className="table-responsive">
@@ -532,27 +529,28 @@ export default function ExperimentPostDeployMonitorTab({
             </div>
             <Link
               className="btn btn-outline-primary btn-sm"
-              to="/products"
+              to={
+                productId ? `/products/${productId}/pde-versions` : "/products"
+              }
             >
               Gerenciar no produto
             </Link>
           </div>
-          <select
-            className="form-select form-select-sm"
+          <div
+            className="border rounded-3 p-3"
             aria-label="Versão PDE medida pelo experimento"
-            defaultValue={monitor.pde.currentExperienceVersion ?? ""}
           >
-            <option value="">
+            <strong className="d-block text-break">
               {monitor.pde.currentExperienceVersion ?? "Sem versão medida"}
-            </option>
-            {pdeProductionSlots.map((slot) => (
-              <option key={slot.id} value={slot.experienceVersion}>
-                {slot.slotCode} · {slot.experienceVersion}
-              </option>
-            ))}
-          </select>
+            </strong>
+            <span className="text-muted small">
+              Definida pelo slot e pela URL persistidos no experimento; esta
+              leitura não altera o destino da campanha.
+            </span>
+          </div>
           <p className="text-muted small mb-0 mt-2">
-            Produto medido: <span className="font-monospace">{monitor.productSlug}</span>.
+            Produto medido:{" "}
+            <span className="font-monospace">{monitor.productSlug}</span>.
           </p>
         </div>
       </div>
@@ -581,19 +579,41 @@ export default function ExperimentPostDeployMonitorTab({
                 <tbody>
                   {monitor.pde.experienceVersions.map((version) => (
                     <tr key={version.experienceVersion}>
-                      <td className="fw-semibold">{version.experienceVersion}</td>
-                      <td className="text-end">{formatNumber(version.sessions)}</td>
-                      <td className="text-end">{formatNumber(version.pdeEntries)}</td>
-                      <td className="text-end">{formatNumber(version.firstInteractionClicks)}</td>
-                      <td className="text-end">{formatNumber(version.videoPartial)}</td>
-                      <td className="text-end">{formatNumber(version.videoComplete)}</td>
-                      <td className="text-end">
-                        {formatPercent(rate(version.videoComplete, version.sessions))}
+                      <td className="fw-semibold">
+                        {version.experienceVersion}
                       </td>
-                      <td className="text-end">{formatNumber(version.loginStarted)}</td>
-                      <td className="text-end">{formatNumber(version.paywallViewed)}</td>
-                      <td className="text-end">{formatNumber(version.checkoutIntent)}</td>
-                      <td className="text-end">{formatNumber(version.subscriptionApproved)}</td>
+                      <td className="text-end">
+                        {formatNumber(version.sessions)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.pdeEntries)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.firstInteractionClicks)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.videoPartial)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.videoComplete)}
+                      </td>
+                      <td className="text-end">
+                        {formatPercent(
+                          rate(version.videoComplete, version.sessions),
+                        )}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.loginStarted)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.paywallViewed)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.checkoutIntent)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(version.subscriptionApproved)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -643,27 +663,48 @@ export default function ExperimentPostDeployMonitorTab({
                         <span className="fw-semibold">
                           {source.trafficChannel}
                         </span>
-                        <div className="text-muted small">{source.utmSource}</div>
+                        <div className="text-muted small">
+                          {source.utmSource}
+                        </div>
                       </td>
                       <td>{source.utmMedium}</td>
                       <td>{source.utmCampaign}</td>
                       <td className="fw-semibold">{source.utmContent}</td>
-                      <td className="text-end">{formatNumber(source.sessions)}</td>
-                      <td className="text-end">{formatNumber(source.pdeEntries)}</td>
+                      <td className="text-end">
+                        {formatNumber(source.sessions)}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(source.pdeEntries)}
+                      </td>
                       <td className="text-end">
                         {formatPercent(source.firstInteractionRate)}
                       </td>
-                      <td className="text-end">{formatNumber(source.videoPartial)}</td>
-                      <td className="text-end">{formatNumber(source.videoComplete)}</td>
                       <td className="text-end">
-                        {formatPercent(rate(source.videoComplete, source.sessions))}
+                        {formatNumber(source.videoPartial)}
                       </td>
-                      <td className="text-end">{formatPercent(source.paywallRate)}</td>
-                      <td className="text-end">{formatPercent(source.checkoutRate)}</td>
-                      <td className="text-end">{formatPercent(source.purchaseRate)}</td>
+                      <td className="text-end">
+                        {formatNumber(source.videoComplete)}
+                      </td>
+                      <td className="text-end">
+                        {formatPercent(
+                          rate(source.videoComplete, source.sessions),
+                        )}
+                      </td>
+                      <td className="text-end">
+                        {formatPercent(source.paywallRate)}
+                      </td>
+                      <td className="text-end">
+                        {formatPercent(source.checkoutRate)}
+                      </td>
+                      <td className="text-end">
+                        {formatPercent(source.purchaseRate)}
+                      </td>
                       <td className="text-end">
                         {formatDuration(
-                          averageDuration(source.totalVisibleMs, source.sessions),
+                          averageDuration(
+                            source.totalVisibleMs,
+                            source.sessions,
+                          ),
                         )}
                       </td>
                     </tr>
@@ -700,7 +741,9 @@ export default function ExperimentPostDeployMonitorTab({
                       <td className="font-monospace small">
                         {(journey.sessionId ?? "sem-sessao").slice(0, 12)}
                       </td>
-                      <td className="font-monospace small">{journey.clientIp ?? "—"}</td>
+                      <td className="font-monospace small">
+                        {journey.clientIp ?? "—"}
+                      </td>
                       <td>
                         <span
                           className={`badge ${
@@ -718,14 +761,29 @@ export default function ExperimentPostDeployMonitorTab({
                           {journey.trafficQuality ?? "UNKNOWN"}
                         </span>
                       </td>
-                      <td className="fw-semibold">{abandonmentLabel(journey.abandonmentPoint)}</td>
-                      <td>{journey.lastActionName ?? journey.lastEventType ?? "—"}</td>
-                      <td className="small text-muted">
-                        {[...(journey.screenNames ?? []), ...(journey.sectionIds ?? [])].slice(0, 3).join(" / ") || "—"}
+                      <td className="fw-semibold">
+                        {abandonmentLabel(journey.abandonmentPoint)}
                       </td>
-                      <td className="text-end">{formatNumber(journey.maxScrollDepthPercent)}%</td>
-                      <td className="text-end">{formatDuration(journey.totalVisibleMs)}</td>
-                      <td className="text-end">{formatPdeOperationalDate(journey.lastEventAt)}</td>
+                      <td>
+                        {journey.lastActionName ?? journey.lastEventType ?? "—"}
+                      </td>
+                      <td className="small text-muted">
+                        {[
+                          ...(journey.screenNames ?? []),
+                          ...(journey.sectionIds ?? []),
+                        ]
+                          .slice(0, 3)
+                          .join(" / ") || "—"}
+                      </td>
+                      <td className="text-end">
+                        {formatNumber(journey.maxScrollDepthPercent)}%
+                      </td>
+                      <td className="text-end">
+                        {formatDuration(journey.totalVisibleMs)}
+                      </td>
+                      <td className="text-end">
+                        {formatPdeOperationalDate(journey.lastEventAt)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

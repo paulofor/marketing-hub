@@ -2,9 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { PdePersuasiveJourney } from "./pdePersuasiveJourney";
 
-export function usePdePersuasiveJourney(productSlug = "metodo-musa-7-dias") {
+export function usePdePersuasiveJourney(
+  productSlug = "metodo-musa-7-dias",
+  enabled = true,
+) {
   return useQuery<PdePersuasiveJourney>({
     queryKey: ["products", productSlug, "pde-persuasive-journey"],
+    enabled,
     queryFn: async () => {
       const { data } = await axios.get<PdePersuasiveJourney>(
         `/api/products/public/${productSlug}/pde-persuasive-journey`,

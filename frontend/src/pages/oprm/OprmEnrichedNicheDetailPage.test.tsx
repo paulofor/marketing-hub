@@ -65,14 +65,14 @@ describe("OprmEnrichedNicheDetailPage", () => {
       screen.getByRole("link", { name: "Baixar pesquisa Markdown" }),
     ).toHaveAttribute(
       "href",
-      "http://localhost/api/oprm/nichocnae/enriched-niche-materializer/profiles/1/pipeline-markdown",
+      `${window.location.origin}/api/oprm/nichocnae/enriched-niche-materializer/profiles/1/pipeline-markdown`,
     );
     expect(screen.queryByText("Dores")).toBeNull();
     expect(screen.queryByText("Resultados desejados")).toBeNull();
     expect(screen.queryByText("Mecanismos e oportunidades")).toBeNull();
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        "http://localhost/api/oprm/nichocnae/enriched-niche-materializer/profiles/1",
+        `${window.location.origin}/api/oprm/nichocnae/enriched-niche-materializer/profiles/1`,
       );
     });
   });

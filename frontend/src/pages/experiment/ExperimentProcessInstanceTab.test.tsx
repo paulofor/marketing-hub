@@ -146,4 +146,18 @@ describe("ExperimentProcessInstanceTab", () => {
     expect(screen.getAllByText("Objetivo atingido")).toHaveLength(2);
     expect(screen.getByText("Tentativa 1 · tarefa #30")).toBeInTheDocument();
   });
+
+  it("separa processo pré-publicação da campanha que já está em operação", () => {
+    render(
+      <ExperimentProcessInstanceTab
+        experimentId="91"
+        experimentStatus="RUNNING"
+        campaignPublished
+        facebookReleaseRequestedAt="2026-09-07T03:11:15Z"
+      />,
+    );
+
+    expect(screen.getByText(/Processo de preparação/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Pré-publicação")).toHaveLength(2);
+  });
 });

@@ -410,7 +410,10 @@ public class PostDeployMonitorService {
         toSessionJourneyDtos(summary));
   }
 
-  /** Converte analytics PDE usando somente UTMs/códigos ligados ao experimento monitorado. */
+  /**
+   * Converte analytics PDE usando somente UTMs/códigos ligados ao experimento e omite recortes
+   * globais que ainda não carregam a mesma atribuição.
+   */
   private PostDeployPdeSummaryDto toAttributedPdeSummary(
       PdeAnalyticsSummary summary,
       String monitoredExperienceVersion,
@@ -527,10 +530,10 @@ public class PostDeployMonitorService {
                 checkoutStarted,
                 subscriptionApproved)),
         toTrafficSourceDtosFromMetrics(matchingTrafficSources),
-        toTrafficQualityDtos(summary),
-        toDeviceDtos(summary),
-        toScreenSizeDtos(summary),
-        toSessionJourneyDtos(summary));
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
   }
 
   /** Calcula o tempo médio visível por sessão PDE para leitura comercial do funil. */
@@ -807,12 +810,17 @@ public class PostDeployMonitorService {
     return Instant.parse(value);
   }
 
-  /** Resume os logs recentes da API Meta vinculados ao experimento. */
+  /** Resume somente falhas Meta ainda não recuperadas, preservando todas as tentativas no total. */
   private PostDeployFacebookLogSummaryDto summarizeLogs(Long experimentId) {
     List<ExperimentFacebookApiLogDto> logs = apiLogService.findLogs(experimentId, 50);
-    int errorLogs = (int) logs.stream().filter(this::isErrorLog).count();
+    List<ExperimentFacebookApiLogDto> unresolvedErrors =
+        logs.stream()
+            .filter(this::isErrorLog)
+            .filter(error -> !hasLaterSuccessfulRetry(error, logs))
+            .toList();
+    int errorLogs = unresolvedErrors.size();
     List<String> recentErrors =
-        logs.stream().filter(this::isErrorLog).map(this::formatLogError).limit(5).toList();
+        unresolvedErrors.stream().map(this::formatLogError).limit(5).toList();
     Instant lastLogAt =
         logs.stream()
             .map(this::logInstant)
@@ -820,6 +828,52 @@ public class PostDeployMonitorService {
             .max(Instant::compareTo)
             .orElse(null);
     return new PostDeployFacebookLogSummaryDto(logs.size(), errorLogs, lastLogAt, recentErrors);
+  }
+
+  /** Confirma que a mesma operação falha foi concluída com sucesso em tentativa posterior. */
+  private boolean hasLaterSuccessfulRetry(
+      ExperimentFacebookApiLogDto failedLog, List<ExperimentFacebookApiLogDto> logs) {
+    Instant failedAt = logInstant(failedLog);
+    if (failedAt == null) {
+      return false;
+    }
+    return logs.stream()
+        .filter(this::isSuccessfulLog)
+        .filter(candidate -> sameLogOperation(failedLog, candidate))
+        .map(this::logInstant)
+        .filter(java.util.Objects::nonNull)
+        .anyMatch(successAt -> successAt.isAfter(failedAt));
+  }
+
+  /** Identifica resposta HTTP concluída sem mensagem de erro. */
+  private boolean isSuccessfulLog(ExperimentFacebookApiLogDto log) {
+    return log.statusCode() != null
+        && log.statusCode() >= 200
+        && log.statusCode() < 400
+        && !StringUtils.hasText(log.errorMessage());
+  }
+
+  /** Compara contexto, método e endpoint sem query para correlacionar uma retentativa Meta. */
+  private boolean sameLogOperation(
+      ExperimentFacebookApiLogDto first, ExperimentFacebookApiLogDto second) {
+    return normalizeLogKey(first.context()).equals(normalizeLogKey(second.context()))
+        && normalizeLogKey(first.httpMethod()).equals(normalizeLogKey(second.httpMethod()))
+        && normalizeLogEndpoint(first.endpoint()).equals(normalizeLogEndpoint(second.endpoint()));
+  }
+
+  /** Normaliza campos textuais usados como chave estável de operação. */
+  private String normalizeLogKey(String value) {
+    return StringUtils.hasText(value) ? value.trim().toUpperCase(Locale.ROOT) : "";
+  }
+
+  /** Remove query sensível ou volátil antes de comparar o endpoint de duas tentativas. */
+  private String normalizeLogEndpoint(String endpoint) {
+    if (!StringUtils.hasText(endpoint)) {
+      return "";
+    }
+    String normalized = endpoint.trim();
+    int queryStart = normalized.indexOf('?');
+    return queryStart >= 0 ? normalized.substring(0, queryStart) : normalized;
   }
 
   /** Identifica falhas de integração por status HTTP ou mensagem de erro. */

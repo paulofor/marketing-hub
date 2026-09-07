@@ -18,9 +18,10 @@ export interface GeraLandingStageModel {
   defaultModelApplied?: boolean | null;
 }
 
-export function useGeraLandingStageModels() {
+export function useGeraLandingStageModels(enabled = true) {
   return useQuery({
     queryKey: ["pipelines", "geralanding", "stage-models"],
+    enabled,
     queryFn: async () => {
       const { data } = await axios.get<GeraLandingStageModel[]>(
         "/api/pipelines/geralanding/stage-models",

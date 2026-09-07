@@ -118,11 +118,15 @@ function groupGates(gates: ExperimentRunGateResult[]) {
 type ExperimentRunPanelProps = {
   experimentId: string;
   compact?: boolean;
+  experimentStatus?: string | null;
+  campaignPublished?: boolean;
 };
 
 export default function ExperimentRunPanel({
   experimentId,
   compact = false,
+  experimentStatus,
+  campaignPublished = false,
 }: ExperimentRunPanelProps) {
   const runsQuery = useExperimentRuns(experimentId);
   const currentRun = latestRun(runsQuery.data);
@@ -139,6 +143,17 @@ export default function ExperimentRunPanel({
   const [homologationDrafts, setHomologationDrafts] = useState<
     Record<string, HomologationDraft>
   >({});
+  const operationAlreadyPublished =
+    campaignPublished ||
+    [
+      "RUNNING",
+      "PAUSED",
+      "USER_STOPPED",
+      "VALIDATED",
+      "INVALIDATED",
+      "INCONCLUSIVE",
+      "FINISHED",
+    ].includes((experimentStatus ?? "").toUpperCase());
 
   const homologationReady =
     homologationGates.length === 4 &&
@@ -209,36 +224,38 @@ export default function ExperimentRunPanel({
               experimento no mercado.
             </p>
           </div>
-          <div className="d-flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn-outline-primary btn-sm"
-              onClick={handleCreateRun}
-              disabled={createRun.isPending || runsQuery.isLoading}
-            >
-              {createRun.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                />
-              ) : null}
-              Criar run
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={handleRunPreflight}
-              disabled={!currentRun || runPreflight.isPending}
-            >
-              {runPreflight.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  aria-hidden="true"
-                />
-              ) : null}
-              Rodar preflight
-            </button>
-          </div>
+          {!operationAlreadyPublished ? (
+            <div className="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm"
+                onClick={handleCreateRun}
+                disabled={createRun.isPending || runsQuery.isLoading}
+              >
+                {createRun.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                Criar run
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleRunPreflight}
+                disabled={!currentRun || runPreflight.isPending}
+              >
+                {runPreflight.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                Rodar preflight
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {runsQuery.isLoading ? (
@@ -246,9 +263,12 @@ export default function ExperimentRunPanel({
             Carregando execução atual...
           </div>
         ) : !currentRun ? (
-          <div className="alert alert-info mt-3 mb-0">
-            Nenhum run foi criado para este experimento. Crie um run antes de
-            interpretar falha técnica como resultado de mercado.
+          <div
+            className={`alert ${operationAlreadyPublished ? "alert-secondary" : "alert-info"} mt-3 mb-0`}
+          >
+            {operationAlreadyPublished
+              ? "Este experimento foi publicado sem um run registrado neste contrato. A lacuna é histórica: não crie um run retroativo nem interprete isso como falha da campanha atual. Consulte Campanha Meta, Saúde e Histórico para a operação vigente."
+              : "Nenhum run foi criado para este experimento. Crie um run antes de interpretar falha técnica como resultado de mercado."}
           </div>
         ) : (
           <>

@@ -133,6 +133,17 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   primeiro uso globais também não são promovidos ao funil.
 - **Prevenção:** testes cobrem canal direto, Facebook sem campanha, UTM divergente, UTM exata e
   métricas pós-compra globais, mantendo visita, compra e entrega zeradas sem evidência própria.
+- **Fechamento complementar em 2026-09-07:** o monitor do experimento #91 já filtrava os totais por
+  UTM, mas ainda anexava distribuição global de dispositivo, resolução, qualidade e jornadas. O
+  mesmo cockpit também promovia tentativas Meta 400 já seguidas por publicação 200 como falhas
+  atuais. Os recortes sem atribuição passam a ser omitidos e retentativas comprovadamente
+  recuperadas permanecem somente no total auditável; testes de contrato protegem ambos os casos.
+- **Fechamento da sincronização tardia em 2026-09-07:** ao chegar a primeira impressão real do #91,
+  `ExperimentCampaignMetricService` chamava o reset global do PDE sem o token interno. O HTTP 401
+  virava 500 e revertia alcance, impressão, clique e gasto; adicionar o token apenas tornaria a
+  exclusão perigosa, pois duas sessões pagas atribuídas já existiam. A sincronização agora persiste a
+  verdade oficial da Meta sem chamada destrutiva. O teste de contrato garante que o primeiro lote
+  não depende de reset externo e o cânone exige segregação por identidade/UTM e janela comercial.
 
 ## LOOP-VIDEO-PLUTUS-RESERVA-EXPIRADA — ciclo antigo monopoliza a fila financeira
 

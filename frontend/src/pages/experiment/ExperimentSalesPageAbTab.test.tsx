@@ -11,7 +11,7 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-function renderTab() {
+function renderTab(alterationLocked = false) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -19,7 +19,10 @@ function renderTab() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <ExperimentSalesPageAbTab experimentId="76" />
+      <ExperimentSalesPageAbTab
+        experimentId="76"
+        alterationLocked={alterationLocked}
+      />
     </QueryClientProvider>,
   );
 }
@@ -72,5 +75,33 @@ describe("ExperimentSalesPageAbTab", () => {
     screen.getAllByRole("checkbox").forEach((checkbox) => {
       expect(checkbox).not.toBeChecked();
     });
+  });
+
+  it("keeps a published experiment read-only to preserve attribution", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-page-types") {
+        return Promise.resolve({
+          data: [
+            {
+              code: "TRADITIONAL_LONG_FORM",
+              name: "Página tradicional",
+              description: "Página linear.",
+              commercialMechanism: "Narrativa.",
+              leadCaptureStrategy: "CTA.",
+              digitalBaitDelivery: "E-mail.",
+              defaultForAbTest: false,
+              active: true,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderTab(true);
+
+    expect(await screen.findByText(/somente para leitura/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Salvar tipos" })).toBeDisabled();
+    expect(screen.getByRole("checkbox")).toBeDisabled();
   });
 });

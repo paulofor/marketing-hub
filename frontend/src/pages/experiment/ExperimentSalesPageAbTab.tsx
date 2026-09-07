@@ -1,4 +1,9 @@
-import { BarChart3, CheckCircle2, ExternalLink, FlaskConical } from "lucide-react";
+import {
+  BarChart3,
+  CheckCircle2,
+  ExternalLink,
+  FlaskConical,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   useExperimentSalesPageAbResults,
@@ -15,6 +20,7 @@ const MAX_AB_TEST_TYPES = 2;
 
 interface ExperimentSalesPageAbTabProps {
   experimentId: string;
+  alterationLocked?: boolean;
 }
 
 function formatDate(value?: string | null) {
@@ -33,7 +39,11 @@ function formatInteger(value?: number | null) {
 
 function formatRate(value?: number | string | null) {
   const numericValue =
-    typeof value === "string" ? Number(value) : typeof value === "number" ? value : 0;
+    typeof value === "string"
+      ? Number(value)
+      : typeof value === "number"
+        ? value
+        : 0;
   if (!Number.isFinite(numericValue)) return "0,00%";
   return new Intl.NumberFormat("pt-BR", {
     style: "percent",
@@ -86,7 +96,10 @@ function totalPageViews(result: ExperimentSalesPageAbTestResult) {
 }
 
 function totalCheckoutClicks(result: ExperimentSalesPageAbTestResult) {
-  return result.variants.reduce((total, item) => total + item.checkoutClicks, 0);
+  return result.variants.reduce(
+    (total, item) => total + item.checkoutClicks,
+    0,
+  );
 }
 
 function splitTrafficWeight(total: number) {
@@ -96,6 +109,7 @@ function splitTrafficWeight(total: number) {
 
 export default function ExperimentSalesPageAbTab({
   experimentId,
+  alterationLocked = false,
 }: ExperimentSalesPageAbTabProps) {
   const { data, isLoading, isError } =
     useExperimentSalesPageAbResults(experimentId);
@@ -125,13 +139,17 @@ export default function ExperimentSalesPageAbTab({
   const persistedSelectedTypes = useMemo(() => {
     const allTypes = types ?? [];
     return (selections ?? [])
-      .map((selection) => allTypes.find((type) => type.code === selection.typeCode))
+      .map((selection) =>
+        allTypes.find((type) => type.code === selection.typeCode),
+      )
       .filter((type): type is SalesPageType => Boolean(type));
   }, [selections, types]);
 
-  const hasPersistedAbTestConfiguration = persistedSelectedTypes.length === MAX_AB_TEST_TYPES;
+  const hasPersistedAbTestConfiguration =
+    persistedSelectedTypes.length === MAX_AB_TEST_TYPES;
 
   const toggleType = (typeCode: string) => {
+    if (alterationLocked) return;
     setSelectionFeedback(null);
     setSelectedTypeCodes((current) => {
       if (current.includes(typeCode)) {
@@ -146,6 +164,7 @@ export default function ExperimentSalesPageAbTab({
   };
 
   const saveTypeSelection = async () => {
+    if (alterationLocked) return;
     setSelectionFeedback(null);
     if (selectedTypeCodes.length > MAX_AB_TEST_TYPES) {
       setSelectionFeedback("limit");
@@ -170,7 +189,9 @@ export default function ExperimentSalesPageAbTab({
     return (
       <div className="d-flex justify-content-center py-5">
         <div className="spinner-border" role="status">
-          <span className="visually-hidden">Carregando páginas de venda...</span>
+          <span className="visually-hidden">
+            Carregando páginas de venda...
+          </span>
         </div>
       </div>
     );
@@ -204,6 +225,7 @@ export default function ExperimentSalesPageAbTab({
           className="btn btn-primary btn-sm"
           onClick={saveTypeSelection}
           disabled={
+            alterationLocked ||
             updateSelections.isPending ||
             selectedTypeCodes.length === 0 ||
             selectedTypeCodes.length > MAX_AB_TEST_TYPES ||
@@ -222,6 +244,14 @@ export default function ExperimentSalesPageAbTab({
         </button>
       </div>
 
+      {alterationLocked ? (
+        <div className="alert alert-secondary mb-0" role="status">
+          A configuração do teste fica somente para leitura depois da liberação
+          do experimento. Uma nova combinação de páginas exige um experimento
+          sucessor para preservar atribuição e histórico.
+        </div>
+      ) : null}
+
       {selectionFeedback === "success" ? (
         <div className="alert alert-success mb-0" role="status">
           Tipos de página de venda salvos para este experimento.
@@ -234,8 +264,8 @@ export default function ExperimentSalesPageAbTab({
       ) : null}
       {selectionFeedback === "limit" ? (
         <div className="alert alert-warning mb-0" role="alert">
-          A seleção aceita no máximo 2 tipos. Remova uma opção antes de
-          escolher outra.
+          A seleção aceita no máximo 2 tipos. Remova uma opção antes de escolher
+          outra.
         </div>
       ) : null}
 
@@ -245,7 +275,9 @@ export default function ExperimentSalesPageAbTab({
         <div className="row g-3">
           {(types ?? []).map((type) => {
             const checked = selectedTypeCodes.includes(type.code);
-            const disabled = !checked && selectedTypeCodes.length >= MAX_AB_TEST_TYPES;
+            const disabled =
+              alterationLocked ||
+              (!checked && selectedTypeCodes.length >= MAX_AB_TEST_TYPES);
             return (
               <div className="col-12 col-xl-6" key={type.code}>
                 <label className="border rounded-3 p-3 h-100 d-flex gap-3">
@@ -287,7 +319,10 @@ export default function ExperimentSalesPageAbTab({
         <div className="alert alert-info mb-0" role="status">
           <strong>Planejamento A/B:</strong>{" "}
           {persistedSelectedTypes
-            .map((type, index) => `Variante ${String.fromCharCode(65 + index)}: ${type.name}`)
+            .map(
+              (type, index) =>
+                `Variante ${String.fromCharCode(65 + index)}: ${type.name}`,
+            )
             .join(" · ")}
         </div>
       ) : persistedSelectedTypes.length === 1 ? (
@@ -317,7 +352,8 @@ export default function ExperimentSalesPageAbTab({
 
       {results.length === 0 ? (
         <div className="alert alert-light border mb-0">
-          Nenhum teste A/B de página de venda foi configurado para este experimento.
+          Nenhum teste A/B de página de venda foi configurado para este
+          experimento.
         </div>
       ) : null}
 
@@ -328,8 +364,9 @@ export default function ExperimentSalesPageAbTab({
               <div>
                 <h5 className="card-title mb-1">{result.test.name}</h5>
                 <p className="text-muted small mb-0">
-                  Métrica principal: {result.test.primaryMetric || "checkout_click_rate"} ·
-                  Amostra mínima: {result.test.minimumSampleSize ?? "-"} page views
+                  Métrica principal:{" "}
+                  {result.test.primaryMetric || "checkout_click_rate"} · Amostra
+                  mínima: {result.test.minimumSampleSize ?? "-"} page views
                 </p>
               </div>
               <span className={`badge ${resultStatusBadge(result.status)}`}>

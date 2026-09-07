@@ -12,13 +12,9 @@ import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleServi
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
-import com.sun.net.httpserver.HttpServer;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.InetSocketAddress;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +40,7 @@ class ExperimentCampaignMetricServiceTest {
   void setUp() {
     service =
         new ExperimentCampaignMetricService(
-            repository, campaignRepository, costAttributionService, runMetricLifecycleService, "");
+            repository, campaignRepository, costAttributionService, runMetricLifecycleService);
   }
 
   /**
@@ -52,29 +48,32 @@ class ExperimentCampaignMetricServiceTest {
    * métrica real.
    */
   @Test
-  void upsertPreservesFunnelWhenImpressionsStart() {
+  void upsertPersistsFirstImpressionsWithoutDestructivePdeReset() {
     Experiment experiment = Experiment.builder().id(41L).build();
     FacebookAdsCampaign campaign = new FacebookAdsCampaign();
     campaign.setId("campaign-1");
     campaign.setExperiment(experiment);
-    ExperimentCampaignMetric savedMetric =
-        ExperimentCampaignMetric.builder().experiment(experiment).build();
-
     when(campaignRepository.findById("campaign-1")).thenReturn(Optional.of(campaign));
     when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
-    when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
+    when(repository.save(any(ExperimentCampaignMetric.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-    service.upsert(
-        "campaign-1",
-        LocalDate.parse("2026-06-24"),
-        LocalDate.parse("2026-06-24"),
-        10L,
-        194L,
-        3L,
-        0L,
-        new BigDecimal("1.10"));
+    ExperimentCampaignMetric saved =
+        service.upsert(
+            "campaign-1",
+            LocalDate.parse("2026-06-24"),
+            LocalDate.parse("2026-06-24"),
+            10L,
+            194L,
+            3L,
+            0L,
+            new BigDecimal("1.10"));
 
     verify(repository).save(any(ExperimentCampaignMetric.class));
+    assertThat(saved.getReach()).isEqualTo(10L);
+    assertThat(saved.getImpressions()).isEqualTo(194L);
+    assertThat(saved.getClicks()).isEqualTo(3L);
+    assertThat(saved.getSpend()).isEqualByComparingTo("1.10");
     assertThat(experiment.getFunnelResetAt()).isNull();
   }
 
@@ -162,57 +161,5 @@ class ExperimentCampaignMetricServiceTest {
 
     assertThat(saved.getCpc()).isNull();
     assertThat(saved.getCpl()).isNull();
-  }
-
-  /**
-   * Garante que campanha do Clube MUSA tambem limpa analytics PDE antes de salvar a primeira
-   * metrica real.
-   */
-  @Test
-  void upsertResetsPdeAnalyticsForClubMusaWhenImpressionsStart() throws IOException {
-    AtomicInteger resetCalls = new AtomicInteger();
-    HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-    server.createContext(
-        "/reset",
-        exchange -> {
-          resetCalls.incrementAndGet();
-          exchange.sendResponseHeaders(200, -1);
-          exchange.close();
-        });
-    server.start();
-    try {
-      service =
-          new ExperimentCampaignMetricService(
-              repository,
-              campaignRepository,
-              costAttributionService,
-              runMetricLifecycleService,
-              "http://localhost:" + server.getAddress().getPort() + "/reset");
-      Experiment experiment =
-          Experiment.builder().id(67L).followUpActionUrl("https://clubemusa.com.br").build();
-      FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-      campaign.setId("campaign-musa");
-      campaign.setExperiment(experiment);
-      ExperimentCampaignMetric savedMetric =
-          ExperimentCampaignMetric.builder().experiment(experiment).build();
-
-      when(campaignRepository.findById("campaign-musa")).thenReturn(Optional.of(campaign));
-      when(repository.findByExperiment(experiment)).thenReturn(Optional.empty());
-      when(repository.save(any(ExperimentCampaignMetric.class))).thenReturn(savedMetric);
-
-      service.upsert(
-          "campaign-musa",
-          LocalDate.parse("2026-07-20"),
-          LocalDate.parse("2026-07-20"),
-          10L,
-          1L,
-          0L,
-          0L,
-          BigDecimal.ZERO);
-
-      assertThat(resetCalls).hasValue(1);
-    } finally {
-      server.stop(0);
-    }
   }
 }

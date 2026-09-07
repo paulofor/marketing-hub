@@ -36,6 +36,7 @@ import LandingTab from "./LandingTab";
 import ExperimentVideoTab from "./ExperimentVideoTab";
 import ExperimentProcessInstanceTab from "./ExperimentProcessInstanceTab";
 import ExperimentFacebookSuccessorPanel from "./ExperimentFacebookSuccessorPanel";
+import ExperimentFacebookCampaignTab from "./ExperimentFacebookCampaignTab";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
@@ -70,22 +71,114 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   );
 }
 
-export const experimentDetailTabs = [
-  { value: "construction", label: "Construção", manualOnly: true },
-  { value: "execucao", label: "Execução" },
-  { value: "funnel", label: "Funil de vendas" },
-  { value: "history", label: "Histórico" },
-  { value: "process", label: "Processo" },
-  { value: "post-deploy", label: "Pós-deploy" },
-  { value: "ab-test", label: "Páginas de venda" },
-  { value: "analytics", label: "Analytics" },
-  { value: "creatives", label: "Criativos" },
-  { value: "landing", label: "Landing" },
-  { value: "video", label: "Vídeo" },
-  { value: "gera-landing", label: "GeraLanding" },
-  { value: "content-structure", label: "Estrutura de conteúdo" },
-  { value: "publico", label: "Público" },
+export const experimentDetailTabGroups = [
+  { value: "operation", label: "Operação atual" },
+  { value: "assets", label: "Ativos" },
+  { value: "planning", label: "Planejamento" },
+  { value: "audit", label: "Auditoria" },
 ] as const;
+
+export const experimentDetailTabs = [
+  { value: "funnel", label: "Resultados", group: "operation" },
+  {
+    value: "campaign",
+    label: "Campanha Meta",
+    group: "operation",
+    facebookOnly: true,
+  },
+  {
+    value: "post-deploy",
+    label: "Saúde da campanha",
+    group: "operation",
+    pdeOnly: true,
+  },
+  {
+    value: "analytics",
+    label: "Comportamento",
+    pdeLabel: "Comportamento PDE",
+    group: "operation",
+  },
+  { value: "creatives", label: "Anúncios", group: "assets" },
+  { value: "video", label: "Vídeo", group: "assets" },
+  {
+    value: "publico",
+    label: "Público",
+    group: "assets",
+    facebookOnly: true,
+  },
+  {
+    value: "landing",
+    label: "Landing",
+    group: "assets",
+    hiddenForPde: true,
+  },
+  {
+    value: "construction",
+    label: "Planejamento",
+    group: "planning",
+    manualOnly: true,
+  },
+  {
+    value: "content-structure",
+    label: "Copy e briefing",
+    group: "planning",
+  },
+  {
+    value: "ab-test",
+    label: "Teste A/B de página",
+    group: "planning",
+    hiddenForPde: true,
+  },
+  {
+    value: "gera-landing",
+    label: "GeraLanding",
+    group: "planning",
+    hiddenForPde: true,
+  },
+  { value: "execucao", label: "Preflight e runs", group: "audit" },
+  { value: "process", label: "Processo", group: "audit" },
+  { value: "history", label: "Histórico", group: "audit" },
+] as const;
+
+type VisibleExperimentDetailTabsInput = {
+  creationSource?: string | null;
+  productAiSubtype?: string | null;
+  experimentType?: string | null;
+  platform?: string | null;
+};
+
+/** Resolve as abas aplicáveis ao canal e ao tipo de experimento sem esconder auditoria histórica. */
+export function getVisibleExperimentDetailTabs({
+  creationSource,
+  productAiSubtype,
+  experimentType,
+  platform,
+}: VisibleExperimentDetailTabsInput) {
+  const isPde = experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const canAccessConstruction = canAccessExperimentConstruction(
+    creationSource,
+    productAiSubtype,
+  );
+  return experimentDetailTabs
+    .filter(
+      (item) =>
+        (!("manualOnly" in item) ||
+          !item.manualOnly ||
+          canAccessConstruction) &&
+        (!("facebookOnly" in item) ||
+          !item.facebookOnly ||
+          platform === "FACEBOOK") &&
+        (!("pdeOnly" in item) || !item.pdeOnly || isPde) &&
+        (!("hiddenForPde" in item) || !item.hiddenForPde || !isPde),
+    )
+    .map((item) => ({
+      ...item,
+      label:
+        isPde && "pdeLabel" in item && item.pdeLabel
+          ? item.pdeLabel
+          : item.label,
+    }));
+}
 
 export function canAccessExperimentConstruction(
   creationSource?: string | null,
@@ -385,6 +478,15 @@ export function canManageGeraSalesPage(experimentId?: number | string | null) {
   return Number.isInteger(normalizedId) && normalizedId > 0;
 }
 
+export function supportsTraditionalLandingForExperiment(
+  experimentType?: string | null,
+) {
+  return (
+    Boolean(experimentType) &&
+    experimentType !== "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
+  );
+}
+
 export function resolveGeraSalesPageCommand() {
   return "rebuild" as const;
 }
@@ -401,6 +503,35 @@ export function canStartDirectExperiment(
   );
 }
 
+/** Exibe um identificador Meta persistido sem transformá-lo em comando de publicação. */
+function PublishedMetaItem({
+  label,
+  id,
+  status,
+}: {
+  label: string;
+  id?: string | null;
+  status?: string | null;
+}) {
+  return (
+    <div className="col-12 col-lg-4">
+      <div className="border rounded-3 p-3 h-100">
+        <div className="d-flex justify-content-between align-items-center gap-2">
+          <span className="small text-muted">{label}</span>
+          <span
+            className={`badge ${status === "ACTIVE" ? "text-bg-success" : "text-bg-secondary"}`}
+          >
+            {status || "Não informado"}
+          </span>
+        </div>
+        <code className="small text-break d-block mt-2">
+          {id || "Não encontrado"}
+        </code>
+      </div>
+    </div>
+  );
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -409,13 +540,18 @@ export default function ExperimentDetailPage() {
   const { data, isLoading } = useExperiment(expId);
   const isPdeExperimentForMonitor =
     data?.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+  const supportsTraditionalLanding = supportsTraditionalLandingForExperiment(
+    data?.experimentType,
+  );
   const pdeMonitorQuery = usePostDeployMonitor(
     isPdeExperimentForMonitor ? expId : undefined,
   );
   const videoAssetsQuery = useExperimentVideoAssets(expId);
-  const geraSalesPagePublications = useGeraSalesPagePublications(expId);
+  const geraSalesPagePublications = useGeraSalesPagePublications(
+    supportsTraditionalLanding ? expId : undefined,
+  );
   const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
-    useGeraLandingStageModels();
+    useGeraLandingStageModels(supportsTraditionalLanding);
   const {
     data: diagnostics,
     isLoading: isLoadingDiagnostics,
@@ -481,38 +617,62 @@ export default function ExperimentDetailPage() {
     data: pendingGeraLandingExecutions,
     isLoading: isLoadingPendingGeraLandingExecutions,
     refetch: refetchPendingGeraLandingExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-wireframe", false);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-wireframe",
+    false,
+  );
   const {
     data: completedGeraLandingExecutions,
     isLoading: isLoadingCompletedGeraLandingExecutions,
     refetch: refetchCompletedGeraLandingExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-wireframe", true);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-wireframe",
+    true,
+  );
   const {
     data: pendingGeraLandingCopyExecutions,
     isLoading: isLoadingPendingGeraLandingCopyExecutions,
     refetch: refetchPendingGeraLandingCopyExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-copy", false);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-copy",
+    false,
+  );
   const {
     data: completedGeraLandingCopyExecutions,
     isLoading: isLoadingCompletedGeraLandingCopyExecutions,
     refetch: refetchCompletedGeraLandingCopyExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-copy", true);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-copy",
+    true,
+  );
   const {
     data: pendingGeraLandingDesignPresetExecutions,
     isLoading: isLoadingPendingGeraLandingDesignPresetExecutions,
     refetch: refetchPendingGeraLandingDesignPresetExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-design-preset", false);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-design-preset",
+    false,
+  );
   const {
     data: completedGeraLandingDesignPresetExecutions,
     isLoading: isLoadingCompletedGeraLandingDesignPresetExecutions,
     refetch: refetchCompletedGeraLandingDesignPresetExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-design-preset", true);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-design-preset",
+    true,
+  );
   const {
     data: pendingGeraLandingImagePromptsExecutions,
     isLoading: isLoadingPendingGeraLandingImagePromptsExecutions,
     refetch: refetchPendingGeraLandingImagePromptsExecutions,
   } = useGeraLandingStageExecutions(
-    expId,
+    supportsTraditionalLanding ? expId : "",
     "landing-page-image-planning",
     false,
   );
@@ -520,13 +680,17 @@ export default function ExperimentDetailPage() {
     data: completedGeraLandingImagePromptsExecutions,
     isLoading: isLoadingCompletedGeraLandingImagePromptsExecutions,
     refetch: refetchCompletedGeraLandingImagePromptsExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-image-planning", true);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-image-planning",
+    true,
+  );
   const {
     data: pendingGeraLandingImageGenerationExecutions,
     isLoading: isLoadingPendingGeraLandingImageGenerationExecutions,
     refetch: refetchPendingGeraLandingImageGenerationExecutions,
   } = useGeraLandingStageExecutions(
-    expId,
+    supportsTraditionalLanding ? expId : "",
     "landing-page-image-generation",
     false,
   );
@@ -535,7 +699,7 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingCompletedGeraLandingImageGenerationExecutions,
     refetch: refetchCompletedGeraLandingImageGenerationExecutions,
   } = useGeraLandingStageExecutions(
-    expId,
+    supportsTraditionalLanding ? expId : "",
     "landing-page-image-generation",
     true,
   );
@@ -544,7 +708,7 @@ export default function ExperimentDetailPage() {
     isLoading: isLoadingPendingGeraLandingQualityReviewExecutions,
     refetch: refetchPendingGeraLandingQualityReviewExecutions,
   } = useGeraLandingStageExecutions(
-    expId,
+    supportsTraditionalLanding ? expId : "",
     "landing-page-quality-review",
     false,
   );
@@ -552,12 +716,18 @@ export default function ExperimentDetailPage() {
     data: completedGeraLandingQualityReviewExecutions,
     isLoading: isLoadingCompletedGeraLandingQualityReviewExecutions,
     refetch: refetchCompletedGeraLandingQualityReviewExecutions,
-  } = useGeraLandingStageExecutions(expId, "landing-page-quality-review", true);
+  } = useGeraLandingStageExecutions(
+    supportsTraditionalLanding ? expId : "",
+    "landing-page-quality-review",
+    true,
+  );
   const {
     data: frameworkImageStatuses,
     isLoading: isLoadingFrameworkImageStatuses,
-  } = useFrameworkImageStatuses(expId);
-  const { data: frameworkImageSummary } = useFrameworkImageSummary(expId);
+  } = useFrameworkImageStatuses(supportsTraditionalLanding ? expId : undefined);
+  const { data: frameworkImageSummary } = useFrameworkImageSummary(
+    supportsTraditionalLanding ? expId : undefined,
+  );
   const { data: readinessSummary, isLoading: isLoadingReadiness } =
     useExperimentReadiness(expId);
   const {
@@ -1717,20 +1887,29 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const alterationLocked = isExperimentAlterationLocked(data);
-  const canAccessConstruction = canAccessExperimentConstruction(
-    data.creationSource,
-    data.productAiSubtype,
-  );
-  const visibleExperimentDetailTabs = experimentDetailTabs.filter(
-    (item) =>
-      !("manualOnly" in item) || !item.manualOnly || canAccessConstruction,
-  );
+  const visibleExperimentDetailTabs = getVisibleExperimentDetailTabs({
+    creationSource: data.creationSource,
+    productAiSubtype: data.productAiSubtype,
+    experimentType: data.experimentType,
+    platform: data.platform,
+  });
+  const visibleExperimentDetailTabGroups = experimentDetailTabGroups
+    .map((group) => ({
+      ...group,
+      tabs: visibleExperimentDetailTabs.filter(
+        (item) => item.group === group.value,
+      ),
+    }))
+    .filter((group) => group.tabs.length > 0);
   const selectedTab = visibleExperimentDetailTabs.some(
     (item) => item.value === tab,
   )
     ? tab
-    : "funnel";
+    : (visibleExperimentDetailTabs[0]?.value ?? "funnel");
   const hasPublishedFacebookCampaigns = Boolean(facebookCampaigns?.length);
+  const primaryFacebookCampaign = facebookCampaigns?.[0] ?? null;
+  const primaryFacebookAdSet = primaryFacebookCampaign?.adSets[0] ?? null;
+  const primaryFacebookAd = primaryFacebookAdSet?.ads[0] ?? null;
   const showGeraLandingStartButtons = !Boolean(data.facebookReleaseRequestedAt);
   const preset = presets?.find((p) => p.id === data.metricPresetId);
   const resetPreviewSummary: ExperimentCampaignResetSummary =
@@ -1819,6 +1998,15 @@ export default function ExperimentDetailPage() {
   };
 
   const isReadyForRunning = readinessSummary?.eligibleForRunning ?? false;
+  const experimentAlreadyStarted = [
+    "RUNNING",
+    "PAUSED",
+    "USER_STOPPED",
+    "VALIDATED",
+    "INVALIDATED",
+    "INCONCLUSIVE",
+    "FINISHED",
+  ].includes((data.status ?? "").toUpperCase());
   const releaseInProgress = releaseExperiment.isPending;
   const lastReleaseAt = data.facebookReleaseRequestedAt;
   const lastReleaseLabel = lastReleaseAt
@@ -2152,21 +2340,31 @@ export default function ExperimentDetailPage() {
                   </div>
                 </div>
                 <div className="experiment-pde-spotlight__action">
-                  {experimentPdePreviewUrl ? (
-                    <a
-                      className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
-                      href={experimentPdePreviewUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink size={16} aria-hidden="true" />
-                      Abrir PDE sem métricas
-                    </a>
-                  ) : (
-                    <span className="badge text-bg-warning">
-                      Link indisponível
-                    </span>
-                  )}
+                  <div className="d-flex flex-wrap gap-2">
+                    {experimentPdePreviewUrl ? (
+                      <a
+                        className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+                        href={experimentPdePreviewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ExternalLink size={16} aria-hidden="true" />
+                        Abrir PDE sem métricas
+                      </a>
+                    ) : (
+                      <span className="badge text-bg-warning">
+                        Link indisponível
+                      </span>
+                    )}
+                    {data.productId ? (
+                      <Link
+                        className="btn btn-outline-primary btn-sm"
+                        to={`/products/${data.productId}/pde-versions`}
+                      >
+                        Gerenciar versão
+                      </Link>
+                    ) : null}
+                  </div>
                   <span>Preview interno com analytics desligado.</span>
                 </div>
               </div>
@@ -2354,7 +2552,7 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       ) : null}
-      {canManageGeraSalesPage(data?.id) ? (
+      {supportsTraditionalLanding && canManageGeraSalesPage(data?.id) ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
@@ -2563,19 +2761,28 @@ export default function ExperimentDetailPage() {
           <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div>
               <h5 className="card-title mb-1">
-                Gate para iniciar o experimento
+                {experimentAlreadyStarted
+                  ? "Gate de publicação aprovado"
+                  : "Gate para iniciar o experimento"}
               </h5>
               <p className="text-muted small mb-0">
-                Fonte canônica dos requisitos para a transição segura de PLANNED
-                para RUNNING.
+                {experimentAlreadyStarted
+                  ? "Auditoria dos requisitos usados na liberação. O estado atual vem da campanha e do experimento, não deste checklist histórico."
+                  : "Fonte canônica dos requisitos para a transição segura de PLANNED para RUNNING."}
               </p>
             </div>
             <span
-              className={`badge ${readinessSummary?.eligibleForRunning ? "text-bg-success" : "text-bg-warning"}`}
+              className={`badge ${
+                experimentAlreadyStarted || readinessSummary?.eligibleForRunning
+                  ? "text-bg-success"
+                  : "text-bg-warning"
+              }`}
             >
-              {readinessSummary?.eligibleForRunning
-                ? "PRONTO PARA RUNNING"
-                : "PLANNED — requisitos pendentes"}
+              {experimentAlreadyStarted
+                ? data.status
+                : readinessSummary?.eligibleForRunning
+                  ? "PRONTO PARA RUNNING"
+                  : "PLANNED — requisitos pendentes"}
             </span>
           </div>
           {isLoadingReadiness ? (
@@ -2655,30 +2862,43 @@ export default function ExperimentDetailPage() {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">
             <h5 className="card-title mb-0">
-              {isDirectOneToOne
-                ? "Abordagem individual consentida"
-                : isPdeMembershipSubscriptionFunnel
-                  ? "Campanha de Facebook Ads para assinatura PDE"
-                  : isLowTicketProduct
-                    ? "Campanha de Facebook Ads para venda"
-                    : "Campanha de Facebook Ads"}
+              {primaryFacebookCampaign
+                ? "Campanha Meta publicada"
+                : isDirectOneToOne
+                  ? "Abordagem individual consentida"
+                  : isPdeMembershipSubscriptionFunnel
+                    ? "Campanha de Facebook Ads para assinatura PDE"
+                    : isLowTicketProduct
+                      ? "Campanha de Facebook Ads para venda"
+                      : "Campanha de Facebook Ads"}
             </h5>
             <span
               className={`badge ${
-                isReadyForRunning ? "text-bg-success" : "text-bg-warning"
+                primaryFacebookCampaign?.status === "ACTIVE"
+                  ? "text-bg-success"
+                  : primaryFacebookCampaign
+                    ? "text-bg-secondary"
+                    : isReadyForRunning
+                      ? "text-bg-success"
+                      : "text-bg-warning"
               }`}
             >
-              {isReadyForRunning ? "Pronto" : "Pendente"}
+              {isLoadingFacebookCampaigns
+                ? "Carregando"
+                : (primaryFacebookCampaign?.status ??
+                  (isReadyForRunning ? "Pronto" : "Pendente"))}
             </span>
           </div>
           <p className="card-text mt-2">
-            {isDirectOneToOne
-              ? `Checklist para executar a amostra de ${data.sampleSize ?? 0} contatos sem mídia paga, comunicação em massa ou dependência da Meta.`
-              : isPdeMembershipSubscriptionFunnel
-                ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
-                : isLowTicketProduct
-                  ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
-                  : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
+            {primaryFacebookCampaign
+              ? "A campanha, o conjunto e o anúncio abaixo são a verdade operacional persistida pelo backend."
+              : isDirectOneToOne
+                ? `Checklist para executar a amostra de ${data.sampleSize ?? 0} contatos sem mídia paga, comunicação em massa ou dependência da Meta.`
+                : isPdeMembershipSubscriptionFunnel
+                  ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
+                  : isLowTicketProduct
+                    ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
+                    : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
           </p>
           {isLoadingReadiness ? (
             <div
@@ -2693,11 +2913,38 @@ export default function ExperimentDetailPage() {
               <span>Carregando pendências básicas...</span>
             </div>
           ) : null}
+          {primaryFacebookCampaign ? (
+            <div className="row g-2 mt-1" aria-label="Estrutura Meta publicada">
+              <PublishedMetaItem
+                label="Campanha"
+                id={primaryFacebookCampaign.id}
+                status={primaryFacebookCampaign.status}
+              />
+              <PublishedMetaItem
+                label="Conjunto"
+                id={primaryFacebookAdSet?.id}
+                status={primaryFacebookAdSet?.status}
+              />
+              <PublishedMetaItem
+                label="Anúncio"
+                id={primaryFacebookAd?.id}
+                status={primaryFacebookAd?.status}
+              />
+            </div>
+          ) : null}
           <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
             {isDirectOneToOne ? (
               <span className="badge text-bg-light border text-body px-3 py-2">
                 Sem mídia paga
               </span>
+            ) : primaryFacebookCampaign ? (
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                onClick={() => openExperimentTab("campaign")}
+              >
+                Ver campanha publicada
+              </button>
             ) : (
               <button
                 type="button"
@@ -2711,15 +2958,19 @@ export default function ExperimentDetailPage() {
               </button>
             )}
             <div className="small text-body-secondary">
-              {isDirectOneToOne
-                ? isReadyForRunning
-                  ? "O gate comercial está pronto; a abordagem continua manual, individual, consentida e atribuível."
-                  : "Resolva os bloqueios do gate antes de iniciar qualquer contato."
-                : isReadyForRunning
-                  ? isSalesObjectiveExperiment
-                    ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
-                    : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
-                  : "Resolva os bloqueios para habilitar a liberação automática."}
+              {primaryFacebookCampaign
+                ? primaryFacebookCampaign.metricsLastError
+                  ? `A sincronização de métricas informa: ${primaryFacebookCampaign.metricsLastError}`
+                  : "A publicação já ocorreu. Novas decisões devem usar resultados, saúde e comportamento atribuídos a este experimento."
+                : isDirectOneToOne
+                  ? isReadyForRunning
+                    ? "O gate comercial está pronto; a abordagem continua manual, individual, consentida e atribuível."
+                    : "Resolva os bloqueios do gate antes de iniciar qualquer contato."
+                  : isReadyForRunning
+                    ? isSalesObjectiveExperiment
+                      ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
+                      : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
+                    : "Resolva os bloqueios para habilitar a liberação automática."}
               {lastReleaseLabel ? (
                 <div className="mt-1">
                   Última liberação: <strong>{lastReleaseLabel}</strong>
@@ -2872,32 +3123,57 @@ export default function ExperimentDetailPage() {
       ) : null}
       <div ref={tabsSectionRef}>
         <Tabs.Root value={selectedTab} onValueChange={setTab} className="mt-3">
-          <Tabs.List className="nav nav-tabs experiment-detail-tabs">
-            {visibleExperimentDetailTabs.map((item) => (
-              <Tabs.Trigger
-                key={item.value}
-                value={item.value}
-                className={`nav-link experiment-detail-tabs__item${
-                  selectedTab === item.value ? " active" : ""
-                }`}
-              >
-                {item.label}
-              </Tabs.Trigger>
-            ))}
-          </Tabs.List>
-          <Tabs.Content value="construction" asChild>
+          <div className="experiment-detail-tabs__viewport">
+            <Tabs.List
+              className="experiment-detail-tabs"
+              aria-label="Áreas do experimento"
+            >
+              {visibleExperimentDetailTabGroups.map((group) => (
+                <div
+                  className="experiment-detail-tabs__group"
+                  key={group.value}
+                  role="presentation"
+                >
+                  <span className="experiment-detail-tabs__group-label">
+                    {group.label}
+                  </span>
+                  <div
+                    className="experiment-detail-tabs__group-items"
+                    role="presentation"
+                  >
+                    {group.tabs.map((item) => (
+                      <Tabs.Trigger
+                        key={item.value}
+                        value={item.value}
+                        className={`experiment-detail-tabs__item${
+                          selectedTab === item.value ? " active" : ""
+                        }`}
+                      >
+                        {item.label}
+                      </Tabs.Trigger>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </Tabs.List>
+          </div>
+          <Tabs.Content value="construction">
             <ExperimentConstructionTab
               experimentId={expId}
               productAiSubtype={data?.productAiSubtype}
               onSelectTab={setTab}
             />
           </Tabs.Content>
-          <Tabs.Content value="execucao" asChild>
+          <Tabs.Content value="execucao">
             <div className="d-flex flex-column gap-3">
-              <ExperimentRunPanel experimentId={expId} />
+              <ExperimentRunPanel
+                experimentId={expId}
+                experimentStatus={data.status}
+                campaignPublished={hasPublishedFacebookCampaigns}
+              />
             </div>
           </Tabs.Content>
-          <Tabs.Content value="funnel" asChild>
+          <Tabs.Content value="funnel">
             <ExperimentFunnelTab
               experimentId={expId}
               experimentType={data?.experimentType}
@@ -2907,40 +3183,57 @@ export default function ExperimentDetailPage() {
               alterationLocked={alterationLocked}
             />
           </Tabs.Content>
-          <Tabs.Content value="history" asChild>
+          <Tabs.Content value="history">
             <ExperimentHistoryTab experimentId={expId} />
           </Tabs.Content>
-          <Tabs.Content value="process" asChild>
-            <ExperimentProcessInstanceTab experimentId={expId} />
+          <Tabs.Content value="process">
+            <ExperimentProcessInstanceTab
+              experimentId={expId}
+              experimentStatus={data.status}
+              facebookReleaseRequestedAt={data.facebookReleaseRequestedAt}
+              campaignPublished={hasPublishedFacebookCampaigns}
+            />
           </Tabs.Content>
-          <Tabs.Content value="post-deploy" asChild>
-            <ExperimentPostDeployMonitorTab experimentId={expId} />
+          <Tabs.Content value="campaign">
+            <ExperimentFacebookCampaignTab
+              campaigns={facebookCampaigns}
+              isLoading={isLoadingFacebookCampaigns}
+            />
           </Tabs.Content>
-          <Tabs.Content value="ab-test" asChild>
-            <ExperimentSalesPageAbTab experimentId={expId} />
+          <Tabs.Content value="post-deploy">
+            <ExperimentPostDeployMonitorTab
+              experimentId={expId}
+              productId={data.productId}
+            />
           </Tabs.Content>
-          <Tabs.Content value="analytics" asChild>
+          <Tabs.Content value="ab-test">
+            <ExperimentSalesPageAbTab
+              experimentId={expId}
+              alterationLocked={alterationLocked}
+            />
+          </Tabs.Content>
+          <Tabs.Content value="analytics">
             <ExperimentLandingAnalyticsTab
               experimentId={expId}
               experimentType={data?.experimentType}
             />
           </Tabs.Content>
-          <Tabs.Content value="creatives" asChild>
+          <Tabs.Content value="creatives">
             <CriativosTab
               experimentId={expId}
               alterationLocked={alterationLocked}
             />
           </Tabs.Content>
-          <Tabs.Content value="landing" asChild>
+          <Tabs.Content value="landing">
             <LandingTab experiment={data} alterationLocked={alterationLocked} />
           </Tabs.Content>
-          <Tabs.Content value="video" asChild>
+          <Tabs.Content value="video">
             <ExperimentVideoTab
               experiment={data}
               alterationLocked={alterationLocked}
             />
           </Tabs.Content>
-          <Tabs.Content value="gera-landing" asChild>
+          <Tabs.Content value="gera-landing">
             <div className="d-flex flex-column gap-3">
               <div className="card">
                 <div className="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -3960,7 +4253,7 @@ export default function ExperimentDetailPage() {
               </div>
             </div>
           </Tabs.Content>
-          <Tabs.Content value="content-structure" asChild>
+          <Tabs.Content value="content-structure">
             <ExperimentContentGenerationTab
               experimentId={expId}
               experimentName={data?.name}
@@ -3974,7 +4267,7 @@ export default function ExperimentDetailPage() {
               isCheckingPublishedFacebookCampaigns={isLoadingFacebookCampaigns}
             />
           </Tabs.Content>
-          <Tabs.Content value="publico" asChild>
+          <Tabs.Content value="publico">
             <ExperimentAudienceTab
               experimentId={Number(expId)}
               nicheId={data?.nicheId}
@@ -3982,7 +4275,7 @@ export default function ExperimentDetailPage() {
               alterationLocked={alterationLocked}
             />
           </Tabs.Content>
-          <Tabs.Content value="conteudo" asChild>
+          <Tabs.Content value="conteudo">
             <div className="d-flex flex-column gap-3">
               {pipelineContentCards.map((card) => {
                 const formattedValue = formatPipelineJson(card.rawValue);

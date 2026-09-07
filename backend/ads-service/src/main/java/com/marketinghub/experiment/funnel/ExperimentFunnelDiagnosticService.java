@@ -77,6 +77,7 @@ public class ExperimentFunnelDiagnosticService {
   private ExperimentFunnelStageDiagnosticDto diagnoseRule(
       Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage,
       ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule) {
+    String stageLabel = resolveStageLabel(byStage, rule.to());
     long attempts =
         Optional.ofNullable(byStage.get(rule.from()))
             .map(ExperimentFunnelStageDto::getTotalCount)
@@ -90,7 +91,7 @@ public class ExperimentFunnelDiagnosticService {
     if (attempts == 0 && successes == 0) {
       return new ExperimentFunnelStageDiagnosticDto(
           rule.to(),
-          rule.to().getLabel(),
+          stageLabel,
           attempts,
           successes,
           null,
@@ -106,7 +107,7 @@ public class ExperimentFunnelDiagnosticService {
     if (successes > attempts || (attempts == 0 && successes > 0)) {
       return new ExperimentFunnelStageDiagnosticDto(
           rule.to(),
-          rule.to().getLabel(),
+          stageLabel,
           attempts,
           successes,
           attempts > 0 ? (double) successes / attempts : null,
@@ -127,7 +128,7 @@ public class ExperimentFunnelDiagnosticService {
       if (attempts < attemptsFor95Confidence) {
         return new ExperimentFunnelStageDiagnosticDto(
             rule.to(),
-            rule.to().getLabel(),
+            stageLabel,
             attempts,
             successes,
             observedRate,
@@ -142,7 +143,7 @@ public class ExperimentFunnelDiagnosticService {
       if (upper95 <= rule.minAcceptableRate()) {
         return new ExperimentFunnelStageDiagnosticDto(
             rule.to(),
-            rule.to().getLabel(),
+            stageLabel,
             attempts,
             successes,
             observedRate,
@@ -156,7 +157,7 @@ public class ExperimentFunnelDiagnosticService {
       }
       return new ExperimentFunnelStageDiagnosticDto(
           rule.to(),
-          rule.to().getLabel(),
+          stageLabel,
           attempts,
           successes,
           observedRate,
@@ -174,7 +175,7 @@ public class ExperimentFunnelDiagnosticService {
       if (upper95 <= rule.minAcceptableRate()) {
         return new ExperimentFunnelStageDiagnosticDto(
             rule.to(),
-            rule.to().getLabel(),
+            stageLabel,
             attempts,
             successes,
             observedRate,
@@ -188,7 +189,7 @@ public class ExperimentFunnelDiagnosticService {
       }
       return new ExperimentFunnelStageDiagnosticDto(
           rule.to(),
-          rule.to().getLabel(),
+          stageLabel,
           attempts,
           successes,
           observedRate,
@@ -203,7 +204,7 @@ public class ExperimentFunnelDiagnosticService {
 
     return new ExperimentFunnelStageDiagnosticDto(
         rule.to(),
-        rule.to().getLabel(),
+        stageLabel,
         attempts,
         successes,
         observedRate,
@@ -214,6 +215,15 @@ public class ExperimentFunnelDiagnosticService {
         FunnelDiagnosticReasonCode.HEALTHY_OR_INCONCLUSIVE,
         "Sem indício forte de reprovação estatística nesta etapa.",
         false);
+  }
+
+  /** Usa o rótulo já adaptado pelo funil ao tipo comercial do experimento. */
+  private String resolveStageLabel(
+      Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage, ExperimentFunnelStage stage) {
+    return Optional.ofNullable(byStage.get(stage))
+        .map(ExperimentFunnelStageDto::getLabel)
+        .filter(label -> !label.isBlank())
+        .orElse(stage.getLabel());
   }
 
   /**

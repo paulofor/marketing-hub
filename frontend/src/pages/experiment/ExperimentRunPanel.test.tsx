@@ -44,7 +44,7 @@ describe("ExperimentRunPanel", () => {
         },
       ],
       isLoading: false,
-    } as ReturnType<typeof useExperimentRuns>);
+    } as unknown as ReturnType<typeof useExperimentRuns>);
     vi.mocked(useExperimentRunPreflight).mockReturnValue({
       data: {
         runId: 51,
@@ -118,5 +118,28 @@ describe("ExperimentRunPanel", () => {
         evidenceReference: `evidence://${gateCode}`,
       })),
     });
+  });
+
+  it("trata ausência de run após publicação como lacuna histórica sem oferecer mutação retroativa", () => {
+    vi.mocked(useExperimentRuns).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useExperimentRuns>);
+
+    render(
+      <ExperimentRunPanel
+        experimentId="91"
+        experimentStatus="RUNNING"
+        campaignPublished
+      />,
+    );
+
+    expect(screen.getByText(/lacuna é histórica/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Criar run" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Rodar preflight" }),
+    ).not.toBeInTheDocument();
   });
 });

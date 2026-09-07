@@ -112,9 +112,10 @@ de conteúdo confiável.
 | Caminho feliz | Adicionar dois JSONs em coleções diferentes no mesmo push | Seleciona e cadastra exatamente os dois. |
 | Versionamento | Alterar o conteúdo de um JSON já versionado | Publica somente o arquivo alterado com nova chave idempotente. |
 | Idempotência | Reexecutar o mesmo JSON ou reconciliar após revisão/ativação | Conserva a chave, aceita o estado editorial atual e não cria versão duplicada. |
-| Seleção | Alterar JSON fora de `pesquisas/<colecao>/cards/` | Não chama a API. |
+| Seleção | Alterar JSON fora de `pesquisas/<origem>/cards/` | Não chama a API. |
 | Contrato | Informar campo ausente, extra, tipo, data ou tamanho inválido | Falha antes da rede com caminho identificável. |
-| Coleção | Divergir coleção do payload e pasta ou usar coleção não roteada | Falha antes da rede. |
+| Coleção | Usar origem diferente da coleção funcional, com coleção roteada no payload | Aceita a procedência e cadastra na coleção funcional. |
+| Coleção | Usar coleção funcional não roteada no payload | Falha antes da rede. |
 | Fonte local | Referência ausente, não versionada, com travessia ou SHA-256 divergente | Falha antes da rede. |
 | Fonte externa | Usar combinação válida de `URL`, `PDF`, `MARKDOWN` ou `TEXT` | Aceita o esquema permitido sem buscar conteúdo remoto. |
 | Integração | API devolver erro de transporte, HTTP diferente de `201` ou corpo inválido | Workflow falha e preserva reexecução idempotente. |
@@ -125,6 +126,27 @@ de conteúdo confiável.
 
 Navegadores e dispositivos não se aplicam a essa automação servidor-a-servidor. A suíte de contrato
 deve rodar junto com Actionlint sempre que o workflow ou seus scripts forem alterados.
+
+### Recuperação de origens externas — 2026-09-07
+
+Os runs `34136304687` e `34136325593` falharam porque o produtor externo armazenou cartões sob
+`pesquisas/ia-aplicada/cards/`, enquanto o publicador confundia a pasta de procedência com a coleção
+funcional. Os payloads já declaravam corretamente `momentos-de-compra-b2c` e `neuromarketing`, ambas
+aceitas pela API. Runs intercalados de `neuromarketing` concluíram, descartando falha de credencial,
+rede ou backend.
+
+Foram rejeitadas a inclusão pontual de `ia-aplicada` numa lista fixa e a movimentação manual dos dois
+arquivos, pois ambas repetiriam o defeito com outro produtor. A automação agora aceita qualquer origem
+com slug seguro, mantém o enum funcional rígido no payload e reconcilia todos os cartões quando o
+workflow ou seu publicador mudarem. O teste reproduz origem `ia-aplicada`, roteamento
+`neuromarketing`, coleção funcional desconhecida e recuperação integral após correção da automação.
+
+Depois da última correção, duas rodadas locais completas e consecutivas terminaram sem falhas, com
+22/22 etapas em cada rodada. Ambas validaram sintaxe, Actionlint compatível com a fila ampliada,
+todos os nove JSONs reais com API falsa, idempotência, erros HTTP/transporte, filas e retries, 34
+cenários de disco, 39 contratos de pacote/workflows, OpenSSH real isolado, retenção e carga Docker,
+integridade de imagem e Compose sem rebuild. As topologias e imagens temporárias foram removidas ao
+final; nenhuma API produtiva, campanha, venda, gasto, PR, workflow remoto ou deploy foi acionado.
 
 ## Navegadores e dispositivos
 

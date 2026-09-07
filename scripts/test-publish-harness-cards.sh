@@ -74,10 +74,11 @@ write_card() {
 }
 
 write_repo_card() {
-  local collection="$1"
+  local source_collection="$1"
   local card_key="$2"
-  local source_path="pesquisas/${collection}/cards/fontes/${card_key}.md"
-  local card_path="pesquisas/${collection}/cards/${card_key}.json"
+  local routed_collection="${3:-${source_collection}}"
+  local source_path="pesquisas/${source_collection}/cards/fontes/${card_key}.md"
+  local card_path="pesquisas/${source_collection}/cards/${card_key}.json"
   local source_sha
 
   mkdir -p "${TEST_REPOSITORY}/$(dirname "${source_path}")"
@@ -86,7 +87,7 @@ write_repo_card() {
   source_sha="$(sha256sum "${TEST_REPOSITORY}/${source_path}" | awk '{print $1}')"
   write_card \
     "${TEST_REPOSITORY}/${card_path}" \
-    "${collection}" \
+    "${routed_collection}" \
     "${card_key}" \
     "MARKDOWN" \
     "repo:${source_path}" \
@@ -111,11 +112,18 @@ run_publisher() {
   run_publisher_for_root "${TEST_REPOSITORY}" "$@"
 }
 
-mkdir -p "${TEST_REPOSITORY}" "${FAKE_BIN}"
+mkdir -p \
+  "${TEST_REPOSITORY}/.github/workflows" \
+  "${TEST_REPOSITORY}/scripts" \
+  "${FAKE_BIN}"
 git -C "${TEST_REPOSITORY}" init -q -b main
 git -C "${TEST_REPOSITORY}" config user.name "Codex Homologação"
 git -C "${TEST_REPOSITORY}" config user.email "codex-homologacao@marketing-hub"
 printf 'fixture\n' > "${TEST_REPOSITORY}/README.md"
+printf 'workflow fixture\n' \
+  > "${TEST_REPOSITORY}/.github/workflows/publicar-harness-cards.yml"
+printf 'publisher fixture\n' \
+  > "${TEST_REPOSITORY}/scripts/publish-harness-cards.sh"
 base_sha="$(commit_fixture "Base")"
 
 cat > "${FAKE_BIN}/curl" <<'EOF'
@@ -192,23 +200,31 @@ chmod +x "${FAKE_BIN}/curl"
 
 write_repo_card "video" "homologacao-video"
 write_repo_card "neuromarketing" "homologacao-neuromarketing"
-cards_sha="$(commit_fixture "Adiciona dois cards")"
+write_repo_card "ia-aplicada" "homologacao-origem-ia" "neuromarketing"
+cards_sha="$(commit_fixture "Adiciona três cards")"
 
 : > "${REQUEST_LOG}"
 run_publisher "${PUBLISHER}" --changed "${base_sha}" "${cards_sha}" >/dev/null
-assert_request_count 2
+assert_request_count 3
 first_keys="$(cut -f1 "${REQUEST_LOG}")"
 
 run_publisher "${PUBLISHER}" --changed "${base_sha}" "${cards_sha}" >/dev/null
-assert_request_count 4
-second_keys="$(tail -n 2 "${REQUEST_LOG}" | cut -f1)"
+assert_request_count 6
+second_keys="$(tail -n 3 "${REQUEST_LOG}" | cut -f1)"
 [[ "${first_keys}" == "${second_keys}" ]] \
   || fail "a repetição do mesmo JSON mudou a chave idempotente"
+
+printf 'publisher fixture revisado\n' \
+  > "${TEST_REPOSITORY}/scripts/publish-harness-cards.sh"
+automation_sha="$(commit_fixture "Atualiza automação")"
+: > "${REQUEST_LOG}"
+run_publisher "${PUBLISHER}" --changed "${cards_sha}" "${automation_sha}" >/dev/null
+assert_request_count 3
 
 printf '{"ignorado":true}\n' > "${TEST_REPOSITORY}/outro.json"
 unrelated_sha="$(commit_fixture "Adiciona JSON fora da pasta de cards")"
 : > "${REQUEST_LOG}"
-run_publisher "${PUBLISHER}" --changed "${cards_sha}" "${unrelated_sha}" >/dev/null
+run_publisher "${PUBLISHER}" --changed "${automation_sha}" "${unrelated_sha}" >/dev/null
 assert_request_count 0
 
 video_card="${TEST_REPOSITORY}/pesquisas/video/cards/homologacao-video.json"
@@ -303,23 +319,24 @@ git -C "${TEST_REPOSITORY}" rm -q \
   "pesquisas/prazer-audio-visual/cards/fontes/hash-divergente.md"
 after_hash_sha="$(commit_fixture "Remove fixture de hash")"
 
-mismatch_card="${TEST_REPOSITORY}/pesquisas/video/cards/colecao-divergente.json"
+unknown_collection_card="${TEST_REPOSITORY}/pesquisas/ia-aplicada/cards/colecao-desconhecida.json"
 write_card \
-  "${mismatch_card}" \
-  "neuromarketing" \
-  "colecao-divergente" \
+  "${unknown_collection_card}" \
+  "ia-aplicada" \
+  "colecao-desconhecida" \
   "TEXT" \
-  "urn:homologacao:colecao-divergente" \
+  "urn:homologacao:colecao-desconhecida" \
   "$(printf 'a%.0s' {1..64})"
-mismatch_sha="$(commit_fixture "Adiciona coleção divergente")"
+unknown_collection_sha="$(commit_fixture "Adiciona coleção desconhecida")"
 : > "${REQUEST_LOG}"
-if run_publisher "${PUBLISHER}" --changed "${after_hash_sha}" "${mismatch_sha}" >/dev/null 2>&1; then
-  fail "coleção divergente da pasta foi aceita"
+if run_publisher "${PUBLISHER}" --changed \
+  "${after_hash_sha}" "${unknown_collection_sha}" >/dev/null 2>&1; then
+  fail "coleção de roteamento desconhecida foi aceita"
 fi
 assert_request_count 0
 git -C "${TEST_REPOSITORY}" rm -q \
-  "pesquisas/video/cards/colecao-divergente.json"
-after_mismatch_sha="$(commit_fixture "Remove fixture de coleção")"
+  "pesquisas/ia-aplicada/cards/colecao-desconhecida.json"
+after_unknown_collection_sha="$(commit_fixture "Remove fixture de coleção")"
 
 text_card="${TEST_REPOSITORY}/pesquisas/momentos-de-compra-b2c/cards/homologacao-texto.json"
 write_card \
@@ -331,7 +348,8 @@ write_card \
   "$(printf 'b%.0s' {1..64})"
 text_sha="$(commit_fixture "Adiciona card com fonte textual")"
 : > "${REQUEST_LOG}"
-run_publisher "${PUBLISHER}" --changed "${after_mismatch_sha}" "${text_sha}" >/dev/null
+run_publisher "${PUBLISHER}" --changed \
+  "${after_unknown_collection_sha}" "${text_sha}" >/dev/null
 assert_request_count 1
 
 : > "${REQUEST_LOG}"
@@ -367,7 +385,7 @@ assert_request_count 1
 : > "${REQUEST_LOG}"
 run_publisher "${PUBLISHER}" --changed \
   "0000000000000000000000000000000000000000" "${text_sha}" >/dev/null
-assert_request_count 3
+assert_request_count 4
 
 printf '{"fora":"da pasta"}\n' > "${TEST_REPOSITORY}/card-fora.json"
 commit_fixture "Adiciona JSON manual fora da pasta" >/dev/null
@@ -382,7 +400,9 @@ grep -Fq 'group: harness-library-cards-main' "${WORKFLOW}" \
 grep -Fq 'queue: max' "${WORKFLOW}" \
   || fail "workflow pode descartar cards quando vários eventos chegam em sequência"
 grep -Fq '"pesquisas/*/cards/*.json"' "${WORKFLOW}" \
-  || fail "workflow não observa todas as coleções"
+  || fail "workflow não observa todas as origens de cards"
+grep -Fq '"scripts/publish-harness-cards.sh"' "${WORKFLOW}" \
+  || fail "workflow não reconcilia cards quando o publicador é corrigido"
 grep -Fq 'repository_dispatch:' "${WORKFLOW}" \
   || fail "workflow não aceita sinal imediato de automações externas"
 grep -Fq 'harness-library-card-created' "${WORKFLOW}" \
@@ -393,9 +413,11 @@ grep -Fq 'bash scripts/publish-harness-cards.sh --all' "${WORKFLOW}" \
   || fail "workflow não usa o publicador testável na reconciliação"
 
 : > "${REQUEST_LOG}"
-run_publisher_for_root "${REPOSITORY_ROOT}" "${PUBLISHER}" \
-  --card "pesquisas/prazer-audio-visual/cards/2026-09-06-loudness-fronteiras-frase.json" \
-  >/dev/null
-assert_request_count 1
+mapfile -d '' -t repository_cards < <(
+  git -C "${REPOSITORY_ROOT}" ls-files -z -- \
+    ':(glob)pesquisas/*/cards/*.json'
+)
+run_publisher_for_root "${REPOSITORY_ROOT}" "${PUBLISHER}" --all >/dev/null
+assert_request_count "${#repository_cards[@]}"
 
 echo "Contrato automático de publicação dos cards validado."

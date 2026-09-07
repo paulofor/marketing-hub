@@ -11,6 +11,8 @@ on:
       - main
     paths:
       - "pesquisas/*/cards/*.json"
+      - ".github/workflows/publicar-harness-cards.yml"
+      - "scripts/publish-harness-cards.sh"
 
   repository_dispatch:
     types:

@@ -4,6 +4,10 @@ set -euo pipefail
 SCRIPT_DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOSITORY_ROOT="${HARNESS_CARDS_REPOSITORY_ROOT:-$(cd "${SCRIPT_DIRECTORY}/.." && pwd)}"
 CARD_PATHSPEC=':(glob)pesquisas/*/cards/*.json'
+AUTOMATION_PATHS=(
+  ".github/workflows/publicar-harness-cards.yml"
+  "scripts/publish-harness-cards.sh"
+)
 MAX_CARD_BYTES=32768
 
 fail() {
@@ -15,7 +19,7 @@ usage() {
   cat >&2 <<'EOF'
 Uso:
   publish-harness-cards.sh --all
-  publish-harness-cards.sh --card pesquisas/<colecao>/cards/<card>.json
+  publish-harness-cards.sh --card pesquisas/<origem>/cards/<card>.json
   publish-harness-cards.sh --changed <before-sha> <after-sha>
 EOF
   exit 2
@@ -39,6 +43,12 @@ select_changed_cards() {
     return
   fi
 
+  if ! git diff --quiet "${before_sha}" "${after_sha}" -- "${AUTOMATION_PATHS[@]}"; then
+    echo "::notice::Automação alterada; reconciliando todos os cards versionados." >&2
+    select_all_cards
+    return
+  fi
+
   git diff \
     --diff-filter=ACMR \
     --name-only \
@@ -51,11 +61,9 @@ select_changed_cards() {
 validate_card_path() {
   local card="$1"
 
-  if [[ ! "${card}" =~ ^pesquisas/(video|prazer-audio-visual|neuromarketing|momentos-de-compra-b2c)/cards/[A-Za-z0-9][A-Za-z0-9._-]*\.json$ ]]; then
-    fail "Card fora da pasta permitida pesquisas/<colecao>/cards: ${card}"
+  if [[ ! "${card}" =~ ^pesquisas/[a-z0-9]+(-[a-z0-9]+)*/cards/[A-Za-z0-9][A-Za-z0-9._-]*\.json$ ]]; then
+    fail "Card fora da pasta de origem segura pesquisas/<origem>/cards: ${card}"
   fi
-
-  CARD_DIRECTORY_COLLECTION="${BASH_REMATCH[1]}"
 }
 
 validate_iso_date() {
@@ -177,7 +185,7 @@ publish_card() {
   local card="$1"
   local response="$2"
   local card_sha idempotency_key http_code expected_card_key expected_source_sha
-  local published_on valid_until payload_collection
+  local published_on valid_until
 
   echo "Validando ${card}"
   validate_card_path "${card}"
@@ -187,10 +195,6 @@ publish_card() {
   fi
 
   validate_card_payload "${card}"
-
-  payload_collection="$(jq -r '.collection' "${card}")"
-  [[ "${payload_collection}" == "${CARD_DIRECTORY_COLLECTION}" ]] \
-    || fail "Coleção do JSON diverge da pasta do card: ${card}"
 
   published_on="$(jq -r '.publishedOn' "${card}")"
   valid_until="$(jq -r '.validUntil' "${card}")"

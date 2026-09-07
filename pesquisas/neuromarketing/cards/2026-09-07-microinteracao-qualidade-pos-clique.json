@@ -1,0 +1,18 @@
+{
+  "cardKey": "microinteracao-qualidade-pos-clique",
+  "collection": "neuromarketing",
+  "title": "Microinteração pode qualificar melhor que o clique",
+  "finding": "Formatos publicitários gamificados e interativos podem elevar atenção, memória e qualidade pós-clique mesmo quando CTR não melhora.",
+  "mechanism": "Uma interação voluntária pode transformar exposição passiva em participação e funcionar como filtro de intenção; formatos mais exigentes podem reduzir cliques superficiais e concentrar usuários mais engajados.",
+  "commercialApplication": "Criar variantes PlayableCreative ou MicroInteractionCreative e avaliar PostClickQualityScore com conclusão de formulário, continuidade no WhatsApp, CPL, conversão e retorno, além de CTR.",
+  "evidenceStrength": "Moderada: projeto aplicado com eye-tracking, pesquisa e três campanhas reais, 943 participantes e cerca de 2,64 milhões de impressões; contexto diferente de Meta Ads exige replicação local.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2027-03-07",
+  "experimentHypothesis": "Uma microinteração simples antes do CTA reduzirá cliques de baixa intenção e melhorará qualidade pós-clique e conversão em relação a um criativo estático equivalente.",
+  "risks": "Adicionar fricção excessiva, confundir entretenimento com intenção de compra, aumentar custo de produção ou otimizar engajamento sem receita.",
+  "limits": "Os formatos originais são display ads e os percentuais observados não são transferíveis diretamente para Meta Ads ou Click-to-WhatsApp. O ganho comercial precisa ser validado por canal e oferta.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-07-microinteracao-qualidade-pos-clique.md",
+  "sourceTitle": "Fonte revisada — Microinterações publicitárias podem elevar qualidade pós-clique",
+  "sourceSha256": "c6a5651785b371fca33279fe33395c09fb371ba4a8462778afe70f49405b10b0"
+}

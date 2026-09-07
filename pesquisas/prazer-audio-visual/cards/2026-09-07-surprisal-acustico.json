@@ -1,0 +1,18 @@
+{
+  "cardKey": "surprisal-acustico-janela-um-segundo",
+  "collection": "prazer-audio-visual",
+  "title": "Modelar surpresa espectral e rítmica separadamente",
+  "finding": "Em 195 ouvintes avaliando 300 sequências, medidas baseadas em Shannon surprisal e auto-similaridade acompanharam melhor imprevisibilidade espectral, enquanto uma medida por autocorrelação captou melhor irregularidade rítmica; várias métricas convergiram para uma janela próxima de 1 segundo.",
+  "mechanism": "A saliência auditiva pode depender de diferentes formas de violação de expectativa mantidas em uma janela curta de memória auditiva; surpresa espectral e surpresa temporal não são necessariamente o mesmo sinal.",
+  "commercialApplication": "Calcular curvas separadas de surprisal espectral e rítmico e testar cortes, transições ou mudanças sonoras em picos de surpresa em vez de introduzir aleatoriedade genérica.",
+  "evidenceStrength": "Média-alta para mensuração de imprevisibilidade percebida: N=195 e 300 sequências, com benchmarking de vários algoritmos; não mede prazer ou comportamento comercial.",
+  "publishedOn": "2026-08-24",
+  "validUntil": "2027-02-24",
+  "experimentHypothesis": "Eventos audiovisuais posicionados em picos de surprisal calculado aumentarão atenção e memória do trecho em relação a eventos igualmente intensos colocados em pontos de baixa surpresa.",
+  "risks": "Não tratar surpresa como sinônimo de prazer; excesso de imprevisibilidade pode aumentar distração ou reduzir compreensão, e parâmetros otimizados no estudo podem sofrer overfitting.",
+  "limits": "Os estímulos eram sequências sintéticas de vocalizações e sons ambientais; a janela de aproximadamente 1 segundo não deve ser tratada como constante universal para música, vídeo ou interfaces.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-07-surprisal-acustico.md",
+  "sourceTitle": "Fonte revisada — surprisal acústico e saliência temporal",
+  "sourceSha256": "b966645c8599a4f9062a7bef6ccd779821e6630ee60f1d3325171feac6a04dbf"
+}

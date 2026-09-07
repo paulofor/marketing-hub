@@ -27,7 +27,9 @@ for (const module of modules) {
   assert.ok(firstWrite > gate, `Gate deve anteceder sincronização e Docker: ${module}`);
   assert.match(deploy.slice(0, gate), /ssh[^\n]+['"]bash -s['"]\s*$/, module);
   assert.ok(restore > deploy.lastIndexOf("docker compose"), `Reserva final deve ocorrer após o deploy: ${module}`);
-  assert.match(deploy.slice(Math.max(0, restore - 220), restore), /name: Restore free disk space[\s\S]+if: always\(\)/, module);
+  const restoreStepStart = deploy.lastIndexOf("- name: Restore free disk space", restore);
+  assert.ok(restoreStepStart >= 0, `Etapa final de restauração ausente: ${module}`);
+  assert.match(deploy.slice(restoreStepStart, restore), /name: Restore free disk space[\s\S]+if: always\(\)/, module);
 }
 
 const customer = readFileSync(path.join(root, ".github/workflows/customer-agent-worker-ci.yml"), "utf8");

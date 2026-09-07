@@ -1,5 +1,6 @@
 services:
   agent-executor-admin-controller:
+    image: ${AGENT_EXECUTOR_ADMIN_IMAGE:-marketing-hub/agent-executor-admin-controller:local}
     build:
       context: ../..
       dockerfile: deploy/agent-executor-admin-controller/Dockerfile

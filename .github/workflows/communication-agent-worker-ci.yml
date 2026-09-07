@@ -56,6 +56,20 @@ jobs:
       - name: Validate container build
         run: docker build -t marketing-hub/communication-agent-worker:${{ github.sha }} communication-agent-worker
 
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/communication-agent-worker:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     name: Deploy worker
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -67,6 +81,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/communication-agent-worker:${{ github.sha }}
 
       - name: Configure authenticated agent VPS SSH
         env:
@@ -82,6 +102,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/communication-agent-worker:${{ github.sha }}
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
@@ -89,7 +112,7 @@ jobs:
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete communication-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/communication-agent-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
-      - name: Rebuild and restart worker
+      - name: Start validated worker
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
@@ -103,7 +126,7 @@ jobs:
                    AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
                    COMMUNICATION_AGENT_IMAGE=marketing-hub/communication-agent-worker:${GITHUB_SHA} \
             && cd '${REPOSITORY_DIR}/communication-agent-worker' \
-            && docker compose up -d --build --remove-orphans \
+            && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' communication-agent-worker-communication-agent-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \

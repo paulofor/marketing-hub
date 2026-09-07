@@ -11,7 +11,7 @@ e `workflow_dispatch` permite um rollout operacional explicitamente solicitado.
 Antes de sincronizar código, gravar credenciais de deploy ou executar build/pull/recriação,
 o job executa `scripts/ensure-agent-vps-disk-space.sh` no host, pela própria revisão versionada.
 Ao final da tentativa de publicação, inclusive após falha, o job executa novamente a sonda com
-`if: always()`, ainda dentro da fila compartilhada, para restaurar a reserva consumida pelo build.
+`if: always()`, ainda dentro da fila compartilhada, para restaurar a reserva consumida pela publicação.
 O bootstrap inicial do Docker de Argos precede a sonda quando a engine ainda não existe.
 
 Os nove publicadores do VPS validam a autenticação antes de qualquer comando remoto. A credencial canônica
@@ -43,7 +43,7 @@ local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
   a reserva para builds maiores sem alterar o indicador de saúde da aplicação.
 - Quando faltar espaço, coletar primeiro cache sem uso há pelo menos 24 horas,
   com `docker builder prune --force --filter until=24h --keep-storage 2GB`.
-  Se a nova medição continuar insuficiente, permitir uma segunda e última faixa:
+  Se a nova medição continuar insuficiente, permitir uma segunda faixa:
   `docker builder prune --force --filter until=1h --keep-storage 1GB`. A segunda faixa
   não roda quando a primeira já devolve a reserva. Cache em uso continua protegido pelo Docker.
 - Se cache não bastar, coletar imagens dangling sem container, primeiro com 24 h e depois com 1 h,
@@ -75,6 +75,37 @@ coleta automática e nunca usa remoção forçada.
 Os gatilhos de evidências comerciais permanecem ativos: quando um agente empacota documentos de
 homologação ou registros auditáveis em sua imagem, a alteração desses documentos deve reconstruir
 o pacote para impedir divergência entre a revisão versionada e o runtime.
+
+## Imagens aprovadas no runner e carga sem recompilação
+
+Os oito publicadores que antes faziam build no VPS devem construir e validar suas imagens no job
+de testes do Actions, empacotá-las por `scripts/agent-image-bundle.mjs` e transportá-las pelo artefato
+do mesmo run. O nome inclui o SHA; a retenção é de um dia. Pacote ausente, truncado, checksum
+divergente, referência inesperada ou identidade diferente bloqueia a atualização. Não reconstruir
+no VPS para contornar pacote indisponível. Argos mantém o contrato de imagem imutável no GHCR.
+
+A transferência usa a configuração SSH já autenticada, gzip por stdin e `docker image load`,
+sem gravar outro arquivo tar no host. Antes da carga, medir reserva de 4 GiB mais duas vezes a soma
+dos tamanhos descompactados reportados pelo Docker, cobrindo camadas e extração transitória.
+Depois da carga, conferir cada ID de imagem e novamente os 4 GiB operacionais antes de liberar o
+restart. Compose usa obrigatoriamente `--no-build --pull never`; a imagem executada é a mesma
+validada no runner. Sondas finais, fila e checks funcionais permanecem obrigatórios.
+
+Psique, Plutus e o controlador administrativo também usam referências explícitas por SHA no Compose
+produtivo. Esses repositórios participam da allowlist de retenção; as tags locais antigas e imagens
+de outros serviços não passam a ser elegíveis por inferência. Duas imagens de rollback distintas
+são preservadas por repositório, incluindo todas as suas tags; tags adicionais de uma imagem
+antiga fora da retenção não podem transformá-la acidentalmente em rollback protegido.
+
+Para a transição do legado, quando as faixas de cache de 24 h e 1 h não bastarem, uma terceira faixa
+permite `docker builder prune --force --filter until=0s --keep-storage 1GB`. Ela alcança somente
+cache descartável dos builds recém-concluídos, sob o lock e timeout existentes. Não usa `--all`,
+não apaga imagens publicadas, containers ou volumes e não reduz a reserva. Falha na coleta bloqueia
+o fluxo. Sem novos builds no VPS, essa faixa deixa de alimentar um ciclo de recompilações locais.
+Se a coleta protegida não recompuser a capacidade, registrar o bloqueio; ampliação de disco ou
+remoção de recursos fora da política depende da decisão operacional correspondente.
+
+Contratos, matriz e limites: `docs/homologacao/actions-agent-images-2026-09-07.md`.
 
 Contrato e evidências: `docs/homologacao/actions-agent-vps-disk-2026-09-06.md`.
 Complemento de SSH/checkout: `docs/homologacao/actions-agent-vps-ssh-checkout-2026-09-07.md`.

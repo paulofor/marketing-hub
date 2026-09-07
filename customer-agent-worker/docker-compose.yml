@@ -1,5 +1,6 @@
 services:
   customer-agent-worker:
+    image: ${CUSTOMER_AGENT_IMAGE:-marketing-hub/customer-agent-worker:local}
     build: .
     init: true
     restart: unless-stopped

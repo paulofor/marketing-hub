@@ -100,6 +100,20 @@ jobs:
             --input-type=module \
             < customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs
 
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/customer-agent-worker:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     name: Deploy worker
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -113,6 +127,12 @@ jobs:
       PDE_INTERNAL_API_TOKEN: ${{ secrets.PDE_INTERNAL_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/customer-agent-worker:${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -139,13 +159,16 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/customer-agent-worker:${{ github.sha }}
       - name: Synchronize versioned worker
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/customer-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete customer-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/customer-agent-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
-      - name: Rebuild, restart and validate worker
+      - name: Start and validate tested worker
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
@@ -155,10 +178,11 @@ jobs:
                    CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home \
                    MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
                    CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
+                   CUSTOMER_AGENT_IMAGE=marketing-hub/customer-agent-worker:${GITHUB_SHA} \
                    PDE_INTERNAL_API_TOKEN='${PDE_INTERNAL_API_TOKEN}' \
                    AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
             && cd '${REPOSITORY_DIR}/customer-agent-worker' \
-            && docker compose up -d --build --remove-orphans \
+            && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' customer-agent-worker-customer-agent-worker-1 2>/dev/null || true); \
                  codex_ready=false; \

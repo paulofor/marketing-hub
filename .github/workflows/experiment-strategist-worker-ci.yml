@@ -49,6 +49,20 @@ jobs:
       - name: Validate container build
         run: docker build -t marketing-hub/experiment-strategist-worker:${{ github.sha }} experiment-strategist-worker
 
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/experiment-strategist-worker:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     name: Deploy worker
     runs-on: ubuntu-latest
@@ -59,6 +73,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/experiment-strategist-worker:${{ github.sha }}
 
       - name: Configure authenticated agent VPS SSH
         env:
@@ -74,6 +94,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/experiment-strategist-worker:${{ github.sha }}
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
@@ -81,7 +104,7 @@ jobs:
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete experiment-strategist-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/experiment-strategist-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
-      - name: Rebuild and restart worker
+      - name: Start validated worker
         env:
           CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
         run: |
@@ -96,7 +119,7 @@ jobs:
                MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
                CODEX_MODEL=gpt-5.6-sol \
                EXPERIMENT_STRATEGIST_IMAGE=marketing-hub/experiment-strategist-worker:${GITHUB_SHA} \
-               docker compose up -d --build --remove-orphans \
+               docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 24); do \
                  status=\$(docker inspect --format '{{.State.Status}}' experiment-strategist-worker-experiment-strategist-worker-1 2>/dev/null || true); \
                  codex_ready=false; \

@@ -41,6 +41,20 @@ jobs:
       - name: Validate container build
         run: docker build -t marketing-hub/financial-agent-worker:${{ github.sha }} financial-agent-worker
 
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/financial-agent-worker:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     name: Deploy worker
     runs-on: ubuntu-latest
@@ -51,6 +65,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/financial-agent-worker:${{ github.sha }}
       - name: Configure authenticated agent VPS SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
@@ -65,19 +85,23 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/financial-agent-worker:${{ github.sha }}
       - name: Synchronize versioned worker
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/financial-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete financial-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/financial-agent-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
-      - name: Rebuild, restart and validate worker
+      - name: Start and validate tested worker
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/financial-agent/codex-home \
             && \
-            export BACKEND_URL=http://191.252.181.168 \
+            export FINANCIAL_AGENT_IMAGE=marketing-hub/financial-agent-worker:${GITHUB_SHA} \
+                   BACKEND_URL=http://191.252.181.168 \
                    FINANCIAL_AGENT_CODEX_HOME=/opt/growth-operator/agents/financial-agent/codex-home \
                    MARKETING_HUB_REPOSITORY_PATH='${REPOSITORY_DIR}' \
                    COMMERCIAL_PLAN_ID=2 \
@@ -86,7 +110,7 @@ jobs:
                    CODEX_SERVICE_TIER=default \
                    AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
             && cd '${REPOSITORY_DIR}/financial-agent-worker' \
-            && docker compose up -d --build --remove-orphans \
+            && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' financial-agent-worker-financial-agent-worker-1 2>/dev/null || true); \
                  codex_ready=false; \

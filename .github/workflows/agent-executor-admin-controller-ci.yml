@@ -27,6 +27,23 @@ jobs:
       - name: Validate restricted controller contract
         run: node scripts/test-agent-executor-admin-controller.mjs
 
+      - name: Validate container build
+        run: docker build -f deploy/agent-executor-admin-controller/Dockerfile -t marketing-hub/agent-executor-admin-controller:${{ github.sha }} .
+
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/agent-executor-admin-controller:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     runs-on: ubuntu-latest
     needs: test
@@ -36,6 +53,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/agent-executor-admin-controller:${{ github.sha }}
       - name: Configure authenticated agent VPS SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
@@ -50,17 +73,20 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" root@163.245.202.80 marketing-hub/agent-executor-admin-controller:${{ github.sha }}
       - name: Install and validate controller
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'install -d /opt/marketing-hub/repo/deploy/agent-executor-admin-controller /opt/marketing-hub/repo/scripts'
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete deploy/agent-executor-admin-controller/ root@163.245.202.80:/opt/marketing-hub/repo/deploy/agent-executor-admin-controller/
           scp ${SSH_COMMON_ARGS} scripts/agent-executor-admin-controller.mjs root@163.245.202.80:/opt/marketing-hub/repo/scripts/agent-executor-admin-controller.mjs
-          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 '
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 "AGENT_EXECUTOR_ADMIN_IMAGE=marketing-hub/agent-executor-admin-controller:${GITHUB_SHA} bash -s" <<'REMOTE_CONTROLLER'
             set -euo pipefail
             systemctl disable --now marketinghub-agent-executor-admin.service 2>/dev/null || true
             cd /opt/marketing-hub/repo/deploy/agent-executor-admin-controller
-            docker compose up -d --build --remove-orphans
+            docker compose up -d --no-build --pull never --remove-orphans
             for attempt in $(seq 1 12); do
               status=$(docker inspect --format "{{.State.Status}}" agent-executor-admin-controller-agent-executor-admin-controller-1 2>/dev/null || true)
               [ "$status" = running ] && exit 0
@@ -68,7 +94,8 @@ jobs:
             done
             docker compose ps
             docker compose logs --tail=150 agent-executor-admin-controller
-            exit 1'
+            exit 1
+          REMOTE_CONTROLLER
       - name: Restore free disk space on agent VPS
         if: always()
         timeout-minutes: 5

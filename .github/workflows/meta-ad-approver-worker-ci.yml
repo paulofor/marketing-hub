@@ -106,6 +106,20 @@ jobs:
             marketing-hub/meta-ad-approver-worker:${{ github.sha }} \
             /app/browser-runtime-check.mjs
 
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/meta-ad-approver-worker:${{ github.sha }} marketing-hub/iris-image-studio:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     name: Deploy independent agent
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -119,6 +133,12 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/meta-ad-approver-worker:${{ github.sha }} marketing-hub/iris-image-studio:${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -145,6 +165,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/meta-ad-approver-worker:${{ github.sha }} marketing-hub/iris-image-studio:${{ github.sha }}
       - name: Provision OpenAI credential for Íris
         run: |
           set -euo pipefail
@@ -180,7 +203,7 @@ jobs:
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/frontend/public/materials/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/frontend/public/materials/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
-      - name: Rebuild and restart agent
+      - name: Start validated agent
         run: |
           set -euo pipefail
           # Versões e caminhos devem ser injetados pelo runner no comando remoto.
@@ -200,7 +223,7 @@ jobs:
                    META_AD_APPROVER_IMAGE=marketing-hub/meta-ad-approver-worker:${GITHUB_SHA} \
                    IRIS_IMAGE_STUDIO_IMAGE=marketing-hub/iris-image-studio:${GITHUB_SHA} \
             && cd '${REPOSITORY_DIR}/meta-ad-approver-worker' \
-            && docker compose up -d --build --remove-orphans \
+            && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 24); do \
                  running=\$(docker compose ps --status running --services); \
                  printf '%s\n' \"\${running}\" | grep -Fxq meta-ad-approver-worker \

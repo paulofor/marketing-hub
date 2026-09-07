@@ -661,7 +661,6 @@ public class FacebookCampaignService {
             if (instantFormUpdate != null && exp.facebookInstantForm() != null) {
                 reportInstantFormPublication(exp.facebookInstantForm().id(), instantFormUpdate);
             }
-            markExperimentAsRunning(exp.id(), campaignId);
         } catch (FacebookPermissionException ex) {
             experimentsBlockedByPermissions.add(exp.id());
             LOGGER.warn(
@@ -2928,37 +2927,6 @@ public class FacebookCampaignService {
                 experimentId,
                 url,
                 ex.getMessage(),
-                ex
-            );
-        }
-    }
-
-    private void markExperimentAsRunning(long experimentId, String campaignId) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/status?status=RUNNING");
-        LOGGER.info(
-            "Marking experiment as RUNNING in backend after Facebook campaign publication: url==>{}, params={}, campaignId={}",
-            url,
-            JsonLogFormatter.wrap(objectMapper, Collections.emptyMap()),
-            campaignId
-        );
-        try {
-            backendClient.patch()
-                .uri(url)
-                .retrieve()
-                .toBodilessEntity()
-                .block();
-            LOGGER.info(
-                "Marked experiment {} as RUNNING after Facebook campaign publication: campaignId={}",
-                experimentId,
-                campaignId
-            );
-        } catch (Exception ex) {
-            LOGGER.warn(
-                "Could not mark experiment {} as RUNNING after Facebook campaign publication: url==>{}, message={}, campaignId={}",
-                experimentId,
-                url,
-                ex.getMessage(),
-                campaignId,
                 ex
             );
         }

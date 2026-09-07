@@ -175,3 +175,40 @@ liberar pela UI dentro de uma janela autorizada, confirmar campanha/conjunto/
 anúncio na Meta e callback real que coloque o #91 em `RUNNING`. Não é necessário
 um novo ciclo de investigação ou PR por defeito; a entrega local reúne todas as
 correções identificadas nesta execução.
+
+## Fechamento operacional — 07/09/2026
+
+O trecho pendente acima foi concluído pela imagem versionada que já estava
+implantada pelo pipeline: commit de runtime `d69d03a7`. A janela vencida foi
+deslocada pela interface para 07–11/09, preservando R$ 20/dia e o teto autorizado
+de R$ 100. A liberação gerou o job
+`e2a930e1ed76a91b59a9738ba148cb496ad98428e31d11274a9eac8e073df3d1`.
+
+A Meta repetiu exatamente a recusa `100/2446307` para `spend_cap=10000`; o
+fallback criou uma única campanha sem elevar o teto e aplicou
+`lifetime_budget=10000` no conjunto. A releitura ocorreu antes do anúncio e
+confirmou campanha, orçamento e término em 11/09/2026 23:59:59 BRT.
+
+Evidência final consultada diretamente na Graph API:
+
+- campanha `120251556536430326`: `ACTIVE`, objetivo `OUTCOME_SALES`;
+- conjunto `120251556536530326`: `ACTIVE`, `OFFSITE_CONVERSIONS`, `PURCHASE`,
+  pixel `1272936690700110`, Instagram e Brasil;
+- criativo `2620982572062615` e anúncio `120251556536810326`; o anúncio saiu de
+  `IN_PROCESS` e foi confirmado como `ACTIVE`;
+- backend: campanha `ACTIVE` e experimento #91 `RUNNING`.
+
+Depois do callback completo, o worker ainda tentou o endpoint legado
+`PATCH /api/experiments/91/status?status=RUNNING`. O backend recusou corretamente
+a segunda transição com HTTP 400, sem desfazer a publicação. Entre tornar o
+backend permissivo, esconder a resposta ou remover a duplicidade, foi escolhida
+a terceira alternativa: `POST /api/facebook-campaigns` permanece dono único da
+transição atômica. O teste de contrato agora impede o PATCH redundante tanto no
+caminho normal quanto no fallback de orçamento.
+
+A validação específica executou 37 cenários do serviço de publicação. Depois da
+correção, duas rodadas completas e consecutivas do Facebook Ads Worker passaram
+com 129 testes, zero falhas e zero erros em cada rodada. O destino público
+respondeu HTTP 200 em Chromium desktop e iPhone 15 Pro, carregou o conteúdo
+completo e não registrou erro de console. A tabela de analytics permaneceu sem
+eventos do #91 após essa inspeção, preservando as métricas comerciais.

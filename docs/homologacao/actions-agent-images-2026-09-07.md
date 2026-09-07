@@ -250,6 +250,58 @@ O projeto Compose exclusivo `aihub-5b0b49b6-6fe1-484c-9564-471b8f2b45a1-70665c65
 
 As tentativas posteriores de Psique (3), Atena (2) e Argos (2) concluíram com sucesso às 02:53, 02:57 e 02:58 UTC, respectivamente. Não foram disparadas nesta tarefa. O log de Psique mostrou a folga subir externamente para 28.516 MiB e depois cair para 25.535 MiB no rebuild; Atena consumiu outros 2.957 MiB. Argos, que já carrega imagem pronta, passou de 22.578 para 22.576 MiB. Esses registros reforçam a relação entre rebuild e pressão no host, mas **não validam nem representam publicação desta correção local**. A origem da recuperação externa não foi inferida.
 
+## Fechamento pós-merge: recência e teto da retenção
+
+O PR #5131 foi mergeado, mas seu check `34119795524` já estava vermelho. A mesma falha reapareceu no
+PR #5133 (`34143344939`) e no push em `main` (`34143608686`). Em todos os casos, os contratos
+anteriores passaram e o E2E falhou somente porque a retenção preservou uma terceira imagem antiga
+“por empate de recência”. A engine não entregou `LastTagTime` utilizável e as imagens da fixture
+compartilharam `Created`; o teste unitário aceitava o crescimento enquanto o teste real exigia duas
+versões. Portanto, repetir o workflow não resolveria a contradição.
+
+Foram comparadas três soluções:
+
+| Alternativa | Benefício | Risco/custo | Decisão |
+|---|---|---|---|
+| Aumentar o intervalo da fixture | Mudança pequena | Continua dependente do relógio e do image store do runner | Rejeitada |
+| Preservar todo empate | Conserva todas as candidatas | Retenção deixa de possuir teto e o disco volta a crescer | Rejeitada |
+| Recência OCI + ordem total | Ordena corretamente imagens novas e limita legadas | Acrescenta metadado aos builds gerenciados | Escolhida |
+
+Os nove workflows de agentes e o workflow PDE agora gravam
+`org.opencontainers.image.created`. A coleta prefere esse instante, depois usa `LastTagTime` e
+`Created`, preservando nanos; se o legado ainda empatar, a referência SHA fecha uma ordem estável.
+Imagem de container ativo/parado, revisão corrente, tags mutáveis, aliases retidos e repositórios fora
+da allowlist permanecem protegidos.
+
+Matriz incremental executada:
+
+| Dimensão | Evidência |
+|---|---|
+| Caminho feliz | Recência OCI distinta preserva os dois rollbacks mais recentes |
+| Precisão | Três instantes no mesmo segundo são ordenados pelos nanos |
+| Legado | Ausência de OCI e `LastTagTime`, com `Created` idêntico, mantém exatamente dois rollbacks |
+| Engine real | Três imagens com o mesmo instante OCI removem somente a terceira referência |
+| Preservação | Container ativo, container parado, volume, revisão protegida e aliases permanecem |
+| Falhas | Inventário, data, medição e remoção inválidos continuam bloqueando o deploy |
+| Integrações | Nove agentes e oito imagens PDE declaram recência no build |
+| Cards | Publicador é validado com os nove JSONs reais e API falsa, sem mutação externa |
+| Dados/métricas | Nenhuma campanha, venda, gasto ou evento comercial foi criado |
+| Navegadores/dispositivos | Não aplicável a contratos de CI sem interface |
+
+Depois do último ajuste, duas rodadas locais completas e consecutivas passaram sem alteração entre
+elas:
+
+| Rodada | Etapas | Duração aproximada | Resultado |
+|---|---:|---:|---|
+| 1 | 28/28 | 107 s | Sem falhas |
+| 2 | 28/28 | 98 s | Sem falhas |
+
+Cada rodada reproduziu todo o job `GitHub Actions Contracts`: sintaxe, Actionlint, política
+ShellCheck, publicação de cards, filas e retries, OpenSSH/SCP/rsync reais isolados, 36 cenários de
+disco, retenção na engine Docker real, transporte verificado e Compose sem rebuild. O projeto
+Compose exclusivo `aihub-703688bc-b9f4-4e08-859e-1564bdc85912-7b70dd20bc` terminou sem containers ou
+volumes. Nenhum workflow remoto ou deploy foi usado como mecanismo de teste.
+
 ## Referências dos contratos externos
 
 - [Docker: carga de imagem por arquivo ou stdin](https://docs.docker.com/reference/cli/docker/image/load/).

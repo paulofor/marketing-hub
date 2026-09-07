@@ -148,6 +148,19 @@ cenários de disco, 39 contratos de pacote/workflows, OpenSSH real isolado, rete
 integridade de imagem e Compose sem rebuild. As topologias e imagens temporárias foram removidas ao
 final; nenhuma API produtiva, campanha, venda, gasto, PR, workflow remoto ou deploy foi acionado.
 
+### Validação produtiva após o merge — 2026-09-07
+
+O push do merge #5133 executou a reconciliação integral no run `34143608681` e terminou com sucesso.
+Os nove JSONs foram aceitos pela API, incluindo `ugc-clientes-confianca` e
+`whatsapp-compra-conversacional`, que haviam falhado quando a origem `ia-aplicada` era confundida com
+a coleção funcional. A consulta direta ao banco confirmou os nove `card_key`, todos auditáveis em
+`DRAFT` e sem nova versão causada pela reconciliação.
+
+O cartão `valor-visual-captura-atencao-crossmodal` possui duas versões legítimas: os hashes de payload
+`fc4446...` e `6013dc...` correspondem aos dois commits que corrigiram `publishedOn` de 01/07 para
+23/07. Os outros oito cartões possuem exatamente uma versão. Assim, não há duplicação operacional;
+há histórico funcional somente onde o arquivo realmente mudou.
+
 ## Navegadores e dispositivos
 
 Não se aplicam à v1: o produto solicitado é uma API servidor-a-servidor operada por `curl`, sem UI.

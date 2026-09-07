@@ -52,7 +52,7 @@ case "$*" in
       if [[ "$DISK_TEST_MODE" = recover-managed-alias ]]; then
         printf '%s\n' 'marketing-hub/meta-ad-approver-worker|bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc|sha256:4444444444444444444444444444444444444444444444444444444444444444'
       fi
-    elif [[ "$DISK_TEST_MODE" =~ ^retention-pde(-tie)?$ ]]; then
+    elif [[ "$DISK_TEST_MODE" =~ ^retention-pde(-tie|-subsecond|-legacy-tie)?$ ]]; then
       printf '%s\n' \
         'ghcr.io/paulofor/pde-platform-backend|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
         'ghcr.io/paulofor/pde-platform-backend|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
@@ -64,29 +64,62 @@ case "$*" in
     ;;
   'container ls --all --no-trunc --quiet')
     [[ "$DISK_TEST_MODE" != container-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready|retention-pde|retention-pde-tie)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready|retention-pde|retention-pde-tie|retention-pde-subsecond|retention-pde-legacy-tie)$ ]]; then
       printf '%s\n' '9999999999999999999999999999999999999999999999999999999999999999'
     fi
     ;;
   'container inspect --format {{.Image}} 9999999999999999999999999999999999999999999999999999999999999999')
     printf '%s\n' 'sha256:1111111111111111111111111111111111111111111111111111111111111111'
     ;;
+  "image inspect --format {{ index .Config.Labels \"org.opencontainers.image.created\" }} "*)
+    image_reference="${*:5}"
+    if [[ "$DISK_TEST_MODE" = retention-pde ]]; then
+      case "$image_reference" in
+        *:ffffffffffffffffffffffffffffffffffffffff) printf '%s\n' '2026-09-07T10:00:00Z' ;;
+        *:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) printf '%s\n' '2026-09-07T09:00:00Z' ;;
+        *:dddddddddddddddddddddddddddddddddddddddd) printf '%s\n' '2026-09-07T08:00:00Z' ;;
+        *:cccccccccccccccccccccccccccccccccccccccc) printf '%s\n' '2026-09-04T12:00:00Z' ;;
+        *) printf '\n' ;;
+      esac
+    elif [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
+      case "$image_reference" in
+        *:ffffffffffffffffffffffffffffffffffffffff) printf '%s\n' '2026-09-07T10:00:00Z' ;;
+        *) printf '%s\n' '2026-09-07T09:00:00Z' ;;
+      esac
+    else
+      printf '\n'
+    fi
+    ;;
   image\ inspect\ --format\ \{\{.Metadata.LastTagTime\}\}\ *)
     image_reference="${*:5}"
     case "$image_reference" in
       *:ffffffffffffffffffffffffffffffffffffffff) printf '%s\n' '2026-09-07T10:00:00Z' ;;
       *:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|*:abababababababababababababababababababab)
-        printf '%s\n' '2026-09-07T09:00:00Z'
+        if [[ "$DISK_TEST_MODE" = retention-pde-subsecond ]]; then
+          printf '%s\n' '2026-09-07T09:00:00.300000000Z'
+        elif [[ "$DISK_TEST_MODE" = retention-pde-legacy-tie ]]; then
+          printf '%s\n' '0001-01-01T00:00:00Z'
+        else
+          printf '%s\n' '2026-09-07T09:00:00Z'
+        fi
         ;;
       *:dddddddddddddddddddddddddddddddddddddddd)
-        if [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
+        if [[ "$DISK_TEST_MODE" = retention-pde-subsecond ]]; then
+          printf '%s\n' '2026-09-07T09:00:00.200000000Z'
+        elif [[ "$DISK_TEST_MODE" = retention-pde-legacy-tie ]]; then
+          printf '%s\n' '0001-01-01T00:00:00Z'
+        elif [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
           printf '%s\n' '2026-09-07T09:00:00Z'
         else
           printf '%s\n' '2026-09-07T08:00:00Z'
         fi
         ;;
       *:cccccccccccccccccccccccccccccccccccccccc|*:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc)
-        if [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
+        if [[ "$DISK_TEST_MODE" = retention-pde-subsecond ]]; then
+          printf '%s\n' '2026-09-07T09:00:00.100000000Z'
+        elif [[ "$DISK_TEST_MODE" = retention-pde-legacy-tie ]]; then
+          printf '%s\n' '0001-01-01T00:00:00Z'
+        elif [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
           printf '%s\n' '2026-09-07T09:00:00Z'
         else
           printf '%s\n' '2026-09-04T12:00:00Z'
@@ -102,8 +135,20 @@ case "$*" in
       *:ffffffffffffffffffffffffffffffffffffffff) printf '%s\n' '2026-09-06T17:00:00Z' ;;
       *:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) printf '%s\n' '2026-09-06T16:00:00Z' ;;
       *:abababababababababababababababababababab) printf '%s\n' '2026-09-06T16:00:00Z' ;;
-      *:dddddddddddddddddddddddddddddddddddddddd) printf '%s\n' '2026-09-06T15:00:00Z' ;;
-      *:cccccccccccccccccccccccccccccccccccccccc|*:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc) printf '%s\n' '2026-09-04T12:00:00Z' ;;
+      *:dddddddddddddddddddddddddddddddddddddddd)
+        if [[ "$DISK_TEST_MODE" = retention-pde-legacy-tie ]]; then
+          printf '%s\n' '2026-09-06T16:00:00Z'
+        else
+          printf '%s\n' '2026-09-06T15:00:00Z'
+        fi
+        ;;
+      *:cccccccccccccccccccccccccccccccccccccccc|*:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc)
+        if [[ "$DISK_TEST_MODE" = retention-pde-legacy-tie ]]; then
+          printf '%s\n' '2026-09-06T16:00:00Z'
+        else
+          printf '%s\n' '2026-09-04T12:00:00Z'
+        fi
+        ;;
       *:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) printf '%s\n' '2026-09-05T12:00:00Z' ;;
       *) exit 71 ;;
     esac
@@ -134,6 +179,8 @@ disk_test_available=0
 if [[ "$DISK_TEST_MODE" = ready || "$DISK_TEST_MODE" = inode-full \
   || "$DISK_TEST_MODE" = retention-ready || "$DISK_TEST_MODE" = retention-pde \
   || "$DISK_TEST_MODE" = retention-pde-tie \
+  || "$DISK_TEST_MODE" = retention-pde-subsecond \
+  || "$DISK_TEST_MODE" = retention-pde-legacy-tie \
   || ( "$DISK_TEST_MODE" = recover && -f "$DISK_TEST_DIR/pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-recent && -f "$DISK_TEST_DIR/recent-pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-fresh && -f "$DISK_TEST_DIR/fresh-pruned" ) \
@@ -234,8 +281,12 @@ AGENT_VPS_DISK_PROTECTED_TAG=cccccccccccccccccccccccccccccccccccccccc \
 grep -q 'preservando imagem da publicação atual' "$test_dir/output"
 run_case retention-pde 0 0 0 1 retention
 grep -Fxq 'image rm ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
-run_case retention-pde-tie 0 0 0 0 retention
-grep -q 'por empate de recência no limite' "$test_dir/output"
+run_case retention-pde-tie 0 0 0 1 retention
+grep -Fxq 'image rm ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
+run_case retention-pde-subsecond 0 0 0 1 retention
+grep -Fxq 'image rm ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
+run_case retention-pde-legacy-tie 0 0 0 1 retention
+grep -Fxq 'image rm ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
 AGENT_VPS_DISK_MIN_FREE_MB=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_FREE_MB=invalid run_case ready 2 0 0 0
 AGENT_VPS_DISK_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
@@ -249,4 +300,4 @@ run_case full 1 0 0 0
 grep -q 'outra verificação' "$test_dir/output"
 flock -u 8
 
-echo "34 cenários de disco, retenção preventiva/adaptativa, falhas e concorrência aprovados."
+echo "36 cenários de disco, retenção preventiva/adaptativa, falhas e concorrência aprovados."

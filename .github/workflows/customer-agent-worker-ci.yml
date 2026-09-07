@@ -83,7 +83,7 @@ jobs:
       - name: Validate container user contract
         run: bash customer-agent-worker/test-dockerfile-contract.sh
       - name: Validate container build
-        run: docker build -t marketing-hub/customer-agent-worker:${{ github.sha }} customer-agent-worker
+        run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -t marketing-hub/customer-agent-worker:${{ github.sha }} customer-agent-worker
       - name: Validate bundled Chromium as runtime user
         run: |
           docker run --rm --entrypoint node marketing-hub/customer-agent-worker:${{ github.sha }} \

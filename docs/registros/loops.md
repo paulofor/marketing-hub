@@ -3952,6 +3952,21 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   piso inválido e preservação do ativo/rollback mínimo. Evidência e matriz em
   `docs/homologacao/actions-agent-images-2026-09-07.md`.
 
+- **Recorrência do contrato de retenção em 2026-09-07:** os checks `34119795524`, `34143344939` e
+  `34143608686` falharam na engine real do runner depois que todos os demais contratos passaram. A
+  imagem ativa e dois rollbacks foram preservados, mas uma terceira versão antiga também permaneceu
+  porque a engine não forneceu `LastTagTime` utilizável e datas de criação iguais acionaram a exceção
+  de empate. O teste unitário aceitava essa exceção enquanto o E2E exigia o teto de dois, comprovando
+  uma contradição no próprio contrato e não uma falha transitória do Docker.
+- **Alternativas avaliadas:** aumentar o intervalo entre builds manteria a dependência do relógio do
+  image store; aceitar todos os empates deixaria o crescimento sem limite; declarar recência OCI no
+  build e aplicar ordem total preserva a imagem correta e mantém o teto. A terceira foi escolhida.
+- **Correção sistêmica complementar:** imagens dos nove agentes e da PDE passam a declarar
+  `org.opencontainers.image.created`; a retenção prefere esse instante, preserva nanos nos fallbacks e
+  usa a referência SHA como último desempate determinístico. Imagem de qualquer container, revisão
+  corrente e aliases da identidade retida continuam fora da remoção. Testes reproduzem recência OCI,
+  nanos no mesmo segundo, metadado legado empatado e a engine real com três horários idênticos.
+
 ## LOOP-ACTIONS-CONTAINERD-CARGA-INCOMPLETA — camada íntegra não materializa no image store
 
 - **Data:** 2026-09-07.

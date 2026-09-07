@@ -14,6 +14,15 @@ const modules = [
 
 for (const module of modules) {
   const workflow = readFileSync(path.join(root, `.github/workflows/${module}-ci.yml`), "utf8");
+  const imageBuilds = workflow.match(/docker build[^\n]+/g) ?? [];
+  assert.ok(imageBuilds.length > 0, `Build de imagem ausente: ${module}`);
+  for (const imageBuild of imageBuilds) {
+    assert.match(
+      imageBuild,
+      /--label "org\.opencontainers\.image\.created=/,
+      `Build sem recência OCI auditável: ${module}`,
+    );
+  }
   const push = workflow.split(/^  push:\s*$/m)[1]?.split(/^  [\w-]+:/m)[0];
   assert.ok(push, `Gatilho push ausente: ${module}`);
   assert.ok(!push.includes(`.github/workflows/${module}-ci.yml`), `Alteração isolada do workflow não deve ocupar o disco com novo deploy: ${module}`);
@@ -39,6 +48,12 @@ for (const module of modules) {
 
 const customer = readFileSync(path.join(root, ".github/workflows/customer-agent-worker-ci.yml"), "utf8");
 assert.match(customer, /curl --fail-with-body .*--max-time 10/, "Health 503 deve preservar diagnóstico e limitar duração.");
+const pde = readFileSync(path.join(root, ".github/workflows/pde-platform-metodo-musa-ci.yml"), "utf8");
+assert.match(
+  pde,
+  /echo "org\.opencontainers\.image\.created=\$\(date -u \+'%Y-%m-%dT%H:%M:%SZ'\)"/,
+  "Imagens PDE devem declarar recência OCI auditável.",
+);
 const ci = readFileSync(path.join(root, ".github/workflows/github-actions-contracts.yml"), "utf8");
 for (const file of ["ensure-agent-vps-disk-space.sh", "test-agent-vps-disk-space.sh", "test-agent-vps-disk-space-e2e.sh", "test-agent-vps-disk-workflows.mjs"]) {
   assert.ok(ci.split(`scripts/${file}`).length >= 4, `CI deve observar push/PR e executar/validar ${file}`);

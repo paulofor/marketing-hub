@@ -41,7 +41,7 @@ jobs:
         run: bash scripts/validate-premium-agents.sh
       - name: Construir imagem versionada
         working-directory: landing-generator-agent-worker
-        run: docker build -t marketing-hub/landing-generator-agent-worker:${{ github.sha }} .
+        run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -t marketing-hub/landing-generator-agent-worker:${{ github.sha }} .
 
       - name: Package tested images
         if: github.event_name != 'pull_request'

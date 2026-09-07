@@ -103,14 +103,30 @@ is_managed_repository() {
   esac
 }
 
+# Normaliza um instante em segundos e nanos para ordenar imagens sem perder precisão.
+normalize_image_recency() {
+  local image_timestamp="$1" image_epoch image_epoch_nanos
+  if [[ ! "$image_timestamp" =~ ^[0-9]{4}- ]]; then
+    return 1
+  fi
+  image_epoch="$(date --date="$image_timestamp" +%s 2>/dev/null || true)"
+  image_epoch_nanos="$(date --date="$image_timestamp" +%s%N 2>/dev/null || true)"
+  if ! [[ "$image_epoch" =~ ^[0-9]{1,12}$ \
+    && "$image_epoch_nanos" =~ ^[0-9]{1,24}$ ]]; then
+    return 1
+  fi
+  printf '%s|%s\n' "$image_epoch" "$image_epoch_nanos"
+}
+
 # Remove referências imutáveis antigas conhecidas, preservando containers, publicação e rollbacks.
 reclaim_managed_history() {
   local history_label="$1" history_seconds="$2" rollback_versions="$3"
   local enforce_full_retention="${4:-false}"
   local image_listing container_listing container_id active_image_id image_row
   local image_repository image_tag image_id image_reference image_recency image_recency_epoch
-  local image_last_tag_time image_created
-  local previous_repository="" retained_versions=0 rollback_cutoff_epoch=""
+  local image_recency_nanos image_recency_normalized image_declared_created image_last_tag_time
+  local image_created
+  local previous_repository="" retained_versions=0
   local current_epoch cutoff_epoch candidate
   local removal_failures=0
   local -a image_rows=() container_ids=() active_image_ids=() managed_images=() sorted_images=()
@@ -155,27 +171,32 @@ reclaim_managed_history() {
       return 1
     fi
     image_reference="${image_repository}:${image_tag}"
-    image_last_tag_time="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
-      docker image inspect --format '{{.Metadata.LastTagTime}}' "$image_reference" 2>/dev/null || true)"
-    image_recency="$image_last_tag_time"
-    image_recency_epoch=""
-    if [[ "$image_recency" =~ ^[0-9]{4}- ]]; then
-      image_recency_epoch="$(date --date="$image_recency" +%s 2>/dev/null || true)"
+    image_declared_created="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+      docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.created" }}' \
+      "$image_reference" 2>/dev/null || true)"
+    image_recency="$image_declared_created"
+    image_recency_normalized="$(normalize_image_recency "$image_recency" || true)"
+    if [[ -z "$image_recency_normalized" ]]; then
+      image_last_tag_time="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
+        docker image inspect --format '{{.Metadata.LastTagTime}}' "$image_reference" 2>/dev/null || true)"
+      image_recency="$image_last_tag_time"
+      image_recency_normalized="$(normalize_image_recency "$image_recency" || true)"
     fi
-    if ! [[ "$image_recency_epoch" =~ ^[0-9]{1,12}$ ]]; then
+    if [[ -z "$image_recency_normalized" ]]; then
       if ! image_created="$(timeout --foreground --kill-after=5s "${disk_timeout_seconds}s" \
         docker image inspect --format '{{.Created}}' "$image_reference")"; then
         echo "Disco do VPS: não foi possível obter a data de ${image_reference}; deploy bloqueado." >&2
         return 1
       fi
       image_recency="$image_created"
-      image_recency_epoch="$(date --date="$image_recency" +%s 2>/dev/null || true)"
+      image_recency_normalized="$(normalize_image_recency "$image_recency" || true)"
     fi
-    if ! [[ "$image_recency_epoch" =~ ^[0-9]{1,12}$ ]]; then
+    if [[ -z "$image_recency_normalized" ]]; then
       echo "Disco do VPS: data inválida para ${image_reference}; deploy bloqueado." >&2
       return 1
     fi
-    managed_images+=("${image_repository}|${image_recency_epoch}|${image_reference}|${image_id}")
+    IFS='|' read -r image_recency_epoch image_recency_nanos <<<"$image_recency_normalized"
+    managed_images+=("${image_repository}|${image_recency_epoch}|${image_recency_nanos}|${image_reference}|${image_id}")
   done
   if ((${#managed_images[@]} == 0)); then
     echo "Disco do VPS: nenhuma versão imutável gerenciada elegível para coleta."
@@ -183,17 +204,18 @@ reclaim_managed_history() {
   fi
 
   mapfile -t sorted_images < <(
-    printf '%s\n' "${managed_images[@]}" | LC_ALL=C sort -t '|' -k1,1 -k2,2nr
+    printf '%s\n' "${managed_images[@]}" \
+      | LC_ALL=C sort -t '|' -k1,1 -k3,3nr -k4,4r
   )
   current_epoch="$(date +%s)"
   cutoff_epoch=$((current_epoch - history_seconds))
   for image_row in "${sorted_images[@]}"; do
-    IFS='|' read -r image_repository image_recency_epoch image_reference image_id <<<"$image_row"
+    IFS='|' read -r image_repository image_recency_epoch image_recency_nanos image_reference image_id \
+      <<<"$image_row"
     image_tag="${image_reference##*:}"
     if [[ "$image_repository" != "$previous_repository" ]]; then
       previous_repository="$image_repository"
       retained_versions=0
-      rollback_cutoff_epoch=""
     fi
     active_image_id=""
     for candidate in "${active_image_ids[@]}"; do
@@ -218,20 +240,12 @@ reclaim_managed_history() {
     if ((retained_versions < rollback_versions)); then
       retained_image_ids["${image_repository}|${image_id}"]=true
       retained_versions=$((retained_versions + 1))
-      rollback_cutoff_epoch="$image_recency_epoch"
       printf 'Disco do VPS: preservando rollback %s (%s/%s).\n' \
         "$image_reference" "$retained_versions" "$rollback_versions"
       continue
     fi
-    if [[ -n "$rollback_cutoff_epoch" \
-      && "$image_recency_epoch" = "$rollback_cutoff_epoch" ]]; then
-      retained_image_ids["${image_repository}|${image_id}"]=true
-      printf 'Disco do VPS: preservando rollback %s por empate de recência no limite.\n' \
-        "$image_reference"
-      continue
-    fi
     if ((image_recency_epoch <= cutoff_epoch)); then
-      removable_images+=("${image_recency_epoch}|${image_reference}")
+      removable_images+=("${image_recency_nanos}|${image_reference}")
     fi
   done
   if ((${#removable_images[@]} == 0)); then

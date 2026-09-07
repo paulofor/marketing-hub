@@ -39,7 +39,7 @@ jobs:
         working-directory: financial-agent-worker
         run: mvn -B test
       - name: Validate container build
-        run: docker build -t marketing-hub/financial-agent-worker:${{ github.sha }} financial-agent-worker
+        run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -t marketing-hub/financial-agent-worker:${{ github.sha }} financial-agent-worker
 
       - name: Package tested images
         if: github.event_name != 'pull_request'

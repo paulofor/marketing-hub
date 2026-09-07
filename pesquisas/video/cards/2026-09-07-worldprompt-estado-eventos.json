@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-estado-persistente-eventos-temporais",
+  "collection": "video",
+  "title": "Separar estado persistente de eventos temporais no harness de vídeo",
+  "finding": "O GWM Worlds 2 formaliza uma arquitetura em que cenário, personagens, estilo, câmera e regras permanecem como estado persistente, enquanto ações, falas, sons e movimentos de câmera são enviados como eventos temporais.",
+  "mechanism": "Separar contexto estável de eventos reduz a necessidade de redescrever a cena a cada tomada e permite que um agente altere apenas o que deve mudar em cada momento, preservando uma referência global de continuidade.",
+  "commercialApplication": "Estruturar o videomaker do Marketing Hub com um bloco persistente de identidade visual, produto, personagem, cenário, câmera e restrições de marca, mais uma linha temporal de ações e falas; comparar esse harness com o fluxo atual de prompts independentes.",
+  "evidenceStrength": "Moderada para o padrão arquitetural: há evidência primária e documentação técnica do produto, mas o GWM Worlds 2 ainda é Research Preview e não há evidência independente de impacto comercial.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "Em peças multi-shot equivalentes, separar estado persistente de eventos temporais reduzirá erros de continuidade e número de revisões manuais sem piorar retenção, CTA ou aprovação do criativo.",
+  "risks": "Adicionar complexidade ao harness antes de comprovar benefício; acoplar a arquitetura a conceitos de um fornecedor em preview; confundir coerência técnica com melhora de desempenho comercial.",
+  "limits": "O GWM Worlds 2 não possui API pública self-service nem benchmarks independentes suficientes; o achado não prova aumento de conversão, retenção ou vendas e deve ser validado em experimentos do próprio Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-07-worldprompt-estado-eventos.md",
+  "sourceTitle": "Fonte revisada — Estado persistente + eventos temporais em vídeo agêntico",
+  "sourceSha256": "3037c697af038392881f95b48d2c2634b40caa63caf83ce7f43b2565172ebbd5"
+}

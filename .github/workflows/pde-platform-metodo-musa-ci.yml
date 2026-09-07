@@ -6,10 +6,12 @@ on:
     paths:
       - "pde-platform/**"
       - ".github/workflows/pde-platform-metodo-musa-ci.yml"
+      - "scripts/ensure-agent-vps-disk-space.sh"
   pull_request:
     paths:
       - "pde-platform/**"
       - ".github/workflows/pde-platform-metodo-musa-ci.yml"
+      - "scripts/ensure-agent-vps-disk-space.sh"
   workflow_dispatch:
     inputs:
       target_environment:
@@ -346,6 +348,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure SSH
+        id: pde_ssh
         env:
           VPS_SSH_KEY: ${{ secrets.PDE_PLATFORM_VPS_SSH_KEY != '' && secrets.PDE_PLATFORM_VPS_SSH_KEY || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.SSH_PRIVATE_KEY }}
         run: |
@@ -382,6 +385,13 @@ jobs:
           docker version
           docker compose version
           REMOTE_DOCKER_BOOTSTRAP
+      - name: Enforce safe PDE image retention before deploy
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "AGENT_VPS_DISK_LOCK_FILE=/var/lock/marketinghub-pde-vps-disk.lock AGENT_VPS_DISK_PROTECTED_TAG='${IMAGE_TAG}' bash -s -- retention" \
+            < scripts/ensure-agent-vps-disk-space.sh
       - name: Sync compose file
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
@@ -681,3 +691,11 @@ jobs:
             export MIRA_PUBLIC_BASE_URL="http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}"
           fi
           bash ../scripts/run-targeted-production-smokes.sh "${TARGETED_FRONTEND_VERSION}"
+      - name: Retain active PDE images and two rollback versions
+        if: ${{ always() && steps.pde_ssh.outcome == 'success' }}
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "AGENT_VPS_DISK_LOCK_FILE=/var/lock/marketinghub-pde-vps-disk.lock AGENT_VPS_DISK_PROTECTED_TAG='${IMAGE_TAG}' bash -s -- retention" \
+            < scripts/ensure-agent-vps-disk-space.sh

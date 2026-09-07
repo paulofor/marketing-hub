@@ -72,7 +72,7 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh
       - name: Load tested images without rebuilding
         timeout-minutes: 20
         run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" root@163.245.202.80 marketing-hub/agent-executor-admin-controller:${{ github.sha }}
@@ -105,4 +105,4 @@ jobs:
             echo "Restauração remota ignorada: o preflight SSH não autenticou."
             exit 0
           fi
-          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh

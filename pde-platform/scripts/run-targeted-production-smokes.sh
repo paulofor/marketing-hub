@@ -21,9 +21,12 @@ run_public_health() {
 
 run_public_diagnostic() {
   local public_url="$1"
+  local expected_experience_version="$2"
   (
     cd "${frontend_dir}"
-    PDE_PUBLIC_HEALTH_URL="${public_url}" "${npm_command}" run test:public-diagnostic-smoke
+    PDE_PUBLIC_HEALTH_URL="${public_url}" \
+      PDE_EXPECTED_EXPERIENCE_VERSION="${expected_experience_version}" \
+      "${npm_command}" run test:public-diagnostic-smoke
   )
 }
 
@@ -51,7 +54,9 @@ run_musa_consistency() {
 
 validate_v5() {
   run_public_health https://v5.clubemusa.com.br
-  run_public_diagnostic https://v5.clubemusa.com.br
+  run_public_diagnostic \
+    https://v5.clubemusa.com.br \
+    musa-pde-entry-v5-video-explicativo
   run_musa_consistency \
     https://v5.clubemusa.com.br \
     musa-pde-entry-v5-video-explicativo
@@ -59,7 +64,9 @@ validate_v5() {
 
 validate_v6() {
   run_public_health https://v6.clubemusa.com.br
-  run_public_diagnostic https://v6.clubemusa.com.br
+  run_public_diagnostic \
+    https://v6.clubemusa.com.br \
+    musa-pde-entry-v6-video-motivacional
   run_musa_consistency \
     https://v6.clubemusa.com.br \
     musa-pde-entry-v6-video-motivacional \
@@ -68,7 +75,9 @@ validate_v6() {
 
 validate_v7() {
   run_public_health https://v7.clubemusa.com.br
-  run_public_diagnostic https://v7.clubemusa.com.br
+  run_public_diagnostic \
+    https://v7.clubemusa.com.br \
+    musa-pde-entry-v7-espelho-antes-de-sair
   run_musa_consistency \
     https://v7.clubemusa.com.br \
     musa-pde-entry-v7-espelho-antes-de-sair

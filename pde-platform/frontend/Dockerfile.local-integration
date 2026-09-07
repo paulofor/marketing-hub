@@ -4,6 +4,7 @@ WORKDIR /work
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY playwright.container-integration.config.ts ./
+COPY src/musaExperiences.ts ./src/musaExperiences.ts
 COPY tests ./tests
 
 ENTRYPOINT ["npx", "playwright", "test", "--config=playwright.container-integration.config.ts"]

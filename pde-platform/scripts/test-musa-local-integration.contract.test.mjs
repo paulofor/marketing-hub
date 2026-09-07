@@ -27,6 +27,28 @@ test("a homologacao integrada combina o Compose base com a sobreposicao local", 
 
 test("a homologacao executa toda a jornada dentro da rede Compose isolada", async () => {
   const script = await readFile(scriptUrl, "utf8");
+  const playwrightConfig = await readFile(
+    new URL(
+      "../frontend/playwright.container-integration.config.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const playwrightDockerfile = await readFile(
+    new URL("../frontend/Dockerfile.local-integration", import.meta.url),
+    "utf8",
+  );
+  const validationCompose = await readFile(
+    new URL("../docker-compose.local-validation.yml", import.meta.url),
+    "utf8",
+  );
+  const publicDiagnosticSmoke = await readFile(
+    new URL(
+      "../frontend/tests/public-presence-diagnostic.smoke.spec.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
 
   assert.match(script, /compose up -d --build --wait/);
   assert.match(script, /pde-contract-server/);
@@ -34,12 +56,20 @@ test("a homologacao executa toda a jornada dentro da rede Compose isolada", asyn
   assert.match(script, /pde-platform-frontend/);
   assert.match(script, /pde-platform-frontend-mira/);
   assert.match(script, /compose build pde-playwright-validation/);
-  assert.match(
-    script,
-    /compose run --rm --no-deps pde-playwright-validation/,
-  );
+  assert.match(script, /compose run --rm --no-deps pde-playwright-validation/);
   assert.doesNotMatch(script, /npm run test:local-integration/);
   assert.doesNotMatch(script, /jdbc:mysql:\/\/127\.0\.0\.1/);
+  assert.match(
+    playwrightConfig,
+    /public-presence-diagnostic\\\.smoke/,
+    "O smoke que bloqueia o deploy deve executar também contra o backend local.",
+  );
+  assert.match(playwrightDockerfile, /COPY src\/musaExperiences\.ts/);
+  assert.match(
+    validationCompose,
+    /PDE_EXPECTED_EXPERIENCE_VERSION: musa-pde-entry-v7-espelho-antes-de-sair/,
+  );
+  assert.match(publicDiagnosticSmoke, /resolveMusaExperienceContract/);
 });
 
 test("a retencao usa a mesma topologia local-e2e do backend PDE", async () => {

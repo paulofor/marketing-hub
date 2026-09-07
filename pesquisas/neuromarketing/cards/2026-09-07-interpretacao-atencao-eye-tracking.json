@@ -1,0 +1,18 @@
+{
+  "cardKey": "interpretacao-atencao-eye-tracking",
+  "collection": "neuromarketing",
+  "title": "Atenção visual não equivale a preferência",
+  "finding": "Métricas de eye-tracking, como fixação prolongada e reinspeção, não devem ser interpretadas isoladamente como interesse, preferência ou compreensão; elas também podem refletir esforço, dúvida ou verificação.",
+  "mechanism": "O mesmo aumento de gaze pode emergir de processos distintos. A interpretação melhora quando atenção visual é combinada com compreensão, lembrança, confiança e comportamento observável.",
+  "commercialApplication": "Usar eye-tracking como sinal dentro de um AttentionInterpretationGuardrail e pré-selecionar criativos por um score multimétrico antes da validação em Meta Ads.",
+  "evidenceStrength": "Moderada-alta: revisão sistemática de 23 estudos com 778 participantes nas partes relevantes de eye-tracking; forte como guardrail metodológico, mas sem prova direta de ganho comercial no Marketing Hub.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2027-09-07",
+  "experimentHypothesis": "Criativos selecionados por gaze combinado com compreensão e lembrança terão melhor relação com CTR, CPL e conversão do que criativos selecionados apenas por dwell/fixation.",
+  "risks": "Criar falsa precisão ao rotular atenção como emoção ou preferência; usar sinais oculares para inferências individuais excessivas; otimizar um proxy sem validar resultado real.",
+  "limits": "A revisão reúne tarefas e contextos heterogêneos e não valida um score específico para Meta Ads. O efeito comercial precisa ser testado no mesmo público, oferta e canal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-07-interpretacao-atencao-eye-tracking.md",
+  "sourceTitle": "Fonte revisada — Eye-tracking: atenção visual não equivale a preferência",
+  "sourceSha256": "864da43bf4e9b3b6010933beb4c22f9f74fb3a094e1c22cfb7cdc8fb3033fed6"
+}

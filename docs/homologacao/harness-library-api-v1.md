@@ -86,6 +86,46 @@ e contrato continuam pertencendo ao módulo independente.
 | Renovação | Agenda semanal antes e depois da ativação inicial | Antes, não altera o host; depois, renova de forma idempotente e recarrega somente configuração válida. |
 | GitHub Actions | PR e push em `main` | Testa e constrói no PR; somente `main` pode produzir imagem e executar deploy. |
 
+## Automação de cards versionados — 2026-09-07
+
+O histórico mostrou que o primeiro JSON entrou antes da criação do workflow e precisou de execução
+manual. O contrato inicial também filtrava somente `prazer-audio-visual`, aceitava somente fonte
+Markdown local e dependia exclusivamente do evento `push`. Essa combinação não atendia novas
+coleções nem commits feitos por outro workflow com `GITHUB_TOKEN`, pois esses commits não encadeiam
+novos workflows de `push`.
+
+Foram comparadas três alternativas:
+
+1. ampliar apenas o filtro de `push`: execução imediata e menor consumo, mas continua vulnerável a
+   eventos suprimidos ou perdidos;
+2. exigir `repository_dispatch` de todo sistema escritor: execução precisa, mas cria acoplamento e
+   deixa de funcionar quando o produtor grava o arquivo sem enviar o segundo evento;
+3. combinar `push` em `main`, `repository_dispatch` opcional e reconciliação diária com a mesma chave
+   idempotente: mantém o caminho comum imediato e recupera as duas classes de falha anteriores.
+
+A terceira alternativa foi escolhida. A agenda diária reduz consumo de runner, a serialização global
+com `queue: max` preserva todos os eventos durante rajadas e a branch `main` permanece como fronteira
+de conteúdo confiável.
+
+| Área | Cenário | Resultado esperado |
+| --- | --- | --- |
+| Caminho feliz | Adicionar dois JSONs em coleções diferentes no mesmo push | Seleciona e cadastra exatamente os dois. |
+| Versionamento | Alterar o conteúdo de um JSON já versionado | Publica somente o arquivo alterado com nova chave idempotente. |
+| Idempotência | Reexecutar o mesmo JSON ou reconciliar após revisão/ativação | Conserva a chave, aceita o estado editorial atual e não cria versão duplicada. |
+| Seleção | Alterar JSON fora de `pesquisas/<colecao>/cards/` | Não chama a API. |
+| Contrato | Informar campo ausente, extra, tipo, data ou tamanho inválido | Falha antes da rede com caminho identificável. |
+| Coleção | Divergir coleção do payload e pasta ou usar coleção não roteada | Falha antes da rede. |
+| Fonte local | Referência ausente, não versionada, com travessia ou SHA-256 divergente | Falha antes da rede. |
+| Fonte externa | Usar combinação válida de `URL`, `PDF`, `MARKDOWN` ou `TEXT` | Aceita o esquema permitido sem buscar conteúdo remoto. |
+| Integração | API devolver erro de transporte, HTTP diferente de `201` ou corpo inválido | Workflow falha e preserva reexecução idempotente. |
+| Recuperação | SHA anterior não existir ou agenda diária executar | Reconcilia todos os cards rastreados sem duplicá-los. |
+| Segurança | Passar caminho manual fora da pasta canônica | Rejeita sem enviar secret ou payload. |
+| Observabilidade | Sincronizar zero, um ou vários cards | Log e resumo registram quantidade e identidade, nunca a chave da API. |
+| Dados de teste | Executar a suíte local | Usa repositório e `curl` falsos em diretório temporário, sem acessar o Mkt Hub. |
+
+Navegadores e dispositivos não se aplicam a essa automação servidor-a-servidor. A suíte de contrato
+deve rodar junto com Actionlint sempre que o workflow ou seus scripts forem alterados.
+
 ## Navegadores e dispositivos
 
 Não se aplicam à v1: o produto solicitado é uma API servidor-a-servidor operada por `curl`, sem UI.

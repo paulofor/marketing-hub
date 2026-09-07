@@ -96,6 +96,22 @@ Use somente uma destas coleções: `video`, `prazer-audio-visual`, `neuromarketi
 `momentos-de-compra-b2c`. As datas usam o formato `AAAA-MM-DD`; `validUntil` não pode ser anterior a
 `publishedOn`, e uma versão vencida não pode ser ativada.
 
+### Cadastro automático a partir do repositório
+
+Um sistema que já grava conteúdo no repositório pode cadastrar o rascunho sem executar `curl` contra
+a Biblioteca. Ele deve versionar o contrato completo diretamente em
+`pesquisas/<colecao>/cards/<nome>.json` na branch `main`. O workflow
+`Publicar cards no Harness Library` detecta a inclusão ou alteração, confere pasta, payload, tamanho,
+tipo de fonte e SHA-256 e envia o JSON com chave idempotente derivada do arquivo.
+
+Se o escritor for outro GitHub Action autenticado com `GITHUB_TOKEN`, ele deve emitir, depois do
+commit, o `repository_dispatch` de tipo `harness-library-card-created`. O campo opcional
+`client_payload.card_path` pode indicar o arquivo; sem ele, o workflow reconcilia todos os cards. Uma
+reconciliação diária cobre eventos perdidos usando as mesmas chaves e não cria versões duplicadas.
+
+Esse caminho cria somente `DRAFT`. Revisão e ativação continuam etapas editoriais separadas e nunca
+são inferidas do commit ou do sucesso do workflow.
+
 ## Exemplo completo com curl
 
 ### 1. Montar o JSON

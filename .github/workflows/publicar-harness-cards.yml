@@ -1,7 +1,8 @@
 name: Publicar cards no Harness Library
 
 concurrency:
-  group: harness-library-cards-${{ github.ref }}
+  group: harness-library-cards-main
+  queue: max
   cancel-in-progress: false
 
 on:
@@ -9,14 +10,20 @@ on:
     branches:
       - main
     paths:
-      - 'pesquisas/prazer-audio-visual/cards/*.json'
+      - "pesquisas/*/cards/*.json"
+
+  repository_dispatch:
+    types:
+      - harness-library-card-created
+
+  schedule:
+    - cron: "17 3 * * *"
 
   workflow_dispatch:
     inputs:
       card_path:
-        description: Caminho do JSON do card
-        required: true
-        default: pesquisas/prazer-audio-visual/cards/2026-09-06-loudness-fronteiras-frase.json
+        description: Caminho de um JSON; vazio reconcilia todos os cards
+        required: false
         type: string
 
 permissions:
@@ -38,122 +45,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validar configuração
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ -z "${HARNESS_LIBRARY_API_KEY:-}" ]]; then
-            echo "::error::HARNESS_LIBRARY_API_KEY não configurado"
-            exit 1
-          fi
-
-      - name: Selecionar cards
+      - name: Selecionar, validar e publicar cards
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
           MANUAL_CARD: ${{ inputs.card_path }}
+          EXTERNAL_CARD: ${{ github.event.client_payload.card_path }}
         run: |
           set -euo pipefail
 
-          : > /tmp/cards.txt
-
-          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
-            echo "${MANUAL_CARD}" > /tmp/cards.txt
-          else
-            git diff \
-              --diff-filter=AM \
-              --name-only \
-              "${BEFORE_SHA}" \
-              "${AFTER_SHA}" \
-              -- 'pesquisas/prazer-audio-visual/cards/*.json' \
-              > /tmp/cards.txt
-          fi
-
-          echo "Cards:"
-          cat /tmp/cards.txt
-
-      - name: Validar e publicar
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          while IFS= read -r card; do
-
-            [[ -n "${card}" ]] || continue
-
-            echo "Validando ${card}"
-
-            jq -e '
-              (.cardKey | type == "string") and
-              (.collection == "prazer-audio-visual") and
-              (.sourceKind == "MARKDOWN") and
-              (.sourceUri | startswith("repo:")) and
-              (.sourceSha256 | test("^[0-9a-f]{64}$"))
-            ' "${card}" > /dev/null
-
-            SOURCE_URI="$(jq -r '.sourceUri' "${card}")"
-            SOURCE_PATH="${SOURCE_URI#repo:}"
-            EXPECTED_SHA="$(jq -r '.sourceSha256' "${card}")"
-
-            if [[ ! -f "${SOURCE_PATH}" ]]; then
-              echo "::error::Fonte não encontrada: ${SOURCE_PATH}"
+          case "${EVENT_NAME}" in
+            push)
+              bash scripts/publish-harness-cards.sh \
+                --changed "${BEFORE_SHA}" "${AFTER_SHA}"
+              ;;
+            workflow_dispatch)
+              if [[ -n "${MANUAL_CARD}" ]]; then
+                bash scripts/publish-harness-cards.sh --card "${MANUAL_CARD}"
+              else
+                bash scripts/publish-harness-cards.sh --all
+              fi
+              ;;
+            repository_dispatch)
+              if [[ -n "${EXTERNAL_CARD}" ]]; then
+                bash scripts/publish-harness-cards.sh --card "${EXTERNAL_CARD}"
+              else
+                bash scripts/publish-harness-cards.sh --all
+              fi
+              ;;
+            schedule)
+              bash scripts/publish-harness-cards.sh --all
+              ;;
+            *)
+              echo "::error::Evento não suportado: ${EVENT_NAME}"
               exit 1
-            fi
-
-            ACTUAL_SHA="$(sha256sum "${SOURCE_PATH}" | awk '{print $1}')"
-
-            if [[ "${ACTUAL_SHA}" != "${EXPECTED_SHA}" ]]; then
-              echo "::error::SHA-256 da fonte não corresponde ao card"
-              exit 1
-            fi
-
-            CARD_SHA="$(sha256sum "${card}" | awk '{print $1}')"
-
-            # Mesma versão do JSON => mesma chave.
-            # Reexecuções não criam versões acidentalmente.
-            IDEMPOTENCY_KEY="gha-${CARD_SHA:0:32}"
-
-            RESPONSE="$(mktemp)"
-
-            HTTP_CODE="$(
-              curl \
-                --silent \
-                --show-error \
-                --location \
-                --connect-timeout 15 \
-                --max-time 60 \
-                --output "${RESPONSE}" \
-                --write-out '%{http_code}' \
-                -X POST "${HARNESS_LIBRARY_URL}/v1/cards" \
-                -H "Content-Type: application/json" \
-                -H "X-API-Key: ${HARNESS_LIBRARY_API_KEY}" \
-                -H "X-Actor: ${HARNESS_LIBRARY_ACTOR}" \
-                -H "Idempotency-Key: ${IDEMPOTENCY_KEY}" \
-                --data-binary "@${card}"
-            )"
-
-            if [[ "${HTTP_CODE}" != "201" ]]; then
-              echo "::error::Mkt Hub respondeu HTTP ${HTTP_CODE}"
-              jq . "${RESPONSE}" 2>/dev/null || cat "${RESPONSE}"
-              exit 1
-            fi
-
-            jq -e '
-              (.status == "DRAFT") and
-              (.cardId | startswith("RI1-"))
-            ' "${RESPONSE}" > /dev/null
-
-            echo "Card publicado:"
-            jq '{
-              cardId,
-              cardKey,
-              version,
-              status,
-              effectiveStatus,
-              routableAgents
-            }' "${RESPONSE}"
-
-          done < /tmp/cards.txt
+              ;;
+          esac

@@ -1,0 +1,18 @@
+{
+  "cardKey": "valor-visual-captura-atencao-crossmodal",
+  "collection": "prazer-audio-visual",
+  "title": "Evitar que sinais visuais de valor sequestram a atenção crossmodal",
+  "finding": "Em dois experimentos, distratores visuais previamente associados a maior recompensa atrasaram respostas e enviesaram a localização percebida de sons em direção à posição visual; a intensidade da interferência dependeu da carga perceptual e da posição do distrator.",
+  "mechanism": "Sinais aprendidos como valiosos recebem prioridade atencional e podem competir com a integração audiovisual; a carga cognitiva altera essa competição de modo dependente da geometria entre estímulos.",
+  "commercialApplication": "Testar badges, highlights, animações ou pistas visuais associadas a valor em posições periféricas versus próximas do alvo principal, variando densidade de informação e medindo compreensão, tempo de resposta, atenção ao CTA e erros.",
+  "evidenceStrength": "Média: dois experimentos convergentes em tarefa crossmodal, mas os próprios autores destacam limitações de tamanho amostral e necessidade de replicação.",
+  "publishedOn": "2026-07-01",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Sob alta densidade de informação, sinais visuais de valor colocados perto do alvo audiovisual aumentarão captura de atenção, mas poderão piorar compreensão se competirem com a informação sonora principal.",
+  "risks": "Não assumir que maior captura de atenção é benéfica; ela pode atrasar decisões, enviesar percepção ou reduzir compreensão mesmo quando aumenta saliência.",
+  "limits": "O paradigma usa recompensa aprendida e localização espacial auditiva, não vídeos comerciais, prazer ou compra; a direção do efeito depende da posição espacial e da carga perceptual.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-07-valor-atencao-crossmodal.md",
+  "sourceTitle": "Fonte revisada — valor visual e captura crossmodal de atenção",
+  "sourceSha256": "2b508f33920335797ade5e4dac63ad8595fdd9acb7b852385b0832fd7300901e"
+}

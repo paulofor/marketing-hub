@@ -1,0 +1,18 @@
+{
+  "cardKey": "whatsapp-compra-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Compra conversacional via WhatsApp merece teste no funil",
+  "finding": "Pesquisa com consumidores online brasileiros registrou 73% relatando ao menos uma compra pelo WhatsApp no último mês, 55% em grupos de promoções e 82% aceitando mensagens de empresas quando ligadas à jornada.",
+  "mechanism": "Manter conversa, recomendação, prova social e fechamento no mesmo canal pode reduzir troca de contexto e atrito. Esse mecanismo é plausível, mas a pesquisa não demonstra causalidade sobre conversão.",
+  "commercialApplication": "No Marketing Hub, comparar uma jornada WhatsApp-first contra uma jornada landing-first para a mesma oferta, público e orçamento, acompanhando resposta qualificada, checkout, pagamento reconciliado e custo por resultado.",
+  "evidenceStrength": "Moderada para comportamento autodeclarado em consumidores online; baixa para inferir efeito causal em vendas ou superioridade do WhatsApp sobre outros funis.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2026-12-06",
+  "experimentHypothesis": "Para a mesma oferta e público, um fluxo WhatsApp-first elevará resposta qualificada e avanço até pagamento em relação ao landing-first sem aumentar rejeição, bloqueio ou custo por pagamento.",
+  "risks": "Excesso de mensagens, falta de consentimento, violações de LGPD ou políticas da plataforma, bloqueios, atribuição incorreta e confusão entre conversa iniciada e compra efetivamente reconciliada.",
+  "limits": "A evidência vem de pesquisa autodeclarada com 800 consumidores online e não de experimento controlado. O comportamento pode variar por nicho, ticket, idade, região e período promocional.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-07-whatsapp-compra-conversacional.md",
+  "sourceTitle": "Fonte revisada — Compra conversacional via WhatsApp no Brasil",
+  "sourceSha256": "10691aac8a56ef56676290d1310d3506d9a83594aa4fdeec971d8a73086988c8"
+}

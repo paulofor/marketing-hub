@@ -118,7 +118,7 @@ for agent in agents:
             errors.append(f"{agent['key']}: workflow clona refresh token para identidade isolada")
         if 'group: codex-agent-host-deploy' in workflow_text:
             errors.append(f"{agent['key']}: workflow usa fila compartilhada que cancela deploys pendentes")
-        module_sync = f'rsync -az --delete {agent["module"]}/'
+        module_sync = 'rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete ' + f'{agent["module"]}/'
         if module_sync not in workflow_text:
             errors.append(f"{agent['key']}: workflow não sincroniza somente o próprio módulo")
         if agent['key'] == 'meta-ad-approver':
@@ -132,9 +132,9 @@ for agent in agents:
                         f"{agent['key']}: workflow não reage à evidência PDE versionada ({' ou '.join(alternatives)})"
                     )
             artifact_markers = (
-                'rsync -az --delete pde-platform/contracts/',
-                'rsync -az --delete pde-platform/frontend/public/materials/',
-                'rsync -az scripts/codex-oauth-session-safe.sh',
+                'rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/contracts/',
+                'rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/frontend/public/materials/',
+                'rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-oauth-session-safe.sh',
                 'test -x /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh',
                 'test -s /workspace/marketing-hub/pde-platform/contracts/kit-whatsapp-pronto-v1.json',
                 'test -s /workspace/marketing-hub/pde-platform/contracts/commercial-journey-event-contract-v1.json',

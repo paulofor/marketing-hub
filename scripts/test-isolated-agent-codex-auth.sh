@@ -24,7 +24,9 @@ for agent in "${!homes[@]}"; do
   grep -q "install -d -o 10001 -g 10001 $expected_home" "$workflow"
   grep -q 'cancel-in-progress: false' "$workflow"
   grep -qE -- '- ["]?scripts/codex-app-server-device-login\.mjs["]?' "$workflow"
-  grep -q 'rsync -az scripts/codex-app-server-device-login.mjs' "$workflow"
+  # O transporte e o caminho de origem preservam configuração SSH e identidade isoladas.
+  # shellcheck disable=SC2016
+  grep -Fq 'rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs' "$workflow"
   if grep -qE 'reconcile-agent-codex-auth|CODEX_HOME=/opt/growth-operator/codex-home|install .*auth\.json .*codex-home/auth\.json' "$workflow"; then
     printf '[ARQUITETURA] %s ainda compartilha ou clona a identidade Codex.\n' "$workflow" >&2
     exit 1
@@ -32,7 +34,8 @@ for agent in "${!homes[@]}"; do
 done
 
 landing_workflow="$repo_root/.github/workflows/landing-generator-agent-worker-ci.yml"
-grep -q 'ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10' "$landing_workflow"
+# shellcheck disable=SC2016
+grep -Fq 'ssh ${SSH_COMMON_ARGS} -o ServerAliveInterval=30 -o ServerAliveCountMax=10' "$landing_workflow"
 grep -q 'Aguardando saúde do executor (tentativa' "$landing_workflow"
 
 if grep -q 'group: shared-growth-agents-repository-deploy' \

@@ -40,7 +40,8 @@ for required_binary in "$ssh_binary" "$ssh_keygen_binary"; do
   fi
 done
 
-if [ ! -x "$keyscan_helper" ]; then
+# Bash precisa ler o helper; o checkout não precisa marcar esse arquivo como executável.
+if [ ! -f "$keyscan_helper" ] || [ ! -r "$keyscan_helper" ]; then
   echo "Erro: helper de coleta da chave do host indisponível." >&2
   exit 2
 fi

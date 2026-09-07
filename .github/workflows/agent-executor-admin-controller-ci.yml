@@ -36,27 +36,27 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Add agent VPS SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
-      - name: Trust agent VPS
+      - name: Configure authenticated agent VPS SSH
+        env:
+          VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_1: ${{ secrets.VPS_SSH_CHAVE }}
+          VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_3: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H 163.245.202.80 >> ~/.ssh/known_hosts
+          bash scripts/configure-vps-ssh-fallback.sh \
+            163.245.202.80 root "$GITHUB_ENV"
       - name: Ensure free disk space on agent VPS
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Install and validate controller
         run: |
           set -euo pipefail
-          ssh root@163.245.202.80 'install -d /opt/marketing-hub/repo/deploy/agent-executor-admin-controller /opt/marketing-hub/repo/scripts'
-          rsync -az --delete deploy/agent-executor-admin-controller/ root@163.245.202.80:/opt/marketing-hub/repo/deploy/agent-executor-admin-controller/
-          scp scripts/agent-executor-admin-controller.mjs root@163.245.202.80:/opt/marketing-hub/repo/scripts/agent-executor-admin-controller.mjs
-          ssh root@163.245.202.80 '
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'install -d /opt/marketing-hub/repo/deploy/agent-executor-admin-controller /opt/marketing-hub/repo/scripts'
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete deploy/agent-executor-admin-controller/ root@163.245.202.80:/opt/marketing-hub/repo/deploy/agent-executor-admin-controller/
+          scp ${SSH_COMMON_ARGS} scripts/agent-executor-admin-controller.mjs root@163.245.202.80:/opt/marketing-hub/repo/scripts/agent-executor-admin-controller.mjs
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 '
             set -euo pipefail
             systemctl disable --now marketinghub-agent-executor-admin.service 2>/dev/null || true
             cd /opt/marketing-hub/repo/deploy/agent-executor-admin-controller
@@ -74,4 +74,8 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          if [ "${SSH_DEPLOY_READY:-false}" != "true" ]; then
+            echo "Restauração remota ignorada: o preflight SSH não autenticou."
+            exit 0
+          fi
+          ssh ${SSH_COMMON_ARGS} root@163.245.202.80 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

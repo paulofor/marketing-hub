@@ -60,37 +60,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Add Experiment Strategist VPS SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
-
-      - name: Trust Experiment Strategist VPS
+      - name: Configure authenticated agent VPS SSH
+        env:
+          VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_1: ${{ secrets.VPS_SSH_CHAVE }}
+          VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_3: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
-
+          bash scripts/configure-vps-ssh-fallback.sh \
+            "$VPS_IP" "$VPS_USER" "$GITHUB_ENV"
       - name: Ensure free disk space on agent VPS
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/experiment-strategist-worker' '${REPOSITORY_DIR}/scripts'"
-          rsync -az --delete experiment-strategist-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/experiment-strategist-worker/"
-          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/experiment-strategist-worker' '${REPOSITORY_DIR}/scripts'"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete experiment-strategist-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/experiment-strategist-worker/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
       - name: Rebuild and restart worker
         env:
           CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "install -d -o 10001 -g 10001 -m 700 /opt/growth-operator/agents/experiment-strategist/secrets && if [ ! -f /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token ]; then install -o 10001 -g 10001 -m 600 /dev/null /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; fi && chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token && chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
-          printf '%s' "${CLARITY_API_TOKEN}" | ssh "${VPS_USER}@${VPS_IP}" "umask 077; tee /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token >/dev/null; chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
-          ssh "${VPS_USER}@${VPS_IP}" "\
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "install -d -o 10001 -g 10001 -m 700 /opt/growth-operator/agents/experiment-strategist/secrets && if [ ! -f /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token ]; then install -o 10001 -g 10001 -m 600 /dev/null /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; fi && chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token && chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
+          printf '%s' "${CLARITY_API_TOKEN}" | ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "umask 077; tee /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token >/dev/null; chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/experiment-strategist/codex-home \
             && export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/growth-operator/agents/experiment-strategist/codex-home \
             && cd '${REPOSITORY_DIR}/experiment-strategist-worker' \
@@ -125,10 +123,10 @@ jobs:
 
       - name: Report deployed revision
         run: |
-          deployed_image="$(ssh "${VPS_USER}@${VPS_IP}" \
+          deployed_image="$(ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" \
             "docker inspect experiment-strategist-worker-experiment-strategist-worker-1 --format '{{.Config.Image}}'")"
           test "${deployed_image}" = "marketing-hub/experiment-strategist-worker:${GITHUB_SHA}"
-          ssh "${VPS_USER}@${VPS_IP}" \
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" \
             "docker inspect experiment-strategist-worker-experiment-strategist-worker-1 \
               --format 'image={{.Config.Image}} started={{.State.StartedAt}} status={{.State.Status}}'"
       - name: Restore free disk space on agent VPS
@@ -136,4 +134,8 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          if [ "${SSH_DEPLOY_READY:-false}" != "true" ]; then
+            echo "Restauração remota ignorada: o preflight SSH não autenticou."
+            exit 0
+          fi
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

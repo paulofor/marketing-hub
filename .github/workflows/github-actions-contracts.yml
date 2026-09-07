@@ -37,6 +37,11 @@ on:
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
       - "scripts/test-configure-vps-ssh-fallback.sh"
+      - "scripts/test-configure-vps-ssh-fallback-e2e.sh"
+      - "scripts/test-agent-vps-ssh-workflows.mjs"
+      - "scripts/fixtures/vps-ssh/**"
+      - "scripts/validate-premium-agents.sh"
+      - "scripts/test-isolated-agent-codex-auth.sh"
       - "lead-portal/scripts/recreate-app-services.sh"
       - "lead-portal/scripts/test-recreate-app-services.sh"
       - "lead-portal/scripts/wait-for-app-services-health.sh"
@@ -76,6 +81,11 @@ on:
       - "scripts/test-shared-vps-deploy-resilience.sh"
       - "scripts/test-ssh-keyscan-with-retry.sh"
       - "scripts/test-configure-vps-ssh-fallback.sh"
+      - "scripts/test-configure-vps-ssh-fallback-e2e.sh"
+      - "scripts/test-agent-vps-ssh-workflows.mjs"
+      - "scripts/fixtures/vps-ssh/**"
+      - "scripts/validate-premium-agents.sh"
+      - "scripts/test-isolated-agent-codex-auth.sh"
       - "lead-portal/scripts/recreate-app-services.sh"
       - "lead-portal/scripts/test-recreate-app-services.sh"
       - "lead-portal/scripts/wait-for-app-services-health.sh"
@@ -136,6 +146,10 @@ jobs:
           bash -n scripts/test-shared-vps-deploy-resilience.sh
           bash -n scripts/test-ssh-keyscan-with-retry.sh
           bash -n scripts/test-configure-vps-ssh-fallback.sh
+          bash -n scripts/test-configure-vps-ssh-fallback-e2e.sh
+          bash -n scripts/fixtures/vps-ssh/test.sh
+          bash -n scripts/validate-premium-agents.sh
+          bash -n scripts/test-isolated-agent-codex-auth.sh
           bash -n lead-portal/scripts/recreate-app-services.sh
           bash -n lead-portal/scripts/test-recreate-app-services.sh
           bash -n lead-portal/scripts/wait-for-app-services-health.sh
@@ -179,6 +193,14 @@ jobs:
 
       - name: Validar fallback seguro das credenciais SSH
         run: bash scripts/test-configure-vps-ssh-fallback.sh
+
+      - name: Validar autenticação em todos os publicadores dos agentes
+        run: |
+          node scripts/test-agent-vps-ssh-workflows.mjs
+          bash scripts/validate-premium-agents.sh
+
+      - name: Validar SSH, SCP e rsync com servidor local isolado
+        run: bash scripts/test-configure-vps-ssh-fallback-e2e.sh
 
       - name: Validar recuperação limitada de disco dos agentes
         run: |

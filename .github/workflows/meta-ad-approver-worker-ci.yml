@@ -131,25 +131,25 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
         run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
-      - name: Add agent VPS SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
-      - name: Trust agent VPS
+      - name: Configure authenticated agent VPS SSH
+        env:
+          VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_1: ${{ secrets.VPS_SSH_CHAVE }}
+          VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KEY_FALLBACK_3: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+          bash scripts/configure-vps-ssh-fallback.sh \
+            "$VPS_IP" "$VPS_USER" "$GITHUB_ENV"
       - name: Ensure free disk space on agent VPS
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
       - name: Provision OpenAI credential for Íris
         run: |
           set -euo pipefail
           test "${#OPENAI_API_KEY}" -ge 20
-          printf '%s' "${OPENAI_API_KEY}" | ssh "${VPS_USER}@${VPS_IP}" '
+          printf '%s' "${OPENAI_API_KEY}" | ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" '
             set -euo pipefail
             secret_dir=/root/infra/openai-token
             secret_file="${secret_dir}/openai_api_key"
@@ -170,22 +170,22 @@ jobs:
           set -euo pipefail
           # Caminhos devem ser resolvidos pelo runner antes do SSH.
           # shellcheck disable=SC2029
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p \
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "mkdir -p \
             '${REPOSITORY_DIR}/meta-ad-approver-worker' \
             '${REPOSITORY_DIR}/pde-platform/contracts' \
             '${REPOSITORY_DIR}/pde-platform/frontend/public/materials' \
             '${REPOSITORY_DIR}/scripts'"
-          rsync -az --delete meta-ad-approver-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/meta-ad-approver-worker/"
-          rsync -az --delete pde-platform/contracts/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/contracts/"
-          rsync -az --delete pde-platform/frontend/public/materials/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/frontend/public/materials/"
-          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
-          rsync -az scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete meta-ad-approver-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/meta-ad-approver-worker/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/contracts/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/contracts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete pde-platform/frontend/public/materials/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/frontend/public/materials/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Rebuild and restart agent
         run: |
           set -euo pipefail
           # Versões e caminhos devem ser injetados pelo runner no comando remoto.
           # shellcheck disable=SC2029
-          ssh "${VPS_USER}@${VPS_IP}" "
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/meta-ad-approver/codex-home \
             && test -f /root/infra/openai-token/openai_api_key \
             && test -s /root/infra/openai-token/openai_api_key \
@@ -223,4 +223,8 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          if [ "${SSH_DEPLOY_READY:-false}" != "true" ]; then
+            echo "Restauração remota ignorada: o preflight SSH não autenticou."
+            exit 0
+          fi
+          ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh

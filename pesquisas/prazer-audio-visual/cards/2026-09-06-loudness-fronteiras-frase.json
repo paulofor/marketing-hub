@@ -1,0 +1,18 @@
+{
+  "cardKey": "loudness-fronteiras-frase-audiovisual",
+  "collection": "prazer-audio-visual",
+  "title": "Sincronizar edição às fronteiras de loudness",
+  "finding": "Em 126 participantes, a estrutura de loudness da música se alinhou mais fortemente a ECG, respiração e pressão arterial do que a estrutura de tempo.",
+  "mechanism": "Mudanças de loudness podem funcionar como pistas rápidas de fronteira; frases mais regulares permitem antecipar transições e podem favorecer entrainment autonômico.",
+  "commercialApplication": "Comparar uma edição guiada por envelope de loudness e fronteiras de frase contra beat-sync puro, usando cortes, transições, zooms ou haptics nos pontos estruturais.",
+  "evidenceStrength": "Média-alta: N=126 e múltiplas medidas fisiológicas; porém a aplicação audiovisual é uma extrapolação que exige teste no mesmo público e formato.",
+  "publishedOn": "2026-08-25",
+  "validUntil": "2027-02-25",
+  "experimentHypothesis": "A edição guiada por loudness e fronteiras de frase aumentará retenção e replay em relação ao beat-sync puro, sem reduzir compreensão ou CTA.",
+  "risks": "Não tratar entrainment fisiológico como prova de prazer ou venda; sincronização excessiva pode aumentar previsibilidade e reduzir interesse.",
+  "limits": "Estudo com piano clássico/ocidental e relações majoritariamente correlacionais; não demonstra causalidade sobre retenção, CTA, conversão ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-06-loudness-fronteiras-frase.md",
+  "sourceTitle": "Fonte revisada — loudness, fronteiras de frase e entrainment autonômico",
+  "sourceSha256": "0e2d4b4988633b0b20ebbdffe5f643d97cb9df2b8b5e3a12d193a59167065e94"
+}

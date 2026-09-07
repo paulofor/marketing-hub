@@ -101,10 +101,9 @@ teste e inspecionar os dados gravados. Sem essa opção, o runner remove
 containers, rede e volumes ao final, inclusive quando alguma jornada falha.
 
 O deploy produtivo do Método MUSA também valida os subdomínios versionados. Em
-`main`, o workflow publica backend/worker da plataforma e executa smoke tests
-para `v5`, `v6` e futuras versões ativas, incluindo health público,
-renderização, diagnóstico público, `experienceVersion` esperada e stream HLS
-real. O frontend público de cada versão é publicado por `frontend_version`
+`main`, o workflow publica backend/worker da plataforma, confirma a saúde das
+versões ativas e executa o smoke segregado de compatibilidade de Mira na v7.
+O frontend público de cada versão é publicado por `frontend_version`
 explícita no `workflow_dispatch`, usando imagem e container próprios para cada
 versão, para impedir que uma alteração da v6 atualize/reinicie a v5 enquanto
 existir cliente ou campanha usando a versão anterior.

@@ -21,12 +21,22 @@ for required_contract in \
   'docker start \"\${proxy_container}\"' \
   'docker kill -s HUP' \
   'Nenhum container de proxy HTTPS' \
-  'run-targeted-production-smokes.sh "${PDE_DEPLOY_FRONTEND_VERSION}"'; do
+  "github.event_name == 'push'" \
+  'MIRA_AGENT_VALIDATION_STATUS=' \
+  '/api/pde/mira/private/v1/internal/agent-validations/sessions' \
+  "if [ \"\${MIRA_AGENT_VALIDATION_STATUS}\" != '403' ]; then" \
+  'TARGETED_FRONTEND_VERSION=v7' \
+  'run-targeted-production-smokes.sh "${TARGETED_FRONTEND_VERSION}"'; do
   if ! grep -Fq "${required_contract}" "${workflow}"; then
     echo "[ARQUITETURA] O deploy PDE perdeu o contrato de integração segura com o proxy existente: ${required_contract}" >&2
     exit 1
   fi
 done
+
+if [ "$(grep -Fc "if: github.event_name == 'push' || inputs.frontend_version != 'none'" "${workflow}")" -ne 2 ]; then
+  echo '[ARQUITETURA] O deploy automático do backend PDE deve validar a compatibilidade da superfície Mira já publicada.' >&2
+  exit 1
+fi
 
 if ! awk '
   /if docker inspect .*proxy_container/ { start_seen = 0 }

@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import { once } from "node:events";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -10,8 +11,16 @@ import { createGzip } from "node:zlib";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const [operation, directory, ...args] = process.argv.slice(2);
 const reserveMb = 4096;
+const loadAttempts = 3;
 const immutableReference = /^[a-z0-9][a-z0-9./_-]*:[a-f0-9]{40}$/;
 const sha256Digest = /^sha256:[a-f0-9]{64}$/;
+
+// Encaminha logs com backpressure sem acumular listeners no stdout global entre comandos SSH.
+async function forwardOutput(source, destination) {
+  for await (const chunk of source) {
+    if (!destination.write(chunk)) await once(destination, "drain");
+  }
+}
 
 // Executa uma operação limitada e preserva a causa de falhas do transporte ou Docker.
 function command(executable, parameters, input, output) {
@@ -24,7 +33,8 @@ function command(executable, parameters, input, output) {
     let inputDone = Promise.resolve();
     let outputDone = Promise.resolve();
     if (input) inputDone = pipeline(input, child.stdin);
-    if (output) outputDone = pipeline(child.stdout, output, { end: output !== process.stdout });
+    if (output === process.stdout) outputDone = forwardOutput(child.stdout, output);
+    else if (output) outputDone = pipeline(child.stdout, output);
     else child.stdout.on("data", (chunk) => { stdout += chunk; });
     // A rejeição da stream é observada imediatamente, inclusive antes do evento close.
     const streamsDone = Promise.allSettled([inputDone, outputDone]);
@@ -232,7 +242,7 @@ function requiredSpace(manifest) {
   return minimum;
 }
 
-// Transmite por stdin sem gravar tar no VPS, confere identidades e valida reserva antes do restart.
+// Transmite por stdin sem gravar tar no VPS, recupera materialização transitória e valida antes do restart.
 async function send(target, references) {
   const manifest = await verifyBundle(references);
   if (process.env.SSH_DEPLOY_READY !== "true" || !/^[a-z_][a-z0-9_-]*@[a-zA-Z0-9.-]+$/.test(target)) {
@@ -246,10 +256,31 @@ async function send(target, references) {
   const minimum = requiredSpace(manifest);
   console.log(`Carga de imagens: minimumMb=${minimum} operationalReserveMb=${reserveMb}`);
   await gate(minimum);
-  await ssh("timeout --kill-after=5s 600s docker image load", createReadStream(path.join(directory, "images.tar.gz")));
-  for (const image of manifest.images) {
-    const actual = inspectImage(await command("ssh", ["-F", config, target,
-      `docker image inspect '${image.reference}'`]));
+  let loadedImages = [];
+  for (let attempt = 1; attempt <= loadAttempts; attempt += 1) {
+    await ssh("timeout --kill-after=5s 600s docker image load",
+      createReadStream(path.join(directory, "images.tar.gz")));
+    loadedImages = [];
+    let unavailable;
+    for (const image of manifest.images) {
+      let inspection;
+      try {
+        inspection = await command("ssh", ["-F", config, target,
+          `docker image inspect '${image.reference}'`]);
+      } catch (error) {
+        unavailable = { image, error };
+        break;
+      }
+      loadedImages.push({ image, actual: inspectImage(inspection) });
+    }
+    if (!unavailable) break;
+    if (attempt === loadAttempts) {
+      throw new Error(`Imagem indisponível após ${loadAttempts} cargas verificadas: ${unavailable.image.reference}; ${unavailable.error.message}`);
+    }
+    console.error(`Image store não materializou ${unavailable.image.reference}; repetindo o mesmo pacote íntegro (${attempt + 1}/${loadAttempts}).`);
+    await gate(minimum);
+  }
+  for (const { image, actual } of loadedImages) {
     if (actual.contentSha256 !== image.contentSha256) {
       throw new Error(`Conteúdo carregado divergente: ${image.reference} sourceId=${image.sourceId} loadedId=${actual.id}`);
     }

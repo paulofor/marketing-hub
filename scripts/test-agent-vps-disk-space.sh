@@ -34,13 +34,18 @@ case "$*" in
     ;;
   'image ls --all --no-trunc --format {{.Repository}}|{{.Tag}}|{{.ID}}')
     [[ "$DISK_TEST_MODE" != image-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|managed-rm-failure)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure)$ ]]; then
       printf '%s\n' \
         'marketing-hub/meta-ad-approver-worker|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
         'marketing-hub/meta-ad-approver-worker|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
-        'marketing-hub/meta-ad-approver-worker|abababababababababababababababababababab|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
-        'marketing-hub/meta-ad-approver-worker|dddddddddddddddddddddddddddddddddddddddd|sha256:3333333333333333333333333333333333333333333333333333333333333333' \
-        'marketing-hub/meta-ad-approver-worker|cccccccccccccccccccccccccccccccccccccccc|sha256:4444444444444444444444444444444444444444444444444444444444444444' \
+        'marketing-hub/meta-ad-approver-worker|abababababababababababababababababababab|sha256:2222222222222222222222222222222222222222222222222222222222222222'
+      if [[ ! -f "$DISK_TEST_DIR/second-rollback-removed" ]]; then
+        printf '%s\n' 'marketing-hub/meta-ad-approver-worker|dddddddddddddddddddddddddddddddddddddddd|sha256:3333333333333333333333333333333333333333333333333333333333333333'
+      fi
+      if [[ ! -f "$DISK_TEST_DIR/managed-removed" ]]; then
+        printf '%s\n' 'marketing-hub/meta-ad-approver-worker|cccccccccccccccccccccccccccccccccccccccc|sha256:4444444444444444444444444444444444444444444444444444444444444444'
+      fi
+      printf '%s\n' \
         'marketing-hub/meta-ad-approver-worker|latest|sha256:6666666666666666666666666666666666666666666666666666666666666666' \
         'unrelated/system|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb|sha256:5555555555555555555555555555555555555555555555555555555555555555' \
         'ghcr.io/paulofor/product-discovery-worker|aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|sha256:7777777777777777777777777777777777777777777777777777777777777777'
@@ -51,7 +56,7 @@ case "$*" in
     ;;
   'container ls --all --no-trunc --quiet')
     [[ "$DISK_TEST_MODE" != container-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|managed-rm-failure)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure)$ ]]; then
       printf '%s\n' '9999999999999999999999999999999999999999999999999999999999999999'
     fi
     ;;
@@ -77,6 +82,9 @@ case "$*" in
   image\ rm\ marketing-hub/meta-ad-approver-worker:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc)
     touch "$DISK_TEST_DIR/alias-removed"
     ;;
+  image\ rm\ marketing-hub/meta-ad-approver-worker:dddddddddddddddddddddddddddddddddddddddd)
+    touch "$DISK_TEST_DIR/second-rollback-removed"
+    ;;
   *) echo "Operação Docker não permitida: $*" >&2; exit 70 ;;
 esac
 DOCKER_DOUBLE
@@ -93,6 +101,7 @@ if [[ "$DISK_TEST_MODE" = ready || "$DISK_TEST_MODE" = inode-full \
   || ( "$DISK_TEST_MODE" = recover-fresh && -f "$DISK_TEST_DIR/fresh-pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-dangling && -f "$DISK_TEST_DIR/image-pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-managed && -f "$DISK_TEST_DIR/managed-removed" ) \
+  || ( "$DISK_TEST_MODE" = recover-managed-pressure && -f "$DISK_TEST_DIR/second-rollback-removed" ) \
   || ( "$DISK_TEST_MODE" = recover-managed-alias && -f "$DISK_TEST_DIR/managed-removed" && -f "$DISK_TEST_DIR/alias-removed" ) ]]; then
   disk_test_available=8388608
 fi
@@ -110,7 +119,8 @@ run_case() {
   local expected_image_prunes="$4" expected_image_removals="$5"
   shift 5
   rm -f "$test_dir/pruned" "$test_dir/recent-pruned" "$test_dir/image-pruned" \
-    "$test_dir/managed-removed" "$test_dir/fresh-pruned" "$test_dir/alias-removed"
+    "$test_dir/managed-removed" "$test_dir/fresh-pruned" "$test_dir/alias-removed" \
+    "$test_dir/second-rollback-removed"
   : >"$test_dir/calls"
   local case_status=0
   PATH="$test_dir/bin:$PATH" DISK_TEST_DIR="$test_dir" DISK_TEST_MODE="$case_mode" \
@@ -153,7 +163,15 @@ if grep -Eq '^image rm .*(ffffffff|eeeeeeee|abababab|dddddddd|latest|unrelated|p
   exit 1
 fi
 run_case recover-managed-alias 0 3 2 2
-run_case managed-rm-failure 1 3 2 2
+run_case recover-managed-pressure 0 3 2 2
+grep -q 'aplicando piso seguro de 1 sob pressão' "$test_dir/output"
+grep -Fxq 'image rm marketing-hub/meta-ad-approver-worker:dddddddddddddddddddddddddddddddddddddddd' "$test_dir/calls"
+if grep -Eq '^image rm .*(ffffffff|eeeeeeee|abababab|latest|unrelated|product-discovery)' \
+  "$test_dir/calls"; then
+  echo "A pressão de capacidade tentou remover imagem ativa, rollback mínimo ou referência fora do escopo." >&2
+  exit 1
+fi
+AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=2 run_case managed-rm-failure 1 3 2 2
 grep -q 'referência preservada' "$test_dir/output"
 run_case recent-failure 1 2 0 0
 run_case full 1 3 2 0
@@ -173,6 +191,8 @@ run_case ready 2 0 0 0 invalid-mode
 AGENT_VPS_DISK_MIN_FREE_MB=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_FREE_MB=invalid run_case ready 2 0 0 0
 AGENT_VPS_DISK_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
+AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
+AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=3 run_case ready 2 0 0 0
 
 exec 8>"$test_dir/disk.lock"
 flock -n 8
@@ -180,4 +200,4 @@ run_case full 1 0 0 0
 grep -q 'outra verificação' "$test_dir/output"
 flock -u 8
 
-echo "26 cenários de disco, retenção, falhas e concorrência aprovados."
+echo "29 cenários de disco, retenção adaptativa, falhas e concorrência aprovados."

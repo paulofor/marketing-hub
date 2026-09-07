@@ -3923,6 +3923,55 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   Docker real altera apenas a representação retornada pelo destino e comprova carga, conteúdo,
   Compose sem build, rollback e volume. Evidência em
   `docs/homologacao/actions-agent-images-2026-09-07.md`.
+- **Recorrência de capacidade após eliminar o rebuild em 2026-09-07:** Têmis `34082959851` e
+  Psique `34082959919` aprovaram integralmente testes, builds e pacotes, mas o envio parou antes do
+  `docker load`. O host tinha 7.050 MiB livres; os gates proporcionais exigiam respectivamente
+  11.409 MiB e 8.687 MiB. Cache e dangling recuperaram 0 B, e o inventário mostrou que as versões
+  restantes estavam protegidas pela retenção fixa de dois rollbacks por repositório. Isso descarta
+  compilação, identidade da imagem e saúde da aplicação como causas desses dois runs.
+- **Alternativas da nova recorrência:** ampliar o disco adicionaria custo e manteria a política sem
+  limite compatível com o host; reduzir o gate ocultaria o pico de extração; retenção adaptativa
+  conserva duas versões normalmente e reduz somente a segunda quando a reserva real não cabe. Foi
+  escolhida a terceira alternativa.
+- **Correção sistêmica:** depois das faixas protegidas já existentes, a sonda pode remover apenas
+  tags SHA antigas dos repositórios conhecidos até o piso de uma versão de rollback. A imagem de
+  qualquer container, o rollback mais recente, tags não imutáveis, outros repositórios, containers
+  e volumes continuam preservados. Se ainda faltar capacidade, a publicação permanece bloqueada.
+- **Prevenção ampliada:** o contrato de disco cobre retenção preferencial, pressão, ordem de remoção,
+  piso inválido e preservação do ativo/rollback mínimo. Evidência e matriz em
+  `docs/homologacao/actions-agent-images-2026-09-07.md`.
+
+## LOOP-ACTIONS-CONTAINERD-CARGA-INCOMPLETA — camada íntegra não materializa no image store
+
+- **Data:** 2026-09-07.
+- **Sintoma confirmado:** Psique `34085490875` aprovou testes, build, checksum e gate de 8.687 MiB,
+  iniciou com 23.819 MiB livres e recebeu `Loaded image`, mas a extração também informou
+  `NotFound: content digest sha256:3f335d... not found`. A inspeção da tag falhou e o Compose não
+  foi iniciado. Têmis `34085490743` carregou suas duas imagens e publicou normalmente no mesmo host.
+- **Confirmação operacional:** a tentativa 2 do mesmo run de Psique, iniciada externamente, reutilizou
+  o build e o pacote anteriores e publicou com sucesso, prova portátil `sha256:253231...`, reserva
+  final de 21.937 MiB e health `UP`. Nada no artefato ou revisão mudou entre a falha e o sucesso.
+- **Causa-raiz confirmada pelo artefato e pelo histórico:** o arquivo preservado no Actions tinha
+  checksum idêntico ao manifesto; `gzip -t` passou; o blob citado existia no tar e seu SHA-256 era
+  exatamente `3f335d...`; a carga do mesmo arquivo na engine Docker local materializou e inspecionou
+  a imagem. O host ainda tinha aproximadamente 24 GiB após a falha, não houve coleta concorrente e
+  a versão anterior de Psique permaneceu saudável. Portanto, não era corrupção do pacote, falta de
+  capacidade nem a corrida de prune já encerrada: o containerd perdeu conteúdo durante uma
+  materialização transitória, classe de falha também registrada no
+  [containerd #10843](https://github.com/containerd/containerd/issues/10843).
+- **Alternativas avaliadas:** reiniciar ou trocar o daemon afetaria todos os agentes; migrar já os
+  oito publicadores para registry ampliaria credenciais e topologia; repetir de forma limitada o
+  mesmo pacote íntegro antes do Compose recupera a operação sem alterar serviço ou contrato. Foi
+  escolhida a terceira alternativa.
+- **Correção sistêmica:** quando somente a inspeção da referência falhar após uma carga concluída,
+  repetir o mesmo pacote por até três cargas totais, aplicando novamente o gate proporcional antes
+  de cada repetição. Divergência de conteúdo, plataforma ou JSON de inspeção bloqueia imediatamente;
+  após a terceira ausência, a publicação também bloqueia e preserva o serviço anterior.
+- **Prevenção:** o double reproduz perda transitória e persistente, comprova duas cargas no primeiro
+  caso, limite de três no segundo, nova medição de capacidade e ausência de Compose até a prova
+  completa. O E2E repete o pacote na engine Docker real e bloqueia acúmulo de listeners durante o
+  encaminhamento dos logs. Evidência e matriz em
+  `docs/homologacao/actions-agent-images-2026-09-07.md`.
 
 ## LOOP-ACTIONS-ARGOS-FALLBACK-SSH-APENAS-POR-AUSÊNCIA — chave presente bloqueia alternativas válidas
 

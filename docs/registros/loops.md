@@ -3899,6 +3899,21 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Causa sistêmica complementar:** oito publicadores construíam a imagem no runner, descartavam esse artefato e recompilavam no host produtivo. A reserva fixa não cobria o pico do build; a janela mínima de uma hora impedia coletar seu cache recém-concluído. A validação real anterior verificava preservação, mas não a sequência build → consumo da reserva → restart.
 - **Correção local:** compartilhar pelo próprio run a imagem testada; verificar checksum, referências SHA e IDs; carregar por stdin com reserva proporcional antes da carga e nova sonda antes do restart; usar Compose sem build/pull nos oito publicadores. Psique, Plutus e controlador recebem referências SHA explícitas. A coleta legada ganha última faixa de cache descartável recente, mantendo containers, volumes, imagens em uso e dois rollbacks protegidos.
 - **Prevenção:** contratos de pacote/erro/ordenação em todos os workflows, simulação de falta de capacidade antes/depois da carga, exportação e carga Docker reais, Compose sem rebuild e OpenSSH isolado. Matriz e resultado em `docs/homologacao/actions-agent-images-2026-09-07.md`. Nenhuma publicação ou limpeza remota foi feita para testar.
+- **Recorrência de identidade em 2026-09-07:** Plutus `34078470275`, Têmis `34078470320`,
+  Psique `34078470341` e o controlador `34078470322` carregaram os pacotes, mas pararam antes do
+  Compose porque o contrato exigia igualdade literal de `.Id` entre stores Docker. O artefato do
+  controlador continha IDs distintos de configuração e manifesto OCI; o Moby documenta a mesma
+  variação após `docker load`, com camadas e configuração preservadas. Têmis `34081005170` e
+  Psique `34081005214`, na revisão posterior `dc2db86cc4f2...`, repetiram exatamente essa falha e
+  descartaram a hipótese de uma nova causa.
+- **Causa sistêmica e correção:** `.Id` foi usado como identidade portátil, embora sua semântica
+  varie entre store clássico e containerd. O manifesto v2 passa a registrar uma prova SHA-256
+  normalizada de plataforma, `RootFS` e configuração funcional. Variação isolada de `.Id` é
+  auditada e aceita; qualquer mudança real de camada/configuração continua bloqueando o restart.
+- **Prevenção ampliada:** doubles cobrem stores com IDs diferentes e corrupção funcional; o teste
+  Docker real altera apenas a representação retornada pelo destino e comprova carga, conteúdo,
+  Compose sem build, rollback e volume. Evidência em
+  `docs/homologacao/actions-agent-images-2026-09-07.md`.
 
 ## LOOP-ACTIONS-ARGOS-FALLBACK-SSH-APENAS-POR-AUSÊNCIA — chave presente bloqueia alternativas válidas
 

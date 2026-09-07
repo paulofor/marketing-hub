@@ -11,6 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const [operation, directory, ...args] = process.argv.slice(2);
 const reserveMb = 4096;
 const immutableReference = /^[a-z0-9][a-z0-9./_-]*:[a-f0-9]{40}$/;
+const sha256Digest = /^sha256:[a-f0-9]{64}$/;
 
 // Executa uma operação limitada e preserva a causa de falhas do transporte ou Docker.
 function command(executable, parameters, input, output) {
@@ -53,17 +54,142 @@ async function checksum(file) {
   return hash.digest("hex");
 }
 
+// Ordena objetos recursivamente para que engines Docker diferentes gerem a mesma prova semântica.
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+      .map(([key, child]) => [key, canonicalJson(child)]));
+  }
+  return value;
+}
+
+// Normaliza uma lista de strings do contrato da imagem e rejeita respostas Docker incompletas.
+function stringList(value, field, nullable = false) {
+  if (value === null || value === undefined) return nullable ? null : [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    throw new Error(`Inspeção Docker inválida em ${field}.`);
+  }
+  return value;
+}
+
+// Normaliza mapas da configuração cujo valor é JSON e elimina variação apenas de ordem de chaves.
+function jsonMap(value, field) {
+  if (value === null || value === undefined) return {};
+  if (typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`Inspeção Docker inválida em ${field}.`);
+  }
+  return canonicalJson(value);
+}
+
+// Produz identidade portátil com camadas e configuração funcional, independente do image store.
+function portableContent(image) {
+  const config = image.Config;
+  if (!config || typeof config !== "object" || Array.isArray(config)
+      || image.RootFS?.Type !== "layers" || !Array.isArray(image.RootFS.Layers)
+      || image.RootFS.Layers.length === 0 || image.RootFS.Layers.some((layer) => !sha256Digest.test(layer))
+      || typeof image.Architecture !== "string" || !image.Architecture
+      || typeof image.Os !== "string" || !image.Os) {
+    throw new Error("Inspeção Docker sem conteúdo portátil válido.");
+  }
+  const text = (value, field) => {
+    if (value === null || value === undefined) return "";
+    if (typeof value !== "string") throw new Error(`Inspeção Docker inválida em ${field}.`);
+    return value;
+  };
+  const flag = (value, field) => {
+    if (value === null || value === undefined) return false;
+    if (typeof value !== "boolean") throw new Error(`Inspeção Docker inválida em ${field}.`);
+    return value;
+  };
+  const optionalNumber = (value, field) => {
+    if (value === null || value === undefined) return null;
+    if (!Number.isSafeInteger(value) || value < 0) throw new Error(`Inspeção Docker inválida em ${field}.`);
+    return value;
+  };
+  let healthcheck = null;
+  if (config.Healthcheck != null) {
+    if (typeof config.Healthcheck !== "object" || Array.isArray(config.Healthcheck)) {
+      throw new Error("Inspeção Docker inválida em Config.Healthcheck.");
+    }
+    healthcheck = {
+      test: stringList(config.Healthcheck.Test, "Config.Healthcheck.Test"),
+      interval: optionalNumber(config.Healthcheck.Interval, "Config.Healthcheck.Interval"),
+      timeout: optionalNumber(config.Healthcheck.Timeout, "Config.Healthcheck.Timeout"),
+      startPeriod: optionalNumber(config.Healthcheck.StartPeriod, "Config.Healthcheck.StartPeriod"),
+      startInterval: optionalNumber(config.Healthcheck.StartInterval, "Config.Healthcheck.StartInterval"),
+      retries: optionalNumber(config.Healthcheck.Retries, "Config.Healthcheck.Retries"),
+    };
+  }
+  return canonicalJson({
+    version: 1,
+    platform: {
+      architecture: image.Architecture,
+      os: image.Os,
+      variant: text(image.Variant, "Variant"),
+    },
+    rootFsLayers: image.RootFS.Layers,
+    config: {
+      hostname: text(config.Hostname, "Config.Hostname"),
+      domainname: text(config.Domainname, "Config.Domainname"),
+      user: text(config.User, "Config.User"),
+      attachStdin: flag(config.AttachStdin, "Config.AttachStdin"),
+      attachStdout: flag(config.AttachStdout, "Config.AttachStdout"),
+      attachStderr: flag(config.AttachStderr, "Config.AttachStderr"),
+      tty: flag(config.Tty, "Config.Tty"),
+      openStdin: flag(config.OpenStdin, "Config.OpenStdin"),
+      stdinOnce: flag(config.StdinOnce, "Config.StdinOnce"),
+      env: stringList(config.Env, "Config.Env"),
+      cmd: stringList(config.Cmd, "Config.Cmd", true),
+      healthcheck,
+      argsEscaped: flag(config.ArgsEscaped, "Config.ArgsEscaped"),
+      volumes: jsonMap(config.Volumes, "Config.Volumes"),
+      workingDir: text(config.WorkingDir, "Config.WorkingDir"),
+      entrypoint: stringList(config.Entrypoint, "Config.Entrypoint", true),
+      networkDisabled: flag(config.NetworkDisabled, "Config.NetworkDisabled"),
+      macAddress: text(config.MacAddress, "Config.MacAddress"),
+      onBuild: stringList(config.OnBuild, "Config.OnBuild"),
+      labels: jsonMap(config.Labels, "Config.Labels"),
+      stopSignal: text(config.StopSignal, "Config.StopSignal"),
+      stopTimeout: optionalNumber(config.StopTimeout, "Config.StopTimeout"),
+      shell: stringList(config.Shell, "Config.Shell"),
+      exposedPorts: jsonMap(config.ExposedPorts, "Config.ExposedPorts"),
+    },
+  });
+}
+
+// Interpreta uma inspeção Docker completa e calcula a prova portátil usada entre runner e VPS.
+function inspectImage(payload) {
+  let response;
+  try {
+    response = JSON.parse(payload);
+  } catch {
+    throw new Error("Resposta de inspeção Docker não é JSON válido.");
+  }
+  if (!Array.isArray(response) || response.length !== 1) {
+    throw new Error("Resposta de inspeção Docker deve conter exatamente uma imagem.");
+  }
+  const [image] = response;
+  if (!image || !sha256Digest.test(image.Id)
+      || !Number.isSafeInteger(image.Size) || image.Size <= 0) {
+    throw new Error("Identidade/tamanho Docker inválido.");
+  }
+  const proof = createHash("sha256").update(JSON.stringify(portableContent(image))).digest("hex");
+  return { id: image.Id, sizeBytes: image.Size, contentSha256: `sha256:${proof}` };
+}
+
 // Valida antes de qualquer SSH; arquivo ausente/corrompido nunca autoriza publicação.
 async function verifyBundle(references) {
   validateReferences(references);
   const manifest = JSON.parse(await readFile(path.join(directory, "manifest.json"), "utf8"));
-  if (manifest.version !== 1 || !Array.isArray(manifest.images)
+  if (manifest.version !== 2 || !Array.isArray(manifest.images)
       || manifest.images.length !== references.length
       || !/^[a-f0-9]{64}$/.test(manifest.archiveSha256)) {
     throw new Error("Manifesto de imagens inválido.");
   }
   for (const [index, image] of manifest.images.entries()) {
-    if (image.reference !== references[index] || !/^sha256:[a-f0-9]{64}$/.test(image.id)
+    if (image.reference !== references[index] || !sha256Digest.test(image.sourceId)
+        || !sha256Digest.test(image.contentSha256)
         || !Number.isSafeInteger(image.sizeBytes) || image.sizeBytes <= 0) {
       throw new Error("Imagem, identidade ou tamanho divergente do contrato de publicação.");
     }
@@ -81,12 +207,9 @@ async function pack(references) {
   await rm(path.join(directory, "manifest.json"), { force: true });
   const images = [];
   for (const reference of references) {
-    const result = await command("docker", ["image", "inspect", "--format", "{{.Id}} {{.Size}}", reference]);
-    const [id, size] = result.split(" ");
-    if (!/^sha256:[a-f0-9]{64}$/.test(id) || !/^[1-9][0-9]*$/.test(size) || !Number.isSafeInteger(Number(size))) {
-      throw new Error(`Identidade/tamanho Docker inválido: ${reference}`);
-    }
-    images.push({ reference, id, sizeBytes: Number(size) });
+    const inspection = inspectImage(await command("docker", ["image", "inspect", reference]));
+    images.push({ reference, sourceId: inspection.id, sizeBytes: inspection.sizeBytes,
+      contentSha256: inspection.contentSha256 });
   }
   const archive = path.join(directory, "images.tar.gz");
   const gzip = createGzip({ level: 1 });
@@ -96,7 +219,7 @@ async function pack(references) {
     command("docker", ["image", "save", ...references], undefined, gzip), archiveDone,
   ]);
   for (const result of results) if (result.status === "rejected") throw result.reason;
-  const manifest = { version: 1, images, archiveSha256: await checksum(archive) };
+  const manifest = { version: 2, images, archiveSha256: await checksum(archive) };
   await writeFile(path.join(directory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Pacote validado: imagens=${images.length} sha256=${manifest.archiveSha256}`);
 }
@@ -125,13 +248,19 @@ async function send(target, references) {
   await gate(minimum);
   await ssh("timeout --kill-after=5s 600s docker image load", createReadStream(path.join(directory, "images.tar.gz")));
   for (const image of manifest.images) {
-    const actual = await command("ssh", ["-F", config, target,
-      `docker image inspect --format '{{.Id}}' '${image.reference}'`]);
-    if (actual !== image.id) throw new Error(`Identidade carregada divergente: ${image.reference}`);
-    console.log(`Imagem confirmada: ${image.reference} id=${actual}`);
+    const actual = inspectImage(await command("ssh", ["-F", config, target,
+      `docker image inspect '${image.reference}'`]));
+    if (actual.contentSha256 !== image.contentSha256) {
+      throw new Error(`Conteúdo carregado divergente: ${image.reference} sourceId=${image.sourceId} loadedId=${actual.id}`);
+    }
+    if (actual.id === image.sourceId) {
+      console.log(`Imagem confirmada: ${image.reference} id=${actual.id} conteúdo=${actual.contentSha256}`);
+    } else {
+      console.log(`Imagem confirmada: ${image.reference} conteúdo=${actual.contentSha256}; ID do store variou de ${image.sourceId} para ${actual.id}`);
+    }
   }
   await gate(reserveMb);
-  console.log("Imagens prontas; capacidade e identidade aprovadas para Compose sem build.");
+  console.log("Imagens prontas; capacidade e conteúdo aprovados para Compose sem build.");
 }
 
 try {

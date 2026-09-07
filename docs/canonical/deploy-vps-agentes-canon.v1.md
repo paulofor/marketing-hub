@@ -50,9 +50,12 @@ local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
   sempre por `docker image prune` sem `--all`.
 - Como última faixa, considerar somente tags imutáveis de 40 caracteres hexadecimais dos
   repositórios explicitamente conhecidos dos agentes. Preservar toda imagem referenciada por
-  container ativo ou parado e as duas versões sem container mais recentes de cada repositório como
-  rollback. Remover apenas a referência exata, sem `--force`, da mais antiga para a mais recente e
-  interromper assim que a reserva for recomposta. Tags `latest`, `local`, `buildcache`, imagens de
+  container ativo ou parado e, em capacidade normal, as duas versões sem container mais recentes de
+  cada repositório como rollback. Se essas faixas terminarem abaixo da reserva exigida, uma faixa de
+  pressão pode reduzir a retenção para uma versão de rollback por repositório, inclusive quando a
+  segunda versão ainda tiver menos de uma hora. Remover apenas a referência exata, sem `--force`, da
+  mais antiga para a mais recente e interromper assim que a reserva for recomposta. A imagem ativa e
+  uma versão de retorno permanecem obrigatórias. Tags `latest`, `local`, `buildcache`, imagens de
   outros repositórios e identidades inválidas nunca são elegíveis.
 - Não usar `--all`, prune de sistema/volumes, remoção de containers, apagamento direto de diretórios
   Docker ou alteração do limite do health para obter um resultado verde.
@@ -60,8 +63,9 @@ local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
   exclusão mútua ou coleta impede o deploy antes da troca do serviço.
 - Registrar capacidade antes/depois e motivo de bloqueio. O health HTTP 503 da Psique
   deve preservar seu corpo no diagnóstico; timeout de conexão/leitura permanece limitado.
-- A coleta pode exigir recompilar camadas em um build futuro; imagens ativas, duas versões de
-  rollback por repositório, containers e dados persistidos ficam preservados.
+- A coleta pode exigir recompilar camadas em um build futuro; imagens ativas, ao menos uma versão de
+  rollback por repositório, containers e dados persistidos ficam preservados. Duas versões continuam
+  sendo a retenção preferencial quando a capacidade comportar a reserva da próxima publicação.
 
 Essa proteção pertence ao fluxo de publicação do VPS. A limpeza de imagens da sandbox
 continua separada, conforme `homologacao-local-docker-canon.v1.md`.
@@ -96,19 +100,31 @@ containerd podem representar a mesma imagem por hashes distintos. Divergência s
 plataforma bloqueia. Compose usa obrigatoriamente `--no-build --pull never`; a imagem executada
 mantém o conteúdo validado no runner. Sondas finais, fila e checks funcionais permanecem obrigatórios.
 
+Se `docker image load` terminar, mas alguma referência exata continuar indisponível para inspeção
+por inconsistência transitória do image store, repetir no máximo duas vezes a carga do mesmo pacote
+já aprovado, totalizando três tentativas. Revalidar antes de cada repetição toda a reserva exigida
+para a extração. Nenhum Compose pode iniciar enquanto todas as referências não estiverem
+materializadas e com a prova portátil aprovada. Resposta de inspeção inválida ou divergência de
+camada, configuração ou plataforma é falha determinística e não autoriza repetição. Depois de três
+cargas sem materialização, bloquear a publicação e preservar o serviço anterior.
+
 Psique, Plutus e o controlador administrativo também usam referências explícitas por SHA no Compose
 produtivo. Esses repositórios participam da allowlist de retenção; as tags locais antigas e imagens
 de outros serviços não passam a ser elegíveis por inferência. Duas imagens de rollback distintas
-são preservadas por repositório, incluindo todas as suas tags; tags adicionais de uma imagem
-antiga fora da retenção não podem transformá-la acidentalmente em rollback protegido.
+são preferidas por repositório e uma permanece obrigatória sob pressão de capacidade, incluindo
+todas as tags da identidade retida; tags adicionais de uma imagem antiga fora da retenção não podem
+transformá-la acidentalmente em rollback protegido.
 
 Para a transição do legado, quando as faixas de cache de 24 h e 1 h não bastarem, uma terceira faixa
 permite `docker builder prune --force --filter until=0s --keep-storage 1GB`. Ela alcança somente
 cache descartável dos builds recém-concluídos, sob o lock e timeout existentes. Não usa `--all`,
 não apaga imagens publicadas, containers ou volumes e não reduz a reserva. Falha na coleta bloqueia
 o fluxo. Sem novos builds no VPS, essa faixa deixa de alimentar um ciclo de recompilações locais.
-Se a coleta protegida não recompuser a capacidade, registrar o bloqueio; ampliação de disco ou
-remoção de recursos fora da política depende da decisão operacional correspondente.
+Se cache, imagens dangling e a retenção preferencial não recompuserem a capacidade, reduzir somente
+o segundo rollback dos repositórios conhecidos até recuperar a reserva, mantendo ativo mais um
+retorno. `AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS` define esse piso e nunca pode superar
+`AGENT_VPS_DISK_ROLLBACK_VERSIONS`. Se nem esse piso recompuser a capacidade, registrar o bloqueio;
+ampliação de disco ou remoção de recursos fora da política depende da decisão operacional correspondente.
 
 Contratos, matriz e limites: `docs/homologacao/actions-agent-images-2026-09-07.md`.
 

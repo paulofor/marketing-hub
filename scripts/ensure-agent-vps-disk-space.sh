@@ -7,6 +7,7 @@ disk_min_free_mb="${AGENT_VPS_DISK_MIN_FREE_MB:-4096}"
 disk_timeout_seconds="${AGENT_VPS_DISK_TIMEOUT_SECONDS:-120}"
 disk_lock_file="${AGENT_VPS_DISK_LOCK_FILE:-/var/lock/marketinghub-agent-vps-disk.lock}"
 disk_rollback_versions="${AGENT_VPS_DISK_ROLLBACK_VERSIONS:-2}"
+disk_min_rollback_versions="${AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS:-1}"
 
 if [[ "$#" -gt 1 || ! "$disk_mode" =~ ^(check|reclaim)$ ]]; then
   echo "Uso: $0 [check|reclaim]" >&2
@@ -18,8 +19,10 @@ for disk_number in "$disk_min_free_mb" "$disk_timeout_seconds"; do
     exit 2
   fi
 done
-if ! [[ "$disk_rollback_versions" =~ ^[1-9][0-9]?$ ]]; then
-  echo "A retenção de rollback deve ser um inteiro positivo de até dois dígitos." >&2
+if ! [[ "$disk_rollback_versions" =~ ^[1-9][0-9]?$ ]] \
+  || ! [[ "$disk_min_rollback_versions" =~ ^[1-9][0-9]?$ ]] \
+  || ((10#$disk_min_rollback_versions > 10#$disk_rollback_versions)); then
+  echo "As retenções preferencial e mínima de rollback devem ser inteiros positivos, e a mínima não pode superar a preferencial." >&2
   exit 2
 fi
 
@@ -86,7 +89,7 @@ is_managed_agent_repository() {
 
 # Remove referências imutáveis antigas apenas de agentes conhecidos, preservando containers e rollbacks.
 reclaim_managed_agent_history() {
-  local history_label="$1" history_seconds="$2"
+  local history_label="$1" history_seconds="$2" rollback_versions="$3"
   local image_listing container_listing container_id active_image_id image_row
   local image_repository image_tag image_id image_reference image_created image_created_epoch
   local previous_repository="" retained_versions=0 current_epoch cutoff_epoch candidate
@@ -172,11 +175,11 @@ reclaim_managed_agent_history() {
       printf 'Disco do VPS: preservando tag adicional do rollback %s.\n' "$image_reference"
       continue
     fi
-    if ((retained_versions < disk_rollback_versions)); then
+    if ((retained_versions < rollback_versions)); then
       retained_image_ids["${image_repository}|${image_id}"]=true
       retained_versions=$((retained_versions + 1))
       printf 'Disco do VPS: preservando rollback %s (%s/%s).\n' \
-        "$image_reference" "$retained_versions" "$disk_rollback_versions"
+        "$image_reference" "$retained_versions" "$rollback_versions"
       continue
     fi
     if ((image_created_epoch <= cutoff_epoch)); then
@@ -254,16 +257,28 @@ for disk_unused_since in 24h 1h; do
   fi
 done
 
-# Última faixa: somente tags SHA de repositórios conhecidos, nunca imagens ativas nem dois rollbacks.
+# Últimas faixas: somente tags SHA de repositórios conhecidos e nunca imagens ativas.
+# A capacidade normal preserva duas versões; sob pressão comprovada, mantém ao menos uma.
 for disk_history_policy in 24h:86400 1h:3600; do
   disk_history_label="${disk_history_policy%:*}"
   disk_history_seconds="${disk_history_policy#*:}"
-  if ! reclaim_managed_agent_history "$disk_history_label" "$disk_history_seconds"; then
+  if ! reclaim_managed_agent_history "$disk_history_label" "$disk_history_seconds" \
+    "$disk_rollback_versions"; then
     exit 1
   fi
   if [[ "$disk_ready" = true ]]; then
     exit 0
   fi
 done
+if ((10#$disk_min_rollback_versions < 10#$disk_rollback_versions)); then
+  printf 'Disco do VPS: capacidade insuficiente com %s rollbacks; aplicando piso seguro de %s sob pressão.\n' \
+    "$disk_rollback_versions" "$disk_min_rollback_versions"
+  if ! reclaim_managed_agent_history "0s sob pressão" 0 "$disk_min_rollback_versions"; then
+    exit 1
+  fi
+  if [[ "$disk_ready" = true ]]; then
+    exit 0
+  fi
+fi
 echo "Disco do VPS: BLOCKED após coleta controlada; preservar serviços e revisar capacidade do host." >&2
 exit 1

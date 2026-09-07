@@ -52,6 +52,11 @@ if [[ "$command_text" =~ ^AGENT_VPS_DISK_MIN_FREE_MB=[0-9]+\ bash\ -s$ ]]; then
   cat >/dev/null
   echo 'Capacidade sintética aprovada na engine de teste.'
 elif [[ "$command_text" == docker\ image\ inspect* ]]; then
+  inspect_retry_marker="${IMAGE_E2E_CALLS}.inspect-retry"
+  if [[ ! -e "$inspect_retry_marker" ]]; then
+    printf 'primeira materialização indisponível\n' >"$inspect_retry_marker"
+    exit 1
+  fi
   bash -c "$command_text" | node -e '
     let payload = "";
     process.stdin.on("data", chunk => { payload += chunk; });
@@ -68,9 +73,14 @@ SSH_DOUBLE
 chmod 700 "$test_dir/bin/ssh"
 send_output="$(PATH="$test_dir/bin:$PATH" SSH_DEPLOY_READY=true SSH_COMMON_ARGS="-F $test_dir/ssh-config" \
   IMAGE_E2E_CALLS="$test_dir/calls" \
-  node "$test_root/scripts/agent-image-bundle.mjs" send "$test_dir/bundle" root@fixture.local "$test_new")"
+  node "$test_root/scripts/agent-image-bundle.mjs" send "$test_dir/bundle" root@fixture.local "$test_new" 2>&1)"
 printf '%s\n' "$send_output"
+grep -Fq 'repetindo o mesmo pacote íntegro (2/3)' <<<"$send_output"
 grep -Fq 'ID do store variou' <<<"$send_output"
+if grep -Fq 'MaxListenersExceededWarning' <<<"$send_output"; then
+  echo 'O transporte acumulou listeners no stdout durante a retentativa.' >&2
+  exit 1
+fi
 [[ "$(docker image inspect --format '{{.Id}}' "$test_new")" = "$test_new_id" ]]
 [[ "$(docker image inspect --format '{{.Id}}' "$test_old")" = "$test_old_id" ]]
 export AGENT_VPS_DISK_TEST_IMAGE="$test_new"
@@ -83,9 +93,10 @@ done
 "${compose[@]}" exec -T proof cat /data/proof.txt | grep -Fx 'nova versão sintética'
 [[ "$("${compose[@]}" ps --all --quiet rollback)" = "$test_rollback" ]]
 [[ "$(docker image inspect --format '{{.Id}}' "$test_old")" = "$test_old_id" ]]
-[[ "$(grep -c 'AGENT_VPS_DISK_MIN_FREE_MB=' "$test_dir/calls")" = 2 ]]
+[[ "$(grep -c 'docker image load' "$test_dir/calls")" = 2 ]]
+[[ "$(grep -c 'AGENT_VPS_DISK_MIN_FREE_MB=' "$test_dir/calls")" = 3 ]]
 if grep -Eq 'docker (build|compose build)|--build' "$test_dir/calls"; then
   echo 'Build remoto inesperado.' >&2
   exit 1
 fi
-echo 'Docker real: pacote carregado, identidade íntegra, serviço atualizado sem build e rollback preservado.'
+echo 'Docker real: pacote recarregado após falha transitória, identidade íntegra, serviço atualizado sem build e rollback preservado.'

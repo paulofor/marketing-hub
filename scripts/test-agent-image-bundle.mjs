@@ -25,6 +25,12 @@ const zlib = require('node:zlib');
 const args = process.argv.slice(2);
 const mode = process.env.IMAGE_TEST_MODE;
 const dir = process.env.IMAGE_TEST_DIR;
+const counter = (name) => {
+  const file = path.join(dir, name);
+  const value = fs.existsSync(file) ? Number(fs.readFileSync(file)) + 1 : 1;
+  fs.writeFileSync(file, String(value));
+  return value;
+};
 fs.appendFileSync(path.join(dir, 'calls'), JSON.stringify({tool: path.basename(process.argv[1]), args}) + '\\n');
 if (path.basename(process.argv[1]) === 'docker') {
   if (args[1] === 'inspect') {
@@ -51,11 +57,14 @@ if (path.basename(process.argv[1]) === 'docker') {
     console.log('gate ' + calls);
     if ((mode === 'disk-before' && calls === 1) || (mode === 'disk-after' && calls === 2)) process.exitCode = 1;
   } else if (command.includes('docker image load')) {
+    counter('loads');
     if (zlib.gunzipSync(fs.readFileSync(0)).toString() !== 'synthetic-image-archive') process.exit(93);
     console.log('Loaded image');
     if (mode === 'load-failure') process.exitCode = 1;
   } else if (command.includes('docker image inspect')) {
+    const inspections = counter('remote-inspections');
     if (mode === 'inspect-failure') process.exit(1);
+    if (mode === 'inspect-transient' && inspections === 1) process.exit(1);
     if (mode === 'invalid-inspect-json') {
       console.log('not-json');
       process.exit(0);
@@ -149,7 +158,7 @@ for (const [label, mutate, refs] of [
 
 for (const [mode, expectedCalls] of [["ssh-failure", 1], ["disk-before", 1], ["load-failure", 2],
   ["wrong-layers", 3], ["wrong-config", 3], ["wrong-platform", 3],
-  ["inspect-failure", 3], ["invalid-inspect-json", 3], ["disk-after", 4]]) {
+  ["inspect-failure", 9], ["invalid-inspect-json", 3], ["disk-after", 4]]) {
   test(`interrompe na fase que falhou: ${mode}`, (t) => {
     const f = fixture(t);
     success(f.run("pack"));
@@ -167,6 +176,16 @@ test("aceita ID diferente entre stores quando o conteúdo portátil coincide", (
   success(result);
   assert.match(result.stdout, /ID do store variou/);
   assert.equal(f.calls().filter((call) => call.tool === "ssh").length, 4);
+});
+
+test("repete a carga quando o image store perde conteúdo antes da inspeção", (t) => {
+  const f = fixture(t);
+  success(f.run("pack"));
+  const result = f.run("send", ["root@fixture.local", image], { IMAGE_TEST_MODE: "inspect-transient" });
+  success(result);
+  assert.match(result.stderr, /repetindo o mesmo pacote íntegro \(2\/3\)/);
+  assert.equal(Number(readFileSync(path.join(f.directory, "loads"))), 2);
+  assert.equal(f.calls().filter((call) => call.tool === "ssh").length, 7);
 });
 
 for (const env of [{ SSH_DEPLOY_READY: "false" }, { SSH_COMMON_ARGS: "" },

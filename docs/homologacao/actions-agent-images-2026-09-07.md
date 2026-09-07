@@ -93,6 +93,140 @@ do Compose. O projeto Compose exclusivo
 `aihub-321997e5-7478-438f-8ba2-119e5767a1e2-72656d2722` foi encerrado com volumes e órfãos removidos
 ao final das duas rodadas.
 
+## Recorrência: retenção fixa maior que a capacidade de carga
+
+Na revisão `20c1037ce8e98160a4527d13b311ce8d60a1b37d`, Têmis
+[`34082959851`](https://github.com/paulofor/marketing-hub/actions/runs/34082959851) e Psique
+[`34082959919`](https://github.com/paulofor/marketing-hub/actions/runs/34082959919) aprovaram testes,
+builds e integridade dos pacotes. Ambos falharam somente em `Load tested images without rebuilding`,
+antes de carregar ou reiniciar qualquer serviço. O host reportou 7.050 MiB livres, contra 11.409 MiB
+exigidos pelas duas imagens de Têmis/Íris e 8.687 MiB pela imagem de Psique. As três faixas de cache e
+as duas faixas de imagens dangling recuperaram 0 B; o inventário registrou dois rollbacks protegidos
+para os repositórios mais pesados e nenhuma versão além da retenção.
+
+Uma consulta posterior somente leitura por `vps_host_inventory` encontrou 28 GiB livres e todos os
+dez containers ativos, nove deles saudáveis quando possuíam healthcheck. Essa recuperação externa
+retira o bloqueio imediato, mas não corrige a incompatibilidade entre retenção rígida e capacidade.
+
+| Alternativa | Benefício | Risco/custo | Decisão |
+|---|---|---|---|
+| Ampliar o disco | Maior folga imediata | Custo e ação externa; crescimento volta sem política compatível | Não escolhida |
+| Reduzir o gate proporcional | Libera a carga com menos espaço | Pode esgotar disco durante extração e derrubar serviços | Rejeitada |
+| Retenção adaptativa | Mantém dois rollbacks normalmente e libera só o segundo sob pressão | Menos uma versão histórica quando o host está cheio | Escolhida |
+
+A sonda conserva a política preferencial de dois rollbacks. Somente depois de cache, dangling e
+histórico fora dessa retenção não recomporem o gate, aplica o piso de um rollback por repositório e
+considera a segunda versão mesmo com menos de uma hora. A remoção continua limitada a referências
+SHA conhecidas, sem `--force`; imagens de containers ativos/parados, o retorno mais recente, tags
+locais e repositórios externos permanecem intocáveis.
+
+Matriz incremental definida antes da validação:
+
+| Dimensão | Cenário e critério |
+|---|---|
+| Caminho feliz | Capacidade suficiente não executa coleta; coleta normal para assim que atingir a reserva |
+| Pressão | Retenção de dois não basta; remover a versão mais antiga e depois somente o segundo rollback até atingir a reserva |
+| Preservação | Nunca remover imagem ativa, rollback mais recente, aliases dessa identidade, tags mutáveis ou repositório externo |
+| Validação | Rejeitar piso zero, não numérico ou superior à retenção preferencial |
+| Falhas | Falha de inventário, medição ou remoção continua bloqueando sem alterar serviços |
+| Integrações | Nove publicadores mantêm fila, gates antes/depois, imagem do mesmo run e Compose sem rebuild |
+| Observabilidade | Registrar retenção preferencial, ativação do piso, capacidade e referência removida |
+| Dados/métricas | Fixtures locais; nenhum evento comercial, venda, gasto, mensagem ou publicação externa |
+| Navegadores/dispositivos | Não aplicável: não há mudança de interface, jornada ou mídia |
+
+O teste de contrato passou a cobrir 29 cenários, incluindo o novo estado em que remover a terceira
+versão ainda não basta e a segunda precisa ser liberada.
+
+Duas rodadas locais completas e consecutivas foram executadas depois da correção, sem defeito ou
+ajuste entre elas:
+
+| Rodada | Etapas aprovadas | Término UTC | Falhas |
+|---|---|---|---|
+| 1 | 28/28 | 05:13 | Nenhuma |
+| 2 | 28/28 | 05:15 | Nenhuma |
+
+Cada rodada executou todos os comandos do job `GitHub Actions Contracts`: sintaxe, Actionlint com
+ShellCheck, 29 cenários de retenção/capacidade, contratos dos nove publicadores, 37 testes do pacote
+de imagem, filas e retries, SSH real em servidor local isolado, Docker real, carga de imagem e
+Compose sem rebuild. O projeto Compose exclusivo
+`aihub-d5e13ce1-4bd3-42f2-8529-6cd8280b65d4-0842d05781` foi encerrado com volumes e órfãos removidos
+nas duas rodadas. Nenhum workflow, deploy ou manutenção remota foi disparado como teste.
+
+Essas duas rodadas validaram a retenção adaptativa. A execução externa posterior de Psique descrita
+a seguir revelou outro defeito na materialização containerd; por isso, elas não foram contabilizadas
+como as duas rodadas finais depois do último ajuste.
+
+## Recorrência: carga íntegra com materialização incompleta no containerd
+
+Na revisão `30f3eac76...`, Psique
+[`34085490875`](https://github.com/paulofor/marketing-hub/actions/runs/34085490875) aprovou testes,
+build, empacotamento, checksum e o gate de 8.687 MiB. A carga começou com 23.819 MiB livres e
+imprimiu a referência esperada, mas o daemon também retornou `NotFound: content digest
+sha256:3f335d... not found`; a tag não ficou disponível para inspeção. O script bloqueou antes do
+Compose, a reserva permaneceu próxima de 24 GiB e a versão anterior continuou saudável. No mesmo
+host e revisão, Têmis
+[`34085490743`](https://github.com/paulofor/marketing-hub/actions/runs/34085490743) carregou as duas
+imagens, validou suas provas portáteis e publicou normalmente.
+
+Uma segunda tentativa externa do próprio run de Psique, não disparada nesta investigação, reutilizou
+o job de build já aprovado e terminou com sucesso às 05:22 UTC. A carga iniciou com 26.117 MiB,
+materializou a mesma prova `sha256:253231...`, preservou 21.937 MiB e confirmou health `UP`. A
+recuperação sem mudar pacote, revisão ou conteúdo reforça o caráter transitório, mas não substitui a
+publicação futura da proteção local para que o próximo run faça essa repetição automaticamente.
+
+O artefato de 972.359.211 bytes preservado pelo Actions foi baixado apenas para análise. Seu
+SHA-256 coincidiu com o manifesto, `gzip -t` aprovou, o blob citado estava presente no tar e o hash
+desse blob era exatamente o digest reclamado. A engine Docker local carregou o mesmo arquivo e
+inspecionou a imagem, incluindo a camada `3f335d...`. Isso confirma uma perda transitória durante a
+materialização do image store no host e descarta pacote truncado, falta de disco e divergência de
+conteúdo. A classe de sintoma também está registrada no
+[containerd #10843](https://github.com/containerd/containerd/issues/10843).
+
+| Alternativa | Benefício | Risco/custo | Decisão |
+|---|---|---|---|
+| Reiniciar ou trocar o daemon | Pode limpar o estado imediatamente | Afeta todos os agentes e exige ação operacional ampla | Rejeitada |
+| Migrar agora para registry | Padroniza aquisição e identidade OCI | Amplia credenciais, armazenamento e topologia dos oito publicadores | Não escolhida agora |
+| Repetir a carga já aprovada | Recupera o erro transitório sem tocar no serviço ativo | Precisa limite, novo gate e bloqueio de defeitos determinísticos | Escolhida |
+
+Matriz incremental definida antes da validação:
+
+| Dimensão | Cenário e critério |
+|---|---|
+| Caminho feliz | Primeira carga materializa todas as imagens e não executa repetição |
+| Recuperação | Primeira inspeção não encontra a tag; novo gate e segunda carga do mesmo pacote concluem |
+| Limite | Ausência persistente executa no máximo três cargas e bloqueia sem Compose |
+| Integridade | JSON inválido ou mudança de camada, configuração ou plataforma bloqueia na primeira carga |
+| Capacidade | Revalidar a reserva proporcional antes de cada carga adicional |
+| Preservação | Nenhum serviço é recriado antes de todas as imagens passarem pela prova portátil |
+| Observabilidade | Registrar referência, tentativa atual e motivo do bloqueio sem dados sensíveis |
+| Dados/métricas | Usar fixtures e engine local; nenhum deploy, evento comercial, venda ou gasto |
+
+O teste unitário encontrou e corrigiu antes da homologação uma primeira versão que repetia também
+JSON inválido. O tratamento passou a distinguir falha do comando de inspeção, recuperável, de
+resposta ou conteúdo inválido, que permanecem determinísticos e bloqueiam imediatamente.
+
+O primeiro E2E da retentativa encontrou ainda `MaxListenersExceededWarning`: cada comando encadeava
+o `stdout` global em uma nova pipeline e as cargas adicionais ultrapassavam o limite de listeners.
+Aumentar o limite esconderia o acúmulo; guardar toda a saída elevaria uso de memória; encaminhar os
+chunks com backpressure preserva logs sem manter listeners entre comandos. A terceira opção foi
+implementada e o E2E passou a bloquear explicitamente qualquer retorno desse alerta.
+
+Homologação final executada depois desse último ajuste, sem mudança entre as rodadas:
+
+| Rodada | Etapas aprovadas | Duração | Falhas |
+|---|---:|---:|---|
+| 1 | 28/28 | 106 s | Nenhuma |
+| 2 | 28/28 | 98 s | Nenhuma |
+
+Cada rodada executou todos os comandos do `GitHub Actions Contracts`, 38 testes de pacote/workflows,
+29 cenários de capacidade e retenção, OpenSSH/SCP/rsync reais isolados, duas cargas consecutivas do
+mesmo pacote na engine Docker real, preservação de container/volume/rollback e Compose sem rebuild.
+Também aprovou 83 testes Java e 2 testes mobile de Psique, 28 testes Java de Plutus, 89 testes Java e
+o handshake MCP de Têmis, três configurações Compose e o build real do controlador. O projeto
+Compose exclusivo `aihub-d5e13ce1-4bd3-42f2-8529-6cd8280b65d4-0842d05781` foi encerrado com volumes
+e órfãos removidos em ambas as rodadas. Nenhum workflow, deploy ou manutenção remota foi usado como
+teste.
+
 ## Validação e limites
 
 - O novo cenário de cache recém-concluído foi executado também contra o script da revisão original: falhou com `recover-fresh: status=1 esperado=0`. O código anterior não alcançava esse cache, mesmo após todas as faixas de recuperação.
@@ -100,7 +234,8 @@ ao final das duas rodadas.
 - A engine real executa exportação, compactação, remoção exclusiva da tag sintética recém-criada, carga, conferência do ID e atualização Compose, preservando container parado, imagem de retorno e volume. Nesse teste, somente o transporte e a medição de capacidade usam doubles; a engine remota da sandbox não tem seu socket exposto. O teste OpenSSH independente executa cliente/servidor reais, quatro identidades, SCP, rsync, recusa total e host divergente em rede local isolada.
 - Casos de pouco disco, resposta inválida e falhas de transporte/carga/identidade são reproduzidos com dependências sintéticas. A API de artefatos do GitHub não foi usada como mecanismo de teste; YAML, contrato do mesmo run e integridade local foram validados. Nenhum Compose produtivo foi iniciado na sandbox.
 
-**Duas rodadas locais completas consecutivas aprovadas depois do último ajuste**, em 07/09/2026.
+**Registro histórico da homologação inicial do transporte**, em 07/09/2026. Essas rodadas foram
+superadas pelas recorrências e pela homologação final de 28/28 registrada acima.
 
 | Rodada | Etapas aprovadas | Duração | Término | Falhas |
 |---|---|---|---|---|

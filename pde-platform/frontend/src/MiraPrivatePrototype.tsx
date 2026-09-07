@@ -256,25 +256,18 @@ export function MiraPrivatePrototype() {
     const preferred = session.events.includes("PREFERRED_OVER_FREE");
     const checkout = session.events.includes("CHECKOUT_STARTED");
     const finished = session.readingFinished;
-    if (agentValidation && finished)
-      return (
-        <main className="mira-private-shell">
-          <h1>Homologação interna concluída</h1>
-          <p>
-            A evidência sintética foi preservada sem compra, publicação, campanha
-            ou gasto.
-          </p>
-        </main>
-      );
     return (
       <main className="mira-private-shell">
         {agentValidation && (
-          <div className="mira-private-alert" data-testid="agent-validation-mode">
+          <div
+            className="mira-private-alert"
+            data-testid="agent-validation-mode"
+          >
             Homologação interna automatizada · cenário {session.scenarioCode}
           </div>
         )}
         <p className="mira-private-kicker">Sua rotina de cuidados</p>
-        <h1>Uma ordem simples para consultar</h1>
+        <h1 id="mira-routine-title">Uma ordem simples para consultar</h1>
         <p>
           Esta organização usa somente o texto de rótulo informado e não
           substitui avaliação profissional.
@@ -348,11 +341,32 @@ export function MiraPrivatePrototype() {
             Não avançaria por esse valor
           </button>
         )}
-        {finished && (
+        {finished && !agentValidation && (
           <div className="mira-private-success">
             Leitura encerrada. Sua resposta foi preservada. Nenhuma compra foi
             realizada. Obrigada por compartilhar sua opinião. Avise a pessoa que
             acompanha sua experiência que você terminou.
+          </div>
+        )}
+        {finished && agentValidation && (
+          <div
+            className="mira-private-success"
+            data-testid="agent-validation-finished"
+          >
+            <strong>
+              Cenário interno concluído com a rotina ainda disponível.
+            </strong>
+            <p>
+              Consulte novamente os passos e os limites de uso acima. A
+              evidência sintética foi preservada sem compra, publicação,
+              campanha ou gasto.
+            </p>
+            <a
+              className="mira-private-return-action"
+              href="#mira-routine-title"
+            >
+              Consultar a rotina novamente
+            </a>
           </div>
         )}
         {!agentValidation && checkout && (

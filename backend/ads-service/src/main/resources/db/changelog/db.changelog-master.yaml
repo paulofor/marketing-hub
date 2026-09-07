@@ -2042,3 +2042,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-07-customer-agent-max-reasoning-v6.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-07-pde-functional-rework-v1.yaml
+      relativeToChangelogFile: true

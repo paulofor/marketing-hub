@@ -724,6 +724,124 @@ describe("ProductProcessActivityExecutionsPage", () => {
     );
   });
 
+  it("routes a Psique rejection to the explicit prototype correction", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...history,
+        productId: 10,
+        productName: "Mira",
+        productInternalName: "Mira",
+        selectedProcessDefinitionId: 80,
+        processCode: "pde-construction-approval",
+        processName: "Protótipo, validação multiagente e aprovação do PDE",
+        selectedProcessVersionNumber: 8,
+        selectedActivityCount: 2,
+        completedActivityCount: 0,
+        remainingActivityCount: 2,
+        blockedActivityCount: 1,
+        operationalState: "BLOCKED",
+        currentActivityId: "prototypeCorrection",
+        currentActivityName: "Corrigir o protótipo a partir do parecer",
+        currentActivityState: "NOT_STARTED",
+        currentActivityStateReason:
+          "A tarefa #350 rejeitou a continuidade da experiência.",
+        activities: [
+          {
+            ...history.activities[0],
+            activityDefinitionId: 801,
+            activityId: "prototypeCorrection",
+            activityName: "Corrigir o protótipo a partir do parecer",
+            activityObjective:
+              "Corrigir a causa-raiz. Diagnóstico vigente: a tarefa #350 ocultou a rotina pronta.",
+            activityOwnerName: "Dédalo",
+            sequenceNumber: 1,
+            selectedVersionActivity: true,
+            operationalState: "NOT_STARTED",
+            objectiveAchieved: false,
+            stateEvidence: "NOT_RECORDED",
+            stateReason: "A rejeição funcional exige correção.",
+            taskCount: 0,
+            tasks: [],
+            executionRequestAvailable: true,
+            executionRequestReason:
+              "Corrija a causa e retorne à homologação técnica.",
+            executionControl: {
+              executorType: "AGENT",
+              interactionType: "COMMAND",
+              actionLabel: "Criar tarefa de correção",
+              description:
+                "Dédalo receberá causa e ação; a nova versão retornará ao harness.",
+              actionAvailable: true,
+              availabilityReason:
+                "A tarefa #350 possui rejeição funcional corrigível.",
+              confirmationRequired: false,
+              requirements: [],
+            },
+          },
+          {
+            ...history.activities[1],
+            activityDefinitionId: 802,
+            activityId: "psiqueAdherent",
+            activityName: "Psique · cenário aderente",
+            activityOwnerName: "Psique",
+            sequenceNumber: 2,
+            selectedVersionActivity: true,
+            operationalState: "BLOCKED",
+            objectiveAchieved: false,
+            stateEvidence: "DIRECT",
+            stateReason: "A rotina pronta desapareceu após a conclusão.",
+            taskCount: 1,
+            tasks: [psiqueTask],
+            executionRequestAvailable: false,
+            executionRequestReason:
+              "Conclua a correção antes de repetir Psique.",
+            executionControl: {
+              executorType: "AGENT",
+              interactionType: "COMMAND",
+              actionLabel: "Reiniciar tarefa",
+              description: "Executa novamente o parecer.",
+              actionAvailable: false,
+              availabilityReason: "Conclua a correção antes de repetir Psique.",
+              confirmationRequired: false,
+              requirements: [],
+            },
+          },
+        ],
+      },
+    });
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        processDefinitionId: 80,
+        productId: 10,
+        activityId: "prototypeCorrection",
+        sourceReference: "product:10@agent-validation-v1",
+        tasks: [{ id: 351 }],
+      },
+    });
+
+    renderPage("/products/10/value-chain-history/processes/80/activities");
+
+    expect(
+      await screen.findAllByText("Corrigir o protótipo a partir do parecer"),
+    ).not.toHaveLength(0);
+    expect(screen.getByText(/Diagnóstico vigente.*tarefa #350/i)).toBeVisible();
+    expect(
+      screen.getByText("Conclua a correção antes de repetir Psique."),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Reiniciar tarefa" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Criar tarefa de correção" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/business-processes/80/products/10/activities/prototypeCorrection/execution-requests",
+      ),
+    );
+  });
+
   it("validates a backend-owned integration and shows the persisted result", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

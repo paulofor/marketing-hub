@@ -145,7 +145,7 @@ test("workflow, proxy e smoke publicam Mira sem operar Vega", async () => {
     "Dockerfile.mira",
     "Build isolated Mira surface",
     "Validate product-exclusive build artifacts",
-    "PDE_FRONTEND_VERSION_ID=mira-private-v1",
+    "PDE_FRONTEND_VERSION_ID=mira-private-v2",
     "mira) FRONTEND_SERVICES='pde-platform-frontend-mira'",
     "TARGETED_FRONTEND_VERSION=v7",
     "bootstrap-legacy-route",

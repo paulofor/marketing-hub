@@ -107,6 +107,25 @@ textarea {
   background: #e8f8ef;
 }
 
+.mira-private-return-action {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #7a315c;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+}
+
+.mira-private-return-action:focus-visible {
+  outline: 3px solid #2b193d;
+  outline-offset: 3px;
+}
+
 .mira-routine-grid {
   display: grid;
   gap: 16px;

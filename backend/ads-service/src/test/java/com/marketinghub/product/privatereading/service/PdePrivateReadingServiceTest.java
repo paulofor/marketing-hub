@@ -143,14 +143,12 @@ class PdePrivateReadingServiceTest {
         .hasMessageContaining("não corresponde");
   }
 
-  /**
-   * Uma evolução de versão de Mira deve bloquear até adaptação, sem voltar ao formulário manual.
-   */
+  /** Uma evolução desconhecida de Mira deve bloquear até adaptação, sem voltar ao formulário. */
   @Test
   void keepsMiraAssistedWhenAcceptedVersionChanges() {
     Product changed = product();
     changed.setValidationDefinitionJson(
-        changed.getValidationDefinitionJson().replace("mira-private-v1", "mira-private-v2"));
+        changed.getValidationDefinitionJson().replace("mira-private-v2", "mira-private-v3"));
     assertThat(service.supports(changed)).isTrue();
     assertThatThrownBy(() -> service.verifiedEvidence(changed, "privateReading1", confirmation()))
         .hasMessageContaining("não possui");
@@ -222,7 +220,7 @@ class PdePrivateReadingServiceTest {
         .commercialStatus("PLANNED")
         .validationDefinitionJson(
             """
-        {"privatePrototypeAcceptance":{"prototypeVersion":"mira-private-v1","status":"READY",
+        {"privatePrototypeAcceptance":{"prototypeVersion":"mira-private-v2","status":"READY",
         "acceptedAt":"2026-09-05T00:00:00Z","privateAccessUrl":"https://v7.clubemusa.com.br/mira-private"}}
         """)
         .build();
@@ -233,7 +231,7 @@ class PdePrivateReadingServiceTest {
     boolean started = !"NOT_STARTED".equals(trafficClass);
     return new PrivateReadingEvidence(
         "mira-private-validation",
-        "mira-private-v1",
+        "mira-private-v2",
         "PV-000000000001",
         trafficClass,
         started ? evidenceId : null,

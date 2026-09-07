@@ -1722,6 +1722,43 @@ class AgentTaskServiceTest {
         .isPresent();
   }
 
+  /** Trata setas REWORK como orientação visual, sem criar predecessoras circulares no executor. */
+  @Test
+  void ignoresExplicitReworkEdgesWhenClaimingCorrection() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    process.setDiagramJson(
+        """
+        {"nodes":[
+          {"id":"start","type":"START"},
+          {"id":"technicalHomologation","type":"TASK"},
+          {"id":"prototypeCorrection","type":"TASK"}],
+         "flows":[
+          {"from":"start","to":"technicalHomologation"},
+          {"from":"technicalHomologation","to":"prototypeCorrection","kind":"REWORK"},
+          {"from":"prototypeCorrection","to":"technicalHomologation","kind":"REWORK"}]}
+        """);
+    AgentTask correction = processTask(51L, dedalo, process, "prototypeCorrection", "PENDING");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of(correction));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(correction));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask(
+                    "landing-generator", "landing-page-generation", "prototypeCorrection"))
+        .isPresent();
+  }
+
   /** Expõe atividade liberada, bloqueio por predecessora e tarefa legada substituída. */
   @Test
   void buildsProcessInstanceOperationalView() {
@@ -2347,6 +2384,73 @@ class AgentTaskServiceTest {
             .orElseThrow();
 
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
+  }
+
+  /**
+   * Entrega a Dédalo a rejeição funcional preservada mesmo quando ela nasceu na versão anterior.
+   */
+  @Test
+  void exposesPreviousVersionFunctionalRejectionInCorrectionContext() throws Exception {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition current = process("PUBLISHED", "Dédalo");
+    current.setId(80L);
+    current.setProcessCode("pde-construction-approval");
+    current.setVersionNumber(8);
+    current.setDiagramJson(
+        """
+        {"nodes":[{"id":"technicalHomologation","type":"TASK"},
+          {"id":"prototypeCorrection","type":"TASK"}],
+         "flows":[
+          {"from":"technicalHomologation","to":"prototypeCorrection","kind":"REWORK"},
+          {"from":"prototypeCorrection","to":"technicalHomologation","kind":"REWORK"}]}
+        """);
+    BusinessProcessDefinition previous = process("RETIRED", "Psique");
+    previous.setId(69L);
+    previous.setProcessCode("pde-construction-approval");
+    previous.setVersionNumber(7);
+    AgentTask rejection =
+        processTask(
+            350L, agent(2L, "customer-agent", "Psique"), previous, "psiqueAdherent", "BLOCKED");
+    rejection.setSourceReference("product:10@agent-validation-v1");
+    rejection.setProcessActivityName("Psique · cenário aderente");
+    rejection.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    rejection.setBlockerAction("Manter visível a rotina pronta após concluir.");
+    rejection.setExecutionError("A tela final substituiu o valor funcional.");
+    rejection.setResultJson(
+        "{\"decision\":\"ADJUST\",\"rootCause\":\"A rotina pronta desaparece.\"}");
+    rejection.setEvidenceJson("{\"prototypeVersion\":\"mira-private-v1\"}");
+    AgentTask correction = processTask(351L, dedalo, current, "prototypeCorrection", "PENDING");
+    correction.setSourceReference("product:10@agent-validation-v1");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of(correction));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            80L, "product:10@agent-validation-v1"))
+        .thenReturn(List.of(correction));
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product:10@agent-validation-v1"))
+        .thenReturn(List.of(rejection, correction));
+
+    AgentTaskPendingResponse pending =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask(
+                "landing-generator", "pde-construction-approval", "prototypeCorrection")
+            .orElseThrow();
+
+    var context = new ObjectMapper().readTree(pending.processContextJson());
+    assertThat(context.path("blockedActivities")).hasSize(1);
+    assertThat(context.path("blockedActivities").path(0).path("taskId").asLong()).isEqualTo(350L);
+    assertThat(context.path("blockedActivities").path(0).path("category").asText())
+        .isEqualTo("FUNCTIONAL_ADJUSTMENT");
+    assertThat(context.path("blockedActivities").path(0).path("recommendedAction").asText())
+        .contains("rotina pronta");
+    assertThat(context.path("blockedActivities").path(0).path("result").isObject()).isTrue();
+    assertThat(context.path("blockedActivities").path(0).path("evidence").isObject()).isTrue();
   }
 
   /** Entrega a Psique as leituras humanas estruturadas sem serializar JSON dentro de JSON. */

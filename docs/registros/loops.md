@@ -270,6 +270,12 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   referência, preserva a tentativa bloqueada e recusa estados ativos ou concluídos.
 - **Prevenção:** testes de contrato no backend e no frontend protegem disponibilidade, rótulo,
   endpoint, idempotência e ausência do comando em estados inelegíveis.
+- **Recorrência funcional fechada em 2026-09-07 — Mira/Psique #350:** a retentativa genérica ficou
+  visível, mas era a ação errada para uma rejeição `FUNCTIONAL_ADJUSTMENT`: repetir Psique sem mudar
+  o protótipo reproduziria a causa. O processo v8 agora abre uma atividade condicional de Dédalo,
+  entrega parecer, causa e ação da versão anterior, exige nova versão e retorna ao harness antes de
+  liberar os três cenários sequenciais de Psique. Testes protegem o direcionamento na tela, o
+  bloqueio da repetição prematura, o contexto entre versões e as setas `REWORK` sem ciclo.
 
 ## LOOP-PLUTUS-HEALTH-VERSION-DRIFT — worker vigente permanece bloqueado após o rebuild
 

@@ -152,6 +152,7 @@ public class ProductProcessActivityPredecessorService {
       JsonNode connections =
           diagram.path("flows").isArray() ? diagram.path("flows") : diagram.path("edges");
       for (JsonNode edge : connections) {
+        if ("REWORK".equalsIgnoreCase(edge.path("kind").asText())) continue;
         String source =
             edge.hasNonNull("from") ? edge.path("from").asText() : edge.path("source").asText();
         String target =

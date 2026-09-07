@@ -185,11 +185,11 @@ services:
     environment:
       PDE_PRODUCT_ID: "10"
       VITE_PDE_PRODUCT_SLUG: pde-planejado-36
-      PDE_EXPERIENCE_VERSION: mira-private-v1
-      PDE_FRONTEND_VERSION: mira-private-v1
+      PDE_EXPERIENCE_VERSION: mira-private-v2
+      PDE_FRONTEND_VERSION: mira-private-v2
       PDE_FRONTEND_PUBLIC_URL: https://v7.clubemusa.com.br/mira-private
       PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_MIRA_IMAGE:-}
-      PDE_FRONTEND_VERSION_ID: mira-private-v1
+      PDE_FRONTEND_VERSION_ID: mira-private-v2
       PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
       PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
       PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}

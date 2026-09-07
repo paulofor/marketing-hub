@@ -1069,6 +1069,139 @@ class BusinessProcessActivityExecutionServiceTest {
     verify(agentTasks).retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class));
   }
 
+  /** Direciona a rejeição de Psique para correção clara em vez de oferecer repetição do parecer. */
+  @Test
+  void routesFunctionalRejectionToConditionalPrototypeCorrection() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    AgentProductProcessActivityReadinessProvider readinessProvider =
+        mock(AgentProductProcessActivityReadinessProvider.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper(),
+            List.of(),
+            List.of(readinessProvider));
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(80L);
+    process.setVersionNumber(8);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-construction-approval");
+    process.setDiagramJson(
+        """
+        {"nodes":[
+          {"id":"prototypeCorrection","type":"TASK","label":"Corrigir o protótipo a partir do parecer",
+           "description":"Corrigir a causa-raiz e criar nova versão.",
+           "responsibleAgentKeys":["landing-generator"]},
+          {"id":"psiqueAdherent","type":"TASK","label":"Psique · cenário aderente",
+           "responsibleAgentKeys":["customer-agent"]}
+        ]}
+        """);
+    BusinessProcessActivityDefinition correction =
+        activity(801L, process, "prototypeCorrection", "Corrigir o protótipo a partir do parecer");
+    correction.setDefinitionJson(
+        """
+        {"responsibleAgentKeys":["landing-generator"],
+         "activationMode":"ON_FUNCTIONAL_REJECTION",
+         "actionLabel":"Criar tarefa de correção",
+         "controlDescription":"Dédalo receberá causa e ação; a nova versão retornará ao harness."}
+        """);
+    BusinessProcessActivityDefinition psique =
+        activity(802L, process, "psiqueAdherent", "Psique · cenário aderente");
+    psique.setDefinitionJson("{\"responsibleAgentKeys\":[\"customer-agent\"]}");
+    Product mira = Product.builder().id(10L).internalName("Mira").build();
+    mira.setAutomaticExecutionEnabled(true);
+    mira.setValidationDefinitionVersion("PDE_AGENT_VALIDATION_V1");
+    BusinessProcessDefinition previousProcess = selectedProcess();
+    previousProcess.setId(69L);
+    previousProcess.setVersionNumber(7);
+    previousProcess.setProcessCode("pde-construction-approval");
+    AgentTask rejected = executionTask(350L);
+    rejected.setProcessDefinition(previousProcess);
+    rejected.setProcessActivityId("psiqueAdherent");
+    rejected.setProcessActivityName("Psique · cenário aderente");
+    rejected.setSourceReference("product:10@agent-validation-v1");
+    rejected.setStatus("BLOCKED");
+    rejected.setExecutionError("A rotina útil desaparece após a conclusão.");
+    rejected.setAssignedAgent(
+        Agent.builder().agentKey("customer-agent").nickname("Psique").build());
+    when(processes.findById(80L)).thenReturn(Optional.of(process));
+    when(products.findById(10L)).thenReturn(Optional.of(mira));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(10L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(10L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(80L))
+        .thenReturn(List.of(correction, psique));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(80L, "prototypeCorrection"))
+        .thenReturn(Optional.of(correction));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:10@"))
+        .thenReturn(List.of(rejected));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                "pde-construction-approval", "product:10@"))
+        .thenReturn(List.of());
+    when(readinessProvider.supports(eq(process), any())).thenReturn(true);
+    when(readinessProvider.readiness(eq(process), eq(correction), eq(mira), anyString()))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                true,
+                "A tarefa #350 foi rejeitada. Corrija a continuidade e retorne à homologação técnica."));
+    when(readinessProvider.readiness(eq(process), eq(psique), eq(mira), anyString()))
+        .thenReturn(
+            new AgentProductProcessActivityReadiness(
+                false, "A correção da tarefa #350 deve ser concluída antes de repetir Psique."));
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var history = executionService.productProcessExecutions(80L, 10L);
+    var result = executionService.requestProductActivityExecution(80L, 10L, "prototypeCorrection");
+
+    assertThat(history.currentActivityId()).isEqualTo("prototypeCorrection");
+    assertThat(history.currentActivityName()).isEqualTo("Corrigir o protótipo a partir do parecer");
+    assertThat(history.activities())
+        .filteredOn(activity -> "prototypeCorrection".equals(activity.activityId()))
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.selectedVersionActivity()).isTrue();
+              assertThat(activity.executionRequestAvailable()).isTrue();
+              assertThat(activity.executionControl().actionLabel())
+                  .isEqualTo("Criar tarefa de correção");
+              assertThat(activity.executionControl().description()).contains("nova versão");
+            });
+    assertThat(history.activities())
+        .filteredOn(activity -> "psiqueAdherent".equals(activity.activityId()))
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.operationalState()).isEqualTo("BLOCKED");
+              assertThat(activity.executionRequestAvailable()).isFalse();
+              assertThat(activity.executionRequestReason()).contains("antes de repetir Psique");
+            });
+    assertThat(result.tasks()).hasSize(1);
+    ArgumentCaptor<CreateAgentTaskRequest> request =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
+    assertThat(request.getValue().assignedAgentKey()).isEqualTo("landing-generator");
+    assertThat(request.getValue().description())
+        .contains("Diagnóstico vigente", "#350", "homologação técnica");
+  }
+
   /**
    * Libera reinício de tarefa bloqueada sem exigir um gate especializado e preserva a tentativa.
    */

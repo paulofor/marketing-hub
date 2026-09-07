@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
 public class MiraPrivatePrototypeService {
     private static final Logger log = LoggerFactory.getLogger(MiraPrivatePrototypeService.class);
     private static final String PRODUCT_SLUG = "mira-private-validation";
-    private static final String VERSION = "mira-private-v1";
+    private static final String VERSION = "mira-private-v2";
     private static final Set<String> HUMAN_EVENTS =
             Set.of("READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED");
     private static final Set<String> AGENT_EVENTS = Set.of(

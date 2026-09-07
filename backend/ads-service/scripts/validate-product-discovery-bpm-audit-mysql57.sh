@@ -128,6 +128,20 @@ audit_agent_validation_command() {
     'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
 }
 
+audit_functional_rework_update() {
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-07-pde-functional-rework-v1.yaml \
+    liquibase-product-discovery-bpm-audit
+}
+
+audit_functional_rework_command() {
+  local command="$1"
+  audit_compose run --rm \
+    -e ADS_LIQUIBASE_CHANGELOG_FILE=db/changelog/changesets/2026-09-07-pde-functional-rework-v1.yaml \
+    liquibase-product-discovery-bpm-audit sh -lc \
+    'AUDIT_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "$AUDIT_CP" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="$ADS_LIQUIBASE_URL" --username="$ADS_LIQUIBASE_USERNAME" --password="$ADS_LIQUIBASE_PASSWORD" --changeLogFile="$ADS_LIQUIBASE_CHANGELOG_FILE" '"${command}"
+}
+
 trap audit_cleanup EXIT
 audit_cleanup
 
@@ -861,4 +875,134 @@ audit_assert_equal \
       WHERE source_reference = 'product:902@private-validation-v1')
   );")"
 
-echo "Auditoria BPM da descoberta PDE aprovada no MySQL 5.7."
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-07-pde-functional-rework-v1-%';" \
+  >/dev/null 2>&1
+audit_functional_rework_update
+audit_assert_equal \
+  "retrabalho funcional versionado e Mira v2" \
+  "PUBLISHED:RETIRED:11:4:mira-private-v2:mira-private-v2:AGENT_VALIDATION_CORRECTION_READY:ON_FUNCTIONAL_REJECTION:1:6" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 8), ':',
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 7), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval' AND process.version_number = 8), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance instance
+      JOIN business_process_activity_definition activity ON activity.id = instance.activity_definition_id
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 8
+        AND instance.source_reference = 'product:902@agent-validation-v1'
+        AND instance.evidence_quality = 'MIGRATED_IMMUTABLE'), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(
+        validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion'))
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.experienceVersion'))
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.status'))
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(activity.definition_json, '$.activationMode'))
+      FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 8
+        AND activity.activity_id = 'prototypeCorrection'), ':',
+    (SELECT COUNT(*) FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery'
+        AND version_number = 12 AND status = 'PUBLISHED'), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery' AND chain.version_number = 12)
+  );")"
+
+audit_compose exec -T mysql57-product-discovery-bpm-audit \
+  mysql -umarketinghub -pmarketinghub-local marketinghub_local \
+  -e "DELETE FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-07-pde-functional-rework-v1-%';" \
+  >/dev/null 2>&1
+audit_functional_rework_update
+audit_assert_equal \
+  "reaplicação do retrabalho sem duplicar processo, atividades, cadeia ou evidência" \
+  "1:11:1:6:4:3" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT COUNT(*) FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 8), ':',
+    (SELECT COUNT(*) FROM business_process_activity_definition activity
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval' AND process.version_number = 8), ':',
+    (SELECT COUNT(*) FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 12), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery' AND chain.version_number = 12), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance instance
+      JOIN business_process_activity_definition activity ON activity.id = instance.activity_definition_id
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 8
+        AND instance.source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM DATABASECHANGELOG
+      WHERE ID LIKE '2026-09-07-pde-functional-rework-v1-%')
+  );")"
+
+audit_functional_rework_command "rollbackCount 3"
+audit_assert_equal \
+  "rollback do retrabalho restaura v7 e a versão rejeitada sem apagar histórico" \
+  "RETIRED:PUBLISHED:RETIRED:PUBLISHED:mira-private-v1:mira-private-v1:0:4" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 8), ':',
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 7), ':',
+    (SELECT status FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 12), ':',
+    (SELECT status FROM business_process_chain_definition
+      WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 11), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(
+        validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion'))
+      FROM product WHERE id = 902), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(pde_experience_json, '$.experienceVersion'))
+      FROM product WHERE id = 902), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance instance
+      JOIN business_process_activity_definition activity ON activity.id = instance.activity_definition_id
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 8
+        AND instance.source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance
+      WHERE source_reference = 'product:902@agent-validation-v1')
+  );")"
+
+audit_functional_rework_update
+audit_assert_equal \
+  "reaplicação após rollback restaura a rota condicional v8" \
+  "PUBLISHED:mira-private-v2:4:4:6" \
+  "$(audit_db_scalar "SELECT CONCAT(
+    (SELECT status FROM business_process_definition
+      WHERE process_code = 'pde-construction-approval' AND version_number = 8), ':',
+    (SELECT JSON_UNQUOTE(JSON_EXTRACT(
+        validation_definition_json, '$.privatePrototypeAcceptance.prototypeVersion'))
+      FROM product WHERE id = 902), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance instance
+      JOIN business_process_activity_definition activity ON activity.id = instance.activity_definition_id
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 8
+        AND instance.source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM business_process_activity_instance instance
+      JOIN business_process_activity_definition activity ON activity.id = instance.activity_definition_id
+      JOIN business_process_definition process ON process.id = activity.process_definition_id
+      WHERE process.process_code = 'pde-construction-approval'
+        AND process.version_number = 7
+        AND instance.source_reference = 'product:902@agent-validation-v1'), ':',
+    (SELECT COUNT(*) FROM business_process_chain_item item
+      JOIN business_process_chain_definition chain ON chain.id = item.chain_definition_id
+      WHERE chain.chain_code = 'pde-value-creation-delivery' AND chain.version_number = 12)
+  );")"
+
+echo "Auditoria BPM da descoberta e do retrabalho PDE aprovada no MySQL 5.7."

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class PdePrivateReadingService {
+  private static final String SUPPORTED_PROTOTYPE_VERSION = "mira-private-v2";
   private static final Set<String> SIGNALS =
       Set.of(
           "EXPERIENCE_STARTED",
@@ -209,7 +210,8 @@ public class PdePrivateReadingService {
   private void requireSupported(Product product) {
     if (!supports(product)
         || !"PLANNED".equals(product.getCommercialStatus())
-        || !"mira-private-v1".equals(acceptance(product).path("prototypeVersion").asText())
+        || !SUPPORTED_PROTOTYPE_VERSION.equals(
+            acceptance(product).path("prototypeVersion").asText())
         || !"READY".equals(acceptance(product).path("status").asText())) {
       throw new IllegalArgumentException(
           "Este produto ainda não possui leitura privada assistida disponível.");

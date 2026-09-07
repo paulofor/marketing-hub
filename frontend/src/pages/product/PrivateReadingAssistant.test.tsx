@@ -25,7 +25,7 @@ const activity = {
 
 const workspace = {
   prototypeUrl: "https://v7.clubemusa.com.br/mira-private",
-  prototypeVersion: "mira-private-v1",
+  prototypeVersion: "mira-private-v2",
   readingNumber: 1,
   participantReference: "PV-000000000001",
   evidenceId: "proof-1",

@@ -42,6 +42,13 @@ public class PdeConstructionBpmTaskConsumer {
               "READY"),
           new BpmContract(
               "pde-construction-approval",
+              "prototypeCorrection",
+              "prompts/pde-construction/v3/prototype-correction.md",
+              "prompts/pde-construction/v3/prototype-correction-schema.json",
+              "pde-construction-v3",
+              "READY"),
+          new BpmContract(
+              "pde-construction-approval",
               "journey",
               "prompts/pde-construction/v2/journey.md",
               "prompts/pde-construction/v2/journey-schema.json",
@@ -105,6 +112,7 @@ public class PdeConstructionBpmTaskConsumer {
       validateTaskContext(task, contract, json);
       execution = execute(task);
       validate(execution.result(), contract);
+      validateCorrectionContext(task, execution.result(), contract, json);
       if (contract.successDecision().equals(execution.result().path("decision").asText())) {
         report(task, execution);
       } else {
@@ -410,6 +418,25 @@ public class PdeConstructionBpmTaskConsumer {
     if (productArchitecture && !result.path("productArchitecture").isObject()) {
       throw new IllegalArgumentException("Arquitetura do PDE incompleta");
     }
+    if ("prototypeCorrection".equals(contract.activityId())) {
+      JsonNode plan = result.path("correctionPlan");
+      JsonNode verification = plan.path("verification");
+      if (!plan.isObject()
+          || plan.path("sourceTaskId").asLong(0) < 1
+          || plan.path("rejectedActivityId").asText().isBlank()
+          || plan.path("previousPrototypeVersion").asText().isBlank()
+          || plan.path("correctedPrototypeVersion").asText().isBlank()
+          || plan.path("rootCause").asText().isBlank()
+          || plan.path("userInstructions").isEmpty()
+          || plan.path("changes").isEmpty()
+          || !"technicalHomologation".equals(plan.path("nextActivityId").asText())
+          || !verification.isObject()
+          || !verification.path("technicalRevalidationRequired").asBoolean(false)
+          || !verification.path("noExternalSideEffects").asBoolean(false)) {
+        throw new IllegalArgumentException("Plano de correção do PDE incompleto");
+      }
+      return;
+    }
     JsonNode privatePrototype = result.path("productArchitecture").path("privatePrototype");
     int maxValueTimeMinutes = privatePrototype.path("maxValueTimeMinutes").asInt(0);
     if (productArchitecture
@@ -513,6 +540,60 @@ public class PdeConstructionBpmTaskConsumer {
     if (!complete) {
       throw new IllegalArgumentException(
           "Contrato PDE privado ausente ou incompleto no contexto enviado pelo backend");
+    }
+  }
+
+  /** Vincula a correção à rejeição real e exige versão nova antes de declarar prontidão. */
+  static void validateCorrectionContext(
+      Map<String, Object> task, JsonNode result, BpmContract contract, ObjectMapper json) {
+    if (!"prototypeCorrection".equals(contract.activityId())) return;
+    try {
+      JsonNode context = json.readTree(String.valueOf(task.get("processContextJson")));
+      JsonNode plan = result.path("correctionPlan");
+      JsonNode matchingBlock = null;
+      long latestFunctionalBlockId = 0;
+      for (JsonNode blocked : context.path("blockedActivities")) {
+        if ("FUNCTIONAL_ADJUSTMENT".equals(blocked.path("category").asText())) {
+          long blockedTaskId = blocked.path("taskId").asLong();
+          if (blockedTaskId > latestFunctionalBlockId) latestFunctionalBlockId = blockedTaskId;
+          if (blockedTaskId == plan.path("sourceTaskId").asLong()) matchingBlock = blocked;
+        }
+      }
+      String currentVersion =
+          json.valueToTree(task).path("taskTarget").path("experienceVersion").asText();
+      if (matchingBlock == null
+          || plan.path("sourceTaskId").asLong() != latestFunctionalBlockId
+          || !matchingBlock
+              .path("activityId")
+              .asText()
+              .equals(plan.path("rejectedActivityId").asText())) {
+        throw new IllegalArgumentException("Correção não referencia a rejeição funcional vigente");
+      }
+      String rejectedVersion = matchingBlock.path("result").path("prototypeVersion").asText();
+      if (!rejectedVersion.isBlank()
+          && !rejectedVersion.equals(plan.path("previousPrototypeVersion").asText())) {
+        throw new IllegalArgumentException("Correção não referencia a versão funcional rejeitada");
+      }
+      if ("READY".equals(result.path("decision").asText())
+          && (currentVersion.isBlank()
+              || !currentVersion.equals(plan.path("correctedPrototypeVersion").asText())
+              || currentVersion.equals(plan.path("previousPrototypeVersion").asText())
+              || !plan.path("verification").path("routineRemainsVisible").asBoolean(false)
+              || !plan.path("verification").path("valueAndLimitsRemainVisible").asBoolean(false)
+              || !plan.path("verification").path("nextActionVisible").asBoolean(false)
+              || !plan.path("verification").path("newVersionPublished").asBoolean(false))) {
+        throw new IllegalArgumentException(
+            "Correção pronta exige versão nova e critérios funcionais comprovados");
+      }
+    } catch (IllegalArgumentException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao validar contexto da correção PDE. taskId={} activityId={}",
+          taskId(task),
+          activityId(task),
+          ex);
+      throw new IllegalArgumentException("Contexto da correção do PDE inválido", ex);
     }
   }
 

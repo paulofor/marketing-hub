@@ -131,7 +131,7 @@ public class PdeAgentValidationGateActivityExecutor
     this.clock = clock;
   }
 
-  /** Reconhece somente o gate backend da versão multiagente publicada. */
+  /** Reconhece somente o gate backend da versão com retrabalho funcional explícito. */
   @Override
   public boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
@@ -139,7 +139,7 @@ public class PdeAgentValidationGateActivityExecutor
         && activityDefinition != null
         && PROCESS_CODE.equals(process.getProcessCode())
         && process.getVersionNumber() != null
-        && process.getVersionNumber() == 7
+        && process.getVersionNumber() == PdeAgentValidationReworkReadinessProvider.PROCESS_VERSION
         && ACTIVITY_ID.equals(activityDefinition.getActivityId());
   }
 

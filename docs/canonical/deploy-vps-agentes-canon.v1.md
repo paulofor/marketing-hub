@@ -31,6 +31,12 @@ reais, com chaves descartáveis e rede restrita ao loopback da fixture local. Mo
 essa validação de transporte. O contrato `scripts/test-agent-vps-ssh-workflows.mjs` protege os nove
 publicadores contra divergência de preflight, transportes e restauração após falha de autenticação.
 
+Os contratos de coordenação com o deploy da aplicação devem identificar a chamada do gate,
+o preflight e os comandos SSH/SCP/rsync, sem depender do texto de `name` das etapas. Argos,
+Psique e o workflow de Íris devem aguardar o gate antes de autenticar ou acessar o VPS.
+`scripts/wait-for-app-deployment.test.mjs` integra a validação central de Actions e sua matriz
+local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
+
 - Medir o filesystem raiz, `DockerRootDir` e `/var/lib/containerd` quando existir.
 - Exigir ao menos 4 GiB disponíveis e 10.000 inodes livres em cada destino; insuficiência
   depois da coleta bloqueia a atualização. `AGENT_VPS_DISK_MIN_FREE_MB` permite dimensionar

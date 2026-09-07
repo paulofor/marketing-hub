@@ -3920,6 +3920,15 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   container foi movido nem serviço publicado. Evidências e matriz:
   `docs/homologacao/actions-agent-vps-ssh-checkout-2026-09-07.md`.
 
+- **Recorrência no teste de coordenação em 2026-09-07:** os runs `34073970914`, `34073970985`
+  e `34073971004` falharam antes do SSH. O teste compartilhado ainda procurava o nome removido
+  `Add agent VPS SSH key`, retornava posição `-1` e acusava ordem incorreta apesar de o gate
+  continuar antes do preflight. A falha foi reproduzida localmente e o histórico confirmou a
+  renomeação. A validação central havia passado porque não executava esse contrato.
+- **Prevenção complementar:** verificar os comandos de gate, preflight e transporte no job de
+  deploy; cobrir renomeação válida, gate ausente e SSH/SCP/rsync antecipados; incluir o teste e
+  seus gatilhos no CI central. Nenhuma nova chave SSH corrige essa falha anterior à conexão.
+
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
 
 - **Data:** 2026-09-05.

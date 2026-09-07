@@ -89,3 +89,54 @@ resposta das aplicações, mas não comprova capacidade para novos builds nem ac
 reais do GitHub. Mover containers sem esse inventário não foi justificado pelas evidências.
 
 Nenhum commit, push, PR, deploy ou reorganização produtiva realizado.
+
+## Complemento: contrato de coordenação após renomeação do preflight
+
+Os runs [Argos 34073970914](https://github.com/paulofor/marketing-hub/actions/runs/34073970914),
+[Psique 34073970985](https://github.com/paulofor/marketing-hub/actions/runs/34073970985) e
+[Íris 34073971004](https://github.com/paulofor/marketing-hub/actions/runs/34073971004)
+falharam em `Validate application deploy coordination`, antes de conectar ao VPS. O CI central
+[34073970958](https://github.com/paulofor/marketing-hub/actions/runs/34073970958) passou porque
+não executava esse teste. Na reprodução local inicial passaram 6/7 testes: a asserção procurava
+`Add agent VPS SSH key`, removido pela troca por `Configure authenticated agent VPS SSH`.
+O histórico e o workflow atual confirmam que a ordem do gate permaneceu correta.
+
+| Alternativa | Benefício | Risco / esforço | Decisão |
+|---|---|---|---|
+| Restaurar o nome anterior da etapa | Mudança mínima | Preserva acoplamento à apresentação e recorrência em nova renomeação | Descartada |
+| Reconhecer comandos e integrar o contrato ao CI central | Protege a ordem real sem depender dos rótulos | Baixo esforço, sem dependência nova; exige casos negativos de ordem | Escolhida |
+| Introduzir parser YAML e modelo completo dos workflows | Permite mais formatos futuros | Nova dependência e escopo maior que o necessário para os formatos existentes | Reservada para mudança estrutural |
+
+Matriz do complemento definida antes da validação final:
+
+| Critério | Evidência local esperada |
+|---|---|
+| Caminho feliz e integração | Mesmo SHA, espera e recuperação transitória com API simulada |
+| Falhas | Deploy falho, ausência e timeout bloqueiam o worker |
+| Contrato dos três workflows | Gate antes do preflight e de todos os transportes |
+| Regressões de apresentação e ordem | Renomear etapas passa; remover gate ou antecipar SSH/SCP/rsync falha |
+| Cobertura central | Push/PR acompanham coordenador/teste e o CI executa a suíte |
+| Compatibilidade | Contratos dos nove publicadores, fila, resiliência e arquitetura premium aprovados |
+| Sintaxe | Actionlint e ShellCheck aprovados |
+| Observabilidade, métricas e segregação | Relatórios locais, API/credenciais sintéticas, sem eventos comerciais nem acesso remoto produtivo |
+| Navegadores/dispositivos | Não aplicável: mudança em teste e workflow, sem interface |
+
+Após a correção, executar duas rodadas consecutivas dessa matriz sem falhas. Não há alteração
+do helper SSH, de Java, de imagens ou de containers que exija repetir builds dos módulos.
+A conexão protegida da sandbox continua bloqueada por `destino não autorizado` para
+`root@163.245.202.80`; isso ocorre antes da autenticação e não identifica chave ausente no host.
+
+Resultados finais do complemento, após a última alteração dos testes:
+
+| Verificação | Rodada 1 | Rodada 2 |
+|---|---:|---:|
+| Matriz do complemento | 10/10 | 10/10 |
+| Testes de coordenação | 11/11 | 11/11 |
+| Nove publicadores, fallback SSH e arquitetura premium | Aprovado | Aprovado |
+| Fila, resiliência e contrato de disco | Aprovado | Aprovado |
+| Actionlint, política ShellCheck e diff | Aprovado | Aprovado |
+
+As rodadas finais foram consecutivas e sem mudanças de código entre elas. Logs locais em
+`codex-cache/actions-key-diagnosis-2026-09-07/final/`, incluindo `results.json` e saída por
+verificação. Nenhuma topologia Docker foi criada neste complemento. A autenticação com os
+segredos reais do GitHub permanece sem comprovação; nenhum run foi disparado para testar.

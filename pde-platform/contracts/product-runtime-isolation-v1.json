@@ -1,0 +1,92 @@
+{
+  "contractVersion": "pde-product-runtime-isolation.v1",
+  "sharedInfrastructure": [
+    "pde-platform-backend",
+    "pde-ai-worker",
+    "pde-retention-worker",
+    "public-edge-proxy"
+  ],
+  "rules": {
+    "productSurfaceOwnImage": true,
+    "productSurfaceOwnContainer": true,
+    "productSurfaceOwnPort": true,
+    "productSurfaceOwnDeployTarget": true,
+    "ordinaryPushDoesNotSelectProduct": true,
+    "legacyProxyBootstrapMustBeExplicit": true,
+    "sharedInfrastructureMustBeProductNeutral": true
+  },
+  "products": [
+    {
+      "productId": 4,
+      "internalName": "Vega",
+      "productSlug": "metodo-musa-7-dias",
+      "surfaces": [
+        {
+          "versionId": "v5",
+          "serviceName": "pde-platform-frontend-v5",
+          "containerName": "pde-platform-frontend-v5",
+          "imageName": "pde-platform-frontend-v5",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_V5_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_V5_PORT",
+          "hostPort": 5176,
+          "publicUrl": "https://v5.clubemusa.com.br"
+        },
+        {
+          "versionId": "v6",
+          "serviceName": "pde-platform-frontend-v6",
+          "containerName": "pde-platform-frontend-v6",
+          "imageName": "pde-platform-frontend-v6",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_V6_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_V6_PORT",
+          "hostPort": 5177,
+          "publicUrl": "https://v6.clubemusa.com.br"
+        },
+        {
+          "versionId": "v7",
+          "serviceName": "pde-platform-frontend-v7",
+          "containerName": "pde-platform-frontend-v7",
+          "imageName": "pde-platform-frontend-v7",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_V7_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_V7_PORT",
+          "hostPort": 5178,
+          "publicUrl": "https://v7.clubemusa.com.br"
+        }
+      ]
+    },
+    {
+      "productId": 9,
+      "internalName": "Rigel",
+      "productSlug": "kit-whatsapp-pronto",
+      "surfaces": [
+        {
+          "versionId": "kit-whatsapp-v2",
+          "serviceName": "pde-platform-frontend-kit-whatsapp",
+          "containerName": "pde-platform-frontend-kit-whatsapp",
+          "imageName": "pde-platform-frontend-kit-whatsapp",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT",
+          "hostPort": 5179,
+          "publicUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br"
+        }
+      ]
+    },
+    {
+      "productId": 10,
+      "internalName": "Mira",
+      "productSlug": "pde-planejado-36",
+      "surfaces": [
+        {
+          "versionId": "mira-private-v1",
+          "serviceName": "pde-platform-frontend-mira",
+          "containerName": "pde-platform-frontend-mira",
+          "imageName": "pde-platform-frontend-mira",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_MIRA_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_MIRA_PORT",
+          "hostPort": 5180,
+          "publicUrl": "https://v7.clubemusa.com.br/mira-private",
+          "historicalPrivateRoute": true
+        }
+      ]
+    }
+  ]
+}

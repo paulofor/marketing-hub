@@ -1,0 +1,90 @@
+services:
+  pde-platform-backend:
+    image: nginx:1.27-alpine
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  pde-platform-frontend-v7:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        PDE_FRONTEND_VERSION_ID: v7
+    environment:
+      VITE_PDE_PRODUCT_SLUG: metodo-musa-7-dias
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v7-espelho-antes-de-sair
+      PDE_FRONTEND_VERSION: v7
+      PDE_FRONTEND_PUBLIC_URL: https://v7.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: pde-platform-frontend-v7:validation
+      PDE_FRONTEND_VERSION_ID: v7
+      PDE_DEPLOY_IMAGE_TAG: local-product-isolation
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:80
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'metodo-musa-7-dias'",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  pde-platform-frontend-mira:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.mira
+      args:
+        PDE_FRONTEND_VERSION_ID: mira-private-v1
+    environment:
+      PDE_PRODUCT_ID: "10"
+      VITE_PDE_PRODUCT_SLUG: pde-planejado-36
+      PDE_EXPERIENCE_VERSION: mira-private-v1
+      PDE_FRONTEND_VERSION: mira-private-v1
+      PDE_FRONTEND_PUBLIC_URL: https://v7.clubemusa.com.br/mira-private
+      PDE_FRONTEND_IMAGE: pde-platform-frontend-mira:validation
+      PDE_FRONTEND_VERSION_ID: mira-private-v1
+      PDE_DEPLOY_IMAGE_TAG: local-product-isolation
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:80
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'pde-platform-frontend-mira'",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  lead-portal-payments-service:
+    image: nginx:1.27-alpine
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  proxy:
+    build:
+      context: ../lead-portal-payments-service
+      dockerfile: docker/proxy/Dockerfile.product-isolation-validation
+    depends_on:
+      lead-portal-payments-service:
+        condition: service_healthy
+      pde-platform-frontend-v7:
+        condition: service_healthy
+      pde-platform-frontend-mira:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t -q"]
+      interval: 2s
+      timeout: 2s
+      retries: 20

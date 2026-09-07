@@ -55,6 +55,44 @@ O padrão obrigatório é:
 
 Não criar um front/back novo para cada produto, salvo exceção explícita e registrada. Essa regra não autoriza reaproveitar a mesma imagem pública para versões comerciais diferentes: o motor continua reutilizável, mas cada versão PDE publicada em domínio próprio deve ser empacotada e executada como imagem/container próprios.
 
+### Isolamento obrigatório por produto
+
+Decisão canônica de 2026-09-07: compartilhar o código-fonte e o motor neutro da PDE Platform não
+autoriza dois produtos a compartilhar uma superfície executável. Cada produto deve possuir, desde a
+homologação técnica de sua versão real:
+
+- repositório/nome de imagem Docker próprio, com identidade OCI do produto e tag imutável;
+- serviço e nome de container próprios;
+- porta, rota de proxy, diagnóstico, health check, smoke test, deploy e rollback próprios;
+- `productId`, `productSlug`, `experienceVersion`, imagem, digest/tag e container explícitos na
+  evidência de homologação;
+- segredos e configuração específicos disponíveis somente ao runtime que deles necessita.
+
+É proibido entregar a entrada ou rota ativa de um produto por imagem/container identificado como
+outro produto, ainda que o acesso seja privado. Código-fonte e componentes neutros podem ser
+reutilizados, mas cada artefato gerado deve ter nome, tag, identidade e configuração próprios e expor
+somente o produto selecionado; assets exclusivos não podem ser servidos pela superfície de outro.
+Uma publicação de Mira não pode exigir reinício, troca ou rollback do container do Vega/Método
+MUSA, e a mesma regra vale para qualquer par de produtos. O teste de arquitetura deve falhar quando
+imagem, serviço, container ou porta forem reutilizados entre produtos.
+
+Backend, banco, proxy de borda e workers podem permanecer compartilhados somente quando forem
+infraestrutura neutra multi-produto, não carregarem assets de uma experiência específica, resolverem
+todo dado por identidade canônica do produto e preservarem segregação de estado, segredos, eventos e
+métricas. Essa exceção não permite chamar uma imagem de produto de “plataforma” para contornar o
+isolamento.
+
+Uma superfície privada histórica pode manter temporariamente sua URL externa para preservar links
+já emitidos, mas o proxy deve encaminhá-la ao container próprio do produto. Antes de tráfego humano,
+campanha ou publicação comercial, o produto também deve receber domínio corporativo próprio; um
+domínio de marca de outro produto nunca pode ser seu destino comercial.
+
+Quando o primeiro rollout exigir criar o container antes de trocar o proxy, o modo de bootstrap deve
+ser explícito, limitado àquele produto e comprovar simultaneamente que o novo container passou em sua
+porta exclusiva e que a rota histórica continua saudável no runtime anterior. O bootstrap não conclui
+o isolamento: depois da troca do proxy, uma nova validação em modo normal deve provar o destino
+exclusivo. Push comum, falha do upstream ou resposta pública indisponível nunca podem ativar esse modo.
+
 ### Isolamento obrigatório por versão pública
 
 Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.

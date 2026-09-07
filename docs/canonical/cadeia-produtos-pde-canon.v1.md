@@ -313,6 +313,8 @@ consiga acessar, usar e concluir, percebendo a transformação prometida com qua
 - construir etapas, missões, recomendações ou microações da experiência;
 - produzir conteúdo e materiais de apoio finais;
 - implementar acesso, progresso, estados vazios, erros e suporte mínimo;
+- empacotar cada superfície do produto em imagem, container, porta, proxy, diagnóstico e deploy
+  próprios, sem hospedar tela ou assets dentro do runtime de outro produto;
 - quando o formato for webapp ou ferramenta interativa, validar o fluxo funcional ponta a ponta,
   persistência, segregação de dados, responsividade, segurança e recuperação de falhas;
 - quando o formato for kit ou conteúdo digital, validar integridade, aplicabilidade, organização,
@@ -691,8 +693,11 @@ isolado não substituem checkout, pagamento, entrega ou venda reais.
 
 O macroprocesso de construção deve ordenar `jornada → componentes → audiovisual quando previsto →
 acesso → homologação técnica → cenários de Psique → Têmis → gate do backend`. A homologação registra
-URL, versão, instrumentação, snapshot e data das fontes, testes desktop e mobile e as travas de
-publicação, pagamento e mídia. Cada cenário usa sessão isolada, marcador `AGENT_VALIDATION` e eventos
+URL, versão, instrumentação, snapshot e data das fontes, testes desktop e mobile, as travas de
+publicação, pagamento e mídia e a identidade do runtime (`productId`, `productSlug`, imagem,
+digest/tag, container, porta e proxy). Ela bloqueia quando imagem, container, porta ou superfície
+forem compartilhados com outro produto. Cada cenário usa sessão isolada, marcador
+`AGENT_VALIDATION` e eventos
 próprios da mesma versão; falha funcional, de segurança ou de integridade preserva a tentativa como
 `BLOCKED` e exige ajuste antes de repetir. Não existem participante, consentimento ou leitura humana
 nessa etapa.

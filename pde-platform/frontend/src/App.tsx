@@ -22,7 +22,6 @@ import { createRoot } from "react-dom/client";
 import { AdaptiveVideoPlayer } from "./AdaptiveVideoPlayer";
 import { AssistedServiceApp } from "./AssistedServiceApp";
 import { TransitionPauseExperiment } from "./TransitionPauseExperiment";
-import { MiraPrivatePrototype } from "./MiraPrivatePrototype";
 import { ConsultantSdkQaPreview } from "./consultant-sdk/v1/ConsultantSdkQaPreview";
 import { pdeAccessHeaders } from "./pdeAccessAuthorization";
 import {
@@ -4255,8 +4254,6 @@ root.render(
     <ConsultantSdkQaPreview />
   ) : window.location.pathname.startsWith("/transition-pause") ? (
     <TransitionPauseExperiment />
-  ) : window.location.pathname.startsWith("/mira-private") ? (
-    <MiraPrivatePrototype />
   ) : configuredProductSlug === "metodo-musa-7-dias" ? (
     <App />
   ) : (

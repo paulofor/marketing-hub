@@ -1,5 +1,21 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-09-07 — Mira e Vega passam a ter superfícies operacionais isoladas
+
+- Evidência produtiva: a rota privada de Mira era entregue pelo mesmo bundle, imagem e container
+  `pde-platform-frontend-v7` usados pelo Vega/Método MUSA; o smoke de Mira também apontava para o
+  domínio v7 do MUSA.
+- Decisão: cada produto PDE passa a ter imagem, container, porta, identidade de diagnóstico, proxy,
+  smoke, deploy e rollback próprios. Mira usa `pde-platform-frontend-mira`; as versões v5, v6 e v7
+  permanecem exclusivas do produto Vega.
+- Limite: backend, banco, edge e workers podem continuar compartilhados somente como infraestrutura
+  neutra, com isolamento por `productId`, segredos, eventos e estado. Compartilhamento neutro não
+  autoriza misturar interfaces ou ciclos de publicação.
+- Critério: alterar, reiniciar ou reverter Mira não pode construir, remover, reiniciar nem trocar a
+  imagem de qualquer superfície Vega, e o contrato automatizado deve reprovar toda colisão futura.
+- Verdade comercial: a separação reduz risco operacional; não constitui publicação, campanha,
+  visitante ou venda.
+
 ## 2026-09-03 — Produto 10 recebe identidade e inicia construção privada
 
 - Estado confirmado: o produto planejado do dossiê #36 entrou no processo 3 de 6, ainda sem

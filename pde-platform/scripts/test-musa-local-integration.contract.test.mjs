@@ -20,6 +20,7 @@ test("a homologacao integrada combina o Compose base com a sobreposicao local", 
     script,
     /docker compose[\s\S]+-f "\$\{BASE_COMPOSE_FILE\}"[\s\S]+-f "\$\{VALIDATION_COMPOSE_FILE\}"/,
   );
+  assert.match(script, /docker compose -p "\$\{COMPOSE_PROJECT\}"/);
   assert.match(script, /--profile local-e2e/);
   assert.match(script, /compose config --quiet/);
 });
@@ -31,6 +32,7 @@ test("a homologacao executa toda a jornada dentro da rede Compose isolada", asyn
   assert.match(script, /pde-contract-server/);
   assert.match(script, /pde-platform-backend/);
   assert.match(script, /pde-platform-frontend/);
+  assert.match(script, /pde-platform-frontend-mira/);
   assert.match(script, /compose build pde-playwright-validation/);
   assert.match(
     script,

@@ -76,6 +76,19 @@ services:
       timeout: 3s
       retries: 30
 
+  pde-platform-frontend-mira:
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    environment:
+      PDE_FRONTEND_PUBLIC_URL: http://pde-platform-frontend-mira/mira-private
+      PDE_DEPLOY_IMAGE_TAG: local-validation
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/mira-private"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   pde-playwright-validation:
     profiles: ["local-e2e"]
     build:
@@ -85,6 +98,7 @@ services:
     environment:
       PDE_TEST_BACKEND_URL: http://pde-platform-backend:8096
       PDE_TEST_FRONTEND_URL: http://pde-platform-frontend
+      PDE_TEST_MIRA_FRONTEND_URL: http://pde-platform-frontend-mira
       PDE_TEST_CONTRACT_SERVER_URL: http://pde-contract-server:57181
       PDE_TEST_INTERNAL_TOKEN: pde-local-internal-test
       MIRA_PRIVATE_E2E_TOKEN: mira-qa-local
@@ -94,6 +108,8 @@ services:
       pde-platform-backend:
         condition: service_healthy
       pde-platform-frontend:
+        condition: service_healthy
+      pde-platform-frontend-mira:
         condition: service_healthy
 
   pde-liquibase-validation:

@@ -4267,3 +4267,23 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** o mesmo smoke usado no CI cobre término ausente, falso e verdadeiro, retomada sem
   mutação, encerramento explícito e unicidade do botão, em Chromium desktop, iPhone e Pixel.
 - **Homologação:** `docs/homologacao/actions-cards-mira-2026-09-05.md`.
+
+## LOOP-PDE-PRODUTOS-COMPARTILHAM-SUPERFICIE — correção de Mira reinicia Vega
+
+- **Data:** 2026-09-07.
+- **Evidência:** o host possuía somente `pde-platform-frontend-v7`, com imagem de Vega/MUSA, para
+  entregar também `/mira-private`; o workflow executava o smoke privado em
+  `https://v7.clubemusa.com.br`, e a tarefa #347 exigiu trocar imagens compartilhadas para corrigir
+  Mira. O produto 10 estava identificado no backend, mas não possuía runtime de frontend próprio.
+- **Causa-raiz:** o cânone exigia separação entre versões de experiência, mas não tornava explícita a
+  fronteira entre produtos. A rota, os assets e o proxy de Mira foram incorporados ao bundle v7 de
+  Vega, tornando build, deploy e rollback tecnicamente acoplados.
+- **Alternativas avaliadas:** apenas documentar manteria o defeito; duplicar backend, banco e workers
+  aumentaria custo e risco de estado concorrente; isolar superfícies de produto e compartilhar apenas
+  infraestrutura neutra oferece independência sem duplicar o motor PDE. Foi escolhida a terceira.
+- **Correção sistêmica:** Mira recebe entrypoint, Dockerfile, imagem, serviço, container, porta,
+  diagnóstico, target de deploy e smoke próprios. O proxy histórico de `/mira-private` aponta somente
+  para esse container, enquanto o nginx de Vega nega explicitamente as rotas de Mira.
+- **Prevenção:** contrato versionado e testes bloqueiam colisão de identidade, imagem, container,
+  porta, proxy e lifecycle; os cânones de plataforma, cadeia e validação agora exigem evidência de
+  isolamento por produto. Matriz: `docs/homologacao/pde-isolamento-produto-mira-vega-v1.md`.

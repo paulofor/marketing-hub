@@ -1,0 +1,18 @@
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --include=dev --no-audit --no-fund
+COPY . .
+RUN npm run build:mira \
+    && mv dist-mira/mira.html dist-mira/index.html
+
+FROM nginx:1.27-alpine
+ARG PDE_FRONTEND_VERSION_ID=mira-private-v1
+COPY --from=build /app/dist-mira /usr/share/nginx/html
+COPY nginx.mira.conf /etc/nginx/templates/default.conf.template
+COPY docker-entrypoint-mira.d/ /docker-entrypoint.d/
+ENV PDE_BACKEND_UPSTREAM=pde-platform-backend:8096
+ENV PDE_FRONTEND_VERSION_ID=${PDE_FRONTEND_VERSION_ID}
+RUN chmod +x /docker-entrypoint.d/10-runtime-config.sh \
+    && printf '{"versionId":"%s"}\n' "${PDE_FRONTEND_VERSION_ID}" > /usr/share/nginx/html/pde-image-version.json
+EXPOSE 80

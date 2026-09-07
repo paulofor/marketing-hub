@@ -26,6 +26,11 @@ for required_contract in \
   '/api/pde/mira/private/v1/internal/agent-validations/sessions' \
   "if [ \"\${MIRA_AGENT_VALIDATION_STATUS}\" != '403' ]; then" \
   'TARGETED_FRONTEND_VERSION=v7' \
+  "mira) FRONTEND_SERVICES='pde-platform-frontend-mira'" \
+  'PDE_PLATFORM_FRONTEND_MIRA_IMAGE=' \
+  'PDE_PLATFORM_FRONTEND_MIRA_PORT=' \
+  'bootstrap-legacy-route' \
+  'PDE_MIRA_PROXY_MODE' \
   'run-targeted-production-smokes.sh "${TARGETED_FRONTEND_VERSION}"'; do
   if ! grep -Fq "${required_contract}" "${workflow}"; then
     echo "[ARQUITETURA] O deploy PDE perdeu o contrato de integração segura com o proxy existente: ${required_contract}" >&2
@@ -34,7 +39,12 @@ for required_contract in \
 done
 
 if [ "$(grep -Fc "if: github.event_name == 'push' || inputs.frontend_version != 'none'" "${workflow}")" -ne 2 ]; then
-  echo '[ARQUITETURA] O deploy automático do backend PDE deve validar a compatibilidade da superfície Mira já publicada.' >&2
+  echo '[ARQUITETURA] O deploy automático do backend PDE deve preservar o smoke da superfície Vega vigente.' >&2
+  exit 1
+fi
+
+if ! grep -Fq "PDE_DEPLOY_FRONTEND_VERSION: \${{ github.event_name == 'workflow_dispatch' && inputs.frontend_version || 'none' }}" "${workflow}"; then
+  echo '[ARQUITETURA] Push comum não pode escolher implicitamente um produto para deploy.' >&2
   exit 1
 fi
 
@@ -53,6 +63,7 @@ fi
 
 bash "${script_dir}/test-targeted-production-smokes.sh"
 bash "${script_dir}/test-public-health-commercial-source.sh"
+node --test "${script_dir}/test-product-runtime-isolation-contract.mjs"
 
 if ! grep -Fq 'PDE_MIRA_PRIVATE_QA_TOKEN: ${{ secrets.PDE_MIRA_PRIVATE_QA_TOKEN }}' "${workflow}" \
   || ! grep -Fq "export PDE_MIRA_PRIVATE_QA_TOKEN='" "${workflow}" \

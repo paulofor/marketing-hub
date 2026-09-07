@@ -68,7 +68,14 @@ validate_v6() {
 
 validate_v7() {
   run_public_health https://v7.clubemusa.com.br
-  run_mira_private https://v7.clubemusa.com.br
+  run_public_diagnostic https://v7.clubemusa.com.br
+  run_musa_consistency \
+    https://v7.clubemusa.com.br \
+    musa-pde-entry-v7-espelho-antes-de-sair
+}
+
+validate_mira() {
+  run_mira_private "${MIRA_PUBLIC_BASE_URL:-https://v7.clubemusa.com.br}"
 }
 
 validate_kit_whatsapp() {
@@ -87,6 +94,9 @@ case "${target_frontend}" in
   v7)
     validate_v7
     ;;
+  mira)
+    validate_mira
+    ;;
   kit-whatsapp)
     validate_kit_whatsapp
     ;;
@@ -94,6 +104,7 @@ case "${target_frontend}" in
     validate_v5
     validate_v6
     validate_v7
+    validate_mira
     validate_kit_whatsapp
     ;;
   none)

@@ -2,6 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 const token = process.env.MIRA_PRIVATE_E2E_TOKEN;
 
+if (process.env.PDE_TEST_MIRA_FRONTEND_URL) {
+  test.use({ baseURL: process.env.PDE_TEST_MIRA_FRONTEND_URL });
+}
+
 /** Protege a experiência contra o retorno de codinomes e instruções operacionais. */
 async function expectParticipantLanguage(page: Page) {
   await expect(page).toHaveTitle("Sua rotina, organizada com calma");

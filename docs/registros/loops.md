@@ -1121,6 +1121,15 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   aplicação terminar vermelho mesmo sem defeito no vídeo. A validação agora normaliza espaços do
   YAML e exige a chamada canônica completa, incluindo as revisões APP e frontend; assim, mudanças de
   formatação não quebram o gate e a ausência de qualquer argumento continua bloqueante.
+- **Recorrência fechada em 2026-09-07 — Mira #347/#348:** o merge da validação multiagente
+  construiu e publicou as imagens do PDE, mas o workflow verde marcou o job de produção como
+  `skipped`, deixando primeiro o backend sem a rota de criação de sessões e, depois do deploy
+  isolado do backend, o frontend v7 sem o modo de homologação. O deploy do backend e dos workers PDE
+  agora é automático em todo `push` elegível de `main`; frontends continuam seletivos e só são
+  publicados pelo slot explícito no `workflow_dispatch`. O pós-deploy exige que a rota interna exista
+  e responda `403` sem credencial, comprova a saúde da v7 e executa nela o smoke Playwright segregado
+  mesmo quando o `push` não publica frontend. O teste de contrato impede remover o gatilho, a prova
+  da rota ou o smoke de compatibilidade que detecta a ausência de `agent-validation-mode`.
 
 ---
 

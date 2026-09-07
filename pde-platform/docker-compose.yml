@@ -54,6 +54,29 @@ services:
       VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_HERO_VIDEO_URL:-}
       PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
 
+  pde-platform-frontend-mira:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.mira
+    container_name: pde-platform-frontend-mira
+    depends_on:
+      - pde-platform-backend
+    ports:
+      - "5180:80"
+    environment:
+      PDE_PRODUCT_ID: "10"
+      VITE_PDE_PRODUCT_SLUG: pde-planejado-36
+      PDE_EXPERIENCE_VERSION: mira-private-v1
+      PDE_FRONTEND_VERSION: mira-private-v1
+      PDE_FRONTEND_PUBLIC_URL: http://localhost:5180/mira-private
+      PDE_FRONTEND_IMAGE: marketing-hub/pde-platform-frontend-mira:local
+      PDE_FRONTEND_VERSION_ID: mira-private-v1
+      PDE_DEPLOY_IMAGE_TAG: local
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    labels:
+      com.marketinghub.pde.product-id: "10"
+      com.marketinghub.pde.product-slug: pde-planejado-36
+
   pde-ai-worker:
     build:
       context: ./pde-ai-worker

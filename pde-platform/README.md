@@ -91,7 +91,7 @@ bash pde-platform/scripts/test-musa-local-integration.sh
 ```
 
 Esse comando sobe um MySQL 5.7 local de teste, inicia o backend PDE na porta
-`8096`, inicia o frontend PDE na porta `57180` e roda Playwright nos hostnames
+`8096`, inicia o frontend MUSA e o frontend isolado de Mira e roda Playwright nos hostnames
 versionados `v5.clubemusa.com.br`, `v6.clubemusa.com.br` e `v7.clubemusa.com.br`
 sem interceptar `/api`. A validação confirma que o frontend conversa com o
 backend real pelo proxy, que cada hostname resolve sua `experienceVersion`, que o
@@ -101,8 +101,8 @@ teste e inspecionar os dados gravados. Sem essa opção, o runner remove
 containers, rede e volumes ao final, inclusive quando alguma jornada falha.
 
 O deploy produtivo do Método MUSA também valida os subdomínios versionados. Em
-`main`, o workflow publica backend/worker da plataforma, confirma a saúde das
-versões ativas e executa o smoke segregado de compatibilidade de Mira na v7.
+`main`, o workflow publica apenas a infraestrutura neutra, confirma a saúde das versões ativas e
+executa o smoke de Vega v7 sem escolher implicitamente outro produto.
 O frontend público de cada versão é publicado por `frontend_version`
 explícita no `workflow_dispatch`, usando imagem e container próprios para cada
 versão, para impedir que uma alteração da v6 atualize/reinicie a v5 enquanto
@@ -115,8 +115,15 @@ Deploy de produção:
 - `v5.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v5`, por padrão na porta `5176`.
 - `v6.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v6`, por padrão na porta `5177`.
 - `v7.clubemusa.com.br` deve apontar para o frontend `pde-platform-frontend-v7`, por padrão na porta `5178`.
+- A rota privada histórica `v7.clubemusa.com.br/mira-private` deve ser encaminhada pelo proxy ao
+  frontend `pde-platform-frontend-mira`, imagem homônima e porta `5180`; o container v7 do Vega não
+  pode conter nem servir a entrada de Mira.
+- No primeiro rollout, publique `frontend_version=mira` com
+  `mira_proxy_mode=bootstrap-legacy-route`; depois publique o proxy pelo workflow proprietário e
+  repita Mira com o modo padrão `isolated`. O bootstrap somente aceita a rota antiga quando ela
+  continua saudável no Vega v7 e o novo container já passou na porta exclusiva.
 - Use `workflow_dispatch` com `frontend_version=v6` para publicar somente a v6, `frontend_version=v5` para publicar somente a v5, `frontend_version=v7` para publicar somente a v7, `frontend_version=all` apenas quando a mudança for comprovadamente comum e aprovada para todas, e `frontend_version=none` quando quiser publicar só backend/worker.
-- O acesso privado histórico usa `https://v7.clubemusa.com.br/mira-private#access=<token-url-encoded>`; o fragmento é removido antes da primeira chamada HTTP e nunca deve ser substituído por token em path ou query string. Esse contrato v6 permanece somente para preservar evidências antigas e não participa do gate multiagente v7.
+- O acesso privado histórico usa `https://v7.clubemusa.com.br/mira-private#access=<token-url-encoded>`; o fragmento é removido antes da primeira chamada HTTP e nunca deve ser substituído por token em path ou query string. A URL é preservada por compatibilidade, mas o proxy a entrega pelo container exclusivo de Mira. Esse contrato v6 permanece somente para preservar evidências antigas e não participa do gate multiagente v7.
 - O processo v7 usa sessões frescas protegidas por `PDE_INTERNAL_API_TOKEN`, executadas pelo harness em desktop, iPhone 15 Pro e Pixel 7 com `trafficClass=AGENT_VALIDATION` e `mh_internal_test`. Convite humano e token de QA não podem ser usados como fallback; nenhuma execução sintética alimenta leitura, preferência, checkout, venda ou satisfação humana.
 - O container legado `pde-platform-frontend` não deve ser usado como destino público de versão. Ele é removido automaticamente quando o deploy incluir `frontend_version=v5` ou `frontend_version=all`, para liberar a porta histórica `5176` para `pde-platform-frontend-v5`.
 - Para ambientes de preview ou rollback, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE`, `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE`, `PDE_DEPLOY_FRONTEND_URL` e `PDE_APP_BASE_URL` apenas fora dos subdomínios versionados produtivos.

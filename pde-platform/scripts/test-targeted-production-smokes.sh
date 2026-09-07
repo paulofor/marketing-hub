@@ -67,9 +67,21 @@ fi
 
 run_target v7
 grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}"
-grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t\trun test:mira-private:public' "${invocation_log}"
+grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t\trun test:public-diagnostic-smoke' "${invocation_log}"
+grep -Fqx $'consistency\thttps://v7.clubemusa.com.br\tmusa-pde-entry-v7-espelho-antes-de-sair\t' "${invocation_log}"
+if grep -Fq 'test:mira-private:public' "${invocation_log}"; then
+  echo '[ARQUITETURA] O deploy direcionado ao Vega v7 executou a superfície de Mira.' >&2
+  exit 1
+fi
 if grep -Fq 'v5.clubemusa.com.br' "${invocation_log}" || grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao v7 validou um produto nao publicado.' >&2
+  exit 1
+fi
+
+run_target mira
+grep -Fqx $'npm\thttps://v7.clubemusa.com.br\t\trun test:mira-private:public' "${invocation_log}"
+if grep -Fq 'test:public-health' "${invocation_log}" || grep -Fq 'test:public-diagnostic-smoke' "${invocation_log}" || grep -q '^consistency' "${invocation_log}" || grep -q '^rigel-consistency' "${invocation_log}"; then
+  echo '[ARQUITETURA] O deploy direcionado a Mira executou a superfície de outro produto.' >&2
   exit 1
 fi
 
@@ -77,16 +89,16 @@ if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \
   PDE_SMOKE_CONSISTENCY_SCRIPT="${fake_consistency}" \
   PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT="${fake_rigel_consistency}" \
   PDE_SMOKE_INVOCATION_LOG="${invocation_log}" \
-  bash "${runner}" v7; then
-  echo '[ARQUITETURA] O smoke produtivo de Mira aceitou deploy v7 sem o token exclusivo de QA.' >&2
+    bash "${runner}" mira; then
+  echo '[ARQUITETURA] O smoke produtivo de Mira aceitou deploy Mira sem o token exclusivo de QA.' >&2
   exit 1
 fi
 
 run_target all
 test "$(grep -c $'npm\t.*\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}")" -eq 4
-test "$(grep -c $'npm\t.*\t\trun test:public-diagnostic-smoke' "${invocation_log}")" -eq 2
+test "$(grep -c $'npm\t.*\t\trun test:public-diagnostic-smoke' "${invocation_log}")" -eq 3
 test "$(grep -c $'npm\t.*\t\trun test:mira-private:public' "${invocation_log}")" -eq 1
-test "$(grep -c '^consistency' "${invocation_log}")" -eq 2
+test "$(grep -c '^consistency' "${invocation_log}")" -eq 3
 test "$(grep -c '^rigel-consistency' "${invocation_log}")" -eq 1
 
 if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \

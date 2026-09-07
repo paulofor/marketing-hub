@@ -299,6 +299,20 @@ jobs:
             curl --fail --show-error --silent \
               --retry 12 --retry-delay 10 --retry-connrefused \
               "${public_url}/pde-health-contract.json" | grep -q '"slug": "kit-whatsapp-pronto"'
+            if docker_host_status="$(curl --show-error --silent --output /tmp/mira-private-diagnostics.json --write-out '%{http_code}' \
+              --retry 12 --retry-delay 10 --retry-connrefused \
+              https://v7.clubemusa.com.br/mira-private/version-diagnostics.json)" \
+              && [ "${docker_host_status}" = "200" ]; then
+              grep -q '"surface": "pde-platform-frontend-mira"' /tmp/mira-private-diagnostics.json
+              grep -q '"productSlug": "pde-planejado-36"' /tmp/mira-private-diagnostics.json
+              curl --fail --show-error --silent \
+                --retry 12 --retry-delay 10 --retry-connrefused \
+                https://v7.clubemusa.com.br/mira-private/healthz | grep -q '"productId":10'
+            else
+              echo 'A rota histórica de Mira não está ligada ao container isolado.' >&2
+              cat /tmp/mira-private-diagnostics.json >&2 || true
+              exit 1
+            fi
           fi
       - name: Clean build artifacts from repository
         if: always()

@@ -48,5 +48,14 @@ grep -Fq 'https://kit-whatsapp-pronto.digicomdigital.com.br' "${workflow}" || {
   echo '[ARQUITETURA] deploy deve validar o destino público do Kit WhatsApp' >&2
   exit 1
 }
+for mira_contract in \
+  'https://v7.clubemusa.com.br/mira-private/version-diagnostics.json' \
+  'pde-platform-frontend-mira' \
+  'pde-planejado-36'; do
+  grep -Fq "${mira_contract}" "${workflow}" || {
+    echo "[ARQUITETURA] deploy do proxy não valida o isolamento de Mira: ${mira_contract}" >&2
+    exit 1
+  }
+done
 
 echo 'Contrato de ciclo de vida do proxy público validado.'

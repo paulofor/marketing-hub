@@ -35,7 +35,8 @@ O macroprocesso passa a se chamar **Protótipo, validação multiagente e aprova
    continuidade, instrumentação e versão imutável do protótipo.
 2. **O harness homologa tecnicamente**: executa a versão real em desktop e nos perfis móveis
    suportados, testa caminho feliz, retomada, entradas inválidas, falhas de integração, privacidade,
-   acessibilidade básica e emissão dos eventos esperados.
+   acessibilidade básica e emissão dos eventos esperados. Também comprova que a superfície pertence
+   a imagem, container, porta, proxy e ciclo de deploy exclusivos daquele produto.
 3. **Psique valida a experiência por cenários**: usa o protótipo real em contexto novo e isolado,
    sem herdar a resposta de Dédalo, e avalia compreensão, esforço, utilidade, confiança, prazer,
    objeções e clareza do próximo passo.
@@ -72,7 +73,7 @@ nome, consentimento, depoimento ou identificador de participante humana.
 
 Cada execução deve persistir:
 
-- produto, URL e versão exatos;
+- produto, URL e versão exatos, além de imagem, digest/tag, container, porta e proxy próprios;
 - agente, execução, modelo, versão do prompt e versão do schema;
 - cenário, entradas, saída funcional e decisão estruturada;
 - request enviado e response bruto recebido do modelo;
@@ -90,6 +91,8 @@ declarar “pessoas preferiram”, “clientes aprovaram” ou expressão equiva
 O backend libera a comunicação somente quando:
 
 - a mesma versão passa em desktop e nos perfis móveis suportados;
+- imagem, container, porta, proxy, diagnóstico e deploy da superfície não são compartilhados com
+  outro produto;
 - o caminho feliz entrega resultado pronto em até dez minutos e sem prompting ou montagem externa;
 - os três cenários de Psique possuem evidência completa e nenhum bloqueio crítico;
 - Têmis aprova segurança, verdade, privacidade e fidelidade aos contratos anteriores;

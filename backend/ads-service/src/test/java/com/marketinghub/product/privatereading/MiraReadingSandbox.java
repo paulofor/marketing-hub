@@ -140,7 +140,7 @@ public class MiraReadingSandbox {
         "requiredSignals":["EXPERIENCE_STARTED","VALUE_MOMENT","READY_RESULT_USED","PREFERRED_OVER_FREE","CHECKOUT_STARTED"]},
         "privatePrototype":{"checkoutMode":"SIMULATED_NO_CHARGE"},"privatePrototypeAcceptance":{
         "status":"READY","sourceQualityPassed":true,"sourceQualityEvaluatedAt":"%s","acceptedAt":"%s",
-        "privateAccessUrl":"https://mira.sandbox.local/mira-private","prototypeVersion":"mira-private-v1",
+        "privateAccessUrl":"https://mira.sandbox.local/mira-private","prototypeVersion":"mira-private-v2",
         "instrumentationReference":"events:local","sourceEvidenceReference":"fixture:local","privateAccessConfirmed":true,
         "desktopValidated":true,"mobileValidated":true,"paymentEnabled":false,"published":false,"mediaSpendBrl":0,
         "eventSource":"FIRST_PARTY_EVENTS","testMarker":"PRIVATE_PROTOTYPE"}}

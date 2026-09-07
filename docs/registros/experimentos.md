@@ -6940,3 +6940,17 @@
   dispositivo, resolução, qualidade ou jornada sem a mesma chave de campanha. Testes de contrato
   reproduzem o histórico exato do #91, garantem que a primeira impressão não aciona reset externo e
   a matriz visual cobre desktop, iPhone e Pixel.
+
+## 2026-09-07 — Mira: retrabalho funcional após rejeição da Psique
+
+- **Evidência:** a tarefa `#350` rejeitou a versão `mira-private-v1` porque a tela de encerramento
+  ocultava a rotina entregue. O processo v7 oferecia apenas repetir Psique e não criava uma tarefa
+  de correção, apesar de já persistir causa e recomendação.
+- **Decisão:** publicar o processo v8 com uma atividade condicional de correção do Dédalo. Ela recebe
+  o parecer completo, exige uma nova versão comprovada e devolve o produto à homologação técnica;
+  Psique só volta a analisar depois dessa validação.
+- **Correção de Mira:** a versão local `mira-private-v2` mantém rotina, instruções de uso e limites
+  visíveis depois do encerramento, com ação inequívoca para consultá-la novamente.
+- **Métrica esperada:** toda rejeição funcional deve produzir trabalho corretivo auditável e nenhuma
+  reanálise deve ocorrer sobre a mesma versão sem mudança. Isso melhora a prontidão comercial, mas
+  não representa venda, receita nem autorização para publicar.

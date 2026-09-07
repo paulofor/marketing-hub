@@ -101,6 +101,10 @@ aliases explícitos do fluxo, preservando uma única execução para a mesma ref
   para não competir visualmente com os processos atuais sem apagar sua rastreabilidade.
 - O diagrama é persistido como grafo estruturado, não como imagem ou XML livre.
 - Todo grafo precisa de exatamente um evento inicial, um final e fluxos entre elementos existentes.
+- Fluxos marcados com `kind=REWORK` documentam visualmente um retorno condicional, mas não entram no
+  cálculo genérico de predecessoras nem podem criar ciclo de liberação. A condição, a causa
+  persistida e a atividade que volta a ficar disponível devem ser governadas por um contrato de
+  prontidão do backend.
 - A tela renderiza o grafo persistido pelo backend e não infere status ou regra de negócio.
 - As superfícies de processo identificam nomes de processo e subprocesso com o ícone canônico de
   fluxo, e nomes de atividades `TASK` com o ícone canônico de atividade. Texto e ícone devem aparecer

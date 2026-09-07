@@ -104,7 +104,8 @@ fi
 for chromium_mobile_config in \
   "${repository_root}/pde-platform/frontend/playwright.public.config.ts" \
   "${repository_root}/pde-platform/frontend/playwright.container-integration.config.ts" \
-  "${repository_root}/pde-platform/frontend/playwright.local-integration.config.ts"; do
+  "${repository_root}/pde-platform/frontend/playwright.local-integration.config.ts" \
+  "${repository_root}/pde-platform/frontend/playwright.mira.config.ts"; do
   if ! grep -Eq "devices\[['\"]iPhone 15 Pro['\"]\], browserName: ['\"]chromium['\"]" \
     "${chromium_mobile_config}"; then
     echo "Erro: ${chromium_mobile_config} deve emular iPhone no Chromium, sem combinar WebKit com executável Chromium." >&2

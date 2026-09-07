@@ -353,8 +353,8 @@ class CommercialBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
+            "kit-whatsapp-tasting-homologation-v6.json",
             "kit-whatsapp-tasting-homologation-v5.json",
-            "kit-whatsapp-tasting-homologation-v4.json",
             "ATTESTED_REFERENCE",
             "reviewSummary",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")

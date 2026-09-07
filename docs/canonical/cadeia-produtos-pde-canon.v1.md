@@ -677,7 +677,8 @@ As execuções iniciadas sob a decisão de 2026-09-02 preservam `pde-commercial-
 `pde-commercial-plan-offer` v7 e `MARKET_STRATEGY_V4`. Atena seleciona no máximo uma candidata para
 protótipo instrumentado; Plutus limita a economia; Dédalo declara entrada, saída, tempo de valor,
 instrumentação e exclusões. O produto resultante nasce `PLANNED`, em `STOP`, e deve ser resolvido
-pela tela para `pde-construction-approval` v7, nunca apresentado como pronto para operação.
+pela tela para `pde-construction-approval` v8, nunca apresentado como pronto para operação. A v7
+permanece somente como histórico das execuções anteriores à rota explícita de retrabalho.
 
 O estado `STOP` permite liberar a construção e a validação interna sem publicar. Como ainda não
 existe experimento comercial, as novas tarefas usam a referência
@@ -692,7 +693,10 @@ Somente evidência persistida pode concluí-la; prompt, dossiê, score, anúncio
 isolado não substituem checkout, pagamento, entrega ou venda reais.
 
 O macroprocesso de construção deve ordenar `jornada → componentes → audiovisual quando previsto →
-acesso → homologação técnica → cenários de Psique → Têmis → gate do backend`. A homologação registra
+acesso → homologação técnica → cenários sequenciais de Psique → Têmis → gate do backend`. Uma
+rejeição funcional ativa a rota condicional `parecer → correção de Dédalo → nova versão → nova
+homologação técnica`, sem transformar as setas de retrabalho em predecessoras operacionais. A
+homologação registra
 URL, versão, instrumentação, snapshot e data das fontes, testes desktop e mobile, as travas de
 publicação, pagamento e mídia e a identidade do runtime (`productId`, `productSlug`, imagem,
 digest/tag, container, porta e proxy). Ela bloqueia quando imagem, container, porta ou superfície

@@ -509,7 +509,7 @@ public class BusinessProcessActivityExecutionService {
       throw new ResponseStatusException(HttpStatus.CONFLICT, agentReadiness.reason());
     }
     String activityName = activity.path("label").asText(normalizedActivityId);
-    String objective = activity.path("description").asText(activityName);
+    String objective = activityObjective(activity, activityDefinition, agentReadiness);
     List<AgentTaskResponse> requestedTasks =
         responsibleAgentKeys.stream()
             .map(
@@ -653,6 +653,44 @@ public class BusinessProcessActivityExecutionService {
           if (key != null) keys.add(key);
         });
     return List.copyOf(keys);
+  }
+
+  /** Acrescenta o diagnóstico vigente à missão das atividades condicionais de retrabalho. */
+  private String activityObjective(
+      JsonNode activity,
+      BusinessProcessActivityDefinition definition,
+      AgentProductProcessActivityReadiness readiness) {
+    String objective = activity.path("description").asText(activity.path("label").asText());
+    if (!"ON_FUNCTIONAL_REJECTION".equals(activityMetadataText(definition, "activationMode"))
+        || readiness == null
+        || readiness.reason() == null
+        || readiness.reason().isBlank()) {
+      return objective;
+    }
+    return objective + " Diagnóstico vigente: " + readiness.reason();
+  }
+
+  /**
+   * Lê um texto opcional da definição versionada sem permitir que JSON inválido libere comandos.
+   */
+  private String activityMetadataText(
+      BusinessProcessActivityDefinition definition, String fieldName) {
+    if (definition == null
+        || definition.getDefinitionJson() == null
+        || definition.getDefinitionJson().isBlank()) {
+      return null;
+    }
+    try {
+      return textOrNull(objectMapper.readTree(definition.getDefinitionJson()).path(fieldName));
+    } catch (Exception ex) {
+      LOGGER.error(
+          "Falha ao ler metadado da atividade BPM. activityDefinitionId={} activityId={} field={}",
+          definition.getId(),
+          definition.getActivityId(),
+          fieldName,
+          ex);
+      return null;
+    }
   }
 
   /** Explica por que a tela pode ou não solicitar a execução dessa atividade. */
@@ -819,11 +857,17 @@ public class BusinessProcessActivityExecutionService {
           backendReadiness.requirements());
     }
     if (!responsibleAgents.isEmpty()) {
+      String configuredActionLabel = activityMetadataText(definition, "actionLabel");
+      String configuredDescription = activityMetadataText(definition, "controlDescription");
       return new ProductProcessActivityExecutionControlResponse(
           "AGENT",
           "COMMAND",
-          "BLOCKED".equals(operationalState) ? "Reiniciar tarefa" : "Executar atividade",
-          "Abre todas as tarefas responsáveis no mesmo ciclo auditável.",
+          configuredActionLabel == null
+              ? "BLOCKED".equals(operationalState) ? "Reiniciar tarefa" : "Executar atividade"
+              : configuredActionLabel,
+          configuredDescription == null
+              ? "Abre todas as tarefas responsáveis no mesmo ciclo auditável."
+              : configuredDescription,
           requestAvailable,
           requestReason,
           false,
@@ -1172,6 +1216,9 @@ public class BusinessProcessActivityExecutionService {
                   product,
                   readinessSourceReference)
               : null;
+      boolean selectedVersionActivity =
+          definition != null
+              && conditionalActivitySelected(definition, situation, executions, agentReadiness);
       boolean backendStateAllowsRequest =
           "NOT_STARTED".equals(situation.operationalState())
               || "BLOCKED".equals(situation.operationalState());
@@ -1239,7 +1286,7 @@ public class BusinessProcessActivityExecutionService {
               definition == null ? null : definition.getObjective(),
               definition == null ? null : definition.getOwnerName(),
               sequence++,
-              definition != null,
+              selectedVersionActivity,
               situation.operationalState(),
               situation.stateReason(),
               situation.objectiveAchieved(),
@@ -1253,6 +1300,20 @@ public class BusinessProcessActivityExecutionService {
               executionControl));
     }
     return groups;
+  }
+
+  /** Oculta uma rota condicional até existir rejeição funcional, tentativa ou conclusão própria. */
+  private boolean conditionalActivitySelected(
+      BusinessProcessActivityDefinition definition,
+      ActivitySituation situation,
+      List<BusinessProcessActivityExecutionResponse> executions,
+      AgentProductProcessActivityReadiness readiness) {
+    if (!"ON_FUNCTIONAL_REJECTION".equals(activityMetadataText(definition, "activationMode"))) {
+      return true;
+    }
+    return !executions.isEmpty()
+        || !"NOT_STARTED".equals(situation.operationalState())
+        || (readiness != null && readiness.ready());
   }
 
   /**
@@ -1503,9 +1564,16 @@ public class BusinessProcessActivityExecutionService {
     return "NOT_STARTED";
   }
 
-  /** Prioriza bloqueio, execução e pendência antes das atividades ainda sem registro. */
+  /** Prioriza a correção acionável e depois bloqueio, execução e pendência. */
   private ProductProcessActivityExecutionGroupResponse currentActivity(
       List<ProductProcessActivityExecutionGroupResponse> activities) {
+    Optional<ProductProcessActivityExecutionGroupResponse> actionable =
+        activities.stream()
+            .filter(activity -> "prototypeCorrection".equals(activity.activityId()))
+            .filter(activity -> !activity.objectiveAchieved())
+            .filter(ProductProcessActivityExecutionGroupResponse::executionRequestAvailable)
+            .findFirst();
+    if (actionable.isPresent()) return actionable.get();
     for (String state : List.of("BLOCKED", "IN_PROGRESS", "PENDING", "NOT_STARTED", "CANCELLED")) {
       Optional<ProductProcessActivityExecutionGroupResponse> matching =
           activities.stream()

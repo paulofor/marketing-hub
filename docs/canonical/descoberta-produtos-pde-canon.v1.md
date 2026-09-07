@@ -761,19 +761,21 @@ Por decisão de 2026-09-06, o avanço canônico depois de Argos é:
    orientado à experiência e eventos instrumentados para início, microvalor, uso do resultado,
    recuperação e limites de segurança;
 5. o backend materializa um único produto `PLANNED`, em `STOP`, e o posiciona no processo
-   `pde-construction-approval` v7 sob `product:<id>@agent-validation-v1`, sem autorização para
+   `pde-construction-approval` v8 sob `product:<id>@agent-validation-v1`, sem autorização para
    contato, publicação, campanha, pagamento ou gasto;
 6. Dédalo materializa a versão; o harness homologa desktop, mobile, retomada, falhas, privacidade e
    eventos com identificadores internos;
-7. Psique executa três cenários isolados — aderente, fricção/recuperação e limite/segurança — usando
+7. se uma validação rejeitar funcionalmente a versão, o backend direciona Dédalo à correção com
+   causa e ação persistidas, exige nova versão e retorna obrigatoriamente ao harness;
+8. Psique executa três cenários isolados — aderente, fricção/recuperação e limite/segurança — usando
    `AGENT_VALIDATION`, sem participante, convite, consentimento ou identidade humana;
-8. Têmis revisa a integridade da mesma versão e confirma que nenhuma evidência sintética foi
+9. Têmis revisa a integridade da mesma versão e confirma que nenhuma evidência sintética foi
    apresentada como preferência, depoimento, checkout comercial ou venda;
-9. o backend exige homologação e decisões explícitas de Psique e Têmis, recalcula cenários,
+10. o backend exige homologação e decisões explícitas de Psique e Têmis, recalcula cenários,
    temporalidade, versão, vigência das fontes e segregação dos eventos e só então libera a
    preparação da comunicação. O produto permanece em `STOP`; não cria experimento, contato,
    campanha, gasto, pagamento, venda ou receita;
-10. depois de comunicação, homologação comercial e autorização financeira, o experimento mede pela
+11. depois de comunicação, homologação comercial e autorização financeira, o experimento mede pela
     primeira vez resposta humana real, desde anúncio atribuído até compra, entrega e satisfação.
 
 Resultado `READY_FOR_OPERATION`, menos de três cenários, protótipo sem instrumentação ou tempo de

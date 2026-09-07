@@ -43,7 +43,7 @@ test.describe("protótipo privado de Mira", () => {
           "PREFERRED_OVER_FREE",
           "CHECKOUT_STARTED",
         ],
-        prototypeVersion: "mira-private-v1",
+        prototypeVersion: "mira-private-v2",
         checkoutMode: "SIMULATED_NO_CHARGE",
         readingFinished,
       };
@@ -215,8 +215,14 @@ test.describe("homologação multiagente segregada", () => {
       ageRange: "45-54",
       objective: "Organizar meus produtos em uma rotina simples",
       products: [
-        { name: "Limpador suave", labelDirections: "Usar para limpar e enxaguar" },
-        { name: "Hidratante diário", labelDirections: "Aplicar após a limpeza" },
+        {
+          name: "Limpador suave",
+          labelDirections: "Usar para limpar e enxaguar",
+        },
+        {
+          name: "Hidratante diário",
+          labelDirections: "Aplicar após a limpeza",
+        },
       ],
       routine: [] as Array<{
         productName: string;
@@ -225,7 +231,7 @@ test.describe("homologação multiagente segregada", () => {
         safetyNote: string;
       }>,
       events: ["EXPERIENCE_STARTED"],
-      prototypeVersion: "mira-private-v1",
+      prototypeVersion: "mira-private-v2",
       checkoutMode: "SIMULATED_NO_CHARGE",
       readingFinished: false,
       agentValidation: true,
@@ -233,7 +239,10 @@ test.describe("homologação multiagente segregada", () => {
       evidenceId: "evidence-local",
     };
     await page.addInitScript(() =>
-      window.sessionStorage.setItem("mira-private-session", "agent-session-local"),
+      window.sessionStorage.setItem(
+        "mira-private-session",
+        "agent-session-local",
+      ),
     );
     await page.route("**/api/pde/mira/private/v1/**", async (route) => {
       const url = new URL(route.request().url());
@@ -258,7 +267,8 @@ test.describe("homologação multiagente segregada", () => {
           events: [...state.events, "VALUE_MOMENT"],
         };
       } else if (url.pathname.endsWith("/events")) {
-        const event = (route.request().postDataJSON() as { eventType: string }).eventType;
+        const event = (route.request().postDataJSON() as { eventType: string })
+          .eventType;
         state = {
           ...state,
           events: [...state.events, event],
@@ -271,16 +281,35 @@ test.describe("homologação multiagente segregada", () => {
     await page.goto("/mira-private");
     await expect(page.getByTestId("agent-validation-mode")).toBeVisible();
     await page.getByRole("button", { name: "Gerar rotina segura" }).click();
-    await page.getByRole("button", { name: "Marcar uma parte como consultada" }).click();
+    await page
+      .getByRole("button", { name: "Marcar uma parte como consultada" })
+      .click();
     await expect(
       page.getByRole("button", { name: "Sim, prefiro a rotina pronta" }),
     ).toHaveCount(0);
-    await expect(page.getByText("Você consideraria avançar por R$ 49?" )).toHaveCount(0);
-    await page.getByRole("button", { name: "Concluir cenário interno" }).click();
     await expect(
-      page.getByRole("heading", { name: "Homologação interna concluída" }),
+      page.getByText("Você consideraria avançar por R$ 49?"),
+    ).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Concluir cenário interno" })
+      .click();
+    await expect(page.getByTestId("agent-validation-finished")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Uma ordem simples para consultar" }),
     ).toBeVisible();
-    await expect(page.locator(".mira-private-shell")).not.toContainText(/\bMira\b/i);
-    await expect(page.locator('input[autocomplete="cc-number"]')).toHaveCount(0);
+    await expect(page.locator(".mira-routine-grid h2")).toHaveText([
+      "Limpador suave",
+      "Hidratante diário",
+    ]);
+    await expect(page.getByText("Conforme rótulo").first()).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Consultar a rotina novamente" }),
+    ).toHaveAttribute("href", "#mira-routine-title");
+    await expect(page.locator(".mira-private-shell")).not.toContainText(
+      /\bMira\b/i,
+    );
+    await expect(page.locator('input[autocomplete="cc-number"]')).toHaveCount(
+      0,
+    );
   });
 });

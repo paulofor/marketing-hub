@@ -13,6 +13,7 @@ const launchOptions = {
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: /mira-private-prototype\.spec\.ts/,
   timeout: 30_000,
   expect: {
     timeout: 5_000,

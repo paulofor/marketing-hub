@@ -75,6 +75,41 @@ class ProductProcessActivityPredecessorServiceTest {
     assertThat(result.reason()).contains("Revisar evidências");
   }
 
+  /** Ignora setas visuais de retrabalho para não transformar a correção em ciclo predecessor. */
+  @Test
+  void ignoresReworkFlowWhenCalculatingOperationalPredecessors() {
+    BusinessProcessDefinition process = process();
+    process.setDiagramJson(
+        """
+        {
+          "nodes":[
+            {"id":"start","type":"START","label":"Início"},
+            {"id":"technical","type":"TASK","label":"Homologar"},
+            {"id":"correction","type":"TASK","label":"Corrigir"}
+          ],
+          "flows":[
+            {"from":"start","to":"technical"},
+            {"from":"technical","to":"correction","kind":"REWORK"},
+            {"from":"correction","to":"technical","kind":"REWORK"}
+          ]
+        }
+        """);
+    BusinessProcessActivityDefinition technical = activity(process, 1L, "technical");
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                56L, "product:10@agent-validation-v1"))
+        .thenReturn(List.of());
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            56L, "product:10@agent-validation-v1"))
+        .thenReturn(List.of());
+
+    ProductProcessActivityPredecessorReadiness result =
+        service.readiness(process, technical, "product:10@agent-validation-v1");
+
+    assertThat(result.ready()).isTrue();
+    assertThat(result.reason()).contains("primeiro trabalho executável");
+  }
+
   /** Monta um fluxo com gateway para validar a travessia entre tarefas. */
   private BusinessProcessDefinition process() {
     BusinessProcessDefinition process = new BusinessProcessDefinition();

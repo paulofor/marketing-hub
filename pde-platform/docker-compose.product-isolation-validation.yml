@@ -40,15 +40,15 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.mira
       args:
-        PDE_FRONTEND_VERSION_ID: mira-private-v1
+        PDE_FRONTEND_VERSION_ID: mira-private-v2
     environment:
       PDE_PRODUCT_ID: "10"
       VITE_PDE_PRODUCT_SLUG: pde-planejado-36
-      PDE_EXPERIENCE_VERSION: mira-private-v1
-      PDE_FRONTEND_VERSION: mira-private-v1
+      PDE_EXPERIENCE_VERSION: mira-private-v2
+      PDE_FRONTEND_VERSION: mira-private-v2
       PDE_FRONTEND_PUBLIC_URL: https://v7.clubemusa.com.br/mira-private
       PDE_FRONTEND_IMAGE: pde-platform-frontend-mira:validation
-      PDE_FRONTEND_VERSION_ID: mira-private-v1
+      PDE_FRONTEND_VERSION_ID: mira-private-v2
       PDE_DEPLOY_IMAGE_TAG: local-product-isolation
       PDE_BACKEND_UPSTREAM: pde-platform-backend:80
     depends_on:

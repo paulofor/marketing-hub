@@ -38,6 +38,14 @@ class PdeConstructionBpmTaskConsumerTest {
         .isEqualTo("prompts/pde-construction/v2/access-schema.json");
     assertThat(
             PdeConstructionBpmTaskConsumer.promptResourceFor(
+                "pde-construction-approval", "prototypeCorrection"))
+        .isEqualTo("prompts/pde-construction/v3/prototype-correction.md");
+    assertThat(
+            PdeConstructionBpmTaskConsumer.schemaResourceFor(
+                "pde-construction-approval", "prototypeCorrection"))
+        .isEqualTo("prompts/pde-construction/v3/prototype-correction-schema.json");
+    assertThat(
+            PdeConstructionBpmTaskConsumer.promptResourceFor(
                 "venda-entrega-satisfacao-cliente", "materialization"))
         .isEqualTo("prompts/pde-delivery/v1/personalization.md");
     assertThat(
@@ -65,6 +73,10 @@ class PdeConstructionBpmTaskConsumerTest {
         .isTrue();
     assertThat(
             PdeConstructionBpmTaskConsumer.supportsContract(
+                "pde-construction-approval", "prototypeCorrection"))
+        .isTrue();
+    assertThat(
+            PdeConstructionBpmTaskConsumer.supportsContract(
                 "pde-tasting-proof-of-value", "materialization"))
         .isTrue();
     assertThat(
@@ -86,6 +98,7 @@ class PdeConstructionBpmTaskConsumerTest {
         .startsWith("venda-entrega-satisfacao-cliente/materialization")
         .containsExactlyInAnyOrder(
             "venda-entrega-satisfacao-cliente/materialization",
+            "pde-construction-approval/prototypeCorrection",
             "pde-construction-approval/journey",
             "pde-construction-approval/deliverables",
             "pde-construction-approval/access",
@@ -100,6 +113,8 @@ class PdeConstructionBpmTaskConsumerTest {
         List.of(
             PdeConstructionBpmTaskConsumer.schemaResourceFor(
                 "pde-commercial-plan-offer", "productArchitecture"),
+            PdeConstructionBpmTaskConsumer.schemaResourceFor(
+                "pde-construction-approval", "prototypeCorrection"),
             PdeConstructionBpmTaskConsumer.schemaResourceFor(
                 "pde-construction-approval", "journey"),
             PdeConstructionBpmTaskConsumer.schemaResourceFor(
@@ -198,6 +213,115 @@ class PdeConstructionBpmTaskConsumerTest {
           .contains("TASK_CONTEXT.taskTarget.pdeContext", "researchIntelligence")
           .containsIgnoringCase("não exija leituras humanas já realizadas");
     }
+  }
+
+  /** Preserva causa, instrução ao usuário e retorno ao harness no prompt de correção. */
+  @Test
+  void keepsCorrectionPromptBoundToRejectedTaskAndNewVersion() throws Exception {
+    assertThat(read("prompts/pde-construction/v3/prototype-correction.md"))
+        .contains(
+            "blockedActivities",
+            "FUNCTIONAL_ADJUSTMENT",
+            "exatamente três alternativas",
+            "userInstructions",
+            "technicalHomologation",
+            "versão em `taskTarget.experienceVersion`")
+        .containsIgnoringCase("não publique");
+  }
+
+  /** Aceita a correção somente quando ela referencia o parecer e uma nova versão real. */
+  @Test
+  void validatesCorrectionBoundToFunctionalRejection() throws Exception {
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            351,
+            "taskTarget",
+            Map.of("experienceVersion", "mira-private-v2"),
+            "processContextJson",
+            """
+            {"blockedActivities":[{"taskId":350,"activityId":"psiqueAdherent",
+              "category":"FUNCTIONAL_ADJUSTMENT","result":{"prototypeVersion":"mira-private-v1"}}]}
+            """);
+    JsonNode result = json.readTree(readyCorrectionResult("mira-private-v1", "mira-private-v2"));
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval",
+            "prototypeCorrection",
+            "prompt",
+            "schema",
+            "pde-construction-v3",
+            "READY");
+
+    PdeConstructionBpmTaskConsumer.validate(result, contract);
+    PdeConstructionBpmTaskConsumer.validateCorrectionContext(task, result, contract, json);
+  }
+
+  /** Recusa aprovação que tenta manter o identificador da versão funcional rejeitada. */
+  @Test
+  void rejectsCorrectionWithoutNewPrototypeVersion() throws Exception {
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            351,
+            "taskTarget",
+            Map.of("experienceVersion", "mira-private-v1"),
+            "processContextJson",
+            """
+            {"blockedActivities":[{"taskId":350,"activityId":"psiqueAdherent",
+              "category":"FUNCTIONAL_ADJUSTMENT","result":{"prototypeVersion":"mira-private-v1"}}]}
+            """);
+    JsonNode result = json.readTree(readyCorrectionResult("mira-private-v1", "mira-private-v1"));
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval",
+            "prototypeCorrection",
+            "prompt",
+            "schema",
+            "pde-construction-v3",
+            "READY");
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateCorrectionContext(
+                    task, result, contract, json))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("versão nova");
+  }
+
+  /** Recusa um parecer antigo quando já existe rejeição funcional posterior no mesmo fluxo. */
+  @Test
+  void rejectsCorrectionBoundToStaleFunctionalRejection() throws Exception {
+    Map<String, Object> task =
+        Map.of(
+            "taskId",
+            353,
+            "taskTarget",
+            Map.of("experienceVersion", "mira-private-v2"),
+            "processContextJson",
+            """
+            {"blockedActivities":[
+              {"taskId":350,"activityId":"psiqueAdherent","category":"FUNCTIONAL_ADJUSTMENT",
+               "result":{"prototypeVersion":"mira-private-v1"}},
+              {"taskId":352,"activityId":"psiqueRecovery","category":"FUNCTIONAL_ADJUSTMENT",
+               "result":{"prototypeVersion":"mira-private-v1"}}]}
+            """);
+    JsonNode result = json.readTree(readyCorrectionResult("mira-private-v1", "mira-private-v2"));
+    var contract =
+        new PdeConstructionBpmTaskConsumer.BpmContract(
+            "pde-construction-approval",
+            "prototypeCorrection",
+            "prompt",
+            "schema",
+            "pde-construction-v3",
+            "READY");
+
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateCorrectionContext(
+                    task, result, contract, json))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("rejeição funcional vigente");
   }
 
   /** Aceita somente jornada com decisão comparada, cinco etapas e critérios verificáveis. */
@@ -412,6 +536,39 @@ class PdeConstructionBpmTaskConsumerTest {
       assertThat(required).as("required em %s", resource).isEqualTo(propertyNames);
     }
     node.forEach(child -> assertStrictObjects(child, resource));
+  }
+
+  /** Monta a saída completa de correção usada nos testes de vínculo e versionamento. */
+  private String readyCorrectionResult(String previousVersion, String correctedVersion) {
+    return """
+        {
+          "decision":"READY",
+          "rationale":"A causa funcional foi corrigida sem alterar o mecanismo de valor.",
+          "alternatives":[{},{},{}],
+          "selectedApproach":"Manter o resultado funcional visível e separar o aviso de homologação.",
+          "correctionPlan":{
+            "sourceTaskId":350,
+            "rejectedActivityId":"psiqueAdherent",
+            "previousPrototypeVersion":"%s",
+            "correctedPrototypeVersion":"%s",
+            "rootCause":"A conclusão substituía a rotina útil por uma mensagem administrativa.",
+            "userInstructions":["Publique a nova versão e execute novamente a homologação técnica."],
+            "changes":["A rotina continua visível após o cenário sintético ser concluído."],
+            "nextActivityId":"technicalHomologation",
+            "verification":{
+              "routineRemainsVisible":true,
+              "valueAndLimitsRemainVisible":true,
+              "nextActionVisible":true,
+              "newVersionPublished":true,
+              "technicalRevalidationRequired":true,
+              "noExternalSideEffects":true
+            }
+          },
+          "acceptanceCriteria":["rotina visível"],
+          "requiredChanges":[]
+        }
+        """
+        .formatted(previousVersion, correctedVersion);
   }
 
   /** Lê um prompt do classpath com a mesma codificação usada em produção. */

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Responsabilidade: comprovar o gate v7 sem fabricar leitura, venda ou autorização de mídia. */
+/** Responsabilidade: comprovar o gate v8 sem fabricar leitura, venda ou autorização de mídia. */
 class PdeAgentValidationGateActivityExecutorTest {
   private static final Instant NOW = Instant.parse("2026-09-06T12:00:00Z");
   private static final String SOURCE = "product:10@agent-validation-v1";
@@ -54,7 +54,7 @@ class PdeAgentValidationGateActivityExecutorTest {
     process = new BusinessProcessDefinition();
     process.setId(70L);
     process.setProcessCode("pde-construction-approval");
-    process.setVersionNumber(7);
+    process.setVersionNumber(8);
     process.setStatus("PUBLISHED");
     gate = new BusinessProcessActivityDefinition();
     gate.setId(710L);
@@ -197,12 +197,12 @@ class PdeAgentValidationGateActivityExecutorTest {
     verify(products, never()).save(any());
   }
 
-  /** Impede que uma versão futura reutilize silenciosamente o executor e o contrato do v7. */
+  /** Impede que uma versão anterior reutilize silenciosamente o executor e o contrato do v8. */
   @Test
-  void supportsOnlyPublishedVersionSevenContract() {
+  void supportsOnlyPublishedVersionEightContract() {
     assertThat(executor.supports(process, gate)).isTrue();
 
-    process.setVersionNumber(8);
+    process.setVersionNumber(7);
 
     assertThat(executor.supports(process, gate)).isFalse();
   }
@@ -215,7 +215,7 @@ class PdeAgentValidationGateActivityExecutorTest {
           "privatePrototypeAcceptance":{
             "status":"READY",
             "privateAccessUrl":"https://v7.clubemusa.com.br/mira-private",
-            "prototypeVersion":"mira-private-v1"
+            "prototypeVersion":"mira-private-v2"
           },
           "agentValidationPlan":{
             "contractVersion":"PDE_AGENT_VALIDATION_V1",
@@ -248,7 +248,7 @@ class PdeAgentValidationGateActivityExecutorTest {
           "productId":10,
           "productSlug":"orientacao-digital-rotina-pele-madura",
           "publicUrl":"https://v7.clubemusa.com.br/mira-private",
-          "prototypeVersion":"mira-private-v1",
+          "prototypeVersion":"mira-private-v2",
           "trafficClass":"AGENT_VALIDATION",
           "internalMarker":"mh_internal_test",
           "humanEvidenceClaimed":false,
@@ -287,7 +287,7 @@ class PdeAgentValidationGateActivityExecutorTest {
           "sourceReference":"product:10@agent-validation-v1",
           "productId":10,
           "productSlug":"orientacao-digital-rotina-pele-madura",
-          "prototypeVersion":"mira-private-v1",
+          "prototypeVersion":"mira-private-v2",
           "trafficClass":"AGENT_VALIDATION",
           "internalMarker":"mh_internal_test",
           "syntheticEvaluation":true,
@@ -321,7 +321,7 @@ class PdeAgentValidationGateActivityExecutorTest {
           "sourceReference":"product:10@agent-validation-v1",
           "productId":10,
           "productSlug":"orientacao-digital-rotina-pele-madura",
-          "prototypeVersion":"mira-private-v1",
+          "prototypeVersion":"mira-private-v2",
           "trafficClass":"AGENT_VALIDATION",
           "internalMarker":"mh_internal_test",
           "humanEvidenceClaimed":false,

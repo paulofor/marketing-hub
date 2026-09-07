@@ -12,9 +12,14 @@ comercial. Ela **não comprova** preferência humana, intenção de compra, sati
 fit, venda ou receita. Essas evidências só podem vir do experimento comercial e da entrega a pessoas
 reais, com origem e métricas persistidas.
 
-Execuções históricas permanecem imutáveis. A mudança entra em `pde-construction-approval` v7, com a
-referência `product:<id>@agent-validation-v1`; atividades históricas de leitura privada não podem
-ser reescritas nem concluídas artificialmente por agentes.
+Execuções históricas permanecem imutáveis. A primeira versão multiagente entrou em
+`pde-construction-approval` v7, com a referência `product:<id>@agent-validation-v1`; atividades
+históricas de leitura privada não podem ser reescritas nem concluídas artificialmente por agentes.
+
+Por decisão de 2026-09-07, a versão v8 torna operacional o retrabalho funcional: uma rejeição de
+harness, Psique ou Têmis não pode oferecer somente a repetição do mesmo parecer. O backend deve
+destacar uma atividade condicional de correção, preservar a rejeição como entrada, orientar o
+usuário e exigir versão nova antes de qualquer revalidação. A v7 permanece imutável como histórico.
 
 ## Alternativas consideradas
 
@@ -53,6 +58,27 @@ Nenhum agente pode criar e aprovar o mesmo artefato. Atena e Plutus continuam re
 respectivamente, pela estratégia e pela economia anteriores à construção; Íris e Apolo continuam
 responsáveis pela comunicação e pelo audiovisual; autorização humana permanece obrigatória para
 preço, publicação, campanha e gasto, não para representar uma pessoa fictícia em teste privado.
+
+## Rejeição, correção e nova validação
+
+Quando uma atividade técnica ou de revisão retornar bloqueio funcional corrigível, o processo deve
+seguir esta sequência auditável:
+
+1. o backend mantém a tarefa rejeitada, a causa-raiz, a ação recomendada, as evidências e o custo;
+2. a tela aponta **Corrigir o protótipo a partir do parecer** como próxima atividade e mostra o
+   comando **Criar tarefa de correção**; a mesma revisão fica indisponível enquanto a correção não
+   for concluída;
+3. Dédalo recebe o parecer estruturado, compara exatamente três alternativas e devolve instruções
+   executáveis, mudanças, critérios e versão anterior/nova;
+4. `READY` só é válido quando a versão corrigida difere da rejeitada e preserva resultado útil,
+   valor, limites e próximo passo visíveis; enquanto código, imagem, publicação ou prova estiverem
+   pendentes, a tarefa permanece `BLOCKED` com a ação restante;
+5. a versão nova retorna obrigatoriamente à homologação técnica; depois dela, os cenários de Psique
+   são executados em sequência e Têmis revisa o conjunto antes do gate do backend.
+
+As setas `kind=REWORK` do diagrama expressam retorno visual e não são predecessoras operacionais.
+Quem libera tarefas continua sendo o backend, combinando a sequência principal, a rejeição
+persistida e a validade da nova versão. Nenhum executor escolhe ou dispara a próxima etapa.
 
 ## Cenários mínimos de Psique
 

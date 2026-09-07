@@ -1,0 +1,110 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "rationale",
+    "alternatives",
+    "selectedApproach",
+    "correctionPlan",
+    "acceptanceCriteria",
+    "requiredChanges"
+  ],
+  "properties": {
+    "decision": { "type": "string", "enum": ["READY", "BLOCKED"] },
+    "rationale": { "type": "string", "minLength": 20, "maxLength": 1600 },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "salesFit"],
+        "properties": {
+          "name": { "type": "string", "minLength": 3, "maxLength": 120 },
+          "benefit": { "type": "string", "minLength": 10, "maxLength": 500 },
+          "risk": { "type": "string", "minLength": 10, "maxLength": 500 },
+          "effort": { "type": "string", "minLength": 3, "maxLength": 300 },
+          "salesFit": { "type": "string", "minLength": 10, "maxLength": 500 }
+        }
+      }
+    },
+    "selectedApproach": { "type": "string", "minLength": 20, "maxLength": 700 },
+    "correctionPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceTaskId",
+        "rejectedActivityId",
+        "previousPrototypeVersion",
+        "correctedPrototypeVersion",
+        "rootCause",
+        "userInstructions",
+        "changes",
+        "nextActivityId",
+        "verification"
+      ],
+      "properties": {
+        "sourceTaskId": { "type": "integer", "minimum": 1 },
+        "rejectedActivityId": {
+          "type": "string",
+          "enum": [
+            "technicalHomologation",
+            "psiqueAdherent",
+            "psiqueRecovery",
+            "psiqueSafety",
+            "commercialIntegrityReview"
+          ]
+        },
+        "previousPrototypeVersion": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "correctedPrototypeVersion": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "rootCause": { "type": "string", "minLength": 20, "maxLength": 1200 },
+        "userInstructions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "type": "string", "minLength": 10, "maxLength": 500 }
+        },
+        "changes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "type": "string", "minLength": 10, "maxLength": 600 }
+        },
+        "nextActivityId": { "type": "string", "enum": ["technicalHomologation"] },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "routineRemainsVisible",
+            "valueAndLimitsRemainVisible",
+            "nextActionVisible",
+            "newVersionPublished",
+            "technicalRevalidationRequired",
+            "noExternalSideEffects"
+          ],
+          "properties": {
+            "routineRemainsVisible": { "type": "boolean" },
+            "valueAndLimitsRemainVisible": { "type": "boolean" },
+            "nextActionVisible": { "type": "boolean" },
+            "newVersionPublished": { "type": "boolean" },
+            "technicalRevalidationRequired": { "type": "boolean", "const": true },
+            "noExternalSideEffects": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 14,
+      "items": { "type": "string", "minLength": 10, "maxLength": 400 }
+    },
+    "requiredChanges": {
+      "type": "array",
+      "maxItems": 12,
+      "items": { "type": "string", "minLength": 5, "maxLength": 500 }
+    }
+  }
+}

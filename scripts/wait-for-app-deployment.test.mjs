@@ -8,6 +8,28 @@ import { selectMatchingRun, waitForAppDeployment } from "./wait-for-app-deployme
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const matchingSha = "a".repeat(40);
 
+function assertDeploymentBeforeHostAccess(workflow) {
+  const deploy = workflow.split(/^  deploy:\s*$/m)[1]?.split(/^  [\w-]+:\s*$/m)[0];
+  assert.ok(deploy, "o job de deploy deve existir");
+  const steps = deploy.split(/^      - (?:name:|uses:)/m);
+  const commands = steps.map((step) =>
+    (step.split(/^        run:[ \t]*/m)[1] ?? "").replace(/\\\r?\n\s*/g, " "),
+  );
+  const gate = commands.findIndex((command) =>
+    /(?:^|\n)\s*node scripts\/wait-for-app-deployment\.mjs deploy-containers\.yml\b/.test(command),
+  );
+  assert.ok(gate > 0, "o gate de coordenação deve existir no job de deploy");
+  assert.match(steps[gate], /if: github\.event_name == 'push'/);
+
+  const preflight = commands.findIndex((command) => command.includes("bash scripts/configure-vps-ssh-fallback.sh"));
+  assert.ok(preflight > gate, "a autenticação deve ocorrer após o deploy da aplicação");
+  const remoteSteps = commands.flatMap((command, index) => /\b(?:ssh|scp|rsync)\s/.test(command) ? [index] : []);
+  assert.ok(remoteSteps.length > 0, "o contrato deve verificar operações remotas reais");
+  for (const index of remoteSteps) {
+    assert.ok(index > gate, "o host do agente só pode ser acessado após o deploy da aplicação");
+  }
+}
+
 function response(payload, status = 200) {
   return {
     ok: status >= 200 && status < 300,
@@ -155,10 +177,10 @@ test("workflow da Psique espera a aplicação e reporta a revisão imutável", a
   );
 
   assert.match(workflow, /permissions:\n  contents: read\n  actions: read/);
-  assert.match(workflow, /name: Wait for matching application deployment\n        if: github\.event_name == 'push'/);
   assert.match(workflow, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
   assert.match(workflow, /node scripts\/wait-for-app-deployment\.mjs deploy-containers\.yml/);
   assert.match(workflow, /AGENT_BUILD_REFERENCE='\$\{GITHUB_SHA\}'/);
+  assertDeploymentBeforeHostAccess(workflow);
 });
 
 test("workflow de Íris espera a aplicação antes de alterar o host do agente", async () => {
@@ -168,13 +190,59 @@ test("workflow de Íris espera a aplicação antes de alterar o host do agente",
   );
 
   assert.match(workflow, /permissions:\n  contents: read\n  actions: read/);
-  assert.match(workflow, /name: Validate application deploy coordination/);
-  assert.match(workflow, /name: Wait for matching application deployment\n        if: github\.event_name == 'push'/);
+  assert.match(workflow, /run: node --test scripts\/wait-for-app-deployment\.test\.mjs/);
   assert.match(workflow, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
   assert.match(workflow, /node scripts\/wait-for-app-deployment\.mjs deploy-containers\.yml/);
 
-  const waitPosition = workflow.indexOf("- name: Wait for matching application deployment");
-  const hostMutationPosition = workflow.indexOf("- name: Add agent VPS SSH key");
-  assert.ok(waitPosition >= 0, "o gate de coordenação deve existir");
-  assert.ok(hostMutationPosition > waitPosition, "o host do agente só pode ser alterado após o deploy da aplicação");
+  assertDeploymentBeforeHostAccess(workflow);
+});
+
+test("workflow de Argos espera a aplicação antes de acessar o VPS", async () => {
+  const workflow = await readFile(
+    path.join(repositoryRoot, ".github/workflows/product-discovery-worker-ci.yml"),
+    "utf8",
+  );
+  assertDeploymentBeforeHostAccess(workflow);
+});
+
+test("renomear etapas preserva o contrato de coordenação", async () => {
+  const workflow = await readFile(
+    path.join(repositoryRoot, ".github/workflows/meta-ad-approver-worker-ci.yml"),
+    "utf8",
+  );
+  assertDeploymentBeforeHostAccess(workflow.replace(/^      - name:.*$/gm, "      - name: Etapa ssh renomeada"));
+});
+
+test("ausência do gate ou acesso remoto antecipado bloqueia o contrato", () => {
+  const gate = `      - name: Aguardar aplicação
+        if: github.event_name == 'push'
+        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
+`;
+  const preflight = `      - name: Autenticar
+        run: bash scripts/configure-vps-ssh-fallback.sh
+`;
+  const remote = (command) => `      - name: Operação remota
+        run: ${command} destino-de-teste
+`;
+  const workflow = (...steps) => `jobs:\n  deploy:\n    steps:\n${steps.join("")}`;
+
+  assert.throws(() => assertDeploymentBeforeHostAccess(workflow(preflight, remote("ssh"))), /gate de coordenação/);
+  assert.throws(() => assertDeploymentBeforeHostAccess(workflow(preflight, gate, remote("ssh"))), /autenticação/);
+  for (const command of ["ssh", "scp", "rsync"]) {
+    assert.throws(
+      () => assertDeploymentBeforeHostAccess(workflow(remote(command), gate, preflight, remote("ssh"))),
+      /host do agente/,
+    );
+  }
+});
+
+test("CI central acompanha e executa o contrato de coordenação", async () => {
+  const ci = await readFile(path.join(repositoryRoot, ".github/workflows/github-actions-contracts.yml"), "utf8");
+  for (const event of ["push", "pull_request"]) {
+    const configuration = ci.split(`  ${event}:`)[1]?.split(/^  \w+:/m)[0];
+    for (const script of ["wait-for-app-deployment.mjs", "wait-for-app-deployment.test.mjs"]) {
+      assert.ok(configuration?.includes(`scripts/${script}`), `${event} deve acompanhar ${script}`);
+    }
+  }
+  assert.match(ci, /run: node --test scripts\/wait-for-app-deployment\.test\.mjs/);
 });

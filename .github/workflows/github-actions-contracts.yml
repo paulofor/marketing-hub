@@ -16,6 +16,8 @@ on:
       - "scripts/test-docker-temporary-image-cleanup-e2e.sh"
       - "scripts/fixtures/temporary-docker-image/Dockerfile"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
+      - "scripts/wait-for-app-deployment.mjs"
+      - "scripts/wait-for-app-deployment.test.mjs"
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/test-agent-vps-disk-space.sh"
       - "scripts/test-agent-vps-disk-space-e2e.sh"
@@ -60,6 +62,8 @@ on:
       - "scripts/test-docker-temporary-image-cleanup-e2e.sh"
       - "scripts/fixtures/temporary-docker-image/Dockerfile"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
+      - "scripts/wait-for-app-deployment.mjs"
+      - "scripts/wait-for-app-deployment.test.mjs"
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/test-agent-vps-disk-space.sh"
       - "scripts/test-agent-vps-disk-space-e2e.sh"
@@ -187,6 +191,9 @@ jobs:
 
       - name: Validar fila do host compartilhado
         run: bash scripts/test-shared-vps-deploy-queue.sh
+
+      - name: Validar coordenação com o deploy da aplicação
+        run: node --test scripts/wait-for-app-deployment.test.mjs
 
       - name: Validar resiliência do host compartilhado
         run: bash scripts/test-shared-vps-deploy-resilience.sh

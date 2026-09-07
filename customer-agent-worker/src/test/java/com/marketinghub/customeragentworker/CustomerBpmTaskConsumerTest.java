@@ -21,7 +21,17 @@ class CustomerBpmTaskConsumerTest {
             () ->
                 new CustomerBpmTaskConsumer(
                     "http://backend:8000", "codex", "gpt-5.6-sol", " ", "/workspace", "", json))
-        .hasMessageContaining("obrigatório para auditar Psique");
+        .hasMessageContaining("deve ser max em toda execução de Psique");
+  }
+
+  /** Bloqueia qualquer redução do esforço máximo antes de consumir uma tentativa do modelo. */
+  @Test
+  void rejectsReasoningEffortBelowMaximumBeforeModel() {
+    assertThatThrownBy(
+            () ->
+                new CustomerBpmTaskConsumer(
+                    "http://backend:8000", "codex", "gpt-5.6-sol", "high", "/workspace", "", json))
+        .hasMessageContaining("deve ser max em toda execução de Psique");
   }
 
   /** Aceita parecer aprovado somente quando há perspectiva e evidência verificável. */
@@ -316,7 +326,7 @@ class CustomerBpmTaskConsumerTest {
             "http://backend:8000",
             "codex",
             "gpt-5.6-sol",
-            "high",
+            "max",
             "/workspace-inexistente",
             "/workspace-inexistente",
             json);
@@ -346,7 +356,7 @@ class CustomerBpmTaskConsumerTest {
             "http://backend:8000",
             "codex",
             "gpt-5.6-sol",
-            "high",
+            "max",
             "/workspace-inexistente",
             "/workspace-inexistente",
             json);
@@ -438,7 +448,7 @@ class CustomerBpmTaskConsumerTest {
             "http://backend:8000",
             "codex",
             "gpt-5.6-sol",
-            "high",
+            "max",
             repository.toString(),
             repository.toString(),
             json);
@@ -533,7 +543,7 @@ class CustomerBpmTaskConsumerTest {
     try {
       CustomerBpmTaskConsumer consumer =
           new CustomerBpmTaskConsumer(
-              "http://backend:8000", "codex", "gpt-5.6-sol", "high", "/workspace", "", json);
+              "http://backend:8000", "codex", "gpt-5.6-sol", "max", "/workspace", "", json);
 
       List<String> command =
           consumer.command(
@@ -545,6 +555,7 @@ class CustomerBpmTaskConsumerTest {
 
       org.assertj.core.api.Assertions.assertThat(command)
           .contains("--sandbox", "read-only")
+          .containsSequence("--config", "model_reasoning_effort=\"max\"")
           .containsSequence("--image", fullPage.toAbsolutePath().toString())
           .containsSequence("--image", fold.toAbsolutePath().toString());
       org.assertj.core.api.Assertions.assertThat(command).filteredOn("--image"::equals).hasSize(2);
@@ -562,7 +573,7 @@ class CustomerBpmTaskConsumerTest {
     try {
       CustomerBpmTaskConsumer consumer =
           new CustomerBpmTaskConsumer(
-              "http://backend:8000", "codex", "gpt-5.6-sol", "high", "/workspace", "", json);
+              "http://backend:8000", "codex", "gpt-5.6-sol", "max", "/workspace", "", json);
 
       assertThatThrownBy(
               () ->

@@ -53,6 +53,7 @@ try {
 }
 
 async function review({ agent, prompt, schemaPath, images }) {
+  const reasoningEffort = agent === "PSIQUE" ? "max" : "high";
   const executionId = randomUUID();
   const slug = `${agent.toLowerCase()}-${executionId}`;
   const requestFile = join(requestsDir, `${slug}.md`);
@@ -63,6 +64,8 @@ async function review({ agent, prompt, schemaPath, images }) {
     "exec",
     "--model",
     model,
+    "--config",
+    `model_reasoning_effort="${reasoningEffort}"`,
     "-s",
     "read-only",
     "--ephemeral",
@@ -87,6 +90,7 @@ async function review({ agent, prompt, schemaPath, images }) {
     executionId,
     agent,
     model,
+    reasoningEffort,
     mode: "LOCAL_READ_ONLY",
     exitCode: result.status,
     requestFile,

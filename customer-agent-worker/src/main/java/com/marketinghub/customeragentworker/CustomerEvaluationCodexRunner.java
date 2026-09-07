@@ -32,16 +32,18 @@ public class CustomerEvaluationCodexRunner {
   private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
   private final String executable;
   private final String model;
+  private final String reasoningEffort;
   private final long timeoutMinutes;
   private final String repositoryPath;
   private final String sandboxMode;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
 
-  /** Configura o executor somente leitura e sua telemetria auditável. */
+  /** Configura o executor somente leitura, o raciocínio máximo e sua telemetria auditável. */
   public CustomerEvaluationCodexRunner(
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String executable,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_REASONING_EFFORT:max}") String reasoningEffort,
       @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long timeoutMinutes,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,
       @Value("${CUSTOMER_AGENT_CODEX_SANDBOX:read-only}") String sandboxMode,
@@ -49,6 +51,7 @@ public class CustomerEvaluationCodexRunner {
       CodexTelemetryReporter telemetry) {
     this.executable = executable;
     this.model = model;
+    this.reasoningEffort = PsiqueReasoningPolicy.requireMaximum(reasoningEffort);
     this.timeoutMinutes = timeoutMinutes;
     this.repositoryPath = repositoryPath;
     this.sandboxMode = sandboxMode;
@@ -173,7 +176,7 @@ public class CustomerEvaluationCodexRunner {
     return payload;
   }
 
-  /** Monta o comando com arquivo final, schema versionado e sandbox somente leitura. */
+  /** Monta o comando com arquivo final, schema, raciocínio máximo e sandbox somente leitura. */
   List<String> buildCommand(Path answer, Path schema) {
     return buildCommand(answer, schema, Path.of("customer-agent.mjs"));
   }
@@ -201,6 +204,8 @@ public class CustomerEvaluationCodexRunner {
                 answer.toString(),
                 "--color",
                 "never",
+                "--config",
+                PsiqueReasoningPolicy.codexConfiguration(reasoningEffort),
                 "--config",
                 "mcp_servers.customer_agent.command=\"node\"",
                 "--config",

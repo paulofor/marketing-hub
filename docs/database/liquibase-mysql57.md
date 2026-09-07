@@ -28,7 +28,7 @@ A matriz dos nove agentes possui fixture própria e valida incremento dinâmico 
 onze processos sem coautoria, a inclusão operacional de Íris, gates independentes de Psique e
 Têmis, cadeias de valor v8/v9, paridade entre `agent.current_version` e as versões declaradas pelos
 executores no contrato canônico de health, a evolução estética v4 de Psique com snapshot e paths
-auditáveis, além de reaplicação sem duplicidade:
+auditáveis e a versão v6 com raciocínio `max`, incluindo rollback e reaplicação sem duplicidade:
 
 ```bash
 bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh

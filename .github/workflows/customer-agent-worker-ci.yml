@@ -178,6 +178,7 @@ jobs:
                    CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home \
                    MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
                    CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
+                   CUSTOMER_AGENT_REASONING_EFFORT=max \
                    CUSTOMER_AGENT_IMAGE=marketing-hub/customer-agent-worker:${GITHUB_SHA} \
                    PDE_INTERNAL_API_TOKEN='${PDE_INTERNAL_API_TOKEN}' \
                    AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \

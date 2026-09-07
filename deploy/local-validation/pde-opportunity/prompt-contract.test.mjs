@@ -89,4 +89,6 @@ test("executor limita a chamada externa e audita a URL do provedor", async () =>
   assert.match(runner, /resolveOpportunityAgentTimeoutMs/);
   assert.match(runner, /AbortSignal\.timeout/);
   assert.match(runner, /persistAudit\("provider", \{ endpoint: providerEndpoint, timeoutMs \}\)/);
+  assert.match(runner, /role === "psique"[\s\S]*?\? "max"/);
+  assert.match(runner, /REASONING_EFFORT deve ser max nas execuções de Psique/);
 });

@@ -46,6 +46,7 @@ services:
       CUSTOMER_AGENT_REPOSITORY_PATH: /workspace
       CUSTOMER_AGENT_CODEX_EXECUTABLE: ${PSIQUE_CODEX_COMMAND:-/workspace/scripts/codex-oauth-session-safe.sh}
       CUSTOMER_AGENT_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CUSTOMER_AGENT_REASONING_EFFORT: max
       CODEX_HOME: /home/operator/.codex
       LOG_FILE_NAME: /tmp/psique.log
     volumes:

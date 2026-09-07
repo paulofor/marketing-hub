@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { CODEX_SANDBOX, CONTRACTS, parseUsage, validateResult } from "./run-pde-construction-v2-agent.mjs";
+import {
+  CODEX_SANDBOX,
+  CONTRACTS,
+  parseUsage,
+  resolveReasoningEffort,
+  validateResult,
+} from "./run-pde-construction-v2-agent.mjs";
 
 test("separa os três agentes de revisão", () => {
   assert.equal(CONTRACTS.dedalo.expectedAgent, "DEDALO");
@@ -11,6 +17,13 @@ test("separa os três agentes de revisão", () => {
 
 test("permite auditoria no snapshot sem depender de namespace aninhado", () => {
   assert.equal(CODEX_SANDBOX, "danger-full-access");
+});
+
+test("mantém Psique em raciocínio máximo sem ampliar a regra aos demais agentes", () => {
+  assert.equal(resolveReasoningEffort("psique"), "max");
+  assert.equal(resolveReasoningEffort("temis"), "high");
+  assert.equal(resolveReasoningEffort("dedalo", "xhigh"), "xhigh");
+  assert.throws(() => resolveReasoningEffort("psique", "high"), /deve ser max/);
 });
 
 test("preserva a última telemetria cumulativa", () => {

@@ -81,15 +81,20 @@ o pacote para impedir divergência entre a revisão versionada e o runtime.
 Os oito publicadores que antes faziam build no VPS devem construir e validar suas imagens no job
 de testes do Actions, empacotá-las por `scripts/agent-image-bundle.mjs` e transportá-las pelo artefato
 do mesmo run. O nome inclui o SHA; a retenção é de um dia. Pacote ausente, truncado, checksum
-divergente, referência inesperada ou identidade diferente bloqueia a atualização. Não reconstruir
-no VPS para contornar pacote indisponível. Argos mantém o contrato de imagem imutável no GHCR.
+divergente, referência inesperada ou conteúdo funcional diferente bloqueia a atualização. Não
+reconstruir no VPS para contornar pacote indisponível. Argos mantém o contrato de imagem imutável
+no GHCR.
 
 A transferência usa a configuração SSH já autenticada, gzip por stdin e `docker image load`,
 sem gravar outro arquivo tar no host. Antes da carga, medir reserva de 4 GiB mais duas vezes a soma
 dos tamanhos descompactados reportados pelo Docker, cobrindo camadas e extração transitória.
-Depois da carga, conferir cada ID de imagem e novamente os 4 GiB operacionais antes de liberar o
-restart. Compose usa obrigatoriamente `--no-build --pull never`; a imagem executada é a mesma
-validada no runner. Sondas finais, fila e checks funcionais permanecem obrigatórios.
+Depois da carga, conferir cada imagem por prova criptográfica portátil composta pela plataforma,
+camadas `RootFS` e configuração funcional normalizada; então medir novamente os 4 GiB operacionais
+antes de liberar o restart. O campo Docker `.Id` é apenas diagnóstico: stores clássicos e
+containerd podem representar a mesma imagem por hashes distintos. Divergência somente do `.Id`
+é aceita e registrada quando a prova portátil coincide; divergência de camada, configuração ou
+plataforma bloqueia. Compose usa obrigatoriamente `--no-build --pull never`; a imagem executada
+mantém o conteúdo validado no runner. Sondas finais, fila e checks funcionais permanecem obrigatórios.
 
 Psique, Plutus e o controlador administrativo também usam referências explícitas por SHA no Compose
 produtivo. Esses repositórios participam da allowlist de retenção; as tags locais antigas e imagens

@@ -11,6 +11,7 @@ const script = path.join(root, "scripts/agent-image-bundle.mjs");
 const image = `marketing-hub/customer-agent-worker:${"a".repeat(40)}`;
 const secondImage = `marketing-hub/iris-image-studio:${"a".repeat(40)}`;
 const imageId = `sha256:${"b".repeat(64)}`;
+const layerId = `sha256:${"d".repeat(64)}`;
 
 function fixture(t) {
   const directory = mkdtempSync(path.join(os.tmpdir(), "agent-images-"));
@@ -28,7 +29,12 @@ fs.appendFileSync(path.join(dir, 'calls'), JSON.stringify({tool: path.basename(p
 if (path.basename(process.argv[1]) === 'docker') {
   if (args[1] === 'inspect') {
     if (mode === 'missing-image') process.exit(1);
-    console.log(mode === 'invalid-size' ? '${imageId} NaN' : '${imageId} 268435456');
+    console.log(JSON.stringify([{
+      Id: '${imageId}', Size: mode === 'invalid-size' ? 'NaN' : 268435456,
+      Architecture: 'amd64', Os: 'linux', RootFS: {Type: 'layers', Layers: ['${layerId}']},
+      Config: {User: '10001', Env: ['MODE=test'], Cmd: ['node', 'worker.mjs'], WorkingDir: '/app',
+        Labels: {alpha: '1', zeta: '2'}, ExposedPorts: {'8099/tcp': {}}}
+    }]));
   } else if (args[1] === 'save') {
     process.stdout.write('synthetic-image-archive');
     if (mode === 'export-failure') process.exitCode = 1;
@@ -50,7 +56,19 @@ if (path.basename(process.argv[1]) === 'docker') {
     if (mode === 'load-failure') process.exitCode = 1;
   } else if (command.includes('docker image inspect')) {
     if (mode === 'inspect-failure') process.exit(1);
-    console.log(mode === 'wrong-id' ? 'sha256:' + 'c'.repeat(64) : '${imageId}');
+    if (mode === 'invalid-inspect-json') {
+      console.log('not-json');
+      process.exit(0);
+    }
+    const inspected = {
+      Id: mode === 'wrong-id' ? 'sha256:' + 'c'.repeat(64) : '${imageId}', Size: 268435999,
+      Architecture: mode === 'wrong-platform' ? 'arm64' : 'amd64', Os: 'linux', RootFS: {Type: 'layers',
+        Layers: [mode === 'wrong-layers' ? 'sha256:' + 'e'.repeat(64) : '${layerId}']},
+      Config: {User: '10001', Env: [mode === 'wrong-config' ? 'MODE=changed' : 'MODE=test'],
+        Cmd: ['node', 'worker.mjs'], WorkingDir: '/app', Labels: {zeta: '2', alpha: '1'},
+        ExposedPorts: {'8099/tcp': {}}}
+    };
+    console.log(JSON.stringify([inspected]));
   } else process.exit(94);
 }
 `;
@@ -113,6 +131,12 @@ for (const [label, mutate, refs] of [
     manifest.images[0].sizeBytes = -1;
     writeFileSync(file, JSON.stringify(manifest));
   }],
+  ["prova de conteúdo inválida", (f) => {
+    const file = path.join(f.bundle, "manifest.json");
+    const manifest = JSON.parse(readFileSync(file));
+    manifest.images[0].contentSha256 = "inválida";
+    writeFileSync(file, JSON.stringify(manifest));
+  }],
 ]) {
   test(`pacote inválido bloqueia antes de SSH: ${label}`, (t) => {
     const f = fixture(t);
@@ -124,7 +148,8 @@ for (const [label, mutate, refs] of [
 }
 
 for (const [mode, expectedCalls] of [["ssh-failure", 1], ["disk-before", 1], ["load-failure", 2],
-  ["wrong-id", 3], ["inspect-failure", 3], ["disk-after", 4]]) {
+  ["wrong-layers", 3], ["wrong-config", 3], ["wrong-platform", 3],
+  ["inspect-failure", 3], ["invalid-inspect-json", 3], ["disk-after", 4]]) {
   test(`interrompe na fase que falhou: ${mode}`, (t) => {
     const f = fixture(t);
     success(f.run("pack"));
@@ -134,6 +159,15 @@ for (const [mode, expectedCalls] of [["ssh-failure", 1], ["disk-before", 1], ["l
     assert.equal(f.calls().filter((call) => call.tool === "ssh").length, expectedCalls);
   });
 }
+
+test("aceita ID diferente entre stores quando o conteúdo portátil coincide", (t) => {
+  const f = fixture(t);
+  success(f.run("pack"));
+  const result = f.run("send", ["root@fixture.local", image], { IMAGE_TEST_MODE: "wrong-id" });
+  success(result);
+  assert.match(result.stdout, /ID do store variou/);
+  assert.equal(f.calls().filter((call) => call.tool === "ssh").length, 4);
+});
 
 for (const env of [{ SSH_DEPLOY_READY: "false" }, { SSH_COMMON_ARGS: "" },
   { SSH_COMMON_ARGS: "-o StrictHostKeyChecking=no" }]) {

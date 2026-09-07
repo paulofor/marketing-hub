@@ -51,14 +51,26 @@ printf '%s\n' "$command_text" >>"${IMAGE_E2E_CALLS:?}"
 if [[ "$command_text" =~ ^AGENT_VPS_DISK_MIN_FREE_MB=[0-9]+\ bash\ -s$ ]]; then
   cat >/dev/null
   echo 'Capacidade sintética aprovada na engine de teste.'
+elif [[ "$command_text" == docker\ image\ inspect* ]]; then
+  bash -c "$command_text" | node -e '
+    let payload = "";
+    process.stdin.on("data", chunk => { payload += chunk; });
+    process.stdin.on("end", () => {
+      const inspected = JSON.parse(payload);
+      inspected[0].Id = `sha256:${"c".repeat(64)}`;
+      process.stdout.write(`${JSON.stringify(inspected)}\n`);
+    });
+  '
 else
   exec bash -c "$command_text"
 fi
 SSH_DOUBLE
 chmod 700 "$test_dir/bin/ssh"
-PATH="$test_dir/bin:$PATH" SSH_DEPLOY_READY=true SSH_COMMON_ARGS="-F $test_dir/ssh-config" \
+send_output="$(PATH="$test_dir/bin:$PATH" SSH_DEPLOY_READY=true SSH_COMMON_ARGS="-F $test_dir/ssh-config" \
   IMAGE_E2E_CALLS="$test_dir/calls" \
-  node "$test_root/scripts/agent-image-bundle.mjs" send "$test_dir/bundle" root@fixture.local "$test_new"
+  node "$test_root/scripts/agent-image-bundle.mjs" send "$test_dir/bundle" root@fixture.local "$test_new")"
+printf '%s\n' "$send_output"
+grep -Fq 'ID do store variou' <<<"$send_output"
 [[ "$(docker image inspect --format '{{.Id}}' "$test_new")" = "$test_new_id" ]]
 [[ "$(docker image inspect --format '{{.Id}}' "$test_old")" = "$test_old_id" ]]
 export AGENT_VPS_DISK_TEST_IMAGE="$test_new"

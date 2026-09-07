@@ -38,6 +38,61 @@ Gargalo: capacidade da publicação. Métrica: nenhuma compilação no VPS e mat
 
 Após qualquer defeito corrigido na matriz, executar duas rodadas locais completas consecutivas sem falhas. Não disparar pipeline ou deploy como teste.
 
+## Recorrência: identidade dependente do image store
+
+Os primeiros deploys reais da revisão `5926b801a14b7f4c35c586b2bab5912d0de9ab24`
+carregaram as imagens com sucesso, mas foram bloqueados logo após a carga por comparação literal de
+`.Id`: Plutus `34078470275`, Têmis `34078470320`, Psique `34078470341` e o controlador
+`34078470322`. Nenhum deles reiniciou o serviço com a nova imagem. O inventário MCP confirmou que
+as versões anteriores continuaram ativas e que o disco tinha 12 GiB livres; capacidade e saúde
+anterior não explicavam essa falha.
+
+Os dois runs mais recentes do `main`, já na revisão `dc2db86cc4f296f7a0d1f35d8e2067d5148916cc`,
+reproduziram o mesmo ponto depois da carga: Têmis `34081005170` e Psique `34081005214`. Isso
+confirma a recorrência do contrato de identidade e não revelou uma segunda causa.
+
+O artefato do controlador preservado pelo Actions comprovou a inconsistência do contrato: o ID da
+configuração era `sha256:aa2034...`, enquanto o mesmo arquivo continha um manifesto OCI distinto,
+`sha256:6a0b51...`. A especificação Docker define o ImageID clássico pelo hash da configuração, mas
+o próprio projeto Moby registra que `docker load` pode expor o digest do manifesto como `.Id` em
+outro image store, mesmo com `RootFS` e `Config` iguais. Assim, o checksum do pacote e a carga
+estavam corretos; a igualdade literal de `.Id` não era uma prova portátil.
+
+| Alternativa | Benefício | Risco e esforço | Decisão |
+|---|---|---|---|
+| Aceitar qualquer ID após `docker load` | Mudança mínima | Perde a proteção contra imagem errada | Rejeitada |
+| Publicar e baixar tudo por registry/digest | Identidade OCI canônica | Amplia credenciais, armazenamento e mudança operacional | Não escolhida agora |
+| Prova portátil de conteúdo | Mantém checksum, tag SHA e valida camadas/configuração entre stores | Exige normalização e regressões específicas | Escolhida |
+
+Matriz incremental definida para a correção:
+
+| Dimensão | Cenário e critério |
+|---|---|
+| Compatibilidade | ID do runner e ID do VPS diferentes, com plataforma, camadas e configuração iguais: permitir e registrar ambos |
+| Integridade | Mudança de camada, configuração, plataforma ou prova no manifesto: bloquear antes do Compose |
+| Transporte real | Exportar, remover, carregar e executar imagem na engine local; simular somente a representação divergente do ID remoto |
+| Preservação | Manter container, volume e imagem de rollback; não executar build/pull no destino |
+| Observabilidade | Informar referência, prova de conteúdo e os dois IDs sem revelar configuração ou credenciais |
+| Regressão | Reexecutar toda a matriz central duas vezes consecutivas após o último ajuste |
+
+Referência externa primária: [Moby #51934](https://github.com/moby/moby/issues/51934).
+
+Homologação local da recorrência, depois do último ajuste:
+
+| Rodada | Etapas aprovadas | Duração | Status global | Falhas |
+|---|---|---|---|---|
+| 1 | 27/27 | 100 s | 0 | Nenhuma |
+| 2 | 27/27 | 101 s | 0 | Nenhuma |
+
+Cada rodada cobriu 37 testes do pacote e dos oito workflows, 26 cenários de disco, 111 testes
+Java (83 da Psique e 28 do Plutus), dois testes de navegador, três configurações Compose, build
+real do controlador e os contratos de Actionlint, ShellCheck, filas, retries, capacidade, SSH real,
+preservação e coordenação com a aplicação. O cenário Docker real comprovou que uma variação apenas
+de `.Id` é aceita, enquanto mudança de camada, configuração ou plataforma continua bloqueada antes
+do Compose. O projeto Compose exclusivo
+`aihub-321997e5-7478-438f-8ba2-119e5767a1e2-72656d2722` foi encerrado com volumes e órfãos removidos
+ao final das duas rodadas.
+
 ## Validação e limites
 
 - O novo cenário de cache recém-concluído foi executado também contra o script da revisão original: falhou com `recover-fresh: status=1 esperado=0`. O código anterior não alcançava esse cache, mesmo após todas as faixas de recuperação.
@@ -66,4 +121,3 @@ As tentativas posteriores de Psique (3), Atena (2) e Argos (2) concluíram com s
 - [Docker: Compose sem build e política de pull](https://docs.docker.com/reference/cli/docker/compose/up/).
 - [Docker: retenção de cache de build](https://docs.docker.com/reference/cli/docker/builder/prune/).
 - [GitHub: artefatos compartilhados entre jobs do mesmo run](https://docs.github.com/en/actions/tutorials/store-and-share-data).
-

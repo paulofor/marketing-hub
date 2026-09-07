@@ -83,7 +83,6 @@ grep -q 'BLOCKED após coleta controlada' "$test_dir/result.log"
 
 # Prova na engine real que a retenção roda mesmo com espaço, sem remover a imagem ativa
 # nem as duas versões de rollback mais recentes do repositório PDE conhecido.
-retention_position=0
 for retention_entry in \
   'stale:cccccccccccccccccccccccccccccccccccccccc' \
   'rollback-2:dddddddddddddddddddddddddddddddddddddddd' \
@@ -93,15 +92,11 @@ for retention_entry in \
   retention_temporary_reference="aihub-homologation/${AIHUB_HOMOLOGATION_SESSION}/retention-${retention_name}:latest"
   retention_reference="${retention_repository}:${retention_tag}"
   bash "$test_root/scripts/docker-build-temporary-image.sh" "retention-${retention_name}" \
-    --label "com.marketinghub.fixture.retention-version=${retention_name}" "$fixture"
+    --label "com.marketinghub.fixture.retention-version=${retention_name}" \
+    --label "org.opencontainers.image.created=2026-09-07T09:00:00Z" "$fixture"
   docker image tag "$retention_temporary_reference" "$retention_reference"
   retention_temporary_references+=("$retention_temporary_reference")
   retention_references+=("$retention_reference")
-  retention_position=$((retention_position + 1))
-  if ((retention_position < 3)); then
-    # Engines sem LastTagTime usam Created; o intervalo evita empate artificial da fixture.
-    sleep 1
-  fi
 done
 retention_active_reference="${retention_repository}:ffffffffffffffffffffffffffffffffffffffff"
 docker image tag "$AGENT_VPS_DISK_TEST_IMAGE" "$retention_active_reference"

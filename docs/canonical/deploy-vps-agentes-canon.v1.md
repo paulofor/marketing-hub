@@ -54,12 +54,14 @@ local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
 - Como última faixa, considerar somente tags imutáveis de 40 caracteres hexadecimais dos
   repositórios explicitamente conhecidos dos agentes. Preservar toda imagem referenciada por
   container ativo ou parado e, em capacidade normal, as duas versões sem container mais recentes de
-  cada repositório como rollback. A ordem usa o instante em que a tag chegou ao host
-  (`Metadata.LastTagTime`), com a data de criação apenas como fallback para engines antigas, porque
-  builds reprodutíveis podem compartilhar a mesma data de criação. Se houver empate no limite de
-  retenção, preservar todas as identidades empatadas até que exista ordem comprovável; nunca escolher
-  arbitrariamente qual rollback apagar. Essa retenção é aplicada antes e depois de todo deploy, sem
-  depender de pressão de disco. Se essas faixas terminarem abaixo da reserva exigida, uma faixa de
+  cada repositório como rollback. A ordem usa primeiro o instante OCI
+  `org.opencontainers.image.created`, declarado no build pelo workflow; para imagens legadas, usa o
+  instante em que a tag chegou ao host (`Metadata.LastTagTime`) e depois a data de criação. A
+  comparação preserva nanos quando disponíveis e termina pela referência imutável, garantindo ordem
+  total e exatamente o limite configurado mesmo quando a engine devolve horários iguais. A imagem em
+  uso e a revisão protegida do deploy são avaliadas separadamente e nunca participam desse desempate.
+  Essa retenção é aplicada antes e depois de todo deploy, sem depender de pressão de disco. Se essas
+  faixas terminarem abaixo da reserva exigida, uma faixa de
   pressão pode reduzir a retenção para uma versão de rollback por repositório, inclusive quando a
   segunda versão ainda tiver menos de uma hora. Remover apenas a referência exata, sem `--force`, da
   mais antiga para a mais recente e interromper assim que a reserva for recomposta. A imagem ativa e

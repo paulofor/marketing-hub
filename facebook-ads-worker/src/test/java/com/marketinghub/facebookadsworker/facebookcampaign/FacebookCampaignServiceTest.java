@@ -183,7 +183,7 @@ class FacebookCampaignServiceTest {
         backend.enqueuePriorityConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().contains("/api/experiments/")
-                && request.getPath().contains("/status?status=")
+                && request.getPath().contains("/status?status=FAILED")
                 && "PATCH".equals(request.getMethod()),
             () -> new MockResponse().setBody("{}").addHeader("Content-Type", "application/json")
         );
@@ -347,6 +347,18 @@ class FacebookCampaignServiceTest {
         throw new AssertionError("Expected backend request (" + description + ") matching predicate within 20 attempts.");
     }
 
+    /** Confirma que nenhuma chamada já concluída ao backend corresponde ao padrão proibido. */
+    private void assertNoBackendRequestMatching(String description, Predicate<RecordedRequest> predicate)
+        throws InterruptedException {
+        RecordedRequest request;
+        while ((request = backend.takeRequest(100, TimeUnit.MILLISECONDS)) != null) {
+            assertFalse(
+                predicate.test(request),
+                "Requisição inesperada ao backend (" + description + "): " + request.getMethod() + " " + request.getPath()
+            );
+        }
+    }
+
     /** Publica vendas PDE com degustação, incluindo recusa do teto e proteção nativa equivalente. */
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
@@ -493,6 +505,12 @@ class FacebookCampaignServiceTest {
         assertEquals("ACTIVE", backendPayload.get("ad").get("status").asText());
         assertEquals(minimumCapRejected ? "10000" : "2500",
             backendPayload.get("adSet").get(minimumCapRejected ? "lifetimeBudget" : "dailyBudget").asText());
+        assertNoBackendRequestMatching(
+            "transição redundante para RUNNING depois do callback completo",
+            request -> request.getPath() != null
+                && request.getPath().contains("/status?status=RUNNING")
+                && "PATCH".equals(request.getMethod())
+        );
         assertTrue(backend.getRequestCount() >= 4);
     }
 

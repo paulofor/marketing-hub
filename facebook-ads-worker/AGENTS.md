@@ -52,7 +52,7 @@
   foi removido da publicação canônica e não deve ser reintroduzido.
 - Na criação de campanhas, não delegue materialização de targeting ao `ai-worker`; o `facebook-ads-worker` monta o targeting
   da Meta localmente a partir do playbook ou do pacote manual aprovado.
-- Na criação de campanhas, manter somente a campanha em `PAUSED`; os ad sets e anúncios devem nascer `ACTIVE` para ficarem prontos para veiculação assim que a campanha for ativada manualmente.
+- Depois de todos os gates de publicação, campanha, ad sets e anúncios devem nascer `ACTIVE`; nunca declarar publicação concluída antes de a Graph API aceitar toda a hierarquia.
 - Campanhas de experimento devem registrar `budgetMode=ADSET`, enviar o orçamento diário apenas no ad set e criar a campanha sem orçamento próprio com `is_adset_budget_sharing_enabled=false`; orçamento de campanha fica reservado para etapa futura de escala de vencedores.
 - Na publicação, envie `mediaSpendLimit` como `spend_cap` nativo da campanha em centavos, sem criar `daily_budget` ou `lifetime_budget` na campanha; o orçamento diário continua no ad set. Na sincronização de métricas, ao atingir o mesmo limite, pause diretamente na Meta antes do callback como defesa adicional.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
@@ -70,7 +70,8 @@
   retornados pelo Facebook.
 - Após a publicação completa da campanha/ad set/criativo/anúncio na Meta, o worker deve confirmar
   sucesso ao backend em `POST /api/facebook-campaigns` com `status=ACTIVE`, permitindo que o backend
-  atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato.
+  atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato. Esse POST é o
+  único comando de sucesso; não enviar depois um `PATCH .../status?status=RUNNING` redundante.
 - Na sincronização periódica de métricas, o worker também deve consultar `status` e `effective_status`
   de campanha, ad sets e anúncios na Graph API e reportar o retrato ao backend em
   `POST /api/facebook-campaigns/{campaignId}/status-sync`; o painel deve refletir a Meta, não somente

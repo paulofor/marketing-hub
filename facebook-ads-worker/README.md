@@ -135,11 +135,12 @@ Meta: `primaryText` com até 125 caracteres, `headline` com até 40 e `descripti
 com até 25. Excessos são bloqueados, nunca truncados; devem voltar ao AI Worker e
 ao Aprovador Meta para reescrita semântica antes de uma nova tentativa.
 
-1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_LEADS` quando o
-   experimento trouxer `campaignObjective=LEADS`, `freeReward` ou criativo
-   direcionado para formulário de leads; use `OUTCOME_TRAFFIC` apenas para
-   experimentos sem contrato de recompensa gratuita e sem objetivo Leads. A
-   campanha nasce com status inicial `ACTIVE` e
+1. **Campanha** (`POST /campaigns`) com o objetivo explícito do experimento como
+   fonte prioritária: `campaignObjective=SALES` gera `OUTCOME_SALES`, pixel e
+   conversão `PURCHASE`; `campaignObjective=LEADS` gera `OUTCOME_LEADS`. Somente
+   na ausência de objetivo explícito, `freeReward` ou destino de formulário
+   permite inferir Leads; o fallback restante é `OUTCOME_TRAFFIC`. A campanha
+   nasce com status inicial `ACTIVE` e
    `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
@@ -287,16 +288,17 @@ anúncio com sucesso na Meta, o worker envia um `CreateCampaignRequest` para o b
 hierarquia para manter rastreabilidade completa (`facebook_ads_campaign`,
 `facebook_ads_ad_set`, `facebook_ads_ad_creative` e `facebook_ads_ad`). Essa chamada é a
 confirmação de publicação completa e por isso envia `status=ACTIVE`, permitindo que o
-backend atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato. O
+backend atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato. Esse
+`POST` é a única transição de sucesso: o worker não envia um `PATCH` adicional de
+`RUNNING`, evitando uma segunda mutação inválida depois de o backend concluir a operação. O
 `CreateCampaignRequest` também leva `experimentAdSetId` para relacionar o
 conjunto criado na Meta ao público configurado no experimento e registrar os
 códigos retornados pelo Facebook no banco de dados do backend. O
 `targetingJson` fornecido pelo backend é preservado no request para manter a
-segmentação aplicada diretamente no conjunto. Assim que o backend confirma o registro, o worker marca o experimento
-de origem como `RUNNING` com
-`PATCH /api/experiments/{id}/status?status=RUNNING`, evitando que o mesmo
-experimento reapareça em consultas futuras a `/facebook-campaigns/experiments-ready`
-e preservando o identificador gerado pela Meta para coleta de resultados. Todas as
+segmentação aplicada diretamente no conjunto. O backend marca o experimento de
+origem como `RUNNING` na mesma transação do registro, evitando que ele reapareça
+em `/facebook-campaigns/experiments-ready` e preservando o identificador gerado
+pela Meta para coleta de resultados. Todas as
 chamadas HTTP ao backend devem registrar a URL completa, parâmetros, payload e
 resposta recebida para acelerar o diagnóstico de incidentes em produção. Os logs
 seguem o padrão visual `==>` para requisições (por exemplo, `url==>https://...`)
@@ -309,11 +311,11 @@ que o formulário já foi criado manualmente diretamente na Meta. O
 e reutiliza o identificador resolvido ao montar criativos com
 `call_to_action.value.lead_gen_form_id`, mantendo o destino `ON_AD` e o objetivo
 `OUTCOME_LEADS` conforme as regras mais recentes da Graph API. A mesma política
-de Leads também vale para experimentos com recompensa gratuita (`freeReward`),
-mesmo quando a captura usa landing própria em vez de Instant Form. A exceção
-obrigatória é `experimentType=LOW_TICKET_PRODUCT` com `campaignObjective=SALES`:
-nesse caso o worker deve preservar campanha de venda (`OUTCOME_SALES`), ainda
-que exista algum `freeReward` secundário no contrato. Identificadores
+de Leads também vale para experimentos sem objetivo explícito com recompensa
+gratuita (`freeReward`), mesmo quando a captura usa landing própria em vez de
+Instant Form. Qualquer experimento com `campaignObjective=SALES`, inclusive PDE
+e low-ticket, deve preservar campanha de venda (`OUTCOME_SALES`), ainda que
+exista algum `freeReward` secundário no contrato. Identificadores
 temporários no formato `ai_form_*` são normalizados para o padrão `form_*`
 antes da publicação, e o share link é reconstruído com o identificador final
 quando disponível.
@@ -778,3 +780,12 @@ de o worker criar anúncios. Outros erros não removem a proteção financeira.
 O backend recebe `lifetimeBudget` pelo contrato já existente e preserva modo
 `ADSET`. Testes cobrem recusa, publicação completa, divergência de releitura,
 período vencido e segregação de vendas/degustação.
+
+Em 07/09/2026, a nova tentativa do #91 publicou a campanha
+`120251556536430326`, o conjunto `120251556536530326` e o anúncio
+`120251556536810326`. A Graph API confirmou todos como `ACTIVE`, com vendas,
+Purchase, teto vitalício de R$ 100 e término em 11/09/2026. O callback completo
+colocou o experimento em `RUNNING`; uma chamada legada de status feita logo
+depois retornou HTTP 400 por repetir a transição já concluída. O worker deixa o
+`POST /api/facebook-campaigns` como único comando de sucesso e o teste de
+contrato proíbe o `PATCH ...status=RUNNING` redundante.

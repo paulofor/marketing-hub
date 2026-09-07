@@ -1176,6 +1176,17 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 ## LOOP-FB-PUBLICATION — Publicação Facebook Ads
 
+- **Fechamento operacional do #91 em 2026-09-07:** a imagem já publicada do
+  worker aplicou o fallback financeiro e criou campanha `120251556536430326`,
+  conjunto `120251556536530326` e anúncio `120251556536810326`. A Graph API
+  confirmou os três como `ACTIVE`; o backend persistiu a campanha e moveu o
+  experimento para `RUNNING`. O único erro posterior foi um `PATCH ...status=RUNNING`
+  legado: o `POST /api/facebook-campaigns` já havia feito a mesma transição
+  atomicamente. A correção remove a segunda chamada, documenta o dono único da
+  transição e adiciona teste que proíbe o request redundante nos dois caminhos
+  de orçamento. O período foi deslocado para 07–11/09 sem elevar R$ 20/dia nem
+  o teto de R$ 100; publicação não é contabilizada como venda.
+
 - **Segundo bloqueio do #91 em 2026-09-06:** após a revisão #527 aprovada de fato,
   a Meta aceitou o vídeo e rejeitou `spend_cap=10000` com `100/2446307`, exigindo
   R$ 300 nesse campo. O #88 havia publicado com `OUTCOME_SALES` e sem esse campo

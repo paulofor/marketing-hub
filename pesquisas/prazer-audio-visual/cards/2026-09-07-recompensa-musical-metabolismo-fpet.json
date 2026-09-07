@@ -1,0 +1,18 @@
+{
+  "cardKey": "recompensa-musical-metabolismo-fpet",
+  "collection": "prazer-audio-visual",
+  "title": "Tratar recompensa musical como processo multimodal e metabólico",
+  "finding": "Em 35 participantes, música auto-selecionada como prazerosa elevou o consumo de glicose em regiões auditivas, motoras e de recompensa; o núcleo accumbens mostrou aumento metabólico no fPET sem aumento BOLD correspondente no fMRI.",
+  "mechanism": "O prazer musical pode envolver demanda metabólica sustentada ou acumulada em circuitos de recompensa, além de processos auditivos, motores, preditivos e autobiográficos; diferentes modalidades de neuroimagem capturam partes distintas dessa dinâmica.",
+  "commercialApplication": "Testar trilha altamente personalizada ou auto-selecionada contra trilha genérica em uma mesma experiência audiovisual, medindo prazer declarado, conclusão, replay, memória e CTA separadamente.",
+  "evidenceStrength": "Média-alta mecanística: estudo simultâneo FDG-fPET/fMRI com N=35 e estímulos auto-selecionados; generalização limitada pela amostra feminina jovem e pelo contraste com tons aleatórios.",
+  "publishedOn": "2026-06-05",
+  "validUntil": "2027-03-05",
+  "experimentHypothesis": "Uma trilha personalizada aumentará liking, conclusão e replay em relação a uma trilha genérica sem necessariamente produzir o mesmo efeito em CTA ou conversão.",
+  "risks": "Não inferir que atividade no núcleo accumbens equivale a engajamento comercial, nem que uma ausência de BOLD signifique ausência de processamento de recompensa.",
+  "limits": "O estudo não separa totalmente familiaridade, preferência, memória autobiográfica, previsão e propriedades acústicas e não mede retenção, CTA, compra ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-07-recompensa-musical-metabolismo-fpet.md",
+  "sourceTitle": "Fonte revisada — recompensa musical e metabolismo cerebral",
+  "sourceSha256": "cd768e27fc02eca7935020e2ec6232f4f7da4ee5bcd807ade1e7621d4fba1cf2"
+}

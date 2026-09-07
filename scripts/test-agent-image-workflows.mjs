@@ -28,6 +28,7 @@ function validate(workflow, module) {
   assert.doesNotMatch(deploy, /docker (?:build|buildx|compose build)\b|\s--build\b/, `${module}: build no VPS proibido`);
   assert.match(deploy, /docker compose up -d --no-build --pull never --remove-orphans/, module);
   assert.match(deploy, /group: deploy-vps-163-245-202-80\s+queue: max\s+cancel-in-progress: false/, module);
+  assert.equal((deploy.match(/bash -s -- retention/g) ?? []).length, 2, `${module}: retenção preventiva ausente`);
 }
 
 for (const module of modules) {
@@ -60,6 +61,19 @@ test("imagens de Psique, Plutus e controlador são imutáveis e participam da re
     assert.ok(workflow.includes(`${variable}=marketing-hub/${module}:\${GITHUB_SHA}`));
     assert.ok(disk.includes(`marketing-hub/${module}`));
   }
+});
+
+test("imagens oficiais da PDE participam somente da retenção segura por SHA", () => {
+  const disk = readFileSync(path.join(root, "scripts/ensure-agent-vps-disk-space.sh"), "utf8");
+  for (const repository of [
+    "pde-platform-backend", "pde-platform-frontend-v5", "pde-platform-frontend-v6",
+    "pde-platform-frontend-v7", "pde-platform-frontend-mira",
+    "pde-platform-frontend-kit-whatsapp", "pde-ai-worker", "pde-retention-worker",
+  ]) {
+    assert.ok(disk.includes(repository), repository);
+  }
+  assert.match(disk, /image_tag.*\^\[0-9a-f\]\{40\}\$/s);
+  assert.doesNotMatch(disk, /docker image prune --(?:all|force --all)|docker system prune/);
 });
 
 test("CI central acompanha os novos contratos e executa homologação real", () => {

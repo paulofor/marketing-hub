@@ -34,7 +34,7 @@ case "$*" in
     ;;
   'image ls --all --no-trunc --format {{.Repository}}|{{.Tag}}|{{.ID}}')
     [[ "$DISK_TEST_MODE" != image-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready)$ ]]; then
       printf '%s\n' \
         'marketing-hub/meta-ad-approver-worker|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
         'marketing-hub/meta-ad-approver-worker|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
@@ -52,16 +52,49 @@ case "$*" in
       if [[ "$DISK_TEST_MODE" = recover-managed-alias ]]; then
         printf '%s\n' 'marketing-hub/meta-ad-approver-worker|bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc|sha256:4444444444444444444444444444444444444444444444444444444444444444'
       fi
+    elif [[ "$DISK_TEST_MODE" =~ ^retention-pde(-tie)?$ ]]; then
+      printf '%s\n' \
+        'ghcr.io/paulofor/pde-platform-backend|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
+        'ghcr.io/paulofor/pde-platform-backend|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
+        'ghcr.io/paulofor/pde-platform-backend|dddddddddddddddddddddddddddddddddddddddd|sha256:3333333333333333333333333333333333333333333333333333333333333333' \
+        'ghcr.io/paulofor/pde-platform-backend|cccccccccccccccccccccccccccccccccccccccc|sha256:4444444444444444444444444444444444444444444444444444444444444444' \
+        'ghcr.io/paulofor/pde-platform-backend|latest|sha256:6666666666666666666666666666666666666666666666666666666666666666' \
+        'ghcr.io/paulofor/not-pde|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb|sha256:5555555555555555555555555555555555555555555555555555555555555555'
     fi
     ;;
   'container ls --all --no-trunc --quiet')
     [[ "$DISK_TEST_MODE" != container-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|recover-managed-pressure|managed-rm-failure|retention-ready|retention-pde|retention-pde-tie)$ ]]; then
       printf '%s\n' '9999999999999999999999999999999999999999999999999999999999999999'
     fi
     ;;
   'container inspect --format {{.Image}} 9999999999999999999999999999999999999999999999999999999999999999')
     printf '%s\n' 'sha256:1111111111111111111111111111111111111111111111111111111111111111'
+    ;;
+  image\ inspect\ --format\ \{\{.Metadata.LastTagTime\}\}\ *)
+    image_reference="${*:5}"
+    case "$image_reference" in
+      *:ffffffffffffffffffffffffffffffffffffffff) printf '%s\n' '2026-09-07T10:00:00Z' ;;
+      *:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|*:abababababababababababababababababababab)
+        printf '%s\n' '2026-09-07T09:00:00Z'
+        ;;
+      *:dddddddddddddddddddddddddddddddddddddddd)
+        if [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
+          printf '%s\n' '2026-09-07T09:00:00Z'
+        else
+          printf '%s\n' '2026-09-07T08:00:00Z'
+        fi
+        ;;
+      *:cccccccccccccccccccccccccccccccccccccccc|*:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc)
+        if [[ "$DISK_TEST_MODE" = retention-pde-tie ]]; then
+          printf '%s\n' '2026-09-07T09:00:00Z'
+        else
+          printf '%s\n' '2026-09-04T12:00:00Z'
+        fi
+        ;;
+      *:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) printf '%s\n' '2026-09-05T12:00:00Z' ;;
+      *) exit 71 ;;
+    esac
     ;;
   image\ inspect\ --format\ \{\{.Created\}\}\ *)
     image_reference="${*:5}"
@@ -85,6 +118,9 @@ case "$*" in
   image\ rm\ marketing-hub/meta-ad-approver-worker:dddddddddddddddddddddddddddddddddddddddd)
     touch "$DISK_TEST_DIR/second-rollback-removed"
     ;;
+  image\ rm\ ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc)
+    touch "$DISK_TEST_DIR/managed-removed"
+    ;;
   *) echo "Operação Docker não permitida: $*" >&2; exit 70 ;;
 esac
 DOCKER_DOUBLE
@@ -96,6 +132,8 @@ set -euo pipefail
 if [[ "$DISK_TEST_MODE" = invalid-df ]]; then echo "Filesystem invalid"; exit 0; fi
 disk_test_available=0
 if [[ "$DISK_TEST_MODE" = ready || "$DISK_TEST_MODE" = inode-full \
+  || "$DISK_TEST_MODE" = retention-ready || "$DISK_TEST_MODE" = retention-pde \
+  || "$DISK_TEST_MODE" = retention-pde-tie \
   || ( "$DISK_TEST_MODE" = recover && -f "$DISK_TEST_DIR/pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-recent && -f "$DISK_TEST_DIR/recent-pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-fresh && -f "$DISK_TEST_DIR/fresh-pruned" ) \
@@ -188,11 +226,22 @@ run_case container-list-failure 1 3 2 0
 run_case timeout 1 1 0 0
 grep -q 'coleta falhou ou excedeu' "$test_dir/output"
 run_case ready 2 0 0 0 invalid-mode
+run_case retention-ready 0 0 0 1 retention
+grep -q 'retenção preventiva concluída' "$test_dir/output"
+grep -Fxq 'image rm marketing-hub/meta-ad-approver-worker:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
+AGENT_VPS_DISK_PROTECTED_TAG=cccccccccccccccccccccccccccccccccccccccc \
+  run_case retention-ready 0 0 0 0 retention
+grep -q 'preservando imagem da publicação atual' "$test_dir/output"
+run_case retention-pde 0 0 0 1 retention
+grep -Fxq 'image rm ghcr.io/paulofor/pde-platform-backend:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
+run_case retention-pde-tie 0 0 0 0 retention
+grep -q 'por empate de recência no limite' "$test_dir/output"
 AGENT_VPS_DISK_MIN_FREE_MB=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_FREE_MB=invalid run_case ready 2 0 0 0
 AGENT_VPS_DISK_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=0 run_case ready 2 0 0 0
 AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS=3 run_case ready 2 0 0 0
+AGENT_VPS_DISK_PROTECTED_TAG=latest run_case ready 2 0 0 0
 
 exec 8>"$test_dir/disk.lock"
 flock -n 8
@@ -200,4 +249,4 @@ run_case full 1 0 0 0
 grep -q 'outra verificação' "$test_dir/output"
 flock -u 8
 
-echo "29 cenários de disco, retenção adaptativa, falhas e concorrência aprovados."
+echo "34 cenários de disco, retenção preventiva/adaptativa, falhas e concorrência aprovados."

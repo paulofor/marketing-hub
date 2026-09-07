@@ -214,7 +214,7 @@ jobs:
         timeout-minutes: 5
         run: |
           set -euo pipefail
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh
       - name: Prepare remote directory
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
@@ -318,4 +318,4 @@ jobs:
             echo "Restauração remota ignorada: o preflight SSH não autenticou."
             exit 0
           fi
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh

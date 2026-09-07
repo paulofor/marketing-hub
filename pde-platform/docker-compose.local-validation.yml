@@ -101,6 +101,7 @@ services:
       PDE_TEST_MIRA_FRONTEND_URL: http://pde-platform-frontend-mira
       PDE_TEST_CONTRACT_SERVER_URL: http://pde-contract-server:57181
       PDE_TEST_INTERNAL_TOKEN: pde-local-internal-test
+      PDE_EXPECTED_EXPERIENCE_VERSION: musa-pde-entry-v7-espelho-antes-de-sair
       MIRA_PRIVATE_E2E_TOKEN: mira-qa-local
     depends_on:
       pde-contract-server:

@@ -9,9 +9,12 @@ valida os workflows no PR; alterações reais nas entradas do módulo mantêm os
 e `workflow_dispatch` permite um rollout operacional explicitamente solicitado.
 
 Antes de sincronizar código, gravar credenciais de deploy ou executar build/pull/recriação,
-o job executa `scripts/ensure-agent-vps-disk-space.sh` no host, pela própria revisão versionada.
-Ao final da tentativa de publicação, inclusive após falha, o job executa novamente a sonda com
-`if: always()`, ainda dentro da fila compartilhada, para restaurar a reserva consumida pela publicação.
+o job executa `scripts/ensure-agent-vps-disk-space.sh retention` no host, pela própria revisão
+versionada. O modo `retention` remove preventivamente as tags SHA que excedem a imagem em uso e as
+duas versões de rollback, mesmo quando ainda existe espaço livre; assim o host não espera ficar cheio
+para controlar o crescimento. Ao final da tentativa de publicação, inclusive após falha, o job
+executa novamente a mesma retenção com `if: always()`, ainda dentro da fila compartilhada, para
+incorporar a nova imagem ao histórico e restaurar a reserva consumida pela publicação.
 O bootstrap inicial do Docker de Argos precede a sonda quando a engine ainda não existe.
 
 Os nove publicadores do VPS validam a autenticação antes de qualquer comando remoto. A credencial canônica
@@ -51,7 +54,12 @@ local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
 - Como última faixa, considerar somente tags imutáveis de 40 caracteres hexadecimais dos
   repositórios explicitamente conhecidos dos agentes. Preservar toda imagem referenciada por
   container ativo ou parado e, em capacidade normal, as duas versões sem container mais recentes de
-  cada repositório como rollback. Se essas faixas terminarem abaixo da reserva exigida, uma faixa de
+  cada repositório como rollback. A ordem usa o instante em que a tag chegou ao host
+  (`Metadata.LastTagTime`), com a data de criação apenas como fallback para engines antigas, porque
+  builds reprodutíveis podem compartilhar a mesma data de criação. Se houver empate no limite de
+  retenção, preservar todas as identidades empatadas até que exista ordem comprovável; nunca escolher
+  arbitrariamente qual rollback apagar. Essa retenção é aplicada antes e depois de todo deploy, sem
+  depender de pressão de disco. Se essas faixas terminarem abaixo da reserva exigida, uma faixa de
   pressão pode reduzir a retenção para uma versão de rollback por repositório, inclusive quando a
   segunda versão ainda tiver menos de uma hora. Remover apenas a referência exata, sem `--force`, da
   mais antiga para a mais recente e interromper assim que a reserva for recomposta. A imagem ativa e
@@ -72,7 +80,7 @@ continua separada, conforme `homologacao-local-docker-canon.v1.md`.
 
 Alteração de código deve passar pelo PR solicitado pelo usuário. Diagnóstico ou recuperação
 operacional de cache não autoriza instalar scripts novos nem publicar aplicações por SSH.
-Imagem fora da lista explícita de agentes continua exigindo revisão operacional individual da
+Imagem fora da lista explícita de agentes ou da PDE Platform continua exigindo revisão operacional individual da
 referência imutável, origem, idade, ausência de containers e versões de recuperação; não entra na
 coleta automática e nunca usa remoção forçada.
 
@@ -126,7 +134,8 @@ retorno. `AGENT_VPS_DISK_MIN_ROLLBACK_VERSIONS` define esse piso e nunca pode su
 `AGENT_VPS_DISK_ROLLBACK_VERSIONS`. Se nem esse piso recompuser a capacidade, registrar o bloqueio;
 ampliação de disco ou remoção de recursos fora da política depende da decisão operacional correspondente.
 
-Contratos, matriz e limites: `docs/homologacao/actions-agent-images-2026-09-07.md`.
+Contratos, matriz e limites: `docs/homologacao/actions-agent-images-2026-09-07.md` e
+`docs/homologacao/actions-pde-smoke-image-retention-2026-09-07.md`.
 
 Contrato e evidências: `docs/homologacao/actions-agent-vps-disk-2026-09-06.md`.
 Complemento de SSH/checkout: `docs/homologacao/actions-agent-vps-ssh-checkout-2026-09-07.md`.

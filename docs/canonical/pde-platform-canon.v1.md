@@ -93,6 +93,23 @@ porta exclusiva e que a rota histórica continua saudável no runtime anterior. 
 o isolamento: depois da troca do proxy, uma nova validação em modo normal deve provar o destino
 exclusivo. Push comum, falha do upstream ou resposta pública indisponível nunca podem ativar esse modo.
 
+### Retenção obrigatória das imagens publicadas
+
+Decisão canônica de 2026-09-07: o workflow da PDE Platform deve executar retenção preventiva antes e
+depois de cada tentativa de deploy, inclusive quando um smoke posterior falhar. Para cada repositório
+oficial do backend, workers e superfícies PDE, devem permanecer a imagem referenciada por qualquer
+container, a revisão que está sendo publicada e duas identidades mais recentes de rollback. Tags SHA
+mais antigas e sem container devem ser removidas sem `--force`, ordenadas pelo instante em que chegaram
+ao host. Um empate no limite deve preservar todas as identidades empatadas, sem eleger um rollback para
+remoção arbitrariamente. Tags mutáveis, imagens de outros produtos, containers e volumes não são elegíveis.
+
+A retenção não substitui o gate de capacidade: depois dela o host ainda deve preservar ao menos 4 GiB
+e 10.000 inodes livres. Sob pressão comprovada, a política compartilhada pode reduzir de dois para um
+rollback, nunca remover a imagem ativa nem usar `docker system prune`. O smoke pós-deploy deve obter as
+perguntas e opções do contrato público implantado, validar a identidade comercial esperada e enviar
+somente escolhas aceitas; é proibido afrouxar o backend ou introduzir metadado de teste dentro das
+respostas categoriais para deixar o Action verde.
+
 ### Isolamento obrigatório por versão pública
 
 Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.

@@ -1,0 +1,18 @@
+{
+  "cardKey": "consentimento-alinhamento-preferencia",
+  "collection": "neuromarketing",
+  "title": "Consentimento maior pode esconder preferência menor",
+  "finding": "Um experimento randomizado mostrou que um banner capaz de elevar a aceitação de rastreamento também reduziu a correspondência entre a decisão registrada e a preferência declarada pelo usuário.",
+  "mechanism": "Saliência, assimetria e fricção podem deslocar a escolha sem alterar a preferência subjacente, fazendo consent_rate parecer melhor enquanto a autonomia real piora.",
+  "commercialApplication": "Adicionar ConsentSymmetryScore e PreferenceAlignmentAudit para impedir que experimentos premiem interfaces que elevam métricas de consentimento por assimetria de UX.",
+  "evidenceStrength": "Moderada-alta: auditoria de 624 sites combinada com experimento online randomizado com 615 participantes; forte para o mecanismo de escolha, mas o contexto foi apostas no Reino Unido.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2027-09-07",
+  "experimentHypothesis": "Entre interfaces igualmente claras e simétricas, uma versão purpose-first pode preservar alinhamento de preferência sem piorar de forma material conversão ou confiança.",
+  "risks": "Transformar o teste em dark pattern, confundir consentimento jurídico com preferência comportamental ou extrapolar requisitos de GDPR para LGPD sem análise específica.",
+  "limits": "O estudo foi realizado no Reino Unido, em contexto de apostas e GDPR, e não prova impacto comercial positivo de uma interface específica no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-07-consentimento-alinhamento-preferencia.md",
+  "sourceTitle": "Fonte revisada — Consentimento elevado pode esconder desalinhamento com a preferência real",
+  "sourceSha256": "2094746483a83f75fa8ee486e440651cf195696e47b07d2c4a41ce069781b10a"
+}

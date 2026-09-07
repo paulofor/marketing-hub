@@ -26,7 +26,13 @@ try {
   );
   const model = resolveOpportunityModel();
   const timeoutMs = resolveOpportunityAgentTimeoutMs();
-  const effort = process.env.REASONING_EFFORT || (role === "argos" ? "medium" : "high");
+  const configuredEffort = String(process.env.REASONING_EFFORT || "").trim();
+  if (role === "psique" && configuredEffort && configuredEffort !== "max") {
+    throw new Error("REASONING_EFFORT deve ser max nas execuções de Psique.");
+  }
+  const effort = role === "psique"
+    ? "max"
+    : configuredEffort || (role === "argos" ? "medium" : "high");
   const request = {
     model,
     service_tier: "flex",

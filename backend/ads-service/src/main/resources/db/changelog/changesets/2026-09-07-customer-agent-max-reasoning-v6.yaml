@@ -1,0 +1,81 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-07-customer-agent-max-reasoning-v6.yaml
+  - changeSet:
+      id: 2026-09-07-customer-agent-max-reasoning-v6-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: agent_version
+        - columnExists:
+            tableName: agent
+            columnName: current_version
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM agent a LEFT JOIN agent_version av ON av.agent_id = a.id AND av.version_number = 6 WHERE a.agent_key = 'customer-agent' AND a.current_version = 5 AND av.id IS NULL
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 6,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'version', 6,
+                  'sourceChangeSet', '2026-09-07-customer-agent-max-reasoning-v6-001',
+                  'previousCurrentVersion', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'authority', 'HUMAN_EXPERIENCE_REVIEW',
+                  'reasoningPolicy', 'PSIQUE_MAX_V1',
+                  'reasoningEffort', 'max',
+                  'executionProfiles', JSON_ARRAY('EVALUATION', 'OBSERVATION', 'BPM', 'LOCAL_HOMOLOGATION'),
+                  'prompt', a.prompt_contract_path,
+                  'schema', a.schema_contract_path
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 6
+              WHERE a.agent_key = 'customer-agent'
+                AND a.current_version = 5
+                AND av.id IS NULL;
+
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 6
+              SET a.current_version = 6
+              WHERE a.agent_key = 'customer-agent'
+                AND a.current_version = 5
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-07-customer-agent-max-reasoning-v6-001';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent a
+              JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = 6
+              SET a.current_version = CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.previousCurrentVersion'))
+                AS UNSIGNED
+              )
+              WHERE a.agent_key = 'customer-agent'
+                AND a.current_version = 6
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-07-customer-agent-max-reasoning-v6-001';
+
+              DELETE av
+              FROM agent_version av
+              JOIN agent a ON a.id = av.agent_id
+              WHERE a.agent_key = 'customer-agent'
+                AND av.version_number = 6
+                AND JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.sourceChangeSet'))
+                  = '2026-09-07-customer-agent-max-reasoning-v6-001';

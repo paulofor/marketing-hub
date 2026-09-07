@@ -18,7 +18,6 @@ const logs = join(evidence, "agent-logs");
 const requests = join(evidence, "agent-requests");
 const responses = join(evidence, "agent-responses");
 const agentModel = "gpt-5.6-sol";
-const reasoningEffort = "high";
 await mkdir(logs, { recursive: true });
 await mkdir(requests, { recursive: true });
 await mkdir(responses, { recursive: true });
@@ -58,6 +57,7 @@ async function runCodex({
   output,
   images = [],
 }) {
+  const reasoningEffort = agent.startsWith("PSIQUE") ? "max" : "high";
   const executionId = randomUUID();
   const executionSlug = `${agent.toLowerCase()}-${executionId}`;
   const requestFile = join(requests, `${executionSlug}.md`);

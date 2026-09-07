@@ -261,6 +261,12 @@ for (const agent of [
       execution.reasoningEffort.length > 0,
     `${agent} nao registrou o tipo de raciocinio`,
   );
+  if (agent === "PSIQUE") {
+    assert(
+      execution.reasoningEffort === "max",
+      "Psique nao usou raciocinio maximo",
+    );
+  }
   assert(
     execution.mediaProviderCalled === false,
     `${agent} chamou provider externo de midia`,

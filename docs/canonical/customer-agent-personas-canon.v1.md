@@ -337,7 +337,24 @@ arquivo completo congelado na imagem. Truncamento silencioso e releitura por she
 Antes de iniciar o Codex, o worker deve recusar prompts acima de 900.000 caracteres e um teste de
 contrato deve montar o prompt comercial real para impedir recorrência por crescimento do pacote.
 
-Nas atividades BPM de Psique, o worker deve configurar explicitamente o tipo de raciocínio, manter o
+## Política de raciocínio de Psique
+
+Desde 2026-09-07, toda chamada de modelo feita em nome de Psique — avaliação estruturada,
+observação digital, atividade BPM ou homologação local — deve usar esforço de raciocínio `max`
+explícito. No catálogo vigente, o modelo canônico é `gpt-5.6-sol`; uma evolução futura de modelo só
+pode preservar esta política se o substituto também suportar `max`. O executor deve resolver `max` no
+próprio comando e falhar antes de chamar o modelo se o valor efetivo divergir; herdar o padrão de uma
+sessão é proibido. Request, resposta, modelo e esforço efetivo continuam auditáveis por execução. O
+custo e a latência adicionais devem ser medidos, sem reduzir silenciosamente a qualidade de um gate
+humano que protege produto e comunicação.
+
+A decisão comparou três alternativas: elevar todos os agentes, com maior custo e pouca aderência às
+responsabilidades distintas; usar `max` apenas em tarefas classificadas como críticas, com risco de
+lacunas e classificação incorreta; ou fixar `max` em todas as execuções exclusivas de Psique. A
+terceira foi escolhida por concentrar qualidade no gate de experiência humana sem ampliar custo aos
+demais agentes.
+
+Nas atividades BPM de Psique, o worker deve manter o
 prompt integral resolvido e capturar somente URLs cuja abertura foi confirmada por evento estruturado
 do runtime. Na execução Codex atual, isso significa itens terminais `web_search` com ação
 `open_page` ou `find_in_page`; quando uma atividade incorporar a observação Playwright, somente a

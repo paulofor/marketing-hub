@@ -24,7 +24,7 @@ class CodexObservationAnalyzerTest {
     executable.toFile().setExecutable(true);
     var analyzer =
         new CodexObservationAnalyzer(
-            executable.toString(), "test-model", "test-schema", Duration.ofSeconds(2));
+            executable.toString(), "test-model", "max", "test-schema", Duration.ofSeconds(2));
 
     assertThat(analyzer.analyze("prompt", temporaryDirectory)).isEqualTo("{\"observation\":{}}");
   }
@@ -37,11 +37,22 @@ class CodexObservationAnalyzerTest {
     executable.toFile().setExecutable(true);
     var analyzer =
         new CodexObservationAnalyzer(
-            executable.toString(), "test-model", "test-schema", Duration.ofMillis(100));
+            executable.toString(), "test-model", "max", "test-schema", Duration.ofMillis(100));
 
     assertThatThrownBy(() -> analyzer.analyze("prompt", temporaryDirectory))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Timeout da análise observacional");
+  }
+
+  /** Garante esforço máximo explícito mesmo quando a sessão local possui outro padrão. */
+  @Test
+  void shouldForceMaximumReasoning() {
+    var analyzer =
+        new CodexObservationAnalyzer(
+            "codex", "test-model", "max", "test-schema", Duration.ofSeconds(2));
+
+    assertThat(analyzer.command("prompt", temporaryDirectory.resolve("result.json")))
+        .containsSubsequence("--config", "model_reasoning_effort=\"max\"");
   }
 
   /** Confirma que todos os objetos do schema cumprem o contrato estrito do provedor. */

@@ -7,6 +7,7 @@ services:
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal}
       CUSTOMER_AGENT_MODEL: ${CUSTOMER_AGENT_MODEL:-gpt-5.6-sol}
+      CUSTOMER_AGENT_REASONING_EFFORT: ${CUSTOMER_AGENT_REASONING_EFFORT:-max}
       CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES: ${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:-40}
       CUSTOMER_AGENT_MODEL_TIMEOUT: ${CUSTOMER_AGENT_MODEL_TIMEOUT:-PT40M}
       CUSTOMER_AGENT_POLL_MS: ${CUSTOMER_AGENT_POLL_MS:-60000}
@@ -17,7 +18,7 @@ services:
       PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?Defina o token interno do PDE para a homologacao multiagente}
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
       AGENT_HEALTH_KEY: customer-agent
-      AGENT_HEALTH_VERSION: "5"
+      AGENT_HEALTH_VERSION: "6"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/operator/.codex
       CUSTOMER_AGENT_CODEX_EXECUTABLE: /workspace/scripts/codex-oauth-session-safe.sh

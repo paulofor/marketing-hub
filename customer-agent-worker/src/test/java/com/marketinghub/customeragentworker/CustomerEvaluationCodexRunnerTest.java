@@ -19,7 +19,7 @@ class CustomerEvaluationCodexRunnerTest {
   void shouldUseStructuredOutputContract() {
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "read-only", new ObjectMapper(), null);
+            "codex", "gpt-test", "max", 40, "/workspace", "read-only", new ObjectMapper(), null);
 
     List<String> command =
         runner.buildCommand(Path.of("/tmp/answer.json"), Path.of("/tmp/schema.json"));
@@ -30,6 +30,7 @@ class CustomerEvaluationCodexRunnerTest {
         .containsSubsequence("--cd", "/workspace")
         .containsSubsequence("--output-schema", "/tmp/schema.json")
         .containsSubsequence("--output-last-message", "/tmp/answer.json")
+        .containsSubsequence("--config", "model_reasoning_effort=\"max\"")
         .containsSubsequence("--model", "gpt-test");
   }
 
@@ -38,7 +39,14 @@ class CustomerEvaluationCodexRunnerTest {
   void shouldUseExternallySandboxedModeWhenExplicitlyConfigured() {
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "danger-full-access", new ObjectMapper(), null);
+            "codex",
+            "gpt-test",
+            "max",
+            40,
+            "/workspace",
+            "danger-full-access",
+            new ObjectMapper(),
+            null);
 
     List<String> command =
         runner.buildCommand(Path.of("/tmp/answer.json"), Path.of("/tmp/schema.json"));
@@ -53,7 +61,7 @@ class CustomerEvaluationCodexRunnerTest {
   void shouldAttachVisualEvidenceToStructuredEvaluation() {
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "read-only", new ObjectMapper(), null);
+            "codex", "gpt-test", "max", 40, "/workspace", "read-only", new ObjectMapper(), null);
     Path image = Path.of("/tmp/approved-product.png");
 
     List<String> command =
@@ -178,7 +186,7 @@ class CustomerEvaluationCodexRunnerTest {
     ObjectMapper mapper = new ObjectMapper();
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
+            "codex", "gpt-test", "max", 40, "/workspace", "read-only", mapper, null);
     var result =
         mapper.readTree(
             """
@@ -235,7 +243,7 @@ class CustomerEvaluationCodexRunnerTest {
     ObjectMapper mapper = new ObjectMapper();
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
+            "codex", "gpt-test", "max", 40, "/workspace", "read-only", mapper, null);
     var result =
         mapper.readTree(
             """
@@ -271,7 +279,7 @@ class CustomerEvaluationCodexRunnerTest {
     ObjectMapper mapper = new ObjectMapper();
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
+            "codex", "gpt-test", "max", 40, "/workspace", "read-only", mapper, null);
     var result =
         mapper.readTree(
             """
@@ -294,7 +302,7 @@ class CustomerEvaluationCodexRunnerTest {
     ObjectMapper mapper = new ObjectMapper();
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
+            "codex", "gpt-test", "max", 40, "/workspace", "read-only", mapper, null);
     var result =
         mapper.readTree(
             """

@@ -238,7 +238,7 @@
           "description": "Configuração do Codex e da inspeção comportamental.",
           "items": [
             { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico configurável por CUSTOMER_AGENT_MODEL.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" },
-            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "A tela não presume um esforço que o executor não fixou.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Política única e bloqueante em avaliações, observações e atividades BPM de Psique; valores inferiores interrompem a execução antes do modelo.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/PsiqueReasoningPolicy.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · 40 minutos", "description": "Inclui evidência visual temporária e limpeza ao final.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" }
           ]
         },

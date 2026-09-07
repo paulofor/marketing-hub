@@ -215,6 +215,25 @@ class AgentHarnessCatalogTest {
             "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v4/evaluation-schema.json");
   }
 
+  /** Mantém visível o raciocínio máximo obrigatório em todas as execuções de Psique. */
+  @Test
+  void exposesPsiqueMaximumReasoningPolicy() {
+    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("customer-agent");
+    var runtime =
+        harness.sections().stream()
+            .filter(section -> "runtime".equals(section.code()))
+            .findFirst()
+            .orElseThrow();
+    var reasoning =
+        runtime.items().stream()
+            .filter(item -> "reasoning".equals(item.key()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(reasoning.value()).isEqualTo("max");
+    assertThat(reasoning.sourceReference()).endsWith("PsiqueReasoningPolicy.java");
+  }
+
   /** Mantém explícita a ausência de manifesto para agentes futuros ainda não catalogados. */
   @Test
   void reportsUnknownHarnessWithoutInference() {

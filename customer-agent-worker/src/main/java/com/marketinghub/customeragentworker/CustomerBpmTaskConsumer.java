@@ -58,13 +58,13 @@ public class CustomerBpmTaskConsumer {
   private final CodexProcessSupervisor processSupervisor;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
-  /** Configura a fila canônica, o modelo e a sandbox somente leitura de Psique. */
+  /** Configura a fila canônica, o modelo, o raciocínio máximo e a sandbox de Psique. */
   @Autowired
   public CustomerBpmTaskConsumer(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String codex,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
-      @Value("${CUSTOMER_AGENT_REASONING_EFFORT:high}") String reasoningEffort,
+      @Value("${CUSTOMER_AGENT_REASONING_EFFORT:max}") String reasoningEffort,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,
       @Value("${CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
       ObjectMapper json,
@@ -75,7 +75,7 @@ public class CustomerBpmTaskConsumer {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.codex = codex;
     this.model = model;
-    this.reasoningEffort = requiredReasoningEffort(reasoningEffort);
+    this.reasoningEffort = PsiqueReasoningPolicy.requireMaximum(reasoningEffort);
     this.repositoryPath = repositoryPath;
     this.pdeExperienceEvidenceLoader =
         new PdeExperienceEvidenceLoader(
@@ -111,15 +111,6 @@ public class CustomerBpmTaskConsumer {
         null,
         new CodexProcessSupervisor(
             Duration.ofMinutes(40), Duration.ofHours(2), Duration.ofSeconds(15)));
-  }
-
-  /** Exige o esforço explícito antes de Psique reservar uma tarefa ou iniciar o modelo. */
-  private static String requiredReasoningEffort(String value) {
-    if (value == null || value.isBlank()) {
-      throw new IllegalStateException(
-          "CUSTOMER_AGENT_REASONING_EFFORT é obrigatório para auditar Psique.");
-    }
-    return value.trim();
   }
 
   /** Reserva em PLAY e avalia a atividade com evidência visual e pesquisa rastreável. */
@@ -414,7 +405,7 @@ public class CustomerBpmTaskConsumer {
                 "-c",
                 "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
                 "--config",
-                "model_reasoning_effort=\"" + reasoningEffort + "\"",
+                PsiqueReasoningPolicy.codexConfiguration(reasoningEffort),
                 "-",
                 "--skip-git-repo-check",
                 "--sandbox",

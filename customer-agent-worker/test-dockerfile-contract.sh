@@ -30,6 +30,8 @@ grep -Fq 'AGENT_VALIDATION' "${agent_harness}"
 compose="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/docker-compose.yml"
 grep -Fq 'PLAYWRIGHT_BROWSERS_PATH: /ms-playwright' "${compose}"
 grep -Fq 'CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence' "${compose}"
+grep -Fq 'CUSTOMER_AGENT_REASONING_EFFORT: ${CUSTOMER_AGENT_REASONING_EFFORT:-max}' "${compose}"
+grep -Fq 'AGENT_HEALTH_VERSION: "6"' "${compose}"
 grep -Fq 'PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?' "${compose}"
 grep -Fq 'init: true' "${compose}"
 if grep -Fq 'CHROMIUM_BIN: /usr/bin/chromium' "${compose}"; then
@@ -46,6 +48,7 @@ grep -Fq 'await chromium.launch' "${workflow}"
 grep -Fq -- '--interactive' "${workflow}"
 grep -Fq -- '--input-type=module' "${workflow}"
 grep -Fq '< customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs' "${workflow}"
+grep -Fq 'CUSTOMER_AGENT_REASONING_EFFORT=max' "${workflow}"
 if grep -Fq -- '--volume "$PWD/customer-agent-worker/src/test/js/bpm-visual-evidence.test.mjs' "${workflow}"; then
   echo "[ARQUITETURA] O gate da captura não pode depender de bind mount silenciosamente ausente." >&2
   exit 1

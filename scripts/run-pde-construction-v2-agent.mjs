@@ -28,6 +28,18 @@ export const CONTRACTS = Object.freeze({
   }
 });
 
+/** Mantém Psique em esforço máximo e preserva configuração explícita dos demais agentes. */
+export function resolveReasoningEffort(agent, configuredEffort) {
+  const configured = String(configuredEffort || "").trim();
+  if (agent === "psique") {
+    if (configured && configured !== "max") {
+      throw new Error("O esforço de raciocínio de Psique deve ser max.");
+    }
+    return "max";
+  }
+  return configured || "high";
+}
+
 /** Lê a última telemetria cumulativa emitida pelo Codex. */
 export function parseUsage(jsonLines) {
   let inputTokens = 0;
@@ -109,11 +121,12 @@ export async function main(argv = process.argv.slice(2)) {
   const snapshot = await createRepositorySnapshot(temporary);
   const outputPath = join(temporary, "result.json");
   const schemaPath = resolve(REPOSITORY, "scripts/pde-construction-v2-review-schema.json");
+  const reasoningEffort = resolveReasoningEffort(args.agent, args.effort);
   const argumentsList = [
     "--search", "exec", "-", "--ephemeral", "--skip-git-repo-check", "--sandbox", CODEX_SANDBOX,
     "--cd", snapshot, "--output-schema", schemaPath, "--output-last-message", outputPath,
     "--json", "--color", "never", "--config", 'approval_policy="never"',
-    "--config", `model_reasoning_effort="${args.effort || "high"}"`, "--model", MODEL
+    "--config", `model_reasoning_effort="${reasoningEffort}"`, "--model", MODEL
   ];
   try {
     const child = spawn(process.env.CODEX_COMMAND || "codex", argumentsList, {

@@ -258,7 +258,7 @@ import sys
 
 contract = json.loads(pathlib.Path(sys.argv[1]).read_text())
 print("\n".join(
-    f"{agent['key']}:{agent['expectedVersion']}"
+    f"{agent['key']}:{agent['expectedVersion'] - 1 if agent['key'] == 'customer-agent' else agent['expectedVersion']}"
     for agent in sorted(contract['agents'], key=lambda item: item['key'])
 ))
 PY
@@ -289,4 +289,64 @@ assert_equals \
   "$(query "SELECT current_version FROM agent WHERE agent_key='customer-agent'")" \
   "a reaplicação da Psique v4 alterou a versão vigente"
 
-printf 'Homologação física da matriz dos nove agentes, do Argos v4 e da Psique v4 aprovada no MySQL 5.7.\n'
+compose run --rm --build liquibase-customer-agent-max-reasoning
+
+assert_equals \
+  "$(python3 - "${HEALTH_CONTRACT}" <<'PY'
+import json
+import pathlib
+import sys
+
+contract = json.loads(pathlib.Path(sys.argv[1]).read_text())
+print("\n".join(
+    f"{agent['key']}:{agent['expectedVersion']}"
+    for agent in sorted(contract['agents'], key=lambda item: item['key'])
+))
+PY
+)" \
+  "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
+  "as versões implantadas dos nove agentes divergem dos contratos persistidos"
+assert_equals \
+  "24" \
+  "$(query "SELECT COUNT(*) FROM agent_version")" \
+  "a política auditável de raciocínio máximo de Psique não foi criada"
+assert_equals \
+  "PSIQUE_MAX_V1:max" \
+  "$(query "SELECT CONCAT(JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.reasoningPolicy')), ':', JSON_UNQUOTE(JSON_EXTRACT(av.contract_snapshot, '$.reasoningEffort'))) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='customer-agent' AND av.version_number=6")" \
+  "a versão auditável de Psique não registra o raciocínio máximo"
+
+compose run --rm liquibase-customer-agent-max-reasoning
+
+assert_equals \
+  "24" \
+  "$(query "SELECT COUNT(*) FROM agent_version")" \
+  "a reaplicação da política de raciocínio máximo duplicou versões"
+assert_equals \
+  "6" \
+  "$(query "SELECT current_version FROM agent WHERE agent_key='customer-agent'")" \
+  "a reaplicação alterou a versão máxima vigente de Psique"
+
+compose run --rm liquibase-customer-agent-max-reasoning sh -lc \
+  'ADS_LIQUIBASE_CP=target/classes:$(sed -n "1p" target/liquibase.classpath) && java -cp "${ADS_LIQUIBASE_CP}" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url="${ADS_LIQUIBASE_URL}" --username="${ADS_LIQUIBASE_USERNAME}" --password="${ADS_LIQUIBASE_PASSWORD}" --changeLogFile="${ADS_LIQUIBASE_CHANGELOG_FILE}" rollbackCount 1'
+
+assert_equals \
+  "5" \
+  "$(query "SELECT current_version FROM agent WHERE agent_key='customer-agent'")" \
+  "o rollback da política máxima não restaurou a versão anterior de Psique"
+assert_equals \
+  "0" \
+  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='customer-agent' AND av.version_number=6")" \
+  "o rollback da política máxima preservou sua versão auditável"
+
+compose run --rm liquibase-customer-agent-max-reasoning
+
+assert_equals \
+  "6" \
+  "$(query "SELECT current_version FROM agent WHERE agent_key='customer-agent'")" \
+  "a reaplicação após rollback não restaurou Psique v6"
+assert_equals \
+  "1" \
+  "$(query "SELECT COUNT(*) FROM agent_version av JOIN agent a ON a.id=av.agent_id WHERE a.agent_key='customer-agent' AND av.version_number=6")" \
+  "a reaplicação após rollback não recriou a política auditável"
+
+printf 'Homologação física da matriz dos nove agentes, do Argos v4 e da Psique v6 aprovada no MySQL 5.7.\n'

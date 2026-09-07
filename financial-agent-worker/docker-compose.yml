@@ -1,5 +1,6 @@
 services:
   financial-agent-worker:
+    image: ${FINANCIAL_AGENT_IMAGE:-marketing-hub/financial-agent-worker:local}
     build: .
     restart: unless-stopped
     environment:

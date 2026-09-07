@@ -63,8 +63,11 @@ read_disk_capacity() {
 is_managed_agent_repository() {
   local image_repository="$1"
   case "$image_repository" in
-    marketing-hub/communication-agent-worker \
+    marketing-hub/agent-executor-admin-controller \
+      | marketing-hub/communication-agent-worker \
+      | marketing-hub/customer-agent-worker \
       | marketing-hub/experiment-strategist-worker \
+      | marketing-hub/financial-agent-worker \
       | marketing-hub/growth-operator-worker \
       | marketing-hub/iris-image-studio \
       | marketing-hub/landing-generator-agent-worker \
@@ -169,8 +172,8 @@ reclaim_managed_agent_history() {
       printf 'Disco do VPS: preservando tag adicional do rollback %s.\n' "$image_reference"
       continue
     fi
-    retained_image_ids["${image_repository}|${image_id}"]=true
     if ((retained_versions < disk_rollback_versions)); then
+      retained_image_ids["${image_repository}|${image_id}"]=true
       retained_versions=$((retained_versions + 1))
       printf 'Disco do VPS: preservando rollback %s (%s/%s).\n' \
         "$image_reference" "$retained_versions" "$disk_rollback_versions"
@@ -217,8 +220,9 @@ if [[ "$disk_mode" = check ]]; then
   exit 1
 fi
 
-# Sem --all; preserva cache em uso. A segunda faixa só roda se a primeira não bastar.
-for disk_policy in 24h:2GB 1h:1GB; do
+# Sem --all; preserva cache em uso. A última faixa alcança cache descartável dos builds
+# recém-concluídos no VPS legado, cuja janela de uma hora impedia restaurar a reserva.
+for disk_policy in 24h:2GB 1h:1GB 0s:1GB; do
   disk_unused_since="${disk_policy%:*}"
   disk_keep_storage="${disk_policy#*:}"
   printf 'Disco do VPS: recuperando somente cache sem uso há %s, com reserva de %s.\n' \

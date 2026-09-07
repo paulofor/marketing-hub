@@ -3884,6 +3884,11 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   falhas e remoção sem força; engine real preserva containers, imagens e volume; contrato dos nove
   workflows exige sondas antes e depois sem enfraquecer os gatilhos de evidência versionada.
 
+- **Recorrência confirmada em 2026-09-07:** Mira `34074415210` iniciou com 4.690 MiB e chegou a zero bytes livres durante o segundo build no VPS. Dédalo `34074415223` consumiu 3.165 MiB e deixou a fila com 1.037 MiB; Atena, Argos e Psique ficaram bloqueados no gate. Hermes passou com consumo menor. O MCP confirmou disco de 59 GiB em 99%, com containers em execução.
+- **Causa sistêmica complementar:** oito publicadores construíam a imagem no runner, descartavam esse artefato e recompilavam no host produtivo. A reserva fixa não cobria o pico do build; a janela mínima de uma hora impedia coletar seu cache recém-concluído. A validação real anterior verificava preservação, mas não a sequência build → consumo da reserva → restart.
+- **Correção local:** compartilhar pelo próprio run a imagem testada; verificar checksum, referências SHA e IDs; carregar por stdin com reserva proporcional antes da carga e nova sonda antes do restart; usar Compose sem build/pull nos oito publicadores. Psique, Plutus e controlador recebem referências SHA explícitas. A coleta legada ganha última faixa de cache descartável recente, mantendo containers, volumes, imagens em uso e dois rollbacks protegidos.
+- **Prevenção:** contratos de pacote/erro/ordenação em todos os workflows, simulação de falta de capacidade antes/depois da carga, exportação e carga Docker reais, Compose sem rebuild e OpenSSH isolado. Matriz e resultado em `docs/homologacao/actions-agent-images-2026-09-07.md`. Nenhuma publicação ou limpeza remota foi feita para testar.
+
 ## LOOP-ACTIONS-ARGOS-FALLBACK-SSH-APENAS-POR-AUSÊNCIA — chave presente bloqueia alternativas válidas
 
 - **Data:** 2026-09-07.

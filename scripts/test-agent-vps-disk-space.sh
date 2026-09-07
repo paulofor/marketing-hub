@@ -15,9 +15,13 @@ case "$*" in
     [[ "$DISK_TEST_MODE" != docker-failure ]] || exit 1
     printf '%s/docker-root\n' "$DISK_TEST_DIR"
     ;;
-  'builder prune --force --filter until=24h --keep-storage 2GB'|'builder prune --force --filter until=1h --keep-storage 1GB')
+  'builder prune --force --filter until=24h --keep-storage 2GB'|'builder prune --force --filter until=1h --keep-storage 1GB'|'builder prune --force --filter until=0s --keep-storage 1GB')
     [[ "$DISK_TEST_MODE" != prune-failure ]] || exit 1
     if [[ "$DISK_TEST_MODE" = timeout ]]; then sleep 10; fi
+    if [[ "$*" = *until=0s* ]]; then
+      [[ "$DISK_TEST_MODE" != fresh-failure ]] || exit 1
+      touch "$DISK_TEST_DIR/fresh-pruned"
+    fi
     touch "$DISK_TEST_DIR/pruned"
     if [[ "$*" = *until=1h* ]]; then
       [[ "$DISK_TEST_MODE" != recent-failure ]] || exit 1
@@ -30,7 +34,7 @@ case "$*" in
     ;;
   'image ls --all --no-trunc --format {{.Repository}}|{{.Tag}}|{{.ID}}')
     [[ "$DISK_TEST_MODE" != image-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|managed-rm-failure)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|managed-rm-failure)$ ]]; then
       printf '%s\n' \
         'marketing-hub/meta-ad-approver-worker|ffffffffffffffffffffffffffffffffffffffff|sha256:1111111111111111111111111111111111111111111111111111111111111111' \
         'marketing-hub/meta-ad-approver-worker|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee|sha256:2222222222222222222222222222222222222222222222222222222222222222' \
@@ -40,11 +44,14 @@ case "$*" in
         'marketing-hub/meta-ad-approver-worker|latest|sha256:6666666666666666666666666666666666666666666666666666666666666666' \
         'unrelated/system|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb|sha256:5555555555555555555555555555555555555555555555555555555555555555' \
         'ghcr.io/paulofor/product-discovery-worker|aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa|sha256:7777777777777777777777777777777777777777777777777777777777777777'
+      if [[ "$DISK_TEST_MODE" = recover-managed-alias ]]; then
+        printf '%s\n' 'marketing-hub/meta-ad-approver-worker|bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc|sha256:4444444444444444444444444444444444444444444444444444444444444444'
+      fi
     fi
     ;;
   'container ls --all --no-trunc --quiet')
     [[ "$DISK_TEST_MODE" != container-list-failure ]] || exit 1
-    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|managed-rm-failure)$ ]]; then
+    if [[ "$DISK_TEST_MODE" =~ ^(recover-managed|recover-managed-alias|managed-rm-failure)$ ]]; then
       printf '%s\n' '9999999999999999999999999999999999999999999999999999999999999999'
     fi
     ;;
@@ -58,7 +65,7 @@ case "$*" in
       *:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee) printf '%s\n' '2026-09-06T16:00:00Z' ;;
       *:abababababababababababababababababababab) printf '%s\n' '2026-09-06T16:00:00Z' ;;
       *:dddddddddddddddddddddddddddddddddddddddd) printf '%s\n' '2026-09-06T15:00:00Z' ;;
-      *:cccccccccccccccccccccccccccccccccccccccc) printf '%s\n' '2026-09-04T12:00:00Z' ;;
+      *:cccccccccccccccccccccccccccccccccccccccc|*:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc) printf '%s\n' '2026-09-04T12:00:00Z' ;;
       *:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) printf '%s\n' '2026-09-05T12:00:00Z' ;;
       *) exit 71 ;;
     esac
@@ -66,6 +73,9 @@ case "$*" in
   image\ rm\ marketing-hub/meta-ad-approver-worker:cccccccccccccccccccccccccccccccccccccccc)
     [[ "$DISK_TEST_MODE" != managed-rm-failure ]] || exit 1
     touch "$DISK_TEST_DIR/managed-removed"
+    ;;
+  image\ rm\ marketing-hub/meta-ad-approver-worker:bcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbcbc)
+    touch "$DISK_TEST_DIR/alias-removed"
     ;;
   *) echo "Operação Docker não permitida: $*" >&2; exit 70 ;;
 esac
@@ -80,8 +90,10 @@ disk_test_available=0
 if [[ "$DISK_TEST_MODE" = ready || "$DISK_TEST_MODE" = inode-full \
   || ( "$DISK_TEST_MODE" = recover && -f "$DISK_TEST_DIR/pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-recent && -f "$DISK_TEST_DIR/recent-pruned" ) \
+  || ( "$DISK_TEST_MODE" = recover-fresh && -f "$DISK_TEST_DIR/fresh-pruned" ) \
   || ( "$DISK_TEST_MODE" = recover-dangling && -f "$DISK_TEST_DIR/image-pruned" ) \
-  || ( "$DISK_TEST_MODE" = recover-managed && -f "$DISK_TEST_DIR/managed-removed" ) ]]; then
+  || ( "$DISK_TEST_MODE" = recover-managed && -f "$DISK_TEST_DIR/managed-removed" ) \
+  || ( "$DISK_TEST_MODE" = recover-managed-alias && -f "$DISK_TEST_DIR/managed-removed" && -f "$DISK_TEST_DIR/alias-removed" ) ]]; then
   disk_test_available=8388608
 fi
 if [[ "$1" = -Pi ]]; then
@@ -98,7 +110,7 @@ run_case() {
   local expected_image_prunes="$4" expected_image_removals="$5"
   shift 5
   rm -f "$test_dir/pruned" "$test_dir/recent-pruned" "$test_dir/image-pruned" \
-    "$test_dir/managed-removed"
+    "$test_dir/managed-removed" "$test_dir/fresh-pruned" "$test_dir/alias-removed"
   : >"$test_dir/calls"
   local case_status=0
   PATH="$test_dir/bin:$PATH" DISK_TEST_DIR="$test_dir" DISK_TEST_MODE="$case_mode" \
@@ -127,9 +139,12 @@ run_case recover 0 1 0 0
 grep -q 'READY após recuperação' "$test_dir/output"
 run_case recover-recent 0 2 0 0
 grep -q 'sem uso há 1h, com reserva de 1GB' "$test_dir/output"
-run_case recover-dangling 0 2 1 0
+run_case recover-fresh 0 3 0 0
+grep -q 'sem uso há 0s, com reserva de 1GB' "$test_dir/output"
+run_case fresh-failure 1 3 0 0
+run_case recover-dangling 0 3 1 0
 grep -q 'READY após recuperação de imagens sem tag' "$test_dir/output"
-run_case recover-managed 0 2 2 1
+run_case recover-managed 0 3 2 1
 grep -q 'READY após retenção controlada' "$test_dir/output"
 grep -Fxq 'image rm marketing-hub/meta-ad-approver-worker:cccccccccccccccccccccccccccccccccccccccc' "$test_dir/calls"
 if grep -Eq '^image rm .*(ffffffff|eeeeeeee|abababab|dddddddd|latest|unrelated|product-discovery)' \
@@ -137,20 +152,21 @@ if grep -Eq '^image rm .*(ffffffff|eeeeeeee|abababab|dddddddd|latest|unrelated|p
   echo "A coleta tentou remover imagem ativa, rollback ou referência fora do escopo." >&2
   exit 1
 fi
-run_case managed-rm-failure 1 2 2 2
+run_case recover-managed-alias 0 3 2 2
+run_case managed-rm-failure 1 3 2 2
 grep -q 'referência preservada' "$test_dir/output"
 run_case recent-failure 1 2 0 0
-run_case full 1 2 2 0
+run_case full 1 3 2 0
 grep -q 'BLOCKED após coleta controlada' "$test_dir/output"
 run_case full 1 0 0 0 check
-run_case inode-full 1 2 2 0
+run_case inode-full 1 3 2 0
 run_case docker-failure 1 0 0 0
 run_case df-failure 1 0 0 0
 run_case invalid-df 1 0 0 0
 run_case prune-failure 1 1 0 0
-run_case image-prune-failure 1 2 1 0
-run_case image-list-failure 1 2 2 0
-run_case container-list-failure 1 2 2 0
+run_case image-prune-failure 1 3 1 0
+run_case image-list-failure 1 3 2 0
+run_case container-list-failure 1 3 2 0
 run_case timeout 1 1 0 0
 grep -q 'coleta falhou ou excedeu' "$test_dir/output"
 run_case ready 2 0 0 0 invalid-mode
@@ -164,4 +180,4 @@ run_case full 1 0 0 0
 grep -q 'outra verificação' "$test_dir/output"
 flock -u 8
 
-echo "23 cenários de disco, retenção, falhas e concorrência aprovados."
+echo "26 cenários de disco, retenção, falhas e concorrência aprovados."

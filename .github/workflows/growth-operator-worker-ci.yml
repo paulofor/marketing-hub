@@ -53,6 +53,20 @@ jobs:
       - name: Validate container build
         run: docker build -t marketing-hub/growth-operator-worker:${{ github.sha }} growth-operator-worker
 
+      - name: Package tested images
+        if: github.event_name != 'pull_request'
+        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/growth-operator-worker:${{ github.sha }}
+      - name: Store tested images for this run
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: true
+
   deploy:
     name: Deploy worker
     runs-on: ubuntu-latest
@@ -63,6 +77,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: agent-images-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-images/
+      - name: Verify tested images
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/growth-operator-worker:${{ github.sha }}
 
       - name: Configure authenticated agent VPS SSH
         env:
@@ -78,6 +98,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s' < scripts/ensure-agent-vps-disk-space.sh
+      - name: Load tested images without rebuilding
+        timeout-minutes: 20
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/growth-operator-worker:${{ github.sha }}
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
@@ -85,7 +108,7 @@ jobs:
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" --delete growth-operator-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/growth-operator-worker/"
           rsync -az -e "ssh ${SSH_COMMON_ARGS}" scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
-      - name: Rebuild and restart worker
+      - name: Start validated worker
         run: |
           set -euo pipefail
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" "\
@@ -98,7 +121,7 @@ jobs:
                    CODEX_MODEL=gpt-5.6-sol \
                    GROWTH_OPERATOR_IMAGE=marketing-hub/growth-operator-worker:${GITHUB_SHA} \
             && cd '${REPOSITORY_DIR}/growth-operator-worker' \
-            && docker compose up -d --build --remove-orphans \
+            && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' growth-operator-worker-growth-operator-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \

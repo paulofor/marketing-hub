@@ -184,12 +184,17 @@ class ExperimentFunnelDiagnosticServiceTest {
         .thenReturn(
             stageList(
                 stage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 1000),
-                stage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 80),
+                stageWithLabel(
+                    ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                    80,
+                    "Clique no anúncio para o PED/MUSA"),
                 stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 60),
-                stage(ExperimentFunnelStage.ENVIO_FORM, 12),
-                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 4),
-                stage(ExperimentFunnelStage.COMPRA, 2),
-                stage(ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO, 1)));
+                stageWithLabel(ExperimentFunnelStage.ENVIO_FORM, 12, "Login ou criação de conta"),
+                stageWithLabel(
+                    ExperimentFunnelStage.ACESSO_CHECKOUT, 4, "Clique no plano/checkout"),
+                stageWithLabel(ExperimentFunnelStage.COMPRA, 2, "Assinatura aprovada"),
+                stageWithLabel(
+                    ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO, 1, "Primeiro uso/ativação")));
 
     ExperimentFunnelDiagnosticsResponseDto response = service.diagnose(66L);
 
@@ -201,6 +206,15 @@ class ExperimentFunnelDiagnosticServiceTest {
             ExperimentFunnelStage.ACESSO_CHECKOUT,
             ExperimentFunnelStage.COMPRA,
             ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO);
+
+    assertThat(response.diagnostics())
+        .extracting(item -> item.stageLabel())
+        .containsExactly(
+            "Clique no anúncio para o PED/MUSA",
+            "Login ou criação de conta",
+            "Clique no plano/checkout",
+            "Assinatura aprovada",
+            "Primeiro uso/ativação");
   }
 
   private List<ExperimentFunnelStageDto> stageList(ExperimentFunnelStageDto... stages) {
@@ -213,6 +227,14 @@ class ExperimentFunnelDiagnosticServiceTest {
     dto.setLabel(stage.getLabel());
     dto.setOrder(stage.getOrder());
     dto.setTotalCount(total);
+    return dto;
+  }
+
+  /** Monta uma etapa com o rótulo comercial já adaptado ao tipo do experimento. */
+  private ExperimentFunnelStageDto stageWithLabel(
+      ExperimentFunnelStage stage, long total, String label) {
+    ExperimentFunnelStageDto dto = stage(stage, total);
+    dto.setLabel(label);
     return dto;
   }
 }

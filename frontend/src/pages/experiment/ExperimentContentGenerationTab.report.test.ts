@@ -3,7 +3,17 @@ import { describe, expect, it } from "vitest";
 import {
   resolvePersistedReportPayload,
   selectLatestGenerationPerSection,
+  supportsTraditionalLandingAssets,
 } from "./ExperimentContentGenerationTab";
+
+describe("supportsTraditionalLandingAssets", () => {
+  it("não consulta nem exibe fluxo de landing tradicional no PDE", () => {
+    expect(
+      supportsTraditionalLandingAssets("PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"),
+    ).toBe(false);
+    expect(supportsTraditionalLandingAssets("LEAD_GENERATION")).toBe(true);
+  });
+});
 
 describe("selectLatestGenerationPerSection", () => {
   it("mantém somente o registro mais recente de cada seção", () => {
@@ -58,7 +68,10 @@ describe("selectLatestGenerationPerSection", () => {
       "landing-copy",
       "landing-layout",
     ]);
-    expect(result.find((item: any) => item.metadata.sectionKey === "landing-copy")?.id).toBe(11);
+    expect(
+      result.find((item: any) => item.metadata.sectionKey === "landing-copy")
+        ?.id,
+    ).toBe(11);
   });
 });
 
@@ -78,10 +91,10 @@ describe("resolvePersistedReportPayload", () => {
     } as any;
 
     expect(resolvePersistedReportPayload("campaign-angle", payloads)).toContain(
-      "\"angle\": \"Ângulo principal\"",
+      '"angle": "Ângulo principal"',
     );
     expect(resolvePersistedReportPayload("ad-copy", payloads)).toContain(
-      "\"hook\": \"Hook principal\"",
+      '"hook": "Hook principal"',
     );
   });
 
@@ -91,6 +104,8 @@ describe("resolvePersistedReportPayload", () => {
       adCopy: { hook: "Hook principal" },
     } as any;
 
-    expect(resolvePersistedReportPayload("landing-copy", payloads)).toBeUndefined();
+    expect(
+      resolvePersistedReportPayload("landing-copy", payloads),
+    ).toBeUndefined();
   });
 });

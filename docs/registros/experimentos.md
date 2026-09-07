@@ -6918,3 +6918,25 @@
   capturou a landing real em 390×844 e 1440×1000, sempre em modo somente leitura e sem mutação.
 - Nenhuma aprovação foi forçada e nenhuma campanha, impressão, clique, checkout, venda ou gasto de
   mídia foi criado durante a investigação.
+
+## 2026-09-07 — Vega #91: cockpit coerente com a campanha publicada
+
+- **Estado real confirmado:** experimento `91` em `RUNNING`; campanha `120251556536430326`, conjunto
+  `120251556536530326` e anúncio `120251556536810326` em `ACTIVE`. Às 11:54 BRT, a Graph API
+  informava 65 pessoas alcançadas, 66 impressões, dois cliques, 23 visualizações de vídeo e R$ 13,22
+  de gasto; o PDE registrava duas sessões/entradas com a campanha e o criativo exatos, sem login,
+  paywall, checkout, compra ou venda.
+- **Causa-raiz:** as 14 abas eram globais para todos os tipos de experimento. O PDE recebia
+  ferramentas de Landing/GeraLanding/A-B tradicional, preparação antiga parecia operação vigente,
+  duas respostas Meta 400 já recuperadas por uma resposta 200 mantinham alerta técnico e o resumo
+  atribuído anexava recortes globais da versão v7. Além disso, a primeira sincronização de métricas
+  chamava um reset PDE sem autenticação, recebia HTTP 401/500 e revertia toda a transação. Mesmo com
+  autenticação, o reset apagaria todos os eventos do produto, inclusive as visitas pagas já reais.
+- **Decisão:** organizar a tela em Operação atual, Ativos, Planejamento e Auditoria; acrescentar a
+  campanha Meta persistida; retirar ferramentas não aplicáveis ao PDE; manter processo e preflight
+  como histórico; remover a falsa meta fixa de 500 outcomes e benchmarks sintéticos; bloquear reset
+  após publicação; preservar eventos PDE e persistir as métricas Meta sem integração destrutiva.
+- **Prevenção:** o backend só promove falhas Meta não recuperadas e não combina totais atribuídos com
+  dispositivo, resolução, qualidade ou jornada sem a mesma chave de campanha. Testes de contrato
+  reproduzem o histórico exato do #91, garantem que a primeira impressão não aciona reset externo e
+  a matriz visual cobre desktop, iPhone e Pixel.

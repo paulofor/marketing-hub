@@ -1242,8 +1242,9 @@ export default function CriativosTab({
       <div className="mb-4">
         {alterationLocked ? (
           <div className="alert alert-secondary" role="status">
-            Criativos e configurações de publicação bloqueados para alteração
-            porque o experimento já foi liberado ou está em execução.
+            A campanha publicada e suas configurações estão bloqueadas. Novas
+            versões permanecem como rascunhos auditáveis e só poderão entrar em
+            outra publicação após os gates próprios.
           </div>
         ) : null}
         <label className="form-label" htmlFor="experiment-instagram-id">

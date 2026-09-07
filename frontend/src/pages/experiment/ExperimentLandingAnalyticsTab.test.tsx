@@ -184,6 +184,11 @@ describe("ExperimentLandingAnalyticsTab", () => {
     expect(await screen.findByText("Tempo médio/sessão")).toBeTruthy();
     expect(screen.getByText("39s")).toBeTruthy();
     expect(screen.queryByText("15min 34s")).toBeNull();
+    expect(
+      (axios.get as any).mock.calls.map((call: unknown[]) => call[0]),
+    ).not.toContain(
+      "/api/products/public/metodo-musa-7-dias/pde-persuasive-journey",
+    );
   });
 
   it("shows consolidated PDE traffic sources by UTM channel", async () => {

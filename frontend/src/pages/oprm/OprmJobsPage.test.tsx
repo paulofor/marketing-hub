@@ -38,7 +38,10 @@ describe("OprmJobsPage", () => {
       revokeObjectURL,
     });
 
-    const clickedAnchor: { href: string; download: string } = { href: "", download: "" };
+    const clickedAnchor: { href: string; download: string } = {
+      href: "",
+      download: "",
+    };
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
       .mockImplementation(function captureClick(this: HTMLAnchorElement) {
@@ -95,7 +98,7 @@ describe("OprmJobsPage", () => {
 
     await waitFor(() => expect(click).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost/api/oprm/nichocnae/routine-research-cycle/stage-executions/74/report",
+      `${window.location.origin}/api/oprm/nichocnae/routine-research-cycle/stage-executions/74/report`,
     );
     expect(clickedAnchor.href).toBe("blob:oprm-report");
     expect(clickedAnchor.download).toBe("nicho-cnae74.md");

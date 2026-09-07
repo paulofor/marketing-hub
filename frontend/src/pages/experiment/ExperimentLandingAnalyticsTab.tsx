@@ -164,7 +164,10 @@ export default function ExperimentLandingAnalyticsTab({
   const pdeMonitorQuery = usePostDeployMonitor(
     isPdeExperiment ? experimentId : undefined,
   );
-  const { data: persuasiveJourney } = usePdePersuasiveJourney();
+  const { data: persuasiveJourney } = usePdePersuasiveJourney(
+    "metodo-musa-7-dias",
+    !isPdeExperiment,
+  );
 
   if (isPdeExperiment) {
     const monitor = pdeMonitorQuery.data;
@@ -230,8 +233,8 @@ export default function ExperimentLandingAnalyticsTab({
               <Activity size={18} /> Analytics do PDE atual
             </h5>
             <p className="text-muted small mb-0">
-              Dados capturados diretamente no Clube MUSA e consolidados por
-              sessão, campanha, criativo, dispositivo e tela.
+              Dados atribuídos a este experimento no Clube MUSA. Recortes sem
+              identificação de campanha ou criativo ficam fora desta leitura.
             </p>
           </div>
           <span className="badge text-bg-light border d-inline-flex align-items-center gap-1">
@@ -413,9 +416,10 @@ export default function ExperimentLandingAnalyticsTab({
               </span>
             </div>
             {pdeDeviceBreakdown.length === 0 ? (
-              <div className="alert alert-warning mb-0">
-                O banco PDE já recebe dispositivo, mas o backend PDE publicado
-                ainda não expôs esta quebra no contrato do monitor.
+              <div className="alert alert-light border mb-0">
+                {pde.sessions === 0
+                  ? "Nenhuma sessão atribuída a este experimento para quebrar por dispositivo."
+                  : "O recorte por dispositivo ainda não possui atribuição por campanha; o agregado global não é exibido como resultado deste experimento."}
               </div>
             ) : (
               <div className="row g-3">
@@ -478,7 +482,9 @@ export default function ExperimentLandingAnalyticsTab({
                 </div>
                 {pdeScreenSizeBreakdown.length === 0 ? (
                   <p className="text-muted small mb-0">
-                    Nenhuma resolução capturada ainda no PDE.
+                    {pde.sessions === 0
+                      ? "Nenhuma sessão atribuída a este experimento para quebrar por resolução."
+                      : "Resoluções globais sem atribuição de campanha não entram nesta leitura."}
                   </p>
                 ) : (
                   <div className="d-flex flex-column gap-3">
@@ -576,7 +582,9 @@ export default function ExperimentLandingAnalyticsTab({
             </div>
             {pdeRecentJourneys.length === 0 ? (
               <p className="text-muted small mb-0">
-                Nenhuma jornada recente retornada pelo monitor.
+                {pde.sessions === 0
+                  ? "Nenhuma jornada atribuída a este experimento."
+                  : "Jornadas sem atribuição de campanha permanecem fora da leitura comercial."}
               </p>
             ) : (
               <div className="d-flex flex-column gap-2">

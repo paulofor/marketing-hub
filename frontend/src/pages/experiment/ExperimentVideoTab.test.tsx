@@ -133,5 +133,17 @@ describe("ExperimentVideoTab", () => {
     expect(
       screen.getByText("PDE em produção pelo destino do experimento"),
     ).toBeTruthy();
+    expect(screen.getByText("Experiência PDE")).toBeTruthy();
+    expect(
+      screen.getByText(/A experiência PDE abre em nova aba de teste/i),
+    ).toBeTruthy();
+    expect(
+      screen.queryByTitle(`Página de venda do experimento ${experiment.id}`),
+    ).toBeNull();
+    expect(
+      screen
+        .getByRole("link", { name: "Abrir experiência" })
+        .getAttribute("href"),
+    ).toBe("https://v6.clubemusa.com.br/?mh_test=1&pde_analytics=off");
   });
 });

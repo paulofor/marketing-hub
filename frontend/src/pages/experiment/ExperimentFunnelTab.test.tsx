@@ -150,14 +150,18 @@ describe("ExperimentFunnelTab", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Backend")).toBeInTheDocument();
     expect(screen.getByText("Facebook Ads Worker")).toBeInTheDocument();
-    expect(screen.getByText("Gasto sem resultado primário")).toBeInTheDocument();
-    expect(screen.getByText("Trava financeira emergencial")).toBeInTheDocument();
+    expect(
+      screen.getByText("Gasto sem resultado primário"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Trava financeira emergencial"),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Registrar evento" }),
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the reset button available while campaign spend is zero even when manual changes are locked", () => {
+  it("blocks funnel reset after publication even while campaign spend is zero", () => {
     renderWithClient(
       <ExperimentFunnelTab
         experimentId="42"
@@ -167,8 +171,8 @@ describe("ExperimentFunnelTab", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: "Zerar contagens" }),
-    ).toBeEnabled();
+      screen.queryByRole("button", { name: "Zerar contagens" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides the reset button after the campaign has spend", () => {
@@ -211,7 +215,7 @@ describe("ExperimentFunnelTab", () => {
     expect(secondStageCells[3]).toHaveTextContent("—");
   });
 
-  it("shows campaign metrics with internal, niche and market comparisons after the funnel", () => {
+  it("shows only persisted campaign metrics without synthetic comparisons", () => {
     renderWithClient(
       <ExperimentFunnelTab
         experimentId="42"
@@ -225,13 +229,12 @@ describe("ExperimentFunnelTab", () => {
       />,
     );
 
+    expect(screen.getByText("Métricas atuais da campanha")).toBeInTheDocument();
     expect(
-      screen.getByText("Métricas da campanha e comparação"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Média dos nossos produtos")).toBeInTheDocument();
-    expect(screen.getByText("Média do nicho")).toBeInTheDocument();
-    expect(screen.getByText("Benchmark de mercado")).toBeInTheDocument();
-    expect(screen.getByText("CTR do anúncio")).toBeInTheDocument();
+      screen.queryByText("Média dos nossos produtos"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Média do nicho")).not.toBeInTheDocument();
+    expect(screen.queryByText("Benchmark de mercado")).not.toBeInTheDocument();
     expect(screen.getAllByText("4,0%").length).toBeGreaterThan(0);
     expect(screen.getAllByText("R$ 5,00").length).toBeGreaterThan(0);
   });
@@ -257,10 +260,16 @@ describe("ExperimentFunnelTab", () => {
     );
 
     expect(screen.getByText(/Venda direta low-ticket/)).toBeInTheDocument();
-    expect(screen.getByText("Clique para a página de venda")).toBeInTheDocument();
-    expect(screen.getByText("Vídeo da página visto parcial")).toBeInTheDocument();
-    expect(screen.getByText("Vídeo da página visto completo")).toBeInTheDocument();
-    expect(screen.getByText("Clique no checkout")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Clique para a página de venda/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Vídeo da página visto parcial/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Vídeo da página visto completo/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Clique no checkout/)).toBeInTheDocument();
     expect(
       screen.queryByText("Acesso ao formulário de lead"),
     ).not.toBeInTheDocument();
@@ -287,10 +296,16 @@ describe("ExperimentFunnelTab", () => {
     );
 
     expect(screen.getByText(/Assinatura PDE\/MUSA/)).toBeInTheDocument();
-    expect(screen.getByText("Vídeo do PDE/MUSA visto parcial")).toBeInTheDocument();
-    expect(screen.getByText("Vídeo do PDE/MUSA visto completo")).toBeInTheDocument();
-    expect(screen.getByText("Login ou criação de conta")).toBeInTheDocument();
-    expect(screen.getByText("Assinatura aprovada")).toBeInTheDocument();
-    expect(screen.getByText("Primeiro uso/ativação")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Vídeo do PDE\/MUSA visto parcial/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Vídeo do PDE\/MUSA visto completo/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Login ou criação de conta/)).toBeInTheDocument();
+    expect(screen.getByText(/Assinatura aprovada/)).toBeInTheDocument();
+    expect(screen.getByText(/Primeiro uso\/ativação/)).toBeInTheDocument();
+    expect(screen.queryByText(/Backtest/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Meta ideal: 500/i)).not.toBeInTheDocument();
   });
 });

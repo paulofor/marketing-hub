@@ -6,7 +6,9 @@ import {
   canManageGeraSalesPage,
   canStartDirectExperiment,
   experimentDetailTabs,
+  getVisibleExperimentDetailTabs,
   resolveGeraSalesPageCommand,
+  supportsTraditionalLandingForExperiment,
 } from "./ExperimentDetailPage";
 
 describe("canManageGeraSalesPage", () => {
@@ -16,6 +18,20 @@ describe("canManageGeraSalesPage", () => {
 
   it("não exibe comandos sem experimento persistido", () => {
     expect(canManageGeraSalesPage(null)).toBe(false);
+  });
+});
+
+describe("supportsTraditionalLandingForExperiment", () => {
+  it("mantém GeraSalesPage fora do PDE e disponível para landing tradicional", () => {
+    expect(
+      supportsTraditionalLandingForExperiment(
+        "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
+      ),
+    ).toBe(false);
+    expect(supportsTraditionalLandingForExperiment("LEAD_GENERATION")).toBe(
+      true,
+    );
+    expect(supportsTraditionalLandingForExperiment(undefined)).toBe(false);
   });
 });
 
@@ -101,16 +117,65 @@ describe("buildPdeInternalPreviewUrl", () => {
 
 describe("ExperimentDetailPage", () => {
   it("mantém o run e o preflight acessíveis pela navegação", () => {
-    expect(experimentDetailTabs).toContainEqual({
-      value: "execucao",
-      label: "Execução",
-    });
+    expect(experimentDetailTabs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: "execucao",
+          label: "Preflight e runs",
+          group: "audit",
+        }),
+      ]),
+    );
   });
 
   it("mantém o painel operacional do GeraLanding acessível pela navegação", () => {
-    expect(experimentDetailTabs).toContainEqual({
-      value: "gera-landing",
-      label: "GeraLanding",
+    expect(experimentDetailTabs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: "gera-landing",
+          label: "GeraLanding",
+          group: "planning",
+        }),
+      ]),
+    );
+  });
+
+  it("mostra somente áreas aplicáveis ao experimento PDE no Facebook", () => {
+    const tabs = getVisibleExperimentDetailTabs({
+      creationSource: "MANUAL_FLOW",
+      productAiSubtype: null,
+      experimentType: "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
+      platform: "FACEBOOK",
     });
+
+    expect(tabs.map((item) => item.value)).toEqual([
+      "funnel",
+      "campaign",
+      "post-deploy",
+      "analytics",
+      "creatives",
+      "video",
+      "publico",
+      "construction",
+      "content-structure",
+      "execucao",
+      "process",
+      "history",
+    ]);
+    expect(tabs.find((item) => item.value === "analytics")?.label).toBe(
+      "Comportamento PDE",
+    );
+  });
+
+  it("retira do PDE ferramentas de landing tradicional que contaminariam a operação", () => {
+    const tabs = getVisibleExperimentDetailTabs({
+      creationSource: "MANUAL_FLOW",
+      experimentType: "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL",
+      platform: "FACEBOOK",
+    });
+
+    expect(tabs.map((item) => item.value)).not.toEqual(
+      expect.arrayContaining(["landing", "gera-landing", "ab-test"]),
+    );
   });
 });

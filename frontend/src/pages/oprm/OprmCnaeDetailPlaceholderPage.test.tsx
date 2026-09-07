@@ -166,7 +166,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     const reportLink = screen.getByRole("link", { name: "Baixar relatório" });
     expect(reportLink).toHaveAttribute(
       "href",
-      "http://localhost/api/oprm/nichocnae/routine-research-cycle/stage-executions/24/pipeline-markdown",
+      `${window.location.origin}/api/oprm/nichocnae/routine-research-cycle/stage-executions/24/pipeline-markdown`,
     );
     expect(
       screen.getByText(/bloqueada por fontes antigas ou sem atualidade/i),

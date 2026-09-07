@@ -572,6 +572,12 @@ interface ExperimentContentGenerationTabProps {
   isCheckingPublishedFacebookCampaigns?: boolean;
 }
 
+export function supportsTraditionalLandingAssets(
+  experimentType?: string | null,
+) {
+  return experimentType !== "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
+}
+
 interface AiGenerationRecord {
   id: number;
   domain: string;
@@ -1170,6 +1176,9 @@ export default function ExperimentContentGenerationTab({
     alterationLocked ||
     hasPublishedFacebookCampaigns ||
     isCheckingPublishedFacebookCampaigns;
+  const usesTraditionalLandingAssets = supportsTraditionalLandingAssets(
+    experiment?.experimentType,
+  );
   const [adCopyGenerations, setAdCopyGenerations] = useState<
     AdCopyGenerationRow[]
   >([]);
@@ -1208,8 +1217,12 @@ export default function ExperimentContentGenerationTab({
   const imageGenerationWaitToastRef = useRef<string | null>(null);
 
   const jobsQuery = useExperimentPipelineJobs(experimentId);
-  const frameworkImageStatusQuery = useFrameworkImageStatuses(experimentId);
-  const generateFrameworkImages = useGenerateFrameworkImages(experimentId);
+  const frameworkImageStatusQuery = useFrameworkImageStatuses(
+    usesTraditionalLandingAssets ? experimentId : undefined,
+  );
+  const generateFrameworkImages = useGenerateFrameworkImages(
+    usesTraditionalLandingAssets ? experimentId : undefined,
+  );
   const frameworkImageStatuses = frameworkImageStatusQuery.data ?? [];
   const hasFrameworkImages = frameworkImageStatuses.length > 0;
   const hasFrameworkImagesInFlight = frameworkImageStatuses.some((item) =>
@@ -2108,19 +2121,21 @@ export default function ExperimentContentGenerationTab({
         </div>
       ) : null}
 
-      <div className="alert alert-light border py-2 px-3 mb-3" role="status">
-        <div className="d-flex flex-wrap align-items-center gap-2">
-          <strong>Fluxo das imagens da landing:</strong>
-          <span
-            className={`badge text-bg-${LANDING_IMAGE_FLOW_BADGES[landingImageFlowStatus]}`}
-          >
-            {LANDING_IMAGE_FLOW_LABELS[landingImageFlowStatus]}
-          </span>
-          <span className="small text-body-secondary">
-            {landingImageFlowMessage}
-          </span>
+      {usesTraditionalLandingAssets ? (
+        <div className="alert alert-light border py-2 px-3 mb-3" role="status">
+          <div className="d-flex flex-wrap align-items-center gap-2">
+            <strong>Fluxo das imagens da landing:</strong>
+            <span
+              className={`badge text-bg-${LANDING_IMAGE_FLOW_BADGES[landingImageFlowStatus]}`}
+            >
+              {LANDING_IMAGE_FLOW_LABELS[landingImageFlowStatus]}
+            </span>
+            <span className="small text-body-secondary">
+              {landingImageFlowMessage}
+            </span>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <Tabs.Root
         value={activeSection}

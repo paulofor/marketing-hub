@@ -53,8 +53,14 @@ const statePresentation: Record<
 /** Exibe a instância BPM do experimento sem recalcular a elegibilidade no navegador. */
 export default function ExperimentProcessInstanceTab({
   experimentId,
+  experimentStatus,
+  facebookReleaseRequestedAt,
+  campaignPublished = false,
 }: {
   experimentId: string;
+  experimentStatus?: string | null;
+  facebookReleaseRequestedAt?: string | null;
+  campaignPublished?: boolean;
 }) {
   const query = useProcessInstances(`experiment:${experimentId}`);
   if (query.isLoading) return <p>Carregando instância do processo...</p>;
@@ -73,6 +79,14 @@ export default function ExperimentProcessInstanceTab({
 
   return (
     <div className="d-grid gap-4 py-3">
+      {campaignPublished ? (
+        <div className="alert alert-info mb-0" role="status">
+          <strong>Processo de preparação:</strong> a campanha já foi publicada e
+          o experimento está {experimentStatus || "em operação"}. Atividades
+          anteriores à liberação permanecem abaixo como auditoria e não
+          substituem o estado atual da campanha.
+        </div>
+      ) : null}
       {query.data.map((instance) => (
         <section className="card" key={instance.processDefinitionId}>
           <div className="card-body">
@@ -99,6 +113,15 @@ export default function ExperimentProcessInstanceTab({
                       <span className={`badge ${presentation.className}`}>
                         {presentation.label}
                       </span>
+                      {campaignPublished &&
+                      activity.enteredAt &&
+                      facebookReleaseRequestedAt &&
+                      new Date(activity.enteredAt).getTime() <
+                        new Date(facebookReleaseRequestedAt).getTime() ? (
+                        <span className="badge text-bg-light border text-body-secondary">
+                          Pré-publicação
+                        </span>
+                      ) : null}
                     </div>
                     {activity.objective ? (
                       <p className="mb-2 mt-2">

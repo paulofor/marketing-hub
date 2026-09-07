@@ -65,4 +65,13 @@ if ! grep -Fq '.deployed-app-revision' "${WORKFLOW_FILE}" \
   exit 1
 fi
 
+if ! grep -Fq 'Probe VIDEO VPS without blocking APP detection' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'VIDEO_SSH_READY=false' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'Reconciliação remota do VIDEO adiada' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'deployed_video_revision="${EVENT_BEFORE}"' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'Add VIDEO VPS to known_hosts' "${WORKFLOW_FILE}"; then
+  printf '[ARQUITETURA] indisponibilidade do VPS de vídeo não pode bloquear APP, mas o deploy real de vídeo deve continuar estrito.\n' >&2
+  exit 1
+fi
+
 printf 'Contrato de deploy transacional validado.\n'

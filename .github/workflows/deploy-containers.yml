@@ -53,18 +53,20 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${APP_VPS_IP}" >> ~/.ssh/known_hosts
 
-      - name: Add VIDEO VPS to known_hosts
+      - name: Probe VIDEO VPS without blocking APP detection
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          for attempt in 1 2 3 4 5; do
-            if ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VIDEO_VPS_IP}" >> ~/.ssh/known_hosts; then
-              exit 0
-            fi
-            sleep $((attempt * 10))
-          done
-          echo "Não foi possível coletar a chave SSH da VIDEO VPS ${VIDEO_VPS_IP}:22." >&2
-          exit 1
+          if SSH_KEYSCAN_MAX_ATTEMPTS=3 \
+            SSH_KEYSCAN_TIMEOUT_SECONDS=10 \
+            SSH_KEYSCAN_RETRY_DELAY_SECONDS=5 \
+            bash scripts/ssh-keyscan-with-retry.sh \
+              "${VIDEO_VPS_IP}" \
+              "$HOME/.ssh/known_hosts"; then
+            echo "VIDEO_SSH_READY=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::VPS de vídeo indisponível no preflight; a detecção do APP continuará e o vídeo usará o diff do push como fallback."
+            echo "VIDEO_SSH_READY=false" >> "$GITHUB_ENV"
+          fi
 
       - id: filter
         name: Detect affected deployment targets
@@ -108,17 +110,31 @@ jobs:
           done
 
           deployed_video_revision="UNKNOWN"
-          for attempt in 1 2 3; do
-            if video_state="$(ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "if test -f ${DEPLOY_DIR}/.deployed-video-revision; then cat ${DEPLOY_DIR}/.deployed-video-revision; else docker inspect marketinghub-video-management --format '{{.Config.Image}}' 2>/dev/null || printf MISSING; fi")"; then
-              if [[ "${video_state}" =~ ^[0-9a-f]{40}$ ]]; then
-                deployed_video_revision="${video_state}"
-              elif [[ "${video_state}" =~ :([0-9a-f]{40})$ ]]; then
-                deployed_video_revision="${BASH_REMATCH[1]}"
+          video_probe_completed=false
+          if [[ "${VIDEO_SSH_READY:-false}" == "true" ]]; then
+            for attempt in 1 2 3; do
+              if video_state="$(ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "if test -f ${DEPLOY_DIR}/.deployed-video-revision; then cat ${DEPLOY_DIR}/.deployed-video-revision; else docker inspect marketinghub-video-management --format '{{.Config.Image}}' 2>/dev/null || printf MISSING; fi")"; then
+                video_probe_completed=true
+                if [[ "${video_state}" =~ ^[0-9a-f]{40}$ ]]; then
+                  deployed_video_revision="${video_state}"
+                elif [[ "${video_state}" =~ :([0-9a-f]{40})$ ]]; then
+                  deployed_video_revision="${BASH_REMATCH[1]}"
+                fi
+                break
               fi
-              break
+              sleep $((attempt * 5))
+            done
+          fi
+
+          if [[ "${video_probe_completed}" != "true" ]]; then
+            if [[ "${EVENT_BEFORE}" =~ ^[0-9a-f]{40}$ ]] \
+              && git cat-file -e "${EVENT_BEFORE}^{commit}" 2>/dev/null; then
+              deployed_video_revision="${EVENT_BEFORE}"
+            else
+              deployed_video_revision="${base}"
             fi
-            sleep $((attempt * 5))
-          done
+            echo "::warning::Reconciliação remota do VIDEO adiada; usando revisão ${deployed_video_revision} somente para classificar o diff deste push."
+          fi
 
           printf 'Revisão observada do frontend: %s\n' "${deployed_frontend_revision}"
           printf 'Revisão observada do executor de vídeo: %s\n' "${deployed_video_revision}"

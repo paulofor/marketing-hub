@@ -18,6 +18,12 @@ on:
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"
+      - "scripts/detect-deployment-changes.sh"
+      - "scripts/test-deploy-transactional-contract.sh"
+      - "scripts/test-deployment-change-resume.sh"
+      - "scripts/read-frontend-build-revision.sh"
+      - "scripts/test-read-frontend-build-revision.sh"
+      - "scripts/test-backend-health-wait.sh"
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/agent-image-bundle.mjs"
       - "scripts/test-agent-image-bundle.mjs"
@@ -71,6 +77,12 @@ on:
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/wait-for-app-deployment.mjs"
       - "scripts/wait-for-app-deployment.test.mjs"
+      - "scripts/detect-deployment-changes.sh"
+      - "scripts/test-deploy-transactional-contract.sh"
+      - "scripts/test-deployment-change-resume.sh"
+      - "scripts/read-frontend-build-revision.sh"
+      - "scripts/test-read-frontend-build-revision.sh"
+      - "scripts/test-backend-health-wait.sh"
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/agent-image-bundle.mjs"
       - "scripts/test-agent-image-bundle.mjs"
@@ -164,6 +176,12 @@ jobs:
           bash -n scripts/test-docker-compose-up-with-transient-retry.sh
           bash -n scripts/test-docker-login-with-transient-retry.sh
           bash -n scripts/test-wait-for-shared-vps-docker-capacity.sh
+          bash -n scripts/detect-deployment-changes.sh
+          bash -n scripts/test-deploy-transactional-contract.sh
+          bash -n scripts/test-deployment-change-resume.sh
+          bash -n scripts/read-frontend-build-revision.sh
+          bash -n scripts/test-read-frontend-build-revision.sh
+          bash -n scripts/test-backend-health-wait.sh
           bash -n scripts/ssh-keyscan-with-retry.sh
           bash -n scripts/configure-vps-ssh-fallback.sh
           bash -n scripts/test-shared-vps-deploy-queue.sh
@@ -217,6 +235,11 @@ jobs:
 
       - name: Validar coordenação com o deploy da aplicação
         run: node --test scripts/wait-for-app-deployment.test.mjs
+
+      - name: Validar deploy transacional da aplicação
+        run: |
+          bash scripts/test-deploy-transactional-contract.sh
+          bash scripts/test-deployment-change-resume.sh
 
       - name: Validar resiliência do host compartilhado
         run: bash scripts/test-shared-vps-deploy-resilience.sh

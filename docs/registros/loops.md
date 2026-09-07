@@ -1138,6 +1138,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   aplicação terminar vermelho mesmo sem defeito no vídeo. A validação agora normaliza espaços do
   YAML e exige a chamada canônica completa, incluindo as revisões APP e frontend; assim, mudanças de
   formatação não quebram o gate e a ausência de qualquer argumento continua bloqueante.
+- **Recorrência fechada em 2026-09-07 — indisponibilidade lateral do VPS de vídeo:** cinco execuções
+  consecutivas do deploy central falharam antes da classificação de mudanças porque o preflight
+  exigia `ssh-keyscan` do host de vídeo até em commits exclusivos de pesquisa/cards. Argos, Psique e
+  os demais agentes aguardavam esse workflow e falhavam em cascata, embora o APP não dependesse do
+  vídeo naquele push. A sondagem de vídeo agora é limitada e não bloqueante durante a detecção; se
+  o host estiver indisponível, o diff do próprio push classifica vídeo sem ocultar mudanças atuais.
+  O job de deploy de vídeo preserva preflight SSH estrito quando o vídeo realmente precisar ser
+  publicado. O contrato transacional bloqueia a volta do acoplamento global.
 - **Recorrência fechada em 2026-09-07 — Mira #347/#348:** o merge da validação multiagente
   construiu e publicou as imagens do PDE, mas o workflow verde marcou o job de produção como
   `skipped`, deixando primeiro o backend sem a rota de criação de sessões e, depois do deploy
@@ -2319,6 +2327,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   carregador de evidências de Têmis passa a resolver caminhos dentro da raiz autorizada, rejeitar
   links simbólicos e exigir SHA-256 exato de toda evidência de implementação e execução. Testes
   negativos comprovam que qualquer artefato alterado ou manifesto desatualizado bloqueia a revisão.
+- **Recorrência fechada em 2026-09-07 — catálogo compartilhado Mira/Rigel:** a evolução isolada da
+  versão privada de Mira alterou o catálogo compartilhado e invalidou corretamente o SHA-256 da
+  atestação vigente do Rigel. A correção preserva a v5 imutável e cria a v6 como delta explícito,
+  revalidando catálogo e testes do Rigel. O teste do carregador exige que somente a revisão mais
+  recente de cada produto coincida com o código candidato e impede atualizar silenciosamente uma
+  evidência histórica.
 
 ## LOOP-PDE-QA-REGISTRADO-COMO-HUMANO — preview contamina o funil comercial
 

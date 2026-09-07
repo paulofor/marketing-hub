@@ -51,6 +51,25 @@ product_ai_workflow="$test_root/.github/workflows/product-ai-worker-ci.yml"
 grep -F "export COMPOSE_PROJECT_NAME='marketinghub-product-ai-worker'" "$product_ai_workflow" >/dev/null
 
 product_discovery_workflow="$test_root/.github/workflows/product-discovery-worker-ci.yml"
+for ssh_contract in \
+  'scripts/configure-vps-ssh-fallback.sh' \
+  'VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}' \
+  'VPS_SSH_KEY_FALLBACK_1: ${{ secrets.VPS_SSH_CHAVE }}' \
+  'VPS_SSH_KEY_FALLBACK_2: ${{ secrets.VPS_SSH_KEY }}' \
+  'VPS_SSH_KEY_FALLBACK_3: ${{ secrets.SSH_PRIVATE_KEY }}' \
+  '${SSH_DEPLOY_READY:-false}' \
+  'Restauração remota ignorada: o preflight SSH não autenticou.'; do
+  if ! grep -Fq "$ssh_contract" "$product_discovery_workflow"; then
+    echo "Deploy de Argos sem fallback SSH seguro: ${ssh_contract}." >&2
+    exit 1
+  fi
+done
+
+if grep -Fq 'StrictHostKeyChecking=no' "$product_discovery_workflow"; then
+  echo "Deploy de Argos permite host SSH não verificado." >&2
+  exit 1
+fi
+
 for helper in \
   docker-login-with-transient-retry.sh \
   docker-compose-up-with-transient-retry.sh \

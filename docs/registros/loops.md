@@ -3884,6 +3884,28 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   falhas e remoção sem força; engine real preserva containers, imagens e volume; contrato dos nove
   workflows exige sondas antes e depois sem enfraquecer os gatilhos de evidência versionada.
 
+## LOOP-ACTIONS-ARGOS-FALLBACK-SSH-APENAS-POR-AUSÊNCIA — chave presente bloqueia alternativas válidas
+
+- **Data:** 2026-09-07.
+- **Sintoma confirmado:** os runs `34068516462` e `34068522817` aprovaram testes e imagem do Product
+  Discovery Worker, mas falharam antes da publicação com `Permission denied (publickey,password)` no
+  host canônico `163.245.202.80`. No run `34068288058`, a mesma credencial autenticou no início do
+  deploy de Psique e foi recusada na sonda final; a definição do workflow e o segredo do repositório
+  não haviam mudado. A consulta `vps_host_inventory` pelo MCP também perdeu autenticação, enquanto o
+  health HTTP de Argos permaneceu `UP` na versão anterior.
+- **Causa-raiz confirmada no contrato:** o YAML escolhia a primeira referência de segredo não vazia.
+  A existência de `GROWTH_OPERATOR_VPS_SSH_KEY` impedia testar `VPS_SSH_CHAVE`, `VPS_SSH_KEY` e
+  `SSH_PRIVATE_KEY` quando a credencial prioritária deixava de ser aceita pelo host. A causa externa
+  da mudança de autorização do VPS não pôde ser inspecionada sem uma identidade ainda aceita.
+- **Alternativas avaliadas:** ignorar a falha produziria falso deploy; mover Argos trocaria topologia,
+  estado e segredos sem evidência; testar os fallbacks já inventariados preserva o host e falha cedo
+  quando nenhuma credencial autentica. Foi escolhida a terceira alternativa.
+- **Correção local:** um helper versionado valida formato, chave do host e autenticação não interativa,
+  mantendo todas as identidades válidas no job. A limpeza final só roda após preflight autenticado.
+- **Prevenção:** teste com doubles cobre chave prioritária recusada, fallback aceito, chave malformada,
+  recusa total, remoção dos arquivos após falha e ausência de segredo nos logs. O contrato central e
+  o próprio CI de Argos executam a validação; a correção aguarda PR e não foi publicada por SSH.
+
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
 
 - **Data:** 2026-09-05.

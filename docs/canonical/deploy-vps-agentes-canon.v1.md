@@ -14,7 +14,7 @@ Ao final da tentativa de publicação, inclusive após falha, o job executa nova
 `if: always()`, ainda dentro da fila compartilhada, para restaurar a reserva consumida pelo build.
 O bootstrap inicial do Docker de Argos precede a sonda quando a engine ainda não existe.
 
-O publicador de Argos valida a autenticação antes de qualquer comando remoto. A credencial canônica
+Os nove publicadores do VPS validam a autenticação antes de qualquer comando remoto. A credencial canônica
 `GROWTH_OPERATOR_VPS_SSH_KEY` permanece prioritária; as três referências já inventariadas são
 fallbacks reais de autenticação, e não apenas substitutos quando o segredo prioritário estiver
 vazio. Chaves ausentes ou malformadas são ignoradas sem exposição do conteúdo, todas as identidades
@@ -22,6 +22,14 @@ válidas permanecem disponíveis durante o job e nenhuma senha ou confirmação 
 Se nenhuma chave autenticar, o deploy falha antes da mutação; a restauração final não executa sem
 uma configuração previamente autenticada. A chave pública do host é coletada com tentativas
 limitadas e `StrictHostKeyChecking` permanece habilitado.
+
+O preflight compartilhado é `scripts/configure-vps-ssh-fallback.sh`. Helpers chamados por Bash
+devem ser arquivos regulares legíveis; não exigir bit executável que não faz parte do contrato.
+Todo SSH, SCP e rsync posterior deve usar a configuração autenticada em `SSH_COMMON_ARGS`.
+Os testes devem reproduzir o modo do checkout e executar também o cliente e o servidor OpenSSH
+reais, com chaves descartáveis e rede restrita ao loopback da fixture local. Mocks não substituem
+essa validação de transporte. O contrato `scripts/test-agent-vps-ssh-workflows.mjs` protege os nove
+publicadores contra divergência de preflight, transportes e restauração após falha de autenticação.
 
 - Medir o filesystem raiz, `DockerRootDir` e `/var/lib/containerd` quando existir.
 - Exigir ao menos 4 GiB disponíveis e 10.000 inodes livres em cada destino; insuficiência
@@ -63,3 +71,4 @@ homologação ou registros auditáveis em sua imagem, a alteração desses docum
 o pacote para impedir divergência entre a revisão versionada e o runtime.
 
 Contrato e evidências: `docs/homologacao/actions-agent-vps-disk-2026-09-06.md`.
+Complemento de SSH/checkout: `docs/homologacao/actions-agent-vps-ssh-checkout-2026-09-07.md`.

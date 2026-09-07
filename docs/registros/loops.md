@@ -3906,6 +3906,20 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   recusa total, remoção dos arquivos após falha e ausência de segredo nos logs. O contrato central e
   o próprio CI de Argos executam a validação; a correção aguarda PR e não foi publicada por SSH.
 
+- **Recorrência no checkout em 2026-09-07:** o run `34072568864` parou antes de conectar ao VPS:
+  o novo preflight exigia `-x` do helper de keyscan, embora ele seja chamado por Bash e versionado
+  como `100644`. O double anterior tinha modo `0700` e escondia o defeito. A correção exige arquivo
+  regular legível, conserva execução por Bash e testa o modo real com OpenSSH local isolado.
+- **Abrangência sistêmica:** Psique (`34072568894`) e Atena (`34072568888`) ainda tentavam somente a
+  chave prioritária. Os nove publicadores passam a compartilhar o mesmo preflight e sua configuração
+  em SSH/SCP/rsync; a restauração final é ignorada quando não houve autenticação. Contratos preservam
+  também sincronização por módulo, identidades Codex, fila única e reserva de disco.
+- **Limite operacional confirmado:** duas tentativas do inventário MCP recusaram autenticação;
+  o helper da sandbox bloqueou `root@163.245.202.80` como destino não autorizado. Argos e Psique
+  responderam HTTP 200/UP. A causa externa da recusa continua dependente do acesso ao host; nenhum
+  container foi movido nem serviço publicado. Evidências e matriz:
+  `docs/homologacao/actions-agent-vps-ssh-checkout-2026-09-07.md`.
+
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
 
 - **Data:** 2026-09-05.

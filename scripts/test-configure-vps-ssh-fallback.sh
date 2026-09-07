@@ -52,7 +52,9 @@ done <"$configuration_file"
 exit 255
 MOCK_SSH
 
-chmod 700 "$mock_keygen" "$mock_keyscan" "$mock_ssh"
+chmod 700 "$mock_keygen" "$mock_ssh"
+# O helper é lido por Bash, como o arquivo 100644 de um checkout limpo.
+chmod 600 "$mock_keyscan"
 
 primary_github_env="$test_tmp_directory/github-env-primary"
 touch "$primary_github_env"
@@ -143,5 +145,45 @@ if missing_output="$(
   exit 1
 fi
 grep -Fq 'nenhuma credencial SSH foi configurada' <<<"$missing_output"
+
+for invalid_helper in "$test_tmp_directory/absent-helper" "$test_tmp_directory"; do
+  if invalid_helper_output="$(
+    SSH_KEYSCAN_HELPER="$invalid_helper" \
+      bash "$configuration_script" 127.0.0.1 test "$missing_github_env" 2>&1
+  )"; then
+    echo "O helper aceitou dependência ausente ou diretório." >&2
+    exit 1
+  fi
+  grep -Fq 'helper de coleta da chave do host indisponível' <<<"$invalid_helper_output"
+done
+
+invalid_github_env="$test_tmp_directory/github-env-invalid"
+touch "$invalid_github_env"
+if invalid_output="$(
+  VPS_SSH_KEY_PRIMARY='MALFORMED-KEY' \
+  SSH_KEYGEN_BIN="$mock_keygen" SSH_KEYSCAN_HELPER="$mock_keyscan" \
+  VPS_SSH_RUNTIME_ROOT="$test_tmp_directory/runtime-invalid" \
+    bash "$configuration_script" 127.0.0.1 test "$invalid_github_env" 2>&1
+)"; then
+  echo "O helper aceitou configuração com todas as chaves inválidas." >&2
+  exit 1
+fi
+grep -Fq 'todas as credenciais SSH configuradas são inválidas' <<<"$invalid_output"
+test ! -s "$invalid_github_env"
+test -z "$(find "$test_tmp_directory/runtime-invalid" -mindepth 1 -print -quit)"
+
+scan_failure_helper="$test_tmp_directory/scan-failure.sh"
+printf 'exit 1\n' >"$scan_failure_helper"
+scan_github_env="$test_tmp_directory/github-env-scan-failure"
+touch "$scan_github_env"
+if VPS_SSH_KEY_PRIMARY='PRIMARY-ACCEPTED' \
+  SSH_KEYGEN_BIN="$mock_keygen" SSH_KEYSCAN_HELPER="$scan_failure_helper" \
+  VPS_SSH_RUNTIME_ROOT="$test_tmp_directory/runtime-scan-failure" \
+    bash "$configuration_script" 127.0.0.1 test "$scan_github_env" >/dev/null 2>&1; then
+  echo "O helper aceitou falha na coleta da identidade do servidor." >&2
+  exit 1
+fi
+test ! -s "$scan_github_env"
+test -z "$(find "$test_tmp_directory/runtime-scan-failure" -mindepth 1 -print -quit)"
 
 echo "Fallback seguro de credenciais SSH validado."

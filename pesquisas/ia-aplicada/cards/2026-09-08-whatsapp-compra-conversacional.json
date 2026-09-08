@@ -1,0 +1,18 @@
+{
+  "cardKey": "whatsapp-compra-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Chat-to-pay reforça a hipótese de fechar a compra na conversa",
+  "finding": "Mastercard e Flowcart anunciaram no Quênia uma jornada em que descoberta, pedido e pagamento podem ocorrer dentro da conversa; o comunicado afirma que WhatsApp já responde por mais de 20% dos pedidos online no país.",
+  "mechanism": "Se a decisão já amadureceu na conversa, remover a troca para outro site ou aplicativo pode reduzir fricção no trecho final do funil. O mecanismo é plausível, mas não há uplift causal publicado.",
+  "commercialApplication": "No Marketing Hub, comparar fluxo WhatsApp com pagamento conectado à conversa contra fluxo que redireciona para landing/checkout externo, medindo checkout, pagamento reconciliado, custo por pagamento e recompra.",
+  "evidenceStrength": "Moderada para existência da infraestrutura e relevância comercial do canal; baixa a moderada para inferir aumento de conversão, pois o comunicado não apresenta experimento controlado nem percentual de uplift.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Para a mesma oferta e público, reduzir a troca de contexto entre conversa e pagamento elevará a proporção de conversas qualificadas que chegam a pagamento reconciliado sem aumentar rejeição ou custo por venda.",
+  "risks": "Consentimento inadequado, excesso de mensagens, fraude, falhas de atribuição, dependência da plataforma, violações de LGPD/políticas e interpretação de pagamento iniciado como venda concluída.",
+  "limits": "O novo dado vem do Quênia e de comunicado das empresas envolvidas. O comportamento pode variar no Brasil por nicho, ticket e meio de pagamento. A melhoria de conversão precisa ser validada experimentalmente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-08-whatsapp-chat-to-pay.md",
+  "sourceTitle": "Fonte revisada — Chat-to-pay em WhatsApp e comércio conversacional",
+  "sourceSha256": "573c7c0ecdd74c5e163be933358ca9fc9a7e14fb3a1c1b1e21a86079095654f5"
+}

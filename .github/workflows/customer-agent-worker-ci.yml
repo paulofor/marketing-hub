@@ -35,10 +35,6 @@ on:
       - scripts/wait-for-app-deployment.test.mjs
   workflow_dispatch:
 
-concurrency:
-  group: customer-agent-worker-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
   actions: read
@@ -114,11 +110,36 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
+  application-deployment:
+    name: Wait for matching application deployment
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: application-deployment-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Coordinate application revision
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
+        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
+
   deploy:
     name: Deploy worker
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+      - test
+      - application-deployment
     concurrency:
       group: deploy-vps-163-245-202-80
       queue: max
@@ -138,13 +159,6 @@ jobs:
           node-version: 22
       - name: Build immutable commercial evidence
         run: node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
-      - name: Wait for matching application deployment
-        if: github.event_name == 'push'
-        timeout-minutes: 45
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
-        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
       - name: Configure authenticated agent VPS SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}

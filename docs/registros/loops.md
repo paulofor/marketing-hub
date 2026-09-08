@@ -3167,6 +3167,28 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   backend sucessor nem publicação de worker antigo contra outra revisão.
 - **Prevenção complementar:** o contrato do deploy exige simultaneamente `queue: max` e
   `cancel-in-progress: false`, protegendo tanto a execução em andamento quanto as pendentes.
+- **Recorrência e fechamento em 2026-09-08:** após o workflow central ficar desativado, o run
+  `34221987913` de Argos não possuía deploy da aplicação para o mesmo SHA. Mesmo assim, seu job
+  entrou primeiro em `deploy-vps-163-245-202-80` e reteve a fila durante os 2.400 segundos do
+  polling. A API de grupos de concorrência confirmou 14 jobs no grupo: onze revisões de Argos,
+  Íris, Psique e a revisão atual. Psique e Íris ainda serializavam o workflow inteiro, fazendo o
+  commit atual aguardar a tentativa anterior antes até dos testes. Não era falta de runner nem
+  falha no deploy atual, que já havia terminado verde.
+- **Alternativas avaliadas:** cancelar apenas a fila recuperaria o momento, mas repetiria o defeito;
+  remover a coordenação permitiria agentes incompatíveis com o backend; mover o gate para um job
+  sem acesso ao host preserva a prova do mesmo SHA e elimina a inversão de locks. Foi adotada a
+  terceira alternativa.
+- **Correção sistêmica:** Argos, Psique e Íris passam a esperar a aplicação em
+  `application-deployment`, fora da concorrência do VPS. O deploy remoto depende desse job e só
+  então entra no grupo compartilhado. A concorrência global de Psique e Íris foi removida; cada
+  gate possui grupo próprio por workflow e branch, com cancelamento apenas da espera obsoleta.
+- **Recuperação operacional:** o run que detinha o lock terminou no timeout comprovado e doze runs
+  obsoletos foram cancelados pela API oficial, sem cancelar as três execuções do SHA atual. Argos e
+  Íris atuais concluíram com sucesso; Psique foi liberada e também concluiu com sucesso. Depois da
+  recuperação, não restou execução ativa em `main` nem membro no grupo compartilhado.
+- **Prevenção:** `scripts/wait-for-app-deployment.test.mjs` rejeita espera dentro do job remoto,
+  concorrência no workflow inteiro, gate na fila do VPS, acesso SSH pelo gate ou deploy sem a
+  dependência. Actionlint e os contratos de fila, imagem, disco e SSH permanecem obrigatórios.
 
 ## LOOP-IRIS-CODEX-AUTH-PENDING-SEM-TIMEOUT — reconexão não sai de REQUESTED
 

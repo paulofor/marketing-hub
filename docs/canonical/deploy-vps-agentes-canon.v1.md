@@ -36,7 +36,14 @@ publicadores contra divergência de preflight, transportes e restauração após
 
 Os contratos de coordenação com o deploy da aplicação devem identificar a chamada do gate,
 o preflight e os comandos SSH/SCP/rsync, sem depender do texto de `name` das etapas. Argos,
-Psique e o workflow de Íris devem aguardar o gate antes de autenticar ou acessar o VPS.
+Psique e o workflow de Íris devem aguardar o gate antes de autenticar ou acessar o VPS. Essa
+espera pertence obrigatoriamente a um job `application-deployment` separado, sem acesso remoto e
+fora da fila `deploy-vps-163-245-202-80`; o job `deploy` depende do gate e só então adquire a fila
+do host. Esses três workflows também não podem usar concorrência no nível do workflow inteiro,
+pois ela faria uma espera antiga bloquear a revisão atual antes mesmo dos jobs. Somente os gates
+do mesmo workflow e branch compartilham um grupo próprio com `cancel-in-progress: true`, para uma
+revisão nova descartar sua espera obsoleta sem interromper publicação que já entrou na seção
+crítica do VPS. A exigência de sucesso do deploy da aplicação no mesmo SHA permanece inalterada.
 `scripts/wait-for-app-deployment.test.mjs` integra a validação central de Actions e sua matriz
 local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
 
@@ -138,6 +145,7 @@ ampliação de disco ou remoção de recursos fora da política depende da decis
 
 Contratos, matriz e limites: `docs/homologacao/actions-agent-images-2026-09-07.md` e
 `docs/homologacao/actions-pde-smoke-image-retention-2026-09-07.md`.
+Coordenação sem bloqueio cruzado: `docs/homologacao/actions-dependencia-fila-vps-2026-09-08.md`.
 
 Contrato e evidências: `docs/homologacao/actions-agent-vps-disk-2026-09-06.md`.
 Complemento de SSH/checkout: `docs/homologacao/actions-agent-vps-ssh-checkout-2026-09-07.md`.

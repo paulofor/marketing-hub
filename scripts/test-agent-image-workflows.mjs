@@ -19,7 +19,7 @@ function validate(workflow, module) {
   assert.match(before, /uses: actions\/upload-artifact@v4/, module);
   assert.match(before, /name: agent-images-\$\{\{ github.sha \}\}/, module);
   assert.match(before, /retention-days: 1\s+compression-level: 0\s+if-no-files-found: error/, module);
-  assert.match(deploy, /needs: test(?:-build)?\s/, module);
+  assert.match(deploy, /(?:^    needs: test(?:-build)?$|^      - test(?:-build)?$)/m, module);
   assert.match(deploy, /uses: actions\/download-artifact@v4\s+with:\s+name: agent-images-\$\{\{ github.sha \}\}/, module);
   assert.ok(deploy.includes(`node scripts/agent-image-bundle.mjs verify "\${{ runner.temp }}/agent-images" ${reference}`), module);
   const load = deploy.indexOf("node scripts/agent-image-bundle.mjs send");

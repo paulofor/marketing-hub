@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -57,19 +59,22 @@ function run(overrides = {}) {
   });
 }
 
-test("seleciona somente o deploy push do mesmo commit", () => {
+test("seleciona o deploy mais recente de main, por push ou retomada manual, do mesmo commit", () => {
   const selected = selectMatchingRun(
     {
       workflow_runs: [
-        { id: 1, head_sha: "b".repeat(40), event: "push", created_at: "2026-08-30T10:00:00Z" },
-        { id: 2, head_sha: matchingSha, event: "workflow_dispatch", created_at: "2026-08-30T12:00:00Z" },
-        { id: 3, head_sha: matchingSha, event: "push", created_at: "2026-08-30T11:00:00Z" },
+        { id: 1, head_sha: "b".repeat(40), head_branch: "main", event: "push", created_at: "2026-08-30T10:00:00Z" },
+        { id: 2, head_sha: matchingSha, head_branch: "main", event: "workflow_dispatch", created_at: "2026-08-30T12:00:00Z" },
+        { id: 3, head_sha: matchingSha, head_branch: "main", event: "push", created_at: "2026-08-30T11:00:00Z" },
+        { id: 4, head_sha: matchingSha, head_branch: "feature/teste", event: "workflow_dispatch", created_at: "2026-08-30T13:00:00Z" },
+        { id: 5, head_sha: matchingSha, head_branch: "main", event: "pull_request", created_at: "2026-08-30T14:00:00Z" },
+        { id: 6, head_sha: matchingSha, event: "workflow_dispatch", created_at: "2026-08-30T15:00:00Z" },
       ],
     },
     matchingSha,
   );
 
-  assert.equal(selected.id, 3);
+  assert.equal(selected.id, 2);
 });
 
 test("aguarda visibilidade e conclusão saudável do deploy correspondente", async () => {
@@ -80,6 +85,7 @@ test("aguarda visibilidade e conclusão saudável do deploy correspondente", asy
         {
           id: 10,
           head_sha: matchingSha,
+          head_branch: "main",
           event: "push",
           status: "in_progress",
           conclusion: null,
@@ -93,6 +99,7 @@ test("aguarda visibilidade e conclusão saudável do deploy correspondente", asy
         {
           id: 10,
           head_sha: matchingSha,
+          head_branch: "main",
           event: "push",
           status: "completed",
           conclusion: "success",
@@ -127,6 +134,7 @@ test("repete erro transitório da API sem liberar o worker", async () => {
           {
             id: 11,
             head_sha: matchingSha,
+            head_branch: "main",
             event: "push",
             status: "completed",
             conclusion: "success",
@@ -150,6 +158,7 @@ test("bloqueia imediatamente quando o deploy correspondente falha", async () => 
             {
               id: 12,
               head_sha: matchingSha,
+              head_branch: "main",
               event: "push",
               status: "completed",
               conclusion: "failure",
@@ -168,6 +177,138 @@ test("bloqueia por timeout quando o deploy correspondente não aparece", async (
     run({ fetchImpl: async () => response({ workflow_runs: [] }), timeoutSeconds: 2 }),
     /Tempo esgotado.*worker não será publicado/,
   );
+});
+
+test("recuperação manual espera sucesso antes de liberar agentes e não filtra apenas push na API", async () => {
+  let calls = 0;
+  const result = await run({
+    fetchImpl: async (url) => {
+      const query = new URL(url).searchParams;
+      assert.equal(query.get("head_sha"), matchingSha);
+      assert.equal(query.get("branch"), "main");
+      assert.equal(query.has("event"), false);
+      calls += 1;
+      return response({ workflow_runs: [
+        {
+          id: 20, head_sha: matchingSha, head_branch: "main", event: "push",
+          status: "completed", conclusion: "failure", created_at: "2026-08-30T10:00:00Z",
+        },
+        {
+          id: 21, head_sha: matchingSha, head_branch: "main", event: "workflow_dispatch",
+          status: calls === 1 ? "in_progress" : "completed",
+          conclusion: calls === 1 ? null : "success", created_at: "2026-08-30T11:00:00Z",
+        },
+      ] });
+    },
+  });
+  assert.equal(result.id, 21);
+  assert.equal(calls, 2);
+});
+
+test("retomada manual falha não reaproveita um sucesso anterior", async () => {
+  await assert.rejects(run({ fetchImpl: async () => response({ workflow_runs: [
+    {
+      id: 20, head_sha: matchingSha, head_branch: "main", event: "push",
+      status: "completed", conclusion: "success", created_at: "2026-08-30T10:00:00Z",
+    },
+    {
+      id: 21, head_sha: matchingSha, head_branch: "main", event: "workflow_dispatch",
+      status: "completed", conclusion: "failure", created_at: "2026-08-30T11:00:00Z",
+    },
+  ] }) }), /terminou com failure/);
+});
+
+test("sucesso de branch, tag, PR ou commit diferente não libera os agentes", async () => {
+  const completed = {
+    id: 22, head_sha: matchingSha, head_branch: "main", event: "workflow_dispatch",
+    status: "completed", conclusion: "success", created_at: "2026-08-30T10:00:00Z",
+  };
+  await assert.rejects(run({
+    timeoutSeconds: 2,
+    fetchImpl: async () => response({ workflow_runs: [
+      { ...completed, head_branch: "feature/teste" },
+      { ...completed, head_branch: "v1.0.0" },
+      { ...completed, head_branch: null },
+      { ...completed, event: "pull_request" },
+      { ...completed, head_sha: "b".repeat(40) },
+    ] }),
+  }), /Tempo esgotado.*worker não será publicado/);
+});
+
+test("aplicação permite retomada manual e restringe detecção e publicação a main", async () => {
+  const workflow = await readFile(path.join(repositoryRoot, ".github/workflows/deploy-containers.yml"), "utf8");
+  const triggers = workflow.split(/^on:\s*$/m)[1]?.split(/^\S/m)[0];
+  assert.match(triggers, /^  workflow_dispatch:\s*$/m);
+  assert.match(triggers, /^  push:\n    branches: \[main\]/m);
+  const detector = workflow.split(/^  detect-changes:\s*$/m)[1]?.split(/^  [\w-]+:\s*$/m)[0];
+  assert.match(detector, /^    if: github\.ref == 'refs\/heads\/main'$/m);
+  const jobs = workflow.split(/^jobs:\s*$/m)[1].split(/^  [\w-]+:\s*$/m).slice(2);
+  for (const job of jobs) {
+    assert.match(job, /^    needs: .*\bdetect-changes\b/m);
+    assert.match(job, /^    if: .*needs\.detect-changes\.outputs\.\w+ == 'true'/m);
+  }
+});
+
+test("detecção real do workflow recupera módulos pendentes sem before no evento manual", async () => {
+  const workflow = await readFile(path.join(repositoryRoot, ".github/workflows/deploy-containers.yml"), "utf8");
+  const filter = workflow.split(/^      - id: filter\s*$/m)[1]?.split(/^      - (?:name|id|uses):/m)[0];
+  const script = filter?.split(/^        run: \|\s*$/m)[1]?.replace(/^          /gm, "");
+  assert.ok(script?.includes("scripts/detect-deployment-changes.sh"));
+  const fixture = await mkdtemp(path.join(tmpdir(), "manual-deploy-contract-"));
+  const git = (...args) => execFileSync("git", args, { cwd: fixture, encoding: "utf8" }).trim();
+  try {
+    for (const directory of ["scripts", "bin", "backend/ads-service", "frontend", "video-management-service"]) {
+      await mkdir(path.join(fixture, directory), { recursive: true });
+    }
+    for (const name of ["detect-deployment-changes.sh", "read-frontend-build-revision.sh"]) {
+      await writeFile(path.join(fixture, "scripts", name), await readFile(path.join(repositoryRoot, "scripts", name)));
+    }
+    await writeFile(path.join(fixture, "backend/ads-service/fixture.txt"), "base\n");
+    await writeFile(path.join(fixture, "frontend/fixture.txt"), "base\n");
+    await writeFile(path.join(fixture, "video-management-service/fixture.txt"), "base\n");
+    git("init", "-q", "--initial-branch=main");
+    git("config", "user.name", "Deploy Contract Test");
+    git("config", "user.email", "teste@sandbox.local");
+    git("add", ".");
+    git("commit", "-qm", "fixture publicada");
+    const deployed = git("rev-parse", "HEAD");
+    await writeFile(path.join(fixture, "backend/ads-service/fixture.txt"), "backend pendente\n");
+    await writeFile(path.join(fixture, "frontend/fixture.txt"), "frontend pendente\n");
+    git("commit", "-qam", "fixture com merge perdido");
+    await writeFile(path.join(fixture, "README.md"), "documentação posterior\n");
+    git("add", "README.md");
+    git("commit", "-qm", "fixture posterior sem código novo");
+    await writeFile(path.join(fixture, "bin/ssh"), `#!/usr/bin/env bash
+set -euo pipefail
+case "$*" in
+  *sandbox@app.sandbox.invalid*deployed-app-revision*) printf '%s\\n' "$TEST_DEPLOYED_REVISION" ;;
+  *sandbox@app.sandbox.invalid*curl*) printf '{\\n  "commit": "%s"\\n}\\n' "$TEST_DEPLOYED_REVISION" ;;
+  *) echo 'Acesso externo fora da fixture bloqueado' >&2; exit 1 ;;
+esac
+`, { mode: 0o755 });
+    const output = path.join(fixture, "outputs");
+    const result = spawnSync("bash", ["-c", script], {
+      cwd: fixture,
+      encoding: "utf8",
+      timeout: 10000,
+      env: {
+        ...process.env,
+        PATH: `${path.join(fixture, "bin")}:${process.env.PATH}`,
+        EVENT_BEFORE: "", GITHUB_SHA: git("rev-parse", "HEAD"), GITHUB_OUTPUT: output,
+        TEST_DEPLOYED_REVISION: deployed, VIDEO_SSH_READY: "false", SSH_OPTS: "",
+        VPS_USER: "sandbox", APP_VPS_IP: "app.sandbox.invalid", DEPLOY_DIR: "/fixture",
+      },
+    });
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+    const values = Object.fromEntries((await readFile(output, "utf8")).trim().split("\n").map((line) => line.split("=")));
+    assert.equal(values.backend, "true");
+    assert.equal(values.frontend, "true");
+    assert.equal(values.app_deploy, "true");
+    assert.equal(values.video, "false");
+    assert.equal(values.video_deploy, "false");
+  } finally {
+    await rm(fixture, { recursive: true, force: true });
+  }
 });
 
 test("workflow da Psique espera a aplicação e reporta a revisão imutável", async () => {

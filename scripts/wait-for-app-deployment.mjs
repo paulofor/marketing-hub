@@ -15,7 +15,9 @@ function positiveInteger(value, fallback, name) {
 export function selectMatchingRun(payload, headSha) {
   const runs = Array.isArray(payload?.workflow_runs) ? payload.workflow_runs : [];
   return runs
-    .filter((run) => run?.head_sha === headSha && run?.event === "push")
+    .filter((run) => run?.head_sha === headSha
+      && run?.head_branch === "main"
+      && ["push", "workflow_dispatch"].includes(run?.event))
     .sort((left, right) => String(right.created_at ?? "").localeCompare(String(left.created_at ?? "")))[0];
 }
 
@@ -42,7 +44,7 @@ export async function waitForAppDeployment({
   const deadline = nowImpl() + timeout * 1000;
   const repositoryPath = repository.split("/").map(encodeURIComponent).join("/");
   const workflowPath = encodeURIComponent(workflow);
-  const query = new URLSearchParams({ head_sha: headSha, event: "push", per_page: "20" });
+  const query = new URLSearchParams({ head_sha: headSha, branch: "main", per_page: "20" });
   const endpoint = `${apiUrl.replace(/\/$/, "")}/repos/${repositoryPath}/actions/workflows/${workflowPath}/runs?${query}`;
   let lastState = "";
 

@@ -3,6 +3,7 @@ name: Build & Deploy containers
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: deploy-containers-${{ github.ref }}
@@ -29,6 +30,8 @@ jobs:
   detect-changes:
     name: Detect changed modules
     runs-on: ubuntu-latest
+    # A retomada manual publica somente código já integrado à main.
+    if: github.ref == 'refs/heads/main'
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}

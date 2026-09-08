@@ -2051,3 +2051,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-08-learning-cycle-videos-v2.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-08-pde-learning-cycle-organization-v1.yaml
+      relativeToChangelogFile: true

@@ -78,6 +78,29 @@ jobs:
             --input-type=module -e \
             'import { chromium } from "playwright-core"; const browser = await chromium.launch({headless: true}); console.log(await browser.version()); await browser.close();'
 
+  application-deployment:
+    name: Wait for matching application deployment
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: application-deployment-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Coordinate application revision
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
+        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
+
   docker:
     runs-on: ubuntu-latest
     needs:
@@ -136,6 +159,7 @@ jobs:
     needs:
       - test
       - docker
+      - application-deployment
     runs-on: ubuntu-latest
     timeout-minutes: 90
     concurrency:
@@ -157,13 +181,6 @@ jobs:
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Wait for matching application deployment
-        if: github.event_name == 'push'
-        timeout-minutes: 45
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
-        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
       - name: Configure SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}

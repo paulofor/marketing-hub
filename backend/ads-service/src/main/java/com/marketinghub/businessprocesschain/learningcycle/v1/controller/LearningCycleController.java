@@ -25,6 +25,15 @@ public class LearningCycleController {
     return service.catalog(chainId, productId);
   }
 
+  /** Resolve a entrada pelo BPM pai ou subprocesso sem criar nenhuma ocorrência. */
+  @GetMapping("/entry")
+  public LearningCycleEntry entry(
+      @RequestParam Long processDefinitionId,
+      @RequestParam(required = false) Long productId,
+      @RequestParam(required = false) Long chainId) {
+    return service.entry(processDefinitionId, productId, chainId);
+  }
+
   /** Lista o histórico segregado do produto e, opcionalmente, de uma cadeia. */
   @GetMapping("/products/{productId}")
   public List<LearningCycleResponse> list(

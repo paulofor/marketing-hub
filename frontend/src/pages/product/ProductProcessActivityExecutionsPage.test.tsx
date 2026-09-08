@@ -13,6 +13,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductProcessActivityExecutionsPage from "./ProductProcessActivityExecutionsPage";
 
 vi.mock("axios");
+// Estes testes isolam as atividades existentes; a entrada do ciclo possui testes de contrato próprios.
+vi.mock(
+  "../../api/learningCycle/useLearningCycles",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../api/learningCycle/useLearningCycles")
+    >()),
+    useLearningCycleEntry: () => ({ data: null, isError: false }),
+  }),
+);
 
 const dedaloTask = {
   taskId: 243,

@@ -29,7 +29,8 @@ def http(path, body=None, expected=200):
     request = urllib.request.Request(BASE + path, data=data, headers={'Content-Type': 'application/json'})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
-            status, result = response.status, json.load(response)
+            payload = response.read()
+            status, result = response.status, json.loads(payload) if payload else None
     except urllib.error.HTTPError as error:
         status, result = error.code, json.loads(error.read())
     assert status == expected, (path, status, expected, result)
@@ -124,9 +125,35 @@ def check(name):
 
 reset()
 catalog=http(f'{API}/catalog?chainId=91001&productId=91001')
-assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 2 and len(catalog['returnTargets']) == 2
+entry=catalog['entry']
+parent_id=entry['parentProcessDefinitionId']
+assert entry['sequenceNumber']==6 and entry['canStartCycle'] and entry['integrated']
+assert [route['sequenceNumber'] for route in entry['returnRoutes']]==[2,3,4,5,6]
+assert http('/api/business-process-chains/91001')['processCount']==6
+before=sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')
+for process_id in (parent_id,entry['processDefinitionId']):
+    direct=http(f'{API}/entry?processDefinitionId={process_id}&productId=91001&chainId=91001')
+    assert direct['workspaceUrl']==entry['workspaceUrl'] and direct['parentProcessDefinitionId']==parent_id
+assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')==before
+assert http(f'{API}/entry?processDefinitionId={parent_id}&chainId=91000') is None
+assert http(f'{API}/entry?processDefinitionId=1&productId=91001') is None
+http(f'{API}/entry?processDefinitionId={parent_id}&productId=91999',expected=404)
+old=http(f'{API}/catalog?chainId=91000&productId=91001')
+assert not old['entry']['integrated'] and not old['entry']['canStartCycle']
+historical_request=brief();historical_request['chainDefinitionId']=91000
+http(f'{API}/products/91001',historical_request,expected=409)
+check('Entrada pelo BPM e subprocesso conserva contexto; seis processos; GET não cria ciclo; histórico e produtos segregados')
+
+started=http(f'{API}/products/91001',brief())
+resumed=http(f'{API}/entry?processDefinitionId={parent_id}&productId=91001')
+assert f'cycleId={started["id"]}' in resumed['workspaceUrl']
+assert 'cycleId=' not in http(f'{API}/entry?processDefinitionId={parent_id}&productId=91002')['workspaceUrl']
+assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='1'
+check('Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto')
+reset()
+assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 2 and catalog['entry']['integrated']
 assert any(flow.get('kind')=='REWORK' and flow['to']=='LEARNING' for flow in catalog['diagram']['flows'])
-target=catalog['returnTargets'][1]
+target=next(item for item in catalog['returnTargets'] if item['processCode']=='pde-construction-approval' and item['activityId']=='rework')
 return_to=dict(returnProcessId=target['processDefinitionId'],returnActivityId=target['activityId'],rootCause='Microação abstrata')
 check('BPM publicado com losangos, atividades reais e retorno ao aprendizado')
 

@@ -44,6 +44,7 @@ public class LearningCycleService {
   private final LearningCycleEvidence evidence;
   private final Clock clock;
   private final LearningCycleVideoEvidence videoEvidence;
+  private final LearningCycleOrganization organization;
 
   /** Configura fontes oficiais, contratos e relógio de decisão. */
   @Autowired
@@ -58,7 +59,8 @@ public class LearningCycleService {
       LearningCycleJson json,
       LearningCycleBpmLedger ledger,
       LearningCycleEvidence evidence,
-      LearningCycleVideoEvidence videoEvidence) {
+      LearningCycleVideoEvidence videoEvidence,
+      LearningCycleOrganization organization) {
     this(
         cycles,
         events,
@@ -71,6 +73,7 @@ public class LearningCycleService {
         ledger,
         evidence,
         videoEvidence,
+        organization,
         Clock.systemUTC());
   }
 
@@ -87,6 +90,7 @@ public class LearningCycleService {
       LearningCycleBpmLedger ledger,
       LearningCycleEvidence evidence,
       LearningCycleVideoEvidence videoEvidence,
+      LearningCycleOrganization organization,
       Clock clock) {
     this.cycles = cycles;
     this.events = events;
@@ -100,6 +104,7 @@ public class LearningCycleService {
     this.evidence = evidence;
     this.clock = clock;
     this.videoEvidence = videoEvidence;
+    this.organization = organization;
   }
 
   /** Lista ciclos do próprio produto, preservando escolhas históricas e estados terminais. */
@@ -162,7 +167,65 @@ public class LearningCycleService {
         process.getVersionNumber(),
         json.read(process.getDiagramJson()),
         targets(chain),
-        options);
+        options,
+        organization.describe(chain, process, productId, openCycle(productId, chain)));
+  }
+
+  /** Liga o BPM ao ambiente do ciclo, preservando cadeia, produto e ocorrência já aberta. */
+  @Transactional(readOnly = true)
+  public LearningCycleEntry entry(Long processId, Long productId, Long chainId) {
+    if (productId != null) requireProduct(productId, false);
+    var selected =
+        processes.findById(processId).orElseThrow(() -> notFound("Processo não encontrado."));
+    var cycleProcess = requiredCycleProcess();
+    boolean isCycle = PROCESS_CODE.equals(selected.getProcessCode());
+    if (!isCycle && !Objects.equals(cycleProcess.getParentProcessCode(), selected.getProcessCode()))
+      return null;
+    List<BusinessProcessChainDefinition> candidates;
+    if (chainId != null) candidates = List.of(requiredChain(chainId));
+    else {
+      Long parentId =
+          isCycle
+              ? processes
+                  .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+                      cycleProcess.getParentProcessCode(), "PUBLISHED")
+                  .map(BusinessProcessDefinition::getId)
+                  .orElse(null)
+              : processId;
+      candidates = parentId == null ? List.of() : chains.findByProcessDefinitionId(parentId);
+    }
+    return candidates.stream()
+        .filter(
+            chain ->
+                chain.getItems().stream()
+                    .anyMatch(
+                        item ->
+                            isCycle
+                                ? Objects.equals(
+                                    item.getProcessDefinition().getProcessCode(),
+                                    selected.getParentProcessCode())
+                                : item.getProcessDefinition().getId().equals(processId)))
+        .sorted(
+            Comparator.comparing(
+                    (BusinessProcessChainDefinition chain) ->
+                        !"PUBLISHED".equals(chain.getStatus()))
+                .thenComparing(
+                    BusinessProcessChainDefinition::getVersionNumber, Comparator.reverseOrder()))
+        .map(
+            chain ->
+                organization.describe(chain, cycleProcess, productId, openCycle(productId, chain)))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** Consulta uma ocorrência aberta sem iniciar trabalho nem inferir pelo último experimento. */
+  private LearningSalesCycle openCycle(Long productId, BusinessProcessChainDefinition chain) {
+    return productId == null
+        ? null
+        : cycles
+            .findFirstByProductIdAndChainCodeAndOpenSlot(productId, chain.getChainCode(), 1)
+            .orElse(null);
   }
 
   /** Abre uma iteração atômica, sem criar campanha nem alterar a seleção comercial do produto. */
@@ -180,6 +243,10 @@ public class LearningCycleService {
     var chain = requiredChain(request.chainDefinitionId());
     require(
         "PUBLISHED".equals(chain.getStatus()), "Inicie o ciclo com a versão publicada da cadeia.");
+    var placement = organization.describe(chain, requiredCycleProcess(), productId, null);
+    require(
+        placement != null && placement.canStartCycle(),
+        "A cadeia precisa chamar o ciclo no BPM de venda e aprendizado antes de iniciar uma iteração.");
     require(
         !cycles.existsByProductIdAndChainCodeAndOpenSlot(productId, chain.getChainCode(), 1),
         "Conclua o ciclo aberto desta cadeia antes de iniciar o sucessor.");

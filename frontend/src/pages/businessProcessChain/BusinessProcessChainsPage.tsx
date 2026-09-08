@@ -1,4 +1,5 @@
 import LearningCycleBlueprint from "../learningCycle/LearningCycleBlueprint";
+import { useCycleCatalog } from "../../api/learningCycle/useLearningCycles";
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -24,6 +25,8 @@ export default function BusinessProcessChainsPage() {
     return selectedChain?.id ?? availableChains[0]?.id;
   }, [chains.data, selectedId]);
   const detail = useBusinessProcessChain(activeId);
+  const productId = Number(searchParams.get("productId")) || undefined;
+  const cycleCatalog = useCycleCatalog(activeId, productId);
 
   return (
     <div className="business-process-chain-page">
@@ -98,13 +101,20 @@ export default function BusinessProcessChainsPage() {
                 </div>
               </section>
 
-              <LearningCycleBlueprint chainId={detail.data.id} />
               <section className="card card-body">
                 <h2 className="h5 mb-1">Processos da cadeia</h2>
                 <p className="small text-body-secondary mb-3">
                   Cada processo termina com um resultado verificável antes de
-                  entregar valor ao próximo.
+                  entregar valor ao próximo. No processo de venda, o aprendizado
+                  orienta o retorno ao responsável pelo ajuste e a próxima
+                  homologação.
                 </p>
+                {cycleCatalog.isError ? (
+                  <p className="alert alert-warning" role="alert">
+                    A integração do ciclo está indisponível. Atualize a leitura
+                    para consultar os vínculos oficiais.
+                  </p>
+                ) : null}
                 <ol className="business-process-chain-processes">
                   {detail.data.processes.map((process) => (
                     <li key={process.processDefinitionId}>
@@ -129,7 +139,7 @@ export default function BusinessProcessChainsPage() {
                                 process.status === "RETIRED"
                                   ? "/business-processes/retired"
                                   : "/business-processes"
-                              }?processId=${process.processDefinitionId}`}
+                              }?processId=${process.processDefinitionId}&chainId=${detail.data.id}${productId ? `&productId=${productId}` : ""}`}
                               aria-label={`Abrir atividades de ${process.name} no diagrama BPM`}
                             >
                               Abrir BPM
@@ -151,6 +161,14 @@ export default function BusinessProcessChainsPage() {
                             <span>{process.outcomeDescription}</span>
                           </div>
                         </div>
+                        {cycleCatalog.data?.entry?.parentProcessDefinitionId ===
+                        process.processDefinitionId ? (
+                          <LearningCycleBlueprint
+                            entry={cycleCatalog.data.entry}
+                            diagram={cycleCatalog.data.diagram}
+                            version={cycleCatalog.data.version}
+                          />
+                        ) : null}
                       </article>
                     </li>
                   ))}

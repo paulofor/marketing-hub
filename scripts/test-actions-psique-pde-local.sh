@@ -34,14 +34,20 @@ in_module() {
   (cd "$module" && "$@")
 }
 
+in_node_module() {
+  local module="$1"
+  shift
+  (cd "$module" && npm ci && "$@")
+}
+
 step 01-psique-java in_module customer-agent-worker mvn -B test
 step 02-dedalo-java in_module landing-generator-agent-worker mvn -B test
 step 03-apolo-java in_module video-management-service mvn -B test
 step 04-pde-java in_module pde-platform/backend mvn -B test
 step 05-harness-catalog in_module backend/ads-service mvn -B -Dtest=AgentHarnessCatalogTest test
 step 06-evidence node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
-step 07-psique-browser in_module customer-agent-worker npm test
-step 08-pde-build in_module pde-platform/frontend npm run build
+step 07-psique-browser in_node_module customer-agent-worker npm test
+step 08-pde-build in_node_module pde-platform/frontend npm run build
 step 09-mira-build in_module pde-platform/frontend npm run build:mira
 step 10-product-artifacts node pde-platform/scripts/test-product-build-artifacts.mjs
 step 11-mira-browser in_module pde-platform/frontend env MIRA_PRIVATE_E2E_TOKEN=mira-local-test-only \

@@ -54,6 +54,7 @@ export default function BusinessProcessEditor({
     setValue((current) => ({
       ...current,
       diagram: {
+        ...current.diagram,
         nodes: current.diagram.nodes.filter(
           (_, position) => position !== index,
         ),
@@ -151,7 +152,8 @@ export default function BusinessProcessEditor({
             value={value.processType ?? "VALUE_PROCESS"}
             onChange={(event) => {
               const processType = event.target.value as
-                "VALUE_PROCESS" | "SUBPROCESS";
+                | "VALUE_PROCESS"
+                | "SUBPROCESS";
               setValue({
                 ...value,
                 processType,
@@ -179,7 +181,9 @@ export default function BusinessProcessEditor({
               setValue({
                 ...value,
                 executionScope: event.target.value as
-                  "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT",
+                  | "PRODUCT"
+                  | "INDEPENDENT"
+                  | "PRODUCT_OR_INDEPENDENT",
               })
             }
           >

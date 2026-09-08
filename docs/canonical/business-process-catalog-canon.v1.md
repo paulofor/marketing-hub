@@ -29,7 +29,8 @@ Para Produtos Digitais Experienciais, a organização macro dos processos deve s
 fabricação de entregáveis, criativos, landing, homologação e venda, são reutilizados dentro dessa
 cadeia e não devem ser confundidos isoladamente com o ciclo completo de criação e venda de um PDE.
 
-Processos podem ser organizados em cadeias de criação e entrega de valor. A cadeia é versionada,
+Todo processo criado ou alterado deve integrar o BPM de uma Cadeia de Valor, diretamente como
+processo de valor ou como subprocesso de um processo participante. A cadeia é versionada,
 preserva as versões exatas dos processos participantes e possui objetivo, resultado e métrica
 principal próprios. Ela serve à visão gerencial e não executa, agenda ou avança etapas. A tela
 canônica é `/business-process-chains` e seu contrato de leitura é
@@ -37,7 +38,52 @@ canônica é `/business-process-chains` e seu contrato de leitura é
 detalhe em `/business-processes` deve mostrar cada cadeia e oferecer link direto para sua versão. A
 consulta reversa canônica é `GET /api/business-process-chains/by-process/{processDefinitionId}`.
 
+## Alocação obrigatória no BPM da Cadeia de Valor
+
+**Decisão obrigatória de 08/09/2026:** tudo que for criado ou alterado relacionado a processos e
+atividades deve ficar alocado dentro do BPM da Cadeia de Valor. A regra vale para todos os produtos,
+agentes, módulos e trabalhos humanos ou automatizados, incluindo subprocessos, ciclos, decisões,
+correções, homologações e produção de comunicação ou vídeos.
+
+O objetivo é conectar cada trabalho ao valor entregue ao cliente e à geração de vendas e receita,
+com resultado verificável. Quantidade de tarefas concluídas não substitui resultado comercial.
+
+- **Hierarquia explícita:** Cadeia de Valor → processo de valor → subprocesso, quando necessário →
+  atividade. Toda criação ou alteração deve identificar a cadeia, a versão do processo e a atividade
+  responsável. Capacidades existentes são reutilizadas por delegação, sem duplicar sua autoridade.
+- **Conexão real no BPM:** a atividade precisa estar conectada ao fluxo a partir do início, com
+  entradas, saídas, condições de avanço e próximo passo definidos. Subprocessos exigem vínculo com
+  o pai e uma atividade de chamada com `subprocessCode` conectada ao diagrama do pai. Cadastro,
+  lista de subprocessos, documento, painel ou link isolado não satisfazem essa obrigação.
+- **Decisões e retornos:** gates e loops devem declarar condições, evidências, destino de correção
+  ou continuidade e encerramento. Reprovação precisa orientar a próxima atividade e quem a executa.
+  O backend governa a liberação; o desenho do retorno não autoriza avanço nem execução por si só.
+- **Orientação executável:** cada atividade declara objetivo, responsável, entradas, entrega,
+  critério de conclusão, bloqueios e ação disponível ao usuário. Telas especializadas, estúdios e
+  painéis permanecem recursos da atividade e devem ser acessíveis pelo BPM preservando seu contexto.
+- **Rastreabilidade:** tarefas e resultados se vinculam à atividade e à versão do processo dentro
+  da cadeia, com produto, experimento e ciclo quando aplicáveis. Execução independente de produto
+  continua pertencendo ao BPM da cadeia; não se deve inventar produto para iniciar descoberta.
+- **Evolução e histórico:** ao criar ou alterar trabalho, atualizar de forma coerente o cânone,
+  a definição BPM, sua composição na cadeia, a navegação e os contratos e testes afetados. Publicados
+  permanecem imutáveis; mudanças usam novas versões e preservam tarefas e evidências anteriores.
+  Itens legados sem alocação devem ser regularizados quando alterados, sem fabricar execução passada.
+
+**Critério de entrega:** uma criação ou alteração de processo ou atividade só está completa quando
+é possível partir da Cadeia de Valor, localizar o trabalho no BPM, compreender sua entrada, executar
+o comando previsto e identificar sua conclusão, bloqueio ou próximo passo. Rascunhos podem ser
+preparados antes da publicação conjunta, mas não orientam execução enquanto a integração estiver
+pendente. Essa regra de organização não concede autorização de publicação comercial, gasto ou escala.
+
 ## Governança BPM
+
+**Integração operacional do ciclo (08/09/2026):** o subprocesso de ciclos pertence ao
+processo de venda e aprendizado. Seu pai precisa conter uma atividade `subprocessCode`
+conectada ao fluxo, além do vínculo de cadastro. A cadeia expõe o painel dentro desse pai.
+O endpoint `GET /api/business-process-chains/learning-cycles/v1/entry` resolve a entrada
+e a ocorrência aberta, sem mutação. Destinos de orientação `learningCycleReturns` no
+diagrama são resolvidos nas versões exatas da cadeia; a execução usa os comandos e a
+atividade orientada do ciclo. Ausência de vínculo não pode ser inferida como integração.
 
 As cadeias incorporam **Ciclos de aprendizado e vendas**, conforme
 `ciclos-aprendizado-vendas-canon.v1.md`. A definição descreve o losango e os retornos; a execução
@@ -276,6 +322,10 @@ O processo `pde-opportunity-discovery` é `INDEPENDENT`: uma pergunta real de me
 e somente uma oportunidade factual aprovada poderá originar produto posteriormente. Vincular produto
 apenas para conseguir disparar Argos inverte a cadeia causal e é proibido.
 
+`INDEPENDENT` descreve ausência de produto na execução, não ausência de alocação na Cadeia de Valor.
+Sua definição, atividades e entrada operacional seguem a mesma regra obrigatória de integração ao
+BPM; a tela independente funciona como recurso de execução do processo correspondente.
+
 A tela canônica de início e acompanhamento é `/business-process-executions`. Ela lista somente versões
 publicadas com escopo independente, apresenta os campos de entrada declarados pelo backend e inicia a
 execução por `POST /api/independent-business-process-executions`. A tela não cria tarefas diretamente,
@@ -463,7 +513,11 @@ tarefa deve mostrar entrada, saída, cache e custo estimado vindos do backend, s
 
 Uma tarefa excepcional pode ser vinculada posteriormente a uma atividade regular somente enquanto estiver `PENDING`, ainda não tiver sido recebida e a definição estiver `PUBLISHED`. O vínculo preserva o mesmo identificador e histórico da tarefa, remove a excepcionalidade e valida se a atividade pertence ao agente responsável. Tarefas recebidas, concluídas ou já vinculadas não podem ser migradas por esse contrato.
 
-Uma demanda fora do catálogo pode ser registrada como `Atividade excepcional`, sem vínculo regular e com justificativa obrigatória auditável. A exceção não cria nem altera processo automaticamente; recorrências devem orientar revisão ou criação de processo. Tarefas históricas anteriores a esta regra permanecem legíveis como legadas.
+Uma demanda ainda sem correspondência no catálogo deve orientar a criação ou revisão da atividade
+no BPM da Cadeia de Valor antes de originar novo trabalho operacional. A partir da decisão de
+08/09/2026, `Atividade excepcional` não pode ser usada para criar ou alterar processos e atividades
+fora dessa organização. Registros excepcionais anteriores permanecem legíveis como legados; sua
+regularização respeita os limites de vínculo e preservação do histórico descritos acima.
 
 A tela do experimento deve expor a instância do processo vinculada à referência da entidade. A situação
 de cada atividade é calculada pelo backend com o mesmo grafo usado pelo endpoint `pending`, distinguindo

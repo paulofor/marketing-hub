@@ -18,6 +18,10 @@ public interface LearningSalesCycleRepository extends JpaRepository<LearningSale
   List<LearningSalesCycle> findByProductIdAndChainCodeOrderByIdDesc(
       Long productId, String chainCode);
 
+  /** Retoma no SQL somente o ciclo aberto do próprio produto e da mesma cadeia. */
+  Optional<LearningSalesCycle> findFirstByProductIdAndChainCodeAndOpenSlot(
+      Long productId, String chainCode, Integer openSlot);
+
   /** Localiza a adoção anterior para responder idempotentemente. */
   Optional<LearningSalesCycle> findByProductIdAndRequestKey(Long productId, String requestKey);
 

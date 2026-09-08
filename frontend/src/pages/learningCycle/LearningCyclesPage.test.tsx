@@ -14,6 +14,23 @@ import {
 } from "../../api/learningCycle/useLearningCycles";
 vi.mock("axios");
 const catalog: CycleCatalog = {
+  entry: {
+    chainDefinitionId: 1,
+    chainName: "Cadeia PDE",
+    parentProcessDefinitionId: 6,
+    parentProcessName: "Venda e aprendizado",
+    sequenceNumber: 6,
+    activityId: "learningCycle",
+    processDefinitionId: 70,
+    processName: "Ciclos de aprendizado e vendas",
+    integrated: true,
+    canStartCycle: true,
+    guidance: "Registre a decisão no ciclo",
+    workspaceUrl: "/business-process-chains/learning-cycles?chainId=1",
+    actionLabel: "Abrir ciclo por produto e experimento",
+    parentUrl: "/business-processes?processId=6",
+    returnRoutes: [],
+  },
   processDefinitionId: 70,
   version: 1,
   returnTargets: [

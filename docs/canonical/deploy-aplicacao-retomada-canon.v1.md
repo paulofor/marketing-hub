@@ -18,6 +18,10 @@ Os agentes que aguardam a aplicação devem reconhecer tanto `push` quanto `work
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
 libera os agentes. A execução correspondente mais recente precisa terminar com `success`;
 uma retomada em andamento ou com falha não pode reutilizar o sucesso de uma execução anterior.
+Em Argos, Psique e Íris, essa espera deve ocorrer em job próprio antes da fila compartilhada do
+VPS. O gate não pode ter SSH nem usar concorrência no nível do workflow inteiro; revisões novas
+cancelam somente o gate antigo do mesmo workflow. Assim, indisponibilidade ou ausência do deploy
+central bloqueia apenas o agente dependente e nunca retém a seção crítica dos demais publicadores.
 
 Uma nova execução manual não substitui os testes locais nem autoriza código fora do PR.
 Não reexecutar um run histórico esperando que ele publique o HEAD atual: o GitHub preserva

@@ -278,9 +278,13 @@ components:
       required: [commercialPlanId, currentStage, status, nextAction, expectedMetric, decisionCriterion, stages, specialistDecisions]
       properties:
         commercialPlanId: {type: integer, format: int64}
-        currentStage: {type: string}
+        currentStage:
+          type: string
+          description: Plano BLOCKED retorna CORRECT_CURRENT_PLAN antes de sugestões genéricas de homologação ou publicação; isso não conclui gates nem autoriza gasto.
         status: {type: string, enum: [APROVADO, BLOQUEADO, AJUSTE_NECESSARIO, EM_ANDAMENTO]}
-        nextAction: {type: string}
+        nextAction:
+          type: string
+          description: Orientação persistida no plano bloqueado, preservando quebras de linha da sequência. Sem orientação, solicita registrar causa e evidência.
         blocker: {type: string, nullable: true}
         expectedMetric: {type: string}
         decisionCriterion: {type: string}

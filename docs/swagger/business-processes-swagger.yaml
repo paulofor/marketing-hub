@@ -118,6 +118,7 @@ paths:
   /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions:
     get:
       summary: Lista as atividades e tarefas do produto no processo canônico
+      description: Na operação, prioriza o experimento já operado do próprio produto selecionado no plano vigente, inclusive pausado. Sucessor PLANNED e plano encerrado não substituem o fallback operacional; o comando usa a mesma referência.
       parameters:
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId

@@ -1,0 +1,159 @@
+{
+  "capturedAt": "2026-09-08T03:25:16.396963+00:00",
+  "productId": 4,
+  "commercialPlanId": 3,
+  "planVersion": 6,
+  "planVersionId": 26,
+  "savedVia": "FRONTEND",
+  "writeRequests": 1,
+  "sourceEvidence": {
+    "ui": "http://191.252.181.168:5173/planning/3",
+    "readPaths": [
+      "/api/planning/commercial-plans/3",
+      "/api/planning/commercial-plans/3/versions",
+      "/api/experiments/90",
+      "/api/experiments/91",
+      "/api/business-processes",
+      "/api/business-processes/66/products/9/activity-executions",
+      "/api/business-processes/66/products/4/activity-executions"
+    ],
+    "database": "marketinghubdb.commercial_plan via MCP db_query",
+    "saveResponse": {
+      "experimentId": 91,
+      "status": "BLOCKED",
+      "httpStatus": 200
+    },
+    "afterBackgroundSync": {
+      "experimentId": 90,
+      "status": "BLOCKED",
+      "updatedAt": "2026-09-08T03:23:29.337624Z"
+    },
+    "apiAndDatabaseAgreeOnObservedFields": true
+  },
+  "configuration": {
+    "status": "BLOCKED",
+    "operationalRevenueTargetBrl": 335.0,
+    "approachesToTest": 1,
+    "roadmap": "SEQUÊNCIA DO VEGA — executar em ordem, com evidência antes de avançar. Primeiro trabalho: reconciliação do #91.\n\n1. Reconciliar o experimento #91 — Hermes\nNo monitor do #91, conferir campanha pausada, gasto com data/fonte, cliques de saída, sessões, e-mail preenchido e pagamentos. Corrigir a leitura incompleta e atualizar o contexto de Atena. Manter #90 separado. Avançar com dados conciliados; não repetir o bloqueio histórico do vídeo #38.\n\n2. Tornar o primeiro ajuste executável — Dédalo\nEntregar o que fazer, como aplicar, ocasião e critério para a cliente avaliar se serviu. Incluir salvar, consultar novamente e caminho neutro. Implementar e testar localmente; parecer não substitui produto funcionando.\n\n3. Facilitar a entrada mobile — Íris\nExibir a primeira escolha sem rolagem e demonstrar a microação real. Explicar primeiro ajuste/Dia 1 gratuitos e o ganho dos Dias 2 a 7 por R$ 67, pagamento único e acesso por 90 dias. Apolo somente se houver necessidade audiovisual comprovada.\n\n4. Homologar a versão — técnico, Psique e Têmis\nTestar resultado → e-mail descartável → retomada → checkout de teste → acesso → missão; incluir falhas, recuperação e dados segregados em desktop, iPhone e Pixel. Depois, Psique avalia utilidade e esforço; Têmis, integridade. Rejeição retorna a Dédalo, Íris ou correção técnica conforme a causa, com nova homologação.\n\n5. Observar cinco pessoas consentidas — operador humano\nObservar iniciar, compreender, aplicar, salvar e retomar; registrar dificuldades e satisfação. Falha volta à etapa responsável antes de novo gasto. É pesquisa qualitativa: agentes não contam como clientes; cinco observações não encerram a amostra de 100 contatos do #90 nem validam conversão paga.\n\n6. Preparar próximo teste pago — Atena, Plutus e autorização humana\nSomente após 1–5: definir uma hipótese, versão, janela e parada; validar margem e atribuição. Criar sucessor do #91 pela tela após autorização. Preservar preço inicialmente e alterar uma variável por teste depois da estabilização. O teto antigo e seu saldo não autorizam reativação nem novo gasto.\n\n7. Comprovar vendas, entrega e contribuição — Hermes e Plutus\nBuscar cinco vendas líquidas do canal avaliado, conciliadas e entregues, com primeiro uso e satisfação acompanhados. Cinco compras de R$ 67 são R$ 335 brutos antes de custos e reembolsos. Escala exige repetição por coorte, contribuição positiva e nova autorização.\n\nEste roteiro não dispara tarefas, não autoriza mídia e não altera o processo compartilhado com Rigel. Cada execução deve anexar causa, evidência e versão; orçamento e prazo não permitem pular etapas.",
+    "roadmapSha256": "2b143c77d8312b0c71bd8d90c896353a17c6b829440fcb5e5be3422486edc24f",
+    "elevenOtherRequestedFieldsStillMatch": true
+  },
+  "preserved": {
+    "exp90Status": "RUNNING",
+    "exp91Status": "USER_STOPPED",
+    "priceBrl": 67.0,
+    "planBudgetBrl": 200.0,
+    "monthlyRevenueTargetBrl": 1340.0,
+    "processDefinitionsUnchanged": true,
+    "rigelReference": "experiment:89"
+  },
+  "pendingCodeDeployment": {
+    "vegaReferenceStillShown": "experiment:90",
+    "necessaryAction": "Publicar correção pelo PR/pipeline e então selecionar #91 novamente pela UI; conferir persistência após o ciclo de sincronização.",
+    "expectedAfterDeployAndUiSelection": "experiment:91",
+    "topPanelExpectedAfterDeploy": "CORRECT_CURRENT_PLAN",
+    "sharedBpmTopologyUnchanged": true,
+    "roadmapDoesNotCreateTasksOrAutomaticGates": true
+  },
+  "localValidation": {
+    "completedAt": "2026-09-08T03:29:21.749123+00:00",
+    "scope": "Plano comercial, referência operacional e sincronização; APIs e persistência simuladas, Chromium real na UI local",
+    "rounds": [
+      {
+        "round": 1,
+        "result": "PASS",
+        "backendTests": 119,
+        "backendSuites": 19,
+        "frontendTests": 26,
+        "browserJourneys": 6,
+        "devices": [
+          "Chromium desktop",
+          "Chromium iPhone 15 Pro emulation",
+          "Chromium Pixel 7 emulation"
+        ],
+        "formatting": "PASS",
+        "typecheck": "PASS",
+        "frontendBuild": "PASS",
+        "logDigests": {
+          "java": {
+            "sha256": "e954b9eb6ebe5152d71bf4d764fa6a4e87739551fab49d33718208c07f051501",
+            "bytes": 10462
+          },
+          "frontend": {
+            "sha256": "a5b5a42215ba5860466e2fe16e353f6d5a6c84efe8588b88b1c9d392a7eebc11",
+            "bytes": 839
+          },
+          "browser": {
+            "sha256": "dc8f98883bdb19fa6c0b73f140f2dfe42ea7dfd8292fa40fb05d417223d03e79",
+            "bytes": 540
+          },
+          "typecheck": {
+            "sha256": "22d61c288c14288b0b237451ea61eb4e2fc236829eb295fb28a2e2109df4eafb",
+            "bytes": 58
+          },
+          "build": {
+            "sha256": "6592804ccd533e9f93e05af62db2387ee3fb7bd1c6f0f4e8f872a0a449711994",
+            "bytes": 981
+          },
+          "spotless": {
+            "sha256": "cedceae6ed6d44e216f7e6b708d54f3385aaa8d783fd858d792a6b737df574c1",
+            "bytes": 16
+          },
+          "prettier": {
+            "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+            "bytes": 66
+          }
+        }
+      },
+      {
+        "round": 2,
+        "result": "PASS",
+        "backendTests": 119,
+        "backendSuites": 19,
+        "frontendTests": 26,
+        "browserJourneys": 6,
+        "devices": [
+          "Chromium desktop",
+          "Chromium iPhone 15 Pro emulation",
+          "Chromium Pixel 7 emulation"
+        ],
+        "formatting": "PASS",
+        "typecheck": "PASS",
+        "frontendBuild": "PASS",
+        "logDigests": {
+          "java": {
+            "sha256": "2df8eb8f2028945bc94b78e3abcaa3cc8daf504cef833efac3aff917f37f6dba",
+            "bytes": 10462
+          },
+          "frontend": {
+            "sha256": "02ed12fa18b260be3353d844fff78fdfec7efe76fc58c58da0f8bf67d9806b85",
+            "bytes": 839
+          },
+          "browser": {
+            "sha256": "dc8f98883bdb19fa6c0b73f140f2dfe42ea7dfd8292fa40fb05d417223d03e79",
+            "bytes": 540
+          },
+          "typecheck": {
+            "sha256": "22d61c288c14288b0b237451ea61eb4e2fc236829eb295fb28a2e2109df4eafb",
+            "bytes": 58
+          },
+          "build": {
+            "sha256": "7faa5e6d59033fca5e550d9c77ef83d953d6227e05e01da7c9b50ed66c91a993",
+            "bytes": 981
+          },
+          "spotless": {
+            "sha256": "cedceae6ed6d44e216f7e6b708d54f3385aaa8d783fd858d792a6b737df574c1",
+            "bytes": 16
+          },
+          "prettier": {
+            "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+            "bytes": 66
+          }
+        }
+      }
+    ],
+    "commercialEventsCreated": 0,
+    "productionCodePublished": false,
+    "pullRequestCreated": false
+  }
+}

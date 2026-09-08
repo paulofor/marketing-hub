@@ -1,6 +1,7 @@
 package com.marketinghub.planning.service;
 
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto;
 import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto.Entry;
 import com.marketinghub.planning.dto.CommercialPlanOperationalFlowDto;
@@ -24,7 +25,7 @@ public class CommercialPlanOperationalFlowService {
     this.activityService = activityService;
   }
 
-  /** Monta o fluxo e mantém publicação ou gasto bloqueados sem homologação comprovada. */
+  /** Prioriza bloqueio deliberado do plano e mantém os gates de homologação e autorização. */
   @Transactional(readOnly = true)
   public CommercialPlanOperationalFlowDto view(CommercialPlan plan) {
     CommercialPlanAgentActivityDto activity = activityService.activity(plan);
@@ -35,12 +36,24 @@ public class CommercialPlanOperationalFlowService {
     boolean homologating = homologation != null && isActive(homologation.status());
     boolean published = positive(plan.getActualExperimentsPublished());
     boolean measured = positive(plan.getActualRevenue()) || positive(plan.getActualTotalCost());
+    boolean correctionRequired = plan.getStatus() == CommercialPlanStatus.BLOCKED;
 
     String currentStage;
     String status;
     String nextAction;
     String blocker = null;
-    if (!offerReady) {
+    if (correctionRequired) {
+      currentStage = "CORRECT_CURRENT_PLAN";
+      status = "BLOQUEADO";
+      nextAction =
+          hasText(plan.getNextAction())
+              ? plan.getNextAction()
+              : "Registrar causa, evidência e sequência de correção no plano antes de retomar.";
+      blocker =
+          hasText(plan.getCurrentBlocker())
+              ? plan.getCurrentBlocker()
+              : "Plano bloqueado; a causa ainda precisa ser registrada.";
+    } else if (!offerReady) {
       currentStage = "CHOOSE_OFFER";
       status = "AJUSTE_NECESSARIO";
       nextAction = "Definir oferta e público antes de mobilizar especialistas.";
@@ -81,15 +94,26 @@ public class CommercialPlanOperationalFlowService {
         status,
         nextAction,
         blocker,
-        "Tempo entre criação do plano e experimento homologado/publicável.",
-        "Continuar com jornada homologada; ajustar bloqueio técnico; parar investimento sem tracking, pagamento ou entrega comprovados.",
-        List.of(
-            stage("CHOOSE_OFFER", "Escolher oferta", offerReady, currentStage),
-            stage("PREPARE_EXPERIMENT", "Preparar experimento", experimentReady, currentStage),
-            stage("HOMOLOGATE_JOURNEY", "Homologar jornada", homologated, currentStage),
-            stage("PUBLISH_TEST", "Publicar teste", published, currentStage),
-            stage("MEASURE_SALES", "Medir vendas", measured, currentStage),
-            stage("ADJUST_OR_SCALE", "Ajustar ou escalar", false, currentStage)),
+        correctionRequired && hasText(plan.getMainMetric())
+            ? plan.getMainMetric()
+            : "Tempo entre criação do plano e experimento homologado/publicável.",
+        correctionRequired && hasText(plan.getSuccessCriteria())
+            ? plan.getSuccessCriteria()
+            : "Continuar com jornada homologada; ajustar bloqueio técnico; parar investimento sem tracking, pagamento ou entrega comprovados.",
+        correctionRequired
+            ? List.of(
+                stage(
+                    "CORRECT_CURRENT_PLAN",
+                    "Executar sequência de correção do plano",
+                    false,
+                    currentStage))
+            : List.of(
+                stage("CHOOSE_OFFER", "Escolher oferta", offerReady, currentStage),
+                stage("PREPARE_EXPERIMENT", "Preparar experimento", experimentReady, currentStage),
+                stage("HOMOLOGATE_JOURNEY", "Homologar jornada", homologated, currentStage),
+                stage("PUBLISH_TEST", "Publicar teste", published, currentStage),
+                stage("MEASURE_SALES", "Medir vendas", measured, currentStage),
+                stage("ADJUST_OR_SCALE", "Ajustar ou escalar", false, currentStage)),
         List.of(
             decision(activity.entries(), "Atena", "Oferta, público e criativos"),
             decision(activity.entries(), "Plutus", "Orçamento, margem e limite de perda"),

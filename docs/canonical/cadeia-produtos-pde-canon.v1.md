@@ -496,6 +496,11 @@ aplicável.
 
 ## 6. Venda, entrega, aprendizado e decisão de escala
 
+A retomada específica do Vega após o experimento #91 segue o
+[roteiro comercial Vega v1](vega-sequencia-comercial-canon.v1.md), com reconciliação, melhoria
+dirigida, homologação, observação humana e novo teste condicionado a autorização. O roteiro
+é do plano do produto e preserva a definição de processo compartilhada com outros PDEs.
+
 **Objetivo final:** gerar vendas reais com entrega satisfatória e transformar o comportamento das
 clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 

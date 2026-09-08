@@ -195,6 +195,14 @@ frontend apenas apresenta essa verdade e nunca transforma bloqueio em permissão
 
 ### Controle padronizado de execução das atividades
 
+Na operação de experimento, a leitura e o comando do produto devem respeitar o experimento
+selecionado no plano vigente (`IN_PROGRESS` ou `BLOCKED`) quando ele pertencer ao produto e já
+tiver saído de `PLANNED`. Isso permite reconciliar um ciclo pausado sem substituí-lo por um piloto
+antigo ainda em `RUNNING`. Sem seleção elegível, permanece o fallback para experimento em execução
+ou já operado. Tentativas e instâncias de outras referências continuam históricas e não são
+migradas nem concluídas por essa seleção. O roteiro particular do produto pertence ao seu plano;
+ele não modifica a topologia compartilhada nem cria gates automáticos somente por descrever etapas.
+
 Toda atividade exibida na visão de produto deve receber do backend um `executionControl`, inclusive
 quando ainda não existe comando manual seguro. Esse contrato é a fonte de verdade para responsável,
 tipo de interação, disponibilidade, causa, pré-requisitos, confirmação, área operacional e

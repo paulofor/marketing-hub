@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Responsabilidade: congelar e expor o contexto comercial usado nas decisões dos agentes. */
 @Service
 public class CommercialPlanVersionService {
+  private static final Logger log = LoggerFactory.getLogger(CommercialPlanVersionService.class);
   private final CommercialPlanVersionRepository repository;
   private final ObjectMapper objectMapper;
   private final Clock clock;
@@ -73,12 +76,20 @@ public class CommercialPlanVersionService {
         .orElseThrow(() -> new IllegalStateException("Plano comercial ainda não possui versão."));
   }
 
-  /** Serializa contexto funcional e metas numéricas sem entidades ou metadados internos. */
+  /** Congela contexto, seleção de experimento e metas sem serializar entidades ou segredos. */
   private String serialize(CommercialPlan plan) {
     Map<String, Object> context = new LinkedHashMap<>();
     context.put("planId", plan.getId());
     context.put("name", plan.getName());
     context.put("status", plan.getStatus());
+    context.put("experimentId", plan.getExperiment() == null ? null : plan.getExperiment().getId());
+    context.put(
+        "experimentIds",
+        plan.getExperiments().stream()
+            .map(experiment -> experiment.getId())
+            .filter(java.util.Objects::nonNull)
+            .sorted()
+            .toList());
     context.put("commercialObjective", plan.getCommercialObjective());
     context.put("targetAudience", plan.getTargetAudience());
     context.put("mainPain", plan.getMainPain());
@@ -91,6 +102,7 @@ public class CommercialPlanVersionService {
     context.put("deadline", plan.getDeadline());
     context.put("maxBudgetBrl", plan.getMaxBudget());
     context.put("targetRevenueBrl", plan.getTargetRevenue());
+    context.put("operationalRevenueTargetBrl", plan.getOperationalRevenueTarget());
     context.put("offerPriceBrl", plan.getOfferPriceBrl());
     context.put("variableCostPerSaleBrl", plan.getVariableCostPerSaleBrl());
     context.put("expectedMonthlyTraffic", plan.getExpectedMonthlyTraffic());
@@ -107,10 +119,12 @@ public class CommercialPlanVersionService {
     context.put("actualTotalCostBrl", plan.getActualTotalCost());
     context.put("actualRevenueBrl", plan.getActualRevenue());
     context.put("currentBlocker", plan.getCurrentBlocker());
+    context.put("rootCause", plan.getRootCause());
     context.put("nextAction", plan.getNextAction());
     try {
       return objectMapper.writeValueAsString(context);
     } catch (JsonProcessingException ex) {
+      log.error("Falha ao versionar contexto comercial. planId={}", plan.getId(), ex);
       throw new IllegalStateException("Não foi possível versionar o contexto comercial.", ex);
     }
   }

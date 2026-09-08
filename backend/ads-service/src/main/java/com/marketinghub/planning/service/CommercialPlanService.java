@@ -27,6 +27,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: coordenar cadastro, marcos e simulacoes de planos comerciais. */
 @Service
 public class CommercialPlanService {
+  private static final Logger log = LoggerFactory.getLogger(CommercialPlanService.class);
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final int NAME_MAX_LENGTH = 191;
   private static final int SUMMARY_MAX_LENGTH = 512;
@@ -61,6 +64,7 @@ public class CommercialPlanService {
   private final CommercialPlanExecutionSyncService executionSyncService;
   private final CommercialPlanVersionService versionService;
 
+  /** Configura persistência, sincronização de métricas e versionamento do planejamento. */
   public CommercialPlanService(
       CommercialPlanRepository planRepository,
       CommercialPlanMilestoneRepository milestoneRepository,
@@ -248,8 +252,10 @@ public class CommercialPlanService {
           saved, "ATENA_PLUTUS", "Premissas hipotéticas definidas e validadas pelos agentes");
       return saved;
     } catch (ResponseStatusException ex) {
+      log.warn("Premissas comerciais rejeitadas. planId={}", id, ex);
       throw ex;
     } catch (Exception ex) {
+      log.error("Falha ao aplicar premissas comerciais dos agentes. planId={}", id, ex);
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Validação de premissas fora do contrato.", ex);
     }
@@ -279,21 +285,30 @@ public class CommercialPlanService {
                     HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
   }
 
-  /**
-   * Vincula ao plano todos os experimentos em execução compatíveis sem apagar vínculos anteriores.
-   */
+  /** Seleciona explicitamente um experimento em execução compatível e audita a mudança de foco. */
   @Transactional
   public CommercialPlan synchronizeRunningExperiment(Long id) {
     CommercialPlan plan = synchronizeAvailableRunningExperiments(id);
     if (plan.getExperiment() == null
         || plan.getExperiment().getStatus() != ExperimentStatus.RUNNING) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Nenhum experimento RUNNING compativel com o planejamento.");
+      Experiment running =
+          plan.getExperiments().stream()
+              .filter(experiment -> experiment.getStatus() == ExperimentStatus.RUNNING)
+              .filter(experiment -> belongsToPlan(plan, experiment))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(
+                          HttpStatus.CONFLICT,
+                          "Nenhum experimento RUNNING compativel com o planejamento."));
+      plan.setExperiment(running);
+      planRepository.save(plan);
+      versionService.snapshot(plan, "USER", "Seleção explícita do experimento em execução");
     }
     return plan;
   }
 
-  /** Atualiza o portfolio e os totais executados no comando operacional de sincronizacao. */
+  /** Atualiza portfólio e métricas sem sobrescrever o experimento selecionado pelo operador. */
   @Transactional
   public CommercialPlan synchronizeAvailableRunningExperiments(Long id) {
     CommercialPlan plan = getPlan(id);
@@ -304,8 +319,9 @@ public class CommercialPlanService {
     if (compatible.isEmpty()) {
       return syncExecution(plan);
     }
+    if (plan.getExperiment() != null) plan.getExperiments().add(plan.getExperiment());
     plan.getExperiments().addAll(compatible);
-    plan.setExperiment(compatible.get(0));
+    if (plan.getExperiment() == null) plan.setExperiment(compatible.get(0));
     return syncExecution(planRepository.save(plan));
   }
 

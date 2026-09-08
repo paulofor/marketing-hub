@@ -32,6 +32,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -314,10 +315,11 @@ public class BusinessProcessActivityExecutionService {
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
     String currentExecutionReference =
-        resolveExecutionReference(selectedProcess, product, productExperiments, tasks, instances);
+        resolveExecutionReference(
+            selectedProcess, product, productExperiments, productPlans, tasks, instances);
     String readinessSourceReference =
         currentExecutionReference == null
-            ? initialSourceReference(selectedProcess, product, productExperiments)
+            ? initialSourceReference(selectedProcess, product, productExperiments, productPlans)
             : currentExecutionReference;
     boolean hasExecutionContext = readinessSourceReference != null;
     Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId =
@@ -442,10 +444,10 @@ public class BusinessProcessActivityExecutionService {
             productPlans, productExperiments, productId, process.getProcessCode());
     String currentSourceReference =
         resolveExecutionReference(
-            process, product, productExperiments, processTasks, processInstances);
+            process, product, productExperiments, productPlans, processTasks, processInstances);
     String sourceReference =
         currentSourceReference == null
-            ? initialSourceReference(process, product, productExperiments)
+            ? initialSourceReference(process, product, productExperiments, productPlans)
             : currentSourceReference;
     if (sourceReference == null) {
       throw new ResponseStatusException(
@@ -557,10 +559,31 @@ public class BusinessProcessActivityExecutionService {
         : experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(productId);
   }
 
-  /** Resolve a referência inicial sem fabricar experimento para um protótipo pré-comercial. */
+  /** Prioriza a seleção já operada do plano vigente sem fabricar contexto pré-comercial. */
   private String initialSourceReference(
-      BusinessProcessDefinition process, Product product, List<Experiment> productExperiments) {
+      BusinessProcessDefinition process,
+      Product product,
+      List<Experiment> productExperiments,
+      List<CommercialPlan> productPlans) {
     if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
+      Optional<Experiment> selected =
+          productPlans.stream()
+              .filter(
+                  plan ->
+                      plan.getStatus() == CommercialPlanStatus.IN_PROGRESS
+                          || plan.getStatus() == CommercialPlanStatus.BLOCKED)
+              .findFirst()
+              .map(CommercialPlan::getExperiment)
+              .flatMap(
+                  experiment ->
+                      productExperiments.stream()
+                          .filter(
+                              candidate -> Objects.equals(candidate.getId(), experiment.getId()))
+                          .filter(
+                              candidate ->
+                                  candidate.getStatus() != null
+                                      && candidate.getStatus() != ExperimentStatus.PLANNED)
+                          .findFirst());
       Optional<Experiment> running =
           productExperiments.stream()
               .filter(experiment -> experiment.getStatus() == ExperimentStatus.RUNNING)
@@ -569,7 +592,8 @@ public class BusinessProcessActivityExecutionService {
           productExperiments.stream()
               .filter(experiment -> experiment.getStatus() != ExperimentStatus.PLANNED)
               .findFirst();
-      return running
+      return selected
+          .or(() -> running)
           .or(() -> alreadyOperated)
           .map(experiment -> "experiment:" + experiment.getId())
           .orElse(null);
@@ -589,21 +613,22 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Mantém o processo de operação vinculado ao experimento efetivamente iniciado, mesmo quando um
-   * sucessor planejado recebeu por engano uma tentativa mais recente.
+   * Mantém leitura e comando na seleção já operada do plano, inclusive pausada, e preserva o
+   * fallback legado quando o plano não selecionou um experimento elegível do próprio produto.
    */
   private String resolveExecutionReference(
       BusinessProcessDefinition process,
       Product product,
       List<Experiment> productExperiments,
+      List<CommercialPlan> productPlans,
       List<AgentTask> tasks,
       List<BusinessProcessActivityInstance> instances) {
     if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
-      return initialSourceReference(process, product, productExperiments);
+      return initialSourceReference(process, product, productExperiments, productPlans);
     }
     if ("pde-construction-approval".equals(process.getProcessCode())
         && usesPdeAgentValidationV1(product)) {
-      return initialSourceReference(process, product, productExperiments);
+      return initialSourceReference(process, product, productExperiments, productPlans);
     }
     return currentExecutionReference(tasks, instances);
   }

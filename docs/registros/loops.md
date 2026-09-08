@@ -4,6 +4,35 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-VEGA-RETOMADA-CONTEXTO-DE-PILOTO — operação repete premissa histórica
+
+- **Data:** 2026-09-08.
+- **Evidência:** plano #3 selecionava #90, mas seu objetivo citava o teste pago #91; sua próxima
+  ação ainda exigia publicar o vídeo #38. API, banco e tela confirmaram #91 `USER_STOPPED`, com
+  campanha já criada, enquanto a atividade atual do produto esperava 100 contatos do piloto #90.
+- **Causa:** a seleção do processo priorizava qualquer experimento `RUNNING`, ignorando a escolha
+  do plano. A visão simplificada de planejamento também ignorava bloqueio e roteiro deliberados,
+  usando apenas a homologação genérica. Depois de salvar, o frontend invalidava o plano mas não
+  seu fluxo operacional, conservando a orientação anterior até o polling.
+- **Histórico preservado:** o fallback foi criado para impedir que o #91 ainda `PLANNED` roubasse
+  a operação do #90. Essa proteção continua válida; a seleção explícita só prevalece para um
+  experimento já operado do próprio produto e em plano vigente.
+- **Correção:** roteiro exclusivo no plano do Vega pela UI, referência igual na leitura e no
+  comando, causa/próxima ação de plano `BLOCKED` prioritárias e atualização imediata da orientação
+  após salvar. Não alterar a definição compartilhada com Rigel nem concluir atividades antigas.
+- **Confirmação adicional ao conferir a gravação autorizada:** a UI salvou o plano v6 às
+  `03:08:22Z`, com #91, mas às `03:08:30Z` o banco voltou a #90. O callback de sincronização de
+  Hermes executava `plan.setExperiment(compatible.get(0))` em toda passagem. A sincronização
+  passiva agora preserva a seleção existente; o comando explícito de escolher um RUNNING continua
+  separado. Snapshots novos passam a congelar a referência e a meta operacional, que estavam ausentes.
+  Teste de atualização seguido de três sincronizações reproduz e previne essa recorrência.
+- **Prevenção:** testes cobrem plano ativo/bloqueado/encerrado, sucessor planejado, ciclo pausado,
+  experimento de outro produto, preservação de tentativas, gates e atualização isolada da tela.
+  Homologação: `docs/homologacao/vega-sequencia-comercial-v1.md`.
+- **Limite:** o roteiro define trabalho e critérios; não implementa a nova experiência nem cria
+  gates BPM automáticos apenas por registrar orientações. Falha da microação volta a Dédalo;
+  fricção de comunicação volta a Íris; dados voltam à reconciliação. Nenhum teste libera mídia.
+
 ## LOOP-ACTIONS-PSIQUE-REVISAO-DE-EVIDENCIA-FIXA — nova atestação quebra teste de isolamento
 
 - **Data:** 2026-09-08.

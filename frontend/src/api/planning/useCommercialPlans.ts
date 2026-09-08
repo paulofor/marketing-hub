@@ -752,6 +752,9 @@ export function useUpdateCommercialPlan() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["commercial-plans"] });
       queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-operational-flow", variables.id],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["commercial-plan-versions", variables.id],
       });
     },

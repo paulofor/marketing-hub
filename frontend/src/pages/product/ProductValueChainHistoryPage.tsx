@@ -167,6 +167,14 @@ export default function ProductValueChainHistoryPage() {
     <div className="product-value-chain-history">
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
+          {summary.chainDefinitionId ? (
+            <Link
+              className="btn btn-outline-primary mb-3"
+              to={`/business-process-chains/learning-cycles?chainId=${summary.chainDefinitionId}&productId=${summary.productId}`}
+            >
+              Ciclos de aprendizado e vendas
+            </Link>
+          ) : null}
           <PageTitle>Histórico da cadeia de valor</PageTitle>
           <p className="text-muted mb-1">
             {displayName} · {formatCommercialStatus(summary.commercialStatus)}

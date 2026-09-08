@@ -1,0 +1,203 @@
+{
+  "date": "2026-09-08",
+  "scope": "Sandbox local; dependências de publicação e especialistas simuladas",
+  "rounds": [
+    {
+      "round": 1,
+      "controlsPassed": 18,
+      "backend": {
+        "tests": 2456,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 5
+      },
+      "frontendTestsPassed": 512,
+      "rest": {
+        "checks": 13,
+        "passed": [
+          "BPM publicado com losangos, atividades reais e retorno ao aprendizado",
+          "Adoção idempotente, conteúdo divergente recusado e um ciclo aberto por produto/cadeia",
+          "Validação de entrada, isolamento de produto e proibição de salto de etapas",
+          "Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada",
+          "Autorização explícita e publicação comprovada pelo run produtivo com preflight",
+          "Recuperação técnica após publicação preserva experimento e exige pausa, nova homologação e publicação posterior",
+          "Métrica contaminada ou de outro experimento não governa ajuste ou escala",
+          "Amostra e vendas bloqueiam escala; continuidade respeita teto autorizado",
+          "Escala exige nova autorização e limite oficial consistente, sem alterar mídia pelo ciclo",
+          "Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável",
+          "Concorrência real MySQL: uma transição e um recibo; revisão obsoleta recusada",
+          "Ciclos simultâneos segregados entre Vega e Mira de teste",
+          "Adoção histórica inicia por conciliação e não fabrica homologação, venda ou aprovação"
+        ],
+        "database": "MySQL 5.7",
+        "externalCalls": 0
+      },
+      "browser": [
+        {
+          "profile": "desktop",
+          "journeys": 4,
+          "api": "real local",
+          "database": "MySQL 5.7",
+          "errors": 0,
+          "externalRequests": 0
+        },
+        {
+          "profile": "iphone",
+          "journeys": 4,
+          "api": "real local",
+          "database": "MySQL 5.7",
+          "errors": 0,
+          "externalRequests": 0
+        },
+        {
+          "profile": "pixel",
+          "journeys": 4,
+          "api": "real local",
+          "database": "MySQL 5.7",
+          "errors": 0,
+          "externalRequests": 0
+        },
+        {
+          "profiles": 3,
+          "journeys": 12,
+          "success": true
+        }
+      ],
+      "migration": [
+        "schema",
+        "rollback",
+        "reapplication",
+        "idempotency"
+      ],
+      "temporaryTopologyRemoved": true
+    },
+    {
+      "round": 2,
+      "controlsPassed": 18,
+      "backend": {
+        "tests": 2456,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 5
+      },
+      "frontendTestsPassed": 512,
+      "rest": {
+        "checks": 13,
+        "passed": [
+          "BPM publicado com losangos, atividades reais e retorno ao aprendizado",
+          "Adoção idempotente, conteúdo divergente recusado e um ciclo aberto por produto/cadeia",
+          "Validação de entrada, isolamento de produto e proibição de salto de etapas",
+          "Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada",
+          "Autorização explícita e publicação comprovada pelo run produtivo com preflight",
+          "Recuperação técnica após publicação preserva experimento e exige pausa, nova homologação e publicação posterior",
+          "Métrica contaminada ou de outro experimento não governa ajuste ou escala",
+          "Amostra e vendas bloqueiam escala; continuidade respeita teto autorizado",
+          "Escala exige nova autorização e limite oficial consistente, sem alterar mídia pelo ciclo",
+          "Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável",
+          "Concorrência real MySQL: uma transição e um recibo; revisão obsoleta recusada",
+          "Ciclos simultâneos segregados entre Vega e Mira de teste",
+          "Adoção histórica inicia por conciliação e não fabrica homologação, venda ou aprovação"
+        ],
+        "database": "MySQL 5.7",
+        "externalCalls": 0
+      },
+      "browser": [
+        {
+          "profile": "desktop",
+          "journeys": 4,
+          "api": "real local",
+          "database": "MySQL 5.7",
+          "errors": 0,
+          "externalRequests": 0
+        },
+        {
+          "profile": "iphone",
+          "journeys": 4,
+          "api": "real local",
+          "database": "MySQL 5.7",
+          "errors": 0,
+          "externalRequests": 0
+        },
+        {
+          "profile": "pixel",
+          "journeys": 4,
+          "api": "real local",
+          "database": "MySQL 5.7",
+          "errors": 0,
+          "externalRequests": 0
+        },
+        {
+          "profiles": 3,
+          "journeys": 12,
+          "success": true
+        }
+      ],
+      "migration": [
+        "schema",
+        "rollback",
+        "reapplication",
+        "idempotency"
+      ],
+      "temporaryTopologyRemoved": true
+    }
+  ],
+  "implementationFilesSha256": {
+    ".github/workflows/liquibase-mysql57.yml": "2e433b19c2509fe2f83cb2de49aaae740b0451efec0c2055c614e652f56e1c8a",
+    "backend/ads-service/docker-compose.learning-cycles-local.yml": "670964518936eb3a1e97c87388950903dcb6451ff289ba879dd5281b32bf9445",
+    "backend/ads-service/scripts/homologate-learning-cycles-local.sh": "44e15d4cc28911375d226588969ac80d325fde318c7a37798a75c572e5b7e9d9",
+    "backend/ads-service/scripts/validate-learning-cycles-e2e.py": "2b0ab4f8ec79d367b827f79010357b2c6b196f53263425dda853ee2d6c239dbe",
+    "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskService.java": "5b21a380825ea95eb8f764f684dd7b8ff0340e5701912f251881afd4c9c57703",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/controller/BusinessProcessActivityExecutionController.java": "15c18b8934d0a25acfc54c4f196bab8e53ee744295970f4853c167ee44e70650",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionService.java": "23a7a4cb89592d763f26108d9d7ca5e860eb88f4b5ad036f06ed8b9941770905",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/LearningSalesCycle.java": "2da588ab4fbf130a7508c61da6dbff6643036effb48ed894fcb71129decdb76f",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/LearningSalesCycleEvent.java": "bb117afb0ee2565a76c55725cba8401fa6f81686eade2a82015a4543fa4e4934",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/controller/LearningCycleController.java": "f8286d9c06d69371fab37d3363ec8fed71c7b5c27385daeb0d94d07f5718a550",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleBpmLedger.java": "3a0fa4a6e3993dfe76d780db96323187ed94a7733da145b848f4442026b2f31f",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleEvidence.java": "1727e5cedacfda06cd4d99bb635af4ab681a82cb7bdc681b19a55cad29502267",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleExecutionContext.java": "ea7b33f62d897c3bc1911530554a26ce0a7606794e3b74640dea1a61c8020bce",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleJson.java": "dd486c1554e9d8a96dd81a43041e35abe23cd8d6f01218d3fab4e4e812d21aa1",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleRules.java": "16a3ebc60e6b5614256d987357031ac9be52e6f78ba7222b7a928fb4e58b3692",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java": "f4e23b259797c98e2349b0e041a1d1318dc16723fdaf5ae35b579d1022746778",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContext.java": "7d422f3c432476372e298b0ae0bb6f80ed0cb1eac371249774d04ddd1215c181",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/command/LearningCycleCommand.java": "20e0d21dcb82589638d9fe6c027b4626cd08a69a06c3ac202e52325e2074c5c3",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/createCycle/CreateLearningCycleRequest.java": "91eac418885e418e3f8eba72cd4d7db8e4a6b0dc8ddd9347b92fb1291cb20ba6",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/getCycles/LearningCycleCatalog.java": "9f0a08ca221c8db743e84badc5b0f50a8bd734c6329d2f0ad0986ec9be53b8bf",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/getCycles/LearningCycleResponse.java": "0eff325fc0fd38327c5165a2f5b064fda188bc4626de1fa7f6b234fcc0cfe22b",
+    "backend/ads-service/src/main/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutor.java": "e28c48a4a3db2777aadadc32fa21a3318449f5fcfa6e10bacbae9c04a1abdc8d",
+    "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/learningcycle/LearningSalesCycleEventRepository.java": "a49641c8e97fe8aa5e829ba12f746cea2cdf5074b7c9b01b045de06585f1cea6",
+    "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/learningcycle/LearningSalesCycleRepository.java": "156dda733b120fb3f7dc963238e880d8deedba3f1ea44e06fd7c8404ef2c296b",
+    "backend/ads-service/src/main/resources/db/changelog/changesets/2026-09-08-learning-sales-cycles-v1.yaml": "f9ab33dbf0bb9d6bacf858ca3a1d051525b4bd7d8cf693b6b268b61d9708b6c8",
+    "backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml": "ce03e4d7849b6d2141624992d6f4b4bbb4dc73b12977359d0b4f2f08bfa0b329",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionServiceTest.java": "83dd175517a4eaf5ea74b562433347439aa04a944392858bcec1df800f695d0e",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleExecutionContextTest.java": "1b5ee48af1a9b6c0502adfe89ad24156edc0faac870808fad52c0b186d17252d",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleLocalApplication.java": "7132f645dcbbd2151eb78bcd1c10ad51507a9f6d8411f485e551abe3c5f3fd8b",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleMigrationVerifier.java": "bc8abffe4908451a2d0bcf720bf1e1a0b057ca01876e4b6e115e53f51f4209ce",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleRulesTest.java": "7502d9c1e25342e8e2fad59dc21c904fb1f81eaff3360b366425b0ecc2c1b105",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleTaskContextTest.java": "4867879f09ca4afc6d2eb943fbb70b34ba0ea688b526f5350f8d0c9b43a25fec",
+    "backend/ads-service/src/test/java/com/marketinghub/product/service/agentvalidation/PdeAgentValidationGateActivityExecutorTest.java": "9853d0e3fb706cef38f1a67d7d91357146adfd2e9712f10495875841677900c8",
+    "backend/ads-service/src/test/resources/learningcycle/baseline.sql": "7a0b2aaa3faec84a6404071af1553cb528a6a1aff6277e271f967492dd0bc7cd",
+    "frontend/e2e/learning-sales-cycles-responsive.mjs": "5e4d50152d30e6db558d4d8fa6a3c25f1ed99cf74817947fecea8b661e5f5b43",
+    "frontend/src/App.tsx": "d1b713656159c8c10a5351d4f2290615b73805f09b0e5af352dce1e3b9310f77",
+    "frontend/src/api/businessProcess/types.ts": "9a1fc9074f61aa8a20b9e440682d53b4941f7657a35888e0132ac1a5b9e4b30f",
+    "frontend/src/api/businessProcess/useProductProcessActivityExecutions.ts": "8683774a66ad2d9ea9d02353181f933a367db67c287851949474a7fc2c89863e",
+    "frontend/src/api/learningCycle/createCycleRequestKey.ts": "42c35899281f2ce593882a3de4df6ea9b649f04fd76326eccad9b5385520d36a",
+    "frontend/src/api/learningCycle/useLearningCycles.ts": "ed2669b258b5910f2f272c3c21efcb16d2a1249032a6a84627205339f7f1feac",
+    "frontend/src/pages/businessProcess/BusinessProcessesPage.tsx": "7bdb2cce1343fa18072e95bd9e4aa672e8dfee43c20892bc0986e57498418f1e",
+    "frontend/src/pages/businessProcessChain/BusinessProcessChainsPage.test.tsx": "71240fcd33a1e235a5b7abbb3da53ac8fbbd550435d984e557f282e11d3c8475",
+    "frontend/src/pages/businessProcessChain/BusinessProcessChainsPage.tsx": "5acbdd5aee6d9bb8ebfdfaa2114498d6dc85ffde103f3833f424f5e0552d6309",
+    "frontend/src/pages/learningCycle/LearningCycleBlueprint.tsx": "e43235135682f79bbc593d592a3be02adb528f4506fb5db0506dc028c5c594bc",
+    "frontend/src/pages/learningCycle/LearningCycleCommandForm.tsx": "d797ffd77308a43be789839e145c510cdd6ba6cdac5b4f6a9cba7bc137f8c8bb",
+    "frontend/src/pages/learningCycle/LearningCycleCreateForm.tsx": "6d9ce44f8790a7c67ffde2b1f659443b962a5adbb5c99e263cc058b2e794761d",
+    "frontend/src/pages/learningCycle/LearningCycleDiagram.tsx": "45a7b01c56a02c5f838c85d96cf67649ccb696c4fe26790518e639aa14265abe",
+    "frontend/src/pages/learningCycle/LearningCyclesPage.css": "e48cb52c3a730a4b4adf680ae70f0641f067f245b84ac977037028647927313d",
+    "frontend/src/pages/learningCycle/LearningCyclesPage.test.tsx": "81da896b6e0dfc6340b9f612b553d665bd8d53c377e376ddd0bed3f8412e3a93",
+    "frontend/src/pages/learningCycle/LearningCyclesPage.tsx": "460484c302653d3feec8f54efd92d9b1adc0fba1ac92e9030cbbda5eba3048ab",
+    "frontend/src/pages/product/ProductProcessActivityExecutionsPage.test.tsx": "4979bc4fe204ddee3fa97fd3e27e0055842b9beec424237fc9b135305cc6dd2e",
+    "frontend/src/pages/product/ProductProcessActivityExecutionsPage.tsx": "3e9adcd24dfe585f6ce9b94e71d5592f10de754b7fcca996765b31ef3cf4d793",
+    "frontend/src/pages/product/ProductValueChainHistoryPage.tsx": "00dbfab31f422a292be4f973fd7bef7fe0f81a65c008e65d32856dd68a669ec0",
+    "frontend/vite.learning-cycles-local.config.ts": "53a264284a9c1b82094a410dc2d07d9bca0cd2e0b2e0ff78293db762426a5a2d",
+    "scripts/liquibase_temporal_contract.py": "f1279d966918151be89d08eb64b497c00cfd3b0db061a515d0f16bfe181665ad",
+    "scripts/test_liquibase_temporal_contract.py": "c17d8dae9d30b66d1960eebba514f806ca2a07ea664045b9b3d0a63aeee57194",
+    "scripts/validate-liquibase-mysql57.sh": "fde4974c6d8aa12e29906c50ae29618453567223cbe52209b51e8798f2dbb6fe"
+  }
+}

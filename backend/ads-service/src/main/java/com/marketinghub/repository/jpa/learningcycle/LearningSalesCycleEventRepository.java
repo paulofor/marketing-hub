@@ -1,0 +1,16 @@
+package com.marketinghub.repository.jpa.learningcycle;
+
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycleEvent;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/** Responsabilidade: consultar comandos imutáveis e suas evidências por ciclo. */
+public interface LearningSalesCycleEventRepository
+    extends JpaRepository<LearningSalesCycleEvent, Long> {
+  /** Lista somente as transições do ciclo solicitado, na ordem em que ocorreram. */
+  List<LearningSalesCycleEvent> findByCycleIdOrderByRevisionAsc(Long cycleId);
+
+  /** Localiza o recibo de um comando para impedir efeitos duplicados. */
+  Optional<LearningSalesCycleEvent> findByCycleIdAndRequestKey(Long cycleId, String requestKey);
+}

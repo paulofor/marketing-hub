@@ -1,3 +1,4 @@
+import LearningCycleBlueprint from "../learningCycle/LearningCycleBlueprint";
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -97,6 +98,7 @@ export default function BusinessProcessChainsPage() {
                 </div>
               </section>
 
+              <LearningCycleBlueprint chainId={detail.data.id} />
               <section className="card card-body">
                 <h2 className="h5 mb-1">Processos da cadeia</h2>
                 <p className="small text-body-secondary mb-3">

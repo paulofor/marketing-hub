@@ -176,6 +176,11 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 - **Prevenção:** teste reproduz #90 ativo, #91 planejado e #340 bloqueado, exigindo que tela e novo
   request usem `experiment:90` sem apagar a tentativa anterior.
 
+- **Proteção dos ciclos em 2026-09-08:** o link de trabalho pode transportar `learningCycleId`.
+  Leitura e comando validam produto/cadeia e usam o experimento desse ciclo, sem mudar o plano nem
+  reaproveitar uma tarefa antiga. Testes do resolvedor, do service e da tela preservam o fallback
+  legado quando nenhum ciclo é explicitamente escolhido. Ver `ciclos-aprendizado-vendas-canon.v1.md`.
+
 ## LOOP-FUNIL-PDE-VERSAO-CONTAMINA-EXPERIMENTO — tráfego antigo aparece como visita comercial
 
 - **Data:** 2026-09-05.
@@ -4414,3 +4419,14 @@ instância #207/v1 antes de consultar a elegibilidade da v2. Fechamento: o domí
 ordem posterior à correção. Nova tarefa gera nova ocorrência e mantém a anterior íntegra.
 Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 `AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.
+
+## LOOP-BPM-VIDEO-GENERICO-SEM-ENTREGA-POR-DESTINO — prevenção em 08/09/2026
+
+- A cadeia produtiva v12 e seus processos conferidos pela tela e MCP ainda descrevem audiovisual
+  genérico. O consumidor antigo de construção lê apenas audiovisualRequired e não produz os dois
+  materiais comerciais. Reutilizar essa conclusão não comprovaria AD e entrada PDE.
+- O ciclo comercial v2 passa a registrar as duas produções, IDs, assinatura dos metadados,
+  revisão, criativo e contrato de entrada. Não declara consumidor inexistente: direciona ao
+  Estúdio oficial e exige evidências antes de liberar homologação e autorização.
+- Contratos locais rejeitam mídia de outro produto/experimento, função errada, arquivo substituído,
+  aprovação revogada e integração vencida. Referência: `docs/homologacao/ciclos-videos-campanha-entrada-pde-v2.md`.

@@ -1,0 +1,111 @@
+# Ciclos de aprendizado e vendas da Cadeia de Valor — v1
+
+Decisão do usuário em 08/09/2026: a cadeia passa a operar ciclos de aprendizado comercial, cada
+um vinculado a um experimento, com retorno dirigido pela evidência e memória do ciclo anterior.
+O objetivo é aumentar vendas líquidas e contribuição através de produtos úteis e comunicação eficaz.
+
+## Modelo escolhido
+
+| Alternativa | Benefício | Risco e esforço | Decisão |
+| --- | --- | --- | --- |
+| Apenas desenhar setas de retorno | Baixo esforço | Não governa execução nem preserva conhecimento | Insuficiente |
+| Reiniciar os processos e o experimento anteriores | Reutiliza telas | Mistura versões, custos, aprovações e métricas | Rejeitada |
+| Ciclo versionado por experimento, delegando aos BPMs existentes | Memória auditável, métricas separadas e retorno pela causa | Exige contratos de decisão e evidência | Escolhida |
+
+O backend é a autoridade das transições. A tela apresenta a etapa, responsável, critérios,
+bloqueios, histórico e comandos fornecidos pelo backend. O ciclo não executa scraping, IA, polling,
+pagamento ou mídia; especialistas continuam nos módulos e BPMs canônicos.
+
+## Contrato do ciclo
+
+- Identidade própria, produto, versão exata da cadeia, experimento único, predecessor e versão do
+  produto. Nenhum ciclo pode usar experimento de outro produto ou compartilhar suas métricas.
+- Pergunta verificável, variável principal, resultado esperado, canal, público, oferta e critérios
+  de decisão declarados antes da publicação. Uma revisão técnica é retrabalho no mesmo ciclo.
+- Aprendizado → planejamento → ajuste de produto/comunicação → homologação → autorização →
+  publicação → medição → decisão. A conclusão comprovada libera a próxima etapa no backend.
+- Registro de etapa é uma evidência humana identificada ou uma referência verificada a execução
+  BPM. Um texto livre não se transforma em aprovação automática de Psique, Têmis ou preflight.
+- Reprovação funcional retorna ao ajuste do mesmo ciclo, preserva a tentativa e invalida as
+  aprovações posteriores. Nova versão retorna obrigatoriamente à homologação.
+- Correção exclusivamente técnica após publicação exige pausa prévia, declaração de que hipótese,
+  oferta e aquisição permanecem iguais, versão nova, homologação e publicação posterior à nova
+  autorização. Preserva o experimento e suas métricas cumulativas. Alteração comercial usa sucessor.
+- O link para executar uma atividade transporta `learningCycleId`. O backend valida produto,
+  composição da cadeia e ciclo aberto antes de fixar `experiment:<id>`; a construção mantém sua
+  referência privada canônica. A tarefa recebe hipótese, memória anterior e decisões do ciclo.
+- A homologação multiagente não é evidência humana. Observações consentidas, se realizadas,
+  podem ser anexadas; exigências adicionais pertencem ao plano específico do produto. Uma nova
+  reprovação invalida a aprovação anterior também antes da publicação ou expansão.
+- Publicação exige os gates canônicos e autorização explícita de orçamento e janela. Registrar um
+  ciclo, aprovar uma etapa ou solicitar escala não ativa campanhas nem autoriza gastos externos.
+- Cada comando possui chave idempotente e revisão esperada; concorrência, replay divergente e
+  comando de tela desatualizada não podem duplicar ciclos ou apagar decisões.
+- A cronologia usa `DATETIME(6)` e instantes normalizados a microssegundos, compatíveis com o run
+  produtivo. Precisão de segundos pode arredondar uma autorização para o futuro e rejeitar uma
+  publicação válida. O upgrade das instâncias BPM, da criação das tarefas e do recibo da campanha preserva o histórico;
+  o rollback do ciclo mantém essa precisão para não degradar a auditoria.
+
+## Losango de decisão
+
+- **Ajustar:** registrar causa, evidências, aprendizado e atividade/processo de retorno. Encerrar a
+  iteração e vincular um experimento novo, inicialmente planejado, do mesmo produto. O sucessor
+  recebe a memória do anterior e percorre novamente planejamento, ajustes e gates afetados.
+- **Continuar coleta:** somente com dados válidos, orçamento e janela ainda disponíveis. Ao atingir
+  um limite, concluir como inconclusivo ou encerrar; prazo decorrido não autoriza verba adicional.
+- **Corrigir medição:** retornar à instrumentação no mesmo ciclo, sem concluir rejeição comercial
+  a partir de dados inválidos e sem criar sucessor apenas para esconder erro técnico.
+- **Solicitar escala:** exige vendas líquidas, contribuição positiva e evidências de entrega, uso e
+  satisfação. Abre nova autorização explícita; não aumenta orçamento nem publica automaticamente.
+  Uma referência histórica adotada sem homologação deve orientar um sucessor homologado.
+- **Encerrar / inconclusivo:** preservar contexto, versão, amostra, gastos, resultados e motivos.
+
+Métricas do ciclo preservam origem, período, moeda, denominadores e qualidade dos dados. Métricas
+digitadas são declaradas como evidência do operador, nunca apresentadas como sincronização Meta.
+Tráfego de homologação deve ser marcado e separado; não entra na leitura comercial nem autoriza escala.
+Memória é histórica e não substitui consulta atual. Antes/depois isolado não demonstra causalidade.
+
+## Vídeos de campanha e entrada do PDE — BPM v2
+
+Decisão do usuário em 08/09/2026: os novos ciclos da cadeia PDE devem tornar explícita a
+criação de vídeo para o criativo de campanha e para a entrada do produto. O BPM v2 acrescenta,
+depois do ajuste útil e antes da homologação, briefing de Íris, vídeo de campanha por Apolo,
+vídeo de entrada por Apolo e revisão/integração independente. Ciclos já abertos preservam o BPM
+e as evidências originais; referências históricas começam na medição, sem produção retroativa.
+A versão v1 fica no histórico como RETIRED; somente v2 aparece como versão publicada do ciclo.
+
+| Alternativa | Benefício | Risco / esforço | Escolha |
+| --- | --- | --- | --- |
+| Detalhar apenas o audiovisual genérico | Esforço baixo | Não distingue entrega nem conclusão de cada vídeo | Não |
+| Criar dois processos executores novos | Isolamento | Duplica Estúdio, gates e manutenção | Não |
+| Entregas próprias no ciclo, usando o Estúdio existente | Rastreabilidade e sequência clara | Contratos de evidência adicionais | Sim |
+
+- Íris declara objetivo, CTA e métrica próprios de cada vídeo, hipótese principal, controle das
+  demais variáveis e referência do limite de produção. Os valores de orçamentos anteriores não
+  são herdados como autorização. Plutus e preflight do Estúdio governam o consumo autorizado.
+- Apolo entrega dois ativos distintos do mesmo experimento: `AD` para atrair tráfego qualificado
+  e `LANDING_HERO` para demonstrar a experiência real e o primeiro resultado útil. A demonstração
+  de entrada deve corresponder à versão exata que será homologada.
+- A tela orienta a produção no Estúdio, seleção de vídeo aprovado para criativo e edição do
+  contrato na versão PDE. Registros do ciclo não criam renders, anúncios ou publicações.
+- Revisão exige vídeo pronto e aprovado, anúncio elegível com o mesmo vídeo e destino, e vídeo
+  de entrada vinculado ao contrato em rascunho da mesma versão/produto/experimento. As referências
+  são conferidas novamente antes da autorização e da confirmação de publicação; substituição
+  ou reprovação invalida a elegibilidade. A confirmação produtiva exige o contrato publicado.
+- A evidência técnica declara legendas, reprodução opcional, CTA acessível na entrada, fallback, mobile
+  e dados de teste segregados. Psique e Têmis continuam independentes; texto de operador não
+  fabrica parecer de agente nem dispensa a homologação canônica.
+- Falha retorna à correção na mesma iteração com causa e evidência; mudança comercial depois da
+  exposição exige sucessor. Aprendizado, briefing e referências de mídia permanecem no histórico.
+- A leitura comercial prioriza sessão atribuída, início, primeiro resultado, checkout, compra,
+  receita e contribuição. Reprodução/conclusão de vídeo são métricas auxiliares, separadas por
+  finalidade e ativo; produzir dois vídeos não demonstra qual deles causou aumento de conversão.
+
+O experimento #91 permanece preservado. Esta mudança instala o fluxo, sem produzir vídeos reais
+nem alterar campanhas, preço ou orçamento.
+
+## Aplicação inicial
+
+Vega #91 permanece histórico interrompido. O #90 não pode substituí-lo silenciosamente. A adoção e
+a criação de ciclos produtivos acontecem pela interface depois do deploy. A migração instala o
+contrato e o BPM; não cria experimentos, campanhas, aprovações, vendas nem tarefas de agentes reais.

@@ -1,0 +1,84 @@
+.learning-cycles-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  overflow-wrap: anywhere;
+}
+.cycle-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.cycle-form-grid > *,
+.learning-cycles-page select {
+  min-width: 0;
+  max-width: 100%;
+}
+.cycle-check {
+  padding-left: 1.8rem;
+  align-self: center;
+}
+.learning-cycle-diagram {
+  list-style: none;
+  margin: 1.2rem 0 0;
+  padding: 0 0 0 1rem;
+  border-left: 3px solid #ced7e3;
+}
+.cycle-node {
+  background: #f7f9fc;
+  border: 1px solid #d5deea;
+  border-radius: 0.7rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 2rem;
+  overflow-wrap: anywhere;
+}
+.cycle-node[aria-current="step"] {
+  border: 2px solid #0d6efd;
+  background: #eef5ff;
+}
+.cycle-node--gateway {
+  background: #fff8e5;
+  border-color: #d6ae42;
+}
+.cycle-node-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+.cycle-node p {
+  margin: 0.6rem 0;
+}
+.cycle-diamond {
+  width: 36px;
+  height: 36px;
+  fill: #ffdf89;
+  stroke: #805f00;
+  stroke-width: 2;
+  flex: 0 0 36px;
+}
+.cycle-outgoing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-top: 0.6rem;
+}
+.cycle-return {
+  color: #86530a;
+  border-bottom: 1px dashed currentColor;
+}
+.cycle-audit {
+  padding-left: 1.3rem;
+}
+.cycle-audit li {
+  margin: 1rem 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .cycle-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .cycle-node {
+    padding: 0.8rem;
+  }
+}

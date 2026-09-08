@@ -14,7 +14,7 @@ import {
   Workflow,
 } from "lucide-react";
 import axios from "axios";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   useProductProcessActivityExecutions,
   useRequestProductProcessActivityExecution,
@@ -83,6 +83,10 @@ function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
 /** Exibe as atividades e tarefas reais de um produto dentro de um processo da cadeia de valor. */
 export default function ProductProcessActivityExecutionsPage() {
   const params = useParams();
+  const [search] = useSearchParams();
+  const cycleParam = Number(search.get("learningCycleId"));
+  const learningCycleId =
+    Number.isSafeInteger(cycleParam) && cycleParam > 0 ? cycleParam : undefined;
   const productId = Number(params.productId);
   const processDefinitionId = Number(params.processDefinitionId);
   const validProductId = Number.isSafeInteger(productId) && productId > 0;
@@ -91,10 +95,12 @@ export default function ProductProcessActivityExecutionsPage() {
   const history = useProductProcessActivityExecutions(
     validProductId ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
+    learningCycleId,
   );
   const requestExecution = useRequestProductProcessActivityExecution(
     productId,
     processDefinitionId,
+    learningCycleId,
   );
   const data = history.data;
   const productLabel =
@@ -136,6 +142,22 @@ export default function ProductProcessActivityExecutionsPage() {
     <div className="product-process-activity-executions">
       <header className="business-process-documents-toolbar mb-4">
         <div>
+          {learningCycleId ? (
+            <Link
+              className="btn btn-outline-primary mb-3"
+              to={`/business-process-chains/learning-cycles?productId=${productId}&cycleId=${learningCycleId}`}
+            >
+              Voltar ao ciclo #{learningCycleId}
+            </Link>
+          ) : null}
+          {data?.processCode === "value-chain-learning-sales-cycle" ? (
+            <Link
+              className="btn btn-primary mb-3"
+              to={`/business-process-chains/learning-cycles?productId=${productId}`}
+            >
+              Executar ciclo e registrar decisões
+            </Link>
+          ) : null}
           <PageTitle>
             {data ? (
               <span className="product-process-activity-executions__title">

@@ -2045,3 +2045,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-07-pde-functional-rework-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-08-learning-sales-cycles-v1.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-08-learning-cycle-videos-v2.yaml
+      relativeToChangelogFile: true

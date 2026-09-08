@@ -1,0 +1,154 @@
+{
+  "date": "2026-09-08",
+  "scope": "BPM v2 de vídeos de campanha e entrada PDE",
+  "productionChanged": false,
+  "paidMediaGenerated": false,
+  "finalRounds": [
+    {
+      "round": 1,
+      "checks": [
+        "docker-version",
+        "buildx-version",
+        "compose-version",
+        "database",
+        "temporal-contract",
+        "liquibase-static",
+        "spotless",
+        "backend",
+        "frontend",
+        "typecheck",
+        "build",
+        "classpath",
+        "rest-mysql",
+        "browser",
+        "migration",
+        "migration-reapply",
+        "migration-idempotency",
+        "diff"
+      ],
+      "backend": {
+        "tests": 209,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      "frontendPassed": 515,
+      "rest": {
+        "checks": 13,
+        "passed": [
+          "BPM publicado com losangos, atividades reais e retorno ao aprendizado",
+          "Adoção idempotente, conteúdo divergente recusado e um ciclo aberto por produto/cadeia",
+          "Validação de entrada, isolamento de produto e proibição de salto de etapas",
+          "Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada",
+          "Autorização explícita e publicação comprovada pelo run produtivo com preflight",
+          "Recuperação técnica após publicação preserva experimento e exige pausa, nova homologação e publicação posterior",
+          "Métrica contaminada ou de outro experimento não governa ajuste ou escala",
+          "Amostra e vendas bloqueiam escala; continuidade respeita teto autorizado",
+          "Escala exige nova autorização e limite oficial consistente, sem alterar mídia pelo ciclo",
+          "Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável",
+          "Concorrência real MySQL: uma transição e um recibo; revisão obsoleta recusada",
+          "Ciclos simultâneos segregados entre Vega e Mira de teste",
+          "Adoção histórica inicia por conciliação e não fabrica homologação, venda ou aprovação"
+        ],
+        "database": "MySQL 5.7",
+        "externalCalls": 0
+      },
+      "browser": {
+        "profiles": 3,
+        "journeys": 12,
+        "success": true
+      },
+      "cleanupConfirmed": true,
+      "localLogs": "/tmp/learning-sales-cycle-round-SDyhSD"
+    },
+    {
+      "round": 2,
+      "checks": [
+        "docker-version",
+        "buildx-version",
+        "compose-version",
+        "database",
+        "temporal-contract",
+        "liquibase-static",
+        "spotless",
+        "backend",
+        "frontend",
+        "typecheck",
+        "build",
+        "classpath",
+        "rest-mysql",
+        "browser",
+        "migration",
+        "migration-reapply",
+        "migration-idempotency",
+        "diff"
+      ],
+      "backend": {
+        "tests": 209,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      "frontendPassed": 515,
+      "rest": {
+        "checks": 13,
+        "passed": [
+          "BPM publicado com losangos, atividades reais e retorno ao aprendizado",
+          "Adoção idempotente, conteúdo divergente recusado e um ciclo aberto por produto/cadeia",
+          "Validação de entrada, isolamento de produto e proibição de salto de etapas",
+          "Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada",
+          "Autorização explícita e publicação comprovada pelo run produtivo com preflight",
+          "Recuperação técnica após publicação preserva experimento e exige pausa, nova homologação e publicação posterior",
+          "Métrica contaminada ou de outro experimento não governa ajuste ou escala",
+          "Amostra e vendas bloqueiam escala; continuidade respeita teto autorizado",
+          "Escala exige nova autorização e limite oficial consistente, sem alterar mídia pelo ciclo",
+          "Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável",
+          "Concorrência real MySQL: uma transição e um recibo; revisão obsoleta recusada",
+          "Ciclos simultâneos segregados entre Vega e Mira de teste",
+          "Adoção histórica inicia por conciliação e não fabrica homologação, venda ou aprovação"
+        ],
+        "database": "MySQL 5.7",
+        "externalCalls": 0
+      },
+      "browser": {
+        "profiles": 3,
+        "journeys": 12,
+        "success": true
+      },
+      "cleanupConfirmed": true,
+      "localLogs": "/tmp/learning-sales-cycle-round-3kfoyg"
+    }
+  ],
+  "implementationSha256": {
+    "backend/ads-service/scripts/homologate-learning-cycles-local.sh": "579a33a3cf6cfe2b08378585cf6f6ea22b8491c2960fcf117707b061f279456b",
+    "backend/ads-service/scripts/validate-learning-cycles-e2e.py": "f80baedb7f30bde1f4e40a8a9e6fbf6bb465f89d87db9f0c9c3f2d8759b083a4",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleRules.java": "13e2778957a0438327ea155efabd12a6e8ae510fbe99b7187558d4fe0bde08f5",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java": "4713e55974cf7281977343de68404e15903120161368e8f4bd33e28e837722a2",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoEvidence.java": "722bb9e7d5266fe7e7c177d15328f45284679ed535db9956a777840d9b6dd4b3",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/getCycles/LearningCycleResponse.java": "c3cc4d9ea5922e17a97baeba1bb13d4f6459d94b874e20b1f3ca646e9fb4e1bd",
+    "backend/ads-service/src/main/resources/db/changelog/changesets/2026-09-08-learning-cycle-videos-v2.yaml": "9884b0bd4cf9631d9abd221a13c62484b04a17aab3fbb44f21bf5000ce0e001d",
+    "backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml": "c5004c7765afbc2b4977b509364f6980c21434531d83ee3213bae215931e4c8e",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleLocalApplication.java": "d6b794a66468d35edeac3be991a57e8e42544d63a98b8f17eac62581edabe438",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleMigrationVerifier.java": "66ceaff438c394a26dedfc4d89ff42681c63bc9062de32f81b4b96a0943e66a6",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoEvidenceTest.java": "8038e16f87020a5c0b8b7fc63cedae13021c069ce731a41b97b9d59e8493f4b3",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoFixtures.java": "f815232ee46b89baa67e84f024de98a51ddc284a310e849851f9c1723eec75d3",
+    "backend/ads-service/src/test/resources/learningcycle/changelog.yaml": "9857355462a3a11e104b18c8f3ce64a906924bc3f402e07364f2f533e5044bb2",
+    "frontend/e2e/learning-sales-cycles-responsive.mjs": "9674878d1889b161bc87a90d835b6d623d42b167ac2ab7114e4c1c0aa8e979cb",
+    "frontend/src/api/learningCycle/useLearningCycles.ts": "603ae70e731ea39e805e93032ab564897dda55e7624843588f91ff4cc90af85e",
+    "frontend/src/pages/learningCycle/LearningCycleCommandForm.tsx": "380d3f806d0e56781ba2f35448221bfbb4d5dfebfeae2780c0a3f2fce0b94c33",
+    "frontend/src/pages/learningCycle/LearningCyclesPage.test.tsx": "b6152a3808e794af4a6ea2a2e591d78d9070d84a6d6a3a6051ccf7ed90b0ca27",
+    "frontend/src/pages/learningCycle/LearningCyclesPage.tsx": "a6d8e8c3ebbd2cd83f8a16c2ee9bb6df3078599ad24a409628f908d6693f6fe3"
+  },
+  "preExistingSkippedTests": [
+    "com.marketinghub.creative.web.VideoCreativeControllerTest.browserJourneyUsesRealLocalBackend",
+    "com.marketinghub.creative.web.VideoCreativeControllerTest.browserRecoversFailedPublicationWithIndependentCopyReview(String)"
+  ],
+  "checksOutsideRounds": {
+    "shellcheck": "passed",
+    "liquibaseWorkflowActionlint": "passed with repository ShellCheck policy"
+  },
+  "limitations": [
+    "Vídeos, Estúdio, agentes e publicação externos são test doubles explícitos; API, backend de ciclo, persistência e browser são locais reais.",
+    "Emulação Chromium de iPhone/Pixel, sem execução de Safari nativo."
+  ]
+}

@@ -15,6 +15,7 @@ export type ProductProcessActivityExecutionCommand = {
 export function useProductProcessActivityExecutions(
   productId?: number,
   processDefinitionId?: number,
+  learningCycleId?: number,
 ) {
   return useQuery({
     queryKey: [
@@ -23,12 +24,13 @@ export function useProductProcessActivityExecutions(
       "business-processes",
       processDefinitionId,
       "activity-executions",
+      learningCycleId,
     ],
     enabled: Boolean(productId && processDefinitionId),
     queryFn: async () =>
       (
         await axios.get<ProductProcessActivityExecutionHistory>(
-          `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions`,
+          `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions${learningCycleId ? `?learningCycleId=${learningCycleId}` : ""}`,
         )
       ).data,
   });
@@ -38,6 +40,7 @@ export function useProductProcessActivityExecutions(
 export function useRequestProductProcessActivityExecution(
   productId: number,
   processDefinitionId: number,
+  learningCycleId?: number,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -45,7 +48,7 @@ export function useRequestProductProcessActivityExecution(
       activityId,
       decision,
     }: ProductProcessActivityExecutionCommand) => {
-      const url = `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests`;
+      const url = `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests${learningCycleId ? `?learningCycleId=${learningCycleId}` : ""}`;
       return decision
         ? (
             await axios.post<ProductProcessActivityExecutionRequest>(

@@ -25,6 +25,7 @@ import com.marketinghub.businessprocess.execution.service.humanactivity.HumanPro
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -50,6 +51,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: comprovar limite, versões e auditoria do histórico de execuções BPM. */
@@ -623,22 +625,28 @@ class BusinessProcessActivityExecutionServiceTest {
 
   /**
    * Preserva o ciclo escolhido no plano vigente e impede que sucessor planejado, plano encerrado ou
-   * experimento alheio desviem leitura e execução do produto.
+   * experimento alheio desviem leitura e execução; um ciclo explícito tem prioridade.
    */
   @ParameterizedTest
   @CsvSource({
-    "PLANNED,NONE,91,90",
-    "PLANNED,IN_PROGRESS,91,90",
-    "USER_STOPPED,BLOCKED,91,91",
-    "USER_STOPPED,IN_PROGRESS,91,91",
-    "RUNNING,IN_PROGRESS,91,91",
-    "USER_STOPPED,COMPLETED,91,90",
-    "USER_STOPPED,CANCELLED,91,90",
-    "USER_STOPPED,DRAFT,91,90",
-    "USER_STOPPED,BLOCKED,999,90"
+    "PLANNED,NONE,91,90,false",
+    "PLANNED,IN_PROGRESS,91,90,false",
+    "USER_STOPPED,BLOCKED,91,91,false",
+    "USER_STOPPED,IN_PROGRESS,91,91,false",
+    "RUNNING,IN_PROGRESS,91,91,false",
+    "USER_STOPPED,COMPLETED,91,90,false",
+    "USER_STOPPED,CANCELLED,91,90,false",
+    "USER_STOPPED,DRAFT,91,90,false",
+    "USER_STOPPED,BLOCKED,999,90,false",
+    "PLANNED,IN_PROGRESS,91,91,true",
+    "USER_STOPPED,COMPLETED,91,91,true"
   })
   void resolvesOperatedPlanSelectionWithoutLosingLegacyFallback(
-      ExperimentStatus selectedStatus, String planStatus, long selectedId, long expectedId) {
+      ExperimentStatus selectedStatus,
+      String planStatus,
+      long selectedId,
+      long expectedId,
+      boolean explicitCycle) {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
         mock(BusinessProcessActivityDefinitionRepository.class);
     AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
@@ -715,8 +723,15 @@ class BusinessProcessActivityExecutionServiceTest {
     when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
         .thenReturn(mock(AgentTaskResponse.class));
 
-    var history = executionService.productProcessExecutions(66L, 4L);
-    var result = executionService.requestProductActivityExecution(66L, 4L, "task-1");
+    Long cycleId = explicitCycle ? 7L : null;
+    if (explicitCycle) {
+      var cycleContext = mock(LearningCycleExecutionContext.class);
+      ReflectionTestUtils.setField(executionService, "learningCycleContext", cycleContext);
+      when(cycleContext.source(7L, vega, process, false)).thenReturn("experiment:91");
+      when(cycleContext.source(7L, vega, process, true)).thenReturn("experiment:91");
+    }
+    var history = executionService.productProcessExecutions(66L, 4L, cycleId);
+    var result = executionService.requestProductActivityExecution(66L, 4L, "task-1", null, cycleId);
 
     assertThat(history.currentExecutionReference()).isEqualTo("experiment:" + expectedId);
     assertThat(history.currentActivityState())

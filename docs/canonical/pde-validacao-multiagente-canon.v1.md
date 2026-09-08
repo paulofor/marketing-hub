@@ -51,6 +51,10 @@ O macroprocesso passa a se chamar **Protótipo, validação multiagente e aprova
 5. **O backend calcula o gate**: somente evidências persistidas, versionadas e aprovadas liberam o
    produto para `COMUNICACAO_E_JORNADA`. O produto permanece em `STOP`; essa passagem não publica,
    cobra, cria campanha nem autoriza gasto.
+   Na revalidação de um produto já comercial em um único ciclo de aprendizado aberto, nas etapas
+   de ajuste/homologação e para a versão exata declarada, o gate renova as evidências sem regredir
+   o estado comercial ou alterar o STOP/RUN do produto. Todos os critérios e contratos do gate
+   continuam obrigatórios. A exceção não autoriza publicação nem mídia.
 6. **O mercado valida o valor**: depois da comunicação, homologação comercial e autorização de
    mídia, Hermes mede pessoas reais desde o anúncio até compra, entrega, satisfação e reembolso.
 

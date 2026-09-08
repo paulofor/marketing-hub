@@ -2,6 +2,10 @@
 
 ## Objetivo
 
+A cadeia adota o ciclo executável descrito em `ciclos-aprendizado-vendas-canon.v1.md`: cada
+experimento possui memória própria e um losango de decisão comercial que orienta continuidade,
+correção, sucessor, solicitação de escala ou encerramento. O retorno respeita a causa comprovada.
+
 Definir a cadeia inicial, simples e reutilizável para transformar uma dor real em um Produto Digital
 Experiencial construído, comunicado, vendido e entregue pelo Marketing Hub, escolhendo o formato
 digital que melhor resolva a necessidade do mercado e entregue valor à cliente.
@@ -726,3 +730,12 @@ ordem temporal, vigência da fonte, segregação do tráfego interno e vínculo 
 O produto aprovado avança apenas para `COMUNICACAO_E_JORNADA`, permanece em `STOP` e continua sem
 experimento, publicação, cobrança, mídia, pagamento, venda ou receita. O contrato detalhado está em
 `docs/canonical/pde-validacao-multiagente-canon.v1.md`.
+
+## Vídeos no ciclo comercial PDE — 08/09/2026
+
+O BPM v2 de Ciclos de aprendizado e vendas explicita briefing, produção de vídeo AD de campanha,
+produção de LANDING_HERO de entrada e revisão/integração antes da homologação. Usa o Estúdio
+existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. O backend confere
+ativos, criativo e contrato da mesma versão; o usuário recebe links para as telas oficiais.
+A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
+Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.

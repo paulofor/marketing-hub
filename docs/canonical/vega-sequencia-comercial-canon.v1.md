@@ -54,3 +54,13 @@ a definição compartilhada de operação usada por Rigel, nem transfere conclus
 | Refazer a cadeia completa | Rever tudo desde descoberta | Alto esforço, perda de foco e repetição sem evidência de necessidade | Descartada |
 | Trocar o processo compartilhado | Padronizar a recuperação para todos | Afeta Rigel e execuções não incluídas no pedido; requer decisão de escopo | Não aplicada |
 | Roteiro exclusivo no plano atual + correção da referência operacional | Foco na primeira entrega, aprendizado e receita; preserva histórico | Exige concluir cada entrega; roteiro não substitui evidência de execução | Escolhida para Vega |
+
+## Evolução para ciclos executáveis — 08/09/2026
+
+O roteiro passa a ser conduzido pelo módulo transversal de
+`ciclos-aprendizado-vendas-canon.v1.md`, quando o operador adotar o experimento na nova tela.
+O #91 entra como referência histórica na medição; uma decisão de ajuste permite vincular um
+sucessor planejado, com memória, versão, hipótese e métricas próprias. A adoção não modifica o
+plano, não substitui o #91 pelo #90 e não reativa campanha. As tarefas novas recebem o contexto
+do ciclo exato no contrato de entrada dos especialistas. As revisões e autorizações continuam
+com suas autoridades canônicas.

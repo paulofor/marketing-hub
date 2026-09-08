@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 cycle_scope=${1:-full}
-case "$cycle_scope" in full|--persistence-only) ;; *) exit 2 ;; esac
+case "$cycle_scope" in full|--video-matrix|--persistence-only) ;; *) exit 2 ;; esac
 : "${LEARNING_CYCLES_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo da sandbox}"
 case "$LEARNING_CYCLES_COMPOSE_PROJECT" in aihub-*) ;; *) exit 2 ;; esac
 export LEARNING_CYCLES_DB_HOST=${LEARNING_CYCLES_DB_HOST:-127.0.0.1}
@@ -50,8 +50,14 @@ run database "${compose[@]}" up -d --wait --wait-timeout 120
 run temporal-contract python3 -B -m unittest scripts.test_liquibase_temporal_contract
 run liquibase-static bash scripts/validate-liquibase-mysql57.sh
 run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*learningcycle.*[.]java,.*AgentTaskService[.]java,.*BusinessProcessActivityExecution(Service|Controller|ServiceTest)[.]java,.*PdeAgentValidationGateActivityExecutor(Test)?[.]java'
-if [[ "$cycle_scope" == full ]]; then
-run backend mvn -q -f backend/ads-service/pom.xml test
+if [[ "$cycle_scope" != --persistence-only ]]; then
+cycle_test_options=()
+if [[ "$cycle_scope" == --video-matrix ]]; then
+  cycle_test_options=('-Dtest=LearningCycle*Test,BusinessProcess*Test,ProductValueChainPosition*Test,PdeProductionSlotServiceTest,VideoCreativeControllerTest,ExperimentVideoAssetServiceTest,PdeAgentValidationGateActivityExecutorTest')
+fi
+# Relatórios gerados de rodadas anteriores não compõem a contagem da rodada corrente.
+rm -rf backend/ads-service/target/surefire-reports
+run backend mvn -q -f backend/ads-service/pom.xml "${cycle_test_options[@]}" test
 python3 - "$cycle_output/backend-count.json" <<'PY'
 import glob, json, sys, xml.etree.ElementTree as ET
 counts = dict(tests=0, failures=0, errors=0, skipped=0)
@@ -74,7 +80,7 @@ java -Xmx512m -cp "$cycle_test_classpath" com.marketinghub.businessprocesschain.
 cycle_api_pid=$!
 wait_http 'http://127.0.0.1:18091/api/products'
 run rest-mysql python3 backend/ads-service/scripts/validate-learning-cycles-e2e.py
-if [[ "$cycle_scope" == full ]]; then
+if [[ "$cycle_scope" != --persistence-only ]]; then
 node frontend/node_modules/vite/bin/vite.js preview frontend --config frontend/vite.learning-cycles-local.config.ts > "$cycle_output/ui.log" 2>&1 &
 cycle_ui_pid=$!
 wait_http 'http://127.0.0.1:15173/business-process-chains/learning-cycles'
@@ -87,7 +93,7 @@ run migration java -Xmx256m -cp "$cycle_test_classpath" com.marketinghub.busines
 run migration-reapply java -Xmx256m -cp "$cycle_test_classpath" com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleMigrationVerifier update-and-verify
 run migration-idempotency java -Xmx256m -cp "$cycle_test_classpath" com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleMigrationVerifier update-and-verify
 run diff git diff --check
-if [[ "$cycle_scope" == full ]]; then
+if [[ "$cycle_scope" != --persistence-only ]]; then
   printf 'RODADA COMPLETA APROVADA\n'
 else
   printf 'VALIDAÇÃO DE PERSISTÊNCIA APROVADA; não substitui a matriz completa\n'

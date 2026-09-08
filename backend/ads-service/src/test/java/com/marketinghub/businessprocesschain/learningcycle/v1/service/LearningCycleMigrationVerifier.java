@@ -28,7 +28,15 @@ public final class LearningCycleMigrationVerifier {
         assertCount(
             connection,
             "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle'",
-            9);
+            22);
+        assertCount(
+            connection,
+            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='PUBLISHED' AND version_number=2",
+            1);
+        assertCount(
+            connection,
+            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='RETIRED' AND version_number=1",
+            1);
         System.out.println("PASS MySQL 5.7: aplicação física e catálogo sem duplicação.");
         return;
       }
@@ -50,7 +58,7 @@ public final class LearningCycleMigrationVerifier {
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle'",
-          9);
+          22);
       assertCount(
           connection,
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='learning_sales_cycle_v1' AND COLUMN_NAME IN ('created_at','updated_at','version_changed_at','window_start','window_end') AND DATA_TYPE='datetime' AND DATETIME_PRECISION=6 AND IS_NULLABLE='NO'",
@@ -63,7 +71,7 @@ public final class LearningCycleMigrationVerifier {
           connection,
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND DATETIME_PRECISION=6 AND ((TABLE_NAME IN ('agent_task','facebook_ads_campaign') AND COLUMN_NAME='created_at') OR (TABLE_NAME='business_process_activity_instance' AND COLUMN_NAME IN ('entered_at','exited_at','created_at','updated_at')))",
           6);
-      migration.rollback(4, new Contexts(), new LabelExpression());
+      migration.rollback(5, new Contexts(), new LabelExpression());
       assertCount(
           connection,
           "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('learning_sales_cycle_v1','learning_sales_cycle_event_v1')",
@@ -93,7 +101,7 @@ public final class LearningCycleMigrationVerifier {
   /** Instancia o Liquibase com a migração versionada desta funcionalidade. */
   private static Liquibase migration(java.sql.Connection connection) throws Exception {
     return new Liquibase(
-        "db/changelog/changesets/2026-09-08-learning-sales-cycles-v1.yaml",
+        "learningcycle/changelog.yaml",
         new ClassLoaderResourceAccessor(),
         new JdbcConnection(connection));
   }

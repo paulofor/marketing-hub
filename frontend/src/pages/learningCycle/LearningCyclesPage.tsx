@@ -353,7 +353,7 @@ export default function LearningCyclesPage() {
         <details className="card card-body">
           <summary>BPM · decisões e retornos do ciclo</summary>
           <LearningCycleDiagram
-            diagram={catalog.data.diagram}
+            diagram={cycle?.diagram ?? catalog.data.diagram}
             currentStage={cycle?.stage}
           />
         </details>

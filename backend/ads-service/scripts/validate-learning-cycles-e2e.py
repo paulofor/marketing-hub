@@ -76,7 +76,24 @@ def metrics(cycle, **overrides):
 def to_validation(cycle):
     cycle=command(cycle,evidence=dict(learning='Valor precisa ser mais concreto',competingExplanation='Tráfego pequeno também explica o resultado'))
     cycle=command(cycle,evidence=dict(planReference='internal://plan/v1',stopRule='Parar no teto ou fim da janela'))
-    return command(cycle,evidence=dict(productVersion=cycle['productVersion'],changeEvidence='internal://release/v1'))
+    return with_videos(command(cycle,evidence=dict(productVersion=cycle['productVersion'],changeEvidence='internal://release/v1')))
+
+
+def with_videos(cycle):
+    assert cycle['stage'] == 'VIDEO_BRIEF', cycle
+    refs=http('/fixture/videos',dict(experimentId=cycle['experimentId'],productVersion=cycle['productVersion']))
+    cycle=command(cycle,evidence={field:'Briefing local: '+field for field in ('briefReference','campaignGoal','campaignCta','campaignMetric','pdeGoal','pdeCta','pdeMetric','controlledVariables','productionBudgetReference')})
+    assert cycle['stage']=='CAMPAIGN_VIDEO' and cycle['workLinks']
+    command(cycle,evidence=dict(campaignVideoAssetId=refs['pdeVideoAssetId'],productionEvidence='Papel incorreto'),expected=409)
+    cycle=command(cycle,evidence=dict(campaignVideoAssetId=refs['campaignVideoAssetId'],productionEvidence='Estúdio simulado'))
+    assert cycle['stage']=='PDE_ENTRY_VIDEO'
+    cycle=command(cycle,evidence=dict(pdeVideoAssetId=refs['pdeVideoAssetId'],productionEvidence='Versão real simulada'))
+    assert cycle['stage']=='VIDEO_APPROVAL'
+    proof=dict(creativeId=refs['creativeId'],pdeSlotId=refs['pdeSlotId'],technicalEvidence='Reprodução, fallback e desempenho',customerReviewEvidence='Parecer independente simulado',captionsVerified=True,mobileVerified=True,optionalPlaybackVerified=True,testDataExcluded=True)
+    command(cycle,evidence=dict(proof,optionalPlaybackVerified=False),expected=409)
+    cycle=command(cycle,evidence=proof)
+    assert cycle['stage']=='VALIDATION'
+    return cycle
 
 
 def approval(cycle, product=None, version=None):
@@ -107,7 +124,7 @@ def check(name):
 
 reset()
 catalog=http(f'{API}/catalog?chainId=91001&productId=91001')
-assert len(catalog['diagram']['nodes']) == 13 and len(catalog['returnTargets']) == 2
+assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 2 and len(catalog['returnTargets']) == 2
 assert any(flow.get('kind')=='REWORK' and flow['to']=='LEARNING' for flow in catalog['diagram']['flows'])
 target=catalog['returnTargets'][1]
 return_to=dict(returnProcessId=target['processDefinitionId'],returnActivityId=target['activityId'],rootCause='Microação abstrata')
@@ -130,7 +147,7 @@ cycle=to_validation(cycle)
 old_gate=approval(cycle)
 cycle=command(cycle,'REWORK',dict(return_to,productVersion='fixture-v2'))
 assert cycle['stage']=='ADJUSTMENT' and cycle['experimentId']==91001
-cycle=command(cycle,evidence=dict(productVersion='fixture-v2',changeEvidence='Correção aplicada'))
+cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v2',changeEvidence='Correção aplicada')))
 command(cycle,evidence=validation_data(cycle,old_gate),expected=409)
 command(cycle,evidence=validation_data(cycle,approval(cycle,product=91002)),expected=409)
 good_gate=approval(cycle)
@@ -141,7 +158,7 @@ assert cycle['stage']=='AUTHORIZATION'
 http('/fixture/approval',dict(productId=cycle['productId'],productVersion=cycle['productVersion'],approved=False))
 command(cycle,evidence=authorization_data(cycle),expected=409)
 cycle=command(cycle,'REWORK',dict(return_to,productVersion='fixture-v3'))
-cycle=command(cycle,evidence=dict(productVersion='fixture-v3',changeEvidence='Correção final aplicada'))
+cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v3',changeEvidence='Correção final aplicada')))
 cycle=command(cycle,evidence=validation_data(cycle))
 check('Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada')
 
@@ -157,7 +174,7 @@ command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4',technicalOnly=
 http('/fixture/experiments/91001/stop',{})
 command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4'),expected=409)
 cycle=command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4',technicalOnly=True))
-cycle=command(cycle,evidence=dict(productVersion='fixture-v4',changeEvidence='Correção técnica sem mudar a hipótese'))
+cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v4',changeEvidence='Correção técnica sem mudar a hipótese')))
 proof=validation_data(cycle); proof.pop('humanObservationEvidence')
 cycle=command(cycle,evidence=proof)
 cycle=command(cycle,evidence=authorization_data(cycle))

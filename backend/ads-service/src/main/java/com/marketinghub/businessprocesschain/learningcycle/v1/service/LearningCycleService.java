@@ -43,6 +43,7 @@ public class LearningCycleService {
   private final LearningCycleBpmLedger ledger;
   private final LearningCycleEvidence evidence;
   private final Clock clock;
+  private final LearningCycleVideoEvidence videoEvidence;
 
   /** Configura fontes oficiais, contratos e relógio de decisão. */
   @Autowired
@@ -56,7 +57,8 @@ public class LearningCycleService {
       BusinessProcessActivityDefinitionRepository activities,
       LearningCycleJson json,
       LearningCycleBpmLedger ledger,
-      LearningCycleEvidence evidence) {
+      LearningCycleEvidence evidence,
+      LearningCycleVideoEvidence videoEvidence) {
     this(
         cycles,
         events,
@@ -68,6 +70,7 @@ public class LearningCycleService {
         json,
         ledger,
         evidence,
+        videoEvidence,
         Clock.systemUTC());
   }
 
@@ -83,6 +86,7 @@ public class LearningCycleService {
       LearningCycleJson json,
       LearningCycleBpmLedger ledger,
       LearningCycleEvidence evidence,
+      LearningCycleVideoEvidence videoEvidence,
       Clock clock) {
     this.cycles = cycles;
     this.events = events;
@@ -95,6 +99,7 @@ public class LearningCycleService {
     this.ledger = ledger;
     this.evidence = evidence;
     this.clock = clock;
+    this.videoEvidence = videoEvidence;
   }
 
   /** Lista ciclos do próprio produto, preservando escolhas históricas e estados terminais. */
@@ -382,14 +387,28 @@ public class LearningCycleService {
                 "O ajuste precisa corresponder à versão declarada. Use Devolver para correção para trocar a versão.");
             text(data, "changeEvidence");
           }
-          case "VALIDATION" -> evidence.validation(cycle, data);
+          case "VIDEO_BRIEF" -> {
+            require(videoWorkflow(cycle), "Este BPM não possui etapas de vídeo.");
+            videoEvidence.brief(data);
+          }
+          case "CAMPAIGN_VIDEO" ->
+              videoEvidence.production(
+                  cycle, data, com.marketinghub.experiment.video.ExperimentVideoSlot.AD);
+          case "PDE_ENTRY_VIDEO" ->
+              videoEvidence.production(
+                  cycle, data, com.marketinghub.experiment.video.ExperimentVideoSlot.LANDING_HERO);
+          case "VIDEO_APPROVAL" -> videoEvidence.integration(cycle, data);
+          case "VALIDATION" -> {
+            if (videoWorkflow(cycle)) videoEvidence.current(cycle, false);
+            evidence.validation(cycle, data);
+          }
           case "AUTHORIZATION" -> evidence.authorization(cycle, experiment, data, now);
           case "PUBLICATION" -> evidence.publication(cycle, experiment, authorizationTime(cycle));
           default ->
               throw new ResponseStatusException(
                   HttpStatus.CONFLICT, "Etapa sem conclusão simples.");
         }
-        cycle.setStage(next(cycle.getStage()));
+        cycle.setStage(next(cycle.getStage(), videoWorkflow(cycle)));
       }
       case REWORK -> {
         require(
@@ -575,6 +594,14 @@ public class LearningCycleService {
 
   /** Uma reprovação posterior não pode ser ignorada por uma autorização que estava em aberto. */
   private String approvalBlocker(LearningSalesCycle cycle) {
+    if (videoWorkflow(cycle)) {
+      String blocker =
+          videoEvidence.blocker(
+              cycle,
+              Set.of("PUBLICATION", "MEASUREMENT", "DECISION", "SCALE_AUTHORIZATION")
+                  .contains(cycle.getStage()));
+      if (blocker != null) return blocker;
+    }
     var validation =
         events.findByCycleIdOrderByRevisionAsc(cycle.getId()).stream()
             .filter(
@@ -666,10 +693,13 @@ public class LearningCycleService {
         cycle.getReturnProcessId(),
         cycle.getReturnActivityId(),
         workUrl,
+        json.read(process.getDiagramJson()),
         brief,
         json.read(cycle.getInheritedLearningJson()),
         eventResponses(cycle),
         approvalOptions,
+        videoWorkflow(cycle) ? videoOptions(cycle) : Map.of(),
+        workLinks(cycle),
         commands,
         "ADJUSTED".equals(cycle.getStatus()) && successor.isEmpty(),
         cycle.getCreatedAt(),
@@ -678,6 +708,10 @@ public class LearningCycleService {
 
   /** Direciona cada etapa ao BPM responsável sem substituir a seleção do experimento no plano. */
   private String workUrl(LearningSalesCycle cycle) {
+    if (VIDEO_STAGES.contains(cycle.getStage()))
+      return "VIDEO_APPROVAL".equals(cycle.getStage())
+          ? "/products/" + cycle.getProductId() + "/pde-versions"
+          : "/audio-video-studio";
     String code =
         switch (cycle.getStage()) {
           case "LEARNING" -> "pde-sales-delivery-learning";
@@ -751,11 +785,48 @@ public class LearningCycleService {
     return chains.findById(id).orElseThrow(() -> notFound("Cadeia de valor não encontrada."));
   }
 
-  /** Exige que a migração tenha instalado o BPM canônico executável. */
+  /** Usa o BPM v2 publicado para novas ocorrências; as existentes preservam sua definição. */
   private BusinessProcessDefinition requiredCycleProcess() {
+    int version = 2;
     return processes
-        .findByProcessCodeAndVersionNumber(PROCESS_CODE, 1)
-        .orElseThrow(() -> notFound("O BPM de ciclos v1 ainda não foi instalado."));
+        .findByProcessCodeAndVersionNumber(PROCESS_CODE, version)
+        .orElseThrow(() -> notFound("O BPM de ciclos v" + version + " ainda não foi instalado."));
+  }
+
+  /** Lê a versão exata do BPM persistido no ciclo, sem migrar ocorrências em andamento. */
+  private boolean videoWorkflow(LearningSalesCycle cycle) {
+    return processes.findById(cycle.getProcessDefinitionId()).orElseThrow().getVersionNumber() >= 2;
+  }
+
+  /** Mantém a tela legível se uma mídia desaparecer, permitindo devolver para correção. */
+  private Map<String, List<LearningCycleResponse.ApprovalOption>> videoOptions(
+      LearningSalesCycle cycle) {
+    try {
+      return videoEvidence.options(cycle);
+    } catch (ResponseStatusException ex) {
+      log.debug(
+          "Ciclos: opções de vídeo indisponíveis cycleId={} experimentId={}",
+          cycle.getId(),
+          cycle.getExperimentId(),
+          ex);
+      return Map.of();
+    }
+  }
+
+  /**
+   * Expõe caminhos oficiais para produção, revisão e integração sem comandos externos implícitos.
+   */
+  private List<LearningCycleResponse.WorkLink> workLinks(LearningSalesCycle cycle) {
+    if (!videoWorkflow(cycle) || !VIDEO_STAGES.contains(cycle.getStage())) return List.of();
+    return List.of(
+        new LearningCycleResponse.WorkLink("Produzir no Estúdio", "/audio-video-studio"),
+        new LearningCycleResponse.WorkLink(
+            "Vídeos e criativos do experimento #" + cycle.getExperimentId(),
+            "/experiments/" + cycle.getExperimentId()),
+        new LearningCycleResponse.WorkLink(
+            "Integrar na versão PDE", "/products/" + cycle.getProductId() + "/pde-versions"),
+        new LearningCycleResponse.WorkLink(
+            "Conferir vídeos do produto", "/products/" + cycle.getProductId() + "/pde-videos"));
   }
 
   /** Padroniza uma ausência sem informar dados de outra entidade. */

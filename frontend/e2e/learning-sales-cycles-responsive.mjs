@@ -145,6 +145,61 @@ try {
       changeEvidence: "internal://change/local",
     });
     await expect(
+      page.getByText("Definir os dois vídeos", { exact: true }).first(),
+    ).toBeVisible();
+    const refs = await fixture("/fixture/videos", {
+      experimentId: 91001,
+      productVersion: "fixture-v1",
+    });
+    await submit(
+      Object.fromEntries(
+        [
+          "briefReference",
+          "campaignGoal",
+          "campaignCta",
+          "campaignMetric",
+          "pdeGoal",
+          "pdeCta",
+          "pdeMetric",
+          "controlledVariables",
+          "productionBudgetReference",
+        ].map((key) => [key, `Briefing local: ${key}`]),
+      ),
+    );
+    await page
+      .getByRole("button", { name: "Atualizar leitura", exact: true })
+      .click();
+    await expect(
+      page.getByRole("navigation", {
+        name: "Produção e integração dos vídeos",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Produzir no Estúdio", exact: true }),
+    ).toHaveAttribute("href", "/audio-video-studio");
+    await submit({
+      campaignVideoAssetId: refs.campaignVideoAssetId,
+      productionEvidence: "internal://studio/ad",
+    });
+    await submit({
+      pdeVideoAssetId: refs.pdeVideoAssetId,
+      productionEvidence: "internal://studio/entry",
+    });
+    await page.screenshot({
+      path: `${output}/${name}-videos.png`,
+      fullPage: true,
+    });
+    await submit({
+      creativeId: refs.creativeId,
+      pdeSlotId: refs.pdeSlotId,
+      technicalEvidence: "internal://qa/playback",
+      customerReviewEvidence: "internal://qa/customer",
+      captionsVerified: true,
+      mobileVerified: true,
+      optionalPlaybackVerified: true,
+      testDataExcluded: true,
+    });
+    await expect(
       page.getByText("Homologar a mesma versão", { exact: true }).first(),
     ).toBeVisible();
     await expect(

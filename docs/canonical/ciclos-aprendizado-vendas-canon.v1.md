@@ -65,6 +65,45 @@ digitadas são declaradas como evidência do operador, nunca apresentadas como s
 Tráfego de homologação deve ser marcado e separado; não entra na leitura comercial nem autoriza escala.
 Memória é histórica e não substitui consulta atual. Antes/depois isolado não demonstra causalidade.
 
+## Vídeos de campanha e entrada do PDE — BPM v2
+
+Decisão do usuário em 08/09/2026: os novos ciclos da cadeia PDE devem tornar explícita a
+criação de vídeo para o criativo de campanha e para a entrada do produto. O BPM v2 acrescenta,
+depois do ajuste útil e antes da homologação, briefing de Íris, vídeo de campanha por Apolo,
+vídeo de entrada por Apolo e revisão/integração independente. Ciclos já abertos preservam o BPM
+e as evidências originais; referências históricas começam na medição, sem produção retroativa.
+A versão v1 fica no histórico como RETIRED; somente v2 aparece como versão publicada do ciclo.
+
+| Alternativa | Benefício | Risco / esforço | Escolha |
+| --- | --- | --- | --- |
+| Detalhar apenas o audiovisual genérico | Esforço baixo | Não distingue entrega nem conclusão de cada vídeo | Não |
+| Criar dois processos executores novos | Isolamento | Duplica Estúdio, gates e manutenção | Não |
+| Entregas próprias no ciclo, usando o Estúdio existente | Rastreabilidade e sequência clara | Contratos de evidência adicionais | Sim |
+
+- Íris declara objetivo, CTA e métrica próprios de cada vídeo, hipótese principal, controle das
+  demais variáveis e referência do limite de produção. Os valores de orçamentos anteriores não
+  são herdados como autorização. Plutus e preflight do Estúdio governam o consumo autorizado.
+- Apolo entrega dois ativos distintos do mesmo experimento: `AD` para atrair tráfego qualificado
+  e `LANDING_HERO` para demonstrar a experiência real e o primeiro resultado útil. A demonstração
+  de entrada deve corresponder à versão exata que será homologada.
+- A tela orienta a produção no Estúdio, seleção de vídeo aprovado para criativo e edição do
+  contrato na versão PDE. Registros do ciclo não criam renders, anúncios ou publicações.
+- Revisão exige vídeo pronto e aprovado, anúncio elegível com o mesmo vídeo e destino, e vídeo
+  de entrada vinculado ao contrato em rascunho da mesma versão/produto/experimento. As referências
+  são conferidas novamente antes da autorização e da confirmação de publicação; substituição
+  ou reprovação invalida a elegibilidade. A confirmação produtiva exige o contrato publicado.
+- A evidência técnica declara legendas, reprodução opcional, CTA acessível na entrada, fallback, mobile
+  e dados de teste segregados. Psique e Têmis continuam independentes; texto de operador não
+  fabrica parecer de agente nem dispensa a homologação canônica.
+- Falha retorna à correção na mesma iteração com causa e evidência; mudança comercial depois da
+  exposição exige sucessor. Aprendizado, briefing e referências de mídia permanecem no histórico.
+- A leitura comercial prioriza sessão atribuída, início, primeiro resultado, checkout, compra,
+  receita e contribuição. Reprodução/conclusão de vídeo são métricas auxiliares, separadas por
+  finalidade e ativo; produzir dois vídeos não demonstra qual deles causou aumento de conversão.
+
+O experimento #91 permanece preservado. Esta mudança instala o fluxo, sem produzir vídeos reais
+nem alterar campanhas, preço ou orçamento.
+
 ## Aplicação inicial
 
 Vega #91 permanece histórico interrompido. O #90 não pode substituí-lo silenciosamente. A adoção e

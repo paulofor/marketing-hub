@@ -23,6 +23,14 @@ public final class LearningCycleRules {
           "MEASUREMENT",
           "DECISION",
           "SCALE_AUTHORIZATION");
+  public static final List<String> VIDEO_STAGES =
+      List.of("VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "VIDEO_APPROVAL");
+  private static final Map<String, String> VIDEO_LABELS =
+      Map.of(
+          "VIDEO_BRIEF", "Definir os dois vídeos",
+          "CAMPAIGN_VIDEO", "Produzir vídeo do criativo de campanha",
+          "PDE_ENTRY_VIDEO", "Produzir vídeo de entrada do PDE",
+          "VIDEO_APPROVAL", "Revisar e integrar os dois vídeos");
   private static final Map<String, String> LABELS =
       Map.of(
           "LEARNING",
@@ -49,14 +57,21 @@ public final class LearningCycleRules {
 
   /** Retorna o nome humano da etapa persistida. */
   public static String label(String stage) {
-    return LABELS.getOrDefault(stage, stage);
+    return LABELS.getOrDefault(stage, VIDEO_LABELS.getOrDefault(stage, stage));
   }
 
   /** Expõe somente movimentos compatíveis com a etapa, antes das validações de evidência. */
   public static List<Action> actions(String stage) {
     return switch (stage) {
       case "LEARNING", "PLANNING" -> List.of(Action.COMPLETE, Action.STOP);
-      case "ADJUSTMENT", "VALIDATION", "AUTHORIZATION", "PUBLICATION" ->
+      case "ADJUSTMENT",
+          "VALIDATION",
+          "AUTHORIZATION",
+          "PUBLICATION",
+          "VIDEO_BRIEF",
+          "CAMPAIGN_VIDEO",
+          "PDE_ENTRY_VIDEO",
+          "VIDEO_APPROVAL" ->
           List.of(Action.COMPLETE, Action.REWORK, Action.STOP);
       case "MEASUREMENT" ->
           List.of(
@@ -101,6 +116,17 @@ public final class LearningCycleRules {
     int index = STAGES.indexOf(stage);
     require(index >= 0 && index < 6, "Esta etapa exige uma decisão específica.");
     return STAGES.get(index + 1);
+  }
+
+  /** Acrescenta entregas audiovisuais somente à versão do BPM que as declara. */
+  public static String next(String stage, boolean videoWorkflow) {
+    if (videoWorkflow) {
+      if ("ADJUSTMENT".equals(stage)) return "VIDEO_BRIEF";
+      int index = VIDEO_STAGES.indexOf(stage);
+      if (index >= 0)
+        return index == VIDEO_STAGES.size() - 1 ? "VALIDATION" : VIDEO_STAGES.get(index + 1);
+    }
+    return next(stage);
   }
 
   /** Bloqueia coleta fora da autorização e resultados inválidos ou desatualizados. */

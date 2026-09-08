@@ -370,3 +370,117 @@ describe("Ciclos de aprendizado e vendas", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("Vídeos nos ciclos PDE", () => {
+  it.each([
+    ["CAMPAIGN_VIDEO", "campaignVideoAssetId", "Vídeo AD deste experimento"],
+    [
+      "PDE_ENTRY_VIDEO",
+      "pdeVideoAssetId",
+      "Vídeo LANDING_HERO deste experimento",
+    ],
+  ])(
+    "seleciona somente a mídia oferecida pelo backend em %s",
+    async (stage, key, label) => {
+      const user = userEvent.setup();
+      const videoCycle = {
+        ...cycle,
+        stage,
+        evidenceOptions: {
+          [key]: [{ id: 38, label: "Vídeo #38 · finalidade aprovada" }],
+        },
+        workLinks: [
+          { label: "Produzir no Estúdio", url: "/audio-video-studio" },
+        ],
+        commands: [
+          {
+            action: "COMPLETE",
+            label: "Concluir etapa com evidência",
+            available: true,
+            reason: "",
+          },
+        ],
+      };
+      vi.mocked(axios.post).mockRejectedValue({
+        isAxiosError: true,
+        response: { data: { detail: "O vídeo pertence a outro experimento." } },
+      });
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
+      const updated = vi.fn();
+      wrapper(
+        <LearningCycleCommandForm
+          cycle={videoCycle}
+          catalog={catalog}
+          onUpdated={updated}
+        />,
+      );
+      expect(
+        screen.getByRole("link", { name: "Produzir no Estúdio" }),
+      ).toHaveAttribute("href", "/audio-video-studio");
+      await user.type(
+        screen.getByLabelText("Responsável pela decisão *"),
+        "Operador local",
+      );
+      await user.type(
+        screen.getByLabelText("Síntese e justificativa *"),
+        "Produção concluída no Estúdio",
+      );
+      await user.type(
+        screen.getByLabelText("Referência da evidência *"),
+        "internal://fixture/video",
+      );
+      await user.selectOptions(screen.getByLabelText(`${label} *`), "38");
+      await user.type(
+        screen.getByLabelText(
+          stage === "CAMPAIGN_VIDEO"
+            ? "Evidência da produção no Estúdio *"
+            : "Evidência da demonstração da versão real *",
+        ),
+        "internal://fixture/production",
+      );
+      await user.click(
+        screen.getByRole("button", { name: "Concluir etapa com evidência" }),
+      );
+      await waitFor(() => expect(axios.post).toHaveBeenCalled());
+      expect(vi.mocked(axios.post).mock.calls[0][1]).toMatchObject({
+        expectedRevision: cycle.revision,
+        evidence: { [key]: 38 },
+      });
+      expect(updated).not.toHaveBeenCalled();
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "O vídeo pertence a outro experimento.",
+      );
+    },
+  );
+
+  it("preserva o diagrama da ocorrência antiga quando o catálogo evolui", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? {
+            data: [
+              {
+                ...cycle,
+                diagram: {
+                  nodes: [
+                    {
+                      id: "LEGACY",
+                      type: "TASK",
+                      label: "BPM histórico imutável",
+                    },
+                  ],
+                  flows: [],
+                },
+              },
+            ],
+          }
+        : original(url, ...args),
+    );
+    wrapper(<LearningCyclesPage />);
+    await screen.findByRole("heading", { name: "Ciclo #2 · experimento #91" });
+    await userEvent.click(
+      screen.getByText("BPM · decisões e retornos do ciclo"),
+    );
+    expect(screen.getByText("BPM histórico imutável")).toBeVisible();
+  });
+});

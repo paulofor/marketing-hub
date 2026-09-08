@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /** Responsabilidade: expor a verdade persistida do ciclo e as ações liberadas pelo backend. */
 public record LearningCycleResponse(
@@ -28,14 +29,20 @@ public record LearningCycleResponse(
     Long returnProcessId,
     String returnActivityId,
     String workUrl,
+    JsonNode diagram,
     JsonNode brief,
     JsonNode inheritedLearning,
     List<Event> events,
     List<ApprovalOption> approvalOptions,
+    Map<String, List<ApprovalOption>> evidenceOptions,
+    List<WorkLink> workLinks,
     List<CommandOption> commands,
     boolean canCreateSuccessor,
     Instant createdAt,
     Instant closedAt) {
+  /** Orienta execução por telas oficiais sem gerar consumo ao navegar. */
+  public record WorkLink(String label, String url) {}
+
   /** Identifica uma aprovação real elegível para a mesma versão do ciclo. */
   public record ApprovalOption(Long id, String label) {}
 

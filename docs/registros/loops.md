@@ -4419,3 +4419,14 @@ instância #207/v1 antes de consultar a elegibilidade da v2. Fechamento: o domí
 ordem posterior à correção. Nova tarefa gera nova ocorrência e mantém a anterior íntegra.
 Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 `AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.
+
+## LOOP-BPM-VIDEO-GENERICO-SEM-ENTREGA-POR-DESTINO — prevenção em 08/09/2026
+
+- A cadeia produtiva v12 e seus processos conferidos pela tela e MCP ainda descrevem audiovisual
+  genérico. O consumidor antigo de construção lê apenas audiovisualRequired e não produz os dois
+  materiais comerciais. Reutilizar essa conclusão não comprovaria AD e entrada PDE.
+- O ciclo comercial v2 passa a registrar as duas produções, IDs, assinatura dos metadados,
+  revisão, criativo e contrato de entrada. Não declara consumidor inexistente: direciona ao
+  Estúdio oficial e exige evidências antes de liberar homologação e autorização.
+- Contratos locais rejeitam mídia de outro produto/experimento, função errada, arquivo substituído,
+  aprovação revogada e integração vencida. Referência: `docs/homologacao/ciclos-videos-campanha-entrada-pde-v2.md`.

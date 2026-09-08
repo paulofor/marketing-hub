@@ -37,6 +37,7 @@ export type LearningCycle = {
   returnProcessId?: number;
   returnActivityId?: string;
   workUrl: string;
+  diagram?: ProcessDiagram;
   brief: Record<string, unknown>;
   inheritedLearning: {
     cycleId?: number;
@@ -46,6 +47,8 @@ export type LearningCycle = {
   };
   events: CycleEvent[];
   approvalOptions?: { id: number; label: string }[];
+  evidenceOptions?: Record<string, { id: number; label: string }[]>;
+  workLinks?: { label: string; url: string }[];
   commands: {
     action: string;
     label: string;

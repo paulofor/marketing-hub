@@ -129,7 +129,17 @@ components:
           type: object
           description: >-
             LEARNING: learning, competingExplanation. PLANNING: planReference, stopRule.
-            ADJUSTMENT: productVersion, changeEvidence. VALIDATION: approvalInstanceId
+            ADJUSTMENT: productVersion, changeEvidence.
+            VIDEO_BRIEF (BPM v2): briefReference, campaignGoal, campaignCta, campaignMetric,
+            pdeGoal, pdeCta, pdeMetric, controlledVariables, productionBudgetReference.
+            CAMPAIGN_VIDEO: campaignVideoAssetId (AD pronto deste experimento), productionEvidence.
+            PDE_ENTRY_VIDEO: pdeVideoAssetId (LANDING_HERO pronto), productionEvidence.
+            VIDEO_APPROVAL: creativeId, pdeSlotId, technicalEvidence, customerReviewEvidence,
+            captionsVerified=true, mobileVerified=true, optionalPlaybackVerified=true, testDataExcluded=true.
+            O backend confere status, aprovação, vínculos e URLs e grava assinaturas do conteúdo lido.
+            Revalida a integração antes da homologação, autorização e publicação, exigindo o contrato
+            publicado na confirmação produtiva. Nenhum comando gera vídeo ou autoriza consumo externo.
+            VALIDATION: approvalInstanceId
             (gate canônico real do mesmo produto/versão), journeyEvidence, humanObservationEvidence opcional,
             instrumentationVerified=true. AUTHORIZATION: confirmed=true, productVersion, budgetLimitBrl.
             REWORK: productVersion nova, rootCause, returnProcessId, returnActivityId.
@@ -153,7 +163,7 @@ components:
         chainDefinitionId: {type: integer, format: int64}
         processDefinitionId: {type: integer, format: int64}
         revision: {type: integer}
-        stage: {type: string, enum: [LEARNING, PLANNING, ADJUSTMENT, VALIDATION, AUTHORIZATION, PUBLICATION, MEASUREMENT, DECISION, SCALE_AUTHORIZATION]}
+        stage: {type: string, enum: [LEARNING, PLANNING, ADJUSTMENT, VIDEO_BRIEF, CAMPAIGN_VIDEO, PDE_ENTRY_VIDEO, VIDEO_APPROVAL, VALIDATION, AUTHORIZATION, PUBLICATION, MEASUREMENT, DECISION, SCALE_AUTHORIZATION]}
         stageLabel: {type: string}
         status: {type: string, enum: [OPEN, ADJUSTED, CLOSED, INCONCLUSIVE]}
         baseline: {type: boolean}
@@ -166,6 +176,12 @@ components:
         workUrl: {type: string}
         returnProcessId: {type: integer, format: int64, nullable: true}
         returnActivityId: {type: string, nullable: true}
+        diagram: {type: object, description: Grafo da versão exata do BPM da ocorrência; não substituir pelo catálogo atual}
+        evidenceOptions:
+          type: object
+          description: Seleções lidas no backend para campaignVideoAssetId, pdeVideoAssetId, creativeId e pdeSlotId
+          additionalProperties: {type: array, items: {type: object, properties: {id: {type: integer}, label: {type: string}}}}
+        workLinks: {type: array, items: {type: object, properties: {label: {type: string}, url: {type: string}}}}
         brief: {type: object}
         inheritedLearning: {type: object, description: Snapshot do predecessor; memória mais antiga permanece acessível por referência ao ciclo anterior}
         approvalOptions: {type: array, items: {type: object, properties: {id: {type: integer}, label: {type: string}}}}

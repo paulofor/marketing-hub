@@ -49,6 +49,8 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleService.class,
   LearningCycleJson.class,
   LearningCycleEvidence.class,
+  LearningCycleVideoEvidence.class,
+  LearningCycleVideoFixtures.class,
   LearningCycleBpmLedger.class,
   LearningCycleController.class
 })
@@ -91,9 +93,7 @@ public class LearningCycleLocalApplication {
         Map.entry("spring.datasource.driver-class-name", "com.mysql.cj.jdbc.Driver"),
         Map.entry("spring.sql.init.mode", "never"),
         Map.entry("spring.sql.init.schema-locations", "classpath:learningcycle/baseline.sql"),
-        Map.entry(
-            "spring.liquibase.change-log",
-            "classpath:db/changelog/changesets/2026-09-08-learning-sales-cycles-v1.yaml"),
+        Map.entry("spring.liquibase.change-log", "classpath:learningcycle/changelog.yaml"),
         Map.entry("spring.jpa.open-in-view", "false"),
         Map.entry("spring.mvc.problemdetails.enabled", "true"),
         Map.entry("server.port", "18091"),
@@ -112,8 +112,7 @@ public class LearningCycleLocalApplication {
         .execute(source);
     var runner = new liquibase.integration.spring.SpringLiquibase();
     runner.setDataSource(source);
-    runner.setChangeLog(
-        "classpath:db/changelog/changesets/2026-09-08-learning-sales-cycles-v1.yaml");
+    runner.setChangeLog("classpath:learningcycle/changelog.yaml");
     return runner;
   }
 
@@ -210,6 +209,7 @@ public class LearningCycleLocalApplication {
     product.setId(id);
     product.setInternalName(id == 91001L ? "Vega · fixture local" : "Mira · fixture local");
     product.setName(product.getInternalName());
+    product.setSlug("fixture-" + id);
     product.setAutomaticExecutionEnabled(true);
     return product;
   }

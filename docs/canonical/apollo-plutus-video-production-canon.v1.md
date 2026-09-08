@@ -166,3 +166,12 @@ Cada cena aceita por um provider deve possuir identidade própria e liquidação
 O aceite registra a estimativa; o desfecho registra créditos e custo cobrados ou reembolsados,
 com a origem da evidência. Saldo calculado por recargas menos liquidações deve ser apresentado
 como reconciliado, nunca como saldo oficial do provider quando a API externa não expuser saldo.
+
+## Vídeos no ciclo comercial PDE — 08/09/2026
+
+O BPM v2 de Ciclos de aprendizado e vendas explicita briefing, produção de vídeo AD de campanha,
+produção de LANDING_HERO de entrada e revisão/integração antes da homologação. Usa o Estúdio
+existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. O backend confere
+ativos, criativo e contrato da mesma versão; o usuário recebe links para as telas oficiais.
+A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
+Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.

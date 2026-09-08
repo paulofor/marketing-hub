@@ -1,5 +1,6 @@
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   cycleError,
   useCycleMutation,
@@ -24,6 +25,59 @@ const byStage: Record<string, Field[]> = {
   ADJUSTMENT: [
     ["productVersion", "Versão do produto", "text"],
     ["changeEvidence", "Evidência do ajuste útil ou da comunicação", "text"],
+  ],
+  VIDEO_BRIEF: [
+    ["briefReference", "Briefing de Íris e versão", "text"],
+    ["campaignGoal", "Objetivo do vídeo de campanha", "text"],
+    ["campaignCta", "CTA do vídeo de campanha", "text"],
+    ["campaignMetric", "Métrica do vídeo de campanha", "text"],
+    ["pdeGoal", "Benefício demonstrado na entrada do PDE", "text"],
+    ["pdeCta", "CTA após a demonstração", "text"],
+    ["pdeMetric", "Métrica do vídeo de entrada", "text"],
+    [
+      "controlledVariables",
+      "Hipótese principal e demais variáveis mantidas",
+      "text",
+    ],
+    [
+      "productionBudgetReference",
+      "Referência do teto de produção e avaliação de Plutus",
+      "text",
+    ],
+  ],
+  CAMPAIGN_VIDEO: [
+    ["campaignVideoAssetId", "Vídeo AD deste experimento", "number"],
+    ["productionEvidence", "Evidência da produção no Estúdio", "text"],
+  ],
+  PDE_ENTRY_VIDEO: [
+    ["pdeVideoAssetId", "Vídeo LANDING_HERO deste experimento", "number"],
+    ["productionEvidence", "Evidência da demonstração da versão real", "text"],
+  ],
+  VIDEO_APPROVAL: [
+    ["creativeId", "Criativo de campanha aprovado", "number"],
+    ["pdeSlotId", "Versão PDE com vídeo integrado em rascunho", "number"],
+    [
+      "technicalEvidence",
+      "Evidência de reprodução, fallback e desempenho",
+      "text",
+    ],
+    [
+      "customerReviewEvidence",
+      "Evidência da avaliação independente de compreensão e utilidade",
+      "text",
+    ],
+    ["captionsVerified", "Legendas e áudio revisados", "checkbox"],
+    ["mobileVerified", "Reprodução e layout validados no celular", "checkbox"],
+    [
+      "optionalPlaybackVerified",
+      "Vídeo opcional e CTA acessível sem assistir",
+      "checkbox",
+    ],
+    [
+      "testDataExcluded",
+      "Testes segregados das métricas comerciais",
+      "checkbox",
+    ],
   ],
   VALIDATION: [
     ["approvalInstanceId", "Parecer multiagente aprovado", "number"],
@@ -173,6 +227,29 @@ export default function LearningCycleCommandForm({
       <h3 className="h5">Próxima ação</h3>
       <p>{cycle.nextAction}</p>
       <p className="small">Responsável: {cycle.responsible}</p>
+      {cycle.workLinks?.length ? (
+        <div className="mb-3">
+          <p>
+            Use o experimento #{cycle.experimentId} e a versão{" "}
+            {cycle.productVersion}. O Estúdio mantém os gates de custo e
+            aprovação.
+          </p>
+          <nav
+            className="d-flex flex-wrap gap-2"
+            aria-label="Produção e integração dos vídeos"
+          >
+            {cycle.workLinks.map((link) => (
+              <Link
+                key={link.url}
+                className="btn btn-outline-primary btn-sm"
+                to={link.url}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      ) : null}
       <label className="form-label">
         Decisão *
         <select
@@ -264,7 +341,13 @@ export default function LearningCycleCommandForm({
             {type !== "checkbox"
               ? `${label}${key === "humanObservationEvidence" ? "" : " *"}`
               : null}
-            {key === "approvalInstanceId" ? (
+            {[
+              "approvalInstanceId",
+              "campaignVideoAssetId",
+              "pdeVideoAssetId",
+              "creativeId",
+              "pdeSlotId",
+            ].includes(key) ? (
               <select
                 required
                 name={key}
@@ -272,9 +355,12 @@ export default function LearningCycleCommandForm({
                 defaultValue=""
               >
                 <option value="">
-                  Selecione uma aprovação real desta versão
+                  Selecione um registro elegível desta versão
                 </option>
-                {cycle.approvalOptions?.map((option) => (
+                {(key === "approvalInstanceId"
+                  ? cycle.approvalOptions
+                  : cycle.evidenceOptions?.[key]
+                )?.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}
                   </option>
@@ -290,7 +376,8 @@ export default function LearningCycleCommandForm({
                 required={
                   (type !== "checkbox" && key !== "humanObservationEvidence") ||
                   key === "confirmed" ||
-                  key === "instrumentationVerified"
+                  key === "instrumentationVerified" ||
+                  (cycle.stage === "VIDEO_APPROVAL" && action === "COMPLETE")
                 }
                 step={
                   type === "number"
@@ -315,7 +402,7 @@ export default function LearningCycleCommandForm({
               />
             )}
             {type === "checkbox"
-              ? `${label}${key === "confirmed" || key === "instrumentationVerified" ? " *" : ""}`
+              ? `${label}${key === "confirmed" || key === "instrumentationVerified" || (cycle.stage === "VIDEO_APPROVAL" && action === "COMPLETE") ? " *" : ""}`
               : null}
           </label>
         ))}

@@ -1,3 +1,15 @@
+## 2026-09-08 — Vega: continuidade do ciclo após deploy
+
+- Pela UI da cadeia, confirmado o acesso ao subprocesso de aprendizado dentro do processo 6.
+- MCP e catálogo publicados confirmam #91 interrompido, recibo Meta persistido, nenhum run #91
+  e nenhum experimento #92. A campanha está pausada. O backend publicado é `ae5460e1`.
+- Corrigida localmente a adoção de publicação legada, com auditoria da fonte e da ausência de
+  preflight; o sucessor recebe o aprendizado e mantém métricas e gates próprios.
+- A operação produtiva não foi alterada. O pedido de colocar o sucessor em execução depende
+  da disponibilidade desta correção pela UI e das entregas comerciais do BPM. O slot mais
+  recente continua v7, associado a #90; não foi encontrada uma versão melhorada vinculada a #92.
+- Matriz e resultados: [adoção histórica no ciclo](../homologacao/ciclo-vendas-historico-sem-run-v1.md).
+
 ## 2026-08-27 — Rigel: homologação do subprocesso 4.2
 
 - **Gargalo real:** a jornada oficial gerou a landing e recebeu Quality Review 90/100, mas Psique

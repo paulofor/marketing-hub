@@ -269,11 +269,45 @@ option=next(item for item in http(f'{API}/catalog?chainId=91001&productId=91001'
 assert option['baseline'] and option['available']
 http(f'{API}/products/91001',brief(),409)
 historical=http(f'{API}/products/91001',brief(baseline=True))
-assert historical['stage']=='MEASUREMENT' and historical['events']==[]
+assert historical['stage']=='MEASUREMENT' and len(historical['events'])==1
+assert historical['events'][0]['action']=='ADOPT_BASELINE'
+assert historical['events'][0]['evidence']['source']=='PRODUCTION_RUN'
 historical=command(historical,'MEASURE',metrics(historical,netSales=0))
 historical=command(historical,'INCONCLUSIVE')
 assert historical['status']=='INCONCLUSIVE' and not historical['canCreateSuccessor']
 assert sql("SELECT COUNT(*) FROM business_process_activity_instance WHERE objective_achieved=1")=='1'
 check('Adoção histórica inicia por conciliação e não fabrica homologação, venda ou aprovação')
+
+reset()
+http('/fixture/experiments/91001/legacy-publication',{})
+before=http('/fixture/experiments/91001/state')
+option=next(item for item in http(f'{API}/catalog?chainId=91001&productId=91001')['experiments'] if item['id']==91001)
+assert option['baseline'] and option['available'] and 'sem publicação registrada em run/preflight' in option['reason']
+payload=brief(baseline=True)
+legacy=http(f'{API}/products/91001',payload)
+assert http(f'{API}/products/91001',payload)['id']==legacy['id']
+assert len(legacy['events'])==1 and legacy['stage']=='MEASUREMENT'
+proof=legacy['events'][0]
+assert proof['action']=='ADOPT_BASELINE' and proof['evidence']['source']=='LEGACY_META_CAMPAIGN'
+assert not proof['evidence']['preflightRecorded'] and proof['evidence']['experimentId']==91001
+assert http('/fixture/experiments/91001/state')==before==dict(status='USER_STOPPED',runCount=0,campaignCount=1)
+legacy=command(legacy,'MEASURE',metrics(legacy,netSales=0,revenueBrl=0,contributionBrl=-40))
+legacy=command(legacy,'ADJUST',dict(return_to,learning='Amostra pequena e microação insuficiente',nextHypothesis='Primeiro ajuste executável'))
+successor=http(f'{API}/products/91001',brief(91002,legacy['id']))
+assert successor['stage']=='LEARNING' and successor['events']==[]
+assert successor['inheritedLearning']['events'][0]['evidence']==proof['evidence']
+assert http('/fixture/experiments/91002/state')==dict(status='PLANNED',runCount=0,campaignCount=0)
+successor=to_validation(successor)
+command(successor,evidence=dict(approvalInstanceId=1,journeyEvidence='Sem gate',instrumentationVerified=True),expected=409)
+successor=command(successor,evidence=validation_data(successor))
+successor=command(successor,evidence=authorization_data(successor))
+command(successor,expected=409)
+http('/fixture/experiments/91002/publish',{})
+successor=command(successor)
+assert successor['stage']=='MEASUREMENT'
+assert not any(event['action']=='MEASURE' for event in successor['events'])
+assert http('/fixture/experiments/91001/state')==before
+assert http('/fixture/experiments/91002/state')['status']=='RUNNING'
+check('Legado sem run → adoção auditável → ajuste → sucessor segregado → vídeos → gates próprios → publicação simulada')
 
 print(json.dumps({'checks':len(checks),'passed':checks,'database':'MySQL 5.7','externalCalls':0},ensure_ascii=False),flush=True)

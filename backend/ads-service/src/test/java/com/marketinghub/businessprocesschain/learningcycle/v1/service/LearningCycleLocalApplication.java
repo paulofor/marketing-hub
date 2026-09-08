@@ -56,6 +56,7 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.businessprocesscomposition.controller.BusinessProcessCompositionController.class,
   LearningCycleJson.class,
   LearningCycleEvidence.class,
+  LearningCyclePublicationHistory.class,
   LearningCycleVideoEvidence.class,
   LearningCycleVideoFixtures.class,
   LearningCycleBpmLedger.class,
@@ -64,6 +65,8 @@ import org.springframework.web.bind.annotation.*;
 public class LearningCycleLocalApplication {
   static final Map<Long, Experiment> EXPERIMENTS = new ConcurrentHashMap<>();
   static final Map<Long, ExperimentRun> RUNS = new ConcurrentHashMap<>();
+  static final Map<Long, com.marketinghub.facebookads.FacebookAdsCampaign> CAMPAIGNS =
+      new ConcurrentHashMap<>();
 
   /** Inicia somente a fixture local, sem importar executores, agendamentos ou credenciais reais. */
   public static void main(String[] args) {
@@ -260,6 +263,7 @@ public class LearningCycleLocalApplication {
   static void resetExperiments() {
     EXPERIMENTS.clear();
     RUNS.clear();
+    CAMPAIGNS.clear();
     for (long id = 91001; id <= 91006; id++) {
       var experiment = new Experiment();
       experiment.setId(id);
@@ -280,6 +284,23 @@ public class LearningCycleLocalApplication {
     when(repository.findTopByExperimentIdAndModeOrderByRunNumberDesc(
             anyLong(), eq(ExperimentRunMode.PRODUCTION)))
         .thenAnswer(call -> Optional.ofNullable(RUNS.get(call.getArgument(0))));
+    when(repository.findTopByExperimentIdAndModeAndPublishedAtIsNotNullOrderByRunNumberDesc(
+            anyLong(), eq(ExperimentRunMode.PRODUCTION)))
+        .thenAnswer(
+            call ->
+                Optional.ofNullable(RUNS.get(call.getArgument(0)))
+                    .filter(run -> run.getPublishedAt() != null));
+    return repository;
+  }
+
+  /** Simula recibos Meta legados sem criar run ou chamar o provedor externo. */
+  @Bean
+  com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository campaigns() {
+    var repository =
+        mock(com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository.class);
+    when(repository.findHistoricalPublicationReceipts(anyLong()))
+        .thenAnswer(
+            call -> Optional.ofNullable(CAMPAIGNS.get(call.getArgument(0))).stream().toList());
     return repository;
   }
 
@@ -402,6 +423,30 @@ public class LearningCycleLocalApplication {
       run.setPreflightCompletedAt(Instant.now());
       RUNS.put(id, run);
       return Map.of("published", true);
+    }
+
+    /** Reproduz a campanha pausada do legado com recibo próprio e ausência de run/preflight. */
+    @PostMapping("/fixture/experiments/{id}/legacy-publication")
+    Map<String, Object> legacyPublication(@PathVariable Long id) {
+      var experiment = EXPERIMENTS.get(id);
+      experiment.setStatus(ExperimentStatus.USER_STOPPED);
+      var campaign = new com.marketinghub.facebookads.FacebookAdsCampaign();
+      campaign.setId("fixture-campaign-" + id);
+      campaign.setExternalId("fixture-meta-" + id);
+      campaign.setExperiment(experiment);
+      campaign.setStatus(com.marketinghub.facebookads.FacebookAdStatus.PAUSED);
+      campaign.setCreatedAt(Instant.now().minusSeconds(86400));
+      CAMPAIGNS.put(id, campaign);
+      return Map.of("legacyReceipt", campaign.getId(), "runCount", RUNS.containsKey(id) ? 1 : 0);
+    }
+
+    /** Expõe somente os estados segregados para comprovar ausência de mutação retroativa. */
+    @GetMapping("/fixture/experiments/{id}/state")
+    Map<String, Object> state(@PathVariable Long id) {
+      return Map.of(
+          "status", EXPERIMENTS.get(id).getStatus(),
+          "runCount", RUNS.containsKey(id) ? 1 : 0,
+          "campaignCount", CAMPAIGNS.containsKey(id) ? 1 : 0);
     }
 
     /** Simula o encerramento oficial do experimento sem gerar tráfego comercial. */

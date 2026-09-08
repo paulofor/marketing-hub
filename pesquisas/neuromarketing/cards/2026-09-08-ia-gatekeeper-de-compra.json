@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "IA pode bloquear a compra durante a due diligence",
+  "finding": "Em pesquisa com 2.338 adultos dos EUA, 57,5% dos usuários de IA disseram já ter desistido de uma compra por informação de chatbot, enquanto 59,27% descobriram marcas ou produtos por recomendação de IA.",
+  "mechanism": "O chatbot pode atuar como gatekeeper bidirecional: reduz esforço de pesquisa e agrega reviews, reputação, riscos e alternativas, podendo aumentar ou reduzir a confiança na oferta antes da decisão.",
+  "commercialApplication": "Criar AgentGatekeeperAudit/AIObjectionSurface para testar prompts de alta intenção, registrar motivos de recomendação ou rejeição e corrigir lacunas reais de evidência, reputação e clareza nas fontes legítimas.",
+  "evidenceStrength": "Moderada: pesquisa recente com amostra ampla e margem de erro informada, mas baseada em autorrelato nos EUA e produzida por fornecedor de AI visibility; não demonstra causalidade em vendas.",
+  "publishedOn": "2026-09-07",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Corrigir uma lacuna real de evidência recorrente nas respostas dos agentes aumentará RecommendationRate e reduzirá a frequência daquele motivo de rejeição; impacto em visitas e vendas deve ser medido separadamente.",
+  "risks": "Otimização pode degenerar em tentativa de manipular agentes, fabricar reviews, esconder críticas ou produzir fontes artificiais; essas práticas devem ser proibidas.",
+  "limits": "Comportamento autorrelatado não equivale a compra observada; resultados podem mudar rapidamente e não foram validados no Brasil nem nas ofertas do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-08-ia-gatekeeper-compra.md",
+  "sourceTitle": "Fonte revisada — IA como gatekeeper de compra",
+  "sourceSha256": "caa3e1399fdcf1ec967f71e3ea13f483d22265cfda61624b0230a865f69a4700"
+}

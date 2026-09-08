@@ -1,4 +1,5 @@
 import LearningCycleDiagram from "../learningCycle/LearningCycleDiagram";
+import LearningCycleProcessEntry from "../learningCycle/LearningCycleProcessEntry";
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -815,6 +816,7 @@ export default function BusinessProcessesPage({
                   loading={compositionQuery.isLoading}
                   unavailable={compositionQuery.isError}
                 />
+                <LearningCycleProcessEntry processDefinitionId={selected.id} />
                 <section className="card card-body">
                   <h2 className="h5 business-process-diagram-title">
                     <BusinessProcessEntityName
@@ -833,12 +835,6 @@ export default function BusinessProcessesPage({
                   {selected.processCode ===
                   "value-chain-learning-sales-cycle" ? (
                     <>
-                      <Link
-                        className="btn btn-primary mb-3 align-self-start"
-                        to="/business-process-chains/learning-cycles"
-                      >
-                        Executar ciclo por produto e experimento
-                      </Link>
                       <LearningCycleDiagram diagram={selected.diagram} />
                     </>
                   ) : (

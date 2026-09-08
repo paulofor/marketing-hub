@@ -4456,6 +4456,18 @@ ordem posterior à correção. Nova tarefa gera nova ocorrência e mantém a ant
 Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 `AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.
 
+## LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI — ciclo fora do fluxo de valor
+
+- Confirmado em 08/09/2026: o ciclo v2 tinha pai no cadastro, mas o BPM de venda v4
+  terminava em `consolidate → decision → end`. O painel anterior aos processos reforçava
+  a impressão de uma estrutura separada. MCP e migrações v1/v2 confirmaram a mesma lacuna.
+- Correção: cadeia v13 e venda v5 chamam o subprocesso, mostram decisões e retornos,
+  oferecem entrada contextual na cadeia/BPM/produto e retomam somente a ocorrência aberta.
+  Não reescrevem ciclos, tarefas nem versões anteriores e não criam trabalho por navegação.
+- Prevenção: criação exige pai publicado e chamada conectada; testes cobrem contrato
+  incompleto, cadeia divergente, segregação por produto, MySQL/rollback e navegação mobile.
+  Evidências: `docs/homologacao/cadeia-ciclo-vendas-integrado-v1.md`.
+
 ## LOOP-BPM-VIDEO-GENERICO-SEM-ENTREGA-POR-DESTINO — prevenção em 08/09/2026
 
 - A cadeia produtiva v12 e seus processos conferidos pela tela e MCP ainda descrevem audiovisual

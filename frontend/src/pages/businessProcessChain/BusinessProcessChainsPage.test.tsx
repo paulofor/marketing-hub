@@ -110,12 +110,15 @@ describe("BusinessProcessChainsPage", () => {
       screen.getByRole("link", {
         name: "Abrir atividades de Descoberta da oportunidade PDE no diagrama BPM",
       }),
-    ).toHaveAttribute("href", "/business-processes?processId=11");
+    ).toHaveAttribute("href", "/business-processes?processId=11&chainId=1");
     expect(
       screen.getByRole("link", {
         name: "Abrir atividades de Plano Comercial e oferta PDE no diagrama BPM",
       }),
-    ).toHaveAttribute("href", "/business-processes/retired?processId=12");
+    ).toHaveAttribute(
+      "href",
+      "/business-processes/retired?processId=12&chainId=1",
+    );
     expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/1");
   });
 

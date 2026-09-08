@@ -26,6 +26,7 @@ import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExec
 import "../businessProcess/BusinessProcessesPage.css";
 import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecutionPanel";
 import DirectContactSamplePanel from "./DirectContactSamplePanel";
+import LearningCycleProcessEntry from "../learningCycle/LearningCycleProcessEntry";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -150,14 +151,6 @@ export default function ProductProcessActivityExecutionsPage() {
               Voltar ao ciclo #{learningCycleId}
             </Link>
           ) : null}
-          {data?.processCode === "value-chain-learning-sales-cycle" ? (
-            <Link
-              className="btn btn-primary mb-3"
-              to={`/business-process-chains/learning-cycles?productId=${productId}`}
-            >
-              Executar ciclo e registrar decisões
-            </Link>
-          ) : null}
           <PageTitle>
             {data ? (
               <span className="product-process-activity-executions__title">
@@ -241,6 +234,10 @@ export default function ProductProcessActivityExecutionsPage() {
         </div>
       ) : null}
 
+      <LearningCycleProcessEntry
+        processDefinitionId={processDefinitionId}
+        productId={productId}
+      />
       {data ? (
         <>
           <section

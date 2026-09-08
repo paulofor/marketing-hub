@@ -40,7 +40,15 @@ export type ProcessFlow = {
   kind?: "REWORK";
 };
 
-export type ProcessDiagram = { nodes: ProcessNode[]; flows: ProcessFlow[] };
+export type ProcessDiagram = {
+  nodes: ProcessNode[];
+  flows: ProcessFlow[];
+  learningCycleReturns?: {
+    label: string;
+    condition: string;
+    processCode: string;
+  }[];
+};
 
 export type BusinessProcess = {
   id: number;

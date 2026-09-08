@@ -85,6 +85,7 @@ node frontend/node_modules/vite/bin/vite.js preview frontend --config frontend/v
 cycle_ui_pid=$!
 wait_http 'http://127.0.0.1:15173/business-process-chains/learning-cycles'
 run browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/browser" node frontend/e2e/learning-sales-cycles-responsive.mjs
+run chain-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/chain-browser" node frontend/e2e/learning-cycle-chain-entry-responsive.mjs
 fi
 kill "$cycle_api_pid"
 wait "$cycle_api_pid" || true

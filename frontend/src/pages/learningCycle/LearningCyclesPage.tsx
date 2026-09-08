@@ -122,15 +122,30 @@ export default function LearningCyclesPage() {
   return (
     <div className="learning-cycles-page">
       <Link
-        to="/business-process-chains"
+        to={`/business-process-chains${chainId ? `?chainId=${chainId}${productId ? `&productId=${productId}` : ""}` : ""}`}
         className="btn btn-outline-secondary mb-3"
       >
         Voltar à Cadeia de Valor
       </Link>
       <PageTitle>Ciclos de aprendizado e vendas</PageTitle>
+      {catalog.data?.entry ? (
+        <nav aria-label="Local do ciclo na cadeia" className="mb-3">
+          <Link to={`/business-process-chains?chainId=${chainId}`}>
+            {catalog.data.entry.chainName}
+          </Link>
+          {" → "}
+          <Link to={catalog.data.entry.parentUrl}>
+            {catalog.data.entry.sequenceNumber}.{" "}
+            {catalog.data.entry.parentProcessName}
+          </Link>
+          {" → Subprocesso: "}
+          {catalog.data.entry.processName}
+        </nav>
+      ) : null}
       <p>
-        Uma hipótese por experimento. Aprender, melhorar o valor entregue e
-        decidir com vendas, contribuição e evidências.
+        Este painel executa o subprocesso de aprendizado do processo de venda.
+        Cada ciclo corresponde a um experimento e conserva seu aprendizado, suas
+        métricas e a próxima ação.
       </p>
       <div className="cycle-form-grid mb-3">
         <label className="form-label">
@@ -188,6 +203,7 @@ export default function LearningCyclesPage() {
           <button
             type="button"
             className="btn btn-primary"
+            disabled={!catalog.data.entry?.canStartCycle}
             onClick={() => {
               setPredecessor(undefined);
               setCreating(true);
@@ -220,6 +236,13 @@ export default function LearningCyclesPage() {
             Atividades da cadeia do produto
           </Link>
         </div>
+      ) : null}
+      {catalog.data && !catalog.data.entry?.canStartCycle ? (
+        <p className="alert alert-warning" role="alert">
+          Para abrir uma nova iteração, selecione a cadeia vigente com o ciclo
+          integrado ao processo de venda. O histórico existente permanece
+          disponível.
+        </p>
       ) : null}
       {creating && productId && chainId && catalog.data ? (
         <LearningCycleCreateForm

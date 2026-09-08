@@ -39,6 +39,14 @@ consulta reversa canônica é `GET /api/business-process-chains/by-process/{proc
 
 ## Governança BPM
 
+**Integração operacional do ciclo (08/09/2026):** o subprocesso de ciclos pertence ao
+processo de venda e aprendizado. Seu pai precisa conter uma atividade `subprocessCode`
+conectada ao fluxo, além do vínculo de cadastro. A cadeia expõe o painel dentro desse pai.
+O endpoint `GET /api/business-process-chains/learning-cycles/v1/entry` resolve a entrada
+e a ocorrência aberta, sem mutação. Destinos de orientação `learningCycleReturns` no
+diagrama são resolvidos nas versões exatas da cadeia; a execução usa os comandos e a
+atividade orientada do ciclo. Ausência de vínculo não pode ser inferida como integração.
+
 As cadeias incorporam **Ciclos de aprendizado e vendas**, conforme
 `ciclos-aprendizado-vendas-canon.v1.md`. A definição descreve o losango e os retornos; a execução
 versionada por experimento persiste conhecimento, decisões e liberação de etapas no backend.

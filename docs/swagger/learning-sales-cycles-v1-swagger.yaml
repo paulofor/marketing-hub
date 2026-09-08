@@ -21,14 +21,34 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [processDefinitionId, version, diagram, returnTargets, experiments]
+                required: [processDefinitionId, version, diagram, returnTargets, experiments, entry]
                 properties:
                   processDefinitionId: {type: integer, format: int64}
                   version: {type: integer}
                   diagram: {type: object, description: 'Grafo com nodes START/TASK/GATEWAY/END e flows; kind REWORK identifica retorno condicional.'}
                   returnTargets: {type: array, items: {type: object, description: 'processDefinitionId, processCode, processName, activityId, activityName, owner'}}
                   experiments: {type: array, items: {type: object, description: 'id, name, status, available, baseline, reason; somente experimentos do próprio produto'}}
+                  entry: {$ref: '#/components/schemas/Entry'}
         '404': {description: Cadeia, produto ou BPM não instalado}
+  /entry:
+    get:
+      summary: Resolver a entrada do ciclo pelo processo de venda ou pelo subprocesso
+      description: >-
+        Somente leitura. Conserva a cadeia solicitada e retoma a ocorrência aberta do produto.
+        Sem chainId, prefere a cadeia publicada que contém a versão exata do pai.
+        Processo sem vínculo ou cadeia divergente devolve corpo vazio; nunca escolhe outro produto.
+        Não cria ciclo, experimento, tarefa ou autorização.
+      parameters:
+        - {name: processDefinitionId, in: query, required: true, schema: {type: integer, format: int64}}
+        - {name: productId, in: query, required: false, schema: {type: integer, format: int64}}
+        - {name: chainId, in: query, required: false, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Hierarquia, chamada no BPM, navegação contextual e destinos reais; vazio se não aplicável
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Entry'}
+        '404': {description: Processo, produto, cadeia ou BPM não encontrado}
   /products/{productId}:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}
@@ -93,6 +113,38 @@ components:
   parameters:
     ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
   schemas:
+    Entry:
+      type: object
+      nullable: true
+      required: [chainDefinitionId, chainName, parentProcessDefinitionId, parentProcessName, sequenceNumber, processDefinitionId, processName, integrated, canStartCycle, guidance, workspaceUrl, actionLabel, parentUrl, returnRoutes]
+      properties:
+        chainDefinitionId: {type: integer, format: int64}
+        chainName: {type: string}
+        parentProcessDefinitionId: {type: integer, format: int64}
+        parentProcessName: {type: string}
+        sequenceNumber: {type: integer, description: Posição real do pai na cadeia}
+        activityId: {type: string, nullable: true, description: Atividade persistida que chama o ciclo}
+        processDefinitionId: {type: integer, format: int64}
+        processName: {type: string}
+        integrated: {type: boolean, description: Chamada TASK com fluxos de entrada e saída na versão exata do pai}
+        canStartCycle: {type: boolean, description: Cadeia e pai publicados com chamada integrada; demais gates continuam obrigatórios}
+        guidance: {type: string}
+        workspaceUrl: {type: string, description: Rota local com cadeia e produto; ciclo aberto conserva sua cadeia histórica}
+        actionLabel: {type: string}
+        parentUrl: {type: string}
+        returnRoutes:
+          type: array
+          description: Destinos de orientação declarados no BPM e resolvidos na mesma cadeia; não são decisões executadas
+          items:
+            type: object
+            required: [label, condition, processDefinitionId, sequenceNumber, processName, url]
+            properties:
+              label: {type: string}
+              condition: {type: string}
+              processDefinitionId: {type: integer, format: int64}
+              sequenceNumber: {type: integer}
+              processName: {type: string}
+              url: {type: string}
     CreateCycle:
       type: object
       required: [requestKey, chainDefinitionId, experimentId, productVersion, hypothesis, mainChange, successCriterion, audience, offer, acquisition, budgetLimitBrl, windowStart, windowEnd, sampleTarget, minimumNetSales, operatorName]

@@ -82,3 +82,16 @@
     padding: 0.8rem;
   }
 }
+.cycle-placement {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-left: 4px solid var(--bs-primary);
+}
+.cycle-return-routes {
+  display: grid;
+  gap: 1rem;
+  padding-left: 1.25rem;
+}
+.cycle-return-routes p {
+  margin-bottom: 0.25rem;
+}

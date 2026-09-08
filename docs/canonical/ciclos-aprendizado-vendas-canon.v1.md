@@ -18,6 +18,30 @@ pagamento ou mídia; especialistas continuam nos módulos e BPMs canônicos.
 
 ## Contrato do ciclo
 
+### Lugar na cadeia e entrada operacional — decisão de 08/09/2026
+
+A cadeia mantém seis processos de valor. **Ciclos de aprendizado e vendas é um subprocesso
+do processo 6, Venda, entrega e aprendizado do PDE**; cada ciclo é uma ocorrência por
+experimento. O painel é o ambiente de execução desse subprocesso, não uma sétima etapa.
+
+O BPM do processo 6 deve chamar explicitamente o subprocesso depois da consolidação dos
+resultados. O losango registra a decisão no ciclo e apresenta seus retornos: continuar coleta
+ou corrigir medição na operação; ajustar estratégia/economia no processo 2, produto no 3 ou
+comunicação no 4; renovar homologação e autorização no 5 antes de voltar à operação no 6.
+Revisitar descoberta exige evidência que questione a necessidade ou o público, nunca um
+reinício automático da cadeia. Encerrar preserva os resultados; escalar exige nova autorização.
+
+A tela da cadeia apresenta o acesso ao ciclo dentro do processo pai. O BPM e as atividades
+do produto oferecem o mesmo acesso, conservando produto, cadeia e ciclo selecionados. A
+hierarquia e os destinos vêm do backend e dos vínculos persistidos. Um clique de navegação
+não cria experimento, tarefa, aprovação, campanha ou gasto. O primeiro experimento pode
+ser planejado nesse ambiente antes de receber tráfego; a entrada pelos resultados adota
+uma referência histórica ou retoma o ciclo existente, sem fingir aprovações retroativas.
+
+Evoluções do BPM pai e da cadeia criam versões novas. Definições, tarefas e ciclos anteriores
+permanecem auditáveis. Retornos comerciais são registrados no ciclo e não entram como
+predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
+
 - Identidade própria, produto, versão exata da cadeia, experimento único, predecessor e versão do
   produto. Nenhum ciclo pode usar experimento de outro produto ou compartilhar suas métricas.
 - Pergunta verificável, variável principal, resultado esperado, canal, público, oferta e critérios

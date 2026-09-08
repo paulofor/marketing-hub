@@ -47,6 +47,13 @@ import org.springframework.web.bind.annotation.*;
 @EnableTransactionManagement
 @Import({
   LearningCycleService.class,
+  LearningCycleOrganization.class,
+  com.marketinghub.businessprocesschain.service.BusinessProcessChainService.class,
+  com.marketinghub.businessprocesschain.controller.BusinessProcessChainController.class,
+  BusinessProcessDefinitionService.class,
+  BusinessProcessDefinitionController.class,
+  com.marketinghub.businessprocesscomposition.service.BusinessProcessCompositionService.class,
+  com.marketinghub.businessprocesscomposition.controller.BusinessProcessCompositionController.class,
   LearningCycleJson.class,
   LearningCycleEvidence.class,
   LearningCycleVideoEvidence.class,
@@ -127,6 +134,8 @@ public class LearningCycleLocalApplication {
             LearningSalesCycle.class.getName(),
             LearningSalesCycleEvent.class.getName(),
             BusinessProcessDefinition.class.getName(),
+            BusinessProcessChainDefinition.class.getName(),
+            BusinessProcessChainItem.class.getName(),
             BusinessProcessActivityDefinition.class.getName(),
             BusinessProcessActivityInstance.class.getName()));
     factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
@@ -165,6 +174,21 @@ public class LearningCycleLocalApplication {
   @Bean
   LearningSalesCycleRepository cycles(EntityManagerFactory factory) {
     return repository(factory, LearningSalesCycleRepository.class);
+  }
+
+  /** Simula somente o ledger de tarefas externas, que não executam durante a homologação. */
+  @Bean
+  com.marketinghub.repository.jpa.agenttask.AgentTaskRepository agentTasks() {
+    return mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+  }
+
+  /** Isola o catálogo de integrações sem carregar executores ou credenciais reais. */
+  @Bean
+  com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository
+      executionResources() {
+    return mock(
+        com.marketinghub.repository.jpa.businessprocessresource
+            .BusinessProcessExecutionResourceRepository.class);
   }
 
   /** Expõe o repositório real de eventos. */
@@ -259,30 +283,20 @@ public class LearningCycleLocalApplication {
     return repository;
   }
 
-  /** Reutiliza o BPM real de construção em uma composição mínima de teste. */
+  /** Consulta a cadeia real migrada, incluindo as seis etapas e o subprocesso de vendas. */
   @Bean
-  BusinessProcessChainDefinitionRepository chains(BusinessProcessDefinitionRepository processes) {
-    var repository = mock(BusinessProcessChainDefinitionRepository.class);
-    when(repository.findById(91001L))
-        .thenAnswer(
-            call -> {
-              var process =
-                  processes
-                      .findByProcessCodeAndVersionNumber("pde-construction-approval", 8)
-                      .orElseThrow();
-              var item = new BusinessProcessChainItem();
-              item.setSequenceNumber(1);
-              item.setProcessDefinition(process);
-              var chain = new BusinessProcessChainDefinition();
-              chain.setId(91001L);
-              chain.setChainCode("pde-value-creation-delivery");
-              chain.setStatus("PUBLISHED");
-              chain.setName("Cadeia local de homologação");
-              chain.setVersionNumber(1);
-              chain.setItems(List.of(item));
-              return Optional.of(chain);
-            });
-    return repository;
+  BusinessProcessChainDefinitionRepository chains(EntityManagerFactory factory) {
+    return repository(factory, BusinessProcessChainDefinitionRepository.class);
+  }
+
+  /** Consulta os vínculos reais e versionados entre cadeia e processos. */
+  @Bean
+  com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainItemRepository
+      chainItems(EntityManagerFactory factory) {
+    return repository(
+        factory,
+        com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainItemRepository
+            .class);
   }
 
   /** Instala uma atividade real de gate para receber callbacks simulados dos especialistas. */
@@ -349,21 +363,6 @@ public class LearningCycleLocalApplication {
     @GetMapping("/api/products")
     List<Product> products() {
       return List.of(product(91001L), product(91002L));
-    }
-
-    /** Lista a única cadeia local para as seleções do navegador. */
-    @GetMapping("/api/business-process-chains")
-    List<Map<String, Object>> chains() {
-      return List.of(
-          Map.of(
-              "id",
-              91001,
-              "name",
-              "Cadeia local de homologação",
-              "versionNumber",
-              1,
-              "status",
-              "PUBLISHED"));
     }
 
     /** Reinicia somente estados simulados para outra rodada local. */

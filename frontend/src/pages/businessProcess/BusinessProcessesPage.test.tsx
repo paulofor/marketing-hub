@@ -12,6 +12,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import BusinessProcessesPage from "./BusinessProcessesPage";
 
 vi.mock("axios");
+// Estes testes isolam as atividades existentes; a entrada do ciclo possui testes de contrato próprios.
+vi.mock(
+  "../../api/learningCycle/useLearningCycles",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../api/learningCycle/useLearningCycles")
+    >()),
+    useLearningCycleEntry: () => ({ data: null, isError: false }),
+  }),
+);
 
 const studio = {
   id: 1,

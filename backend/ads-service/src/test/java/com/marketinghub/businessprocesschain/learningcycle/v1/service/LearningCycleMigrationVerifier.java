@@ -37,6 +37,7 @@ public final class LearningCycleMigrationVerifier {
             connection,
             "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='RETIRED' AND version_number=1",
             1);
+        verifyOrganization(connection);
         System.out.println("PASS MySQL 5.7: aplicação física e catálogo sem duplicação.");
         return;
       }
@@ -71,6 +72,21 @@ public final class LearningCycleMigrationVerifier {
           connection,
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND DATETIME_PRECISION=6 AND ((TABLE_NAME IN ('agent_task','facebook_ads_campaign') AND COLUMN_NAME='created_at') OR (TABLE_NAME='business_process_activity_instance' AND COLUMN_NAME IN ('entered_at','exited_at','created_at','updated_at')))",
           6);
+      verifyOrganization(connection);
+      migration.rollback(1, new Contexts(), new LabelExpression());
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=12 AND status='PUBLISHED'",
+          1);
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.version_number=13",
+          6);
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=5 AND status='RETIRED'",
+          1);
+      // A reaplicação ocorre em outra JVM para não reutilizar o estado do executor de rollback.
       migration.rollback(5, new Contexts(), new LabelExpression());
       assertCount(
           connection,
@@ -83,6 +99,38 @@ public final class LearningCycleMigrationVerifier {
     }
     System.out.println(
         "PASS MySQL 5.7: schema, 7 FKs, DATETIME, BPM, rollback e preservação de processo anterior.");
+  }
+
+  /** Confere hierarquia, chamada, retornos, idempotência e preservação da definição anterior. */
+  private static void verifyOrganization(java.sql.Connection connection) throws Exception {
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=13 AND status='PUBLISHED'",
+        1);
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_chain_item i JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.version_number=13",
+        6);
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_definition p JOIN business_process_chain_item i ON i.process_definition_id=p.id JOIN business_process_chain_definition c ON c.id=i.chain_definition_id WHERE c.version_number=13 AND i.sequence_number=6 AND p.process_code='pde-sales-delivery-learning' AND p.version_number=5",
+        1);
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-sales-delivery-learning' AND p.version_number=5 AND a.activity_id='learningCycle' AND a.subprocess_code='value-chain-learning-sales-cycle'",
+        1);
+    assertCount(
+        connection,
+        "SELECT JSON_LENGTH(diagram_json,'$.learningCycleReturns') FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=5",
+        5);
+    assertCount(
+        connection,
+        "SELECT JSON_LENGTH(diagram_json,'$.nodes') FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=4",
+        6);
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='pde-sales-delivery-learning' AND p.version_number=5",
+        4);
   }
 
   /** Abre uma conexão exclusiva da fixture sem aceitar destino produtivo. */

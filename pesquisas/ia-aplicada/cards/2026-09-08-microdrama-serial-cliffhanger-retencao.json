@@ -1,0 +1,18 @@
+{
+  "cardKey": "microdrama-serial-cliffhanger-retencao",
+  "collection": "video",
+  "title": "Microdramas sugerem testar vídeo curto seriado com continuidade",
+  "finding": "Na Índia, microdramas somaram cerca de 15–17 milhões de assinantes mensais e 40 milhões de pagantes ao menos uma vez no FY26; o formato é consumido em sessões curtas e seriadas.",
+  "mechanism": "Episódios breves podem ocupar pequenos intervalos de atenção, e uma continuação legítima pode incentivar retorno ao próximo episódio. A evidência não isola causalmente cliffhanger, duração curta ou verticalidade.",
+  "commercialApplication": "No Marketing Hub, comparar uma sequência curta de episódios contra uma peça única equivalente, mantendo oferta, público e orçamento e medindo retenção por episódio, retorno, CTA, checkout e pagamento.",
+  "evidenceStrength": "Moderada para adoção e disposição de pagamento pelo formato de microdrama; baixa para transferir causalmente o efeito a criativos comerciais brasileiros ou atribuí-lo especificamente a cliffhangers.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Uma sequência de vídeos curtos em que cada episódio entrega valor próprio e abre uma continuação legítima elevará avanço entre peças e retorno ao funil versus uma peça única, sem reduzir pagamento por impressão.",
+  "risks": "Cliffhanger enganoso, retenção artificial de informação essencial, fadiga criativa, aumento de frequência, dependência de múltiplas exposições e otimização para retenção sem ganho comercial.",
+  "limits": "A fonte descreve entretenimento indiano, não anúncios brasileiros. Os números de mercado não provam que serialização cause retenção nem que uma sequência comercial supere uma peça única.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-08-microdrama-serial-curto.md",
+  "sourceTitle": "Fonte revisada — Microdramas, serialização curta e retorno do usuário",
+  "sourceSha256": "6c189011e0b306711622abbd670584b61a15dd097fb7a1af7bcd4087aa9596b8"
+}

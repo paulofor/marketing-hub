@@ -1,0 +1,824 @@
+{
+  "report_type": "READ_ONLY_MARKETING_ANALYSIS",
+  "assembled_at_utc": "2026-09-08T02:34:03.004672+00:00",
+  "repository_commit": "d1c41901ddf9dc1d3e74487a549678ae3f35c4be",
+  "product": {
+    "id": 4,
+    "internal_name": "Vega",
+    "public_name": "Método MUSA - Presença Elegante em 7 Dias",
+    "price_brl": 67,
+    "billing_model": "ONE_TIME",
+    "guided_days": 7,
+    "access_days": 90,
+    "public_url": "https://v7.clubemusa.com.br",
+    "experience_version": "musa-pde-entry-v7-espelho-antes-de-sair"
+  },
+  "value_chain": {
+    "commercialStatus": "ATIVO",
+    "chainVersion": 12,
+    "processCode": "pde-sales-delivery-learning",
+    "processName": "Venda, entrega e aprendizado do PDE",
+    "sequenceNumber": 6,
+    "processCount": 6,
+    "subprocessPosition": {
+      "trackingStatus": "IN_PROGRESS",
+      "subprocessCount": 2,
+      "currentActivityName": "Operar e otimizar o experimento",
+      "currentSubprocessDefinitionId": 66,
+      "currentSubprocessSequenceNumber": 1,
+      "currentSubprocessCode": "operacao-otimizacao-experimento",
+      "currentSubprocessName": "Operação e otimização de experimento",
+      "currentSubprocessObjective": "Teste controlado decidido por eventos, vendas e entrega reais.",
+      "nextSubprocessDefinitionId": 62,
+      "nextSubprocessSequenceNumber": 2,
+      "nextSubprocessCode": "venda-entrega-satisfacao-cliente",
+      "nextSubprocessName": "Venda, entrega e satisfação da cliente",
+      "nextSubprocessObjective": "Venda entregue com satisfação ou falha bloqueada e tratada pela causa-raiz.",
+      "measurements": [
+        {
+          "stageType": "SUBPROCESS",
+          "sequenceLabel": "6.1",
+          "trackingStatus": "CURRENT",
+          "processDefinitionId": 66,
+          "processCode": "operacao-otimizacao-experimento",
+          "processName": "Operação e otimização de experimento",
+          "enteredAt": "2026-09-05T02:00:15Z",
+          "entryEvidence": "FIRST_SUBPROCESS_TASK",
+          "exitedAt": null,
+          "exitEvidence": null,
+          "objectiveAchieved": false,
+          "elapsedDays": 3,
+          "knownEstimatedCostUsd": 7.054912,
+          "costCoverage": "PARTIAL",
+          "costedExecutionCount": 3,
+          "uncostedExecutionCount": 5,
+          "commitRegistrationAllowed": true
+        }
+      ]
+    }
+  },
+  "experiment": {
+    "id": 91,
+    "status": "USER_STOPPED",
+    "sourceExperimentId": 90,
+    "platform": "FACEBOOK",
+    "sampleSize": 100,
+    "targetCvr": 5.0,
+    "dailyBudget": 20.0,
+    "mediaSpendLimit": 100.0,
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-11",
+    "primaryMetric": "Venda líquida reconciliada e entregue"
+  },
+  "meta_campaign": {
+    "id": "120251556536430326",
+    "name": "MUSA-H003-E002",
+    "status": "PAUSED",
+    "effective_status": "PAUSED",
+    "objective": "OUTCOME_SALES"
+  },
+  "meta_adset": {
+    "id": "120251556536530326",
+    "status": "ACTIVE",
+    "effective_status": "CAMPAIGN_PAUSED",
+    "optimization_goal": "OFFSITE_CONVERSIONS",
+    "lifetime_budget": "10000",
+    "budget_remaining": "7255",
+    "start_time": "2026-09-07T00:13:13-0300",
+    "end_time": "2026-09-11T23:59:59-0300",
+    "targeting": {
+      "age_max": 65,
+      "age_min": 18,
+      "flexible_spec": [
+        {
+          "interests": [
+            {
+              "id": "6003524485642",
+              "name": "Estilista"
+            }
+          ]
+        }
+      ],
+      "geo_locations": {
+        "countries": [
+          "BR"
+        ],
+        "location_types": [
+          "home",
+          "recent"
+        ]
+      },
+      "targeting_automation": {
+        "advantage_audience": 0
+      },
+      "publisher_platforms": [
+        "instagram"
+      ],
+      "instagram_positions": [
+        "stream",
+        "story",
+        "explore",
+        "reels"
+      ]
+    }
+  },
+  "meta_insights": {
+    "date_start": "2026-09-07",
+    "date_stop": "2026-09-07",
+    "reach": "113",
+    "impressions": "121",
+    "clicks": "5",
+    "inline_link_clicks": "4",
+    "outbound_clicks": [
+      {
+        "action_type": "outbound_click",
+        "value": "4"
+      }
+    ],
+    "spend": "27.45",
+    "cpc": "5.49",
+    "cpm": "226.859504",
+    "ctr": "4.132231",
+    "actions": [
+      {
+        "action_type": "link_click",
+        "value": "4"
+      },
+      {
+        "action_type": "post_reaction",
+        "value": "2"
+      },
+      {
+        "action_type": "post_engagement",
+        "value": "58"
+      },
+      {
+        "action_type": "post_interaction_gross",
+        "value": "3"
+      },
+      {
+        "action_type": "page_engagement",
+        "value": "58"
+      },
+      {
+        "action_type": "post_interaction_net",
+        "value": "3"
+      },
+      {
+        "action_type": "post",
+        "value": "1"
+      },
+      {
+        "action_type": "onsite_conversion.post_net_like",
+        "value": "2"
+      },
+      {
+        "action_type": "video_view",
+        "value": "51"
+      }
+    ],
+    "cost_per_action_type": [
+      {
+        "action_type": "video_view",
+        "value": "0.538235"
+      },
+      {
+        "action_type": "link_click",
+        "value": "6.8625"
+      },
+      {
+        "action_type": "post_interaction_gross",
+        "value": "9.15"
+      },
+      {
+        "action_type": "post_engagement",
+        "value": "0.473276"
+      },
+      {
+        "action_type": "page_engagement",
+        "value": "0.473276"
+      }
+    ],
+    "video_play_actions": [
+      {
+        "action_type": "video_view",
+        "value": "119"
+      }
+    ],
+    "video_p25_watched_actions": [
+      {
+        "action_type": "video_view",
+        "value": "38"
+      }
+    ],
+    "video_p50_watched_actions": [
+      {
+        "action_type": "video_view",
+        "value": "20"
+      }
+    ],
+    "video_p75_watched_actions": [
+      {
+        "action_type": "video_view",
+        "value": "12"
+      }
+    ],
+    "video_p100_watched_actions": [
+      {
+        "action_type": "video_view",
+        "value": "8"
+      }
+    ]
+  },
+  "meta_demographics": [
+    {
+      "impressions": "8",
+      "clicks": "2",
+      "inline_link_clicks": "2",
+      "spend": "0.96",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "18-24",
+      "gender": "female"
+    },
+    {
+      "impressions": "4",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "0.09",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "18-24",
+      "gender": "male"
+    },
+    {
+      "impressions": "10",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "3.05",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "25-34",
+      "gender": "female"
+    },
+    {
+      "impressions": "3",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "0.04",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "25-34",
+      "gender": "male"
+    },
+    {
+      "impressions": "12",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "1.24",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "35-44",
+      "gender": "female"
+    },
+    {
+      "impressions": "4",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "0.19",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "35-44",
+      "gender": "male"
+    },
+    {
+      "impressions": "21",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "2.04",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "45-54",
+      "gender": "female"
+    },
+    {
+      "impressions": "2",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "0.14",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "45-54",
+      "gender": "male"
+    },
+    {
+      "impressions": "29",
+      "clicks": "1",
+      "inline_link_clicks": "1",
+      "spend": "13.93",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "55-64",
+      "gender": "female"
+    },
+    {
+      "impressions": "5",
+      "clicks": "1",
+      "inline_link_clicks": "1",
+      "spend": "1.61",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "55-64",
+      "gender": "male"
+    },
+    {
+      "impressions": "22",
+      "clicks": "1",
+      "inline_link_clicks": "0",
+      "spend": "4.13",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "65+",
+      "gender": "female"
+    },
+    {
+      "impressions": "1",
+      "clicks": "0",
+      "inline_link_clicks": "0",
+      "spend": "0.03",
+      "date_start": "2026-09-07",
+      "date_stop": "2026-09-07",
+      "age": "65+",
+      "gender": "male"
+    }
+  ],
+  "hub_metric_snapshot": {
+    "dateStart": "2026-09-07",
+    "dateStop": "2026-09-07",
+    "reach": 112,
+    "impressions": 120,
+    "clicks": 5,
+    "leads": 0,
+    "spend": 27.25,
+    "cpc": 5.45,
+    "cpl": null,
+    "ctrPercent": 4.17,
+    "lastSyncedAt": "2026-09-07T22:24:14.483589Z",
+    "lastSyncError": null
+  },
+  "attributed_pde_event_aggregates": [
+    {
+      "event_type": "CATEGORY_UNDERSTOOD",
+      "traffic_quality": "HUMAN",
+      "events": 8,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:30",
+      "last_at": "2026-09-07T16:18:01"
+    },
+    {
+      "event_type": "DIAGNOSTIC_CHOICE_SELECTED",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:15",
+      "last_at": "2026-09-07T15:03:15"
+    },
+    {
+      "event_type": "DIAGNOSTIC_COMPLETED",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:23",
+      "last_at": "2026-09-07T15:03:23"
+    },
+    {
+      "event_type": "FIELD_FILLED",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:51",
+      "last_at": "2026-09-07T15:03:51"
+    },
+    {
+      "event_type": "FIELD_FOCUS",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:46",
+      "last_at": "2026-09-07T15:03:46"
+    },
+    {
+      "event_type": "FIELD_INPUT",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:48",
+      "last_at": "2026-09-07T15:03:48"
+    },
+    {
+      "event_type": "FUNNEL_EXPERIMENT_ASSIGNED",
+      "traffic_quality": "HUMAN",
+      "events": 4,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:30",
+      "last_at": "2026-09-07T16:18:01"
+    },
+    {
+      "event_type": "LINK_CLICK",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:04:12",
+      "last_at": "2026-09-07T15:04:12"
+    },
+    {
+      "event_type": "LOGIN_STARTED",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:51",
+      "last_at": "2026-09-07T15:03:51"
+    },
+    {
+      "event_type": "MECHANISM_VIEWED",
+      "traffic_quality": "HUMAN",
+      "events": 2,
+      "sessions": 2,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:02:30",
+      "last_at": "2026-09-07T16:18:22"
+    },
+    {
+      "event_type": "PAGE_LOAD",
+      "traffic_quality": "HUMAN",
+      "events": 4,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:30",
+      "last_at": "2026-09-07T16:18:01"
+    },
+    {
+      "event_type": "PAGE_VIEW",
+      "traffic_quality": "HUMAN",
+      "events": 4,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:29",
+      "last_at": "2026-09-07T16:18:01"
+    },
+    {
+      "event_type": "PAGE_VISIBLE_TIME",
+      "traffic_quality": "HUMAN",
+      "events": 5,
+      "sessions": 3,
+      "visible_ms": 209914,
+      "first_at": "2026-09-07T11:11:03",
+      "last_at": "2026-09-07T16:18:32"
+    },
+    {
+      "event_type": "PAYWALL_VIEWED",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:23",
+      "last_at": "2026-09-07T15:03:23"
+    },
+    {
+      "event_type": "PED_ENTRY",
+      "traffic_quality": "HUMAN",
+      "events": 4,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:29",
+      "last_at": "2026-09-07T16:18:01"
+    },
+    {
+      "event_type": "PROBLEM_RECOGNIZED",
+      "traffic_quality": "HUMAN",
+      "events": 2,
+      "sessions": 2,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:02:08",
+      "last_at": "2026-09-07T16:18:16"
+    },
+    {
+      "event_type": "REAL_INPUT_SUBMITTED",
+      "traffic_quality": "HUMAN",
+      "events": 2,
+      "sessions": 2,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:02:23",
+      "last_at": "2026-09-07T16:18:20"
+    },
+    {
+      "event_type": "SCREEN_TIME",
+      "traffic_quality": "HUMAN",
+      "events": 4,
+      "sessions": 3,
+      "visible_ms": 227196,
+      "first_at": "2026-09-07T11:11:04",
+      "last_at": "2026-09-07T16:18:27"
+    },
+    {
+      "event_type": "SCREEN_VIEW",
+      "traffic_quality": "HUMAN",
+      "events": 8,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:30",
+      "last_at": "2026-09-07T16:18:03"
+    },
+    {
+      "event_type": "SCROLL_DEPTH",
+      "traffic_quality": "HUMAN",
+      "events": 12,
+      "sessions": 3,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:47",
+      "last_at": "2026-09-07T16:18:07"
+    },
+    {
+      "event_type": "SECTION_VIEW",
+      "traffic_quality": "HUMAN",
+      "events": 4,
+      "sessions": 4,
+      "visible_ms": null,
+      "first_at": "2026-09-07T10:26:32",
+      "last_at": "2026-09-07T16:18:03"
+    },
+    {
+      "event_type": "TASTING_STARTED",
+      "traffic_quality": "HUMAN",
+      "events": 2,
+      "sessions": 2,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:02:08",
+      "last_at": "2026-09-07T16:18:16"
+    },
+    {
+      "event_type": "UI_CLICK",
+      "traffic_quality": "HUMAN",
+      "events": 12,
+      "sessions": 2,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:02:08",
+      "last_at": "2026-09-07T16:18:22"
+    },
+    {
+      "event_type": "VALUE_MOMENT",
+      "traffic_quality": "HUMAN",
+      "events": 1,
+      "sessions": 1,
+      "visible_ms": null,
+      "first_at": "2026-09-07T15:03:23",
+      "last_at": "2026-09-07T15:03:23"
+    }
+  ],
+  "attributed_sessions": {
+    "count": 4,
+    "classified_human": 4,
+    "device": "mobile",
+    "tasting_started": 2,
+    "result_rendered": 1,
+    "field_filled": 1,
+    "login_started": 1,
+    "login_completed": 0,
+    "checkout_started": 0,
+    "purchase_completed": 0,
+    "raw_event_count": 86
+  },
+  "commercial_reconciliation": {
+    "pde_payment_audit_rows_for_product": 0,
+    "grant_summary": [
+      {
+        "source": "MAGIC_LINK",
+        "experience_version": "musa-pde-entry-v7-espelho-antes-de-sair",
+        "accesses": 1,
+        "marked_paid": 0
+      }
+    ],
+    "direct_experiment_90_contacts": 0
+  },
+  "actual_first_result_anonymized": [
+    {
+      "status": "COMPLETED",
+      "model": "MUSA_LOCAL_RULES_V1",
+      "headline": "Sua mensagem visual e o primeiro ajuste estão organizados",
+      "summary": "Sua mensagem visual e o primeiro ajuste estão organizados. As escolhas foram combinadas por regras locais para você testar e avaliar por si mesma.",
+      "micro_actions_json": "[\"Observe a mensagem falta presença em encontro ou saída.\", \"Use postura e presença para aproximar o sinal de elegância discreta.\", \"Registre a mensagem percebida antes e depois do ajuste.\"]",
+      "caution": "A orientação não avalia corpo, emoção, personalidade ou reação de terceiros.",
+      "cost_usd": 0.0
+    }
+  ],
+  "plan_snapshot": {
+    "id": 3,
+    "status": "IN_PROGRESS",
+    "experiment_id": 90,
+    "commercial_objective": "Validar cinco vendas líquidas reconciliadas e entregues do MUSA v7 por Instagram Ads no experimento #91, mantendo preço de R$ 67, teto de mídia de R$ 100, jornada homologada e contribuição positiva. O experimento direto #90 permanece como validação complementar e nunca fornece métricas ao #91.",
+    "main_channel": "Instagram Ads via Meta Ads é o canal principal. O #91 é o teste pago; o #90 direto é validação complementar. Métricas separadas; gasto só após gates e autorização.",
+    "current_blocker": "O #91 ainda está PLANNED e não possui campanha Meta. O vídeo #38 está aprovado, mas falta HLS e a prontidão integral antes da autorização de mídia.",
+    "next_action": "Concluir o HLS e a prontidão do vídeo premium #38 no experimento #91; depois solicitar autorização explícita para ativar uma única campanha de Instagram Ads com R$ 20/dia e teto total de R$ 100.",
+    "offer_price_brl": 67.0,
+    "variable_cost_per_sale_brl": 20.0,
+    "expected_cac_brl": 25.0,
+    "expected_refund_rate_percent": 12.0,
+    "max_budget": 200.0,
+    "actual_campaign_cost": 27.25,
+    "actual_total_cost": 27.35,
+    "actual_revenue": 0.0
+  },
+  "recent_hermes_snapshots": [
+    {
+      "id": 917,
+      "commercial_plan_id": 3,
+      "status": "COMPLETED",
+      "automatic_cycle": true,
+      "created_at": "2026-09-08T02:14:54",
+      "snapshot_experiment_id": "90",
+      "snapshot_blocker": "\"O #91 ainda está PLANNED e não possui campanha Meta. O vídeo #38 está aprovado, mas falta HLS e a prontidão integral antes da autorização de mídia.\"",
+      "recommended_decision": "ADJUST",
+      "recommended_action": "Concluir e comprovar o HLS reproduzível do vídeo #38, registrar a causa técnica se houver nova falha, reconciliar e encerrar a pendência #5 e persistir uma auditoria única dos gates do #91. Depois, solicitar autorização humana explícita para uma única campanha de Instagram Ads a R$ 20/dia, limitada a R$ 100. Não publicar, gastar nem incorporar métricas do #90.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "estimated_cost": null
+    },
+    {
+      "id": 915,
+      "commercial_plan_id": 3,
+      "status": "COMPLETED",
+      "automatic_cycle": true,
+      "created_at": "2026-09-08T01:44:43",
+      "snapshot_experiment_id": "90",
+      "snapshot_blocker": "\"O #91 ainda está PLANNED e não possui campanha Meta. O vídeo #38 está aprovado, mas falta HLS e a prontidão integral antes da autorização de mídia.\"",
+      "recommended_decision": "ADJUST",
+      "recommended_action": "Concluir e comprovar o HLS válido do vídeo #38, registrar a causa técnica caso a geração continue falhando, encerrar a pendência #5 com evidência e persistir uma auditoria única dos gates do experimento #91. Depois, solicitar autorização humana explícita para uma única campanha de Instagram Ads a R$ 20/dia, limitada a R$ 100. Não publicar, gastar nem usar métricas do #90 no #91.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "estimated_cost": null
+    },
+    {
+      "id": 914,
+      "commercial_plan_id": 3,
+      "status": "COMPLETED",
+      "automatic_cycle": true,
+      "created_at": "2026-09-07T23:11:07",
+      "snapshot_experiment_id": "90",
+      "snapshot_blocker": "\"O #91 ainda está PLANNED e não possui campanha Meta. O vídeo #38 está aprovado, mas falta HLS e a prontidão integral antes da autorização de mídia.\"",
+      "recommended_decision": "ADJUST",
+      "recommended_action": "Comprovar e persistir o HLS válido do vídeo #38, reconciliar e encerrar a pendência #5 e registrar uma auditoria única de todos os gates do experimento #91. Somente depois solicitar autorização humana explícita para uma única campanha de Instagram Ads a R$ 20/dia, com teto total de R$ 100. Não publicar, gastar nem incorporar métricas do #90.",
+      "input_tokens": null,
+      "output_tokens": null,
+      "estimated_cost": null
+    }
+  ],
+  "browser_observations": {
+    "method": "Playwright/Chromium, public preview mh_preview=qa&pde_analytics=off; all non-read HTTP methods blocked",
+    "errors_in_initial_pages": 0,
+    "fold_measurements": [
+      {
+        "device": "iPhone 15 Pro",
+        "viewport": {
+          "width": 393,
+          "height": 659
+        },
+        "firstAnswer": {
+          "x": 54,
+          "y": 963.796875,
+          "width": 285,
+          "height": 58
+        },
+        "visibleWithoutScroll": false,
+        "overflow": false
+      },
+      {
+        "device": "Pixel 7",
+        "viewport": {
+          "width": 412,
+          "height": 839
+        },
+        "firstAnswer": {
+          "x": 54,
+          "y": 979.53125,
+          "width": 304,
+          "height": 58
+        },
+        "visibleWithoutScroll": false,
+        "overflow": false
+      }
+    ],
+    "full_authenticated_purchase_flow_tested": false
+  },
+  "arithmetic_scenarios_not_forecasts": {
+    "outbound_cpc_brl": 6.8625,
+    "outbound_ctr_percent": 3.3057851239669422,
+    "cac_at_5pct_purchase_conversion_brl": 137.25,
+    "media_cost_for_100_visits_at_observed_rate_brl": 686.25,
+    "required_conversion_for_25_brl_cac_percent": 27.449999999999996,
+    "max_visit_cost_for_25_brl_cac_at_5pct_conversion_brl": 1.25,
+    "five_sales_gross_revenue_brl": 335
+  },
+  "limitations": [
+    "Four attributed sessions cannot establish conversion rate, creative winner, audience winner, product-market fit or cause of abandonment.",
+    "VALUE_MOMENT and PAYWALL_VIEWED are emitted when the result is rendered; they do not prove application, satisfaction or reading the entire offer.",
+    "No real payment, email request, campaign mutation or new diagnostic was generated by this analysis.",
+    "Financial assumptions are plan parameters, not verified variable costs or observed CAC.",
+    "The central financial summary uses niche-level attribution and incomplete costs; it is not a reconciled lifetime product P&L."
+  ],
+  "source_capture_hashes": [
+    {
+      "name": "exp91",
+      "captured_at_utc": "2026-09-08T02:21:11.335972+00:00",
+      "sha256": "5a71364a8014554b314f2aa0380a4100a236d1279b53d4a9cae08fbb7d025a39"
+    },
+    {
+      "name": "position4",
+      "captured_at_utc": "2026-09-08T02:21:28.935992+00:00",
+      "sha256": "58581838fdee8ea45a325964ab00d22979733fe2c24573f586571c39a1130cdb"
+    },
+    {
+      "name": "monitor91",
+      "captured_at_utc": "2026-09-08T02:21:16.810979+00:00",
+      "sha256": "26e9a5b41600e81a5df14d9455661b96db141988e0720afcff705a83b95087df"
+    },
+    {
+      "name": "meta_campaign_radar",
+      "captured_at_utc": "2026-09-08T02:23:29.999129+00:00",
+      "sha256": "c02c2fd65ec7fa98229306e6360f060f5428d943fe299ff969f2b3bb918b1357"
+    },
+    {
+      "name": "meta_adset",
+      "captured_at_utc": "2026-09-08T02:24:01.812165+00:00",
+      "sha256": "fcdd9783d40bdef6405eee291d0f89b63c23bf45bb0dc79af5d12fa6b962d4c6"
+    },
+    {
+      "name": "meta_ad",
+      "captured_at_utc": "2026-09-08T02:24:01.734164+00:00",
+      "sha256": "13f83bc915d2e58d566f2d333031f8233d8a8dafd2f445f5dd5be231c57cfd27"
+    },
+    {
+      "name": "meta_insights",
+      "captured_at_utc": "2026-09-08T02:24:01.885165+00:00",
+      "sha256": "89716bea08d1b1e0f784a6ed585b39044b2335a7c1e1be49cb9f87288bd01838"
+    },
+    {
+      "name": "meta_demographics",
+      "captured_at_utc": "2026-09-08T02:31:57.722690+00:00",
+      "sha256": "9635be4b30dbfa341d0f620f99c8d722d980a440864d26f30b7ddac89489c3ae"
+    },
+    {
+      "name": "pde_events91",
+      "captured_at_utc": "2026-09-08T02:25:11.662243+00:00",
+      "sha256": "9f3b95b404e1afd75934aeb47d48e14f55661782444003e567b57b40e7dbf129"
+    },
+    {
+      "name": "pde_journeys91",
+      "captured_at_utc": "2026-09-08T02:25:11.660243+00:00",
+      "sha256": "c2b3eb733033a47354f16e683f0112b4cadd83c82d0b9d319d0190262995039c"
+    },
+    {
+      "name": "pde_payments_vega",
+      "captured_at_utc": "2026-09-08T02:25:12.139243+00:00",
+      "sha256": "75d81ea3ad4ff7e89658e132be7dd920024c1c8ffae08b5241c436f053628912"
+    },
+    {
+      "name": "pde_grants4",
+      "captured_at_utc": "2026-09-08T02:26:03.972301+00:00",
+      "sha256": "a7c7e6244e414ded1d46d265622c878d88cfec5b20ca309139d60b5ca8c36ab5"
+    },
+    {
+      "name": "actual_first_value91",
+      "captured_at_utc": "2026-09-08T02:30:17.030580+00:00",
+      "sha256": "37a0064e015548291f650e809ee52e56461ac35cd3e74af432e04142a930e1e1"
+    },
+    {
+      "name": "plans_vega",
+      "captured_at_utc": "2026-09-08T02:25:11.685243+00:00",
+      "sha256": "1aa7fe719e616e99d3b489740d81416604eb065f0fa0b9c33455b5ed804dc133"
+    },
+    {
+      "name": "hermes_recent",
+      "captured_at_utc": "2026-09-08T02:29:01.970498+00:00",
+      "sha256": "49d4f2d041994acf6d6116fdf203ec05da6ef82397746b1d1b3d8d2d00db51e3"
+    },
+    {
+      "name": "direct_counts90",
+      "captured_at_utc": "2026-09-08T02:26:03.968301+00:00",
+      "sha256": "8b89779ddc62f8771fd4d77cffc004ed1df97f072a310b472aaf698dcfcef131"
+    },
+    {
+      "name": "fold-measurements",
+      "captured_at_utc": "2026-09-08T02:30:07.655570+00:00",
+      "sha256": "e9806c6eb55380687260769517e3d8e5f2fc86003b114efbbd11ec31913d4d84"
+    }
+  ]
+}

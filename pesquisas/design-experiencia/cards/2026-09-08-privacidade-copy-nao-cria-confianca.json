@@ -1,0 +1,18 @@
+{
+  "cardKey": "privacidade-copy-nao-cria-confianca",
+  "collection": "neuromarketing",
+  "title": "Copy de privacidade não basta para criar confiança",
+  "finding": "Em experimentos com sistemas de recomendação, declarações de privacidade e diferentes enquadramentos de competência, benevolência ou integridade não aumentaram significativamente confiança, disposição para seguir recomendações ou compartilhar dados; um estudo relacionado encontrou menor confiança com política longa.",
+  "mechanism": "A evidência sustenta que sinalização declarativa isolada tem efeito limitado. A hipótese para produto é que confiança dependa mais da experiência observável, como minimização de dados, justificativa contextual e controles reais, do que de afirmações genéricas de segurança.",
+  "commercialApplication": "Em formulários e agentes do Marketing Hub, comparar uma experiência com coleta mínima, explicação contextual de cada dado e controles claros contra uma versão que apenas adiciona copy de privacidade.",
+  "evidenceStrength": "Evidência experimental peer-reviewed em sistemas de recomendação, com dois estudos dos mesmos autores apresentando resultados convergentes. A aplicação ao Marketing Hub ainda não foi validada.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2027-03-08",
+  "experimentHypothesis": "Uma experiência que pede menos dados e mostra necessidade e controle no momento da coleta aumentará conclusão e compartilhamento voluntário em relação a copy de privacidade isolada, sem reduzir a qualidade dos leads.",
+  "risks": "Não ocultar políticas obrigatórias nem manipular consentimento; não interpretar maior compartilhamento como confiança genuína; preservar LGPD, minimização de dados e escolha real.",
+  "limits": "Os estudos focam recomendadores e medidas de confiança ou disposição, não vendas do Marketing Hub. Os dois trabalhos são dos mesmos autores; o mecanismo de controles concretos é hipótese a testar.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-08-privacidade-copy-nao-cria-confianca.md",
+  "sourceTitle": "Fonte revisada — políticas de privacidade, confiança e compartilhamento de dados",
+  "sourceSha256": "5d5ddfc7f2bd29a736318dba8597bb886048a976ec238fa319eb9f106121737e"
+}

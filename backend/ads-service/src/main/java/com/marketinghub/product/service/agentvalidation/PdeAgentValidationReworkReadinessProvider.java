@@ -44,7 +44,8 @@ public class PdeAgentValidationReworkReadinessProvider
           "technicalHomologation", "APPROVED",
           "psiqueAdherent", "APPROVED",
           "psiqueRecovery", "APPROVED",
-          "psiqueSafety", "APPROVED");
+          "psiqueSafety", "APPROVED",
+          "commercialIntegrityReview", "APPROVED");
 
   private final ProductProcessActivityPredecessorService predecessors;
   private final AgentTaskRepository tasks;
@@ -72,7 +73,7 @@ public class PdeAgentValidationReworkReadinessProvider
             || CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId()));
   }
 
-  /** Libera somente a correção pendente ou a próxima validação aprovada da mesma versão. */
+  /** Exige correção das rejeições e libera somente a validação sequencial da versão corrente. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -88,8 +89,7 @@ public class PdeAgentValidationReworkReadinessProvider
     if (CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId())) {
       return correctionReadiness(rejection);
     }
-    if ("technicalHomologation".equals(activityDefinition.getActivityId())
-        && rejection.isPresent()) {
+    if (rejection.isPresent()) {
       return blocked(correctionRequiredReason(rejection.orElseThrow()));
     }
     ProductProcessActivityPredecessorReadiness predecessor =
@@ -104,10 +104,7 @@ public class PdeAgentValidationReworkReadinessProvider
     if (expectedVersion == null) {
       return blocked("A versão aceita do protótipo ainda não foi persistida no produto.");
     }
-    Optional<AgentTask> approved =
-        latestCurrentProcessTask(history, process, requiredActivity)
-            .filter(task -> approvedForVersion(task, requiredActivity, expectedVersion));
-    if (approved.isEmpty()) {
+    if (!hasCurrentApproval(history, process, requiredActivity, expectedVersion)) {
       return blocked(
           "Conclua primeiro "
               + activityLabel(requiredActivity)
@@ -118,6 +115,58 @@ public class PdeAgentValidationReworkReadinessProvider
     return ready(
         activityLabel(requiredActivity)
             + " aprovou a mesma versão; esta atividade pode ser executada.");
+  }
+
+  /** Exige nova ocorrência para histórico superado, preservando bloqueios ainda atuais. */
+  @Override
+  public boolean requiresFreshExecution(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activityDefinition,
+      Product product,
+      String sourceReference) {
+    if (!supports(process, activityDefinition)) return false;
+    List<AgentTask> history = processHistory(sourceReference);
+    String version = expectedPrototypeVersion(product);
+    String activityId = activityDefinition.getActivityId();
+    boolean currentBlock =
+        latestCurrentProcessTask(history, process, activityId)
+            .filter(task -> "BLOCKED".equals(task.getStatus()))
+            .filter(
+                task ->
+                    CORRECTION_ACTIVITY.equals(activityId)
+                        || task.getId() > latestCorrectionId(history, version))
+            .isPresent();
+    if (currentBlock) return false;
+    if (CORRECTION_ACTIVITY.equals(activityId)) {
+      return unresolvedFunctionalRejection(history, version).isPresent();
+    }
+    return version == null
+        || !hasCurrentApproval(history, process, activityDefinition.getActivityId(), version);
+  }
+
+  /** Aceita somente prova da versão atual produzida depois da última correção aplicável. */
+  private boolean hasCurrentApproval(
+      List<AgentTask> history,
+      BusinessProcessDefinition process,
+      String activityId,
+      String version) {
+    long correctionId = latestCorrectionId(history, version);
+    return latestCurrentProcessTask(history, process, activityId)
+        .filter(task -> "COMPLETED".equals(task.getStatus()))
+        .filter(task -> task.getId() > correctionId)
+        .filter(task -> approvedForVersion(task, activityId, version))
+        .isPresent();
+  }
+
+  /** Identifica a última correção válida para separar pendências atuais de pareceres superados. */
+  private long latestCorrectionId(List<AgentTask> history, String version) {
+    return history.stream()
+        .filter(task -> CORRECTION_ACTIVITY.equals(task.getProcessActivityId()))
+        .filter(task -> "COMPLETED".equals(task.getStatus()))
+        .filter(task -> validCorrection(task, version))
+        .mapToLong(AgentTask::getId)
+        .max()
+        .orElse(0L);
   }
 
   /** Expõe o diagnóstico exato que originará a tarefa condicional de correção. */
@@ -186,14 +235,13 @@ public class PdeAgentValidationReworkReadinessProvider
     }
   }
 
-  /** Exige uma conclusão da própria versão publicada do processo de revalidação. */
+  /** Localiza a tentativa mais recente da versão do processo, inclusive falhas ainda atuais. */
   private Optional<AgentTask> latestCurrentProcessTask(
       List<AgentTask> history, BusinessProcessDefinition process, String activityId) {
     return history.stream()
         .filter(task -> task.getProcessDefinition() != null)
         .filter(task -> process.getId().equals(task.getProcessDefinition().getId()))
         .filter(task -> activityId.equals(task.getProcessActivityId()))
-        .filter(task -> "COMPLETED".equals(task.getStatus()))
         .max(Comparator.comparing(AgentTask::getId));
   }
 

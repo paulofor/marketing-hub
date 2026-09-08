@@ -2229,6 +2229,21 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** decisão e materialização passam a ser interações estruturadas separadas; quando a escolha for código e o artefato estiver ausente, o worker gera imediatamente o HTML integral em contrato dedicado, soma a telemetria e valida checkout antes do callback.
 - **Prevenção:** teste de contrato exige schema e prompt dedicados ao artefato e mantém descrições de alteração inválidas como substituto do HTML.
 
+## LOOP-PDE-CORRECAO-BLOQUEADA-VIRA-PARECER — retentativa perde a rejeição original
+
+- **Confirmado em 08/09/2026:** Mira #350 foi reprovada por esconder a rotina; #351 apenas
+  aguardava implantação da correção. O contexto seguinte incluía ambas em `blockedActivities`,
+  mas Dédalo exigia o maior ID funcional e seu schema não aceitava `prototypeCorrection` como
+  atividade reprovadora. A reprodução local falhou após uma e duas tentativas bloqueadas.
+- **Correção:** o backend preserva os pareceres em `blockedActivities` e as tentativas bloqueadas
+  de correção em `correctionAttempts`, sem alterar tarefas históricas nem aprovar o produto.
+- **Defeito integrado adicional:** a v2 mantinha a rotina, mas retirava o título de conclusão
+  consumido pelo harness real. A conclusão agora preserva título semântico, rotina, limites e
+  consulta. O ícone vazio explícito elimina a busca por `/favicon.ico` ausente na superfície isolada.
+- **Prevenção:** contrato parametrizado com zero, uma e duas tentativas; harness real sobre Docker;
+  jornadas em desktop, iPhone e Pixel. Evidências em
+  `docs/homologacao/mira-tarefa-351-recuperacao-v1.md`.
+
 ## LOOP-BPM-RETRABALHO-INVERTE-PREDECESSORA — laço bloqueia a próxima agente
 
 - **Data:** 2026-08-15.
@@ -4389,3 +4404,13 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** contrato versionado e testes bloqueiam colisão de identidade, imagem, container,
   porta, proxy e lifecycle; os cânones de plataforma, cadeia e validação agora exigem evidência de
   isolamento por produto. Matriz: `docs/homologacao/pde-isolamento-produto-mira-vega-v1.md`.
+
+
+### Complemento Mira #351 — conclusão histórica bloqueando a revalidação
+
+Em 08/09/2026, após #353 `READY`, o motor da tela encerrava `technicalHomologation` pela
+instância #207/v1 antes de consultar a elegibilidade da v2. Fechamento: o domínio declara
+`requiresFreshExecution`; leitura e comando usam a mesma validade por processo, versão e
+ordem posterior à correção. Nova tarefa gera nova ocorrência e mantém a anterior íntegra.
+Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
+`AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.

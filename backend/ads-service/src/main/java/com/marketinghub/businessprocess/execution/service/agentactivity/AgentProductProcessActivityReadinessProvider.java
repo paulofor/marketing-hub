@@ -17,4 +17,13 @@ public interface AgentProductProcessActivityReadinessProvider {
       BusinessProcessActivityDefinition activityDefinition,
       Product product,
       String sourceReference);
+
+  /** Informa quando uma conclusão histórica não atende à identidade vigente da execução. */
+  default boolean requiresFreshExecution(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activityDefinition,
+      Product product,
+      String sourceReference) {
+    return false;
+  }
 }

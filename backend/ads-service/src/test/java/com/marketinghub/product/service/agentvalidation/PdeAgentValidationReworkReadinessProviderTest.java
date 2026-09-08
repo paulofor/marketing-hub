@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Responsabilidade: comprovar a rota condicional de correção e revalidação do PDE v8. */
 class PdeAgentValidationReworkReadinessProviderTest {
@@ -105,6 +107,64 @@ class PdeAgentValidationReworkReadinessProviderTest {
 
     assertThat(readiness.ready()).isFalse();
     assertThat(readiness.reason()).contains("mira-private-v2");
+  }
+
+  /** Uma segunda rejeição exige nova correção mesmo quando a versão já teve homologação técnica. */
+  @Test
+  void blocksReviewerAfterNewFunctionalRejection() {
+    history.add(correction(353L));
+    AgentTask approved = task(354L, process, "technicalHomologation", "COMPLETED");
+    approved.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"mira-private-v2\"}");
+    history.add(approved);
+    AgentTask newRejection = rejection(355L);
+    newRejection.setProcessDefinition(process);
+    history.add(newRejection);
+
+    var readiness = provider.readiness(process, activity("psiqueAdherent"), product, SOURCE);
+
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason()).contains("#355", "publique uma nova versão");
+    assertThat(
+            provider.requiresFreshExecution(
+                process, activity("prototypeCorrection"), product, SOURCE))
+        .isTrue();
+  }
+
+  /** Mantém bloqueios atuais visíveis e retira do estado corrente somente os já corrigidos. */
+  @ParameterizedTest
+  @CsvSource({
+    "technicalHomologation,352,true",
+    "technicalHomologation,355,false",
+    "psiqueAdherent,352,true",
+    "psiqueAdherent,355,false",
+    "prototypeCorrection,356,false"
+  })
+  void keepsCurrentBlockAndRetiresCorrectedBlock(
+      String activityId, long taskId, boolean expectedFresh) {
+    history.add(rejection(350L));
+    history.add(correction(353L));
+    if ("prototypeCorrection".equals(activityId)) {
+      AgentTask newRejection = rejection(355L);
+      newRejection.setProcessDefinition(process);
+      history.add(newRejection);
+    }
+    history.add(task(taskId, process, activityId, "BLOCKED"));
+    assertThat(provider.requiresFreshExecution(process, activity(activityId), product, SOURCE))
+        .isEqualTo(expectedFresh);
+  }
+
+  /** Uma falha técnica posterior impede reutilizar a aprovação anterior como prova vigente. */
+  @Test
+  void newerTechnicalFailureInvalidatesPreviousApproval() {
+    history.add(correction(353L));
+    AgentTask approved = task(354L, process, "technicalHomologation", "COMPLETED");
+    approved.setResultJson("{\"decision\":\"APPROVED\",\"prototypeVersion\":\"mira-private-v2\"}");
+    history.add(approved);
+    history.add(task(356L, process, "technicalHomologation", "BLOCKED"));
+    var psique = activity("psiqueAdherent");
+    when(predecessors.readiness(process, psique, SOURCE))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Histórico concluído."));
+    assertThat(provider.readiness(process, psique, product, SOURCE).ready()).isFalse();
   }
 
   /** Limita a regra à versão que declara a rota de retrabalho. */

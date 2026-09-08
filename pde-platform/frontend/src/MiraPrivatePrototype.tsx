@@ -282,13 +282,17 @@ export function MiraPrivatePrototype() {
             </article>
           ))}
         </div>
-        <button
-          className="primary-button"
-          disabled={used || busy || finished}
-          onClick={() => void record("READY_RESULT_USED")}
-        >
-          {used ? "Resultado consultado" : "Marcar uma parte como consultada"}
-        </button>
+        {finished && used && agentValidation ? (
+          <p role="status">Resultado consultado</p>
+        ) : (
+          <button
+            className="primary-button"
+            disabled={used || busy || finished}
+            onClick={() => void record("READY_RESULT_USED")}
+          >
+            {used ? "Resultado consultado" : "Marcar uma parte como consultada"}
+          </button>
+        )}
         {used && !agentValidation && (!finished || preferred) && (
           <section className="mira-private-question">
             <h2>
@@ -353,9 +357,7 @@ export function MiraPrivatePrototype() {
             className="mira-private-success"
             data-testid="agent-validation-finished"
           >
-            <strong>
-              Cenário interno concluído com a rotina ainda disponível.
-            </strong>
+            <h2>Homologação interna concluída</h2>
             <p>
               Consulte novamente os passos e os limites de uso acima. A
               evidência sintética foi preservada sem compra, publicação,

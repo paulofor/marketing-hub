@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
@@ -185,8 +187,9 @@ class AgentTaskServiceTest {
   }
 
   /** Cria nova tentativa para o revisor bloqueado sem duplicar outra tarefa ainda pendente. */
-  @Test
-  void retriesBlockedHumanReviewAndRefreshesPendingContext() {
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"BLOCKED", "COMPLETED"})
+  void retriesBlockedHumanReviewAndRefreshesPendingContext(String previousStatus) {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
@@ -196,7 +199,7 @@ class AgentTaskServiceTest {
         "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Montar HTML\","
             + "\"owner\":\"Psique\"},{\"id\":\"customer\",\"type\":\"TASK\","
             + "\"label\":\"Avaliar percepção\",\"owner\":\"Psique\"}]}");
-    AgentTask blocked = processTask(601L, psique, process, "customer", "BLOCKED");
+    AgentTask blocked = processTask(601L, psique, process, "customer", previousStatus);
     blocked.setSourceReference("commercial-plan:4@v3:journey");
     AtomicReference<AgentTask> saved = new AtomicReference<>();
     when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3:journey"))
@@ -226,7 +229,11 @@ class AgentTaskServiceTest {
             false,
             null);
 
-    AgentTaskResponse retry = service.retryBlockedByHumanOrRefreshPending(request);
+    if ("COMPLETED".equals(previousStatus)) {
+      assertThat(service.retryBlockedByHumanOrRefreshPending(request).id()).isEqualTo(601L);
+    }
+    AgentTaskResponse retry = service.retryBlockedByHumanOrRefreshPending(request, true);
+    assertThat(blocked.getStatus()).isEqualTo(previousStatus);
 
     assertThat(retry.id()).isEqualTo(602L);
     assertThat(retry.status()).isEqualTo("PENDING");
@@ -252,6 +259,9 @@ class AgentTaskServiceTest {
 
     assertThat(reused.id()).isEqualTo(602L);
     assertThat(saved.get().getDescription()).isEqualTo("Snapshot canônico mais recente.");
+    assertThat(service.retryBlockedByHumanOrRefreshPending(request, true).id()).isEqualTo(602L);
+    pending.setStatus("IN_PROGRESS");
+    assertThat(service.retryBlockedByHumanOrRefreshPending(request, true).id()).isEqualTo(602L);
   }
 
   /** Persiste atividade, instância e tentativas como níveis distintos do mesmo trabalho. */
@@ -2386,11 +2396,11 @@ class AgentTaskServiceTest {
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
   }
 
-  /**
-   * Entrega a Dédalo a rejeição funcional preservada mesmo quando ela nasceu na versão anterior.
-   */
-  @Test
-  void exposesPreviousVersionFunctionalRejectionInCorrectionContext() throws Exception {
+  /** Preserva a rejeição original entre versões e separa tentativas de correção sem implantação. */
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1, 2})
+  void exposesPreviousVersionFunctionalRejectionInCorrectionContext(int blockedAttempts)
+      throws Exception {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
@@ -2421,8 +2431,20 @@ class AgentTaskServiceTest {
     rejection.setResultJson(
         "{\"decision\":\"ADJUST\",\"rootCause\":\"A rotina pronta desaparece.\"}");
     rejection.setEvidenceJson("{\"prototypeVersion\":\"mira-private-v1\"}");
-    AgentTask correction = processTask(351L, dedalo, current, "prototypeCorrection", "PENDING");
+    List<AgentTask> history = new ArrayList<>(List.of(rejection));
+    for (int attempt = 0; attempt < blockedAttempts; attempt++) {
+      AgentTask blocked =
+          processTask(351L + attempt, dedalo, current, "prototypeCorrection", "BLOCKED");
+      blocked.setSourceReference("product:10@agent-validation-v1");
+      blocked.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+      blocked.setBlockerAction("Implantar a versão corrigida antes da homologação.");
+      blocked.setResultJson("{\"decision\":\"BLOCKED\",\"requiredChanges\":[\"Implantar v2\"]}");
+      history.add(blocked);
+    }
+    AgentTask correction =
+        processTask(351L + blockedAttempts, dedalo, current, "prototypeCorrection", "PENDING");
     correction.setSourceReference("product:10@agent-validation-v1");
+    history.add(correction);
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             "landing-generator", "WORK", "IN_PROGRESS"))
@@ -2434,7 +2456,7 @@ class AgentTaskServiceTest {
             80L, "product:10@agent-validation-v1"))
         .thenReturn(List.of(correction));
     when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product:10@agent-validation-v1"))
-        .thenReturn(List.of(rejection, correction));
+        .thenReturn(history);
 
     AgentTaskPendingResponse pending =
         service(repository, agents, Clock.systemUTC())
@@ -2451,6 +2473,12 @@ class AgentTaskServiceTest {
         .contains("rotina pronta");
     assertThat(context.path("blockedActivities").path(0).path("result").isObject()).isTrue();
     assertThat(context.path("blockedActivities").path(0).path("evidence").isObject()).isTrue();
+    assertThat(context.path("correctionAttempts")).hasSize(blockedAttempts);
+    if (blockedAttempts > 0) {
+      assertThat(context.path("correctionAttempts").path(0).path("taskId").asLong())
+          .isEqualTo(351L);
+      assertThat(context.path("correctionAttempts").path(0).path("result").isObject()).isTrue();
+    }
   }
 
   /** Entrega a Psique as leituras humanas estruturadas sem serializar JSON dentro de JSON. */

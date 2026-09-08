@@ -370,6 +370,13 @@ public class AgentTaskService {
   /** Abre nova tentativa após bloqueio e atualiza o contexto de trabalho ainda não reservado. */
   @Transactional
   public AgentTaskResponse retryBlockedByHumanOrRefreshPending(CreateAgentTaskRequest request) {
+    return retryBlockedByHumanOrRefreshPending(request, false);
+  }
+
+  /** Abre nova tentativa para uma conclusão anterior apenas quando o gate exige revalidação. */
+  @Transactional
+  public AgentTaskResponse retryBlockedByHumanOrRefreshPending(
+      CreateAgentTaskRequest request, boolean freshExecutionRequired) {
     String sourceReference = trimToNull(request.sourceReference());
     if (sourceReference == null) {
       throw new IllegalArgumentException("Retentativa idempotente exige referência de origem.");
@@ -391,7 +398,9 @@ public class AgentTaskService {
             .max(
                 java.util.Comparator.comparing(
                     AgentTask::getId, java.util.Comparator.nullsFirst(Long::compareTo)));
-    if (latest.isEmpty() || "BLOCKED".equals(latest.get().getStatus())) {
+    if (latest.isEmpty()
+        || "BLOCKED".equals(latest.get().getStatus())
+        || (freshExecutionRequired && "COMPLETED".equals(latest.get().getStatus()))) {
       return createByHuman(request);
     }
     AgentTask task = latest.get();
@@ -1806,10 +1815,11 @@ public class AgentTaskService {
                     "O recurso especializado da atividade não está disponível."));
   }
 
-  /** Consolida conclusões e, no retrabalho, a rejeição funcional que deve ser corrigida. */
+  /** Consolida pareceres e preserva tentativas de correção sem convertê-las em novas rejeições. */
   private String processContext(AgentTask task) {
     try {
       List<AgentTask> processTasks = processContextTasks(task);
+      boolean prototypeCorrection = isPdePrototypeCorrection(task);
       Map<String, AgentTask> latestByOwnerActivity = new LinkedHashMap<>();
       processTasks.stream()
           .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
@@ -1828,6 +1838,7 @@ public class AgentTaskService {
       Map<String, AgentTask> latestBlockedByActivity = new LinkedHashMap<>();
       processTasks.stream()
           .filter(sibling -> "BLOCKED".equals(sibling.getStatus()))
+          .filter(sibling -> !prototypeCorrection || !isPdePrototypeCorrection(sibling))
           .forEach(
               sibling ->
                   latestBlockedByActivity.merge(
@@ -1845,6 +1856,16 @@ public class AgentTaskService {
       context.put("completedActivities", completedActivities);
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);
+      if (prototypeCorrection) {
+        context.put(
+            "correctionAttempts",
+            processTasks.stream()
+                .filter(this::isPdePrototypeCorrection)
+                .filter(sibling -> "BLOCKED".equals(sibling.getStatus()))
+                .sorted(java.util.Comparator.comparing(AgentTask::getId))
+                .map(this::blockedActivityContext)
+                .toList());
+      }
       marketStrategicContextProvider
           .resolve(task.getSourceReference())
           .ifPresent(contract -> context.put("marketStrategicContract", contract));
@@ -1867,8 +1888,7 @@ public class AgentTaskService {
 
   /** Amplia o contexto entre versões somente para a correção oficial do protótipo PDE. */
   private List<AgentTask> processContextTasks(AgentTask task) {
-    if (!"pde-construction-approval".equals(task.getProcessDefinition().getProcessCode())
-        || !"prototypeCorrection".equals(task.getProcessActivityId())) {
+    if (!isPdePrototypeCorrection(task)) {
       return repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
           task.getProcessDefinition().getId(), task.getSourceReference());
     }
@@ -1882,6 +1902,13 @@ public class AgentTaskService {
                     .getProcessCode()
                     .equals(candidate.getProcessDefinition().getProcessCode()))
         .toList();
+  }
+
+  /** Identifica o retrabalho PDE cujo histórico não substitui o parecer independente de origem. */
+  private boolean isPdePrototypeCorrection(AgentTask task) {
+    return task.getProcessDefinition() != null
+        && "pde-construction-approval".equals(task.getProcessDefinition().getProcessCode())
+        && "prototypeCorrection".equals(task.getProcessActivityId());
   }
 
   /** Converte uma tarefa concluída em contexto estruturado sem JSON serializado dentro de JSON. */

@@ -556,7 +556,12 @@ components:
           description: Identidade comercial segregada e eventual contrato PDE da própria tarefa.
           allOf:
             - $ref: "#/components/schemas/TaskTarget"
-        processContextJson: { type: string }
+        processContextJson:
+          type: string
+          description: >-
+            Contexto legado serializado do processo. No retrabalho PDE, blockedActivities contém
+            os pareceres de origem e correctionAttempts preserva separadamente as tentativas
+            de correção bloqueadas; cada item mantém tarefa, causa, ação e resultado estruturados.
         researchIntelligence:
           nullable: true
           description: Seleção compacta da Biblioteca de Inteligência aplicável à atividade audiovisual.
@@ -582,7 +587,12 @@ components:
           type: object
           nullable: true
           additionalProperties: true
-          description: Contrato PDE versionado, exposto somente à construção privada do próprio produto.
+          description: >-
+            Contrato PDE versionado, exposto somente à construção privada do próprio produto.
+            experienceVersion e privatePrototypeAcceptance usam a aceitação canônica vigente.
+            technicalDeploymentEvidence contém o recibo persistido PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1
+            somente quando produto, URL, versão, imagem e status do diagnóstico conferem.
+            A disponibilidade técnica não representa publicação comercial nem aprovação da homologação.
     ExecutionResource:
       type: object
       required:

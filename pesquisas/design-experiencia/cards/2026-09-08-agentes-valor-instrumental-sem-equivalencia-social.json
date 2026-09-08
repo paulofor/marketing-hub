@@ -1,0 +1,18 @@
+{
+  "cardKey": "agentes-valor-instrumental-sem-equivalencia-social",
+  "collection": "neuromarketing",
+  "title": "Agentes podem colaborar bem sem equivalência social humana",
+  "finding": "Meta-análise de 162 estudos encontrou desempenho, confiança comportamental, alinhamento e experiência de interação frequentemente comparáveis entre agentes e humanos em papéis equivalentes, enquanto respostas pró-sociais, engajamento moral, agência atribuída e presença social foram menores para agentes.",
+  "mechanism": "O padrão agregado sugere que usuários podem conceder valor instrumental a agentes sem lhes atribuir o mesmo valor social ou moral dado a pessoas. Por isso, colaboração funcional não exige assumir que maior antropomorfismo produzirá melhor experiência.",
+  "commercialApplication": "Em agentes do Marketing Hub, priorizar competência observável, evidências, estado da tarefa, reversibilidade e handoff humano. Em experiências com clientes, testar framing de especialista funcional contra framing fortemente humanizado.",
+  "evidenceStrength": "Revisão sistemática e meta-análise peer-reviewed com 162 estudos elegíveis, 146 na meta-análise e 468 tamanhos de efeito. Há heterogeneidade relevante e mistura de gerações de agentes.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2027-03-08",
+  "experimentHypothesis": "Um agente apresentado como especialista funcional, com evidências, estado e handoff claros, manterá ou melhorará conclusão de tarefa e confiança calibrada em relação a um agente fortemente antropomorfizado, com melhor compreensão de responsabilidade.",
+  "risks": "Não usar menor atribuição de responsabilidade ao agente para diluir accountability; manter supervisão e handoff humano quando necessário; não assumir equivalência de confiança em todos os contextos.",
+  "limits": "A meta-análise inclui estudos desde 2000 e sistemas anteriores aos LLMs modernos, com alta heterogeneidade em várias medidas subjetivas. Não há prova de efeito direto em conversão ou retenção do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-08-agentes-valor-instrumental-sem-equivalencia-social.md",
+  "sourceTitle": "Fonte revisada — valor instrumental e limites sociais na interação humano-agente",
+  "sourceSha256": "5a0ea8e8066a86a19fb0d258b1dfc1a6ea2f900a8fbdcfeaa785dd5cd0960b6f"
+}

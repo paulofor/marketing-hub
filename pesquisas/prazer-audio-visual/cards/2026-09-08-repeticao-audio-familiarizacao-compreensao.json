@@ -1,0 +1,18 @@
+{
+  "cardKey": "repeticao-audio-familiarizacao-compreensao",
+  "collection": "prazer-audio-visual",
+  "title": "Repetição curta pode aumentar familiarização e compreensão de conteúdo falado",
+  "finding": "Dezessete adultos ouviram trechos de audiobooks três vezes; respostas às mesmas perguntas melhoraram entre exposições, enquanto EEG mostrou modulação theta/gamma e aumento de sincronização de fase em alpha entre regiões frontais e parietais.",
+  "mechanism": "A repetição pode reduzir novidade do estímulo, facilitar recuperação de informação e reorganizar o processamento atencional e de memória; os sinais neurais observados são compatíveis com familiarização, mas também podem refletir reteste e adaptação.",
+  "commercialApplication": "Em vídeos explicativos, onboarding ou demonstrações, testar repetição de uma mensagem-chave em duas ou três exposições com pequenas variações de forma, medindo compreensão, recordação, abandono, irritação, replay e CTA.",
+  "evidenceStrength": "Média: há melhora comportamental e convergência com mudanças de EEG, mas a amostra é pequena (N=17), o estudo não mede familiaridade diretamente e há possíveis efeitos de memória, reteste e adaptação.",
+  "publishedOn": "2026-06-23",
+  "validUntil": "2026-12-23",
+  "experimentHypothesis": "Duas ou três exposições espaçadas ou reformuladas da mesma mensagem-chave melhorarão compreensão e recordação em relação a uma única exposição, até um ponto em que repetição excessiva passe a elevar abandono ou irritação.",
+  "risks": "Repetição pode gerar saturação, irritação ou sensação de conteúdo lento; ganhos em compreensão não implicam maior prazer, persuasão ou conversão.",
+  "limits": "Amostra pequena, participantes jovens não nativos de inglês, narradores masculinos e apenas três repetições. O estudo não mede retenção de vídeo, prazer, compra ou eficácia publicitária.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-08-repeticao-audio-familiarizacao-compreensao.md",
+  "sourceTitle": "Fonte revisada — repetição de áudio, familiarização e compreensão",
+  "sourceSha256": "6cdf5c33ce4bc7d8bdda5395678e2134a64e300a0db1fcc5986ddb96726ea207"
+}

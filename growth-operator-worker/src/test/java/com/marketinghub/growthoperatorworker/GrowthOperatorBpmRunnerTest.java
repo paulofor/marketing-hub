@@ -328,7 +328,7 @@ class GrowthOperatorBpmRunnerTest {
             "consultar_amostra_direta",
             "direct-contact-sample",
             "executions?limit=10",
-            "funnel/analytics",
+            "/internal/experiments/${experimentId}/session-intelligence",
             "experiment:${await resolvedExperimentId()}",
             "MCP_TOOL",
             "recuperar_memoria_just_in_time",

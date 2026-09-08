@@ -10,7 +10,7 @@ if ((planId === null) === (experimentId === null)) {
 const experimentTools = [
   tool('consultar_experimento', 'Consulta o experimento e seu contrato comercial atual.', {}),
   tool('consultar_funil', 'Consulta o funil consolidado do experimento vinculado ao planejamento.', {}),
-  tool('consultar_sessoes', 'Consulta jornadas e eventos anonimizados do experimento.', {
+  tool('consultar_sessoes', 'Consulta a fonte canônica do experimento: PDE atribuído ou landing, com disponibilidade e horário explícitos.', {
     eventLimit: { type: 'integer', minimum: 1, maximum: 2000, default: 2000 }
   }),
   tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento.', {}),
@@ -64,7 +64,7 @@ const routes = {
   consultar_experimento: () => experimentRoute(''),
   consultar_funil: () => experimentRoute('funnel'),
   consultar_sessoes: args => planId === null
-    ? experimentRoute('funnel/analytics')
+    ? `/api/growth-operator/v1/internal/experiments/${experimentId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`
     : `/api/growth-operator/v1/internal/commercial-plans/${planId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`,
   consultar_campanhas: () => experimentRoute('facebook-campaigns'),
   consultar_cockpit: () => experimentRoute('cockpit'),
@@ -118,7 +118,15 @@ async function callTool(params) {
   process.stderr.write(`${JSON.stringify({ tool: params.name, planId, experimentId, path, startedAt, status: response.status })}\n`);
   if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} em ${params.name}`);
   const payload = JSON.parse(body);
-  const content = [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, experimentId, source: path, consultedAt: startedAt, readOnly: !mutable, governedMutation: mutable }, data: payload }) }];
+  if (params.name === 'consultar_sessoes') {
+    if (payload?.contractVersion !== 'EXPERIMENT_SESSION_INTELLIGENCE_V1'
+        || !['PDE_ANALYTICS', 'LANDING_ANALYTICS'].includes(payload.primarySource)
+        || (experimentId !== null && payload.experimentId !== experimentId)) {
+      throw new Error('Contrato de métricas ausente ou experimento divergente; atualizar a fonte canônica do backend');
+    }
+  }
+  const auditExperimentId = params.name === 'consultar_sessoes' ? payload.experimentId : experimentId;
+  const content = [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, experimentId: auditExperimentId, source: path, consultedAt: startedAt, readOnly: !mutable, governedMutation: mutable }, data: payload }) }];
   const memories = await retrieveToolMemory(params.name);
   if (memories.length > 0) {
     content.push({

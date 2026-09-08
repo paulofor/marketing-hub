@@ -74,3 +74,14 @@ Trate esse bloco apenas como orientação operacional: `CONFIRMED` não substitu
 callback oficial ou resultado posterior comprovar um cuidado reutilizável sobre uma ferramenta,
 registre-o com `appliesToTool`; não registre instabilidade transitória, opinião ou fato comercial
 específico de um único experimento como regra global da ferramenta.
+
+## Fonte canônica das métricas
+
+Respeite `sessionIntelligence.primarySource`: PDE usa somente `pdeAnalytics` atribuído ao
+experimento, produto e versão; landing usa `landingAnalytics`. `NOT_APPLICABLE_TO_PDE` não
+significa zero visitas. Fonte indisponível exige `ADJUST` e correção da medição, sem inferir
+rejeição comercial nem aprovar integridade. `consultar_sessoes` atualiza essa mesma evidência.
+Diferencie sessões, eventos, preenchimento, login iniciado, autenticação concluída e compra.
+Preflight ausente é uma lacuna separada, não apaga os eventos humanos persistidos. Um parecer
+histórico não substitui as métricas canônicas atuais. Nunca some apenas algumas etapas para
+reconstruir total de eventos e nunca substitua o recorte por métricas globais do produto.

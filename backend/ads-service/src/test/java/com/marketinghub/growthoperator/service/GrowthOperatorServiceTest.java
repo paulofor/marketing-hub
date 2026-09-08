@@ -476,8 +476,8 @@ class GrowthOperatorServiceTest {
     when(funnelService.buildDetailedAnalyticsEvidence(81L, 2000))
         .thenReturn(
             new ExperimentLandingAnalyticsEvidenceDto(81L, 1, 1, false, null, List.of(event)));
-    when(funnelService.buildDetailedPdeAnalyticsEvidence(81L))
-        .thenReturn(Map.of("available", false));
+    when(funnelService.buildDetailedPdeAnalyticsEvidence(81L, 2000))
+        .thenReturn(Map.of("available", false, "reason", "NOT_PDE_EXPERIENCE"));
     ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     GrowthOperatorService service =
         new GrowthOperatorService(
@@ -521,8 +521,8 @@ class GrowthOperatorServiceTest {
         .thenReturn(new ExperimentLandingAnalyticsEvidenceDto(81L, 0, 0, false, null, List.of()));
     when(funnelService.buildPersonalizedSampleDeliveryEvidence(81L))
         .thenReturn(Map.of("deliveredEmails", 1L, "openedEmails", 1L));
-    when(funnelService.buildDetailedPdeAnalyticsEvidence(81L))
-        .thenReturn(Map.of("available", false));
+    when(funnelService.buildDetailedPdeAnalyticsEvidence(81L, 2000))
+        .thenReturn(Map.of("available", false, "reason", "NOT_PDE_EXPERIENCE"));
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
@@ -544,6 +544,29 @@ class GrowthOperatorServiceTest {
         .isEqualTo(Map.of("deliveredEmails", 1L, "openedEmails", 1L));
     verify(funnelService).buildDetailedAnalyticsEvidence(81L, 2000);
     verify(funnelService).buildPersonalizedSampleDeliveryEvidence(81L);
+  }
+
+  /** Horários de leitura não geram ciclos pagos novos; eventos novos mudam a identidade. */
+  @Test
+  void shouldIgnoreConsultationClockButDetectNewMetrics() {
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            null, null, null, null, null, null, null, null, new ObjectMapper());
+    String first =
+        "{\"sessionIntelligence\":{\"consultedAt\":\"2026-09-08T19:00:00Z\",\"pdeAnalytics\":{\"consultedAt\":\"2026-09-08T19:00:00Z\",\"totalEvents\":86}}}";
+    String later = first.replace("19:00:00", "20:00:00");
+    String changed = later.replace("86", "87");
+    Object identity =
+        org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+            service, "buildEvidenceFingerprint", first);
+    assertThat(
+            org.springframework.test.util.ReflectionTestUtils.<String>invokeMethod(
+                service, "buildEvidenceFingerprint", later))
+        .isEqualTo(identity);
+    assertThat(
+            org.springframework.test.util.ReflectionTestUtils.<String>invokeMethod(
+                service, "buildEvidenceFingerprint", changed))
+        .isNotEqualTo(identity);
   }
 
   /** Confirma que o agente recebe estrategia e custos sem depender da tela do Estudio. */

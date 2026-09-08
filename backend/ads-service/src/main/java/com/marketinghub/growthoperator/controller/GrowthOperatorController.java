@@ -5,6 +5,7 @@ import com.marketinghub.growthoperator.service.action.GrowthOperatorExperimentAc
 import com.marketinghub.growthoperator.service.action.ResolveGrowthOperatorTaskRequest;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
+import com.marketinghub.growthoperator.service.sessionintelligence.GrowthOperatorSessionIntelligenceResponse;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GrowthOperatorController {
   private final GrowthOperatorService service;
 
+  /** Conecta as rotas à fonte canônica de leitura e auditoria de Hermes. */
   public GrowthOperatorController(GrowthOperatorService service) {
     this.service = service;
   }
@@ -69,6 +71,14 @@ public class GrowthOperatorController {
   public Map<String, Object> sessionIntelligence(
       @PathVariable Long planId, @RequestParam(defaultValue = "2000") int eventLimit) {
     return service.sessionIntelligence(planId, eventLimit);
+  }
+
+  /** Entrega a mesma inteligência de sessões ao BPM, fixando o experimento da tarefa. */
+  @GetMapping("/internal/experiments/{experimentId}/session-intelligence")
+  public GrowthOperatorSessionIntelligenceResponse experimentSessionIntelligence(
+      @PathVariable Long experimentId, @RequestParam(defaultValue = "2000") int eventLimit) {
+    return GrowthOperatorSessionIntelligenceResponse.from(
+        service.experimentSessionIntelligence(experimentId, eventLimit));
   }
 
   /** Entrega estrategia, custos, progressao e aprendizados dos videos ao agente. */

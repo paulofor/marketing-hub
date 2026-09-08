@@ -25,12 +25,21 @@ processo. Não altere banco, campanha, orçamento, preço, landing, checkout, me
   oferta ou preço.
 - Não trate automação, `mh_test=1`, `INTERNAL_QA`, auditoria, acesso de validação Meta, PR, impacto
   estimado, impressão estimada, clique ou checkout como venda.
-- Métricas começam em zero e taxas sem denominador permanecem ausentes.
+- Métricas sem evidência permanecem indisponíveis; zero exige consulta válida. Taxas sem denominador permanecem ausentes.
 - Antes de decidir `task-1` ou `task-2`, consulte `consultar_experimento` e
-  `consultar_preflight`. Em `task-2` com `DIRECT_ONE_TO_ONE`, consulte também
+  `consultar_preflight` e `consultar_sessoes`. Em `task-2` com `DIRECT_ONE_TO_ONE`, consulte também
   `consultar_amostra_direta`. Use `platform`, `sampleSize`, o run produtivo mais recente, seus gates,
   a amostra persistida e o contrato estratégico; não substitua esses dados por um piso genérico de
   mídia paga.
+- `sessionIntelligence` é a fotografia canônica obtida pelo executor antes do modelo; para atualizar,
+  use `consultar_sessoes`, com contrato `EXPERIMENT_SESSION_INTELLIGENCE_V1`. Obedeça `primarySource`:
+  `PDE_ANALYTICS` usa somente `pdeAnalytics` atribuído ao experimento, produto e versão;
+  `LANDING_ANALYTICS` usa `landingAnalytics`. `NOT_APPLICABLE_TO_PDE` não é zero eventos nem divergência.
+  Nunca compare totais globais do produto ou outra campanha com o experimento. Indisponibilidade não é zero.
+- Diferencie total de eventos, sessões, pessoas, início de login e login concluído. `FIELD_FILLED`
+  comprova preenchimento, não autenticação. Contagem única nula significa não medida. Não some etapas
+  selecionadas para reconstruir total de eventos. Preflight ausente é lacuna própria de homologação,
+  nunca evidência de que as sessões atuais não existem. Dados atuais prevalecem sobre pareceres históricos.
 - Em `task-1`, confirme a cadeia do canal autorizado até landing, checkout e acesso, além de
   identidade first-party, deduplicação, segregação e consistência dos placares. Divergência bloqueia.
 - Para `FACEBOOK`, confirme campanha Meta, estado efetivo, gasto, primeira impressão real e percurso

@@ -60,6 +60,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
   @Mock private PdeAnalyticsClient pdeAnalyticsClient;
 
+  @Mock
+  private com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader
+      pdeExperimentAnalyticsReader;
+
   @Mock private InternalAnalyticsTrafficFilter internalAnalyticsTrafficFilter;
 
   @Mock private PdeProductionSlotRepository pdeProductionSlotRepository;
@@ -1142,86 +1146,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .build();
     when(experimentRepository.findById(67L)).thenReturn(Optional.of(experiment));
     when(eventRepository.aggregateManualByExperiment(67L, null)).thenReturn(List.of());
-    when(jdbcTemplate.queryForList(
-            any(String.class),
-            eq(String.class),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()))
-        .thenReturn(List.of("120250506594240326"));
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", null))
-        .thenReturn(
-            new PdeAnalyticsSummary(
-                "metodo-musa-7-dias",
-                "musa-pde-entry-v3",
-                289,
-                31,
-                33,
-                33,
-                33,
-                0,
-                0,
-                0,
-                0,
-                0,
-                8,
-                7,
-                0,
-                3765490,
-                "2026-07-21T02:00:00Z",
-                List.of(),
-                List.of(),
-                List.of(
-                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
-                        "Meta",
-                        "ig",
-                        "paid_social",
-                        "120250506594240326",
-                        "120250506596000326",
-                        29,
-                        29,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        3519549,
-                        "2026-07-22T23:07:32Z"),
-                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
-                        "Outros",
-                        "codex",
-                        "qa",
-                        "codex-mkt-analytics-test",
-                        "browser-submit-20260723",
-                        1,
-                        1,
-                        1,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        100.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0,
-                        "2026-07-22T22:45:54Z")),
-                List.of(),
-                List.of(),
-                List.of()));
+    when(pdeExperimentAnalyticsReader.read(experiment))
+        .thenReturn(canonicalSummary(29, "2026-07-22T23:07:32Z"));
 
     var summary = service.summarize(67L);
 
@@ -1259,65 +1185,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .build();
     when(experimentRepository.findById(68L)).thenReturn(Optional.of(experiment));
     when(eventRepository.aggregateManualByExperiment(68L, null)).thenReturn(List.of());
-    when(jdbcTemplate.queryForList(
-            any(String.class),
-            eq(String.class),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()))
-        .thenReturn(List.of("120250506596000326"));
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", null))
-        .thenReturn(
-            new PdeAnalyticsSummary(
-                "metodo-musa-7-dias",
-                "musa-pde-entry-v3",
-                50,
-                10,
-                10,
-                10,
-                10,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                120000,
-                "2026-07-21T02:00:00Z",
-                List.of(),
-                List.of(),
-                List.of(
-                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
-                        "Meta",
-                        "ig",
-                        "paid_social",
-                        "campanha-nao-salva",
-                        "120250506596000326",
-                        10,
-                        10,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        120000,
-                        "2026-07-23T02:00:00Z")),
-                List.of(),
-                List.of(),
-                List.of()));
+    when(pdeExperimentAnalyticsReader.read(experiment))
+        .thenReturn(canonicalSummary(10, "2026-07-23T02:00:00Z"));
 
     var summary = service.summarize(68L);
 
@@ -1345,72 +1214,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .build();
     when(experimentRepository.findById(76L)).thenReturn(Optional.of(experiment));
     when(eventRepository.aggregateManualByExperiment(76L, null)).thenReturn(List.of());
-    when(jdbcTemplate.queryForList(
-            any(String.class),
-            eq(String.class),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()))
-        .thenReturn(List.of());
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
-        .thenReturn(
-            new PdeAnalyticsSummary(
-                "metodo-musa-7-dias",
-                "musa-pde-entry-v5-video-explicativo",
-                2570,
-                195,
-                218,
-                225,
-                225,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                79377913,
-                "2026-07-28T22:04:06Z",
-                List.of(),
-                List.of(
-                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v5-video-explicativo",
-                        1269,
-                        108,
-                        106,
-                        0,
-                        4,
-                        20,
-                        6,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0),
-                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v6-video-motivacional",
-                        915,
-                        65,
-                        70,
-                        0,
-                        2,
-                        34,
-                        12,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0)),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of()));
+    when(pdeExperimentAnalyticsReader.read(experiment)).thenReturn(canonicalSummary(0, null));
 
     var summary = service.summarize(76L);
 
@@ -1433,7 +1237,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals(0, pdeEntry.getTotalCount());
     assertEquals(0, videoPartial.getTotalCount());
     assertEquals(0, videoComplete.getTotalCount());
-    verify(pdeAnalyticsClient).fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br");
+    verify(pdeExperimentAnalyticsReader).read(experiment);
   }
 
   /**
@@ -1451,46 +1255,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .build();
     when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
     when(eventRepository.aggregateManualByExperiment(91L, null)).thenReturn(List.of());
-    when(jdbcTemplate.queryForList(
-            any(String.class),
-            eq(String.class),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()))
-        .thenReturn(List.of());
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v7.clubemusa.com.br"))
-        .thenReturn(
-            new PdeAnalyticsSummary(
-                "metodo-musa-7-dias",
-                "musa-pde-entry-v7-product-ugc",
-                132,
-                17,
-                17,
-                17,
-                17,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                500000,
-                "2026-09-04T13:46:00Z",
-                List.of(),
-                List.of(
-                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v7-product-ugc", 132, 17, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of()));
+    when(pdeExperimentAnalyticsReader.read(experiment)).thenReturn(canonicalSummary(0, null));
 
     var summary = service.summarize(91L);
     var diagnostics = service.diagnosePdeCockpitIntegration(91L);
@@ -1519,79 +1284,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .build();
     when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
     when(eventRepository.aggregateManualByExperiment(77L, null)).thenReturn(List.of());
-    when(jdbcTemplate.queryForList(
-            any(String.class),
-            eq(String.class),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()))
-        .thenReturn(List.of("campanha-do-experimento-77"));
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
-        .thenReturn(
-            new PdeAnalyticsSummary(
-                "metodo-musa-7-dias",
-                "musa-pde-entry-v5-video-explicativo",
-                420,
-                35,
-                35,
-                35,
-                35,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                13375288,
-                "2026-07-30T21:51:38-03:00",
-                List.of(),
-                List.of(
-                    new PdeAnalyticsSummary.PdeExperienceVersionMetric(
-                        "musa-pde-entry-v6-video-motivacional",
-                        371,
-                        29,
-                        29,
-                        0,
-                        0,
-                        12,
-                        6,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0)),
-                List.of(
-                    new PdeAnalyticsSummary.PdeTrafficSourceMetric(
-                        "Meta",
-                        "ig",
-                        "paid",
-                        "120250665503920326",
-                        "120250665505440326",
-                        27,
-                        27,
-                        0,
-                        12,
-                        6,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        13311927,
-                        "2026-07-30T21:51:38-03:00")),
-                List.of(),
-                List.of(),
-                List.of()));
+    when(pdeExperimentAnalyticsReader.read(experiment)).thenReturn(canonicalSummary(0, null));
     var summary = service.summarize(77L);
 
     var pdeEntry =
@@ -1862,7 +1555,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
             any(),
             any()))
         .thenReturn(List.of("campanha-do-experimento-77"));
-    when(pdeAnalyticsClient.fetchSummary("metodo-musa-7-dias", "https://v6.clubemusa.com.br"))
+    when(pdeExperimentAnalyticsReader.read(experiment))
         .thenReturn(
             new PdeAnalyticsSummary(
                 "metodo-musa-7-dias",
@@ -2082,5 +1775,21 @@ class ExperimentFunnelServiceRenderCompleteTest {
         .findFirst()
         .orElseThrow()
         .percentage();
+  }
+
+  /**
+   * Cria uma resposta já filtrada do leitor canônico, sem simular agregados globais como evidência.
+   */
+  private PdeAnalyticsSummary canonicalSummary(long entries, String lastEventAt) {
+    java.util.Map<String, Object> fixture = new java.util.HashMap<>();
+    fixture.put("productSlug", "metodo-musa-7-dias");
+    fixture.put("currentExperienceVersion", "musa-v7");
+    fixture.put("pedEntries", entries);
+    fixture.put("sessions", entries);
+    fixture.put("lastEventAt", lastEventAt);
+    fixture.put("events", List.of());
+    fixture.put("trafficSources", List.of());
+    return new com.fasterxml.jackson.databind.ObjectMapper()
+        .convertValue(fixture, PdeAnalyticsSummary.class);
   }
 }

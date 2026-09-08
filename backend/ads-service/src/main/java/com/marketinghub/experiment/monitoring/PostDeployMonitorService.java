@@ -2,6 +2,7 @@ package com.marketinghub.experiment.monitoring;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.monitoring.dto.PostDeployFacebookLogSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMetaAdsSummaryDto;
 import com.marketinghub.experiment.monitoring.dto.PostDeployMonitorDecision;
@@ -19,6 +20,7 @@ import com.marketinghub.experiment.monitoring.dto.PostDeployPdeTrafficSourceDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeBuildIdentity;
+import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.pde.service.PdeProductionSlotService;
@@ -52,6 +54,7 @@ public class PostDeployMonitorService {
   private final PdeAnalyticsClient pdeAnalyticsClient;
   private final PdeProductionSlotService pdeProductionSlotService;
   private final JdbcTemplate jdbcTemplate;
+  private final PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader;
 
   /** Inicializa o agregador com as fontes persistidas do Hub e o cliente do PDE. */
   public PostDeployMonitorService(
@@ -60,16 +63,18 @@ public class PostDeployMonitorService {
       ExperimentFacebookApiLogService apiLogService,
       PdeAnalyticsClient pdeAnalyticsClient,
       PdeProductionSlotService pdeProductionSlotService,
-      JdbcTemplate jdbcTemplate) {
+      JdbcTemplate jdbcTemplate,
+      PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader) {
     this.experimentRepository = experimentRepository;
     this.campaignMetricRepository = campaignMetricRepository;
     this.apiLogService = apiLogService;
     this.pdeAnalyticsClient = pdeAnalyticsClient;
     this.pdeProductionSlotService = pdeProductionSlotService;
     this.jdbcTemplate = jdbcTemplate;
+    this.pdeExperimentAnalyticsReader = pdeExperimentAnalyticsReader;
   }
 
-  /** Monta o painel pós-deploy para o experimento e produto PDE informados. */
+  /** Monta o painel pós-deploy fixando o produto canônico do experimento PDE. */
   public PostDeployMonitorResponseDto summarize(Long experimentId, String productSlug) {
     Experiment experiment =
         experimentRepository
@@ -78,7 +83,11 @@ public class PostDeployMonitorService {
                 () ->
                     new EntityNotFoundException(
                         "Experimento %d não encontrado".formatted(experimentId)));
-    String resolvedProductSlug = pdeProductionSlotService.resolveProductSlug(productSlug);
+    String resolvedProductSlug =
+        experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL
+                && experiment.getProduct() != null
+            ? experiment.getProduct().getSlug()
+            : pdeProductionSlotService.resolveProductSlug(productSlug);
     ExperimentCampaignMetric metric =
         campaignMetricRepository.findByExperiment(experiment).orElse(null);
     PostDeployMetaAdsSummaryDto metaAds = toMetaAdsSummary(metric);
@@ -93,6 +102,7 @@ public class PostDeployMonitorService {
     List<String> attributionCodes = fetchExperimentAttributionCodes(experimentId);
     PostDeployPdeSummaryDto pde =
         fetchPdeSummary(
+            experiment,
             resolvedProductSlug,
             monitoredExperienceVersion,
             monitoredPublicUrl,
@@ -245,12 +255,18 @@ public class PostDeployMonitorService {
 
   /** Consulta o PDE e retorna um resumo indisponível quando houver falha técnica. */
   private PostDeployPdeSummaryDto fetchPdeSummary(
+      Experiment experiment,
       String productSlug,
       String monitoredExperienceVersion,
       String monitoredPublicUrl,
       boolean campaignTrafficActive,
       List<String> attributionCodes) {
     try {
+      if (experiment.getExperimentType() == ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL) {
+        PdeAnalyticsSummary attributed = pdeExperimentAnalyticsReader.read(experiment);
+        return toPdeSummary(
+            attributed, attributed.currentExperienceVersion(), campaignTrafficActive, List.of());
+      }
       PdeAnalyticsSummary summary =
           pdeAnalyticsClient.fetchSummary(
               productSlug, monitoredPublicUrl, monitoredExperienceVersion);

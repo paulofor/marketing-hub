@@ -16,6 +16,7 @@ public class GrowthOperatorBackendClient {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBackendClient.class);
   private final RestClient client;
 
+  /** Configura as chamadas ao backend principal do Marketing Hub. */
   public GrowthOperatorBackendClient(WorkerProperties properties) {
     this.client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
   }
@@ -95,6 +96,17 @@ public class GrowthOperatorBackendClient {
             .retrieve()
             .body(new ParameterizedTypeReference<>() {});
     return pending == null || pending.isEmpty() ? null : pending.get(0);
+  }
+
+  /** Obtém a leitura oficial de métricas do experimento antes de consumir o modelo. */
+  public Map<String, Object> sessionIntelligence(Long experimentId) {
+    return client
+        .get()
+        .uri(
+            "/api/growth-operator/v1/internal/experiments/{id}/session-intelligence?eventLimit=2000",
+            experimentId)
+        .retrieve()
+        .body(new ParameterizedTypeReference<>() {});
   }
 
   /** Conclui uma atividade BPM preservando resultado, evidências e consumo do modelo. */

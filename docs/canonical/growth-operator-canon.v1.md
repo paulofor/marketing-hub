@@ -17,7 +17,7 @@ Ao reconciliar o experimento em execucao, a compatibilidade usa a hipotese ou o 
 - O worker consome somente o endpoint `pending/claim` e nunca acessa o banco.
 - O Codex roda com sandbox `read-only`, identidade ChatGPT persistida em volume proprio e repositorio montado sem escrita.
 - Como o repositorio e montado de outro host e pertence a um UID diferente, o comando aceita explicitamente essa arvore com `--skip-git-repo-check`; essa opcao nao amplia permissoes e o sandbox `read-only` permanece obrigatorio.
-- O worker mantem o polling operacional, mas o backend so cria novo ciclo quando o fingerprint das evidencias muda. A passagem de 30 minutos, isoladamente, nunca justifica novo consumo de IA.
+- O worker mantem o polling operacional, mas o backend so cria novo ciclo quando o fingerprint das evidencias muda. Horários de consulta permanecem na auditoria, mas não alteram o fingerprint; somente novas métricas ou evidências justificam nova análise. A passagem de 30 minutos, isoladamente, nunca justifica novo consumo de IA.
 - Antes de criar o ciclo automatico, o backend reconcilia o plano com o unico experimento `RUNNING` compativel pela hipotese canonica ou, quando ela nao existir, pelo nicho. Nenhum candidato ou mais de um candidato bloqueia a selecao para impedir mistura de produtos.
 - Uma execucao `RUNNING` somente bloqueia outro ciclo enquanto a telemetria comprovar processo vivo e heartbeat nos ultimos dois minutos. Execucao sem esse sinal e encerrada como falha auditavel antes da nova avaliacao.
 - A investigacao consulta APIs oficiais e documentacao publica. A unica mutacao autonoma permitida e solicitar pausa preventiva; o backend valida gates deterministas, registra auditoria e aciona o worker da Meta. Retomada apenas registra pedido para aprovacao humana.
@@ -137,6 +137,31 @@ integridade ou amostra, impedindo que uma tentativa antiga bloqueada ou um requi
 substitua a evidência vigente.
 
 ## Memória ligada à ferramenta
+
+### Fonte obrigatória de métricas por experimento — 08/09/2026
+
+Hermes deve receber a mesma evidência canônica tanto no BPM da Cadeia de Valor quanto nas
+execuções por plano comercial. O backend resolve produto, versão e atribuição do experimento;
+o agente não escolhe analytics de landing para um PDE nem usa totais globais do produto.
+`consultar_sessoes` usa o contrato `EXPERIMENT_SESSION_INTELLIGENCE_V1` do próprio módulo
+em ambos os escopos, incluindo `/api/growth-operator/v1/internal/experiments/{experimentId}/session-intelligence`.
+No BPM, o executor obtém e congela essa leitura antes da chamada ao modelo. Erro de fonte,
+escopo incompatível ou contrato antigo bloqueiam antes do consumo de IA.
+Para PDE, a fonte persistida é `pde_funnel_event`, filtrada antes da agregação por produto,
+versão e códigos de atribuição oficiais ou `experimentId` explícito do evento (canal direto).
+Uma referência explícita a outro experimento impede a atribuição por UTM residual.
+Sem produto/slot/versão coerentes, a leitura é indisponível;
+nunca há fallback para outro produto, outra versão ou tráfego sem atribuição.
+
+Eventos totais são eventos registrados, não a soma de algumas etapas. Sessões, visitantes,
+eventos, início de login, login concluído, pagamento e venda são medidas distintas. QA,
+crawlers e suspeitas de robô ficam fora dos indicadores humanos. Falha de leitura não equivale
+a zero. A resposta declara fonte, escopo, horário e disponibilidade; o parecer conserva essa
+evidência. Preflight e autorização são gates separados: corrigir a leitura não os aprova,
+não reativa campanha e não transforma a tarefa histórica bloqueada em sucesso.
+
+Esta correção integra a atividade existente **Verificar integridade dos eventos** no BPM
+**Operação e otimização de experimento**, dentro da Cadeia de Valor. Não cria processo avulso.
 
 O Operador usa o piloto de recuperação just-in-time da memória premium. Antes de devolver o
 resultado de uma ferramenta MCP de consulta, o servidor recupera no máximo três memórias vigentes

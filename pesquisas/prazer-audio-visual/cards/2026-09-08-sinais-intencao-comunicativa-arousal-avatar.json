@@ -1,0 +1,18 @@
+{
+  "cardKey": "sinais-intencao-comunicativa-arousal-avatar",
+  "collection": "prazer-audio-visual",
+  "title": "Sinais comunicativos não amplificam emoção igualmente em humanos e avatares",
+  "finding": "Em dois estudos (N combinado=108), sinais de intenção comunicativa aumentaram o arousal de palavras emocionais apresentadas por humanos; efeitos correspondentes em androides e robôs foram menores e não significativos, enquanto a valência permaneceu estável.",
+  "mechanism": "Olhar direto, movimento labial e endereçamento ao usuário podem elevar relevância social e autorreferência da mensagem; a atribuição de animacidade ou mente ao emissor pode modular essa amplificação emocional.",
+  "commercialApplication": "Comparar a mesma fala com apresentador humano e avatar sob diferentes combinações de olhar direto, sincronização labial e sinais de endereçamento, medindo intensidade emocional, compreensão, memória, retenção e CTA separadamente.",
+  "evidenceStrength": "Média-alta para o efeito sobre arousal em humanos: dois estudos convergentes, segundo pré-registrado, N combinado=108. A generalização para avatares generativos, anúncios e resultados comerciais é incerta.",
+  "publishedOn": "2026-09-04",
+  "validUntil": "2027-03-04",
+  "experimentHypothesis": "Olhar direto e sincronização labial elevarão arousal e memória quando usados por apresentador humano, mas o ganho poderá ser menor ou ausente em avatar; retenção e CTA devem ser avaliados como desfechos independentes.",
+  "risks": "Não concluir que humanos persuadem ou vendem mais que avatares; arousal maior pode ser positivo ou negativo, e animacidade percebida varia entre públicos e estilos de agente.",
+  "limits": "Amostra composta por mulheres jovens alemãs e estímulos de palavras isoladas em vídeos curtos. O estudo não mede confiança, prazer, retenção, compra ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-08-sinais-intencao-comunicativa-arousal-avatar.md",
+  "sourceTitle": "Fonte revisada — sinais de intenção comunicativa e impacto emocional",
+  "sourceSha256": "00234f3e070f4d716d50f7fe22893ecad25896582995d5d03ed5033554871356"
+}

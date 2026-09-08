@@ -1,0 +1,18 @@
+{
+  "cardKey": "saliencia-opcoes-pagamento",
+  "collection": "neuromarketing",
+  "title": "Saliência do pagamento pode antecipar mentalmente a compra",
+  "finding": "Quatro estudos no Journal of Retailing, incluindo experimento de campo, indicam que formas de pagamento visualmente salientes na página do produto aumentam compra/intenção; no campo, os autores relatam 38% mais probabilidade de adição ao carrinho no contexto estudado.",
+  "mechanism": "A proeminência visual de logos e opções de pagamento facilita a simulação mental do processo de pagar; em experimento online, a simulação mediou o efeito, enquanto alta carga cognitiva reduziu o benefício.",
+  "commercialApplication": "Criar PaymentReadinessCue e testar formas reais de pagamento próximas ao preço e CTA, comparando informação apenas no checkout, texto discreto e logos/condições visíveis, sempre sem adicionar complexidade desnecessária.",
+  "evidenceStrength": "Alta para o mecanismo no contexto estudado: quatro estudos, replicações online e experimento de campo; transferência para Pix, produtos digitais brasileiros e vendas do Marketing Hub ainda exige validação.",
+  "publishedOn": "2026-09-01",
+  "validUntil": "2027-09-01",
+  "experimentHypothesis": "Em páginas de baixa carga informacional, tornar formas reais de pagamento mais salientes elevará checkout_start e pagamento reconciliado; o efeito será menor em páginas mais densas.",
+  "risks": "Saliência pode induzir decisão sem reflexão ou sugerir condições inexistentes; não exibir método, parcelamento, desconto ou benefício que não esteja realmente disponível.",
+  "limits": "Os estudos não testaram Pix nem ofertas digitais brasileiras; parte das medidas é intenção de compra e a magnitude de 38% não deve ser extrapolada para outros contextos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-08-saliencia-opcoes-pagamento.md",
+  "sourceTitle": "Fonte revisada — Saliência das opções de pagamento",
+  "sourceSha256": "88d82f58e8aad2b60f23419477764cbd720925bc9d941706658366d00bb1ff12"
+}

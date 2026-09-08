@@ -4,6 +4,35 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-VEGA-RETOMADA-CONTEXTO-DE-PILOTO — operação repete premissa histórica
+
+- **Data:** 2026-09-08.
+- **Evidência:** plano #3 selecionava #90, mas seu objetivo citava o teste pago #91; sua próxima
+  ação ainda exigia publicar o vídeo #38. API, banco e tela confirmaram #91 `USER_STOPPED`, com
+  campanha já criada, enquanto a atividade atual do produto esperava 100 contatos do piloto #90.
+- **Causa:** a seleção do processo priorizava qualquer experimento `RUNNING`, ignorando a escolha
+  do plano. A visão simplificada de planejamento também ignorava bloqueio e roteiro deliberados,
+  usando apenas a homologação genérica. Depois de salvar, o frontend invalidava o plano mas não
+  seu fluxo operacional, conservando a orientação anterior até o polling.
+- **Histórico preservado:** o fallback foi criado para impedir que o #91 ainda `PLANNED` roubasse
+  a operação do #90. Essa proteção continua válida; a seleção explícita só prevalece para um
+  experimento já operado do próprio produto e em plano vigente.
+- **Correção:** roteiro exclusivo no plano do Vega pela UI, referência igual na leitura e no
+  comando, causa/próxima ação de plano `BLOCKED` prioritárias e atualização imediata da orientação
+  após salvar. Não alterar a definição compartilhada com Rigel nem concluir atividades antigas.
+- **Confirmação adicional ao conferir a gravação autorizada:** a UI salvou o plano v6 às
+  `03:08:22Z`, com #91, mas às `03:08:30Z` o banco voltou a #90. O callback de sincronização de
+  Hermes executava `plan.setExperiment(compatible.get(0))` em toda passagem. A sincronização
+  passiva agora preserva a seleção existente; o comando explícito de escolher um RUNNING continua
+  separado. Snapshots novos passam a congelar a referência e a meta operacional, que estavam ausentes.
+  Teste de atualização seguido de três sincronizações reproduz e previne essa recorrência.
+- **Prevenção:** testes cobrem plano ativo/bloqueado/encerrado, sucessor planejado, ciclo pausado,
+  experimento de outro produto, preservação de tentativas, gates e atualização isolada da tela.
+  Homologação: `docs/homologacao/vega-sequencia-comercial-v1.md`.
+- **Limite:** o roteiro define trabalho e critérios; não implementa a nova experiência nem cria
+  gates BPM automáticos apenas por registrar orientações. Falha da microação volta a Dédalo;
+  fricção de comunicação volta a Íris; dados voltam à reconciliação. Nenhum teste libera mídia.
+
 ## LOOP-ACTIONS-PSIQUE-REVISAO-DE-EVIDENCIA-FIXA — nova atestação quebra teste de isolamento
 
 - **Data:** 2026-09-08.
@@ -2200,6 +2229,21 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** decisão e materialização passam a ser interações estruturadas separadas; quando a escolha for código e o artefato estiver ausente, o worker gera imediatamente o HTML integral em contrato dedicado, soma a telemetria e valida checkout antes do callback.
 - **Prevenção:** teste de contrato exige schema e prompt dedicados ao artefato e mantém descrições de alteração inválidas como substituto do HTML.
 
+## LOOP-PDE-CORRECAO-BLOQUEADA-VIRA-PARECER — retentativa perde a rejeição original
+
+- **Confirmado em 08/09/2026:** Mira #350 foi reprovada por esconder a rotina; #351 apenas
+  aguardava implantação da correção. O contexto seguinte incluía ambas em `blockedActivities`,
+  mas Dédalo exigia o maior ID funcional e seu schema não aceitava `prototypeCorrection` como
+  atividade reprovadora. A reprodução local falhou após uma e duas tentativas bloqueadas.
+- **Correção:** o backend preserva os pareceres em `blockedActivities` e as tentativas bloqueadas
+  de correção em `correctionAttempts`, sem alterar tarefas históricas nem aprovar o produto.
+- **Defeito integrado adicional:** a v2 mantinha a rotina, mas retirava o título de conclusão
+  consumido pelo harness real. A conclusão agora preserva título semântico, rotina, limites e
+  consulta. O ícone vazio explícito elimina a busca por `/favicon.ico` ausente na superfície isolada.
+- **Prevenção:** contrato parametrizado com zero, uma e duas tentativas; harness real sobre Docker;
+  jornadas em desktop, iPhone e Pixel. Evidências em
+  `docs/homologacao/mira-tarefa-351-recuperacao-v1.md`.
+
 ## LOOP-BPM-RETRABALHO-INVERTE-PREDECESSORA — laço bloqueia a próxima agente
 
 - **Data:** 2026-08-15.
@@ -4360,3 +4404,13 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
 - **Prevenção:** contrato versionado e testes bloqueiam colisão de identidade, imagem, container,
   porta, proxy e lifecycle; os cânones de plataforma, cadeia e validação agora exigem evidência de
   isolamento por produto. Matriz: `docs/homologacao/pde-isolamento-produto-mira-vega-v1.md`.
+
+
+### Complemento Mira #351 — conclusão histórica bloqueando a revalidação
+
+Em 08/09/2026, após #353 `READY`, o motor da tela encerrava `technicalHomologation` pela
+instância #207/v1 antes de consultar a elegibilidade da v2. Fechamento: o domínio declara
+`requiresFreshExecution`; leitura e comando usam a mesma validade por processo, versão e
+ordem posterior à correção. Nova tarefa gera nova ocorrência e mantém a anterior íntegra.
+Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
+`AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.

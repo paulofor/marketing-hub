@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanVersion;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVersionRepository;
@@ -23,9 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CommercialPlanVersionServiceTest {
   @Mock private CommercialPlanVersionRepository repository;
 
-  /** Congela metas comerciais e numéricas sem contaminar o snapshot com detalhes técnicos. */
+  /** Congela seleção, causa e metas comerciais sem reescrever a versão após mudanças do plano. */
   @Test
-  void snapshotFreezesSalesAndProfitContext() {
+  void snapshotFreezesSalesAndProfitContext() throws Exception {
     when(repository.findTopByPlanIdOrderByVersionNumberDesc(7L)).thenReturn(Optional.empty());
     when(repository.save(any(CommercialPlanVersion.class)))
         .thenAnswer(
@@ -47,6 +48,9 @@ class CommercialPlanVersionServiceTest {
             .mainOffer("Método MUSA")
             .maxBudget(BigDecimal.valueOf(500))
             .targetRevenue(BigDecimal.valueOf(1000))
+            .operationalRevenueTarget(BigDecimal.valueOf(335))
+            .rootCause("Seleção anterior sobrescrita pelo polling")
+            .experiment(Experiment.builder().id(91L).build())
             .experimentsToCreate(2)
             .experimentsToPublish(1)
             .productsToValidate(1)
@@ -54,6 +58,8 @@ class CommercialPlanVersionServiceTest {
             .approachesToTest(2)
             .customerConversationsTarget(2)
             .build();
+    plan.getExperiments().add(Experiment.builder().id(90L).build());
+    plan.getExperiments().add(plan.getExperiment());
 
     var version = service.snapshot(plan, "USER", "Definição inicial");
 
@@ -65,5 +71,12 @@ class CommercialPlanVersionServiceTest {
             "\"experimentsToCreate\":2",
             "\"customerConversationsTarget\":2");
     assertThat(version.snapshotJson()).doesNotContain("hibernateLazyInitializer", "debug");
+    plan.setExperiment(Experiment.builder().id(90L).build());
+    var frozen = new ObjectMapper().readTree(version.snapshotJson());
+    assertThat(frozen.path("experimentId").asLong()).isEqualTo(91L);
+    assertThat(frozen.path("experimentIds").toString()).isEqualTo("[90,91]");
+    assertThat(frozen.path("operationalRevenueTargetBrl").decimalValue())
+        .isEqualByComparingTo("335");
+    assertThat(frozen.path("rootCause").asText()).contains("polling");
   }
 }

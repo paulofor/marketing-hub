@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -33,6 +34,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
@@ -254,7 +257,9 @@ class CommercialPlanServiceTest {
             plan, "ATENA_PLUTUS", "Premissas hipotéticas definidas e validadas pelos agentes");
   }
 
-  /** Atualiza o plano quando existe um unico experimento ativo da mesma hipotese. */
+  /**
+   * Seleciona e versiona o experimento compatível quando o operador pede o ativo explicitamente.
+   */
   @Test
   void synchronizeRunningExperimentLinksUniqueCompatibleExperiment() {
     Hypothesis hypothesis =
@@ -282,6 +287,7 @@ class CommercialPlanServiceTest {
     CommercialPlan synchronizedPlan = service.synchronizeRunningExperiment(2L);
 
     assertThat(synchronizedPlan.getExperiment().getId()).isEqualTo(85L);
+    verify(versionService).snapshot(plan, "USER", "Seleção explícita do experimento em execução");
   }
 
   /** Usa o contexto do experimento antigo quando o plano legado nao gravou hipotese nem nicho. */
@@ -341,5 +347,51 @@ class CommercialPlanServiceTest {
     assertThat(synchronizedPlan.getExperiments())
         .extracting(Experiment::getId)
         .containsExactly(85L, 86L);
+  }
+
+  /** A sincronização recorrente de Hermes não desfaz a escolha salva pela tela do plano. */
+  @ParameterizedTest
+  @EnumSource(
+      value = ExperimentStatus.class,
+      names = {"PLANNED", "USER_STOPPED", "PAUSED", "RUNNING"})
+  void preservesUiSelectionAcrossRepeatedAutomaticSynchronizations(ExperimentStatus status)
+      throws Exception {
+    Hypothesis hypothesis = Hypothesis.builder().id(UUID.randomUUID()).build();
+    Experiment pilot =
+        Experiment.builder()
+            .id(90L)
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.RUNNING)
+            .build();
+    Experiment selected =
+        Experiment.builder().id(91L).hypothesisRef(hypothesis).status(status).build();
+    CommercialPlan plan = CommercialPlan.builder().id(3L).experiment(pilot).build();
+    when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+    when(planRepository.save(any(CommercialPlan.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(experimentRepository.findById(91L)).thenReturn(Optional.of(selected));
+    when(experimentRepository.findByStatus(ExperimentStatus.RUNNING)).thenReturn(List.of(pilot));
+    UpdateCommercialPlanRequest request =
+        new ObjectMapper()
+            .readValue(
+                """
+        {"name":"Vega","status":"BLOCKED","experimentId":91,"nextAction":"Reconciliar #91 antes de novo gasto",
+         "currentBlocker":"Corrigir experiência e dados","offerPriceBrl":67,"maxBudget":200}
+        """,
+                UpdateCommercialPlanRequest.class);
+
+    service.update(3L, request);
+    for (int cycle = 0; cycle < 3; cycle++) service.synchronizeAvailableRunningExperiments(3L);
+    CommercialPlan persisted = service.getPlan(3L);
+
+    assertThat(persisted.getExperiment()).isSameAs(selected);
+    assertThat(persisted.getExperiments()).contains(pilot, selected).hasSize(2);
+    assertThat(persisted.getStatus()).isEqualTo(CommercialPlanStatus.BLOCKED);
+    assertThat(persisted.getNextAction()).isEqualTo(request.nextAction());
+    assertThat(persisted.getOfferPriceBrl()).isEqualByComparingTo("67");
+    assertThat(persisted.getMaxBudget()).isEqualByComparingTo("200");
+    assertThat(pilot.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    assertThat(selected.getStatus()).isEqualTo(status);
+    verify(versionService, times(1)).snapshot(any(), any(), any());
   }
 }

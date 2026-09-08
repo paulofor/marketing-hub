@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.experiment.Experiment;
@@ -198,14 +199,46 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
             pdeContext(product, processCode)));
   }
 
-  /** Entrega o contrato PDE estruturado somente à construção privada do próprio produto. */
+  /** Entrega o contrato privado reconciliado com a versão aceita e sua evidência de implantação. */
   private JsonNode pdeContext(Product product, String processCode) {
     if (!isPrivateValidation(product, processCode) || blank(product.getPdeExperienceJson())) {
       return null;
     }
     try {
       JsonNode context = objectMapper.readTree(product.getPdeExperienceJson());
-      return context.isObject() ? context : null;
+      if (!(context instanceof ObjectNode resolved)) return null;
+      resolved.put("experienceVersion", experienceVersion(product, processCode));
+      resolved.remove("technicalDeploymentEvidence");
+      if (!blank(product.getValidationDefinitionJson())) {
+        JsonNode validation = objectMapper.readTree(product.getValidationDefinitionJson());
+        JsonNode acceptance = validation.path("privatePrototypeAcceptance");
+        if (acceptance.isObject()) resolved.set("privatePrototypeAcceptance", acceptance);
+        JsonNode deployment = validation.path("technicalDeploymentEvidence");
+        JsonNode diagnostic = deployment.path("diagnosticSnapshot");
+        if (deployment.isObject()
+            && "PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1"
+                .equals(deployment.path("contractVersion").asText())
+            && deployment.path("httpStatus").asInt() == 200
+            && !deployment.path("observedAt").asText().isBlank()
+            && "UP".equals(diagnostic.path("status").asText())
+            && diagnostic.path("productId").asLong() == product.getId()
+            && resolved
+                .path("experienceVersion")
+                .asText()
+                .equals(diagnostic.path("experienceVersion").asText())
+            && resolved
+                .path("experienceVersion")
+                .asText()
+                .equals(diagnostic.path("imageVersionId").asText())
+            && acceptance
+                .path("privateAccessUrl")
+                .asText()
+                .equals(diagnostic.path("publicUrl").asText())
+            && !diagnostic.path("image").asText().isBlank()) {
+          resolved.set("technicalDeploymentEvidence", deployment);
+        }
+      }
+      return resolved;
     } catch (Exception ex) {
       log.error(
           "Contrato PDE privado inválido ao montar contexto da tarefa. productId={} productSlug={} processCode={}",

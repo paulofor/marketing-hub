@@ -29,6 +29,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -45,6 +46,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
@@ -619,11 +622,23 @@ class BusinessProcessActivityExecutionServiceTest {
   }
 
   /**
-   * Mantém a operação no experimento iniciado quando um sucessor planejado possui tarefa bloqueada
-   * mais recente.
+   * Preserva o ciclo escolhido no plano vigente e impede que sucessor planejado, plano encerrado ou
+   * experimento alheio desviem leitura e execução do produto.
    */
-  @Test
-  void requestsExperimentOptimizationForRunningExperimentInsteadOfPlannedSuccessor() {
+  @ParameterizedTest
+  @CsvSource({
+    "PLANNED,NONE,91,90",
+    "PLANNED,IN_PROGRESS,91,90",
+    "USER_STOPPED,BLOCKED,91,91",
+    "USER_STOPPED,IN_PROGRESS,91,91",
+    "RUNNING,IN_PROGRESS,91,91",
+    "USER_STOPPED,COMPLETED,91,90",
+    "USER_STOPPED,CANCELLED,91,90",
+    "USER_STOPPED,DRAFT,91,90",
+    "USER_STOPPED,BLOCKED,999,90"
+  })
+  void resolvesOperatedPlanSelectionWithoutLosingLegacyFallback(
+      ExperimentStatus selectedStatus, String planStatus, long selectedId, long expectedId) {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
         mock(BusinessProcessActivityDefinitionRepository.class);
     AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
@@ -662,7 +677,7 @@ class BusinessProcessActivityExecutionServiceTest {
     Experiment planned = new Experiment();
     planned.setId(91L);
     planned.setProduct(vega);
-    planned.setStatus(ExperimentStatus.PLANNED);
+    planned.setStatus(selectedStatus);
     Experiment running = new Experiment();
     running.setId(90L);
     running.setProduct(vega);
@@ -680,7 +695,14 @@ class BusinessProcessActivityExecutionServiceTest {
     when(products.findById(4L)).thenReturn(Optional.of(vega));
     when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(4L))
         .thenReturn(List.of(planned, running));
-    when(commercialPlans.findByProductId(4L)).thenReturn(List.of());
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(3L);
+    plan.setStatus("NONE".equals(planStatus) ? null : CommercialPlanStatus.valueOf(planStatus));
+    Experiment primary = new Experiment();
+    primary.setId(selectedId);
+    plan.setExperiment(primary);
+    when(commercialPlans.findByProductId(4L))
+        .thenReturn("NONE".equals(planStatus) ? List.of() : List.of(plan));
     when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(66L))
         .thenReturn(List.of(taskOne));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(66L, "task-1"))
@@ -696,13 +718,18 @@ class BusinessProcessActivityExecutionServiceTest {
     var history = executionService.productProcessExecutions(66L, 4L);
     var result = executionService.requestProductActivityExecution(66L, 4L, "task-1");
 
-    assertThat(history.currentExecutionReference()).isEqualTo("experiment:90");
-    assertThat(history.currentActivityState()).isEqualTo("NOT_STARTED");
-    assertThat(result.sourceReference()).isEqualTo("experiment:90");
+    assertThat(history.currentExecutionReference()).isEqualTo("experiment:" + expectedId);
+    assertThat(history.currentActivityState())
+        .isEqualTo(expectedId == 91 ? "BLOCKED" : "NOT_STARTED");
+    assertThat(result.sourceReference()).isEqualTo("experiment:" + expectedId);
+    assertThat(wrongAttempt.getSourceReference()).isEqualTo("experiment:91");
+    assertThat(wrongAttempt.getStatus()).isEqualTo("BLOCKED");
+    assertThat(planned.getStatus()).isEqualTo(selectedStatus);
+    assertThat(running.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     ArgumentCaptor<CreateAgentTaskRequest> request =
         ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
     verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
-    assertThat(request.getValue().sourceReference()).isEqualTo("experiment:90");
+    assertThat(request.getValue().sourceReference()).isEqualTo("experiment:" + expectedId);
   }
 
   /** Inicia a construção privada pelo próprio produto antes de existir experimento comercial. */

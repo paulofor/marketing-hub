@@ -6954,3 +6954,26 @@
 - **Métrica esperada:** toda rejeição funcional deve produzir trabalho corretivo auditável e nenhuma
   reanálise deve ocorrer sobre a mesma versão sem mudança. Isso melhora a prontidão comercial, mas
   não representa venda, receita nem autorização para publicar.
+
+## 2026-09-08 — Vega: estratégia após o experimento 91
+
+- **Estado conferido:** Vega na etapa 6/6, Venda, entrega e aprendizado; objetivo ainda não atingido.
+  Experimento #91 `USER_STOPPED`; campanha Meta `PAUSED`. Consulta direta mostrou R$ 27,45,
+  121 impressões, cinco cliques totais e quatro de saída. O banco PDE preserva quatro sessões
+  atribuídas, duas degustações iniciadas, uma devolutiva renderizada, um e-mail preenchido e nenhuma
+  compra. O #90 direto continua separado, sem contatos consentidos registrados.
+- **Achados de análise:** o resumo atribuído omite eventos existentes e soma relógios sobrepostos;
+  Hermes recebe o experimento #90 junto do texto antigo que declara #91 sem campanha; a devolutiva
+  real do primeiro ajuste organiza categorias, mas ainda exige interpretação para agir. A primeira
+  resposta da degustação fica abaixo da dobra em iPhone e Pixel.
+- **Estratégia recomendada:** reconciliar o estado antes de novos pareceres; tornar o primeiro ajuste
+  concreto; facilitar a entrada mobile; observar uso real consentido; depois testar uma nova versão
+  com limite financeiro, atribuição e hipótese explícitos. Instagram permanece a tese principal,
+  com piloto direto complementar e creators considerados depois de prova e margem.
+- **Critério comercial:** cinco vendas líquidas do canal em avaliação, conciliadas e entregues, com
+  uso, satisfação e contribuição positiva, antes de considerar ampliação. Ao custo atual de R$ 6,86
+  por acesso, conversão hipotética de 5% implicaria CAC de R$ 137,25 para ticket de R$ 67; a amostra
+  é insuficiente para estimar conversão ou eleger vencedor.
+- **Escopo:** relatório e evidências agregadas registrados; nenhuma implementação, mudança de estado,
+  contato, compra, campanha, PR ou publicação. A observação pública usou analytics desligado.
+- **Relatório:** [Vega: posição na cadeia e sequência para vender](../marketing/vega-cadeia-valor-estrategia-2026-09-08.md).

@@ -32,6 +32,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -314,10 +315,11 @@ public class BusinessProcessActivityExecutionService {
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
     String currentExecutionReference =
-        resolveExecutionReference(selectedProcess, product, productExperiments, tasks, instances);
+        resolveExecutionReference(
+            selectedProcess, product, productExperiments, productPlans, tasks, instances);
     String readinessSourceReference =
         currentExecutionReference == null
-            ? initialSourceReference(selectedProcess, product, productExperiments)
+            ? initialSourceReference(selectedProcess, product, productExperiments, productPlans)
             : currentExecutionReference;
     boolean hasExecutionContext = readinessSourceReference != null;
     Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId =
@@ -394,7 +396,10 @@ public class BusinessProcessActivityExecutionService {
     return requestProductActivityExecution(processDefinitionId, productId, activityId, null);
   }
 
-  /** Inicia a atividade ou registra uma decisão humana auditável após confirmação explícita. */
+  /**
+   * Inicia a atividade, revalida uma versão nova ou registra decisão humana após confirmação
+   * explícita.
+   */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId,
@@ -442,10 +447,10 @@ public class BusinessProcessActivityExecutionService {
             productPlans, productExperiments, productId, process.getProcessCode());
     String currentSourceReference =
         resolveExecutionReference(
-            process, product, productExperiments, processTasks, processInstances);
+            process, product, productExperiments, productPlans, processTasks, processInstances);
     String sourceReference =
         currentSourceReference == null
-            ? initialSourceReference(process, product, productExperiments)
+            ? initialSourceReference(process, product, productExperiments, productPlans)
             : currentSourceReference;
     if (sourceReference == null) {
       throw new ResponseStatusException(
@@ -461,6 +466,14 @@ public class BusinessProcessActivityExecutionService {
                 .toList(),
             currentInstancesByActivityId(process.getId(), sourceReference, processInstances)
                 .getOrDefault(normalizedActivityId, List.of()));
+    List<AgentProductProcessActivityReadinessProvider> agentReadinessProviders =
+        backendExecutor.isEmpty() && humanExecutor.isEmpty()
+            ? agentActivityReadinessProviders(process, activityDefinition)
+            : List.of();
+    boolean freshExecutionRequired =
+        requiresFreshExecution(
+            agentReadinessProviders, process, activityDefinition, product, sourceReference);
+    currentSituation = currentVersionSituation(currentSituation, freshExecutionRequired);
     requireRequestableActivityState(currentSituation.operationalState());
     if (backendExecutor.isPresent()) {
       BackendProductProcessActivityReadiness readiness =
@@ -500,8 +513,6 @@ public class BusinessProcessActivityExecutionService {
           result.objectiveAchieved(),
           result.message());
     }
-    List<AgentProductProcessActivityReadinessProvider> agentReadinessProviders =
-        agentActivityReadinessProviders(process, activityDefinition);
     AgentProductProcessActivityReadiness agentReadiness =
         combinedAgentActivityReadiness(
             agentReadinessProviders, process, activityDefinition, product, sourceReference);
@@ -514,7 +525,7 @@ public class BusinessProcessActivityExecutionService {
         responsibleAgentKeys.stream()
             .map(
                 agentKey ->
-                    agentTaskService.retryBlockedByHumanOrRefreshPending(
+                    requestAgentAttempt(
                         new CreateAgentTaskRequest(
                             agentKey,
                             "Operador do Marketing Hub",
@@ -525,10 +536,50 @@ public class BusinessProcessActivityExecutionService {
                             process.getId(),
                             normalizedActivityId,
                             false,
-                            null)))
+                            null),
+                        freshExecutionRequired))
             .toList();
     return new ProductProcessActivityExecutionRequestResponse(
         process.getId(), product.getId(), normalizedActivityId, sourceReference, requestedTasks);
+  }
+
+  /** Preserva a idempotência normal e permite nova ocorrência somente por exigência do gate. */
+  private AgentTaskResponse requestAgentAttempt(
+      CreateAgentTaskRequest request, boolean freshExecutionRequired) {
+    return freshExecutionRequired
+        ? agentTaskService.retryBlockedByHumanOrRefreshPending(request, true)
+        : agentTaskService.retryBlockedByHumanOrRefreshPending(request);
+  }
+
+  /** Consulta a política do domínio sem acoplar o motor BPM a uma versão ou produto concreto. */
+  private boolean requiresFreshExecution(
+      List<AgentProductProcessActivityReadinessProvider> providers,
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activity,
+      Product product,
+      String sourceReference) {
+    return sourceReference != null
+        && providers.stream()
+            .anyMatch(
+                provider ->
+                    provider.requiresFreshExecution(process, activity, product, sourceReference));
+  }
+
+  /**
+   * Mantém conclusões e rejeições superadas na auditoria, sem confundir o estado da nova versão.
+   */
+  private ActivitySituation currentVersionSituation(
+      ActivitySituation situation, boolean freshRequired) {
+    if (!freshRequired || !List.of("COMPLETED", "BLOCKED").contains(situation.operationalState())) {
+      return situation;
+    }
+    return new ActivitySituation(
+        "NOT_STARTED",
+        "O histórico foi preservado; a versão atual exige nova execução.",
+        false,
+        "NOT_RECORDED",
+        null,
+        null);
   }
 
   /** Aceita somente atividade inédita ou bloqueada, impedindo reinício de trabalho ainda ativo. */
@@ -557,10 +608,31 @@ public class BusinessProcessActivityExecutionService {
         : experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(productId);
   }
 
-  /** Resolve a referência inicial sem fabricar experimento para um protótipo pré-comercial. */
+  /** Prioriza a seleção já operada do plano vigente sem fabricar contexto pré-comercial. */
   private String initialSourceReference(
-      BusinessProcessDefinition process, Product product, List<Experiment> productExperiments) {
+      BusinessProcessDefinition process,
+      Product product,
+      List<Experiment> productExperiments,
+      List<CommercialPlan> productPlans) {
     if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
+      Optional<Experiment> selected =
+          productPlans.stream()
+              .filter(
+                  plan ->
+                      plan.getStatus() == CommercialPlanStatus.IN_PROGRESS
+                          || plan.getStatus() == CommercialPlanStatus.BLOCKED)
+              .findFirst()
+              .map(CommercialPlan::getExperiment)
+              .flatMap(
+                  experiment ->
+                      productExperiments.stream()
+                          .filter(
+                              candidate -> Objects.equals(candidate.getId(), experiment.getId()))
+                          .filter(
+                              candidate ->
+                                  candidate.getStatus() != null
+                                      && candidate.getStatus() != ExperimentStatus.PLANNED)
+                          .findFirst());
       Optional<Experiment> running =
           productExperiments.stream()
               .filter(experiment -> experiment.getStatus() == ExperimentStatus.RUNNING)
@@ -569,7 +641,8 @@ public class BusinessProcessActivityExecutionService {
           productExperiments.stream()
               .filter(experiment -> experiment.getStatus() != ExperimentStatus.PLANNED)
               .findFirst();
-      return running
+      return selected
+          .or(() -> running)
           .or(() -> alreadyOperated)
           .map(experiment -> "experiment:" + experiment.getId())
           .orElse(null);
@@ -589,21 +662,22 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Mantém o processo de operação vinculado ao experimento efetivamente iniciado, mesmo quando um
-   * sucessor planejado recebeu por engano uma tentativa mais recente.
+   * Mantém leitura e comando na seleção já operada do plano, inclusive pausada, e preserva o
+   * fallback legado quando o plano não selecionou um experimento elegível do próprio produto.
    */
   private String resolveExecutionReference(
       BusinessProcessDefinition process,
       Product product,
       List<Experiment> productExperiments,
+      List<CommercialPlan> productPlans,
       List<AgentTask> tasks,
       List<BusinessProcessActivityInstance> instances) {
     if ("operacao-otimizacao-experimento".equals(process.getProcessCode())) {
-      return initialSourceReference(process, product, productExperiments);
+      return initialSourceReference(process, product, productExperiments, productPlans);
     }
     if ("pde-construction-approval".equals(process.getProcessCode())
         && usesPdeAgentValidationV1(product)) {
-      return initialSourceReference(process, product, productExperiments);
+      return initialSourceReference(process, product, productExperiments, productPlans);
     }
     return currentExecutionReference(tasks, instances);
   }
@@ -1146,7 +1220,7 @@ public class BusinessProcessActivityExecutionService {
     return activityIds;
   }
 
-  /** Monta grupos ordenados e mantém atividades da versão atual mesmo quando ainda estão vazias. */
+  /** Monta os grupos distinguindo conclusões históricas da validação exigida pela versão atual. */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
       Map<String, List<AgentTask>> tasksByActivityId,
@@ -1216,6 +1290,15 @@ public class BusinessProcessActivityExecutionService {
                   product,
                   readinessSourceReference)
               : null;
+      situation =
+          currentVersionSituation(
+              situation,
+              requiresFreshExecution(
+                  agentReadinessProviders,
+                  selectedProcess,
+                  definition,
+                  product,
+                  readinessSourceReference));
       boolean selectedVersionActivity =
           definition != null
               && conditionalActivitySelected(definition, situation, executions, agentReadiness);

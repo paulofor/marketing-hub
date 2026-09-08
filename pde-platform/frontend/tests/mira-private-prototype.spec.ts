@@ -295,6 +295,10 @@ test.describe("homologação multiagente segregada", () => {
       .click();
     await expect(page.getByTestId("agent-validation-finished")).toBeVisible();
     await expect(
+      page.getByRole("heading", { name: "Homologação interna concluída" }),
+    ).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("Resultado consultado");
+    await expect(
       page.getByRole("heading", { name: "Uma ordem simples para consultar" }),
     ).toBeVisible();
     await expect(page.locator(".mira-routine-grid h2")).toHaveText([

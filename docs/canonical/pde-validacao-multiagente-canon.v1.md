@@ -80,6 +80,17 @@ As setas `kind=REWORK` do diagrama expressam retorno visual e não são predeces
 Quem libera tarefas continua sendo o backend, combinando a sequência principal, a rejeição
 persistida e a validade da nova versão. Nenhum executor escolhe ou dispara a próxima etapa.
 
+Uma tentativa de `prototypeCorrection` bloqueada por implantação ou evidência pendente não é
+um novo parecer independente. No contexto de outra tentativa, `blockedActivities` preserva
+os pareceres de origem; os bloqueios anteriores de correção ficam em `correctionAttempts`,
+com tarefa, causa, ação e resultado estruturados. Assim, a repetição não troca a versão
+rejeitada nem exige corrigir a própria atividade de correção.
+
+A conclusão do cenário deve preservar também seu título semântico, consumido pelo harness
+e pelas tecnologias assistivas, junto à rotina e à ação de consulta. A homologação local deve
+executar o harness real contra a imagem final; um teste com API simulada isoladamente não
+comprova compatibilidade entre frontend e executor.
+
 ## Cenários mínimos de Psique
 
 Psique deve executar no mínimo três jornadas isoladas da mesma versão:
@@ -147,3 +158,39 @@ artificial. O experimento deve separar tráfego interno e medir, no mínimo:
 
 Sem tráfego humano suficiente, o resultado é `EVIDÊNCIA_INSUFICIENTE`. Sem pagamento reconciliado,
 não existe venda. Parecer de agente pode liberar o teste, mas nunca substituir esses fatos.
+
+
+### Evidência técnica da versão corrigida
+
+O alvo e o contexto enviado ao agente devem usar a mesma aceitação canônica de
+`validationDefinitionJson.privatePrototypeAcceptance`. A cópia histórica em `pdeExperienceJson`
+não pode reintroduzir versão anterior no contexto.
+
+Antes de repetir uma correção por ausência de implantação, registrar pela edição do produto a
+prova operacional em `validationDefinitionJson.technicalDeploymentEvidence`, contrato
+`PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1`: `observedAt`, `diagnosticUrl`, `httpStatus`,
+`diagnosticSnapshot` bruto e referência à verificação. O diagnóstico precisa identificar produto,
+URL privada, imagem e versão atuais com status `UP`. O backend expõe a evidência apenas quando
+as identidades conferem com a aceitação vigente; recibos de outra versão/produto/endereço não
+entram no contexto. O registro deve ser renovado após nova implantação.
+
+Disponibilidade técnica de protótipo privado não muda `published`, não autoriza distribuição,
+cobrança, campanha ou gasto e não substitui `technicalHomologation`, Psique ou Têmis. O agente
+deve avaliar a evidência atual; um workflow antigo com `frontend_version=none` não a invalida.
+
+
+### Revalidação depois da correção
+
+Uma conclusão de outra versão do processo/protótipo, ou anterior à última correção aplicável,
+não encerra a atividade da versão atual. O gate do domínio declara `requiresFreshExecution` e
+o motor BPM representa a nova validação como pendente, mantendo tarefas e instâncias antigas
+na auditoria. O mesmo critério governa a tela e o comando de criação. Uma nova tarefa gera nova
+ocorrência; execução pendente/em andamento permanece idempotente e não pode ser duplicada.
+
+Toda rejeição funcional em uma revisão da v8 bloqueia a repetição das revisões até nova correção.
+A homologação técnica anterior não libera nova tentativa de Psique sobre o mesmo defeito.
+
+Rejeições superadas por correção válida ficam na auditoria e não definem o bloqueio atual
+da tela. Falhas posteriores à correção continuam vigentes. Para liberar uma revisão, o backend
+considera a tentativa mais recente da predecessora; uma aprovação antiga não compensa uma
+falha mais nova nem uma execução ainda pendente.

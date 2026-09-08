@@ -1028,7 +1028,11 @@ function CommercialPlanBlockersPanel({
                 </div>
                 <div>
                   <dt>Como desbloquear</dt>
-                  <dd>{blocker.nextAction}</dd>
+                  <dd
+                    style={{ whiteSpace: "pre-line", overflowWrap: "anywhere" }}
+                  >
+                    {blocker.nextAction}
+                  </dd>
                 </div>
                 <div>
                   <dt>Evidência</dt>

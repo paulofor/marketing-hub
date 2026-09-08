@@ -118,6 +118,7 @@ paths:
   /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions:
     get:
       summary: Lista as atividades e tarefas do produto no processo canônico
+      description: Na operação, prioriza o experimento já operado do próprio produto selecionado no plano vigente, inclusive pausado. Sucessor PLANNED e plano encerrado não substituem o fallback operacional; o comando usa a mesma referência.
       parameters:
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId
@@ -135,6 +136,12 @@ paths:
   /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests:
     post:
       summary: Executa o comando backend, abre tarefas ou registra uma decisão humana
+      description: >-
+        O gate do domínio pode exigir uma nova ocorrência quando a versão do protótipo/processo
+        ou uma correção válida superar a conclusão anterior. No PDE v8, leitura e comando usam
+        a mesma elegibilidade; tarefas e instâncias antigas permanecem na auditoria. Rejeições
+        já corrigidas não definem o bloqueio atual, enquanto falhas novas, tarefas pendentes e
+        execuções em andamento continuam protegidas contra avanço ou duplicação indevidos.
       parameters:
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId

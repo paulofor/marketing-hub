@@ -18,6 +18,8 @@ import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Responsabilidade: impedir que tarefas comerciais percam ou misturem a identidade do PDE. */
 class ExperimentAgentTaskTargetContextProviderTest {
@@ -224,6 +226,89 @@ class ExperimentAgentTaskTargetContextProviderTest {
             .orElseThrow();
     assertThat(futureVersionTarget.publicUrl()).isNull();
     assertThat(futureVersionTarget.pdeContext()).isNull();
+  }
+
+  /** Reconcilia a versão canônica e exclui comprovantes de outro produto, versão ou endereço. */
+  @ParameterizedTest
+  @CsvSource({
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,true",
+    "11,mira-private-v2,mira-private-v2,https://private.local/mira,200,UP,false",
+    "10,mira-private-v1,mira-private-v2,https://private.local/mira,200,UP,false",
+    "10,mira-private-v2,mira-private-v1,https://private.local/mira,200,UP,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/vega,200,UP,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,404,UP,false",
+    "10,mira-private-v2,mira-private-v2,https://private.local/mira,200,DOWN,false"
+  })
+  void reconcilesPrivateDeploymentEvidence(
+      long diagnosticProductId,
+      String version,
+      String imageVersion,
+      String url,
+      int httpStatus,
+      String diagnosticStatus,
+      boolean expectedEvidence) {
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    String storedExperience =
+        """
+        {"experienceVersion":"mira-private-v1",
+         "harness":{"readyResult":"Rotina consultável"},
+         "privatePrototypeAcceptance":{"prototypeVersion":"mira-private-v1"},
+         "technicalDeploymentEvidence":{"obsolete":true}}
+        """;
+    Product product =
+        Product.builder()
+            .id(10L)
+            .slug("mira")
+            .validationDefinitionVersion("PDE_AGENT_VALIDATION_V1")
+            .pdeExperienceJson(storedExperience)
+            .validationDefinitionJson(
+                """
+          {"privatePrototypeAcceptance":{"status":"READY",
+           "prototypeVersion":"mira-private-v2","privateAccessUrl":"https://private.local/mira",
+           "published":false},
+           "technicalDeploymentEvidence":{"contractVersion":"PDE_TECHNICAL_DEPLOYMENT_EVIDENCE_V1",
+             "httpStatus":%d,"observedAt":"2026-09-08T04:24:00Z",
+             "diagnosticSnapshot":{"status":"%s","productId":%d,"experienceVersion":"%s",
+               "imageVersionId":"%s","publicUrl":"%s","image":"mira:sha123"}}}
+          """
+                    .formatted(
+                        httpStatus,
+                        diagnosticStatus,
+                        diagnosticProductId,
+                        version,
+                        imageVersion,
+                        url))
+            .build();
+    when(products.findById(10L)).thenReturn(Optional.of(product));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+
+    var target =
+        provider
+            .resolve("product:10@agent-validation-v1", "pde-construction-approval")
+            .orElseThrow();
+
+    assertThat(target.experienceVersion()).isEqualTo("mira-private-v2");
+    assertThat(target.pdeContext().path("experienceVersion").asText()).isEqualTo("mira-private-v2");
+    assertThat(
+            target
+                .pdeContext()
+                .path("privatePrototypeAcceptance")
+                .path("prototypeVersion")
+                .asText())
+        .isEqualTo("mira-private-v2");
+    assertThat(
+            target
+                .pdeContext()
+                .path("privatePrototypeAcceptance")
+                .path("published")
+                .asBoolean(true))
+        .isFalse();
+    assertThat(target.pdeContext().has("technicalDeploymentEvidence")).isEqualTo(expectedEvidence);
+    assertThat(target.pdeContext().path("harness").path("readyResult").asText())
+        .isEqualTo("Rotina consultável");
+    assertThat(product.getPdeExperienceJson()).isEqualTo(storedExperience);
   }
 
   /** Não amplia prompts comerciais com o contrato privado fora da construção governada. */

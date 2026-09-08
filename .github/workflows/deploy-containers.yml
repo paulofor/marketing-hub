@@ -259,6 +259,11 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: mvn -B -s ../settings.xml package -DskipTests
 
+      - name: Verify packaged backend resources and catalog startup
+        run: |
+          python3 scripts/test-backend-packaged-resources.py
+          python3 scripts/verify-backend-packaged-resources.py
+
       - name: Publish backend library for dependent workers
         working-directory: backend/ads-service
         env:

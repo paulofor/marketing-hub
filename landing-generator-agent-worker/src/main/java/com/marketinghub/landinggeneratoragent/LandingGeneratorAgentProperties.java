@@ -12,7 +12,7 @@ public class LandingGeneratorAgentProperties {
   private String mcpScriptPath = "/app/mcp/landing-generator.mjs";
   private String codexCommand = "codex";
   private String model = "gpt-5.6-sol";
-  private String reasoningEffort = "high";
+  private String reasoningEffort = "max";
   private String buildReference = "local";
   private Duration codexTimeout = Duration.ofMinutes(40);
 
@@ -86,13 +86,13 @@ public class LandingGeneratorAgentProperties {
     reasoningEffort = value;
   }
 
-  /** Retorna o esforço de raciocínio obrigatório para auditar cada chamada do Dédalo. */
+  /** Exige raciocínio máximo antes de executar ou auditar qualquer chamada de Dédalo. */
   public String requiredReasoningEffort() {
-    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+    if (reasoningEffort == null || !"max".equals(reasoningEffort.trim())) {
       throw new IllegalStateException(
-          "CODEX_REASONING_EFFORT é obrigatório para auditar a execução do Dédalo.");
+          "CODEX_REASONING_EFFORT deve ser max em toda execução do Dédalo.");
     }
-    return reasoningEffort.trim();
+    return "max";
   }
 
   /** Retorna a identidade imutável do deploy atual. */

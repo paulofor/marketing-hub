@@ -5,6 +5,14 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/**"
+      - "scripts/check-musa-pde-public-consistency.sh"
+      - "scripts/test-musa-pde-public-consistency.py"
+      - "scripts/test-agent-max-reasoning.mjs"
+      - "landing-generator-agent-worker/docker-compose.yml"
+      - "landing-generator-agent-worker/src/main/resources/application.yml"
+      - "deploy/docker-compose.video.yml"
+      - "video-management-service/src/main/resources/application.yml"
+      - "pde-platform/frontend/docker-entrypoint.d/10-runtime-config.sh"
       - "scripts/docker-compose-pull-with-transient-retry.sh"
       - "scripts/docker-compose-up-with-transient-retry.sh"
       - "scripts/docker-login-with-transient-retry.sh"
@@ -64,6 +72,14 @@ on:
   pull_request:
     paths:
       - ".github/workflows/**"
+      - "scripts/check-musa-pde-public-consistency.sh"
+      - "scripts/test-musa-pde-public-consistency.py"
+      - "scripts/test-agent-max-reasoning.mjs"
+      - "landing-generator-agent-worker/docker-compose.yml"
+      - "landing-generator-agent-worker/src/main/resources/application.yml"
+      - "deploy/docker-compose.video.yml"
+      - "video-management-service/src/main/resources/application.yml"
+      - "pde-platform/frontend/docker-entrypoint.d/10-runtime-config.sh"
       - "scripts/docker-compose-pull-with-transient-retry.sh"
       - "scripts/docker-compose-up-with-transient-retry.sh"
       - "scripts/docker-login-with-transient-retry.sh"
@@ -199,6 +215,12 @@ jobs:
 
       - name: Validar sintaxe dos workflows
         run: bash scripts/run-actionlint.sh
+
+      - name: Validar consistência pública PDE com HTTP local
+        run: python3 scripts/test-musa-pde-public-consistency.py
+
+      - name: Validar raciocínio máximo de Dédalo e Apolo
+        run: node --test scripts/test-agent-max-reasoning.mjs
 
       - name: Validar suporte do Actionlint à fila ampliada
         run: bash scripts/test-actionlint-queue-support.sh

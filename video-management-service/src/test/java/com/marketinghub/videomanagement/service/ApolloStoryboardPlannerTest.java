@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +15,8 @@ import com.marketinghub.videomanagement.client.ApolloPlanningAiClient;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJobType;
 import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
+import com.marketinghub.videomanagement.client.dto.SalesVideoScript;
+import com.marketinghub.videomanagement.client.dto.SalesVideoScriptStatus;
 import com.marketinghub.videomanagement.client.dto.SalesVideoProviderFamily;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
@@ -31,6 +36,39 @@ class ApolloStoryboardPlannerTest {
     void setUp() {
         aiClient = mock(ApolloPlanningAiClient.class);
         planner = new ApolloStoryboardPlanner(new VideoManagementProperties(), objectMapper, aiClient);
+    }
+
+    /** Exige raciocínio máximo no request efetivo e na evidência preservada pelo fluxo completo. */
+    @Test
+    void shouldPlanWithMaximumReasoningAndPreserveRequestInResult() throws Exception {
+        var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
+        metadata.put("videoProductionCycleId", 1);
+        SalesVideoJob job = mock(SalesVideoJob.class);
+        when(job.id()).thenReturn(1L);
+        when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
+        when(job.providerName()).thenReturn("RUNWAY_SEEDANCE_2_5");
+        when(job.metadataJson()).thenReturn(metadata.toString());
+        SalesVideoScript script = new SalesVideoScript(1L, 1, "Roteiro", "Gancho", "CTA", null,
+                null, null, null, null, SalesVideoScriptStatus.APPROVED, null, null, null);
+        SalesVideoProfile profile = new SalesVideoProfile(1L, 1L, null, "TEST", "Teste local",
+                null, null, null, "pt-BR", 30, SalesVideoStatus.VIDEO_REQUESTED,
+                null, null, script, null);
+        JsonNode approvedPlan = plan(false);
+        when(aiClient.plan(eq(1L), any())).thenAnswer(invocation -> {
+            JsonNode request = invocation.getArgument(1);
+            assertThat(request.at("/reasoning/effort").asText()).isEqualTo("max");
+            assertThat(request.path("service_tier").asText()).isEqualTo("flex");
+            var response = objectMapper.createObjectNode();
+            response.putArray("output").addObject().putArray("content").addObject()
+                    .put("type", "output_text").put("text", approvedPlan.toString());
+            return response;
+        });
+
+        SalesVideoJob result = planner.planAndApprove(job, profile, mock(ProgressCallback.class));
+
+        JsonNode persisted = objectMapper.readTree(result.metadataJson());
+        assertThat(persisted.at("/apollo_planner_request/reasoning/effort").asText()).isEqualTo("max");
+        assertThat(persisted.path("apollo_planner_status").asText()).isEqualTo("APPROVED");
     }
 
     /** Aprova um storyboard distinto cujo custo previsto permanece dentro do teto. */

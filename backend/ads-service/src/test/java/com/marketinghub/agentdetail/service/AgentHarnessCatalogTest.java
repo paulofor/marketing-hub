@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: proteger a cobertura e as referências versionadas do catálogo de harness. */
@@ -215,10 +217,15 @@ class AgentHarnessCatalogTest {
             "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v4/evaluation-schema.json");
   }
 
-  /** Mantém visível o raciocínio máximo obrigatório em todas as execuções de Psique. */
-  @Test
-  void exposesPsiqueMaximumReasoningPolicy() {
-    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("customer-agent");
+  /** Mantém visível a política obrigatória de raciocínio máximo de Psique, Dédalo e Apolo. */
+  @ParameterizedTest
+  @CsvSource({
+    "customer-agent, PsiqueReasoningPolicy.java",
+    "landing-generator, LandingGeneratorAgentProperties.java",
+    "videomaker, ApolloReasoningPolicy.java"
+  })
+  void exposesMaximumReasoningPolicyForPremiumAgents(String agentKey, String sourceFile) {
+    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey(agentKey);
     var runtime =
         harness.sections().stream()
             .filter(section -> "runtime".equals(section.code()))
@@ -231,7 +238,7 @@ class AgentHarnessCatalogTest {
             .orElseThrow();
 
     assertThat(reasoning.value()).isEqualTo("max");
-    assertThat(reasoning.sourceReference()).endsWith("PsiqueReasoningPolicy.java");
+    assertThat(reasoning.sourceReference()).endsWith(sourceFile);
   }
 
   /** Mantém explícita a ausência de manifesto para agentes futuros ainda não catalogados. */

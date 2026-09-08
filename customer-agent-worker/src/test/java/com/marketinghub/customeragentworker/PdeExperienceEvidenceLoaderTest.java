@@ -3,6 +3,7 @@ package com.marketinghub.customeragentworker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -285,7 +286,59 @@ class PdeExperienceEvidenceLoaderTest {
         .hasMessageContaining("App.tsx");
   }
 
-  /** Confirma no repositório real que Rigel e Vega recebem somente suas próprias provas. */
+  /** Seleciona a revisão numérica mais recente sem depender da ordem alfabética dos arquivos. */
+  @Test
+  void selectsLatestNumericRevisionWithoutMixingOlderEvidence() throws Exception {
+    writeManifest("produto-homologacao-v2.json", "produto-homologacao.v2", "anterior.txt");
+    writeManifest("produto-homologacao-v10.json", "produto-homologacao.v10", "vigente.txt");
+
+    var evidence =
+        new PdeExperienceEvidenceLoader(tempDir.toString())
+            .loadCommercialHomologationEvidence(testTarget());
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .containsExactly("pde-platform/contracts/produto-homologacao-v10.json", "vigente.txt");
+  }
+
+  /** Bloqueia dois manifestos da mesma revisão para não escolher uma prova arbitrária. */
+  @Test
+  void rejectsAmbiguousCurrentRevision() throws Exception {
+    writeManifest("primeiro-v10.json", "produto-homologacao.v10", "primeiro.txt");
+    writeManifest("segundo-v10.json", "produto-homologacao.v10", "segundo.txt");
+
+    assertThatThrownBy(
+            () ->
+                new PdeExperienceEvidenceLoader(tempDir.toString())
+                    .loadCommercialHomologationEvidence(testTarget()))
+        .isInstanceOf(java.io.IOException.class)
+        .hasMessageContaining("Mais de um manifesto vigente");
+  }
+
+  /** Grava manifesto e prova descartáveis para validar evolução sem usar revisões produtivas. */
+  private void writeManifest(String filename, String revision, String proof) throws Exception {
+    Files.writeString(tempDir.resolve(proof), "prova de " + revision);
+    Path manifest = tempDir.resolve("pde-platform/contracts").resolve(filename);
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {
+          "contractVersion":"%s",
+          "product":{"id":9,"slug":"produto-teste","experienceVersion":"produto-teste-v1"},
+          "implementationEvidence":[{"path":"%s","sha256":"%s"}]
+        }
+        """
+            .formatted(revision, proof, "a".repeat(64)));
+  }
+
+  /** Define um alvo segregado sem identificador de experimento real. */
+  private Map<String, Object> testTarget() {
+    return Map.of(
+        "productId", 9L, "productSlug", "produto-teste", "experienceVersion", "produto-teste-v1");
+  }
+
+  /** Confirma identidade e isolamento de Rigel e Vega sem fixar revisões históricas de evidência. */
   @Test
   void segregatesCurrentRepositoryEvidenceByProduct() throws Exception {
     Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
@@ -321,24 +374,22 @@ class PdeExperienceEvidenceLoaderTest {
     assertThat(rigel)
         .extracting(item -> item.get("path"))
         .contains(
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
-        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json")
-        .doesNotContain("pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json")
-        .doesNotContain("pde-platform/contracts/musa-v7-commercial-homologation-v1.json");
+        .allSatisfy(path -> assertThat(path.toString()).doesNotContain("musa-v7-", "mira-"));
     assertThat(vega)
         .extracting(item -> item.get("path"))
-        .contains(
-            "pde-platform/contracts/musa-v7-commercial-homologation-v5.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v4.json",
-            "pde-platform/frontend/src/musaExperiences.ts")
-        .doesNotContain(
-            "pde-platform/contracts/musa-v7-commercial-homologation-v1.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v2.json",
-            "pde-platform/contracts/musa-v7-commercial-homologation-v3.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
-            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
+        .contains("pde-platform/frontend/src/musaExperiences.ts")
+        .allSatisfy(path -> assertThat(path.toString()).doesNotContain("kit-whatsapp-", "mira-"));
+    var json = new ObjectMapper();
+    var rigelProduct = json.readTree(rigel.getFirst().get("content").toString()).path("product");
+    assertThat(rigelProduct.path("id").asLong()).isEqualTo(9L);
+    assertThat(rigelProduct.path("slug").asText()).isEqualTo("kit-whatsapp-pronto");
+    assertThat(rigelProduct.path("experienceVersion").asText())
+        .isEqualTo("kit-whatsapp-pronto-pde-v2");
+    var vegaProduct = json.readTree(vega.getFirst().get("content").toString()).path("product");
+    assertThat(vegaProduct.path("id").asLong()).isEqualTo(4L);
+    assertThat(vegaProduct.path("slug").asText()).isEqualTo("metodo-musa-7-dias");
+    assertThat(vegaProduct.path("experienceVersion").asText())
+        .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
   }
 }

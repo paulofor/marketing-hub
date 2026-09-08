@@ -4,6 +4,33 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-ACTIONS-PSIQUE-REVISAO-DE-EVIDENCIA-FIXA — nova atestação quebra teste de isolamento
+
+- **Data:** 2026-09-08.
+- **Evidência:** runs `34167034165` e `34168148113` falharam no mesmo teste de Psique.
+  A revisão anterior passou; `3e6fb356` introduziu o manifesto Rigel v6, que referencia v5,
+  enquanto o teste ainda exigia v4. Reproduzido localmente antes da correção.
+- **Causa-raiz:** teste sobre repositório evolutivo congelava revisões históricas, confundindo
+  isolamento entre produtos com uma lista fixa de arquivos. O carregador selecionava corretamente v6.
+- **Correção:** testar identidade e artefatos funcionais sem congelar revisão; fixtures independentes
+  comprovam seleção numérica v10 sobre v2, exclusão das provas antigas e bloqueio de empate.
+- **Prevenção:** suíte Java completa, empacotamento imutável e matriz em
+  `docs/homologacao/actions-psique-pde-2026-09-08.md`. Nenhuma atestação histórica foi reescrita.
+
+## LOOP-ACTIONS-PDE-DIAGNOSTICO-LEGADO — smoke rejeita versão pública saudável
+
+- **Data:** 2026-09-08.
+- **Evidência:** run `34168148078` passou no health e no diagnóstico funcional, mas o script
+  seguinte exigiu `slot`. O produtor versionado e os dois endpoints públicos v7 retornavam
+  `version`/`legacySlot`, confirmando o cânone de versão isolada.
+- **Causa-raiz:** o verificador consumia o alias antigo e um campo removido; o teste de seleção
+  substituía esse verificador por double e não exercitava seu contrato HTTP real antes do deploy.
+- **Correção:** consumir `/version-diagnostics.json`, verificar `version`, `productSlug` e
+  `experienceVersion` contra o alvo e o backend, mantendo identidade de imagem e gates funcionais.
+- **Prevenção:** o próprio script roda no CI contra HTTP local e o JSON gerado pelo entrypoint
+  real, com casos negativos. Gatilhos incluem o verificador e seu teste. Não há fallback silencioso
+  para legado, remoção do smoke ou troca da imagem pública para contornar o erro.
+
 ## LOOP-AGENTE-PROMPT-FORA-DO-CATALOGO — contrato executável fica invisível à auditoria
 
 - **Data:** 2026-09-06.

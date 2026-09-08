@@ -354,6 +354,12 @@ lacunas e classificação incorreta; ou fixar `max` em todas as execuções excl
 terceira foi escolhida por concentrar qualidade no gate de experiência humana sem ampliar custo aos
 demais agentes.
 
+Para as evidências PDE, o carregador seleciona a revisão numérica vigente do produto/experiência
+solicitados. Testes com o repositório vivo verificam identidade, artefatos funcionais e segregação,
+sem fixar uma revisão histórica de manifesto. A ordem numérica, a ausência de mistura com provas
+anteriores e o bloqueio de empate são comprovados com fixtures controladas. Uma atestação nova de
+Rigel não pode quebrar o CI de Psique apenas por substituir sua referência de baseline.
+
 Nas atividades BPM de Psique, o worker deve manter o
 prompt integral resolvido e capturar somente URLs cuja abertura foi confirmada por evento estruturado
 do runtime. Na execução Codex atual, isso significa itens terminais `web_search` com ação

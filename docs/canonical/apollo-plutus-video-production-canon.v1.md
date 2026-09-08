@@ -140,6 +140,15 @@ Por decisão comercial de 2026-08-13, todo render pago de ciclo autônomo deve p
 
 Por decisão comercial de 2026-08-14, novo crédito só pode ser consumido depois de roteiro aprovado com gancho e CTA, duração compatível com a capacidade do modelo, plano de pelo menos cinco cortes e arco narrativo progressivo de gancho até CTA. Cada corte deve declarar fase narrativa e âncora de continuidade; o gate bloqueia retrocesso da história, ausência de prova, quebra de continuidade ou retorno ao plano legado de clipes fixos de dez segundos. A qualidade do modelo de planejamento não substitui esse gate e nenhuma sessão ou API de IA pode repetir gasto automaticamente.
 
+Decisão do usuário registrada em 2026-09-08: o raciocínio de Apolo é `max` no planejamento,
+análise de referências, preparação de imagem por modelo de raciocínio e replay Codex. A Responses
+API recebe `reasoning.effort: max`, mantendo `service_tier: flex`; o Codex recebe
+`model_reasoning_effort="max"` e bloqueia configuração inferior antes da execução. A configuração
+fica auditável no request e no resultado do replay. Renderizadores, TTS e caminhos determinísticos
+não recebem parâmetro incompatível nem alegam raciocínio que não executaram. Teto, reservas, gates
+e ativação dos providers permanecem obrigatórios. O suporte de `gpt-5.6-sol` e seu alias `gpt-5.6`
+foi conferido na [documentação oficial](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
+
 ## Autoridade e segurança
 
 - Aprovar um ciclo não autoriza publicação, campanha, mudança de preço ou compra de créditos.

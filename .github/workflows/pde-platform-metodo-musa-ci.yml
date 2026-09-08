@@ -7,11 +7,15 @@ on:
       - "pde-platform/**"
       - ".github/workflows/pde-platform-metodo-musa-ci.yml"
       - "scripts/ensure-agent-vps-disk-space.sh"
+      - "scripts/check-musa-pde-public-consistency.sh"
+      - "scripts/test-musa-pde-public-consistency.py"
   pull_request:
     paths:
       - "pde-platform/**"
       - ".github/workflows/pde-platform-metodo-musa-ci.yml"
       - "scripts/ensure-agent-vps-disk-space.sh"
+      - "scripts/check-musa-pde-public-consistency.sh"
+      - "scripts/test-musa-pde-public-consistency.py"
   workflow_dispatch:
     inputs:
       target_environment:
@@ -95,6 +99,8 @@ jobs:
         run: npm ci --include=dev
       - name: Validate local homologation topology contract
         run: node --test ../scripts/test-musa-local-integration.contract.test.mjs
+      - name: Validate public consistency with local HTTP and runtime contract
+        run: python3 ../../scripts/test-musa-pde-public-consistency.py
       - name: Install video tooling
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Validate PDE API boundary

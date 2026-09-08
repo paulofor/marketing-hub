@@ -11,6 +11,7 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoScript;
 import com.marketinghub.videomanagement.client.dto.SalesVideoScriptStatus;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import com.marketinghub.videomanagement.config.ApolloReasoningPolicy;
 import com.marketinghub.videomanagement.client.ApolloPlanningAiClient;
 import com.marketinghub.videomanagement.service.provider.ProgressCallback;
 import com.marketinghub.videomanagement.service.provider.VideoProviderException;
@@ -264,24 +265,26 @@ public class ApolloStoryboardPlanner {
         return values.containsAll(Set.of("Psique", "Temis", "HUMAN"));
     }
 
-    /** Serializa request, response e plano para persistência auditável antes do gate financeiro. */
+    /** Serializa request, response, esforço e plano para auditoria anterior ao gate financeiro. */
     private String planningAudit(JsonNode request, JsonNode response, JsonNode plan) {
         ObjectNode audit = objectMapper.createObjectNode();
         audit.put("eventType", "APOLLO_STORYBOARD_PLANNED");
         audit.put("model", properties.getApolloPlanner().getModel());
+        audit.put("reasoningEffort", request.path("reasoning").path("effort").asText());
         audit.set("request", request);
         audit.set("response", response);
         audit.set("plan", plan);
         return audit.toString();
     }
 
-    /** Monta a requisição Responses API com prompt e schema versionados e modo Flex. */
+    /** Monta a Responses API com raciocínio máximo, Flex e prompt/schema versionados. */
     private ObjectNode buildRequest(SalesVideoJob job, SalesVideoProfile profile, JsonNode metadata) {
         String context = metadata.toString() + "\nPerfil: " + objectMapper.valueToTree(profile);
         String prompt = resource(PROMPT_PATH).replace("{{CONTEXT}}", context);
         ObjectNode request = objectMapper.createObjectNode();
         request.put("model", properties.getApolloPlanner().getModel());
         request.put("service_tier", "flex");
+        request.putObject("reasoning").put("effort", ApolloReasoningPolicy.MAXIMUM);
         request.put("input", prompt);
         ObjectNode format = request.putObject("text").putObject("format");
         format.put("type", "json_schema");

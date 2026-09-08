@@ -4,6 +4,20 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-ACTIONS-RETOMADA-SEM-GATILHO — workflow ativo não recupera merge perdido
+
+- **Data:** 2026-09-08.
+- **Evidência:** após reativar `Build & Deploy containers`, a tentativa autorizada de executar
+  `main` retornou HTTP 422 por ausência de `workflow_dispatch`. O merge #5140 não possuía run
+  desse workflow; os runs anteriores referenciavam código antigo.
+- **Causa:** o publicador aceitava apenas `push` e os agentes também buscavam somente esse
+  evento. Reativar o workflow ou adicionar somente o disparo manual deixava parte da cadeia parada.
+- **Correção local:** gatilho manual restrito a `main`, com a mesma detecção/fila e gates;
+  coordenação aceita `push` ou `workflow_dispatch` bem-sucedido do mesmo SHA e branch.
+- **Prevenção:** testes reproduzem as quatro falhas, rejeitam outras referências e impedem
+  liberar agentes durante uma retomada pendente ou falha. Publicação depende de PR.
+  Procedimento e matriz: `docs/canonical/deploy-aplicacao-retomada-canon.v1.md`.
+
 ## LOOP-VEGA-RETOMADA-CONTEXTO-DE-PILOTO — operação repete premissa histórica
 
 - **Data:** 2026-09-08.

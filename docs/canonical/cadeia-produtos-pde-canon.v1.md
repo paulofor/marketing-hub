@@ -588,6 +588,19 @@ caber nesta cadeia.
 
 ## Organização no Marketing Hub
 
+**Alocação obrigatória — decisão de 08/09/2026:** toda criação ou alteração relacionada a processos
+e atividades deve ficar dentro do BPM da Cadeia de Valor, conforme a
+[regra transversal do catálogo de processos](business-process-catalog-canon.v1.md#alocação-obrigatória-no-bpm-da-cadeia-de-valor).
+No PDE, o trabalho deve ser alocado no processo responsável entre os seis macroprocessos, como
+atividade ou subprocesso conectado ao fluxo. Isso inclui ciclos de aprendizado, correções,
+homologações e vídeos de campanha ou de entrada do produto. O escopo de execução pode anteceder a
+existência de um produto; a definição continua pertencendo à cadeia.
+
+A entrega deve permitir navegar da cadeia até a atividade, reconhecer responsável, entradas,
+resultado esperado e critério de conclusão, e seguir a próxima ação orientada pelo backend.
+Um painel separado ou somente o vínculo cadastral do subprocesso não atende à regra. Evoluções
+devem alinhar BPM, composição da cadeia e navegação em novas versões, preservando o histórico.
+
 Na cadeia v13, o processo 6 usa o BPM de venda v5: consolidação → subprocesso
 **Ciclos de aprendizado e vendas** → decisão comercial. O subprocesso é apresentado dentro
 do processo pai e é acessível pelo seu BPM e pelas atividades do produto. Cada ocorrência

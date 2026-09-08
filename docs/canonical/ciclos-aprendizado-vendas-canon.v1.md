@@ -20,6 +20,10 @@ pagamento ou mídia; especialistas continuam nos módulos e BPMs canônicos.
 
 ### Lugar na cadeia e entrada operacional — decisão de 08/09/2026
 
+Toda criação ou alteração de ciclo, atividade, decisão ou retorno segue a
+[regra obrigatória de alocação no BPM da Cadeia de Valor](business-process-catalog-canon.v1.md#alocação-obrigatória-no-bpm-da-cadeia-de-valor).
+O painel e os recursos especializados devem manter o vínculo e a entrada pelo fluxo do processo pai.
+
 A cadeia mantém seis processos de valor. **Ciclos de aprendizado e vendas é um subprocesso
 do processo 6, Venda, entrega e aprendizado do PDE**; cada ciclo é uma ocorrência por
 experimento. O painel é o ambiente de execução desse subprocesso, não uma sétima etapa.

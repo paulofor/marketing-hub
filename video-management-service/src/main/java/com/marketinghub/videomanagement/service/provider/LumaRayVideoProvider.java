@@ -10,6 +10,7 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
 import com.marketinghub.videomanagement.client.dto.SalesVideoScript;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import com.marketinghub.videomanagement.config.ApolloReasoningPolicy;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
@@ -276,13 +277,14 @@ public class LumaRayVideoProvider implements VideoProvider {
         return keyframes;
     }
 
-    /** Gera imagem base64 via Responses API com ferramenta de geração de imagem e modo Flex. */
+    /** Gera imagem via Responses API com raciocínio máximo no modelo diretor e modo Flex. */
     private byte[] generateOpenAiReferenceImage(String prompt) {
         VideoManagementProperties.Luma config = properties.getProviders().getLuma();
         Map<String, Object> payload = Map.of(
                 "model", config.getOpenAiImageModel(),
                 "input", prompt,
                 "service_tier", SERVICE_TIER,
+                "reasoning", Map.of("effort", ApolloReasoningPolicy.MAXIMUM),
                 "tool_choice", Map.of("type", "image_generation"),
                 "tools", List.of(Map.of(
                         "type", "image_generation",

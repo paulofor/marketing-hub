@@ -18,7 +18,14 @@ comunicação pode apresentá-las, mas não redesenhá-las como prova.
 
 ## Executor e modelo
 
-O executor independente é `landing-generator-agent-worker`, implantado no mesmo host dos demais módulos, com identidade exclusiva em `/opt/marketing-hub/agents/landing-generator/codex-home`. Ele executa Codex ChatGPT com `gpt-5.6-sol`, raciocínio `high`, timeout de 40 minutos, pesquisa web e sandbox `read-only`. O modelo visual permanece `gpt-image-2` e somente é acionado pelo Gerador de Imagens oficial do Marketing Hub.
+O executor independente é `landing-generator-agent-worker`, implantado no mesmo host dos demais módulos, com identidade exclusiva em `/opt/marketing-hub/agents/landing-generator/codex-home`. Ele executa Codex ChatGPT com `gpt-5.6-sol`, raciocínio `max`, timeout de 40 minutos, pesquisa web e sandbox `read-only`. O modelo visual permanece `gpt-image-2` e somente é acionado pelo Gerador de Imagens oficial do Marketing Hub.
+
+Decisão do usuário registrada em 2026-09-08: toda chamada de Dédalo, incluindo construção,
+correção, personalização e linhagens históricas de HTML, envia `max` explicitamente. Configuração
+ausente ou inferior bloqueia antes do modelo; é proibido reduzir o esforço silenciosamente.
+O comando e os callbacks preservam o esforço efetivo. Acompanhar qualidade, tempo e custo, sem
+confundir raciocínio máximo com aprovação, publicação ou receita. Suporte do modelo conferido na
+[documentação oficial](https://developers.openai.com/api/docs/models/gpt-5.6-sol).
 
 O worker usa a porta exclusiva `8100`, grava log em arquivo e expõe leitura operacional em `/ops-landing-generator-observability-v1/logfile`. O MCP central deve disponibilizar essa origem como `landing-generator-agent-worker`.
 

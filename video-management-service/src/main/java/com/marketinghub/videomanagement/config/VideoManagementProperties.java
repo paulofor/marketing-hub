@@ -103,7 +103,7 @@ public class VideoManagementProperties {
         private boolean enabled = false;
         private String command = "codex";
         private String model = "gpt-5.6-sol";
-        private String reasoningEffort = "high";
+        private String reasoningEffort = ApolloReasoningPolicy.MAXIMUM;
         private String workingDirectory = "/app";
         @NotNull
         private Duration timeout = Duration.ofMinutes(10);

@@ -671,7 +671,7 @@
           "description": "Configuração efetiva da construção PDE.",
           "items": [
             { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico do Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
-            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável por CODEX_REASONING_EFFORT.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Obrigatório em toda execução; configuração inferior bloqueia antes do modelo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentProperties.java" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Browser é usado para verificar, não para publicar.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" }
           ]
         },
@@ -974,7 +974,8 @@
           "description": "Modelos de planejamento, shadow e provedores de renderização.",
           "items": [
             { "key": "planner", "label": "Planejador", "value": "OpenAI Responses · gpt-5.6 · service_tier flex", "description": "Planejamento estruturado antes de qualquer renderização.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java" },
-            { "key": "shadow", "label": "Shadow Codex", "value": "gpt-5.6-sol · high · read-only · PT10M", "description": "Avaliação em sombra sem chamar provedor ou autorizar gasto.", "sourceReference": "video-management-service/src/main/resources/application.yml" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "max", "description": "Obrigatório na API e no Codex; modelos de mídia sem raciocínio preservam o próprio contrato.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/config/ApolloReasoningPolicy.java" },
+            { "key": "shadow", "label": "Shadow Codex", "value": "gpt-5.6-sol · max · read-only · PT10M", "description": "Avaliação em sombra sem chamar provedor ou autorizar gasto.", "sourceReference": "video-management-service/src/main/resources/application.yml" },
             { "key": "providers", "label": "Provedores de mídia", "value": "Veo · Luma · Kling · Runway · HeyGen · pós-produção", "description": "Cada integração possui limites, polling e auditoria próprios.", "sourceReference": "video-management-service/src/main/resources/application.yml" }
           ]
         },

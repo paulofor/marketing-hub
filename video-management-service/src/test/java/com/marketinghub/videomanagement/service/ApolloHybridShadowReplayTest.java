@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class ApolloHybridShadowReplayTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** Aprova a candidata Codex superior sem chamada de vídeo, gasto ou publicação. */
+    /** Aprova a candidata e preserva seu raciocínio auditado sem chamada de vídeo ou gasto. */
     @Test
     void shouldComparePersistedApiPlanWithCodexCandidateWithoutExternalEffect() throws Exception {
         JsonNode metadata = metadata();
@@ -24,7 +24,7 @@ class ApolloHybridShadowReplayTest {
         ApolloCodexShadowClient codex = mock(ApolloCodexShadowClient.class);
         when(codex.plan(21105L, metadata, baseline)).thenReturn(
                 new ApolloCodexShadowClient.CodexShadowResult(candidate, "snapshot", candidate.toString(),
-                        "gpt-5.6-sol", true, false, false));
+                        "gpt-5.6-sol", "max", true, false, false));
         ApolloStoryboardPlanner planner = new ApolloStoryboardPlanner(new VideoManagementProperties(), objectMapper,
                 mock(ApolloPlanningAiClient.class));
         ApolloHybridShadowReplay hybrid = new ApolloHybridShadowReplay(codex,
@@ -35,6 +35,7 @@ class ApolloHybridShadowReplayTest {
 
         assertThat(result.baselineOrigin()).isEqualTo("OPENAI_API_PERSISTED");
         assertThat(result.candidateOrigin()).isEqualTo("CODEX_SESSION");
+        assertThat(result.candidateReasoningEffort()).isEqualTo("max");
         assertThat(result.providerCalled()).isFalse();
         assertThat(result.spendingAuthorized()).isFalse();
         assertThat(result.comparison().decision()).isEqualTo("CANDIDATE_ELIGIBLE_FOR_ONLINE_SHADOW");

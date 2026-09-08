@@ -16,7 +16,7 @@ public class ApolloHybridShadowReplay {
         this.replay = replay;
     }
 
-    /** Executa a candidata Codex e a compara com o plano API congelado sem chamar provider de vídeo. */
+    /** Compara a candidata Codex ao plano API congelado e preserva o raciocínio efetivo do replay. */
     public HybridComparison compare(Long jobId, JsonNode frozenMetadata, JsonNode persistedApiPlan,
                                     String providerName) {
         ApolloCodexShadowClient.CodexShadowResult codex =
@@ -27,12 +27,13 @@ public class ApolloHybridShadowReplay {
         ApolloStoryboardShadowReplay.ReplayComparison comparison =
                 replay.compare(frozenMetadata, persistedApiPlan, codex.plan(), providerName);
         return new HybridComparison("OPENAI_API_PERSISTED", "CODEX_SESSION", codex.model(),
-                true, false, false, comparison, codex.request(), codex.rawResponse());
+                true, false, false, comparison, codex.request(), codex.rawResponse(), codex.reasoningEffort());
     }
 
     /** Consolida origens, auditoria e decisão do replay híbrido. */
     public record HybridComparison(String baselineOrigin, String candidateOrigin, String candidateModel,
                                    boolean shadowMode, boolean providerCalled, boolean spendingAuthorized,
                                    ApolloStoryboardShadowReplay.ReplayComparison comparison,
-                                   String candidateRequest, String candidateRawResponse) {}
+                                   String candidateRequest, String candidateRawResponse,
+                                   String candidateReasoningEffort) {}
 }

@@ -2,6 +2,7 @@ package com.marketinghub.videomanagement.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.videomanagement.config.ApolloReasoningPolicy;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.service.provider.VideoProviderException;
 import java.io.IOException;
@@ -31,12 +32,13 @@ public class ApolloCodexShadowClient {
         this.objectMapper = objectMapper;
     }
 
-    /** Produz um storyboard candidato sem provider, publicação, MCP ou autorização financeira. */
+    /** Produz um storyboard com raciocínio máximo e auditoria, sem autoridade financeira. */
     public CodexShadowResult plan(Long jobId, JsonNode frozenMetadata, JsonNode apiBaseline) {
         VideoManagementProperties.CodexShadow config = properties.getApolloPlanner().getCodexShadow();
         if (!config.isEnabled()) {
             throw blocked("Replay Codex de Apolo está desabilitado; nenhum provider foi chamado.");
         }
+        String reasoningEffort = ApolloReasoningPolicy.requireMaximum(config.getReasoningEffort());
         Path output = null;
         Path processLog = null;
         Path schema = null;
@@ -65,8 +67,10 @@ public class ApolloCodexShadowClient {
             JsonNode plan = objectMapper.readTree(raw);
             log.info("Replay Codex de Apolo concluído; jobId={} model={} shadow=true",
                     jobId, config.getModel());
-            return new CodexShadowResult(plan, request, raw, config.getModel(), true, false, false);
+            return new CodexShadowResult(plan, request, raw, config.getModel(), reasoningEffort,
+                    true, false, false);
         } catch (VideoProviderException ex) {
+            log.error("Replay Codex de Apolo bloqueado; jobId={}", jobId, ex);
             throw ex;
         } catch (IOException ex) {
             log.error("Falha ao executar replay Codex de Apolo; jobId={}", jobId, ex);
@@ -82,7 +86,7 @@ public class ApolloCodexShadowClient {
         }
     }
 
-    /** Monta o comando Codex sem pesquisa, MCP, escrita ou aprovação interativa. */
+    /** Monta o comando Codex com raciocínio máximo, sem pesquisa, MCP ou escrita. */
     List<String> command(Path output, Path schema) {
         VideoManagementProperties.CodexShadow config = properties.getApolloPlanner().getCodexShadow();
         List<String> command = new ArrayList<>(List.of(
@@ -90,10 +94,8 @@ public class ApolloCodexShadowClient {
                 "--cd", config.getWorkingDirectory(), "--output-schema", schema.toString(),
                 "--output-last-message", output.toString(), "--color", "never",
                 "--config", "approval_policy=\"never\"", "--model", config.getModel()));
-        if (config.getReasoningEffort() != null && !config.getReasoningEffort().isBlank()) {
-            command.addAll(List.of("--config",
-                    "model_reasoning_effort=\"" + config.getReasoningEffort() + "\""));
-        }
+        command.addAll(List.of("--config", "model_reasoning_effort=\""
+                + ApolloReasoningPolicy.requireMaximum(config.getReasoningEffort()) + "\""));
         return command;
     }
 
@@ -150,7 +152,8 @@ public class ApolloCodexShadowClient {
         return new VideoProviderException("APOLLO_CODEX_SHADOW_BLOCKED", message, cause);
     }
 
-    /** Preserva plano e auditoria sem alegar gasto, provider ou publicação. */
+    /** Preserva plano e configuração efetiva sem alegar gasto, provider ou publicação. */
     public record CodexShadowResult(JsonNode plan, String request, String rawResponse, String model,
+                                    String reasoningEffort,
                                     boolean shadowMode, boolean providerCalled, boolean spendingAuthorized) {}
 }

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 /** Valida os limites estruturais do processo Codex do Agente Gerador de Landing. */
 class LandingGeneratorCodexRunnerTest {
-  /** Deve fixar modelo, sandbox, pesquisa e MCP exclusivo em toda execução. */
+  /** Deve fixar raciocínio máximo, modelo, sandbox, pesquisa e MCP exclusivo em toda execução. */
   @Test
   void shouldBuildPremiumCodexCommand() {
     LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
@@ -38,7 +38,7 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(command.contains("--json"));
     assertTrue(command.contains("read-only"));
     assertTrue(command.contains("gpt-5.6-sol"));
-    assertTrue(command.contains("model_reasoning_effort=\"high\""));
+    assertTrue(command.contains("model_reasoning_effort=\"max\""));
     assertTrue(command.stream().anyMatch(value -> value.contains("mcp_servers.landing_generator")));
   }
 
@@ -225,7 +225,7 @@ class LandingGeneratorCodexRunnerTest {
     assertFalse(schema.contains("null"));
     List<String> command = generator.command(Path.of("/tmp/html-out"), Path.of("/tmp/html-schema"));
     assertTrue(command.contains("read-only"));
-    assertTrue(command.contains("model_reasoning_effort=\"high\""));
+    assertTrue(command.contains("model_reasoning_effort=\"max\""));
   }
 
   /** Deve materializar automaticamente o HTML quando a decisão por código vier sem artefato. */

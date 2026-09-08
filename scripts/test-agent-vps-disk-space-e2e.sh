@@ -44,28 +44,34 @@ done
 test_containers_before="$("${compose[@]}" ps --all --quiet | sort)"
 test_image_before="$(docker image inspect --format '{{.Id}}' "$AGENT_VPS_DISK_TEST_IMAGE")"
 
-# Na sandbox a engine pode ser remota. Só o caminho da medição usa double nesse caso;
-# build, coleta e inspeção de imagens, containers e volumes continuam na engine real.
-test_command_path="$PATH"
+# Na sandbox a engine pode ser remota e conter cache de outras homologações.
+# A retenção de tags é real; o cache compartilhado é simulado e a coleta dangling
+# fica restrita à sessão atual para não apagar artefatos externos a este teste.
 test_docker_root="$(docker info --format '{{.DockerRootDir}}')"
+mkdir -p "$test_dir/bin"
+export DISK_E2E_DOCKER_EXECUTABLE
+DISK_E2E_DOCKER_EXECUTABLE="$(command -v docker)"
+export DISK_E2E_MEASUREMENT_PATH="$test_docker_root"
 if [[ ! -d "$test_docker_root" ]]; then
-  mkdir -p "$test_dir/bin"
-  export DISK_E2E_DOCKER_EXECUTABLE
-  DISK_E2E_DOCKER_EXECUTABLE="$(command -v docker)"
-  export DISK_E2E_MEASUREMENT_PATH="$test_dir"
-  cat >"$test_dir/bin/docker" <<'REMOTE_ENGINE_DOUBLE'
+  DISK_E2E_MEASUREMENT_PATH="$test_dir"
+  echo "Engine remota: caminho da medição sintético; retenção de tags testada no Docker real."
+fi
+cat >"$test_dir/bin/docker" <<'REMOTE_ENGINE_DOUBLE'
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "$*" = 'info --format {{.DockerRootDir}}' ]]; then
   printf '%s\n' "$DISK_E2E_MEASUREMENT_PATH"
+elif [[ "${1:-} ${2:-}" = 'builder prune' ]]; then
+  echo 'Coleta de cache simulada para preservar outras homologações da sandbox.'
+elif [[ "${1:-} ${2:-}" = 'image prune' ]]; then
+  exec "$DISK_E2E_DOCKER_EXECUTABLE" "$@" \
+    --filter "label=com.marketinghub.homologation.session=${AIHUB_HOMOLOGATION_SESSION:?}"
 else
   exec "$DISK_E2E_DOCKER_EXECUTABLE" "$@"
 fi
 REMOTE_ENGINE_DOUBLE
-  chmod +x "$test_dir/bin/docker"
-  test_command_path="$test_dir/bin:$PATH"
-  echo "Engine remota: caminho da medição sintético; coleta e preservação testadas no Docker real."
-fi
+chmod +x "$test_dir/bin/docker"
+test_command_path="$test_dir/bin:$PATH"
 
 # Limite sintético impossível: executa a coleta real e exige bloqueio se o disco não atender.
 test_status=0

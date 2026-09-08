@@ -34,7 +34,7 @@ video:
       enabled: ${APOLLO_CODEX_SHADOW_ENABLED:false}
       command: ${APOLLO_CODEX_COMMAND:codex}
       model: ${APOLLO_CODEX_MODEL:gpt-5.6-sol}
-      reasoning-effort: ${APOLLO_CODEX_REASONING_EFFORT:high}
+      reasoning-effort: ${APOLLO_CODEX_REASONING_EFFORT:max}
       working-directory: ${APOLLO_CODEX_WORKING_DIRECTORY:/app}
       timeout: ${APOLLO_CODEX_TIMEOUT:PT10M}
   reference-analysis:

@@ -163,7 +163,7 @@ class LumaRayVideoProviderTest {
                 .hasMessageContaining("LUMA_AGENTS_API_KEY");
     }
 
-    /** Deve gerar imagem OpenAI, publicar asset e enviar frame inicial para Luma. */
+    /** Deve dirigir a imagem com raciocínio máximo e enviar o frame pelo contrato de assets. */
     @Test
     void shouldUseOpenAiReferenceImageAsLumaStartFrame() throws Exception {
         server.enqueue(json("""
@@ -213,6 +213,7 @@ class LumaRayVideoProviderTest {
         assertThat(openAiRequest.getHeader("Authorization")).isEqualTo("Bearer openai-test-key");
         assertThat(openAiRequest.getBody().readUtf8())
                 .contains("\"service_tier\":\"flex\"")
+                .contains("\"reasoning\":{\"effort\":\"max\"}")
                 .contains("\"model\":\"gpt-image-2\"")
                 .contains("anti-sensualizacao");
         RecordedRequest lumaCreate = server.takeRequest();

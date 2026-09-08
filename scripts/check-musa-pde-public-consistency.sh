@@ -62,7 +62,7 @@ PY
   local backend_alias_url="${BACKEND_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}${contract_query}"
   local pde_alias_url="${PDE_PUBLIC_BASE_URL%/}/api/pde/products/${PRODUCT_SLUG}${contract_query}"
   local pde_health_url="${PDE_PUBLIC_BASE_URL%/}/healthz"
-  local pde_slot_diagnostics_url="${PDE_PUBLIC_BASE_URL%/}/slot-diagnostics.json"
+  local pde_version_diagnostics_url="${PDE_PUBLIC_BASE_URL%/}/version-diagnostics.json"
   local pde_page_url="${PDE_PUBLIC_BASE_URL%/}/"
   local runtime_config_url="${PDE_PUBLIC_BASE_URL%/}/runtime-config.js"
 
@@ -70,7 +70,7 @@ PY
   fetch_url "${backend_alias_url}" "${TMP_DIR}/backend-alias.json"
   fetch_url "${pde_alias_url}" "${TMP_DIR}/pde-alias.json"
   fetch_url "${pde_health_url}" "${TMP_DIR}/pde-health.txt"
-  fetch_url "${pde_slot_diagnostics_url}" "${TMP_DIR}/slot-diagnostics.json"
+  fetch_url "${pde_version_diagnostics_url}" "${TMP_DIR}/version-diagnostics.json"
   fetch_url "${pde_page_url}" "${TMP_DIR}/pde-page.html"
   fetch_url "${runtime_config_url}" "${TMP_DIR}/runtime-config.js"
   if [[ -n "${EXPECTED_HERO_VIDEO_PATH}" ]]; then
@@ -82,7 +82,7 @@ PY
       "${video_url}" >"${TMP_DIR}/hero-video-content-type.txt"
   fi
 
-  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" <<'PY'
+  python3 - "${PRODUCT_SLUG}" "${TMP_DIR}" "${PDE_PUBLIC_BASE_URL}" "${EXPECTED_EXPERIENCE_VERSION}" "${EXPECTED_HERO_VIDEO_PATH}" "${EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE}" "${slot_code}" <<'PY'
 import json
 import pathlib
 import sys
@@ -92,6 +92,7 @@ base = pathlib.Path(sys.argv[2])
 pde_public_base_url = sys.argv[3]
 expected_experience_version = sys.argv[4].strip()
 expected_hero_video_path = sys.argv[5].strip()
+expected_public_version = sys.argv[7].strip()
 
 def load_json(name):
     path = base / name
@@ -116,7 +117,7 @@ def without_nulls(value):
 canonical = load_json("canonical.json")
 backend_alias = load_json("backend-alias.json")
 pde_alias = load_json("pde-alias.json")
-slot_diagnostics = load_json("slot-diagnostics.json")
+version_diagnostics = load_json("version-diagnostics.json")
 
 canonical_slug = field(canonical, "slug")
 if canonical_slug != product_slug:
@@ -190,19 +191,25 @@ health = (base / "pde-health.txt").read_text(encoding="utf-8", errors="replace")
 if "UP" not in health.upper():
     raise SystemExit("Health público do PDE não contém status UP")
 
-if field(slot_diagnostics, "status").upper() != "UP":
-    raise SystemExit("Diagnóstico público do slot PDE não contém status UP")
+if field(version_diagnostics, "status").upper() != "UP":
+    raise SystemExit("Diagnóstico público da versão PDE não contém status UP")
 
-for key in ["slot", "experienceVersion", "image", "imageTag", "commitSha"]:
-    field(slot_diagnostics, key)
+for key in ["version", "productSlug", "experienceVersion", "image", "imageTag", "commitSha"]:
+    field(version_diagnostics, key)
 
-if expected_experience_version:
-    slot_experience_version = field(slot_diagnostics, "experienceVersion")
-    if slot_experience_version != expected_experience_version:
+diagnostic_identity = {
+    "productSlug": canonical_slug,
+    "experienceVersion": field(canonical, "experienceVersion"),
+}
+if expected_public_version:
+    diagnostic_identity["version"] = expected_public_version
+for key, expected in diagnostic_identity.items():
+    actual = field(version_diagnostics, key)
+    if actual != expected:
         raise SystemExit(
-            "Diagnóstico público do slot PDE divergente: "
-            f"url={pde_public_base_url}/slot-diagnostics.json "
-            f"esperado={expected_experience_version} retornado={slot_experience_version}"
+            f"Diagnóstico público da versão PDE divergente no campo {key}: "
+            f"url={pde_public_base_url}/version-diagnostics.json "
+            f"esperado={expected} retornado={actual}"
         )
 
 page = (base / "pde-page.html").read_text(encoding="utf-8", errors="replace")

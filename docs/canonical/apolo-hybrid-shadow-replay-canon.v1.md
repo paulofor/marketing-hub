@@ -10,6 +10,10 @@ Comparar a direção criativa produzida pela API com uma candidata criada por se
 - O Codex recebe somente o snapshot congelado e o plano da linha de base.
 - O Codex executa sem pesquisa, MCP, escrita, aprovação interativa, provider de vídeo, publicação ou autoridade financeira.
 - API e Codex usam o mesmo schema de storyboard e o mesmo gate determinístico.
+- Por decisão do usuário registrada em 2026-09-08, API e Codex enviam raciocínio `max`
+  explicitamente. O replay bloqueia configuração ausente ou inferior antes de iniciar o processo,
+  e registra o esforço efetivo na auditoria. O baseline persistido conserva sua configuração
+  histórica; não se atribui `max` retroativamente.
 - A candidata precisa obter nota mínima 70, superar a linha de base, respeitar o teto congelado, cobrir o arco comercial e não conter cenas redundantes.
 - Vencer o replay torna a candidata elegível somente para sombra online; não promove versão nem libera créditos automaticamente.
 - Orçamento, provider, publicação e promoção permanecem sob controle externo imutável.

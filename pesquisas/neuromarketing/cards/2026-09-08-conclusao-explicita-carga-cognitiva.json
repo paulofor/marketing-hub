@@ -1,0 +1,18 @@
+{
+  "cardKey": "conclusao-explicita-carga-cognitiva",
+  "collection": "neuromarketing",
+  "title": "Conclusão explícita pode ajudar sob alta carga cognitiva",
+  "finding": "Em três experimentos com anúncios simulados de Instagram, os dois estudos adultos mais robustos encontraram melhor atitude de marca para conclusões explícitas sob carga cognitiva; a credibilidade percebida participou do mecanismo.",
+  "mechanism": "Quando recursos cognitivos estão limitados, uma conclusão clara e sustentada reduz o esforço de converter evidências ambíguas em um takeaway e pode funcionar como heurística de baixa demanda.",
+  "commercialApplication": "Adicionar ConclusionExplicitnessVariant/CognitiveLoadCopyMode aos creative variants, mantendo evidência e visual constantes e comparando conclusão IMPLICIT com EXPLICIT, especialmente em claims complexos ou difíceis de verificar.",
+  "evidenceStrength": "Moderada-alta para atitude e credibilidade em anúncios simulados: efeito replicado em dois estudos adultos; não há evidência direta de aumento de CTR, leads ou vendas e o domínio principal foi sustentabilidade.",
+  "publishedOn": "2026-06-22",
+  "validUntil": "2027-06-22",
+  "experimentHypothesis": "Em Meta Ads com claims complexos, uma conclusão explícita e comprovada elevará compreensão e credibilidade em contextos de maior carga e poderá melhorar CTA/conversão; cada desfecho precisa ser medido diretamente.",
+  "risks": "Transformar clareza em exagero, claim categórico não sustentado, greenwashing ou falsa certeza; toda conclusão explícita deve permanecer verificável.",
+  "limits": "Os experimentos focaram principalmente sustentabilidade e mediram atitude/credibilidade, não vendas; a generalização para outros claims, públicos e placements deve ser testada.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-08-conclusao-explicita-carga-cognitiva.md",
+  "sourceTitle": "Fonte revisada — Conclusão explícita sob carga cognitiva",
+  "sourceSha256": "efa42de0076f0b4c0e4cc70d06ccdd980fa7c84256d863635af71d1045d74b53"
+}

@@ -284,3 +284,60 @@ function startMcp(port, scope) {
     }
   };
 }
+
+test('consulta a mesma inteligencia canonica nos escopos de experimento e plano', async () => {
+  const requests = [];
+  const data = {
+    contractVersion: 'EXPERIMENT_SESSION_INTELLIGENCE_V1', available: true,
+    primarySource: 'PDE_ANALYTICS', experimentId: 91,
+    pdeAnalytics: { available: true, scope: 'EXPERIMENT_ATTRIBUTED', totalEvents: 86, sessions: 4 },
+    landingAnalytics: { available: false, reason: 'NOT_APPLICABLE_TO_PDE' }
+  };
+  const backend = await startBackend(async (request, response) => {
+    requests.push(request.url);
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify(request.url.includes('agent-memory') ? [] : data));
+  });
+  for (const scope of [{ MCP_EXPERIMENT_ID: '91' }, { MCP_COMMERCIAL_PLAN_ID: '3' }]) {
+    const client = startMcp(backend.address().port, scope);
+    try {
+      const result = await client.request('tools/call', { name: 'consultar_sessoes', arguments: { eventLimit: 5000 } });
+      const payload = JSON.parse(result.result.content[0].text);
+      assert.deepEqual(payload.data, data);
+      assert.equal(payload.audit.experimentId, 91);
+      assert.match(payload.audit.source, /session-intelligence\?eventLimit=2000$/);
+    } finally { await client.close(); }
+  }
+  backend.close();
+  assert(requests.some(p => p.includes('/internal/experiments/91/session-intelligence')));
+  assert(requests.some(p => p.includes('/internal/commercial-plans/3/session-intelligence')));
+  assert(!requests.some(p => p.includes('funnel/analytics')));
+});
+
+test('erro da API de metricas nao consulta analytics legado nem inventa zero', async () => {
+  const requests = [];
+  const backend = await startBackend(async (request, response) => {
+    requests.push(request.url);
+    response.statusCode = 503;
+    response.end('{"error":"fonte indisponivel"}');
+  });
+  const client = startMcp(backend.address().port, { MCP_EXPERIMENT_ID: '91' });
+  try {
+    const result = await client.request('tools/call', { name: 'consultar_sessoes', arguments: {} });
+    assert.match(result.error.message, /HTTP 503/);
+    assert.equal(requests.length, 1);
+    assert(!requests.some(p => p.includes('funnel/analytics')));
+  } finally { await client.close(); backend.close(); }
+});
+
+test('bloqueia contrato antigo ou metricas de outro experimento', async () => {
+  const backend = await startBackend(async (_request, response) => {
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify({ contractVersion: 'EXPERIMENT_SESSION_INTELLIGENCE_V1', primarySource: 'PDE_ANALYTICS', experimentId: 90 }));
+  });
+  const client = startMcp(backend.address().port, { MCP_EXPERIMENT_ID: '91' });
+  try {
+    const result = await client.request('tools/call', { name: 'consultar_sessoes', arguments: {} });
+    assert.match(result.error.message, /experimento divergente/);
+  } finally { await client.close(); backend.close(); }
+});

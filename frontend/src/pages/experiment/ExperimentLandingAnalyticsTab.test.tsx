@@ -151,7 +151,16 @@ describe("ExperimentLandingAnalyticsTab", () => {
               trafficSources: [],
               deviceBreakdown: [],
               screenSizeBreakdown: [],
-              recentJourneys: [],
+              recentJourneys: [
+                {
+                  sessionId: "anonymous-session",
+                  abandonmentPoint: "NOT_INFERRED",
+                  screenNames: [],
+                  sectionIds: [],
+                  maxScrollDepthPercent: 0,
+                  totalVisibleMs: 1000,
+                },
+              ],
             },
             pdeProductionSlots: [],
             logs: {
@@ -183,6 +192,8 @@ describe("ExperimentLandingAnalyticsTab", () => {
 
     expect(await screen.findByText("Tempo médio/sessão")).toBeTruthy();
     expect(screen.getByText("39s")).toBeTruthy();
+    expect(screen.getByText("Sem conclusão sobre abandono")).toBeTruthy();
+    expect(screen.queryByText("NOT_INFERRED")).toBeNull();
     expect(screen.queryByText("15min 34s")).toBeNull();
     expect(
       (axios.get as any).mock.calls.map((call: unknown[]) => call[0]),

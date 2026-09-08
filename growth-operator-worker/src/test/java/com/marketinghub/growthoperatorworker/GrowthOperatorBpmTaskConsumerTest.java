@@ -26,6 +26,7 @@ class GrowthOperatorBpmTaskConsumerTest {
     WorkerProperties properties = properties();
     Map<String, Object> task = task(88L);
     when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
+    when(backend.sessionIntelligence(88L)).thenReturn(metrics(88L));
     when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
@@ -54,6 +55,7 @@ class GrowthOperatorBpmTaskConsumerTest {
     GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
     Map<String, Object> task = task(89L);
     when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
+    when(backend.sessionIntelligence(88L)).thenReturn(metrics(88L));
     when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
@@ -75,6 +77,7 @@ class GrowthOperatorBpmTaskConsumerTest {
     GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
     Map<String, Object> task = task(90L);
     when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
+    when(backend.sessionIntelligence(88L)).thenReturn(metrics(88L));
     when(runner.run(any()))
         .thenReturn(
             new GrowthOperatorBpmRunner.BpmExecution(
@@ -141,6 +144,74 @@ class GrowthOperatorBpmTaskConsumerTest {
 
     verify(runner, never()).run(any());
     verify(backend).failBpmTask(eq(93L), any());
+  }
+
+  /** Exige evidência canônica antes de consumir o modelo em caso de fonte indisponível. */
+  @Test
+  void shouldRejectUnavailableMetricsBeforeModel() throws Exception {
+    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
+    GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
+    when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task(356L));
+    when(backend.sessionIntelligence(88L)).thenReturn(Map.of("available", false));
+    new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
+    verify(runner, never()).run(any());
+    verify(backend).failBpmTask(eq(356L), any());
+  }
+
+  /** Não aceita métricas de outro experimento mesmo que disponíveis. */
+  @Test
+  void shouldRejectCrossExperimentMetrics() throws Exception {
+    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
+    when(backend.sessionIntelligence(88L)).thenReturn(metrics(90L));
+    var consumer =
+        new GrowthOperatorBpmTaskConsumer(
+            backend, mock(GrowthOperatorBpmRunner.class), properties(), json);
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> consumer.requireSessionIntelligence(task(356L)))
+        .hasMessageContaining("divergentes");
+  }
+
+  /** Preserva zero real como evidência disponível e congela a leitura para o parecer. */
+  @Test
+  void shouldFreezeCanonicalPdeEvidenceWithoutInventingEvents() {
+    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
+    when(backend.sessionIntelligence(88L)).thenReturn(metrics(88L));
+    var consumer =
+        new GrowthOperatorBpmTaskConsumer(
+            backend, mock(GrowthOperatorBpmRunner.class), properties(), json);
+    assertThat(consumer.requireSessionIntelligence(task(356L)).get("sessionIntelligence"))
+        .isEqualTo(metrics(88L));
+  }
+
+  /** Monta uma leitura PDE atribuída, sem acessar fonte produtiva. */
+  private Map<String, Object> metrics(long id) {
+    return Map.of(
+        "contractVersion",
+        "EXPERIMENT_SESSION_INTELLIGENCE_V1",
+        "experimentId",
+        id,
+        "available",
+        true,
+        "primarySource",
+        "PDE_ANALYTICS",
+        "consultedAt",
+        "2026-09-08T19:00:00Z",
+        "pdeAnalytics",
+        Map.of(
+            "experimentId",
+            id,
+            "scope",
+            "EXPERIMENT_ATTRIBUTED",
+            "available",
+            true,
+            "sessions",
+            0,
+            "totalEvents",
+            0,
+            "source",
+            "pde_funnel_event",
+            "experienceVersion",
+            "musa-v7"));
   }
 
   /** Cria uma resposta mínima válida para exercitar os callbacks. */

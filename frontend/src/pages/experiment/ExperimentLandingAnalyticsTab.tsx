@@ -114,6 +114,7 @@ export function calculateVideoAnalytics(events?: Record<string, number>) {
 
 function abandonmentLabel(value?: string | null) {
   const labels: Record<string, string> = {
+    NOT_INFERRED: "Sem conclusão sobre abandono",
     ASSINATURA_APROVADA: "Compra aprovada",
     ABANDONOU_CHECKOUT: "Abandonou no checkout",
     ABANDONOU_PAYWALL: "Abandonou no paywall",

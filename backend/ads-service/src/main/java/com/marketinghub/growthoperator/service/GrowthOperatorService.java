@@ -325,29 +325,47 @@ public class GrowthOperatorService {
     return toTaskResponse(taskRepository.save(task));
   }
 
-  /** Consulta as sessoes atuais por API sem expor banco ou dados pessoais ao worker. */
+  /** Consulta a fonte canônica do experimento explicitamente selecionado no plano. */
   @Transactional(readOnly = true)
   public Map<String, Object> sessionIntelligence(Long planId, int requestedEventLimit) {
     CommercialPlan plan = commercialPlanService.getPlan(planId);
     if (plan.getExperiment() == null) {
       return Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT", "planId", planId);
     }
-    int eventLimit = Math.max(1, Math.min(requestedEventLimit, SESSION_EVENT_LIMIT));
-    Long experimentId = plan.getExperiment().getId();
-    LinkedHashMap<String, Object> intelligence = new LinkedHashMap<>();
-    intelligence.put("available", true);
+    Map<String, Object> intelligence =
+        new LinkedHashMap<>(
+            experimentSessionIntelligence(plan.getExperiment().getId(), requestedEventLimit));
     intelligence.put("planId", planId);
+    return intelligence;
+  }
+
+  /** Entrega métricas por experimento para o BPM sem fallback de PDE para landing tradicional. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> experimentSessionIntelligence(
+      Long experimentId, int requestedEventLimit) {
+    int eventLimit = Math.max(1, Math.min(requestedEventLimit, SESSION_EVENT_LIMIT));
+    Map<String, Object> pde =
+        experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId, eventLimit);
+    boolean legacy = "NOT_PDE_EXPERIENCE".equals(pde.get("reason"));
+    LinkedHashMap<String, Object> intelligence = new LinkedHashMap<>();
+    intelligence.put("contractVersion", "EXPERIMENT_SESSION_INTELLIGENCE_V1");
+    intelligence.put("available", legacy || Boolean.TRUE.equals(pde.get("available")));
+    intelligence.put("primarySource", legacy ? "LANDING_ANALYTICS" : "PDE_ANALYTICS");
     intelligence.put("experimentId", experimentId);
+    intelligence.put("consultedAt", Instant.now());
     intelligence.put("requestedEventLimit", requestedEventLimit);
     intelligence.put("appliedEventLimit", eventLimit);
     intelligence.put(
         "landingAnalytics",
-        experimentFunnelService.buildDetailedAnalyticsEvidence(experimentId, eventLimit));
+        legacy
+            ? experimentFunnelService.buildDetailedAnalyticsEvidence(experimentId, eventLimit)
+            : Map.of("available", false, "reason", "NOT_APPLICABLE_TO_PDE"));
     intelligence.put(
         "personalizedSampleDelivery",
-        experimentFunnelService.buildPersonalizedSampleDeliveryEvidence(experimentId));
-    intelligence.put(
-        "pdeAnalytics", experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId));
+        legacy
+            ? experimentFunnelService.buildPersonalizedSampleDeliveryEvidence(experimentId)
+            : Map.of("available", false, "reason", "NOT_APPLICABLE_TO_PDE"));
+    intelligence.put("pdeAnalytics", pde);
     return intelligence;
   }
 
@@ -700,7 +718,8 @@ public class GrowthOperatorService {
   }
 
   /**
-   * Calcula a identidade das evidencias operacionais sem incluir a memoria que cresce a cada ciclo.
+   * Calcula a identidade das evidências sem memória acumulada ou relógios de consulta, preservando
+   * mudanças reais.
    */
   private String buildEvidenceFingerprint(String evidenceSnapshot) {
     try {
@@ -708,6 +727,11 @@ public class GrowthOperatorService {
       if (operationalEvidence.isObject()) {
         ((com.fasterxml.jackson.databind.node.ObjectNode) operationalEvidence)
             .remove(java.util.List.of("consolidatedMemory", "operatorTasks"));
+        for (String path : List.of("/sessionIntelligence", "/sessionIntelligence/pdeAnalytics")) {
+          JsonNode evidence = operationalEvidence.at(path);
+          if (evidence.isObject())
+            ((com.fasterxml.jackson.databind.node.ObjectNode) evidence).remove("consultedAt");
+        }
       }
       return sha256(objectMapper.writeValueAsString(operationalEvidence));
     } catch (JsonProcessingException ex) {

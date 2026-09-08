@@ -88,9 +88,46 @@ paths:
           schema: {type: integer, format: int64}
       responses:
         "200": {description: Ciclo atual ou novo ciclo criado quando as evidencias mudam.}
+  /api/growth-operator/v1/internal/experiments/{experimentId}/session-intelligence:
+    get:
+      summary: Entrega ao BPM a fonte canônica do experimento, com atribuição e disponibilidade explícitas.
+      description: >-
+        Usa EXPERIMENT_SESSION_INTELLIGENCE_V1. primarySource seleciona PDE_ANALYTICS ou
+        LANDING_ANALYTICS no backend. PDE retorna pde_funnel_event filtrado por produto, versão e
+        atribuição UTM oficial ou experimentId explícito no evento. available=false significa
+        fonte indisponível, nunca zero. Totais completos e eventos detalhados limitados são separados.
+        Nenhuma consulta publica campanha, altera processo ou dispensa preflight e autorização.
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - in: query
+          name: eventLimit
+          schema: {type: integer, default: 2000, minimum: 1, maximum: 2000}
+      responses:
+        "200":
+          description: Leitura canônica disponível ou falha de fonte declarada no payload.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [contractVersion, available, primarySource, experimentId, consultedAt, pdeAnalytics, landingAnalytics]
+                properties:
+                  contractVersion: {type: string, enum: [EXPERIMENT_SESSION_INTELLIGENCE_V1]}
+                  available: {type: boolean}
+                  primarySource: {type: string, enum: [PDE_ANALYTICS, LANDING_ANALYTICS]}
+                  experimentId: {type: integer, format: int64}
+                  consultedAt: {type: string, format: date-time}
+                  pdeAnalytics: {type: object}
+                  landingAnalytics: {type: object}
+                  personalizedSampleDelivery: {type: object}
+                  requestedEventLimit: {type: integer}
+                  appliedEventLimit: {type: integer}
+        "404": {description: Experimento inexistente.}
   /api/growth-operator/v1/internal/commercial-plans/{planId}/session-intelligence:
     get:
-      summary: Entrega sessoes, jornadas e eventos detalhados anonimizados ao agente.
+      summary: Entrega a mesma fonte canônica do experimento selecionado no plano, sem analytics global.
       parameters:
         - in: path
           name: planId

@@ -20,6 +20,7 @@ import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAna
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
+import com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
@@ -78,6 +79,7 @@ public class ExperimentFunnelService {
   private final PdeAnalyticsClient pdeAnalyticsClient;
   private final InternalAnalyticsTrafficFilter internalAnalyticsTrafficFilter;
   private final PdeProductionSlotRepository pdeProductionSlotRepository;
+  private final PdeExperimentAnalyticsReader pdeExperimentAnalyticsReader;
 
   static final String FLOW_SCOPE_CONDITION =
       """
@@ -407,14 +409,44 @@ public class ExperimentFunnelService {
 
   /** Entrega jornadas PDE detalhadas e anonimizadas quando o experimento usa essa experiência. */
   public Map<String, Object> buildDetailedPdeAnalyticsEvidence(Long experimentId) {
-    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    return buildDetailedPdeAnalyticsEvidence(experimentId, 2000);
+  }
+
+  /** Lê métricas completas e eventos limitados no mesmo recorte canônico. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> buildDetailedPdeAnalyticsEvidence(Long experimentId, int eventLimit) {
+    Experiment experiment =
+        experimentRepository
+            .findById(experimentId)
+            .orElseThrow(
+                () ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Experimento não encontrado"));
     if (!isPdeMembershipSubscriptionFunnel(experiment)) {
       return Map.of("available", false, "reason", "NOT_PDE_EXPERIENCE");
     }
     try {
-      PdeAnalyticsSummary summary = fetchPdeSummaryForExperiment(experiment);
+      PdeAnalyticsSummary summary = pdeExperimentAnalyticsReader.read(experiment);
       LinkedHashMap<String, Object> evidence = new LinkedHashMap<>();
       evidence.put("available", true);
+      evidence.put("source", "pde_funnel_event");
+      evidence.put("scope", "EXPERIMENT_ATTRIBUTED");
+      evidence.put("experimentId", experimentId);
+      evidence.put("consultedAt", Instant.now());
+      evidence.put("sessions", summary.sessions());
+      evidence.put("uniqueVisitors", summary.uniqueVisitors());
+      evidence.put("pageViews", summary.pageViews());
+      evidence.put("loginStarted", summary.loginStarted());
+      evidence.put("loginCompleted", summary.loginCompleted());
+      evidence.put("checkoutStarted", summary.checkoutStarted());
+      evidence.put("subscriptionApproved", summary.subscriptionApproved());
+      evidence.put("lastEventAt", summary.lastEventAt());
+      var details = pdeExperimentAnalyticsReader.details(experiment, summary, eventLimit);
+      evidence.put("totalEventsAvailable", summary.totalEvents());
+      evidence.put("includedEvents", details.size());
+      evidence.put("truncated", summary.totalEvents() > details.size());
+      evidence.put("detailedEvents", details);
       evidence.put("productSlug", summary.productSlug());
       evidence.put("experienceVersion", summary.currentExperienceVersion());
       evidence.put("totalEvents", summary.totalEvents());
@@ -430,9 +462,7 @@ public class ExperimentFunnelService {
       evidence.put("trafficQuality", summary.trafficQualityBreakdown());
       evidence.put("devices", summary.deviceBreakdown());
       evidence.put("screenSizes", summary.screenSizeBreakdown());
-      evidence.put(
-          "detailedJourneys",
-          summary.recentJourneys().stream().map(this::sanitizePdeJourney).toList());
+      evidence.put("detailedJourneys", summary.recentJourneys());
       return evidence;
     } catch (Exception ex) {
       log.error(
@@ -445,37 +475,14 @@ public class ExperimentFunnelService {
           "reason",
           "PDE_ANALYTICS_ERROR",
           "errorType",
-          ex.getClass().getSimpleName());
+          ex.getClass().getSimpleName(),
+          "experimentId",
+          experimentId,
+          "source",
+          "pde_funnel_event",
+          "consultedAt",
+          Instant.now());
     }
-  }
-
-  /** Remove IP, user-agent e identificadores completos de uma jornada PDE detalhada. */
-  private Map<String, Object> sanitizePdeJourney(PdeAnalyticsSummary.PdeSessionJourney journey) {
-    LinkedHashMap<String, Object> safe = new LinkedHashMap<>();
-    safe.put("anonymousVisitorId", anonymousIdentifier("visitor", journey.visitorId()));
-    safe.put("anonymousSessionId", anonymousIdentifier("session", journey.sessionId()));
-    safe.put("trafficQuality", journey.trafficQuality());
-    safe.put("trafficQualityReason", journey.trafficQualityReason());
-    safe.put("trafficProvider", journey.trafficProvider());
-    safe.put("firstEventAt", journey.firstEventAt());
-    safe.put("lastEventAt", journey.lastEventAt());
-    safe.put("totalVisibleMs", journey.totalVisibleMs());
-    safe.put("maxScrollDepthPercent", journey.maxScrollDepthPercent());
-    safe.put("screenNames", journey.screenNames());
-    safe.put("sectionIds", journey.sectionIds());
-    safe.put("fieldFocused", journey.fieldFocused());
-    safe.put("fieldInputStarted", journey.fieldInputStarted());
-    safe.put("fieldFilled", journey.fieldFilled());
-    safe.put("ctaClicked", journey.ctaClicked());
-    safe.put("loginStarted", journey.loginStarted());
-    safe.put("loginCompleted", journey.loginCompleted());
-    safe.put("paywallViewed", journey.paywallViewed());
-    safe.put("checkoutStarted", journey.checkoutStarted());
-    safe.put("subscriptionApproved", journey.subscriptionApproved());
-    safe.put("abandonmentPoint", journey.abandonmentPoint());
-    safe.put("lastEventType", journey.lastEventType());
-    safe.put("lastActionName", journey.lastActionName());
-    return safe;
   }
 
   /** Remove identificadores e user-agent bruto das jornadas agregadas entregues ao agente. */
@@ -1527,8 +1534,10 @@ public class ExperimentFunnelService {
       return;
     }
 
-    List<String> attributionCodes = fetchExperimentAttributionCodes(experiment);
-    PdeMembershipMetric metric = aggregatePdeMembershipMetric(summary, attributionCodes);
+    PdeMembershipMetric metric =
+        isFakeExperiment(experiment)
+            ? aggregatePdeMembershipMetric(summary, fetchExperimentAttributionCodes(experiment))
+            : canonicalPdeMetric(summary);
     mergeMetric(
         stages,
         ExperimentFunnelStage.VISUALIZACAO_FORM,
@@ -1582,8 +1591,7 @@ public class ExperimentFunnelService {
       return pdeAnalyticsClient.fetchSummaryIncludingNonHumanTraffic(
           DEFAULT_PDE_PRODUCT_SLUG, experiment.getFollowUpActionUrl());
     }
-    return pdeAnalyticsClient.fetchSummary(
-        DEFAULT_PDE_PRODUCT_SLUG, experiment.getFollowUpActionUrl());
+    return pdeExperimentAnalyticsReader.read(experiment);
   }
 
   /**
@@ -1664,6 +1672,26 @@ public class ExperimentFunnelService {
     fakeCodes.add("experiment-" + experimentId);
     fakeCodes.add("experiment_" + experimentId);
     return fakeCodes.stream().distinct().toList();
+  }
+
+  /** Projeta a mesma leitura já atribuída ao experimento, inclusive entrega e primeiro uso. */
+  private PdeMembershipMetric canonicalPdeMetric(PdeAnalyticsSummary summary) {
+    Map<String, Long> events = new HashMap<>();
+    if (summary.events() != null)
+      summary.events().forEach(event -> events.put(event.eventType(), event.total()));
+    return new PdeMembershipMetric(
+        summary.pedEntries(),
+        events.getOrDefault("VIDEO_PROGRESS_25", 0L)
+            + events.getOrDefault("VIDEO_PROGRESS_50", 0L)
+            + events.getOrDefault("VIDEO_PROGRESS_75", 0L),
+        events.getOrDefault("VIDEO_COMPLETED", 0L),
+        summary.loginStarted(),
+        summary.paywallViewed(),
+        summary.checkoutStarted(),
+        summary.subscriptionApproved(),
+        summary.accessReleased(),
+        summary.firstUse(),
+        parsePdeInstant(summary.lastEventAt()));
   }
 
   /** Agrega somente métricas PDE que possuem atribuição própria do experimento. */
@@ -1930,7 +1958,8 @@ public class ExperimentFunnelService {
     }
     dto.setAutoCount(metric.total());
     dto.setTotalCount(dto.getManualCount() + metric.total());
-    dto.setUniqueCount(sum(dto.getUniqueCount(), metric.uniqueCount()));
+    dto.setUniqueCount(
+        metric.uniqueCount() == null ? null : sum(dto.getUniqueCount(), metric.uniqueCount()));
     dto.setLastEventAt(max(dto.getLastEventAt(), metric.lastEvent()));
     dto.setSource(source);
   }

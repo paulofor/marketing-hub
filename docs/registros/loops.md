@@ -4478,3 +4478,24 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   Estúdio oficial e exige evidências antes de liberar homologação e autorização.
 - Contratos locais rejeitam mídia de outro produto/experimento, função errada, arquivo substituído,
   aprovação revogada e integração vencida. Referência: `docs/homologacao/ciclos-videos-campanha-entrada-pde-v2.md`.
+
+
+## LOOP-HERMES-PDE-ANALYTICS-LEGADO — métricas corretas existem, mas o agente lê outra fonte
+
+- **Data:** 2026-09-08.
+- **Evidência:** tarefa #356 de Hermes usou `/api/experiments/91/funnel/analytics` (zero),
+  embora `marketinghubdb.pde_funnel_event` registrasse 4 sessões humanas e 86 eventos atribuídos
+  à campanha do experimento #91. A consulta por plano devolvia o produto inteiro; o monitor reconstruía apenas
+  7 eventos a partir de etapas, omitindo `FIELD_FILLED`. #339/#340 descrevem outro momento,
+  anterior à publicação, e não justificam ignorar os eventos atuais.
+- **Causa-raiz:** o contrato de sessões divergira entre BPM e plano, e cada consumidor aplicava
+  sua própria seleção/agregação. O recorte global e a lista das vinte maiores origens também
+  permitiam esconder uma campanha pequena. Contagem única ausente era combinada com zero legado.
+- **Correção:** fonte de leitura compartilhada no backend principal, filtragem SQL por produto,
+  versão e atribuição, agregações integrais, detalhe limitado e pseudonimizado, mesma projeção no
+  monitor PDE e contrato de Hermes por experimento/plano. O worker exige e audita a leitura antes
+  do modelo. Erro de fonte não vira zero e preflight ausente continua como gate independente.
+- **Prevenção:** regressão SQL em H2 e MySQL 5.7, controller real com MCP real em HTTP local,
+  segregação de campanhas/produtos/QA, falhas sem fallback, consumo bloqueado antes do modelo e
+  conferência do painel em desktop e mobile. Evidências em
+  `docs/homologacao/hermes-metricas-experimento-v1.md`.

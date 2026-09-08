@@ -50,6 +50,7 @@ public class GrowthOperatorBpmTaskConsumer {
       task = claimNext();
       if (task == null) return;
       task = requireMarketStrategicContract(task);
+      task = requireSessionIntelligence(task);
       execution = runner.run(task);
       if ("COMPLETED".equals(execution.result().path("executionStatus").asText())) {
         backend.completeBpmTask(taskId(task), payload(task, execution));
@@ -141,6 +142,49 @@ public class GrowthOperatorBpmTaskConsumer {
     }
     Map<String, Object> enriched = new HashMap<>(task);
     enriched.put("marketStrategicContract", json.convertValue(wrapper, Object.class));
+    return enriched;
+  }
+
+  /** Fixa fonte e experimento das métricas, bloqueando falhas de leitura antes do modelo. */
+  Map<String, Object> requireSessionIntelligence(Map<String, Object> task) {
+    String source = String.valueOf(task.get("sourceReference"));
+    if (!source.matches("experiment:[1-9][0-9]*")) {
+      throw new IllegalStateException("Escopo de experimento inválido para métricas de Hermes");
+    }
+    long experimentId = Long.parseLong(source.substring("experiment:".length()));
+    Map<String, Object> intelligence = backend.sessionIntelligence(experimentId);
+    JsonNode evidence = json.valueToTree(intelligence);
+    if (evidence == null
+        || !"EXPERIMENT_SESSION_INTELLIGENCE_V1".equals(evidence.path("contractVersion").asText())
+        || evidence.path("experimentId").asLong() != experimentId
+        || !evidence.path("available").asBoolean()
+        || evidence.path("consultedAt").asText().isBlank()) {
+      throw new IllegalStateException(
+          "Métricas canônicas indisponíveis ou divergentes para "
+              + source
+              + "; corrija a fonte no backend antes de repetir Hermes");
+    }
+    String primary = evidence.path("primarySource").asText();
+    JsonNode pde = evidence.path("pdeAnalytics");
+    String expectedVersion =
+        json.valueToTree(task).path("taskTarget").path("experienceVersion").asText();
+    if (!("LANDING_ANALYTICS".equals(primary)
+        || ("PDE_ANALYTICS".equals(primary)
+            && "EXPERIMENT_ATTRIBUTED".equals(pde.path("scope").asText())
+            && pde.path("available").asBoolean()
+            && "pde_funnel_event".equals(pde.path("source").asText())
+            && !pde.path("experienceVersion").asText().isBlank()
+            && (expectedVersion.isBlank()
+                || expectedVersion.equals(pde.path("experienceVersion").asText()))
+            && pde.path("totalEvents").isIntegralNumber()
+            && pde.path("totalEvents").asLong() >= 0
+            && pde.path("sessions").isIntegralNumber()
+            && pde.path("sessions").asLong() >= 0
+            && evidence.path("pdeAnalytics").path("experimentId").asLong() == experimentId))) {
+      throw new IllegalStateException("Fonte de métricas fora do contrato para " + source);
+    }
+    Map<String, Object> enriched = new HashMap<>(task);
+    enriched.put("sessionIntelligence", intelligence);
     return enriched;
   }
 
@@ -248,6 +292,8 @@ public class GrowthOperatorBpmTaskConsumer {
     evidence.put("accessMode", "READ_ONLY");
     evidence.put("externalSideEffects", false);
     evidence.put("toolUsage", toolUsage);
+    if (task.containsKey("sessionIntelligence"))
+      evidence.put("sessionIntelligence", task.get("sessionIntelligence"));
     if (task.containsKey("marketStrategicContract")) {
       JsonNode contract = json.valueToTree(task.get("marketStrategicContract"));
       evidence.put(

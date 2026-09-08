@@ -62,7 +62,9 @@ class PostDeployMonitorServiceTest {
             apiLogService,
             pdeAnalyticsClient,
             pdeProductionSlotService,
-            jdbcTemplate);
+            jdbcTemplate,
+            org.mockito.Mockito.mock(
+                com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsReader.class));
     lenient()
         .when(pdeProductionSlotService.resolveProductSlug(null))
         .thenReturn("metodo-musa-7-dias");

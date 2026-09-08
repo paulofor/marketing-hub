@@ -176,6 +176,11 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 - **Prevenção:** teste reproduz #90 ativo, #91 planejado e #340 bloqueado, exigindo que tela e novo
   request usem `experiment:90` sem apagar a tentativa anterior.
 
+- **Proteção dos ciclos em 2026-09-08:** o link de trabalho pode transportar `learningCycleId`.
+  Leitura e comando validam produto/cadeia e usam o experimento desse ciclo, sem mudar o plano nem
+  reaproveitar uma tarefa antiga. Testes do resolvedor, do service e da tela preservam o fallback
+  legado quando nenhum ciclo é explicitamente escolhido. Ver `ciclos-aprendizado-vendas-canon.v1.md`.
+
 ## LOOP-FUNIL-PDE-VERSAO-CONTAMINA-EXPERIMENTO — tráfego antigo aparece como visita comercial
 
 - **Data:** 2026-09-05.

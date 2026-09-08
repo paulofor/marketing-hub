@@ -1,3 +1,4 @@
+import LearningCyclesPage from "./pages/learningCycle/LearningCyclesPage";
 import {
   Navigate,
   Route,
@@ -496,6 +497,10 @@ export default function App() {
               <Route
                 path="/business-processes/:processDefinitionId/documents"
                 element={<BusinessProcessActivityDocumentsPage />}
+              />
+              <Route
+                path="/business-process-chains/learning-cycles"
+                element={<LearningCyclesPage />}
               />
               <Route
                 path="/business-process-chains"

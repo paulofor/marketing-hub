@@ -591,71 +591,82 @@ describe("ProductProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("starts every responsible task from the current product activity", async () => {
-    vi.mocked(axios.get).mockResolvedValue({
-      data: {
-        ...history,
-        productId: 4,
-        productName: "Método MUSA 7 Dias",
-        productInternalName: "Vega",
-        selectedProcessDefinitionId: 45,
-        processCode: "pde-commercial-homologation-activation",
-        processName: "Homologação e ativação comercial do PDE",
-        selectedProcessVersionNumber: 5,
-        selectedActivityCount: 1,
-        completedActivityCount: 0,
-        remainingActivityCount: 1,
-        blockedActivityCount: 0,
-        operationalState: "NOT_STARTED",
-        currentActivityId: "pdeGate",
-        currentActivityName: "Validar fatos, controle e valor do PDE",
-        currentActivityState: "NOT_STARTED",
-        activities: [
-          {
-            ...history.activities[0],
-            activityId: "pdeGate",
-            activityName: "Validar fatos, controle e valor do PDE",
-            activityOwnerName: "Psique e Têmis",
-            operationalState: "NOT_STARTED",
-            objectiveAchieved: false,
-            stateEvidence: "NOT_RECORDED",
-            stateReason:
-              "Nenhuma tarefa ou instância foi registrada para esta atividade.",
-            taskCount: 0,
-            tasks: [],
-            executionRequestAvailable: true,
-            executionRequestReason:
-              "A atividade está pronta para abrir todas as tarefas responsáveis.",
-          },
-        ],
-      },
-    });
-    vi.mocked(axios.post).mockResolvedValue({
-      data: {
-        processDefinitionId: 45,
-        productId: 4,
-        activityId: "pdeGate",
-        sourceReference: "experiment:90",
-        tasks: [{ id: 301 }, { id: 302 }],
-      },
-    });
+  it.each([undefined, 7])(
+    "starts responsible tasks in the explicit cycle %s when supplied",
+    async (learningCycleId) => {
+      vi.mocked(axios.get).mockResolvedValue({
+        data: {
+          ...history,
+          productId: 4,
+          productName: "Método MUSA 7 Dias",
+          productInternalName: "Vega",
+          selectedProcessDefinitionId: 45,
+          processCode: "pde-commercial-homologation-activation",
+          processName: "Homologação e ativação comercial do PDE",
+          selectedProcessVersionNumber: 5,
+          selectedActivityCount: 1,
+          completedActivityCount: 0,
+          remainingActivityCount: 1,
+          blockedActivityCount: 0,
+          operationalState: "NOT_STARTED",
+          currentActivityId: "pdeGate",
+          currentActivityName: "Validar fatos, controle e valor do PDE",
+          currentActivityState: "NOT_STARTED",
+          activities: [
+            {
+              ...history.activities[0],
+              activityId: "pdeGate",
+              activityName: "Validar fatos, controle e valor do PDE",
+              activityOwnerName: "Psique e Têmis",
+              operationalState: "NOT_STARTED",
+              objectiveAchieved: false,
+              stateEvidence: "NOT_RECORDED",
+              stateReason:
+                "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+              taskCount: 0,
+              tasks: [],
+              executionRequestAvailable: true,
+              executionRequestReason:
+                "A atividade está pronta para abrir todas as tarefas responsáveis.",
+            },
+          ],
+        },
+      });
+      vi.mocked(axios.post).mockResolvedValue({
+        data: {
+          processDefinitionId: 45,
+          productId: 4,
+          activityId: "pdeGate",
+          sourceReference: "experiment:90",
+          tasks: [{ id: 301 }, { id: 302 }],
+        },
+      });
 
-    renderPage("/products/4/value-chain-history/processes/45/activities");
+      const suffix = learningCycleId
+        ? `?learningCycleId=${learningCycleId}`
+        : "";
+      renderPage(
+        `/products/4/value-chain-history/processes/45/activities${suffix}`,
+      );
 
-    const button = await screen.findByRole("button", {
-      name: "Executar atividade",
-    });
-    fireEvent.click(button);
+      const button = await screen.findByRole("button", {
+        name: "Executar atividade",
+      });
+      expect(axios.get).toHaveBeenCalledWith(
+        `/api/business-processes/45/products/4/activity-executions${suffix}`,
+      );
+      fireEvent.click(button);
 
-    await waitFor(() =>
-      expect(axios.post).toHaveBeenCalledWith(
-        "/api/business-processes/45/products/4/activities/pdeGate/execution-requests",
-      ),
-    );
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Todas as tarefas responsáveis foram abertas",
-    );
-  });
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+          `/api/business-processes/45/products/4/activities/pdeGate/execution-requests${suffix}`,
+        ),
+      );
+      expect(await screen.findByRole("status")).toHaveTextContent(
+        "Todas as tarefas responsáveis foram abertas",
+      );
+    },
+  );
 
   it("restarts a blocked task while preserving its audited attempt", async () => {
     vi.mocked(axios.get).mockResolvedValue({

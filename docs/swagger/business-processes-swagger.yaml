@@ -118,8 +118,13 @@ paths:
   /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions:
     get:
       summary: Lista as atividades e tarefas do produto no processo canônico
-      description: Na operação, prioriza o experimento já operado do próprio produto selecionado no plano vigente, inclusive pausado. Sucessor PLANNED e plano encerrado não substituem o fallback operacional; o comando usa a mesma referência.
+      description: Com learningCycleId, usa o ciclo explícito validado e preserva o contrato privado da construção. Sem esse parâmetro, prioriza o experimento já operado do próprio produto selecionado no plano vigente, inclusive pausado. Sucessor PLANNED e plano encerrado não substituem o fallback operacional; o comando usa a mesma referência.
       parameters:
+        - name: learningCycleId
+          in: query
+          required: false
+          description: Identidade do ciclo que fixa o experimento sem alterar a seleção legada; produto e composição são conferidos pelo backend.
+          schema: { type: integer, format: int64 }
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId
           in: path
@@ -143,6 +148,11 @@ paths:
         já corrigidas não definem o bloqueio atual, enquanto falhas novas, tarefas pendentes e
         execuções em andamento continuam protegidas contra avanço ou duplicação indevidos.
       parameters:
+        - name: learningCycleId
+          in: query
+          required: false
+          description: Identidade do ciclo que fixa o experimento sem alterar a seleção legada; produto e composição são conferidos pelo backend.
+          schema: { type: integer, format: int64 }
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId
           in: path

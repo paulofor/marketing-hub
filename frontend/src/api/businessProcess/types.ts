@@ -37,6 +37,7 @@ export type ProcessFlow = {
   from: string;
   to: string;
   label?: string;
+  kind?: "REWORK";
 };
 
 export type ProcessDiagram = { nodes: ProcessNode[]; flows: ProcessFlow[] };

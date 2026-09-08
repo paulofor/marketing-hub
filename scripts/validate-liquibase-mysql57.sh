@@ -255,13 +255,14 @@ if positions != sorted(positions):
 PY
 
 log "Validando padrões temporais e erro MySQL 5.7 1093 (escopo=${LIQUIBASE_VALIDATE_SCOPE})"
-python3 - "${CHANGELOG_ROOT}" "${LIQUIBASE_VALIDATE_SCOPE}" <<'PY'
+python3 -B - "${CHANGELOG_ROOT}" "${LIQUIBASE_VALIDATE_SCOPE}" <<'PY'
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+from scripts.liquibase_temporal_contract import timestamp_columns_without_default
 scope = sys.argv[2]
 allowed_suffixes = {".yaml", ".yml", ".sql", ".xml"}
 
@@ -295,11 +296,6 @@ if not files:
     print("Nenhum changelog alterado encontrado para validação estática temporal/1093.")
     sys.exit(0)
 
-timestamp_without_default = re.compile(
-    r"\b(timestamp)\b(?:(?!\bdefault\b|[\n;]).)*\bnot\s+null\b|"
-    r"\bnot\s+null\b(?:(?!\bdefault\b|[\n;]).)*\btimestamp\b",
-    re.IGNORECASE,
-)
 target_statement = re.compile(r"\b(update|delete\s+from)\s+`?([a-zA-Z0-9_]+)`?", re.IGNORECASE)
 
 errors = []
@@ -313,11 +309,10 @@ for path in files:
             f"{path}:{line_no}: precondição Liquibase inválida: use a lista direta em preConditions, sem nestedPreconditions"
         )
 
-    for line_no, line in enumerate(text.splitlines(), start=1):
-        if timestamp_without_default.search(line):
-            errors.append(
-                f"{path}:{line_no}: TIMESTAMP NOT NULL sem DEFAULT explícito na mesma declaração"
-            )
+    for line_no in timestamp_columns_without_default(text):
+        errors.append(
+            f"{path}:{line_no}: TIMESTAMP NOT NULL sem DEFAULT explícito na mesma declaração"
+        )
 
     for statement in re.split(r";\s*(?:\n|$)", text):
         target = target_statement.search(statement)

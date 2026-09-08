@@ -2,6 +2,10 @@
 
 ## Objetivo
 
+A cadeia adota o ciclo executável descrito em `ciclos-aprendizado-vendas-canon.v1.md`: cada
+experimento possui memória própria e um losango de decisão comercial que orienta continuidade,
+correção, sucessor, solicitação de escala ou encerramento. O retorno respeita a causa comprovada.
+
 Definir a cadeia inicial, simples e reutilizável para transformar uma dor real em um Produto Digital
 Experiencial construído, comunicado, vendido e entregue pelo Marketing Hub, escolhendo o formato
 digital que melhor resolva a necessidade do mercado e entregue valor à cliente.

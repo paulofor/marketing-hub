@@ -1,0 +1,176 @@
+openapi: 3.0.3
+info:
+  title: Ciclos de aprendizado e vendas da Cadeia de Valor
+  version: 1.0.0
+  description: >-
+    O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
+    Nenhuma rota ativa campanha, altera orçamento de mídia ou cria venda.
+servers:
+  - url: /api/business-process-chains/learning-cycles/v1
+paths:
+  /catalog:
+    get:
+      summary: Consultar BPM versionado, destinos de correção e experimentos elegíveis
+      parameters:
+        - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
+        - {name: productId, in: query, required: false, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Grafo persistido, versão, atividades reais e opções segregadas pelo produto
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [processDefinitionId, version, diagram, returnTargets, experiments]
+                properties:
+                  processDefinitionId: {type: integer, format: int64}
+                  version: {type: integer}
+                  diagram: {type: object, description: 'Grafo com nodes START/TASK/GATEWAY/END e flows; kind REWORK identifica retorno condicional.'}
+                  returnTargets: {type: array, items: {type: object, description: 'processDefinitionId, processCode, processName, activityId, activityName, owner'}}
+                  experiments: {type: array, items: {type: object, description: 'id, name, status, available, baseline, reason; somente experimentos do próprio produto'}}
+        '404': {description: Cadeia, produto ou BPM não instalado}
+  /products/{productId}:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+    get:
+      summary: Consultar histórico, memória herdada, aprovações e próximos comandos do produto
+      parameters:
+        - {name: chainId, in: query, required: false, schema: {type: integer, format: int64}, description: Filtra pelo código da cadeia preservando seu histórico entre versões}
+      responses:
+        '200':
+          description: Histórico de ciclos com revisão, etapa e decisões auditáveis
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Cycle'}}
+        '404': {description: Produto não encontrado}
+    post:
+      summary: Adotar experimento planejado ou referência histórica interrompida
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateCycle'}
+      responses:
+        '200':
+          description: Ciclo criado ou recibo idempotente existente
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Cycle'}
+        '400': {description: Campos inválidos}
+        '404': {description: Referência não encontrada}
+        '409': {description: Experimento incompatível, ciclo aberto, predecessor sem decisão de ajuste ou chave reutilizada com outro conteúdo}
+  /products/{productId}/{cycleId}/commands:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Aplicar decisão com revisão esperada e recibo idempotente
+      description: >-
+        COMPLETE avança a etapa após validar sua evidência. REWORK exige nova versão e retorna
+        ao ajuste antes da publicação; após publicação, exige experimento pausado e technicalOnly=true
+        (mesma hipótese, oferta e aquisição), com nova homologação e publicação oficial posterior.
+        MEASURE registra fotografia cumulativa, sem somar snapshots.
+        ADJUST encerra o ciclo para um sucessor, exigindo experimento fora de RUNNING.
+        CONTINUE respeita qualidade, leitura atual, teto e janela. FIX_MEASUREMENT preserva o experimento.
+        SCALE exige amostra, vendas líquidas, contribuição positiva, entrega, uso e satisfação.
+        AUTHORIZE_SCALE exige confirmação explícita e limite consistente no experimento oficial.
+        STOP e INCONCLUSIVE exigem experimento fora de RUNNING e preservam o histórico.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Command'}
+      responses:
+        '200':
+          description: Decisão aplicada ou replay idempotente; nenhuma publicação externa
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Cycle'}
+        '400': {description: Contrato inválido}
+        '404': {description: Ciclo não encontrado neste produto}
+        '409': {description: Revisão obsoleta, comando incompatível, evidência insuficiente ou limite atingido}
+components:
+  parameters:
+    ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+  schemas:
+    CreateCycle:
+      type: object
+      required: [requestKey, chainDefinitionId, experimentId, productVersion, hypothesis, mainChange, successCriterion, audience, offer, acquisition, budgetLimitBrl, windowStart, windowEnd, sampleTarget, minimumNetSales, operatorName]
+      properties:
+        requestKey: {type: string, format: uuid}
+        chainDefinitionId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        previousCycleId: {type: integer, format: int64, nullable: true}
+        baseline: {type: boolean, default: false}
+        productVersion: {type: string, maxLength: 160}
+        hypothesis: {type: string, maxLength: 1000}
+        mainChange: {type: string, maxLength: 1000}
+        successCriterion: {type: string, maxLength: 1000}
+        audience: {type: string, maxLength: 500}
+        offer: {type: string, maxLength: 500}
+        acquisition: {type: string, maxLength: 500}
+        budgetLimitBrl: {type: number, minimum: 0, multipleOf: 0.01}
+        windowStart: {type: string, format: date-time}
+        windowEnd: {type: string, format: date-time}
+        sampleTarget: {type: integer, minimum: 1, maximum: 10000000}
+        minimumNetSales: {type: integer, minimum: 1, maximum: 1000000}
+        operatorName: {type: string, maxLength: 160}
+    Command:
+      type: object
+      required: [requestKey, expectedRevision, action, operatorName, summary, evidenceReference, evidence]
+      properties:
+        requestKey: {type: string, format: uuid}
+        expectedRevision: {type: integer, minimum: 0}
+        action: {type: string, enum: [COMPLETE, REWORK, MEASURE, ADJUST, CONTINUE, FIX_MEASUREMENT, SCALE, AUTHORIZE_SCALE, STOP, INCONCLUSIVE]}
+        operatorName: {type: string, maxLength: 160}
+        summary: {type: string, maxLength: 4000}
+        evidenceReference: {type: string, maxLength: 1200}
+        evidence:
+          type: object
+          description: >-
+            LEARNING: learning, competingExplanation. PLANNING: planReference, stopRule.
+            ADJUSTMENT: productVersion, changeEvidence. VALIDATION: approvalInstanceId
+            (gate canônico real do mesmo produto/versão), journeyEvidence, humanObservationEvidence opcional,
+            instrumentationVerified=true. AUTHORIZATION: confirmed=true, productVersion, budgetLimitBrl.
+            REWORK: productVersion nova, rootCause, returnProcessId, returnActivityId.
+            ADJUST: rootCause, learning, nextHypothesis, returnProcessId, returnActivityId.
+            FIX_MEASUREMENT: rootCause, correctionPlan. SCALE: scaleHypothesis.
+            AUTHORIZE_SCALE: confirmed, productVersion, budgetLimitBrl novo, windowEnd novo.
+            MEASURE: experimentId, currency=BRL, source, periodStart, periodEnd, observedAt,
+            sessions, starts, firstResults, checkouts, netSales, refunds, spendBrl, revenueBrl,
+            contributionBrl, dataValid, testDataExcluded, deliveryVerified, useVerified, satisfactionVerified.
+            Campos monetários e contagens são números; flags são booleanos; datas são ISO-8601.
+            Limite total do comando: 64 KB. Evidência do operador não é sincronização automática Meta.
+    Cycle:
+      type: object
+      required: [id, productId, experimentId, revision, stage, status, brief, inheritedLearning, events, commands, canCreateSuccessor]
+      properties:
+        id: {type: integer, format: int64}
+        productId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        previousCycleId: {type: integer, format: int64, nullable: true}
+        successorCycleId: {type: integer, format: int64, nullable: true}
+        chainDefinitionId: {type: integer, format: int64}
+        processDefinitionId: {type: integer, format: int64}
+        revision: {type: integer}
+        stage: {type: string, enum: [LEARNING, PLANNING, ADJUSTMENT, VALIDATION, AUTHORIZATION, PUBLICATION, MEASUREMENT, DECISION, SCALE_AUTHORIZATION]}
+        stageLabel: {type: string}
+        status: {type: string, enum: [OPEN, ADJUSTED, CLOSED, INCONCLUSIVE]}
+        baseline: {type: boolean}
+        productVersion: {type: string}
+        budgetLimitBrl: {type: number}
+        windowStart: {type: string, format: date-time}
+        windowEnd: {type: string, format: date-time}
+        nextAction: {type: string}
+        responsible: {type: string}
+        workUrl: {type: string}
+        returnProcessId: {type: integer, format: int64, nullable: true}
+        returnActivityId: {type: string, nullable: true}
+        brief: {type: object}
+        inheritedLearning: {type: object, description: Snapshot do predecessor; memória mais antiga permanece acessível por referência ao ciclo anterior}
+        approvalOptions: {type: array, items: {type: object, properties: {id: {type: integer}, label: {type: string}}}}
+        events: {type: array, items: {type: object, description: 'id, revision, fromStage, toStage, action, operatorName, summary, evidenceReference, evidence (objeto), createdAt'}}
+        commands: {type: array, items: {type: object, properties: {action: {type: string}, label: {type: string}, available: {type: boolean}, reason: {type: string}}}}
+        canCreateSuccessor: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        closedAt: {type: string, format: date-time, nullable: true}

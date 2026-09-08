@@ -1,0 +1,218 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-08-learning-sales-cycles-v1-cycle-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS learning_sales_cycle_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                product_id BIGINT NOT NULL,
+                chain_definition_id BIGINT NOT NULL,
+                chain_code VARCHAR(100) NOT NULL,
+                process_definition_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                previous_cycle_id BIGINT NULL,
+                request_key VARCHAR(36) NOT NULL,
+                creation_json LONGTEXT NOT NULL,
+                brief_json LONGTEXT NOT NULL,
+                inherited_learning_json LONGTEXT NOT NULL,
+                stage VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                product_version VARCHAR(160) NOT NULL,
+                budget_limit_brl DECIMAL(12,2) NOT NULL,
+                window_start DATETIME(6) NOT NULL,
+                window_end DATETIME(6) NOT NULL,
+                return_process_id BIGINT NULL,
+                return_activity_id VARCHAR(100) NULL,
+                current_instance_id BIGINT NULL,
+                open_slot INT NULL,
+                revision BIGINT NOT NULL DEFAULT 0,
+                baseline BIT(1) NOT NULL DEFAULT 0,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                version_changed_at DATETIME(6) NOT NULL,
+                closed_at DATETIME(6) NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_learning_cycle_experiment (experiment_id),
+                UNIQUE KEY uk_learning_cycle_predecessor (previous_cycle_id),
+                UNIQUE KEY uk_learning_cycle_request (product_id, request_key),
+                UNIQUE KEY uk_learning_cycle_open (product_id, chain_code, open_slot),
+                CONSTRAINT fk_learning_cycle_product FOREIGN KEY (product_id) REFERENCES product(id),
+                CONSTRAINT fk_learning_cycle_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+                CONSTRAINT fk_learning_cycle_chain FOREIGN KEY (chain_definition_id) REFERENCES business_process_chain_definition(id),
+                CONSTRAINT fk_learning_cycle_process FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id),
+                CONSTRAINT fk_learning_cycle_previous FOREIGN KEY (previous_cycle_id) REFERENCES learning_sales_cycle_v1(id),
+                CONSTRAINT fk_learning_cycle_return FOREIGN KEY (return_process_id) REFERENCES business_process_definition(id),
+                CONSTRAINT fk_learning_cycle_instance FOREIGN KEY (current_instance_id) REFERENCES business_process_activity_instance(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE learning_sales_cycle_v1;
+
+  - changeSet:
+      id: 2026-09-08-learning-sales-cycles-v1-event-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS learning_sales_cycle_event_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                cycle_id BIGINT NOT NULL,
+                request_key VARCHAR(36) NOT NULL,
+                request_json LONGTEXT NOT NULL,
+                revision BIGINT NOT NULL,
+                from_stage VARCHAR(32) NOT NULL,
+                to_stage VARCHAR(32) NOT NULL,
+                action VARCHAR(32) NOT NULL,
+                operator_name VARCHAR(160) NOT NULL,
+                summary TEXT NOT NULL,
+                evidence_reference VARCHAR(1200) NOT NULL,
+                evidence_json LONGTEXT NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_learning_event_request (cycle_id, request_key),
+                UNIQUE KEY uk_learning_event_revision (cycle_id, revision),
+                CONSTRAINT fk_learning_event_cycle FOREIGN KEY (cycle_id) REFERENCES learning_sales_cycle_v1(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE learning_sales_cycle_event_v1;
+
+  - changeSet:
+      id: 2026-09-08-learning-sales-cycles-v1-bpm
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+               (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number,
+               status, technical_reference, process_type, execution_scope, parent_process_code, diagram_json, created_at, published_at)
+               SELECT 'value-chain-learning-sales-cycle', 'Ciclos de aprendizado e vendas',
+               'Transformar resultados de experimentos em produtos úteis, comunicação eficaz, vendas líquidas e contribuição positiva.',
+               'Coordenação da Cadeia de Valor', 'Hipótese inicial ou decisão de ajuste de um experimento anterior.',
+               'Decisão auditável e próxima ação explícita, com memória preservada e métricas separadas por experimento.',
+               1, 'PUBLISHED', 'docs/canonical/ciclos-aprendizado-vendas-canon.v1.md', 'SUBPROCESS', 'PRODUCT',
+               'pde-sales-delivery-learning', '{"schemaVersion":"LEARNING_SALES_CYCLE_V1","nodes":[{"id":"start","type":"START","label":"Aprendizado anterior ou primeira hipótese"},{"id":"LEARNING","type":"TASK","label":"Aprendizado e hipótese","owner":"Hermes · síntese; operador · registro","description":"Concilie o experimento anterior. Registre o aprendizado, as limitações e uma hipótese verificável, incluindo explicação concorrente.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"PLANNING","type":"TASK","label":"Planejar o experimento","owner":"Atena e Plutus · pareceres separados; operador · registro","description":"Defina uma variável principal, oferta, canal, público, amostra, janela, teto total e regras de parada. Preserve as demais condições para tornar a comparação clara.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"ADJUSTMENT","type":"TASK","label":"Ajustar produto e comunicação","owner":"Dédalo · produto; Íris e Apolo · comunicação","description":"Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"VALIDATION","type":"TASK","label":"Homologar a mesma versão","owner":"Harness técnico, Psique e Têmis · gates independentes","description":"Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada e, se realizada, a observação humana consentida. Reprovação volta ao ajuste.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"qualityDecision","type":"GATEWAY","label":"Versão homologada?","description":"Reprovação exige correção e nova evidência para a versão afetada."},{"id":"AUTHORIZATION","type":"TASK","label":"Autorizar orçamento e janela","owner":"Operador responsável pela autorização","description":"Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"PUBLICATION","type":"TASK","label":"Conferir publicação","owner":"Operador · fluxo oficial do experimento","description":"Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"MEASUREMENT","type":"TASK","label":"Medir vendas e valor entregue","owner":"Hermes e Plutus · conciliação; operador · registro","description":"Registre uma fotografia cumulativa e datada deste experimento: funil, vendas líquidas, receita, contribuição, entrega, uso e satisfação. Declare fonte e segregação de dados de teste.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"DECISION","type":"TASK","label":"Registrar decisão comercial","owner":"Operador responsável pela decisão","description":"Use as evidências para ajustar, continuar coleta, corrigir medição, solicitar escala ou encerrar. Dados insuficientes não provam rejeição. Cada decisão preserva causa e próxima ação.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"commercialDecision","type":"GATEWAY","label":"O que os resultados autorizam?","description":"Ajustar, continuar, corrigir dados, solicitar escala ou encerrar."},{"id":"SCALE_AUTHORIZATION","type":"TASK","label":"Autorizar expansão","owner":"Operador responsável pela autorização","description":"Reavalie contribuição, vendas e valor entregue. Defina uma nova autorização explícita e atualize os limites pelo fluxo oficial antes de continuar o acompanhamento.","runtimePath":"/business-process-chains/learning-cycles"},{"id":"end","type":"END","label":"Preservar resultados e aprendizado"}],"flows":[{"from":"start","to":"LEARNING"},{"from":"LEARNING","to":"PLANNING"},{"from":"PLANNING","to":"ADJUSTMENT"},{"from":"ADJUSTMENT","to":"VALIDATION"},{"from":"VALIDATION","to":"qualityDecision"},{"from":"AUTHORIZATION","to":"PUBLICATION"},{"from":"PUBLICATION","to":"MEASUREMENT"},{"from":"MEASUREMENT","to":"DECISION"},{"from":"DECISION","to":"commercialDecision"},{"from":"qualityDecision","to":"ADJUSTMENT","label":"Reprovado: corrigir a mesma iteração","kind":"REWORK"},{"from":"qualityDecision","to":"AUTHORIZATION","label":"Aprovado: mesma versão"},{"from":"commercialDecision","to":"LEARNING","label":"Ajustar: novo experimento com memória","kind":"REWORK"},{"from":"commercialDecision","to":"ADJUSTMENT","label":"Correção técnica: pausar e revalidar o mesmo experimento","kind":"REWORK"},{"from":"commercialDecision","to":"MEASUREMENT","label":"Continuar dentro dos limites / corrigir medição","kind":"REWORK"},{"from":"commercialDecision","to":"SCALE_AUTHORIZATION","label":"Vendas, contribuição e valor comprovados"},{"from":"SCALE_AUTHORIZATION","to":"MEASUREMENT","label":"Nova autorização explícita","kind":"REWORK"},{"from":"commercialDecision","to":"end","label":"Encerrar / inconclusivo"}]}', NOW(), NOW()
+               FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=1);
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'LEARNING','Aprendizado e hipótese','Concilie o experimento anterior. Registre o aprendizado, as limitações e uma hipótese verificável, incluindo explicação concorrente.','Hermes · síntese; operador · registro',
+               '{"id":"LEARNING","type":"TASK","label":"Aprendizado e hipótese","owner":"Hermes · síntese; operador · registro","description":"Concilie o experimento anterior. Registre o aprendizado, as limitações e uma hipótese verificável, incluindo explicação concorrente.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='LEARNING'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'PLANNING','Planejar o experimento','Defina uma variável principal, oferta, canal, público, amostra, janela, teto total e regras de parada. Preserve as demais condições para tornar a comparação clara.','Atena e Plutus · pareceres separados; operador · registro',
+               '{"id":"PLANNING","type":"TASK","label":"Planejar o experimento","owner":"Atena e Plutus · pareceres separados; operador · registro","description":"Defina uma variável principal, oferta, canal, público, amostra, janela, teto total e regras de parada. Preserve as demais condições para tornar a comparação clara.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='PLANNING'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'ADJUSTMENT','Ajustar produto e comunicação','Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste.','Dédalo · produto; Íris e Apolo · comunicação',
+               '{"id":"ADJUSTMENT","type":"TASK","label":"Ajustar produto e comunicação","owner":"Dédalo · produto; Íris e Apolo · comunicação","description":"Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='ADJUSTMENT'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'VALIDATION','Homologar a mesma versão','Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada e, se realizada, a observação humana consentida. Reprovação volta ao ajuste.','Harness técnico, Psique e Têmis · gates independentes',
+               '{"id":"VALIDATION","type":"TASK","label":"Homologar a mesma versão","owner":"Harness técnico, Psique e Têmis · gates independentes","description":"Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada e, se realizada, a observação humana consentida. Reprovação volta ao ajuste.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='VALIDATION'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'AUTHORIZATION','Autorizar orçamento e janela','Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.','Operador responsável pela autorização',
+               '{"id":"AUTHORIZATION","type":"TASK","label":"Autorizar orçamento e janela","owner":"Operador responsável pela autorização","description":"Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='AUTHORIZATION'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'PUBLICATION','Conferir publicação','Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados.','Operador · fluxo oficial do experimento',
+               '{"id":"PUBLICATION","type":"TASK","label":"Conferir publicação","owner":"Operador · fluxo oficial do experimento","description":"Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='PUBLICATION'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'MEASUREMENT','Medir vendas e valor entregue','Registre uma fotografia cumulativa e datada deste experimento: funil, vendas líquidas, receita, contribuição, entrega, uso e satisfação. Declare fonte e segregação de dados de teste.','Hermes e Plutus · conciliação; operador · registro',
+               '{"id":"MEASUREMENT","type":"TASK","label":"Medir vendas e valor entregue","owner":"Hermes e Plutus · conciliação; operador · registro","description":"Registre uma fotografia cumulativa e datada deste experimento: funil, vendas líquidas, receita, contribuição, entrega, uso e satisfação. Declare fonte e segregação de dados de teste.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='MEASUREMENT'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'DECISION','Registrar decisão comercial','Use as evidências para ajustar, continuar coleta, corrigir medição, solicitar escala ou encerrar. Dados insuficientes não provam rejeição. Cada decisão preserva causa e próxima ação.','Operador responsável pela decisão',
+               '{"id":"DECISION","type":"TASK","label":"Registrar decisão comercial","owner":"Operador responsável pela decisão","description":"Use as evidências para ajustar, continuar coleta, corrigir medição, solicitar escala ou encerrar. Dados insuficientes não provam rejeição. Cada decisão preserva causa e próxima ação.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='DECISION'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,definition_json,created_at)
+               SELECT p.id,'SCALE_AUTHORIZATION','Autorizar expansão','Reavalie contribuição, vendas e valor entregue. Defina uma nova autorização explícita e atualize os limites pelo fluxo oficial antes de continuar o acompanhamento.','Operador responsável pela autorização',
+               '{"id":"SCALE_AUTHORIZATION","type":"TASK","label":"Autorizar expansão","owner":"Operador responsável pela autorização","description":"Reavalie contribuição, vendas e valor entregue. Defina uma nova autorização explícita e atualize os limites pelo fluxo oficial antes de continuar o acompanhamento.","runtimePath":"/business-process-chains/learning-cycles"}',NOW()
+               FROM business_process_definition p
+               LEFT JOIN business_process_activity_definition a ON a.process_definition_id=p.id AND a.activity_id='SCALE_AUTHORIZATION'
+               WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1 AND a.id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE a FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=1;
+              DELETE FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=1;
+
+  - changeSet:
+      id: 2026-09-08-learning-sales-cycles-v1-clock-precision
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE business_process_activity_instance
+                MODIFY entered_at DATETIME(6) NOT NULL,
+                MODIFY exited_at DATETIME(6) NULL,
+                MODIFY created_at DATETIME(6) NOT NULL,
+                MODIFY updated_at DATETIME(6) NOT NULL;
+              ALTER TABLE agent_task MODIFY created_at DATETIME(6) NOT NULL;
+              ALTER TABLE facebook_ads_campaign
+                MODIFY created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6);
+      # Precisão maior é compatível com o código anterior; rollback não destrói a cronologia auditada.
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;

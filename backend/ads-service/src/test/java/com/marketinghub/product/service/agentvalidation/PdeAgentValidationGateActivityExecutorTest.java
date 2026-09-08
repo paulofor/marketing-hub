@@ -13,6 +13,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.valuechainposition.ProductProcessPeriodService;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: comprovar o gate v8 sem fabricar leitura, venda ou autorização de mídia. */
 class PdeAgentValidationGateActivityExecutorTest {
@@ -157,6 +159,25 @@ class PdeAgentValidationGateActivityExecutorTest {
         .contains("\"campaignAuthorized\":false")
         .contains("\"mediaSpendAuthorizedBrl\":0")
         .contains("\"humanEvidenceClaimed\":false");
+  }
+
+  /** Renova evidências do ciclo sem regredir o produto comercial nem pausar sua operação. */
+  @Test
+  void revalidatesOpenLearningCycleWithoutResettingCommercialState() throws Exception {
+    var cycleContext = mock(LearningCycleExecutionContext.class);
+    ReflectionTestUtils.setField(executor, "learningCycleContext", cycleContext);
+    product.setCommercialStatus("EXPERIMENTING");
+    product.setPdeExperienceJson("{\"status\":\"PUBLIC\"}");
+    when(cycleContext.permitsRevalidation(product)).thenReturn(false);
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+    when(cycleContext.permitsRevalidation(product)).thenReturn(true);
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+    assertThat(executor.execute(process, gate, product, SOURCE).objectiveAchieved()).isTrue();
+    assertThat(product.getCommercialStatus()).isEqualTo("EXPERIMENTING");
+    assertThat(product.getAutomaticExecutionEnabled()).isTrue();
+    assertThat(json.readTree(product.getPdeExperienceJson()).path("status").asText())
+        .isEqualTo("PUBLIC");
+    verify(periods, never()).recordTransition(any(), any());
   }
 
   /** Mantém o gate fechado quando falta um dos três cenários independentes. */

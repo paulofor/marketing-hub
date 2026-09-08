@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -40,15 +41,19 @@ public class BusinessProcessActivityExecutionController {
     return service.recentExecutions(processDefinitionId, activityId);
   }
 
-  /** Retorna a situação, todas as atividades e as tarefas do produto no processo selecionado. */
+  /** Retorna as atividades do produto com vínculo opcional ao ciclo comercial selecionado. */
   @Operation(summary = "Mostra a situação, as atividades e as tarefas do produto no processo")
   @GetMapping("/{processDefinitionId}/products/{productId}/activity-executions")
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
-      @PathVariable Long processDefinitionId, @PathVariable Long productId) {
-    return service.productProcessExecutions(processDefinitionId, productId);
+      @PathVariable Long processDefinitionId,
+      @PathVariable Long productId,
+      @RequestParam(required = false) Long learningCycleId) {
+    return learningCycleId == null
+        ? service.productProcessExecutions(processDefinitionId, productId)
+        : service.productProcessExecutions(processDefinitionId, productId, learningCycleId);
   }
 
-  /** Executa o comando ou registra a decisão humana da atividade publicada do produto. */
+  /** Executa a atividade no ciclo explícito, quando informado, preservando decisões humanas. */
   @Operation(summary = "Inicia ou decide atomicamente a atividade do produto")
   @PostMapping(
       "/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests")
@@ -56,7 +61,11 @@ public class BusinessProcessActivityExecutionController {
       @PathVariable Long processDefinitionId,
       @PathVariable Long productId,
       @PathVariable String activityId,
-      @RequestBody(required = false) ProductProcessActivityExecutionRequest request) {
+      @RequestBody(required = false) ProductProcessActivityExecutionRequest request,
+      @RequestParam(required = false) Long learningCycleId) {
+    if (learningCycleId != null)
+      return service.requestProductActivityExecution(
+          processDefinitionId, productId, activityId, request, learningCycleId);
     return request == null
         ? service.requestProductActivityExecution(processDefinitionId, productId, activityId)
         : service.requestProductActivityExecution(

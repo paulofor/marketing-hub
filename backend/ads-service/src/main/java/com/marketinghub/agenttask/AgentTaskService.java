@@ -103,6 +103,10 @@ public class AgentTaskService {
   private final AgentTaskTargetContextProvider taskTargetContextProvider;
 
   @Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleTaskContext
+      learningCycleTaskContext;
+
+  @Autowired(required = false)
   private ResearchIntelligenceService researchIntelligenceService;
 
   @Autowired(required = false)
@@ -1815,7 +1819,7 @@ public class AgentTaskService {
                     "O recurso especializado da atividade não está disponível."));
   }
 
-  /** Consolida pareceres e preserva tentativas de correção sem convertê-las em novas rejeições. */
+  /** Consolida o trabalho anterior e a memória do ciclo exato para orientar a próxima atividade. */
   private String processContext(AgentTask task) {
     try {
       List<AgentTask> processTasks = processContextTasks(task);
@@ -1856,6 +1860,11 @@ public class AgentTaskService {
       context.put("completedActivities", completedActivities);
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);
+      if (learningCycleTaskContext != null) {
+        learningCycleTaskContext
+            .resolve(task.getSourceReference(), task.getCreatedAt())
+            .ifPresent(value -> context.put("learningSalesCycle", value));
+      }
       if (prototypeCorrection) {
         context.put(
             "correctionAttempts",

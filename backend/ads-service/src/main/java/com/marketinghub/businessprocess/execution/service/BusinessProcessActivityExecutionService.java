@@ -28,6 +28,7 @@ import com.marketinghub.businessprocess.execution.service.recentExecutions.Busin
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -94,6 +95,9 @@ public class BusinessProcessActivityExecutionService {
   private final List<BackendProductProcessActivityExecutor> backendActivityExecutors;
   private final List<HumanProductProcessActivityExecutor> humanActivityExecutors;
   private final List<AgentProductProcessActivityReadinessProvider> agentActivityReadinessProviders;
+
+  @Autowired(required = false)
+  private LearningCycleExecutionContext learningCycleContext;
 
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
@@ -265,6 +269,13 @@ public class BusinessProcessActivityExecutionService {
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId, Long productId) {
+    return productProcessExecutions(processDefinitionId, productId, null);
+  }
+
+  /** Consulta o ciclo explicitamente escolhido sem alterar o contexto de outros experimentos. */
+  @Transactional(readOnly = true)
+  public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
+      Long processDefinitionId, Long productId, Long learningCycleId) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
@@ -315,8 +326,10 @@ public class BusinessProcessActivityExecutionService {
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
     String currentExecutionReference =
-        resolveExecutionReference(
-            selectedProcess, product, productExperiments, productPlans, tasks, instances);
+        learningCycleId == null
+            ? resolveExecutionReference(
+                selectedProcess, product, productExperiments, productPlans, tasks, instances)
+            : cycleSource(learningCycleId, product, selectedProcess, false);
     String readinessSourceReference =
         currentExecutionReference == null
             ? initialSourceReference(selectedProcess, product, productExperiments, productPlans)
@@ -406,6 +419,18 @@ public class BusinessProcessActivityExecutionService {
       Long productId,
       String activityId,
       ProductProcessActivityExecutionRequest request) {
+    return requestProductActivityExecution(
+        processDefinitionId, productId, activityId, request, null);
+  }
+
+  /** Executa a atividade no ciclo indicado, mantendo gates, autorizações e contrato do produto. */
+  @Transactional
+  public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
+      Long processDefinitionId,
+      Long productId,
+      String activityId,
+      ProductProcessActivityExecutionRequest request,
+      Long learningCycleId) {
     if (agentTaskService == null || experimentRepository == null) {
       throw new IllegalStateException("Execução de atividade não configurada neste ambiente.");
     }
@@ -446,8 +471,10 @@ public class BusinessProcessActivityExecutionService {
         productProcessActivityInstances(
             productPlans, productExperiments, productId, process.getProcessCode());
     String currentSourceReference =
-        resolveExecutionReference(
-            process, product, productExperiments, productPlans, processTasks, processInstances);
+        learningCycleId == null
+            ? resolveExecutionReference(
+                process, product, productExperiments, productPlans, processTasks, processInstances)
+            : cycleSource(learningCycleId, product, process, true);
     String sourceReference =
         currentSourceReference == null
             ? initialSourceReference(process, product, productExperiments, productPlans)
@@ -606,6 +633,15 @@ public class BusinessProcessActivityExecutionService {
     return experimentRepository == null
         ? List.of()
         : experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(productId);
+  }
+
+  /** Exige o resolvedor do ciclo para impedir retorno silencioso ao experimento legado. */
+  private String cycleSource(
+      Long cycleId, Product product, BusinessProcessDefinition process, boolean command) {
+    if (learningCycleContext == null)
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Contexto de ciclo indisponível neste ambiente.");
+    return learningCycleContext.source(cycleId, product, process, command);
   }
 
   /** Prioriza a seleção já operada do plano vigente sem fabricar contexto pré-comercial. */

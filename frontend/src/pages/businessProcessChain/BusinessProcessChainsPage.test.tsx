@@ -14,6 +14,9 @@ describe("BusinessProcessChainsPage", () => {
 
   it("apresenta a cadeia e seus processos na ordem informada pelo backend", async () => {
     vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/business-process-chains/learning-cycles/v1/catalog")
+        return { data: { version: 1, diagram: { nodes: [], flows: [] } } };
+
       if (url === "/api/business-process-chains") {
         return {
           data: [
@@ -142,6 +145,9 @@ describe("BusinessProcessChainsPage", () => {
       },
     ];
     vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/business-process-chains/learning-cycles/v1/catalog")
+        return { data: { version: 1, diagram: { nodes: [], flows: [] } } };
+
       if (url === "/api/business-process-chains") return { data: summaries };
       if (url === "/api/business-process-chains/4") {
         return {
@@ -181,6 +187,9 @@ describe("BusinessProcessChainsPage", () => {
       processCount: 0,
     };
     vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/business-process-chains/learning-cycles/v1/catalog")
+        return { data: { version: 1, diagram: { nodes: [], flows: [] } } };
+
       if (url === "/api/business-process-chains") {
         return { data: [currentChain] };
       }

@@ -12,6 +12,7 @@ import com.marketinghub.businessprocess.execution.service.backendactivity.Backen
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityExecutor;
 import com.marketinghub.businessprocess.execution.service.backendactivity.BackendProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRequirementResponse;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.valuechainposition.ProductProcessPeriodService;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -103,6 +104,9 @@ public class PdeAgentValidationGateActivityExecutor
   private final ProductProcessPeriodService periods;
   private final ObjectMapper json;
   private final Clock clock;
+
+  @Autowired(required = false)
+  private LearningCycleExecutionContext learningCycleContext;
 
   /** Configura as fontes persistidas e o relógio do gate. */
   @Autowired
@@ -266,7 +270,7 @@ public class PdeAgentValidationGateActivityExecutor
         List.copyOf(evidenceTasks));
   }
 
-  /** Valida a versão vigente e os critérios predeclarados do próprio produto. */
+  /** Valida o contrato inicial ou a revalidação da mesma versão em um ciclo comercial aberto. */
   private AgentValidationContract contract(
       Product product, String sourceReference, List<String> issues) {
     if (product == null || product.getId() == null) {
@@ -282,7 +286,8 @@ public class PdeAgentValidationGateActivityExecutor
       issues.add("O produto não possui o contrato PDE_AGENT_VALIDATION_V1 vigente.");
     }
     if (!"PLANNED".equals(product.getCommercialStatus())
-        && !"COMUNICACAO_E_JORNADA".equals(product.getCommercialStatus())) {
+        && !"COMUNICACAO_E_JORNADA".equals(product.getCommercialStatus())
+        && !cycleRevalidation(product)) {
       issues.add("O produto está fora da etapa permitida para a validação multiagente.");
     }
     try {
@@ -630,9 +635,16 @@ public class PdeAgentValidationGateActivityExecutor
     return informed == evidenceTasks.size() ? "COMPLETE" : "PARTIAL";
   }
 
-  /** Atualiza o produto e seus períodos sem transferir orçamento ou autorização de mídia. */
+  /** Identifica revalidação explícita sem afrouxar os critérios técnicos, humanos ou de versão. */
+  private boolean cycleRevalidation(Product product) {
+    return learningCycleContext != null && learningCycleContext.permitsRevalidation(product);
+  }
+
+  /** Registra aprovação e preserva a operação comercial durante uma revalidação por ciclo. */
   private void advanceProduct(Product product, GateEvaluation evaluation, Instant completedAt) {
-    if (COMPLETED_CONTRACT.equals(product.getValidationDefinitionVersion())
+    boolean revalidation = cycleRevalidation(product);
+    if (!revalidation
+        && COMPLETED_CONTRACT.equals(product.getValidationDefinitionVersion())
         && "COMUNICACAO_E_JORNADA".equals(product.getCommercialStatus())
         && Boolean.FALSE.equals(product.getAutomaticExecutionEnabled())) {
       return;
@@ -640,23 +652,27 @@ public class PdeAgentValidationGateActivityExecutor
     String previousStatus = product.getCommercialStatus();
     try {
       ObjectNode validation = (ObjectNode) json.readTree(product.getValidationDefinitionJson());
-      validation.put("purchaseMomentStatus", "WAITING_MARKET_VALIDATION");
-      validation.put("finalCommercialPrioritizationEligible", false);
-      validation.put("communicationPreparationEligible", true);
+      if (!revalidation) {
+        validation.put("purchaseMomentStatus", "WAITING_MARKET_VALIDATION");
+        validation.put("finalCommercialPrioritizationEligible", false);
+        validation.put("communicationPreparationEligible", true);
+      }
       ObjectNode gate = validation.putObject("agentValidation");
       writeGateSummary(gate, evaluation, completedAt);
       ObjectNode experience = (ObjectNode) json.readTree(product.getPdeExperienceJson());
-      experience.put("status", "AGENT_VALIDATED");
+      if (!revalidation) experience.put("status", "AGENT_VALIDATED");
       writeGateSummary(experience.putObject("agentValidation"), evaluation, completedAt);
       product.setValidationDefinitionVersion(COMPLETED_CONTRACT);
       product.setValidationDefinitionJson(json.writeValueAsString(validation));
       product.setPdeExperienceJson(json.writeValueAsString(experience));
-      product.setCommercialStatus("COMUNICACAO_E_JORNADA");
-      product.setAutomaticExecutionEnabled(false);
-      product.setAutomaticExecutionChangedAt(completedAt);
-      product.setAutomaticExecutionChangedBy("pde-agent-validation-gate-v1");
+      if (!revalidation) {
+        product.setCommercialStatus("COMUNICACAO_E_JORNADA");
+        product.setAutomaticExecutionEnabled(false);
+        product.setAutomaticExecutionChangedAt(completedAt);
+        product.setAutomaticExecutionChangedBy("pde-agent-validation-gate-v1");
+      }
       products.save(product);
-      periods.recordTransition(product, previousStatus);
+      if (!revalidation) periods.recordTransition(product, previousStatus);
     } catch (Exception ex) {
       log.error(
           "Falha ao persistir aprovação multiagente. productId={} sourceReference={}",

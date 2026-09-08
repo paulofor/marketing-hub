@@ -1,3 +1,4 @@
+import LearningCycleDiagram from "../learningCycle/LearningCycleDiagram";
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -267,7 +268,8 @@ export default function BusinessProcessesPage({
                 value={form.processType}
                 onChange={(event) => {
                   const processType = event.target.value as
-                    "VALUE_PROCESS" | "SUBPROCESS";
+                    | "VALUE_PROCESS"
+                    | "SUBPROCESS";
                   setForm({
                     ...form,
                     processType,
@@ -295,7 +297,9 @@ export default function BusinessProcessesPage({
                   setForm({
                     ...form,
                     executionScope: event.target.value as
-                      "PRODUCT" | "INDEPENDENT" | "PRODUCT_OR_INDEPENDENT",
+                      | "PRODUCT"
+                      | "INDEPENDENT"
+                      | "PRODUCT_OR_INDEPENDENT",
                   })
                 }
               >
@@ -826,13 +830,26 @@ export default function BusinessProcessesPage({
                       versões não podem selecionar um recurso até a recuperação.
                     </div>
                   ) : null}
-                  <BusinessProcessDiagram
-                    diagram={selected.diagram}
-                    executionResources={executionResourcesQuery.data ?? []}
-                    processDefinitionId={selected.id}
-                    documentActivityIds={documentActivitiesQuery.data ?? []}
-                    subprocesses={compositionQuery.data?.subprocesses ?? []}
-                  />
+                  {selected.processCode ===
+                  "value-chain-learning-sales-cycle" ? (
+                    <>
+                      <Link
+                        className="btn btn-primary mb-3 align-self-start"
+                        to="/business-process-chains/learning-cycles"
+                      >
+                        Executar ciclo por produto e experimento
+                      </Link>
+                      <LearningCycleDiagram diagram={selected.diagram} />
+                    </>
+                  ) : (
+                    <BusinessProcessDiagram
+                      diagram={selected.diagram}
+                      executionResources={executionResourcesQuery.data ?? []}
+                      processDefinitionId={selected.id}
+                      documentActivityIds={documentActivitiesQuery.data ?? []}
+                      subprocesses={compositionQuery.data?.subprocesses ?? []}
+                    />
+                  )}
                 </section>
               </>
             )

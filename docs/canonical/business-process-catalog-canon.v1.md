@@ -39,6 +39,11 @@ consulta reversa canônica é `GET /api/business-process-chains/by-process/{proc
 
 ## Governança BPM
 
+As cadeias incorporam **Ciclos de aprendizado e vendas**, conforme
+`ciclos-aprendizado-vendas-canon.v1.md`. A definição descreve o losango e os retornos; a execução
+versionada por experimento persiste conhecimento, decisões e liberação de etapas no backend.
+As versões publicadas anteriores e suas tarefas permanecem imutáveis.
+
 ### Modelo operacional explícito
 
 O catálogo e a execução adotam três níveis distintos e persistidos:

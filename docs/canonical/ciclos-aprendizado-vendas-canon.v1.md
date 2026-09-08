@@ -93,6 +93,21 @@ digitadas são declaradas como evidência do operador, nunca apresentadas como s
 Tráfego de homologação deve ser marcado e separado; não entra na leitura comercial nem autoriza escala.
 Memória é histórica e não substitui consulta atual. Antes/depois isolado não demonstra causalidade.
 
+### Publicação histórica sem run — contrato de adoção
+
+Uma campanha antiga pode ter sido publicada pelo callback oficial antes de possuir run no modelo
+atual. Para adoção como referência, o backend consulta primeiro qualquer run produtivo publicado
+do experimento; uma tentativa posterior sem publicação não apaga essa evidência. Na ausência
+desse run, experimentos Facebook podem usar o recibo externo datado da própria campanha
+persistida. Status do experimento, rascunho de campanha sem identificador externo, run de teste
+e campanhas de outro experimento não comprovam publicação.
+
+A referência deve estar fora de operação. A adoção começa na medição e registra um evento
+`ADOPT_BASELINE` com fonte, experimento, referência, data, existência de preflight e limitações.
+Não cria run/preflight retroativos nem transforma recibo em aprovação. O sucessor recebe essa
+evidência no aprendizado herdado, mantendo suas próprias métricas e exigindo os gates completos
+de versão, vídeos, homologação, autorização, orçamento, janela e publicação produtiva.
+
 ## Vídeos de campanha e entrada do PDE — BPM v2
 
 Decisão do usuário em 08/09/2026: os novos ciclos da cadeia PDE devem tornar explícita a

@@ -5,6 +5,7 @@ import static com.marketinghub.businessprocesschain.learningcycle.v1.service.Lea
 import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleHistoricalPublication;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.LearningCycleResponse;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
@@ -28,6 +29,7 @@ public class LearningCycleEvidence {
   private final BusinessProcessActivityInstanceRepository instances;
   private final ExperimentRunRepository runs;
   private final LearningCycleJson json;
+  private final LearningCyclePublicationHistory publicationHistory;
 
   /** Exige gate canônico aprovado para o mesmo produto e versão depois do último ajuste. */
   public void validation(LearningSalesCycle cycle, JsonNode data) {
@@ -154,11 +156,15 @@ public class LearningCycleEvidence {
         "O orçamento publicado diverge do teto aprovado neste ciclo.");
   }
 
-  /** Reconhece somente referências históricas que realmente chegaram à operação produtiva. */
+  /**
+   * Reconhece publicação anterior por run produtivo ou recibo externo legado, sem aprovar gates.
+   */
   public boolean operated(Experiment experiment) {
-    return runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(
-            experiment.getId(), ExperimentRunMode.PRODUCTION)
-        .filter(run -> run.getPublishedAt() != null)
-        .isPresent();
+    return historicalPublication(experiment).isPresent();
+  }
+
+  /** Entrega a fonte histórica para auditoria da adoção e orientação do operador. */
+  public Optional<LearningCycleHistoricalPublication> historicalPublication(Experiment experiment) {
+    return publicationHistory.find(experiment);
   }
 }

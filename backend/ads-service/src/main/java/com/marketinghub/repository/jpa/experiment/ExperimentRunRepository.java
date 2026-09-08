@@ -21,4 +21,8 @@ public interface ExperimentRunRepository extends JpaRepository<ExperimentRun, Lo
   /** Retorna o run produtivo mais recente para reconciliar publicação e primeira exposição. */
   Optional<ExperimentRun> findTopByExperimentIdAndModeOrderByRunNumberDesc(
       Long experimentId, ExperimentRunMode mode);
+
+  /** Preserva a prova de publicação anterior mesmo quando uma tentativa posterior não publicou. */
+  Optional<ExperimentRun> findTopByExperimentIdAndModeAndPublishedAtIsNotNullOrderByRunNumberDesc(
+      Long experimentId, ExperimentRunMode mode);
 }

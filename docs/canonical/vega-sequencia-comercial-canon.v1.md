@@ -64,3 +64,8 @@ sucessor planejado, com memória, versão, hipótese e métricas próprias. A ad
 plano, não substitui o #91 pelo #90 e não reativa campanha. As tarefas novas recebem o contexto
 do ciclo exato no contrato de entrada dos especialistas. As revisões e autorizações continuam
 com suas autoridades canônicas.
+
+A campanha histórica do #91 possui recibo Meta persistido, mas não tem run/preflight registrado.
+Essa lacuna deve acompanhar a adoção e a memória do sucessor; não exige reativar #91 nem fabricar
+aprovação retroativa. O backend deve aceitar a referência pelo contrato de publicação histórica
+do cânone dos ciclos. A nova publicação continua exigindo sua própria homologação e autorização.

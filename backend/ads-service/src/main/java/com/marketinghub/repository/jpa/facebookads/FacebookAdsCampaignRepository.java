@@ -72,6 +72,21 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
   /** Lista campanhas persistidas para um experimento sem forçar joins de leitura. */
   List<FacebookAdsCampaign> findByExperimentId(Long experimentId);
 
+  /**
+   * Consulta recibos externos datados do experimento, excluindo rascunhos locais sem publicação.
+   */
+  @Query(
+      """
+      select c from FacebookAdsCampaign c
+      where c.experiment.id = :experimentId
+        and c.externalId is not null
+        and length(trim(c.externalId)) > 0
+        and c.createdAt is not null
+      order by c.createdAt asc, c.id asc
+      """)
+  List<FacebookAdsCampaign> findHistoricalPublicationReceipts(
+      @Param("experimentId") Long experimentId);
+
   /** Remove campanhas persistidas para um experimento antes de reprocessar a publicação. */
   @org.springframework.data.jpa.repository.Modifying
   void deleteByExperimentId(Long experimentId);

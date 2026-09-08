@@ -141,7 +141,8 @@ public class LearningCycleService {
           experiments.findByProductIdOrderByUpdatedAtDescIdDesc(productId).stream()
               .map(
                   experiment -> {
-                    boolean baseline = evidence.operated(experiment);
+                    var historicalPublication = evidence.historicalPublication(experiment);
+                    boolean baseline = historicalPublication.isPresent();
                     boolean allowed =
                         !used.contains(experiment.getId())
                             && experiment.getExperimentType() != ExperimentType.FAKE_EXPERIMENT
@@ -156,7 +157,7 @@ public class LearningCycleService {
                         baseline,
                         allowed
                             ? (baseline
-                                ? "Referência histórica: iniciar pela conciliação dos resultados."
+                                ? historicalPublication.orElseThrow().summary()
                                 : "Novo ciclo: iniciar pelo aprendizado e hipótese.")
                             : "Já pertence a um ciclo, está em operação ou não possui publicação produtiva comprovada.");
                   })
@@ -261,15 +262,16 @@ public class LearningCycleService {
         request.windowEnd().isAfter(request.windowStart()),
         "A janela precisa terminar depois do início.");
     Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    var historicalPublication = evidence.historicalPublication(experiment);
     if (request.baseline()) {
       require(
           request.previousCycleId() == null
               && experiment.getStatus() != ExperimentStatus.RUNNING
-              && evidence.operated(experiment),
+              && historicalPublication.isPresent(),
           "A referência histórica deve ter sido publicada e estar fora de operação.");
     } else {
       require(
-          experiment.getStatus() == ExperimentStatus.PLANNED && !evidence.operated(experiment),
+          experiment.getStatus() == ExperimentStatus.PLANNED && historicalPublication.isEmpty(),
           "Um novo ciclo exige experimento planejado sem exposição anterior.");
       require(
           request.windowEnd().isAfter(now), "Defina uma janela futura para o novo experimento.");
@@ -349,6 +351,9 @@ public class LearningCycleService {
       cycle.setReturnActivityId(target.activityId());
     }
     cycles.saveAndFlush(cycle);
+    if (request.baseline()) {
+      recordHistoricalAdoption(cycle, request, historicalPublication.orElseThrow(), now);
+    }
     ledger.open(cycle, now);
     log.info(
         "Ciclos: ciclo aberto productId={} cycleId={} experimentId={} predecessor={} baseline={}",
@@ -358,6 +363,28 @@ public class LearningCycleService {
         cycle.getPreviousCycleId(),
         cycle.isBaseline());
     return response(cycle);
+  }
+
+  /** Registra a origem e as lacunas da referência sem fabricar execução ou aprovação retroativa. */
+  private void recordHistoricalAdoption(
+      LearningSalesCycle cycle,
+      CreateLearningCycleRequest request,
+      LearningCycleHistoricalPublication publication,
+      Instant now) {
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycle.getId());
+    event.setRequestKey(request.requestKey().toString());
+    event.setRequestJson(cycle.getCreationJson());
+    event.setRevision(0);
+    event.setFromStage("MEASUREMENT");
+    event.setToStage("MEASUREMENT");
+    event.setAction("ADOPT_BASELINE");
+    event.setOperatorName(request.operatorName().trim());
+    event.setSummary(publication.summary());
+    event.setEvidenceReference(publication.reference());
+    event.setEvidenceJson(json.write(publication));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
   }
 
   /** Aplica um comando idempotente com bloqueio de linha e rejeição de revisão obsoleta. */

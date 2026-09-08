@@ -5,6 +5,9 @@ info:
   description: >-
     O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
     Nenhuma rota ativa campanha, altera orçamento de mídia ou cria venda.
+    Adoção histórica aceita run produtivo publicado ou recibo externo datado da campanha Meta
+    do próprio experimento. Persiste evento ADOPT_BASELINE com source, experimentId, reference,
+    recordedAt, preflightRecorded e summary. A lacuna histórica não dispensa run/preflight do sucessor.
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:

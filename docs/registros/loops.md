@@ -4499,3 +4499,20 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   segregação de campanhas/produtos/QA, falhas sem fallback, consumo bloqueado antes do modelo e
   conferência do painel em desktop e mobile. Evidências em
   `docs/homologacao/hermes-metricas-experimento-v1.md`.
+
+## LOOP-CICLO-HISTORICO-EXIGE-RUN-RETROATIVO — campanha publicada não entra no aprendizado
+
+- **Data:** 2026-09-08.
+- **Evidência:** o catálogo da cadeia v13 rejeita #91, embora o MCP confirme experimento
+  interrompido e campanha Meta pausada com recibo externo. O #90 tem run próprio; #91 não tem.
+  O histórico anterior de Hermes já identificava a lacuna, e o backend publicado é `ae5460e1`.
+- **Causa-raiz:** reconhecimento de operação consultava apenas o último run produtivo. O modelo
+  legado também possui publicação comprovada pelo callback de campanha, e uma tentativa posterior
+  sem publicação não elimina exposição anterior.
+- **Correção local:** consultar o último run produtivo efetivamente publicado e, para Facebook
+  sem esse registro, o recibo externo datado da própria campanha. Registrar fonte e limitações
+  em evento de adoção do ciclo, preservado na memória do sucessor. Nenhum run/preflight retroativo.
+- **Prevenção:** consultas JPA reais excluem rascunhos, outro experimento/canal e runs de teste;
+  o fluxo MySQL/UI cobre adoção, ajuste, memória, segregação e nova publicação com gates próprios.
+  O recibo legado não substitui preflight do sucessor. Matriz:
+  `docs/homologacao/ciclo-vendas-historico-sem-run-v1.md`.

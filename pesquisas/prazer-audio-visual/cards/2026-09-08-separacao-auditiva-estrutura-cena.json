@@ -1,0 +1,18 @@
+{
+  "cardKey": "separacao-auditiva-estrutura-cena",
+  "collection": "prazer-audio-visual",
+  "title": "Separação auditiva deve acompanhar a estrutura da cena",
+  "finding": "Em fMRI com sons concorrentes, a atenção enfatizou características acústicas de baixo nível quando fontes da mesma categoria competiam e representações abstratas de categoria quando as fontes pertenciam a categorias diferentes; identidade do objeto foi modulada nos dois casos.",
+  "mechanism": "O sistema atencional parece adaptar o nível de representação à ambiguidade disponível: quando rótulos semânticos não distinguem fontes, detalhes acústicos ganham importância; quando categorias diferem, representações abstratas ajudam a seleção.",
+  "commercialApplication": "Em cenas com múltiplas fontes, testar diferenciação acústica maior entre fontes da mesma categoria, como duas vozes, e separação semântica clara entre categorias diferentes, como voz, música e efeitos.",
+  "evidenceStrength": "Média-alta para a flexibilidade representacional da atenção auditiva, com fMRI, análise de similaridade e decodificação entre experimentos. A tradução para mixagem audiovisual e resultados de produto ainda é hipótese.",
+  "publishedOn": "2026-09-03",
+  "validUntil": "2027-03-03",
+  "experimentHypothesis": "Maior separação acústica entre fontes concorrentes da mesma categoria reduzirá erros e esforço de compreensão; em fontes de categorias diferentes, distinção semântica clara poderá facilitar a seleção da fonte relevante.",
+  "risks": "Exagerar contraste acústico pode soar artificial, aumentar fadiga ou prejudicar coerência estética; separação semântica não garante compreensão quando intensidade e mascaramento continuam inadequados.",
+  "limits": "O estudo mede representação neural durante seleção auditiva, não prazer, qualidade percebida da mixagem, retenção, CTA ou conversão. A aplicação comercial é extrapolação a validar.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-08-separacao-auditiva-estrutura-cena.md",
+  "sourceTitle": "Fonte revisada — atenção auditiva depende da estrutura da cena",
+  "sourceSha256": "e991211514cf4c594427f13b7813e0b994186e99436006cdf91755dd632f830f"
+}

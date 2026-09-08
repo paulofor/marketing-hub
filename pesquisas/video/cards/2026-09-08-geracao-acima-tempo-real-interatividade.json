@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-geracao-acima-tempo-real-interatividade-hibrida",
+  "collection": "video",
+  "title": "Usar geração mais rápida que a reprodução para vídeo interativo híbrido",
+  "finding": "O Yoroll H3 Superfast foi anunciado como capaz de gerar 10 segundos de vídeo 768p/24 fps com áudio em 4 segundos em 8× B200, e o YoLive usa essa folga para escolher e gerar a próxima cena enquanto a atual é reproduzida.",
+  "mechanism": "Quando o próximo segmento pode ser produzido antes de o atual terminar, o harness consegue esconder parte da latência dentro da reprodução: mantém o estado, coleta a escolha do usuário e dispara o próximo clipe. Conteúdo pré-produzido pode fixar elementos críticos enquanto trechos menos críticos permanecem adaptativos.",
+  "commercialApplication": "Prototipar no Marketing Hub uma peça interativa cuja oferta, produto e claims permaneçam pré-aprovados, mas permita ao usuário escolher ramificações seguras de demonstração, cenário ou narrativa; comparar com vídeo linear equivalente.",
+  "evidenceStrength": "Moderada-baixa: há lançamento público e demonstração operacional do YoLive, mas o benchmark de velocidade é divulgado pelo próprio fornecedor, depende de 8× B200 e não há evidência independente de efeito comercial.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2026-12-07",
+  "experimentHypothesis": "Uma experiência híbrida com núcleo pré-aprovado e ramificações interativas aumentará conclusão, tempo de permanência e CTA em relação a um vídeo linear equivalente sem elevar erros de marca ou aprovação.",
+  "risks": "Custo e latência de infraestrutura; escolhas do usuário podem produzir conteúdo inadequado ou inconsistente; complexidade do harness; confundir engajamento com conversão; dependência de tecnologia ainda pouco documentada.",
+  "limits": "Não foi encontrada API, preço ou licença comercial pública específica para H3 Superfast; a velocidade do modelo não representa a latência ponta a ponta; os pesos abertos do MiniMax H3 base não implicam abertura do derivado; impacto em vendas precisa ser medido no próprio funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-08-geracao-acima-tempo-real-interatividade.md",
+  "sourceTitle": "Fonte revisada — Geração mais rápida que a reprodução e vídeo interativo híbrido",
+  "sourceSha256": "e3d92d2f4047f5ed5b735a7f3f4e4047442c9641a30df94e696f01dbf3acc655"
+}

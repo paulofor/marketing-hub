@@ -343,6 +343,7 @@ export default function LearningCyclesPage() {
             <p>Hipótese: {String(cycle.brief.hypothesis)}</p>
             <p>Variável: {String(cycle.brief.mainChange)}</p>
             <p>Critério: {String(cycle.brief.successCriterion)}</p>
+            {cycle.status !== "OPEN" ? <p>{cycle.nextAction}</p> : null}
             <div className="d-flex flex-wrap gap-2">
               <Link
                 to={`/experiments/${cycle.experimentId}`}
@@ -350,9 +351,11 @@ export default function LearningCyclesPage() {
               >
                 Abrir experimento
               </Link>
-              <Link to={cycle.workUrl} className="btn btn-outline-secondary">
-                Abrir atividade orientada
-              </Link>
+              {cycle.workUrl ? (
+                <Link to={cycle.workUrl} className="btn btn-outline-secondary">
+                  Abrir atividade orientada
+                </Link>
+              ) : null}
               {cycle.canCreateSuccessor ? (
                 <button
                   className="btn btn-primary"

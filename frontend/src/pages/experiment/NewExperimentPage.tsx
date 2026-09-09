@@ -110,6 +110,7 @@ export default function NewExperimentPage() {
   const [params] = useSearchParams();
   const nicheIdParam = params.get("nicheId") ?? "";
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
+  const productIdParam = params.get("productId") ?? "";
   const create = useCreateExperiment();
   const createHypothesis = useCreateHypothesis();
   const prepareProductAiHypothesis = usePrepareProductAiHypothesis();
@@ -120,7 +121,7 @@ export default function NewExperimentPage() {
   const { data: products } = useProducts();
   const [form, setForm] = useState<FormState>({
     platform: "FACEBOOK",
-    productId: "",
+    productId: productIdParam,
     desireTerritoryCode: "",
     experimentType: "LOW_TICKET_PRODUCT",
     productAiSubtype: "",
@@ -215,15 +216,15 @@ export default function NewExperimentPage() {
   })() as Array<{ code: string; name: string; idea?: string }>;
   const canGeneratePromiseOptions = Boolean(
     form.nicheId &&
-    form.hypothesisId &&
-    form.productId &&
-    form.desireTerritoryCode,
+      form.hypothesisId &&
+      form.productId &&
+      form.desireTerritoryCode,
   );
   const promiseOptionsRequest = usePromiseOptionsRequest(promiseRequestId);
   const promiseRequestStatus = promiseOptionsRequest.data?.status;
   const isWaitingPromiseOptions = Boolean(
     promiseRequestId &&
-    !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
+      !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
@@ -243,7 +244,7 @@ export default function NewExperimentPage() {
     !isProductAiExperiment ||
     Boolean(
       productAiPreparationData?.ready &&
-      productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
+        productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
     );
   const experimentTypeLabel = isPdeMembershipSubscriptionFunnel
     ? "PDE / assinatura MUSA"
@@ -270,6 +271,7 @@ export default function NewExperimentPage() {
     const draft = latestPromiseOptionsDraft.data;
     if (
       !draft ||
+      productIdParam ||
       nicheIdParam ||
       hypothesisIdParam ||
       form.nicheId ||
@@ -289,6 +291,7 @@ export default function NewExperimentPage() {
     setPromiseOptions(draft.options ?? []);
   }, [
     latestPromiseOptionsDraft.data,
+    productIdParam,
     nicheIdParam,
     hypothesisIdParam,
     form.nicheId,
@@ -497,9 +500,11 @@ export default function NewExperimentPage() {
       }
       if (
         form.platform === "FACEBOOK" &&
-        ((parsedDailyBudget == null) !== (parsedMediaSpendLimit == null))
+        (parsedDailyBudget == null) !== (parsedMediaSpendLimit == null)
       ) {
-        alert("Orçamento diário e teto total de mídia devem ser informados juntos");
+        alert(
+          "Orçamento diário e teto total de mídia devem ser informados juntos",
+        );
         return;
       }
       const parsedKpiTarget = parseOptionalPositiveAmount(form.kpiTarget);

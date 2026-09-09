@@ -4552,6 +4552,13 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   a versão do predecessor. Contratos de regressão: `SalesFlowResolverTest`,
   `AgentTaskServiceTest`, REST/MySQL e navegação desktop/mobile em
   `docs/homologacao/processo6-fluxo-produto-v1.md`.
+- Recorrência na continuação do Vega em 09/09/2026: o ciclo #1 já estava `ADJUSTED`, mas
+  a orientação considerava somente `stage=DECISION`, abrindo o #91 e pedindo nova aprovação.
+  O formulário do sucessor também apontava ao wizard que cria outro nicho/hipótese, sem produto.
+  A projeção passa a considerar o encerramento e o sucessor persistido; o catálogo fornece o
+  cadastro do produto existente. Regressão cobre predecessor imutável, navegação contextual,
+  vínculo do sucessor e avanço de aprendizado a planejamento em MySQL e desktop/mobile.
+  Evidências: `docs/homologacao/vega-sucessor-continuidade-v1.md`.
 
 ## LOOP-BPM-VIDEO-GENERICO-SEM-ENTREGA-POR-DESTINO — prevenção em 08/09/2026
 

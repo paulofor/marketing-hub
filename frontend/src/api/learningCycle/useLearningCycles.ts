@@ -93,7 +93,7 @@ export type LearningCycle = {
   responsible: string;
   returnProcessId?: number;
   returnActivityId?: string;
-  workUrl: string;
+  workUrl: string | null;
   diagram?: ProcessDiagram;
   brief: Record<string, unknown>;
   inheritedLearning: {
@@ -117,6 +117,7 @@ export type LearningCycle = {
   closedAt?: string;
 };
 export type CycleCatalog = {
+  createExperimentUrl?: string | null;
   successorChainDefinitionId?: number | null;
   successorChainName?: string | null;
   entry?: LearningCycleEntry;

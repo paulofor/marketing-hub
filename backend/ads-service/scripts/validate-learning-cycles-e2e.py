@@ -293,11 +293,15 @@ command(cycle,'ADJUST',dict(return_to,learning='Melhorar microação',nextHypoth
 http('/fixture/experiments/91001/stop',{})
 cycle=command(cycle,'ADJUST',dict(return_to,learning='Melhorar microação',nextHypothesis='Ação guiada'))
 assert cycle['status']=='ADJUSTED' and cycle['canCreateSuccessor']
+assert cycle['workUrl'] is None and 'Ajuste aprovado' in cycle['nextAction']
 successor=http(f'{API}/products/91001',brief(91002,cycle['id']))
 assert successor['stage']=='LEARNING' and successor['inheritedLearning']['experimentId']==91001
 assert f'learningCycleId={successor["id"]}' in successor['workUrl'] or successor['workUrl']==f'/experiments/{successor["experimentId"]}'
 assert len(http(f'{API}/products/91001?chainId=91002'))==2
 assert successor['inheritedLearning']['events'][-1]['evidence']['nextHypothesis']=='Ação guiada'
+predecessor=next(c for c in http(f'{API}/products/91001?chainId=91002') if c['id']==cycle['id'])
+assert predecessor['workUrl'].endswith(f'cycleId={successor["id"]}')
+assert not predecessor['canCreateSuccessor'] and predecessor['commands']==[]
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='2'
 command(cycle,'STOP',expected=409)
 check('Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável')

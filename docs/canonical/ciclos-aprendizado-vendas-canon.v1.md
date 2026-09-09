@@ -137,6 +137,11 @@ O BPM deve modelar esses caminhos e a tela deve expor sua evidência e próxima 
 - **Ajustar:** registrar causa, evidências, aprendizado e atividade/processo de retorno. Encerrar a
   iteração e vincular um experimento novo, inicialmente planejado, do mesmo produto. O sucessor
   recebe a memória do anterior e percorre novamente planejamento, ajustes e gates afetados.
+  O ciclo encerrado orienta a criação/vinculação do sucessor, sem repetir a aprovação ou executar
+  a melhoria no experimento histórico. O cadastro deve preservar produto e nicho existentes;
+  o wizard que cria outra descoberta não é entrada do sucessor. Quando o sucessor existe, a
+  navegação retoma sua ocorrência. O retorno só é executado no contexto dessa nova iteração,
+  com cadeia, ciclo e atividade explícitos na URL.
 - **Continuar coleta:** somente com dados válidos, orçamento e janela ainda disponíveis. Ao atingir
   um limite, concluir como inconclusivo ou encerrar; prazo decorrido não autoriza verba adicional.
 - **Corrigir medição:** retornar à instrumentação no mesmo ciclo, sem concluir rejeição comercial

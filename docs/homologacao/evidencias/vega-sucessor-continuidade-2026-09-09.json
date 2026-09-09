@@ -1,0 +1,133 @@
+{
+  "date": "2026-09-09",
+  "production": {
+    "experiment": {
+      "id": 92,
+      "name": "MUSA-H003-E003",
+      "productId": 4,
+      "nicheId": 31,
+      "status": "PLANNED",
+      "hypothesisId": "89766cc8-1b39-417f-a15d-173723a04d86"
+    },
+    "cycle": {
+      "id": 2,
+      "productId": 4,
+      "experimentId": 92,
+      "previousCycleId": 1,
+      "chainDefinitionId": 14,
+      "processDefinitionId": 76,
+      "stage": "PLANNING",
+      "status": "OPEN",
+      "revision": 1,
+      "productVersion": "musa-pde-entry-v8-primeiro-ajuste-aplicavel",
+      "returnProcessId": 67,
+      "returnActivityId": "productArchitecture",
+      "budgetLimitBrl": 100,
+      "windowStart": "2026-09-10T03:00:00Z",
+      "windowEnd": "2026-09-17T02:59:00Z"
+    },
+    "lastEvent": {
+      "id": 4,
+      "revision": 1,
+      "fromStage": "LEARNING",
+      "toStage": "PLANNING",
+      "action": "COMPLETE",
+      "operatorName": "Codex — execução solicitada pelo usuário",
+      "summary": "Aprendizado aprovado do ciclo #1 transmitido ao sucessor: melhorar a aplicabilidade do primeiro ajuste e testar continuidade até compra, preservando a limitação da amostra.",
+      "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+      "evidence": {
+        "learning": "O #91 teve 4 sessões humanas, 86 eventos, 2 inícios, 1 primeiro resultado e nenhuma venda. R$ 27,30 de custo auditável e contribuição de -R$ 27,30. A amostra é insuficiente para concluir conversão ou causa de abandono. O sucessor deve produzir uma microação executável, manter oferta/público e ter métricas, homologação e autorização próprias.",
+        "competingExplanation": "A falta de compra também pode decorrer da amostra de quatro sessões, do público, do criativo ou da fricção de entrada/retomada. A hipótese de utilidade inicial precisa de teste; não é causa comprovada."
+      },
+      "createdAt": "2026-09-09T19:04:24.447919Z"
+    },
+    "historicalExperimentStatus": "USER_STOPPED",
+    "mediaStarted": false,
+    "deploymentPerformedByThisTask": false,
+    "browserVerification": [
+      {
+        "name": "desktop",
+        "entry": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+        "cycleId": 2,
+        "experimentId": 92,
+        "stage": "PLANNING",
+        "target": "/products/4/value-chain-history/processes/67/activities?learningCycleId=2",
+        "errors": []
+      },
+      {
+        "name": "iphone",
+        "entry": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+        "cycleId": 2,
+        "experimentId": 92,
+        "stage": "PLANNING",
+        "target": "/products/4/value-chain-history/processes/67/activities?learningCycleId=2",
+        "errors": []
+      },
+      {
+        "name": "pixel",
+        "entry": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+        "cycleId": 2,
+        "experimentId": 92,
+        "stage": "PLANNING",
+        "target": "/products/4/value-chain-history/processes/67/activities?learningCycleId=2",
+        "errors": []
+      }
+    ],
+    "finalDatabaseVerification": [
+      {
+        "id": 91,
+        "status": "USER_STOPPED",
+        "product_id": 4,
+        "daily_budget": 20.0,
+        "media_spend_limit": 100.0,
+        "campaign_count": 1
+      },
+      {
+        "id": 92,
+        "status": "PLANNED",
+        "product_id": 4,
+        "daily_budget": null,
+        "media_spend_limit": null,
+        "campaign_count": 0
+      }
+    ]
+  },
+  "localValidation": {
+    "consecutiveCompleteRounds": 2,
+    "backendTestsPerRound": {
+      "tests": 149,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "atenaTestsPerRound": {
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontendTestsPerRound": 33,
+    "mysqlContractsPerRound": 18,
+    "profiles": [
+      "Chromium desktop",
+      "Chromium iPhone 15 Pro emulado",
+      "Chromium Pixel 7 emulado"
+    ],
+    "externalModel": "SIMULATED",
+    "productionCallsDuringLocalMatrix": 0,
+    "checksPerRound": [
+      "backend",
+      "atena",
+      "frontend",
+      "typecheck",
+      "build",
+      "spotless",
+      "prettier",
+      "rest",
+      "legacy-browser",
+      "registration-browser",
+      "diff"
+    ],
+    "temporaryTopologyRemoved": true
+  }
+}

@@ -44,12 +44,29 @@ public class LearningCycleBpmLedger {
   /** Fecha a ocorrência atual preservando evidência, reprovação e horário da decisão. */
   public void finish(
       LearningSalesCycle cycle, String evidence, String status, String reason, Instant now) {
+    finish(cycle, evidence, status, reason, "HUMAN_RECORDED", now);
+  }
+
+  /** Fecha a medição automática com a própria fotografia funcional como evidência da ocorrência. */
+  public void finishAutomaticMeasurement(
+      LearningSalesCycle cycle, String evidence, String status, String reason, Instant now) {
+    finish(cycle, evidence, status, reason, "AUTOMATIC", now);
+  }
+
+  /** Aplica a conclusão comum preservando a origem humana ou automática da evidência. */
+  private void finish(
+      LearningSalesCycle cycle,
+      String evidence,
+      String status,
+      String reason,
+      String evidenceQuality,
+      Instant now) {
     var instance = instances.findById(cycle.getCurrentInstanceId()).orElseThrow();
     instance.setStatus(status);
     instance.setObjectiveAchieved("COMPLETED".equals(status));
     instance.setObjectiveEvidenceJson(evidence);
     instance.setBlockedReason("BLOCKED".equals(status) ? reason : null);
-    instance.setEvidenceQuality("HUMAN_RECORDED");
+    instance.setEvidenceQuality(evidenceQuality);
     instance.setExitedAt(now);
     instance.setUpdatedAt(now);
     instances.save(instance);

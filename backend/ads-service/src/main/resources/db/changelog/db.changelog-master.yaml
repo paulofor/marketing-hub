@@ -2054,3 +2054,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-08-pde-learning-cycle-organization-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-09-learning-cycle-automatic-measurement-v3.yaml
+      relativeToChangelogFile: true

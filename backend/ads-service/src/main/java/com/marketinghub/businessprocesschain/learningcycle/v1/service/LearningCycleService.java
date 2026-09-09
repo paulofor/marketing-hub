@@ -10,6 +10,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.Le
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand.Action;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentType;
@@ -45,6 +46,7 @@ public class LearningCycleService {
   private final Clock clock;
   private final LearningCycleVideoEvidence videoEvidence;
   private final LearningCycleOrganization organization;
+  private final LearningCycleMeasurementCollector measurementCollector;
 
   /** Configura fontes oficiais, contratos e relógio de decisão. */
   @Autowired
@@ -60,7 +62,8 @@ public class LearningCycleService {
       LearningCycleBpmLedger ledger,
       LearningCycleEvidence evidence,
       LearningCycleVideoEvidence videoEvidence,
-      LearningCycleOrganization organization) {
+      LearningCycleOrganization organization,
+      LearningCycleMeasurementCollector measurementCollector) {
     this(
         cycles,
         events,
@@ -74,6 +77,7 @@ public class LearningCycleService {
         evidence,
         videoEvidence,
         organization,
+        measurementCollector,
         Clock.systemUTC());
   }
 
@@ -91,6 +95,7 @@ public class LearningCycleService {
       LearningCycleEvidence evidence,
       LearningCycleVideoEvidence videoEvidence,
       LearningCycleOrganization organization,
+      LearningCycleMeasurementCollector measurementCollector,
       Clock clock) {
     this.cycles = cycles;
     this.events = events;
@@ -105,6 +110,7 @@ public class LearningCycleService {
     this.clock = clock;
     this.videoEvidence = videoEvidence;
     this.organization = organization;
+    this.measurementCollector = measurementCollector;
   }
 
   /** Lista ciclos do próprio produto, preservando escolhas históricas e estados terminais. */
@@ -355,6 +361,7 @@ public class LearningCycleService {
       recordHistoricalAdoption(cycle, request, historicalPublication.orElseThrow(), now);
     }
     ledger.open(cycle, now);
+    reconcileAutomatically(cycle, experiment, now, "STAGE_ENTERED");
     log.info(
         "Ciclos: ciclo aberto productId={} cycleId={} experimentId={} predecessor={} baseline={}",
         productId,
@@ -444,6 +451,7 @@ public class LearningCycleService {
     ledger.finish(cycle, input, completion, request.summary(), now);
     if ("OPEN".equals(cycle.getStatus())) ledger.open(cycle, now);
     cycles.saveAndFlush(cycle);
+    reconcileAutomatically(cycle, experiment, now, "STAGE_ENTERED");
     log.info(
         "Ciclos: decisão persistida productId={} cycleId={} experimentId={} action={} from={} to={} revision={}",
         productId,
@@ -454,6 +462,154 @@ public class LearningCycleService {
         cycle.getStage(),
         cycle.getRevision());
     return response(cycle);
+  }
+
+  /**
+   * Reconcilia novamente as fontes oficiais de uma medição bloqueada sem receber números do
+   * navegador.
+   */
+  @Transactional
+  public LearningCycleResponse reconcileMeasurement(
+      Long productId, Long cycleId, ReconcileLearningCycleMeasurementRequest request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    String input = json.write(request);
+    var replay = events.findByCycleIdAndRequestKey(cycleId, request.requestKey().toString());
+    if (replay.isPresent()) {
+      require(
+          json.read(input).equals(json.read(replay.get().getRequestJson())),
+          "A chave desta conciliação já foi usada com outro conteúdo.");
+      return response(cycle);
+    }
+    require(
+        cycle.getRevision() == request.expectedRevision(),
+        "O ciclo mudou. Atualize a tela antes de reconciliar novamente.");
+    require(
+        "OPEN".equals(cycle.getStatus()) && "MEASUREMENT".equals(cycle.getStage()),
+        "A conciliação automática só pode ser refeita durante a etapa de medição.");
+    Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    var experiment = requiredExperiment(productId, cycle.getExperimentId());
+    persistAutomaticMeasurement(
+        cycle,
+        experiment,
+        measurementCollector.collect(cycle, experiment, now),
+        request.requestKey().toString(),
+        input,
+        now);
+    return response(cycle);
+  }
+
+  /** Tenta concluir toda entrada em medição e preserva o bloqueio se a fonte não estiver pronta. */
+  private void reconcileAutomatically(
+      LearningSalesCycle cycle, Experiment experiment, Instant now, String trigger) {
+    if (!"OPEN".equals(cycle.getStatus()) || !"MEASUREMENT".equals(cycle.getStage())) return;
+    String requestKey = UUID.randomUUID().toString();
+    String input =
+        json.write(
+            Map.of(
+                "contractVersion",
+                LearningCycleMeasurementCollector.CONTRACT,
+                "requestKey",
+                requestKey,
+                "trigger",
+                trigger));
+    persistAutomaticMeasurement(
+        cycle,
+        experiment,
+        measurementCollector.collect(cycle, experiment, now),
+        requestKey,
+        input,
+        now);
+  }
+
+  /** Persiste uma fotografia válida ou um bloqueio, mantendo revisão e ledger BPM coerentes. */
+  private void persistAutomaticMeasurement(
+      LearningSalesCycle cycle,
+      Experiment experiment,
+      LearningCycleMeasurementCollector.Result collected,
+      String requestKey,
+      String input,
+      Instant now) {
+    var result = preventUnchangedSnapshot(cycle, experiment, collected, now);
+    String from = cycle.getStage();
+    if (result.ready()) {
+      validateMetrics(cycle, result.evidence(), now);
+      cycle.setStage("DECISION");
+    }
+    cycle.setRevision(cycle.getRevision() + 1);
+    cycle.setUpdatedAt(now);
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycle.getId());
+    event.setRequestKey(requestKey);
+    event.setRequestJson(input);
+    event.setRevision(cycle.getRevision());
+    event.setFromStage(from);
+    event.setToStage(cycle.getStage());
+    event.setAction(result.ready() ? "MEASURE" : "MEASUREMENT_BLOCKED");
+    event.setOperatorName("Marketing Hub · backend");
+    event.setSummary(result.summary());
+    event.setEvidenceReference(result.evidenceReference());
+    event.setEvidenceJson(json.write(result.evidence()));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
+    ledger.finishAutomaticMeasurement(
+        cycle,
+        json.write(result.evidence()),
+        result.ready() ? "COMPLETED" : "BLOCKED",
+        result.summary(),
+        now);
+    ledger.open(cycle, now);
+    cycles.saveAndFlush(cycle);
+    log.info(
+        "Ciclos: conciliação automática persistida productId={} cycleId={} experimentId={} status={} revision={}",
+        cycle.getProductId(),
+        cycle.getId(),
+        experiment.getId(),
+        result.ready() ? "READY" : "BLOCKED",
+        cycle.getRevision());
+  }
+
+  /** Impede que continuar coleta produza outra decisão sem qualquer mudança nas fontes. */
+  private LearningCycleMeasurementCollector.Result preventUnchangedSnapshot(
+      LearningSalesCycle cycle,
+      Experiment experiment,
+      LearningCycleMeasurementCollector.Result result,
+      Instant now) {
+    JsonNode previous = latestMetrics(cycle);
+    String fingerprint = result.evidence().path("sourceFingerprint").asText();
+    if (!result.ready()
+        || fingerprint.isBlank()
+        || !fingerprint.equals(previous.path("sourceFingerprint").asText())) return result;
+    JsonNode blocked =
+        json.read(
+            json.write(
+                Map.of(
+                    "contractVersion",
+                    LearningCycleMeasurementCollector.CONTRACT,
+                    "automatic",
+                    true,
+                    "dataValid",
+                    false,
+                    "experimentId",
+                    experiment.getId(),
+                    "observedAt",
+                    now.toString(),
+                    "sourceFingerprint",
+                    fingerprint,
+                    "blocker",
+                    "As fontes ainda não mudaram desde a última leitura. Aguarde novos dados antes de decidir novamente.")));
+    return new LearningCycleMeasurementCollector.Result(
+        false,
+        blocked,
+        "Conciliação automática bloqueada: as fontes ainda não mudaram desde a última leitura.",
+        "internal://learning-cycles/"
+            + cycle.getId()
+            + "/experiments/"
+            + experiment.getId()
+            + "/measurement-unchanged");
   }
 
   /** Valida o movimento e resolve a próxima etapa sem permitir bypass por campos da tela. */
@@ -756,6 +912,11 @@ public class LearningCycleService {
     String nextAction =
         stageNode == null ? label(cycle.getStage()) : stageNode.path("description").asText();
     String responsible = stageNode == null ? "Operador do ciclo" : stageNode.path("owner").asText();
+    if ("MEASUREMENT".equals(cycle.getStage())) {
+      nextAction =
+          "O backend concilia automaticamente funil, vendas, receita, custos e valor entregue pelas fontes oficiais do experimento. Corrija somente a fonte indicada se houver bloqueio.";
+      responsible = "Marketing Hub · conciliação automática; Hermes e Plutus · interpretação";
+    }
     if ("ADJUSTMENT".equals(cycle.getStage()) && cycle.getReturnProcessId() != null) {
       var target =
           activities
@@ -879,9 +1040,9 @@ public class LearningCycleService {
     return chains.findById(id).orElseThrow(() -> notFound("Cadeia de valor não encontrada."));
   }
 
-  /** Usa o BPM v2 publicado para novas ocorrências; as existentes preservam sua definição. */
+  /** Usa o BPM v3 publicado para novas ocorrências; as existentes preservam sua definição. */
   private BusinessProcessDefinition requiredCycleProcess() {
-    int version = 2;
+    int version = 3;
     return processes
         .findByProcessCodeAndVersionNumber(PROCESS_CODE, version)
         .orElseThrow(() -> notFound("O BPM de ciclos v" + version + " ainda não foi instalado."));

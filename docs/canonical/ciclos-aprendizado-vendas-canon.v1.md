@@ -88,10 +88,46 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
   Uma referência histórica adotada sem homologação deve orientar um sucessor homologado.
 - **Encerrar / inconclusivo:** preservar contexto, versão, amostra, gastos, resultados e motivos.
 
-Métricas do ciclo preservam origem, período, moeda, denominadores e qualidade dos dados. Métricas
-digitadas são declaradas como evidência do operador, nunca apresentadas como sincronização Meta.
-Tráfego de homologação deve ser marcado e separado; não entra na leitura comercial nem autoriza escala.
-Memória é histórica e não substitui consulta atual. Antes/depois isolado não demonstra causalidade.
+Métricas do ciclo preservam origem, período, moeda, denominadores e qualidade dos dados. Tráfego de
+homologação deve ser marcado e separado; não entra na leitura comercial nem autoriza escala. Memória
+é histórica e não substitui consulta atual. Antes/depois isolado não demonstra causalidade.
+
+### Conciliação automática de resultados — decisão de 09/09/2026
+
+Resultados do experimento **não são digitados pelo operador**. Entrar em `MEASUREMENT` faz o backend
+ler e persistir automaticamente a fotografia atribuída ao experimento; a pessoa interpreta a
+evidência e decide o próximo movimento comercial. O BPM v3 torna essa responsabilidade explícita.
+
+| Alternativa | Benefício | Risco / esforço | Decisão |
+| --- | --- | --- | --- |
+| Manter formulário manual | Implementação simples | Duplica a fonte, permite erro e cria divergência com Hermes | Rejeitada |
+| Preencher o formulário no navegador | Remove parte da digitação | Depende da tela aberta e transforma o frontend em conciliador | Rejeitada |
+| Backend conciliar fontes oficiais e persistir snapshot ou bloqueio | Uma verdade para ciclo, painel e Hermes; auditável e idempotente | Exige contratos de fonte e tratamento de inconsistências | Escolhida |
+
+- O funil usa o mesmo leitor canônico de Hermes, com produto, versão e experimento ou identificadores
+  de campanha vinculados, sempre filtrando `traffic_quality=HUMAN`. Sessões, início, primeiro resultado
+  e checkout vêm desse recorte e da janela autorizada do ciclo; totais brutos permanecem apenas para
+  demonstrar a segregação.
+- Compra e reembolso usam eventos comerciais internos `PURCHASE_COMPLETED` e `REFUND_CONFIRMED`,
+  com referência financeira, moeda e valor verificáveis. `SUBSCRIPTION_APPROVED` sem compra canônica,
+  valor ausente, moeda divergente ou reembolso sem compra bloqueiam a leitura; não viram zero.
+- Mídia Facebook vem do snapshot persistido da própria campanha. Experimento encerrado exige
+  sincronização final; experimento em operação exige leitura com no máximo 24 horas. Canal direto
+  registra mídia zero por contrato do canal, não por ausência de fonte.
+- Contribuição é receita líquida menos o ledger de custos auditáveis do mesmo experimento. Entrega,
+  primeiro uso e percepção positiva usam eventos internos canônicos e não são inferidos de clique.
+  Esses marcos só comprovam valor quando o `accessReferenceHash` irreversível forma uma relação
+  unívoca com uma compra líquida do mesmo recorte; bearer bruto, acesso gratuito, compra reembolsada
+  ou evento de outra pessoa não satisfazem o gate de escala.
+- Uma leitura válida cria evento `MEASURE` com `automatic=true`, assinatura das fontes, período,
+  horário e componentes da conciliação, e o backend avança para `DECISION`. Fonte ausente ou
+  contraditória cria `MEASUREMENT_BLOCKED`, conserva a etapa e informa a causa e a correção.
+- Repetir coleta só produz nova decisão quando a assinatura de alguma fonte mudar. A retentativa
+  aceita apenas chave idempotente e revisão esperada; nunca recebe números, responsável ou
+  justificativa do frontend.
+- Leituras manuais antigas permanecem identificadas como históricas. Ocorrências abertas em BPM
+  anterior conservam sua definição original, mas usam a reconciliação automática compatível antes
+  de decidir; novas ocorrências usam o BPM v3 publicado.
 
 ### Publicação histórica sem run — contrato de adoção
 

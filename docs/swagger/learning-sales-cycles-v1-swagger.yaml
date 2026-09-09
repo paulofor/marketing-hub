@@ -5,6 +5,9 @@ info:
   description: >-
     O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
     Nenhuma rota ativa campanha, altera orçamento de mídia ou cria venda.
+    Ao entrar em MEASUREMENT, o backend concilia automaticamente analytics atribuído,
+    canal, desfechos financeiros, custos e valor entregue. A tela não envia métricas.
+    Fonte indisponível ou inconsistente persiste MEASUREMENT_BLOCKED e nunca vira zero.
     Adoção histórica aceita run produtivo publicado ou recibo externo datado da campanha Meta
     do próprio experimento. Persiste evento ADOPT_BASELINE com source, experimentId, reference,
     recordedAt, preflightRecorded e summary. A lacuna histórica não dispensa run/preflight do sucessor.
@@ -92,7 +95,6 @@ paths:
         COMPLETE avança a etapa após validar sua evidência. REWORK exige nova versão e retorna
         ao ajuste antes da publicação; após publicação, exige experimento pausado e technicalOnly=true
         (mesma hipótese, oferta e aquisição), com nova homologação e publicação oficial posterior.
-        MEASURE registra fotografia cumulativa, sem somar snapshots.
         ADJUST encerra o ciclo para um sucessor, exigindo experimento fora de RUNNING.
         CONTINUE respeita qualidade, leitura atual, teto e janela. FIX_MEASUREMENT preserva o experimento.
         SCALE exige amostra, vendas líquidas, contribuição positiva, entrega, uso e satisfação.
@@ -112,6 +114,32 @@ paths:
         '400': {description: Contrato inválido}
         '404': {description: Ciclo não encontrado neste produto}
         '409': {description: Revisão obsoleta, comando incompatível, evidência insuficiente ou limite atingido}
+  /products/{productId}/{cycleId}/measurement-reconciliation:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Reconciliar novamente as fontes oficiais da etapa de medição
+      description: >-
+        Não aceita contagens, valores, autoria ou justificativa da tela. O backend resolve o
+        experimento e lê o mesmo recorte atribuído usado por Hermes, além das métricas do canal,
+        eventos financeiros internos e custos auditáveis, limitado à janela autorizada do ciclo.
+        Persiste MEASURE quando as fontes são coerentes ou MEASUREMENT_BLOCKED com a causa quando
+        não são. Não publica, vende nem gasta.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReconcileMeasurement'}
+      responses:
+        '200':
+          description: Fotografia automática ou bloqueio persistido e auditável
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Cycle'}
+        '400': {description: Contrato inválido}
+        '404': {description: Ciclo não encontrado neste produto}
+        '409': {description: Revisão obsoleta ou ciclo fora da etapa de medição}
 components:
   parameters:
     ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
@@ -176,7 +204,7 @@ components:
       properties:
         requestKey: {type: string, format: uuid}
         expectedRevision: {type: integer, minimum: 0}
-        action: {type: string, enum: [COMPLETE, REWORK, MEASURE, ADJUST, CONTINUE, FIX_MEASUREMENT, SCALE, AUTHORIZE_SCALE, STOP, INCONCLUSIVE]}
+        action: {type: string, enum: [COMPLETE, REWORK, ADJUST, CONTINUE, FIX_MEASUREMENT, SCALE, AUTHORIZE_SCALE, STOP, INCONCLUSIVE]}
         operatorName: {type: string, maxLength: 160}
         summary: {type: string, maxLength: 4000}
         evidenceReference: {type: string, maxLength: 1200}
@@ -201,11 +229,15 @@ components:
             ADJUST: rootCause, learning, nextHypothesis, returnProcessId, returnActivityId.
             FIX_MEASUREMENT: rootCause, correctionPlan. SCALE: scaleHypothesis.
             AUTHORIZE_SCALE: confirmed, productVersion, budgetLimitBrl novo, windowEnd novo.
-            MEASURE: experimentId, currency=BRL, source, periodStart, periodEnd, observedAt,
-            sessions, starts, firstResults, checkouts, netSales, refunds, spendBrl, revenueBrl,
-            contributionBrl, dataValid, testDataExcluded, deliveryVerified, useVerified, satisfactionVerified.
             Campos monetários e contagens são números; flags são booleanos; datas são ISO-8601.
-            Limite total do comando: 64 KB. Evidência do operador não é sincronização automática Meta.
+            Limite total do comando: 64 KB. Resultados comerciais não são aceitos neste comando.
+    ReconcileMeasurement:
+      type: object
+      additionalProperties: false
+      required: [requestKey, expectedRevision]
+      properties:
+        requestKey: {type: string, format: uuid}
+        expectedRevision: {type: integer, minimum: 0}
     Cycle:
       type: object
       required: [id, productId, experimentId, revision, stage, status, brief, inheritedLearning, events, commands, canCreateSuccessor]

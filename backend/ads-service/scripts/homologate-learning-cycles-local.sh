@@ -76,6 +76,12 @@ run compile mvn -q -f backend/ads-service/pom.xml -DskipTests test-compile
 fi
 run classpath mvn -q -f backend/ads-service/pom.xml dependency:build-classpath -DincludeScope=test "-Dmdep.outputFile=$cycle_output/classpath"
 cycle_test_classpath="backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat "$cycle_output/classpath")"
+run pde-mysql-database "${compose[@]}" exec -T learning-cycles-mysql mysql -uroot -pcycles-root-local-only -e 'DROP DATABASE IF EXISTS hermes_test; CREATE DATABASE hermes_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+run pde-mysql env \
+  "HERMES_TEST_JDBC_URL=jdbc:mysql://$LEARNING_CYCLES_DB_HOST:18307/hermes_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+  HERMES_TEST_JDBC_USERNAME=root \
+  HERMES_TEST_JDBC_PASSWORD=cycles-root-local-only \
+  mvn -q -f backend/ads-service/pom.xml -Dtest=PdeExperimentAnalyticsIntegrationTest test
 java -Xmx512m -cp "$cycle_test_classpath" com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication > "$cycle_output/api.log" 2>&1 &
 cycle_api_pid=$!
 wait_http 'http://127.0.0.1:18091/api/products'

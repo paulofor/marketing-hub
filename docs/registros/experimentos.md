@@ -7061,3 +7061,19 @@ nem ignorar essa diferença na conciliação do ciclo. Nenhuma consulta direta n
 alteração de lógica, reexecução de agente, criação de ciclo/experimento, aprovação, gasto, PR ou
 deploy. A entrada foi inspecionada em Chromium desktop; não foi executada homologação ponta a
 ponta nem teste de publicação do sucessor.
+
+## 2026-09-09 — Vega #91: ciclo passa a conciliar resultados automaticamente
+
+- **Decisão:** a atividade de medição não deve solicitar transcrição de resultados, período, fonte,
+  responsável ou justificativa. O operador decide a ação comercial depois que o backend preservar
+  uma fotografia confiável.
+- **Causa confirmada:** o ciclo #1 duplicava dados que já existem no recorte atribuído utilizado por
+  Hermes. Para o #91, esse recorte contém quatro sessões humanas, 86 eventos, duas degustações, um
+  primeiro resultado e nenhuma compra; a campanha possui snapshot final próprio.
+- **Implementação local:** o BPM v3 mantém a medição dentro do processo 6 e usa conciliação automática
+  de funil, mídia, venda/reembolso, custo, entrega, uso e satisfação. Fonte ausente ou inconsistente
+  permanece bloqueio auditável e não é apresentada como zero.
+- **Limite operacional:** nenhuma campanha, gasto, venda, experimento, PR ou deploy foi criado nesta
+  alteração. O ciclo produtivo #1 só mudará após a implementação passar pelo fluxo de publicação.
+- **Homologação:** matriz e resultados em
+  `docs/homologacao/ciclo-vendas-medicao-automatica-v3.md`.

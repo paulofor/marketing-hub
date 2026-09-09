@@ -28,15 +28,15 @@ public final class LearningCycleMigrationVerifier {
         assertCount(
             connection,
             "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle'",
-            22);
+            35);
         assertCount(
             connection,
-            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='PUBLISHED' AND version_number=2",
+            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='PUBLISHED' AND version_number=3",
             1);
         assertCount(
             connection,
-            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='RETIRED' AND version_number=1",
-            1);
+            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='RETIRED' AND version_number IN (1,2)",
+            2);
         verifyOrganization(connection);
         System.out.println("PASS MySQL 5.7: aplicação física e catálogo sem duplicação.");
         return;
@@ -59,7 +59,7 @@ public final class LearningCycleMigrationVerifier {
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle'",
-          22);
+          35);
       assertCount(
           connection,
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='learning_sales_cycle_v1' AND COLUMN_NAME IN ('created_at','updated_at','version_changed_at','window_start','window_end') AND DATA_TYPE='datetime' AND DATETIME_PRECISION=6 AND IS_NULLABLE='NO'",
@@ -73,6 +73,19 @@ public final class LearningCycleMigrationVerifier {
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND DATETIME_PRECISION=6 AND ((TABLE_NAME IN ('agent_task','facebook_ads_campaign') AND COLUMN_NAME='created_at') OR (TABLE_NAME='business_process_activity_instance' AND COLUMN_NAME IN ('entered_at','exited_at','created_at','updated_at')))",
           6);
       verifyOrganization(connection);
+      migration.rollback(1, new Contexts(), new LabelExpression());
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=2 AND status='PUBLISHED'",
+          1);
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=3",
+          0);
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=13 AND status='PUBLISHED'",
+          1);
       migration.rollback(1, new Contexts(), new LabelExpression());
       assertCount(
           connection,
@@ -98,11 +111,19 @@ public final class LearningCycleMigrationVerifier {
           1);
     }
     System.out.println(
-        "PASS MySQL 5.7: schema, 7 FKs, DATETIME, BPM, rollback e preservação de processo anterior.");
+        "PASS MySQL 5.7: schema, 7 FKs, DATETIME, BPM v3 automático, rollback e preservação histórica.");
   }
 
   /** Confere hierarquia, chamada, retornos, idempotência e preservação da definição anterior. */
   private static void verifyOrganization(java.sql.Connection connection) throws Exception {
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=3 AND status='PUBLISHED' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.schemaVersion'))='LEARNING_SALES_CYCLE_V3'",
+        1);
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=3 AND a.activity_id='MEASUREMENT' AND a.owner_name LIKE 'Marketing Hub%conciliação automática%'",
+        1);
     assertCount(
         connection,
         "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=13 AND status='PUBLISHED'",

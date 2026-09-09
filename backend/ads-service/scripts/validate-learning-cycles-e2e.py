@@ -65,13 +65,16 @@ def command(cycle, action='COMPLETE', evidence=None, expected=200, request=None)
     return http(f'{API}/products/{cycle["productId"]}/{cycle["id"]}/commands', request, expected)
 
 
-def metrics(cycle, **overrides):
-    data = dict(experimentId=cycle['experimentId'], currency='BRL', source='Conciliação simulada, sem métricas de produção',
-        periodStart=cycle['windowStart'], periodEnd=iso(now()-dt.timedelta(seconds=2)), observedAt=iso(now()),
-        sessions=10, starts=8, firstResults=7, checkouts=6, netSales=5, refunds=0, spendBrl=40, revenueBrl=335,
-        contributionBrl=200, dataValid=True, testDataExcluded=True, deliveryVerified=True, useVerified=True, satisfactionVerified=True)
-    data.update(overrides)
-    return data
+def configure_measurement(experiment=91001, **values):
+    return http(f'/fixture/experiments/{experiment}/measurement', values)
+
+
+def reconcile(cycle, expected=200, request=None, product=None):
+    request = request or dict(requestKey=str(uuid.uuid4()), expectedRevision=cycle['revision'])
+    return http(
+        f'{API}/products/{product or cycle["productId"]}/{cycle["id"]}/measurement-reconciliation',
+        request,
+        expected)
 
 
 def to_validation(cycle):
@@ -151,7 +154,7 @@ assert 'cycleId=' not in http(f'{API}/entry?processDefinitionId={parent_id}&prod
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='1'
 check('Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto')
 reset()
-assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 2 and catalog['entry']['integrated']
+assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 3 and catalog['entry']['integrated']
 assert any(flow.get('kind')=='REWORK' and flow['to']=='LEARNING' for flow in catalog['diagram']['flows'])
 target=next(item for item in catalog['returnTargets'] if item['processCode']=='pde-construction-approval' and item['activityId']=='rework')
 return_to=dict(returnProcessId=target['processDefinitionId'],returnActivityId=target['activityId'],rootCause='Microação abstrata')
@@ -194,8 +197,11 @@ cycle=command(cycle,evidence=authorization_data(cycle))
 command(cycle,expected=409)
 http('/fixture/experiments/91001/publish',{})
 cycle=command(cycle)
-assert cycle['stage']=='MEASUREMENT'
-check('Autorização explícita e publicação comprovada pelo run produtivo com preflight')
+assert cycle['stage']=='DECISION'
+assert cycle['events'][-1]['action']=='MEASURE' and cycle['events'][-1]['evidence']['automatic']
+assert cycle['events'][-1]['operatorName']=='Marketing Hub · backend'
+assert cycle['events'][-1]['evidence']['sources']['pdeAnalytics']['trafficQualityIncluded']=='HUMAN'
+check('Autorização, publicação e conciliação automática comprovadas sem digitação de métricas')
 
 command(cycle,'REWORK',dict(return_to,productVersion='fixture-v4',technicalOnly=True),expected=409)
 http('/fixture/experiments/91001/stop',{})
@@ -209,31 +215,48 @@ command(cycle,expected=409)
 http('/fixture/experiments/91001/publish',{})
 cycle=command(cycle)
 assert cycle['experimentId']==91001 and cycle['stage']=='MEASUREMENT'
-check('Recuperação técnica após publicação preserva experimento e exige pausa, nova homologação e publicação posterior')
+assert cycle['events'][-1]['action']=='MEASUREMENT_BLOCKED'
+assert 'fontes ainda não mudaram' in cycle['events'][-1]['evidence']['blocker']
+configure_measurement(snapshot='technical-v2')
+cycle=reconcile(cycle)
+assert cycle['stage']=='DECISION'
+check('Recuperação técnica preserva experimento, refaz gates e exige uma fotografia realmente nova')
 
-command(cycle,'MEASURE',dict(metrics(cycle),experimentId=91002),expected=409)
-cycle=command(cycle,'MEASURE',metrics(cycle,dataValid=False,testDataExcluded=False))
-command(cycle,'SCALE',dict(scaleHypothesis='Ampliar'),expected=409)
-command(cycle,'ADJUST',dict(return_to,learning='Insuficiente',nextHypothesis='Nova versão'),expected=409)
-cycle=command(cycle,'FIX_MEASUREMENT',dict(rootCause='Eventos sem origem',correctionPlan='Corrigir correlação no backend'))
-assert cycle['stage']=='MEASUREMENT'
-check('Métrica contaminada ou de outro experimento não governa ajuste ou escala')
-
-cycle=command(cycle,'MEASURE',metrics(cycle,netSales=0))
+command(cycle,'MEASURE',dict(experimentId=91002),expected=409)
+reconcile(cycle,expected=404,product=91002)
+reconcile(cycle,expected=400,request=dict(requestKey=str(uuid.uuid4())))
+reconcile(cycle,expected=409,request=dict(requestKey=str(uuid.uuid4()),expectedRevision=cycle['revision']-1))
 assert not next(item for item in cycle['commands'] if item['action']=='SCALE')['available']
 cycle=command(cycle,'CONTINUE')
-cycle=command(cycle,'MEASURE',metrics(cycle,spendBrl=100))
+assert cycle['stage']=='MEASUREMENT' and cycle['events'][-1]['action']=='MEASUREMENT_BLOCKED'
+configure_measurement(ready=False,snapshot='source-down',blocker='Snapshot final da campanha indisponível')
+retry_request=dict(requestKey=str(uuid.uuid4()),expectedRevision=cycle['revision'])
+cycle=reconcile(cycle,request=retry_request)
+assert cycle['stage']=='MEASUREMENT' and 'indisponível' in cycle['events'][-1]['evidence']['blocker']
+assert 'sessions' not in cycle['events'][-1]['evidence']
+assert reconcile(cycle,request=retry_request)['revision']==cycle['revision']
+reconcile(cycle,expected=409,request=dict(retry_request,expectedRevision=cycle['revision']))
+configure_measurement(snapshot='cap-v3',netSales=0,spendBrl=100,contributionBrl=-100)
+cycle=reconcile(cycle)
+assert cycle['stage']=='DECISION'
 command(cycle,'CONTINUE',expected=409)
-check('Amostra e vendas bloqueiam escala; continuidade respeita teto autorizado')
+check('Fonte indisponível não vira zero; produto, revisão, amostra, vendas e teto governam a coleta')
+
+configure_measurement(snapshot='sales-v4',netSales=5,checkouts=6,spendBrl=100,revenueBrl=335,
+    contributionBrl=200,deliveryVerified=True,useVerified=True,satisfactionVerified=True)
+cycle=command(cycle,'FIX_MEASUREMENT',dict(rootCause='Fotografia anterior não tinha vendas',correctionPlan='Reconciliar novo snapshot oficial'))
+assert cycle['stage']=='DECISION'
 
 cycle=command(cycle,'SCALE',dict(scaleHypothesis='Ampliar após vendas úteis'))
 command(cycle,'AUTHORIZE_SCALE',dict(confirmed=True,productVersion=cycle['productVersion'],budgetLimitBrl=150,windowEnd=iso(now()+dt.timedelta(days=2))),expected=409)
 http('/fixture/experiments/91001/budget',dict(budgetLimitBrl=150))
+configure_measurement(snapshot='scale-v5',netSales=5,checkouts=6,spendBrl=110,revenueBrl=335,
+    contributionBrl=190,deliveryVerified=True,useVerified=True,satisfactionVerified=True)
 cycle=command(cycle,'AUTHORIZE_SCALE',dict(confirmed=True,productVersion=cycle['productVersion'],budgetLimitBrl=150,windowEnd=iso(now()+dt.timedelta(days=2))))
-assert cycle['stage']=='MEASUREMENT' and cycle['budgetLimitBrl']==150
-check('Escala exige nova autorização e limite oficial consistente, sem alterar mídia pelo ciclo')
+assert cycle['stage']=='DECISION' and cycle['budgetLimitBrl']==150
+assert cycle['events'][-1]['action']=='MEASURE' and cycle['events'][-1]['evidence']['sourceFingerprint'].endswith('scale-v5')
+check('Escala exige nova autorização, limite oficial e nova fotografia, sem alterar mídia pelo ciclo')
 
-cycle=command(cycle,'MEASURE',metrics(cycle))
 command(cycle,'ADJUST',dict(return_to,learning='Melhorar microação',nextHypothesis='Ação guiada'),expected=409)
 http('/fixture/experiments/91001/stop',{})
 cycle=command(cycle,'ADJUST',dict(return_to,learning='Melhorar microação',nextHypothesis='Ação guiada'))
@@ -269,14 +292,14 @@ option=next(item for item in http(f'{API}/catalog?chainId=91001&productId=91001'
 assert option['baseline'] and option['available']
 http(f'{API}/products/91001',brief(),409)
 historical=http(f'{API}/products/91001',brief(baseline=True))
-assert historical['stage']=='MEASUREMENT' and len(historical['events'])==1
+assert historical['stage']=='DECISION' and len(historical['events'])==2
 assert historical['events'][0]['action']=='ADOPT_BASELINE'
 assert historical['events'][0]['evidence']['source']=='PRODUCTION_RUN'
-historical=command(historical,'MEASURE',metrics(historical,netSales=0))
+assert historical['events'][1]['action']=='MEASURE' and historical['events'][1]['evidence']['automatic']
 historical=command(historical,'INCONCLUSIVE')
 assert historical['status']=='INCONCLUSIVE' and not historical['canCreateSuccessor']
 assert sql("SELECT COUNT(*) FROM business_process_activity_instance WHERE objective_achieved=1")=='1'
-check('Adoção histórica inicia por conciliação e não fabrica homologação, venda ou aprovação')
+check('Adoção histórica concilia automaticamente e não fabrica homologação, venda ou aprovação')
 
 reset()
 http('/fixture/experiments/91001/legacy-publication',{})
@@ -286,12 +309,12 @@ assert option['baseline'] and option['available'] and 'sem publicação registra
 payload=brief(baseline=True)
 legacy=http(f'{API}/products/91001',payload)
 assert http(f'{API}/products/91001',payload)['id']==legacy['id']
-assert len(legacy['events'])==1 and legacy['stage']=='MEASUREMENT'
+assert len(legacy['events'])==2 and legacy['stage']=='DECISION'
 proof=legacy['events'][0]
 assert proof['action']=='ADOPT_BASELINE' and proof['evidence']['source']=='LEGACY_META_CAMPAIGN'
 assert not proof['evidence']['preflightRecorded'] and proof['evidence']['experimentId']==91001
+assert legacy['events'][1]['action']=='MEASURE' and legacy['events'][1]['evidence']['automatic']
 assert http('/fixture/experiments/91001/state')==before==dict(status='USER_STOPPED',runCount=0,campaignCount=1)
-legacy=command(legacy,'MEASURE',metrics(legacy,netSales=0,revenueBrl=0,contributionBrl=-40))
 legacy=command(legacy,'ADJUST',dict(return_to,learning='Amostra pequena e microação insuficiente',nextHypothesis='Primeiro ajuste executável'))
 successor=http(f'{API}/products/91001',brief(91002,legacy['id']))
 assert successor['stage']=='LEARNING' and successor['events']==[]
@@ -304,10 +327,11 @@ successor=command(successor,evidence=authorization_data(successor))
 command(successor,expected=409)
 http('/fixture/experiments/91002/publish',{})
 successor=command(successor)
-assert successor['stage']=='MEASUREMENT'
-assert not any(event['action']=='MEASURE' for event in successor['events'])
+assert successor['stage']=='DECISION'
+assert successor['events'][-1]['action']=='MEASURE' and successor['events'][-1]['evidence']['automatic']
 assert http('/fixture/experiments/91001/state')==before
 assert http('/fixture/experiments/91002/state')['status']=='RUNNING'
-check('Legado sem run → adoção auditável → ajuste → sucessor segregado → vídeos → gates próprios → publicação simulada')
+assert sql("SELECT COUNT(*) FROM learning_sales_cycle_event_v1 WHERE action='MEASURE' AND operator_name<>'Marketing Hub · backend'")=='0'
+check('Legado sem run → medição automática → ajuste → sucessor segregado → gates próprios → publicação simulada')
 
 print(json.dumps({'checks':len(checks),'passed':checks,'database':'MySQL 5.7','externalCalls':0},ensure_ascii=False),flush=True)

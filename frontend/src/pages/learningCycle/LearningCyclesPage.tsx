@@ -11,6 +11,7 @@ import {
 import PageTitle from "../../components/PageTitle";
 import LearningCycleCreateForm from "./LearningCycleCreateForm";
 import LearningCycleCommandForm from "./LearningCycleCommandForm";
+import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
 import "./LearningCyclesPage.css";
 
@@ -47,11 +48,15 @@ function Audit({ events }: { events: CycleEvent[] }) {
               >
                 {event.evidence.dataValid === true &&
                 event.evidence.testDataExcluded === true
-                  ? "Dados declarados válidos e segregados."
+                  ? event.evidence.automatic === true
+                    ? "Dados reconciliados automaticamente e segregados."
+                    : "Dados declarados válidos e segregados."
                   : "Medição pendente de correção; não usar para concluir desempenho comercial."}
               </p>
               <p>
-                Leitura declarada pelo operador:{" "}
+                {event.evidence.automatic === true
+                  ? "Leitura automática das fontes oficiais: "
+                  : "Leitura declarada pelo operador: "}
                 {String(event.evidence.sessions)} sessões ·{" "}
                 {String(event.evidence.netSales)} vendas líquidas ·{" "}
                 {money.format(Number(event.evidence.revenueBrl))} de receita ·{" "}
@@ -64,6 +69,11 @@ function Audit({ events }: { events: CycleEvent[] }) {
                 {String(event.evidence.source)}.
               </p>
             </div>
+          ) : null}
+          {event.action === "MEASUREMENT_BLOCKED" ? (
+            <p className="text-danger">
+              Fonte bloqueada: {String(event.evidence.blocker ?? event.summary)}
+            </p>
           ) : null}
           {event.evidence.learning ? (
             <p>Aprendizado: {String(event.evidence.learning)}</p>
@@ -356,7 +366,16 @@ export default function LearningCyclesPage() {
               <Audit events={cycle.inheritedLearning.events ?? []} />
             </section>
           ) : null}
-          {catalog.data ? (
+          {cycle.stage === "MEASUREMENT" ? (
+            <LearningCycleAutomaticMeasurement
+              cycle={cycle}
+              onUpdated={updated}
+            />
+          ) : null}
+          {catalog.data &&
+          (cycle.stage !== "MEASUREMENT" ||
+            cycle.events[cycle.events.length - 1]?.action ===
+              "MEASUREMENT_BLOCKED") ? (
             <LearningCycleCommandForm
               key={`${cycle.id}-${cycle.revision}`}
               cycle={cycle}

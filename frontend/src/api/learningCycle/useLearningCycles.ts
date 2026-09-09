@@ -196,6 +196,34 @@ export function useCycleMutation(productId?: number, cycleId?: number) {
     },
   });
 }
+export function useMeasurementReconciliation(
+  productId?: number,
+  cycleId?: number,
+) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      requestKey: string;
+      expectedRevision: number;
+    }) =>
+      (
+        await axios.post<LearningCycle>(
+          `${cycleApi}/products/${productId}/${cycleId}/measurement-reconciliation`,
+          body,
+        )
+      ).data,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["learning-cycles"] }),
+        client.invalidateQueries({ queryKey: ["learning-cycle-catalog"] }),
+        client.invalidateQueries({ queryKey: ["learning-cycle-entry"] }),
+        client.invalidateQueries({
+          queryKey: ["products", productId, "business-processes"],
+        }),
+      ]);
+    },
+  });
+}
 export function cycleError(error: unknown) {
   if (axios.isAxiosError(error))
     return (

@@ -232,31 +232,9 @@ try {
     );
     await fixture("/fixture/experiments/91001/publish");
     let current = await submit({});
-    const metricFields = {
-      source: "Conciliação simulada e atribuída",
-      periodStart: start,
-      periodEnd: new Date(Date.now() - 60000).toISOString().slice(0, 16),
-      observedAt: new Date().toISOString().slice(0, 16),
-      sessions: 10,
-      starts: 8,
-      firstResults: 7,
-      checkouts: 2,
-      netSales: 0,
-      refunds: 0,
-      spendBrl: 40,
-      revenueBrl: 0,
-      contributionBrl: -40,
-      dataValid: true,
-      testDataExcluded: true,
-      deliveryVerified: false,
-      useVerified: false,
-      satisfactionVerified: false,
-    };
-    current = await submit(
-      metricFields,
-      "Registrar leitura de resultados",
-      "MEASURE",
-    );
+    assert.equal(current.stage, "DECISION");
+    assert.equal(current.events.at(-1).action, "MEASURE");
+    assert.equal(current.events.at(-1).evidence.automatic, true);
     await expect(
       form().getByRole("option", { name: "Solicitar escala · bloqueado" }),
     ).toHaveJSProperty("disabled", true);

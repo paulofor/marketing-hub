@@ -2,13 +2,18 @@ package com.marketinghub.repository.jdbc.experiment;
 
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsSummary.*;
+import com.marketinghub.experiment.monitoring.pde.PdeCommercialOutcomeSummary;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -26,6 +31,7 @@ public class ExperimentPdeAnalyticsRepository {
         AND (JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')) = :experimentId
           OR (COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.experimentId')), '') IN ('', 'null')
             AND :hasCodes = 1 AND (utm_campaign IN (:codes) OR utm_content IN (:codes))))
+        AND occurred_at >= :periodStart AND occurred_at <= :periodEnd
       """;
   private static final String HUMAN = " AND traffic_quality = 'HUMAN' ";
   private static final String SESSION = "COALESCE(NULLIF(session_id, ''), event_id)";
@@ -61,7 +67,19 @@ public class ExperimentPdeAnalyticsRepository {
   /** Agrega eventos completos; as listas de detalhe nunca limitam os totais comerciais. */
   public PdeAnalyticsSummary summarize(
       Long experimentId, String product, String version, List<String> codes) {
-    Map<String, Object> parameters = parameters(experimentId, product, version, codes);
+    return summarize(experimentId, product, version, codes, null, null);
+  }
+
+  /** Agrega somente a janela autorizada quando ela for fornecida pelo ciclo comercial. */
+  public PdeAnalyticsSummary summarize(
+      Long experimentId,
+      String product,
+      String version,
+      List<String> codes,
+      java.time.Instant periodStart,
+      java.time.Instant periodEnd) {
+    Map<String, Object> parameters =
+        parameters(experimentId, product, version, codes, periodStart, periodEnd);
     List<PdeEventMetric> events =
         jdbc.query(
             "SELECT event_type, COUNT(*) AS total "
@@ -204,6 +222,148 @@ public class ExperimentPdeAnalyticsRepository {
         devices,
         screens,
         journeys(experimentId, parameters));
+  }
+
+  /**
+   * Concilia eventos comerciais internos do mesmo recorte atribuído sem devolver IDs de pagamento.
+   */
+  public PdeCommercialOutcomeSummary commercialOutcomes(
+      Long experimentId, String product, String version, List<String> codes) {
+    return commercialOutcomes(experimentId, product, version, codes, null, null);
+  }
+
+  /** Concilia desfechos comerciais limitados à janela autorizada do ciclo. */
+  public PdeCommercialOutcomeSummary commercialOutcomes(
+      Long experimentId,
+      String product,
+      String version,
+      List<String> codes,
+      java.time.Instant periodStart,
+      java.time.Instant periodEnd) {
+    Map<String, Object> parameters =
+        parameters(experimentId, product, version, codes, periodStart, periodEnd);
+    List<CommercialEvent> rows =
+        jdbc.query(
+            "SELECT event_type,"
+                + "COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.paymentId')),'null'),"
+                + "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.pepperTransactionId')),'null')) AS payment_reference,"
+                + "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.accessReferenceHash')),'null') AS access_reference,"
+                + "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.amountBrl')),'null') AS amount_brl,"
+                + "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.pepperAmountCents')),'null') AS amount_cents,"
+                + "COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.currency')),'null'),"
+                + "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.pepperCurrency')),'null')) AS currency,"
+                + "JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.useful')) AS useful,"
+                + "JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.easy')) AS easy,"
+                + "JSON_UNQUOTE(JSON_EXTRACT(metadata_json,'$.applicable')) AS applicable "
+                + SCOPE
+                + HUMAN
+                + " AND event_type IN ('PURCHASE_COMPLETED','REFUND_CONFIRMED','ACCESS_RELEASED','DELIVERY_COMPLETED','FIRST_USE','MISSION_FEEDBACK_SUBMITTED')"
+                + " ORDER BY occurred_at,id",
+            parameters,
+            (rs, row) ->
+                new CommercialEvent(
+                    rs.getString("event_type"),
+                    rs.getString("payment_reference"),
+                    rs.getString("access_reference"),
+                    rs.getString("amount_brl"),
+                    rs.getString("amount_cents"),
+                    rs.getString("currency"),
+                    rs.getString("useful"),
+                    rs.getString("easy"),
+                    rs.getString("applicable")));
+    Map<String, CommercialEvent> purchases = new LinkedHashMap<>();
+    Map<String, CommercialEvent> refunds = new LinkedHashMap<>();
+    Map<String, String> accessByPayment = new LinkedHashMap<>();
+    Set<String> deliveries = new LinkedHashSet<>();
+    Set<String> firstUses = new LinkedHashSet<>();
+    Set<String> feedback = new LinkedHashSet<>();
+    Set<String> positiveFeedback = new LinkedHashSet<>();
+    boolean referencesComplete = true;
+    boolean amountsComplete = true;
+    boolean valueReferencesComplete = true;
+    int anonymousReference = 0;
+    for (CommercialEvent row : rows) {
+      if (Set.of("ACCESS_RELEASED", "DELIVERY_COMPLETED", "FIRST_USE", "MISSION_FEEDBACK_SUBMITTED")
+          .contains(row.eventType())) {
+        if (row.accessReference() == null || row.accessReference().isBlank()) {
+          valueReferencesComplete = false;
+          continue;
+        }
+        switch (row.eventType()) {
+          case "ACCESS_RELEASED" -> {
+            if (row.paymentReference() == null || row.paymentReference().isBlank()) {
+              valueReferencesComplete = false;
+            } else {
+              String previous =
+                  accessByPayment.putIfAbsent(row.paymentReference(), row.accessReference());
+              if (previous != null && !previous.equals(row.accessReference()))
+                valueReferencesComplete = false;
+            }
+          }
+          case "DELIVERY_COMPLETED" -> deliveries.add(row.accessReference());
+          case "FIRST_USE" -> firstUses.add(row.accessReference());
+          case "MISSION_FEEDBACK_SUBMITTED" -> {
+            feedback.add(row.accessReference());
+            if ("Sim".equalsIgnoreCase(row.useful())
+                && "Sim".equalsIgnoreCase(row.easy())
+                && "Sim".equalsIgnoreCase(row.applicable()))
+              positiveFeedback.add(row.accessReference());
+          }
+          default -> throw new IllegalStateException("Evento de valor sem tratamento canônico.");
+        }
+        continue;
+      }
+      String reference = row.paymentReference();
+      if (reference == null || reference.isBlank()) {
+        referencesComplete = false;
+        reference = "missing-" + anonymousReference++;
+      }
+      BigDecimal amount = row.amountBrl();
+      if (amount == null || amount.signum() < 0 || !"BRL".equalsIgnoreCase(row.currency()))
+        amountsComplete = false;
+      ("PURCHASE_COMPLETED".equals(row.eventType()) ? purchases : refunds)
+          .putIfAbsent(reference, row);
+    }
+    BigDecimal gross = total(purchases.values());
+    BigDecimal refunded = total(refunds.values());
+    boolean refundsMatchPurchases =
+        refunds.entrySet().stream()
+            .allMatch(
+                entry -> {
+                  CommercialEvent purchase = purchases.get(entry.getKey());
+                  BigDecimal refundAmount = entry.getValue().amountBrl();
+                  BigDecimal purchaseAmount = purchase == null ? null : purchase.amountBrl();
+                  return purchaseAmount != null
+                      && refundAmount != null
+                      && refundAmount.compareTo(purchaseAmount) <= 0;
+                });
+    if (!purchases.keySet().containsAll(accessByPayment.keySet())) valueReferencesComplete = false;
+    if (new LinkedHashSet<>(accessByPayment.values()).size() != accessByPayment.size())
+      valueReferencesComplete = false;
+    Set<String> activePayments = new LinkedHashSet<>(purchases.keySet());
+    activePayments.removeAll(refunds.keySet());
+    long releasedNetSales =
+        correlated(activePayments, accessByPayment, Set.copyOf(accessByPayment.values()));
+    long deliveredNetSales = correlated(activePayments, accessByPayment, deliveries);
+    long firstUseNetSales = correlated(activePayments, accessByPayment, firstUses);
+    long satisfactionResponses = correlated(activePayments, accessByPayment, feedback);
+    long positiveSatisfactionResponses =
+        correlated(activePayments, accessByPayment, positiveFeedback);
+    return new PdeCommercialOutcomeSummary(
+        purchases.size(),
+        refunds.size(),
+        gross,
+        refunded,
+        gross.subtract(refunded).setScale(2, RoundingMode.HALF_UP),
+        referencesComplete,
+        amountsComplete,
+        refundsMatchPurchases,
+        valueReferencesComplete,
+        releasedNetSales,
+        deliveredNetSales,
+        firstUseNetSales,
+        satisfactionResponses,
+        positiveSatisfactionResponses);
   }
 
   /**
@@ -355,17 +515,37 @@ public class ExperimentPdeAnalyticsRepository {
   /** Parametriza atribuição UTM ou referência explícita do experimento usada pelo canal direto. */
   private Map<String, Object> parameters(
       Long id, String product, String version, List<String> codes) {
-    return Map.of(
-        "product",
-        product,
-        "version",
-        version,
-        "experimentId",
-        String.valueOf(id),
-        "hasCodes",
-        codes.isEmpty() ? 0 : 1,
-        "codes",
-        codes.isEmpty() ? List.of("") : codes);
+    return parameters(id, product, version, codes, null, null);
+  }
+
+  /**
+   * Converte a janela UTC para o DATETIME operacional e usa limites MySQL quando ela não existe.
+   */
+  private Map<String, Object> parameters(
+      Long id,
+      String product,
+      String version,
+      List<String> codes,
+      java.time.Instant periodStart,
+      java.time.Instant periodEnd) {
+    ZoneId zone = ZoneId.of("America/Sao_Paulo");
+    var parameters = new LinkedHashMap<String, Object>();
+    parameters.put("product", product);
+    parameters.put("version", version);
+    parameters.put("experimentId", String.valueOf(id));
+    parameters.put("hasCodes", codes.isEmpty() ? 0 : 1);
+    parameters.put("codes", codes.isEmpty() ? List.of("") : codes);
+    parameters.put(
+        "periodStart",
+        periodStart == null
+            ? java.time.LocalDateTime.of(1000, 1, 1, 0, 0)
+            : java.time.LocalDateTime.ofInstant(periodStart, zone));
+    parameters.put(
+        "periodEnd",
+        periodEnd == null
+            ? java.time.LocalDateTime.of(9999, 12, 31, 23, 59, 59)
+            : java.time.LocalDateTime.ofInstant(periodEnd, zone));
+    return parameters;
   }
 
   /**
@@ -474,6 +654,54 @@ public class ExperimentPdeAnalyticsRepository {
   /** Calcula percentual apenas para um denominador existente. */
   private double percentage(long value, long total) {
     return total == 0 ? 0 : value * 100.0 / total;
+  }
+
+  /**
+   * Soma valores financeiros já normalizados, preservando zero quando uma fonte está incompleta.
+   */
+  private BigDecimal total(java.util.Collection<CommercialEvent> events) {
+    return events.stream()
+        .map(CommercialEvent::amountBrl)
+        .filter(java.util.Objects::nonNull)
+        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        .setScale(2, RoundingMode.HALF_UP);
+  }
+
+  /** Conta compras líquidas cuja referência de acesso alcançou o marco informado. */
+  private long correlated(
+      Set<String> activePayments,
+      Map<String, String> accessByPayment,
+      Set<String> reachedAccesses) {
+    return activePayments.stream()
+        .map(accessByPayment::get)
+        .filter(java.util.Objects::nonNull)
+        .filter(reachedAccesses::contains)
+        .count();
+  }
+
+  /** Mantém uma linha comercial apenas durante a conciliação, sem expor sua referência. */
+  private record CommercialEvent(
+      String eventType,
+      String paymentReference,
+      String accessReference,
+      String amountBrlText,
+      String amountCentsText,
+      String currency,
+      String useful,
+      String easy,
+      String applicable) {
+    /** Converte reais ou centavos canônicos em BRL sem aceitar conteúdo financeiro ilegível. */
+    private BigDecimal amountBrl() {
+      try {
+        if (amountBrlText != null && !amountBrlText.isBlank())
+          return new BigDecimal(amountBrlText).setScale(2, RoundingMode.HALF_UP);
+        if (amountCentsText != null && !amountCentsText.isBlank())
+          return new BigDecimal(amountCentsText).movePointLeft(2).setScale(2, RoundingMode.HALF_UP);
+        return null;
+      } catch (NumberFormatException ex) {
+        return null;
+      }
+    }
   }
 
   /** Conserva os totais SQL antes de montar o contrato compartilhado. */

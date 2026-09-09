@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-assistants-product-discovery-intent",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Assistentes de IA entram antes do checkout e capturam intenção de compra",
+  "finding": "Em pesquisa da PYMNTS com millennials dos EUA, 41% usam ChatGPT para descoberta de produtos e, entre usuários de GenAI para pesquisa de compras, 42% dizem que ela substituiu total ou majoritariamente métodos anteriores. Em paralelo, a OpenAI reporta US$ 1 bilhão de run rate anualizado para ChatGPT Ads em menos de 200 dias.",
+  "mechanism": "A conversa com o assistente recebe objetivo, critérios e restrições explicitamente declarados antes da escolha final. Isso pode tornar a IA uma camada de descoberta e consideração anterior ao site ou checkout, mas não prova que esse canal cause maior conversão do que busca, social ou marketplaces.",
+  "commercialApplication": "No Marketing Hub, instrumentar `AI_ASSISTANT` como origem de descoberta e separar influência, visita, lead, checkout e pagamento. Estruturar dados verificáveis da oferta para recuperação por agentes e, quando mídia conversacional estiver disponível para o mercado/conta, comparar custo por pagamento reconciliado com canais tradicionais.",
+  "evidenceStrength": "Moderada a forte como sinal de mudança de descoberta: pesquisa proprietária identifica uso relevante entre millennials dos EUA e a OpenAI reporta escala comercial real do canal publicitário. A causalidade sobre conversão e a transferência para o Brasil ainda não estão estabelecidas.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2026-12-08",
+  "experimentHypothesis": "Para ofertas de consideração, preparar conteúdo legível por agentes e medir origem AI_ASSISTANT aumentará a detecção de jornadas influenciadas por IA; quando houver mídia paga disponível, campanhas contextuais poderão gerar pagamentos incrementais a custo competitivo com Meta/Google.",
+  "risks": "Confundir influência com última interação; superatribuir vendas ao assistente; otimizar para presença em IA sem demanda real; usar alegações ou feeds desatualizados; assumir que exemplos divulgados pela plataforma representam desempenho típico.",
+  "limits": "Pesquisa de comportamento restrita a millennials dos EUA. Métricas de ChatGPT Ads são divulgadas pela própria OpenAI; run rate não é receita anual reconhecida. O exemplo de 3x ROAS é um caso individual. Disponibilidade de mídia e comportamento do público podem diferir no Brasil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-09-ai-assistants-descoberta-produtos.md",
+  "sourceTitle": "Fonte revisada — Assistentes de IA na descoberta de produtos e intenção comercial",
+  "sourceSha256": "6ab71c83ad0bb56a8186da1bfec883bceef9ddec9ef4900985547d072227efd8"
+}

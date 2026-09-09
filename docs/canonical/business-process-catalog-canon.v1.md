@@ -61,6 +61,9 @@ com resultado verificável. Quantidade de tarefas concluídas não substitui res
 - **Orientação executável:** cada atividade declara objetivo, responsável, entradas, entrega,
   critério de conclusão, bloqueios e ação disponível ao usuário. Telas especializadas, estúdios e
   painéis permanecem recursos da atividade e devem ser acessíveis pelo BPM preservando seu contexto.
+- **Identificação para o usuário:** a tela de atividades deve mostrar, junto ao nome, o número oficial
+  do processo ou subprocesso dentro da Cadeia de Valor (por exemplo, `Processo 6` ou `Processo 6.1`).
+  O número vem do backend e não pode ser confundido com a versão técnica ou com o identificador do banco.
 - **Rastreabilidade:** tarefas e resultados se vinculam à atividade e à versão do processo dentro
   da cadeia, com produto, experimento e ciclo quando aplicáveis. Execução independente de produto
   continua pertencendo ao BPM da cadeia; não se deve inventar produto para iniciar descoberta.

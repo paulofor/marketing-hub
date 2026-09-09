@@ -521,6 +521,74 @@ describe("ProductProcessActivityExecutionsPage", () => {
     );
   });
 
+  it("shows the official value-chain process number next to its name", async () => {
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/products/value-chain-positions/4") {
+        return {
+          data: {
+            productId: 4,
+            resolutionStatus: "IDENTIFIED",
+            resolutionMessage: "Posição identificada na cadeia vigente.",
+            chainDefinitionId: 13,
+            chainName:
+              "Criação e entrega de valor de Produtos Digitais Experienciais",
+            chainVersion: 13,
+            processDefinitionId: 73,
+            processCode: "pde-sales-delivery-learning",
+            processName: "Venda, entrega e aprendizado do PDE",
+            processVersion: 5,
+            sequenceNumber: 6,
+            processCount: 6,
+            processMeasurements: [
+              {
+                stageType: "PROCESS",
+                sequenceLabel: "6",
+                trackingStatus: "CURRENT",
+                processDefinitionId: 73,
+                processCode: "pde-sales-delivery-learning",
+                processName: "Venda, entrega e aprendizado do PDE",
+                entryEvidence: "CURRENT_COMMERCIAL_STATUS",
+                objectiveAchieved: false,
+                knownEstimatedCostUsd: 0,
+                costCoverage: "NO_EXECUTIONS",
+                costedExecutionCount: 0,
+                uncostedExecutionCount: 0,
+                commitRegistrationAllowed: false,
+              },
+            ],
+            subprocessPosition: null,
+          },
+        };
+      }
+      return {
+        data: {
+          ...history,
+          productId: 4,
+          productName: "Método MUSA - Presença Elegante em 7 Dias",
+          productInternalName: "Vega",
+          selectedProcessDefinitionId: 73,
+          processCode: "pde-sales-delivery-learning",
+          processName: "Venda, entrega e aprendizado do PDE",
+          selectedProcessVersionNumber: 5,
+        },
+      };
+    });
+
+    renderPage(
+      "/products/4/value-chain-history/processes/73/activities?chainId=13",
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Vega · Processo 6 — Venda, entrega e aprendizado do PDE",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/processo v5 · PUBLISHED/)).toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/products/value-chain-positions/4",
+    );
+  });
+
   it("makes a process with every objective achieved explicitly complete", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

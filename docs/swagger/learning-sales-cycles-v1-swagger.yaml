@@ -39,6 +39,7 @@ paths:
                   entry: {$ref: '#/components/schemas/Entry'}
                   successorChainDefinitionId: {type: integer, format: int64, nullable: true, description: 'Versão publicada da mesma cadeia indicada pelo backend para criar o sucessor.'}
                   successorChainName: {type: string, nullable: true}
+                  createExperimentUrl: {type: string, nullable: true, description: 'Cadastro oficial com produto e nicho existentes; não usar o wizard que recria a descoberta.'}
         '404': {description: Cadeia, produto ou BPM não instalado}
   /entry:
     get:
@@ -266,7 +267,7 @@ components:
         windowEnd: {type: string, format: date-time}
         nextAction: {type: string}
         responsible: {type: string}
-        workUrl: {type: string}
+        workUrl: {type: string, nullable: true, description: 'Nulo enquanto o ajuste encerrado ainda exige criar sucessor; depois aponta à ocorrência sucessora. Ajuste aberto inclui ciclo, cadeia e atividade de retorno.'}
         returnProcessId: {type: integer, format: int64, nullable: true}
         returnActivityId: {type: string, nullable: true}
         diagram: {type: object, description: Grafo da versão exata do BPM da ocorrência; não substituir pelo catálogo atual}

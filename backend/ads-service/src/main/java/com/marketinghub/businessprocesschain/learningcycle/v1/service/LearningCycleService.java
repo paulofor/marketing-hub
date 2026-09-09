@@ -189,7 +189,17 @@ public class LearningCycleService {
         successorChain == null ? null : successorChain.getId(),
         successorChain == null
             ? null
-            : successorChain.getName() + " · v" + successorChain.getVersionNumber());
+            : successorChain.getName() + " · v" + successorChain.getVersionNumber(),
+        createExperimentUrl(productId));
+  }
+
+  /** Abre o cadastro existente com o produto e seu nicho, sem recriar a descoberta. */
+  private String createExperimentUrl(Long productId) {
+    if (productId == null) return null;
+    var product = products.findById(productId).orElseThrow();
+    return "/experiments/new?productId="
+        + productId
+        + (product.getMarketNiche() == null ? "" : "&nicheId=" + product.getMarketNiche().getId());
   }
 
   /** Liga o BPM ao ambiente do ciclo, preservando cadeia, produto e ocorrência já aberta. */
@@ -973,6 +983,29 @@ public class LearningCycleService {
       nextAction = "Abra a atividade orientada e execute «" + target.getName() + "». " + nextAction;
       responsible = target.getOwnerName();
     }
+    if ("ADJUSTED".equals(cycle.getStatus())) {
+      responsible = "Operador do ciclo · preparação do sucessor";
+      if (successor.isPresent()) {
+        var nextCycle = successor.orElseThrow();
+        nextAction =
+            "Ajuste aprovado. Continue no ciclo #"
+                + nextCycle.getId()
+                + " · experimento #"
+                + nextCycle.getExperimentId()
+                + ", que recebeu o aprendizado e o retorno registrado no BPM.";
+        workUrl =
+            "/business-process-chains/learning-cycles?chainId="
+                + nextCycle.getChainDefinitionId()
+                + "&productId="
+                + nextCycle.getProductId()
+                + "&cycleId="
+                + nextCycle.getId();
+      } else {
+        nextAction =
+            "Ajuste aprovado. Crie um experimento planejado deste produto e vincule-o em «Criar ciclo sucessor com aprendizado». O sucessor receberá a hipótese e o destino de retorno; não repita a decisão nem execute o ajuste no experimento histórico.";
+        workUrl = null;
+      }
+    }
     return new LearningCycleResponse(
         cycle.getId(),
         cycle.getProductId(),
@@ -1037,7 +1070,12 @@ public class LearningCycleService {
             + "/value-chain-history/processes/"
             + processId
             + "/activities?learningCycleId="
-            + cycle.getId();
+            + cycle.getId()
+            + "&chainId="
+            + cycle.getChainDefinitionId()
+            + ("ADJUSTMENT".equals(cycle.getStage()) && cycle.getReturnActivityId() != null
+                ? "#activity-" + cycle.getReturnActivityId()
+                : "");
   }
 
   /** Projeta a auditoria sem expor JSON dentro de texto JSON. */

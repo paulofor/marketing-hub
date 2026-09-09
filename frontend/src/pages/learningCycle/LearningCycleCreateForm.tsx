@@ -77,14 +77,16 @@ export default function LearningCycleCreateForm({
         novo experimento planejado; uma referência histórica começa pela
         conciliação.
       </p>
-      <Link
-        className="mb-3"
-        to="/experiments/manual/new"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Criar novo experimento pelo cadastro oficial
-      </Link>
+      {catalog.createExperimentUrl ? (
+        <Link
+          className="mb-3"
+          to={catalog.createExperimentUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Criar novo experimento deste produto
+        </Link>
+      ) : null}
       <label className="form-label">
         Experimento *
         <select

@@ -14,6 +14,7 @@ import {
 } from "../../api/learningCycle/useLearningCycles";
 vi.mock("axios");
 const catalog: CycleCatalog = {
+  createExperimentUrl: "/experiments/new?productId=4&nicheId=31",
   entry: {
     chainDefinitionId: 1,
     chainName: "Cadeia PDE",
@@ -178,6 +179,46 @@ beforeEach(() => {
   });
 });
 describe("Ciclos de aprendizado e vendas", () => {
+  it("orienta ajuste aprovado para sucessor do produto, sem repetir a decisão", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? {
+            data: [
+              {
+                ...cycle,
+                status: "ADJUSTED",
+                workUrl: null,
+                nextAction:
+                  "Ajuste aprovado. Crie o experimento sucessor deste produto.",
+                canCreateSuccessor: true,
+                commands: [],
+              },
+            ],
+          }
+        : original(url, ...args),
+    );
+    wrapper(<LearningCyclesPage />);
+    expect(
+      await screen.findByText(
+        "Ajuste aprovado. Crie o experimento sucessor deste produto.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Abrir atividade orientada" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", {
+        name: "Criar ciclo sucessor com aprendizado",
+      }),
+    );
+    expect(
+      screen.getByRole("link", {
+        name: "Criar novo experimento deste produto",
+      }),
+    ).toHaveAttribute("href", catalog.createExperimentUrl);
+    expect(axios.post).not.toHaveBeenCalled();
+  });
   it("identifica a atividade chamadora e permite retornar ao ponto correto do processo", async () => {
     wrapper(<LearningCyclesPage />);
     expect(

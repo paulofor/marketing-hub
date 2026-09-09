@@ -257,16 +257,32 @@ try {
       returnTarget: `${target.processDefinitionId}:${target.activityId}`,
     });
     await returnToParent("IN_PROGRESS", "Ajuste registrado");
+    await expect(
+      page.getByRole("link", { name: "Abrir atividade orientada" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText(/Ajuste aprovado\. Crie um experimento planejado/),
+    ).toBeVisible();
     await page
       .getByRole("button", {
         name: "Criar ciclo sucessor com aprendizado",
         exact: true,
       })
       .click();
+    await expect(
+      page.getByRole("link", { name: "Criar novo experimento deste produto" }),
+    ).toHaveAttribute("href", catalog.createExperimentUrl);
     const successor = await create(91002, "fixture-v2");
     assert.equal(successor.previousCycleId, current.id);
     assert.equal(successor.stage, "LEARNING");
     assert.equal(successor.events.length, 0);
+    const learned = await command("COMPLETE", "Concluir etapa com evidência", {
+      learning:
+        "O primeiro resultado precisa de uma ação aplicável; quatro sessões não demonstram causalidade.",
+      competingExplanation:
+        "Amostra pequena e origem do tráfego também podem explicar a falta de compra.",
+    });
+    assert.equal(learned.stage, "PLANNING");
     assert.equal(
       successor.inheritedLearning.events[0].evidence.source,
       "LEGACY_META_CAMPAIGN",

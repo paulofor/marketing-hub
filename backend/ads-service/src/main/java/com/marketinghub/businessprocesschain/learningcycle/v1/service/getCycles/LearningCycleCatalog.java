@@ -12,7 +12,8 @@ public record LearningCycleCatalog(
     List<ExperimentOption> experiments,
     LearningCycleEntry entry,
     Long successorChainDefinitionId,
-    String successorChainName) {
+    String successorChainName,
+    String createExperimentUrl) {
   /** Identifica uma atividade real que pode receber a correção causal. */
   public record Target(
       Long processDefinitionId,

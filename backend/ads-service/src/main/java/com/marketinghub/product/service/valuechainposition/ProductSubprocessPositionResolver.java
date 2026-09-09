@@ -40,6 +40,10 @@ public class ProductSubprocessPositionResolver {
   private final ObjectMapper objectMapper;
   private final ProductStageMeasurementResolver stageMeasurementResolver;
 
+  @Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.SalesFlowResolver
+      salesFlowResolver;
+
   /** Configura as fontes persistidas usadas para localizar atividades e subprocessos. */
   public ProductSubprocessPositionResolver(
       BusinessProcessDefinitionRepository processRepository,
@@ -85,6 +89,11 @@ public class ProductSubprocessPositionResolver {
       Integer parentSequenceNumber,
       ProductStageMeasurementContext context) {
     List<BusinessProcessDefinition> subprocesses = orderedSubprocesses(parentProcess);
+    if (salesFlowResolver != null) {
+      var flow = salesFlowResolver.resolve(product.getId(), parentProcess, null, null);
+      if (flow != null)
+        return salesPosition(product, subprocesses, parentSequenceNumber, context, flow);
+    }
     if (subprocesses.isEmpty()) {
       return new ProductSubprocessPositionResponse(
           "NOT_APPLICABLE",
@@ -155,6 +164,100 @@ public class ProductSubprocessPositionResolver {
         parentSequenceNumber,
         currentAwaitingFirstExecution,
         context);
+  }
+
+  /**
+   * Usa os eventos do fluxo comercial e mantém as tarefas antigas apenas como histórico e custo.
+   */
+  private ProductSubprocessPositionResponse salesPosition(
+      Product product,
+      List<BusinessProcessDefinition> subprocesses,
+      Integer parentSequence,
+      ProductStageMeasurementContext context,
+      com.marketinghub.businessprocesschain.learningcycle.v1.service.getSalesFlow.SalesFlowResponse
+          flow) {
+    Map<String, String> calls =
+        Map.of(
+            "optimization",
+            "operacao-otimizacao-experimento",
+            "delivery",
+            "venda-entrega-satisfacao-cliente",
+            "learningCycle",
+            "value-chain-learning-sales-cycle");
+    var current =
+        childByCode(
+            flow.currentActivityId() == null ? null : calls.get(flow.currentActivityId()),
+            subprocesses);
+    if ("learningCycle".equals(flow.currentActivityId()) && flow.cycleProcessDefinitionId() != null)
+      current = processRepository.findById(flow.cycleProcessDefinitionId()).orElse(current);
+    var recorded =
+        stageMeasurementResolver == null
+            ? List.<ProductStageMeasurementResponse>of()
+            : stageMeasurementResolver.resolveSubprocessMeasurements(
+                context == null ? stageMeasurementResolver.loadContext(product) : context,
+                subprocesses,
+                current,
+                parentSequence,
+                false);
+    var measurements = new ArrayList<ProductStageMeasurementResponse>();
+    for (var activity : flow.activities()) {
+      var child = childByCode(calls.get(activity.activityId()), subprocesses);
+      if ("learningCycle".equals(activity.activityId()) && flow.cycleProcessDefinitionId() != null)
+        child = processRepository.findById(flow.cycleProcessDefinitionId()).orElse(child);
+      if (child == null) continue;
+      String childCode = child.getProcessCode();
+      var old =
+          recorded.stream()
+              .filter(value -> value.processCode().equals(childCode))
+              .findFirst()
+              .orElse(null);
+      String status =
+          switch (activity.state()) {
+            case "COMPLETED" -> "COMPLETED";
+            case "IN_PROGRESS", "BLOCKED" ->
+                Objects.equals(activity.activityId(), flow.currentActivityId())
+                    ? "CURRENT"
+                    : "RECORDED";
+            case "WAITING" -> "PLANNED";
+            default -> activity.state();
+          };
+      var entered = old != null && old.enteredAt() != null ? old.enteredAt() : activity.enteredAt();
+      measurements.add(
+          new ProductStageMeasurementResponse(
+              "SUBPROCESS",
+              parentSequence == null ? null : parentSequence + "." + activity.sequenceNumber(),
+              status,
+              child.getId(),
+              child.getProcessCode(),
+              child.getName(),
+              entered,
+              activity.evidenceReference() == null ? "NOT_RECORDED" : "SALES_FLOW_EVENT",
+              activity.exitedAt(),
+              activity.objectiveAchieved() ? "SALES_FLOW_EVENT" : null,
+              activity.objectiveAchieved(),
+              old == null ? null : old.elapsedDays(),
+              old == null ? java.math.BigDecimal.ZERO : old.knownEstimatedCostUsd(),
+              old == null ? "NO_EXECUTIONS" : old.costCoverage(),
+              old == null ? 0 : old.costedExecutionCount(),
+              old == null ? 0 : old.uncostedExecutionCount(),
+              old != null && old.commitRegistrationAllowed()));
+    }
+    return new ProductSubprocessPositionResponse(
+        flow.state(),
+        subprocesses.size(),
+        flow.currentActivityName(),
+        current == null ? null : current.getId(),
+        current == null ? null : flow.currentActivitySequenceNumber(),
+        current == null ? null : current.getProcessCode(),
+        current == null ? null : current.getName(),
+        flow.reason(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        List.copyOf(measurements),
+        flow);
   }
 
   /** Confirma o objetivo sem recarregar o histórico quando o contexto já está disponível. */

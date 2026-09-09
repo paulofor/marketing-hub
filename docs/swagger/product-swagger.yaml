@@ -971,6 +971,10 @@ components:
         - trackingStatus
         - subprocessCount
       properties:
+        salesFlow:
+          nullable: true
+          allOf:
+            - $ref: "learning-sales-cycles-v1-swagger.yaml#/components/schemas/SalesFlow"
         trackingStatus:
           type: string
           enum:
@@ -979,6 +983,7 @@ components:
             - IN_PROGRESS
             - RECORDED
             - COMPLETED
+            - BLOCKED
         subprocessCount:
           type: integer
           minimum: 0
@@ -1056,6 +1061,8 @@ components:
             - COMPLETED
             - RECORDED
             - PLANNED
+            - HISTORICAL
+            - NOT_APPLICABLE
         processDefinitionId:
           type: integer
           format: int64

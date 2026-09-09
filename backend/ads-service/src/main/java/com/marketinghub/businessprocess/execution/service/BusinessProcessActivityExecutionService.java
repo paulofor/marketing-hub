@@ -102,6 +102,10 @@ public class BusinessProcessActivityExecutionService {
 
   @Autowired private LearningCycleActivityProjection learningCycleActivityProjection;
 
+  @Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.SalesFlowResolver
+      salesFlowResolver;
+
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
   public BusinessProcessActivityExecutionService(
@@ -288,6 +292,10 @@ public class BusinessProcessActivityExecutionService {
       Long processDefinitionId, Long productId, Long learningCycleId, Long chainId) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
+    var salesFlow =
+        salesFlowResolver == null
+            ? null
+            : salesFlowResolver.resolve(productId, selectedProcess, chainId, learningCycleId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
     List<Experiment> productExperiments = productExperiments(productId);
     List<AgentTask> tasks =
@@ -336,10 +344,12 @@ public class BusinessProcessActivityExecutionService {
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
     String currentExecutionReference =
-        learningCycleId == null
-            ? resolveExecutionReference(
-                selectedProcess, product, productExperiments, productPlans, tasks, instances)
-            : cycleSource(learningCycleId, product, selectedProcess, false);
+        salesFlow != null
+            ? "experiment:" + salesFlow.experimentId()
+            : learningCycleId == null
+                ? resolveExecutionReference(
+                    selectedProcess, product, productExperiments, productPlans, tasks, instances)
+                : cycleSource(learningCycleId, product, selectedProcess, false);
     String readinessSourceReference =
         currentExecutionReference == null
             ? initialSourceReference(selectedProcess, product, productExperiments, productPlans)
@@ -371,6 +381,22 @@ public class BusinessProcessActivityExecutionService {
               chainId);
     }
     ProductProcessSituation situation = processSituation(activities);
+    if (salesFlow != null) {
+      var current =
+          activities.stream()
+              .filter(item -> Objects.equals(item.activityId(), salesFlow.currentActivityId()))
+              .findFirst()
+              .orElse(null);
+      situation =
+          new ProductProcessSituation(
+              salesFlow.state(),
+              salesFlow.currentActivityId() == null,
+              situation.selectedActivityCount(),
+              situation.completedActivityCount(),
+              situation.remainingActivityCount(),
+              situation.blockedActivityCount(),
+              current);
+    }
     BigDecimal knownCost = knownEstimatedCost(tasks);
     CommercialPlan commercialPlan = currentCommercialPlan(productPlans, currentExecutionReference);
     return new ProductProcessActivityExecutionHistoryResponse(
@@ -400,7 +426,8 @@ public class BusinessProcessActivityExecutionService {
         tasks.size(),
         knownCost,
         costCoverage(tasks),
-        activities);
+        activities,
+        salesFlow);
   }
 
   /**
@@ -1664,7 +1691,15 @@ public class BusinessProcessActivityExecutionService {
             selectedActivities.stream()
                 .filter(activity -> "BLOCKED".equals(activity.operationalState()))
                 .count();
-    int remaining = selectedActivities.size() - completed;
+    int omitted =
+        (int)
+            selectedActivities.stream()
+                .filter(
+                    activity ->
+                        Set.of("HISTORICAL", "NOT_APPLICABLE", "RECORDED")
+                            .contains(activity.operationalState()))
+                .count();
+    int remaining = selectedActivities.size() - completed - omitted;
     boolean objectiveAchieved = !selectedActivities.isEmpty() && remaining == 0;
     String operationalState =
         processOperationalState(selectedActivities, objectiveAchieved, completed, blocked);

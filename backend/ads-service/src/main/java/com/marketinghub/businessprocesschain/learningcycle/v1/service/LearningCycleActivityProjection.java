@@ -23,7 +23,10 @@ public class LearningCycleActivityProjection {
   private final BusinessProcessActivityInstanceRepository instances;
   private final LearningSalesCycleEventRepository events;
 
-  /** Projeta somente a chamada vinculada, sem criar execução nem concluir atividades anteriores. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private SalesFlowResolver salesFlowResolver;
+
+  /** Projeta o fluxo vinculado sem criar execução nem aprovar retroativamente tarefas antigas. */
   @Transactional(readOnly = true)
   public List<ProductProcessActivityExecutionGroupResponse> apply(
       BusinessProcessDefinition process,
@@ -49,6 +52,10 @@ public class LearningCycleActivityProjection {
                 definition ->
                     LearningCycleRules.PROCESS_CODE.equals(definition.getSubprocessCode()));
     if (!callsCycle) return groups;
+    if (salesFlowResolver != null) {
+      var flow = salesFlowResolver.resolve(productId, process, chainId, explicitCycleId);
+      if (flow != null) return projectFlow(flow, groups);
+    }
     var explicit =
         explicitCycleId == null
             ? null
@@ -167,6 +174,96 @@ public class LearningCycleActivityProjection {
                   reason,
                   control);
             })
+        .toList();
+  }
+
+  /** Projeta todas as atividades a partir da mesma passagem comercial usada pelo histórico. */
+  private List<ProductProcessActivityExecutionGroupResponse> projectFlow(
+      com.marketinghub.businessprocesschain.learningcycle.v1.service.getSalesFlow.SalesFlowResponse
+          flow,
+      List<ProductProcessActivityExecutionGroupResponse> groups) {
+    return groups.stream()
+        .map(
+            group -> {
+              var state =
+                  flow.activities().stream()
+                      .filter(item -> item.activityId().equals(group.activityId()))
+                      .findFirst()
+                      .orElse(null);
+              if (state == null) return group;
+              boolean cycleEntry = "learningCycle".equals(group.activityId());
+              boolean measurement = "consolidate".equals(group.activityId());
+              boolean actionable = cycleEntry || measurement;
+              boolean executing = List.of("IN_PROGRESS", "BLOCKED").contains(state.state());
+              var previous = group.executionControl();
+              String url =
+                  actionable
+                      ? flow.navigationUrl()
+                      : previous == null ? null : previous.navigationUrl();
+              Long target =
+                  actionable
+                      ? cycles.findById(flow.cycleId()).orElseThrow().getProcessDefinitionId()
+                      : previous == null ? null : previous.targetProcessDefinitionId();
+              if (!actionable && target != null && executing)
+                url =
+                    "/products/"
+                        + flow.productId()
+                        + "/value-chain-history/processes/"
+                        + target
+                        + "/activities?learningCycleId="
+                        + flow.cycleId();
+              var control =
+                  new ProductProcessActivityExecutionControlResponse(
+                      "BACKEND",
+                      measurement
+                          ? "AUTOMATIC"
+                          : cycleEntry
+                              ? "SUBPROCESS"
+                              : previous == null ? "SUBPROCESS" : previous.interactionType(),
+                      cycleEntry
+                          ? "Retomar subprocesso · ciclo #" + flow.cycleId()
+                          : measurement
+                              ? "Consultar conciliação automática"
+                              : executing
+                                  ? "Abrir subprocesso"
+                                  : "Consultar histórico do subprocesso",
+                      state.reason(),
+                      actionable || target != null,
+                      state.reason(),
+                      false,
+                      null,
+                      null,
+                      null,
+                      null,
+                      null,
+                      target,
+                      List.of(),
+                      "DETAILED",
+                      state.evidenceReference(),
+                      url);
+              return new ProductProcessActivityExecutionGroupResponse(
+                  group.activityDefinitionId(),
+                  group.activityId(),
+                  group.activityName(),
+                  group.activityObjective(),
+                  group.activityOwnerName(),
+                  state.sequenceNumber(),
+                  group.selectedVersionActivity(),
+                  state.state(),
+                  state.reason(),
+                  state.objectiveAchieved(),
+                  state.evidenceReference() == null ? "NOT_RECORDED" : "SALES_FLOW_EVENT",
+                  null,
+                  null,
+                  group.taskCount(),
+                  group.tasks(),
+                  false,
+                  state.reason(),
+                  control);
+            })
+        .sorted(
+            java.util.Comparator.comparing(
+                ProductProcessActivityExecutionGroupResponse::sequenceNumber))
         .toList();
   }
 

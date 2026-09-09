@@ -71,6 +71,21 @@ class LearningCycleExecutionContextTest {
     assertThat(context.permitsRevalidation(product)).isTrue();
   }
 
+  /**
+   * Mantém o pai da cadeia original ao abrir um subprocesso depois da publicação de outra versão.
+   */
+  @Test
+  void subprocessUsesParentVersionFromOriginalChain() {
+    process.setProcessCode("pde-sales-delivery-learning");
+    var child = new BusinessProcessDefinition();
+    child.setId(66L);
+    child.setProcessCode("venda-entrega-satisfacao-cliente");
+    child.setParentProcessCode(process.getProcessCode());
+    assertThat(context.source(1L, product, child, true)).isEqualTo("experiment:92");
+    verify(processes, never())
+        .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(anyString(), anyString());
+  }
+
   /** Bloqueia outro produto, processo externo e comandos em ciclos encerrados. */
   @Test
   void rejectsForeignScopeAndClosedCommands() {

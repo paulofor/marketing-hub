@@ -703,6 +703,10 @@ components:
         - costCoverage
         - activities
       properties:
+        salesFlow:
+          nullable: true
+          allOf:
+            - $ref: "learning-sales-cycles-v1-swagger.yaml#/components/schemas/SalesFlow"
         productId: { type: integer, format: int64 }
         productName: { type: string, nullable: true }
         productInternalName: { type: string, nullable: true }
@@ -747,7 +751,7 @@ components:
         selectedVersionActivity: { type: boolean }
         stateEvidence:
           type: string
-          description: SUBPROCESS identifica estado projetado do ciclo persistido na atividade de chamada; não fabrica instância ou tarefa no pai.
+          description: SALES_FLOW_EVENT identifica passagem auditada no fluxo comum do produto. HISTORICAL preserva a operação anterior e NOT_APPLICABLE dispensa a atividade no recorte; não comprovam objetivo. SUBPROCESS identifica estado projetado do ciclo persistido na atividade de chamada; não fabrica instância ou tarefa no pai.
         taskCount: { type: integer, minimum: 0 }
         tasks:
           type: array

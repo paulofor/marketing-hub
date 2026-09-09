@@ -35,6 +35,8 @@ paths:
                   returnTargets: {type: array, items: {type: object, description: 'processDefinitionId, processCode, processName, activityId, activityName, owner'}}
                   experiments: {type: array, items: {type: object, description: 'id, name, status, available, baseline, reason; somente experimentos do próprio produto'}}
                   entry: {$ref: '#/components/schemas/Entry'}
+                  successorChainDefinitionId: {type: integer, format: int64, nullable: true, description: 'Versão publicada da mesma cadeia indicada pelo backend para criar o sucessor.'}
+                  successorChainName: {type: string, nullable: true}
         '404': {description: Cadeia, produto ou BPM não instalado}
   /entry:
     get:
@@ -279,3 +281,57 @@ components:
         canCreateSuccessor: {type: boolean}
         createdAt: {type: string, format: date-time}
         closedAt: {type: string, format: date-time, nullable: true}
+
+    SalesFlow:
+      type: object
+      description: >-
+        Leitura comum ao histórico e às atividades do Processo 6, baseada em eventos imutáveis.
+        A versão atual do BPM explica caminhos compatíveis de ciclos históricos, sem alterar seus
+        vínculos. Não há mutação em GET. A sequência do subprocesso usa a atividade chamadora (6.4).
+      required: [productId, experimentId, cycleId, chainDefinitionId, modelProcessDefinitionId, state, reason, navigationUrl, modelUrl, activities, transitions]
+      properties:
+        productId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        cycleId: {type: integer, format: int64}
+        cycleProcessDefinitionId: {type: integer, format: int64}
+        chainDefinitionId: {type: integer, format: int64, description: 'Versão original do ciclo'}
+        modelProcessDefinitionId: {type: integer, format: int64, description: 'BPM versionado com caminhos e retornos explícitos'}
+        currentActivityId: {type: string, nullable: true}
+        currentActivityName: {type: string, nullable: true}
+        currentActivitySequenceNumber: {type: integer, nullable: true}
+        state: {type: string}
+        reason: {type: string}
+        navigationUrl: {type: string}
+        modelUrl: {type: string}
+        activities:
+          type: array
+          items:
+            type: object
+            required: [activityId, sequenceNumber, name, state, objectiveAchieved, reason]
+            properties:
+              activityId: {type: string}
+              sequenceNumber: {type: integer}
+              name: {type: string}
+              state: {type: string, enum: [HISTORICAL, NOT_APPLICABLE, RECORDED, WAITING, IN_PROGRESS, BLOCKED, COMPLETED]}
+              objectiveAchieved: {type: boolean}
+              reason: {type: string}
+              evidenceReference: {type: string, nullable: true}
+              enteredAt: {type: string, format: date-time, nullable: true}
+              exitedAt: {type: string, format: date-time, nullable: true}
+        transitions:
+          type: array
+          items:
+            type: object
+            required: [eventId, revision, action, from, to, returnFlow, reason, responsible, evidenceReference, occurredAt]
+            properties:
+              eventId: {type: integer, format: int64}
+              revision: {type: integer, format: int64}
+              action: {type: string}
+              flowId: {type: string, nullable: true}
+              from: {type: string}
+              to: {type: string}
+              returnFlow: {type: boolean}
+              reason: {type: string}
+              responsible: {type: string}
+              evidenceReference: {type: string}
+              occurredAt: {type: string, format: date-time}

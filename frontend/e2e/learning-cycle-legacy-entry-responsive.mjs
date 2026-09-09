@@ -58,7 +58,7 @@ try {
       return route.continue();
     });
     await page.goto(
-      `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91001`,
+      `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91002`,
       { waitUntil: "networkidle" },
     );
     await page
@@ -156,7 +156,7 @@ try {
       return response.json();
     }
     const catalog = await (
-      await fetch(`${api}${cycleApi}/catalog?chainId=91001&productId=91001`)
+      await fetch(`${api}${cycleApi}/catalog?chainId=91002&productId=91001`)
     ).json();
     await page.route("**/api/products/value-chain-positions/*", (route) =>
       route.fulfill({
@@ -169,7 +169,7 @@ try {
     );
     const returnToParent = async (expectedState, label) => {
       const beforeNavigation = await (
-        await fetch(`${api}${cycleApi}/products/91001?chainId=91001`)
+        await fetch(`${api}${cycleApi}/products/91001?chainId=91002`)
       ).json();
       await page
         .getByRole("link", { name: "Voltar à atividade 4 do Processo 6" })
@@ -209,7 +209,7 @@ try {
       }
       assert(
         history.activities
-          .filter((a) => a.activityId !== "learningCycle")
+          .filter((a) => ["optimization", "delivery"].includes(a.activityId))
           .every((a) => !a.objectiveAchieved),
       );
       assert(
@@ -230,7 +230,7 @@ try {
         page.getByRole("navigation", { name: "Local do ciclo na cadeia" }),
       ).toContainText("Atividade 4: Conduzir o ciclo de aprendizado e vendas");
       const afterNavigation = await (
-        await fetch(`${api}${cycleApi}/products/91001?chainId=91001`)
+        await fetch(`${api}${cycleApi}/products/91001?chainId=91002`)
       ).json();
       assert.deepEqual(
         afterNavigation,
@@ -247,7 +247,7 @@ try {
       nextHypothesis: "Ação concreta melhora uso",
       returnTarget: `${target.processDefinitionId}:${target.activityId}`,
     });
-    await returnToParent("COMPLETED", "Decisão encerrada");
+    await returnToParent("IN_PROGRESS", "Ajuste registrado");
     await page
       .getByRole("button", {
         name: "Criar ciclo sucessor com aprendizado",

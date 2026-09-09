@@ -5,6 +5,7 @@ import type {
   PsiquePurchaseEmotion,
   PsiqueVisualAudit,
 } from "../agentTask/types";
+import type { SalesFlow } from "../learningCycle/salesFlow";
 
 export type ProcessNodeType = "START" | "TASK" | "GATEWAY" | "END";
 
@@ -34,6 +35,7 @@ export type BusinessProcessExecutionResource = {
 };
 
 export type ProcessFlow = {
+  id?: string;
   from: string;
   to: string;
   label?: string;
@@ -41,6 +43,7 @@ export type ProcessFlow = {
 };
 
 export type ProcessDiagram = {
+  salesFlowVersion?: number;
   nodes: ProcessNode[];
   flows: ProcessFlow[];
   learningCycleReturns?: {
@@ -388,6 +391,10 @@ export type ProductProcessActivityExecutionGroup = {
   selectedVersionActivity: boolean;
   operationalState:
     | "NOT_STARTED"
+    | "HISTORICAL"
+    | "NOT_APPLICABLE"
+    | "RECORDED"
+    | "WAITING"
     | "PENDING"
     | "IN_PROGRESS"
     | "BLOCKED"
@@ -402,6 +409,7 @@ export type ProductProcessActivityExecutionGroup = {
     | "LEGACY_TASK"
     | "COMPOSITE_TASK_COVERAGE"
     | "SUBPROCESS"
+    | "SALES_FLOW_EVENT"
     | "NOT_RECORDED";
   activityInstanceId?: number;
   occurrenceNumber?: number;
@@ -472,6 +480,7 @@ export type ProductProcessActivityExecutionRequest = {
 };
 
 export type ProductProcessActivityExecutionHistory = {
+  salesFlow?: SalesFlow | null;
   productId: number;
   productName?: string;
   productInternalName?: string;

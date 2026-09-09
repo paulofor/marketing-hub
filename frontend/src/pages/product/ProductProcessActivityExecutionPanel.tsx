@@ -93,7 +93,8 @@ export default function ProductProcessActivityExecutionPanel({
           executing={executing}
           onExecute={onExecute}
         />
-      ) : control.interactionType === "SUBPROCESS" ? (
+      ) : control.interactionType === "SUBPROCESS" ||
+        (control.interactionType === "AUTOMATIC" && control.navigationUrl) ? (
         control.targetProcessDefinitionId && control.actionAvailable ? (
           <Link
             className="btn btn-primary"

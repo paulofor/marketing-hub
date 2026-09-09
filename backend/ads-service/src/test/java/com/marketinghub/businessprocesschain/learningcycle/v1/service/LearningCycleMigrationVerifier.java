@@ -76,6 +76,11 @@ public final class LearningCycleMigrationVerifier {
       migration.rollback(1, new Contexts(), new LabelExpression());
       assertCount(
           connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=6 AND status='RETIRED'",
+          1);
+      migration.rollback(1, new Contexts(), new LabelExpression());
+      assertCount(
+          connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=2 AND status='PUBLISHED'",
           1);
       assertCount(
@@ -126,7 +131,7 @@ public final class LearningCycleMigrationVerifier {
         1);
     assertCount(
         connection,
-        "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=13 AND status='PUBLISHED'",
+        "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=14 AND status='PUBLISHED'",
         1);
     assertCount(
         connection,

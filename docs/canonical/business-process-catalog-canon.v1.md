@@ -41,6 +41,14 @@ consulta reversa canônica é `GET /api/business-process-chains/by-process/{proc
 
 ## Alocação obrigatória no BPM da Cadeia de Valor
 
+**Posição e sequência por produto — 09/09/2026:** histórico, atividades e subprocessos devem
+consultar o mesmo fluxo persistido do backend, segregado por produto, experimento e cadeia.
+Tarefa antiga bloqueada não é uma transição de retorno. Cada retorno deve ter caminho explícito
+no BPM e evento com origem, destino, condição, motivo, evidência, responsável e horário.
+Entradas históricas, paralelismo e atividades não aplicáveis devem ser modelados explicitamente;
+não equivalem a aprovações nem a objetivos concluídos. A numeração do subprocesso segue sua
+atividade chamadora, incluindo atividades simples entre as chamadas (ex.: ciclo na 6.4).
+
 **Decisão obrigatória de 08/09/2026, reforçada em 09/09/2026:** todo processo, subprocesso e
 atividade deve sempre ser criado e, quando alterado, permanecer alocado e conectado dentro do
 BPM da Cadeia de Valor. Essa obrigação começa na concepção e no rascunho, antes da implementação

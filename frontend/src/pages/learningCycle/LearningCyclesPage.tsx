@@ -183,6 +183,14 @@ export default function LearningCyclesPage() {
             onChange={(event) => select("chainId", event.target.value)}
           >
             <option value="">Selecione</option>
+            {catalog.data?.entry &&
+            chainId &&
+            chains.data &&
+            !chains.data.some((chain) => chain.id === chainId) ? (
+              <option value={chainId}>
+                {catalog.data.entry.chainName} · histórico do ciclo
+              </option>
+            ) : null}
             {chains.data?.map((chain) => (
               <option value={chain.id} key={chain.id}>
                 {chain.name} · v{chain.versionNumber}
@@ -271,11 +279,21 @@ export default function LearningCyclesPage() {
           disponível.
         </p>
       ) : null}
+      {creating && predecessor && catalog.data?.successorChainName ? (
+        <p className="alert alert-info">
+          O sucessor usará {catalog.data.successorChainName}. O ciclo anterior
+          conserva sua versão e seu histórico.
+        </p>
+      ) : null}
       {creating && productId && chainId && catalog.data ? (
         <LearningCycleCreateForm
           key={`${productId}-${predecessor?.id ?? "new"}`}
           productId={productId}
-          chainId={chainId}
+          chainId={
+            predecessor
+              ? (catalog.data.successorChainDefinitionId ?? chainId)
+              : chainId
+          }
           catalog={catalog.data}
           predecessor={predecessor}
           onCreated={updated}

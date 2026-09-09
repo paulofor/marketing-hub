@@ -500,6 +500,16 @@ aplicável.
 
 ## 6. Venda, entrega, aprendizado e decisão de escala
 
+O fluxo do Processo 6 possui entrada normal e entrada histórica explícitas. Na normal, **6.1
+opera o experimento e 6.2 entrega cada venda durante a operação**, por ramos modelados no BPM.
+Ausência comprovada de vendas dispensa entrega apenas naquele recorte; ausência de fonte bloqueia.
+**6.3 concilia automaticamente resultados e situação das entregas; 6.4 conduz o ciclo e registra
+a decisão.** Uma campanha histórica comprovada entra em 6.3, preservando lacunas e tarefas antigas,
+sem homologação retroativa. O histórico e as atividades leem a mesma posição do backend.
+Continuar coleta, corrigir medição, ajustar e solicitar escala são retornos registrados com
+origem, destino e evidência; jamais mudanças de posição inferidas da última tarefa executada.
+O sucessor usa a versão publicada da mesma cadeia, preservando a versão original do predecessor.
+
 A retomada específica do Vega após o experimento #91 segue o
 [roteiro comercial Vega v1](vega-sequencia-comercial-canon.v1.md), com reconciliação, melhoria
 dirigida, homologação, observação humana e novo teste condicionado a autorização. O roteiro

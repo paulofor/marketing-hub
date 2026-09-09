@@ -33,6 +33,8 @@ import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExec
 import "../businessProcess/BusinessProcessesPage.css";
 import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecutionPanel";
 import DirectContactSamplePanel from "./DirectContactSamplePanel";
+import { SalesFlowTransitions } from "../../components/ProductSalesFlow";
+import { salesActivityStateLabels } from "../../api/learningCycle/salesFlow";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -52,6 +54,10 @@ type ActivityOperationalState =
   ProductProcessActivityExecutionGroup["operationalState"];
 
 const activityStateLabels: Record<ActivityOperationalState, string> = {
+  HISTORICAL: salesActivityStateLabels.HISTORICAL,
+  NOT_APPLICABLE: salesActivityStateLabels.NOT_APPLICABLE,
+  RECORDED: salesActivityStateLabels.RECORDED,
+  WAITING: salesActivityStateLabels.WAITING,
   NOT_STARTED: "Não iniciada",
   PENDING: "Pendente",
   IN_PROGRESS: "Em execução",
@@ -138,7 +144,11 @@ export default function ProductProcessActivityExecutionsPage() {
     (activity) => activity.objectiveAchieved,
   );
   const remainingActivities = selectedActivities.filter(
-    (activity) => !activity.objectiveAchieved,
+    (activity) =>
+      !activity.objectiveAchieved &&
+      !["HISTORICAL", "NOT_APPLICABLE", "RECORDED"].includes(
+        activity.operationalState,
+      ),
   );
   const completionPercentage = data?.selectedActivityCount
     ? Math.round(
@@ -319,6 +329,12 @@ export default function ProductProcessActivityExecutionsPage() {
                     ? "Objetivo do processo atingido."
                     : `${data.remainingActivityCount} atividade${data.remainingActivityCount === 1 ? "" : "s"} ainda sem objetivo comprovado.`}
                 </small>
+                {data.salesFlow ? (
+                  <p className="small text-muted mb-0">
+                    Referências históricas e atividades não aplicáveis ficam
+                    identificadas abaixo; não contam como conclusão comprovada.
+                  </p>
+                ) : null}
               </article>
               <article>
                 <span>
@@ -576,6 +592,10 @@ export default function ProductProcessActivityExecutionsPage() {
                   pendingActivityId={requestExecution.variables?.activityId}
                   onExecute={(command) => requestExecution.mutate(command)}
                 />
+
+                {activity.activityId === "learningCycle" && data.salesFlow ? (
+                  <SalesFlowTransitions flow={data.salesFlow} />
+                ) : null}
 
                 {activity.tasks.length > 0 ? (
                   <div className="d-grid gap-3">

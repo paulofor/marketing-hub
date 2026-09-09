@@ -1,0 +1,70 @@
+{
+  "verificadoEm": "2026-09-09",
+  "produtoId": 4,
+  "experimentoId": 91,
+  "origem": "MCP somente leitura e navegação Chromium no frontend administrativo",
+  "ciclo": [
+    {
+      "id": 1,
+      "product_id": 4,
+      "chain_definition_id": 13,
+      "process_definition_id": 72,
+      "experiment_id": 91,
+      "status": "OPEN",
+      "stage": "DECISION",
+      "revision": 1,
+      "current_instance_id": 220,
+      "baseline": true,
+      "created_at": "2026-09-09T00:56:05.742108",
+      "updated_at": "2026-09-09T06:03:36.030895",
+      "closed_at": null
+    }
+  ],
+  "eventos": [
+    {
+      "id": 1,
+      "cycle_id": 1,
+      "revision": 0,
+      "action": "ADOPT_BASELINE",
+      "from_stage": "MEASUREMENT",
+      "to_stage": "MEASUREMENT",
+      "summary": "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias.",
+      "evidence_reference": "facebook_ads_campaign:120251556536430326",
+      "created_at": "2026-09-09T00:56:05.742108"
+    },
+    {
+      "id": 2,
+      "cycle_id": 1,
+      "revision": 1,
+      "action": "MEASURE",
+      "from_stage": "MEASUREMENT",
+      "to_stage": "DECISION",
+      "summary": "Conciliação automática: 4 sessões, 1 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -27.30 de contribuição.",
+      "evidence_reference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+      "created_at": "2026-09-09T06:03:36.030895"
+    }
+  ],
+  "tarefasAnteriores": [
+    {
+      "id": 356,
+      "status": "BLOCKED",
+      "process_definition_id": 66,
+      "process_activity_id": "task-1",
+      "source_reference": "experiment:91",
+      "created_at": "2026-09-08T19:40:30.212161",
+      "updated_at": "2026-09-08T19:42:51",
+      "instance_status": "BLOCKED"
+    },
+    {
+      "id": 357,
+      "status": "BLOCKED",
+      "process_definition_id": 66,
+      "process_activity_id": "task-1",
+      "source_reference": "experiment:91",
+      "created_at": "2026-09-09T00:34:32.82488",
+      "updated_at": "2026-09-09T00:37:52",
+      "instance_status": "BLOCKED"
+    }
+  ],
+  "divergencia": "Histórico apontava subprocesso 6.1; atividades apontavam 6.4. Adoção histórica e medição estão registradas no ciclo."
+}

@@ -1,0 +1,100 @@
+databaseChangeLog:
+- changeSet:
+    id: 2026-09-09-pde-sales-flow-v6
+    author: codex
+    preConditions:
+    - onFail: HALT
+    - onError: HALT
+    - dbms:
+        type: mysql
+    - sqlCheck:
+        expectedResult: 1
+        sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code='pde-value-creation-delivery'
+          AND version_number=13
+    - sqlCheck:
+        expectedResult: 1
+        sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND
+          version_number=5
+    - sqlCheck:
+        expectedResult: 1
+        sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle'
+          AND version_number=2
+    changes:
+    - sql:
+        splitStatements: true
+        stripComments: true
+        sql: |
+          INSERT INTO business_process_definition
+           (process_code,name,purpose,owner_name,trigger_description,outcome_description,version_number,status,
+            technical_reference,process_type,parent_process_code,execution_scope,diagram_json,created_at,published_at)
+           SELECT source.process_code,source.name,
+            'Vender, entregar valor e conduzir ciclos por experimento: resultados orientam ajustes, revalidação e decisões de investimento.',
+            source.owner_name,source.trigger_description,
+            'Decisão registrada no ciclo, com evidências, responsável e retorno ao processo da causa; vendas e entrega preservadas.',
+            6,'PUBLISHED',source.technical_reference,source.process_type,source.parent_process_code,source.execution_scope,
+            '{"nodes":[{"id":"start","type":"START","label":"Experimento identificado","owner":"Backend","description":"Entrada por operação autorizada ou referência histórica comprovada, sempre vinculada ao produto e experimento."},{"id":"entry","type":"GATEWAY","label":"Operação atual ou referência histórica?","owner":"Backend","description":"Adoção histórica exige evento ADOPT_BASELINE e evidência de publicação, sem aprovação retroativa."},{"id":"parallel","type":"GATEWAY","label":"Operação e entrega durante as vendas","owner":"Backend","description":"Ramos paralelos explícitos; a entrega de uma compra não aguarda o encerramento do experimento."},{"id":"sales","type":"GATEWAY","label":"Existem vendas no recorte?","owner":"Backend","description":"Somente fonte válida pode comprovar zero vendas. Nenhuma venda implica entrega não aplicável nesta passagem."},{"id":"optimization","type":"TASK","label":"Operar e otimizar o experimento","owner":"Backend","description":"Delega aquisição, mensuração e teste de variável ao subprocesso canônico.","subprocessCode":"operacao-otimizacao-experimento"},{"id":"delivery","type":"TASK","label":"Entregar cada venda e acompanhar satisfação","owner":"Backend","description":"Delega conciliação, entrega, suporte, satisfação e reembolso ao subprocesso canônico.","subprocessCode":"venda-entrega-satisfacao-cliente"},{"id":"consolidate","type":"TASK","label":"Consolidar resultado comercial","owner":"Backend","description":"O backend concilia automaticamente fontes do experimento. Fonte inválida bloqueia; não é preenchimento manual nem ausência igual a zero."},{"id":"learningCycle","type":"TASK","label":"Conduzir o ciclo de aprendizado e vendas","owner":"Operador responsável pelo produto","description":"Abra ou retome o ciclo deste produto e experimento. Concilie resultados, registre a decisão e siga a atividade orientada. Mudança comercial exige experimento sucessor com o aprendizado anterior; correção técnica permanece na mesma iteração com revalidação.","subprocessCode":"value-chain-learning-sales-cycle"},{"id":"decision","type":"GATEWAY","label":"Qual decisão comercial?","owner":"Backend e operador humano","description":"A decisão persistida no ciclo determina o retorno pela causa. Continuar coleta respeita janela e orçamento. Ajustar estratégia, produto ou comunicação exige revalidação; escala exige nova autorização. Encerrar preserva resultados e limitações."},{"id":"join","type":"GATEWAY","label":"Resultados e situação das entregas disponíveis","owner":"Backend","description":"Consolidar situação comercial e entregas, preservando bloqueios e ausência comprovada de vendas."},{"id":"returnTarget","type":"GATEWAY","label":"Retorno ao processo da causa: 2, 3 ou 4","owner":"Backend","description":"A decisão identifica processo e atividade. Mudança comercial usa sucessor; correção técnica preserva o experimento. Executar gates no 5 antes de operar."},{"id":"returnAuthorization","type":"GATEWAY","label":"Processo 5: homologação e autorização","owner":"Backend e operador","description":"Renovar os gates afetados e autorização explícita antes da publicação ou escala; retorno registrado não autoriza gasto por si só."},{"id":"end","type":"END","label":"Ciclo decidido por vendas entregues","owner":"Backend","description":"A decisão e suas evidências ficam auditáveis."}],"flows":[{"id":"identify","from":"start","to":"entry","label":"Fixar produto e experimento"},{"id":"live-entry","from":"entry","to":"parallel","label":"Publicação atual autorizada"},{"id":"historical-entry","from":"entry","to":"consolidate","label":"ADOPT_BASELINE: publicação histórica comprovada; preservar limitações"},{"id":"operate","from":"parallel","to":"optimization","label":"Operação com limites vigentes"},{"id":"delivery-condition","from":"parallel","to":"sales","label":"Entregar cada compra durante a operação"},{"id":"has-sales","from":"sales","to":"delivery","label":"Vendas existentes: entrega obrigatória"},{"id":"no-sales","from":"sales","to":"join","label":"Zero vendas comprovado: entrega não aplicável nesta passagem"},{"id":"operation-snapshot","from":"optimization","to":"join","label":"Rodada de resultados disponível"},{"id":"delivery-snapshot","from":"delivery","to":"join","label":"Situação das entregas registrada"},{"id":"consolidation","from":"join","to":"consolidate","label":"Fontes e limites do mesmo experimento"},{"id":"measurement-ready","from":"consolidate","to":"learningCycle","label":"MEASURE: leitura válida; obrigações de entrega verificadas"},{"id":"measurement-blocked","from":"consolidate","to":"consolidate","label":"MEASUREMENT_BLOCKED: corrigir fonte e repetir conciliação","kind":"REWORK"},{"id":"delivery-blocked","from":"consolidate","to":"delivery","label":"Venda sem entrega comprovada: tratar e reconsolidar","kind":"REWORK"},{"id":"decision-recorded","from":"learningCycle","to":"decision","label":"Decisão, causa, evidência, responsável e destino registrados"},{"id":"continue-collection","from":"decision","to":"optimization","label":"CONTINUE: mesmo experimento, dentro do orçamento e janela","kind":"REWORK"},{"id":"fix-measurement","from":"decision","to":"consolidate","label":"FIX_MEASUREMENT: corrigir e reconciliar a fonte; sem reiniciar campanha","kind":"REWORK"},{"id":"directed-adjustment","from":"decision","to":"returnTarget","label":"ADJUST / REWORK: executar retorno registrado pela causa","kind":"REWORK"},{"id":"delegated-progress","from":"returnTarget","to":"learningCycle","label":"Etapas delegadas concluídas com evidência no ciclo","kind":"REWORK"},{"id":"request-scale","from":"decision","to":"returnAuthorization","label":"SCALE: contribuição e valor comprovados; solicitar autorização","kind":"REWORK"},{"id":"revalidate","from":"returnTarget","to":"returnAuthorization","label":"Melhoria pronta: revalidar a mesma versão"},{"id":"authorized-scale","from":"returnAuthorization","to":"optimization","label":"AUTHORIZE_SCALE: expansão explicitamente autorizada","kind":"REWORK"},{"id":"publication-measurement","from":"returnAuthorization","to":"consolidate","label":"Publicação comprovada após gates próprios"},{"id":"close-cycle","from":"decision","to":"end","label":"STOP / INCONCLUSIVE: preservar resultados e motivos"}],"learningCycleReturns":[{"label":"Estratégia e economia","condition":"A evidência exige rever oferta, preço ou viabilidade. Defina a hipótese do sucessor.","processCode":"pde-commercial-plan-offer"},{"label":"Utilidade do produto","condition":"A cliente não consegue aplicar o resultado ou perceber valor. Corrija a entrega e renove os pareceres.","processCode":"pde-construction-approval"},{"label":"Comunicação e vídeos","condition":"O benefício ou a entrada não são compreendidos. Ajuste mensagem, demonstração e criativo.","processCode":"pde-communication-sales-journey"},{"label":"Homologação e autorização","condition":"Depois dos ajustes, valide a mesma versão e obtenha autorização explícita antes de publicar ou expandir.","processCode":"pde-commercial-homologation-activation"},{"label":"Coleta e medição","condition":"Continuar somente com dados válidos dentro dos limites; corrigir dados inválidos antes de decidir sobre desempenho.","processCode":"pde-sales-delivery-learning"}],"salesFlowVersion":1}',UTC_TIMESTAMP(),UTC_TIMESTAMP()
+           FROM business_process_definition source
+           WHERE source.process_code='pde-sales-delivery-learning' AND source.version_number=5
+           AND NOT EXISTS (SELECT 1 FROM business_process_definition target
+            WHERE target.process_code=source.process_code AND target.version_number=6);
+
+          INSERT INTO business_process_activity_definition
+           (process_definition_id,activity_id,name,objective,owner_name,execution_resource_code,subprocess_code,definition_json,created_at)
+           SELECT p.id,
+            JSON_UNQUOTE(JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,'].id'))),
+            JSON_UNQUOTE(JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,'].label'))),
+            JSON_UNQUOTE(JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,'].description'))),
+            JSON_UNQUOTE(JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,'].owner'))),
+            NULL,JSON_UNQUOTE(JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,'].subprocessCode'))),
+            JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,']')),UTC_TIMESTAMP()
+           FROM business_process_definition p
+           JOIN (SELECT 4 number UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7) n
+           LEFT JOIN business_process_activity_definition existing ON existing.process_definition_id=p.id
+            AND existing.activity_id=JSON_UNQUOTE(JSON_EXTRACT(p.diagram_json,CONCAT('$.nodes[',n.number,'].id')))
+           WHERE p.process_code='pde-sales-delivery-learning' AND p.version_number=6 AND existing.id IS NULL;
+
+          INSERT INTO business_process_chain_definition
+           (chain_code,name,purpose,outcome_description,primary_metric,version_number,status,created_at,published_at)
+           SELECT source.chain_code,source.name,source.purpose,
+            'Venda entregue e ciclo de aprendizado decidido no processo 6, com retorno orientado à causa e próxima ação auditável.',
+            source.primary_metric,14,'PUBLISHED',UTC_TIMESTAMP(),UTC_TIMESTAMP()
+           FROM business_process_chain_definition source
+           WHERE source.chain_code='pde-value-creation-delivery' AND source.version_number=13
+           AND NOT EXISTS (SELECT 1 FROM business_process_chain_definition target
+            WHERE target.chain_code=source.chain_code AND target.version_number=14);
+
+          INSERT INTO business_process_chain_item
+           (chain_definition_id,process_definition_id,sequence_number,value_contribution,created_at)
+           SELECT target.id,CASE WHEN old_process.process_code='pde-sales-delivery-learning' THEN new_process.id ELSE item.process_definition_id END,
+            item.sequence_number,CASE WHEN old_process.process_code='pde-sales-delivery-learning'
+             THEN 'Vendas e valor entregue alimentam o ciclo: decidir, corrigir a causa e revalidar antes de investir novamente.'
+             ELSE item.value_contribution END,UTC_TIMESTAMP()
+           FROM business_process_chain_definition source
+           JOIN business_process_chain_item item ON item.chain_definition_id=source.id
+           JOIN business_process_definition old_process ON old_process.id=item.process_definition_id
+           JOIN business_process_definition new_process ON new_process.process_code='pde-sales-delivery-learning' AND new_process.version_number=6
+           JOIN business_process_chain_definition target ON target.chain_code=source.chain_code AND target.version_number=14
+           LEFT JOIN business_process_chain_item existing ON existing.chain_definition_id=target.id AND existing.sequence_number=item.sequence_number
+           WHERE source.chain_code='pde-value-creation-delivery' AND source.version_number=13 AND existing.id IS NULL;
+
+          UPDATE business_process_definition SET status='RETIRED'
+           WHERE process_code='pde-sales-delivery-learning' AND version_number=5 AND status='PUBLISHED';
+          UPDATE business_process_definition SET status='PUBLISHED'
+           WHERE process_code='pde-sales-delivery-learning' AND version_number=6;
+          UPDATE business_process_chain_definition SET status='RETIRED'
+           WHERE chain_code='pde-value-creation-delivery' AND version_number=13 AND status='PUBLISHED';
+          UPDATE business_process_chain_definition SET status='PUBLISHED'
+           WHERE chain_code='pde-value-creation-delivery' AND version_number=14;
+    rollback:
+    - sql:
+        splitStatements: true
+        stripComments: true
+        sql: |
+          UPDATE business_process_chain_definition SET status='RETIRED'
+           WHERE chain_code='pde-value-creation-delivery' AND version_number=14;
+          UPDATE business_process_definition SET status='RETIRED'
+           WHERE process_code='pde-sales-delivery-learning' AND version_number=6;
+          UPDATE business_process_chain_definition SET status='PUBLISHED'
+           WHERE chain_code='pde-value-creation-delivery' AND version_number=13;
+          UPDATE business_process_definition SET status='PUBLISHED'
+           WHERE process_code='pde-sales-delivery-learning' AND version_number=5;

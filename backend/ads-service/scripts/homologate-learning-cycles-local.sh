@@ -49,11 +49,11 @@ run compose-version docker compose version
 run database "${compose[@]}" up -d --wait --wait-timeout 120
 run temporal-contract python3 -B -m unittest scripts.test_liquibase_temporal_contract
 run liquibase-static bash scripts/validate-liquibase-mysql57.sh
-run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*learningcycle.*[.]java,.*AgentTaskService[.]java,.*BusinessProcessActivityExecution(Service|Controller|ServiceTest)[.]java,.*PdeAgentValidationGateActivityExecutor(Test)?[.]java'
+run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*learningcycle.*[.]java,.*ProductSubprocessPosition.*[.]java,.*ProductProcessActivityExecutionHistoryResponse[.]java,.*AgentTaskService(Test)?[.]java,.*BusinessProcessActivityExecution(Service|Controller|ServiceTest)[.]java,.*PdeAgentValidationGateActivityExecutor(Test)?[.]java'
 if [[ "$cycle_scope" != --persistence-only ]]; then
 cycle_test_options=()
 if [[ "$cycle_scope" == --video-matrix ]]; then
-  cycle_test_options=('-Dtest=LearningCycle*Test,BusinessProcess*Test,ProductValueChainPosition*Test,PdeProductionSlotServiceTest,VideoCreativeControllerTest,ExperimentVideoAssetServiceTest,PdeAgentValidationGateActivityExecutorTest')
+  cycle_test_options=('-Dtest=SalesFlow*Test,LearningCycle*Test,AgentTaskServiceTest,ProductSubprocessPositionResolverTest,BusinessProcess*Test,ProductValueChainPosition*Test,PdeProductionSlotServiceTest,VideoCreativeControllerTest,ExperimentVideoAssetServiceTest,PdeAgentValidationGateActivityExecutorTest')
 fi
 # Relatórios gerados de rodadas anteriores não compõem a contagem da rodada corrente.
 rm -rf backend/ads-service/target/surefire-reports
@@ -93,6 +93,7 @@ wait_http 'http://127.0.0.1:15173/business-process-chains/learning-cycles'
 run browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/browser" node frontend/e2e/learning-sales-cycles-responsive.mjs
 run chain-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/chain-browser" node frontend/e2e/learning-cycle-chain-entry-responsive.mjs
 run legacy-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/legacy-browser" node frontend/e2e/learning-cycle-legacy-entry-responsive.mjs
+run sales-flow-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/sales-flow-browser" node frontend/e2e/sales-process-flow-responsive.mjs
 fi
 kill "$cycle_api_pid"
 wait "$cycle_api_pid" || true

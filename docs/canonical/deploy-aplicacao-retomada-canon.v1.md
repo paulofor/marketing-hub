@@ -27,6 +27,31 @@ Uma nova execução manual não substitui os testes locais nem autoriza código 
 Não reexecutar um run histórico esperando que ele publique o HEAD atual: o GitHub preserva
 o SHA e a referência do evento original.
 
+## Validação do backend antes da integração
+
+O workflow `Backend CI` deve executar a suíte completa de `backend/ads-service` em Pull Requests
+que alterem o backend, seus recursos empacotados ou seu contrato de CI. O comando integral
+`mvn -B test` cobre também `ArquiteturaTest`; uma seleção por módulo pode ajudar no diagnóstico,
+mas não substitui essa validação. Empacotamento e verificação dos recursos ocorrem após os testes.
+Falhas interrompem o job e os relatórios Surefire são preservados inclusive quando houver erro.
+O workflow de PR tem permissão somente de leitura do código e não publica aplicação ou biblioteca.
+
+Bancos H2 de testes Spring precisam ter identidade própria por contexto. Nas anotações de
+testes com preparação e limpeza próprias, a URL inclui também a identidade da classe, para
+que o cache Spring não reutilize um contexto com dados deixados por outra classe.
+O fechamento de um contexto não pode apagar tabelas de outro nem
+permitir que seus registros se misturem. A análise arquitetural produtiva usa a origem do
+bytecode para excluir classes de teste, preservando todas as classes produtivas e suas internas.
+Fixtures de homologação não autorizam novas dependências entre módulos produtivos.
+
+Para a JVM de testes com limite de 3 GB, `src/test/resources/spring.properties` limita o
+cache Spring a oito contextos. O H2 em memória é descartado ao fechar a última conexão
+(`DB_CLOSE_DELAY=0`), liberando também o banco após encerrar o pool do contexto.
+
+Antes de solicitar publicação, executar localmente os testes relevantes, revisar o diff e,
+após correções de defeitos, concluir as duas rodadas consecutivas previstas na matriz local.
+Referência: [isolamento dos testes do backend](../homologacao/actions-backend-isolamento-testes-2026-09-08.md).
+
 ## Recuperação de 08/09/2026
 
 - PR #5140 mergeado em `3c7e537f04c82733e44690d9071aa83f63ff1385`.

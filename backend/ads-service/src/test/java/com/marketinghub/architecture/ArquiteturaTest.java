@@ -13,6 +13,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -37,9 +38,35 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Garante isolamento arquitetural entre módulos/pacotes internos do backend. */
-@AnalyzeClasses(packages = "com.marketinghub")
+/** Garante isolamento arquitetural entre módulos produtivos, excluindo o bytecode de testes. */
+@AnalyzeClasses(packages = "com.marketinghub", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArquiteturaTest {
+
+  /** Mantém o bytecode produtivo completo sob análise e impede a importação das fixtures locais. */
+  @ArchTest
+  static void productionImportMustPreserveScopeWithoutTestFixtures(JavaClasses importedClasses) {
+    List<String> violations = new ArrayList<>();
+    for (String required :
+        List.of(
+            "com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleService",
+            "com.marketinghub.businessprocesschain.learningcycle.v1.controller.LearningCycleController",
+            "com.marketinghub.facebookads.FacebookAdsCampaign",
+            "com.marketinghub.experiment.Experiment$ExperimentBuilder")) {
+      if (!importedClasses.contain(required)) {
+        violations.add("[ARQUITETURA] Classe produtiva ausente da verificação: " + required);
+      }
+    }
+    for (JavaClass imported : importedClasses) {
+      if (imported
+          .getSource()
+          .map(source -> source.getUri().toString().contains("/test-classes/"))
+          .orElse(false)) {
+        violations.add(
+            "[ARQUITETURA] Bytecode de teste incluído no escopo produtivo: " + imported.getName());
+      }
+    }
+    failWithArchitectureViolations(violations);
+  }
 
   private static final String MOIS_SALES_LIBRARY_PACKAGE =
       "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";

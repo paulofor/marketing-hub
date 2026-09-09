@@ -16,11 +16,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+/** Valida os contratos HTTP das configurações gerais do backend. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(
     properties = {
-      "spring.datasource.url=jdbc:h2:mem:testdb-settings;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.settings.GeneralSettingControllerTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE",
       "spring.datasource.driverClassName=org.h2.Driver",
       "spring.datasource.username=sa",
       "spring.datasource.password=",

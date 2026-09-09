@@ -15,10 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Valida a persistência e evolução das jornadas comerciais. */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @org.springframework.test.context.TestPropertySource(
     properties = {
-      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.journey.JourneyServiceTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE",
       "spring.datasource.driverClassName=org.h2.Driver",
       "spring.datasource.username=sa",
       "spring.datasource.password=",

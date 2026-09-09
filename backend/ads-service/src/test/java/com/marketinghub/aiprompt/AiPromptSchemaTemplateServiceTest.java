@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
 @TestPropertySource(
     properties = {
-      "spring.datasource.url=jdbc:h2:mem:testdb-aiprompt;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.aiprompt.AiPromptSchemaTemplateServiceTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE",
       "spring.datasource.driverClassName=org.h2.Driver",
       "spring.datasource.username=sa",
       "spring.datasource.password=",

@@ -4,6 +4,28 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-ACTIONS-BACKEND-TESTES-SEM-ISOLAMENTO — PR verde falha no deploy
+
+- **Data:** 2026-09-08.
+- **Evidência:** deploy `34288453432`, do merge `2b7168918c42`, falhou em arquitetura e em
+  seis testes de distribuição; Argos/Psique bloquearam pela falha central. O deploy anterior
+  `34277111441` estava aprovado. A suíte local reproduziu a violação de arquitetura;
+  dois contextos JPA locais reproduziram dados compartilhados e remoção do schema ativo.
+- **Causa-raiz:** a análise importava fixtures de `target/test-classes` como classes produtivas;
+  o leitor produtivo de histórico também acessava a entidade interna de campanhas;
+  os contextos Spring usavam bancos H2 com nome fixo e o fechamento de um removia tabelas
+  dos demais. A seleção de testes do ciclo e os checks do PR não exercitavam a suíte integral.
+- **Correção:** importação ArchUnit limitada ao bytecode produtivo e bancos H2 distintos por
+  contexto, inclusive nas anotações que substituem o perfil de teste. O histórico usa
+  uma projeção imutável de referência/data no contrato de experimento. Nenhuma dependência
+  entre módulos produtivos foi liberada para acomodar uma fixture.
+- **Fechamento local:** a URL também identifica a classe para separar contextos com limpeza
+  própria. O cache fica limitado a oito contextos e o H2 é descartado ao fechar o pool,
+  mantendo a suíte dentro do limite existente de 3 GB por JVM.
+- **Prevenção:** regressão com JPA/H2 reais, contrato do escopo arquitetural e `Backend CI`
+  integral no PR com relatórios em falha. Gates dos agentes permanecem restritos ao sucesso
+  do deploy da mesma revisão. Evidências e matriz: [homologação](../homologacao/actions-backend-isolamento-testes-2026-09-08.md).
+
 ## LOOP-ACTIONS-RETOMADA-SEM-GATILHO — workflow ativo não recupera merge perdido
 
 - **Data:** 2026-09-08.

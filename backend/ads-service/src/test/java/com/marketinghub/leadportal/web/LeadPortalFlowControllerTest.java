@@ -40,11 +40,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+/** Valida os contratos HTTP dos fluxos do Lead Portal. */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(
     properties = {
-      "spring.datasource.url=jdbc:h2:mem:leadportal-flow-controller;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.leadportal.web.LeadPortalFlowControllerTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE",
       "spring.datasource.driverClassName=org.h2.Driver",
       "spring.datasource.username=sa",
       "spring.datasource.password=",

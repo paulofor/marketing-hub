@@ -1,0 +1,59 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+      - ".github/workflows/deploy-containers.yml"
+      - "scripts/test-backend-ci-workflow.py"
+      - "scripts/test-backend-packaged-resources.py"
+      - "scripts/verify-backend-packaged-resources.py"
+      - "scripts/BackendResearchPackageSmoke.java"
+      - "**/src/main/resources/prompts/**"
+      - "experiment-strategist-worker/src/main/resources/behavioral-science/**"
+      - "product-discovery-worker/prompts/**"
+      - "pesquisas/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Backend completo e arquitetura
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - name: Validar contrato do CI
+        run: python3 scripts/test-backend-ci-workflow.py
+      - name: Executar todos os testes do backend
+        working-directory: backend/ads-service
+        run: mvn -B test
+      - name: Empacotar o backend aprovado
+        working-directory: backend/ads-service
+        run: mvn -B package -DskipTests
+      - name: Conferir recursos e inicialização do catálogo empacotado
+        run: |
+          python3 scripts/test-backend-packaged-resources.py
+          python3 scripts/verify-backend-packaged-resources.py
+      - name: Preservar relatórios inclusive em falha
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: backend/ads-service/target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 7

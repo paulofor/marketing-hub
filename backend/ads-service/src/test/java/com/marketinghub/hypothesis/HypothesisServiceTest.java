@@ -18,10 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
+/** Valida a persistência e evolução das hipóteses comerciais. */
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
 @TestPropertySource(
     properties = {
-      "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.hypothesis.HypothesisServiceTest-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE",
       "spring.datasource.driverClassName=org.h2.Driver",
       "spring.datasource.username=sa",
       "spring.datasource.password=",

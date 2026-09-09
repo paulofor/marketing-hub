@@ -4,6 +4,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCy
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.LearningCycleCommand;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -55,5 +56,14 @@ public class LearningCycleController {
       @PathVariable Long cycleId,
       @Valid @RequestBody LearningCycleCommand request) {
     return service.command(productId, cycleId, request);
+  }
+
+  /** Solicita nova leitura das fontes oficiais sem receber métricas digitadas pela tela. */
+  @PostMapping("/products/{productId}/{cycleId}/measurement-reconciliation")
+  public LearningCycleResponse reconcileMeasurement(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ReconcileLearningCycleMeasurementRequest request) {
+    return service.reconcileMeasurement(productId, cycleId, request);
   }
 }

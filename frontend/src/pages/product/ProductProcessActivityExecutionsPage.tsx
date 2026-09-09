@@ -20,6 +20,7 @@ import {
   useRequestProductProcessActivityExecution,
 } from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
+import { useProductValueChainPosition } from "../../api/product/useProductValueChainPositions";
 import BusinessProcessEntityName from "../../components/BusinessProcessEntityName";
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExecutionCard";
@@ -98,6 +99,9 @@ export default function ProductProcessActivityExecutionsPage() {
     validProcessId ? processDefinitionId : undefined,
     learningCycleId,
   );
+  const valueChainPosition = useProductValueChainPosition(
+    validProductId && validProcessId ? productId : undefined,
+  );
   const requestExecution = useRequestProductProcessActivityExecution(
     productId,
     processDefinitionId,
@@ -130,6 +134,22 @@ export default function ProductProcessActivityExecutionsPage() {
     data.currentExecutionReference?.match(/^experiment:([1-9][0-9]*)$/)
       ? Number(data.currentExecutionReference.split(":")[1])
       : null;
+  const selectedProcessSequence = data
+    ? [
+        ...(valueChainPosition.data?.processMeasurements ?? []),
+        ...(valueChainPosition.data?.subprocessPosition?.measurements ?? []),
+      ].find(
+        (measurement) =>
+          measurement.processDefinitionId === data.selectedProcessDefinitionId,
+      )?.sequenceLabel ||
+      (valueChainPosition.data?.processDefinitionId ===
+      data.selectedProcessDefinitionId
+        ? valueChainPosition.data.sequenceNumber?.toString()
+        : undefined)
+    : undefined;
+  const selectedProcessName = data
+    ? `${selectedProcessSequence ? `Processo ${selectedProcessSequence} — ` : ""}${data.processName}`
+    : "";
 
   if (!validProductId || !validProcessId) {
     return (
@@ -158,7 +178,7 @@ export default function ProductProcessActivityExecutionsPage() {
                 <span>·</span>
                 <BusinessProcessEntityName
                   kind="process"
-                  name={data.processName}
+                  name={selectedProcessName}
                 />
               </span>
             ) : (

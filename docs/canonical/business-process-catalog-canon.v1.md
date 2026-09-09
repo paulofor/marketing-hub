@@ -61,6 +61,9 @@ com resultado verificável. Quantidade de tarefas concluídas não substitui res
 - **Orientação executável:** cada atividade declara objetivo, responsável, entradas, entrega,
   critério de conclusão, bloqueios e ação disponível ao usuário. Telas especializadas, estúdios e
   painéis permanecem recursos da atividade e devem ser acessíveis pelo BPM preservando seu contexto.
+- **Identificação para o usuário:** a tela de atividades deve mostrar, junto ao nome, o número oficial
+  do processo ou subprocesso dentro da Cadeia de Valor (por exemplo, `Processo 6` ou `Processo 6.1`).
+  O número vem do backend e não pode ser confundido com a versão técnica ou com o identificador do banco.
 - **Rastreabilidade:** tarefas e resultados se vinculam à atividade e à versão do processo dentro
   da cadeia, com produto, experimento e ciclo quando aplicáveis. Execução independente de produto
   continua pertencendo ao BPM da cadeia; não se deve inventar produto para iniciar descoberta.
@@ -533,3 +536,13 @@ existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. 
 ativos, criativo e contrato da mesma versão; o usuário recebe links para as telas oficiais.
 A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
 Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.
+
+## Medição automática no ciclo comercial PDE — 09/09/2026
+
+O BPM v3 de Ciclos de aprendizado e vendas mantém a atividade `MEASUREMENT` dentro do subprocesso
+do processo 6, mas transfere sua execução ao backend: fontes atribuídas são conciliadas e persistidas
+antes do losango de decisão. A tela não solicita métricas, fonte, período, responsável ou justificativa.
+Uma leitura coerente avança para a decisão; indisponibilidade, desatualização ou conflito persiste
+o bloqueio na própria atividade, sem fabricar zero. Versões anteriores e seus eventos permanecem
+auditáveis. O contrato completo está em
+[Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md#conciliação-automática-de-resultados--decisão-de-09092026).

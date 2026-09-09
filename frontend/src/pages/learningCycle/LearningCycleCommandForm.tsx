@@ -104,30 +104,6 @@ const byStage: Record<string, Field[]> = {
   ],
   PUBLICATION: [],
 };
-const metrics: Field[] = [
-  ["source", "Fonte da leitura e critério de atribuição", "text"],
-  ["periodStart", "Início do período medido", "datetime-local"],
-  ["periodEnd", "Fim do período medido", "datetime-local"],
-  ["observedAt", "Horário da conciliação", "datetime-local"],
-  ["sessions", "Sessões atribuídas", "number"],
-  ["starts", "Experiências iniciadas", "number"],
-  ["firstResults", "Primeiros resultados entregues", "number"],
-  ["checkouts", "Checkouts", "number"],
-  ["netSales", "Vendas líquidas", "number"],
-  ["refunds", "Reembolsos", "number"],
-  ["spendBrl", "Mídia acumulada (R$)", "number"],
-  ["revenueBrl", "Receita líquida (R$)", "number"],
-  ["contributionBrl", "Contribuição após todos os custos (R$)", "number"],
-  ["dataValid", "Dados válidos e conciliados", "checkbox"],
-  [
-    "testDataExcluded",
-    "Dados de teste separados da leitura comercial",
-    "checkbox",
-  ],
-  ["deliveryVerified", "Entrega comprovada", "checkbox"],
-  ["useVerified", "Uso comprovado", "checkbox"],
-  ["satisfactionVerified", "Satisfação comprovada", "checkbox"],
-];
 export default function LearningCycleCommandForm({
   cycle,
   catalog,
@@ -144,7 +120,6 @@ export default function LearningCycleCommandForm({
   const returnRequired = action === "ADJUST" || action === "REWORK";
   let fields: Field[] =
     action === "COMPLETE" ? (byStage[cycle.stage] ?? []) : [];
-  if (action === "MEASURE") fields = metrics;
   if (returnRequired)
     fields = [
       ["rootCause", "Causa e impacto comercial", "text"],
@@ -189,11 +164,6 @@ export default function LearningCycleCommandForm({
               ? new Date(String(value)).toISOString()
               : String(value ?? "");
     });
-    if (action === "MEASURE")
-      Object.assign(evidence, {
-        experimentId: cycle.experimentId,
-        currency: "BRL",
-      });
     if (returnRequired) {
       const [process, activity] = String(form.get("returnTarget")).split(":");
       Object.assign(evidence, {
@@ -407,13 +377,6 @@ export default function LearningCycleCommandForm({
           </label>
         ))}
       </div>
-      {action === "MEASURE" ? (
-        <p className="small">
-          Esta leitura ficará identificada como registro do operador, com a
-          fonte informada. Não será apresentada como sincronização automática da
-          Meta.
-        </p>
-      ) : null}
       {mutation.isError ? (
         <p role="alert" className="alert alert-danger">
           {cycleError(mutation.error)}

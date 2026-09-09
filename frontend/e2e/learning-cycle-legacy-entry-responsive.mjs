@@ -110,15 +110,20 @@ try {
       return value;
     }
     let current = await create(91001, "fixture-v1");
-    assert.equal(current.stage, "MEASUREMENT");
+    assert.equal(current.stage, "DECISION");
     await page
-      .getByText("Histórico de decisões e evidências (1)", { exact: true })
+      .getByText("Histórico de decisões e evidências (2)", { exact: true })
       .click();
     await expect(
       page.getByText(/Campanha Meta histórica comprovada por recibo externo/),
     ).toBeVisible();
     assert.equal(current.events[0].evidence.preflightRecorded, false);
     assert.equal(current.events[0].evidence.source, "LEGACY_META_CAMPAIGN");
+    assert.equal(current.events[1].action, "MEASURE");
+    assert.equal(current.events[1].evidence.automatic, true);
+    await expect(
+      page.getByText(/Leitura automática das fontes oficiais/),
+    ).toBeVisible();
     await page.screenshot({
       path: `${output}/${name}-adocao.png`,
       fullPage: true,
@@ -147,26 +152,6 @@ try {
       await page.waitForLoadState("networkidle");
       return response.json();
     }
-    current = await command("MEASURE", "Registrar leitura de resultados", {
-      source: "Conciliação histórica simulada",
-      periodStart: start,
-      periodEnd: new Date(Date.now() - 60000).toISOString().slice(0, 16),
-      observedAt: new Date().toISOString().slice(0, 16),
-      sessions: 4,
-      starts: 2,
-      firstResults: 1,
-      checkouts: 0,
-      netSales: 0,
-      refunds: 0,
-      spendBrl: 40,
-      revenueBrl: 0,
-      contributionBrl: -40,
-      dataValid: true,
-      testDataExcluded: true,
-      deliveryVerified: false,
-      useVerified: false,
-      satisfactionVerified: false,
-    });
     const catalog = await (
       await fetch(`${api}${cycleApi}/catalog?chainId=91001&productId=91001`)
     ).json();

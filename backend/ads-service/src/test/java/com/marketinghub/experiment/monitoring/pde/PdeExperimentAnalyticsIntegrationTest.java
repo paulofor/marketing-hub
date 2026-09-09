@@ -51,7 +51,10 @@ public class PdeExperimentAnalyticsIntegrationTest {
           .findAndRegisterModules()
           .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-  /** Cria base efêmera; a mesma suíte aceita MySQL 5.7 real pela variável exclusiva de teste. */
+  /**
+   * Cria base efêmera; a mesma suíte aceita MySQL 5.7 real com destino e credenciais locais
+   * explícitos.
+   */
   @BeforeEach
   void setUp() {
     String url = System.getenv("HERMES_TEST_JDBC_URL");
@@ -60,14 +63,17 @@ public class PdeExperimentAnalyticsIntegrationTest {
         && !url.matches(
             "jdbc:mysql://(sandbox-docker|127\\.0\\.0\\.1|localhost):[0-9]+/hermes_test(?:\\?.*)?"))
       throw new IllegalArgumentException("Use somente o banco hermes_test da sandbox isolada");
+    String username = System.getenv().getOrDefault("HERMES_TEST_JDBC_USERNAME", "root");
+    String password =
+        System.getenv().getOrDefault("HERMES_TEST_JDBC_PASSWORD", "local-hermes-test");
     jdbc =
         new JdbcTemplate(
             new DriverManagerDataSource(
                 h2
                     ? "jdbc:h2:mem:hermes_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1"
                     : url,
-                h2 ? "sa" : "root",
-                h2 ? "" : "local-hermes-test"));
+                h2 ? "sa" : username,
+                h2 ? "" : password));
     if (h2) {
       jdbc.execute(
           "CREATE ALIAS SUBSTRING_INDEX FOR 'com.marketinghub.experiment.monitoring.pde.PdeExperimentAnalyticsIntegrationTest.substringIndex'");
@@ -95,7 +101,7 @@ public class PdeExperimentAnalyticsIntegrationTest {
         """
       CREATE TABLE pde_funnel_event(id BIGINT PRIMARY KEY AUTO_INCREMENT,event_id VARCHAR(64) UNIQUE,
       product_slug VARCHAR(191),experience_version VARCHAR(120),event_type VARCHAR(80),traffic_quality VARCHAR(30),
-      session_id VARCHAR(100),visitor_id VARCHAR(100),utm_source VARCHAR(100),utm_medium VARCHAR(100),utm_campaign VARCHAR(100),utm_content VARCHAR(100),
+      access_token VARCHAR(120),session_id VARCHAR(100),visitor_id VARCHAR(100),utm_source VARCHAR(100),utm_medium VARCHAR(100),utm_campaign VARCHAR(100),utm_content VARCHAR(100),
       visible_ms BIGINT,occurred_at DATETIME,screen_width INT,screen_height INT,device_type VARCHAR(20),action_name VARCHAR(100),section_id VARCHAR(100),metadata_json TEXT)
       """);
     jdbc.update("INSERT INTO facebook_ads_campaign VALUES ('campaign-91','120251556536430326',91)");
@@ -337,6 +343,251 @@ public class PdeExperimentAnalyticsIntegrationTest {
     assertThat(limited.at("/pdeAnalytics/totalEventsAvailable").asLong()).isEqualTo(86);
     assertThat(limited.at("/pdeAnalytics/includedEvents").asLong()).isEqualTo(2);
     assertThat(limited.at("/pdeAnalytics/truncated").asBoolean()).isTrue();
+  }
+
+  /** Concilia compra, reembolso e satisfação sem expor a referência financeira. */
+  @Test
+  void readsCommercialOutcomesFromTheSameAttributedScope() {
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "paid-session",
+        "{\"pepperTransactionId\":\"payment-secret\",\"pepperAmountCents\":6700,\"pepperCurrency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "ACCESS_RELEASED",
+        "paid-session",
+        "{\"paymentId\":\"payment-secret\",\"accessReferenceHash\":\"access-secret\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "DELIVERY_COMPLETED",
+        "paid-session",
+        "{\"accessReferenceHash\":\"access-secret\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "FIRST_USE",
+        "paid-session",
+        "{\"accessReferenceHash\":\"access-secret\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "MISSION_FEEDBACK_SUBMITTED",
+        "paid-session",
+        "{\"accessReferenceHash\":\"access-secret\",\"useful\":\"Sim\",\"easy\":\"Sim\",\"applicable\":\"Sim\"}");
+
+    var summary = reader.read(experiment);
+    var outcomes = reader.commercialOutcomes(experiment, summary);
+
+    assertThat(outcomes.purchases()).isEqualTo(1);
+    assertThat(outcomes.refunds()).isZero();
+    assertThat(outcomes.grossRevenueBrl()).isEqualByComparingTo("67.00");
+    assertThat(outcomes.refundedRevenueBrl()).isEqualByComparingTo("0.00");
+    assertThat(outcomes.netRevenueBrl()).isEqualByComparingTo("67.00");
+    assertThat(outcomes.financialReferencesComplete()).isTrue();
+    assertThat(outcomes.financialAmountsComplete()).isTrue();
+    assertThat(outcomes.refundReferencesMatchPurchases()).isTrue();
+    assertThat(outcomes.valueReferencesComplete()).isTrue();
+    assertThat(outcomes.accessReleasedNetSales()).isEqualTo(1);
+    assertThat(outcomes.deliveredNetSales()).isEqualTo(1);
+    assertThat(outcomes.firstUseNetSales()).isEqualTo(1);
+    assertThat(outcomes.positiveSatisfactionResponses()).isEqualTo(1);
+    assertThat(outcomes.toString()).doesNotContain("payment-secret");
+  }
+
+  /** Expõe reembolso de outra compra como conflito em vez de mascará-lo com receita zero. */
+  @Test
+  void identifiesRefundWithoutMatchingPurchase() {
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "paid-session",
+        "{\"paymentId\":\"purchase-1\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "REFUND_CONFIRMED",
+        "paid-session",
+        "{\"paymentId\":\"purchase-2\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+
+    var summary = reader.read(experiment);
+    var outcomes = reader.commercialOutcomes(experiment, summary);
+
+    assertThat(outcomes.refundReferencesMatchPurchases()).isFalse();
+    assertThat(outcomes.netRevenueBrl()).isEqualByComparingTo("0.00");
+  }
+
+  /** Relaciona o valor do reembolso à própria compra, não apenas ao total do experimento. */
+  @Test
+  void identifiesRefundGreaterThanItsOwnPurchase() {
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "paid-1",
+        "{\"paymentId\":\"purchase-1\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "paid-2",
+        "{\"paymentId\":\"purchase-2\",\"amountBrl\":100,\"currency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "REFUND_CONFIRMED",
+        "paid-1",
+        "{\"paymentId\":\"purchase-1\",\"amountBrl\":80,\"currency\":\"BRL\"}");
+
+    var summary = reader.read(experiment);
+    var outcomes = reader.commercialOutcomes(experiment, summary);
+
+    assertThat(outcomes.refundReferencesMatchPurchases()).isFalse();
+  }
+
+  /** Não atribui satisfação gratuita nem aceita bearer bruto como prova da entrega paga. */
+  @Test
+  void correlatesValueOnlyThroughTheIrreversibleReferenceOfTheNetPurchase() {
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "paid-session",
+        "{\"paymentId\":\"purchase-1\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "ACCESS_RELEASED",
+        "paid-session",
+        "{\"paymentId\":\"purchase-1\",\"accessReferenceHash\":\"paid-access\"}");
+    jdbc.update(
+        "UPDATE pde_funnel_event SET access_token='bearer-sentinel' WHERE event_type='ACCESS_RELEASED'");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "DELIVERY_COMPLETED",
+        "free-session",
+        "{\"accessReferenceHash\":\"free-access\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "MISSION_FEEDBACK_SUBMITTED",
+        "free-session",
+        "{\"accessReferenceHash\":\"free-access\",\"useful\":\"Sim\",\"easy\":\"Sim\",\"applicable\":\"Sim\"}");
+
+    var summary = reader.read(experiment);
+    var outcomes = reader.commercialOutcomes(experiment, summary);
+
+    assertThat(outcomes.accessReleasedNetSales()).isEqualTo(1);
+    assertThat(outcomes.deliveredNetSales()).isZero();
+    assertThat(outcomes.satisfactionResponses()).isZero();
+    assertThat(outcomes.positiveSatisfactionResponses()).isZero();
+    assertThat(outcomes.toString()).doesNotContain("bearer-sentinel", "free-access", "paid-access");
+  }
+
+  /** Limita funil e receita à janela do ciclo sem perder a atribuição do experimento. */
+  @Test
+  void readsOnlyEventsInsideTheAuthorizedCycleWindow() {
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "before-window",
+        "{\"paymentId\":\"before\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "inside-window",
+        "{\"paymentId\":\"inside\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+    add(
+        "musa",
+        "musa-v7",
+        "120251556536430326",
+        "HUMAN",
+        "PURCHASE_COMPLETED",
+        "after-window",
+        "{\"paymentId\":\"after\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+    jdbc.update(
+        "UPDATE pde_funnel_event SET occurred_at='2026-09-07 15:59:00' WHERE session_id='before-window'");
+    jdbc.update(
+        "UPDATE pde_funnel_event SET occurred_at='2026-09-07 16:30:00' WHERE session_id='inside-window'");
+    jdbc.update(
+        "UPDATE pde_funnel_event SET occurred_at='2026-09-07 17:01:00' WHERE session_id='after-window'");
+    Instant start = Instant.parse("2026-09-07T19:00:00Z");
+    Instant end = Instant.parse("2026-09-07T20:00:00Z");
+
+    var summary = reader.read(experiment, start, end);
+    var outcomes = reader.commercialOutcomes(experiment, summary, start, end);
+
+    assertThat(summary.totalEvents()).isEqualTo(1);
+    assertThat(summary.sessions()).isEqualTo(1);
+    assertThat(outcomes.purchases()).isEqualTo(1);
+    assertThat(outcomes.grossRevenueBrl()).isEqualByComparingTo("67.00");
+  }
+
+  /** Bloqueia duas compras associadas à mesma referência de acesso como correlação ambígua. */
+  @Test
+  void identifiesAmbiguousAccessCorrelation() {
+    for (String payment : List.of("purchase-1", "purchase-2")) {
+      add(
+          "musa",
+          "musa-v7",
+          "120251556536430326",
+          "HUMAN",
+          "PURCHASE_COMPLETED",
+          payment,
+          "{\"paymentId\":\"" + payment + "\",\"amountBrl\":67,\"currency\":\"BRL\"}");
+      add(
+          "musa",
+          "musa-v7",
+          "120251556536430326",
+          "HUMAN",
+          "ACCESS_RELEASED",
+          payment,
+          "{\"paymentId\":\"" + payment + "\",\"accessReferenceHash\":\"shared-access\"}");
+    }
+
+    var summary = reader.read(experiment);
+    var outcomes = reader.commercialOutcomes(experiment, summary);
+
+    assertThat(outcomes.valueReferencesComplete()).isFalse();
   }
 
   /** Não depende das vinte origens de maior volume para encontrar a campanha do experimento. */

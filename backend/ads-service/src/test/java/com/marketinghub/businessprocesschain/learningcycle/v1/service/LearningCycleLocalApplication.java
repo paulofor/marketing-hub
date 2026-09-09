@@ -67,6 +67,7 @@ public class LearningCycleLocalApplication {
   static final Map<Long, Experiment> EXPERIMENTS = new ConcurrentHashMap<>();
   static final Map<Long, ExperimentRun> RUNS = new ConcurrentHashMap<>();
   static final Map<Long, HistoricalCampaignReceipt> CAMPAIGNS = new ConcurrentHashMap<>();
+  static final Map<Long, Map<String, Object>> MEASUREMENTS = new ConcurrentHashMap<>();
 
   /** Inicia somente a fixture local, sem importar executores, agendamentos ou credenciais reais. */
   public static void main(String[] args) {
@@ -200,6 +201,98 @@ public class LearningCycleLocalApplication {
     return repository(factory, LearningSalesCycleEventRepository.class);
   }
 
+  /** Simula as fontes oficiais já conciliadas sem acessar Meta, checkout ou tráfego reais. */
+  @Bean
+  LearningCycleMeasurementCollector measurements(ObjectMapper mapper) {
+    var collector = mock(LearningCycleMeasurementCollector.class);
+    when(collector.collect(
+            any(LearningSalesCycle.class), any(Experiment.class), any(Instant.class)))
+        .thenAnswer(
+            call -> {
+              LearningSalesCycle cycle = call.getArgument(0);
+              Experiment experiment = call.getArgument(1);
+              Instant observedAt = call.getArgument(2);
+              Instant periodEnd =
+                  observedAt.isBefore(cycle.getWindowEnd()) ? observedAt : cycle.getWindowEnd();
+              Map<String, Object> source = MEASUREMENTS.getOrDefault(experiment.getId(), Map.of());
+              String snapshot = String.valueOf(source.getOrDefault("snapshot", "v1"));
+              var evidence = mapper.createObjectNode();
+              evidence.put("contractVersion", LearningCycleMeasurementCollector.CONTRACT);
+              evidence.put("automatic", true);
+              evidence.put("experimentId", experiment.getId());
+              evidence.put("observedAt", observedAt.toString());
+              if (!booleanValue(source, "ready", true)) {
+                String blocker =
+                    String.valueOf(
+                        source.getOrDefault(
+                            "blocker", "A fonte simulada está indisponível para conciliação."));
+                evidence.put("dataValid", false);
+                evidence.put("blocker", blocker);
+                return new LearningCycleMeasurementCollector.Result(
+                    false,
+                    evidence,
+                    "Conciliação automática bloqueada: " + blocker,
+                    "internal://fixture/automatic-measurement/"
+                        + experiment.getId()
+                        + "/blocked/"
+                        + snapshot);
+              }
+              evidence.put("sourceFingerprint", "fixture-" + experiment.getId() + "-" + snapshot);
+              evidence.put("currency", "BRL");
+              evidence.put("source", "Fontes oficiais simuladas e segregadas da fixture local");
+              evidence.put("periodStart", cycle.getWindowStart().toString());
+              evidence.put("periodEnd", periodEnd.toString());
+              evidence.put("sessions", longValue(source, "sessions", 10));
+              evidence.put("starts", longValue(source, "starts", 8));
+              evidence.put("firstResults", longValue(source, "firstResults", 7));
+              evidence.put("checkouts", longValue(source, "checkouts", 2));
+              evidence.put("netSales", longValue(source, "netSales", 0));
+              evidence.put("refunds", longValue(source, "refunds", 0));
+              evidence.put("spendBrl", decimalValue(source, "spendBrl", "40.00"));
+              evidence.put("revenueBrl", decimalValue(source, "revenueBrl", "0.00"));
+              evidence.put("contributionBrl", decimalValue(source, "contributionBrl", "-40.00"));
+              evidence.put("dataValid", true);
+              evidence.put("testDataExcluded", true);
+              evidence.put("deliveryVerified", booleanValue(source, "deliveryVerified", false));
+              evidence.put("useVerified", booleanValue(source, "useVerified", false));
+              evidence.put(
+                  "satisfactionVerified", booleanValue(source, "satisfactionVerified", false));
+              var sources = evidence.putObject("sources");
+              sources.putObject("pdeAnalytics").put("trafficQualityIncluded", "HUMAN");
+              sources.putObject("acquisition").put("mode", "META_INSIGHTS_FIXTURE");
+              sources.putObject("financialOutcomes").put("referencesComplete", true);
+              sources.putObject("costLedger").put("auditable", true);
+              sources.putObject("valueDelivery").put("referencesComplete", true);
+              return new LearningCycleMeasurementCollector.Result(
+                  true,
+                  evidence,
+                  "Conciliação automática das fontes segregadas da fixture.",
+                  "internal://fixture/automatic-measurement/"
+                      + experiment.getId()
+                      + "/"
+                      + snapshot);
+            });
+    return collector;
+  }
+
+  /** Lê uma contagem configurável mantendo valor padrão determinístico. */
+  private static long longValue(Map<String, Object> source, String field, long fallback) {
+    Object value = source.get(field);
+    return value instanceof Number number ? number.longValue() : fallback;
+  }
+
+  /** Lê moeda de teste sem depender do tipo numérico escolhido pelo parser JSON. */
+  private static java.math.BigDecimal decimalValue(
+      Map<String, Object> source, String field, String fallback) {
+    return new java.math.BigDecimal(String.valueOf(source.getOrDefault(field, fallback)));
+  }
+
+  /** Lê flags configuráveis mantendo o padrão seguro do cenário sem vendas. */
+  private static boolean booleanValue(Map<String, Object> source, String field, boolean fallback) {
+    Object value = source.get(field);
+    return value instanceof Boolean bool ? bool : fallback;
+  }
+
   /** Expõe o catálogo relacional real do BPM. */
   @Bean
   BusinessProcessDefinitionRepository processes(EntityManagerFactory factory) {
@@ -264,6 +357,7 @@ public class LearningCycleLocalApplication {
     EXPERIMENTS.clear();
     RUNS.clear();
     CAMPAIGNS.clear();
+    MEASUREMENTS.clear();
     for (long id = 91001; id <= 91006; id++) {
       var experiment = new Experiment();
       experiment.setId(id);
@@ -452,6 +546,15 @@ public class LearningCycleLocalApplication {
     Map<String, Object> stop(@PathVariable Long id) {
       EXPERIMENTS.get(id).setStatus(ExperimentStatus.USER_STOPPED);
       return Map.of("stopped", true);
+    }
+
+    /** Configura apenas a fotografia segregada usada pela próxima conciliação local. */
+    @PostMapping("/fixture/experiments/{id}/measurement")
+    Map<String, Object> measurement(@PathVariable Long id, @RequestBody Map<String, Object> input) {
+      if (!EXPERIMENTS.containsKey(id))
+        throw new IllegalArgumentException("Experimento inexistente");
+      MEASUREMENTS.put(id, Map.copyOf(input));
+      return Map.of("configured", true, "experimentId", id);
     }
 
     /** Reproduz um estado legado divergente sem apagar a prova de exposição anterior. */

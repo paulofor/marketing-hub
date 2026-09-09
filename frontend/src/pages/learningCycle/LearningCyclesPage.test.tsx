@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
@@ -278,6 +278,152 @@ describe("Ciclos de aprendizado e vendas", () => {
         name: "Criar ciclo sucessor com aprendizado",
       }),
     ).not.toBeInTheDocument();
+  });
+  it("concilia a medição sem exibir nem enviar campos manuais de resultado", async () => {
+    const baselineEvent = {
+      id: 1,
+      revision: 0,
+      action: "ADOPT_BASELINE",
+      fromStage: "MEASUREMENT",
+      toStage: "MEASUREMENT",
+      operatorName: "Operador",
+      summary: "Referência histórica adotada",
+      evidenceReference: "internal://campaign/91",
+      evidence: {},
+      createdAt: "2026-09-09T00:00:00Z",
+    };
+    let current = {
+      ...cycle,
+      revision: 0,
+      stage: "MEASUREMENT",
+      stageLabel: "Medir vendas e valor entregue",
+      events: [baselineEvent],
+      commands: [],
+    } as LearningCycle;
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? { data: [current] }
+        : original(url, ...args),
+    );
+    let finishReconciliation!: () => void;
+    vi.mocked(axios.post).mockImplementation(async (url, body) => {
+      if (url !== `${cycleApi}/products/4/2/measurement-reconciliation`)
+        throw new Error(`Requisição não simulada: ${url}`);
+      current = {
+        ...current,
+        revision: 1,
+        stage: "DECISION",
+        stageLabel: "Decisão comercial",
+        events: [
+          baselineEvent,
+          {
+            ...baselineEvent,
+            id: 2,
+            revision: 1,
+            action: "MEASURE",
+            toStage: "DECISION",
+            operatorName: "Marketing Hub · backend",
+            summary: "Conciliação automática concluída",
+            evidenceReference: "internal://measurement/91",
+            evidence: {
+              automatic: true,
+              dataValid: true,
+              testDataExcluded: true,
+              sessions: 4,
+              netSales: 0,
+              revenueBrl: 0,
+              contributionBrl: -27.3,
+              periodStart: "2026-09-07T03:00:00Z",
+              periodEnd: "2026-09-09T01:00:00Z",
+              source: "Fontes oficiais",
+            },
+          },
+        ],
+      };
+      expect(body).toEqual({
+        requestKey: expect.any(String),
+        expectedRevision: 0,
+      });
+      await new Promise<void>((resolve) => {
+        finishReconciliation = resolve;
+      });
+      return { data: current };
+    });
+
+    wrapper(<LearningCyclesPage />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Conciliação automática de resultados",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        `${cycleApi}/products/4/2/measurement-reconciliation`,
+        expect.objectContaining({ expectedRevision: 0 }),
+      ),
+    );
+    await act(async () => finishReconciliation());
+    expect(
+      screen.queryByLabelText("Sessões atribuídas *"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Responsável pela decisão *"),
+    ).not.toBeInTheDocument();
+  });
+  it("mostra o bloqueio automático e permite somente retentar ou corrigir a fonte", async () => {
+    const blocked = {
+      ...cycle,
+      stage: "MEASUREMENT",
+      stageLabel: "Medir vendas e valor entregue",
+      events: [
+        {
+          id: 9,
+          revision: 3,
+          action: "MEASUREMENT_BLOCKED",
+          fromStage: "MEASUREMENT",
+          toStage: "MEASUREMENT",
+          operatorName: "Marketing Hub · backend",
+          summary: "Conciliação automática bloqueada",
+          evidenceReference: "internal://measurement-blocker/91",
+          evidence: {
+            automatic: true,
+            dataValid: false,
+            blocker: "A sincronização final da campanha está ausente.",
+          },
+          createdAt: "2026-09-09T01:00:00Z",
+        },
+      ],
+      commands: [
+        {
+          action: "FIX_MEASUREMENT",
+          label: "Corrigir medição neste ciclo",
+          available: true,
+          reason: "Corrija a fonte",
+        },
+      ],
+    } as LearningCycle;
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? { data: [blocked] }
+        : original(url, ...args),
+    );
+
+    wrapper(<LearningCyclesPage />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "A sincronização final da campanha está ausente.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Tentar conciliação novamente" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByLabelText("Receita líquida (R$) *"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Falha da medição *")).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
   });
   it("mostra o losango e um retorno navegável para o aprendizado", () => {
     wrapper(

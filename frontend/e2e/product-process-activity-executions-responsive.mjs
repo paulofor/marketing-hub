@@ -371,7 +371,9 @@ try {
       /\/products\/9\/value-chain-history\/processes\/18\/activities$/,
     );
     await expect(
-      page.getByRole("heading", { name: "Rigel · Geração de landing page" }),
+      page.getByRole("heading", {
+        name: "Rigel · Processo 4.2 — Geração de landing page",
+      }),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Plano comercial" }),

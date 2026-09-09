@@ -59,6 +59,7 @@ class LearningCycleRulesTest {
     assertThrows(ResponseStatusException.class, () -> LearningCycleRules.next("DECISION"));
     assertFalse(LearningCycleRules.actions("LEARNING").contains(Action.SCALE));
     assertTrue(LearningCycleRules.actions("MEASUREMENT").contains(Action.FIX_MEASUREMENT));
+    assertFalse(LearningCycleRules.actions("MEASUREMENT").contains(Action.MEASURE));
   }
 
   /** Aceita resultados válidos sem transformar amostra em venda. */

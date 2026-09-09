@@ -4538,3 +4538,19 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   o fluxo MySQL/UI cobre adoção, ajuste, memória, segregação e nova publicação com gates próprios.
   O recibo legado não substitui preflight do sucessor. Matriz:
   `docs/homologacao/ciclo-vendas-historico-sem-run-v1.md`.
+
+## LOOP-CICLO-MEDICAO-MANUAL-DUPLICA-FONTE — ciclo pede números que o backend já conhece
+
+- **Data:** 2026-09-09.
+- **Evidência:** o ciclo #1 do Vega, ligado ao #91, chegou a `MEASUREMENT` e ofereceu o comando
+  manual `MEASURE`, embora o endpoint canônico usado por Hermes já devolva quatro sessões humanas,
+  86 eventos e a atribuição exata do experimento. O banco também possui snapshot final da campanha
+  e custos rastreáveis. O formulário criava uma segunda autoridade para fonte, período e números.
+- **Causa-raiz:** a primeira versão do ciclo modelou a fotografia como declaração do operador e não
+  integrou a atividade às projeções já corrigidas no `LOOP-HERMES-PDE-ANALYTICS-LEGADO`.
+- **Correção local:** BPM v3 e backend conciliam analytics, canal, eventos financeiros, custos e
+  valor entregue ao entrar na medição. A tela não envia resultados; apenas solicita retentativa
+  idempotente. Leitura válida persiste `MEASURE`; divergência persiste `MEASUREMENT_BLOCKED`.
+- **Prevenção:** contrato SQL do mesmo recorte atribuído, teste do histórico do #91, bloqueios contra
+  fonte ausente/legada, ausência do comando manual, fingerprint, MySQL 5.7 e desktop/mobile. Matriz:
+  `docs/homologacao/ciclo-vendas-medicao-automatica-v3.md`.

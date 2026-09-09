@@ -74,12 +74,7 @@ public final class LearningCycleRules {
           "VIDEO_APPROVAL" ->
           List.of(Action.COMPLETE, Action.REWORK, Action.STOP);
       case "MEASUREMENT" ->
-          List.of(
-              Action.MEASURE,
-              Action.FIX_MEASUREMENT,
-              Action.REWORK,
-              Action.STOP,
-              Action.INCONCLUSIVE);
+          List.of(Action.FIX_MEASUREMENT, Action.REWORK, Action.STOP, Action.INCONCLUSIVE);
       case "DECISION" ->
           List.of(
               Action.ADJUST,
@@ -100,7 +95,7 @@ public final class LearningCycleRules {
       case COMPLETE ->
           "AUTHORIZATION".equals(stage) ? "Registrar autorização" : "Concluir etapa com evidência";
       case REWORK -> "Devolver para correção";
-      case MEASURE -> "Registrar leitura de resultados";
+      case MEASURE -> "Leitura histórica do contrato anterior";
       case ADJUST -> "Encerrar ciclo e preparar sucessor";
       case CONTINUE -> "Continuar coleta autorizada";
       case FIX_MEASUREMENT -> "Corrigir medição neste ciclo";

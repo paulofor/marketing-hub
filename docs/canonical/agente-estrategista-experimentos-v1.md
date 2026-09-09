@@ -161,6 +161,24 @@ diagnóstico técnico quando houver falha. O histórico não depende dos logs do
 
 O timeout padrão do Codex é de 40 minutos. O worker processa no máximo uma pesquisa por ciclo e nunca avança experimento, publica ativo ou executa a recomendação.
 
+Na atividade BPM `marketStrategy`, o executor conserva a reserva, o prompt, os eventos brutos do
+modelo e o callback em armazenamento persistente exclusivo, separado da sessão Codex. O backend
+recebe a auditoria antes da inferência. Indisponibilidade de transporte não descarta o parecer nem
+é convertida em bloqueio funcional: o mesmo envelope é reenviado antes de consumir outra tarefa,
+inclusive após reinício do container. Em STOP, somente a entrega de trabalho já executado pode
+continuar. O backend serializa callbacks por tarefa e confirma um parecer terminal idêntico sem
+repetir efeitos, tokens, custos ou avanço. Autoria diferente, resultado ou auditoria divergentes
+permanecem recusados. Inferência interrompida sem callback completo gera falha auditável e permite
+nova tentativa pela atividade; o executor não inventa sucesso nem refaz a análise silenciosamente.
+
+O prompt `pde-commercial-plan/v8/market-strategy.md` distingue descoberta autônoma de um retorno
+de aprendizado. A exigência `DOSSIER_READY` pertence à descoberta; um sucessor de produto existente
+recebe o brief, a medição conciliada e a decisão de ajuste do ciclo exato. Experimento e produto
+devem coincidir com a tarefa. A versão alvo do sucessor não deve ser confundida com a URL histórica
+já publicada. Amostra pequena e ausência de venda limitam a conclusão causal, mas não impedem
+planejar uma melhoria com hipótese explícita. O contrato da definição de processo já adotada é
+preservado; isso não migra a cadeia nem concede homologação, publicação ou gasto ao sucessor.
+
 A autenticação Codex usa o volume persistente e exclusivo
 `/opt/marketing-hub/agents/strategist/codex-home`. É proibido compartilhar o diretório mutável de
 outro agente. O deploy deve validar que o volume está gravável pelo usuário do container e que

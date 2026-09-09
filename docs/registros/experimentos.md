@@ -7077,3 +7077,34 @@ ponta nem teste de publicação do sucessor.
   alteração. O ciclo produtivo #1 só mudará após a implementação passar pelo fluxo de publicação.
 - **Homologação:** matriz e resultados em
   `docs/homologacao/ciclo-vendas-medicao-automatica-v3.md`.
+
+## 2026-09-09 — Vega #92: tarefa #358 de Atena sem confirmação de resultado
+
+- **Escopo autorizado:** investigar #358, corrigir localmente, repetir a atividade pela tela e
+  publicar imagens construídas pelos arquivos do repositório após homologação. A exceção de
+  publicação manual foi registrada no cânone de deploy; nenhum PR foi solicitado ou aberto.
+- **Evidência operacional:** processo 67, atividade 2.1, ciclo #2, origem `experiment:92`. A UI e
+  o MCP confirmam `IN_PROGRESS` desde 20:00:49 UTC, sem término, resultado, erro ou prompt. O botão
+  de repetir a atividade não aparece enquanto a tentativa é considerada ativa.
+- **Causa confirmada:** log de Atena registra falha de transporte ao enviar o bloqueio às
+  20:03:36–37, durante indisponibilidade do backend. O código apagava a resposta temporária antes
+  da confirmação e não conservava uma entrega pendente. A comparação com #327 concluída e #326
+  com falha de transporte sustenta o diagnóstico de perda de confirmação, e não de tarefa apenas lenta.
+- **Correção local:** Atena conserva snapshot, prompt, resposta, consumo e callback até o backend
+  confirmar; retoma o envio após reinício, inclusive em STOP, sem outra inferência. O backend
+  serializa callbacks por tarefa e reconhece o mesmo parecer terminal auditado sem repetir consumo
+  ou avanço. O prompt v8 distingue descoberta de melhoria de produto com aprendizado aprovado,
+  verificando produto/experimento e preservando o contrato da cadeia vigente.
+- **Sequência do BPM:** a tela pode aceitar solicitações antecipadas de Plutus/Dédalo; o consumo
+  da fila pelo executor depende da conclusão das predecessoras no backend. Isso não significa que
+  a atividade 2.1 esteja concluída. A retomada real deve preservar a tentativa antiga, solicitar uma
+  nova execução pela atividade e aguardar o parecer antes de operar a seguinte.
+- **Actions:** runs 34398921266 (Psique) e 34398921246 (Meta Ad Approver) falharam na capacidade
+  anterior à carga das imagens. Havia 8.449 MiB para requisitos de 10.211/11.412 MiB. Os runs verdes
+  posteriores pularam a publicação; não são evidência de correção do espaço. Nenhum limite foi reduzido.
+- **Bloqueio real de ambiente:** a Atena responde operacionalmente no host 163.245.202.80, porém
+  `sandbox-ssh` recusou `root@163.245.202.80` como destino não autorizado (saída 77). O backend
+  191.252.181.168 é acessível. Foi solicitada liberação do destino sem contornar a restrição.
+- **Estado:** nenhuma imagem publicada, nenhuma tarefa produtiva criada/cancelada/concluída e
+  nenhum gasto iniciado nesta recuperação. #358 continua pendente; #92 não foi colocado em RUNNING.
+  Matriz, testes e limitações: [homologação de Atena](../homologacao/vega-atena-callback-resiliente-v1.md).

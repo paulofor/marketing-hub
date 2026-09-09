@@ -27,3 +27,4 @@ experiment-strategist:
   reasoning-effort: ${EXPERIMENT_STRATEGIST_REASONING_EFFORT:high}
   codex-timeout: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:PT40M}
   clarity-api-token-file: ${CLARITY_API_TOKEN_FILE:}
+  bpm-state-directory: ${EXPERIMENT_STRATEGIST_BPM_STATE_DIRECTORY:/var/lib/atena/bpm-market-strategy}

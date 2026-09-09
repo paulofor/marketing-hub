@@ -173,6 +173,10 @@ paths:
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/result:
     post:
       summary: Conclui a atividade e contabiliza o uso de modelos
+      description: >-
+        Serializa callbacks pela tarefa. O reenvio do mesmo parecer terminal, evidências e
+        auditoria recebe confirmação sem repetir efeitos, tokens, custos ou avanço.
+        Outro agente ou conteúdo terminal divergente permanece recusado.
       parameters:
         - $ref: "#/components/parameters/AgentKey"
         - $ref: "#/components/parameters/TaskId"
@@ -269,6 +273,10 @@ paths:
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/failure:
     post:
       summary: Bloqueia a atividade preservando resultado parcial e uso de modelos
+      description: >-
+        Confirma o reenvio do mesmo bloqueio terminal com causa, parecer, evidências e auditoria
+        iguais, sem repetir consumo. A indisponibilidade de transporte deve ser tratada pelo
+        executor conservando o callback até confirmação.
       parameters:
         - $ref: "#/components/parameters/AgentKey"
         - $ref: "#/components/parameters/TaskId"

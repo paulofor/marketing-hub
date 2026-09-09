@@ -135,7 +135,7 @@ class PdeMarketStrategyBpmTaskConsumerTest {
   }
 
   /** Monta um parecer mínimo que respeita o schema versionado da atividade. */
-  private String validResult(String decision, String dossierId, String opportunityId) {
+  static String validResult(String decision, String dossierId, String opportunityId) {
     String status =
         "APPROVE".equals(decision) ? "READY_FOR_PRIVATE_VALIDATION" : "INSUFFICIENT_EVIDENCE";
     return """

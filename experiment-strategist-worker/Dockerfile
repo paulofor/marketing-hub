@@ -26,6 +26,8 @@ COPY --from=build /build/target/app.jar /app/app.jar
 COPY agent-health-report.mjs /app/agent-health-report.mjs
 COPY --from=build /build/src/main/resources/browser /app/browser
 COPY --from=build /build/src/main/resources/mcp /app/mcp
-RUN useradd --create-home --uid 10001 strategist
+RUN useradd --create-home --uid 10001 strategist \
+    && mkdir -p /var/lib/atena \
+    && chown strategist:strategist /var/lib/atena
 USER strategist
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

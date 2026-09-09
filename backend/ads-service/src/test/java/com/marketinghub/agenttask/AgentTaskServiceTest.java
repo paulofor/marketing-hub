@@ -844,6 +844,7 @@ class AgentTaskServiceTest {
     task.setCreatedAt(Instant.parse("2026-08-15T21:30:22Z"));
     task.setUpdatedAt(task.getCreatedAt());
     when(repository.findById(40L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(40L)).thenReturn(Optional.of(task));
     when(processes.findById(9L)).thenReturn(Optional.of(process));
     when(repository.save(task)).thenReturn(task);
     AgentTaskService service =
@@ -874,6 +875,7 @@ class AgentTaskServiceTest {
     task.setStatus("IN_PROGRESS");
     task.setReceivedAt(Instant.parse("2026-08-15T21:35:00Z"));
     when(repository.findById(40L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(40L)).thenReturn(Optional.of(task));
 
     assertThatThrownBy(
             () ->
@@ -1043,6 +1045,7 @@ class AgentTaskServiceTest {
     task.setCreatedAt(receivedAt);
     task.setUpdatedAt(receivedAt);
     when(repository.findById(52L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(52L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     AgentTaskService service =
         service(repository, mock(AgentRepository.class), Clock.fixed(deliveredAt, ZoneOffset.UTC));
@@ -1263,6 +1266,7 @@ class AgentTaskServiceTest {
     task.setId(5L);
     task.setStatus("PENDING");
     when(repository.findById(5L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(5L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -1286,6 +1290,7 @@ class AgentTaskServiceTest {
     task.setCreatedAt(Instant.parse("2026-08-11T15:00:00Z"));
     task.setUpdatedAt(task.getCreatedAt());
     when(repository.findById(51L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(51L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
@@ -1329,6 +1334,7 @@ class AgentTaskServiceTest {
     task.setCreatedAt(Instant.parse("2026-09-03T15:00:00Z"));
     task.setUpdatedAt(task.getCreatedAt());
     when(repository.findById(52L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(52L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
     AgentTaskExecutionAuditRequest audit =
@@ -1434,6 +1440,7 @@ class AgentTaskServiceTest {
         processTask(37L, argos, process("PUBLISHED", "Argos e Dédalo"), "inspiration", "PENDING");
     when(agents.findByAgentKey("market-radar")).thenReturn(Optional.of(argos));
     when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(37L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     Instant received = Instant.parse("2026-08-28T01:00:00Z");
     AgentTaskService service = service(repository, agents, Clock.fixed(received, ZoneOffset.UTC));
@@ -1460,6 +1467,7 @@ class AgentTaskServiceTest {
     task.setReceivedAt(null);
     when(agents.findByAgentKey("market-radar")).thenReturn(Optional.of(argos));
     when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(37L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     Instant resumed = Instant.parse("2026-08-28T01:10:00Z");
 
@@ -1481,6 +1489,7 @@ class AgentTaskServiceTest {
         processTask(
             37L, argos, process("PUBLISHED", "Argos e Dédalo"), "inspiration", "IN_PROGRESS");
     when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(37L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     Instant audited = Instant.parse("2026-08-28T01:05:00Z");
     AgentTaskService service =
@@ -1520,6 +1529,7 @@ class AgentTaskServiceTest {
             "inspiration",
             "IN_PROGRESS");
     when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(37L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -1876,6 +1886,7 @@ class AgentTaskServiceTest {
             "html",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     Instant delivered = Instant.parse("2026-08-15T13:00:00Z");
     AgentTaskService service =
@@ -1893,6 +1904,107 @@ class AgentTaskServiceTest {
     assertThat(task.getEvidenceJson()).contains("htmlVersion");
   }
 
+  /** Confirma resposta perdida após commit sem repetir efeitos, tokens ou avanço no BPM. */
+  @Test
+  void acknowledgesTerminalReplayWithoutDuplicatingUsageOrHooks() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            358L,
+            agent(4L, "experiment-strategist", "Atena"),
+            process("PUBLISHED", "Atena"),
+            "marketStrategy",
+            "IN_PROGRESS");
+    when(repository.findById(358L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(358L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var hook = mock(AgentTaskCompletionHook.class);
+    when(hook.supports(task)).thenReturn(true);
+    when(hook.apply(any(), any()))
+        .thenReturn(AgentTaskCompletionHook.CompletionDisposition.COMPLETE);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "completionHooks", List.of(hook));
+    var request =
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"APPROVE\"}",
+            "{\"experimentId\":92}",
+            List.of(new AgentTaskModelUsageRequest("gpt-test", "STANDARD", 100L, 20L, 10L)),
+            modelExecutionAudit());
+
+    service.completeClaimedProcessTask("experiment-strategist", 358L, request);
+    Instant delivered = task.getDeliveredAt();
+    service.completeClaimedProcessTask("experiment-strategist", 358L, request);
+
+    assertThat(task.getInputTokens()).isEqualTo(100L);
+    assertThat(task.getOutputTokens()).isEqualTo(10L);
+    assertThat(task.getDeliveredAt()).isEqualTo(delivered);
+    verify(repository).save(task);
+    verify(hook).apply(task, request);
+    assertThatThrownBy(() -> service.completeClaimedProcessTask("landing-generator", 358L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("outro agente");
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "experiment-strategist",
+                    358L,
+                    new CompleteAgentTaskRequest(
+                        "{\"decision\":\"ADJUST\"}",
+                        request.evidenceJson(),
+                        request.modelUsages(),
+                        request.executionAudit())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não está reservada");
+  }
+
+  /** Preserva bloqueio funcional e permite confirmar seu callback idêntico após reinício. */
+  @Test
+  void acknowledgesBlockedReplayWithoutOverwritingTheReason() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            359L,
+            agent(4L, "experiment-strategist", "Atena"),
+            process("PUBLISHED", "Atena"),
+            "marketStrategy",
+            "IN_PROGRESS");
+    when(repository.findById(359L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(359L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    var service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    var request =
+        new FailAgentTaskRequest(
+            "Falta evidência rastreável",
+            "{\"decision\":\"ADJUST\"}",
+            "{\"experimentId\":92}",
+            null,
+            modelExecutionAudit(),
+            new AgentTaskBlockerGuidanceRequest(
+                "MISSING_EVIDENCE",
+                "Revisar evidência do mesmo ciclo",
+                List.of(new AgentTaskHelpLinkRequest("Abrir tarefa", "/agent-tasks"))));
+
+    service.failClaimedProcessTask("experiment-strategist", 359L, request);
+    service.failClaimedProcessTask("experiment-strategist", 359L, request);
+
+    assertThat(task.getStatus()).isEqualTo("BLOCKED");
+    assertThat(task.getExecutionError()).isEqualTo(request.error());
+    verify(repository).save(task);
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "experiment-strategist",
+                    359L,
+                    new CompleteAgentTaskRequest(
+                        request.resultJson(),
+                        request.evidenceJson(),
+                        null,
+                        request.executionAudit())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não está reservada");
+  }
+
   /** Preserva a chamada final para tornar a execução reproduzível pela auditoria BPM. */
   @Test
   void preservesExecutionModelReasoningAndPrompt() {
@@ -1905,6 +2017,7 @@ class AgentTaskServiceTest {
             "html",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
@@ -1946,6 +2059,7 @@ class AgentTaskServiceTest {
             "html",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -1982,6 +2096,7 @@ class AgentTaskServiceTest {
             "html",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -2018,6 +2133,7 @@ class AgentTaskServiceTest {
             "marketEvidence",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
     String fullPrompt =
         "--- PLANEJAMENTO ---\nNúcleo do plano.\n\nPlaneje a pesquisa.\n\n"
@@ -2063,6 +2179,7 @@ class AgentTaskServiceTest {
             "marketEvidence",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -2099,6 +2216,7 @@ class AgentTaskServiceTest {
             "html",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
@@ -2126,6 +2244,7 @@ class AgentTaskServiceTest {
             "html",
             "IN_PROGRESS");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -2157,6 +2276,7 @@ class AgentTaskServiceTest {
     task.setEstimatedCostUsd(new BigDecimal("0.01000000"));
     task.setCostEstimationStatus("ESTIMATED");
     when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(30L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     when(pricing.estimateTaskCost("gpt-test", "FLEX", 900L, 400L, 200L))
         .thenReturn(Optional.of(new BigDecimal("0.02000000")));
@@ -2200,6 +2320,7 @@ class AgentTaskServiceTest {
             "customer",
             "IN_PROGRESS");
     when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(31L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
     when(pricing.estimateTaskCost("unknown", "FLEX", 500L, 100L, 80L)).thenReturn(Optional.empty());
     AgentTaskService service =
@@ -2241,6 +2362,7 @@ class AgentTaskServiceTest {
             "customer",
             "IN_PROGRESS");
     when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(31L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -2270,6 +2392,7 @@ class AgentTaskServiceTest {
             "customer",
             "IN_PROGRESS");
     when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(31L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -2300,6 +2423,7 @@ class AgentTaskServiceTest {
             "customer",
             "IN_PROGRESS");
     when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(31L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
 
     service(repository, mock(AgentRepository.class), Clock.systemUTC())
@@ -2358,6 +2482,7 @@ class AgentTaskServiceTest {
             "customer",
             "IN_PROGRESS");
     when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(31L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
@@ -2399,6 +2524,7 @@ class AgentTaskServiceTest {
             "customer",
             "IN_PROGRESS");
     when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.findLockedById(31L)).thenReturn(Optional.of(task));
     AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(

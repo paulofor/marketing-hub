@@ -15,6 +15,17 @@ public class WorkerProperties {
   private String reasoningEffort = "high";
   private Duration codexTimeout = Duration.ofMinutes(40);
   private String clarityApiTokenFile;
+  private String bpmStateDirectory = "/var/lib/atena/bpm-market-strategy";
+
+  /** Retorna o armazenamento persistente das entregas BPM ainda não confirmadas. */
+  public String getBpmStateDirectory() {
+    return bpmStateDirectory;
+  }
+
+  /** Configura armazenamento exclusivo desta fila, independente da sessão Codex. */
+  public void setBpmStateDirectory(String value) {
+    bpmStateDirectory = value;
+  }
 
   /** Retorna a URL do backend. */
   public String getBackendUrl() {

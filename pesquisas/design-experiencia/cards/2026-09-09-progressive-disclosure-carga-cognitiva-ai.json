@@ -1,0 +1,18 @@
+{
+  "cardKey": "progressive-disclosure-carga-cognitiva-ai",
+  "collection": "neuromarketing",
+  "title": "Use progressive disclosure quando a IA concentra muita informação",
+  "finding": "Em 1.680 observações de decisões apoiadas por IA, densidade de informação e pressão de tempo estiveram entre os correlatos mais consistentes de carga cognitiva e fadiga; maior carga cognitiva esteve associada a menor acurácia objetiva, e simulações do modelo apontaram redução de densidade e progressive disclosure como intervenções promissoras.",
+  "mechanism": "Revelar primeiro o essencial e adiar detalhes secundários pode reduzir competição por recursos cognitivos durante decisões complexas, preservando atenção para a ação principal. O estudo sustenta associações e simulações, não uma causalidade isolada do progressive disclosure.",
+  "commercialApplication": "No Marketing Hub, mostrar primeiro recomendação, evidência principal e próxima ação em telas de agentes, deixando justificativas, métricas secundárias e histórico expansíveis sob demanda.",
+  "evidenceStrength": "Evidência moderada: estudo peer-reviewed com 420 profissionais e desenho repetido em quatro cenários, mas amostra não representativa e recomendações de adaptação parcialmente baseadas em modelagem/simulação.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Uma apresentação em camadas reduzirá tempo de decisão, erros e abandono em comparação com a exibição simultânea de toda a informação, sem reduzir a inspeção de evidências quando ela for necessária.",
+  "risks": "Ocultar detalhes importantes ou usar progressive disclosure para dificultar contestação pode criar falsa simplicidade e reduzir transparência.",
+  "limits": "O estudo ocorreu em decisões logísticas na Turquia e não mediu comportamento comercial no Marketing Hub; somente experimento no produto pode validar impacto em UX ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-09-progressive-disclosure-carga-cognitiva-ai.md",
+  "sourceTitle": "Fonte revisada — Progressive disclosure e carga cognitiva em decisões com IA",
+  "sourceSha256": "3398b5a0f0e13f61fcccbb74bc2ec552901bad7ae44f5c6808176b440785c351"
+}

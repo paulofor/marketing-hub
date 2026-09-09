@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-afeto-alem-distracao",
+  "collection": "prazer-audio-visual",
+  "title": "Separar efeito afetivo da música de distração",
+  "finding": "Em 59 participantes analisados, maior carga cognitiva e música agradável reduziram dimensões da dor de forma aditiva; não houve interação significativa entre música e dificuldade da tarefa, e a acurácia cognitiva não mudou entre condições auditivas.",
+  "mechanism": "O benefício da música agradável pode incluir uma rota afetiva/emocional parcialmente independente da simples captura de recursos atencionais. O estudo não mediu dopamina nem opioides.",
+  "commercialApplication": "Ao testar trilhas em experiências digitais, separar musicalidade agradável de distração: comparar música, controle acústico e silêncio sob diferentes cargas, medindo emoção e desempenho além de atenção.",
+  "evidenceStrength": "Média-alta para a dissociação no paradigma: desenho intraindivíduo, manipulação de carga e análises frequentistas/bayesianas; generalização de dor experimental para UX ou marketing ainda exige teste.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Uma trilha percebida como agradável melhorará conforto/afeto e reduzirá abandono em relação a silêncio ou controle acústico sem piorar compreensão, mesmo quando a experiência exige atenção cognitiva.",
+  "risks": "Música pode competir com fala, leitura ou tarefas complexas; respostas dependem de gosto e contexto; controle embaralhado pode ser aversivo e superestimar contraste entre condições.",
+  "limits": "Amostra jovem e saudável, dor térmica como desfecho, sete faixas disponíveis e dados coletados em 2019; não demonstra impacto em retenção, CTA, compra ou sistema dopaminérgico.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-musica-afeto-alem-distracao.md",
+  "sourceTitle": "Fonte revisada — música prazerosa, afeto e atenção",
+  "sourceSha256": "c33b1975c62e46fc08bca5d41f8d022a73d850ac8cad275feea4b58f96eef516"
+}

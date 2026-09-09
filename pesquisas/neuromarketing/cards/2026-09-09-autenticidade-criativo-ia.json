@@ -1,0 +1,18 @@
+{
+  "cardKey": "autenticidade-criativo-ia",
+  "collection": "neuromarketing",
+  "title": "IA em criativos exige fidelidade e transparência",
+  "finding": "Pesquisa com consumidores indica forte sensibilidade a conteúdo social gerado por IA quando há risco de misrepresentation, perda de autenticidade ou falta de disclosure.",
+  "mechanism": "A presença de IA parece ser menos problemática quando adiciona utilidade e mais problemática quando altera a percepção do produto ou torna incerta a origem e a autenticidade da mensagem.",
+  "commercialApplication": "Tratar uso de IA como dimensão de creative variant, exigir revisão de fidelidade do produto e comparar versões humanas, assistidas por IA e sintéticas com a mesma promessa e disclosure adequado.",
+  "evidenceStrength": "Moderada: survey recente com 601 consumidores, útil como sinal de confiança e rejeição, mas baseado em autorrelato e sem teste causal de conversão.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Criativos com IA que preservem fielmente o produto e sejam transparentes quando relevante manterão mais confiança e conversão do que variantes sintéticas percebidas como enganosas ou ambíguas.",
+  "risks": "Confundir transparência com licença para exagerar atributos; alterar aparência, resultado ou funcionalidade real do produto; usar disclosure de modo insuficiente ou enganoso.",
+  "limits": "Não há evidência específica para Brasil ou para as ofertas do Marketing Hub. Os percentuais da pesquisa não devem ser tratados como efeito esperado em Meta Ads; o impacto comercial precisa ser testado.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-09-autenticidade-integridade-criativos-ia.md",
+  "sourceTitle": "Fonte revisada — Autenticidade e integridade de criativos com IA",
+  "sourceSha256": "a553a5e6e1c71b34e26a8e9012597f758e8eee4abe4c46f946459665e45673f5"
+}

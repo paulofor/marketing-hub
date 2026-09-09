@@ -1,0 +1,18 @@
+{
+  "cardKey": "groove-sincronizacao-flexibilidade",
+  "collection": "prazer-audio-visual",
+  "title": "Não maximizar sincronização para criar groove",
+  "finding": "Com 30 participantes ouvindo padrões de bateria a 120 BPM, sincopação intermediária gerou maior prazer e vontade de se mover. A vontade de se mover previu sincronização em 2 Hz, mas sincronização mais forte não se associou uniformemente a mais groove e variou com o contexto de movimento.",
+  "mechanism": "Groove parece depender do equilíbrio entre previsibilidade, erro de previsão, motivação motora e flexibilidade. Uma métrica suficientemente estável suporta movimento, enquanto sincronização excessivamente rígida pode reduzir a liberdade necessária para uma experiência prazerosa.",
+  "commercialApplication": "Em conteúdo que convida movimento, comparar beat-sync rígido de cortes/animações/haptics com versões de complexidade intermediária e microvariação temporal controlada.",
+  "evidenceStrength": "Média: experimento controlado com medidas subjetivas e captura de movimento e forte efeito de sincopação; amostra pequena e relações negativas entre sincronização e groove não demonstram causalidade dentro do indivíduo.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Conteúdo com complexidade rítmica intermediária e pequenas variações controladas em torno do beat aumentará prazer, replay e movimento espontâneo em relação a sincronização totalmente rígida.",
+  "risks": "Microvariação excessiva pode parecer erro de edição; públicos e gêneros diferem em preferência rítmica; usar o efeito para provocar movimento pode prejudicar clareza ou CTA.",
+  "limits": "N=30, jovens japoneses, padrões curtos de bateria, único BPM e PLV contra referências periódicas canônicas; não há evidência direta sobre vídeo comercial ou conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-groove-sincronizacao-flexibilidade.md",
+  "sourceTitle": "Fonte revisada — groove, sincronização e flexibilidade",
+  "sourceSha256": "49bb1bd121ba6b924a02919daa2b2dc3a6a290f8953e23a54cb1451a626125bb"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "audio-visual-alinhamento-inicio-acao",
+  "collection": "prazer-audio-visual",
+  "title": "Alinhar pista sonora ao alvo visual sob distração",
+  "finding": "Em tarefas visuomotoras com adultos jovens e mais velhos, estímulos audiovisuais reduziram o tempo de reação; sob distração, som espacialmente alinhado ao alvo visual reduziu parcialmente a interferência, sobretudo no grupo mais idoso.",
+  "mechanism": "Sinais multissensoriais congruentes podem facilitar planejamento e início da ação e, em seguida, exigir uma fase de calibração durante a execução. Sob distração, a integração espacial parece tornar-se mais seletiva.",
+  "commercialApplication": "Em interfaces, vídeos interativos ou experiências com alvos acionáveis, comparar pista sonora espacialmente congruente ao elemento visual contra silêncio ou som desalinhado, especialmente quando há distração.",
+  "evidenceStrength": "Média-alta para facilitação visuomotora no paradigma experimental; aplicação a UX e prazer ainda exige validação no público, dispositivo e tarefa reais.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Uma pista sonora espacialmente congruente ao alvo visual reduzirá o tempo para iniciar a ação e/ou erros sob distração sem piorar compreensão ou conforto em comparação com silêncio ou som desalinhado.",
+  "risks": "Som adicional pode distrair, incomodar ou aumentar carga sensorial; benefício de velocidade pode não compensar erros ou desconforto em todos os públicos.",
+  "limits": "O estudo mede tarefas visuomotoras simples, não prazer, retenção, CTA, compra ou qualidade percebida de interfaces comerciais; menor tempo de reação não prova melhor experiência.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-audio-visual-alinhamento-inicio-acao.md",
+  "sourceTitle": "Fonte revisada — alinhamento audiovisual e início de ação",
+  "sourceSha256": "206ff6e85b9492b8d49642eb991e7118371455e2005cb6bc3a6db907c030b97e"
+}

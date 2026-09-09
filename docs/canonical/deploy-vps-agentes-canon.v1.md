@@ -34,18 +34,21 @@ reais, com chaves descartáveis e rede restrita ao loopback da fixture local. Mo
 essa validação de transporte. O contrato `scripts/test-agent-vps-ssh-workflows.mjs` protege os nove
 publicadores contra divergência de preflight, transportes e restauração após falha de autenticação.
 
-Os contratos de coordenação com o deploy da aplicação devem identificar a chamada do gate,
+Os contratos de coordenação com o deploy da aplicação devem identificar o run testado de origem,
 o preflight e os comandos SSH/SCP/rsync, sem depender do texto de `name` das etapas. Argos,
-Psique e o workflow de Íris devem aguardar o gate antes de autenticar ou acessar o VPS. Essa
-espera pertence obrigatoriamente a um job `application-deployment` separado, sem acesso remoto e
-fora da fila `deploy-vps-163-245-202-80`; o job `deploy` depende do gate e só então adquire a fila
-do host. Esses três workflows também não podem usar concorrência no nível do workflow inteiro,
-pois ela faria uma espera antiga bloquear a revisão atual antes mesmo dos jobs. Somente os gates
-do mesmo workflow e branch compartilham um grupo próprio com `cancel-in-progress: true`, para uma
-revisão nova descartar sua espera obsoleta sem interromper publicação que já entrou na seção
-crítica do VPS. A exigência de sucesso do deploy da aplicação no mesmo SHA permanece inalterada.
-`scripts/wait-for-app-deployment.test.mjs` integra a validação central de Actions e sua matriz
-local; os gatilhos de push e PR acompanham tanto o teste quanto o coordenador.
+Psique e o workflow de Íris testam e empacotam a revisão no `push`, mas a publicação automática
+é retomada somente por `workflow_run: completed` do workflow central. A continuação exige
+aplicação e agente verdes no mesmo SHA, faz checkout dessa revisão e recupera o artefato pelo ID
+do run de origem. Não pode aceitar commit posterior como compatível nem usar o HEAD atual por
+conveniência.
+
+O job `source-run` não acessa o host e permanece fora de `deploy-vps-163-245-202-80`; somente o
+job `deploy`, dependente dessa resolução, adquire a fila. Esses workflows não usam concorrência
+no nível do workflow inteiro. O push também confirma rapidamente a existência do workflow central
+do mesmo SHA, para um publicador desativado ou ausente não virar omissão silenciosa. É proibido
+reter um runner em polling durante a fila ampliada da aplicação. A exigência de sucesso do mesmo
+SHA permanece inalterada. `scripts/coordinate-agent-deployment.test.mjs` integra a validação
+central de Actions e sua matriz local; os gatilhos de push e PR acompanham o teste e o coordenador.
 
 - Medir o filesystem raiz, `DockerRootDir` e `/var/lib/containerd` quando existir.
 - Exigir ao menos 4 GiB disponíveis e 10.000 inodes livres em cada destino; insuficiência

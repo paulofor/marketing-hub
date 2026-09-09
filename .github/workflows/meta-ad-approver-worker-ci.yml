@@ -17,8 +17,8 @@ on:
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
       - scripts/codex-oauth-session-safe.sh
-      - scripts/wait-for-app-deployment.mjs
-      - scripts/wait-for-app-deployment.test.mjs
+      - scripts/coordinate-agent-deployment.mjs
+      - scripts/coordinate-agent-deployment.test.mjs
   pull_request:
     paths:
       - meta-ad-approver-worker/**
@@ -38,8 +38,12 @@ on:
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
       - scripts/codex-oauth-session-safe.sh
-      - scripts/wait-for-app-deployment.mjs
-      - scripts/wait-for-app-deployment.test.mjs
+      - scripts/coordinate-agent-deployment.mjs
+      - scripts/coordinate-agent-deployment.test.mjs
+  workflow_run:
+    workflows: ["Build & Deploy containers"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -54,6 +58,7 @@ env:
 jobs:
   test:
     name: Test independent agent
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +78,13 @@ jobs:
       - name: Build immutable commercial evidence
         run: node scripts/build-commercial-review-evidence.mjs . meta-ad-approver-worker/review-evidence
       - name: Validate application deploy coordination
-        run: node --test scripts/wait-for-app-deployment.test.mjs
+        run: node --test scripts/coordinate-agent-deployment.test.mjs
+      - name: Confirm matching application deployment was enqueued
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_REGISTRATION_TIMEOUT_SECONDS: 120
+        run: node scripts/coordinate-agent-deployment.mjs assert-application-run deploy-containers.yml
       - name: Validate Java and architecture
         working-directory: meta-ad-approver-worker
         run: mvn -B verify
@@ -112,55 +123,72 @@ jobs:
         with:
           name: agent-images-${{ github.sha }}
           path: ${{ runner.temp }}/agent-images/
-          retention-days: 1
+          retention-days: 7
           compression-level: 0
           if-no-files-found: error
           overwrite: true
 
-  application-deployment:
-    name: Wait for matching application deployment
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+  source-run:
+    name: Resolve tested worker revision
+    if: github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    concurrency:
-      group: application-deployment-${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
+    timeout-minutes: 120
     permissions:
       contents: read
       actions: read
+    outputs:
+      required: ${{ steps.resolve.outputs.required }}
+      source_run_id: ${{ steps.resolve.outputs.source_run_id }}
+      source_sha: ${{ steps.resolve.outputs.source_sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Coordinate application revision
-        if: github.event_name == 'push'
+      - id: resolve
+        name: Resolve exact tested source run
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
-        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
+          APP_DEPLOY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          APP_DEPLOY_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          APP_DEPLOY_EVENT: ${{ github.event.workflow_run.event }}
+          APP_DEPLOY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          AGENT_SOURCE_WAIT_TIMEOUT_SECONDS: 6900
+        run: node scripts/coordinate-agent-deployment.mjs resolve-source-run meta-ad-approver-worker-ci.yml
 
   deploy:
     name: Deploy independent agent
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: >-
+      always() &&
+      ((github.event_name == 'workflow_dispatch' &&
+        needs.test.result == 'success') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        needs.source-run.result == 'success' &&
+        needs.source-run.outputs.required == 'true'))
     runs-on: ubuntu-latest
     needs:
       - test
-      - application-deployment
+      - source-run
     concurrency:
       group: deploy-vps-163-245-202-80
       queue: max
       cancel-in-progress: false
     env:
+      DEPLOY_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_sha || github.sha }}
       OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SOURCE_SHA }}
       - uses: actions/download-artifact@v4
         with:
-          name: agent-images-${{ github.sha }}
+          name: agent-images-${{ env.DEPLOY_SOURCE_SHA }}
           path: ${{ runner.temp }}/agent-images/
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_run_id || github.run_id }}
       - name: Verify tested images
-        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" marketing-hub/meta-ad-approver-worker:${{ github.sha }} marketing-hub/iris-image-studio:${{ github.sha }}
+        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -182,7 +210,7 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh
       - name: Load tested images without rebuilding
         timeout-minutes: 20
-        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" marketing-hub/meta-ad-approver-worker:${{ github.sha }} marketing-hub/iris-image-studio:${{ github.sha }}
+        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
       - name: Provision OpenAI credential for Íris
         run: |
           set -euo pipefail
@@ -235,8 +263,8 @@ jobs:
                    OPENAI_API_KEY_FILE=/run/secrets/openai_api_key \
                    OPENAI_API_KEY_HOST_FILE=/root/infra/openai-token/openai_api_key \
                    OPENAI_IMAGE_MODEL=gpt-image-2 \
-                   META_AD_APPROVER_IMAGE=marketing-hub/meta-ad-approver-worker:${GITHUB_SHA} \
-                   IRIS_IMAGE_STUDIO_IMAGE=marketing-hub/iris-image-studio:${GITHUB_SHA} \
+                   META_AD_APPROVER_IMAGE=marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA} \
+                   IRIS_IMAGE_STUDIO_IMAGE=marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA} \
             && cd '${REPOSITORY_DIR}/meta-ad-approver-worker' \
             && docker compose up -d --no-build --pull never --remove-orphans \
             && for attempt in \$(seq 1 24); do \

@@ -3208,9 +3208,31 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   obsoletos foram cancelados pela API oficial, sem cancelar as três execuções do SHA atual. Argos e
   Íris atuais concluíram com sucesso; Psique foi liberada e também concluiu com sucesso. Depois da
   recuperação, não restou execução ativa em `main` nem membro no grupo compartilhado.
-- **Prevenção:** `scripts/wait-for-app-deployment.test.mjs` rejeita espera dentro do job remoto,
-  concorrência no workflow inteiro, gate na fila do VPS, acesso SSH pelo gate ou deploy sem a
-  dependência. Actionlint e os contratos de fila, imagem, disco e SSH permanecem obrigatórios.
+- **Prevenção aplicada em 2026-09-08:** `scripts/wait-for-app-deployment.test.mjs` rejeitava espera
+  dentro do job remoto, concorrência no workflow inteiro, gate na fila do VPS, acesso SSH pelo
+  gate ou deploy sem a dependência. Esse contrato foi sucedido pela prevenção da recorrência
+  abaixo; Actionlint e os contratos de fila, imagem, disco e SSH permanecem obrigatórios.
+- **Recorrência confirmada em 2026-09-09:** os runs `34356522474` de Argos, `34356522469` de
+  Íris, `34361476862` do Argos seguinte e `34356522612` de Psique passaram nos jobs de teste e
+  imagem e falharam apenas porque o gate expirou em 2.400 segundos. Os deploys centrais exatos
+  continuavam `pending`; outro run criado às 11:56 UTC só começou às 16:08 UTC. A repetição nos
+  três agentes confirmou que o defeito não estava nos builds dos módulos.
+- **Causa-raiz da recorrência:** a correção anterior retirou o polling da fila do VPS, mas ainda
+  manteve um runner com timeout de 45 minutos aguardando uma fila central capaz de preservar até
+  cem revisões. A garantia de mesmo SHA e a duração máxima do gate tornaram-se incompatíveis sob
+  rajada legítima de pesquisas, que também recompõem a biblioteca distribuída pelo backend.
+- **Alternativas da recorrência:** aumentar o timeout continuaria limitado a seis horas e
+  consumindo runner; aceitar um commit sucessor presumiria compatibilidade; iniciar a continuação
+  pelo evento de conclusão preserva o SHA sem depender do tempo da fila. Foi escolhida a terceira.
+- **Fechamento sistêmico local:** o push do agente testa e empacota a imagem, valida apenas que o
+  deploy central foi registrado e termina. Quando o workflow central conclui, `workflow_run`
+  localiza o run testado do mesmo SHA; somente aplicação e agente verdes liberam checkout,
+  artefato e fila remota. Falha mantém a versão anterior e run ausente torna a continuação não
+  aplicável. Artefatos de Psique e Íris passam a durar sete dias.
+- **Prevenção atual:** `scripts/coordinate-agent-deployment.test.mjs` cobre registro ausente,
+  API transitória, fila pendente, continuação aplicável e irrelevante, falhas dos dois lados,
+  timeout do teste, branch/evento/SHA, proveniência do artefato e ausência de acesso remoto antes
+  da fila. Actionlint e os contratos de imagem, disco, SSH e concorrência continuam obrigatórios.
 
 ## LOOP-IRIS-CODEX-AUTH-PENDING-SEM-TIMEOUT — reconexão não sai de REQUESTED
 

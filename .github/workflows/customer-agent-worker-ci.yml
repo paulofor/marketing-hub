@@ -79,14 +79,18 @@ jobs:
       - name: Run unit tests
         working-directory: customer-agent-worker
         run: mvn -B test
-      - name: Install Chromium for mobile visual validation
+      - name: Install browser client dependencies
         working-directory: customer-agent-worker
-        run: |
-          npm ci
-          npx playwright-core install --with-deps chromium
+        run: npm ci
       - name: Validate real mobile visual capture
         working-directory: customer-agent-worker
-        run: npm test
+        run: |
+          docker run --rm --init --network none \
+            --user "$(id -u):$(id -g)" --env npm_config_cache=/tmp/npm-cache \
+            --volume "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            --workdir "${GITHUB_WORKSPACE}/customer-agent-worker" \
+            mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8 \
+            npm test
       - name: Validate container user contract
         run: bash customer-agent-worker/test-dockerfile-contract.sh
       - name: Validate container build

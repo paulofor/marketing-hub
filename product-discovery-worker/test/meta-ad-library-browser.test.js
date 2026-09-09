@@ -62,9 +62,11 @@ test("extrai cards pela interface renderizada em Chromium real", async (t) => {
   const executablePath =
     process.env.ARGOS_META_BROWSER_EXECUTABLE_PATH ||
     process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ||
-    process.env.CHROMIUM_BIN ||
-    "/usr/bin/chromium";
-  const browser = await chromium.launch({ headless: true, executablePath });
+    process.env.CHROMIUM_BIN;
+  const browser = await chromium.launch({
+    headless: true,
+    ...(executablePath ? { executablePath } : {}),
+  });
   t.after(() => browser.close());
   const page = await browser.newPage();
   await page.setContent(`

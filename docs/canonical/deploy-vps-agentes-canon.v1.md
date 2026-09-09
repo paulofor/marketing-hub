@@ -102,6 +102,18 @@ o pacote para impedir divergência entre a revisão versionada e o runtime.
 
 ## Imagens aprovadas no runner e carga sem recompilação
 
+Argos e Psique devem usar a base oficial Playwright alinhada à versão exata de `playwright-core`
+no `package.json` e no lock, fixada também pelo digest no Dockerfile e no teste do workflow.
+Os testes de navegador rodam dentro dessa base, com dependências Node resolvidas antes, rede
+externa desabilitada e o usuário do checkout. É proibido instalar Chromium ou suas bibliotecas
+por APT/`playwright install --with-deps` nesses gates ou nos runtimes desses agentes. O JRE de
+Psique continua vindo do estágio Temurin 21 e as duas imagens mantêm usuário sem privilégios.
+Browser ausente ou incompatível deve reprovar o gate, preservando a versão anterior.
+O contrato `scripts/test-agent-browser-version-contract.mjs` protege imagem, pacote, lock e
+workflow no check central de Actions. Uma atualização do Playwright deve alinhar esses quatro
+contratos e validar novamente captura real, permissões e imagens antes de publicação.
+Evidências: `docs/homologacao/actions-navegador-versionado-2026-09-09.md`.
+
 Os oito publicadores que antes faziam build no VPS devem construir e validar suas imagens no job
 de testes do Actions, empacotá-las por `scripts/agent-image-bundle.mjs` e transportá-las pelo artefato
 do mesmo run. O nome inclui o SHA; a retenção é de um dia. Pacote ausente, truncado, checksum

@@ -1,11 +1,18 @@
 package com.marketinghub.customeragentworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -34,25 +41,23 @@ class CodexProcessSupervisorTest {
     }
   }
 
-  /** Mantém viva uma execução que continua produzindo eventos até concluir normalmente. */
+  /** Renova a janela por eventos com tempo controlado, mesmo após superar a inatividade inicial. */
   @Test
   void keepsProcessAliveWhileJsonlAdvances() throws Exception {
     Path log = Files.createTempFile("psique-active-process-", ".log");
-    Process process =
-        new ProcessBuilder(
-                "sh", "-c", "for value in 1 2 3 4 5; do echo event-$value; sleep 0.05; done")
-            .redirectErrorStream(true)
-            .redirectOutput(log.toFile())
-            .start();
+    AtomicLong clock = new AtomicLong();
+    Process process = activeProcess(log, clock, Duration.ofMillis(300));
     CodexProcessSupervisor supervisor =
         new CodexProcessSupervisor(
-            Duration.ofMillis(130), Duration.ofSeconds(2), Duration.ofMillis(20));
+            Duration.ofMillis(130), Duration.ofSeconds(2), Duration.ofMillis(20), clock::get);
 
-    CodexProcessSupervisor.WaitOutcome outcome = supervisor.awaitCompletion(process, log);
-
-    assertThat(outcome).isEqualTo(CodexProcessSupervisor.WaitOutcome.COMPLETED);
-    assertThat(process.isAlive()).isFalse();
-    Files.deleteIfExists(log);
+    try {
+      CodexProcessSupervisor.WaitOutcome outcome = supervisor.awaitCompletion(process, log);
+      assertThat(outcome).isEqualTo(CodexProcessSupervisor.WaitOutcome.COMPLETED);
+      assertThat(clock.get()).isGreaterThan(supervisor.inactivityTimeout().toNanos());
+    } finally {
+      Files.deleteIfExists(log);
+    }
   }
 
   /** Encerra lançador e descendente quando não existe progresso observável. */
@@ -78,24 +83,38 @@ class CodexProcessSupervisorTest {
     Files.deleteIfExists(log);
   }
 
-  /** Aplica o teto absoluto mesmo quando uma execução continua emitindo eventos. */
+  /** Aplica o teto absoluto com tempo controlado apesar do progresso em todas as observações. */
   @Test
   void terminatesActiveProcessAtAbsoluteTimeout() throws Exception {
     Path log = Files.createTempFile("psique-hard-cap-process-", ".log");
-    Process process =
-        new ProcessBuilder("sh", "-c", "while true; do echo event; sleep 0.03; done")
-            .redirectErrorStream(true)
-            .redirectOutput(log.toFile())
-            .start();
+    AtomicLong clock = new AtomicLong();
+    Process process = activeProcess(log, clock, Duration.ofSeconds(10));
     CodexProcessSupervisor supervisor =
         new CodexProcessSupervisor(
-            Duration.ofMillis(120), Duration.ofMillis(320), Duration.ofMillis(20));
+            Duration.ofMillis(120), Duration.ofMillis(320), Duration.ofMillis(20), clock::get);
 
-    CodexProcessSupervisor.WaitOutcome outcome = supervisor.awaitCompletion(process, log);
+    try {
+      CodexProcessSupervisor.WaitOutcome outcome = supervisor.awaitCompletion(process, log);
+      assertThat(outcome).isEqualTo(CodexProcessSupervisor.WaitOutcome.ABSOLUTE_TIMEOUT);
+      assertThat(clock.get()).isEqualTo(supervisor.absoluteTimeout().toNanos());
+    } finally {
+      Files.deleteIfExists(log);
+    }
+  }
 
-    assertThat(outcome).isEqualTo(CodexProcessSupervisor.WaitOutcome.ABSOLUTE_TIMEOUT);
-    assertThat(process.isAlive()).isFalse();
-    Files.deleteIfExists(log);
+  /** Simula progresso em arquivo real e avanço monotônico sem sleeps ou comandos de modelo. */
+  private Process activeProcess(Path log, AtomicLong clock, Duration completion) throws Exception {
+    Process process = mock(Process.class);
+    when(process.descendants()).thenAnswer(invocation -> Stream.empty());
+    when(process.toHandle()).thenReturn(mock(ProcessHandle.class));
+    when(process.waitFor(anyLong(), eq(TimeUnit.NANOSECONDS)))
+        .thenAnswer(
+            invocation -> {
+              long now = clock.addAndGet(invocation.getArgument(0));
+              Files.writeString(log, "evento\n", java.nio.file.StandardOpenOption.APPEND);
+              return now >= completion.toNanos();
+            });
+    return process;
   }
 
   /** Aguarda o shell materializar o filho usado para provar a limpeza recursiva. */

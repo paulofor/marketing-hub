@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.facebookads;
 
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.service.publicationhistory.HistoricalCampaignReceipt;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import java.util.Collection;
@@ -72,19 +73,18 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
   /** Lista campanhas persistidas para um experimento sem forçar joins de leitura. */
   List<FacebookAdsCampaign> findByExperimentId(Long experimentId);
 
-  /**
-   * Consulta recibos externos datados do experimento, excluindo rascunhos locais sem publicação.
-   */
+  /** Projeta apenas referência e data de recibos externos, excluindo rascunhos sem publicação. */
   @Query(
       """
-      select c from FacebookAdsCampaign c
+      select new com.marketinghub.experiment.service.publicationhistory.HistoricalCampaignReceipt(c.id, c.createdAt)
+      from FacebookAdsCampaign c
       where c.experiment.id = :experimentId
         and c.externalId is not null
         and length(trim(c.externalId)) > 0
         and c.createdAt is not null
       order by c.createdAt asc, c.id asc
       """)
-  List<FacebookAdsCampaign> findHistoricalPublicationReceipts(
+  List<HistoricalCampaignReceipt> findHistoricalPublicationReceipts(
       @Param("experimentId") Long experimentId);
 
   /** Remove campanhas persistidas para um experimento antes de reprocessar a publicação. */

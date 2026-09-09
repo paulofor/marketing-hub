@@ -11,6 +11,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.controller.LearningCycleController;
 import com.marketinghub.experiment.*;
 import com.marketinghub.experiment.run.*;
+import com.marketinghub.experiment.service.publicationhistory.HistoricalCampaignReceipt;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.*;
@@ -65,8 +66,7 @@ import org.springframework.web.bind.annotation.*;
 public class LearningCycleLocalApplication {
   static final Map<Long, Experiment> EXPERIMENTS = new ConcurrentHashMap<>();
   static final Map<Long, ExperimentRun> RUNS = new ConcurrentHashMap<>();
-  static final Map<Long, com.marketinghub.facebookads.FacebookAdsCampaign> CAMPAIGNS =
-      new ConcurrentHashMap<>();
+  static final Map<Long, HistoricalCampaignReceipt> CAMPAIGNS = new ConcurrentHashMap<>();
 
   /** Inicia somente a fixture local, sem importar executores, agendamentos ou credenciais reais. */
   public static void main(String[] args) {
@@ -425,19 +425,17 @@ public class LearningCycleLocalApplication {
       return Map.of("published", true);
     }
 
-    /** Reproduz a campanha pausada do legado com recibo próprio e ausência de run/preflight. */
+    /** Reproduz o contrato de recibo do legado pausado, preservando a ausência de run/preflight. */
     @PostMapping("/fixture/experiments/{id}/legacy-publication")
     Map<String, Object> legacyPublication(@PathVariable Long id) {
       var experiment = EXPERIMENTS.get(id);
       experiment.setStatus(ExperimentStatus.USER_STOPPED);
-      var campaign = new com.marketinghub.facebookads.FacebookAdsCampaign();
-      campaign.setId("fixture-campaign-" + id);
-      campaign.setExternalId("fixture-meta-" + id);
-      campaign.setExperiment(experiment);
-      campaign.setStatus(com.marketinghub.facebookads.FacebookAdStatus.PAUSED);
-      campaign.setCreatedAt(Instant.now().minusSeconds(86400));
-      CAMPAIGNS.put(id, campaign);
-      return Map.of("legacyReceipt", campaign.getId(), "runCount", RUNS.containsKey(id) ? 1 : 0);
+      var receipt =
+          new HistoricalCampaignReceipt(
+              "fixture-campaign-" + id, Instant.now().minusSeconds(86400));
+      CAMPAIGNS.put(id, receipt);
+      return Map.of(
+          "legacyReceipt", receipt.campaignId(), "runCount", RUNS.containsKey(id) ? 1 : 0);
     }
 
     /** Expõe somente os estados segregados para comprovar ausência de mutação retroativa. */

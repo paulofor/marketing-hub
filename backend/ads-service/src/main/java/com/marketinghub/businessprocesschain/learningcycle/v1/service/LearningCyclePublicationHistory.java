@@ -17,7 +17,7 @@ public class LearningCyclePublicationHistory {
   private final ExperimentRunRepository runs;
   private final FacebookAdsCampaignRepository campaigns;
 
-  /** Reconhece publicação produtiva anterior ou recibo Meta legado, preservando a lacuna de run. */
+  /** Reconhece runs ou contratos de recibo legado, sem acessar a entidade interna de campanhas. */
   public Optional<LearningCycleHistoricalPublication> find(Experiment experiment) {
     var published =
         runs.findTopByExperimentIdAndModeAndPublishedAtIsNotNullOrderByRunNumberDesc(
@@ -43,8 +43,8 @@ public class LearningCyclePublicationHistory {
                 new LearningCycleHistoricalPublication(
                     "LEGACY_META_CAMPAIGN",
                     experiment.getId(),
-                    "facebook_ads_campaign:" + campaign.getId(),
-                    campaign.getCreatedAt(),
+                    "facebook_ads_campaign:" + campaign.campaignId(),
+                    campaign.recordedAt(),
                     false,
                     "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias."));
   }

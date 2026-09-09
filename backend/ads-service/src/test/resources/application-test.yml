@@ -1,6 +1,7 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:aiworker;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    # Cada contexto possui schema próprio, inclusive quando outro contexto sai do cache Spring.
+    url: jdbc:h2:mem:ads-test-${random.uuid};MODE=MySQL;DB_CLOSE_DELAY=0;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:

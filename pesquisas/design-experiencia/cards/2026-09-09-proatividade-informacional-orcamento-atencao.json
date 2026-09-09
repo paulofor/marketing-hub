@@ -1,0 +1,18 @@
+{
+  "cardKey": "proatividade-informacional-orcamento-atencao",
+  "collection": "neuromarketing",
+  "title": "Trate sugestões não solicitadas como gasto de atenção",
+  "finding": "Em um survey transversal com 566 universitários, encontros informacionais inesperados durante uso de IA estiveram positivamente associados a digital burnout; flexibilidade cognitiva mediou parcialmente a relação e confiança em IA moderou parte das associações.",
+  "mechanism": "Informação inesperada pode gerar descoberta útil, mas também acrescentar processamento não solicitado. A hipótese é que proatividade sem limite consuma um orçamento finito de atenção e aumente sensação de sobrecarga.",
+  "commercialApplication": "No Marketing Hub, limitar sugestões espontâneas por etapa, priorizar somente achados de alta relevância e agrupar recomendações secundárias em áreas expansíveis ou sob demanda.",
+  "evidenceStrength": "Evidência preliminar a moderada: artigo peer-reviewed com 566 respostas, mas desenho transversal e autorrelatado; sustenta associação, não causalidade.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Um agente que mostra poucas sugestões altamente priorizadas produzirá menor abandono e maior conclusão de tarefa do que um agente que apresenta muitas sugestões proativas, sem reduzir descoberta de achados realmente relevantes.",
+  "risks": "Reduzir demais a proatividade pode esconder oportunidades úteis; o limite deve preservar alertas críticos e permitir descoberta voluntária.",
+  "limits": "A evidência vem de contexto educacional e não mede retenção, CTA ou vendas; os efeitos precisam ser replicados em jornadas comerciais reais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-09-proatividade-informacional-orcamento-atencao.md",
+  "sourceTitle": "Fonte revisada — Limitar encontros informacionais não solicitados em experiências com IA",
+  "sourceSha256": "3908c0bf23cf03774ad30e67c9b47cd7136dab3c9c6a7a124cb2185a382b26c5"
+}

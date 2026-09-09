@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-geracao-acima-tempo-real-interatividade-hibrida",
+  "collection": "video",
+  "title": "Gerar a próxima cena durante a reprodução com frames de ancoragem",
+  "finding": "O VDN-H3 publicou uma configuração que gera 14,4 s de vídeo 768p em 11,23 s de denoising em 8× B200 e ampliou o mesmo checkpoint para image-to-video, first/last-frame-to-video e last-frame-to-video.",
+  "mechanism": "Geração mais rápida que a duração do clipe pode permitir produzir o próximo trecho enquanto o atual é exibido; controles de primeiro/último frame funcionam como âncoras para encadear cenas e reduzir descontinuidade entre segmentos.",
+  "commercialApplication": "No Marketing Hub, testar um criativo híbrido em que claims, produto e identidade visual ficam pré-aprovados, enquanto a próxima variação de cena é gerada antecipadamente e conectada por frames de ancoragem.",
+  "evidenceStrength": "Moderada para viabilidade técnica: código, pesos e benchmark são públicos, mas o desempenho é medido pelos próprios autores e não representa latência ponta a ponta nem demonstra impacto comercial.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2026-10-09",
+  "experimentHypothesis": "Em uma experiência com ramificações, gerar o próximo trecho durante a reprodução e ancorá-lo ao frame final reduzirá pausas percebidas e poderá elevar conclusão do vídeo e CTA em relação a uma versão interativa que espera a geração após cada escolha.",
+  "risks": "Confundir velocidade de denoising com latência real; gastar infraestrutura excessiva para um ganho não percebido pelo usuário; usar pesos ou outputs fora do território autorizado; interpretar maior engajamento como prova de venda.",
+  "limits": "O benchmark principal usa 8× NVIDIA B200 e exclui carregamento, warm-up, VAE, codificação, fila, rede e orquestração. O projeto não oferece API hospedada pelos autores. Os pesos seguem a MiniMax H3 Community License, com restrições territoriais, e não uma licença permissiva global.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-09-vdn-h3-geracao-acima-tempo-real.md",
+  "sourceTitle": "Fonte revisada — VDN-H3 e geração de vídeo acima do tempo real",
+  "sourceSha256": "3431bbdb2449efaca254084df9d5b37f1a63a80dfb4f11725098d78c44dfc41c"
+}

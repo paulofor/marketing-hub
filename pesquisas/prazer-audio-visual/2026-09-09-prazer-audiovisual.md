@@ -155,3 +155,57 @@ Os três arquivos representam candidatos `DRAFT`. Revisão, ativação e arquiva
 - Desbarats E, et al. *The Hypoalgesic Effects of Pleasant Music Are Not Fully Explained by Distraction*. European Journal of Pain. 2026. https://doi.org/10.1002/ejp.70372
 - Tanabe H, Nakajima M, Shiratori M, Yamamoto K, Okano M. *Embodied groove–synchrony model: movement context reshapes groove–synchrony coupling and its dominant timescale*. Frontiers in Psychology. 2026;17:1803480. https://doi.org/10.3389/fpsyg.2026.1803480
 - Shen W, Mou X, Wang D, et al. *A multimodal framework of continuous music emotion recognition for adaptive cockpit lighting*. Scientific Reports. 2026. https://doi.org/10.1038/s41598-026-70305-y
+
+## Atualização adicional — publicações de 09/09/2026
+
+Depois da primeira versão da rodada, duas publicações do próprio dia acrescentaram evidência diretamente útil sobre **integração audiovisual, atenção e ação**. Elas não substituem os achados anteriores; ampliam o relatório desta mesma data.
+
+### 5. Faster to React, Slower to Move: Differential Effects of Multisensory Facilitation on Movement Initiation and Execution Across the Adult Lifespan
+
+**Fonte:** Frontiers in Psychology, seção Psychology of Aging. Publicado em 09/09/2026.  
+**DOI:** https://doi.org/10.3389/fpsyg.2026.1811531  
+**Texto:** https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2026.1811531/abstract
+
+**Método.** Adultos jovens com menos de 30 anos e dois grupos de adultos mais velhos, de 50–69 e 70 anos ou mais, realizaram tarefas em touchscreen. Na tarefa de detecção, indicavam a localização percebida de estímulos auditivos, visuais ou audiovisuais. Na tarefa de discriminação visual, o alvo podia aparecer com ou sem distratores e acompanhado de som espacialmente alinhado ou desalinhado.
+
+**Achado principal.** A estimulação multissensorial reduziu significativamente o tempo de reação em jovens e idosos. Ao mesmo tempo, a velocidade do movimento caiu modestamente em algumas condições. Distratores prejudicaram desproporcionalmente os participantes mais velhos, mas uma pista auditiva espacialmente alinhada ao alvo visual reduziu parcialmente essa interferência, especialmente no grupo de maior idade.
+
+**Mecanismo proposto.** Os autores interpretam o padrão como facilitação do planejamento e início da ação por sinais multissensoriais, seguida por uma fase de calibração durante a execução. Sob distração, a janela espacial de integração audiovisual pode ficar mais seletiva.
+
+**Força da evidência:** média-alta para o efeito visuomotor específico. É pesquisa original peer-reviewed e o efeito aparece em diferentes faixas etárias e tarefas. A aplicação a interfaces comerciais, prazer ou persuasão ainda é extrapolação.
+
+**Limitações.** Menor tempo de reação não significa automaticamente melhor UX. O estudo mede ação visuomotora simples, não prazer, retenção, CTA ou compra. Som adicional também pode gerar distração ou carga sensorial dependendo da tarefa e do usuário.
+
+**Aplicação prática.** Em interfaces, experiências audiovisuais e vídeos interativos, testar uma pista sonora espacialmente congruente com um alvo acionável contra silêncio ou som desalinhado. Medir separadamente início da ação, erros, conclusão, compreensão e conforto. A hipótese é particularmente interessante para públicos mais velhos e situações com elementos concorrentes na tela.
+
+---
+
+### 6. Effects of emotions on concentration and usage intention to short video viewing among older adults
+
+**Fonte:** Humanities and Social Sciences Communications. Publicado em 09/09/2026.  
+**DOI:** https://doi.org/10.1057/s41599-026-09033-7  
+**Texto:** https://www.nature.com/articles/s41599-026-09033-7
+
+**Método.** Trinta e cinco adultos com 60 anos ou mais assistiram, em desenho intraindividual, a grupos de vídeos curtos positivos, neutros e negativos. O estudo combinou eye-tracking, reconhecimento de expressão facial com OpenCV e escalas de aceitação da informação, valência, concentração e intenção de uso.
+
+**Achado principal.** A duração média das fixações foi maior nos vídeos positivos e negativos do que nos neutros: aproximadamente 397 ms e 400 ms contra 298 ms. Emoções específicas de maior intensidade, como surpresa, tristeza, felicidade e raiva, também apresentaram padrões de fixação mais concentrados que o estado neutro. A relação entre valência e intenção de uso não foi simplesmente linear; a intensidade emocional mostrou-se uma explicação mais útil que a polaridade positiva versus negativa isoladamente.
+
+**Mecanismo proposto.** Conteúdo emocionalmente intenso pode aumentar saliência e alocação atencional independentemente da direção da valência. Isso é compatível com tratar `emotional_intensity` e `emotional_valence` como variáveis diferentes, em vez de supor que somente emoções positivas elevam atenção.
+
+**Força da evidência:** média. O trabalho é peer-reviewed e combina medidas objetivas de gaze com autorrelato, mas a amostra é pequena, específica e o conteúdo emocional pode carregar diferenças além da emoção.
+
+**Limitações.** O estudo não mede vendas, satisfação de longo prazo ou sistema de recompensa. Não houve medida direta de dopamina. Maior concentração tampouco demonstra que o conteúdo seja melhor ou mais saudável; os próprios autores alertam para o risco de exposição excessiva a conteúdo altamente carregado emocionalmente.
+
+**Aplicação prática.** Para vídeos curtos destinados a públicos maduros, testar intensidade emocional baixa, média e alta separadamente da valência. Medir atenção, conclusão, lembrança, satisfação, intenção de continuar e sinais de rejeição. A meta não deve ser maximizar arousal, mas encontrar uma faixa de intensidade que preserve atenção sem degradar bem-estar ou confiança.
+
+## Cards adicionais gerados nesta atualização
+
+1. `audio-visual-alinhamento-inicio-acao` — hipótese: uma pista sonora espacialmente congruente com o alvo visual pode reduzir o tempo para iniciar uma ação e/ou erros sob distração sem piorar compreensão ou conforto.
+2. `intensidade-emocional-atencao-video-curto-idosos` — hipótese: intensidade emocional moderada ou alta pode elevar atenção e conclusão em relação ao conteúdo neutro, mas níveis extremos podem também aumentar rejeição; a faixa útil precisa ser testada separadamente da valência.
+
+As fontes revisadas curtas foram versionadas em `pesquisas/prazer-audio-visual/cards/fontes/`, seus SHA-256 foram calculados sobre os bytes exatos, e os payloads JSON foram salvos em `pesquisas/prazer-audio-visual/cards/`. Eles permanecem candidatos `DRAFT`; revisão, ativação e arquivamento continuam etapas editoriais separadas.
+
+## Referências adicionais
+
+- Barutchu A, Spence C. *Faster to React, Slower to Move: Differential Effects of Multisensory Facilitation on Movement Initiation and Execution Across the Adult Lifespan*. Frontiers in Psychology. 2026. https://doi.org/10.3389/fpsyg.2026.1811531
+- Tang Z, Chen N, Cui Z, et al. *Effects of emotions on concentration and usage intention to short video viewing among older adults*. Humanities and Social Sciences Communications. 2026. https://doi.org/10.1057/s41599-026-09033-7

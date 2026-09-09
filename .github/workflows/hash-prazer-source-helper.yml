@@ -1,0 +1,28 @@
+name: Hash prazer audiovisual sources helper
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-*.md'
+
+permissions:
+  contents: read
+
+jobs:
+  hash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compute SHA-256
+        shell: bash
+        run: |
+          find pesquisas/prazer-audio-visual/cards/fontes \
+            -maxdepth 1 \
+            -type f \
+            -name '2026-09-09-*.md' \
+            -print0 \
+            | sort -z \
+            | xargs -0 sha256sum

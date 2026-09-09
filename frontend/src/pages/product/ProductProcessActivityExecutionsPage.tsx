@@ -14,7 +14,13 @@ import {
   Workflow,
 } from "lucide-react";
 import axios from "axios";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  Link,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   useProductProcessActivityExecutions,
   useRequestProductProcessActivityExecution,
@@ -27,7 +33,6 @@ import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExec
 import "../businessProcess/BusinessProcessesPage.css";
 import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecutionPanel";
 import DirectContactSamplePanel from "./DirectContactSamplePanel";
-import LearningCycleProcessEntry from "../learningCycle/LearningCycleProcessEntry";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -85,10 +90,14 @@ function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
 /** Exibe as atividades e tarefas reais de um produto dentro de um processo da cadeia de valor. */
 export default function ProductProcessActivityExecutionsPage() {
   const params = useParams();
+  const { hash } = useLocation();
   const [search] = useSearchParams();
   const cycleParam = Number(search.get("learningCycleId"));
   const learningCycleId =
     Number.isSafeInteger(cycleParam) && cycleParam > 0 ? cycleParam : undefined;
+  const chainParam = Number(search.get("chainId"));
+  const chainId =
+    Number.isSafeInteger(chainParam) && chainParam > 0 ? chainParam : undefined;
   const productId = Number(params.productId);
   const processDefinitionId = Number(params.processDefinitionId);
   const validProductId = Number.isSafeInteger(productId) && productId > 0;
@@ -98,6 +107,7 @@ export default function ProductProcessActivityExecutionsPage() {
     validProductId ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
     learningCycleId,
+    chainId,
   );
   const valueChainPosition = useProductValueChainPosition(
     validProductId && validProcessId ? productId : undefined,
@@ -108,6 +118,12 @@ export default function ProductProcessActivityExecutionsPage() {
     learningCycleId,
   );
   const data = history.data;
+  useEffect(() => {
+    if (data && hash.startsWith("#activity-"))
+      document
+        .getElementById(hash.slice(1))
+        ?.scrollIntoView?.({ block: "start" });
+  }, [data, hash]);
   const productLabel =
     data?.productInternalName ||
     data?.productName ||
@@ -254,10 +270,6 @@ export default function ProductProcessActivityExecutionsPage() {
         </div>
       ) : null}
 
-      <LearningCycleProcessEntry
-        processDefinitionId={processDefinitionId}
-        productId={productId}
-      />
       {data ? (
         <>
           <section
@@ -334,6 +346,14 @@ export default function ProductProcessActivityExecutionsPage() {
                       ? "Não há atividade pendente nesta versão."
                       : "O backend ainda não registrou uma causa ou próxima atividade.")}
                 </small>
+                {data.currentActivityId ? (
+                  <a
+                    className="btn btn-outline-primary btn-sm mt-2"
+                    href={`#activity-${data.currentActivityId}`}
+                  >
+                    Ir para a atividade atual
+                  </a>
+                ) : null}
               </article>
             </div>
 
@@ -438,11 +458,20 @@ export default function ProductProcessActivityExecutionsPage() {
               <article
                 className="product-process-activity-executions__activity"
                 key={activity.activityId}
+                id={`activity-${activity.activityId}`}
               >
                 <header className="product-process-activity-executions__activity-header">
                   <div>
                     <span className="product-process-activity-executions__eyebrow">
-                      Atividade {activity.sequenceNumber}
+                      Atividade{" "}
+                      {selectedProcessSequence
+                        ? `${selectedProcessSequence}.`
+                        : ""}
+                      {activity.sequenceNumber}
+                      {activity.executionControl?.interactionType ===
+                      "SUBPROCESS"
+                        ? " · Abre subprocesso"
+                        : ""}
                       {!activity.selectedVersionActivity
                         ? " · versão histórica"
                         : ""}
@@ -563,6 +592,12 @@ export default function ProductProcessActivityExecutionsPage() {
                       />
                     ))}
                   </div>
+                ) : activity.executionControl?.interactionType ===
+                  "SUBPROCESS" ? (
+                  <p className="text-body-secondary small mb-0">
+                    Acompanhe as etapas, os resultados e as evidências dentro do
+                    subprocesso.
+                  </p>
                 ) : (
                   <div className="product-process-activity-executions__empty">
                     <Bot size={24} aria-hidden="true" />

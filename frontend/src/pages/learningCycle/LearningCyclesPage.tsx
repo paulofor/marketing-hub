@@ -131,6 +131,15 @@ export default function LearningCyclesPage() {
   }
   return (
     <div className="learning-cycles-page">
+      {catalog.data?.entry?.activitySequenceNumber ? (
+        <Link
+          to={catalog.data.entry.parentUrl}
+          className="btn btn-primary me-2 mb-3"
+        >
+          Voltar à atividade {catalog.data.entry.activitySequenceNumber} do
+          Processo {catalog.data.entry.sequenceNumber}
+        </Link>
+      ) : null}
       <Link
         to={`/business-process-chains${chainId ? `?chainId=${chainId}${productId ? `&productId=${productId}` : ""}` : ""}`}
         className="btn btn-outline-secondary mb-3"
@@ -148,14 +157,22 @@ export default function LearningCyclesPage() {
             {catalog.data.entry.sequenceNumber}.{" "}
             {catalog.data.entry.parentProcessName}
           </Link>
+          {catalog.data.entry.activityName ? (
+            <>
+              {" → Atividade "}
+              {catalog.data.entry.activitySequenceNumber}
+              {": "}
+              {catalog.data.entry.activityName}
+            </>
+          ) : null}
           {" → Subprocesso: "}
           {catalog.data.entry.processName}
         </nav>
       ) : null}
       <p>
-        Este painel executa o subprocesso de aprendizado do processo de venda.
-        Cada ciclo corresponde a um experimento e conserva seu aprendizado, suas
-        métricas e a próxima ação.
+        Este subprocesso é executado pela atividade “Conduzir o ciclo de
+        aprendizado e vendas” do processo de venda. Cada ciclo corresponde a um
+        experimento e conserva seu aprendizado, suas métricas e a próxima ação.
       </p>
       <div className="cycle-form-grid mb-3">
         <label className="form-label">

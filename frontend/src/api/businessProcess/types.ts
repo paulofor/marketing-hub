@@ -401,6 +401,7 @@ export type ProductProcessActivityExecutionGroup = {
     | "BACKFILLED_FROM_TASKS"
     | "LEGACY_TASK"
     | "COMPOSITE_TASK_COVERAGE"
+    | "SUBPROCESS"
     | "NOT_RECORDED";
   activityInstanceId?: number;
   occurrenceNumber?: number;
@@ -447,6 +448,7 @@ export type ProductProcessActivityExecutionControl = {
   requirements: ProductProcessActivityRequirement[];
   decisionMode?: "DETAILED" | "REVIEW_AND_ACCEPT";
   auditEvidenceReference?: string;
+  navigationUrl?: string;
 };
 
 export type ProductProcessActivityHumanDecision = {

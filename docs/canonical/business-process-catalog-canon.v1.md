@@ -61,6 +61,12 @@ com resultado verificável. Quantidade de tarefas concluídas não substitui res
 - **Orientação executável:** cada atividade declara objetivo, responsável, entradas, entrega,
   critério de conclusão, bloqueios e ação disponível ao usuário. Telas especializadas, estúdios e
   painéis permanecem recursos da atividade e devem ser acessíveis pelo BPM preservando seu contexto.
+- **Entrada única por atividade de chamada (09/09/2026):** na tela de atividades do produto,
+  subprocessos aparecem na sequência do pai como atividades que abrem seu fluxo especializado.
+  A chamada apresenta o andamento persistido, a próxima ação e o destino contextual do subprocesso.
+  Não repetir o ciclo em um painel independente acima das atividades. Ao entrar, mostrar o processo
+  e a atividade de origem e oferecer retorno a essa atividade; não confundir ausência de tarefa de
+  agente no pai com ausência de execução registrada no subprocesso.
 - **Identificação para o usuário:** a tela de atividades deve mostrar, junto ao nome, o número oficial
   do processo ou subprocesso dentro da Cadeia de Valor (por exemplo, `Processo 6` ou `Processo 6.1`).
   O número vem do backend e não pode ser confundido com a versão técnica ou com o identificador do banco.

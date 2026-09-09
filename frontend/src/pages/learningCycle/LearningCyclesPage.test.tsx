@@ -21,6 +21,8 @@ const catalog: CycleCatalog = {
     parentProcessName: "Venda e aprendizado",
     sequenceNumber: 6,
     activityId: "learningCycle",
+    activityName: "Conduzir o ciclo de aprendizado e vendas",
+    activitySequenceNumber: 4,
     processDefinitionId: 70,
     processName: "Ciclos de aprendizado e vendas",
     integrated: true,
@@ -28,7 +30,8 @@ const catalog: CycleCatalog = {
     guidance: "Registre a decisão no ciclo",
     workspaceUrl: "/business-process-chains/learning-cycles?chainId=1",
     actionLabel: "Abrir ciclo por produto e experimento",
-    parentUrl: "/business-processes?processId=6",
+    parentUrl:
+      "/products/4/value-chain-history/processes/73/activities?chainId=1#activity-learningCycle",
     returnRoutes: [],
   },
   processDefinitionId: 70,
@@ -131,6 +134,20 @@ beforeEach(() => {
   });
 });
 describe("Ciclos de aprendizado e vendas", () => {
+  it("identifica a atividade chamadora e permite retornar ao ponto correto do processo", async () => {
+    wrapper(<LearningCyclesPage />);
+    expect(
+      await screen.findByRole("link", {
+        name: "Voltar à atividade 4 do Processo 6",
+      }),
+    ).toHaveAttribute("href", catalog.entry!.parentUrl);
+    expect(
+      screen.getByRole("navigation", { name: "Local do ciclo na cadeia" }),
+    ).toHaveTextContent(
+      "Atividade 4: Conduzir o ciclo de aprendizado e vendas",
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
   it("não substitui um ciclo solicitado inexistente pelo mais recente", async () => {
     wrapper(
       <LearningCyclesPage />,

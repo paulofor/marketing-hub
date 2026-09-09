@@ -270,6 +270,35 @@ describe("ProductProcessActivityExecutionPanel", () => {
     );
   });
 
+  it("opens the contextual cycle destination supplied by the backend without executing a command", () => {
+    renderPanel({
+      ...baseActivity(),
+      activityId: "learningCycle",
+      activityName: "Conduzir o ciclo de aprendizado e vendas",
+      executionControl: {
+        executorType: "BACKEND",
+        interactionType: "SUBPROCESS",
+        actionLabel: "Retomar subprocesso · ciclo #1",
+        description: "Ciclo #1 · experimento #91 · Decisão comercial",
+        actionAvailable: true,
+        availabilityReason: "Retome a decisão comercial.",
+        confirmationRequired: false,
+        targetProcessDefinitionId: 72,
+        navigationUrl:
+          "/business-process-chains/learning-cycles?chainId=13&productId=9&cycleId=1",
+        requirements: [],
+      },
+    });
+    expect(screen.getByRole("heading", { name: "Subprocesso" })).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Retomar subprocesso · ciclo #1" }),
+    ).toHaveAttribute(
+      "href",
+      "/business-process-chains/learning-cycles?chainId=13&productId=9&cycleId=1",
+    );
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
   it("shows the preflight workspace and keeps a pending run non-reentrant", () => {
     renderPanel({
       ...baseActivity(),

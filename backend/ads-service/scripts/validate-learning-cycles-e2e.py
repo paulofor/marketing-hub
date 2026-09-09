@@ -130,7 +130,17 @@ reset()
 catalog=http(f'{API}/catalog?chainId=91001&productId=91001')
 entry=catalog['entry']
 parent_id=entry['parentProcessDefinitionId']
+def parent_history(product=91001, chain=91001, cycle_id=None):
+    query=f'?chainId={chain}' + (f'&learningCycleId={cycle_id}' if cycle_id else '')
+    return http(f'/api/business-processes/{parent_id}/products/{product}/activity-executions{query}')
+
+
+def cycle_call(history):
+    return next(activity for activity in history['activities'] if activity['activityId']=='learningCycle')
+
+
 assert entry['sequenceNumber']==6 and entry['canStartCycle'] and entry['integrated']
+assert entry['activitySequenceNumber']==4 and entry['parentUrl'].endswith('#activity-learningCycle')
 assert [route['sequenceNumber'] for route in entry['returnRoutes']]==[2,3,4,5,6]
 assert http('/api/business-process-chains/91001')['processCount']==6
 before=sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')
@@ -152,7 +162,17 @@ resumed=http(f'{API}/entry?processDefinitionId={parent_id}&productId=91001')
 assert f'cycleId={started["id"]}' in resumed['workspaceUrl']
 assert 'cycleId=' not in http(f'{API}/entry?processDefinitionId={parent_id}&productId=91002')['workspaceUrl']
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='1'
+parent=parent_history()
+assert parent['operationalState']=='IN_PROGRESS' and parent['currentActivityId']=='learningCycle'
+assert cycle_call(parent)['stateEvidence']=='SUBPROCESS'
+assert f'cycleId={started["id"]}' in cycle_call(parent)['executionControl']['navigationUrl']
+assert not cycle_call(parent_history(91002))['objectiveAchieved']
+assert 'cycleId=' not in cycle_call(parent_history(91002))['executionControl']['navigationUrl']
+assert not cycle_call(parent_history(chain=91000))['executionControl']['actionAvailable']
+assert [a['executionControl']['interactionType'] for a in parent['activities']]==['SUBPROCESS','SUBPROCESS','AUTOMATIC','SUBPROCESS']
+assert not any(a['objectiveAchieved'] for a in parent['activities'])
 check('Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto')
+check('Atividade do pai projeta ciclo e estado reais, conserva a cadeia e distingue as três chamadas')
 reset()
 assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 3 and catalog['entry']['integrated']
 assert any(flow.get('kind')=='REWORK' and flow['to']=='LEARNING' for flow in catalog['diagram']['flows'])
@@ -234,6 +254,8 @@ retry_request=dict(requestKey=str(uuid.uuid4()),expectedRevision=cycle['revision
 cycle=reconcile(cycle,request=retry_request)
 assert cycle['stage']=='MEASUREMENT' and 'indisponível' in cycle['events'][-1]['evidence']['blocker']
 assert 'sessions' not in cycle['events'][-1]['evidence']
+assert cycle_call(parent_history())['operationalState']=='BLOCKED'
+assert 'indisponível' in cycle_call(parent_history())['stateReason']
 assert reconcile(cycle,request=retry_request)['revision']==cycle['revision']
 reconcile(cycle,expected=409,request=dict(retry_request,expectedRevision=cycle['revision']))
 configure_measurement(snapshot='cap-v3',netSales=0,spendBrl=100,contributionBrl=-100)
@@ -316,7 +338,11 @@ assert not proof['evidence']['preflightRecorded'] and proof['evidence']['experim
 assert legacy['events'][1]['action']=='MEASURE' and legacy['events'][1]['evidence']['automatic']
 assert http('/fixture/experiments/91001/state')==before==dict(status='USER_STOPPED',runCount=0,campaignCount=1)
 legacy=command(legacy,'ADJUST',dict(return_to,learning='Amostra pequena e microação insuficiente',nextHypothesis='Primeiro ajuste executável'))
+assert cycle_call(parent_history())['operationalState']=='COMPLETED'
+assert cycle_call(parent_history())['executionControl']['actionAvailable']
 successor=http(f'{API}/products/91001',brief(91002,legacy['id']))
+assert cycle_call(parent_history())['operationalState']=='IN_PROGRESS'
+assert cycle_call(parent_history(cycle_id=legacy['id']))['operationalState']=='COMPLETED'
 assert successor['stage']=='LEARNING' and successor['events']==[]
 assert successor['inheritedLearning']['events'][0]['evidence']==proof['evidence']
 assert http('/fixture/experiments/91002/state')==dict(status='PLANNED',runCount=0,campaignCount=0)

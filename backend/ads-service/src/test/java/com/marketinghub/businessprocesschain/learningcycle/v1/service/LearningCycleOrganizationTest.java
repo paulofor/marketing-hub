@@ -57,6 +57,8 @@ class LearningCycleOrganizationTest {
     assertThat(entry.canStartCycle()).isTrue();
     assertThat(entry.sequenceNumber()).isEqualTo(6);
     assertThat(entry.activityId()).isEqualTo("learningCycle");
+    assertThat(entry.activitySequenceNumber()).isEqualTo(1);
+    assertThat(entry.parentUrl()).endsWith("#activity-learningCycle");
     assertThat(entry.returnRoutes()).hasSize(1);
     assertThat(entry.returnRoutes().getFirst().processDefinitionId()).isEqualTo(60L);
     assertThat(entry.parentUrl()).contains("/products/4/", "processes/60", "chainId=13");

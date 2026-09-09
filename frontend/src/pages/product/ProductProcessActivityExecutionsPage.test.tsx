@@ -13,16 +13,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductProcessActivityExecutionsPage from "./ProductProcessActivityExecutionsPage";
 
 vi.mock("axios");
-// Estes testes isolam as atividades existentes; a entrada do ciclo possui testes de contrato próprios.
-vi.mock(
-  "../../api/learningCycle/useLearningCycles",
-  async (importOriginal) => ({
-    ...(await importOriginal<
-      typeof import("../../api/learningCycle/useLearningCycles")
-    >()),
-    useLearningCycleEntry: () => ({ data: null, isError: false }),
-  }),
-);
 
 const dedaloTask = {
   taskId: 243,
@@ -392,6 +382,71 @@ describe("ProductProcessActivityExecutionsPage", () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+  });
+
+  it("keeps the cycle entry inside its calling activity and reflects the backend state", async () => {
+    const cycleActivity = {
+      ...history.activities[0],
+      activityId: "learningCycle",
+      sequenceNumber: 4,
+      activityName: "Conduzir o ciclo de aprendizado e vendas",
+      operationalState: "IN_PROGRESS",
+      objectiveAchieved: false,
+      stateEvidence: "SUBPROCESS",
+      tasks: [],
+      taskCount: 0,
+      stateReason: "Ciclo #1 · experimento #91 · Decisão comercial",
+      executionRequestAvailable: false,
+      executionControl: {
+        executorType: "BACKEND",
+        interactionType: "SUBPROCESS",
+        actionAvailable: true,
+        actionLabel: "Retomar subprocesso · ciclo #1",
+        description: "Subprocesso de aprendizado",
+        availabilityReason: "Decisão comercial",
+        confirmationRequired: false,
+        targetProcessDefinitionId: 72,
+        requirements: [],
+        navigationUrl:
+          "/business-process-chains/learning-cycles?chainId=13&productId=9&cycleId=1",
+      },
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => ({
+      data: url.includes("value-chain-positions")
+        ? null
+        : {
+            ...history,
+            activities: [cycleActivity],
+            operationalState: "IN_PROGRESS",
+            currentActivityId: "learningCycle",
+            currentActivityName: cycleActivity.activityName,
+            currentActivityStateReason: cycleActivity.stateReason,
+          },
+    }));
+    renderPage();
+    const link = await screen.findByRole("link", {
+      name: "Retomar subprocesso · ciclo #1",
+    });
+    expect(link.closest("article")).toHaveAttribute(
+      "id",
+      "activity-learningCycle",
+    );
+    expect(screen.getByText("Atividade 4 · Abre subprocesso")).toBeVisible();
+    expect(
+      screen.queryByRole("region", {
+        name: "Ciclo dentro do processo de venda",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Situação do processo" }),
+      ).getByText("Em andamento"),
+    ).toBeVisible();
+    expect(axios.get).not.toHaveBeenCalledWith(
+      expect.stringContaining("/learning-cycles/"),
+      expect.anything(),
+    );
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("shows product activities and tasks without duplicating the summary", async () => {

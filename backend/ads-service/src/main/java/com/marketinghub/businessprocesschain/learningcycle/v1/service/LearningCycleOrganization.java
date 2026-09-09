@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class LearningCycleOrganization {
   private final LearningCycleJson json;
 
-  /** Expõe somente o pai e os retornos que pertencem à versão exata da cadeia. */
+  /** Expõe a atividade de origem, o pai e os retornos pertencentes à versão exata da cadeia. */
   public LearningCycleEntry describe(
       BusinessProcessChainDefinition chain,
       BusinessProcessDefinition cycleProcess,
@@ -34,9 +34,17 @@ public class LearningCycleOrganization {
     if (parent == null) return null;
     var diagram = json.read(parent.getProcessDefinition().getDiagramJson());
     String activityId = null;
+    String activityName = null;
+    Integer activitySequence = null;
+    int taskSequence = 0;
     for (var node : diagram.path("nodes")) {
+      if ("TASK".equals(node.path("type").asText())) taskSequence++;
       if (cycleProcess.getProcessCode().equals(node.path("subprocessCode").asText())
-          && "TASK".equals(node.path("type").asText())) activityId = node.path("id").asText();
+          && "TASK".equals(node.path("type").asText())) {
+        activityId = node.path("id").asText();
+        activityName = node.path("label").asText();
+        activitySequence = taskSequence;
+      }
     }
     boolean incoming = false, outgoing = false;
     for (var flow : diagram.path("flows")) {
@@ -88,8 +96,11 @@ public class LearningCycleOrganization {
         activeCycle == null
             ? "Abrir ciclo por produto e experimento"
             : "Retomar ciclo #" + activeCycle.getId(),
-        processUrl(parent, productId, chain.getId()),
-        List.copyOf(routes));
+        processUrl(parent, productId, chain.getId())
+            + (productId != null && integrated ? "#activity-" + activityId : ""),
+        List.copyOf(routes),
+        activityName,
+        activitySequence);
   }
 
   /** Abre a definição do destino; a execução da correção usa a atividade orientada do ciclo. */

@@ -46,6 +46,9 @@ try {
       if (
         url.pathname.startsWith("/api/") &&
         !url.pathname.startsWith(cycleApi) &&
+        !/^\/api\/business-processes\/\d+\/products\/\d+\/activity-executions$/.test(
+          url.pathname,
+        ) &&
         !["/api/products", "/api/business-process-chains"].includes(
           url.pathname,
         )
@@ -155,6 +158,87 @@ try {
     const catalog = await (
       await fetch(`${api}${cycleApi}/catalog?chainId=91001&productId=91001`)
     ).json();
+    await page.route("**/api/products/value-chain-positions/*", (route) =>
+      route.fulfill({
+        json: {
+          processDefinitionId: catalog.entry.parentProcessDefinitionId,
+          sequenceNumber: catalog.entry.sequenceNumber,
+          processMeasurements: [],
+        },
+      }),
+    );
+    const returnToParent = async (expectedState, label) => {
+      const beforeNavigation = await (
+        await fetch(`${api}${cycleApi}/products/91001?chainId=91001`)
+      ).json();
+      await page
+        .getByRole("link", { name: "Voltar à atividade 4 do Processo 6" })
+        .click();
+      const call = page.locator("#activity-learningCycle");
+      await expect(call).toBeInViewport();
+      await expect(page.locator("#activity-optimization")).toContainText(
+        "Abre subprocesso",
+      );
+      await expect(page.locator("#activity-delivery")).toContainText(
+        "Abre subprocesso",
+      );
+      await expect(page.locator("#activity-consolidate")).not.toContainText(
+        "Abre subprocesso",
+      );
+      await expect(call).toContainText("Atividade 6.4 · Abre subprocesso");
+      await expect(call).toContainText(`Ciclo #${current.id}`);
+      await expect(call).toContainText(label);
+      await expect(
+        page.getByRole("region", { name: "Ciclo dentro do processo de venda" }),
+      ).toHaveCount(0);
+      const history = await (
+        await fetch(
+          `${api}/api/business-processes/${catalog.entry.parentProcessDefinitionId}/products/91001/activity-executions`,
+        )
+      ).json();
+      assert.equal(
+        history.activities.find((a) => a.activityId === "learningCycle")
+          .operationalState,
+        expectedState,
+      );
+      assert.equal(history.activities.length, 4);
+      assert.equal(history.uniqueTaskCount, 0);
+      if (expectedState === "IN_PROGRESS") {
+        assert.equal(history.currentActivityId, "learningCycle");
+        assert.equal(history.operationalState, "IN_PROGRESS");
+      }
+      assert(
+        history.activities
+          .filter((a) => a.activityId !== "learningCycle")
+          .every((a) => !a.objectiveAchieved),
+      );
+      assert(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      );
+      await page.screenshot({
+        path: `${output}/${name}-processo6-${expectedState}.png`,
+        fullPage: true,
+      });
+      await call
+        .getByRole("link", {
+          name: /Retomar subprocesso|Consultar subprocesso/,
+        })
+        .click();
+      await expect(
+        page.getByRole("navigation", { name: "Local do ciclo na cadeia" }),
+      ).toContainText("Atividade 4: Conduzir o ciclo de aprendizado e vendas");
+      const afterNavigation = await (
+        await fetch(`${api}${cycleApi}/products/91001?chainId=91001`)
+      ).json();
+      assert.deepEqual(
+        afterNavigation,
+        beforeNavigation,
+        "Navegação alterou o ciclo",
+      );
+    };
+    await returnToParent("IN_PROGRESS", "Decisão comercial");
     const target = catalog.returnTargets.find((t) => t.activityId === "rework");
     current = await command("ADJUST", "Encerrar ciclo e preparar sucessor", {
       rootCause: "Microação pouco clara",
@@ -163,6 +247,7 @@ try {
       nextHypothesis: "Ação concreta melhora uso",
       returnTarget: `${target.processDefinitionId}:${target.activityId}`,
     });
+    await returnToParent("COMPLETED", "Decisão encerrada");
     await page
       .getByRole("button", {
         name: "Criar ciclo sucessor com aprendizado",

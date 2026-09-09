@@ -41,13 +41,17 @@ public class BusinessProcessActivityExecutionController {
     return service.recentExecutions(processDefinitionId, activityId);
   }
 
-  /** Retorna as atividades do produto com vínculo opcional ao ciclo comercial selecionado. */
+  /** Retorna as atividades preservando o ciclo e a versão de cadeia explicitamente selecionados. */
   @Operation(summary = "Mostra a situação, as atividades e as tarefas do produto no processo")
   @GetMapping("/{processDefinitionId}/products/{productId}/activity-executions")
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       @PathVariable Long processDefinitionId,
       @PathVariable Long productId,
-      @RequestParam(required = false) Long learningCycleId) {
+      @RequestParam(required = false) Long learningCycleId,
+      @RequestParam(required = false) Long chainId) {
+    if (chainId != null)
+      return service.productProcessExecutions(
+          processDefinitionId, productId, learningCycleId, chainId);
     return learningCycleId == null
         ? service.productProcessExecutions(processDefinitionId, productId)
         : service.productProcessExecutions(processDefinitionId, productId, learningCycleId);

@@ -11,6 +11,9 @@ public interface LearningSalesCycleEventRepository
   /** Lista somente as transições do ciclo solicitado, na ordem em que ocorreram. */
   List<LearningSalesCycleEvent> findByCycleIdOrderByRevisionAsc(Long cycleId);
 
+  /** Lê o último resultado sem perder bloqueios cuja próxima instância já foi aberta. */
+  Optional<LearningSalesCycleEvent> findFirstByCycleIdOrderByRevisionDesc(Long cycleId);
+
   /** Localiza o recibo de um comando para impedir efeitos duplicados. */
   Optional<LearningSalesCycleEvent> findByCycleIdAndRequestKey(Long cycleId, String requestKey);
 }

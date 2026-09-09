@@ -61,7 +61,11 @@ export default function ProductProcessActivityExecutionPanel({
           <span className="product-process-activity-control__eyebrow">
             Como executar
           </span>
-          <h3>{executorLabels[control.executorType]}</h3>
+          <h3>
+            {control.interactionType === "SUBPROCESS"
+              ? "Subprocesso"
+              : executorLabels[control.executorType]}
+          </h3>
         </div>
         <ExecutionIcon executorType={control.executorType} />
       </header>
@@ -93,7 +97,10 @@ export default function ProductProcessActivityExecutionPanel({
         control.targetProcessDefinitionId && control.actionAvailable ? (
           <Link
             className="btn btn-primary"
-            to={`/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities`}
+            to={
+              control.navigationUrl ||
+              `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities`
+            }
           >
             <Workflow size={17} aria-hidden="true" />
             {control.actionLabel || "Abrir subprocesso"}

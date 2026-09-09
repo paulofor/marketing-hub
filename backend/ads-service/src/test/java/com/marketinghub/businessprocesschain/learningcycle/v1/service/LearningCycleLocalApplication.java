@@ -49,6 +49,11 @@ import org.springframework.web.bind.annotation.*;
 @Import({
   LearningCycleService.class,
   LearningCycleOrganization.class,
+  LearningCycleActivityProjection.class,
+  LearningCycleExecutionContext.class,
+  com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService.class,
+  com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController
+      .class,
   com.marketinghub.businessprocesschain.service.BusinessProcessChainService.class,
   com.marketinghub.businessprocesschain.controller.BusinessProcessChainController.class,
   BusinessProcessDefinitionService.class,
@@ -184,6 +189,32 @@ public class LearningCycleLocalApplication {
   @Bean
   com.marketinghub.repository.jpa.agenttask.AgentTaskRepository agentTasks() {
     return mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+  }
+
+  /** Simula apenas vínculos de tarefas externas; as atividades e os ciclos usam MySQL real. */
+  @Bean
+  com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository activityCoverage() {
+    return mock(
+        com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository.class);
+  }
+
+  /** Mantém os planos externos vazios para comprovar a entrada histórica independente. */
+  @Bean
+  com.marketinghub.repository.jpa.planning.CommercialPlanRepository plans() {
+    return mock(com.marketinghub.repository.jpa.planning.CommercialPlanRepository.class);
+  }
+
+  /** Isola execuções de landing sem acionar geradores durante navegação. */
+  @Bean
+  com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository landings() {
+    return mock(
+        com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository.class);
+  }
+
+  /** Impede execução de agentes reais; a matriz verifica que navegar não solicita tarefas. */
+  @Bean
+  com.marketinghub.agenttask.AgentTaskService taskService() {
+    return mock(com.marketinghub.agenttask.AgentTaskService.class);
   }
 
   /** Isola o catálogo de integrações sem carregar executores ou credenciais reais. */
@@ -412,6 +443,35 @@ public class LearningCycleLocalApplication {
         factory,
         com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainItemRepository
             .class);
+  }
+
+  /** Instala os dois outros subprocessos chamados pelo pai, sem executores ou efeitos externos. */
+  @Bean
+  ApplicationRunner subprocessFixtures(BusinessProcessDefinitionRepository processes) {
+    return args -> {
+      for (String code :
+          List.of("operacao-otimizacao-experimento", "venda-entrega-satisfacao-cliente")) {
+        if (processes.findByProcessCodeAndVersionNumber(code, 1).isPresent()) continue;
+        var process = new BusinessProcessDefinition();
+        process.setProcessCode(code);
+        process.setVersionNumber(1);
+        process.setName(
+            code.startsWith("operacao")
+                ? "Operação do experimento local"
+                : "Entrega e satisfação local");
+        process.setPurpose("Validar a navegação de subprocessos na sandbox");
+        process.setOwnerName("Backend local");
+        process.setTriggerDescription("Atividade de chamada do pai");
+        process.setOutcomeDescription("Consulta local sem execução comercial");
+        process.setStatus("PUBLISHED");
+        process.setProcessType("SUBPROCESS");
+        process.setExecutionScope("PRODUCT");
+        process.setParentProcessCode("pde-sales-delivery-learning");
+        process.setDiagramJson("{\"nodes\":[],\"flows\":[]}");
+        process.setCreatedAt(Instant.now());
+        processes.saveAndFlush(process);
+      }
+    };
   }
 
   /** Instala uma atividade real de gate para receber callbacks simulados dos especialistas. */

@@ -46,15 +46,11 @@ try {
         await route.abort();
         return;
       }
-      if (/^\/api\/business-processes\/\d+\/products\//.test(url.pathname)) {
-        await route.fulfill({ json: null });
-        return;
-      }
       if (
         url.pathname.startsWith("/api/") &&
         !url.pathname.startsWith(cycleApi) &&
         !url.pathname.startsWith("/api/business-process-chains") &&
-        !/^\/api\/business-processes(\/\d+(\/composition)?)?$/.test(
+        !/^\/api\/business-processes(\/\d+(\/composition|\/products\/\d+\/activity-executions)?)?$/.test(
           url.pathname,
         ) &&
         url.pathname !== "/api/products"
@@ -139,12 +135,15 @@ try {
         `/products/91001/value-chain-history/processes/${parent.processDefinitionId}/activities?chainId=91001`,
       { waitUntil: "networkidle" },
     );
-    const productEntry = page.getByRole("region", {
-      name: "Ciclo dentro do processo de venda",
-    });
+    const productEntry = page.locator("#activity-learningCycle");
+    await expect(
+      page.getByRole("region", { name: "Ciclo dentro do processo de venda" }),
+    ).toHaveCount(0);
     await expect(productEntry).toBeVisible();
     await productEntry
-      .getByRole("link", { name: /Abrir ciclo|Retomar ciclo/ })
+      .getByRole("link", {
+        name: /Abrir subprocesso|Retomar subprocesso|Consultar subprocesso/,
+      })
       .click();
     assert.equal(new URL(page.url()).searchParams.get("productId"), "91001");
     await expect(
@@ -163,8 +162,13 @@ try {
     assert.deepEqual(errors, []);
     assert.deepEqual(mutations, []);
     // A indisponibilidade do contrato deve ser mostrada sem oferecer um vínculo inferido.
-    await page.route("**" + cycleApi + "/entry?**", (route) =>
-      route.fulfill({ status: 503, json: { detail: "Fixture indisponível" } }),
+    await page.route(
+      "**/api/business-processes/*/products/*/activity-executions**",
+      (route) =>
+        route.fulfill({
+          status: 503,
+          json: { detail: "Fixture indisponível" },
+        }),
     );
     await page.goto(
       base +
@@ -174,7 +178,7 @@ try {
     await expect(
       page
         .getByRole("alert")
-        .filter({ hasText: "Não foi possível consultar o vínculo" }),
+        .filter({ hasText: "Não foi possível consultar as atividades" }),
     ).toBeVisible({ timeout: 15000 });
     await expect(
       page.getByRole("region", { name: "Ciclo dentro do processo de venda" }),

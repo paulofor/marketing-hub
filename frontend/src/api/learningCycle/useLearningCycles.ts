@@ -11,6 +11,8 @@ export type LearningCycleEntry = {
   parentProcessName: string;
   sequenceNumber: number;
   activityId?: string | null;
+  activityName?: string | null;
+  activitySequenceNumber?: number | null;
   processDefinitionId: number;
   processName: string;
   integrated: boolean;
@@ -35,6 +37,8 @@ const entrySchema = z.object({
   parentProcessName: z.string(),
   sequenceNumber: z.number().int().positive(),
   activityId: z.string().nullish(),
+  activityName: z.string().nullish(),
+  activitySequenceNumber: z.number().int().positive().nullish(),
   processDefinitionId: z.number().int().positive(),
   processName: z.string(),
   integrated: z.boolean(),

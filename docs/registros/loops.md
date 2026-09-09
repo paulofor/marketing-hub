@@ -4489,6 +4489,12 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - Prevenção: criação exige pai publicado e chamada conectada; testes cobrem contrato
   incompleto, cadeia divergente, segregação por produto, MySQL/rollback e navegação mobile.
   Evidências: `docs/homologacao/cadeia-ciclo-vendas-integrado-v1.md`.
+- Recorrência em 09/09/2026: a chamada já existia no pai v5, mas o painel ficava acima
+  das atividades e o histórico só consultava instâncias do pai. Vega tinha ciclo #1 em
+  `DECISION`, enquanto a atividade 4 aparecia não iniciada. A correção projeta o ciclo
+  persistido nessa atividade, respeita produto/cadeia e oferece destino direto e retorno
+  à chamada. A navegação local passa a usar o controller e o histórico reais, em vez de
+  simular um histórico vazio. Matriz: `docs/homologacao/ciclo-vendas-atividade-subprocesso-v1.md`.
 
 ## LOOP-BPM-VIDEO-GENERICO-SEM-ENTREGA-POR-DESTINO — prevenção em 08/09/2026
 

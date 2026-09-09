@@ -28,6 +28,7 @@ import com.marketinghub.businessprocess.execution.service.recentExecutions.Busin
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleActivityProjection;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -98,6 +99,8 @@ public class BusinessProcessActivityExecutionService {
 
   @Autowired(required = false)
   private LearningCycleExecutionContext learningCycleContext;
+
+  @Autowired private LearningCycleActivityProjection learningCycleActivityProjection;
 
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
@@ -272,10 +275,17 @@ public class BusinessProcessActivityExecutionService {
     return productProcessExecutions(processDefinitionId, productId, null);
   }
 
-  /** Consulta o ciclo explicitamente escolhido sem alterar o contexto de outros experimentos. */
+  /** Consulta tarefas e chamadas de subprocesso no contexto persistido do produto e do ciclo. */
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId, Long productId, Long learningCycleId) {
+    return productProcessExecutions(processDefinitionId, productId, learningCycleId, null);
+  }
+
+  /** Respeita a versão de cadeia explicitamente escolhida ao apresentar a chamada do ciclo. */
+  @Transactional(readOnly = true)
+  public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
+      Long processDefinitionId, Long productId, Long learningCycleId, Long chainId) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
@@ -350,6 +360,16 @@ public class BusinessProcessActivityExecutionService {
             product,
             hasExecutionContext,
             !Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()));
+    if (learningCycleActivityProjection != null) {
+      activities =
+          learningCycleActivityProjection.apply(
+              selectedProcess,
+              productId,
+              learningCycleId,
+              selectedByActivityId,
+              activities,
+              chainId);
+    }
     ProductProcessSituation situation = processSituation(activities);
     BigDecimal knownCost = knownEstimatedCost(tasks);
     CommercialPlan commercialPlan = currentCommercialPlan(productPlans, currentExecutionReference);

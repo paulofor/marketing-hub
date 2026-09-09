@@ -120,6 +120,11 @@ paths:
       summary: Lista as atividades e tarefas do produto no processo canônico
       description: Com learningCycleId, usa o ciclo explícito validado e preserva o contrato privado da construção. Sem esse parâmetro, prioriza o experimento já operado do próprio produto selecionado no plano vigente, inclusive pausado. Sucessor PLANNED e plano encerrado não substituem o fallback operacional; o comando usa a mesma referência.
       parameters:
+        - name: chainId
+          in: query
+          required: false
+          description: Preserva a versão da cadeia na projeção do ciclo da atividade chamadora; contexto divergente não libera navegação.
+          schema: { type: integer, format: int64 }
         - name: learningCycleId
           in: query
           required: false
@@ -740,6 +745,9 @@ components:
         activityOwnerName: { type: string, nullable: true }
         sequenceNumber: { type: integer, minimum: 1 }
         selectedVersionActivity: { type: boolean }
+        stateEvidence:
+          type: string
+          description: SUBPROCESS identifica estado projetado do ciclo persistido na atividade de chamada; não fabrica instância ou tarefa no pai.
         taskCount: { type: integer, minimum: 0 }
         tasks:
           type: array
@@ -803,6 +811,10 @@ components:
           type: string
           nullable: true
           description: Referência persistida que o backend registrará sem exigir redigitação.
+        navigationUrl:
+          type: string
+          nullable: true
+          description: Destino oficial do subprocesso especializado com produto, cadeia e ciclo preservados. Quando ausente, usar as atividades de targetProcessDefinitionId. Navegar não executa comando.
         requirements:
           type: array
           items:

@@ -21,7 +21,46 @@ public record ProductProcessActivityExecutionControlResponse(
     Long targetProcessDefinitionId,
     List<ProductProcessActivityRequirementResponse> requirements,
     String decisionMode,
-    String auditEvidenceReference) {
+    String auditEvidenceReference,
+    String navigationUrl) {
+
+  /** Preserva controles existentes sem destino especializado de navegação. */
+  public ProductProcessActivityExecutionControlResponse(
+      String executorType,
+      String interactionType,
+      String actionLabel,
+      String description,
+      boolean actionAvailable,
+      String availabilityReason,
+      boolean confirmationRequired,
+      String confirmationTitle,
+      String confirmationMessage,
+      String confirmationToken,
+      String workspaceCode,
+      Long workspaceReferenceId,
+      Long targetProcessDefinitionId,
+      List<ProductProcessActivityRequirementResponse> requirements,
+      String decisionMode,
+      String auditEvidenceReference) {
+    this(
+        executorType,
+        interactionType,
+        actionLabel,
+        description,
+        actionAvailable,
+        availabilityReason,
+        confirmationRequired,
+        confirmationTitle,
+        confirmationMessage,
+        confirmationToken,
+        workspaceCode,
+        workspaceReferenceId,
+        targetProcessDefinitionId,
+        requirements,
+        decisionMode,
+        auditEvidenceReference,
+        null);
+  }
 
   /** Mantém o contrato anterior para controles que não representam uma decisão simplificada. */
   public ProductProcessActivityExecutionControlResponse(

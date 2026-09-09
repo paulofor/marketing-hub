@@ -16,7 +16,12 @@ export function useProductProcessActivityExecutions(
   productId?: number,
   processDefinitionId?: number,
   learningCycleId?: number,
+  chainId?: number,
 ) {
+  const query = new URLSearchParams();
+  if (learningCycleId) query.set("learningCycleId", String(learningCycleId));
+  if (chainId) query.set("chainId", String(chainId));
+  const queryString = query.toString();
   return useQuery({
     queryKey: [
       "products",
@@ -25,12 +30,13 @@ export function useProductProcessActivityExecutions(
       processDefinitionId,
       "activity-executions",
       learningCycleId,
+      chainId,
     ],
     enabled: Boolean(productId && processDefinitionId),
     queryFn: async () =>
       (
         await axios.get<ProductProcessActivityExecutionHistory>(
-          `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions${learningCycleId ? `?learningCycleId=${learningCycleId}` : ""}`,
+          `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions${queryString ? `?${queryString}` : ""}`,
         )
       ).data,
   });

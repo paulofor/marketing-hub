@@ -155,6 +155,8 @@ components:
         parentProcessName: {type: string}
         sequenceNumber: {type: integer, description: Posição real do pai na cadeia}
         activityId: {type: string, nullable: true, description: Atividade persistida que chama o ciclo}
+        activityName: {type: string, nullable: true, description: Nome da atividade de origem no processo pai}
+        activitySequenceNumber: {type: integer, nullable: true, description: Posição da atividade de chamada entre as tarefas do BPM pai}
         processDefinitionId: {type: integer, format: int64}
         processName: {type: string}
         integrated: {type: boolean, description: Chamada TASK com fluxos de entrada e saída na versão exata do pai}

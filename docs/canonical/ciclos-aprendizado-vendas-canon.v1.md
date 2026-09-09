@@ -76,6 +76,19 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
 
 ## Losango de decisão
 
+**Organização operacional — 09/09/2026:** o Processo 6 mantém quatro atividades:
+
+1. Operar e otimizar o experimento (chama subprocesso).
+2. Entregar cada venda e acompanhar satisfação (chama subprocesso).
+3. Consolidar resultado comercial (atividade automática do backend).
+4. Conduzir o ciclo de aprendizado e vendas (chama este subprocesso).
+
+Na tela de atividades, a entrada do ciclo fica na atividade 4. Seu estado é lido dos registros
+do ciclo do produto e da cadeia, incluindo a etapa atual, bloqueios e encerramento. O ambiente
+especializado conserva essa origem e permite voltar à atividade chamadora. Não deve haver um
+segundo painel independente de entrada acima da lista, nem conclusão retroativa das outras
+atividades apenas porque uma referência histórica foi adotada.
+
 - **Ajustar:** registrar causa, evidências, aprendizado e atividade/processo de retorno. Encerrar a
   iteração e vincular um experimento novo, inicialmente planejado, do mesmo produto. O sucessor
   recebe a memória do anterior e percorre novamente planejamento, ajustes e gates afetados.

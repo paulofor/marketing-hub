@@ -48,6 +48,12 @@ import org.springframework.web.bind.annotation.*;
 @EnableTransactionManagement
 @Import({
   LearningCycleService.class,
+  com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+      .LearningCycleDecisionService.class,
+  com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+      .LearningCycleDecisionApproval.class,
+  com.marketinghub.businessprocesschain.learningcycle.v1.decision.controller
+      .LearningCycleDecisionController.class,
   LearningCycleOrganization.class,
   LearningCycleActivityProjection.class,
   SalesFlowResolver.class,
@@ -125,6 +131,27 @@ public class LearningCycleLocalApplication {
         Map.entry("logging.level.root", "WARN"));
   }
 
+  /** Persiste a fila de propostas em MySQL real na homologação. */
+  @Bean
+  LearningCycleDecisionProposalRepository decisionProposals(EntityManagerFactory factory) {
+    return repository(factory, LearningCycleDecisionProposalRepository.class);
+  }
+
+  /** Simula somente o cadastro PLAY de Atena sem consultar agente produtivo. */
+  @Bean
+  com.marketinghub.repository.jpa.agent.AgentRepository decisionAgents() {
+    var repository = mock(com.marketinghub.repository.jpa.agent.AgentRepository.class);
+    var agent =
+        com.marketinghub.agent.Agent.builder()
+            .id(91004L)
+            .nickname("Atena")
+            .agentKey("experiment-strategist")
+            .automaticExecutionEnabled(true)
+            .build();
+    when(repository.findByAgentKey("experiment-strategist")).thenReturn(Optional.of(agent));
+    return repository;
+  }
+
   /**
    * Instala a base mínima antes do Liquibase para preservar a ordem real das chaves estrangeiras.
    */
@@ -148,6 +175,9 @@ public class LearningCycleLocalApplication {
     factory.setManagedTypes(
         PersistenceManagedTypes.of(
             LearningSalesCycle.class.getName(),
+            com.marketinghub.businessprocesschain.learningcycle.v1.decision
+                .LearningCycleDecisionProposal.class
+                .getName(),
             LearningSalesCycleEvent.class.getName(),
             BusinessProcessDefinition.class.getName(),
             BusinessProcessChainDefinition.class.getName(),
@@ -551,6 +581,7 @@ public class LearningCycleLocalApplication {
     private final ObjectMapper mapper;
     private final LearningSalesCycleRepository cycles;
     private final LearningSalesCycleEventRepository events;
+    private final LearningCycleDecisionProposalRepository decisionProposals;
 
     /** Recebe as fontes persistidas da fixture. */
     FixtureController(
@@ -559,13 +590,21 @@ public class LearningCycleLocalApplication {
         BusinessProcessActivityInstanceRepository instances,
         ObjectMapper mapper,
         LearningSalesCycleRepository cycles,
-        LearningSalesCycleEventRepository events) {
+        LearningSalesCycleEventRepository events,
+        LearningCycleDecisionProposalRepository decisionProposals) {
+      this.decisionProposals = decisionProposals;
       this.cycles = cycles;
       this.events = events;
       this.processes = processes;
       this.activities = activities;
       this.instances = instances;
       this.mapper = mapper;
+    }
+
+    /** Simula o comando PLAY do executor somente para consumo HTTP local. */
+    @GetMapping("/api/internal/agents/executor-health/experiment-strategist/automatic-execution")
+    Map<String, Object> automaticExecution() {
+      return Map.of("automaticExecutionEnabled", true);
     }
 
     /** Lista produtos explicitamente segregados de homologação. */
@@ -580,6 +619,7 @@ public class LearningCycleLocalApplication {
       var existing = cycles.findAll();
       existing.forEach(cycle -> cycle.setCurrentInstanceId(null));
       cycles.saveAllAndFlush(existing);
+      decisionProposals.deleteAllInBatch();
       events.deleteAllInBatch();
       existing.stream()
           .sorted(Comparator.comparing(LearningSalesCycle::getId).reversed())

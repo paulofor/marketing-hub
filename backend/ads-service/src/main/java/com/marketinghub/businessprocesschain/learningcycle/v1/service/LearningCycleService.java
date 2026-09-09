@@ -48,6 +48,11 @@ public class LearningCycleService {
   private final LearningCycleOrganization organization;
   private final LearningCycleMeasurementCollector measurementCollector;
 
+  @Autowired
+  private com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+          .LearningCycleDecisionApproval
+      decisionApproval;
+
   /** Configura fontes oficiais, contratos e relógio de decisão. */
   @Autowired
   public LearningCycleService(
@@ -403,8 +408,8 @@ public class LearningCycleService {
     events.saveAndFlush(event);
   }
 
-  /** Aplica um comando idempotente com bloqueio de linha e rejeição de revisão obsoleta. */
-  @Transactional
+  /** Aplica sob lock e lê commits recentes para reconhecer aprovações concorrentes idênticas. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse command(Long productId, Long cycleId, LearningCycleCommand request) {
     requireProduct(productId, true);
     var cycle =
@@ -434,6 +439,7 @@ public class LearningCycleService {
     String from = cycle.getStage();
     Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     var experiment = requiredExperiment(productId, cycle.getExperimentId());
+    var approvedProposal = decisionApproval.validate(cycle, request);
     apply(cycle, experiment, request, now);
     cycle.setRevision(cycle.getRevision() + 1);
     cycle.setUpdatedAt(now);
@@ -451,6 +457,7 @@ public class LearningCycleService {
     event.setEvidenceJson(json.write(request.evidence()));
     event.setCreatedAt(now);
     events.saveAndFlush(event);
+    decisionApproval.record(approvedProposal, event.getId(), input, now);
     String completion =
         request.action() == Action.REWORK || request.action() == Action.FIX_MEASUREMENT
             ? "BLOCKED"
@@ -947,6 +954,11 @@ public class LearningCycleService {
     String nextAction =
         stageNode == null ? label(cycle.getStage()) : stageNode.path("description").asText();
     String responsible = stageNode == null ? "Operador do ciclo" : stageNode.path("owner").asText();
+    if ("DECISION".equals(cycle.getStage())) {
+      nextAction =
+          "Atena prepara a proposta com as evidências conciliadas. Revise, edite e aprove para registrar a decisão e o retorno no BPM.";
+      responsible = "Atena · proposta; usuário · edição e aprovação";
+    }
     if ("MEASUREMENT".equals(cycle.getStage())) {
       nextAction =
           "O backend concilia automaticamente funil, vendas, receita, custos e valor entregue pelas fontes oficiais do experimento. Corrija somente a fonte indicada se houver bloqueio.";
@@ -1075,12 +1087,11 @@ public class LearningCycleService {
     return chains.findById(id).orElseThrow(() -> notFound("Cadeia de valor não encontrada."));
   }
 
-  /** Usa o BPM v3 publicado para novas ocorrências; as existentes preservam sua definição. */
+  /** Usa o BPM publicado mais recente para novas ocorrências, preservando a definição histórica. */
   private BusinessProcessDefinition requiredCycleProcess() {
-    int version = 3;
     return processes
-        .findByProcessCodeAndVersionNumber(PROCESS_CODE, version)
-        .orElseThrow(() -> notFound("O BPM de ciclos v" + version + " ainda não foi instalado."));
+        .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(PROCESS_CODE, "PUBLISHED")
+        .orElseThrow(() -> notFound("O BPM de ciclos ainda não possui versão publicada."));
   }
 
   /** Lê a versão exata do BPM persistido no ciclo, sem migrar ocorrências em andamento. */

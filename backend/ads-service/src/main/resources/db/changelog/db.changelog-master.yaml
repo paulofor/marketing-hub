@@ -2060,3 +2060,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-09-pde-sales-flow-v6.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-09-learning-cycle-decision-atena-v4.yaml
+      relativeToChangelogFile: true

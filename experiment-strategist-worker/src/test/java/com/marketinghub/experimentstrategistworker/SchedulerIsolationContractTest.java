@@ -9,11 +9,14 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: proteger o isolamento entre as filas agendadas do worker de Atena. */
 class SchedulerIsolationContractTest {
 
-  /** Garante uma thread para cada fila bloqueante de Atena e para a reconexão. */
+  /**
+   * Garante uma thread para cada fila bloqueante de Atena e para a reconexão e para a proposta do
+   * ciclo.
+   */
   @Test
   void configuresConcurrentSchedulerForIndependentQueues() throws Exception {
     String application = Files.readString(Path.of("src/main/resources/application.yml"));
 
-    assertThat(application).contains("task:\n    scheduling:\n      pool:\n        size: 4");
+    assertThat(application).contains("task:\n    scheduling:\n      pool:\n        size: 5");
   }
 }

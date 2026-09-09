@@ -123,7 +123,16 @@ try {
           response.url().includes("/commands") &&
           response.request().method() === "POST",
       );
-      await form().getByRole("button", { name: button, exact: true }).click();
+      await form()
+        .getByRole("button", {
+          name: (await form()
+            .getByRole("button", { name: "Aprovar decisão e registrar no BPM" })
+            .count())
+            ? "Aprovar decisão e registrar no BPM"
+            : button,
+          exact: true,
+        })
+        .click();
       const result = await response;
       assert.equal(result.status(), 200, await result.text());
       await page.waitForLoadState("networkidle");

@@ -159,6 +159,14 @@ try {
       refunds: 0,
       deliveryVerified: false,
     });
+    // A fixture também precisa revisar a proposta antes de registrar uma decisão humana.
+    const proposalPath = `${cycleApi}/products/91001/${cycle.id}/decision-proposal`;
+    await expect
+      .poll(async () => (await request(proposalPath)).status, {
+        timeout: 20000,
+      })
+      .toBe("READY");
+    const proposal = await request(proposalPath);
     await request(`${cycleApi}/products/91001/${cycle.id}/commands`, {
       requestKey: crypto.randomUUID(),
       expectedRevision: cycle.revision,
@@ -167,6 +175,8 @@ try {
       summary: "Conferir entrega na fonte simulada",
       evidenceReference: "internal://fixture/delivery",
       evidence: {
+        decisionProposalId: proposal.id,
+        humanApproved: true,
         rootCause: "Venda sem entrega",
         correctionPlan: "Conferir fonte oficial",
       },

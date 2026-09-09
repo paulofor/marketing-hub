@@ -82,6 +82,33 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
 
 ## Losango de decisão
 
+### Proposta de Atena e aprovação humana — decisão de 09/09/2026
+
+Na atividade **6.4 — Conduzir o ciclo de aprendizado e vendas**, a decisão comercial deve
+ser preparada automaticamente por **Atena (`experiment-strategist`)**, dentro do subprocesso
+do ciclo. O usuário recebe o formulário preenchido para **editar e aprovar**. Hermes continua
+responsável pela leitura operacional e Plutus pelos limites econômicos; Atena propõe o
+aprendizado, a hipótese e o retorno comercial com base nessas evidências.
+
+- A preparação usa exclusivamente o contexto persistido do próprio ciclo, produto, versão e
+  experimento: conciliação, fontes, período, limitações históricas, hipótese e destinos reais do BPM.
+  Compara três alternativas, distingue observação de hipótese e não inventa causa de abandono.
+- A execução pertence à atividade de decisão do subprocesso, associada a Atena. O worker
+  consome sua fila `pending`; o backend mantém identidade, entrada, proposta original, auditoria,
+  falhas e aprovação. A navegação é somente leitura e não dispara modelo nem aprova decisão.
+- A proposta não encerra o ciclo, cria sucessor, altera experimento, autoriza orçamento ou publica.
+  Somente o envio explícito da aprovação humana registra a decisão e o retorno no BPM.
+- O formulário apresenta o responsável declarado do ciclo como sugestão editável de aprovador,
+  distinguindo-o da autora Atena; essa declaração não é identidade autenticada.
+- Revisão do ciclo, versão da proposta e evidência precisam coincidir. Resposta inválida, fonte
+  indisponível, execução vencida ou proposta desatualizada impedem aprovação e expõem a causa.
+  A proposta original permanece preservada junto à decisão final editada e à autoria declarada.
+- Ciclos históricos abertos recebem a mesma assistência na decisão, mantendo suas definições,
+  métricas e lacunas originais. O vínculo à nova atividade assistida é explícito e auditável.
+- Novas ocorrências usam a versão publicada mais recente do subprocesso, nunca um número fixo
+  no código. A chamada 6.4 e as atividades internas abrem o mesmo formulário do ciclo; comandos
+  genéricos de agente não podem criar uma execução paralela dessa decisão.
+
 **Organização operacional — 09/09/2026:** o Processo 6 mantém quatro atividades:
 
 1. Operar e otimizar o experimento (chama subprocesso).

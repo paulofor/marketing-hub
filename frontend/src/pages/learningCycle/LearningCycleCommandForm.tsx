@@ -8,6 +8,8 @@ import {
   type LearningCycle,
 } from "../../api/learningCycle/useLearningCycles";
 
+import type { DecisionProposal } from "../../api/learningCycle/useDecisionProposal";
+
 type Field = [
   string,
   string,
@@ -108,13 +110,17 @@ export default function LearningCycleCommandForm({
   cycle,
   catalog,
   onUpdated,
+  decisionProposal,
 }: {
   cycle: LearningCycle;
   catalog: CycleCatalog;
+  decisionProposal?: DecisionProposal;
   onUpdated: (cycle: LearningCycle) => void;
 }) {
   const mutation = useCycleMutation(cycle.productId, cycle.id);
-  const [action, setAction] = useState(cycle.commands[0]?.action ?? "");
+  const [action, setAction] = useState(
+    decisionProposal?.proposal?.action ?? cycle.commands[0]?.action ?? "",
+  );
   const [requestKey, setRequestKey] = useState(() => createCycleRequestKey());
   const command = cycle.commands.find((item) => item.action === action);
   const returnRequired = action === "ADJUST" || action === "REWORK";
@@ -152,7 +158,9 @@ export default function LearningCycleCommandForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const evidence: Record<string, unknown> = {};
+    const evidence: Record<string, unknown> = decisionProposal
+      ? { decisionProposalId: decisionProposal.id, humanApproved: true }
+      : {};
     fields.forEach(([key, , type]) => {
       const value = form.get(key);
       evidence[key] =
@@ -251,12 +259,18 @@ export default function LearningCycleCommandForm({
             {item.label}: {item.reason}
           </p>
         ))}
-      <div className="cycle-form-grid" key={`${cycle.revision}-${action}`}>
+      <div
+        className="cycle-form-grid"
+        key={
+          decisionProposal ? decisionProposal.id : `${cycle.revision}-${action}`
+        }
+      >
         <label className="form-label">
           Responsável pela decisão *
           <input
             required
             name="operatorName"
+            defaultValue={decisionProposal?.operatorName}
             className="form-control"
             maxLength={160}
           />
@@ -266,6 +280,7 @@ export default function LearningCycleCommandForm({
           <textarea
             required
             name="summary"
+            defaultValue={decisionProposal?.proposal?.summary}
             className="form-control"
             maxLength={4000}
           />
@@ -275,6 +290,7 @@ export default function LearningCycleCommandForm({
           <input
             required
             name="evidenceReference"
+            defaultValue={decisionProposal?.proposal?.evidenceReference}
             className="form-control"
             maxLength={1200}
             placeholder="Link do relatório, tarefa ou documento"
@@ -287,7 +303,11 @@ export default function LearningCycleCommandForm({
               required
               name="returnTarget"
               className="form-select"
-              defaultValue=""
+              defaultValue={
+                decisionProposal?.proposal?.returnProcessId
+                  ? `${decisionProposal.proposal.returnProcessId}:${decisionProposal.proposal.returnActivityId}`
+                  : ""
+              }
             >
               <option value="">Selecione o destino do retorno</option>
               {catalog.returnTargets.map((target) => (
@@ -336,6 +356,19 @@ export default function LearningCycleCommandForm({
                   </option>
                 ))}
               </select>
+            ) : decisionProposal && type === "text" ? (
+              <textarea
+                className="form-control"
+                name={key}
+                required
+                rows={3}
+                maxLength={4000}
+                defaultValue={String(
+                  decisionProposal.proposal?.[
+                    key as keyof NonNullable<DecisionProposal["proposal"]>
+                  ] ?? "",
+                )}
+              />
             ) : (
               <input
                 className={
@@ -363,11 +396,17 @@ export default function LearningCycleCommandForm({
                 }
                 maxLength={4000}
                 defaultValue={
-                  key === "productVersion" && action !== "REWORK"
-                    ? cycle.productVersion
-                    : key === "budgetLimitBrl" && action !== "AUTHORIZE_SCALE"
-                      ? cycle.budgetLimitBrl
-                      : undefined
+                  decisionProposal?.proposal && key in decisionProposal.proposal
+                    ? String(
+                        decisionProposal.proposal[
+                          key as keyof typeof decisionProposal.proposal
+                        ] ?? "",
+                      )
+                    : key === "productVersion" && action !== "REWORK"
+                      ? cycle.productVersion
+                      : key === "budgetLimitBrl" && action !== "AUTHORIZE_SCALE"
+                        ? cycle.budgetLimitBrl
+                        : undefined
                 }
               />
             )}
@@ -394,7 +433,9 @@ export default function LearningCycleCommandForm({
             aria-label="Registrando"
           />
         ) : null}
-        {command?.label || "Registrar decisão"}
+        {decisionProposal
+          ? "Aprovar decisão e registrar no BPM"
+          : command?.label || "Registrar decisão"}
       </button>
     </form>
   );

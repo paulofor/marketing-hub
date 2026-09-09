@@ -4569,3 +4569,23 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - **Prevenção:** contrato SQL do mesmo recorte atribuído, teste do histórico do #91, bloqueios contra
   fonte ausente/legada, ausência do comando manual, fingerprint, MySQL 5.7 e desktop/mobile. Matriz:
   `docs/homologacao/ciclo-vendas-medicao-automatica-v3.md`.
+
+## LOOP-CICLO-DECISAO-SEM-AGENTE — formulário transfere análise estratégica ao usuário
+
+- Confirmado em 09/09/2026 na tela e no MCP: ciclo #1 do Vega em `DECISION`, revisão 1,
+  conciliação automática existente, campos de decisão vazios e responsabilidade somente humana.
+  O worker de Atena não possuía consumidor para a decisão comercial do ciclo.
+- Correção local: atividade assistida de Atena no BPM v4, fila canônica, contexto congelado do
+  ciclo, proposta estruturada, auditoria e edição/aprovação humanas. A navegação apenas consulta.
+  A proposta nunca conclui sozinha a decisão nem altera campanha, orçamento ou experimento.
+- A primeira integração local expôs seleção fixa do BPM v3, já aposentado pela migração nova;
+  o resolvedor agora usa a versão publicada mais recente, com regressão cobrindo atualizações
+  posteriores. Ciclos históricos conservam seus IDs. A cobertura do catálogo também detectou
+  os novos arquivos de comportamento ausentes; prompt e schema foram incluídos no harness.
+- A reserva concorrente em MySQL 5.7 reproduziu erro 1062 na ocorrência: o snapshot de
+  `REPEATABLE READ` precedia a obtenção do lock. Reserva, callbacks, retentativa e aprovação
+  usam `READ COMMITTED` com lock do ciclo, mantendo as chaves únicas e reconhecendo commits
+  concorrentes. O teste HTTP real cobre reserva única, resposta divergente e aprovação repetida.
+- Prevenção: contratos de fontes, revisão, concorrência, callbacks, falha/retentativa, autoria e
+  três alternativas; integração real em MySQL e worker com modelo simulado; browser desktop/mobile.
+  [Matriz e resultados](../homologacao/ciclo-vendas-decisao-atena-v1.md).

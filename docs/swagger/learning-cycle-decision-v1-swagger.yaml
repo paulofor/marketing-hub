@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Proposta comercial de Atena no ciclo da Cadeia de Valor
+  version: 1.0.0
+  description: >-
+    A atividade DECISION do subprocesso chamado por 6.4 recebe uma proposta de Atena.
+    O worker apenas prepara; a pessoa edita e aprova pelo comando canônico do ciclo.
+    A proposta nunca publica, autoriza gasto, cria sucessor ou altera o experimento.
+paths:
+  /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CycleId'
+    get:
+      operationId: getLearningCycleDecisionProposal
+      summary: Ler a proposta e o estado; navegação não cria execução
+      responses:
+        '200':
+          description: Proposta compacta, revisões, autoria, estado e eventual bloqueio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '404':
+          description: Ciclo ausente ou pertencente a outro produto
+  /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal/audit:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CycleId'
+    get:
+      operationId: getLearningCycleDecisionAudit
+      summary: Ler tentativas, contexto, request, resposta bruta, consumo e referência à aprovação
+      responses:
+        '200':
+          description: Tentativas completas; lease não é exposta. Resposta bruta é texto por contrato de auditoria.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '404':
+          description: Ciclo de outro produto ou inexistente
+  /api/business-process-chains/learning-cycles/v1/products/{productId}/{cycleId}/decision-proposal/retry:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/CycleId'
+    post:
+      operationId: retryLearningCycleDecisionProposal
+      summary: Enfileirar nova tentativa após falha ou lease vencida, preservando a anterior
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, previousProposalId]
+              properties:
+                expectedRevision: {type: integer, format: int64, minimum: 0}
+                previousProposalId: {type: integer, format: int64}
+      responses:
+        '200':
+          description: Nova tentativa ou o mesmo recibo se a solicitação for repetida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '409':
+          description: Revisão, tentativa ou etapa incompatível
+  /api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending:
+    get:
+      operationId: claimLearningCycleDecisionProposal
+      summary: Reservar no máximo uma proposta para o executor de Atena em PLAY
+      description: >-
+        Entrada canônica do worker. Inclui ciclos históricos em DECISION com conciliação
+        automática válida. A transação bloqueia o ciclo; callbacks exigem a lease reservada.
+      responses:
+        '200':
+          description: Lista vazia ou uma execução com entrada congelada
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1
+                items:
+                  type: object
+                  required: [proposalId, leaseToken, cycleId, cycleRevision, activityDefinitionId, context]
+                  properties:
+                    proposalId: {type: integer, format: int64}
+                    leaseToken: {type: string, format: uuid}
+                    cycleId: {type: integer, format: int64}
+                    cycleRevision: {type: integer, format: int64}
+                    activityDefinitionId: {type: integer, format: int64}
+                    context: {type: object, description: 'Ciclo, produto, experimento, versão, eventos, conciliação, briefing, aprendizado, ações e destinos oficiais.'}
+  /api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/{id}/request:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      operationId: recordLearningCycleDecisionRequest
+      summary: Registrar request imutável antes do modelo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leaseToken, prompt, schema, model, serviceTier]
+              properties:
+                leaseToken: {type: string, format: uuid}
+                prompt: {type: string, maxLength: 200000}
+                schema: {type: object}
+                model: {type: string, maxLength: 120}
+                serviceTier: {type: string, enum: [flex, default]}
+                serviceTierReason: {type: string, maxLength: 1200, nullable: true, description: Obrigatória para exceção funcional a Flex}
+      responses:
+        '200': {description: Request preservado; repetição idêntica aceita}
+        '409': {description: Lease inválida ou vencida, request divergente ou tier sem justificativa}
+  /api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/{id}/result:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      operationId: receiveLearningCycleDecisionResult
+      summary: Receber resposta bruta ou falha sem executar a decisão proposta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leaseToken]
+              properties:
+                leaseToken: {type: string, format: uuid}
+                rawResponse: {type: string, maxLength: 64000, nullable: true}
+                error: {type: string, maxLength: 4000, nullable: true}
+                inputTokens: {type: integer, format: int64, minimum: 0, nullable: true}
+                outputTokens: {type: integer, format: int64, minimum: 0, nullable: true}
+                costUsd: {type: number, minimum: 0, nullable: true, description: Nulo quando não informado pelo provedor; nunca presumido zero}
+      responses:
+        '200':
+          description: READY aguarda revisão humana; FAILED ou STALE preserva resposta e causa; conferir status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '409': {description: Lease inválida ou callback terminal divergente}
+components:
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+    ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+    CycleId: {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+  schemas:
+    ProposalResponse:
+      type: object
+      required: [cycleId, cycleRevision, status, agentKey, agentName, automaticExecutionEnabled, operatorName]
+      properties:
+        id: {type: integer, format: int64, nullable: true}
+        cycleId: {type: integer, format: int64}
+        cycleRevision: {type: integer, format: int64}
+        status: {type: string, enum: [WAITING, QUEUED, RUNNING, READY, FAILED, EXPIRED, STALE, APPROVED]}
+        agentKey: {type: string, enum: [experiment-strategist]}
+        agentName: {type: string, enum: [Atena]}
+        agentId: {type: integer, format: int64, nullable: true}
+        automaticExecutionEnabled: {type: boolean}
+        activityDefinitionId: {type: integer, format: int64, nullable: true}
+        proposal: {type: object, nullable: true, description: 'Contrato LEARNING_CYCLE_DECISION_PROPOSAL_V1 do schema versionado no worker, acrescido da referência de evidência resolvida pelo backend.'}
+        operatorName: {type: string, description: Sugestão editável a partir do responsável declarado na criação do ciclo; não é identidade autenticada}
+        error: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time, nullable: true}
+        finishedAt: {type: string, format: date-time, nullable: true}
+        approvedAt: {type: string, format: date-time, nullable: true}
+        approvedEventId: {type: integer, format: int64, nullable: true}

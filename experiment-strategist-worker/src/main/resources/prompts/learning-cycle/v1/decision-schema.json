@@ -1,0 +1,141 @@
+{
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "enum": [
+        "LEARNING_CYCLE_DECISION_PROPOSAL_V1"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "ADJUST",
+        "CONTINUE",
+        "FIX_MEASUREMENT",
+        "SCALE",
+        "STOP",
+        "INCONCLUSIVE"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "rootCause": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "learning": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "nextHypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "evidenceLimits": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "correctionPlan": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "scaleHypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "returnProcessId": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "returnActivityId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidenceEventIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "integer"
+      }
+    },
+    "selectedAlternative": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "benefit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "risk": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "effort": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "salesImpact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "option",
+          "benefit",
+          "risk",
+          "effort",
+          "salesImpact"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "contractVersion",
+    "action",
+    "summary",
+    "rootCause",
+    "learning",
+    "nextHypothesis",
+    "evidenceLimits",
+    "correctionPlan",
+    "scaleHypothesis",
+    "returnProcessId",
+    "returnActivityId",
+    "evidenceEventIds",
+    "selectedAlternative",
+    "alternatives"
+  ],
+  "additionalProperties": false
+}

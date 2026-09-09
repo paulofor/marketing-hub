@@ -11,11 +11,13 @@ case "$LEARNING_CYCLES_DB_HOST" in 127.0.0.1|sandbox-docker) ;; *) exit 2 ;; esa
 cycle_output=$(mktemp -d /tmp/learning-sales-cycle-round-XXXXXX)
 cycle_api_pid=""
 cycle_ui_pid=""
+cycle_atena_pid=""
 compose=(docker compose -p "$LEARNING_CYCLES_COMPOSE_PROJECT" -f backend/ads-service/docker-compose.learning-cycles-local.yml)
 cleanup() {
   local result=$?
   trap - EXIT
   if [[ -n "$cycle_api_pid" ]]; then kill "$cycle_api_pid" 2>/dev/null || true; wait "$cycle_api_pid" 2>/dev/null || true; fi
+  if [[ -n "$cycle_atena_pid" ]]; then kill "$cycle_atena_pid" 2>/dev/null || true; wait "$cycle_atena_pid" 2>/dev/null || true; fi
   if [[ -n "$cycle_ui_pid" ]]; then kill "$cycle_ui_pid" 2>/dev/null || true; wait "$cycle_ui_pid" 2>/dev/null || true; fi
   "${compose[@]}" down --volumes --remove-orphans > "$cycle_output/cleanup.log" 2>&1 || result=1
   printf 'Resultado=%s Evidências=%s\n' "$result" "$cycle_output"
@@ -53,7 +55,7 @@ run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFil
 if [[ "$cycle_scope" != --persistence-only ]]; then
 cycle_test_options=()
 if [[ "$cycle_scope" == --video-matrix ]]; then
-  cycle_test_options=('-Dtest=SalesFlow*Test,LearningCycle*Test,AgentTaskServiceTest,ProductSubprocessPositionResolverTest,BusinessProcess*Test,ProductValueChainPosition*Test,PdeProductionSlotServiceTest,VideoCreativeControllerTest,ExperimentVideoAssetServiceTest,PdeAgentValidationGateActivityExecutorTest')
+  cycle_test_options=('-Dtest=SalesFlow*Test,LearningCycle*Test,AgentHarnessCatalogTest,ArquiteturaTest,AgentTaskServiceTest,ProductSubprocessPositionResolverTest,BusinessProcess*Test,ProductValueChainPosition*Test,PdeProductionSlotServiceTest,VideoCreativeControllerTest,ExperimentVideoAssetServiceTest,PdeAgentValidationGateActivityExecutorTest')
 fi
 # Relatórios gerados de rodadas anteriores não compõem a contagem da rodada corrente.
 rm -rf backend/ads-service/target/surefire-reports
@@ -74,6 +76,16 @@ run build env VITE_API_URL=http://127.0.0.1:15173 npm --prefix frontend run buil
 else
 run compile mvn -q -f backend/ads-service/pom.xml -DskipTests test-compile
 fi
+run atena-tests mvn -q -f experiment-strategist-worker/pom.xml test
+run atena-spotless mvn -q -f experiment-strategist-worker/pom.xml spotless:check
+run decision-prettier npm exec --yes --package=prettier@3.6.2 -- prettier --check \
+  frontend/src/api/learningCycle/useDecisionProposal.ts \
+  frontend/src/pages/learningCycle/LearningCycleDecisionPanel.tsx \
+  frontend/src/pages/learningCycle/LearningCycleDecisionPanel.test.tsx \
+  frontend/src/pages/learningCycle/LearningCycleCommandForm.tsx \
+  frontend/src/pages/learningCycle/LearningCyclesPage.tsx \
+  frontend/src/pages/learningCycle/LearningCyclesPage.test.tsx
+run atena-classpath mvn -q -f experiment-strategist-worker/pom.xml dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=target/decision-classpath
 run classpath mvn -q -f backend/ads-service/pom.xml dependency:build-classpath -DincludeScope=test "-Dmdep.outputFile=$cycle_output/classpath"
 cycle_test_classpath="backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat "$cycle_output/classpath")"
 run pde-mysql-database "${compose[@]}" exec -T learning-cycles-mysql mysql -uroot -pcycles-root-local-only -e 'DROP DATABASE IF EXISTS hermes_test; CREATE DATABASE hermes_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
@@ -85,6 +97,9 @@ run pde-mysql env \
 java -Xmx512m -cp "$cycle_test_classpath" com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication > "$cycle_output/api.log" 2>&1 &
 cycle_api_pid=$!
 wait_http 'http://127.0.0.1:18091/api/products'
+run decision-rest python3 backend/ads-service/scripts/validate-learning-cycle-decision-e2e.py
+java -Xmx256m -cp "experiment-strategist-worker/target/test-classes:experiment-strategist-worker/target/classes:$(cat experiment-strategist-worker/target/decision-classpath)" com.marketinghub.experimentstrategistworker.learningcyclev1.decision.LearningCycleDecisionLocalRunner > "$cycle_output/atena-local.log" 2>&1 &
+cycle_atena_pid=$!
 run rest-mysql python3 backend/ads-service/scripts/validate-learning-cycles-e2e.py
 if [[ "$cycle_scope" != --persistence-only ]]; then
 node frontend/node_modules/vite/bin/vite.js preview frontend --config frontend/vite.learning-cycles-local.config.ts > "$cycle_output/ui.log" 2>&1 &
@@ -93,8 +108,12 @@ wait_http 'http://127.0.0.1:15173/business-process-chains/learning-cycles'
 run browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/browser" node frontend/e2e/learning-sales-cycles-responsive.mjs
 run chain-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/chain-browser" node frontend/e2e/learning-cycle-chain-entry-responsive.mjs
 run legacy-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/legacy-browser" node frontend/e2e/learning-cycle-legacy-entry-responsive.mjs
+run decision-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/decision-browser" node frontend/e2e/learning-cycle-decision-responsive.mjs
 run sales-flow-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/sales-flow-browser" node frontend/e2e/sales-process-flow-responsive.mjs
 fi
+kill "$cycle_atena_pid"
+wait "$cycle_atena_pid" || true
+cycle_atena_pid=""
 kill "$cycle_api_pid"
 wait "$cycle_api_pid" || true
 cycle_api_pid=""

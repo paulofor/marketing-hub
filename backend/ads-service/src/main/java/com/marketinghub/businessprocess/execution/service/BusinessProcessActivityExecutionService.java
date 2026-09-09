@@ -30,6 +30,7 @@ import com.marketinghub.businessprocess.execution.service.requestProductProcessA
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleActivityProjection;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleExecutionContext;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleRules;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -470,7 +471,7 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, activityId, request, null);
   }
 
-  /** Executa a atividade no ciclo indicado, mantendo gates, autorizações e contrato do produto. */
+  /** Executa contratos gerais; decisões do ciclo usam sua fila e aprovação específicas. */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId,
@@ -485,6 +486,11 @@ public class BusinessProcessActivityExecutionService {
     if (!"PUBLISHED".equals(process.getStatus())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Somente a versão publicada pode iniciar uma atividade.");
+    }
+    if (LearningCycleRules.PROCESS_CODE.equals(process.getProcessCode())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Retome o subprocesso pela atividade 6.4. Atena prepara a proposta automaticamente e o usuário aprova no formulário do ciclo.");
     }
     Product product = requiredProduct(productId);
     if (Boolean.FALSE.equals(product.getAutomaticExecutionEnabled())) {

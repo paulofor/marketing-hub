@@ -1,3 +1,5 @@
+# Em DECISION, commands exige evidence.decisionProposalId vigente e evidence.humanApproved=true.
+# A proposta é lida pela API em learning-cycle-decision-v1-swagger.yaml; operatorName identifica o aprovador declarado.
 openapi: 3.0.3
 info:
   title: Ciclos de aprendizado e vendas da Cadeia de Valor

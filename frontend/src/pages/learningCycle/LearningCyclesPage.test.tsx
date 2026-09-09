@@ -104,6 +104,48 @@ const cycle = {
   ],
   canCreateSuccessor: false,
 } as LearningCycle;
+const decisionProposal = {
+  id: 9,
+  cycleId: cycle.id,
+  cycleRevision: cycle.revision,
+  status: "READY",
+  agentKey: "experiment-strategist",
+  agentName: "Atena",
+  agentId: 4,
+  automaticExecutionEnabled: true,
+  activityDefinitionId: 800,
+  operatorName: "Operador do ciclo",
+  error: null,
+  createdAt: cycle.createdAt,
+  finishedAt: cycle.createdAt,
+  approvedAt: null,
+  approvedEventId: null,
+  proposal: {
+    contractVersion: "LEARNING_CYCLE_DECISION_PROPOSAL_V1",
+    action: "ADJUST",
+    summary: "Corrija a microação útil com Dédalo.",
+    rootCause:
+      "Hipótese de esforço na primeira ação, ainda sem causa comprovada.",
+    learning: "Quatro sessões não provam rejeição.",
+    nextHypothesis: "Reduzir esforço e medir continuidade até compra.",
+    evidenceLimits:
+      "Amostra pequena; explicação concorrente: origem do tráfego.",
+    correctionPlan: "Conferir a fonte.",
+    scaleHypothesis: "Não se aplica.",
+    evidenceReference: "internal://measurement/2",
+    returnProcessId: 3,
+    returnActivityId: "rework",
+    evidenceEventIds: [2],
+    selectedAlternative: 0,
+    alternatives: ["Produto", "Comunicação", "Mais dados"].map((option) => ({
+      option,
+      benefit: "Valor útil",
+      risk: "Amostra pequena",
+      effort: "Médio",
+      salesImpact: "Hipótese a testar",
+    })),
+  },
+};
 function wrapper(
   ui: React.ReactElement,
   entry = "/business-process-chains/learning-cycles?productId=4&chainId=12",
@@ -128,6 +170,8 @@ beforeEach(() => {
       return { data: [{ id: 4, internalName: "Vega" }] };
     if (url === "/api/business-process-chains")
       return { data: [{ id: 12, name: "Cadeia PDE", versionNumber: 12 }] };
+    if (url === `${cycleApi}/products/4/2/decision-proposal`)
+      return { data: decisionProposal };
     if (url === `${cycleApi}/catalog`) return { data: catalog };
     if (url === `${cycleApi}/products/4`) return { data: [cycle] };
     throw new Error(`Requisição não simulada: ${url}`);
@@ -285,7 +329,7 @@ describe("Ciclos de aprendizado e vendas", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Corrija a microação útil com Dédalo."),
+      await screen.findByDisplayValue("Corrija a microação útil com Dédalo."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: "Solicitar escala · bloqueado" }),

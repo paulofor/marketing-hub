@@ -30,6 +30,45 @@ class LearningCycleActivityProjectionTest {
   private final LearningCycleActivityProjection projection =
       new LearningCycleActivityProjection(service, cycles, instances, events);
 
+  /** A atividade interna abre a proposta no ciclo sem disponibilizar execução genérica de Atena. */
+  @Test
+  void routesInnerDecisionToSameCycleWorkspace() {
+    var process = new BusinessProcessDefinition();
+    process.setId(76L);
+    process.setProcessCode(LearningCycleRules.PROCESS_CODE);
+    when(cycles.findById(1L)).thenReturn(Optional.of(cycle()));
+    when(service.entry(76L, 4L, 13L))
+        .thenReturn(
+            new LearningCycleEntry(
+                13L,
+                "Cadeia PDE",
+                73L,
+                "Venda e aprendizado",
+                6,
+                "learningCycle",
+                76L,
+                "Ciclo",
+                true,
+                true,
+                "Revisar",
+                "/ciclo",
+                "Retomar",
+                "/pai",
+                List.of()));
+    var decision =
+        projection.apply(process, 4L, 1L, Map.of(), List.of(group("DECISION", 10))).getFirst();
+    assertThat(decision.executionRequestAvailable()).isFalse();
+    assertThat(decision.executionControl().actionAvailable()).isTrue();
+    assertThat(decision.executionControl().navigationUrl())
+        .isEqualTo("/business-process-chains/learning-cycles?chainId=13&productId=4&cycleId=1");
+    assertThat(decision.executionControl().description()).contains("Atena", "aprovação humana");
+    var foreign =
+        projection.apply(process, 5L, 1L, Map.of(), List.of(group("DECISION", 10))).getFirst();
+    assertThat(foreign.executionControl().actionAvailable()).isFalse();
+    assertThat(foreign.executionControl().navigationUrl()).isNull();
+    verifyNoInteractions(instances, events);
+  }
+
   /**
    * Um ciclo em decisão aparece em andamento, com destino direto, sem concluir os predecessores.
    */

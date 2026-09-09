@@ -95,6 +95,18 @@ especializado conserva essa origem e permite voltar à atividade chamadora. Não
 segundo painel independente de entrada acima da lista, nem conclusão retroativa das outras
 atividades apenas porque uma referência histórica foi adotada.
 
+**Fluxo por produto e experimento — decisão de 09/09/2026:** a posição atual no histórico,
+nas atividades e na entrada do subprocesso deve vir do mesmo fluxo do backend, considerando
+os eventos do ciclo. A última tarefa de agente, isoladamente, não determina a posição atual.
+Operação e entrega podem ocorrer em paralelo, com gateway explícito: cada venda deve ser
+entregue durante a operação; ausência comprovada de vendas dispensa a entrega naquele recorte,
+sem declarar uma entrega fictícia. A referência histórica entra por um caminho explícito na
+consolidação, registra as lacunas da operação anterior e só libera a decisão após a conciliação.
+Tarefas antigas bloqueadas permanecem consultáveis e não fazem o produto retroceder implicitamente.
+Todo retorno identifica origem, destino, condição, motivo, responsável, horário, ciclo e
+experimento. Ajustes e escala preservam os gates dos processos responsáveis antes da nova operação.
+O BPM deve modelar esses caminhos e a tela deve expor sua evidência e próxima ação.
+
 - **Ajustar:** registrar causa, evidências, aprendizado e atividade/processo de retorno. Encerrar a
   iteração e vincular um experimento novo, inicialmente planejado, do mesmo produto. O sucessor
   recebe a memória do anterior e percorre novamente planejamento, ajustes e gates afetados.

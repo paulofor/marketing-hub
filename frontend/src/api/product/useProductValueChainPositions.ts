@@ -1,10 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import type { SalesFlow } from "../learningCycle/salesFlow";
 
 export type ProductStageMeasurement = {
   stageType: "PROCESS" | "SUBPROCESS";
   sequenceLabel?: string | null;
-  trackingStatus: "CURRENT" | "COMPLETED" | "RECORDED" | "PLANNED";
+  trackingStatus:
+    | "CURRENT"
+    | "COMPLETED"
+    | "RECORDED"
+    | "PLANNED"
+    | "HISTORICAL"
+    | "NOT_APPLICABLE";
   processDefinitionId: number;
   processCode: string;
   processName: string;
@@ -37,8 +44,14 @@ export type ProductValueChainPosition = {
   processCount?: number | null;
   processMeasurements?: ProductStageMeasurement[];
   subprocessPosition?: {
+    salesFlow?: SalesFlow | null;
     trackingStatus:
-      "NOT_APPLICABLE" | "PLANNED" | "IN_PROGRESS" | "RECORDED" | "COMPLETED";
+      | "NOT_APPLICABLE"
+      | "PLANNED"
+      | "IN_PROGRESS"
+      | "RECORDED"
+      | "COMPLETED"
+      | "BLOCKED";
     subprocessCount: number;
     currentActivityName?: string | null;
     currentSubprocessDefinitionId?: number | null;

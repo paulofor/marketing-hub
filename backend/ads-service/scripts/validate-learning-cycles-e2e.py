@@ -51,7 +51,7 @@ def reset():
 
 
 def brief(experiment=91001, predecessor=None, baseline=False):
-    return dict(requestKey=str(uuid.uuid4()), chainDefinitionId=91001, experimentId=experiment,
+    return dict(requestKey=str(uuid.uuid4()), chainDefinitionId=91002, experimentId=experiment,
         previousCycleId=predecessor, baseline=baseline, productVersion='fixture-v1', hypothesis='Ação concreta aumenta primeiro uso',
         mainChange='Instrução executável', successCriterion='Cinco vendas líquidas com uso e contribuição positiva',
         audience='Pessoas aderentes consentidas', offer='Oferta de teste segregada', acquisition='Canal simulado',
@@ -127,10 +127,10 @@ def check(name):
 
 
 reset()
-catalog=http(f'{API}/catalog?chainId=91001&productId=91001')
+catalog=http(f'{API}/catalog?chainId=91002&productId=91001')
 entry=catalog['entry']
 parent_id=entry['parentProcessDefinitionId']
-def parent_history(product=91001, chain=91001, cycle_id=None):
+def parent_history(product=91001, chain=91002, cycle_id=None):
     query=f'?chainId={chain}' + (f'&learningCycleId={cycle_id}' if cycle_id else '')
     return http(f'/api/business-processes/{parent_id}/products/{product}/activity-executions{query}')
 
@@ -142,10 +142,10 @@ def cycle_call(history):
 assert entry['sequenceNumber']==6 and entry['canStartCycle'] and entry['integrated']
 assert entry['activitySequenceNumber']==4 and entry['parentUrl'].endswith('#activity-learningCycle')
 assert [route['sequenceNumber'] for route in entry['returnRoutes']]==[2,3,4,5,6]
-assert http('/api/business-process-chains/91001')['processCount']==6
+assert http('/api/business-process-chains/91002')['processCount']==6
 before=sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')
 for process_id in (parent_id,entry['processDefinitionId']):
-    direct=http(f'{API}/entry?processDefinitionId={process_id}&productId=91001&chainId=91001')
+    direct=http(f'{API}/entry?processDefinitionId={process_id}&productId=91001&chainId=91002')
     assert direct['workspaceUrl']==entry['workspaceUrl'] and direct['parentProcessDefinitionId']==parent_id
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')==before
 assert http(f'{API}/entry?processDefinitionId={parent_id}&chainId=91000') is None
@@ -164,11 +164,11 @@ assert 'cycleId=' not in http(f'{API}/entry?processDefinitionId={parent_id}&prod
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='1'
 parent=parent_history()
 assert parent['operationalState']=='IN_PROGRESS' and parent['currentActivityId']=='learningCycle'
-assert cycle_call(parent)['stateEvidence']=='SUBPROCESS'
+assert cycle_call(parent)['stateEvidence']=='NOT_RECORDED' and parent['salesFlow']['cycleId']==started['id']
 assert f'cycleId={started["id"]}' in cycle_call(parent)['executionControl']['navigationUrl']
 assert not cycle_call(parent_history(91002))['objectiveAchieved']
 assert 'cycleId=' not in cycle_call(parent_history(91002))['executionControl']['navigationUrl']
-assert not cycle_call(parent_history(chain=91000))['executionControl']['actionAvailable']
+http(f'/api/business-processes/{parent_id}/products/91001/activity-executions?chainId=91000',expected=409)
 assert [a['executionControl']['interactionType'] for a in parent['activities']]==['SUBPROCESS','SUBPROCESS','AUTOMATIC','SUBPROCESS']
 assert not any(a['objectiveAchieved'] for a in parent['activities'])
 check('Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto')
@@ -254,8 +254,9 @@ retry_request=dict(requestKey=str(uuid.uuid4()),expectedRevision=cycle['revision
 cycle=reconcile(cycle,request=retry_request)
 assert cycle['stage']=='MEASUREMENT' and 'indisponível' in cycle['events'][-1]['evidence']['blocker']
 assert 'sessions' not in cycle['events'][-1]['evidence']
-assert cycle_call(parent_history())['operationalState']=='BLOCKED'
-assert 'indisponível' in cycle_call(parent_history())['stateReason']
+assert parent_history()['currentActivityId']=='consolidate' and parent_history()['operationalState']=='BLOCKED'
+assert cycle_call(parent_history())['operationalState']=='WAITING'
+assert 'indisponível' in parent_history()['currentActivityStateReason']
 assert reconcile(cycle,request=retry_request)['revision']==cycle['revision']
 reconcile(cycle,expected=409,request=dict(retry_request,expectedRevision=cycle['revision']))
 configure_measurement(snapshot='cap-v3',netSales=0,spendBrl=100,contributionBrl=-100)
@@ -286,7 +287,7 @@ assert cycle['status']=='ADJUSTED' and cycle['canCreateSuccessor']
 successor=http(f'{API}/products/91001',brief(91002,cycle['id']))
 assert successor['stage']=='LEARNING' and successor['inheritedLearning']['experimentId']==91001
 assert f'learningCycleId={successor["id"]}' in successor['workUrl'] or successor['workUrl']==f'/experiments/{successor["experimentId"]}'
-assert len(http(f'{API}/products/91001?chainId=91001'))==2
+assert len(http(f'{API}/products/91001?chainId=91002'))==2
 assert successor['inheritedLearning']['events'][-1]['evidence']['nextHypothesis']=='Ação guiada'
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='2'
 command(cycle,'STOP',expected=409)
@@ -304,13 +305,13 @@ check('Concorrência real MySQL: uma transição e um recibo; revisão obsoleta 
 other=http(f'{API}/products/91002',brief(91006))
 assert other['productId']==91002 and other['inheritedLearning']=={}
 assert len(http(f'{API}/products/91002'))==1
-assert all(option['id']==91006 for option in http(f'{API}/catalog?chainId=91001&productId=91002')['experiments'])
+assert all(option['id']==91006 for option in http(f'{API}/catalog?chainId=91002&productId=91002')['experiments'])
 check('Ciclos simultâneos segregados entre Vega e Mira de teste')
 
 reset()
 http('/fixture/experiments/91001/publish',{});http('/fixture/experiments/91001/stop',{})
 http('/fixture/experiments/91001/plan-again',{})
-option=next(item for item in http(f'{API}/catalog?chainId=91001&productId=91001')['experiments'] if item['id']==91001)
+option=next(item for item in http(f'{API}/catalog?chainId=91002&productId=91001')['experiments'] if item['id']==91001)
 assert option['baseline'] and option['available']
 http(f'{API}/products/91001',brief(),409)
 historical=http(f'{API}/products/91001',brief(baseline=True))
@@ -326,7 +327,7 @@ check('Adoção histórica concilia automaticamente e não fabrica homologação
 reset()
 http('/fixture/experiments/91001/legacy-publication',{})
 before=http('/fixture/experiments/91001/state')
-option=next(item for item in http(f'{API}/catalog?chainId=91001&productId=91001')['experiments'] if item['id']==91001)
+option=next(item for item in http(f'{API}/catalog?chainId=91002&productId=91001')['experiments'] if item['id']==91001)
 assert option['baseline'] and option['available'] and 'sem publicação registrada em run/preflight' in option['reason']
 payload=brief(baseline=True)
 legacy=http(f'{API}/products/91001',payload)
@@ -338,7 +339,7 @@ assert not proof['evidence']['preflightRecorded'] and proof['evidence']['experim
 assert legacy['events'][1]['action']=='MEASURE' and legacy['events'][1]['evidence']['automatic']
 assert http('/fixture/experiments/91001/state')==before==dict(status='USER_STOPPED',runCount=0,campaignCount=1)
 legacy=command(legacy,'ADJUST',dict(return_to,learning='Amostra pequena e microação insuficiente',nextHypothesis='Primeiro ajuste executável'))
-assert cycle_call(parent_history())['operationalState']=='COMPLETED'
+assert cycle_call(parent_history())['operationalState']=='IN_PROGRESS'
 assert cycle_call(parent_history())['executionControl']['actionAvailable']
 successor=http(f'{API}/products/91001',brief(91002,legacy['id']))
 assert cycle_call(parent_history())['operationalState']=='IN_PROGRESS'
@@ -359,5 +360,44 @@ assert http('/fixture/experiments/91001/state')==before
 assert http('/fixture/experiments/91002/state')['status']=='RUNNING'
 assert sql("SELECT COUNT(*) FROM learning_sales_cycle_event_v1 WHERE action='MEASURE' AND operator_name<>'Marketing Hub · backend'")=='0'
 check('Legado sem run → medição automática → ajuste → sucessor segregado → gates próprios → publicação simulada')
+
+
+# Reproduz localmente um ciclo persistido antes da evolução do pai: a versão original fica intacta.
+reset()
+http('/fixture/experiments/91001/legacy-publication',{})
+legacy=http(f'{API}/products/91001',brief(baseline=True))
+sql(f"UPDATE learning_sales_cycle_v1 SET chain_definition_id=91001 WHERE id={legacy['id']}")
+old_catalog=http(f'{API}/catalog?chainId=91001&productId=91001')
+assert not old_catalog['entry']['canStartCycle'] and old_catalog['successorChainDefinitionId']==91002
+current=parent_history()
+position=http('/api/products/value-chain-positions/91001')
+assert current['salesFlow']['currentActivityId']==position['subprocessPosition']['salesFlow']['currentActivityId']=='learningCycle'
+assert position['subprocessPosition']['currentSubprocessSequenceNumber']==4
+assert position['subprocessPosition']['salesFlow']['chainDefinitionId']==91001
+assert 'chainId=91001' in current['salesFlow']['navigationUrl']
+assert current['currentExecutionReference']=='experiment:91001'
+assert [a['state'] for a in current['salesFlow']['activities']]==['HISTORICAL','NOT_APPLICABLE','COMPLETED','IN_PROGRESS']
+assert all(t['flowId'] for t in current['salesFlow']['transitions'])
+legacy=command(legacy,'ADJUST',dict(return_to,learning='Memória da versão anterior preservada',nextHypothesis='Entrega mais aplicável'))
+successor=http(f'{API}/products/91001',brief(91002,legacy['id']))
+assert successor['chainDefinitionId']==91002 and successor['previousCycleId']==legacy['id']
+assert sql(f"SELECT chain_definition_id FROM learning_sales_cycle_v1 WHERE id={legacy['id']}")=='91001'
+assert parent_history()['salesFlow']['experimentId']==91002
+assert parent_history()['salesFlow']['activities'][2]['state']=='WAITING'
+assert parent_history()['salesFlow']['activities'][0]['state']=='WAITING'
+check('Ciclo em cadeia anterior → posição única 6.4 → sucessor na versão vigente sem reabrir operação histórica')
+
+reset()
+http('/fixture/experiments/91001/legacy-publication',{})
+configure_measurement(netSales=2,refunds=0,deliveryVerified=False)
+sales=http(f'{API}/products/91001',brief(baseline=True))
+assert parent_history()['currentActivityId']=='delivery'
+assert not next(c for c in sales['commands'] if c['action']=='ADJUST')['available']
+command(sales,'ADJUST',dict(return_to,learning='Entrega ainda não comprovada',nextHypothesis='Corrigir entrega'),expected=409)
+configure_measurement(snapshot='delivered',netSales=2,refunds=0,deliveryVerified=True)
+sales=command(sales,'FIX_MEASUREMENT',dict(rootCause='Entrega pendente',correctionPlan='Comprovar entrega e reconciliar'))
+assert sales['stage']=='DECISION' and parent_history()['currentActivityId']=='learningCycle'
+assert parent_history()['salesFlow']['activities'][1]['objectiveAchieved']
+check('Venda sem entrega bloqueia avanço; entrega comprovada e reconciliação liberam decisão')
 
 print(json.dumps({'checks':len(checks),'passed':checks,'database':'MySQL 5.7','externalCalls':0},ensure_ascii=False),flush=True)

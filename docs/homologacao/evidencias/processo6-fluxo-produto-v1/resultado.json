@@ -1,0 +1,327 @@
+{
+  "date": "2026-09-09",
+  "scope": "Processo 6 local com backend/JPA/MySQL 5.7 reais, métricas e integrações externas simuladas; produção consultada somente para diagnóstico.",
+  "rounds": [
+    {
+      "round": 1,
+      "controlsPassed": 23,
+      "controls": [
+        "docker-version",
+        "buildx-version",
+        "compose-version",
+        "database",
+        "temporal-contract",
+        "liquibase-static",
+        "spotless",
+        "backend",
+        "frontend",
+        "typecheck",
+        "build",
+        "classpath",
+        "pde-mysql-database",
+        "pde-mysql",
+        "rest-mysql",
+        "browser",
+        "chain-browser",
+        "legacy-browser",
+        "sales-flow-browser",
+        "migration",
+        "migration-reapply",
+        "migration-idempotency",
+        "diff"
+      ],
+      "backend": {
+        "tests": 332,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      "pdeMysqlTests": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "frontendTestsPassed": 528,
+      "rest": {
+        "checks": 18,
+        "passed": [
+          "Entrada pelo BPM e subprocesso conserva contexto; seis processos; GET não cria ciclo; histórico e produtos segregados",
+          "Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto",
+          "Atividade do pai projeta ciclo e estado reais, conserva a cadeia e distingue as três chamadas",
+          "BPM publicado com losangos, atividades reais e retorno ao aprendizado",
+          "Adoção idempotente, conteúdo divergente recusado e um ciclo aberto por produto/cadeia",
+          "Validação de entrada, isolamento de produto e proibição de salto de etapas",
+          "Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada",
+          "Autorização, publicação e conciliação automática comprovadas sem digitação de métricas",
+          "Recuperação técnica preserva experimento, refaz gates e exige uma fotografia realmente nova",
+          "Fonte indisponível não vira zero; produto, revisão, amostra, vendas e teto governam a coleta",
+          "Escala exige nova autorização, limite oficial e nova fotografia, sem alterar mídia pelo ciclo",
+          "Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável",
+          "Concorrência real MySQL: uma transição e um recibo; revisão obsoleta recusada",
+          "Ciclos simultâneos segregados entre Vega e Mira de teste",
+          "Adoção histórica concilia automaticamente e não fabrica homologação, venda ou aprovação",
+          "Legado sem run → medição automática → ajuste → sucessor segregado → gates próprios → publicação simulada",
+          "Ciclo em cadeia anterior → posição única 6.4 → sucessor na versão vigente sem reabrir operação histórica",
+          "Venda sem entrega bloqueia avanço; entrega comprovada e reconciliação liberam decisão"
+        ],
+        "database": "MySQL 5.7",
+        "externalCalls": 0
+      },
+      "browser": {
+        "browser": [
+          {
+            "profile": "desktop",
+            "journeys": 4,
+            "api": "real local",
+            "database": "MySQL 5.7",
+            "errors": 0,
+            "externalRequests": 0
+          },
+          {
+            "profile": "iphone",
+            "journeys": 4,
+            "api": "real local",
+            "database": "MySQL 5.7",
+            "errors": 0,
+            "externalRequests": 0
+          },
+          {
+            "profile": "pixel",
+            "journeys": 4,
+            "api": "real local",
+            "database": "MySQL 5.7",
+            "errors": 0,
+            "externalRequests": 0
+          },
+          {
+            "profiles": 3,
+            "journeys": 12,
+            "success": true
+          }
+        ],
+        "chain-browser": [
+          {
+            "checks": 18,
+            "profiles": 3,
+            "externalCalls": 0,
+            "mutations": 0
+          }
+        ],
+        "legacy-browser": [
+          {
+            "profile": "desktop",
+            "legacyAdoption": true,
+            "successorMemory": true,
+            "productionCalls": 0
+          },
+          {
+            "profile": "iphone",
+            "legacyAdoption": true,
+            "successorMemory": true,
+            "productionCalls": 0
+          },
+          {
+            "profile": "pixel",
+            "legacyAdoption": true,
+            "successorMemory": true,
+            "productionCalls": 0
+          }
+        ],
+        "sales-flow-browser": [
+          "PASS desktop: histórico → atividade → subprocesso; posições 6.4/6.2, entrega no contexto correto, dados segregados; sem efeitos externos",
+          "PASS iphone: histórico → atividade → subprocesso; posições 6.4/6.2, entrega no contexto correto, dados segregados; sem efeitos externos",
+          "PASS pixel: histórico → atividade → subprocesso; posições 6.4/6.2, entrega no contexto correto, dados segregados; sem efeitos externos"
+        ]
+      },
+      "temporaryTopologyRemoved": true
+    },
+    {
+      "round": 2,
+      "controlsPassed": 23,
+      "controls": [
+        "docker-version",
+        "buildx-version",
+        "compose-version",
+        "database",
+        "temporal-contract",
+        "liquibase-static",
+        "spotless",
+        "backend",
+        "frontend",
+        "typecheck",
+        "build",
+        "classpath",
+        "pde-mysql-database",
+        "pde-mysql",
+        "rest-mysql",
+        "browser",
+        "chain-browser",
+        "legacy-browser",
+        "sales-flow-browser",
+        "migration",
+        "migration-reapply",
+        "migration-idempotency",
+        "diff"
+      ],
+      "backend": {
+        "tests": 332,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2
+      },
+      "pdeMysqlTests": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "frontendTestsPassed": 528,
+      "rest": {
+        "checks": 18,
+        "passed": [
+          "Entrada pelo BPM e subprocesso conserva contexto; seis processos; GET não cria ciclo; histórico e produtos segregados",
+          "Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto",
+          "Atividade do pai projeta ciclo e estado reais, conserva a cadeia e distingue as três chamadas",
+          "BPM publicado com losangos, atividades reais e retorno ao aprendizado",
+          "Adoção idempotente, conteúdo divergente recusado e um ciclo aberto por produto/cadeia",
+          "Validação de entrada, isolamento de produto e proibição de salto de etapas",
+          "Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada",
+          "Autorização, publicação e conciliação automática comprovadas sem digitação de métricas",
+          "Recuperação técnica preserva experimento, refaz gates e exige uma fotografia realmente nova",
+          "Fonte indisponível não vira zero; produto, revisão, amostra, vendas e teto governam a coleta",
+          "Escala exige nova autorização, limite oficial e nova fotografia, sem alterar mídia pelo ciclo",
+          "Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável",
+          "Concorrência real MySQL: uma transição e um recibo; revisão obsoleta recusada",
+          "Ciclos simultâneos segregados entre Vega e Mira de teste",
+          "Adoção histórica concilia automaticamente e não fabrica homologação, venda ou aprovação",
+          "Legado sem run → medição automática → ajuste → sucessor segregado → gates próprios → publicação simulada",
+          "Ciclo em cadeia anterior → posição única 6.4 → sucessor na versão vigente sem reabrir operação histórica",
+          "Venda sem entrega bloqueia avanço; entrega comprovada e reconciliação liberam decisão"
+        ],
+        "database": "MySQL 5.7",
+        "externalCalls": 0
+      },
+      "browser": {
+        "browser": [
+          {
+            "profile": "desktop",
+            "journeys": 4,
+            "api": "real local",
+            "database": "MySQL 5.7",
+            "errors": 0,
+            "externalRequests": 0
+          },
+          {
+            "profile": "iphone",
+            "journeys": 4,
+            "api": "real local",
+            "database": "MySQL 5.7",
+            "errors": 0,
+            "externalRequests": 0
+          },
+          {
+            "profile": "pixel",
+            "journeys": 4,
+            "api": "real local",
+            "database": "MySQL 5.7",
+            "errors": 0,
+            "externalRequests": 0
+          },
+          {
+            "profiles": 3,
+            "journeys": 12,
+            "success": true
+          }
+        ],
+        "chain-browser": [
+          {
+            "checks": 18,
+            "profiles": 3,
+            "externalCalls": 0,
+            "mutations": 0
+          }
+        ],
+        "legacy-browser": [
+          {
+            "profile": "desktop",
+            "legacyAdoption": true,
+            "successorMemory": true,
+            "productionCalls": 0
+          },
+          {
+            "profile": "iphone",
+            "legacyAdoption": true,
+            "successorMemory": true,
+            "productionCalls": 0
+          },
+          {
+            "profile": "pixel",
+            "legacyAdoption": true,
+            "successorMemory": true,
+            "productionCalls": 0
+          }
+        ],
+        "sales-flow-browser": [
+          "PASS desktop: histórico → atividade → subprocesso; posições 6.4/6.2, entrega no contexto correto, dados segregados; sem efeitos externos",
+          "PASS iphone: histórico → atividade → subprocesso; posições 6.4/6.2, entrega no contexto correto, dados segregados; sem efeitos externos",
+          "PASS pixel: histórico → atividade → subprocesso; posições 6.4/6.2, entrega no contexto correto, dados segregados; sem efeitos externos"
+        ]
+      },
+      "temporaryTopologyRemoved": true
+    }
+  ],
+  "architecture": {
+    "tests": 92,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "conditionalSkippedTests": [
+    "VideoCreativeControllerTest.browserJourneyUsesRealLocalBackend: propriedade videoCreative.browser não habilitada; cenário preexistente fora do escopo.",
+    "VideoCreativeControllerTest.browserRecoversFailedPublicationWithIndependentCopyReview: propriedade publicationRecovery.browser não habilitada; cenário preexistente fora do escopo."
+  ],
+  "limitations": [
+    "iPhone 15 Pro e Pixel 7 emulados no Chromium; não comprova Safari/WebKit nativo.",
+    "Publicação, mídia paga, pagamentos e agentes externos simulados, sem executar ações produtivas."
+  ],
+  "sameImplementationInBothRounds": true,
+  "implementationSha256": {
+    "backend/ads-service/scripts/homologate-learning-cycles-local.sh": "7d5644fdcef6bd75e7aa5882c1236d8470173a684531ca6bc8056308bcec7a6b",
+    "backend/ads-service/scripts/validate-learning-cycles-e2e.py": "ef2bf5a4d7192e2472780d7d039b54e955fb6f70e174bb6f8fd300e7a4de7126",
+    "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskService.java": "662d85c6c711602e4e1038152cfec317a70301bc372b9aa578b40dc657c43810",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionService.java": "32f979b2c6502541c5382a8bab59d6c44c9b51203f6de0e6de267defd9a461aa",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/productProcessExecutions/ProductProcessActivityExecutionHistoryResponse.java": "d9cbbc759a38840401d291e8ed9f1714bbab6fd82399412005ffce7aa9e682de",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleActivityProjection.java": "d6052787edc4a24138d37f3d4467b80d14d0a20e55d866bfc4d4d13830b7b80d",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleExecutionContext.java": "8749db7fa5b692cff776b5924392467f987c6e8a04d22be32c8987a8b717c8fa",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleService.java": "71b039e885f19072b8bf0b8f2b47c54c7be4a45e36c3c22dd181d402a37dca0d",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/SalesFlowActivityReadiness.java": "f9e66e65e75557b133cfec9aaf19dd56bd783de97a9b12fb8aed8a49a3ba6679",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/SalesFlowResolver.java": "96af95232400ed61f83291119304caf91f4a73d0477067919999a1cbe3176b87",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/getCycles/LearningCycleCatalog.java": "17451118bf1b9c2652ecc4b033adb1042d5aac3c1988a5140d0b4ed1ea562212",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/getSalesFlow/SalesFlowResponse.java": "2889addef364dcb3d9be099fbc7c0804d8bcad97b6c434731f11d47ab5f94644",
+    "backend/ads-service/src/main/java/com/marketinghub/product/service/valuechainposition/ProductSubprocessPositionResolver.java": "51a1f97ff1c6f8225c3982dce46c963812f7fa6fbefc8ab9c9105da1baa72f7d",
+    "backend/ads-service/src/main/java/com/marketinghub/product/service/valuechainposition/ProductSubprocessPositionResponse.java": "f14ba95d09b756c08b71204d199d61fea8d4b64bf6c3f561d77b3eb2e72e25b4",
+    "backend/ads-service/src/main/resources/db/changelog/changesets/2026-09-09-pde-sales-flow-v6.yaml": "f64c0bf40e2f91e77dfc689985c05d47f72e6f0bf127e6f8e6bf11c6e234dab7",
+    "backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml": "6af201104c5603bb18f520067c05e48cafc684f34e7ca77192dad5141c64ca18",
+    "backend/ads-service/src/test/java/com/marketinghub/agenttask/AgentTaskServiceTest.java": "cb4c2e40e9c9fc34de03251fe5050995c7dbef8e377f8745ed0e1a4161a5d8b1",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleExecutionContextTest.java": "e5cf0527f8da1ef97ebd2f63d7834ced0f8109452476669a7af5e11127338b33",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleLocalApplication.java": "e6ba47852dfd937083b35cc637d0ce002a501aa9e890170d0ef5767081225d08",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleMigrationVerifier.java": "b5825641128435a65f052adb6379ea648ae48d07fd92c8987366a095ab5abe58",
+    "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/SalesFlowResolverTest.java": "3e1105ff5f88fe71e5e0ea2e292fb8bbd4e045397447604959abd603246be9c8",
+    "backend/ads-service/src/test/resources/learningcycle/changelog.yaml": "ebf10c58dcb4a7deab54c58f655441f1e81e65108fdb2d86a5f1c793478a3a0c",
+    "frontend/e2e/learning-cycle-chain-entry-responsive.mjs": "f503e824d1c75284d16da3d9dd6d25ad949943ef94d0f3590985971a52a46c3b",
+    "frontend/e2e/learning-cycle-legacy-entry-responsive.mjs": "6f92b97e29d2f0eed9b1a63824a77230280f342d4bc6768a4ad927b41a693231",
+    "frontend/e2e/learning-sales-cycles-responsive.mjs": "1315973f483ec3bb4ba29dd106208f05a7ed37934f24651eaecd7ae26f95a09f",
+    "frontend/e2e/sales-process-flow-responsive.mjs": "5867263e6cd46068646df77b6e73b0615df35960f381fb7bc98a355dfa1b8918",
+    "frontend/src/api/businessProcess/types.ts": "a2500c8000aa7822d24c3930cbf9efa881e06f753c504f54d22e4abff9819be2",
+    "frontend/src/api/learningCycle/salesFlow.ts": "0b2cc55f1e0c61ebc8a5810001c5be621e40d5499563961b8682b1df70bac9bc",
+    "frontend/src/api/learningCycle/useLearningCycles.ts": "1aed4064203bfc4d102ba9f7983271e06723c77bf8b99c91c1490500aa7238ef",
+    "frontend/src/api/product/useProductValueChainPositions.ts": "a873a898193935c694077a354c0bbfab455789adb7bde968cd3932ab6d82bf83",
+    "frontend/src/components/ProductSalesFlow.test.tsx": "a2c90c2822774a4e335f4f6eee711088b40f50bb4da14c561ca45876d19f1a3d",
+    "frontend/src/components/ProductSalesFlow.tsx": "570e291fb1059b8ba8754136ff5c8b98184d5dc10b81e6b82e978510052ecf4f",
+    "frontend/src/pages/learningCycle/LearningCyclesPage.tsx": "0514c937d3c3a41f01f21b585e31ef9a71af9ee38581698238e22d37c4ab0c37",
+    "frontend/src/pages/product/ProductProcessActivityExecutionPanel.tsx": "85127863c93169563e9bb88572452d68b0a6dc32dd09d5048da7be7a6117db2f",
+    "frontend/src/pages/product/ProductProcessActivityExecutionsPage.tsx": "8e2a7ad322db08298a576658f3d7538f6039d15ceb34ec5ad1986a042d9b65f3",
+    "frontend/src/pages/product/ProductValueChainHistoryPage.tsx": "5597b1b78195831b4ee8d30bac05b8adf491418c46190c3e235b8e9a1f79a66a"
+  }
+}

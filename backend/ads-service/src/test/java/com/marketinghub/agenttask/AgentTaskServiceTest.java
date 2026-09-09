@@ -38,6 +38,67 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /** Não entrega ao worker uma tarefa antiga quando o fluxo comercial já avançou para decisão. */
+  @Test
+  void doesNotClaimOperationOutsideCurrentSalesFlow() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent hermes = agent(17L, "growth-operator", "Hermes");
+    var process = process("PUBLISHED", "Hermes");
+    process.setProcessCode("operacao-otimizacao-experimento");
+    AgentTask task = processTask(357L, hermes, process, "html", "PENDING");
+    task.setSourceReference("experiment:91");
+    when(agents.findByAgentKey("growth-operator")).thenReturn(Optional.of(hermes));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "growth-operator", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    var service = service(repository, agents, Clock.systemUTC());
+    var flow =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.SalesFlowResolver.class);
+    when(flow.executionBlocker(process, "experiment:91"))
+        .thenReturn("Retomar decisão na atividade 6.4.");
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "salesFlowResolver", flow);
+    assertThat(service.claimEligibleProcessTask("growth-operator")).isEmpty();
+    verify(flow).executionBlocker(process, "experiment:91");
+    verify(repository, never()).save(any());
+  }
+
+  /** Impede que uma referência legada de plano contorne a segregação exigida pelo ciclo vigente. */
+  @Test
+  void doesNotClaimLegacyPlanOutsideCurrentSalesFlow() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent hermes = agent(17L, "growth-operator", "Hermes");
+    var process = process("PUBLISHED", "Hermes");
+    process.setProcessCode("operacao-otimizacao-experimento");
+    String source = "commercial-plan:3@v1";
+    AgentTask task = processTask(358L, hermes, process, "html", "PENDING");
+    task.setSourceReference(source);
+    when(agents.findByAgentKey("growth-operator")).thenReturn(Optional.of(hermes));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "growth-operator", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    var service = service(repository, agents, Clock.systemUTC());
+    var flow =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.SalesFlowResolver.class);
+    var target = mock(AgentTaskTargetContextProvider.class);
+    when(target.resolve(source, process.getProcessCode()))
+        .thenReturn(
+            Optional.of(
+                new AgentTaskTargetResponse(
+                    source, 91L, 4L, null, null, null, null, null, null, null, null, null)));
+    when(flow.executionBlocker(4L, process, source))
+        .thenReturn("Use a referência do experimento do ciclo.");
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "salesFlowResolver", flow);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "taskTargetContextProvider", target);
+    assertThat(service.claimEligibleProcessTask("growth-operator")).isEmpty();
+    verify(flow).executionBlocker(4L, process, source);
+    verify(repository, never()).save(any());
+  }
+
   /** Reutiliza a atividade oficial existente quando a tela repete o mesmo comando. */
   @Test
   void reusesExistingHumanTaskForTheSameExecution() {

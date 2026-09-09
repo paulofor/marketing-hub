@@ -61,7 +61,7 @@ try {
       await route.continue();
     });
     await page.goto(
-      `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91001`,
+      `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91002`,
       { waitUntil: "networkidle" },
     );
     await expect(
@@ -259,7 +259,7 @@ try {
     assert(size.scroll <= size.viewport + 1, JSON.stringify(size));
     await fixture("/fixture/experiments/91001/stop");
     const response = await fetch(
-      `${api}${cycleApi}/catalog?chainId=91001&productId=91001`,
+      `${api}${cycleApi}/catalog?chainId=91002&productId=91001`,
     );
     const catalog = await response.json();
     const target = catalog.returnTargets.find(

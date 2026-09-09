@@ -23,7 +23,7 @@ public class LearningCycleExecutionContext {
   private final LearningCycleJson json;
 
   /**
-   * Resolve a fonte canônica sem trocar a seleção do plano nem escolher o experimento mais novo.
+   * Resolve a fonte canônica pela cadeia original do ciclo, sem trocar o plano ou o experimento.
    */
   @Transactional(readOnly = true)
   public String source(
@@ -50,12 +50,22 @@ public class LearningCycleExecutionContext {
         throw new ResponseStatusException(
             HttpStatus.CONFLICT, "O processo não pertence à versão da cadeia deste ciclo.");
       current =
-          processes
-              .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(parent, "PUBLISHED")
-              .orElseThrow(
+          chain.getItems().stream()
+              .map(
+                  com.marketinghub.businessprocesschain.BusinessProcessChainItem
+                      ::getProcessDefinition)
+              .filter(member -> parent.equals(member.getProcessCode()))
+              .findFirst()
+              .orElseGet(
                   () ->
-                      new ResponseStatusException(
-                          HttpStatus.CONFLICT, "Processo pai indisponível nesta cadeia."));
+                      processes
+                          .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+                              parent, "PUBLISHED")
+                          .orElseThrow(
+                              () ->
+                                  new ResponseStatusException(
+                                      HttpStatus.CONFLICT,
+                                      "Processo pai indisponível nesta cadeia.")));
     }
     if ("pde-construction-approval".equals(process.getProcessCode())) {
       String contract = product.getValidationDefinitionVersion();

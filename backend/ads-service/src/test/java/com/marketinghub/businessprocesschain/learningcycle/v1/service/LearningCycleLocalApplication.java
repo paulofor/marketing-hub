@@ -50,6 +50,13 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleService.class,
   LearningCycleOrganization.class,
   LearningCycleActivityProjection.class,
+  SalesFlowResolver.class,
+  SalesFlowActivityReadiness.class,
+  com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService.class,
+  com.marketinghub.product.service.valuechainposition.ProductSubprocessPositionResolver.class,
+  com.marketinghub.product.service.valuechainposition.ProductStageMeasurementResolver.class,
+  com.marketinghub.product.service.valuechainposition.PdeProcessCodeResolver.class,
+  com.marketinghub.product.web.ProductValueChainPositionController.class,
   LearningCycleExecutionContext.class,
   com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService.class,
   com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController
@@ -350,6 +357,19 @@ public class LearningCycleLocalApplication {
         .thenAnswer(call -> Optional.ofNullable(product(call.getArgument(0))));
     when(repository.findLockedById(anyLong()))
         .thenAnswer(call -> Optional.ofNullable(product(call.getArgument(0))));
+    when(repository.findValueChainSummaryById(anyLong()))
+        .thenAnswer(
+            call -> {
+              var value = product(call.getArgument(0));
+              return value == null
+                  ? Optional.empty()
+                  : Optional.of(
+                      new com.marketinghub.repository.jpa.product.ProductValueChainSummaryProduct(
+                          value.getId(),
+                          value.getName(),
+                          value.getInternalName(),
+                          value.getCommercialStatus()));
+            });
     return repository;
   }
 
@@ -362,7 +382,21 @@ public class LearningCycleLocalApplication {
     product.setName(product.getInternalName());
     product.setSlug("fixture-" + id);
     product.setAutomaticExecutionEnabled(true);
+    product.setCommercialStatus("ACTIVE");
     return product;
+  }
+
+  /** Isola períodos comerciais legados; o estado corrente é lido de ciclos reais no MySQL. */
+  @Bean
+  com.marketinghub.repository.jpa.product.ProductProcessPeriodRepository periods() {
+    return mock(com.marketinghub.repository.jpa.product.ProductProcessPeriodRepository.class);
+  }
+
+  /** Isola custos de fornecedores sem autorizar integrações ou registrar despesas reais. */
+  @Bean
+  com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository studioLedger() {
+    return mock(
+        com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository.class);
   }
 
   /** Simula o cadastro oficial e estados externos que o ciclo apenas consulta. */

@@ -4495,6 +4495,15 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
   persistido nessa atividade, respeita produto/cadeia e oferece destino direto e retorno
   à chamada. A navegação local passa a usar o controller e o histórico reais, em vez de
   simular um histórico vazio. Matriz: `docs/homologacao/ciclo-vendas-atividade-subprocesso-v1.md`.
+- Nova recorrência em 09/09/2026: o histórico da cadeia ainda usava tarefas dos agentes e
+  apontava Vega em 6.1, enquanto o ciclo #1 já tinha adoção histórica e medição automática
+  em `DECISION`. A correção usa uma projeção comum dos eventos para posição e atividades,
+  mantém tarefas antigas como histórico, identifica entrega não aplicável e protege a fila
+  contra reinício fora da passagem. Venda v6/cadeia v14 modelam entrada histórica, operação
+  e entrega em paralelo e retornos identificados. Sucessor usa a versão vigente sem alterar
+  a versão do predecessor. Contratos de regressão: `SalesFlowResolverTest`,
+  `AgentTaskServiceTest`, REST/MySQL e navegação desktop/mobile em
+  `docs/homologacao/processo6-fluxo-produto-v1.md`.
 
 ## LOOP-BPM-VIDEO-GENERICO-SEM-ENTREGA-POR-DESTINO — prevenção em 08/09/2026
 

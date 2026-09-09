@@ -169,13 +169,22 @@ public class LearningCycleService {
                   })
               .toList();
     }
+    var successorChain =
+        chains
+            .findFirstByChainCodeAndStatusOrderByVersionNumberDesc(
+                chain.getChainCode(), "PUBLISHED")
+            .orElse(null);
     return new LearningCycleCatalog(
         process.getId(),
         process.getVersionNumber(),
         json.read(process.getDiagramJson()),
         targets(chain),
         options,
-        organization.describe(chain, process, productId, openCycle(productId, chain)));
+        organization.describe(chain, process, productId, openCycle(productId, chain)),
+        successorChain == null ? null : successorChain.getId(),
+        successorChain == null
+            ? null
+            : successorChain.getName() + " · v" + successorChain.getVersionNumber());
   }
 
   /** Liga o BPM ao ambiente do ciclo, preservando cadeia, produto e ocorrência já aberta. */
@@ -682,6 +691,7 @@ public class LearningCycleService {
       }
       case ADJUST -> {
         JsonNode metrics = latestMetrics(cycle);
+        requireDeliveryResolved(metrics);
         require(
             metrics.path("dataValid").asBoolean(false)
                 && metrics.path("testDataExcluded").asBoolean(false),
@@ -696,6 +706,7 @@ public class LearningCycleService {
         close(cycle, "ADJUSTED", now);
       }
       case CONTINUE -> {
+        requireDeliveryResolved(latestMetrics(cycle));
         String blocker = collectionBlocker(cycle, latestMetrics(cycle), now);
         require(blocker == null, blocker);
         require(
@@ -709,6 +720,7 @@ public class LearningCycleService {
         cycle.setStage("MEASUREMENT");
       }
       case SCALE -> {
+        requireDeliveryResolved(latestMetrics(cycle));
         String blocker =
             scaleBlocker(cycle, latestMetrics(cycle), json.read(cycle.getBriefJson()), now);
         require(blocker == null, blocker);
@@ -739,12 +751,27 @@ public class LearningCycleService {
         cycle.setStage("MEASUREMENT");
       }
       case STOP, INCONCLUSIVE -> {
+        requireDeliveryResolved(latestMetrics(cycle));
         require(
             experiment.getStatus() != ExperimentStatus.RUNNING,
             "Encerre ou pause o experimento pelo fluxo oficial antes de fechar o ciclo.");
         close(cycle, request.action() == Action.STOP ? "CLOSED" : "INCONCLUSIVE", now);
       }
     }
+  }
+
+  /** Impede avanço comercial com venda sem entrega comprovada na fotografia conciliada. */
+  private void requireDeliveryResolved(JsonNode metrics) {
+    String blocker = deliveryBlocker(metrics);
+    require(blocker == null, blocker);
+  }
+
+  /** Explica o mesmo bloqueio de entrega na disponibilidade e na execução da decisão. */
+  private String deliveryBlocker(JsonNode metrics) {
+    return metrics.path("netSales").asLong() == 0
+            || metrics.path("deliveryVerified").asBoolean(false)
+        ? null
+        : "Há vendas sem entrega comprovada. Conclua a atividade 6.2 e reconcilie a medição antes de avançar.";
   }
 
   /** Fecha a iteração, liberando o slot sem reescrever o experimento anterior. */
@@ -898,6 +925,14 @@ public class LearningCycleService {
                                       : null;
                       if (blocker == null && requiresCurrentApproval(action, cycle.getStage()))
                         blocker = approvalBlocker(cycle);
+                      if (blocker == null
+                          && Set.of(
+                                  Action.ADJUST,
+                                  Action.CONTINUE,
+                                  Action.SCALE,
+                                  Action.STOP,
+                                  Action.INCONCLUSIVE)
+                              .contains(action)) blocker = deliveryBlocker(metrics);
                       return new LearningCycleResponse.CommandOption(
                           action.name(),
                           actionLabel(action, cycle.getStage()),

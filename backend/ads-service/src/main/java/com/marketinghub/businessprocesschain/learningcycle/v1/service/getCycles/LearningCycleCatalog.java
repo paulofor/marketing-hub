@@ -10,7 +10,9 @@ public record LearningCycleCatalog(
     JsonNode diagram,
     List<Target> returnTargets,
     List<ExperimentOption> experiments,
-    LearningCycleEntry entry) {
+    LearningCycleEntry entry,
+    Long successorChainDefinitionId,
+    String successorChainName) {
   /** Identifica uma atividade real que pode receber a correção causal. */
   public record Target(
       Long processDefinitionId,

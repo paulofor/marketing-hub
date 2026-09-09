@@ -25,6 +25,7 @@ import {
 } from "../../api/product/useProductValueChainPositions";
 import PageTitle from "../../components/PageTitle";
 import ProductProcessCommitLedger from "../../components/ProductProcessCommitLedger";
+import ProductSalesFlow from "../../components/ProductSalesFlow";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -54,6 +55,7 @@ const evidenceLabels: Record<string, string> = {
   NEXT_PROCESS_EXECUTION_STARTED: "Execução do processo seguinte iniciada",
   NEXT_PROCESS_PERIOD_STARTED: "Período do processo seguinte iniciado",
   NOT_RECORDED: "Data ainda não registrada",
+  SALES_FLOW_EVENT: "Passagem registrada no ciclo do experimento",
 };
 
 function formatDateTime(value?: string | null) {
@@ -78,6 +80,8 @@ function formatEvidence(value?: string | null) {
 function statusLabel(measurement: ProductStageMeasurement) {
   const status = measurement.trackingStatus;
   if (status === "COMPLETED") return "Objetivo atingido";
+  if (status === "HISTORICAL") return "Referência histórica";
+  if (status === "NOT_APPLICABLE") return "Não aplicável neste período";
   if (status === "PLANNED") {
     return measurement.stageType === "PROCESS"
       ? "Previsto na cadeia"
@@ -147,6 +151,7 @@ export default function ProductValueChainHistoryPage() {
     `Produto ${summary.productId}`;
   const identified = summary.resolutionStatus === "IDENTIFIED";
   const subprocessPosition = position?.subprocessPosition;
+  const salesFlow = subprocessPosition?.salesFlow;
   const currentSubprocess = subprocessPosition?.currentSubprocessName;
   const nextSubprocess = subprocessPosition?.nextSubprocessName;
   const currentParentActivity = currentSubprocess
@@ -167,12 +172,12 @@ export default function ProductValueChainHistoryPage() {
     <div className="product-value-chain-history">
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
-          {summary.chainDefinitionId ? (
+          {summary.processDefinitionId ? (
             <Link
               className="btn btn-outline-primary mb-3"
-              to={`/business-process-chains/learning-cycles?chainId=${summary.chainDefinitionId}&productId=${summary.productId}`}
+              to={`/products/${summary.productId}/value-chain-history/processes/${summary.processDefinitionId}/activities?chainId=${summary.chainDefinitionId}`}
             >
-              Ciclos de aprendizado e vendas
+              Atividades do Processo {summary.sequenceNumber}
             </Link>
           ) : null}
           <PageTitle>Histórico da cadeia de valor</PageTitle>
@@ -286,22 +291,32 @@ export default function ProductValueChainHistoryPage() {
                 <>
                   <span>
                     <Clock3 size={16} aria-hidden="true" />
-                    {subprocessAwaitingFirstExecution
-                      ? "Subprocesso atual"
-                      : currentParentActivity
-                        ? subprocessPosition?.trackingStatus === "COMPLETED"
-                          ? "Próxima atividade"
-                          : "Atividade atual"
-                        : "Próximo marco"}
+                    {salesFlow
+                      ? "Atividade atual"
+                      : subprocessAwaitingFirstExecution
+                        ? "Subprocesso atual"
+                        : currentParentActivity
+                          ? subprocessPosition?.trackingStatus === "COMPLETED"
+                            ? "Próxima atividade"
+                            : "Atividade atual"
+                          : "Próximo marco"}
                   </span>
-                  <strong>{nextMilestone}</strong>
+                  <strong>
+                    {salesFlow
+                      ? salesFlow.currentActivityId
+                        ? `6.${salesFlow.currentActivitySequenceNumber} — ${salesFlow.currentActivityName}`
+                        : "Passagem encerrada"
+                      : nextMilestone}
+                  </strong>
                   <small>
-                    {subprocessAwaitingFirstExecution
-                      ? "Subprocesso atual preparado; ainda aguarda a primeira execução."
-                      : currentParentActivity
-                        ? "Continuação enviada pelo backend dentro do processo atual."
-                        : subprocessPosition?.nextSubprocessObjective ||
-                          "O próximo objetivo será definido pela cadeia publicada."}
+                    {salesFlow
+                      ? salesFlow.reason
+                      : subprocessAwaitingFirstExecution
+                        ? "Subprocesso atual preparado; ainda aguarda a primeira execução."
+                        : currentParentActivity
+                          ? "Continuação enviada pelo backend dentro do processo atual."
+                          : subprocessPosition?.nextSubprocessObjective ||
+                            "O próximo objetivo será definido pela cadeia publicada."}
                   </small>
                 </>
               ) : (
@@ -421,7 +436,13 @@ export default function ProductValueChainHistoryPage() {
                             <div className="product-value-chain-history__activity-links">
                               <Link
                                 className="product-value-chain-history__activities-link"
-                                to={`/products/${summary.productId}/value-chain-history/processes/${measurement.processDefinitionId}/activities`}
+                                to={
+                                  salesFlow &&
+                                  measurement.processCode ===
+                                    "value-chain-learning-sales-cycle"
+                                    ? salesFlow.navigationUrl
+                                    : `/products/${summary.productId}/value-chain-history/processes/${measurement.processDefinitionId}/activities`
+                                }
                               >
                                 <ListTree size={15} aria-hidden="true" />
                                 Atividades e tarefas
@@ -445,6 +466,12 @@ export default function ProductValueChainHistoryPage() {
                           </span>
                         </div>
 
+                        {measurement.stageType === "PROCESS" &&
+                        measurement.processCode ===
+                          "pde-sales-delivery-learning" &&
+                        salesFlow ? (
+                          <ProductSalesFlow flow={salesFlow} />
+                        ) : null}
                         <dl className="product-value-chain-history__facts">
                           <div>
                             <dt>Entrada</dt>

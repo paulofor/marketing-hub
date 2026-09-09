@@ -11,7 +11,7 @@ const output =
   process.env.LEARNING_CYCLES_EVIDENCE_DIR || "/tmp/learning-cycle-entry";
 await mkdir(output, { recursive: true });
 const fixture = await (
-  await fetch(api + "/api/business-process-chains/91001")
+  await fetch(api + "/api/business-process-chains/91002")
 ).json();
 const parent = fixture.processes.find((p) => p.sequenceNumber === 6);
 const browser = await chromium.launch({
@@ -61,7 +61,7 @@ try {
       await route.continue();
     });
     await page.goto(
-      base + "/business-process-chains?chainId=91001&productId=91001",
+      base + "/business-process-chains?chainId=91002&productId=91001",
       { waitUntil: "networkidle" },
     );
     const processes = page.locator(".business-process-chain-processes > li");
@@ -129,10 +129,10 @@ try {
       .getByRole("region", { name: "Ciclo dentro do processo de venda" })
       .getByRole("link", { name: /Abrir ciclo|Retomar ciclo/ })
       .click();
-    assert.equal(new URL(page.url()).searchParams.get("chainId"), "91001");
+    assert.equal(new URL(page.url()).searchParams.get("chainId"), "91002");
     await page.goto(
       base +
-        `/products/91001/value-chain-history/processes/${parent.processDefinitionId}/activities?chainId=91001`,
+        `/products/91001/value-chain-history/processes/${parent.processDefinitionId}/activities?chainId=91002`,
       { waitUntil: "networkidle" },
     );
     const productEntry = page.locator("#activity-learningCycle");
@@ -172,7 +172,7 @@ try {
     );
     await page.goto(
       base +
-        `/products/91002/value-chain-history/processes/${parent.processDefinitionId}/activities?chainId=91001`,
+        `/products/91002/value-chain-history/processes/${parent.processDefinitionId}/activities?chainId=91002`,
       { waitUntil: "networkidle" },
     );
     await expect(

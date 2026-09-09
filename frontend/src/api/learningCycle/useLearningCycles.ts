@@ -117,6 +117,8 @@ export type LearningCycle = {
   closedAt?: string;
 };
 export type CycleCatalog = {
+  successorChainDefinitionId?: number | null;
+  successorChainName?: string | null;
   entry?: LearningCycleEntry;
   processDefinitionId: number;
   version: number;

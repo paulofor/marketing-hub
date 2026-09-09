@@ -107,6 +107,10 @@ public class AgentTaskService {
       learningCycleTaskContext;
 
   @Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.SalesFlowResolver
+      salesFlowResolver;
+
+  @Autowired(required = false)
   private ResearchIntelligenceService researchIntelligenceService;
 
   @Autowired(required = false)
@@ -2634,9 +2638,30 @@ public class AgentTaskService {
     return task;
   }
 
-  /** Verifica no grafo se todas as atividades imediatamente anteriores foram concluídas. */
+  /**
+   * Valida a passagem comercial atual e as predecessoras antes de disponibilizar trabalho ao
+   * agente.
+   */
   private boolean predecessorsCompleted(AgentTask candidate) {
     try {
+      if (salesFlowResolver != null
+          && salesFlowResolver.executionBlocker(
+                  candidate.getProcessDefinition(), candidate.getSourceReference())
+              != null) return false;
+      if (salesFlowResolver != null
+          && Set.of("operacao-otimizacao-experimento", "venda-entrega-satisfacao-cliente")
+              .contains(candidate.getProcessDefinition().getProcessCode())) {
+        var target =
+            taskTargetContextProvider.resolve(
+                candidate.getSourceReference(), candidate.getProcessDefinition().getProcessCode());
+        if (target.isPresent()
+            && target.get().productId() != null
+            && salesFlowResolver.executionBlocker(
+                    target.get().productId(),
+                    candidate.getProcessDefinition(),
+                    candidate.getSourceReference())
+                != null) return false;
+      }
       JsonNode diagram = objectMapper.readTree(candidate.getProcessDefinition().getDiagramJson());
       Map<String, List<String>> incoming = new HashMap<>();
       Map<String, List<String>> outgoing = new HashMap<>();

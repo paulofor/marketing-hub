@@ -666,6 +666,15 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
 
 ## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
 
+- Recorrência Atena/Vega #358 em 09/09/2026: a inferência terminou, mas duas tentativas de callback
+  falharam durante indisponibilidade do backend. Arquivos temporários já tinham sido apagados e a
+  tarefa permaneceu `IN_PROGRESS`, sem parecer ou erro. A correção local conserva reserva, auditoria,
+  saída bruta e callback em volume próprio do executor; drena reenvios antes de novo trabalho e
+  registra interrupções para retentativa pelo BPM. O backend trava a tarefa e confirma o mesmo
+  parecer terminal sem repetir consumo ou efeitos. Testes reproduzem indisponibilidade, reinício,
+  STOP, erro de modelo, resposta inválida e confirmação repetida. Evidências e estado de publicação:
+  `docs/homologacao/vega-atena-callback-resiliente-v1.md`.
+
 - Sintoma: execução permanece `RUNNING`, mas não é possível comprovar se o processo Codex está vivo ou avançando.
 - Causa-raiz: o job registrava apenas início, fim e timeout; a atividade intermediária existia somente no processo local do worker.
 - Prevenção: telemetria canônica com heartbeat de 15 segundos, PID, processo vivo, linhas/eventos, bytes de saída, tokens quando informados e detecção de atraso após dois minutos.

@@ -92,6 +92,15 @@ continua separada, conforme `homologacao-local-docker-canon.v1.md`.
 
 Alteração de código deve passar pelo PR solicitado pelo usuário. Diagnóstico ou recuperação
 operacional de cache não autoriza instalar scripts novos nem publicar aplicações por SSH.
+
+Exceção operacional autorizada em 09/09/2026, restrita à recuperação da atividade de Atena do
+Vega (#358, experimento #92): o usuário autorizou publicar manualmente no host imagens construídas
+pelos Dockerfiles/Compose deste repositório, depois da correção e homologação local completas,
+consolidando posteriormente pelo seu fluxo de PR. Essa autorização não altera os gates comerciais
+nem permite contornar destinos negados pelo helper SSH, compartilhar sessões dos agentes,
+reduzir reservas de disco ou descartar dados. Registrar imagem, diff, validação, estado anterior,
+retorno e resultado na UI; preservar rollback. O fluxo normal dos demais serviços permanece pelo PR.
+
 Imagem fora da lista explícita de agentes ou da PDE Platform continua exigindo revisão operacional individual da
 referência imutável, origem, idade, ausência de containers e versões de recuperação; não entra na
 coleta automática e nunca usa remoção forçada.

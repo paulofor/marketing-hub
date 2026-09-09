@@ -18,7 +18,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 
-/** Responsabilidade: validar as consultas persistentes dos documentos produzidos no BPM. */
+/** Responsabilidade: validar os contratos de persistência das tarefas do BPM. */
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class AgentTaskRepositoryDocumentTest {
@@ -28,6 +28,97 @@ class AgentTaskRepositoryDocumentTest {
   @Autowired private AgentThemeRepository themes;
   @Autowired private BusinessProcessDefinitionRepository processes;
   @Autowired private EntityManager entityManager;
+  @Autowired private org.springframework.transaction.PlatformTransactionManager transactions;
+
+  /**
+   * Comprova no banco que dois callbacks concorrentes observam o commit antes de repetir efeitos.
+   */
+  @Test
+  @org.springframework.transaction.annotation.Transactional(
+      propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+  void serializesConcurrentCallbackReceipts() throws Exception {
+    var transaction = new org.springframework.transaction.support.TransactionTemplate(transactions);
+    AgentTask created =
+        transaction.execute(
+            status ->
+                tasks.saveAndFlush(
+                    task(
+                        persistedAgent(),
+                        persistedProcess(),
+                        "marketStrategy",
+                        "IN_PROGRESS",
+                        null,
+                        Instant.now())));
+    Long id = created.getId();
+    var locked = new java.util.concurrent.CountDownLatch(1);
+    var release = new java.util.concurrent.CountDownLatch(1);
+    var competing = new java.util.concurrent.CountDownLatch(1);
+    var effects = new java.util.concurrent.atomic.AtomicInteger();
+    try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      var first =
+          pool.submit(
+              () ->
+                  transaction.execute(
+                      status -> {
+                        var current = tasks.findLockedById(id).orElseThrow();
+                        locked.countDown();
+                        awaitLatch(release);
+                        current.setStatus("COMPLETED");
+                        effects.incrementAndGet();
+                        return tasks.save(current).getId();
+                      }));
+      try {
+        assertThat(locked.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        var second =
+            pool.submit(
+                () ->
+                    transaction.execute(
+                        status -> {
+                          competing.countDown();
+                          var current = tasks.findLockedById(id).orElseThrow();
+                          if ("IN_PROGRESS".equals(current.getStatus())) effects.incrementAndGet();
+                          return current.getStatus();
+                        }));
+        assertThat(competing.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> second.get(100, java.util.concurrent.TimeUnit.MILLISECONDS))
+            .isInstanceOf(java.util.concurrent.TimeoutException.class);
+        release.countDown();
+        first.get(5, java.util.concurrent.TimeUnit.SECONDS);
+        assertThat(second.get(5, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo("COMPLETED");
+        assertThat(effects.get()).isEqualTo(1);
+      } finally {
+        release.countDown();
+      }
+    } finally {
+      transaction.executeWithoutResult(
+          status -> {
+            var current = tasks.findById(id).orElseThrow();
+            var process = current.getProcessDefinition();
+            var agent = current.getAssignedAgent();
+            var theme = agent.getTheme();
+            tasks.delete(current);
+            tasks.flush();
+            processes.delete(process);
+            agents.delete(agent);
+            agents.flush();
+            themes.delete(theme);
+          });
+    }
+  }
+
+  /** Aguarda a sincronização controlada e conserva interrupção como falha explícita do teste. */
+  private static void awaitLatch(java.util.concurrent.CountDownLatch latch) {
+    try {
+      if (!latch.await(5, java.util.concurrent.TimeUnit.SECONDS))
+        throw new IllegalStateException("Timeout da fixture concorrente");
+    } catch (InterruptedException ex) {
+      org.slf4j.LoggerFactory.getLogger(AgentTaskRepositoryDocumentTest.class)
+          .error("Fixture de callback interrompida", ex);
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(ex);
+    }
+  }
 
   /** Garante segregação, ordenação e limite de dez documentos concluídos por atividade. */
   @Test

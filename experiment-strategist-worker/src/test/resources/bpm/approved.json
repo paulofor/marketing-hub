@@ -1,0 +1,70 @@
+{
+  "decision": "APPROVE",
+  "selectedDossierId": null,
+  "selectedOpportunityId": null,
+  "alternatives": [
+    {},
+    {},
+    {}
+  ],
+  "selectedAlternative": "Alternativa factual",
+  "marketStrategicContract": {
+    "contractVersion": "MARKET_STRATEGY_V3",
+    "status": "READY_FOR_PRIVATE_VALIDATION",
+    "privateValidationPlan": {
+      "prototypeObjective": "Demonstrar resultado pronto em até dez minutos.",
+      "purchaseScene": {
+        "trigger": "Compromisso confirmado.",
+        "deadline": "Antes de sair hoje.",
+        "costOfError": "Perder confiança e tempo.",
+        "budgetEvidence": "Já compara alternativas pagas.",
+        "failedAttempt": "Tentou montar manualmente.",
+        "currentPaidBehavior": "Compra orientação especializada."
+      },
+      "strongestFreeAlternative": "Pesquisar e montar manualmente com uma IA genérica.",
+      "prototypeAdvantage": "Entregar resultado pessoal pronto sem prompting.",
+      "humanValueDelivery": {
+        "territories": [
+          "RECOGNITION",
+          "EFFORT_RELIEF"
+        ],
+        "desiredTransformation": "Sentir segurança com menos esforço.",
+        "evidenceSourceIds": [
+          "source-1",
+          "source-2"
+        ],
+        "evidencePathways": [
+          "CURRENT_LANGUAGE",
+          "PAID_BEHAVIOR"
+        ],
+        "readyMadeOutcome": "Resultado pessoal pronto para uso.",
+        "minimumCustomerInput": "Uma escolha curta em linguagem comum.",
+        "requiresPromptEngineering": false,
+        "requiresManualAssembly": false,
+        "usableWithoutAiKnowledge": true,
+        "customerStepsToValue": 3,
+        "timeToUsableResultMinutes": 8,
+        "automationBoundary": "A pessoa revisa antes de aplicar."
+      },
+      "minimumIndependentReadings": 2,
+      "minimumEligibleParticipantsPerReading": 1,
+      "requiredSignals": [
+        "EXPERIENCE_STARTED",
+        "VALUE_MOMENT",
+        "READY_RESULT_USED",
+        "PREFERRED_OVER_FREE",
+        "CHECKOUT_STARTED"
+      ],
+      "minimumExperienceStartRate": 1,
+      "minimumValueMomentRate": 1,
+      "minimumReadyResultUseRate": 1,
+      "minimumPrototypePreferenceRate": 1,
+      "minimumCheckoutStartRate": 1,
+      "sourceMaxAgeDays": 30,
+      "sourceRefreshRequired": false,
+      "sourceRefreshAction": "Nenhuma atualização necessária.",
+      "publicationBoundary": "Uso privado sem contato, publicação, pagamento ou gasto."
+    }
+  },
+  "rationale": "Decisão sustentada pelo dossiê e suas fontes."
+}

@@ -2015,11 +2015,19 @@ public class AgentTaskService {
     }
   }
 
-  /** Conclui trabalho reservado com saída e evidências persistidas. */
+  /** Conclui trabalho reservado ou confirma reenvio idêntico sem repetir efeitos e consumo. */
   @Transactional
   public void completeClaimedProcessTask(
       String agentKey, Long taskId, CompleteAgentTaskRequest request) {
-    AgentTask task = claimedBy(agentKey, taskId);
+    AgentTask task = lockedForCallback(agentKey, taskId);
+    if (terminalCallbackRecorded(
+        task,
+        "COMPLETED",
+        request.resultJson(),
+        request.evidenceJson(),
+        null,
+        request.executionAudit())) return;
+    requireClaimed(task);
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
@@ -2121,10 +2129,20 @@ public class AgentTaskService {
     }
   }
 
-  /** Bloqueia trabalho reservado preservando a causa técnica completa. */
+  /**
+   * Bloqueia trabalho reservado e confirma reenvio já persistido sem acumular consumo novamente.
+   */
   @Transactional
   public void failClaimedProcessTask(String agentKey, Long taskId, FailAgentTaskRequest request) {
-    AgentTask task = claimedBy(agentKey, taskId);
+    AgentTask task = lockedForCallback(agentKey, taskId);
+    if (terminalCallbackRecorded(
+        task,
+        "BLOCKED",
+        request.resultJson(),
+        request.evidenceJson(),
+        request.error(),
+        request.executionAudit())) return;
+    requireClaimed(task);
     task.setExecutionError(request.error());
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
@@ -2626,16 +2644,66 @@ public class AgentTaskService {
             || "BATCH".equalsIgnoreCase(serviceTier));
   }
 
-  /** Confirma identidade e lease antes de aceitar callback operacional. */
-  private AgentTask claimedBy(String agentKey, Long taskId) {
-    AgentTask task = task(taskId);
+  /**
+   * Trava a tarefa para impedir que confirmação perdida repita efeitos em callbacks concorrentes.
+   */
+  private AgentTask lockedForCallback(String agentKey, Long taskId) {
+    AgentTask task =
+        repository
+            .findLockedById(taskId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
+    requireTaskOwner(agentKey, task);
+    return task;
+  }
+
+  /** Confirma autoria sem revelar conteúdo ou estado a outro agente. */
+  private void requireTaskOwner(String agentKey, AgentTask task) {
     if (!task.getAssignedAgent().getAgentKey().equals(agentKey.trim())) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tarefa pertence a outro agente.");
     }
+  }
+
+  /** Confirma a autoria antes de consultar estado ou reconhecer callback repetido. */
+  private AgentTask ownedBy(String agentKey, Long taskId) {
+    AgentTask task = task(taskId);
+    requireTaskOwner(agentKey, task);
+    return task;
+  }
+
+  /** Exige reserva ativa para qualquer alteração operacional ainda não confirmada. */
+  private void requireClaimed(AgentTask task) {
     if (!"IN_PROGRESS".equals(task.getStatus())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Tarefa não está reservada.");
     }
+  }
+
+  /** Confirma identidade e lease antes de aceitar callback operacional. */
+  private AgentTask claimedBy(String agentKey, Long taskId) {
+    AgentTask task = ownedBy(agentKey, taskId);
+    requireClaimed(task);
     return task;
+  }
+
+  /** Reconhece somente o mesmo parecer terminal auditado, sem repetir efeitos, tokens ou avanço. */
+  private boolean terminalCallbackRecorded(
+      AgentTask task,
+      String status,
+      String result,
+      String evidence,
+      String error,
+      AgentTaskExecutionAuditRequest audit) {
+    return status.equals(task.getStatus())
+        && Objects.equals(task.getResultJson(), result)
+        && Objects.equals(task.getEvidenceJson(), evidence)
+        && Objects.equals(task.getExecutionError(), error)
+        && audit != null
+        && Objects.equals(task.getExecutionMode(), audit.executionMode())
+        && Objects.equals(task.getExecutionModelCode(), audit.modelCode())
+        && Objects.equals(task.getExecutionReasoningEffort(), audit.reasoningEffort())
+        && Objects.equals(task.getExecutionPrompt(), audit.promptSent())
+        && Objects.equals(task.getExecutionAgentPrompt(), audit.agentPromptPart())
+        && Objects.equals(task.getExecutionActivityPrompt(), audit.activityPromptPart());
   }
 
   /**

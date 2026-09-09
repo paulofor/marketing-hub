@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -26,7 +27,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private static final String AGENT_KEY = "experiment-strategist";
   private static final String PROCESS_CODE = "pde-commercial-plan-offer";
   private static final String ACTIVITY_ID = "marketStrategy";
-  private static final String PROMPT = "prompts/pde-commercial-plan/v7/market-strategy.md";
+  private static final String PROMPT = "prompts/pde-commercial-plan/v8/market-strategy.md";
   private static final String SCHEMA = "prompts/pde-commercial-plan/v7/market-strategy-schema.json";
   private static final String READY_FOR_PRIVATE_VALIDATION = "READY_FOR_PRIVATE_VALIDATION";
   private static final String INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE";
@@ -41,42 +42,184 @@ public class PdeMarketStrategyBpmTaskConsumer {
   private final WorkerProperties properties;
   private final ObjectMapper objectMapper;
   private final AutomaticExecutionControl automaticExecution;
+  private final PdeMarketStrategyOutbox outbox;
 
   /** Configura fila canônica, sandbox Codex e controle operacional PLAY/STOP. */
   public PdeMarketStrategyBpmTaskConsumer(
       WorkerProperties properties,
       ObjectMapper objectMapper,
       AutomaticExecutionControl automaticExecution) {
-    this.backend = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    var requests = new SimpleClientHttpRequestFactory();
+    requests.setConnectTimeout(10000);
+    requests.setReadTimeout(30000);
+    this.backend =
+        RestClient.builder().baseUrl(properties.getBackendUrl()).requestFactory(requests).build();
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.automaticExecution = automaticExecution;
+    this.outbox =
+        new PdeMarketStrategyOutbox(Path.of(properties.getBpmStateDirectory()), objectMapper);
   }
 
-  /** Reserva e processa no máximo um dossiê liberado pelo backend. */
+  /** Retoma entregas primeiro e reserva no máximo uma estratégia quando o agente está em PLAY. */
   @Scheduled(cron = "40 */1 * * * *")
-  public void processOne() {
-    if (!automaticExecution.allowsAutomaticExecution()) return;
-    Map<String, Object> task = null;
-    Execution execution = null;
-    try {
-      task = claim();
-      if (task == null) return;
-      execution = execute(task);
-      validate(execution.result(), sourceReference(task));
-      if ("APPROVE".equals(execution.result().path("decision").asText())) {
-        complete(task, execution);
-      } else {
-        block(task, execution);
+  public synchronized void processOne() {
+    try (var lock = outbox.lock()) {
+      if (lock == null) return;
+      var pending = outbox.read();
+      if (pending != null && pending.callback() != null) {
+        deliver(pending);
+        return;
       }
+      if (pending != null && pending.modelStarted()) {
+        var failure =
+            technicalFailure(
+                pending.task(),
+                pending.audit(),
+                new IllegalStateException(
+                    "Execução de Atena interrompida antes de confirmar o resultado; reinicie a atividade pelo BPM."));
+        enqueue(pending.task(), pending.audit(), "failure", failure);
+        return;
+      }
+      if (!automaticExecution.allowsAutomaticExecution()) return;
+      Map<String, Object> task = pending == null ? claim() : pending.task();
+      if (task == null) return;
+      if (pending == null) {
+        outbox.save(new PdeMarketStrategyOutbox.Pending(task, null, false, null, null));
+      }
+      PromptComposition prompt;
+      try {
+        validateTaskContext(task);
+        prompt = prompt(task);
+      } catch (Exception ex) {
+        log.error(
+            "Atena recusou entrada antes do modelo. taskId={} sourceReference={}",
+            taskId(task),
+            sourceReference(task),
+            ex);
+        var notStarted =
+            Map.<String, Object>of(
+                "executionMode",
+                "NOT_STARTED",
+                "reasoningEffort",
+                "NOT_APPLICABLE",
+                "accessedUrls",
+                List.of());
+        enqueue(task, notStarted, "failure", technicalFailure(task, notStarted, ex));
+        return;
+      }
+      Map<String, Object> audit = audit(prompt);
+      outbox.save(new PdeMarketStrategyOutbox.Pending(task, audit, false, null, null));
+      backend
+          .put()
+          .uri(
+              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/execution-audit",
+              AGENT_KEY,
+              taskId(task))
+          .body(audit)
+          .retrieve()
+          .toBodilessEntity();
+      outbox.save(new PdeMarketStrategyOutbox.Pending(task, audit, true, null, null));
+      Execution execution;
+      try {
+        execution = execute(task, prompt);
+        validate(execution.result(), sourceReference(task));
+      } catch (Exception ex) {
+        log.error(
+            "Falha na inferência de Atena. taskId={} sourceReference={}",
+            taskId(task),
+            sourceReference(task),
+            ex);
+        enqueue(task, audit, "failure", technicalFailure(task, audit, ex));
+        return;
+      }
+      String operation =
+          "APPROVE".equals(execution.result().path("decision").asText()) ? "result" : "failure";
+      Map<String, Object> body = callback(task, execution);
+      if ("failure".equals(operation)) {
+        body.put(
+            "error",
+            "Atena bloqueou a estratégia: " + execution.result().path("rationale").asText());
+        body.put(
+            "blockerGuidance",
+            Map.of(
+                "category",
+                "MISSING_EVIDENCE",
+                "recommendedAction",
+                firstRequiredChange(execution.result()),
+                "helpLinks",
+                List.of(taskLink())));
+      }
+      enqueue(task, audit, operation, body);
     } catch (Exception ex) {
       log.error(
-          "Falha na estratégia BPM de Atena. taskId={} sourceReference={}",
-          taskId(task),
-          sourceReference(task),
+          "Atena preservou a entrega local para retomada; nenhuma nova inferência será iniciada. backend={}",
+          properties.getBackendUrl(),
           ex);
-      fail(task, execution, ex);
     }
+  }
+
+  /**
+   * Persiste o envelope completo antes de tentar entregá-lo, sem trocar falha de rede por parecer.
+   */
+  private void enqueue(
+      Map<String, Object> task,
+      Map<String, Object> audit,
+      String operation,
+      Map<String, Object> body)
+      throws IOException {
+    var pending = new PdeMarketStrategyOutbox.Pending(task, audit, true, operation, body);
+    outbox.save(pending);
+    deliver(pending);
+  }
+
+  /** Reenvia o mesmo callback e remove a cópia local somente após confirmação do backend. */
+  private void deliver(PdeMarketStrategyOutbox.Pending pending) throws IOException {
+    log.info(
+        "Atena enviando callback preservado. taskId={} sourceReference={} operation={}",
+        taskId(pending.task()),
+        sourceReference(pending.task()),
+        pending.operation());
+    backend
+        .post()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/{operation}",
+            AGENT_KEY,
+            taskId(pending.task()),
+            pending.operation())
+        .body(pending.callback())
+        .retrieve()
+        .toBodilessEntity();
+    log.info(
+        "Atena recebeu confirmação do callback. taskId={} operation={}",
+        taskId(pending.task()),
+        pending.operation());
+    outbox.acknowledge();
+  }
+
+  /** Preserva auditoria, resposta disponível e consumo real em falha ou interrupção do modelo. */
+  private Map<String, Object> technicalFailure(
+      Map<String, Object> task, Map<String, Object> audit, Exception ex) throws IOException {
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("error", ex.toString());
+    body.put("evidenceJson", evidence(task));
+    if (audit != null) body.put("executionAudit", audit);
+    if (Files.exists(outbox.output())) body.put("resultJson", Files.readString(outbox.output()));
+    if (Files.exists(outbox.events()))
+      putUsage(
+          body,
+          readTokenUsage(outbox.events()),
+          audit == null ? modelCode() : String.valueOf(audit.get("modelCode")));
+    body.put(
+        "blockerGuidance",
+        Map.of(
+            "category",
+            "TECHNICAL_FAILURE",
+            "recommendedAction",
+            "Corrija a falha técnica registrada e reinicie a atividade de Atena pelo BPM.",
+            "helpLinks",
+            List.of(taskLink())));
+    return body;
   }
 
   /** Reserva somente a atividade oficial de estratégia após predecessoras aprovadas. */
@@ -94,14 +237,15 @@ public class PdeMarketStrategyBpmTaskConsumer {
     return pending == null || pending.isEmpty() ? null : pending.getFirst();
   }
 
-  /** Executa o prompt versionado em leitura somente e preserva a resposta bruta. */
-  Execution execute(Map<String, Object> task) throws IOException, InterruptedException {
-    Path output = Files.createTempFile("atena-market-strategy-", ".json");
-    Path processLog = Files.createTempFile("atena-market-strategy-", ".jsonl");
+  /** Executa o prompt versionado preservando resposta e eventos até confirmação do callback. */
+  Execution execute(Map<String, Object> task, PromptComposition prompt)
+      throws IOException, InterruptedException {
+    Path output = outbox.output();
+    Path processLog = outbox.events();
     Path schema = materialize(SCHEMA, ".json");
-    PromptComposition prompt = prompt(task);
+    Process process = null;
     try {
-      Process process =
+      process =
           new ProcessBuilder(command(output, schema))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
@@ -120,8 +264,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
       String raw = Files.readString(output);
       return new Execution(objectMapper.readTree(raw), usage, prompt, raw);
     } finally {
-      Files.deleteIfExists(output);
-      Files.deleteIfExists(processLog);
+      if (process != null && process.isAlive()) terminateTree(process);
       Files.deleteIfExists(schema);
     }
   }
@@ -159,85 +302,28 @@ public class PdeMarketStrategyBpmTaskConsumer {
     return command;
   }
 
+  /** Impede que aprendizado de outro produto ou experimento seja usado para planejar o sucessor. */
+  private void validateTaskContext(Map<String, Object> task) throws IOException {
+    JsonNode context =
+        objectMapper.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
+    JsonNode cycle = context.path("learningSalesCycle");
+    if (!cycle.isMissingNode() && !cycle.isNull()) {
+      JsonNode target = objectMapper.valueToTree(task.get("taskTarget"));
+      if (!sourceReference(task).equals("experiment:" + cycle.path("experimentId").asLong(-1))
+          || !cycle.path("productId").canConvertToLong()
+          || cycle.path("productId").asLong() != target.path("productId").asLong(-1)) {
+        throw new IllegalArgumentException(
+            "O ciclo de aprendizado não corresponde ao produto e experimento da tarefa.");
+      }
+    }
+  }
+
   /** Compõe identidade permanente e missão específica sem hardcode de contrato na classe. */
   private PromptComposition prompt(Map<String, Object> task) throws IOException {
     String agent = read("prompts/experiment-strategist/v1/agent-core.md");
     String activity =
         read(PROMPT).replace("{{TASK_CONTEXT}}", objectMapper.writeValueAsString(task));
     return new PromptComposition(agent + "\n\n" + activity, agent, activity);
-  }
-
-  /** Persiste parecer, evidência, auditoria e tokens antes de liberar Plutus. */
-  private void complete(Map<String, Object> task, Execution execution) throws IOException {
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
-            AGENT_KEY,
-            taskId(task))
-        .body(callback(task, execution))
-        .retrieve()
-        .toBodilessEntity();
-  }
-
-  /** Bloqueia a cadeia quando a evidência não sustenta estratégia operacional. */
-  private void block(Map<String, Object> task, Execution execution) throws IOException {
-    Map<String, Object> body = callback(task, execution);
-    body.put(
-        "error", "Atena bloqueou a estratégia: " + execution.result().path("rationale").asText());
-    body.put(
-        "blockerGuidance",
-        Map.of(
-            "category",
-            "MISSING_EVIDENCE",
-            "recommendedAction",
-            firstRequiredChange(execution.result()),
-            "helpLinks",
-            List.of(taskLink())));
-    backend
-        .post()
-        .uri(
-            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-            AGENT_KEY,
-            taskId(task))
-        .body(body)
-        .retrieve()
-        .toBodilessEntity();
-  }
-
-  /** Registra falha técnica com contexto completo sem deixar tarefa invisível em andamento. */
-  private void fail(Map<String, Object> task, Execution execution, Exception ex) {
-    if (task == null) return;
-    try {
-      Map<String, Object> body = new LinkedHashMap<>();
-      body.put("error", ex.toString());
-      body.put("evidenceJson", evidence(task));
-      if (execution != null) {
-        body.put("resultJson", execution.raw());
-        body.put("executionAudit", audit(execution.prompt()));
-        putUsage(body, execution.usage());
-      }
-      body.put(
-          "blockerGuidance",
-          Map.of(
-              "category",
-              "TECHNICAL_FAILURE",
-              "recommendedAction",
-              "Corrija a falha técnica registrada e reinicie a atividade de Atena.",
-              "helpLinks",
-              List.of(taskLink())));
-      backend
-          .post()
-          .uri(
-              "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
-              AGENT_KEY,
-              taskId(task))
-          .body(body)
-          .retrieve()
-          .toBodilessEntity();
-    } catch (Exception callbackEx) {
-      log.error("Falha ao registrar bloqueio de Atena. taskId={}", taskId(task), callbackEx);
-    }
   }
 
   /** Monta o callback comum sem omitir o envelope de execução do modelo. */
@@ -247,7 +333,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
     body.put("resultJson", execution.raw());
     body.put("evidenceJson", evidence(task));
     body.put("executionAudit", audit(execution.prompt()));
-    putUsage(body, execution.usage());
+    putUsage(body, execution.usage(), modelCode());
     return body;
   }
 
@@ -271,7 +357,7 @@ public class PdeMarketStrategyBpmTaskConsumer {
             "agent",
             "Atena",
             "promptVersion",
-            "pde-commercial-plan-v7",
+            "pde-commercial-plan-v8",
             "sourceReference",
             sourceReference(task),
             "processCode",
@@ -430,14 +516,14 @@ public class PdeMarketStrategyBpmTaskConsumer {
   }
 
   /** Acrescenta consumo apenas quando o runtime forneceu os três contadores. */
-  private void putUsage(Map<String, Object> body, TokenUsage usage) {
+  private void putUsage(Map<String, Object> body, TokenUsage usage, String executionModel) {
     if (!usage.informed()) return;
     body.put(
         "modelUsages",
         List.of(
             Map.of(
                 "modelCode",
-                modelCode(),
+                executionModel,
                 "serviceTier",
                 "STANDARD",
                 "inputTokens",

@@ -14,6 +14,11 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Serializa callbacks concorrentes da mesma tarefa até o commit de status e efeitos. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select task from AgentTask task where task.id = :id")
+  Optional<AgentTask> findLockedById(@Param("id") Long id);
+
   /** Informa se uma definição de processo já possui trabalho operacional vinculado. */
   boolean existsByProcessDefinitionId(Long processDefinitionId);
 

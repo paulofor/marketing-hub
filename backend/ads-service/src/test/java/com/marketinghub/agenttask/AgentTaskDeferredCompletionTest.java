@@ -102,6 +102,7 @@ class AgentTaskDeferredCompletionTest {
   private AgentTaskService service(AgentTask task) {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     when(tasks.findById(task.getId())).thenReturn(Optional.of(task));
+    when(tasks.findLockedById(task.getId())).thenReturn(Optional.of(task));
     when(tasks.save(any(AgentTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
     return new AgentTaskService(
         tasks,

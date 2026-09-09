@@ -20,17 +20,23 @@ pagamento ou mídia; especialistas continuam nos módulos e BPMs canônicos.
 
 ### Lugar na cadeia e entrada operacional — decisão de 08/09/2026
 
-Toda criação ou alteração de ciclo, atividade, decisão ou retorno segue a
+Todo processo, subprocesso e atividade, incluindo o ciclo, suas decisões e retornos, deve sempre
+ser criado e permanecer dentro do BPM da Cadeia de Valor, seguindo a
 [regra obrigatória de alocação no BPM da Cadeia de Valor](business-process-catalog-canon.v1.md#alocação-obrigatória-no-bpm-da-cadeia-de-valor).
-O painel e os recursos especializados devem manter o vínculo e a entrada pelo fluxo do processo pai.
+**Reforço de 09/09/2026:** a alocação é obrigatória desde a concepção e o rascunho; não se cria um
+ciclo separado para conectá-lo depois. O painel e os recursos especializados pertencem à atividade
+chamadora e devem manter o vínculo, a entrada e o retorno pelo fluxo do processo pai.
 
 A cadeia mantém seis processos de valor. **Ciclos de aprendizado e vendas é um subprocesso
 do processo 6, Venda, entrega e aprendizado do PDE**; cada ciclo é uma ocorrência por
 experimento. O painel é o ambiente de execução desse subprocesso, não uma sétima etapa.
 
-O BPM do processo 6 deve chamar explicitamente o subprocesso depois da consolidação dos
-resultados. O losango registra a decisão no ciclo e apresenta seus retornos: continuar coleta
-ou corrigir medição na operação; ajustar estratégia/economia no processo 2, produto no 3 ou
+O BPM do processo 6 deve chamar explicitamente o subprocesso pela atividade
+**6.4 — Conduzir o ciclo de aprendizado e vendas**, depois da consolidação dos resultados.
+As atividades internas do ciclo pertencem ao BPM desse subprocesso, com critérios de entrada,
+conclusão, bloqueio e continuidade definidos. O losango registra a decisão no ciclo e apresenta
+seus retornos: continuar coleta ou corrigir medição na operação; ajustar estratégia/economia no
+processo 2, produto no 3 ou
 comunicação no 4; renovar homologação e autorização no 5 antes de voltar à operação no 6.
 Revisitar descoberta exige evidência que questione a necessidade ou o público, nunca um
 reinício automático da cadeia. Encerrar preserva os resultados; escalar exige nova autorização.

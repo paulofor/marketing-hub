@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-video-enterprise-workflow-adoption",
+  "collection": "video",
+  "title": "Vídeo generativo ganha tração quando entra no workflow de produção",
+  "finding": "A Runway informou em 8 de setembro de 2026 ter alcançado US$ 200 milhões de ARR, aproximadamente o dobro do patamar de abril, além de uso por mais de 60 milhões de creators e presença em 95% da Fortune 100. A empresa afirma que a maior parte da receita vem de seus modelos de geração de vídeo.",
+  "mechanism": "A proposta combina interface criativa, edição, APIs e licenciamento de modelos, permitindo incorporar geração de vídeo a processos recorrentes. A tração sugere disposição para pagar por capacidade produtiva integrada, mas não demonstra que vídeos gerados por IA tenham maior eficácia comercial.",
+  "commercialApplication": "No Marketing Hub, tratar vídeo gerado ou assistido por IA como uma rota de produção experimental. Comparar com o workflow atual usando mesma oferta e público, medindo tempo e custo por variante, volume de hipóteses testadas, retenção, CTA, lead, checkout e pagamento reconciliado.",
+  "evidenceStrength": "Moderada como sinal comercial: crescimento e adoção são materiais, mas ARR, alcance e penetração empresarial são números divulgados pela própria Runway/fundador e não equivalem a prova independente de eficácia dos criativos.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2026-12-08",
+  "experimentHypothesis": "Um workflow de vídeo assistido por IA reduzirá tempo e custo por variante e permitirá testar mais hipóteses criativas sem degradar retenção, CTA e taxa de pagamento em relação ao processo atual.",
+  "risks": "Aumentar volume de peças sem qualidade; gerar conteúdo inconsistente com marca ou política; confundir redução de custo de produção com aumento de vendas; publicar material sintético sem revisão; elevar gasto de inferência sem ganho comercial.",
+  "limits": "Os números são auto-reportados e não auditados. Adoção por grandes empresas e creators não demonstra causalidade sobre atenção ou conversão. Resultados podem não transferir para campanhas pequenas, nichos locais ou públicos brasileiros.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-09-runway-video-workflow.md",
+  "sourceTitle": "Fonte revisada — Adoção empresarial de vídeo generativo em workflows de produção",
+  "sourceSha256": "efad9bc733a42b963e1091d3b626dc7c49fe1cd5220c2b7e53b4e86707dfdf55"
+}

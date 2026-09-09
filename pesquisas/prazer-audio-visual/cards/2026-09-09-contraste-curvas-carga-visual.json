@@ -2,17 +2,17 @@
   "cardKey": "contraste-curvas-carga-visual",
   "collection": "prazer-audio-visual",
   "title": "Amortecer alto contraste com geometria curva",
-  "finding": "Em VR imersiva com 61 participantes, cores contrastantes e formas angulares aumentaram marcadores de conflito visual inicial; sob grande área de alto contraste, formas curvas atenuaram a resposta N200, enquanto o contraste aumentou LPP ligado a saliência sustentada.",
+  "finding": "Em VR imersiva com 61 participantes, cores contrastantes e formas angulares aumentaram marcadores de conflito visual inicial; sob alto contraste, curvas reduziram a resposta N200 e melhoraram liking em relação a formas angulares, enquanto maior área amplificou os efeitos visuais.",
   "mechanism": "Cor, forma e área parecem atuar em estágios parcialmente distintos: geometria influencia conflito perceptivo mais cedo, contraste sustenta arousal/atenção e grande área amplifica esses efeitos. Curvas podem amortecer parte do custo perceptivo inicial sem eliminar a saliência.",
   "commercialApplication": "Em interfaces, vídeo e criativos com grandes áreas de alto contraste, comparar recipientes, molduras ou transições curvas contra versões angulares, mantendo cor e conteúdo constantes.",
-  "evidenceStrength": "Média-alta: experimento intraindivíduo com 61 participantes, VR, EEG e avaliações subjetivas; porém é um único estudo arquitetônico e marcadores neurais não equivalem a prazer ou resultado comercial.",
+  "evidenceStrength": "Média-alta: experimento intraindivíduo com 61 participantes, VR, EEG e avaliações subjetivas; porém é um único estudo arquitetônico e marcadores neurais não equivalem a resultado comercial.",
   "publishedOn": "2026-09-09",
   "validUntil": "2027-03-09",
-  "experimentHypothesis": "Sob alto contraste ocupando grande área, geometrias curvas reduzirão fadiga/conflito percebido e preservarão atenção e compreensão melhor que geometrias angulares, sem piorar CTA.",
-  "risks": "Curvas podem reduzir urgência ou distintividade em alguns contextos; menor N200 não implica maior liking; otimizar apenas por conforto pode reduzir saliência.",
+  "experimentHypothesis": "Sob alto contraste ocupando grande área, geometrias curvas reduzirão fadiga/conflito percebido e preservarão ou melhorarão preferência e compreensão em relação a geometrias angulares, sem piorar CTA.",
+  "risks": "Curvas podem reduzir urgência ou distintividade em alguns contextos; o ganho de liking observado em VR arquitetônica pode não se generalizar para criativos ou interfaces; otimizar apenas por conforto pode reduzir saliência.",
   "limits": "Estudo em arquitetura virtual, amostra jovem e contexto cultural específico; não mediu retenção, compra, conversão ou uso prolongado de interfaces.",
   "sourceKind": "MARKDOWN",
   "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-contraste-curvas-carga-visual.md",
   "sourceTitle": "Fonte revisada — contraste cromático, curvas e carga visual",
-  "sourceSha256": "117405beb772da1f07843bf1dd88b7ba6c59001956deb6e57f8096c3807ae7ce"
+  "sourceSha256": "5e2f24a5b3183d8ff1fc9df898d7a9c3606646642a8a4d4f6606873a8069a2f3"
 }

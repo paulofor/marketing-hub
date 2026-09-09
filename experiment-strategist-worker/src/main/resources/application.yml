@@ -15,7 +15,7 @@ spring:
   task:
     scheduling:
       pool:
-        size: 4
+        size: 5
 logging:
   file:
     name: ${LOG_FILE_NAME:/tmp/experiment-strategist-worker.log}

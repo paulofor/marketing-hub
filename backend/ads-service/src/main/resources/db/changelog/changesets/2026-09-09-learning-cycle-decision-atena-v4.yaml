@@ -1,0 +1,122 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-09-learning-cycle-decision-atena-v1-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS learning_cycle_decision_proposal_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                cycle_id BIGINT NOT NULL,
+                cycle_revision BIGINT NOT NULL,
+                attempt INT NOT NULL,
+                activity_definition_id BIGINT NOT NULL,
+                activity_instance_id BIGINT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                lease_token VARCHAR(36) NULL,
+                context_json LONGTEXT NOT NULL,
+                audit_json LONGTEXT NULL,
+                raw_response LONGTEXT NULL,
+                result_receipt_json LONGTEXT NULL,
+                proposal_json LONGTEXT NULL,
+                error TEXT NULL,
+                created_at DATETIME(6) NOT NULL,
+                started_at DATETIME(6) NULL,
+                finished_at DATETIME(6) NULL,
+                approved_at DATETIME(6) NULL,
+                approved_event_id BIGINT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_cycle_decision_attempt (cycle_id, cycle_revision, attempt),
+                CONSTRAINT fk_cycle_decision_cycle FOREIGN KEY (cycle_id) REFERENCES learning_sales_cycle_v1(id),
+                CONSTRAINT fk_cycle_decision_activity FOREIGN KEY (activity_definition_id) REFERENCES business_process_activity_definition(id),
+                CONSTRAINT fk_cycle_decision_instance FOREIGN KEY (activity_instance_id) REFERENCES business_process_activity_instance(id),
+                CONSTRAINT fk_cycle_decision_event FOREIGN KEY (approved_event_id) REFERENCES learning_sales_cycle_event_v1(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE learning_cycle_decision_proposal_v1;
+
+  - changeSet:
+      id: 2026-09-09-learning-cycle-decision-atena-v4-bpm
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=3 AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.nodes[13].id'))='DECISION'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+               (process_code,name,purpose,owner_name,trigger_description,outcome_description,version_number,status,
+                technical_reference,process_type,execution_scope,parent_process_code,diagram_json,created_at,published_at)
+              SELECT source.process_code,source.name,source.purpose,source.owner_name,source.trigger_description,
+               'Atena prepara a proposta com evidências conciliadas; o usuário edita e aprova; o backend registra a decisão e o retorno no BPM.',
+               4,'PUBLISHED',source.technical_reference,source.process_type,source.execution_scope,source.parent_process_code,
+               JSON_SET(source.diagram_json,
+                '$.schemaVersion','LEARNING_SALES_CYCLE_V4',
+                '$.nodes[13].label','Revisar e aprovar proposta comercial de Atena',
+                '$.nodes[13].owner','Atena · proposta; usuário · edição e aprovação',
+                '$.nodes[13].responsibleAgentKeys',JSON_ARRAY('experiment-strategist'),
+                '$.nodes[13].responsibilityDomain','MARKET_STRATEGY',
+                '$.nodes[13].humanApprovalRequired',true,
+                '$.nodes[13].executionContract','LEARNING_CYCLE_DECISION_PROPOSAL_V1',
+                '$.nodes[13].description','Atena compara três alternativas com a conciliação oficial, preenche justificativa, evidência, aprendizado, hipótese e destino. O usuário pode editar e aprovar. Proposta pendente, inválida ou desatualizada bloqueia o losango; só a aprovação registra a decisão e o retorno. Nenhum gasto ou publicação é autorizado por este parecer.',
+                '$.decisionPreparation',JSON_OBJECT('agentKey','experiment-strategist','activityId','DECISION','pending','/api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending','sequence',JSON_ARRAY('ATENA_PROPOSAL','HUMAN_REVIEW','EXPLICIT_APPROVAL','COMMERCIAL_GATEWAY'))),
+               UTC_TIMESTAMP(),UTC_TIMESTAMP()
+              FROM business_process_definition source
+              WHERE source.process_code='value-chain-learning-sales-cycle' AND source.version_number=3
+              AND NOT EXISTS (SELECT 1 FROM business_process_definition target WHERE target.process_code=source.process_code AND target.version_number=4);
+
+              INSERT INTO business_process_activity_definition
+               (process_definition_id,activity_id,name,objective,owner_name,execution_resource_code,subprocess_code,definition_json,created_at)
+              SELECT target.id,activity.activity_id,
+               CASE WHEN activity.activity_id='DECISION' THEN 'Revisar e aprovar proposta comercial de Atena' ELSE activity.name END,
+               CASE WHEN activity.activity_id='DECISION' THEN JSON_UNQUOTE(JSON_EXTRACT(target.diagram_json,'$.nodes[13].description')) ELSE activity.objective END,
+               CASE WHEN activity.activity_id='DECISION' THEN 'Atena · proposta; usuário · edição e aprovação' ELSE activity.owner_name END,
+               activity.execution_resource_code,activity.subprocess_code,
+               CASE WHEN activity.activity_id='DECISION' THEN JSON_EXTRACT(target.diagram_json,'$.nodes[13]') ELSE activity.definition_json END,
+               UTC_TIMESTAMP()
+              FROM business_process_definition source
+              JOIN business_process_activity_definition activity ON activity.process_definition_id=source.id
+              JOIN business_process_definition target ON target.process_code=source.process_code AND target.version_number=4
+              LEFT JOIN business_process_activity_definition existing ON existing.process_definition_id=target.id AND existing.activity_id=activity.activity_id
+              WHERE source.process_code='value-chain-learning-sales-cycle' AND source.version_number=3 AND existing.id IS NULL;
+
+              UPDATE business_process_definition previous_version
+              JOIN business_process_definition current_version ON current_version.process_code=previous_version.process_code AND current_version.version_number=4
+              SET previous_version.status='RETIRED'
+              WHERE previous_version.process_code='value-chain-learning-sales-cycle' AND previous_version.version_number=3 AND previous_version.status='PUBLISHED';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE activity FROM business_process_activity_definition activity
+              JOIN business_process_definition process ON process.id=activity.process_definition_id
+              LEFT JOIN business_process_activity_instance instance ON instance.activity_definition_id=activity.id
+              LEFT JOIN learning_sales_cycle_v1 cycle ON cycle.process_definition_id=process.id
+              LEFT JOIN learning_cycle_decision_proposal_v1 proposal ON proposal.activity_definition_id=activity.id
+              WHERE process.process_code='value-chain-learning-sales-cycle' AND process.version_number=4 AND instance.id IS NULL AND cycle.id IS NULL AND proposal.id IS NULL;
+              DELETE process FROM business_process_definition process
+              LEFT JOIN business_process_activity_definition activity ON activity.process_definition_id=process.id
+              LEFT JOIN learning_sales_cycle_v1 cycle ON cycle.process_definition_id=process.id
+              WHERE process.process_code='value-chain-learning-sales-cycle' AND process.version_number=4 AND activity.id IS NULL AND cycle.id IS NULL;
+              UPDATE business_process_definition previous_version
+              LEFT JOIN business_process_definition current_version ON current_version.process_code=previous_version.process_code AND current_version.version_number=4
+              SET previous_version.status='PUBLISHED'
+              WHERE previous_version.process_code='value-chain-learning-sales-cycle' AND previous_version.version_number=3 AND current_version.id IS NULL;

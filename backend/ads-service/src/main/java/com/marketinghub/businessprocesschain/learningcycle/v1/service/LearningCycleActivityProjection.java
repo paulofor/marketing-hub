@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: apresentar o ciclo persistido na atividade de chamada do processo pai. */
+/** Responsabilidade: apresentar a navegação canônica do ciclo no processo pai e no subprocesso. */
 @Component
 @RequiredArgsConstructor
 public class LearningCycleActivityProjection {
@@ -46,6 +46,8 @@ public class LearningCycleActivityProjection {
       Map<String, BusinessProcessActivityDefinition> definitions,
       List<ProductProcessActivityExecutionGroupResponse> groups,
       Long chainId) {
+    if (LearningCycleRules.PROCESS_CODE.equals(process.getProcessCode()))
+      return projectCycleWorkspace(process, productId, explicitCycleId, chainId, groups);
     boolean callsCycle =
         definitions.values().stream()
             .anyMatch(
@@ -174,6 +176,91 @@ public class LearningCycleActivityProjection {
                   reason,
                   control);
             })
+        .toList();
+  }
+
+  /** Mantém as atividades internas na mesma tela, sem abrir tarefas genéricas paralelas. */
+  private List<ProductProcessActivityExecutionGroupResponse> projectCycleWorkspace(
+      BusinessProcessDefinition process,
+      Long productId,
+      Long explicitCycleId,
+      Long chainId,
+      List<ProductProcessActivityExecutionGroupResponse> groups) {
+    var explicit =
+        explicitCycleId == null
+            ? null
+            : cycles
+                .findById(explicitCycleId)
+                .filter(cycle -> Objects.equals(cycle.getProductId(), productId))
+                .orElse(null);
+    boolean invalid =
+        explicitCycleId != null
+            && (explicit == null
+                || chainId != null && !Objects.equals(chainId, explicit.getChainDefinitionId()));
+    var entry =
+        invalid
+            ? null
+            : service.entry(
+                process.getId(),
+                productId,
+                chainId != null
+                    ? chainId
+                    : explicit == null ? null : explicit.getChainDefinitionId());
+    boolean available = entry != null && entry.integrated();
+    String url =
+        !available
+            ? null
+            : explicit == null
+                ? entry.workspaceUrl()
+                : "/business-process-chains/learning-cycles?chainId="
+                    + entry.chainDefinitionId()
+                    + "&productId="
+                    + productId
+                    + "&cycleId="
+                    + explicit.getId();
+    String reason =
+        available
+            ? "A atividade é executada no ciclo vinculado à atividade 6.4; Atena prepara a decisão para edição e aprovação humana."
+            : "O vínculo do ciclo com este produto e cadeia precisa ser válido para retomar a atividade.";
+    return groups.stream()
+        .map(
+            group ->
+                new ProductProcessActivityExecutionGroupResponse(
+                    group.activityDefinitionId(),
+                    group.activityId(),
+                    group.activityName(),
+                    group.activityObjective(),
+                    group.activityOwnerName(),
+                    group.sequenceNumber(),
+                    group.selectedVersionActivity(),
+                    group.operationalState(),
+                    group.stateReason(),
+                    group.objectiveAchieved(),
+                    group.stateEvidence(),
+                    group.activityInstanceId(),
+                    group.occurrenceNumber(),
+                    group.taskCount(),
+                    group.tasks(),
+                    false,
+                    reason,
+                    new ProductProcessActivityExecutionControlResponse(
+                        "BACKEND",
+                        "SUBPROCESS",
+                        "Retomar atividade no ciclo",
+                        reason,
+                        available,
+                        reason,
+                        false,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        process.getId(),
+                        List.of(),
+                        "DETAILED",
+                        null,
+                        url)))
         .toList();
   }
 

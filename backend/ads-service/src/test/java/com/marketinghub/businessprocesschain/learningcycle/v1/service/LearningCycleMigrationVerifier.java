@@ -28,21 +28,22 @@ public final class LearningCycleMigrationVerifier {
         assertCount(
             connection,
             "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle'",
-            35);
+            48);
         assertCount(
             connection,
-            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='PUBLISHED' AND version_number=3",
+            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='PUBLISHED' AND version_number=4",
             1);
         assertCount(
             connection,
-            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='RETIRED' AND version_number IN (1,2)",
-            2);
+            "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND status='RETIRED' AND version_number IN (1,2,3)",
+            3);
         verifyOrganization(connection);
         System.out.println("PASS MySQL 5.7: aplicação física e catálogo sem duplicação.");
         return;
       }
       try (var statement = connection.createStatement()) {
         statement.executeUpdate("UPDATE learning_sales_cycle_v1 SET current_instance_id=NULL");
+        statement.executeUpdate("DELETE FROM learning_cycle_decision_proposal_v1");
         statement.executeUpdate("DELETE FROM learning_sales_cycle_event_v1");
         statement.executeUpdate("DELETE FROM learning_sales_cycle_v1 ORDER BY id DESC");
         statement.executeUpdate("DELETE FROM business_process_activity_instance");
@@ -59,7 +60,7 @@ public final class LearningCycleMigrationVerifier {
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle'",
-          35);
+          48);
       assertCount(
           connection,
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='learning_sales_cycle_v1' AND COLUMN_NAME IN ('created_at','updated_at','version_changed_at','window_start','window_end') AND DATA_TYPE='datetime' AND DATETIME_PRECISION=6 AND IS_NULLABLE='NO'",
@@ -73,6 +74,20 @@ public final class LearningCycleMigrationVerifier {
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND DATETIME_PRECISION=6 AND ((TABLE_NAME IN ('agent_task','facebook_ads_campaign') AND COLUMN_NAME='created_at') OR (TABLE_NAME='business_process_activity_instance' AND COLUMN_NAME IN ('entered_at','exited_at','created_at','updated_at')))",
           6);
       verifyOrganization(connection);
+      migration.rollback(1, new Contexts(), new LabelExpression());
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=3 AND status='PUBLISHED'",
+          1);
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=4",
+          0);
+      migration.rollback(1, new Contexts(), new LabelExpression());
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='learning_cycle_decision_proposal_v1'",
+          0);
       migration.rollback(1, new Contexts(), new LabelExpression());
       assertCount(
           connection,
@@ -116,14 +131,23 @@ public final class LearningCycleMigrationVerifier {
           1);
     }
     System.out.println(
-        "PASS MySQL 5.7: schema, 7 FKs, DATETIME, BPM v3 automático, rollback e preservação histórica.");
+        "PASS MySQL 5.7: schema, 7 FKs, DATETIME, BPM v4 com Atena, rollback e preservação histórica.");
   }
 
   /** Confere hierarquia, chamada, retornos, idempotência e preservação da definição anterior. */
   private static void verifyOrganization(java.sql.Connection connection) throws Exception {
     assertCount(
         connection,
-        "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=3 AND status='PUBLISHED' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.schemaVersion'))='LEARNING_SALES_CYCLE_V3'",
+        "SELECT COUNT(*) FROM business_process_activity_definition a JOIN business_process_definition p ON p.id=a.process_definition_id WHERE p.process_code='value-chain-learning-sales-cycle' AND p.version_number=4 AND a.activity_id='DECISION' AND JSON_UNQUOTE(JSON_EXTRACT(a.definition_json,'$.responsibleAgentKeys[0]'))='experiment-strategist' AND JSON_EXTRACT(a.definition_json,'$.humanApprovalRequired')=true",
+        1);
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='learning_cycle_decision_proposal_v1'",
+        4);
+
+    assertCount(
+        connection,
+        "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=4 AND status='PUBLISHED' AND JSON_UNQUOTE(JSON_EXTRACT(diagram_json,'$.schemaVersion'))='LEARNING_SALES_CYCLE_V4'",
         1);
     assertCount(
         connection,

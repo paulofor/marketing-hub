@@ -8,6 +8,7 @@ import subprocess
 import urllib.request
 import urllib.error
 import uuid
+import time
 
 BASE = 'http://127.0.0.1:18091'
 API = '/api/business-process-chains/learning-cycles/v1'
@@ -45,7 +46,7 @@ def sql(query):
 
 
 def reset():
-    sql('UPDATE learning_sales_cycle_v1 SET current_instance_id=NULL; DELETE FROM learning_sales_cycle_event_v1; '
+    sql('UPDATE learning_sales_cycle_v1 SET current_instance_id=NULL; DELETE FROM learning_cycle_decision_proposal_v1; DELETE FROM learning_sales_cycle_event_v1; '
         'DELETE FROM learning_sales_cycle_v1 ORDER BY id DESC; DELETE FROM business_process_activity_instance;')
     http('/fixture/reset', {})
 
@@ -62,6 +63,14 @@ def brief(experiment=91001, predecessor=None, baseline=False):
 def command(cycle, action='COMPLETE', evidence=None, expected=200, request=None):
     request = request or dict(requestKey=str(uuid.uuid4()), expectedRevision=cycle['revision'], action=action,
         operatorName='Homologação local', summary='Evidência local sem venda real', evidenceReference='internal://fixture/learning-cycles', evidence=evidence or {})
+    if cycle['stage']=='DECISION' and cycle['status']=='OPEN':
+        proposal = None
+        for _ in range(100):
+            proposal=http(f'{API}/products/{cycle["productId"]}/{cycle["id"]}/decision-proposal')
+            if proposal['status'] not in ('WAITING','RUNNING','QUEUED'): break
+            time.sleep(0.1)
+        assert proposal['status']=='READY', proposal
+        request['evidence'].update(decisionProposalId=proposal['id'],humanApproved=True)
     return http(f'{API}/products/{cycle["productId"]}/{cycle["id"]}/commands', request, expected)
 
 
@@ -174,7 +183,7 @@ assert not any(a['objectiveAchieved'] for a in parent['activities'])
 check('Retomada usa a ocorrência aberta do produto sem duplicar ou contaminar outro produto')
 check('Atividade do pai projeta ciclo e estado reais, conserva a cadeia e distingue as três chamadas')
 reset()
-assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 3 and catalog['entry']['integrated']
+assert len(catalog['diagram']['nodes']) == 17 and catalog['version'] == 4 and catalog['entry']['integrated']
 assert any(flow.get('kind')=='REWORK' and flow['to']=='LEARNING' for flow in catalog['diagram']['flows'])
 target=next(item for item in catalog['returnTargets'] if item['processCode']=='pde-construction-approval' and item['activityId']=='rework')
 return_to=dict(returnProcessId=target['processDefinitionId'],returnActivityId=target['activityId'],rootCause='Microação abstrata')
@@ -321,7 +330,7 @@ assert historical['events'][0]['evidence']['source']=='PRODUCTION_RUN'
 assert historical['events'][1]['action']=='MEASURE' and historical['events'][1]['evidence']['automatic']
 historical=command(historical,'INCONCLUSIVE')
 assert historical['status']=='INCONCLUSIVE' and not historical['canCreateSuccessor']
-assert sql("SELECT COUNT(*) FROM business_process_activity_instance WHERE objective_achieved=1")=='1'
+assert sql("SELECT COUNT(*) FROM business_process_activity_instance WHERE objective_achieved=1 AND source_reference NOT LIKE 'learning-cycle:%'")=='1'
 check('Adoção histórica concilia automaticamente e não fabrica homologação, venda ou aprovação')
 
 reset()

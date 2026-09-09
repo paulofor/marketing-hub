@@ -10,6 +10,7 @@ import {
 } from "../../api/learningCycle/useLearningCycles";
 import PageTitle from "../../components/PageTitle";
 import LearningCycleCreateForm from "./LearningCycleCreateForm";
+import LearningCycleDecisionPanel from "./LearningCycleDecisionPanel";
 import LearningCycleCommandForm from "./LearningCycleCommandForm";
 import LearningCycleAutomaticMeasurement from "./LearningCycleAutomaticMeasurement";
 import LearningCycleDiagram from "./LearningCycleDiagram";
@@ -408,6 +409,17 @@ export default function LearningCyclesPage() {
             />
           ) : null}
           {catalog.data &&
+          (cycle.stage === "DECISION" ||
+            cycle.events.some((event) => event.evidence.decisionProposalId)) ? (
+            <LearningCycleDecisionPanel
+              key={`${cycle.id}-${cycle.revision}`}
+              cycle={cycle}
+              catalog={catalog.data}
+              onUpdated={updated}
+            />
+          ) : null}
+          {catalog.data &&
+          cycle.stage !== "DECISION" &&
           (cycle.stage !== "MEASUREMENT" ||
             cycle.events[cycle.events.length - 1]?.action ===
               "MEASUREMENT_BLOCKED") ? (

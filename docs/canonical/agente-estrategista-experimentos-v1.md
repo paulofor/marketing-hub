@@ -175,3 +175,27 @@ não configura autenticação e deve bloquear o deploy com diagnóstico explíci
 - `POST /api/experiment-strategist/v1/internal/executions/pending/claim`: reserva uma pendência;
 - `POST /api/experiment-strategist/v1/internal/executions/{id}/complete`: recebe o parecer;
 - `POST /api/experiment-strategist/v1/internal/executions/{id}/fail`: recebe a falha detalhada.
+
+## Decisão assistida no ciclo comercial — 09/09/2026
+
+Atena prepara o formulário de decisão do ciclo da Cadeia de Valor, no subprocesso chamado pela
+atividade **6.4**. A atividade `DECISION` do BPM v4 declara `responsibleAgentKeys=[experiment-strategist]`
+e aprovação humana obrigatória. Hermes entrega a leitura operacional; a proposta usa a conciliação
+persistida e os limites econômicos existentes, sem reescrever números ou o mandato de Plutus.
+
+O executor `learningcyclev1.decision` consome exclusivamente
+`/api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending`,
+registra prompt/schema antes da execução e reporta resposta bruta e consumo. O prompt e schema
+ficam em `experiment-strategist-worker/src/main/resources/prompts/learning-cycle/v1/`.
+A proposta compara três alternativas e preenche o formulário; somente o envio humano registra a
+decisão no backend. Ciclos históricos recebem vínculo explícito à atividade assistida vigente.
+O comando conserva a autenticação de Atena e ignora configurações pessoais de ferramentas;
+executa em diretório temporário, com pesquisa, shell, apps, hooks e colaboração desabilitados.
+O retorno estruturado usa `--output-schema`, conforme o [contrato oficial do Codex](https://learn.chatgpt.com/docs/non-interactive-mode#create-structured-outputs-with-a-schema).
+
+A fila usa o harness Codex OAuth já versionado de Atena e conserva sua exceção funcional de tier
+`default`, registrada por execução. Quando esse runtime oferecer Flex para o provedor/modelo
+selecionado, Flex deve ser adotado. O worker não chama uma nova API paga nesta implementação.
+A homologação usa um executável de modelo simulado; não comprova qualidade editorial de uma
+inferência produtiva. [Contrato do ciclo](ciclos-aprendizado-vendas-canon.v1.md) e
+[API de propostas](../swagger/learning-cycle-decision-v1-swagger.yaml).

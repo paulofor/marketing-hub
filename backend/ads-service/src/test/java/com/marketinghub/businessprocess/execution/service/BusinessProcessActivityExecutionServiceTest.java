@@ -62,6 +62,36 @@ class BusinessProcessActivityExecutionServiceTest {
   private final BusinessProcessActivityExecutionService service =
       new BusinessProcessActivityExecutionService(processes, tasks, new ObjectMapper());
 
+  /** A associação a Atena não pode criar uma tarefa genérica sem consumidor nem aprovação. */
+  @Test
+  void routesLearningCycleDecisionThroughItsCanonicalContract() {
+    var agentTasks = mock(AgentTaskService.class);
+    var products = mock(ProductRepository.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            mock(BusinessProcessActivityDefinitionRepository.class),
+            tasks,
+            mock(AgentTaskActivityCoverageRepository.class),
+            mock(BusinessProcessActivityInstanceRepository.class),
+            mock(CommercialPlanRepository.class),
+            null,
+            products,
+            mock(ExperimentRepository.class),
+            agentTasks,
+            new ObjectMapper(),
+            List.of(),
+            List.of());
+    var process = selectedProcess();
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("value-chain-learning-sales-cycle");
+    when(processes.findById(37L)).thenReturn(Optional.of(process));
+    assertThatThrownBy(() -> executionService.requestProductActivityExecution(37L, 4L, "DECISION"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("atividade 6.4");
+    verifyNoInteractions(agentTasks, products, tasks);
+  }
+
   /** Lista dez tarefas do processo canônico e preserva a versão real de cada execução. */
   @Test
   void returnsTenRecentExecutionsAcrossProcessVersions() {

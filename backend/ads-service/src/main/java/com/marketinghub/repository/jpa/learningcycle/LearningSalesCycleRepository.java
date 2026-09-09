@@ -4,6 +4,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,24 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir ciclos segregados por produto e serializar suas decisões. */
 public interface LearningSalesCycleRepository extends JpaRepository<LearningSalesCycle, Long> {
+  /** Publica somente decisões sem proposta ou com nova tentativa explicitamente enfileirada. */
+  @Query(
+      """
+      select c.id from LearningSalesCycle c
+      where c.status = 'OPEN' and c.stage = 'DECISION'
+      and (not exists (select p.id from LearningCycleDecisionProposal p
+                        where p.cycleId = c.id and p.cycleRevision = c.revision)
+        or exists (select p.id from LearningCycleDecisionProposal p
+                    where p.cycleId = c.id and p.cycleRevision = c.revision and p.status = 'QUEUED'))
+      order by c.id
+      """)
+  List<Long> findDecisionPending(Pageable page);
+
+  /** Reserva a identidade do ciclo sem carregar uma entidade antes de adquirir o lock. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select c from LearningSalesCycle c where c.id = :id")
+  Optional<LearningSalesCycle> findLockedById(@Param("id") Long id);
+
   /** Lista o histórico do produto em ordem cronológica inversa. */
   List<LearningSalesCycle> findByProductIdOrderByIdDesc(Long productId);
 

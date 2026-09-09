@@ -7,7 +7,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,7 @@ final class CodexProcessSupervisor {
   private final Duration inactivityTimeout;
   private final Duration absoluteTimeout;
   private final Duration pollInterval;
+  private final LongSupplier nanoTime;
 
   /** Configura inatividade e teto absoluto de três janelas conforme o cânone dos agentes. */
   @Autowired
@@ -34,9 +37,19 @@ final class CodexProcessSupervisor {
   /** Permite testes rápidos com janelas controladas sem alterar a política produtiva. */
   CodexProcessSupervisor(
       Duration inactivityTimeout, Duration absoluteTimeout, Duration pollInterval) {
+    this(inactivityTimeout, absoluteTimeout, pollInterval, System::nanoTime);
+  }
+
+  /** Permite controlar o relógio monotônico nos testes sem depender do escalonamento do sistema. */
+  CodexProcessSupervisor(
+      Duration inactivityTimeout,
+      Duration absoluteTimeout,
+      Duration pollInterval,
+      LongSupplier nanoTime) {
     this.inactivityTimeout = requiredPositive(inactivityTimeout, "inatividade");
     this.absoluteTimeout = requiredPositive(absoluteTimeout, "teto absoluto");
     this.pollInterval = requiredPositive(pollInterval, "polling");
+    this.nanoTime = Objects.requireNonNull(nanoTime, "Relógio monotônico obrigatório.");
     if (this.absoluteTimeout.compareTo(this.inactivityTimeout) < 0) {
       throw new IllegalArgumentException("Teto absoluto não pode ser menor que a inatividade.");
     }
@@ -45,13 +58,13 @@ final class CodexProcessSupervisor {
   /** Aguarda progresso pelo JSONL e encerra toda a árvore quando uma janela expira. */
   WaitOutcome awaitCompletion(Process process, Path processLog)
       throws IOException, InterruptedException {
-    long startedAt = System.nanoTime();
+    long startedAt = nanoTime.getAsLong();
     long lastActivityAt = startedAt;
     long observedSize = Files.size(processLog);
     long inactivityNanos = inactivityTimeout.toNanos();
     long absoluteNanos = absoluteTimeout.toNanos();
     while (true) {
-      long elapsed = System.nanoTime() - startedAt;
+      long elapsed = nanoTime.getAsLong() - startedAt;
       long remaining = absoluteNanos - elapsed;
       if (remaining <= 0) {
         terminateTree(process);
@@ -60,7 +73,7 @@ final class CodexProcessSupervisor {
       long waitNanos = Math.max(1L, Math.min(pollInterval.toNanos(), remaining));
       if (process.waitFor(waitNanos, TimeUnit.NANOSECONDS)) return WaitOutcome.COMPLETED;
       long currentSize = Files.size(processLog);
-      long now = System.nanoTime();
+      long now = nanoTime.getAsLong();
       if (currentSize != observedSize) {
         observedSize = currentSize;
         lastActivityAt = now;

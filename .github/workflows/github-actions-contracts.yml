@@ -37,6 +37,15 @@ on:
       - "scripts/agent-image-bundle.mjs"
       - "scripts/test-agent-image-bundle.mjs"
       - "scripts/test-agent-image-workflows.mjs"
+      - "scripts/test-agent-browser-version-contract.mjs"
+      - "scripts/test-agent-browser-ci-local.sh"
+      - "scripts/fixtures/agent-browser-ci/**"
+      - "product-discovery-worker/Dockerfile"
+      - "product-discovery-worker/package.json"
+      - "product-discovery-worker/package-lock.json"
+      - "customer-agent-worker/Dockerfile"
+      - "customer-agent-worker/package.json"
+      - "customer-agent-worker/package-lock.json"
       - "scripts/test-agent-executor-admin-controller.mjs"
       - "scripts/test-agent-image-bundle-e2e.sh"
       - "scripts/test-agent-vps-disk-space.sh"
@@ -105,6 +114,15 @@ on:
       - "scripts/agent-image-bundle.mjs"
       - "scripts/test-agent-image-bundle.mjs"
       - "scripts/test-agent-image-workflows.mjs"
+      - "scripts/test-agent-browser-version-contract.mjs"
+      - "scripts/test-agent-browser-ci-local.sh"
+      - "scripts/fixtures/agent-browser-ci/**"
+      - "product-discovery-worker/Dockerfile"
+      - "product-discovery-worker/package.json"
+      - "product-discovery-worker/package-lock.json"
+      - "customer-agent-worker/Dockerfile"
+      - "customer-agent-worker/package.json"
+      - "customer-agent-worker/package-lock.json"
       - "scripts/test-agent-executor-admin-controller.mjs"
       - "scripts/test-agent-image-bundle-e2e.sh"
       - "scripts/test-agent-vps-disk-space.sh"
@@ -291,6 +309,9 @@ jobs:
 
       - name: Validar preservação de imagens e containers na engine real
         run: bash scripts/test-agent-vps-disk-space-e2e.sh
+
+      - name: Validar navegador versionado de Argos e Psique
+        run: node --test scripts/test-agent-browser-version-contract.mjs
 
       - name: Validar transporte da imagem aprovada
         run: |

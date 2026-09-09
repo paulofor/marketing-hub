@@ -4316,6 +4316,17 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   antigo e regravação dispendiosa das camadas do Playwright. Duas rodadas consecutivas aprovaram 86
   testes, MCP, contratos, 117 evidências, as duas imagens, Compose e a abertura real do Chromium pelo
   usuário `10001`.
+- **Recorrência em 2026-09-09 — Argos e Psique:** os runs `34385449770` e `34385449771`, e os
+  correspondentes de PR `34385321543` e `34385321564`, falharam no APT do runner com
+  `Hash Sum mismatch` do repositório Google Chrome durante a instalação do Playwright. Os runs
+  `34382224626` e `34382224462` haviam passado nas mesmas etapas. A correção anterior do coordenador
+  de publicação não participa dessa falha.
+- **Fechamento sistêmico local:** testes e Dockerfiles dos dois agentes passam a usar Playwright
+  `1.54.2-noble`, fixado por digest e alinhado aos locks. A imagem de Psique recebe Java 21 por
+  multi-stage. O teste renderizado de Argos deixa de exigir `/usr/bin/chromium`, ausente da base,
+  e usa o navegador do próprio pacote quando não há override explícito. O contrato central rejeita
+  versões divergentes, instalação dinâmica e testes ignorados. Matriz e resultados em
+  `docs/homologacao/actions-navegador-versionado-2026-09-09.md`.
 
 ## LOOP-VIDEO-PRODUCT-UGC-CORTE-TRATADO-COMO-TREMOR — transição reprova planos estáveis
 

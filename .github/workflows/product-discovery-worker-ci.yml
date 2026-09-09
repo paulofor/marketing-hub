@@ -63,8 +63,12 @@ jobs:
         run: npm run build:research-library
       - name: Run tests
         run: |
-          npx playwright-core install --with-deps chromium
-          npm test
+          docker run --rm --init --network none \
+            --user "$(id -u):$(id -g)" --env npm_config_cache=/tmp/npm-cache \
+            --volume "${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}" \
+            --workdir "${GITHUB_WORKSPACE}/product-discovery-worker" \
+            mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8 \
+            npm test
       - name: Validate application deploy coordination
         working-directory: ${{ github.workspace }}
         run: node --test scripts/coordinate-agent-deployment.test.mjs

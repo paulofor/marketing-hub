@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
+# Os contratos comparam expressões literais do Compose e do workflow.
+# shellcheck disable=SC2016
 set -euo pipefail
 
 dockerfile="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/Dockerfile"
 
-grep -Fq 'FROM eclipse-temurin:21-jre-noble' "${dockerfile}"
+grep -Fq 'FROM eclipse-temurin:21-jre-noble AS java-runtime' "${dockerfile}"
+grep -Fq 'COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk' "${dockerfile}"
+grep -Fq 'FROM mcr.microsoft.com/playwright:v1.54.2-noble@sha256:' "${dockerfile}"
+grep -Fq 'ENV JAVA_HOME=/opt/java/openjdk' "${dockerfile}"
 grep -Fq 'getent group operator >/dev/null || groupadd --gid 10001 operator' "${dockerfile}"
 grep -Fq 'id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator' "${dockerfile}"
 grep -Fq 'npm ci --omit=dev' "${dockerfile}"
 grep -Fq 'ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright' "${dockerfile}"
-grep -Fq 'npx playwright-core install --with-deps chromium' "${dockerfile}"
-grep -Fq 'chmod -R a+rX /ms-playwright' "${dockerfile}"
+if grep -Eq 'apt-get|playwright-core install|chmod -R.*ms-playwright' "${dockerfile}"; then
+  echo "[ARQUITETURA] A imagem deve reutilizar o navegador versionado, sem APT nem download dinâmico." >&2
+  exit 1
+fi
 grep -Fq 'COPY --from=build /build/src/main/resources/browser /app/browser' "${dockerfile}"
 grep -Fq 'COPY review-evidence /app/commercial-evidence' "${dockerfile}"
 

@@ -1,0 +1,42 @@
+x-browser-tests: &browser-tests
+  image: mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
+  init: true
+  network_mode: none
+  user: "${AGENT_BROWSER_TEST_UID:?}:${AGENT_BROWSER_TEST_GID:?}"
+  environment:
+    npm_config_cache: /tmp/npm-cache
+  volumes:
+    - browser-workspace:/workspace
+
+x-runtime: &runtime
+  init: true
+  network_mode: none
+  read_only: true
+  tmpfs:
+    - /tmp:size=256m,noexec,nosuid
+  security_opt:
+    - no-new-privileges:true
+  entrypoint: node
+
+services:
+  argos-ci:
+    <<: *browser-tests
+    working_dir: /workspace/product-discovery-worker
+    command: [npm, test]
+  psique-ci:
+    <<: *browser-tests
+    working_dir: /workspace/customer-agent-worker
+    command: [npm, test]
+  argos-runtime:
+    <<: *runtime
+    image: ${ARGOS_TEST_IMAGE:-unused-argos-test-image}
+    profiles: [runtime]
+  psique-runtime:
+    <<: *runtime
+    image: ${PSIQUE_TEST_IMAGE:-unused-psique-test-image}
+    profiles: [runtime]
+    environment:
+      CUSTOMER_AGENT_BPM_VISUAL_SCRIPT: /app/browser/bpm-visual-evidence.mjs
+
+volumes:
+  browser-workspace:

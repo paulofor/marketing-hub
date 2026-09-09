@@ -51,13 +51,13 @@ const agentHarness = JSON.parse(
   ),
 );
 
-test("instala certificados raiz antes do cliente Codex", () => {
-  const certificates = dockerfile.indexOf("ca-certificates");
+test("valida certificados raiz da base antes do cliente Codex", () => {
+  const certificates = dockerfile.indexOf("test -s /etc/ssl/certs/ca-certificates.crt");
   const codex = dockerfile.indexOf("npm install -g @openai/codex");
 
   assert.ok(
     certificates >= 0,
-    "[ARQUITETURA] O runtime de Argos deve instalar certificados raiz para autenticar no Codex.",
+    "[ARQUITETURA] O runtime de Argos deve validar os certificados raiz para autenticar no Codex.",
   );
   assert.ok(
     certificates < codex,
@@ -80,6 +80,11 @@ test("empacota a biblioteca factual e mantém o modelo ativo no deploy", () => {
     dockerfile,
     /COPY research-library \.\/research-library/,
     "[ARQUITETURA] A imagem de Argos deve conter o índice materializado dos artigos versionados.",
+  );
+  assert.match(
+    dockerfile,
+    /RUN test -s research-library\/index.json/,
+    "[ARQUITETURA] O build deve recusar imagem sem biblioteca factual materializada.",
   );
   for (const compose of [localCompose, deployCompose]) {
     assert.match(
@@ -161,7 +166,16 @@ test("mantém a fonte viva no harness sem anunciar o índice derivado como versi
 });
 
 test("empacota Chromium como usuário sem privilégios e habilita a coleta limitada", () => {
-  assert.match(dockerfile, /playwright-core install --with-deps chromium/);
+  assert.match(
+    dockerfile,
+    /FROM mcr\.microsoft\.com\/playwright:v1\.54\.2-noble@sha256:/,
+    "[ARQUITETURA] Argos deve usar o browser compatível da base versionada.",
+  );
+  assert.doesNotMatch(
+    dockerfile,
+    /apt-get|playwright-core install|chmod -R.*ms-playwright/,
+    "[ARQUITETURA] Argos não deve reinstalar browser e bibliotecas no build.",
+  );
   assert.match(dockerfile, /ARG RUNTIME_UID=1000/);
   assert.match(dockerfile, /ARG RUNTIME_GID=1000/);
   assert.match(dockerfile, /USER \$\{RUNTIME_UID\}:\$\{RUNTIME_GID\}/);

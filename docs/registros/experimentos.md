@@ -6989,3 +6989,75 @@
 - **Escopo:** relatório e evidências agregadas registrados; nenhuma implementação, mudança de estado,
   contato, compra, campanha, PR ou publicação. A observação pública usou analytics desligado.
 - **Relatório:** [Vega: posição na cadeia e sequência para vender](../marketing/vega-cadeia-valor-estrategia-2026-09-08.md).
+
+## 2026-09-09 — Vega: tarefa #357 e entrada no ciclo histórico
+
+- **Pedido:** explicar o bloqueio da tarefa #357 e o caminho para continuar do #91 ao sucessor.
+- **Fontes consultadas:** tela de tarefas; atividades dos processos 66 e 73 para produto 4;
+  formulário de ciclos na cadeia 13; APIs oficiais; MCP `db_health`, `db_query`,
+  `runtime_build_info` e `java_module_logs`. O backend publicado e o checkout local identificam
+  `877cd47d509624e6375730e3b950585a9717efb0`. Consulta de identidade às 00:46 UTC.
+- **Resultado da tarefa:** #357 foi recebida às 00:35:25 UTC e registrou `BLOCKED` às 00:37:52 UTC,
+  em `operacao-otimizacao-experimento` v5, processo 66, atividade `task-1`, instância 193,
+  referência `experiment:91`. Não é uma execução do subprocesso de ciclos de aprendizado.
+- **Métricas:** a auditoria confirma `consultar_sessoes` em
+  `/api/growth-operator/v1/internal/experiments/91/session-intelligence?eventLimit=2000`, fonte
+  `PDE_ANALYTICS`, escopo `EXPERIMENT_ATTRIBUTED`, produto `metodo-musa-7-dias`, versão
+  `musa-pde-entry-v7-espelho-antes-de-sair`. Registrou quatro sessões humanas, 86 eventos sem
+  truncamento, um início de login, nenhum login concluído, nenhum checkout e nenhuma compra
+  registrada. O monitor `/api/experiments/91/post-deploy-monitor`, gerado às 00:43:50 UTC,
+  confirmou essas contagens. Ausência de compra registrada não prova, sozinha, que checkout,
+  pagamento e entrega funcionam, nem que a oferta foi rejeitada.
+- **Comparação histórica:** #356 consultara a fonte legada com zero sessões. #357 reconhece
+  expressamente que os dados atuais superam aquela conclusão. #339 e #340 são anteriores à
+  publicação da campanha. Portanto, repetir a correção de seleção da fonte não resolveria o
+  bloqueio atual.
+- **Motivo do bloqueio atual:** o prompt operacional v3 exige verificar a cadeia comercial,
+  identidade, deduplicação e homologação antes de operar. #91 continua sem run/preflight;
+  o login foi apenas iniciado e as etapas posteriores não têm evidência suficiente. O parecer
+  recomenda preparar preflight para uma eventual retomada. Essa orientação pertence à operação
+  do experimento; não representa a decisão já adotada de preservar #91 como aprendizado.
+- **Persistência e logs:** o worker encaminha resultado `BLOCKED` ao callback `failure`, e
+  `AgentTaskService.failClaimedProcessTask` persiste resultado, evidências e bloqueio. O MCP
+  confirmou esses dados na tarefa #357. As consultas de logs responderam HTTP 206; o filtro
+  `357` não encontrou linhas de Hermes e trouxe somente uma ocorrência sem relação no backend.
+  A evidência da execução vem da auditoria persistida, não de uma suposta confirmação nos logs.
+- **Entrada disponível:** `GET /api/business-process-chains/learning-cycles/v1/catalog?chainId=13&productId=4`
+  retorna #91 com `available=true`, `baseline=true` e comprovação pela campanha Meta histórica.
+  Na interface, abri o formulário e selecionei #91; a opção está habilitada e exibe a limitação
+  de run/preflight. O formulário foi cancelado sem envio. O recibo pertence à campanha
+  `120251556536430326`, criada em 07/09, atualmente `PAUSED`. A API de runs continua vazia.
+- **Estado confirmado no banco:** nenhuma linha em `learning_sales_cycle_v1` para produto 4;
+  #91 está `USER_STOPPED`; #90, de canal direto, permanece separado em `RUNNING`; #92 ainda
+  não existe. A verificação comprova a disponibilidade da entrada, não a criação de um ciclo.
+
+Alternativas de continuidade consideradas:
+
+| Caminho | Benefício | Risco e esforço | Aderência e escolha |
+| --- | --- | --- | --- |
+| Adotar #91 pelo ciclo já publicado e conciliar a evidência histórica | Preserva memória e direciona o sucessor dentro do BPM | Baixo esforço; exige explicitar lacunas e frescor | Melhor para a decisão vigente; escolhido como orientação |
+| Consolidar primeiro um relatório de evidências e anexá-lo ao ciclo | Facilita revisão humana dos dados antes da decisão | Esforço adicional e risco de desatualização da cópia | Útil se a conciliação exigir revisão conjunta |
+| Solicitar análise específica de Hermes sobre as lacunas históricas antes da adoção | Pode aprofundar identidade e deduplicação | Nova execução tem custo e precisa receber objetivo histórico explícito | Complementar somente se faltar evidência necessária; repetir `task-1` não muda seu contrato |
+
+**Próximo movimento:** processo 6 →
+[Abrir ciclo por produto e experimento](http://191.252.181.168:5173/business-process-chains/learning-cycles?chainId=13&productId=4)
+→ adotar #91 como histórico → registrar leitura conciliada e seus limites → decidir o ajuste
+→ criar e vincular o sucessor planejado. Dados inválidos devem ser reconciliados antes de declarar
+`dataValid` e concluir `ADJUST`. A ausência de run antigo fica como limitação histórica; não exige
+fabricar aprovação retroativa. A #357 permanece como diagnóstico da prontidão operacional.
+
+O retorno comercial segue o [roteiro do Vega](../canonical/vega-sequencia-comercial-canon.v1.md):
+Dédalo para o primeiro ajuste aplicável, Íris para entrada mobile e continuidade da oferta,
+com vídeos, homologação e autorização próprias do sucessor. Quatro sessões não permitem eleger
+preço, público ou produto como causa comprovada. As melhorias anteriores são hipóteses apoiadas
+na inspeção da experiência, a validar com uso e vendas reais.
+
+**Limite financeiro da evidência:** a #357 usou o snapshot Meta sincronizado em 07/09 às
+22:24:14 UTC: R$ 27,25 e 120 impressões. O registro de 08/09 acima contém uma consulta externa
+posterior, R$ 27,45 e 121 impressões. Não apresentar o snapshot antigo como consulta atual da Meta
+nem ignorar essa diferença na conciliação do ciclo. Nenhuma consulta direta nova à Meta foi feita.
+
+**Escopo desta verificação:** somente leitura operacional e registro documental. Não houve
+alteração de lógica, reexecução de agente, criação de ciclo/experimento, aprovação, gasto, PR ou
+deploy. A entrada foi inspecionada em Chromium desktop; não foi executada homologação ponta a
+ponta nem teste de publicação do sucessor.

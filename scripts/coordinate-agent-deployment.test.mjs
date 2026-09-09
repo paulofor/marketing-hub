@@ -276,6 +276,21 @@ test("aguarda o teste do agente depois que a aplicação termina", async () => {
   assert.equal(calls, 2);
 });
 
+test("cancelamento da execução de origem encerra a continuação sem publicar", async () => {
+  const warnings = [];
+  const result = await resolution({
+    fetchImpl: async () =>
+      response({ workflow_runs: [sourceRun({ conclusion: "cancelled" })] }),
+    warn: (message) => warnings.push(message),
+  });
+
+  assert.equal(result.required, false);
+  assert.equal(result.run, null);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /foi cancelada.*sem publicar.*versão anterior preservada/);
+  assert.match(warnings[0], /actions\/runs\/20/);
+});
+
 test("falha da aplicação ou do teste preserva a versão anterior do agente", async () => {
   await assert.rejects(
     resolution({

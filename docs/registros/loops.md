@@ -3233,6 +3233,21 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   API transitória, fila pendente, continuação aplicável e irrelevante, falhas dos dois lados,
   timeout do teste, branch/evento/SHA, proveniência do artefato e ausência de acesso remoto antes
   da fila. Actionlint e os contratos de imagem, disco, SSH e concorrência continuam obrigatórios.
+- **Recorrência da continuação em 2026-09-09:** o deploy central `34348412662` terminou verde para
+  o SHA `d2879a47710edfc0e89ecd26ec16c6cf43eb55e3` e disparou o run `34383214944` do Product
+  Discovery Worker. A origem exata `34348412630` já estava `cancelled` porque o modelo antigo
+  cancelou somente seu job de espera; o novo coordenador tratou esse estado inconclusivo como falha
+  e criou um segundo alerta vermelho, embora corretamente não tivesse publicado o agente. Durante
+  a homologação, o run `34384814592` repetiu o mesmo sintoma com a origem cancelada `34348607109`,
+  confirmando que os eventos da fila histórica continuariam gerando falsos erros até a correção.
+- **Causa-raiz e fechamento da nova recorrência:** faltava distinguir falha funcional de execução
+  cancelada/obsoleta. A continuação agora encerra a origem `cancelled` como não aplicável, registra
+  SHA e URL e preserva a versão anterior sem checkout, artefato, imagem ou acesso ao VPS. Conclusão
+  `failure`, deploy central sem sucesso, divergência de SHA/branch/evento e timeout continuam
+  falhando fechados.
+- **Prevenção complementar:** o contrato compartilhado reproduz a origem cancelada, exige saída
+  `required=false`, aviso auditável e ausência de publicação; a matriz e as evidências ficam em
+  `docs/homologacao/actions-continuacao-run-cancelado-2026-09-09.md`.
 
 ## LOOP-IRIS-CODEX-AUTH-PENDING-SEM-TIMEOUT — reconexão não sai de REQUESTED
 

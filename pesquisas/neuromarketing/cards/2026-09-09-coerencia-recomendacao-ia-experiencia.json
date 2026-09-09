@@ -1,0 +1,18 @@
+{
+  "cardKey": "coerencia-recomendacao-ia-experiencia",
+  "collection": "neuromarketing",
+  "title": "A experiência deve confirmar a promessa feita pela IA",
+  "finding": "Pesquisa com 2.000 consumidores sugere que recomendações de IA criam expectativas antes da visita e que uma experiência digital decepcionante ou inconsistente pode reabrir a decisão, levar a mais pesquisa, troca de marca ou abandono.",
+  "mechanism": "Quando a IA participa da descoberta, ela passa a formar parte da promessa percebida. A landing page funciona como etapa de validação; divergência em preço, benefícios, limitações ou prova aumenta incerteza e esforço de verificação.",
+  "commercialApplication": "Auditar paridade entre aquilo que agentes dizem sobre cada oferta e o conteúdo canônico da landing page, registrando inconsistências de preço, promessa, condições, limitações, evidências e FAQ.",
+  "evidenceStrength": "Moderada: survey com 2.000 consumidores dos EUA e França, com sinais fortes de comportamento declarado, mas sem observação causal de conversões reais.",
+  "publishedOn": "2026-09-03",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Reduzir inconsistências entre respostas de agentes e a landing page diminuirá pesquisa adicional e abandono e aumentará progressão para CTA, checkout ou conversa de alta intenção.",
+  "risks": "Tentar otimizar respostas de agentes por manipulação ou conteúdo artificial; corrigir a camada de IA sem corrigir a fonte real; ocultar limitações para parecer mais coerente.",
+  "limits": "Pesquisa de fornecedor e autorrelatada, restrita a EUA e França. Não prova que corrigir inconsistências aumentará vendas no Marketing Hub; validar com eventos reais do funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-09-coerencia-recomendacao-ia-experiencia.md",
+  "sourceTitle": "Fonte revisada — Coerência entre recomendação de IA e experiência da marca",
+  "sourceSha256": "ffeefa7f8277693bed09230f7d00b524bbfcbe482725b5adef76fb39a904eda0"
+}

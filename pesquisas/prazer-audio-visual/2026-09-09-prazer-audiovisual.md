@@ -2,7 +2,7 @@
 
 ## Resumo executivo
 
-A rodada de 09/09 acrescenta três achados humanos particularmente úteis e uma ponte aplicada para sistemas adaptativos com IA. O padrão mais importante é que **prazer e qualidade da experiência não parecem depender de maximizar uma única variável sensorial**. Contraste pode aumentar saliência e arousal, mas sua área e a geometria que o contém mudam a carga visual inicial; música agradável pode alterar a dimensão afetiva de uma experiência sem funcionar apenas como distração; e groove não cresce simplesmente com sincronização motora máxima — ele depende de complexidade rítmica, liberdade de movimento e flexibilidade temporal.
+A rodada de 09/09 acrescenta três achados humanos particularmente úteis e uma ponte aplicada para sistemas adaptativos com IA. O padrão mais importante é que **prazer e qualidade da experiência não parecem depender de maximizar uma única variável sensorial**. Contraste pode elevar saliência e arousal, mas área e geometria mudam o custo perceptivo e a preferência; música agradável pode alterar a dimensão afetiva de uma experiência sem funcionar apenas como distração; e groove não cresce simplesmente com sincronização motora máxima — ele depende de complexidade rítmica, liberdade de movimento e flexibilidade temporal.
 
 Também foi publicado em 08/09 um trabalho de affective computing que combina áudio e letras para estimar trajetórias contínuas de valência–arousal e controlar iluminação automotiva. O ganho mais sólido desse trabalho é técnico: estados emocionais contínuos podem funcionar como sinal de controle para adaptação audiovisual. A evidência de benefício humano ainda é preliminar, portanto não foi convertida em card.
 
@@ -13,6 +13,7 @@ ESTÍMULO
 │
 ├── contraste / área / geometria
 │   ├── conflito visual inicial
+│   ├── liking / prazer
 │   └── saliência sustentada
 │
 ├── música agradável
@@ -44,15 +45,15 @@ A busca reencontrou trabalhos relevantes que já haviam sido apresentados e, por
 
 **Método.** Sessenta e três participantes foram recrutados e 61 forneceram EEG válido. Em realidade virtual imersiva, os autores manipularam três dimensões visuais em desenho intraindivíduo: combinações cromáticas análogas versus complementares/contrastantes, formas angulares versus curvas e diferentes proporções da área visual. Foram analisados N200, late positive potential (LPP), assimetria alfa frontal (FAA), beta, Self-Assessment Manikin e liking.
 
-**Achado principal.** Forma e cor atuaram em momentos diferentes do processamento. Formas angulares e cores contrastantes aumentaram a negatividade do N200, compatível com maior conflito visual inicial. A interação cor × forma foi significativa e a interação cor × forma × área também: quando alto contraste ocupava uma grande parcela do campo visual, substituir formas angulares por curvas atenuou a resposta N200. O contraste cromático, por sua vez, elevou o LPP, compatível com maior saliência e processamento emocional sustentado. A proporção da área amplificou os efeitos já produzidos por cor e forma.
+**Achado principal.** Forma e cor atuaram em momentos diferentes do processamento. Formas angulares e cores contrastantes aumentaram a negatividade do N200, compatível com maior conflito visual inicial. A interação cor × forma foi significativa e a interação cor × forma × área também: quando alto contraste ocupava uma grande parcela do campo visual, substituir formas angulares por curvas atenuou a resposta N200. O contraste cromático elevou o LPP, compatível com maior saliência e processamento emocional sustentado. A proporção da área amplificou os efeitos já produzidos por cor e forma. Além disso, formas curvas obtiveram maiores escores de prazer e liking que formas angulares; em cenas de alto contraste, a geometria curva melhorou o liking em relação à angular.
 
 **Mecanismo proposto.** Os autores propõem uma dissociação temporal: contorno/morfologia influencia mais cedo a detecção de conflito e tendências de aproximação–evitação, enquanto contraste cromático sustenta arousal e atenção em estágios posteriores. Curvas podem funcionar como um “buffer” perceptivo sob configurações visualmente agressivas.
 
-**Força da evidência:** média-alta para o efeito específico no paradigma de VR/EEG. A amostra final superou a análise de poder declarada e houve convergência entre medidas fisiológicas e subjetivas, mas é um único estudo e a interpretação dos marcadores EEG não equivale a uma medida direta de prazer.
+**Força da evidência:** média-alta para o efeito específico no paradigma de VR/EEG. A amostra final superou a análise de poder declarada e houve convergência entre medidas fisiológicas e subjetivas, mas é um único estudo e a interpretação dos marcadores EEG não equivale a um efeito comercial.
 
-**Limitações.** O contexto era arquitetura virtual, a amostra era jovem e culturalmente específica e as medidas neurais são indiretas. Redução de conflito neural inicial não se traduziu automaticamente em maior liking. O estudo não mede retenção, CTA, compra ou fadiga de interfaces reais.
+**Limitações.** O contexto era arquitetura virtual, a amostra era jovem e culturalmente específica e as medidas neurais são indiretas. Embora curvas tenham melhorado liking no paradigma, a relação entre N200 e liking não deve ser tratada como equivalência causal. O estudo não mede retenção, CTA, compra ou fadiga de interfaces reais.
 
-**Aplicação prática.** Em telas, vídeo e criativos que usam alto contraste em grande área, testar geometrias curvas ou recipientes visuais mais suaves contra formas angulares. Medir atenção, compreensão, preferência e fadiga separadamente. O objetivo não é remover contraste, mas verificar se a geometria permite manter saliência com menor custo perceptivo inicial.
+**Aplicação prática.** Em telas, vídeo e criativos que usam alto contraste em grande área, testar geometrias curvas ou recipientes visuais mais suaves contra formas angulares. Medir atenção, compreensão, preferência e fadiga separadamente. O objetivo não é remover contraste, mas verificar se a geometria permite manter saliência e preferência com menor custo perceptivo inicial.
 
 ---
 
@@ -88,7 +89,7 @@ A busca reencontrou trabalhos relevantes que já haviam sido apresentados e, por
 
 **Mecanismo proposto.** Groove parece emergir de um equilíbrio entre previsão, erro de previsão, motivação motora e flexibilidade. Sincopação baixa oferece pouco desafio; sincopação excessiva pode enfraquecer o modelo métrico; a faixa intermediária preserva uma estrutura previsível enquanto introduz violações suficientemente informativas. Movimento ajuda a regular esse erro, mas uma sincronização excessivamente rígida pode reduzir a flexibilidade da experiência.
 
-**Força da evidência:** média. O desenho controla tempo, timbre e sincopação e mede simultaneamente experiência subjetiva e movimento. O efeito de U invertido para sincopação é forte no estudo, mas os caminhos negativos entre sincronização e groove não devem ser tratados como causalidade imediata; os próprios autores mostram que parte deles não aparece nas flutuações tentativa a tentativa dentro do indivíduo.
+**Força da evidência:** média. O desenho controla tempo, timbre e sincopação e mede simultaneamente experiência subjetiva e movimento. O efeito de U invertido para sincopação é robusto no estudo, mas os caminhos negativos entre sincronização e groove não devem ser tratados como causalidade imediata; os próprios autores mostram que parte deles não aparece nas flutuações tentativa a tentativa dentro do indivíduo.
 
 **Limitações.** N=30, amostra jovem e japonesa, sem experiência formal de dança, padrões curtos de bateria e um único BPM. O PLV foi calculado contra referências periódicas canônicas, não contra a fase do áudio bruto. A aplicação a vídeo, animação e haptics ainda precisa de validação própria.
 
@@ -104,13 +105,13 @@ A busca reencontrou trabalhos relevantes que já haviam sido apresentados e, por
 
 **Tipo de contribuição.** Ponte aplicada entre ciência da emoção musical e adaptação audiovisual por IA. O sistema Cockpit-EmoNet combina um encoder acústico MERT e um encoder textual GTE com cross-attention bidirecional e gating para estimar continuamente valência e arousal da música.
 
-**Achado principal.** No benchmark combinado PMEmo–DEAM, o modelo alcançou PCC/CCC de 0,69/0,67 para valência e 0,81/0,79 para arousal, com redução significativa do erro por música em relação a uma baseline de cross-attention. Na etapa de iluminação automotiva, menor erro de valência–arousal esteve associado a menores desvios de cor e transição; uma validação controlada forneceu evidência física e perceptual inicial.
+**Achado principal.** No benchmark combinado PMEmo–DEAM, o modelo alcançou PCC/CCC de 0,69/0,67 para valência e 0,81/0,79 para arousal. A contribuição mais sólida é permitir uma trajetória afetiva contínua em vez de um rótulo emocional discreto; a etapa de iluminação mostra como esse sinal pode controlar cor e transições de forma adaptativa.
 
 **Mecanismo/ideia útil.** Em vez de classificar uma música como uma emoção discreta e manter uma cena visual fixa, um sistema adaptativo pode acompanhar uma trajetória contínua de `valence(t)` e `arousal(t)` e usar essa trajetória como sinal para modificar gradualmente iluminação, cor ou outros parâmetros visuais.
 
-**Força da evidência:** média para a engenharia de reconhecimento de emoção musical; baixa a média para benefício humano da adaptação visual. O trabalho demonstra melhor inferência e menor desvio no mapeamento de iluminação, não aumento comprovado de prazer ou conforto.
+**Força da evidência:** média para a engenharia de reconhecimento de emoção musical; baixa a média para benefício humano da adaptação visual. O trabalho demonstra melhor inferência e um pipeline de mapeamento audiovisual, não aumento comprovado de prazer ou conforto.
 
-**Limitações.** Benchmarks offline, dependência de dados e alinhamento de letras, domínio automotivo e validação humana ainda inicial. O modelo prediz rótulos/trajectórias afetivas, não mede diretamente estado neurofisiológico do usuário. Uma iluminação que acompanha a música com mais precisão não é necessariamente mais agradável.
+**Limitações.** Benchmarks offline, dependência de dados e alinhamento de letras, domínio automotivo e validação humana ainda inicial. O modelo prediz rótulos/trajetórias afetivas, não mede diretamente estado neurofisiológico do usuário. Uma iluminação que acompanha a música com mais precisão não é necessariamente mais agradável.
 
 **Aplicação prática.** Para produtos com IA, tratar valência–arousal contínuos como uma camada de controle candidata para cor, iluminação, intensidade de animação ou atmosfera visual. O teste correto deve comparar adaptação contínua contra presets fixos e medir conforto, coerência percebida, prazer, distração e desempenho da tarefa.
 
@@ -120,7 +121,7 @@ Não foi criado card para este artigo nesta rodada porque a parte diretamente hu
 
 A rodada reforça três regras de modelagem, não três regras universais de design:
 
-1. **Saliência visual tem custo e contexto.** Contraste, área e geometria interagem; uma variável pode amplificar ou amortecer outra.
+1. **Saliência visual tem custo e contexto.** Contraste, área e geometria interagem; curvas podem amortecer conflito inicial e melhorar preferência em cenas de alto contraste, mas isso ainda precisa ser validado no formato real.
 2. **Música não é apenas distração.** A experiência afetiva pode produzir efeitos adicionais aos mecanismos atencionais, que devem ser medidos separadamente.
 3. **Entrainment máximo não equivale a groove máximo.** Sincronização útil parece depender de previsão, liberdade de movimento, escala temporal e flexibilidade.
 
@@ -142,11 +143,11 @@ Essas variáveis devem orientar hipóteses e variantes, não decisões automáti
 
 ## Cards candidatos gerados
 
-1. `contraste-curvas-carga-visual` — testar se curvas amortecem custo perceptivo inicial de alto contraste em grande área sem perder saliência ou compreensão.
+1. `contraste-curvas-carga-visual` — testar se curvas amortecem custo perceptivo inicial de alto contraste em grande área e preservam ou melhoram preferência e compreensão.
 2. `musica-afeto-alem-distracao` — testar efeitos afetivos da música separadamente de captura de atenção sob diferentes níveis de carga cognitiva.
 3. `groove-sincronizacao-flexibilidade` — testar complexidade rítmica intermediária e sincronização flexível contra beat-sync rígido em conteúdo que convida movimento.
 
-Os três arquivos representam candidatos `DRAFT`. O commit dos JSONs permite que o workflow da Harness Library faça apenas o cadastro em DRAFT; revisão e ativação permanecem etapas separadas.
+Os três arquivos representam candidatos `DRAFT`. Revisão, ativação e arquivamento permanecem etapas separadas.
 
 ## Referências
 

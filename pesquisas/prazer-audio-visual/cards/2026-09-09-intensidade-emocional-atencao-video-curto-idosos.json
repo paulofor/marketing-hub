@@ -1,0 +1,18 @@
+{
+  "cardKey": "intensidade-emocional-atencao-video-curto-idosos",
+  "collection": "prazer-audio-visual",
+  "title": "Separar intensidade emocional de valência em vídeo curto",
+  "finding": "Em adultos com 60 anos ou mais, vídeos curtos com emoções de maior intensidade foram associados a maior concentração que conteúdo neutro, enquanto a relação entre valência e intenção de uso não foi linear.",
+  "mechanism": "A intensidade emocional pode aumentar saliência e alocação atencional independentemente de a emoção ser positiva ou negativa; isso não implica que maior ativação produza melhor experiência ou resultado comercial.",
+  "commercialApplication": "Em vídeos curtos para públicos maduros, testar níveis baixo, médio e alto de intensidade emocional separadamente da valência positiva ou negativa e observar atenção, conclusão, memória, satisfação e rejeição.",
+  "evidenceStrength": "Média: estudo peer-reviewed com eye-tracking e medidas comportamentais, porém amostra pequena e específica; generalização para outros públicos e formatos exige replicação.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Uma intensidade emocional moderada ou alta poderá elevar atenção e conclusão em relação ao conteúdo neutro, mas níveis extremos podem aumentar rejeição; a faixa ótima deverá ser estimada separadamente da valência.",
+  "risks": "Otimizar apenas atenção pode incentivar estímulos excessivos ou negativos e degradar satisfação, confiança ou bem-estar, especialmente em públicos vulneráveis.",
+  "limits": "A amostra é pequena e composta por adultos mais velhos em contexto cultural específico. O estudo mede concentração e intenção declarada, não compra, comportamento de longo prazo, dopamina ou sistema de recompensa.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-intensidade-emocional-atencao-video-curto.md",
+  "sourceTitle": "Fonte revisada — intensidade emocional e atenção em vídeo curto",
+  "sourceSha256": "9a0a5bdfcfc78d469b451d70b56e86c5f405f42779528fd6939a84952227631d"
+}

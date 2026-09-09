@@ -1,0 +1,21 @@
+name: Hash temporario fontes prazer audiovisual
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  hash:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Calcular SHA-256 das fontes de 09-09
+        run: |
+          sha256sum \
+            pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-contraste-curvas-carga-visual.md \
+            pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-musica-afeto-alem-distracao.md \
+            pesquisas/prazer-audio-visual/cards/fontes/2026-09-09-groove-sincronizacao-flexibilidade.md

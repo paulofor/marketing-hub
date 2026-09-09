@@ -206,6 +206,12 @@ export async function resolveAgentSourceRun({
           if (run.conclusion === "success") {
             return { required: true, run };
           }
+          if (run.conclusion === "cancelled") {
+            warn(
+              `Execução testada do agente para ${headSha.slice(0, 12)} foi cancelada; continuação encerrada sem publicar e versão anterior preservada. ${run.html_url ?? ""}`.trim(),
+            );
+            return { required: false, run: null };
+          }
           throw new Error(
             `Execução testada do agente para ${headSha} terminou com ${run.conclusion ?? "conclusão desconhecida"}: ${run.html_url ?? "URL indisponível"}.`,
           );

@@ -14,14 +14,25 @@ pelo evento, com testes, fila, rollback, retenção e confirmação das revisõe
 A detecção compara o histórico com a revisão efetivamente publicada, recuperando módulos
 pendentes mesmo quando o evento manual não contém `github.event.before`.
 
-Os agentes que aguardam a aplicação devem reconhecer tanto `push` quanto `workflow_dispatch`,
+Argos, Psique e Íris devem reconhecer tanto `push` quanto `workflow_dispatch` da aplicação,
 sempre na branch `main` e no mesmo SHA. Uma execução de outro commit, branch, tag ou PR não
-libera os agentes. A execução correspondente mais recente precisa terminar com `success`;
-uma retomada em andamento ou com falha não pode reutilizar o sucesso de uma execução anterior.
-Em Argos, Psique e Íris, essa espera deve ocorrer em job próprio antes da fila compartilhada do
-VPS. O gate não pode ter SSH nem usar concorrência no nível do workflow inteiro; revisões novas
-cancelam somente o gate antigo do mesmo workflow. Assim, indisponibilidade ou ausência do deploy
-central bloqueia apenas o agente dependente e nunca retém a seção crítica dos demais publicadores.
+libera os agentes. O push de origem testa e empacota a imagem imutável do agente e confirma, em
+até dois minutos, que o workflow central da mesma revisão foi registrado. Essa confirmação não
+aguarda a fila terminar e não acessa nenhum VPS.
+
+A publicação automática do agente começa somente pelo evento `workflow_run: completed` de
+`Build & Deploy containers`. A continuação localiza a execução `push` do próprio agente no mesmo
+SHA, exige sucesso tanto dela quanto da aplicação, faz checkout dessa revisão e, quando houver
+artefato, baixa-o pelo ID exato do run de origem. Ausência de execução de origem torna a
+continuação não aplicável; falha da aplicação ou do teste mantém o agente na versão anterior.
+É proibido liberar por ancestralidade presumida, usar o SHA corrente da branch no lugar do SHA do
+evento ou manter um runner fazendo polling durante toda a fila central.
+
+A resolução do run de origem ocorre antes da fila compartilhada do VPS e não contém SSH, SCP ou
+rsync. Somente depois dessas provas o job remoto entra em `deploy-vps-163-245-202-80`. As imagens
+empacotadas de Psique e Íris têm retenção de sete dias para sobreviver à fila central ampliada.
+Uma execução manual do próprio agente continua sendo uma recuperação operacional explícita e não
+substitui a validação normal do push.
 
 Uma nova execução manual não substitui os testes locais nem autoriza código fora do PR.
 Não reexecutar um run histórico esperando que ele publique o HEAD atual: o GitHub preserva
@@ -61,6 +72,27 @@ Referência: [isolamento dos testes do backend](../homologacao/actions-backend-i
 - Último run disponível, `34186720906`, pertence a `ad2929c6`, anterior ao merge solicitado.
 - O consumidor `wait-for-app-deployment.mjs` também filtrava somente `push`; adicionar apenas
   o gatilho ao publicador manteria a espera dos agentes bloqueada.
+
+## Correção da espera incompatível com a fila em 09/09/2026
+
+Os runs `34356522474` de Argos, `34356522469` de Íris, `34361476862` do Argos seguinte e
+`34356522612` de Psique aprovaram seus jobs de teste e imagem, mas falharam após 2.400 segundos
+aguardando os deploys centrais correspondentes, que continuavam `pending`. Na mesma janela, um run
+central criado às 11:56 UTC só iniciou seus jobs às 16:08 UTC. A fila estava saudável e
+processando em ordem; o timeout fixo era menor que o atraso legítimo que o próprio `queue: max`
+permite.
+
+Três alternativas foram comparadas:
+
+| Alternativa | Benefício | Risco/custo | Decisão |
+| --- | --- | --- | --- |
+| Aumentar o polling para seis horas | Mudança pequena | Ainda incompatível com até cem itens e ocupa runner | Rejeitada |
+| Aceitar deploy verde de commit posterior | Reduz espera | Presume compatibilidade entre revisões | Rejeitada |
+| Continuar pelo evento de conclusão do mesmo SHA | Não ocupa runner na fila e preserva revisão | Exige coordenar run e artefato de origem | Adotada |
+
+O contrato executável é `scripts/coordinate-agent-deployment.mjs`, protegido por
+`scripts/coordinate-agent-deployment.test.mjs`. A espera antiga por conclusão foi removida.
+Matriz e evidências: [coordenação sem polling](../homologacao/actions-dependencia-aplicacao-sem-polling-2026-09-09.md).
 
 Alternativas avaliadas:
 

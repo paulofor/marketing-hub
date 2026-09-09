@@ -12,16 +12,35 @@ const modules = ["agent-executor-admin-controller", "communication-agent-worker"
 function validate(workflow, module) {
   const [before, deploy] = workflow.split(/^  deploy:\s*$/m);
   assert.ok(deploy, `${module}: deploy ausente`);
+  const eventDriven = ["customer-agent-worker", "meta-ad-approver-worker"].includes(module);
   const reference = `marketing-hub/${module}:\${{ github.sha }}`;
+  const deployedReference = eventDriven
+    ? `marketing-hub/${module}:\${DEPLOY_SOURCE_SHA}`
+    : reference;
   assert.match(before, /docker build[^\n]+/, module);
   const pack = before.match(/node scripts\/agent-image-bundle\.mjs pack [^\n]+/)?.[0];
   assert.ok(pack?.includes(reference), `${module}: pacote deve conter a imagem testada`);
   assert.match(before, /uses: actions\/upload-artifact@v4/, module);
   assert.match(before, /name: agent-images-\$\{\{ github.sha \}\}/, module);
-  assert.match(before, /retention-days: 1\s+compression-level: 0\s+if-no-files-found: error/, module);
+  assert.match(
+    before,
+    new RegExp(`retention-days: ${eventDriven ? 7 : 1}\\s+compression-level: 0\\s+if-no-files-found: error`),
+    module,
+  );
   assert.match(deploy, /(?:^    needs: test(?:-build)?$|^      - test(?:-build)?$)/m, module);
-  assert.match(deploy, /uses: actions\/download-artifact@v4\s+with:\s+name: agent-images-\$\{\{ github.sha \}\}/, module);
-  assert.ok(deploy.includes(`node scripts/agent-image-bundle.mjs verify "\${{ runner.temp }}/agent-images" ${reference}`), module);
+  if (eventDriven) {
+    assert.match(
+      deploy,
+      /uses: actions\/download-artifact@v4\s+with:\s+name: agent-images-\$\{\{ env\.DEPLOY_SOURCE_SHA \}\}[\s\S]+github-token: \$\{\{ github\.token \}\}[\s\S]+run-id:.*needs\.source-run\.outputs\.source_run_id/,
+      module,
+    );
+    assert.match(before, /workflow_run:[\s\S]+workflows: \["Build & Deploy containers"\]/, module);
+    assert.match(deploy, /ref: \$\{\{ env\.DEPLOY_SOURCE_SHA \}\}/, module);
+  } else {
+    assert.match(deploy, /uses: actions\/download-artifact@v4\s+with:\s+name: agent-images-\$\{\{ github.sha \}\}/, module);
+  }
+  const verification = deploy.match(/node scripts\/agent-image-bundle\.mjs verify [^\n]+/)?.[0];
+  assert.ok(verification?.includes(deployedReference), module);
   const load = deploy.indexOf("node scripts/agent-image-bundle.mjs send");
   assert.ok(load > deploy.indexOf("< scripts/ensure-agent-vps-disk-space.sh"), `${module}: carga deve seguir gate inicial`);
   assert.ok(load < deploy.indexOf("docker compose up"), `${module}: carga deve preceder restart`);
@@ -58,7 +77,8 @@ test("imagens de Psique, Plutus e controlador são imutáveis e participam da re
     const compose = readFileSync(path.join(root, `${location}/docker-compose.yml`), "utf8");
     assert.ok(compose.includes(`image: \${${variable}:-marketing-hub/${module}:local}`));
     const workflow = readFileSync(path.join(root, `.github/workflows/${module}-ci.yml`), "utf8");
-    assert.ok(workflow.includes(`${variable}=marketing-hub/${module}:\${GITHUB_SHA}`));
+    const revisionVariable = module === "customer-agent-worker" ? "DEPLOY_SOURCE_SHA" : "GITHUB_SHA";
+    assert.ok(workflow.includes(`${variable}=marketing-hub/${module}:\${${revisionVariable}}`));
     assert.ok(disk.includes(`marketing-hub/${module}`));
   }
 });

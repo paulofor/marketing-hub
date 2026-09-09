@@ -15,8 +15,8 @@ on:
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/test-configure-vps-ssh-fallback.sh"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
-      - "scripts/wait-for-app-deployment.mjs"
-      - "scripts/wait-for-app-deployment.test.mjs"
+      - "scripts/coordinate-agent-deployment.mjs"
+      - "scripts/coordinate-agent-deployment.test.mjs"
   pull_request:
     paths:
       - "product-discovery-worker/**"
@@ -30,9 +30,13 @@ on:
       - "scripts/ssh-keyscan-with-retry.sh"
       - "scripts/test-configure-vps-ssh-fallback.sh"
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
-      - "scripts/wait-for-app-deployment.mjs"
-      - "scripts/wait-for-app-deployment.test.mjs"
+      - "scripts/coordinate-agent-deployment.mjs"
+      - "scripts/coordinate-agent-deployment.test.mjs"
       - ".github/workflows/product-discovery-worker-ci.yml"
+  workflow_run:
+    workflows: ["Build & Deploy containers"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -41,6 +45,7 @@ permissions:
 
 jobs:
   test:
+    if: github.event_name != 'workflow_run'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -62,7 +67,14 @@ jobs:
           npm test
       - name: Validate application deploy coordination
         working-directory: ${{ github.workspace }}
-        run: node --test scripts/wait-for-app-deployment.test.mjs
+        run: node --test scripts/coordinate-agent-deployment.test.mjs
+      - name: Confirm matching application deployment was enqueued
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: ${{ github.workspace }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APP_DEPLOY_REGISTRATION_TIMEOUT_SECONDS: 120
+        run: node scripts/coordinate-agent-deployment.mjs assert-application-run deploy-containers.yml
       - name: Validate SSH credential fallback
         working-directory: ${{ github.workspace }}
         run: bash scripts/test-configure-vps-ssh-fallback.sh
@@ -78,34 +90,39 @@ jobs:
             --input-type=module -e \
             'import { chromium } from "playwright-core"; const browser = await chromium.launch({headless: true}); console.log(await browser.version()); await browser.close();'
 
-  application-deployment:
-    name: Wait for matching application deployment
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+  source-run:
+    name: Resolve tested worker revision
+    if: github.event_name == 'workflow_run'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    concurrency:
-      group: application-deployment-${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
+    timeout-minutes: 120
     permissions:
       contents: read
       actions: read
+    outputs:
+      required: ${{ steps.resolve.outputs.required }}
+      source_run_id: ${{ steps.resolve.outputs.source_run_id }}
+      source_sha: ${{ steps.resolve.outputs.source_sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Coordinate application revision
-        if: github.event_name == 'push'
+      - id: resolve
+        name: Resolve exact tested source run
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          APP_DEPLOY_WAIT_TIMEOUT_SECONDS: 2400
-        run: node scripts/wait-for-app-deployment.mjs deploy-containers.yml
+          APP_DEPLOY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          APP_DEPLOY_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          APP_DEPLOY_EVENT: ${{ github.event.workflow_run.event }}
+          APP_DEPLOY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          AGENT_SOURCE_WAIT_TIMEOUT_SECONDS: 6900
+        run: node scripts/coordinate-agent-deployment.mjs resolve-source-run product-discovery-worker-ci.yml
 
   docker:
     runs-on: ubuntu-latest
     needs:
       - test
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.event_name != 'workflow_run'
     permissions:
       contents: read
       packages: write
@@ -155,11 +172,19 @@ jobs:
         run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      always() &&
+      ((github.event_name == 'workflow_dispatch' &&
+        needs.test.result == 'success' &&
+        needs.docker.result == 'success') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        needs.source-run.result == 'success' &&
+        needs.source-run.outputs.required == 'true'))
     needs:
       - test
       - docker
-      - application-deployment
+      - source-run
     runs-on: ubuntu-latest
     timeout-minutes: 90
     concurrency:
@@ -171,16 +196,19 @@ jobs:
       packages: read
       actions: read
     env:
+      DEPLOY_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_sha || github.sha }}
       DEPLOY_HOST: 163.245.202.80
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.PRODUCT_DISCOVERY_WORKER_REMOTE_PATH || '/root/product-discovery-worker' }}
       IMAGE_REGISTRY: ghcr.io
       IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}
-      IMAGE_TAG: ${{ needs.docker.outputs['image-tag'] }}
+      IMAGE_TAG: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_sha || github.sha }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SOURCE_SHA }}
       - name: Configure SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}

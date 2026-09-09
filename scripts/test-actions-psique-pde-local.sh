@@ -62,7 +62,7 @@ step 17-reasoning-config node --test scripts/test-agent-max-reasoning.mjs
 step 18-retention bash scripts/test-agent-vps-disk-space.sh
 step 19-retention-workflows node scripts/test-agent-vps-disk-workflows.mjs
 step 20-image-contracts node --test scripts/test-agent-image-bundle.mjs scripts/test-agent-image-workflows.mjs
-step 21-deployment-coordination node --test scripts/wait-for-app-deployment.test.mjs
+step 21-deployment-coordination node --test scripts/coordinate-agent-deployment.test.mjs
 step 22-agent-ssh-contracts node scripts/test-agent-vps-ssh-workflows.mjs
 step 23-retention-docker bash scripts/test-agent-vps-disk-space-e2e.sh
 step 24-ssh-docker bash scripts/test-configure-vps-ssh-fallback-e2e.sh

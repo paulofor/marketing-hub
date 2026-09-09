@@ -29,9 +29,10 @@ Para Produtos Digitais Experienciais, a organização macro dos processos deve s
 fabricação de entregáveis, criativos, landing, homologação e venda, são reutilizados dentro dessa
 cadeia e não devem ser confundidos isoladamente com o ciclo completo de criação e venda de um PDE.
 
-Todo processo criado ou alterado deve integrar o BPM de uma Cadeia de Valor, diretamente como
-processo de valor ou como subprocesso de um processo participante. A cadeia é versionada,
-preserva as versões exatas dos processos participantes e possui objetivo, resultado e métrica
+Todo processo, subprocesso e atividade deve ser criado e permanecer dentro do BPM de uma Cadeia de
+Valor. Processos de valor integram a composição da cadeia; subprocessos e atividades integram o
+fluxo de um processo participante. A cadeia é versionada, preserva as versões exatas dos processos
+participantes e possui objetivo, resultado e métrica
 principal próprios. Ela serve à visão gerencial e não executa, agenda ou avança etapas. A tela
 canônica é `/business-process-chains` e seu contrato de leitura é
 `/api/business-process-chains`. Quando uma versão de processo pertencer a uma ou mais cadeias, o
@@ -40,21 +41,29 @@ consulta reversa canônica é `GET /api/business-process-chains/by-process/{proc
 
 ## Alocação obrigatória no BPM da Cadeia de Valor
 
-**Decisão obrigatória de 08/09/2026:** tudo que for criado ou alterado relacionado a processos e
-atividades deve ficar alocado dentro do BPM da Cadeia de Valor. A regra vale para todos os produtos,
-agentes, módulos e trabalhos humanos ou automatizados, incluindo subprocessos, ciclos, decisões,
-correções, homologações e produção de comunicação ou vídeos.
+**Decisão obrigatória de 08/09/2026, reforçada em 09/09/2026:** todo processo, subprocesso e
+atividade deve sempre ser criado e, quando alterado, permanecer alocado e conectado dentro do
+BPM da Cadeia de Valor. Essa obrigação começa na concepção e no rascunho, antes da implementação
+ou execução. É proibido criar trabalho fora da cadeia para integrá-lo depois. A regra vale para
+todos os produtos, agentes, módulos e trabalhos humanos ou automatizados, incluindo ciclos,
+decisões, correções, homologações e produção de comunicação ou vídeos.
 
 O objetivo é conectar cada trabalho ao valor entregue ao cliente e à geração de vendas e receita,
 com resultado verificável. Quantidade de tarefas concluídas não substitui resultado comercial.
 
-- **Hierarquia explícita:** Cadeia de Valor → processo de valor → subprocesso, quando necessário →
-  atividade. Toda criação ou alteração deve identificar a cadeia, a versão do processo e a atividade
-  responsável. Capacidades existentes são reutilizadas por delegação, sem duplicar sua autoridade.
+- **Alocação antes de criar:** identificar a cadeia e sua versão, o processo responsável e a
+  posição do trabalho no BPM. Reutilizar ou evoluir a definição existente quando atender ao mesmo
+  objetivo; uma nova tela, módulo ou agente não justifica um processo paralelo fora da cadeia.
+- **Hierarquia explícita:** cada processo de valor integra a composição da cadeia; cada atividade
+  pertence ao BPM de um processo ou subprocesso; cada subprocesso é acessado por uma atividade de
+  chamada no BPM pai, inclusive quando houver mais de um nível de decomposição. Toda criação ou
+  alteração identifica as versões envolvidas. Capacidades existentes são reutilizadas por delegação,
+  sem duplicar sua autoridade.
 - **Conexão real no BPM:** a atividade precisa estar conectada ao fluxo a partir do início, com
   entradas, saídas, condições de avanço e próximo passo definidos. Subprocessos exigem vínculo com
-  o pai e uma atividade de chamada com `subprocessCode` conectada ao diagrama do pai. Cadastro,
-  lista de subprocessos, documento, painel ou link isolado não satisfazem essa obrigação.
+  o pai e uma atividade de chamada com `subprocessCode` conectada ao diagrama do pai, com condição
+  de entrada e destino após conclusão ou bloqueio. Cadastro, lista de subprocessos, documento,
+  painel ou link isolado não satisfazem essa obrigação.
 - **Decisões e retornos:** gates e loops devem declarar condições, evidências, destino de correção
   ou continuidade e encerramento. Reprovação precisa orientar a próxima atividade e quem a executa.
   O backend governa a liberação; o desenho do retorno não autoriza avanço nem execução por si só.
@@ -78,17 +87,28 @@ com resultado verificável. Quantidade de tarefas concluídas não substitui res
   permanecem imutáveis; mudanças usam novas versões e preservam tarefas e evidências anteriores.
   Itens legados sem alocação devem ser regularizados quando alterados, sem fabricar execução passada.
 
-**Critério de entrega:** uma criação ou alteração de processo ou atividade só está completa quando
-é possível partir da Cadeia de Valor, localizar o trabalho no BPM, compreender sua entrada, executar
-o comando previsto e identificar sua conclusão, bloqueio ou próximo passo. Rascunhos podem ser
-preparados antes da publicação conjunta, mas não orientam execução enquanto a integração estiver
-pendente. Essa regra de organização não concede autorização de publicação comercial, gasto ou escala.
+**Critério de entrega:** uma criação ou alteração de processo, subprocesso ou atividade só está
+completa quando é possível partir da Cadeia de Valor, localizar o trabalho no BPM, compreender sua
+entrada, executar o comando previsto e identificar sua conclusão, bloqueio ou próximo passo. Para
+subprocessos, a validação inclui entrar pela atividade chamadora, consultar seu andamento e voltar
+à origem, com continuidade definida no fluxo. Sem essa integração, a entrega está incompleta.
+Rascunhos também devem nascer alocados na cadeia e no BPM; podem aguardar publicação conjunta,
+mas não orientar execução enquanto a integração estiver pendente. Essa regra de organização não
+concede autorização de publicação comercial, gasto ou escala.
+
+**Aprendizado que fundamenta o reforço:** no ciclo de vendas, o vínculo cadastral com o processo pai
+não impediu uma entrada separada e confusa. O caso está registrado em
+[LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI](../registros/loops.md#loop-bpm-ciclo-sem-chamada-do-pai--ciclo-fora-do-fluxo-de-valor).
+A prevenção exige conjuntamente alocação, chamada conectada, andamento persistido e navegação de
+entrada e retorno pela atividade. Essa exigência vale para qualquer novo processo, subprocesso ou
+atividade, e para alterações nos existentes.
 
 ## Governança BPM
 
 **Integração operacional do ciclo (08/09/2026):** o subprocesso de ciclos pertence ao
 processo de venda e aprendizado. Seu pai precisa conter uma atividade `subprocessCode`
-conectada ao fluxo, além do vínculo de cadastro. A cadeia expõe o painel dentro desse pai.
+conectada ao fluxo, além do vínculo de cadastro. A cadeia oferece acesso pela atividade chamadora
+nesse pai, com andamento e retorno contextual.
 O endpoint `GET /api/business-process-chains/learning-cycles/v1/entry` resolve a entrada
 e a ocorrência aberta, sem mutação. Destinos de orientação `learningCycleReturns` no
 diagrama são resolvidos nas versões exatas da cadeia; a execução usa os comandos e a

@@ -130,6 +130,21 @@ cancela a ferramenta, invalida as evidências e fecha o gate.
 
 Sem qualquer evidência obrigatória, o gate permanece fechado.
 
+### Compatibilidade das atestações com o código compartilhado
+
+Antes de empacotar evidências para Têmis ou Psique, validar por produto a revisão numérica vigente
+do manifesto. As coleções `implementationEvidence` e `executableEvidence` devem coincidir com o
+SHA-256 do código e dos testes atuais; revisão ambígua ou divergência bloqueia a preparação com
+produto, manifesto e arquivo identificáveis. Essa validação deve executar também nas matrizes locais
+que alterem código compartilhado, mesmo quando a atividade em correção pertença a outro produto.
+
+Uma mudança no catálogo compartilhado exige revalidar os contratos dos produtos afetados e criar uma
+nova atestação explícita de compatibilidade. As atestações anteriores permanecem imutáveis e não
+devem ser atualizadas apenas para o CI passar. O pacote preserva o histórico e confere sua integridade
+no índice do build. `homologationEvidence` continua podendo representar a candidata ainda submetida
+à revisão independente, com hash-base e `UPDATED_CANDIDATE`; empacotar não aprova comercialmente essa
+candidata. A nova atestação de compatibilidade não autoriza tráfego, publicação ou gasto.
+
 ## Critérios
 
 O agente avalia separadamente atenção, clareza, desejo, credibilidade e ação. Também registra pareceres explícitos sobre copy, estética comercial e integração anúncio → landing. A aprovação exige ausência de bloqueio, nota mínima 80 em todas as dimensões e coerência comprovada de público, dor, promessa, mecanismo, oferta, identidade e próximo passo.

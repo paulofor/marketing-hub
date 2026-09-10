@@ -155,14 +155,10 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/produto-homologation-v2.json");
   }
 
-  /** Confirma que o repositório carrega as revisões comerciais vigentes de Rigel e MUSA. */
+  /** Confirma que a fonte ou o pacote carrega as revisões comerciais vigentes de Rigel e MUSA. */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {
-    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
-    Path repository =
-        moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
-            ? moduleDirectory.getParent()
-            : moduleDirectory;
+    Path repository = evidenceRepository();
 
     var evidence = new PdeReviewArtifactLoader(repository.toString()).loadCommunicationContracts();
 
@@ -173,6 +169,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v5.json");
   }
@@ -379,14 +376,10 @@ class PdeReviewArtifactLoaderTest {
         .hasMessageContaining("App.tsx");
   }
 
-  /** Confirma no repositório real que Têmis não mistura provas comerciais entre PDEs. */
+  /** Confirma na fonte ou no pacote que Têmis não mistura provas comerciais entre PDEs. */
   @Test
   void segregatesCurrentRepositoryEvidenceByProduct() throws Exception {
-    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
-    Path repository =
-        moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
-            ? moduleDirectory.getParent()
-            : moduleDirectory;
+    Path repository = evidenceRepository();
     var loader = new PdeReviewArtifactLoader(repository.toString());
 
     var rigel =
@@ -415,6 +408,7 @@ class PdeReviewArtifactLoaderTest {
     assertThat(rigel)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
             "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java")
@@ -435,5 +429,17 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v2.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
+  }
+
+  /** Resolve a fonte local ou o pacote explícito para repetir os mesmos contratos após empacotar. */
+  private Path evidenceRepository() {
+    String configured = System.getProperty("review.evidence.root");
+    if (configured != null && !configured.isBlank()) {
+      return Path.of(configured).toAbsolutePath().normalize();
+    }
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    return moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
+        ? moduleDirectory.getParent()
+        : moduleDirectory;
   }
 }

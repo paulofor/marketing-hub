@@ -1,0 +1,6 @@
+FROM nginx:1.27-alpine
+ARG NGINX_TEMPLATE=pde-platform/frontend/nginx.conf
+COPY ${NGINX_TEMPLATE} /etc/nginx/templates/default.conf.template
+RUN mkdir -p /usr/share/nginx/html/materials \
+    && printf 'material local autorizado' > /usr/share/nginx/html/materials/proof.txt
+ENV PDE_BACKEND_UPSTREAM=pde-backend-current:8096

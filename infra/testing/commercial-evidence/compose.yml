@@ -1,0 +1,32 @@
+services:
+  mysql:
+    image: ${EVIDENCE_MYSQL_IMAGE:?Informe a imagem MySQL local}
+    ports:
+      - "33068:3306"
+    environment:
+      MYSQL_DATABASE: pde_local
+      MYSQL_USER: pde
+      MYSQL_PASSWORD: pde
+      MYSQL_ROOT_PASSWORD: pde-root
+    mem_limit: 1g
+    cpus: 2
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-upde", "-ppde"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    tmpfs:
+      - /var/lib/mysql:size=512m
+
+  reviewer:
+    image: ${EVIDENCE_REVIEWER_IMAGE:?Informe a imagem do revisor local}
+    entrypoint: ["node"]
+    command: ["/app/browser-runtime-check.mjs"]
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 2

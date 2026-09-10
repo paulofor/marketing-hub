@@ -4682,6 +4682,14 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 
 ## LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI — ciclo fora do fluxo de valor
 
+- **Recorrência nos cards em 10/09/2026:** Vega seguia em “Etapa 6 de 6” porque o card
+  consumia somente a posição comercial e a projeção do processo coordenador. Banco e
+  `process-context` já identificavam o segundo ciclo, #92, e a pendência 3.5 no Processo 3.
+  O card agora reutiliza esse contexto oficial, mostra memória anterior e separa os custos
+  acumulados. Falha de consulta não retorna silenciosamente à orientação comercial histórica.
+  Regressões cobrem os contratos, navegação com ciclo/cadeia, bloqueios, cache, isolamento,
+  início e catálogo em desktop/mobile. Evidências: `docs/homologacao/vega-card-ciclo-atual-v1.md`.
+
 - **Continuidade em 10/09/2026:** a conclusão do Processo 2 no segundo ciclo não indicava o
   trabalho seguinte; o ciclo ainda apontava à arquitetura já concluída. A orientação passa a
   consultar a mesma situação oficial das atividades, com ciclo, experimento, número da passagem,

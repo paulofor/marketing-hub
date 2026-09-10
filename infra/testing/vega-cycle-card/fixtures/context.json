@@ -1,0 +1,56 @@
+{
+  "cycleId": 2,
+  "cycleNumber": 2,
+  "experimentId": 92,
+  "chainDefinitionId": 14,
+  "productVersion": "musa-pde-entry-v8-primeiro-ajuste-aplicavel",
+  "status": "OPEN",
+  "stageLabel": "Ajustar produto e comunicação",
+  "hypothesis": "Tornar o primeiro ajuste imediatamente aplicável com itens que a cliente já possui pode aumentar primeiros resultados por início e a continuidade até checkout e compra. Hipótese do sucessor, sem causa de abandono comprovada pelas quatro sessões do #91.",
+  "mainChange": "Utilidade do primeiro resultado: explicar o que fazer, como aplicar, ocasião e critério de autoavaliação; permitir salvar e retomar. Preservar público, canal, preço e oferta durante este teste; toda comunicação deve refletir a versão real homologada.",
+  "cycleUrl": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+  "previousLearning": [
+    {
+      "cycleId": 1,
+      "experimentId": 91,
+      "action": "ADOPT_BASELINE",
+      "summary": "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias.",
+      "evidenceReference": "facebook_ads_campaign:120251556536430326",
+      "learning": "",
+      "nextHypothesis": "",
+      "limitation": ""
+    },
+    {
+      "cycleId": 1,
+      "experimentId": 91,
+      "action": "MEASURE",
+      "summary": "Conciliação automática: 4 sessões, 1 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -27.30 de contribuição.",
+      "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+      "learning": "",
+      "nextHypothesis": "",
+      "limitation": ""
+    },
+    {
+      "cycleId": 1,
+      "experimentId": 91,
+      "action": "ADJUST",
+      "summary": "Rascunho para aprovação humana: encerrar o ciclo do experimento 91 e preparar um sucessor, preservando o produto MUSA, a versão musa-pde-entry-v7-espelho-antes-de-sair, o período e as fontes conciliadas. A medição oficial registrou 4 sessões humanas, 2 inícios, 1 primeiro resultado, 0 checkouts, 0 vendas líquidas, R$ 0,00 de receita e R$ -27,30 de contribuição. A amostra é insuficiente para concluir conversão, causa de abandono ou público vencedor.",
+      "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+      "learning": "O fluxo conseguiu gerar 2 inícios e 1 primeiro resultado em 4 sessões, mostrando uso parcial, mas não validação humana ou comercial. Não houve checkout, compra, entrega, primeiro uso pós-venda nem resposta de satisfação. Cliques, sessões, inícios e primeiro resultado não equivalem a vendas. O experimento interrompido deve permanecer como referência histórica, sem alterações ou homologação retroativas.",
+      "nextHypothesis": "Em um sucessor com gates, métricas e autorização próprios, tornar o primeiro ajuste mais imediatamente aplicável com itens que a cliente já possui aumentará a proporção de primeiros resultados por início e, como efeito comercial a testar, poderá aumentar checkouts e vendas líquidas reconciliadas em comparação com esta referência; a hipótese deve ser testada sem alterar simultaneamente público, comunicação ou outras variáveis materiais.",
+      "limitation": "Não há causa comprovada. A hipótese prioritária é que a utilidade do primeiro ajuste não tenha ficado suficientemente clara ou imediata para sustentar o avanço após o início; explicações concorrentes incluem inadequação do público, comunicação ou criativo, fricção de entrada e simples variação causada pela amostra de apenas 4 sessões. O sucessor deve isolar a utilidade inicial como uma variável e medir seu efeito."
+    }
+  ],
+  "nextWork": {
+    "processDefinitionId": 70,
+    "processNumber": 3,
+    "processName": "Protótipo, validação multiagente e aprovação do PDE",
+    "activityId": "technicalHomologation",
+    "activityNumber": 5,
+    "activityName": "Homologar tecnicamente a versão real",
+    "responsible": "Psique",
+    "state": "BLOCKED",
+    "reason": "O protótipo desta passagem ainda não possui uma URL executável aceita. As especificações concluídas por Dédalo não comprovam implementação. Conclua a implementação da versão do ciclo e registre sua aceitação privada antes de executar Psique com o harness. Repetir a tarefa agora não resolve a pendência.",
+    "url": "/products/4/value-chain-history/processes/70/activities?learningCycleId=2&chainId=14#activity-technicalHomologation"
+  }
+}

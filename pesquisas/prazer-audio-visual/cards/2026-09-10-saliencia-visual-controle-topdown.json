@@ -1,0 +1,18 @@
+{
+  "cardKey": "saliencia-visual-antes-controle-topdown",
+  "collection": "prazer-audio-visual",
+  "title": "Alinhar a saliência visual inicial ao alvo principal",
+  "finding": "Em uma tarefa EEG com cores concorrentes, a seleção guiada diretamente pelo estímulo dominou o processamento visual inicial e prejudicou temporariamente uma cor relevante por regra aprendida; por volta de 500 ms, o controle top-down começou a redistribuir os recursos e reduzir essa vantagem inicial.",
+  "mechanism": "Características fisicamente salientes podem capturar rapidamente um conjunto limitado de recursos sensoriais; o controle orientado por objetivo entra depois e redistribui atenção. O marco de cerca de 500 ms descreve este paradigma, não uma constante universal de interfaces.",
+  "commercialApplication": "Em interfaces, anúncios e vídeos, comparar uma versão em que o elemento visual mais saliente no início coincide com a informação principal contra outra em que badges, animações ou cores concorrentes capturam atenção primeiro. Medir identificação, compreensão, abandono e CTA separadamente.",
+  "evidenceStrength": "Média-alta: estudo controlado de NeuroImage com EEG/SSVEP e convergência comportamental; porém usa estímulos artificiais, seleção por cor e uma amostra única, sem medir prazer ou resultado comercial.",
+  "publishedOn": "2026-09-10",
+  "validUntil": "2027-03-10",
+  "experimentHypothesis": "Reduzir saliência visual irrelevante nos primeiros instantes e concentrar o maior destaque no alvo principal aumentará identificação e compreensão em relação a uma versão com competição visual inicial, sem necessariamente aumentar CTA.",
+  "risks": "Reduzir elementos chamativos demais pode diminuir descoberta ou interesse; usar 500 ms como regra fixa pode produzir otimizações erradas. Atenção capturada não deve ser tratada como prazer, preferência ou conversão.",
+  "limits": "O estudo não testa interfaces naturais, vídeos, publicidade, memória de marca, retenção ou venda. SSVEP é marcador de seleção sensorial e não demonstra que a mesma dinâmica temporal tenha igual magnitude em todos os públicos e formatos.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-10-saliencia-visual-controle-topdown.md",
+  "sourceTitle": "Fonte revisada — saliência visual e controle top-down",
+  "sourceSha256": "489ac7e3300cfe7f33b112d1bbd79c5f75bb06e33bf8091ea395c11ed7aa2bd4"
+}

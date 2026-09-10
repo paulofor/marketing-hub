@@ -1349,7 +1349,9 @@ public class BusinessProcessActivityExecutionService {
     return activityIds;
   }
 
-  /** Projeta o estado e a mesma elegibilidade do comando, preservando tentativas históricas. */
+  /**
+   * Projeta estado, pendência atual e elegibilidade do comando, preservando a auditoria histórica.
+   */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
       Map<String, List<AgentTask>> tasksByActivityId,
@@ -1492,7 +1494,11 @@ public class BusinessProcessActivityExecutionService {
               sequence++,
               selectedVersionActivity,
               situation.operationalState(),
-              situation.stateReason(),
+              agentReadiness != null
+                      && !agentReadiness.ready()
+                      && "BLOCKED".equals(situation.operationalState())
+                  ? agentReadiness.reason()
+                  : situation.stateReason(),
               situation.objectiveAchieved(),
               situation.stateEvidence(),
               situation.activityInstanceId(),

@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-10-pde-harness-responsibility-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_activity_definition activity
+              JOIN business_process_definition process ON process.id = activity.process_definition_id
+                 SET activity.owner_name = 'Psique',
+                     activity.definition_json = JSON_SET(activity.definition_json,
+                       '$.owner', 'Psique',
+                       '$.controlDescription', 'Psique executa testes automáticos com o harness, a estrutura de ferramentas, cenários e evidências. Esta etapa técnica não usa parecer de IA; os cenários de experiência vêm depois.')
+               WHERE process.process_code = 'pde-construction-approval'
+                 AND process.version_number = 8
+                 AND activity.activity_id = 'technicalHomologation';
+
+              UPDATE business_process_definition
+                 SET diagram_json = JSON_SET(diagram_json,
+                       REPLACE(JSON_UNQUOTE(JSON_SEARCH(diagram_json, 'one', 'technicalHomologation', NULL, '$.nodes[*].id')), '.id', '.owner'), 'Psique',
+                       REPLACE(JSON_UNQUOTE(JSON_SEARCH(diagram_json, 'one', 'technicalHomologation', NULL, '$.nodes[*].id')), '.id', '.controlDescription'),
+                       'Psique executa testes automáticos com o harness, a estrutura de ferramentas, cenários e evidências. Esta etapa técnica não usa parecer de IA; os cenários de experiência vêm depois.')
+               WHERE process_code = 'pde-construction-approval'
+                 AND version_number = 8
+                 AND JSON_SEARCH(diagram_json, 'one', 'technicalHomologation', NULL, '$.nodes[*].id') IS NOT NULL;

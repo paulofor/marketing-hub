@@ -1,0 +1,17 @@
+{
+  "productId": 4,
+  "commercialStatus": "ATIVO",
+  "resolutionStatus": "IDENTIFIED",
+  "resolutionMessage": "Fixture local do segundo ciclo",
+  "chainDefinitionId": 14,
+  "chainName": "Cadeia PDE",
+  "chainVersion": 14,
+  "processDefinitionId": 75,
+  "processCode": "pde-sales-delivery-learning",
+  "processName": "Aprendizado e vendas",
+  "processVersion": 6,
+  "sequenceNumber": 6,
+  "processCount": 6,
+  "processMeasurements": [{ "processDefinitionId": 70, "sequenceLabel": "3" }],
+  "subprocessPosition": null
+}

@@ -38,7 +38,10 @@ O macroprocesso passa a se chamar **Protótipo, validação multiagente e aprova
 
 1. **Dédalo materializa o PDE**: jornada, componentes, audiovisual quando previsto, acesso,
    continuidade, instrumentação e versão imutável do protótipo.
-2. **O harness homologa tecnicamente**: executa a versão real em desktop e nos perfis móveis
+2. **Psique executa a homologação técnica com o harness**: o harness é a estrutura de
+   ferramentas, contratos, cenários, testes e evidências usada pelo executor; não é um agente
+   nem deve constar como responsável no BPM. Essa execução é determinística, sem parecer de IA,
+   e permanece separada dos três pareceres de experiência de Psique. Executa a versão real em desktop e nos perfis móveis
    suportados, testa caminho feliz, retomada, entradas inválidas, falhas de integração, privacidade,
    acessibilidade básica e emissão dos eventos esperados. Também comprova que a superfície pertence
    a imagem, container, porta, proxy e ciclo de deploy exclusivos daquele produto.
@@ -62,6 +65,25 @@ Nenhum agente pode criar e aprovar o mesmo artefato. Atena e Plutus continuam re
 respectivamente, pela estratégia e pela economia anteriores à construção; Íris e Apolo continuam
 responsáveis pela comunicação e pelo audiovisual; autorização humana permanece obrigatória para
 preço, publicação, campanha e gasto, não para representar uma pessoa fictícia em teste privado.
+
+### Entrada da homologação técnica
+
+Por correção de 2026-09-10 (Vega, tarefa #377), concluir especificações de jornada,
+componentes ou acesso não comprova que o protótipo esteja implementado. Antes de liberar o
+comando de homologação, o backend deve resolver o mesmo alvo entregue à fila e exigir URL
+executável, identidade e versão compatíveis com a aceitação privada persistida. Um plano
+`PLANNED` com URL ausente bloqueia a execução com orientação de concluir a implementação e
+registrar sua aceitação. Repetir a tarefa, usar uma URL histórica ou aceitar qualquer URL
+não resolve essa ausência.
+
+O responsável da atividade 3.5 é Psique; o modo determinístico e o uso do harness aparecem
+na explicação do comando. A tarefa bloqueada permanece no histórico, com sua causa técnica
+original. O resumo da atividade apresenta a pendência atual informada pelo backend.
+
+O executor só pode executar cenários implementados para o produto e a superfície declarados.
+O script `pde-agent-validation-harness.mjs` atual implementa Mira; seu nome genérico não
+autoriza usá-lo em Vega ou em outro PDE. A referência deve identificar o mesmo produto do
+alvo, e o contrato do ciclo precisa ser compatível com o executor antes de liberar sua fila.
 
 ## Rejeição, correção e nova validação
 

@@ -1,0 +1,24 @@
+{
+  "cycleId": 2,
+  "cycleNumber": 2,
+  "experimentId": 92,
+  "chainDefinitionId": 14,
+  "productVersion": "musa-pde-entry-v8-primeiro-ajuste-aplicavel",
+  "status": "OPEN",
+  "stageLabel": "Ajustar produto e comunicação",
+  "hypothesis": "Simulação local: tornar o primeiro ajuste aplicável pode favorecer a continuidade até a compra.",
+  "mainChange": "Simulação local: explicar o que fazer e como aplicar usando itens já disponíveis, preservando os limites do teste.",
+  "cycleUrl": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+  "previousLearning": [
+    {
+      "cycleId": 1,
+      "experimentId": 91,
+      "action": "ADJUST",
+      "learning": "Fixture de aprendizado anterior: quatro sessões e nenhuma venda não comprovam a causa do abandono.",
+      "summary": "Evidência histórica insuficiente para atribuição causal.",
+      "limitation": "Dados desta página são test doubles locais; nenhum evento integra métricas comerciais.",
+      "evidenceReference": "urn:marketinghub:test:vega377:previous-learning"
+    }
+  ],
+  "nextWork": null
+}

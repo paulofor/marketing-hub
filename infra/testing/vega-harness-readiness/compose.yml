@@ -1,0 +1,19 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: harness-local-root
+      MYSQL_DATABASE: harness_qa
+    ports:
+      - "33377:3306"
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pharness-local-root"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+    mem_limit: 512m
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  mysql-data:

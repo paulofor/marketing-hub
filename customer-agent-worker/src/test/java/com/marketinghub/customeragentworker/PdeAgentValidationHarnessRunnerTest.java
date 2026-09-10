@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -14,6 +15,51 @@ import org.junit.jupiter.api.io.TempDir;
 class PdeAgentValidationHarnessRunnerTest {
   @TempDir Path temporaryDirectory;
   private final ObjectMapper json = new ObjectMapper();
+
+  /** Reproduz #377 e explica ausência de implementação antes de iniciar navegador ou integração. */
+  @Test
+  void rejectsPlannedCycleWithoutExecutableUrl() {
+    var target = new HashMap<String, Object>((Map<String, Object>) task().get("taskTarget"));
+    target.put("publicUrl", null);
+    var task = new HashMap<>(task());
+    task.put("taskTarget", target);
+    task.put("sourceReference", "experiment:92");
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
+
+    assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
+        .hasMessageContaining("não possui URL executável")
+        .hasMessageContaining("implementação");
+  }
+
+  /** Impede atribuir cenários específicos de Mira a outro produto mesmo com URL preenchida. */
+  @Test
+  void rejectsAnotherProductBeforeLaunchingMiraScenarios() {
+    var target = new HashMap<String, Object>((Map<String, Object>) task().get("taskTarget"));
+    target.put("productId", 4L);
+    target.put("productSlug", "metodo-musa");
+    target.put("experienceVersion", "vega-v8");
+    var task = new HashMap<>(task());
+    task.put("taskTarget", target);
+    task.put("sourceReference", "product:4@agent-validation-v1");
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
+
+    assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
+        .hasMessageContaining("cenários somente para o protótipo privado de Mira");
+  }
+
+  /** Exige que a referência e o alvo declarem a mesma identidade de produto. */
+  @Test
+  void rejectsProductReferenceFromAnotherProduct() {
+    var task = new HashMap<>(task());
+    task.put("sourceReference", "product:4@agent-validation-v1");
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
+
+    assertThatThrownBy(() -> runner.run(task, "TECHNICAL", null, temporaryDirectory))
+        .hasMessageContaining("não corresponde ao produto alvo");
+  }
 
   /** Aceita somente cobertura completa, PNG local e efeitos comerciais nulos. */
   @Test

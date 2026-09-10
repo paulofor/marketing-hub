@@ -1,0 +1,18 @@
+{
+  "cardKey": "novidade-auditiva-atualizacao-preditiva",
+  "collection": "prazer-audio-visual",
+  "title": "Usar novidade auditiva como sinal de atualização, não como sinônimo de prazer",
+  "finding": "Em estereo-EEG humano com paradigma oddball, sons novos produziram uma hierarquia temporal em dois níveis: regiões temporais, insulares e parietais responderam antes, enquanto regiões frontais e hipocampais responderam depois; a modulação top-down foi seletivamente maior para novidade.",
+  "mechanism": "O padrão é compatível com sinais auditivos ascendendo pela hierarquia, sendo comparados em níveis superiores e, diante de novidade, disparando atualização de previsões por vias top-down. Isso apoia predictive coding, mas não demonstra reward prediction error dopaminérgico nem prazer.",
+  "commercialApplication": "Em áudio, vídeo e experiências com IA, testar eventos sonoros raros e semanticamente coerentes em pontos de mudança narrativa contra versões totalmente previsíveis e versões com surpresa excessiva. Medir orientação atencional, memória, compreensão, rejeição e CTA separadamente.",
+  "evidenceStrength": "Média-alta para a organização temporal da novidade auditiva: sEEG intracraniano oferece alta resolução e o estudo foi publicado em NeuroImage; a amostra é clínica, o paradigma usa tons puros e a conectividade por Granger não prova causalidade fisiológica direta.",
+  "publishedOn": "2026-09-10",
+  "validUntil": "2027-03-10",
+  "experimentHypothesis": "Inserir eventos auditivos raros e coerentes em mudanças narrativas aumentará orientação e atualização de contexto em relação a uma trilha totalmente previsível, enquanto surpresa excessiva poderá aumentar rejeição; o efeito sobre prazer deve ser medido separadamente.",
+  "risks": "Surpresa frequente pode virar ruído, aumentar carga cognitiva ou irritação. Novidade neural não deve ser convertida em alegação de dopamina, prazer, retenção ou venda sem medir esses desfechos diretamente.",
+  "limits": "O estudo foi realizado em pacientes com epilepsia usando tons puros e não testa música, vídeos, narrativas ou publicidade. Não mede prazer, dopamina, conversão, retenção ou memória de marca.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-10-novidade-auditiva-atualizacao-preditiva.md",
+  "sourceTitle": "Fonte revisada — novidade auditiva e atualização preditiva",
+  "sourceSha256": "db49cd825c02eb9a46dff757a6bb18c0d78eaff2e689f91c38548794b950c18e"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "personalizacao-demografica-achata-individualidade",
+  "collection": "neuromarketing",
+  "title": "Personalização por rótulo demográfico pode achatar a individualidade",
+  "finding": "Em sete LLMs avaliados com World Values Survey, perfis demográficos melhoraram o alinhamento de valores para a maioria dos modelos, mas puxaram respostas individuais em direção ao centro do grupo demográfico; testes de permutação encontraram compressão de individualidade acima do baseline humano nos modelos de melhor desempenho.",
+  "mechanism": "Rótulos demográficos compactos podem ativar protótipos de grupo e funcionar como atalhos de personalização. No estudo, distribuir sinais ao longo do diálogo reduziu parcialmente esse efeito em comparação com perfis compactos, sugerindo que evidência individual contextual pode preservar melhor distinções entre pessoas.",
+  "commercialApplication": "No Marketing Hub, não personalizar mensagem, recomendação ou tom principalmente por rótulos demográficos. Preferir comportamento observado, preferências explicitadas, histórico individual relevante e controles editáveis de personalização.",
+  "evidenceStrength": "Moderada-baixa: benchmark sistemático em sete modelos, 10.000 permutações e validação parcial com conversas humanas; é estudo de modelos, não experimento de produto, e a mitigação por diálogo requer replicação maior.",
+  "publishedOn": "2026-09-10",
+  "validUntil": "2026-12-10",
+  "experimentHypothesis": "Uma personalização baseada em sinais individuais explícitos e comportamentais produzirá maior relevância percebida e menos correções do usuário do que uma personalização baseada em rótulos demográficos, sem reduzir desempenho da tarefa.",
+  "risks": "Perfis demográficos podem reforçar estereótipos, discriminação e inferências indevidas sobre atributos sensíveis; sinais individuais também exigem minimização de dados, transparência e possibilidade de correção.",
+  "limits": "O estudo mede alinhamento de valores em benchmarks, não conversão ou satisfação. World Values Survey e PRISM cobrem apenas parte da diversidade real, e resultados podem mudar com modelos futuros.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-10-personalizacao-demografica-achata-individualidade.md",
+  "sourceTitle": "Fonte revisada — Personalização demográfica e perda de individualidade",
+  "sourceSha256": "6808e454c45b9b18f6616ee187be077793c84d39dd949e7acb005e8af4b5a0a4"
+}

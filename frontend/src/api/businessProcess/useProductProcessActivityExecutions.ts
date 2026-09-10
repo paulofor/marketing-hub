@@ -67,6 +67,9 @@ export function useRequestProductProcessActivityExecution(
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
+          queryKey: ["cycle-process-context", productId],
+        }),
+        queryClient.invalidateQueries({
           queryKey: [
             "products",
             productId,

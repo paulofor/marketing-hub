@@ -139,6 +139,12 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
       Long processDefinitionId, String sourceReference);
 
+  /** Seleciona tentativas da passagem exata no SQL, preservando substituições e bloqueios. */
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "assignedAgent")
+  List<AgentTask>
+      findByProcessDefinitionIdAndSourceReferenceAndCreatedAtGreaterThanEqualOrderByCreatedAtDescIdDesc(
+          Long processDefinitionId, String sourceReference, java.time.Instant createdAt);
+
   /** Lista todas as tentativas de uma instância para consolidar estado, custo e objetivo. */
   List<AgentTask> findByActivityInstanceIdOrderByCreatedAtAscIdAsc(Long activityInstanceId);
 

@@ -48,6 +48,104 @@ public class LearningCycleService {
   private final LearningCycleOrganization organization;
   private final LearningCycleMeasurementCollector measurementCollector;
 
+  @Autowired private LearningCycleWorkResolver workResolver;
+
+  @Autowired private LearningCycleExecutionContext executionContext;
+
+  /** Apresenta o ciclo selecionado, sua posição e a memória histórica dentro do processo. */
+  @Transactional(readOnly = true)
+  public LearningCycleProcessContext processContext(
+      Long productId, Long processId, Long cycleId, Long chainId) {
+    var product =
+        products
+            .findById(productId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    var process =
+        processes
+            .findById(processId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(HttpStatus.NOT_FOUND, "Processo não encontrado."));
+    var candidates =
+        cycleId == null
+            ? cycles.findByProductIdAndOpenSlot(productId, 1)
+            : cycles.findById(cycleId).stream().toList();
+    var matching =
+        candidates.stream()
+            .filter(value -> Objects.equals(value.getProductId(), productId))
+            .filter(
+                value -> chainId == null || Objects.equals(value.getChainDefinitionId(), chainId))
+            .toList();
+    if (matching.size() != 1) {
+      if (cycleId != null || matching.size() > 1)
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "Selecione um ciclo deste produto e cadeia.");
+      return null;
+    }
+    var cycle = matching.getFirst();
+    try {
+      executionContext.source(cycle.getId(), product, process, false);
+    } catch (ResponseStatusException ex) {
+      log.debug(
+          "Processo fora da passagem consultada. productId={} processId={} cycleId={}",
+          productId,
+          processId,
+          cycle.getId(),
+          ex);
+      if (cycleId == null && ex.getStatusCode().value() == 409) return null;
+      throw ex;
+    }
+    int number = 1;
+    var previous = cycle;
+    var memories = new ArrayList<JsonNode>();
+    memories.add(json.read(cycle.getInheritedLearningJson()));
+    var visited = new HashSet<Long>();
+    visited.add(cycle.getId());
+    while (previous.getPreviousCycleId() != null) {
+      previous = cycles.findById(previous.getPreviousCycleId()).orElseThrow();
+      if (!Objects.equals(previous.getProductId(), productId) || !visited.add(previous.getId()))
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Histórico do ciclo inconsistente.");
+      if (previous.getPreviousCycleId() != null)
+        memories.add(json.read(previous.getInheritedLearningJson()));
+      number++;
+    }
+    var learning = new ArrayList<LearningCycleProcessContext.Learning>();
+    for (var memory : memories)
+      for (var event : memory.path("events")) {
+        var detail = event.path("evidence");
+        learning.add(
+            new LearningCycleProcessContext.Learning(
+                memory.path("cycleId").asLong(),
+                memory.path("experimentId").asLong(),
+                event.path("action").asText(),
+                event.path("summary").asText(),
+                event.path("evidenceReference").asText(),
+                detail.path("learning").asText(),
+                detail.path("nextHypothesis").asText(),
+                detail.path("rootCause").asText()));
+      }
+    var brief = json.read(cycle.getBriefJson());
+    return new LearningCycleProcessContext(
+        cycle.getId(),
+        number,
+        cycle.getExperimentId(),
+        cycle.getChainDefinitionId(),
+        cycle.getProductVersion(),
+        cycle.getStatus(),
+        label(cycle.getStage()),
+        brief.path("hypothesis").asText(),
+        brief.path("mainChange").asText(),
+        "/business-process-chains/learning-cycles?chainId="
+            + cycle.getChainDefinitionId()
+            + "&productId="
+            + productId
+            + "&cycleId="
+            + cycle.getId(),
+        List.copyOf(learning),
+        workResolver.resolve(cycle));
+  }
+
   @Autowired
   private com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
           .LearningCycleDecisionApproval
@@ -982,6 +1080,20 @@ public class LearningCycleService {
               .orElseThrow();
       nextAction = "Abra a atividade orientada e execute «" + target.getName() + "». " + nextAction;
       responsible = target.getOwnerName();
+    }
+    var nextWork = workResolver == null ? null : workResolver.resolve(cycle);
+    if (nextWork != null) {
+      workUrl = nextWork.url();
+      nextAction =
+          "Continue na atividade "
+              + nextWork.processNumber()
+              + "."
+              + nextWork.activityNumber()
+              + " — "
+              + nextWork.activityName()
+              + ". "
+              + nextWork.reason();
+      responsible = nextWork.responsible();
     }
     if ("ADJUSTED".equals(cycle.getStatus())) {
       responsible = "Operador do ciclo · preparação do sucessor";

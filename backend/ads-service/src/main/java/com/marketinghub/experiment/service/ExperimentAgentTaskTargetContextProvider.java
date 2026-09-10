@@ -49,6 +49,11 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
   private final ObjectMapper objectMapper;
   private final PdeCommercialCheckoutContractResolver checkoutResolver;
 
+  @Autowired
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleConstructionContext
+      cycleConstructionContext;
+
   /** Configura as fontes canônicas de experimento, produto e contrato PDE. */
   @Autowired
   public ExperimentAgentTaskTargetContextProvider(
@@ -175,6 +180,10 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
       String sourceReference, Experiment experiment, Product product, String processCode) {
     if (product == null || product.getId() == null || blank(product.getSlug())) {
       return Optional.empty();
+    }
+    if (cycleConstructionContext != null) {
+      var cycleTarget = cycleConstructionContext.resolve(sourceReference, experiment, processCode);
+      if (cycleTarget.isPresent()) return cycleTarget;
     }
     String experienceVersion = experienceVersion(product, processCode);
     if (blank(experienceVersion)) return Optional.empty();

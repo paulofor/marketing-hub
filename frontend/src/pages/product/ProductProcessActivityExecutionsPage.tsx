@@ -35,6 +35,8 @@ import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecut
 import DirectContactSamplePanel from "./DirectContactSamplePanel";
 import { SalesFlowTransitions } from "../../components/ProductSalesFlow";
 import { salesActivityStateLabels } from "../../api/learningCycle/salesFlow";
+import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
+import ProductLearningCycleContext from "./ProductLearningCycleContext";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -109,11 +111,21 @@ export default function ProductProcessActivityExecutionsPage() {
   const validProductId = Number.isSafeInteger(productId) && productId > 0;
   const validProcessId =
     Number.isSafeInteger(processDefinitionId) && processDefinitionId > 0;
-  const history = useProductProcessActivityExecutions(
+  const cycleContext = useCycleProcessContext(
     validProductId ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
     learningCycleId,
     chainId,
+  );
+  const effectiveCycleId = cycleContext.data?.cycleId ?? learningCycleId;
+  const effectiveChainId = cycleContext.data?.chainDefinitionId ?? chainId;
+  const history = useProductProcessActivityExecutions(
+    validProductId && !cycleContext.isLoading && !cycleContext.isError
+      ? productId
+      : undefined,
+    validProcessId ? processDefinitionId : undefined,
+    effectiveCycleId,
+    effectiveChainId,
   );
   const valueChainPosition = useProductValueChainPosition(
     validProductId && validProcessId ? productId : undefined,
@@ -121,9 +133,10 @@ export default function ProductProcessActivityExecutionsPage() {
   const requestExecution = useRequestProductProcessActivityExecution(
     productId,
     processDefinitionId,
-    learningCycleId,
+    effectiveCycleId,
   );
-  const data = history.data;
+  const data =
+    cycleContext.isLoading || cycleContext.isError ? undefined : history.data;
   useEffect(() => {
     if (data && hash.startsWith("#activity-"))
       document
@@ -189,12 +202,15 @@ export default function ProductProcessActivityExecutionsPage() {
     <div className="product-process-activity-executions">
       <header className="business-process-documents-toolbar mb-4">
         <div>
-          {learningCycleId ? (
+          {effectiveCycleId ? (
             <Link
               className="btn btn-outline-primary mb-3"
-              to={`/business-process-chains/learning-cycles?productId=${productId}&cycleId=${learningCycleId}`}
+              to={
+                cycleContext.data?.cycleUrl ??
+                `/business-process-chains/learning-cycles?productId=${productId}&cycleId=${effectiveCycleId}`
+              }
             >
-              Voltar ao ciclo #{learningCycleId}
+              Voltar ao ciclo #{effectiveCycleId}
             </Link>
           ) : null}
           <PageTitle>
@@ -244,6 +260,19 @@ export default function ProductProcessActivityExecutionsPage() {
           </Link>
         </div>
       </header>
+
+      {cycleContext.isError ? (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível identificar o ciclo desta atividade. Atualize a
+          página antes de executar; o histórico não substitui o contexto atual.
+        </div>
+      ) : null}
+      {cycleContext.isLoading ? (
+        <p role="status">Identificando o ciclo e o aprendizado anterior...</p>
+      ) : null}
+      {cycleContext.data ? (
+        <ProductLearningCycleContext context={cycleContext.data} />
+      ) : null}
 
       {history.isLoading ? (
         <div

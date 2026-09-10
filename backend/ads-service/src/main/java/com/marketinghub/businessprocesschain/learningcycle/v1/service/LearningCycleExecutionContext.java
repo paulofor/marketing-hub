@@ -22,6 +22,19 @@ public class LearningCycleExecutionContext {
   private final BusinessProcessDefinitionRepository processes;
   private final LearningCycleJson json;
 
+  /** Expõe o início persistido da passagem para separar tarefas e custos do histórico. */
+  @Transactional(readOnly = true)
+  public java.time.Instant startedAt(Long cycleId, Long productId) {
+    return cycles
+        .findById(cycleId)
+        .filter(cycle -> productId.equals(cycle.getProductId()))
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Ciclo do produto não encontrado."))
+        .getCreatedAt();
+  }
+
   /**
    * Resolve a fonte canônica pela cadeia original do ciclo, sem trocar o plano ou o experimento.
    */

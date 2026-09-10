@@ -4073,6 +4073,13 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   versão, estratégia, economia sem gasto, harness, protótipo, momento de compra, resultado pronto,
   cinco eventos, checkout simulado e limite de publicação. Testes protegem exposição segregada,
   contexto completo e ausência fora do processo privado.
+- **Recorrência em 10/09/2026 — Vega #368:** o cadastro comercial histórico permanecia `v1/v7`,
+  enquanto #359/#361/#362 aprovavam o sucessor #92/v8. A #366 recebeu o contrato completo e
+  concluiu; a #368 voltou a receber contexto ausente após mudança do runtime. O backend passa
+  a montar a construção pelo experimento e pela cadeia do ciclo, com versões e IDs das três
+  aprovações, sem alterar o produto histórico. Contrato incompleto não volta silenciosamente à v7.
+  Testes de isolamento, ordem das aprovações e contrato backend → consumidor de Dédalo cobrem a
+  recorrência. Evidências: `docs/homologacao/vega-ciclo2-contexto-continuidade-v1.md`.
 
 ## LOOP-APOLO-BPM-AUDIOVISUAL-SEM-CONSUMIDOR — atividade opcional permanece pendente
 
@@ -4614,6 +4621,12 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 `AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.
 
 ## LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI — ciclo fora do fluxo de valor
+
+- **Continuidade em 10/09/2026:** a conclusão do Processo 2 no segundo ciclo não indicava o
+  trabalho seguinte; o ciclo ainda apontava à arquitetura já concluída. A orientação passa a
+  consultar a mesma situação oficial das atividades, com ciclo, experimento, número da passagem,
+  memória e próximo destino dentro da cadeia. Tarefas e custos históricos não entram na passagem
+  selecionada. Navegação é somente leitura e não encerra etapas ou aprova gates.
 
 - Confirmado em 08/09/2026: o ciclo v2 tinha pai no cadastro, mas o BPM de venda v4
   terminava em `consolidate → decision → end`. O painel anterior aos processos reforçava

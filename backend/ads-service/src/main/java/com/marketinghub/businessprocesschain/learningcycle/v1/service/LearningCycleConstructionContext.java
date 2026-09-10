@@ -1,0 +1,150 @@
+package com.marketinghub.businessprocesschain.learningcycle.v1.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskTargetResponse;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Responsabilidade: compor o contrato privado do sucessor com aprovações do seu próprio ciclo. */
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class LearningCycleConstructionContext {
+  private final LearningSalesCycleRepository cycles;
+  private final BusinessProcessChainDefinitionRepository chains;
+  private final AgentTaskRepository tasks;
+  private final ObjectMapper mapper;
+
+  /** Resolve construção por experimento sem substituir o cadastro ou a experiência histórica. */
+  @Transactional(readOnly = true)
+  public Optional<AgentTaskTargetResponse> resolve(
+      String reference, Experiment experiment, String processCode) {
+    if (experiment == null || !"pde-construction-approval".equals(processCode))
+      return Optional.empty();
+    var cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
+    if (cycle == null) return Optional.empty();
+    var product = experiment.getProduct();
+    if (product == null || !Objects.equals(cycle.getProductId(), product.getId()))
+      throw new IllegalStateException("Ciclo e experimento pertencem a produtos diferentes.");
+    return Optional.of(
+        new AgentTaskTargetResponse(
+            reference,
+            experiment.getId(),
+            product.getId(),
+            product.getSlug(),
+            product.getName(),
+            product.getInternalName(),
+            cycle.getProductVersion(),
+            null,
+            null,
+            null,
+            null,
+            experiment.getUnitPrice(),
+            context(cycle)));
+  }
+
+  /**
+   * Mantém ausência explícita se as aprovações estiverem incompletas, recusadas ou incompatíveis.
+   */
+  private JsonNode context(LearningSalesCycle cycle) {
+    try {
+      if (!"OPEN".equals(cycle.getStatus()) || cycle.isBaseline()) return null;
+      var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
+      Long planningId =
+          chain.getItems().stream()
+              .map(item -> item.getProcessDefinition())
+              .filter(process -> "pde-commercial-plan-offer".equals(process.getProcessCode()))
+              .map(process -> process.getId())
+              .findFirst()
+              .orElseThrow();
+      var approved =
+          tasks
+              .findByProcessDefinitionIdAndSourceReferenceAndCreatedAtGreaterThanEqualOrderByCreatedAtDescIdDesc(
+                  planningId, "experiment:" + cycle.getExperimentId(), cycle.getCreatedAt());
+      var strategyTask = latest(approved, "marketStrategy", "experiment-strategist");
+      var economicsTask = latest(approved, "economics", "financial-agent");
+      var architectureTask = latest(approved, "productArchitecture", "landing-generator");
+      var strategyResult = mapper.readTree(strategyTask.getResultJson());
+      var economicsResult = mapper.readTree(economicsTask.getResultJson());
+      var architectureResult = mapper.readTree(architectureTask.getResultJson());
+      var strategy = strategyResult.path("marketStrategicContract");
+      var economics = economicsResult.path("economics");
+      var architecture = architectureResult.path("productArchitecture");
+      if (!"APPROVE".equals(strategyResult.path("decision").asText())
+          || !"MARKET_STRATEGY_V3".equals(strategy.path("contractVersion").asText())
+          || !"READY_FOR_PRIVATE_VALIDATION".equals(strategy.path("status").asText())
+          || !"APPROVE".equals(economicsResult.path("decision").asText())
+          || !"PDE_PRIVATE_ECONOMICS_V1".equals(economicsResult.path("contractVersion").asText())
+          || !economics.isObject()
+          || economics.path("commercialSpendAuthorized").asBoolean(true)
+          || !"APPROVE".equals(architectureResult.path("decision").asText())
+          || !architecture.path("privatePrototype").isObject()
+          || !strategy.path("privateValidationPlan").isObject()
+          || architectureTask.getDeliveredAt().isBefore(economicsTask.getDeliveredAt())
+          || economicsTask.getDeliveredAt().isBefore(strategyTask.getDeliveredAt()))
+        throw new IllegalStateException(
+            "Aprovações privadas ausentes, incompatíveis ou desatualizadas.");
+      var context = mapper.createObjectNode();
+      context.put("contractVersion", "PDE_HARNESS_PLAN_V1");
+      context.put("experienceVersion", cycle.getProductVersion());
+      context.put("status", "PLANNED");
+      context
+          .putObject("lineage")
+          .put("learningCycleId", cycle.getId())
+          .put("productId", cycle.getProductId())
+          .put("experimentId", cycle.getExperimentId())
+          .put("strategyTaskId", strategyTask.getId())
+          .put("economicsTaskId", economicsTask.getId())
+          .put("architectureTaskId", architectureTask.getId());
+      context.set("marketStrategy", strategy);
+      context.set("economics", economics);
+      context.set("metrics", economicsResult.path("metrics"));
+      context.set("harness", architecture);
+      context.set("privateValidationPlan", strategy.path("privateValidationPlan"));
+      context.set("inheritedLearning", mapper.readTree(cycle.getInheritedLearningJson()));
+      context.set("cycleBrief", mapper.readTree(cycle.getBriefJson()));
+      context.put(
+          "publicationBoundary",
+          "Construção privada do sucessor. Sem autorização de contato, publicação, campanha, cobrança ou gasto comercial; preservar a versão histórica.");
+      return context;
+    } catch (Exception ex) {
+      log.error(
+          "Contrato privado do ciclo indisponível. cycleId={} productId={} experimentId={}",
+          cycle.getId(),
+          cycle.getProductId(),
+          cycle.getExperimentId(),
+          ex);
+      return null;
+    }
+  }
+
+  /**
+   * Exige aprovação da tentativa mais recente, sem reaproveitar entrega substituída ou bloqueada.
+   */
+  private AgentTask latest(List<AgentTask> candidates, String activity, String agent) {
+    var task =
+        candidates.stream()
+            .filter(value -> activity.equals(value.getProcessActivityId()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Aprovação ausente: " + activity));
+    if (!"COMPLETED".equals(task.getStatus())
+        || task.getDeliveredAt() == null
+        || task.getAssignedAgent() == null
+        || !agent.equals(task.getAssignedAgent().getAgentKey()))
+      throw new IllegalStateException(
+          "Última tentativa ainda não é uma aprovação válida: " + activity);
+    return task;
+  }
+}

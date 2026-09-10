@@ -24,6 +24,49 @@ import org.junit.jupiter.params.provider.CsvSource;
 /** Responsabilidade: impedir que tarefas comerciais percam ou misturem a identidade do PDE. */
 class ExperimentAgentTaskTargetContextProviderTest {
 
+  /** A construção de sucessor usa o contexto do ciclo antes do cadastro comercial legado. */
+  @Test
+  void prioritizesCycleContextBeforeHistoricalProductContract() {
+    var experiments = mock(ExperimentRepository.class);
+    var products = mock(ProductRepository.class);
+    var cycles =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleConstructionContext.class);
+    var product =
+        Product.builder()
+            .id(4L)
+            .slug("vega-test")
+            .validationDefinitionVersion("v1")
+            .pdeExperienceJson("{\"experienceVersion\":\"historical-v7\"}")
+            .build();
+    var experiment = Experiment.builder().id(92L).product(product).build();
+    when(experiments.findById(92L)).thenReturn(Optional.of(experiment));
+    var expected =
+        new com.marketinghub.agenttask.AgentTaskTargetResponse(
+            "experiment:92",
+            92L,
+            4L,
+            "vega-test",
+            "Vega",
+            "Vega",
+            "successor-v8",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    when(cycles.resolve("experiment:92", experiment, "pde-construction-approval"))
+        .thenReturn(Optional.of(expected));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        provider, "cycleConstructionContext", cycles);
+    assertThat(provider.resolve("experiment:92", "pde-construction-approval")).contains(expected);
+    assertThat(product.getPdeExperienceJson()).contains("historical-v7");
+  }
+
   /** Resolve produto, experimento e versão a partir da referência canônica da tarefa. */
   @Test
   void resolvesTypedTargetFromExperimentReference() {

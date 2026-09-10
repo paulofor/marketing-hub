@@ -106,6 +106,12 @@ no backend (retomada de ocorrência cancelada e leitura do experimento) e em Plu
 para resolver o fluxo e avançar pela tela. Cada imagem exige aceite local completo,
 origem nos arquivos versionados, configuração preservada e evidência de saúde/resultado.
 Isso não autoriza publicar manualmente as otimizações gerais de Psique ou Íris.
+Na continuidade do segundo ciclo de Vega em 10/09/2026, a mesma autorização operacional
+para recuperar o fluxo do #92 abrange o backend e o frontend administrativo: seleção do contrato
+aprovado, identidade da passagem, aprendizado e orientação para a próxima atividade. Exige
+homologação local completa antes da troca, imagens dos Dockerfiles do repositório, preservação
+integral da configuração e das imagens de retorno, e confirmação da tarefa na UI e no banco.
+O diff permanece local para o PR posterior solicitado pelo usuário.
 
 Imagem fora da lista explícita de agentes ou da PDE Platform continua exigindo revisão operacional individual da
 referência imutável, origem, idade, ausência de containers e versões de recuperação; não entra na

@@ -2,6 +2,7 @@ package com.marketinghub.productdiscovery.v1.service;
 
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryMarketType;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
+import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceSelectionResponse;
 
 /** Contrato de pendência que o worker consome para pesquisar oportunidades PDE. */
 public record ProductDiscoveryPendingResponse(
@@ -20,4 +21,5 @@ public record ProductDiscoveryPendingResponse(
     ProductDiscoveryMarketType marketType,
     String referenceSources,
     String executionLeaseId,
-    int executionAttempt) {}
+    int executionAttempt,
+    ResearchIntelligenceSelectionResponse researchIntelligence) {}

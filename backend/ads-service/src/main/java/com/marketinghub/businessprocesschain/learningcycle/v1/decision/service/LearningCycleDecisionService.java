@@ -19,11 +19,13 @@ import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstance
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.learningcycle.*;
+import com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,6 +50,7 @@ public class LearningCycleDecisionService {
   private final AgentRepository agents;
   private final LearningCycleService cycleService;
   private final LearningCycleJson json;
+  @Autowired private ResearchIntelligenceService researchIntelligenceService;
 
   /** Reserva sob lock do ciclo e lê commits recentes, evitando snapshot antigo do MySQL 5.7. */
   @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -304,7 +307,9 @@ public class LearningCycleDecisionService {
     return proposal;
   }
 
-  /** Reúne apenas fatos persistidos, limitações e destinos oficiais da cadeia do próprio ciclo. */
+  /**
+   * Preserva fatos, limitações, destinos oficiais e curadoria consultiva no snapshot da proposta.
+   */
   private String context(LearningSalesCycle cycle, Long decisionProcessId) {
     var current =
         cycleService.list(cycle.getProductId()).stream()
@@ -343,6 +348,15 @@ public class LearningCycleDecisionService {
         "returnTargets",
         cycleService.catalog(cycle.getChainDefinitionId(), cycle.getProductId()).returnTargets());
     context.put("operatorName", json.read(cycle.getCreationJson()).path("operatorName").asText(""));
+    if (researchIntelligenceService != null) {
+      context.put(
+          "researchIntelligence",
+          researchIntelligenceService.selectForAgentTask(
+              AGENT,
+              "Decisão comercial do ciclo",
+              json.write(current.brief()),
+              json.write(current.inheritedLearning())));
+    }
     return json.write(context);
   }
 

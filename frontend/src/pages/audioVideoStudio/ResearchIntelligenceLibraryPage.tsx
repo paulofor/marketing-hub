@@ -19,7 +19,10 @@ function normalized(value: string) {
 }
 
 function isActive(card: ResearchIntelligenceCard, evaluatedOn: string) {
-  return !card.validUntil || card.validUntil >= evaluatedOn;
+  return (
+    (!card.publishedOn || card.publishedOn <= evaluatedOn) &&
+    (!card.validUntil || card.validUntil >= evaluatedOn)
+  );
 }
 
 function authorityLabel(authority: string) {
@@ -27,6 +30,10 @@ function authorityLabel(authority: string) {
     PRODUCTION_ADVISORY: "orienta produção",
     COMMUNICATION_ADVISORY: "orienta comunicação",
     REVIEW_CRITERIA_ONLY: "somente revisão",
+    FACTUAL_ADVISORY: "orienta pesquisa factual",
+    STRATEGY_ADVISORY: "orienta estratégia",
+    PRODUCT_ADVISORY: "orienta experiência do produto",
+    MEASUREMENT_ADVISORY: "orienta medição",
   };
   return labels[authority] ?? authority;
 }
@@ -37,10 +44,10 @@ function matchesAgent(
   policies: ResearchIntelligenceAgentPolicy[],
 ) {
   if (!selectedAgent) return true;
-  return (
-    policies
-      .find((policy) => policy.agentKey === selectedAgent)
-      ?.collections.includes(card.collection) ?? false
+  const policy = policies.find((item) => item.agentKey === selectedAgent);
+  return Boolean(
+    policy?.collections.includes(card.collection) ||
+    policy?.assignments?.some((item) => item.cardId === card.cardId),
   );
 }
 
@@ -93,7 +100,7 @@ export default function ResearchIntelligenceLibraryPage() {
     <div className="audio-video-studio-page">
       <PageTitle
         title="Biblioteca de Inteligência do Harness"
-        subtitle="Catálogo global usado automaticamente pelos projetos audiovisuais presentes e futuros."
+        subtitle="Pesquisas para orientar agentes, tarefas da Cadeia de Valor e projetos audiovisuais."
       />
 
       {catalogQuery.isLoading ? (
@@ -131,7 +138,7 @@ export default function ResearchIntelligenceLibraryPage() {
                 <p className="audio-video-studio-page__eyebrow">
                   Catálogo global, seleção contextual
                 </p>
-                <h2>Como a biblioteca entra nos projetos</h2>
+                <h2>Como a biblioteca chega aos agentes</h2>
               </div>
               <span>{catalog.contractVersion}</span>
             </div>
@@ -142,6 +149,12 @@ export default function ResearchIntelligenceLibraryPage() {
               os hashes usados para auditoria. Fontes Markdown e cartões
               aprovados pela API externa usam a mesma seleção canônica.
             </p>
+            <p>
+              Referências cadastradas nas entradas do agente também chegam às
+              suas tarefas, com orientação de aplicação e limite de quatro
+              cartões. Os vínculos abaixo vêm do cadastro versionado. A pesquisa
+              orienta hipóteses; vendas e entrega precisam de evidência real.
+            </p>
             <div className="audio-video-studio-page__research-policy-grid">
               {catalog.agentPolicies.map((policy) => (
                 <article key={policy.agentKey}>
@@ -150,9 +163,24 @@ export default function ResearchIntelligenceLibraryPage() {
                   <span>{authorityLabel(policy.authority)}</span>
                   <p>{policy.purpose}</p>
                   <small>
-                    {policy.collections.join(" · ")} · até{" "}
-                    {policy.maxCardsPerContext}
+                    {policy.collections.join(" · ") || "Curadoria para tarefas"}{" "}
+                    · até {policy.maxCardsPerContext}
                   </small>
+                  {(policy.assignments?.length ?? 0) > 0 ? (
+                    <p>{policy.assignments!.length} referências direcionadas</p>
+                  ) : null}
+                  {policy.assignments
+                    ?.filter((item) => !item.available)
+                    .map((item) => (
+                      <p key={item.cardId}>
+                        Referência indisponível: {item.cardId}
+                      </p>
+                    ))}
+                  {policy.agentId ? (
+                    <Link to={`/agents/${policy.agentId}/edit`}>
+                      Editar referências de {policy.agentName}
+                    </Link>
+                  ) : null}
                 </article>
               ))}
             </div>
@@ -240,7 +268,7 @@ export default function ResearchIntelligenceLibraryPage() {
                 >
                   <option value="ACTIVE">Elegíveis hoje</option>
                   <option value="ALL">Todos</option>
-                  <option value="EXPIRED">Vencidos</option>
+                  <option value="EXPIRED">Fora da validade</option>
                 </select>
               </label>
             </div>
@@ -258,11 +286,26 @@ export default function ResearchIntelligenceLibraryPage() {
                     <header>
                       <span>{card.collection}</span>
                       <small data-status={active ? "active" : "expired"}>
-                        {active ? "Elegível" : "Vencido"}
+                        {active
+                          ? "Elegível"
+                          : card.publishedOn &&
+                              card.publishedOn > catalog.evaluatedOn
+                            ? "Fonte futura"
+                            : "Vencido"}
                       </small>
                     </header>
                     <strong>{card.title}</strong>
                     <p>{card.finding}</p>
+                    {catalog.agentPolicies.flatMap((policy) =>
+                      (policy.assignments ?? [])
+                        .filter((item) => item.cardId === card.cardId)
+                        .map((item) => (
+                          <div key={policy.agentKey}>
+                            <strong>Direcionado a {policy.agentName}</strong>
+                            <p>{item.guidance}</p>
+                          </div>
+                        )),
+                    )}
                     <details>
                       <summary>Ver mecanismo e aplicação</summary>
                       <dl>

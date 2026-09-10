@@ -38,6 +38,48 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /**
+   * Entrega a curadoria real do cadastro no contrato consumido pelo executor e preserva o destino
+   * BPM.
+   */
+  @Test
+  void deliversRegisteredResearchReferencesThroughClaimedTaskContract() throws Exception {
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    dedalo
+        .getInputs()
+        .add(
+            com.marketinghub.agent.AgentInput.builder()
+                .name("RI1-AAB0EC98AB06")
+                .type("HARNESS_RESEARCH_CARD")
+                .description("Testar o primeiro resultado útil.")
+                .build());
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    var task = processTask(9001L, dedalo, process("PUBLISHED", "Dédalo"), "html", "IN_PROGRESS");
+    when(tasks.findById(9001L)).thenReturn(Optional.of(task));
+    var service = service(tasks, agents, Clock.systemUTC());
+    var research =
+        new com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService(
+            mock(
+                com.marketinghub.repository.jpa.researchintelligence
+                    .ResearchIntelligenceCardVersionRepository.class),
+            agents);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        research, "clock", Clock.fixed(Instant.parse("2026-09-10T12:00:00Z"), ZoneOffset.UTC));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "researchIntelligenceService", research);
+    var response = service.claimedProcessTask("landing-generator", 9001L);
+    assertThat(response.taskId()).isEqualTo(9001L);
+    assertThat(response.sourceReference()).isEqualTo(task.getSourceReference());
+    assertThat(response.researchIntelligence().routes().getFirst().cards())
+        .extracting("cardId")
+        .containsExactly("RI1-AAB0EC98AB06");
+    String serialized = new ObjectMapper().findAndRegisterModules().writeValueAsString(response);
+    assertThat(serialized)
+        .contains("researchIntelligence", "sourceSha256", "Testar o primeiro resultado útil.");
+  }
+
   /** Não entrega ao worker uma tarefa antiga quando o fluxo comercial já avançou para decisão. */
   @Test
   void doesNotClaimOperationOutsideCurrentSalesFlow() {

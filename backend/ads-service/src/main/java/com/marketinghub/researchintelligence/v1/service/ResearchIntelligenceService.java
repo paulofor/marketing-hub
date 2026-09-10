@@ -1,9 +1,13 @@
 package com.marketinghub.researchintelligence.v1.service;
 
+import com.marketinghub.agent.Agent;
+import com.marketinghub.agent.AgentInput;
+import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.researchintelligence.ResearchIntelligenceCardVersionRepository;
 import com.marketinghub.researchintelligence.v1.ResearchIntelligenceCardStatus;
 import com.marketinghub.researchintelligence.v1.ResearchIntelligenceCardVersion;
 import com.marketinghub.researchintelligence.v1.service.catalog.ResearchIntelligenceAgentPolicyResponse;
+import com.marketinghub.researchintelligence.v1.service.catalog.ResearchIntelligenceAssignmentResponse;
 import com.marketinghub.researchintelligence.v1.service.catalog.ResearchIntelligenceCatalogResponse;
 import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceCardResponse;
 import com.marketinghub.researchintelligence.v1.service.select.ResearchIntelligenceRouteResponse;
@@ -19,6 +23,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -33,12 +38,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Compila o catálogo global e seleciona cartões para o harness dos agentes. */
 @Service
+@Transactional(readOnly = true)
 public class ResearchIntelligenceService {
   public static final String CONTRACT_VERSION = "HARNESS_RESEARCH_INTELLIGENCE_V1";
   public static final int MAX_CARDS_PER_ROUTE = 4;
+  public static final String CURATED_INPUT_TYPE = "HARNESS_RESEARCH_CARD";
   private static final Logger log = LoggerFactory.getLogger(ResearchIntelligenceService.class);
   private static final String RESEARCH_PATTERN = "classpath*:research-library/pesquisas/**/*.md";
   private static final Pattern HEADING = Pattern.compile("(?m)^(#{1,4})\\s+(.+?)\\s*$");
@@ -67,6 +75,13 @@ public class ResearchIntelligenceService {
               List.of("video", "prazer-audio-visual", "neuromarketing", "momentos-de-compra-b2c"));
   private static final List<String> VIDEO_AGENT_ORDER =
       List.of("communication-director", "videomaker", "customer-agent", "meta-ad-approver");
+  private static final List<String> OTHER_AGENT_ORDER =
+      List.of(
+          "market-radar",
+          "experiment-strategist",
+          "financial-agent",
+          "landing-generator",
+          "growth-operator");
   private static final List<String> LIMITATIONS =
       List.of(
           "Cartões são evidência externa ou inspiração; não comprovam demanda, venda ou satisfação.",
@@ -77,6 +92,7 @@ public class ResearchIntelligenceService {
   private final Clock clock;
   private final List<CatalogCard> bundledCatalog;
   private final ResearchIntelligenceCardVersionRepository versionRepository;
+  private final AgentRepository agentRepository;
 
   /** Carrega uma vez todos os artigos versionados empacotados com o backend. */
   public ResearchIntelligenceService() {
@@ -90,25 +106,44 @@ public class ResearchIntelligenceService {
 
   /** Injeta as versões ativas mantendo o catálogo Markdown como base compatível. */
   @Autowired
-  public ResearchIntelligenceService(ResearchIntelligenceCardVersionRepository versionRepository) {
-    this(Clock.systemUTC(), versionRepository);
+  public ResearchIntelligenceService(
+      ResearchIntelligenceCardVersionRepository versionRepository,
+      AgentRepository agentRepository) {
+    this(Clock.systemUTC(), versionRepository, agentRepository);
   }
 
   /** Centraliza a construção usada pela aplicação e pelos testes com relógio controlado. */
   ResearchIntelligenceService(
       Clock clock, ResearchIntelligenceCardVersionRepository versionRepository) {
+    this(clock, versionRepository, null);
+  }
+
+  /** Carrega fontes e permite consultar os vínculos versionados sem criar outro cadastro. */
+  ResearchIntelligenceService(
+      Clock clock,
+      ResearchIntelligenceCardVersionRepository versionRepository,
+      AgentRepository agentRepository) {
     this.clock = Objects.requireNonNull(clock);
     this.bundledCatalog = loadCatalog(new PathMatchingResourcePatternResolver());
     this.versionRepository = versionRepository;
+    this.agentRepository = agentRepository;
   }
 
-  /** Expõe a fonte global única e as políticas que atendem qualquer projeto audiovisual. */
+  /**
+   * Expõe a fonte global, as rotas audiovisuais e os vínculos consultivos cadastrados nos agentes.
+   */
   public ResearchIntelligenceCatalogResponse getCatalog() {
     LocalDate evaluatedOn = LocalDate.now(clock);
     List<CatalogCard> catalog = currentCatalog();
     List<ResearchIntelligenceCardResponse> cards = catalog.stream().map(this::response).toList();
-    List<ResearchIntelligenceAgentPolicyResponse> policies =
-        VIDEO_AGENT_ORDER.stream().map(this::agentPolicy).toList();
+    List<ResearchIntelligenceAgentPolicyResponse> policies = new ArrayList<>();
+    for (String agentKey : VIDEO_AGENT_ORDER) {
+      policies.add(agentPolicy(agentKey, curation(agentKey), catalog));
+    }
+    for (String agentKey : OTHER_AGENT_ORDER) {
+      AgentCuration curation = curation(agentKey);
+      if (!curation.inputs().isEmpty()) policies.add(agentPolicy(agentKey, curation, catalog));
+    }
     int activeCards = (int) catalog.stream().filter(this::isCurrent).count();
     return new ResearchIntelligenceCatalogResponse(
         CONTRACT_VERSION, evaluatedOn, catalog.size(), activeCards, policies, cards, LIMITATIONS);
@@ -134,16 +169,20 @@ public class ResearchIntelligenceService {
     return selection(context, List.of(route(agentKey, context, catalog)), catalog.size());
   }
 
-  /** Seleciona somente a rota do agente que recebeu uma tarefa BPM. */
+  /**
+   * Entrega a curadoria explícita à tarefa ou preserva o roteamento audiovisual quando não há
+   * vínculo.
+   */
   public ResearchIntelligenceSelectionResponse selectForAgentTask(
       String agentKey, String... contextParts) {
-    if (!COLLECTIONS_BY_AGENT.containsKey(agentKey)) {
-      return null;
-    }
     String context = joinContext(contextParts);
-    if (!isAudiovisualContext(context)) {
-      return null;
+    AgentCuration curation = curation(agentKey);
+    if (!curation.inputs().isEmpty()) {
+      List<CatalogCard> catalog = currentCatalog();
+      return selection(
+          context, List.of(route(agentKey, context, catalog, curation, true)), catalog.size());
     }
+    if (!COLLECTIONS_BY_AGENT.containsKey(agentKey) || !isAudiovisualContext(context)) return null;
     List<CatalogCard> catalog = currentCatalog();
     return selection(context, List.of(route(agentKey, context, catalog)), catalog.size());
   }
@@ -196,13 +235,20 @@ public class ResearchIntelligenceService {
     String selectedHashes =
         routes.stream()
             .flatMap(route -> route.cards().stream())
-            .map(ResearchIntelligenceCardResponse::sourceSha256)
+            .map(card -> card.cardId() + ":" + card.sourceSha256())
             .distinct()
             .sorted()
             .reduce("", (left, right) -> left + right);
     return new ResearchIntelligenceSelectionResponse(
         CONTRACT_VERSION,
-        sha256(normalize(context) + "|" + selectedHashes),
+        sha256(
+            normalize(context)
+                + "|"
+                + selectedHashes
+                + "|"
+                + routes.stream()
+                    .map(route -> route.agentKey() + ":" + route.selectionReason())
+                    .toList()),
         availableCards,
         routes,
         LIMITATIONS);
@@ -211,16 +257,34 @@ public class ResearchIntelligenceService {
   /** Cria uma rota curta, cobrindo primeiro cada coleção obrigatória do agente. */
   private ResearchIntelligenceRouteResponse route(
       String agentKey, String context, List<CatalogCard> catalog) {
+    return route(agentKey, context, catalog, curation(agentKey), false);
+  }
+
+  /**
+   * Prioriza referências explícitas e mantém cobertura audiovisual, validade e limite de contexto.
+   */
+  private ResearchIntelligenceRouteResponse route(
+      String agentKey,
+      String context,
+      List<CatalogCard> catalog,
+      AgentCuration curation,
+      boolean curatedOnly) {
     List<String> collections = COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of());
     Set<String> terms = meaningfulTerms(context);
     List<ScoredCard> scored =
         catalog.stream()
-            .filter(card -> collections.contains(card.collection()))
+            .filter(
+                card ->
+                    curatedOnly
+                        ? curation.inputs().containsKey(card.cardId())
+                        : collections.contains(card.collection()))
             .filter(this::isCurrent)
             .map(card -> new ScoredCard(card, relevance(card, terms)))
             .sorted(
-                Comparator.comparingInt(ScoredCard::score)
+                Comparator.<ScoredCard, Boolean>comparing(
+                        scoredCard -> curation.inputs().containsKey(scoredCard.card().cardId()))
                     .reversed()
+                    .thenComparing(Comparator.comparingInt(ScoredCard::score).reversed())
                     .thenComparing(
                         scoredCard -> scoredCard.card().publishedOn(),
                         Comparator.nullsLast(Comparator.reverseOrder()))
@@ -228,7 +292,7 @@ public class ResearchIntelligenceService {
             .toList();
 
     LinkedHashSet<CatalogCard> selected = new LinkedHashSet<>();
-    for (String collection : collections) {
+    for (String collection : curatedOnly ? List.<String>of() : collections) {
       scored.stream()
           .filter(candidate -> candidate.card().collection().equals(collection))
           .findFirst()
@@ -245,19 +309,94 @@ public class ResearchIntelligenceService {
         agentName(agentKey),
         purpose(agentKey),
         authority(agentKey),
-        "Coleções " + String.join(", ", collections) + "; até quatro cartões por aderência e data.",
+        selectionReason(curation, catalog, selected, curatedOnly, collections),
         selected.stream().limit(MAX_CARDS_PER_ROUTE).map(this::response).toList());
   }
 
   /** Descreve o roteamento global de um agente sem associá-lo a projeto específico. */
-  private ResearchIntelligenceAgentPolicyResponse agentPolicy(String agentKey) {
+  private ResearchIntelligenceAgentPolicyResponse agentPolicy(
+      String agentKey, AgentCuration curation, List<CatalogCard> catalog) {
     return new ResearchIntelligenceAgentPolicyResponse(
         agentKey,
         agentName(agentKey),
         purpose(agentKey),
         authority(agentKey),
         COLLECTIONS_BY_AGENT.getOrDefault(agentKey, List.of()),
-        MAX_CARDS_PER_ROUTE);
+        MAX_CARDS_PER_ROUTE,
+        curation.agentId(),
+        curation.inputs().entrySet().stream()
+            .map(
+                entry ->
+                    new ResearchIntelligenceAssignmentResponse(
+                        entry.getKey(),
+                        entry.getValue(),
+                        catalog.stream()
+                            .anyMatch(
+                                card -> card.cardId().equals(entry.getKey()) && isCurrent(card))))
+            .toList());
+  }
+
+  /** Lê apenas entradas tipadas como referências e elimina duplicatas sem copiar o artigo. */
+  private AgentCuration curation(String agentKey) {
+    if (agentRepository == null || agentKey == null || agentKey.isBlank())
+      return new AgentCuration(null, null, Map.of());
+    Agent agent = agentRepository.findByAgentKey(agentKey).orElse(null);
+    if (agent == null) return new AgentCuration(null, null, Map.of());
+    Map<String, String> inputs = new LinkedHashMap<>();
+    for (AgentInput input : agent.getInputs()) {
+      if (CURATED_INPUT_TYPE.equals(input.getType())
+          && input.getName() != null
+          && !input.getName().isBlank()) {
+        inputs.putIfAbsent(
+            input.getName().trim(),
+            compact(input.getDescription() == null ? "" : input.getDescription(), 255));
+      }
+    }
+    return new AgentCuration(agent.getId(), agent.getCurrentVersion(), inputs);
+  }
+
+  /**
+   * Separa orientação editorial da evidência científica e torna vínculos indisponíveis auditáveis.
+   */
+  private String selectionReason(
+      AgentCuration curation,
+      List<CatalogCard> catalog,
+      Set<CatalogCard> selected,
+      boolean curatedOnly,
+      List<String> collections) {
+    StringBuilder reason =
+        new StringBuilder(
+            curatedOnly
+                ? "Curadoria explícita para tarefas do agente; até quatro cartões."
+                : "Coleções "
+                    + String.join(", ", collections)
+                    + "; até quatro cartões por aderência e data.");
+    if (curation.inputs().isEmpty()) return reason.toString();
+    reason
+        .append(" Orientação editorial do agente v")
+        .append(curation.version())
+        .append(" (não é achado científico):");
+    selected.stream()
+        .filter(card -> curation.inputs().containsKey(card.cardId()))
+        .forEach(
+            card ->
+                reason
+                    .append(" ")
+                    .append(card.cardId())
+                    .append(": ")
+                    .append(curation.inputs().get(card.cardId())));
+    List<String> unavailable =
+        curation.inputs().keySet().stream()
+            .filter(
+                id ->
+                    catalog.stream().noneMatch(card -> card.cardId().equals(id) && isCurrent(card)))
+            .toList();
+    if (!unavailable.isEmpty())
+      reason
+          .append(" Referências indisponíveis, vencidas ou futuras; não usar como evidência: ")
+          .append(String.join(", ", unavailable))
+          .append('.');
+    return reason.toString();
   }
 
   /** Une fontes empacotadas e versões cadastradas ativas sem expor rascunhos aos agentes. */
@@ -295,9 +434,11 @@ public class ResearchIntelligenceService {
         "EXTERNAL_RESEARCH");
   }
 
-  /** Exclui evidência vencida antes de formar qualquer contexto de agente. */
+  /** Exclui evidência vencida ou futura antes de formar qualquer contexto de agente. */
   private boolean isCurrent(CatalogCard card) {
-    return card.validUntil() == null || !card.validUntil().isBefore(LocalDate.now(clock));
+    LocalDate today = LocalDate.now(clock);
+    return (card.publishedOn() == null || !card.publishedOn().isAfter(today))
+        && (card.validUntil() == null || !card.validUntil().isBefore(today));
   }
 
   /** Pontua um cartão sem transformar repetição lexical em força de evidência. */
@@ -411,6 +552,9 @@ public class ResearchIntelligenceService {
                 "resumo executivo",
                 "resumo",
                 "achado principal",
+                "evidência encontrada",
+                "evidência revisada",
+                "evidência observada",
                 "o que mudou",
                 "o que aconteceu",
                 "o que foi descoberto"),
@@ -420,6 +564,7 @@ public class ResearchIntelligenceService {
             sections,
             List.of(
                 "mecanismo proposto",
+                "hipótese interpretativa",
                 "mecanismo",
                 "desejo/comportamento revelado",
                 "por que importa"),
@@ -431,6 +576,8 @@ public class ResearchIntelligenceService {
                 "aplicação no marketing hub",
                 "aplicação sugerida",
                 "aplicação prática",
+                "aplicação possível",
+                "uso como hipótese",
                 "por que isso importa"),
             "Aplicação ainda não explicitada na fonte; exigir adaptação ao produto e validação humana.");
     String hypothesis =
@@ -440,6 +587,8 @@ public class ResearchIntelligenceService {
                 "experimento sugerido",
                 "experimento concreto",
                 "hipótese comercial",
+                "hipótese interpretativa",
+                "uso como hipótese",
                 "recomendação para arquitetura"),
             "Testar uma única variação controlada e comparar eventos humanos e custo com a versão anterior.");
     String evidenceStrength =
@@ -450,7 +599,7 @@ public class ResearchIntelligenceService {
     String risks =
         firstSection(
             sections,
-            List.of("limitações", "atenção", "riscos", "licença e uso comercial"),
+            List.of("limitações", "limites", "atenção", "riscos", "licença e uso comercial"),
             "Risco de generalização para público, canal ou contexto diferente do estudo ou observação original.");
     return new CatalogCard(
         "RI1-" + sha256(sourcePath).substring(0, 12).toUpperCase(Locale.ROOT),
@@ -476,13 +625,14 @@ public class ResearchIntelligenceService {
     List<HeadingMatch> headings = new ArrayList<>();
     while (matcher.find()) {
       headings.add(
-          new HeadingMatch(matcher.group(1).length(), matcher.group(2).trim(), matcher.end()));
+          new HeadingMatch(
+              matcher.group(1).length(), matcher.group(2).trim(), matcher.start(), matcher.end()));
     }
     List<MarkdownSection> sections = new ArrayList<>();
     for (int index = 0; index < headings.size(); index++) {
       HeadingMatch heading = headings.get(index);
       int end =
-          index + 1 < headings.size() ? headings.get(index + 1).contentStart() : content.length();
+          index + 1 < headings.size() ? headings.get(index + 1).headingStart() : content.length();
       sections.add(
           new MarkdownSection(
               heading.level(),
@@ -637,6 +787,11 @@ public class ResearchIntelligenceService {
       case "videomaker" -> "Apolo";
       case "customer-agent" -> "Psique";
       case "meta-ad-approver" -> "Têmis";
+      case "market-radar" -> "Argos";
+      case "experiment-strategist" -> "Atena";
+      case "financial-agent" -> "Plutus";
+      case "landing-generator" -> "Dédalo";
+      case "growth-operator" -> "Hermes";
       default -> agentKey;
     };
   }
@@ -648,6 +803,11 @@ public class ResearchIntelligenceService {
       case "videomaker" -> "Orientar roteiro, ritmo, áudio, continuidade e escolha técnica.";
       case "customer-agent" -> "Revisar percepção, fluidez, prazer, esforço e desejo.";
       case "meta-ad-approver" -> "Verificar alegações, limites, coerência e integridade.";
+      case "market-radar" -> "Orientar investigação factual e verificação das fontes.";
+      case "experiment-strategist" -> "Orientar hipótese, valor e desenho do próximo teste.";
+      case "financial-agent" -> "Revisar custo por resultado, margem e limites econômicos.";
+      case "landing-generator" -> "Orientar primeiro resultado útil e jornada de valor do produto.";
+      case "growth-operator" -> "Interpretar funil e testar o gargalo com eventos reconciliados.";
       default -> "Contexto consultivo limitado.";
     };
   }
@@ -657,9 +817,16 @@ public class ResearchIntelligenceService {
     return switch (agentKey) {
       case "videomaker" -> "PRODUCTION_ADVISORY";
       case "communication-director" -> "COMMUNICATION_ADVISORY";
+      case "market-radar" -> "FACTUAL_ADVISORY";
+      case "experiment-strategist" -> "STRATEGY_ADVISORY";
+      case "landing-generator" -> "PRODUCT_ADVISORY";
+      case "growth-operator" -> "MEASUREMENT_ADVISORY";
       default -> "REVIEW_CRITERIA_ONLY";
     };
   }
+
+  /** Mantém somente identidade, versão e referências editoriais do cadastro consultado. */
+  private record AgentCuration(Long agentId, Integer version, Map<String, String> inputs) {}
 
   /** Mantém os campos do cartão compilado imutáveis dentro do catálogo em memória. */
   private record CatalogCard(
@@ -683,7 +850,7 @@ public class ResearchIntelligenceService {
   private record ScoredCard(CatalogCard card, int score) {}
 
   /** Marca a posição de um cabeçalho para recortar sua seção. */
-  private record HeadingMatch(int level, String heading, int contentStart) {}
+  private record HeadingMatch(int level, String heading, int headingStart, int contentStart) {}
 
   /** Representa uma seção Markdown já separada do documento integral. */
   private record MarkdownSection(int level, String heading, String content) {}

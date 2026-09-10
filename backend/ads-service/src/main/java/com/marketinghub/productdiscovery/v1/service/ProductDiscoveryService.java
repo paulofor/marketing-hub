@@ -13,6 +13,7 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryResearchMode;
 import com.marketinghub.productdiscovery.v1.service.resumePrivateValidationHandoff.ProductDiscoveryPrivateValidationHandoffResponse;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
+import com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,7 @@ public class ProductDiscoveryService {
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
   private final OpportunityDossierResearchSyncService dossierResearchSyncService;
   private final ProductDiscoveryBpmAuditService bpmAuditService;
+  @Autowired private ResearchIntelligenceService researchIntelligenceService;
 
   /** Inicializa o serviço com repositórios canônicos do módulo. */
   public ProductDiscoveryService(
@@ -1091,7 +1094,9 @@ public class ProductDiscoveryService {
         opportunity.getUpdatedAt());
   }
 
-  /** Converte ciclo para contrato de pendência do worker. */
+  /**
+   * Converte o ciclo para pendência e inclui a curadoria consultiva de Argos na pesquisa factual.
+   */
   private ProductDiscoveryPendingResponse toPendingResponse(ProductDiscoveryCycle cycle) {
     return new ProductDiscoveryPendingResponse(
         cycle.getId(),
@@ -1109,7 +1114,11 @@ public class ProductDiscoveryService {
         cycle.getMarketType(),
         cycle.getReferenceSources(),
         cycle.getExecutionLeaseId(),
-        cycle.getExecutionAttempt());
+        cycle.getExecutionAttempt(),
+        researchIntelligenceService == null
+            ? null
+            : researchIntelligenceService.selectForAgentTask(
+                "market-radar", cycle.getTheme(), cycle.getTargetAudience(), cycle.getObjective()));
   }
 
   /** Impede que uma execução expirada sobrescreva o resultado de uma retomada mais recente. */

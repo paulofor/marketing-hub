@@ -130,6 +130,38 @@ class LearningCycleDecisionServiceTest {
     verifyNoInteractions(cycleService);
   }
 
+  /** Preserva a curadoria no snapshot da decisão sem conceder aprovação ao modelo. */
+  @Test
+  void includesCuratedResearchInDecisionSnapshot() {
+    agent
+        .getInputs()
+        .add(
+            com.marketinghub.agent.AgentInput.builder()
+                .name("RI1-AAB0EC98AB06")
+                .type("HARNESS_RESEARCH_CARD")
+                .description("Testar menos esforço até o primeiro resultado útil.")
+                .build());
+    var research =
+        new com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService(
+            mock(
+                com.marketinghub.repository.jpa.researchintelligence
+                    .ResearchIntelligenceCardVersionRepository.class),
+            agents);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        research,
+        "clock",
+        java.time.Clock.fixed(Instant.parse("2026-09-10T12:00:00Z"), java.time.ZoneOffset.UTC));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "researchIntelligenceService", research);
+    var pending = service.pending().getFirst();
+    assertThat(pending.context().at("/researchIntelligence/routes/0/cards/0/cardId").asText())
+        .isEqualTo("RI1-AAB0EC98AB06");
+    assertThat(json.read(saved.get().getContextJson()).path("researchIntelligence"))
+        .isEqualTo(pending.context().path("researchIntelligence"));
+    assertThat(cycle.getStage()).isEqualTo("DECISION");
+    assertThat(saved.get().getStatus()).isEqualTo("RUNNING");
+  }
+
   /** STOP impede reserva e a segunda consulta não duplica a lease já entregue. */
   @Test
   void respectsPlayAndExclusiveReservation() {

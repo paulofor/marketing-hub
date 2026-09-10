@@ -136,9 +136,12 @@ export function executeCodexWithInput(command, args, input, options = {}) {
       child = spawnProcess(command, args, { stdio: ["pipe", "pipe", "pipe"] });
     } catch (error) {
       rejectOnce(
-        new Error(`Falha ao iniciar a ${phaseName} de Argos: ${error.message}`, {
-          cause: error,
-        }),
+        new Error(
+          `Falha ao iniciar a ${phaseName} de Argos: ${error.message}`,
+          {
+            cause: error,
+          },
+        ),
       );
       return;
     }
@@ -162,9 +165,12 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     });
     child.on("error", (error) => {
       rejectOnce(
-        new Error(`Falha ao executar a ${phaseName} de Argos: ${error.message}`, {
-          cause: error,
-        }),
+        new Error(
+          `Falha ao executar a ${phaseName} de Argos: ${error.message}`,
+          {
+            cause: error,
+          },
+        ),
       );
     });
     child.on("close", (code, signal) => {
@@ -226,7 +232,9 @@ export function parseCodexUsage(stdout) {
 
 /** Produz um plano seguro quando o piloto Codex está desligado ou ainda sem sessão. */
 export function deterministicPlan(job) {
-  const theme = compactQuery([job.theme, job.targetAudience].filter(Boolean).join(" "));
+  const theme = compactQuery(
+    [job.theme, job.targetAudience].filter(Boolean).join(" "),
+  );
   const metaQuery = metaCategoryQuery(job);
   const consumerInstagramFocus = requiresConsumerInstagramFocus(job);
   const discoveryMode = job.researchMode === "DISCOVER_MARKETS";
@@ -288,8 +296,16 @@ export function deterministicPlan(job) {
           ...referenceQueries,
         ],
     marketplaceRequests: [
-      { marketplace: "HOTMART", query: compactQuery(theme, 80), maxProducts: 10 },
-      { marketplace: "CLICKBANK", query: compactQuery(theme, 80), maxProducts: 10 },
+      {
+        marketplace: "HOTMART",
+        query: compactQuery(theme, 80),
+        maxProducts: 10,
+      },
+      {
+        marketplace: "CLICKBANK",
+        query: compactQuery(theme, 80),
+        maxProducts: 10,
+      },
     ],
     metaAdRequests: [
       {
@@ -379,9 +395,7 @@ export function validatePlan(plan) {
     throw new Error("Plano dirigido de Argos fora do contrato v1");
   }
   if (
-    plan.publicQueries.some(
-      (query) => !query || Array.from(query).length > 180,
-    )
+    plan.publicQueries.some((query) => !query || Array.from(query).length > 180)
   ) {
     throw new Error("Consulta pública de Argos deve ser curta e atômica");
   }
@@ -436,6 +450,11 @@ async function buildPromptComposition(job) {
     researchMode: job.researchMode || "VALIDATE_MARKET",
     marketType: job.marketType || "UNSPECIFIED",
     referenceSources: job.referenceSources || "não informadas",
+    researchIntelligence: JSON.stringify(
+      job.researchIntelligence || null,
+      null,
+      2,
+    ),
     researchLibraryContext: JSON.stringify(
       researchLibraryPromptContext(job.researchLibraryContext),
       null,
@@ -516,7 +535,9 @@ function requiresConsumerInstagramFocus(job) {
 
 /** Reduz briefings longos a uma consulta legível sem cortar a intenção central. */
 function compactQuery(value, maxLength = 140) {
-  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  const normalized = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (Array.from(normalized).length <= maxLength) return normalized;
   return Array.from(normalized)
     .slice(0, maxLength)
@@ -566,7 +587,9 @@ function metaQueryTerms(value) {
     .toLocaleLowerCase("pt-BR")
     .split(/[^\p{L}\p{N}]+/u)
     .map((term) => term.trim())
-    .filter((term) => term.length >= 3 && !ignored.has(term) && !/^\d+$/.test(term))
+    .filter(
+      (term) => term.length >= 3 && !ignored.has(term) && !/^\d+$/.test(term),
+    )
     .filter((term, index, terms) => terms.indexOf(term) === index);
 }
 
@@ -592,10 +615,7 @@ function backendMetaQueryTerms(value) {
     .split(/[^\p{L}\p{N}]+/u)
     .map((term) => term.trim())
     .filter(
-      (term) =>
-        term.length >= 4 &&
-        !ignored.has(term) &&
-        !/^\d+$/.test(term),
+      (term) => term.length >= 4 && !ignored.has(term) && !/^\d+$/.test(term),
     )
     .filter((term, index, terms) => terms.indexOf(term) === index);
 }
@@ -652,7 +672,10 @@ function referenceSourceQueries(job, theme) {
         const domain = new URL(value).hostname.replace(/^www\./, "");
         return [
           compactQuery(`site:${domain} ${theme}`, 180),
-          compactQuery(`site:${domain} ${theme} problema desejo tendência`, 180),
+          compactQuery(
+            `site:${domain} ${theme} problema desejo tendência`,
+            180,
+          ),
         ];
       } catch {
         return [];

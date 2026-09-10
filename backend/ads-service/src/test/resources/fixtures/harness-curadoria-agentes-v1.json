@@ -1,0 +1,190 @@
+[
+  {
+    "agentKey": "market-radar",
+    "agentId": 5,
+    "agentName": "Argos",
+    "inputs": [
+      {
+        "name": "RI1-3B283DA81459",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Pesquisa de oportunidade: extrair cena, prazo, alternativa gratuita e prova paga; revalidar a fonte e a data antes de usar."
+      },
+      {
+        "name": "RI1-702849682E37",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Pesquisa de canais: investigar descoberta por assistentes no público real; separar pesquisa de intenção e compra observada."
+      }
+    ]
+  },
+  {
+    "agentKey": "experiment-strategist",
+    "agentId": 4,
+    "agentName": "Atena",
+    "inputs": [
+      {
+        "name": "RI1-13715DD1B708",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Planejamento 2.1 e degustação: testar orientação personalizada que entregue a próxima ação útil, comparada à alternativa gratuita."
+      },
+      {
+        "name": "RI1-AAB0EC98AB06",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Planejamento e decisão 6.4: formular teste de menos esforço até o primeiro resultado útil, com uma variável e critério de refutação."
+      },
+      {
+        "name": "RI1-BF9831BF0643",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Ciclo 6.4: testar coerência entre promessa e experiência; não atribuir abandono a causa sem evidência."
+      }
+    ]
+  },
+  {
+    "agentKey": "financial-agent",
+    "agentId": 3,
+    "agentName": "Plutus",
+    "inputs": [
+      {
+        "name": "RI1-97CABFD0EEC4",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Economia 2.2: estimar custo por resultado útil e por venda entregue, teto de IA, margem e sensibilidade; sem alterar preço ou gasto."
+      },
+      {
+        "name": "RI1-171B5EE66949",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Economia da degustação: tratar uso gratuito como custo de aquisição; medir custo por degustação e pagamento reconciliado."
+      }
+    ]
+  },
+  {
+    "agentKey": "landing-generator",
+    "agentId": 7,
+    "agentName": "Dédalo",
+    "inputs": [
+      {
+        "name": "RI1-AAB0EC98AB06",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Arquitetura 2.3 e jornada 3: entregar primeiro o essencial e a próxima ação; detalhes sob demanda. Medir conclusão, tempo e erros."
+      },
+      {
+        "name": "RI1-13715DD1B708",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Protótipo e degustação: transformar dados mínimos em orientação pessoal utilizável, com prova real do resultado e continuidade."
+      },
+      {
+        "name": "RI1-BF9831BF0643",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Correção do protótipo: conferir a paridade entre promessa aprovada e valor entregue; preservar o papel de Íris na comunicação."
+      }
+    ]
+  },
+  {
+    "agentKey": "communication-director",
+    "agentId": 9,
+    "agentName": "Íris",
+    "inputs": [
+      {
+        "name": "RI1-6AA6455BB792",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Copy e criativos: testar conclusão explícita sustentada por prova, com uma mensagem e CTA claro. Medir compreensão e compra."
+      },
+      {
+        "name": "RI1-646DE1AF483E",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Landing: dar clareza às formas reais de pagamento junto ao preço/CTA. Não inventar desconto, parcelamento ou disponibilidade."
+      },
+      {
+        "name": "RI1-46C593BBC354",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Peças e landing: usar prova fiel do produto; identificar simulação quando aplicável e evitar atributos ou depoimentos inventados."
+      }
+    ]
+  },
+  {
+    "agentKey": "videomaker",
+    "agentId": 8,
+    "agentName": "Apolo",
+    "inputs": [
+      {
+        "name": "RI1-8EB0EABA1344",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Audiovisual: testar cortes em fronteiras de frase e dinâmica sonora; medir compreensão e retenção sem presumir aumento de vendas."
+      },
+      {
+        "name": "RI1-AC85EF9A7C43",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Áudio: separar voz, música e efeitos para compreender a mensagem em celular; avaliar com som e legendas, sem regra universal."
+      },
+      {
+        "name": "RI1-AF2ACDE03006",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Produção de cenas: manter estado visual de personagem, objeto e ambiente entre planos; usar apenas providers já homologados."
+      }
+    ]
+  },
+  {
+    "agentKey": "customer-agent",
+    "agentId": 2,
+    "agentName": "Psique",
+    "inputs": [
+      {
+        "name": "RI1-AAB0EC98AB06",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Revisão do protótipo: verificar esforço até o primeiro resultado útil, clareza da próxima ação, conclusão e recuperação de erros."
+      },
+      {
+        "name": "RI1-03183674C8A3",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Revisão de experiência: atenção e permanência podem indicar dúvida. Cruzar compreensão, esforço e conclusão; simulação não é cliente."
+      },
+      {
+        "name": "RI1-AC85EF9A7C43",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Revisão audiovisual: avaliar compreensão da voz, competição sonora e uso mobile; pedir correção com evidência do trecho."
+      }
+    ]
+  },
+  {
+    "agentKey": "meta-ad-approver",
+    "agentId": 6,
+    "agentName": "Têmis",
+    "inputs": [
+      {
+        "name": "RI1-46C593BBC354",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Integridade de criativos: conferir fidelidade ao produto real, origem de provas e transparência; não produzir ou aprovar prova fictícia."
+      },
+      {
+        "name": "RI1-BF9831BF0643",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Integridade da jornada: comparar promessa, preço, limitações e entrega entre anúncio, landing, checkout e produto."
+      },
+      {
+        "name": "RI1-03183674C8A3",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Revisão de evidência: proibir atenção, intenção ou simulação como prova de venda; exigir fonte e limite da inferência."
+      }
+    ]
+  },
+  {
+    "agentKey": "growth-operator",
+    "agentId": 1,
+    "agentName": "Hermes",
+    "inputs": [
+      {
+        "name": "RI1-03183674C8A3",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Operação 6.1: interpretar permanência junto com etapa, erro e conversão; não chamar atenção de interesse nem zero dado de zero vendas."
+      },
+      {
+        "name": "RI1-BF9831BF0643",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Gargalo 6.1: verificar anúncio, landing, checkout e entrega no mesmo experimento; testar uma discrepância comprovada por vez."
+      },
+      {
+        "name": "RI1-646DE1AF483E",
+        "type": "HARNESS_RESEARCH_CARD",
+        "description": "Teste operacional: medir saliência de pagamento somente se o gargalo for chegada ao checkout; usar meios realmente disponíveis."
+      }
+    ]
+  }
+]

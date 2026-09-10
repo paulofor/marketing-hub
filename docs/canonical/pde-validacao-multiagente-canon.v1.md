@@ -121,6 +121,14 @@ nome, consentimento, depoimento ou identificador de participante humana.
 
 ## Evidência obrigatória
 
+Ao recriar o backend compartilhado, o deploy deve revalidar a ligação de todos os frontends PDE
+já publicados a esse backend, preservando suas imagens, versões e containers. Saúde de HTML estático
+não comprova disponibilidade da API. Os proxies novos usam resolução dinâmica do DNS Docker; os
+legados recebem reload validado após a saúde do backend, com sonda pela API do próprio produto.
+Uma falha nessa reconexão bloqueia o deploy e identifica a superfície afetada. A homologação local
+deve trocar de fato o IP do backend e verificar recuperação, URI/query, POST, autorização de materiais
+e isolamento entre Mira e Vega, sem aceitar 502 nem recarregar serviços alheios ao PDE.
+
 No executor de navegador, o clique não equivale a evento persistido. Antes de emitir uma
 ação dependente ou recarregar a página, aguardar a resposta do evento exato iniciado pela
 tela e conferir sua presença no estado devolvido pelo backend. Em particular,

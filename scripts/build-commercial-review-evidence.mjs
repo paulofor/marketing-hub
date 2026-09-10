@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const EVIDENCE_COLLECTIONS = [
   "homologationEvidence",
@@ -12,7 +13,7 @@ const EVIDENCE_COLLECTIONS = [
 
 const PROMPT_MODES = new Set(["FULL", "ATTESTED_REFERENCE"]);
 
-const FIXED_REVIEW_PATHS = [
+export const FIXED_REVIEW_PATHS = [
   "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
   "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
   "pde-platform/frontend/src/AssistedServiceApp.tsx",
@@ -38,7 +39,11 @@ function sha256(content) {
 }
 
 function authorizedRelativePath(value) {
-  if (typeof value !== "string" || value.trim() === "" || path.isAbsolute(value)) {
+  if (
+    typeof value !== "string" ||
+    value.trim() === "" ||
+    path.isAbsolute(value)
+  ) {
     throw new Error(`Caminho de evidência inválido: ${String(value)}`);
   }
   const normalized = path.posix.normalize(value.replaceAll("\\", "/"));
@@ -61,13 +66,67 @@ async function regularFile(sourceRoot, relativePath) {
   const realSourceRoot = await fs.realpath(sourceRoot);
   const realSource = await fs.realpath(source);
   const realRelativeToRoot = path.relative(realSourceRoot, realSource);
-  if (realRelativeToRoot.startsWith("..") || path.isAbsolute(realRelativeToRoot)) {
-    throw new Error(`Evidência resolve para fora da raiz autorizada: ${relativePath}`);
+  if (
+    realRelativeToRoot.startsWith("..") ||
+    path.isAbsolute(realRelativeToRoot)
+  ) {
+    throw new Error(
+      `Evidência resolve para fora da raiz autorizada: ${relativePath}`,
+    );
   }
   return source;
 }
 
-async function buildBundle(sourceArgument, destinationArgument) {
+// Mantém a seleção de revisão equivalente ao carregador independente de Têmis.
+function manifestRevision(contract) {
+  for (const field of ["contractVersion", "evidenceVersion"]) {
+    const match = /(?:^|[.-])v([1-9][0-9]*)$/.exec(contract[field] ?? "");
+    if (match) return Number(match[1]);
+  }
+  return 1;
+}
+
+// Revalida provas vigentes antes de substituir um pacote, preservando atestações históricas.
+async function validateCurrentManifestEvidence(sourceRoot, manifests) {
+  const byProduct = new Map();
+  for (const manifest of manifests) {
+    const candidates = byProduct.get(manifest.productSlug) ?? [];
+    candidates.push(manifest);
+    byProduct.set(manifest.productSlug, candidates);
+  }
+  for (const [productSlug, candidates] of byProduct) {
+    const latestRevision = Math.max(
+      ...candidates.map(({ contract }) => manifestRevision(contract)),
+    );
+    const latest = candidates.filter(
+      ({ contract }) => manifestRevision(contract) === latestRevision,
+    );
+    if (latest.length !== 1) {
+      throw new Error(
+        `Mais de um manifesto vigente corresponde ao produto ${productSlug}`,
+      );
+    }
+    const { relativePath: manifestPath, contract } = latest[0];
+    // homologationEvidence também representa a candidata a revisar; seu hash-base pode divergir.
+    // implementationEvidence/executableEvidence são atestações e exigem igualdade, como em Têmis.
+    for (const collection of ["implementationEvidence", "executableEvidence"]) {
+      for (const evidence of contract[collection] ?? []) {
+        const relativePath = authorizedRelativePath(evidence.path);
+        const source = await regularFile(sourceRoot, relativePath);
+        const actualHash = sha256(await fs.readFile(source));
+        if (actualHash !== evidence.sha256) {
+          throw new Error(
+            `SHA-256 divergente para a prova de homologação: ${relativePath}; ` +
+              `produto=${productSlug}; manifesto=${manifestPath}. ` +
+              "Revalide o produto e crie nova atestação; preserve o histórico.",
+          );
+        }
+      }
+    }
+  }
+}
+
+export async function buildBundle(sourceArgument, destinationArgument) {
   const sourceRoot = path.resolve(sourceArgument);
   const destinationRoot = path.resolve(destinationArgument);
   const destinationWithinSource = path.relative(sourceRoot, destinationRoot);
@@ -76,10 +135,11 @@ async function buildBundle(sourceArgument, destinationArgument) {
     destinationWithinSource.startsWith("..") ||
     path.isAbsolute(destinationWithinSource)
   ) {
-    throw new Error("A saída do pacote deve ser um subdiretório explícito do repositório.");
+    throw new Error(
+      "A saída do pacote deve ser um subdiretório explícito do repositório.",
+    );
   }
 
-  await fs.rm(destinationRoot, { recursive: true, force: true });
   const contractsDirectory = path.join(sourceRoot, "pde-platform/contracts");
   const contractNames = (await fs.readdir(contractsDirectory))
     .filter((name) => name.endsWith(".json"))
@@ -87,16 +147,23 @@ async function buildBundle(sourceArgument, destinationArgument) {
 
   const paths = new Set(FIXED_REVIEW_PATHS.map(authorizedRelativePath));
   const manifestPaths = [];
+  const manifests = [];
   for (const contractName of contractNames) {
-    const relativePath = authorizedRelativePath(`pde-platform/contracts/${contractName}`);
+    const relativePath = authorizedRelativePath(
+      `pde-platform/contracts/${contractName}`,
+    );
     paths.add(relativePath);
-    const contract = JSON.parse(await fs.readFile(path.join(sourceRoot, relativePath), "utf8"));
+    const contract = JSON.parse(
+      await fs.readFile(path.join(sourceRoot, relativePath), "utf8"),
+    );
     let declaresEvidence = false;
     for (const collectionName of EVIDENCE_COLLECTIONS) {
       const collection = contract[collectionName];
       if (collection === undefined) continue;
       if (!Array.isArray(collection)) {
-        throw new Error(`Coleção ${collectionName} inválida em ${relativePath}`);
+        throw new Error(
+          `Coleção ${collectionName} inválida em ${relativePath}`,
+        );
       }
       declaresEvidence ||= collection.length > 0;
       for (const evidence of collection) {
@@ -105,13 +172,18 @@ async function buildBundle(sourceArgument, destinationArgument) {
         }
         const promptMode = evidence?.promptMode ?? "FULL";
         if (!PROMPT_MODES.has(promptMode)) {
-          throw new Error(`Modo de prompt inválido em ${relativePath}: ${String(promptMode)}`);
+          throw new Error(
+            `Modo de prompt inválido em ${relativePath}: ${String(promptMode)}`,
+          );
         }
         if (
           promptMode === "ATTESTED_REFERENCE" &&
-          (typeof evidence?.reviewSummary !== "string" || evidence.reviewSummary.trim() === "")
+          (typeof evidence?.reviewSummary !== "string" ||
+            evidence.reviewSummary.trim() === "")
         ) {
-          throw new Error(`Referência atestada sem resumo verificável em ${relativePath}`);
+          throw new Error(
+            `Referência atestada sem resumo verificável em ${relativePath}`,
+          );
         }
         paths.add(authorizedRelativePath(evidence?.path));
       }
@@ -119,14 +191,24 @@ async function buildBundle(sourceArgument, destinationArgument) {
     if (declaresEvidence) {
       const productSlug = contract.product?.slug ?? contract.productSlug;
       const hasIdentity =
-        Number.isInteger(contract.product?.id) || Number.isInteger(contract.experimentId);
-      if (typeof productSlug !== "string" || productSlug.trim() === "" || !hasIdentity) {
-        throw new Error(`Manifesto comercial sem identidade de produto: ${relativePath}`);
+        Number.isInteger(contract.product?.id) ||
+        Number.isInteger(contract.experimentId);
+      if (
+        typeof productSlug !== "string" ||
+        productSlug.trim() === "" ||
+        !hasIdentity
+      ) {
+        throw new Error(
+          `Manifesto comercial sem identidade de produto: ${relativePath}`,
+        );
       }
       manifestPaths.push(relativePath);
+      manifests.push({ relativePath, productSlug, contract });
     }
   }
 
+  await validateCurrentManifestEvidence(sourceRoot, manifests);
+  await fs.rm(destinationRoot, { recursive: true, force: true });
   const files = [];
   for (const relativePath of [...paths].sort()) {
     const source = await regularFile(sourceRoot, relativePath);
@@ -134,7 +216,11 @@ async function buildBundle(sourceArgument, destinationArgument) {
     const destination = path.join(destinationRoot, relativePath);
     await fs.mkdir(path.dirname(destination), { recursive: true });
     await fs.writeFile(destination, content);
-    files.push({ path: relativePath, sha256: sha256(content), sizeBytes: content.length });
+    files.push({
+      path: relativePath,
+      sha256: sha256(content),
+      sizeBytes: content.length,
+    });
   }
 
   const index = {
@@ -150,14 +236,18 @@ async function buildBundle(sourceArgument, destinationArgument) {
   return index;
 }
 
-const [sourceArgument, destinationArgument] = process.argv.slice(2);
-if (!sourceArgument || !destinationArgument) {
-  throw new Error(
-    "Uso: node scripts/build-commercial-review-evidence.mjs <repositorio> <diretorio-saida>",
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+) {
+  const [sourceArgument, destinationArgument] = process.argv.slice(2);
+  if (!sourceArgument || !destinationArgument) {
+    throw new Error(
+      "Uso: node scripts/build-commercial-review-evidence.mjs <repositorio> <diretorio-saida>",
+    );
+  }
+  const index = await buildBundle(sourceArgument, destinationArgument);
+  process.stdout.write(
+    `Pacote comercial ${index.bundleVersion}: ${index.files.length} arquivos, ${index.manifestPaths.length} manifestos.\n`,
   );
 }
-
-const index = await buildBundle(sourceArgument, destinationArgument);
-process.stdout.write(
-  `Pacote comercial ${index.bundleVersion}: ${index.files.length} arquivos, ${index.manifestPaths.length} manifestos.\n`,
-);

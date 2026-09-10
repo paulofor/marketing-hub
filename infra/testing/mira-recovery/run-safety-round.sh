@@ -39,6 +39,9 @@ metrics() {
 }
 
 export JAVA_TOOL_OPTIONS="-XX:ActiveProcessorCount=2 -Xmx768m"
+step evidence-contract node --test scripts/build-commercial-review-evidence.test.mjs
+step commercial-evidence node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
+step temis-java mvn -q -f meta-ad-approver-worker/pom.xml test
 step pde-java mvn -q -f pde-platform/backend/pom.xml test
 step psique-java mvn -q -f customer-agent-worker/pom.xml test
 step harness-contract npm --prefix customer-agent-worker test
@@ -52,4 +55,4 @@ step image-contract bash customer-agent-worker/test-dockerfile-contract.sh
 step isolation-contract node pde-platform/scripts/test-product-runtime-isolation-contract.mjs
 step api-boundary npm --prefix pde-platform/frontend run check:api-boundary
 step diff git diff --check
-printf 'Rodada completa: 11/11 controles aprovados.\n'
+printf 'Rodada completa: 14/14 controles aprovados.\n'

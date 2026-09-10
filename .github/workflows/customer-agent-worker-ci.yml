@@ -12,6 +12,7 @@ on:
       - docs/homologacao/**
       - docs/registros/**
       - scripts/build-commercial-review-evidence.mjs
+      - scripts/build-commercial-review-evidence.test.mjs
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
@@ -28,6 +29,7 @@ on:
       - docs/registros/**
       - .github/workflows/customer-agent-worker-ci.yml
       - scripts/build-commercial-review-evidence.mjs
+      - scripts/build-commercial-review-evidence.test.mjs
       - scripts/generate-musa-v7-canonical-contract-changelog.mjs
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
@@ -59,7 +61,9 @@ jobs:
         with:
           node-version: 22
       - name: Build immutable commercial evidence
-        run: node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
+        run: |
+          node --test scripts/build-commercial-review-evidence.test.mjs
+          node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
       - name: Validate application deploy coordination
         run: node --test scripts/coordinate-agent-deployment.test.mjs
       - name: Confirm matching application deployment was enqueued
@@ -190,7 +194,9 @@ jobs:
         with:
           node-version: 22
       - name: Build immutable commercial evidence
-        run: node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
+        run: |
+          node --test scripts/build-commercial-review-evidence.test.mjs
+          node scripts/build-commercial-review-evidence.mjs . customer-agent-worker/review-evidence
       - name: Configure authenticated agent VPS SSH
         env:
           VPS_SSH_KEY_PRIMARY: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}

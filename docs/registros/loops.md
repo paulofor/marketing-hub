@@ -146,6 +146,20 @@
   real, com casos negativos. Gatilhos incluem o verificador e seu teste. Não há fallback silencioso
   para legado, remoção do smoke ou troca da imagem pública para contornar o erro.
 
+## LOOP-PDE-PROXY-IP-ANTIGO — backend saudável e contrato público com 502
+
+- **Data:** 2026-09-10.
+- **Evidência:** run PDE `34466059383`; backend novo saudável em `172.18.0.4`, acesso direto 200,
+  Nginx do frontend v7 ainda tentando `172.18.0.2:8096`, domínio público com 502. Logs MCP e SSH
+  somente leitura confirmaram a etapa exata da falha.
+- **Causa-raiz:** recriação isolada do backend mudou seu IP; o Nginx dos frontends preservados
+  resolvia o upstream apenas ao iniciar. O deploy recarregava somente o proxy HTTPS externo.
+- **Correção:** DNS Docker dinâmico nas imagens novas e reconexão validada dos proxies PDE já
+  publicados após a saúde do backend, sem trocar suas imagens ou versões.
+- **Prevenção:** teste Docker do CI troca o IP, demonstra 502 no controle legado e recupera pelo
+  script real, preservando query, POST, autorização de materiais e limites de cada produto.
+  Evidências: `docs/homologacao/actions-evidencias-catalogo-compartilhado-2026-09-10.md`.
+
 ## LOOP-AGENTE-PROMPT-FORA-DO-CATALOGO — contrato executável fica invisível à auditoria
 
 - **Data:** 2026-09-06.
@@ -2525,6 +2539,15 @@ Use este checklist quando o problema estiver em algum loop acima:
   revalidando catálogo e testes do Rigel. O teste do carregador exige que somente a revisão mais
   recente de cada produto coincida com o código candidato e impede atualizar silenciosamente uma
   evidência histórica.
+- **Recorrência de 2026-09-10 — identidade privada Mira v3:** os runs `34464419688` e
+  `34466059243` falharam no mesmo gate após `ProductCatalogService` mudar de `mira-private-v2`
+  para `mira-private-v3`. A revisão anterior `1c491da7` passou no run `34460402227`; a comparação
+  confirma que não era erro de SSH, navegador ou disco. A matriz de recuperação de Mira não
+  executava Têmis, e o empacotador aceitava hashes vigentes divergentes. A v7 do Rigel reatesta a
+  compatibilidade após testes do catálogo, preservando v5/v6. O empacotador passa a validar as
+  atestações vigentes antes de substituir o pacote; a matriz de Mira inclui esse contrato e os
+  testes de Têmis. Testes negativos protegem hash, histórico, isolamento e ambiguidade. Evidências:
+  `docs/homologacao/actions-evidencias-catalogo-compartilhado-2026-09-10.md`.
 
 ## LOOP-PDE-QA-REGISTRADO-COMO-HUMANO — preview contamina o funil comercial
 

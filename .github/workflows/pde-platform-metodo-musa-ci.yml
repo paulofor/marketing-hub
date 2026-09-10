@@ -115,6 +115,11 @@ jobs:
         run: npm run test:mira-private:local
       - name: Validate product-exclusive build artifacts
         run: node ../scripts/test-product-build-artifacts.mjs
+      - name: Validate backend replacement through published proxies
+        working-directory: .
+        env:
+          EVIDENCE_COMPOSE_PROJECT: aihub-pde-proxy-${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash scripts/run-docker-homologation.sh bash pde-platform/scripts/test-backend-proxy-recovery.sh
 
   retention_worker:
     name: Retention worker
@@ -681,6 +686,11 @@ jobs:
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "kit-whatsapp-pronto-pde-v2"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://kit-whatsapp-pronto.digicomdigital.com.br/
           fi
+      - name: Reconnect published frontend proxies to the healthy backend
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "PDE_PLATFORM_NETWORK='${PDE_PLATFORM_NETWORK}' bash -s" \
+            < pde-platform/scripts/reload-published-frontend-proxies.sh
       - name: Set up Node for production rendering smoke
         if: github.event_name == 'push' || inputs.frontend_version != 'none'
         uses: actions/setup-node@v4

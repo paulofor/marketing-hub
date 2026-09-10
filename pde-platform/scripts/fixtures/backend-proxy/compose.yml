@@ -1,0 +1,30 @@
+services:
+  old-backend:
+    image: ${PROXY_BACKEND_IMAGE:?}
+    environment:
+      GENERATION: old
+    networks:
+      default:
+        aliases: [pde-backend-current]
+  new-backend:
+    image: ${PROXY_BACKEND_IMAGE:?}
+    environment:
+      GENERATION: new
+  pde-platform-frontend-v7:
+    image: ${PROXY_PUBLIC_IMAGE:?}
+    ports: ["18280:80"]
+  pde-platform-frontend-mira:
+    image: ${PROXY_MIRA_IMAGE:?}
+    ports: ["18281:80"]
+  pde-platform-frontend-v5:
+    image: ${PROXY_LEGACY_IMAGE:?}
+    ports: ["18282:80"]
+  unrelated:
+    image: ${PROXY_LEGACY_IMAGE:?}
+    ports: ["18283:80"]
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${PDE_PROXY_TEST_SUBNET:-172.29.196.0/24}

@@ -25,6 +25,7 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRecoveryResolver;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRequirementResponse;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
@@ -473,6 +474,40 @@ public class BusinessProcessActivityExecutionService {
       }
     }
     return productPlans.stream().findFirst().orElse(null);
+  }
+
+  /**
+   * Consulta revisões leves do contexto do produto para atualizar a tela somente quando houver
+   * mudança.
+   */
+  @Transactional(readOnly = true)
+  public List<ProductProcessExecutionProgressResponse> productExecutionProgress(
+      Long processDefinitionId, Long productId, String sourceReference) {
+    if (!processRepository.existsById(processDefinitionId)
+        || !productRepository.existsById(productId)) {
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Produto ou processo não encontrado.");
+    }
+    if (!progressReferenceBelongsToProduct(productId, sourceReference)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A referência acompanhada não pertence a este produto.");
+    }
+    return taskRepository.findProductProcessExecutionProgress(processDefinitionId, sourceReference);
+  }
+
+  /** Valida a propriedade da referência exata sem ler auditorias de tarefas ou outro produto. */
+  private boolean progressReferenceBelongsToProduct(Long productId, String reference) {
+    if (reference == null || reference.length() > 200) return false;
+    if (reference.startsWith("product:" + productId + "@")
+        && reference.length() > ("product:" + productId + "@").length()) return true;
+    if (reference.matches("experiment:[1-9][0-9]{0,17}")) {
+      return experimentRepository.existsByIdAndProductId(
+          Long.valueOf(reference.substring(11)), productId);
+    }
+    Matcher plan = COMMERCIAL_PLAN_REFERENCE.matcher(reference);
+    return plan.matches()
+        && commercialPlanRepository.findIdsByProductId(productId).stream()
+            .anyMatch(id -> String.valueOf(id).equals(plan.group(1)));
   }
 
   /** Mantém o contrato sem corpo usado por atividades de agente e comandos backend legados. */
@@ -1510,7 +1545,11 @@ public class BusinessProcessActivityExecutionService {
               executionControl));
     }
     return ProductProcessActivityRecoveryResolver.resolve(
-        groups, selectedByActivityId, objectMapper);
+        groups,
+        selectedByActivityId,
+        objectMapper,
+        selectedProcess.getId(),
+        currentExecutionReference);
   }
 
   /**

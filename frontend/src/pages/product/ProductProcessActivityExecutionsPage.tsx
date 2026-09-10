@@ -14,7 +14,7 @@ import {
   Workflow,
 } from "lucide-react";
 import axios from "axios";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   useLocation,
@@ -119,10 +119,11 @@ export default function ProductProcessActivityExecutionsPage() {
   );
   const effectiveCycleId = cycleContext.data?.cycleId ?? learningCycleId;
   const effectiveChainId = cycleContext.data?.chainDefinitionId ?? chainId;
+  const cycleContextUnavailable =
+    cycleContext.isLoading ||
+    (cycleContext.isError && cycleContext.data === undefined);
   const history = useProductProcessActivityExecutions(
-    validProductId && !cycleContext.isLoading && !cycleContext.isError
-      ? productId
-      : undefined,
+    validProductId && !cycleContextUnavailable ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
     effectiveCycleId,
     effectiveChainId,
@@ -135,21 +136,23 @@ export default function ProductProcessActivityExecutionsPage() {
     processDefinitionId,
     effectiveCycleId,
   );
-  const data =
-    cycleContext.isLoading || cycleContext.isError ? undefined : history.data;
+  const [requestOrigin, setRequestOrigin] = useState<string>();
   useEffect(() => {
-    if (data && hash.startsWith("#activity-"))
+    setRequestOrigin(undefined);
+    requestExecution.reset();
+  }, [productId, processDefinitionId, effectiveCycleId]);
+  const data = cycleContextUnavailable ? undefined : history.data;
+  const loaded = Boolean(data);
+  useEffect(() => {
+    if (loaded && hash.startsWith("#activity-"))
       document
         .getElementById(hash.slice(1))
         ?.scrollIntoView?.({ block: "start" });
-  }, [data, hash]);
+  }, [loaded, hash]);
   const productLabel =
     data?.productInternalName ||
     data?.productName ||
     (validProductId ? `Produto ${productId}` : "Produto");
-  const firstActivityWithTasks = data?.activities.find(
-    (activity) => activity.tasks.length > 0,
-  );
   const selectedActivities =
     data?.activities.filter((activity) => activity.selectedVersionActivity) ??
     [];
@@ -290,7 +293,7 @@ export default function ProductProcessActivityExecutionsPage() {
         </div>
       ) : null}
 
-      {requestExecution.isSuccess ? (
+      {requestExecution.isSuccess && !requestOrigin ? (
         <div
           className={`alert ${requestExecution.data.objectiveAchieved ? "alert-success" : requestExecution.data.operationalState === "BLOCKED" ? "alert-warning" : "alert-success"}`}
           role="status"
@@ -300,7 +303,7 @@ export default function ProductProcessActivityExecutionsPage() {
         </div>
       ) : null}
 
-      {requestExecution.isError ? (
+      {requestExecution.isError && !requestOrigin ? (
         <div className="alert alert-danger" role="alert">
           {axios.isAxiosError(requestExecution.error)
             ? requestExecution.error.response?.data?.message ||
@@ -593,9 +596,16 @@ export default function ProductProcessActivityExecutionsPage() {
                   </p>
                 ) : null}
 
-                <p className="product-process-activity-executions__state-reason">
-                  <strong>Situação:</strong> {activity.stateReason}
-                </p>
+                {activity.recoveryAction ? (
+                  <details className="product-process-activity-executions__state-reason">
+                    <summary>Ver motivo do bloqueio</summary>
+                    <p className="mt-2 mb-0">{activity.stateReason}</p>
+                  </details>
+                ) : (
+                  <p className="product-process-activity-executions__state-reason">
+                    <strong>Situação:</strong> {activity.stateReason}
+                  </p>
+                )}
 
                 {activity.activityId === "task-2" &&
                 directContactExperimentId ? (
@@ -619,7 +629,65 @@ export default function ProductProcessActivityExecutionsPage() {
                   productId={productId}
                   pending={requestExecution.isPending}
                   pendingActivityId={requestExecution.variables?.activityId}
-                  onExecute={(command) => requestExecution.mutate(command)}
+                  onExecute={(command) => {
+                    setRequestOrigin(activity.activityId);
+                    requestExecution.mutate(command);
+                  }}
+                  trackingError={
+                    history.trackingError ||
+                    history.isRefetchError ||
+                    cycleContext.isRefetchError
+                  }
+                  currentTask={(() => {
+                    const trackedActivity =
+                      requestOrigin === activity.activityId &&
+                      requestExecution.variables?.activityId
+                        ? (data.activities.find(
+                            (item) =>
+                              item.activityId ===
+                              requestExecution.variables?.activityId,
+                          ) ?? activity)
+                        : activity;
+                    const task = trackedActivity.tasks.find(
+                      (item) =>
+                        item.sourceReference ===
+                          data.currentExecutionReference &&
+                        item.processDefinitionId ===
+                          data.selectedProcessDefinitionId,
+                    );
+                    return task
+                      ? {
+                          taskId: task.taskId,
+                          status: task.status,
+                          agentName: task.assignedAgentNickname,
+                          createdAt: task.createdAt,
+                          startedAt: task.startedAt,
+                          finishedAt: task.finishedAt,
+                          executionError: task.executionError,
+                          recommendedAction:
+                            task.blockerGuidance?.recommendedAction,
+                        }
+                      : null;
+                  })()}
+                  feedback={
+                    requestOrigin === activity.activityId
+                      ? {
+                          error: requestExecution.isError
+                            ? axios.isAxiosError(requestExecution.error)
+                              ? requestExecution.error.response?.data
+                                  ?.message ||
+                                "Não foi possível criar a tarefa. Tente novamente."
+                              : "Não foi possível criar a tarefa. Tente novamente."
+                            : undefined,
+                          message: requestExecution.isSuccess
+                            ? requestExecution.data.message
+                            : undefined,
+                          taskIds: requestExecution.isSuccess
+                            ? requestExecution.data.tasks.map((task) => task.id)
+                            : undefined,
+                        }
+                      : undefined
+                  }
                 />
 
                 {activity.activityId === "learningCycle" && data.salesFlow ? (
@@ -628,15 +696,10 @@ export default function ProductProcessActivityExecutionsPage() {
 
                 {activity.tasks.length > 0 ? (
                   <div className="d-grid gap-3">
-                    {activity.tasks.map((execution, taskIndex) => (
+                    {activity.tasks.map((execution) => (
                       <BusinessProcessExecutionCard
                         key={`${activity.activityId}-${execution.taskId}`}
                         execution={execution}
-                        defaultOpen={
-                          activity.activityId ===
-                            firstActivityWithTasks?.activityId &&
-                          taskIndex === 0
-                        }
                         contentHeadingLevel="h3"
                       />
                     ))}

@@ -96,7 +96,16 @@ de outras atividades não são promovidas a parecer funcional. A tentativa origi
 na auditoria. Uma homologação posterior aprovada supera a falha técnica; uma rejeição
 funcional continua exigindo a correção versionada conforme as regras abaixo.
 
-O botão da homologação permanece visível e desabilitado enquanto faltarem seus requisitos.
+Por decisão de 2026-09-10, a atividade bloqueada apresenta **uma única ação principal**:
+o comando de correção quando ele for o caminho vigente, ou o comando da própria atividade
+quando seus requisitos estiverem satisfeitos. Não apresentar simultaneamente uma retentativa
+inoperante de homologação e um botão de correção. O clique deve confirmar a solicitação no
+próprio card e mostrar a tarefa criada, seu responsável e sua situação, com atualização
+automática até o resultado persistido. Falhas de envio ou de acompanhamento também ficam
+visíveis junto à ação; o usuário não precisa procurar mensagens no topo nem recarregar a página.
+Uma tarefa já ativa é acompanhada sem duplicação. Reabrir a página restaura esse acompanhamento
+pelo backend. A tarefa encerrada e seu motivo continuam visíveis, com a auditoria sob demanda.
+
 Criar a tarefa de correção não comprova implementação nem aprovação: Dédalo deve identificar
 a tarefa bloqueada e o aprendizado do ciclo, e só pode declarar prontidão após comprovar
 a versão executável aceita. Uma tarefa ativa de correção impede duplicação pelo card.

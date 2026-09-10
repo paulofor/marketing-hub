@@ -19,21 +19,61 @@ class ProductProcessActivityRecoveryResolverTest {
 
   /** Expõe somente o comando da atividade publicada declarada para remediar o card bloqueado. */
   @ParameterizedTest
-  @CsvSource({"NOT_STARTED,true", "PENDING,false", "IN_PROGRESS,false", "BLOCKED,true"})
+  @CsvSource({
+    "NOT_STARTED,true",
+    "PENDING,false",
+    "IN_PROGRESS,false",
+    "BLOCKED,true",
+    "COMPLETED,false"
+  })
   void preservesRecoveryAvailabilityAndHistory(String recoveryState, boolean available)
       throws Exception {
     var blocked = group("technicalHomologation", "BLOCKED", false, true);
     var recovery = group("prototypeCorrection", recoveryState, available, true);
     var result =
         ProductProcessActivityRecoveryResolver.resolve(
-            List.of(blocked, recovery), definitions(), json);
+            List.of(blocked, recovery), definitions(), json, 70L, "experiment:92");
     var action = result.getFirst().recoveryAction();
     assertThat(action.activityId()).isEqualTo("prototypeCorrection");
     assertThat(action.ownerName()).isEqualTo("Dédalo");
     assertThat(action.actionAvailable()).isEqualTo(available);
+    assertThat(action.operationalState()).isEqualTo(recoveryState);
+    assertThat(action.objectiveAchieved()).isEqualTo("COMPLETED".equals(recoveryState));
     assertThat(result.getFirst().executionRequestAvailable()).isFalse();
     assertThat(result.getFirst().operationalState()).isEqualTo("BLOCKED");
     assertThat(result.getFirst().tasks()).isSameAs(blocked.tasks());
+  }
+
+  /** Mostra a tentativa atual sem vazar tarefa de outro ciclo, processo ou auditoria extensa. */
+  @Test
+  void tracksOnlyTheLatestTaskInTheExactContext() throws Exception {
+    var node = json.valueToTree(group("prototypeCorrection", "BLOCKED", true, true));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) node)
+        .set(
+            "tasks",
+            json.readTree(
+                """
+        [{"taskId":378,"processDefinitionId":70,"sourceReference":"experiment:92","status":"BLOCKED",
+          "assignedAgentNickname":"Dédalo","executionError":"URL executável ausente",
+          "promptSent":"AUDITORIA_QUE_NAO_DEVE_SER_DUPLICADA"},
+         {"taskId":400,"processDefinitionId":70,"sourceReference":"experiment:91","status":"COMPLETED"},
+         {"taskId":401,"processDefinitionId":69,"sourceReference":"experiment:92","status":"COMPLETED"}]
+        """));
+    var result =
+        ProductProcessActivityRecoveryResolver.resolve(
+            List.of(
+                group("technicalHomologation", "BLOCKED", false, true),
+                json.treeToValue(node, ProductProcessActivityExecutionGroupResponse.class)),
+            definitions(),
+            json,
+            70L,
+            "experiment:92");
+    var task = result.getFirst().recoveryAction().latestTask();
+    assertThat(task.taskId()).isEqualTo(378L);
+    assertThat(task.status()).isEqualTo("BLOCKED");
+    assertThat(task.executionError()).isEqualTo("URL executável ausente");
+    assertThat(json.writeValueAsString(task))
+        .doesNotContain("promptSent", "AUDITORIA_QUE_NAO_DEVE_SER_DUPLICADA");
   }
 
   /** Não atribui recuperação a atividade concluída, histórica ou já liberada pelo backend. */
@@ -51,7 +91,9 @@ class ProductProcessActivityRecoveryResolverTest {
                 group("technicalHomologation", state, available, selected),
                 group("prototypeCorrection", "NOT_STARTED", true, true)),
             definitions(),
-            json);
+            json,
+            70L,
+            "experiment:92");
     assertThat(result.getFirst().recoveryAction()).isNull();
   }
 
@@ -64,7 +106,9 @@ class ProductProcessActivityRecoveryResolverTest {
                 group("technicalHomologation", "BLOCKED", false, true),
                 group("prototypeCorrection", "NOT_STARTED", false, false)),
             definitions(),
-            json);
+            json,
+            70L,
+            "experiment:92");
     assertThat(result.getFirst().recoveryAction()).isNull();
   }
 

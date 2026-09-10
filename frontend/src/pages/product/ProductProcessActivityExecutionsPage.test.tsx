@@ -457,6 +457,10 @@ describe("ProductProcessActivityExecutionsPage", () => {
     await waitFor(() =>
       expect(axios.get).toHaveBeenCalledWith(
         "/api/business-processes/18/products/9/activity-executions?learningCycleId=2&chainId=14",
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+          timeout: 45000,
+        }),
       ),
     );
   });
@@ -667,6 +671,10 @@ describe("ProductProcessActivityExecutionsPage", () => {
     );
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-processes/18/products/9/activity-executions",
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+        timeout: 45000,
+      }),
     );
   });
 
@@ -881,6 +889,10 @@ describe("ProductProcessActivityExecutionsPage", () => {
       });
       expect(axios.get).toHaveBeenCalledWith(
         `/api/business-processes/45/products/4/activity-executions${suffix}`,
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+          timeout: 45000,
+        }),
       );
       fireEvent.click(button);
 

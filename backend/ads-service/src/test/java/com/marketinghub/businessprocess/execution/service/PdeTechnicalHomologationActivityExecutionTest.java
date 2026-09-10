@@ -58,7 +58,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class PdeTechnicalHomologationActivityExecutionTest {
   /**
    * Preserva o bloqueio, oferece a correção configurada e mantém a homologação sujeita aos
-   * pré-requisitos.
+   * pré-requisitos; exporta estados auditáveis para a homologação visual do acompanhamento.
    */
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
@@ -374,6 +374,54 @@ class PdeTechnicalHomologationActivityExecutionTest {
             Path.of(output + ".after-next-work.json"),
             json.writeValueAsString(
                 new LearningCycleWorkResolver(chains, service).resolve(learningCycle)));
+      }
+      var recoveryTask =
+          history.stream()
+              .filter(itemTask -> itemTask.getId().equals(900378L))
+              .findFirst()
+              .orElseThrow();
+      for (String state : List.of("IN_PROGRESS", "BLOCKED", "COMPLETED")) {
+        recoveryTask.setStatus(state);
+        recoveryTask.setReceivedAt(created.plusSeconds(110));
+        recoveryTask.setUpdatedAt(
+            created.plusSeconds(
+                "IN_PROGRESS".equals(state) ? 110 : "BLOCKED".equals(state) ? 120 : 130));
+        recoveryTask.setDeliveredAt(
+            "IN_PROGRESS".equals(state) ? null : recoveryTask.getUpdatedAt());
+        recoveryTask.setExecutionError(
+            "BLOCKED".equals(state) ? "A versão executável ainda não foi disponibilizada." : null);
+        recoveryTask.setBlockerCategory("BLOCKED".equals(state) ? "FUNCTIONAL_ADJUSTMENT" : null);
+        recoveryTask.setBlockerAction(
+            "BLOCKED".equals(state)
+                ? "Disponibilizar a versão corrigida antes de homologar."
+                : null);
+        if ("COMPLETED".equals(state)) {
+          product.setValidationDefinitionJson(
+              "{\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"vega-local-v9\"}}");
+          recoveryTask.setResultJson(
+              """
+              {"decision":"READY","correctionPlan":{"sourceTaskId":377,"previousPrototypeVersion":"vega-local-v8",
+                "correctedPrototypeVersion":"vega-local-v9","nextActivityId":"technicalHomologation",
+                "verification":{"technicalRevalidationRequired":true,"noExternalSideEffects":true}}}
+              """);
+        }
+        var stateResponse =
+            mvc.perform(
+                    get("/api/business-processes/70/products/4/activity-executions")
+                        .param("learningCycleId", "2")
+                        .param("chainId", "14"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        var recoveryView =
+            json.readTree(stateResponse).path("activities").get(4).path("recoveryAction");
+        assertThat(recoveryView.path("latestTask").path("status").asText()).isEqualTo(state);
+        assertThat(recoveryView.path("latestTask").path("taskId").asLong()).isEqualTo(900378L);
+        assertThat(recoveryView.path("objectiveAchieved").asBoolean())
+            .isEqualTo("COMPLETED".equals(state));
+        if (output != null)
+          Files.writeString(Path.of(output + "." + state + ".json"), stateResponse);
       }
     }
   }

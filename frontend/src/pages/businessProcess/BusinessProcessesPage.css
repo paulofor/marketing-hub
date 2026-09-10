@@ -512,3 +512,19 @@
     transform: rotate(90deg);
   }
 }
+
+.product-process-task-tracking:empty {
+  display: none;
+}
+
+.product-process-task-tracking {
+  margin-top: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.product-process-task-tracking__task {
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  background: #fff;
+}

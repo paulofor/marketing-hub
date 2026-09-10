@@ -19,6 +19,9 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar experimentos comerciais. */
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
+  /** Confirma o produto da referência acompanhada sem carregar o contrato do experimento. */
+  boolean existsByIdAndProductId(Long id, Long productId);
+
   /**
    * Serializa a seleção de vídeo do experimento para impedir anúncios duplicados por concorrência.
    */

@@ -24,6 +24,37 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private AgentTaskRepository repository;
   @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
 
+  /** A consulta de progresso usa projeção escalar e mantém o isolamento de versão e ciclo. */
+  @Test
+  void readsProgressWithoutHydratingTasksOrTheirAudit() {
+    var agent = agent();
+    var process = process("pde-construction-approval", 8);
+    var oldProcess = process("pde-construction-approval", 7);
+    var current = task(agent, process, "prototypeCorrection", 20, "2026-09-10T17:51:00Z");
+    current.setSourceReference("experiment:92");
+    current.setStatus("IN_PROGRESS");
+    current.setExecutionPrompt("Auditoria extensa que não participa da consulta de progresso");
+    var otherCycle = task(agent, process, "prototypeCorrection", 21, "2026-09-10T17:52:00Z");
+    otherCycle.setSourceReference("experiment:91");
+    var otherVersion = task(agent, oldProcess, "prototypeCorrection", 22, "2026-09-10T17:53:00Z");
+    otherVersion.setSourceReference("experiment:92");
+    entityManager.flush();
+    entityManager.clear();
+    var sessionFactory =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class);
+    sessionFactory.getStatistics().setStatisticsEnabled(true);
+    sessionFactory.getStatistics().clear();
+    var result = repository.findProductProcessExecutionProgress(process.getId(), "experiment:92");
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().taskId()).isEqualTo(current.getId());
+    assertThat(result.getFirst().status()).isEqualTo("IN_PROGRESS");
+    assertThat(sessionFactory.getStatistics().getEntityLoadCount()).isZero();
+    sessionFactory.getStatistics().setStatisticsEnabled(false);
+  }
+
   /** Consulta versões do mesmo processo sem misturar outra atividade ou outro processo. */
   @Test
   void findsRecentActivityExecutionsAcrossVersionsWithoutCrossProcessLeakage() {

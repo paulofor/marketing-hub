@@ -1067,8 +1067,8 @@ describe("ProductProcessActivityExecutionsPage", () => {
       screen.getByText("Conclua a correção antes de repetir Psique."),
     ).toBeVisible();
     expect(
-      screen.queryByRole("button", { name: "Reiniciar tarefa" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Reiniciar tarefa" }),
+    ).toBeDisabled();
     fireEvent.click(
       screen.getByRole("button", { name: "Criar tarefa de correção" }),
     );

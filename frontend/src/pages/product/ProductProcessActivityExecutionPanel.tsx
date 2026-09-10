@@ -49,6 +49,8 @@ export default function ProductProcessActivityExecutionPanel({
   const control = activity.executionControl;
   if (!control) return null;
   const executing = pending && pendingActivityId === activity.activityId;
+  const recovery = activity.recoveryAction;
+  const recovering = pending && pendingActivityId === recovery?.activityId;
   const controlCompleted = activity.operationalState === "COMPLETED";
 
   return (
@@ -109,11 +111,11 @@ export default function ProductProcessActivityExecutionPanel({
         ) : null
       ) : ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
         control.actionLabel &&
-        control.actionAvailable ? (
+        (control.actionAvailable || activity.operationalState === "BLOCKED") ? (
         <button
           className="btn btn-primary"
           type="button"
-          disabled={pending}
+          disabled={pending || !control.actionAvailable}
           onClick={() => onExecute({ activityId: activity.activityId })}
         >
           {executing ? (
@@ -127,6 +129,31 @@ export default function ProductProcessActivityExecutionPanel({
           )}
           {executing ? "Executando..." : control.actionLabel}
         </button>
+      ) : null}
+
+      {recovery ? (
+        <aside className="mt-3" aria-label="Resolver bloqueio da atividade">
+          <strong>{recovery.activityName}</strong>
+          <p className="mb-2">Responsável: {recovery.ownerName}</p>
+          <p>{recovery.availabilityReason}</p>
+          <button
+            className="btn btn-primary d-inline-flex align-items-center gap-2"
+            type="button"
+            disabled={pending || !recovery.actionAvailable}
+            onClick={() => onExecute({ activityId: recovery.activityId })}
+          >
+            {recovering ? (
+              <Loader2
+                className="spinner-border spinner-border-sm"
+                size={16}
+                aria-hidden="true"
+              />
+            ) : (
+              <PlayCircle size={17} aria-hidden="true" />
+            )}
+            {recovering ? "Criando tarefa..." : recovery.actionLabel}
+          </button>
+        </aside>
       ) : null}
 
       {control.workspaceCode === "EXPERIMENT_PREFLIGHT" &&

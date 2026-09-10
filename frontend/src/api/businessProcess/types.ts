@@ -418,6 +418,14 @@ export type ProductProcessActivityExecutionGroup = {
   executionRequestAvailable: boolean;
   executionRequestReason: string;
   executionControl?: ProductProcessActivityExecutionControl;
+  recoveryAction?: {
+    activityId: string;
+    activityName: string;
+    ownerName: string;
+    actionLabel: string;
+    actionAvailable: boolean;
+    availabilityReason: string;
+  } | null;
 };
 
 export type ProductProcessActivityRequirement = {

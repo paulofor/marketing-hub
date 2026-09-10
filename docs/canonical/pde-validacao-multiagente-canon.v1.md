@@ -87,6 +87,20 @@ alvo, e o contrato do ciclo precisa ser compatível com o executor antes de libe
 
 ## Rejeição, correção e nova validação
 
+Por ajuste de 2026-09-10, uma falha `TECHNICAL_FAILURE` da atividade
+`technicalHomologation` também disponibiliza **Criar tarefa de correção** para Dédalo.
+O card bloqueado deve expor esse comando com destino, responsável e disponibilidade
+fornecidos pelo backend, usando a mesma referência de produto/ciclo. O modo legado
+`ON_FUNCTIONAL_REJECTION` inclui essa recuperação técnica da homologação; falhas técnicas
+de outras atividades não são promovidas a parecer funcional. A tentativa original permanece
+na auditoria. Uma homologação posterior aprovada supera a falha técnica; uma rejeição
+funcional continua exigindo a correção versionada conforme as regras abaixo.
+
+O botão da homologação permanece visível e desabilitado enquanto faltarem seus requisitos.
+Criar a tarefa de correção não comprova implementação nem aprovação: Dédalo deve identificar
+a tarefa bloqueada e o aprendizado do ciclo, e só pode declarar prontidão após comprovar
+a versão executável aceita. Uma tarefa ativa de correção impede duplicação pelo card.
+
 Quando uma atividade técnica ou de revisão retornar bloqueio funcional corrigível, o processo deve
 seguir esta sequência auditável:
 

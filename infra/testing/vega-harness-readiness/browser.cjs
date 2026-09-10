@@ -67,7 +67,7 @@ const assert = require('node:assert/strict');
       assert.match(await card.innerText(), /testes automáticos com o harness/);
       assert.match(await card.innerText(), /não possui uma URL executável aceita/);
       assert.match(await card.innerText(), /10\/09\/2026/);
-      assert.equal(await card.getByRole('button', { name: /Reiniciar tarefa|Executar atividade/ }).count(), 0);
+      assert.equal(await card.getByRole('button', { name: 'Reiniciar tarefa' }).isDisabled(), true);
       assert.equal(await page.getByText('Responsável: Harness', { exact: true }).count(), 0);
       assert.match(await page.locator('body').innerText(), /2º ciclo de vendas · Experimento #92/);
       assert.match(await page.locator('body').innerText(), /Aprendizado dos ciclos anteriores/);

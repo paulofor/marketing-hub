@@ -543,7 +543,7 @@ public class PdeConstructionBpmTaskConsumer {
     }
   }
 
-  /** Vincula a correção à rejeição real e exige versão nova antes de declarar prontidão. */
+  /** Vincula a correção ao bloqueio real e exige versão executável antes de declarar prontidão. */
   static void validateCorrectionContext(
       Map<String, Object> task, JsonNode result, BpmContract contract, ObjectMapper json) {
     if (!"prototypeCorrection".equals(contract.activityId())) return;
@@ -551,23 +551,33 @@ public class PdeConstructionBpmTaskConsumer {
       JsonNode context = json.readTree(String.valueOf(task.get("processContextJson")));
       JsonNode plan = result.path("correctionPlan");
       JsonNode matchingBlock = null;
-      long latestFunctionalBlockId = 0;
+      long latestRecoverableBlockId = 0;
+      long completedTechnicalId = 0;
+      for (JsonNode completed : context.path("completedActivities")) {
+        if ("technicalHomologation".equals(completed.path("activityId").asText())) {
+          completedTechnicalId = Math.max(completedTechnicalId, completed.path("taskId").asLong());
+        }
+      }
       for (JsonNode blocked : context.path("blockedActivities")) {
-        if ("FUNCTIONAL_ADJUSTMENT".equals(blocked.path("category").asText())) {
+        if ("FUNCTIONAL_ADJUSTMENT".equals(blocked.path("category").asText())
+            || ("TECHNICAL_FAILURE".equals(blocked.path("category").asText())
+                && "technicalHomologation".equals(blocked.path("activityId").asText())
+                && blocked.path("taskId").asLong() > completedTechnicalId)) {
           long blockedTaskId = blocked.path("taskId").asLong();
-          if (blockedTaskId > latestFunctionalBlockId) latestFunctionalBlockId = blockedTaskId;
+          if (blockedTaskId > latestRecoverableBlockId) latestRecoverableBlockId = blockedTaskId;
           if (blockedTaskId == plan.path("sourceTaskId").asLong()) matchingBlock = blocked;
         }
       }
       String currentVersion =
           json.valueToTree(task).path("taskTarget").path("experienceVersion").asText();
       if (matchingBlock == null
-          || plan.path("sourceTaskId").asLong() != latestFunctionalBlockId
+          || plan.path("sourceTaskId").asLong() != latestRecoverableBlockId
           || !matchingBlock
               .path("activityId")
               .asText()
               .equals(plan.path("rejectedActivityId").asText())) {
-        throw new IllegalArgumentException("Correção não referencia a rejeição funcional vigente");
+        throw new IllegalArgumentException(
+            "Correção não referencia a rejeição funcional vigente ou a falha técnica de homologação");
       }
       String rejectedVersion = matchingBlock.path("result").path("prototypeVersion").asText();
       if (!rejectedVersion.isBlank()
@@ -585,7 +595,28 @@ public class PdeConstructionBpmTaskConsumer {
         throw new IllegalArgumentException(
             "Correção pronta exige versão nova e critérios funcionais comprovados");
       }
+      if ("READY".equals(result.path("decision").asText())
+          && "TECHNICAL_FAILURE".equals(matchingBlock.path("category").asText())) {
+        JsonNode target = json.valueToTree(task).path("taskTarget");
+        JsonNode acceptance = target.path("pdeContext").path("privatePrototypeAcceptance");
+        if (!target.path("publicUrl").isTextual()
+            || target.path("publicUrl").asText().isBlank()
+            || !"READY".equals(acceptance.path("status").asText())
+            || !currentVersion.equals(acceptance.path("prototypeVersion").asText())
+            || !target
+                .path("publicUrl")
+                .asText()
+                .equals(acceptance.path("privateAccessUrl").asText())) {
+          throw new IllegalArgumentException(
+              "Correção técnica pronta exige protótipo executável aceito da mesma versão");
+        }
+      }
     } catch (IllegalArgumentException ex) {
+      log.error(
+          "Falha no contrato da correção PDE. taskId={} activityId={}",
+          taskId(task),
+          activityId(task),
+          ex);
       throw ex;
     } catch (Exception ex) {
       log.error(

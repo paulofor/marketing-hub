@@ -9,13 +9,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.AgentTaskTargetContextProvider;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
+import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController;
+import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadinessProvider;
+import com.marketinghub.businessprocess.execution.service.predecessor.ProductProcessActivityPredecessorService;
 import com.marketinghub.businessprocesschain.BusinessProcessChainDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
@@ -24,6 +28,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCy
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.service.agentvalidation.PdeAgentValidationReworkReadinessProvider;
 import com.marketinghub.product.service.agentvalidation.PdeTechnicalHomologationReadinessProvider;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -40,7 +45,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -51,10 +57,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
  */
 class PdeTechnicalHomologationActivityExecutionTest {
   /**
-   * Preserva a tentativa, explica a pendência atual e recusa retentativa até haver implementação.
+   * Preserva o bloqueio, oferece a correção configurada e mantém a homologação sujeita aos
+   * pré-requisitos.
    */
-  @Test
-  void blocksRetryAndExportsTheSameTruthForTheScreen() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void blocksRetryAndExportsTheSameTruthForTheScreen(boolean recoveryEnabled) throws Exception {
     var json =
         new ObjectMapper()
             .findAndRegisterModules()
@@ -68,6 +76,12 @@ class PdeTechnicalHomologationActivityExecutionTest {
     var agentTasks = mock(AgentTaskService.class);
     var targets = mock(AgentTaskTargetContextProvider.class);
     var cycle = mock(LearningCycleExecutionContext.class);
+    var providers = new ArrayList<AgentProductProcessActivityReadinessProvider>();
+    providers.add(new PdeTechnicalHomologationReadinessProvider(targets));
+    if (recoveryEnabled)
+      providers.add(
+          new PdeAgentValidationReworkReadinessProvider(
+              new ProductProcessActivityPredecessorService(tasks, instances, json), tasks, json));
     var service =
         new BusinessProcessActivityExecutionService(
             processes,
@@ -82,7 +96,7 @@ class PdeTechnicalHomologationActivityExecutionTest {
             agentTasks,
             json,
             List.of(),
-            List.of(new PdeTechnicalHomologationReadinessProvider(targets)));
+            providers);
     ReflectionTestUtils.setField(service, "learningCycleContext", cycle);
 
     var process = new BusinessProcessDefinition();
@@ -97,7 +111,15 @@ class PdeTechnicalHomologationActivityExecutionTest {
          "owner":"Psique","responsibleAgentKeys":["customer-agent"],"executionMode":"DETERMINISTIC",
          "controlDescription":"Psique executa testes automáticos com o harness, a estrutura de ferramentas, cenários e evidências. Esta etapa técnica não usa parecer de IA; os cenários de experiência vêm depois."}
         """;
-    process.setDiagramJson("{\"nodes\":[" + node + "]}");
+    String correctionNode =
+        """
+        {"id":"prototypeCorrection","type":"TASK","label":"Corrigir o protótipo a partir do parecer",
+         "owner":"Dédalo","responsibleAgentKeys":["landing-generator"],
+         "activationMode":"ON_FUNCTIONAL_REJECTION","actionLabel":"Criar tarefa de correção",
+         "remediatesActivities":["technicalHomologation"]}
+        """;
+    process.setDiagramJson(
+        "{\"nodes\":[" + node + (recoveryEnabled ? "," + correctionNode : "") + "]}");
     var activity = new BusinessProcessActivityDefinition();
     activity.setId(705L);
     activity.setProcessDefinition(process);
@@ -144,6 +166,10 @@ class PdeTechnicalHomologationActivityExecutionTest {
     instance.setCreatedAt(created);
     instance.setUpdatedAt(created);
     task.setActivityInstance(instance);
+    task.setBlockerCategory("TECHNICAL_FAILURE");
+    task.setBlockerAction(
+        "Implemente a versão do ciclo com seus testes próprios e registre a aceitação privada.");
+    var history = new ArrayList<AgentTask>(List.of(task));
     var selectedActivities = new ArrayList<BusinessProcessActivityDefinition>();
     var historicalInstances = new ArrayList<BusinessProcessActivityInstance>();
     int previousId = 701;
@@ -168,6 +194,18 @@ class PdeTechnicalHomologationActivityExecutionTest {
       historicalInstances.add(completed);
     }
     selectedActivities.add(activity);
+    var correction = new BusinessProcessActivityDefinition();
+    correction.setId(706L);
+    correction.setProcessDefinition(process);
+    correction.setActivityId("prototypeCorrection");
+    correction.setName("Corrigir o protótipo a partir do parecer");
+    correction.setOwnerName("Dédalo");
+    correction.setDefinitionJson(correctionNode);
+    if (recoveryEnabled) {
+      selectedActivities.add(correction);
+      when(definitions.findByProcessDefinitionIdAndActivityId(70L, "prototypeCorrection"))
+          .thenReturn(Optional.of(correction));
+    }
     historicalInstances.add(instance);
     when(processes.findById(70L)).thenReturn(Optional.of(process));
     when(products.findById(4L)).thenReturn(Optional.of(product));
@@ -175,8 +213,7 @@ class PdeTechnicalHomologationActivityExecutionTest {
     when(definitions.findAllByProcessDefinitionIdOrderByIdAsc(70L)).thenReturn(selectedActivities);
     when(definitions.findByProcessDefinitionIdAndActivityId(70L, "technicalHomologation"))
         .thenReturn(Optional.of(activity));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:92"))
-        .thenReturn(List.of(task));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:92")).thenReturn(history);
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
                 "pde-construction-approval", "experiment:92"))
@@ -249,14 +286,95 @@ class PdeTechnicalHomologationActivityExecutionTest {
     learningCycle.setStage("ADJUSTMENT");
     learningCycle.setStatus("OPEN");
     var next = new LearningCycleWorkResolver(chains, service).resolve(learningCycle);
-    assertThat(next.responsible()).isEqualTo("Psique");
-    assertThat(next.activityNumber()).isEqualTo(5);
-    assertThat(next.reason()).contains("implementação");
+    assertThat(next.responsible()).isEqualTo(recoveryEnabled ? "Dédalo" : "Psique");
+    assertThat(next.activityNumber()).isEqualTo(recoveryEnabled ? 6 : 5);
+    assertThat(next.reason()).contains(recoveryEnabled ? "#377" : "implementação");
+    assertThat(group.path("recoveryAction").path("actionAvailable").asBoolean())
+        .isEqualTo(recoveryEnabled);
     String output = System.getProperty("vega377.output");
+    if (output != null && recoveryEnabled) output += ".recovery.json";
     if (output != null) {
       Files.createDirectories(Path.of(output).getParent());
       Files.writeString(Path.of(output), response);
       Files.writeString(Path.of(output + ".next-work.json"), json.writeValueAsString(next));
+    }
+    if (recoveryEnabled) {
+      when(agentTasks.retryBlockedByHumanOrRefreshPending(
+              any(CreateAgentTaskRequest.class), eq(true)))
+          .thenAnswer(
+              invocation -> {
+                CreateAgentTaskRequest request = invocation.getArgument(0);
+                assertThat(request.assignedAgentKey()).isEqualTo("landing-generator");
+                assertThat(request.sourceReference()).isEqualTo("experiment:92");
+                assertThat(request.processDefinitionId()).isEqualTo(70L);
+                assertThat(request.processActivityId()).isEqualTo("prototypeCorrection");
+                assertThat(request.description()).contains("#377", "URL");
+                var createdTask = new AgentTask();
+                createdTask.setId(900378L);
+                createdTask.setProcessDefinition(process);
+                createdTask.setProcessActivityId("prototypeCorrection");
+                createdTask.setSourceReference(request.sourceReference());
+                createdTask.setStatus("PENDING");
+                createdTask.setTitle(request.title());
+                createdTask.setDescription(request.description());
+                createdTask.setCreatedAt(created.plusSeconds(100));
+                createdTask.setUpdatedAt(created.plusSeconds(100));
+                var dedalo = new Agent();
+                dedalo.setId(7L);
+                dedalo.setAgentKey("landing-generator");
+                dedalo.setName("Dédalo");
+                dedalo.setNickname("Dédalo");
+                createdTask.setAssignedAgent(dedalo);
+                history.add(createdTask);
+                return json.readValue(
+                    "{\"id\":900378,\"status\":\"PENDING\",\"sourceReference\":\"experiment:92\"}",
+                    AgentTaskResponse.class);
+              });
+      var commandResult =
+          mvc.perform(
+                  post("/api/business-processes/70/products/4/activities/prototypeCorrection/execution-requests")
+                      .param("learningCycleId", "2"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+      var afterResult =
+          mvc.perform(
+                  get("/api/business-processes/70/products/4/activity-executions")
+                      .param("learningCycleId", "2")
+                      .param("chainId", "14"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+      var after = json.readTree(afterResult);
+      assertThat(after.path("currentActivityId").asText()).isEqualTo("prototypeCorrection");
+      assertThat(
+              after
+                  .path("activities")
+                  .get(4)
+                  .path("recoveryAction")
+                  .path("actionAvailable")
+                  .asBoolean())
+          .isFalse();
+      assertThat(after.path("activities").get(5).path("tasks").get(0).path("taskId").asLong())
+          .isEqualTo(900378L);
+      mvc.perform(
+              post("/api/business-processes/70/products/4/activities/prototypeCorrection/execution-requests")
+                  .param("learningCycleId", "2"))
+          .andExpect(status().isConflict());
+      verify(agentTasks, times(1))
+          .retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class), eq(true));
+      assertThat(task.getStatus()).isEqualTo("BLOCKED");
+      assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+      if (output != null) {
+        Files.writeString(Path.of(output + ".command.json"), commandResult);
+        Files.writeString(Path.of(output + ".after.json"), afterResult);
+        Files.writeString(
+            Path.of(output + ".after-next-work.json"),
+            json.writeValueAsString(
+                new LearningCycleWorkResolver(chains, service).resolve(learningCycle)));
+      }
     }
   }
 }

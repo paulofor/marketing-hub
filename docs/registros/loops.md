@@ -23,6 +23,14 @@
   Liquibase do PR. Registro: `docs/homologacao/vega-tarefa-377-harness-v1.md`.
 - **Limite:** essa correção não materializa o protótipo v8 nem aprova a tarefa #377. A versão
   executável e seus cenários próprios continuam necessários para homologar o segundo ciclo.
+- **Recorrência na saída do bloqueio em 10/09/2026:** a validação de entrada ocultou a retentativa,
+  mas #377 era `TECHNICAL_FAILURE` e a atividade de correção só aceitava rejeição funcional.
+  O card ficou sem comando de recuperação. Backend e Dédalo passam a aceitar essa origem
+  técnica exclusivamente da homologação; o card recebe `recoveryAction` declarada no processo,
+  preservando a indisponibilidade de Psique. Tarefa ativa impede duplicação e passa a ser a
+  orientação atual do ciclo. A causa original e o aprendizado do #91 seguem no contexto da fila.
+  Testes de comando, contexto, executor e navegação previnem recorrência; matriz em
+  `docs/homologacao/vega-criar-tarefa-correcao-v1.md`.
 
 ## LOOP-MIRA-SEGURANCA-ENCERRADA-SEM-ORIENTACAO — bloqueio correto perde contexto na tela
 

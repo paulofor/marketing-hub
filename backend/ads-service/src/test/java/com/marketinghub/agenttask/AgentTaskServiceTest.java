@@ -3,6 +3,7 @@ package com.marketinghub.agenttask;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -2664,11 +2665,19 @@ class AgentTaskServiceTest {
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
   }
 
-  /** Preserva a rejeição original entre versões e separa tentativas de correção sem implantação. */
+  /** Preserva a origem técnica ou funcional e a memória do ciclo entre tentativas de correção. */
   @ParameterizedTest
-  @ValueSource(ints = {0, 1, 2})
-  void exposesPreviousVersionFunctionalRejectionInCorrectionContext(int blockedAttempts)
-      throws Exception {
+  @org.junit.jupiter.params.provider.CsvSource({
+    "0,FUNCTIONAL_ADJUSTMENT",
+    "1,FUNCTIONAL_ADJUSTMENT",
+    "2,FUNCTIONAL_ADJUSTMENT",
+    "0,TECHNICAL_FAILURE",
+    "2,TECHNICAL_FAILURE"
+  })
+  void exposesPreviousVersionFunctionalRejectionInCorrectionContext(
+      int blockedAttempts, String category) throws Exception {
+    String source =
+        "TECHNICAL_FAILURE".equals(category) ? "experiment:92" : "product:10@agent-validation-v1";
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
@@ -2691,9 +2700,11 @@ class AgentTaskServiceTest {
     AgentTask rejection =
         processTask(
             350L, agent(2L, "customer-agent", "Psique"), previous, "psiqueAdherent", "BLOCKED");
-    rejection.setSourceReference("product:10@agent-validation-v1");
+    rejection.setSourceReference(source);
     rejection.setProcessActivityName("Psique · cenário aderente");
-    rejection.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    rejection.setBlockerCategory(category);
+    if ("TECHNICAL_FAILURE".equals(category))
+      rejection.setProcessActivityId("technicalHomologation");
     rejection.setBlockerAction("Manter visível a rotina pronta após concluir.");
     rejection.setExecutionError("A tela final substituiu o valor funcional.");
     rejection.setResultJson(
@@ -2703,7 +2714,7 @@ class AgentTaskServiceTest {
     for (int attempt = 0; attempt < blockedAttempts; attempt++) {
       AgentTask blocked =
           processTask(351L + attempt, dedalo, current, "prototypeCorrection", "BLOCKED");
-      blocked.setSourceReference("product:10@agent-validation-v1");
+      blocked.setSourceReference(source);
       blocked.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
       blocked.setBlockerAction("Implantar a versão corrigida antes da homologação.");
       blocked.setResultJson("{\"decision\":\"BLOCKED\",\"requiredChanges\":[\"Implantar v2\"]}");
@@ -2711,7 +2722,7 @@ class AgentTaskServiceTest {
     }
     AgentTask correction =
         processTask(351L + blockedAttempts, dedalo, current, "prototypeCorrection", "PENDING");
-    correction.setSourceReference("product:10@agent-validation-v1");
+    correction.setSourceReference(source);
     history.add(correction);
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
     when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
@@ -2721,22 +2732,54 @@ class AgentTaskServiceTest {
             "landing-generator", "WORK", "PENDING"))
         .thenReturn(List.of(correction));
     when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-            80L, "product:10@agent-validation-v1"))
+            80L, source))
         .thenReturn(List.of(correction));
-    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product:10@agent-validation-v1"))
-        .thenReturn(history);
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(source)).thenReturn(history);
 
+    var service = service(repository, agents, Clock.systemUTC());
+    if ("TECHNICAL_FAILURE".equals(category)) {
+      var cycleContext =
+          mock(
+              com.marketinghub.businessprocesschain.learningcycle.v1.service
+                  .LearningCycleTaskContext.class);
+      when(cycleContext.resolve(eq(source), any()))
+          .thenReturn(
+              Optional.of(
+                  Map.of(
+                      "cycleId",
+                      2L,
+                      "experimentId",
+                      92L,
+                      "inheritedLearning",
+                      Map.of(
+                          "sourceExperimentId",
+                          91L,
+                          "hypothesis",
+                          "Melhorar o primeiro resultado útil"))));
+      org.springframework.test.util.ReflectionTestUtils.setField(
+          service, "learningCycleTaskContext", cycleContext);
+    }
     AgentTaskPendingResponse pending =
-        service(repository, agents, Clock.systemUTC())
+        service
             .claimEligibleProcessTask(
                 "landing-generator", "pde-construction-approval", "prototypeCorrection")
             .orElseThrow();
 
     var context = new ObjectMapper().readTree(pending.processContextJson());
+    if ("TECHNICAL_FAILURE".equals(category)) {
+      assertThat(context.path("learningSalesCycle").path("cycleId").asLong()).isEqualTo(2L);
+      assertThat(
+              context
+                  .path("learningSalesCycle")
+                  .path("inheritedLearning")
+                  .path("sourceExperimentId")
+                  .asLong())
+          .isEqualTo(91L);
+    }
     assertThat(context.path("blockedActivities")).hasSize(1);
     assertThat(context.path("blockedActivities").path(0).path("taskId").asLong()).isEqualTo(350L);
     assertThat(context.path("blockedActivities").path(0).path("category").asText())
-        .isEqualTo("FUNCTIONAL_ADJUSTMENT");
+        .isEqualTo(category);
     assertThat(context.path("blockedActivities").path(0).path("recommendedAction").asText())
         .contains("rotina pronta");
     assertThat(context.path("blockedActivities").path(0).path("result").isObject()).isTrue();

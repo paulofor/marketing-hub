@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-trilha-condicionada-por-video",
+  "collection": "video",
+  "title": "Usar o próprio vídeo como contexto para gerar a trilha",
+  "finding": "O Suno v6 aceita vídeo, além de texto, áudio e imagens, como entrada para criação musical e permite editar seções preservando o restante da faixa.",
+  "mechanism": "Um rough cut contém ritmo visual, atmosfera e contexto narrativo que podem ser usados diretamente como condicionamento musical, reduzindo a tradução manual do vídeo para uma descrição textual da trilha.",
+  "commercialApplication": "Gerar uma primeira trilha a partir do rough cut do criativo e depois revisar manualmente ou por agente os pontos de tensão, demonstração e CTA antes da versão final.",
+  "evidenceStrength": "Evidência forte de que o recurso existe no Suno v6; evidência inexistente de sincronização frame a frame ou de ganho comercial em anúncios.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2026-10-25",
+  "experimentHypothesis": "Uma trilha condicionada pelo próprio rough cut terá melhor aderência percebida ao ritmo e exigirá menos iterações de briefing do que uma trilha gerada apenas por prompt textual.",
+  "risks": "Licenciamento depende do plano e dos termos vigentes; o sistema pode produzir associação musical inadequada ao posicionamento da marca; não assumir que melhor aderência estética melhora vendas.",
+  "limits": "A Suno não afirma alinhamento automático a cortes ou eventos específicos; downloads gratuitos não têm uso comercial e a documentação oficial consultada não expõe endpoint público específico do v6.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-10-suno-v6-video-trilha.md",
+  "sourceTitle": "Fonte revisada — Suno v6 condicionado por vídeo",
+  "sourceSha256": "e0eab4546ddd0a1e4ba94470a0c3261171a8911cfa9da3f6b2e38474b9f47234"
+}

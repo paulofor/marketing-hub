@@ -23,6 +23,7 @@ import com.marketinghub.businessprocess.execution.service.humanactivity.HumanPro
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionControlResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRecoveryResolver;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityRequirementResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
@@ -1349,9 +1350,7 @@ public class BusinessProcessActivityExecutionService {
     return activityIds;
   }
 
-  /**
-   * Projeta estado, pendência atual e elegibilidade do comando, preservando a auditoria histórica.
-   */
+  /** Projeta estado, comando e recuperação do bloqueio, preservando a auditoria histórica. */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
       Map<String, List<AgentTask>> tasksByActivityId,
@@ -1495,8 +1494,9 @@ public class BusinessProcessActivityExecutionService {
               selectedVersionActivity,
               situation.operationalState(),
               agentReadiness != null
-                      && !agentReadiness.ready()
-                      && "BLOCKED".equals(situation.operationalState())
+                      && (executionRequestAvailable
+                          || (!agentReadiness.ready()
+                              && "BLOCKED".equals(situation.operationalState())))
                   ? agentReadiness.reason()
                   : situation.stateReason(),
               situation.objectiveAchieved(),
@@ -1509,10 +1509,13 @@ public class BusinessProcessActivityExecutionService {
               executionRequestReason,
               executionControl));
     }
-    return groups;
+    return ProductProcessActivityRecoveryResolver.resolve(
+        groups, selectedByActivityId, objectMapper);
   }
 
-  /** Oculta uma rota condicional até existir rejeição funcional, tentativa ou conclusão própria. */
+  /**
+   * Expõe a rota condicional quando o domínio identifica bloqueio recuperável ou histórico próprio.
+   */
   private boolean conditionalActivitySelected(
       BusinessProcessActivityDefinition definition,
       ActivitySituation situation,
@@ -1782,14 +1785,17 @@ public class BusinessProcessActivityExecutionService {
     return "NOT_STARTED";
   }
 
-  /** Prioriza a correção acionável e depois bloqueio, execução e pendência. */
+  /** Prioriza a correção acionável ou em andamento e depois os demais bloqueios e pendências. */
   private ProductProcessActivityExecutionGroupResponse currentActivity(
       List<ProductProcessActivityExecutionGroupResponse> activities) {
     Optional<ProductProcessActivityExecutionGroupResponse> actionable =
         activities.stream()
             .filter(activity -> "prototypeCorrection".equals(activity.activityId()))
             .filter(activity -> !activity.objectiveAchieved())
-            .filter(ProductProcessActivityExecutionGroupResponse::executionRequestAvailable)
+            .filter(
+                activity ->
+                    activity.executionRequestAvailable()
+                        || Set.of("PENDING", "IN_PROGRESS").contains(activity.operationalState()))
             .findFirst();
     if (actionable.isPresent()) return actionable.get();
     for (String state : List.of("BLOCKED", "IN_PROGRESS", "PENDING", "NOT_STARTED", "CANCELLED")) {

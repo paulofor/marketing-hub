@@ -24,7 +24,75 @@ public record ProductProcessActivityExecutionGroupResponse(
     List<BusinessProcessActivityExecutionResponse> tasks,
     boolean executionRequestAvailable,
     String executionRequestReason,
-    ProductProcessActivityExecutionControlResponse executionControl) {
+    ProductProcessActivityExecutionControlResponse executionControl,
+    ProductProcessActivityRecoveryResponse recoveryAction) {
+
+  /** Preserva projeções existentes que não possuem uma atividade de recuperação associada. */
+  public ProductProcessActivityExecutionGroupResponse(
+      Long activityDefinitionId,
+      String activityId,
+      String activityName,
+      String activityObjective,
+      String activityOwnerName,
+      Integer sequenceNumber,
+      boolean selectedVersionActivity,
+      String operationalState,
+      String stateReason,
+      boolean objectiveAchieved,
+      String stateEvidence,
+      Long activityInstanceId,
+      Integer occurrenceNumber,
+      int taskCount,
+      List<BusinessProcessActivityExecutionResponse> tasks,
+      boolean executionRequestAvailable,
+      String executionRequestReason,
+      ProductProcessActivityExecutionControlResponse executionControl) {
+    this(
+        activityDefinitionId,
+        activityId,
+        activityName,
+        activityObjective,
+        activityOwnerName,
+        sequenceNumber,
+        selectedVersionActivity,
+        operationalState,
+        stateReason,
+        objectiveAchieved,
+        stateEvidence,
+        activityInstanceId,
+        occurrenceNumber,
+        taskCount,
+        tasks,
+        executionRequestAvailable,
+        executionRequestReason,
+        executionControl,
+        null);
+  }
+
+  /** Associa uma saída para o bloqueio sem alterar estado, objetivo ou tarefas históricas. */
+  public ProductProcessActivityExecutionGroupResponse withRecoveryAction(
+      ProductProcessActivityRecoveryResponse recovery) {
+    return new ProductProcessActivityExecutionGroupResponse(
+        activityDefinitionId,
+        activityId,
+        activityName,
+        activityObjective,
+        activityOwnerName,
+        sequenceNumber,
+        selectedVersionActivity,
+        operationalState,
+        stateReason,
+        objectiveAchieved,
+        stateEvidence,
+        activityInstanceId,
+        occurrenceNumber,
+        taskCount,
+        tasks,
+        executionRequestAvailable,
+        executionRequestReason,
+        executionControl,
+        recovery);
+  }
 
   /** Mantém compatibilidade com projeções que ainda não oferecem início pela tela do produto. */
   public ProductProcessActivityExecutionGroupResponse(

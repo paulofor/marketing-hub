@@ -23,6 +23,9 @@ paths:
         Somente leitura. Sem cycleId, resolve o único ciclo aberto compatível; não cria tarefas.
         cycleNumber é o ordinal na linhagem do produto, distinto do id e da versão do BPM.
         nextWork usa a situação oficial das atividades e conserva os bloqueios e o retorno original.
+        Os cards de produto também consomem este contrato, usando produto, processo coordenador,
+        ciclo e cadeia de salesFlow. A posição comercial e os custos acumulados não representam
+        a atividade ou as métricas do ciclo atual. Falha de leitura deve aparecer explicitamente.
       parameters:
         - {$ref: '#/components/parameters/ProductId'}
         - {name: processDefinitionId, in: query, required: true, schema: {type: integer, format: int64}}

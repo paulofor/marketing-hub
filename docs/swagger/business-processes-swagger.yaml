@@ -765,6 +765,20 @@ components:
           description: Explica a disponibilidade, a preservação da tentativa anterior ou o bloqueio do comando.
         executionControl:
           $ref: "#/components/schemas/ProductProcessActivityExecutionControl"
+        recoveryAction:
+          $ref: "#/components/schemas/ProductProcessActivityRecovery"
+    ProductProcessActivityRecovery:
+      type: object
+      nullable: true
+      description: Comando da atividade de recuperação declarada no mesmo processo. Usa o endpoint execution-requests com activityId e o mesmo learningCycleId. Não libera a atividade bloqueada nem altera suas tarefas. Disponibilidade recalculada pelo backend, inclusive quando já existe tarefa ativa ou o produto está em STOP.
+      required: [activityId, activityName, ownerName, actionLabel, actionAvailable, availabilityReason]
+      properties:
+        activityId: { type: string }
+        activityName: { type: string }
+        ownerName: { type: string }
+        actionLabel: { type: string }
+        actionAvailable: { type: boolean }
+        availabilityReason: { type: string }
     ProductProcessActivityRequirement:
       type: object
       required: [code, title, satisfied, detail, recommendation]

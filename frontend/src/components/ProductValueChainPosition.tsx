@@ -1,5 +1,6 @@
 import { ArrowRight, History, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
+import ProductValueChainCycleSummary from "./ProductValueChainCycleSummary";
 import { sortProductStageMeasurements } from "../api/product/useProductValueChainPositions";
 import type {
   ProductStageMeasurement,
@@ -172,6 +173,53 @@ export default function ProductValueChainPosition({
   const latestVisibleSubprocessMeasurement =
     latestCompletedSubprocessMeasurement ?? recordedSubprocessMeasurement;
   const historyProductId = productId ?? position?.productId;
+
+  const flow = subprocess?.salesFlow;
+  if (
+    identified &&
+    flow?.cycleId != null &&
+    flow.productId === historyProductId
+  ) {
+    return (
+      <section
+        className={`product-value-chain-position${compactClass}`}
+        aria-label={`Posição de ${productName} na cadeia de valor`}
+      >
+        <ProductValueChainCycleSummary
+          key={`${flow.productId}-${flow.cycleId}-${flow.chainDefinitionId}`}
+          flow={flow}
+          processNumber={
+            position.processDefinitionId === flow.modelProcessDefinitionId
+              ? position.sequenceNumber
+              : null
+          }
+          isPositionError={isError}
+        />
+        <details className="product-value-chain-position__history">
+          <summary>Histórico da cadeia · tempo e custo acumulados</summary>
+          <p>
+            Valores acumulados do produto na cadeia; não são o total deste
+            ciclo.
+          </p>
+          <Link to={`/products/${historyProductId}/value-chain-history`}>
+            Histórico da cadeia
+          </Link>
+          <div>
+            {orderedMeasurements.map((measurement, index) => (
+              <section
+                key={`${measurement.stageType}-${measurement.processDefinitionId}-${index}`}
+              >
+                <strong>
+                  {measurement.sequenceLabel} — {measurement.processName}
+                </strong>
+                <StageMeasurement measurement={measurement} compact />
+              </section>
+            ))}
+          </div>
+        </details>
+      </section>
+    );
+  }
 
   return (
     <section

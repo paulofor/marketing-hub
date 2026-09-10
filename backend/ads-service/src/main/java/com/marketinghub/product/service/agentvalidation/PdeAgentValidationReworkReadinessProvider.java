@@ -19,7 +19,9 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** Responsabilidade: encaminhar rejeições funcionais do PDE para correção antes da revalidação. */
+/**
+ * Responsabilidade: orientar o retrabalho de rejeições funcionais e falhas de homologação do PDE.
+ */
 @Service
 @Slf4j
 public class PdeAgentValidationReworkReadinessProvider
@@ -73,7 +75,7 @@ public class PdeAgentValidationReworkReadinessProvider
             || CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId()));
   }
 
-  /** Exige correção das rejeições e libera somente a validação sequencial da versão corrente. */
+  /** Oferece correção dos bloqueios e exige as aprovações sequenciais da versão corrente. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -87,7 +89,7 @@ public class PdeAgentValidationReworkReadinessProvider
     String expectedVersion = expectedPrototypeVersion(product);
     Optional<AgentTask> rejection = unresolvedFunctionalRejection(history, expectedVersion);
     if (CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId())) {
-      return correctionReadiness(rejection);
+      return correctionReadiness(correctionSource(history, expectedVersion));
     }
     if (rejection.isPresent()) {
       return blocked(correctionRequiredReason(rejection.orElseThrow()));
@@ -138,7 +140,7 @@ public class PdeAgentValidationReworkReadinessProvider
             .isPresent();
     if (currentBlock) return false;
     if (CORRECTION_ACTIVITY.equals(activityId)) {
-      return unresolvedFunctionalRejection(history, version).isPresent();
+      return correctionSource(history, version).isPresent();
     }
     return version == null
         || !hasCurrentApproval(history, process, activityDefinition.getActivityId(), version);
@@ -169,16 +171,19 @@ public class PdeAgentValidationReworkReadinessProvider
         .orElse(0L);
   }
 
-  /** Expõe o diagnóstico exato que originará a tarefa condicional de correção. */
+  /** Expõe o diagnóstico funcional ou técnico que originará a tarefa condicional de correção. */
   private AgentProductProcessActivityReadiness correctionReadiness(Optional<AgentTask> rejection) {
     if (rejection.isEmpty()) {
-      return blocked("Nenhuma rejeição funcional pendente exige correção do protótipo.");
+      return blocked(
+          "Nenhuma rejeição funcional ou falha de homologação pendente exige correção do protótipo.");
     }
     AgentTask task = rejection.orElseThrow();
     return ready(correctionRequiredReason(task));
   }
 
-  /** Monta uma orientação curta com causa, ação e retorno obrigatório ao harness. */
+  /**
+   * Distingue falha técnica de rejeição funcional e preserva causa, origem e retorno aos testes.
+   */
   private String correctionRequiredReason(AgentTask rejection) {
     String rootCause = rootCause(rejection);
     String action = text(rejection.getBlockerAction());
@@ -188,12 +193,29 @@ public class PdeAgentValidationReworkReadinessProvider
             + rejection.getId()
             + " ("
             + activityLabel(rejection.getProcessActivityId())
-            + ") rejeitou a versão. Causa-raiz: "
+            + ("TECHNICAL_FAILURE".equals(rejection.getBlockerCategory())
+                ? ") não conseguiu homologar o protótipo. Causa registrada: "
+                : ") rejeitou a versão. Causa-raiz: ")
             + rootCause
             + " Próxima ação: "
             + action
             + " Depois da correção, publique uma nova versão e execute novamente a homologação técnica.",
         1800);
+  }
+
+  /** Seleciona a origem mais recente sem confundir falha técnica com reprovação funcional. */
+  private Optional<AgentTask> correctionSource(List<AgentTask> history, String version) {
+    Optional<AgentTask> functional = unresolvedFunctionalRejection(history, version);
+    long correctionId = latestCorrectionId(history, version);
+    Optional<AgentTask> technical =
+        history.stream()
+            .filter(task -> "technicalHomologation".equals(task.getProcessActivityId()))
+            .max(Comparator.comparing(AgentTask::getId))
+            .filter(task -> "BLOCKED".equals(task.getStatus()))
+            .filter(task -> "TECHNICAL_FAILURE".equals(task.getBlockerCategory()))
+            .filter(task -> task.getId() > correctionId);
+    return java.util.stream.Stream.concat(functional.stream(), technical.stream())
+        .max(Comparator.comparing(AgentTask::getId));
   }
 
   /** Localiza a rejeição funcional mais recente ainda sem correção válida posterior. */

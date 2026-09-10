@@ -7143,3 +7143,14 @@ ponta nem teste de publicação do sucessor.
   incluindo 2.577 testes backend, 535 frontend, 160 dos três módulos agentes,
   Docker, SSH e navegação por rodada. Cinco testes backend ignorados preexistentes.
   Nenhum commit, push ou PR. [Evidências completas](../homologacao/actions-capacidade-agentes-vega-2026-09-10.md).
+
+### 2026-09-10 — Vega #92: ação disponível para corrigir a homologação bloqueada
+
+- A tela e o MCP confirmaram #377 bloqueada por falha técnica, com origem `experiment:92`.
+  A regra de correção só reconhecia rejeições funcionais e deixava o operador sem comando.
+- Ajuste local: o card de homologação oferece **Criar tarefa de correção**, com Dédalo,
+  na atividade 3.6 do mesmo ciclo. A #377 e os aprendizados do #91 são preservados.
+- A nova tarefa de correção orienta o próximo trabalho e impede duplicação enquanto ativa.
+  Criá-la não aprova o protótipo: implementação, aceitação e homologação continuam necessárias.
+- Nenhuma tarefa produtiva, publicação, campanha ou venda foi gerada nesta solicitação.
+  [Contratos, matriz e evidências](../homologacao/vega-criar-tarefa-correcao-v1.md).

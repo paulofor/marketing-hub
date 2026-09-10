@@ -18,6 +18,67 @@ describe("ProductProcessActivityExecutionPanel", () => {
     onExecute.mockReset();
   });
 
+  it("offers the backend recovery task while keeping homologation disabled", () => {
+    const activity = blockedHomologation();
+    renderPanel(activity);
+    expect(
+      screen.getByRole("button", { name: "Reiniciar tarefa" }),
+    ).toBeDisabled();
+    expect(screen.getByText("Responsável: Dédalo")).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Criar tarefa de correção" }),
+    );
+    expect(onExecute).toHaveBeenCalledTimes(1);
+    expect(onExecute).toHaveBeenCalledWith({
+      activityId: "prototypeCorrection",
+    });
+  });
+
+  it("prevents duplicate recovery and displays the pending request", () => {
+    render(
+      <MemoryRouter>
+        <ProductProcessActivityExecutionPanel
+          activity={blockedHomologation()}
+          productId={4}
+          pending={true}
+          pendingActivityId="prototypeCorrection"
+          onExecute={onExecute}
+        />
+      </MemoryRouter>,
+    );
+    const button = screen.getByRole("button", { name: "Criando tarefa..." });
+    expect(button).toBeDisabled();
+    expect(button.querySelector(".spinner-border")).not.toBeNull();
+    fireEvent.click(button);
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
+  it("keeps the recovery visible with the backend restriction", () => {
+    const activity = blockedHomologation();
+    activity.recoveryAction!.actionAvailable = false;
+    activity.recoveryAction!.availabilityReason =
+      "A correção já possui execução ativa neste ciclo.";
+    renderPanel(activity);
+    expect(
+      screen.getByRole("button", { name: "Criar tarefa de correção" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText("A correção já possui execução ativa neste ciclo."),
+    ).toBeVisible();
+  });
+
+  it("does not invent a recovery command when the backend has no destination", () => {
+    const activity = blockedHomologation();
+    activity.recoveryAction = null;
+    renderPanel(activity);
+    expect(
+      screen.queryByRole("button", { name: "Criar tarefa de correção" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Reiniciar tarefa" }),
+    ).toBeDisabled();
+  });
+
   it("requires an explicit and audited human decision", () => {
     renderPanel(humanActivity());
 
@@ -475,6 +536,36 @@ describe("ProductProcessActivityExecutionPanel", () => {
         workspaceCode: "PDE_PRIVATE_PROTOTYPE_ACCEPTANCE",
         workspaceReferenceId: 9,
         requirements: [],
+      },
+    };
+  }
+
+  function blockedHomologation(): ProductProcessActivityExecutionGroup {
+    return {
+      ...baseActivity(),
+      activityId: "technicalHomologation",
+      activityName: "Homologar tecnicamente a versão real",
+      activityOwnerName: "Psique",
+      operationalState: "BLOCKED",
+      executionControl: {
+        executorType: "AGENT",
+        interactionType: "COMMAND",
+        actionLabel: "Reiniciar tarefa",
+        description: "Psique executa os testes com o harness.",
+        actionAvailable: false,
+        availabilityReason:
+          "O protótipo ainda não possui URL executável aceita.",
+        confirmationRequired: false,
+        requirements: [],
+      },
+      recoveryAction: {
+        activityId: "prototypeCorrection",
+        activityName: "Corrigir o protótipo a partir do parecer",
+        ownerName: "Dédalo",
+        actionLabel: "Criar tarefa de correção",
+        actionAvailable: true,
+        availabilityReason:
+          "A tarefa #377 exige implementação e nova homologação no ciclo #2.",
       },
     };
   }

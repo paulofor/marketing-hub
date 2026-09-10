@@ -1,0 +1,84 @@
+.product-cycle-summary {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.product-cycle-summary__title {
+  color: var(--product-primary, #7a2444);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.product-cycle-summary__work {
+  display: grid;
+  gap: 0.5rem;
+  background: #fff;
+  border: 1px solid #dbe3ed;
+  border-left: 3px solid var(--product-primary, #7a2444);
+  border-radius: 0.4rem;
+  padding: 0.75rem;
+}
+
+.product-cycle-summary__work--blocked {
+  background: #fffbeb;
+  border-color: #b45309;
+}
+
+.product-cycle-summary__label {
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.product-cycle-summary__work--blocked .product-cycle-summary__label {
+  color: #92400e;
+}
+
+.product-value-chain-position .product-cycle-summary__work > p,
+.product-value-chain-position .product-cycle-summary__details p {
+  font-weight: 400;
+}
+
+.product-cycle-summary__work .btn,
+.product-cycle-summary__cycle-link {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+  justify-content: center;
+  min-height: 44px;
+  white-space: normal;
+}
+
+.product-cycle-summary__details {
+  border-top: 1px solid #dbe3ed;
+  padding-top: 0.6rem;
+}
+
+.product-cycle-summary__details summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding-block: 0.4rem;
+}
+
+.product-cycle-summary__details > p,
+.product-cycle-summary__learning {
+  margin-top: 0.6rem;
+}
+
+.product-cycle-summary__learning {
+  border-left: 2px solid #cbd5e1;
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 0.6rem;
+}
+
+.product-cycle-summary__coordination {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 0.6rem;
+}

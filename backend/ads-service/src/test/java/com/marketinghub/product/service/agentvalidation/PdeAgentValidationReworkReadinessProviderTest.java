@@ -62,6 +62,53 @@ class PdeAgentValidationReworkReadinessProviderTest {
         .contains("homologação técnica");
   }
 
+  /** Oferece tarefa causal para #377 mesmo sem aceitação privada ou rejeição funcional. */
+  @Test
+  void exposesCorrectionForTechnicalHomologationFailureWithoutAcceptance() {
+    product.setValidationDefinitionJson("{}");
+    AgentTask failure = task(377L, process, "technicalHomologation", "BLOCKED");
+    failure.setBlockerCategory("TECHNICAL_FAILURE");
+    failure.setExecutionError("A URL do PDE é inválida ou contém parâmetros não permitidos.");
+    failure.setBlockerAction("Implemente o protótipo da versão e seus testes próprios.");
+    history.add(failure);
+
+    var readiness = provider.readiness(process, activity("prototypeCorrection"), product, SOURCE);
+
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.reason())
+        .contains("#377", "não conseguiu homologar", "URL", "testes próprios");
+    assertThat(readiness.reason()).doesNotContain("rejeitou a versão");
+    assertThat(
+            provider.requiresFreshExecution(
+                process, activity("prototypeCorrection"), product, SOURCE))
+        .isTrue();
+  }
+
+  /** Não transforma falhas técnicas de cenários ou do próprio corretor em rejeições funcionais. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"psiqueSafety", "prototypeCorrection", "access"})
+  void ignoresTechnicalFailureOutsideHomologation(String activityId) {
+    AgentTask failure = task(377L, process, activityId, "BLOCKED");
+    failure.setBlockerCategory("TECHNICAL_FAILURE");
+    history.add(failure);
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, SOURCE).ready())
+        .isFalse();
+  }
+
+  /** Uma homologação posterior concluída supera a falha técnica sem inventar correção funcional. */
+  @Test
+  void retiresTechnicalFailureAfterSuccessfulRetry() {
+    AgentTask failure = task(377L, process, "technicalHomologation", "BLOCKED");
+    failure.setBlockerCategory("TECHNICAL_FAILURE");
+    history.add(failure);
+    history.add(task(379L, process, "technicalHomologation", "COMPLETED"));
+    assertThat(
+            provider.readiness(process, activity("prototypeCorrection"), product, SOURCE).ready())
+        .isFalse();
+  }
+
   /** Impede reexecutar o harness antes de existir correção válida e versionada. */
   @Test
   void blocksTechnicalHomologationUntilCorrectionIsReady() {

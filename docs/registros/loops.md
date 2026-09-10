@@ -23,6 +23,14 @@
   Liquibase do PR. Registro: `docs/homologacao/vega-tarefa-377-harness-v1.md`.
 - **Limite:** essa correção não materializa o protótipo v8 nem aprova a tarefa #377. A versão
   executável e seus cenários próprios continuam necessários para homologar o segundo ciclo.
+- **Recorrência na saída do bloqueio em 10/09/2026:** a validação de entrada ocultou a retentativa,
+  mas #377 era `TECHNICAL_FAILURE` e a atividade de correção só aceitava rejeição funcional.
+  O card ficou sem comando de recuperação. Backend e Dédalo passam a aceitar essa origem
+  técnica exclusivamente da homologação; o card recebe `recoveryAction` declarada no processo,
+  preservando a indisponibilidade de Psique. Tarefa ativa impede duplicação e passa a ser a
+  orientação atual do ciclo. A causa original e o aprendizado do #91 seguem no contexto da fila.
+  Testes de comando, contexto, executor e navegação previnem recorrência; matriz em
+  `docs/homologacao/vega-criar-tarefa-correcao-v1.md`.
 
 ## LOOP-MIRA-SEGURANCA-ENCERRADA-SEM-ORIENTACAO — bloqueio correto perde contexto na tela
 
@@ -4681,6 +4689,14 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 `AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.
 
 ## LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI — ciclo fora do fluxo de valor
+
+- **Recorrência nos cards em 10/09/2026:** Vega seguia em “Etapa 6 de 6” porque o card
+  consumia somente a posição comercial e a projeção do processo coordenador. Banco e
+  `process-context` já identificavam o segundo ciclo, #92, e a pendência 3.5 no Processo 3.
+  O card agora reutiliza esse contexto oficial, mostra memória anterior e separa os custos
+  acumulados. Falha de consulta não retorna silenciosamente à orientação comercial histórica.
+  Regressões cobrem os contratos, navegação com ciclo/cadeia, bloqueios, cache, isolamento,
+  início e catálogo em desktop/mobile. Evidências: `docs/homologacao/vega-card-ciclo-atual-v1.md`.
 
 - **Continuidade em 10/09/2026:** a conclusão do Processo 2 no segundo ciclo não indicava o
   trabalho seguinte; o ciclo ainda apontava à arquitetura já concluída. A orientação passa a

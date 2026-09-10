@@ -48,6 +48,21 @@ não cria experimento, tarefa, aprovação, campanha ou gasto. O primeiro experi
 ser planejado nesse ambiente antes de receber tráfego; a entrada pelos resultados adota
 uma referência histórica ou retoma o ciclo existente, sem fingir aprovações retroativas.
 
+### Cards de produto orientados pelo ciclo — decisão de 10/09/2026
+
+Quando houver ciclo identificado, os cards de início e catálogo devem destacar o número ordinal
+da passagem, experimento, etapa e trabalho atual fornecidos pelo backend. O Processo 6 permanece
+como coordenação do ciclo; seu vínculo comercial não significa que o sucessor já está em vendas.
+Um retorno ao Processo 2, 3 ou 4 deve mostrar o destino atual, atividade, responsável, pendência e
+link com produto, cadeia e ciclo. O retorno aprovado original não substitui a orientação atual.
+
+A melhoria/hipótese desta passagem e a memória dos ciclos anteriores devem ficar acessíveis no
+próprio card, com origem e limites da conclusão. Custos e tempos acumulados da cadeia ficam no
+histórico identificado; não podem ser apresentados como custo ou duração do ciclo atual.
+Carregamento, falha de consulta e ciclo encerrado devem aparecer explicitamente, sem substituir
+silenciosamente a orientação por “Etapa 6 de 6” ou presumir operação comercial.
+O card reutiliza o contrato canônico `process-context`; não decide transições nem cria tarefas.
+
 Evoluções do BPM pai e da cadeia criam versões novas. Definições, tarefas e ciclos anteriores
 permanecem auditáveis. Retornos comerciais são registrados no ciclo e não entram como
 predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.

@@ -222,11 +222,142 @@ class PdeConstructionBpmTaskConsumerTest {
         .contains(
             "blockedActivities",
             "FUNCTIONAL_ADJUSTMENT",
+            "TECHNICAL_FAILURE",
+            "learningSalesCycle",
             "exatamente três alternativas",
             "userInstructions",
             "technicalHomologation",
             "versão em `taskTarget.experienceVersion`")
         .containsIgnoringCase("não publique");
+  }
+
+  /**
+   * Aceita a origem técnica auditada, mas não declara pronta uma implementação ainda inexistente.
+   */
+  @Test
+  void acceptsTechnicalHomologationRecoveryWithoutInventingExecutablePrototype() throws Exception {
+    var task = technicalCorrectionTask("technicalHomologation");
+    var result =
+        (com.fasterxml.jackson.databind.node.ObjectNode)
+            json.readTree(readyCorrectionResult("vega-v7", "vega-v8"));
+    ((com.fasterxml.jackson.databind.node.ObjectNode) result.path("correctionPlan"))
+        .put("rejectedActivityId", "technicalHomologation");
+    var contract = correctionContract();
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateCorrectionContext(
+                    task, result, contract, json))
+        .hasMessageContaining("protótipo executável aceito");
+
+    result.put("decision", "BLOCKED");
+    PdeConstructionBpmTaskConsumer.validate(result, contract);
+    PdeConstructionBpmTaskConsumer.validateCorrectionContext(task, result, contract, json);
+
+    var preparedTask = new java.util.HashMap<String, Object>(task);
+    String privateUrl = "https://prototype.example.test/vega-private";
+    preparedTask.put(
+        "taskTarget",
+        Map.of(
+            "experienceVersion",
+            "vega-v8",
+            "publicUrl",
+            privateUrl,
+            "pdeContext",
+            Map.of(
+                "privatePrototypeAcceptance",
+                Map.of(
+                    "status",
+                    "READY",
+                    "prototypeVersion",
+                    "vega-v8",
+                    "privateAccessUrl",
+                    privateUrl))));
+    result.put("decision", "READY");
+    PdeConstructionBpmTaskConsumer.validateCorrectionContext(preparedTask, result, contract, json);
+  }
+
+  /** Recusa falhas técnicas de outras atividades como origem de correção de protótipo. */
+  @Test
+  void rejectsTechnicalRecoveryFromAnotherActivity() throws Exception {
+    var result = json.readTree(readyCorrectionResult("vega-v7", "vega-v8"));
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateCorrectionContext(
+                    technicalCorrectionTask("access"), result, correctionContract(), json))
+        .hasMessageContaining("falha técnica de homologação");
+  }
+
+  /** Exige a origem mais recente mesmo quando uma falha técnica sucede o parecer funcional. */
+  @Test
+  void rejectsStaleFunctionalSourceAfterTechnicalFailure() throws Exception {
+    var task =
+        Map.<String, Object>of(
+            "taskId",
+            380,
+            "taskTarget",
+            Map.of("experienceVersion", "vega-v8"),
+            "processContextJson",
+            """
+        {"blockedActivities":[
+          {"taskId":350,"activityId":"psiqueAdherent","category":"FUNCTIONAL_ADJUSTMENT"},
+          {"taskId":377,"activityId":"technicalHomologation","category":"TECHNICAL_FAILURE"}]}
+        """);
+    var result = json.readTree(readyCorrectionResult("vega-v7", "vega-v8"));
+    assertThatThrownBy(
+            () ->
+                PdeConstructionBpmTaskConsumer.validateCorrectionContext(
+                    task, result, correctionContract(), json))
+        .hasMessageContaining("vigente");
+  }
+
+  /** Mantém a correção funcional válida quando a falha técnica posterior já foi superada. */
+  @Test
+  void ignoresTechnicalFailureAfterCompletedHomologation() throws Exception {
+    var task =
+        Map.<String, Object>of(
+            "taskId",
+            381,
+            "taskTarget",
+            Map.of("experienceVersion", "vega-v8"),
+            "processContextJson",
+            """
+        {"blockedActivities":[
+          {"taskId":350,"activityId":"psiqueAdherent","category":"FUNCTIONAL_ADJUSTMENT"},
+          {"taskId":377,"activityId":"technicalHomologation","category":"TECHNICAL_FAILURE"}],
+         "completedActivities":[{"taskId":380,"activityId":"technicalHomologation"}]}
+        """);
+    var result = json.readTree(readyCorrectionResult("vega-v7", "vega-v8"));
+    PdeConstructionBpmTaskConsumer.validateCorrectionContext(
+        task, result, correctionContract(), json);
+  }
+
+  /** Monta contexto mínimo de uma falha técnica de homologação sem chamar integrações externas. */
+  private Map<String, Object> technicalCorrectionTask(String activityId) throws Exception {
+    var context = json.createObjectNode();
+    context
+        .putArray("blockedActivities")
+        .addObject()
+        .put("taskId", 350)
+        .put("activityId", activityId)
+        .put("category", "TECHNICAL_FAILURE");
+    return Map.of(
+        "taskId",
+        378,
+        "taskTarget",
+        Map.of("experienceVersion", "vega-v8"),
+        "processContextJson",
+        json.writeValueAsString(context));
+  }
+
+  /** Usa o mesmo contrato de correção que o consumidor resolve para a fila canônica. */
+  private PdeConstructionBpmTaskConsumer.BpmContract correctionContract() {
+    return new PdeConstructionBpmTaskConsumer.BpmContract(
+        "pde-construction-approval",
+        "prototypeCorrection",
+        "prompt",
+        "schema",
+        "pde-construction-v3",
+        "READY");
   }
 
   /** Aceita a correção somente quando ela referencia o parecer e uma nova versão real. */

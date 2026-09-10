@@ -31,6 +31,18 @@
   orientação atual do ciclo. A causa original e o aprendizado do #91 seguem no contexto da fila.
   Testes de comando, contexto, executor e navegação previnem recorrência; matriz em
   `docs/homologacao/vega-criar-tarefa-correcao-v1.md`.
+- **Recorrência de acompanhamento em 10/09/2026:** o clique criou #378 e Dédalo a executou,
+  mas o usuário percebeu ausência de efeito. A confirmação estava no topo da página, a tarefa
+  em outro card e a leitura não acompanhava mudanças. #378 terminou `BLOCKED` por falta da
+  versão executável aceita; o executor desta atividade usa análise de repositório somente
+  leitura. A interface agora mostra uma única ação e a tentativa atual junto ao comando,
+  preserva o retorno em falhas de conexão e atualiza o histórico por projeção leve de ID,
+  estado e alteração, filtrada no banco por processo e referência. Não há nova consulta de
+  auditoria saudável enquanto essa projeção não mudar; uma leitura que falhou é retomada
+  mesmo quando a revisão leve continua igual. A razão técnica antiga fica sob demanda, e
+  a página não reposiciona a leitura a cada atualização. Testes cobrem viewport real do
+  retorno, ciclo, fila, callbacks, persistência, bloqueio, conclusão e ausência de duplicação.
+  Registro: `docs/homologacao/vega-acao-unica-acompanhamento-v1.md`.
 
 ## LOOP-MIRA-SEGURANCA-ENCERRADA-SEM-ORIENTACAO — bloqueio correto perde contexto na tela
 

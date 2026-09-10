@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.agenttask;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,21 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /**
+   * Consulta somente identidade, estado e revisão das tarefas do contexto exato em acompanhamento.
+   */
+  @Query(
+      """
+      select new com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse(
+        task.id, task.status, task.updatedAt)
+      from AgentTask task
+      where task.processDefinition.id = :processDefinitionId and task.sourceReference = :sourceReference
+      order by task.id
+      """)
+  List<ProductProcessExecutionProgressResponse> findProductProcessExecutionProgress(
+      @Param("processDefinitionId") Long processDefinitionId,
+      @Param("sourceReference") String sourceReference);
+
   /** Serializa callbacks concorrentes da mesma tarefa até o commit de status e efeitos. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select task from AgentTask task where task.id = :id")

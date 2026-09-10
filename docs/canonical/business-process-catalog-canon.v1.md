@@ -290,6 +290,19 @@ atividade sem saída operacional quando todos os demais critérios permitirem a 
 
 ### Controle padronizado de execução das atividades
 
+O comando assíncrono deve confirmar a tarefa no próprio card em que ocorreu o clique, com
+número, responsável e andamento automático. Quando o backend oferecer recuperação, ela é
+a única ação principal do card bloqueado. Erros de envio e de atualização aparecem junto ao
+comando; reler o histórico não reposiciona a página nem apaga a última situação conhecida.
+`GET /api/business-processes/{processDefinitionId}/products/{productId}/execution-progress`
+consulta somente ID, estado e instante de alteração das tarefas, filtrados pela referência
+exata e pela versão do processo. O backend valida a pertença da referência ao produto. A tela
+reconsulta a auditoria e a orientação do ciclo ao detectar mudança nessa projeção ou ao
+recuperar uma leitura que falhou. Uma falha não pode fixar indefinidamente o estado antigo:
+a consulta seguinte deve tentar recuperar o resultado mesmo com a revisão leve inalterada.
+Concluir a tarefa e atingir o objetivo continuam sendo fatos distintos quando o domínio
+mantiver alguma exigência pendente.
+
 Na operação de experimento, a leitura e o comando do produto devem respeitar o experimento
 selecionado no plano vigente (`IN_PROGRESS` ou `BLOCKED`) quando ele pertencer ao produto e já
 tiver saído de `PLANNED`. Isso permite reconciliar um ciclo pausado sem substituí-lo por um piloto

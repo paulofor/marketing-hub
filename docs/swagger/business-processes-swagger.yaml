@@ -143,6 +143,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProductProcessActivityExecutionHistory"
         "404": { description: Processo ou produto não encontrado }
+  /api/business-processes/{processDefinitionId}/products/{productId}/execution-progress:
+    get:
+      summary: Acompanha revisões de tarefas sem carregar auditorias
+      description: Consulta escalar de ID, estado e alteração, filtrada pela versão exata do processo e pela referência do produto. Não retorna prompts, resultados, evidências nem altera a execução. Uma mudança permite reconsultar o histórico completo e os gates atuais.
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+        - name: productId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: sourceReference
+          in: query
+          required: true
+          schema: { type: string, maxLength: 200 }
+      responses:
+        "200":
+          description: Revisões ordenadas por ID, incluindo lista vazia
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [taskId, status, updatedAt]
+                  properties:
+                    taskId: { type: integer, format: int64 }
+                    status: { type: string }
+                    updatedAt: { type: string, format: date-time }
+        "404": { description: Produto ou processo inexistente }
+        "409": { description: Referência inválida ou pertencente a outro produto }
   /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests:
     post:
       summary: Executa o comando backend, abre tarefas ou registra uma decisão humana
@@ -771,7 +801,7 @@ components:
       type: object
       nullable: true
       description: Comando da atividade de recuperação declarada no mesmo processo. Usa o endpoint execution-requests com activityId e o mesmo learningCycleId. Não libera a atividade bloqueada nem altera suas tarefas. Disponibilidade recalculada pelo backend, inclusive quando já existe tarefa ativa ou o produto está em STOP.
-      required: [activityId, activityName, ownerName, actionLabel, actionAvailable, availabilityReason]
+      required: [activityId, activityName, ownerName, actionLabel, actionAvailable, availabilityReason, operationalState, objectiveAchieved]
       properties:
         activityId: { type: string }
         activityName: { type: string }
@@ -779,6 +809,21 @@ components:
         actionLabel: { type: string }
         actionAvailable: { type: boolean }
         availabilityReason: { type: string }
+        operationalState: { type: string }
+        objectiveAchieved: { type: boolean }
+        latestTask:
+          type: object
+          nullable: true
+          description: Última tentativa da correção na mesma referência e versão do processo. Não duplica prompts nem resultados completos.
+          properties:
+            taskId: { type: integer, format: int64 }
+            status: { type: string }
+            agentName: { type: string }
+            createdAt: { type: string, format: date-time }
+            startedAt: { type: string, format: date-time, nullable: true }
+            finishedAt: { type: string, format: date-time, nullable: true }
+            executionError: { type: string, nullable: true }
+            recommendedAction: { type: string, nullable: true }
     ProductProcessActivityRequirement:
       type: object
       required: [code, title, satisfied, detail, recommendation]

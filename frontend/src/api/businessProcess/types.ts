@@ -425,7 +425,21 @@ export type ProductProcessActivityExecutionGroup = {
     actionLabel: string;
     actionAvailable: boolean;
     availabilityReason: string;
+    operationalState?: ProductProcessActivityExecutionGroup["operationalState"];
+    objectiveAchieved?: boolean;
+    latestTask?: ProductProcessRecoveryTask | null;
   } | null;
+};
+
+export type ProductProcessRecoveryTask = {
+  taskId: number;
+  status: string;
+  agentName: string;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  executionError?: string;
+  recommendedAction?: string;
 };
 
 export type ProductProcessActivityRequirement = {
@@ -481,7 +495,7 @@ export type ProductProcessActivityExecutionRequest = {
   productId: number;
   activityId: string;
   sourceReference: string;
-  tasks: unknown[];
+  tasks: { id: number; status: string; assignedAgentNickname?: string }[];
   operationalState: ProductProcessActivityExecutionGroup["operationalState"];
   objectiveAchieved: boolean;
   message: string;

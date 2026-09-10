@@ -10,7 +10,13 @@ import {
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import type { ProductProcessActivityExecutionCommand } from "../../api/businessProcess/useProductProcessActivityExecutions";
-import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
+import type {
+  ProductProcessActivityExecutionGroup,
+  ProductProcessRecoveryTask,
+} from "../../api/businessProcess/types";
+import ProductProcessTaskTracking, {
+  type ActivityExecutionFeedback,
+} from "./ProductProcessTaskTracking";
 import ExperimentRunPanel from "../experiment/ExperimentRunPanel";
 import PrivateReadingAssistant from "./PrivateReadingAssistant";
 
@@ -20,6 +26,9 @@ type Props = {
   pending: boolean;
   pendingActivityId?: string;
   onExecute: (command: ProductProcessActivityExecutionCommand) => void;
+  feedback?: ActivityExecutionFeedback;
+  trackingError?: boolean;
+  currentTask?: ProductProcessRecoveryTask | null;
 };
 
 const executorLabels = {
@@ -45,6 +54,9 @@ export default function ProductProcessActivityExecutionPanel({
   pending,
   pendingActivityId,
   onExecute,
+  feedback,
+  trackingError,
+  currentTask,
 }: Props) {
   const control = activity.executionControl;
   if (!control) return null;
@@ -52,6 +64,11 @@ export default function ProductProcessActivityExecutionPanel({
   const recovery = activity.recoveryAction;
   const recovering = pending && pendingActivityId === recovery?.activityId;
   const controlCompleted = activity.operationalState === "COMPLETED";
+  const trackedTask = recovery ? recovery.latestTask : currentTask;
+  const waitingForTask = Boolean(
+    feedback?.taskIds?.length &&
+      !feedback.taskIds.includes(trackedTask?.taskId ?? -1),
+  );
 
   return (
     <section
@@ -73,73 +90,79 @@ export default function ProductProcessActivityExecutionPanel({
       </header>
 
       <p className="product-process-activity-control__description">
-        {control.description}
+        {recovery
+          ? "Solicite a correção e acompanhe a tarefa aqui. O resultado e os eventuais impedimentos aparecem abaixo."
+          : control.description}
       </p>
 
       <ActivityRequirements activity={activity} />
 
-      <p
-        className={`product-process-activity-control__availability ${control.actionAvailable || controlCompleted ? "is-ready" : "is-pending"}`}
-      >
-        {control.actionAvailable || controlCompleted ? (
-          <CheckCircle2 size={17} aria-hidden="true" />
-        ) : (
-          <AlertTriangle size={17} aria-hidden="true" />
-        )}
-        <span>{control.availabilityReason}</span>
-      </p>
-
-      {control.interactionType === "APPROVAL" ? (
-        <HumanDecisionForm
-          activity={activity}
-          executing={executing}
-          onExecute={onExecute}
-        />
-      ) : control.interactionType === "SUBPROCESS" ||
-        (control.interactionType === "AUTOMATIC" && control.navigationUrl) ? (
-        control.targetProcessDefinitionId && control.actionAvailable ? (
-          <Link
-            className="btn btn-primary"
-            to={
-              control.navigationUrl ||
-              `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities`
-            }
-          >
-            <Workflow size={17} aria-hidden="true" />
-            {control.actionLabel || "Abrir subprocesso"}
-          </Link>
-        ) : null
-      ) : ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
-        control.actionLabel &&
-        (control.actionAvailable || activity.operationalState === "BLOCKED") ? (
-        <button
-          className="btn btn-primary"
-          type="button"
-          disabled={pending || !control.actionAvailable}
-          onClick={() => onExecute({ activityId: activity.activityId })}
+      {!recovery ? (
+        <p
+          className={`product-process-activity-control__availability ${control.actionAvailable || controlCompleted ? "is-ready" : "is-pending"}`}
         >
-          {executing ? (
-            <Loader2
-              className="spinner-border spinner-border-sm"
-              size={16}
-              aria-hidden="true"
-            />
+          {control.actionAvailable || controlCompleted ? (
+            <CheckCircle2 size={17} aria-hidden="true" />
           ) : (
-            <PlayCircle size={17} aria-hidden="true" />
+            <AlertTriangle size={17} aria-hidden="true" />
           )}
-          {executing ? "Executando..." : control.actionLabel}
-        </button>
+          <span>{control.availabilityReason}</span>
+        </p>
       ) : null}
+
+      {!recovery &&
+        (control.interactionType === "APPROVAL" ? (
+          <HumanDecisionForm
+            activity={activity}
+            executing={executing}
+            onExecute={onExecute}
+          />
+        ) : control.interactionType === "SUBPROCESS" ||
+          (control.interactionType === "AUTOMATIC" && control.navigationUrl) ? (
+          control.targetProcessDefinitionId && control.actionAvailable ? (
+            <Link
+              className="btn btn-primary"
+              to={
+                control.navigationUrl ||
+                `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities`
+              }
+            >
+              <Workflow size={17} aria-hidden="true" />
+              {control.actionLabel || "Abrir subprocesso"}
+            </Link>
+          ) : null
+        ) : ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
+          control.actionLabel &&
+          (control.actionAvailable ||
+            activity.operationalState === "BLOCKED") ? (
+          <button
+            className="btn btn-primary"
+            type="button"
+            disabled={pending || waitingForTask || !control.actionAvailable}
+            onClick={() => onExecute({ activityId: activity.activityId })}
+          >
+            {executing ? (
+              <Loader2
+                className="spinner-border spinner-border-sm"
+                size={16}
+                aria-hidden="true"
+              />
+            ) : (
+              <PlayCircle size={17} aria-hidden="true" />
+            )}
+            {executing ? "Executando..." : control.actionLabel}
+          </button>
+        ) : null)}
 
       {recovery ? (
         <aside className="mt-3" aria-label="Resolver bloqueio da atividade">
           <strong>{recovery.activityName}</strong>
           <p className="mb-2">Responsável: {recovery.ownerName}</p>
-          <p>{recovery.availabilityReason}</p>
+          {!recovery.latestTask ? <p>{recovery.availabilityReason}</p> : null}
           <button
             className="btn btn-primary d-inline-flex align-items-center gap-2"
             type="button"
-            disabled={pending || !recovery.actionAvailable}
+            disabled={pending || waitingForTask || !recovery.actionAvailable}
             onClick={() => onExecute({ activityId: recovery.activityId })}
           >
             {recovering ? (
@@ -155,6 +178,12 @@ export default function ProductProcessActivityExecutionPanel({
           </button>
         </aside>
       ) : null}
+
+      <ProductProcessTaskTracking
+        task={trackedTask}
+        feedback={feedback}
+        trackingError={trackingError}
+      />
 
       {control.workspaceCode === "EXPERIMENT_PREFLIGHT" &&
       control.workspaceReferenceId ? (

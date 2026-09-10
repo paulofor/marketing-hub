@@ -1,0 +1,57 @@
+{
+  "observedAtUtc": "2026-09-10T18:47:03.789661+00:00",
+  "productId": 4,
+  "chainId": 14,
+  "learningCycleId": 2,
+  "experimentId": 92,
+  "source": {
+    "provider": "Marketing Hub MCP",
+    "tool": "db_query",
+    "query": "SELECT id,status,source_reference,process_activity_id,activity_instance_id,blocker_category,created_at,updated_at FROM agent_task WHERE source_reference='experiment:92' ORDER BY id DESC LIMIT 4"
+  },
+  "observedTasks": [
+    {
+      "id": 378,
+      "status": "BLOCKED",
+      "source_reference": "experiment:92",
+      "process_activity_id": "prototypeCorrection",
+      "activity_instance_id": 240,
+      "blocker_category": "FUNCTIONAL_ADJUSTMENT",
+      "created_at": "2026-09-10T17:51:05.6315",
+      "updated_at": "2026-09-10T17:52:58"
+    },
+    {
+      "id": 377,
+      "status": "BLOCKED",
+      "source_reference": "experiment:92",
+      "process_activity_id": "technicalHomologation",
+      "activity_instance_id": 239,
+      "blocker_category": "TECHNICAL_FAILURE",
+      "created_at": "2026-09-10T13:45:53.671871",
+      "updated_at": "2026-09-10T13:46:39"
+    },
+    {
+      "id": 376,
+      "status": "COMPLETED",
+      "source_reference": "experiment:92",
+      "process_activity_id": "access",
+      "activity_instance_id": 238,
+      "blocker_category": null,
+      "created_at": "2026-09-10T13:37:19.671605",
+      "updated_at": "2026-09-10T13:43:46"
+    },
+    {
+      "id": 375,
+      "status": "COMPLETED",
+      "source_reference": "experiment:92",
+      "process_activity_id": "audiovisual",
+      "activity_instance_id": 237,
+      "blocker_category": null,
+      "created_at": "2026-09-10T13:33:38.508874",
+      "updated_at": "2026-09-10T13:34:42"
+    }
+  ],
+  "productiveTaskCreatedDuringThisRequest": false,
+  "productionCodeChangedDuringThisRequest": false,
+  "interpretation": "O clique anterior criou a tarefa 378, encerrada como BLOCKED. A correção local melhora criação e acompanhamento; não comprova a disponibilidade do protótipo nem a conclusão da homologação produtiva."
+}

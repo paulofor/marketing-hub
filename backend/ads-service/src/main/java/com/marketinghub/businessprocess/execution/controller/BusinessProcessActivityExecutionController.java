@@ -2,11 +2,13 @@ package com.marketinghub.businessprocess.execution.controller;
 
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,6 +57,16 @@ public class BusinessProcessActivityExecutionController {
     return learningCycleId == null
         ? service.productProcessExecutions(processDefinitionId, productId)
         : service.productProcessExecutions(processDefinitionId, productId, learningCycleId);
+  }
+
+  /** Entrega somente revisões de tarefas para acompanhar mudanças sem retransmitir auditorias. */
+  @Operation(summary = "Acompanha alterações das tarefas do produto e referência exatos")
+  @GetMapping("/{processDefinitionId}/products/{productId}/execution-progress")
+  public List<ProductProcessExecutionProgressResponse> productExecutionProgress(
+      @PathVariable Long processDefinitionId,
+      @PathVariable Long productId,
+      @RequestParam String sourceReference) {
+    return service.productExecutionProgress(processDefinitionId, productId, sourceReference);
   }
 
   /** Executa a atividade no ciclo explícito, quando informado, preservando decisões humanas. */

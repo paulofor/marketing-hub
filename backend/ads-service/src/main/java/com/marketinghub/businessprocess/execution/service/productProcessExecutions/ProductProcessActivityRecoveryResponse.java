@@ -9,4 +9,7 @@ public record ProductProcessActivityRecoveryResponse(
     String ownerName,
     String actionLabel,
     boolean actionAvailable,
-    String availabilityReason) {}
+    String availabilityReason,
+    String operationalState,
+    boolean objectiveAchieved,
+    ProductProcessRecoveryTaskResponse latestTask) {}

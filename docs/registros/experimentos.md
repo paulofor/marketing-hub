@@ -1,3 +1,20 @@
+## 2026-09-10 — Vega: ação única e acompanhamento da tarefa de correção
+
+- Causa confirmada na tela, endpoint e MCP: o clique criou #378 no ciclo #2/experimento #92,
+  mas o card de origem não mostrava a tarefa nem atualizava seu estado. Dédalo encerrou como
+  `BLOCKED` pela ausência da versão executável aceita; #377 permanece no histórico.
+- Correção local: uma ação principal por card bloqueado, confirmação e tarefa no ponto do
+  clique, acompanhamento automático de fila/execução/resultado e erros visíveis. Consultas
+  leves respeitam produto, versão do processo e referência; falhas de conexão preservam os
+  dados conhecidos e recuperam a leitura sem exigir nova mudança na tarefa.
+- Duas rodadas locais completas passaram com 522 testes cada, persistência H2, fila e
+  callbacks reais com executor simulado, além de Chromium desktop, iPhone e Pixel em
+  emulação. Dados de homologação ficaram isolados da operação comercial.
+- Limite: a melhoria da interface não comprova a implementação do protótipo. A atividade
+  produtiva continua bloqueada; não houve nova tarefa produtiva, PR ou deploy nesta execução.
+  Repetir o parecer sem disponibilizar uma versão corrigida não acrescenta prova de valor.
+- Matriz e evidências: [ação única do Vega](../homologacao/vega-acao-unica-acompanhamento-v1.md).
+
 ## 2026-09-08 — Vega: continuidade do ciclo após deploy
 
 - Pela UI da cadeia, confirmado o acesso ao subprocesso de aprendizado dentro do processo 6.

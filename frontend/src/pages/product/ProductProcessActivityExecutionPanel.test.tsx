@@ -18,12 +18,12 @@ describe("ProductProcessActivityExecutionPanel", () => {
     onExecute.mockReset();
   });
 
-  it("offers the backend recovery task while keeping homologation disabled", () => {
+  it("offers one action and follows the backend recovery destination", () => {
     const activity = blockedHomologation();
     renderPanel(activity);
     expect(
-      screen.getByRole("button", { name: "Reiniciar tarefa" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "Reiniciar tarefa" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Responsável: Dédalo")).toBeVisible();
     fireEvent.click(
       screen.getByRole("button", { name: "Criar tarefa de correção" }),

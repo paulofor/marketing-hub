@@ -1,0 +1,18 @@
+{
+  "cardKey": "prova-humana-em-recomendacao-ia",
+  "collection": "neuromarketing",
+  "title": "Recomendações de IA ganham confiança com prova humana crível",
+  "finding": "Entre consumidores que já usam IA para pesquisa de compras, uma pesquisa global encontrou preferência relevante por recomendações que incorporem perspectivas de criadores, especialmente quando a fonte demonstra credibilidade, expertise e independência.",
+  "mechanism": "Quando a IA comprime muitas opções em poucas recomendações, experiência humana verificável pode funcionar como evidência adicional para reduzir incerteza. Popularidade isolada parece menos importante do que credibilidade, consistência, expertise e transparência de patrocínio.",
+  "commercialApplication": "Estruturar reviews, depoimentos e conteúdo de consumidores, reviewers e especialistas para que agentes possam localizar a fonte, entender qual claim ela sustenta e informar eventual relação comercial. Testar AgentDiscoverability antes e depois dessa camada de evidência.",
+  "evidenceStrength": "Moderada: survey global com 2.200 consumidores que haviam usado IA para pesquisa de compras, útil como sinal de confiança, mas baseado em autorrelato, sem Brasil e sem teste causal de conversão.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Disponibilizar prova humana verificável e transparente em formato legível por agentes aumentará a confiança e a qualidade das recomendações de IA mais do que prova social genérica ou não rastreável.",
+  "risks": "Fabricar reviews, confundir patrocínio com independência, esconder relação comercial, usar criadores sem experiência real ou transformar popularidade em falsa autoridade.",
+  "limits": "A amostra inclui apenas usuários recentes de IA para compras e não inclui Brasil. Os percentuais não predizem aumento de CTR, lead ou venda; o efeito deve ser validado com comportamento real no funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-10-prova-humana-recomendacao-ia.md",
+  "sourceTitle": "Fonte revisada — Perspectivas de criadores em recomendações de compra por IA",
+  "sourceSha256": "629b06a3b491e79c0094c198dcb3aa94b64f095467be024e8fd679db7f303d43"
+}

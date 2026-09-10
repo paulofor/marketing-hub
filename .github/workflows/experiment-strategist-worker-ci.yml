@@ -43,8 +43,13 @@ jobs:
         run: mvn -B test
 
       - name: Run Clarity MCP adapter tests
-        working-directory: experiment-strategist-worker
-        run: npm ci && npm test
+        run: |
+          npm ci --prefix experiment-strategist-worker
+          docker run --rm --init --network none \
+            --user "$(id -u):$(id -g)" \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "/workspace/experiment-strategist-worker" \
+            mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8 npm test
 
       - name: Validate container build
         run: docker build --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" -t marketing-hub/experiment-strategist-worker:${{ github.sha }} experiment-strategist-worker

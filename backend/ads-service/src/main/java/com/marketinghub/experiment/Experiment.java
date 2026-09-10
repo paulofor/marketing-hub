@@ -25,6 +25,28 @@ import org.hibernate.type.SqlTypes;
 
 /** Representa um experimento comercial com contexto, ativos, métricas e regras de publicação. */
 @Entity
+@NamedEntityGraph(
+    name = "Experiment.administrativeRead",
+    attributeNodes = {
+      @NamedAttributeNode("niche"),
+      @NamedAttributeNode("product"),
+      @NamedAttributeNode("hypothesisRef"),
+      @NamedAttributeNode("sourceExperiment"),
+      @NamedAttributeNode("facebookPage"),
+      @NamedAttributeNode(value = "facebookInstantForm", subgraph = "instantFormPage"),
+      @NamedAttributeNode("instagramAccount"),
+      @NamedAttributeNode("leadPortalFlow"),
+      @NamedAttributeNode("journeyTemplate"),
+      @NamedAttributeNode("metricPreset"),
+      @NamedAttributeNode("imageGenerationModel"),
+      @NamedAttributeNode("imageGenerationQuality"),
+      @NamedAttributeNode("selectedSampleEmail"),
+      @NamedAttributeNode(value = "campaignMetric", subgraph = "campaignAudit")
+    },
+    subgraphs = {
+      @NamedSubgraph(name = "campaignAudit", attributeNodes = @NamedAttributeNode("campaign")),
+      @NamedSubgraph(name = "instantFormPage", attributeNodes = @NamedAttributeNode("page"))
+    })
 @Table(
     uniqueConstraints = {
       @UniqueConstraint(columnNames = {"niche_id", "name"}),

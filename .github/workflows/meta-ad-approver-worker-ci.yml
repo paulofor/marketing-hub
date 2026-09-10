@@ -96,7 +96,11 @@ jobs:
           node --check src/main/resources/mcp/landing-evidence.mjs
           node --check src/main/resources/mcp/video-frame-extractor.mjs
           node --check src/main/resources/mcp/temis-library-review.mjs
-          npm run test:mcp-handshake
+          docker run --rm --init --network none \
+            --user "$(id -u):$(id -g)" \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w "/workspace/meta-ad-approver-worker" \
+            mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8 npm test
       - name: Validate container build
         run: |
           image_created_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -116,7 +120,9 @@ jobs:
 
       - name: Package tested images
         if: github.event_name != 'pull_request'
-        run: node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images" marketing-hub/meta-ad-approver-worker:${{ github.sha }} marketing-hub/iris-image-studio:${{ github.sha }}
+        run: |
+          node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images/reviewer" marketing-hub/meta-ad-approver-worker:${{ github.sha }}
+          node scripts/agent-image-bundle.mjs pack "${{ runner.temp }}/agent-images/studio" marketing-hub/iris-image-studio:${{ github.sha }}
       - name: Store tested images for this run
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
@@ -188,7 +194,13 @@ jobs:
           github-token: ${{ github.token }}
           run-id: ${{ github.event_name == 'workflow_run' && needs.source-run.outputs.source_run_id || github.run_id }}
       - name: Verify tested images
-        run: node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
+        run: |
+          if [ -f "${{ runner.temp }}/agent-images/manifest.json" ]; then
+            node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
+          else
+            node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images/reviewer" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}"
+            node scripts/agent-image-bundle.mjs verify "${{ runner.temp }}/agent-images/studio" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -210,7 +222,13 @@ jobs:
           ssh ${SSH_COMMON_ARGS} "${VPS_USER}@${VPS_IP}" 'bash -s -- retention' < scripts/ensure-agent-vps-disk-space.sh
       - name: Load tested images without rebuilding
         timeout-minutes: 20
-        run: node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
+        run: |
+          if [ -f "${{ runner.temp }}/agent-images/manifest.json" ]; then
+            node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images" "${VPS_USER}@${VPS_IP}" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
+          else
+            node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images/reviewer" "${VPS_USER}@${VPS_IP}" "marketing-hub/meta-ad-approver-worker:${DEPLOY_SOURCE_SHA}"
+            node scripts/agent-image-bundle.mjs send "${{ runner.temp }}/agent-images/studio" "${VPS_USER}@${VPS_IP}" "marketing-hub/iris-image-studio:${DEPLOY_SOURCE_SHA}"
+          fi
       - name: Provision OpenAI credential for Íris
         run: |
           set -euo pipefail

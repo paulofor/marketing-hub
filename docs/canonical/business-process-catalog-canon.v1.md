@@ -273,13 +273,20 @@ continuam legíveis e executáveis somente para preservar auditoria, mas não po
 usadas como modelo de nova versão. O comando canônico da tela do produto é
 `POST /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests`.
 Ele somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada ou
-`BLOCKED` e experimento do próprio produto. Uma atividade `BLOCKED` deve expor na tela o comando explícito
+`BLOCKED` ou `CANCELLED` e experimento do próprio produto. Uma atividade `BLOCKED` ou `CANCELLED` deve expor na tela o comando explícito
 **Reiniciar tarefa**, desde que seus validadores de prontidão atuais permitam a nova tentativa. O
-reinício cria uma tentativa `PENDING` na mesma instância e referência operacional, preserva a tarefa
+reinício após `BLOCKED` cria uma tentativa `PENDING` na mesma instância e referência operacional, preserva a tarefa
 bloqueada, seu erro, evidências, consumo e custo, e não reabre atividade concluída nem trabalho ainda
 `PENDING` ou `IN_PROGRESS`. Repetir o comando enquanto a nova tentativa estiver ativa reutiliza a
 tarefa existente e não duplica custo nem execução. O backend expõe a disponibilidade e o motivo; o
 frontend apenas apresenta essa verdade e nunca transforma bloqueio em permissão por inferência.
+
+Após cancelamento, a nova tentativa abre **nova ocorrência** da mesma atividade, no mesmo
+processo, produto e referência do ciclo. A ocorrência cancelada permanece encerrada, com motivo,
+horários, tarefas e consumo preservados. Cancelar não significa atingir o objetivo nem dispensar
+os validadores atuais, o estado `PLAY` ou as predecessoras do BPM. A disponibilidade na leitura
+e a validação do comando devem usar a mesma regra; uma ocorrência cancelada não pode deixar a
+atividade sem saída operacional quando todos os demais critérios permitirem a retomada.
 
 ### Controle padronizado de execução das atividades
 

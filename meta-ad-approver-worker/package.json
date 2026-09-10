@@ -3,11 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "test": "node scripts/test-mcp-handshake.mjs",
     "test:mcp-handshake": "node scripts/test-mcp-handshake.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "playwright-core": "1.49.0",
+    "playwright-core": "1.54.2",
     "zod": "^3.25.0"
   }
 }

@@ -46,6 +46,12 @@ on:
       - "customer-agent-worker/Dockerfile"
       - "customer-agent-worker/package.json"
       - "customer-agent-worker/package-lock.json"
+      - "experiment-strategist-worker/Dockerfile"
+      - "experiment-strategist-worker/package.json"
+      - "experiment-strategist-worker/package-lock.json"
+      - "meta-ad-approver-worker/Dockerfile"
+      - "meta-ad-approver-worker/package.json"
+      - "meta-ad-approver-worker/package-lock.json"
       - "scripts/test-agent-executor-admin-controller.mjs"
       - "scripts/test-agent-image-bundle-e2e.sh"
       - "scripts/test-agent-vps-disk-space.sh"
@@ -123,6 +129,12 @@ on:
       - "customer-agent-worker/Dockerfile"
       - "customer-agent-worker/package.json"
       - "customer-agent-worker/package-lock.json"
+      - "experiment-strategist-worker/Dockerfile"
+      - "experiment-strategist-worker/package.json"
+      - "experiment-strategist-worker/package-lock.json"
+      - "meta-ad-approver-worker/Dockerfile"
+      - "meta-ad-approver-worker/package.json"
+      - "meta-ad-approver-worker/package-lock.json"
       - "scripts/test-agent-executor-admin-controller.mjs"
       - "scripts/test-agent-image-bundle-e2e.sh"
       - "scripts/test-agent-vps-disk-space.sh"
@@ -310,7 +322,7 @@ jobs:
       - name: Validar preservação de imagens e containers na engine real
         run: bash scripts/test-agent-vps-disk-space-e2e.sh
 
-      - name: Validar navegador versionado de Argos e Psique
+      - name: Validar navegador compartilhado dos quatro agentes
         run: node --test scripts/test-agent-browser-version-contract.mjs
 
       - name: Validar transporte da imagem aprovada

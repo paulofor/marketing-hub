@@ -170,3 +170,19 @@ grep -Fxq 'video=false' "${video_descriptor_output}"
 grep -Fxq 'video_deploy=true' "${video_descriptor_output}"
 
 printf 'Contrato de retomada de modulos pendentes validado.\n'
+
+# Uma alteração isolada do manifesto recompila o backend sem trocar outros executores.
+health_base="$(git -C "$TEST_REPO" rev-parse HEAD)"
+mkdir -p "$TEST_REPO/config/agents"
+printf '{"contractVersion":"codex-health-v1","agents":[]}\n' > "$TEST_REPO/config/agents/codex-agent-health-compliance.json"
+git -C "$TEST_REPO" add config/agents/codex-agent-health-compliance.json
+git -C "$TEST_REPO" commit -qm 'manifesto tecnico da fixture'
+health_head="$(git -C "$TEST_REPO" rev-parse HEAD)"
+(
+  cd "$TEST_REPO"
+  bash "$DETECT_SCRIPT" "$health_base" "$health_head" "$TEST_REPO/health-output" "$health_base" "$health_base"
+)
+grep -Fxq 'backend=true' "$TEST_REPO/health-output"
+grep -Fxq 'frontend=false' "$TEST_REPO/health-output"
+grep -Fxq 'video=false' "$TEST_REPO/health-output"
+printf 'Manifesto técnico isolado encaminhado à reconstrução do backend.\n'

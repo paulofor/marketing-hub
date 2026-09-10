@@ -1,0 +1,41 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: mira_recovery
+      MYSQL_ROOT_PASSWORD: mira-local-root
+    ports:
+      - "18306:3306"
+    healthcheck:
+      test: [CMD, mysqladmin, ping, -h, 127.0.0.1, -pmira-local-root]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - mysql-data:/var/lib/mysql
+  psique-runtime:
+    image: ${MIRA_PSIQUE_IMAGE:-unused}
+    profiles: [runtime]
+    init: true
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    entrypoint: node
+    environment:
+      PDE_HARNESS_TEST_SCRIPT: /app/browser/pde-agent-validation-harness.mjs
+  backend-runtime:
+    image: ${MIRA_HUB_IMAGE:-unused}
+    profiles: [runtime]
+    network_mode: none
+    read_only: true
+    entrypoint: java
+    tmpfs:
+      - /tmp:size=32m
+    volumes:
+      - smoke-class:/smoke
+volumes:
+  mysql-data:
+  smoke-class:

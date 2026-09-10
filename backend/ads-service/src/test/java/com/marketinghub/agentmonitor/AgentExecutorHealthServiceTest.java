@@ -14,6 +14,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /** Responsabilidade: proteger a classificação central da prontidão dos executores dos agentes. */
 class AgentExecutorHealthServiceTest {
@@ -155,13 +157,13 @@ class AgentExecutorHealthServiceTest {
     assertThat(response.status()).isEqualTo("REQUESTED");
   }
 
-  /** Aprova somente quando versão, backend e autenticação estão comprovados. */
+  /** Aprova o executor técnico vigente mesmo depois de uma edição do cadastro do agente. */
   @Test
   void shouldReportReadyOnlyWithAllThreeSignals() {
     AgentRepository agents = mock(AgentRepository.class);
     AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
     Agent agent =
-        Agent.builder().agentKey("landing-generator").currentVersion(2).nickname("Dédalo").build();
+        Agent.builder().agentKey("landing-generator").currentVersion(5).nickname("Dédalo").build();
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(agent));
     when(checks.save(org.mockito.ArgumentMatchers.any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -172,12 +174,13 @@ class AgentExecutorHealthServiceTest {
     AgentExecutorHealthResponse result =
         service.report(
             new AgentExecutorHealthReportRequest(
-                "landing-generator", 2, "abc123", true, true, "Executor pronto."));
+                "landing-generator", 4, "abc123", true, true, "Executor pronto."));
 
     assertThat(result.status()).isEqualTo("READY");
     assertThat(result.versionCurrent()).isTrue();
     assertThat(result.backendAccessible()).isTrue();
     assertThat(result.codexAuthenticated()).isTrue();
+    assertThat(result.expectedVersion()).isEqualTo(4);
   }
 
   /** Bloqueia uma imagem antiga mesmo quando rede e autenticação funcionam. */
@@ -228,5 +231,111 @@ class AgentExecutorHealthServiceTest {
 
     assertThat(result.status()).isEqualTo("UNKNOWN");
     assertThat(result.detail()).contains("vencida");
+  }
+
+  /**
+   * Preserva prontidão após curadoria do cadastro, mas recusa versão técnica antiga ou falta de
+   * autenticação.
+   */
+  @Test
+  void shouldSeparateCuratedDefinitionFromRuntimeCompatibility() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    Agent psique = Agent.builder().agentKey("customer-agent").currentVersion(7).build();
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(checks.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    AgentExecutorHealthService service = new AgentExecutorHealthService(agents, checks);
+    for (int definition : new int[] {7, 8, 9}) {
+      psique.setCurrentVersion(definition);
+      var healthy =
+          service.report(
+              new AgentExecutorHealthReportRequest(
+                  "customer-agent", 6, "build-testado", true, true, "Executor pronto."));
+      assertThat(healthy.status()).isEqualTo("READY");
+      assertThat(healthy.expectedVersion()).isEqualTo(6);
+      assertThat(psique.getCurrentVersion()).isEqualTo(definition);
+    }
+    var outdated =
+        service.report(
+            new AgentExecutorHealthReportRequest(
+                "customer-agent", 5, "build-antigo", true, true, "Versão anterior."));
+    assertThat(outdated.versionCurrent()).isFalse();
+    assertThat(outdated.status()).isEqualTo("BLOCKED");
+    var unauthenticated =
+        service.report(
+            new AgentExecutorHealthReportRequest(
+                "customer-agent", 6, "build-testado", true, false, "Sessão indisponível."));
+    assertThat(unauthenticated.status()).isEqualTo("BLOCKED");
+    var disconnected =
+        service.report(
+            new AgentExecutorHealthReportRequest(
+                "customer-agent", 6, "build-testado", false, true, "Backend indisponível."));
+    assertThat(disconnected.status()).isEqualTo("BLOCKED");
+  }
+
+  /**
+   * Recalcula a leitura pelo manifesto vigente sem manter aprovação obsoleta ou bloqueio do
+   * cadastro.
+   */
+  @Test
+  void shouldRevalidateStoredHealthAgainstRuntimeManifest() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    var now = Instant.parse("2026-09-10T04:00:00Z");
+    Agent psique = Agent.builder().agentKey("customer-agent").currentVersion(7).build();
+    AgentExecutorHealthService service =
+        new AgentExecutorHealthService(agents, checks, Clock.fixed(now, ZoneOffset.UTC));
+    when(checks.findTopByAgentAgentKeyOrderByCheckedAtDesc("customer-agent"))
+        .thenReturn(
+            Optional.of(
+                new AgentExecutorHealthCheck(
+                    psique, 6, "atual", true, true, "BLOCKED", "Cadastro alterado.", now)));
+    assertThat(service.current(psique).status()).isEqualTo("READY");
+    when(checks.findTopByAgentAgentKeyOrderByCheckedAtDesc("customer-agent"))
+        .thenReturn(
+            Optional.of(
+                new AgentExecutorHealthCheck(
+                    psique, 5, "antigo", true, true, "READY", "Prova antiga.", now)));
+    assertThat(service.current(psique).status()).isEqualTo("BLOCKED");
+  }
+
+  /**
+   * Exercita o callback HTTP real do worker e confirma o registro sem alterar o cadastro curado.
+   */
+  @Test
+  void shouldAcceptActualReporterContractAfterCuration() throws Exception {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    Agent psique = Agent.builder().agentKey("customer-agent").currentVersion(7).build();
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(checks.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    var service = new AgentExecutorHealthService(agents, checks);
+    var mvc =
+        MockMvcBuilders.standaloneSetup(new AgentExecutorHealthController(service, null)).build();
+    mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                    "/api/internal/agents/executor-health")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                {"agentKey":"customer-agent","deployedVersion":6,"buildReference":"test-local",
+                 "backendAccessible":true,"codexAuthenticated":true,"detail":"Executor pronto."}
+                """))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status")
+                .value("READY"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath(
+                    "$.expectedVersion")
+                .value(6));
+    org.mockito.Mockito.verify(checks)
+        .save(
+            org.mockito.ArgumentMatchers.argThat(
+                check -> check.getDeployedVersion() == 6 && check.getStatus().equals("READY")));
+    assertThat(psique.getCurrentVersion()).isEqualTo(7);
   }
 }

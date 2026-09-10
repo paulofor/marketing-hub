@@ -18,6 +18,7 @@ class BackendCiWorkflowTest(unittest.TestCase):
         self.assertRegex(self.workflow, r"pull_request:\s+branches: \[main\]")
         for path in [
             "backend/**",
+            "config/agents/codex-agent-health-compliance.json",
             ".github/workflows/backend-ci.yml",
             ".github/workflows/deploy-containers.yml",
             "scripts/test-backend-ci-workflow.py",

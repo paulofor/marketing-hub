@@ -3,6 +3,17 @@ info:
   title: Agent Executor Administration
   version: 1.0.0
 paths:
+  /api/internal/agents/executor-health:
+    post:
+      summary: Registra a prontidão e a versão técnica real do executor
+      description: >-
+        deployedVersion é a versão técnica declarada pelo executor. expectedVersion vem
+        do manifesto config/agents/codex-agent-health-compliance.json empacotado no backend.
+        agent.current_version versiona o cadastro editável e não participa desta comparação.
+        READY exige compatibilidade técnica, backend acessível, autenticação e prova recente.
+        Versão ausente ou divergente continua bloqueando a prontidão.
+      responses:
+        "200": { description: Leitura persistida com status, expectedVersion, deployedVersion e versionCurrent }
   /api/agents/work-monitor/{agentId}/executor-operations/{operationType}:
     post:
       summary: Solicita atualização ou reinício auditável de um executor Codex

@@ -112,6 +112,14 @@ nome, consentimento, depoimento ou identificador de participante humana.
 
 ## Evidência obrigatória
 
+No executor de navegador, o clique não equivale a evento persistido. Antes de emitir uma
+ação dependente ou recarregar a página, aguardar a resposta do evento exato iniciado pela
+tela e conferir sua presença no estado devolvido pelo backend. Em particular,
+`RECOVERY_COMPLETED` exige confirmação prévia de `READY_RESULT_USED`. HTTP de erro,
+JSON inválido ou resposta sem o evento devem bloquear com operação e status identificáveis,
+sem expor tokens. Não adicionar espera fixa nem afrouxar o gate para acomodar latência.
+O teste de contrato deve introduzir atraso antes da persistência e comprovar a ordem.
+
 Cada execução deve persistir:
 
 - produto, URL e versão exatos, além de imagem, digest/tag, container, porta e proxy próprios;

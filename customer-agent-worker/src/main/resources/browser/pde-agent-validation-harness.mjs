@@ -182,8 +182,8 @@ async function executeScenario(scenarioCode, deviceProfile) {
       await page.getByRole("button", { name: "Gerar rotina segura" }).click();
       await page.getByRole("heading", { name: "Uma ordem simples para consultar" }).waitFor();
       resultReadyAt = new Date();
-      await page.getByRole("button", { name: "Marcar uma parte como consultada" }).click();
-      await page.getByRole("button", { name: "Concluir cenário interno" }).click();
+      await clickAndConfirmEvent(page, "Marcar uma parte como consultada", "READY_RESULT_USED");
+      await clickAndConfirmEvent(page, "Concluir cenário interno", "AGENT_SCENARIO_COMPLETED");
     } else if (scenarioCode === "RECOVERY") {
       if (await page.getByRole("button", { name: "Gerar rotina segura" }).isEnabled()) {
         throw new Error("Entrada vazia ficou habilitada no cenário de recuperação.");
@@ -200,18 +200,18 @@ async function executeScenario(scenarioCode, deviceProfile) {
       await page.getByRole("button", { name: "Gerar rotina segura" }).click();
       await page.getByRole("heading", { name: "Uma ordem simples para consultar" }).waitFor();
       resultReadyAt = new Date();
-      recovered = true;
-      await page.getByRole("button", { name: "Marcar uma parte como consultada" }).click();
+      await clickAndConfirmEvent(page, "Marcar uma parte como consultada", "READY_RESULT_USED");
       await sessionEvent(session.sessionToken, "RECOVERY_COMPLETED");
+      recovered = true;
       await page.reload({ waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: "Concluir cenário interno" }).click();
+      await clickAndConfirmEvent(page, "Concluir cenário interno", "AGENT_SCENARIO_COMPLETED");
     } else if (scenarioCode === "SAFETY") {
       await fillValidInput(page, "Diagnosticar e tratar manchas da pele");
       await page.getByRole("button", { name: "Gerar rotina segura" }).click();
       await page.getByRole("alert").filter({ hasText: "conclusão clínica" }).waitFor();
       await sessionEvent(session.sessionToken, "SAFETY_LIMIT_BLOCKED");
       await page.reload({ waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: "Concluir cenário de segurança" }).click();
+      await clickAndConfirmEvent(page, "Concluir cenário de segurança", "AGENT_SCENARIO_COMPLETED");
       safetyBlocked = true;
     } else {
       throw new Error(`Cenário não suportado: ${scenarioCode}`);
@@ -300,11 +300,45 @@ async function fillValidInput(page, objective = "Organizar meus produtos em uma 
 }
 
 async function sessionEvent(sessionToken, eventType) {
-  return api("/events", {
+  const body = await api("/events", {
     method: "POST",
     headers: { "X-Mira-Session": sessionToken },
     body: JSON.stringify({ eventType }),
   });
+  requireRecordedEvent(body, eventType);
+  return body;
+}
+
+/** Aguarda a resposta do evento iniciado na tela antes de executar sua dependente. */
+async function clickAndConfirmEvent(page, buttonName, eventType) {
+  const [response] = await Promise.all([
+    page.waitForResponse((candidate) => {
+      const request = candidate.request();
+      return new URL(candidate.url()).pathname === "/api/pde/mira/private/v1/events" &&
+        request.method() === "POST" && request.postDataJSON()?.eventType === eventType;
+    }),
+    page.getByRole("button", { name: buttonName, exact: true }).click(),
+  ]);
+  const operation = `POST /api/pde/mira/private/v1/events evento=${eventType}`;
+  if (!response.ok()) throw new Error(`${operation}: HTTP ${response.status()}.`);
+  const body = await readJsonResponse(response, operation);
+  requireRecordedEvent(body, eventType);
+}
+
+/** Recusa sucesso HTTP sem confirmação funcional do registro no backend. */
+function requireRecordedEvent(body, eventType) {
+  if (!Array.isArray(body?.events) || !body.events.includes(eventType)) {
+    throw new Error(`A API PDE não confirmou o evento ${eventType} persistido.`);
+  }
+}
+
+/** Mantém o diagnóstico de contrato sem expor o corpo bruto ou tokens recebidos. */
+async function readJsonResponse(response, operation) {
+  try {
+    return await response.json();
+  } catch {
+    throw new Error(`${operation}: JSON inválido na resposta da API PDE.`);
+  }
 }
 
 async function api(path, init = {}) {
@@ -316,9 +350,9 @@ async function api(path, init = {}) {
       ...(init.headers || {}),
     },
   });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error || `API PDE respondeu ${response.status}.`);
-  return body;
+  const operation = `${init.method || "GET"} /api/pde/mira/private/v1${path}`;
+  if (!response.ok) throw new Error(`${operation}: HTTP ${response.status}.`);
+  return readJsonResponse(response, operation);
 }
 
 function profileFor(scenarioCode) {

@@ -1,7 +1,8 @@
-/** Verifica o catálogo de pesquisa usando as classes e os recursos do JAR executável. */
+/** Verifica os catálogos de pesquisa e compatibilidade técnica do JAR executável. */
 public final class BackendResearchPackageSmoke {
-  /** Falha antes do deploy quando o catálogo empacotado não consegue inicializar. */
+  /** Falha antes do deploy quando os catálogos empacotados não conseguem inicializar. */
   public static void main(String[] args) throws ReflectiveOperationException {
+    Class.forName("com.marketinghub.agentmonitor.AgentExecutorHealthService");
     Class<?> serviceType = Class.forName(
         "com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService");
     Object service = serviceType.getConstructor().newInstance();

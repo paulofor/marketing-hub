@@ -73,9 +73,16 @@ executores que usam Codex. Um novo agente deve entrar nesse cadastro no mesmo co
 que cria seu executor. O gate global deve falhar quando faltar o reporter, a ativação periódica, a
 consulta real da autenticação, o endpoint canônico ou quando o intervalo padrão superar 60 segundos.
 Cada entrada também deve declarar `expectedVersion` e os arquivos `versionSources` que materializam
-essa versão no runtime. O runner físico MySQL 5.7 deve comparar o cadastro com `agent.current_version`
-após todos os changelogs de identidade; o gate global deve comparar o mesmo valor com cada Compose ou
-configuração do executor. Divergência em qualquer lado bloqueia antes do deploy.
+essa versão no runtime. Essa é a **versão técnica do executor**, distinta de
+`agent.current_version`, que versiona o cadastro editável, suas entradas e curadoria do Harness.
+O backend deve carregar o mesmo manifesto empacotado no JAR e comparar `deployedVersion` com seu
+`expectedVersion`; nunca copiar automaticamente a versão esperada para o heartbeat nem exigir
+um novo binário só porque o operador associou cards. Versão técnica ausente ou divergente,
+autenticação inválida, backend inacessível ou prova vencida continuam impedindo prontidão.
+O runner físico pode conferir a correspondência inicial dos seeds de identidade ao baseline;
+edições posteriores do cadastro não modificam esse contrato. O gate global compara o manifesto
+com cada Compose/configuração do executor e com o recurso empacotado no backend. Mudanças de
+capacidade do executor devem atualizar explicitamente o manifesto e suas fontes no repositório.
 
 O health-check não pode compartilhar a única thread usada por autenticação, polling ou trabalho
 longo. Falha ao publicar um heartbeat deve ser registrada com contexto e stack trace, sem encerrar

@@ -1,0 +1,18 @@
+{
+  "cardKey": "interpretacao-atencao-eye-tracking",
+  "collection": "neuromarketing",
+  "title": "Controle propriedades visuais antes de interpretar gaze",
+  "finding": "Novo experimento de eye-tracking com anúncios humanos, gerados por IA e co-criados encontrou diferenças de gaze, mas também maior densidade de bordas nos estímulos de IA, impedindo atribuir essas diferenças apenas à origem criativa.",
+  "mechanism": "Fixações e sacadas respondem tanto à decisão e à atenção quanto a propriedades visuais de baixo nível. Sem parear ou controlar complexidade, contraste, luminância, saliência e densidade de bordas, um teste pode atribuir à IA um efeito produzido pelo próprio desenho do estímulo.",
+  "commercialApplication": "Atualizar o AttentionInterpretationGuardrail para registrar e controlar propriedades visuais dos creative variants antes de comparar eye-tracking, e combinar gaze com compreensão, lembrança e comportamento real.",
+  "evidenceStrength": "Exploratória a moderada: experimento within-subject com medidas objetivas e correção estatística, mas preprint não revisado por pares, apenas 39 participantes e confusão residual por densidade de bordas.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Scores de atenção que controlam propriedades visuais e combinam gaze com compreensão e resultado comportamental preverão melhor performance de Meta Ads do que rankings baseados apenas em fixações.",
+  "risks": "Tratar gaze como leitura direta de preferência, comparar estímulos visualmente não equivalentes, inferir causalidade da origem IA ou promover um criativo só porque recebeu mais fixações.",
+  "limits": "O estudo não mediu CTR, CPL ou vendas e não isolou completamente a origem criativa das propriedades da imagem. A maior escolha de anúncios de IA no forced-choice não prova maior eficácia comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-10-eye-tracking-criativos-ia.md",
+  "sourceTitle": "Fonte revisada — Eye-tracking em anúncios humanos, gerados por IA e co-criados",
+  "sourceSha256": "0c4b202ca8a15a6ed854aa0f8538327b2dcf92a4c167a0d1189a0ec464eae827"
+}

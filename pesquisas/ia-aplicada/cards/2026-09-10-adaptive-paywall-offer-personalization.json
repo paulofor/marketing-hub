@@ -1,0 +1,18 @@
+{
+  "cardKey": "adaptive-paywall-offer-personalization",
+  "collection": "neuromarketing",
+  "title": "Personalizar a oferta por contexto em vez de otimizar apenas pela média",
+  "finding": "A Botsi afirma que clientes como Fitness AI, Sleepiest e Reading.com observaram aumentos de receita e LTV entre 15% e 75% usando ofertas escolhidas em tempo real por comportamento e contexto, em vez de um único paywall vencedor para toda a audiência.",
+  "mechanism": "Usuários podem responder de forma diferente a preço, trial, bônus, pacote e timing. Uma oferta otimizada pela média pode perder essas diferenças; uma matriz contextual pode aproximar condição e necessidade. O mecanismo é plausível, mas os ganhos divulgados não têm detalhe experimental público suficiente para inferir causalidade.",
+  "commercialApplication": "No Marketing Hub, testar uma matriz controlada de ofertas elegíveis por contexto — preço, trial, bônus, parcelamento ou pacote — mantendo um grupo de controle com oferta única. Medir checkout, pagamento reconciliado, reembolso, cancelamento, LTV e satisfação antes de permitir otimização adaptativa mais livre.",
+  "evidenceStrength": "Baixa a moderada: há casos comerciais e percentuais reportados por clientes segundo a própria fornecedora, mas o dado vem de material promocional associado a uma captação e não publica baseline, amostra, duração, controle ou significância estatística.",
+  "publishedOn": "2026-09-10",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "Uma matriz transparente de ofertas elegíveis por sinais de contexto aumentará pagamento reconciliado e/ou LTV versus uma oferta única, sem elevar reembolso, cancelamento ou percepção negativa de justiça.",
+  "risks": "Personalização de preço ou condição pode ser percebida como injusta, gerar risco de compliance, aprender correlações espúrias com pouco volume, otimizar conversão imediata às custas de retenção e tornar difícil explicar por que usuários semelhantes receberam condições diferentes.",
+  "limits": "Os ganhos de 15% a 75% são alegações da fornecedora, não benchmark independente. Não há detalhes suficientes sobre método, clientes individuais, categorias, mix de tráfego ou horizonte de LTV. Resultados podem não se transferir para produtos, públicos ou mercados do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-10-paywall-personalizado-contexto.md",
+  "sourceTitle": "Fonte revisada — Personalização contextual de paywall e oferta",
+  "sourceSha256": "90e9aa5106926ba0cbb6bf10c60e3088f2be1e9c97bb62f90343e49220a2de95"
+}

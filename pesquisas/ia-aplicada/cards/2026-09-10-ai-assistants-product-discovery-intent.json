@@ -1,0 +1,18 @@
+{
+  "cardKey": "ai-assistants-product-discovery-intent",
+  "collection": "momentos-de-compra-b2c",
+  "title": "IA também atua como validador da compra perto da decisão",
+  "finding": "Em pesquisa brasileira para a Black Friday 2026, 86% dos entrevistados pretendem usar IA. Entre os que recorrem à tecnologia, 66% já chegam sabendo produto, marca e modelo; 49% usam para comparar preços, 47% para verificar se a promoção é real e 42% para conferir a confiabilidade da loja.",
+  "mechanism": "A IA pode entrar depois que a intenção já está parcialmente formada e funcionar como camada de redução de incerteza sobre preço, promoção, reputação e risco. Isso amplia a ideia anterior de IA como descoberta, mas não demonstra que a validação por IA cause maior conversão.",
+  "commercialApplication": "No Marketing Hub, distinguir `AI_ASSISTANT_DISCOVERY` de `AI_ASSISTANT_VALIDATION` e preparar evidências verificáveis de preço, reputação, garantia, prazo e diferenciais. Para tráfego de alta intenção, comparar uma experiência de validação objetiva contra mensagem genérica e medir checkout e pagamento reconciliado.",
+  "evidenceStrength": "Moderada como sinal de comportamento declarado no Brasil: estudo com mil pessoas traz percentuais específicos e coerentes entre finalidades de uso. A evidência é sazonal, baseada em intenção/autorreporte e não observa causalidade nem transações individuais.",
+  "publishedOn": "2026-09-10",
+  "validUntil": "2026-12-09",
+  "experimentHypothesis": "Em jornadas de alta intenção, apresentar informação verificável orientada à validação — preço, autenticidade da oferta, reputação, garantia e prazo — aumentará checkout e pagamento reconciliado versus uma experiência focada apenas em recomendação ou descrição genérica.",
+  "risks": "Confundir intenção declarada com comportamento real; superatribuir a decisão à IA; usar preço ou reputação desatualizados; otimizar para respostas de agentes sem impacto comercial; extrapolar um comportamento de Black Friday para outras categorias e períodos.",
+  "limits": "O estudo mede intenção e comportamento declarado em contexto de Black Friday 2026. Não há experimento controlado, atribuição individual de venda ou comparação causal entre usuários que validam com IA e os que não usam IA. O padrão pode variar por categoria, ticket e canal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-10-ai-assistants-validacao-compra-brasil.md",
+  "sourceTitle": "Fonte revisada — IA como camada de validação de compra no Brasil",
+  "sourceSha256": "eb3e2f7985d6f2164f9e09ad9c306ec687955db04ecb0e87a59dba3ef7504508"
+}

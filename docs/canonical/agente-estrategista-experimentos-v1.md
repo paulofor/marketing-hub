@@ -196,6 +196,23 @@ não configura autenticação e deve bloquear o deploy com diagnóstico explíci
 
 ## Decisão assistida no ciclo comercial — 09/09/2026
 
+### Contrato econômico do sucessor — 10/09/2026
+
+Na atividade `economics` do processo `pde-commercial-plan-offer`, a versão do BPM
+governa o contrato de Plutus. A versão 6 exige `MARKET_STRATEGY_V3` de Atena e
+`PDE_PRIVATE_ECONOMICS_V1` de Plutus tanto para `product-discovery-cycle:*` quanto
+para `experiment:*`, incluindo sucessores originados no ciclo da atividade 6.4.
+A origem identifica a entidade; não autoriza voltar ao contrato comercial antigo.
+Versões históricas anteriores mantêm seu contrato e suas ocorrências preservados.
+
+Plutus valida o predecessor antes de consumir modelo, utiliza prompt/schema v5 e
+registra data ISO, contribuição reconciliada e limites privados sem autorizar gasto.
+Falha de contrato exige nova tentativa auditável após a correção; não se altera o
+parecer antigo para fabricar aprovação. A homologação deve percorrer fila, seleção
+do prompt/schema, resposta e callback para descoberta **e** experimento sucessor.
+
+### Proposta de decisão do ciclo
+
 Atena prepara o formulário de decisão do ciclo da Cadeia de Valor, no subprocesso chamado pela
 atividade **6.4**. A atividade `DECISION` do BPM v4 declara `responsibleAgentKeys=[experiment-strategist]`
 e aprovação humana obrigatória. Hermes entrega a leitura operacional; a proposta usa a conciliação

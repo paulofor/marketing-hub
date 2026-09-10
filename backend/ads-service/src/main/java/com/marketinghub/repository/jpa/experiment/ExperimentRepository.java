@@ -31,16 +31,10 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   @Query("select e from Experiment e where e.id = :id")
   Optional<Experiment> findForFacebookRelease(@Param("id") Long id);
 
-  /** Lista experimentos administrativos com filtros aplicados diretamente no banco. */
-  @EntityGraph(
-      attributePaths = {
-        "niche",
-        "hypothesisRef",
-        "sourceExperiment",
-        "facebookPage",
-        "instagramAccount",
-        "leadPortalFlow"
-      })
+  /**
+   * Carrega o contrato administrativo e sua auditoria de campanha com filtros e paginação no banco.
+   */
+  @EntityGraph(value = "Experiment.administrativeRead")
   @Query(
       """
       select e from Experiment e
@@ -59,11 +53,20 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
       @Param("search") String search,
       Pageable pageable);
 
+  /** Carrega as associações exigidas pelo DTO antes de encerrar a sessão da consulta individual. */
   @Override
-  @EntityGraph(
-      attributePaths = {"sourceExperiment", "facebookPage", "instagramAccount", "leadPortalFlow"})
+  @EntityGraph(value = "Experiment.administrativeRead")
   Optional<Experiment> findById(Long id);
 
+  /** Lista os experimentos com os mesmos dados administrativos do detalhe e da página filtrada. */
+  @Override
+  @EntityGraph(value = "Experiment.administrativeRead")
+  List<Experiment> findAll();
+
+  /**
+   * Mantém a leitura administrativa por nicho independente de uma sessão Hibernate aberta na tela.
+   */
+  @EntityGraph(value = "Experiment.administrativeRead")
   List<Experiment> findByNicheId(Long nicheId);
 
   /** Lista os experimentos do produto, priorizando a referência operacional mais recente. */

@@ -434,12 +434,10 @@ public class PdeEconomicsBpmTaskConsumer {
         && signals.containsAll(PRIVATE_VALIDATION_SIGNALS);
   }
 
-  /** Identifica o processo em que preço e checkout ainda são somente hipóteses privadas. */
+  /** Aplica o contrato privado pela versão do BPM, inclusive aos experimentos sucessores. */
   private static boolean isPrivateValidationTask(Map<String, Object> task) {
     Object version = task == null ? null : task.get("processVersion");
-    return version instanceof Number number
-        && number.intValue() >= 6
-        && sourceReference(task).startsWith("product-discovery-cycle:");
+    return version instanceof Number number && number.intValue() >= 6;
   }
 
   /** Distingue incompatibilidade entre etapas de uma falha técnica genérica do executor. */

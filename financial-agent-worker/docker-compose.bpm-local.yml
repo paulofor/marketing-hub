@@ -1,0 +1,23 @@
+services:
+  plutus-bpm-smoke:
+    image: ${PLUTUS_BPM_TEST_IMAGE:?Informe a imagem construída pelo Dockerfile do módulo}
+    entrypoint: [java, -Dloader.path=/tests, -Dloader.main=com.marketinghub.financialagentworker.PdeEconomicsImageSmoke, -cp, /app/app.jar, org.springframework.boot.loader.launch.PropertiesLauncher]
+    read_only: true
+    network_mode: none
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 1.0
+    tmpfs: ["/tmp:size=64m,noexec,nosuid"]
+    volumes: [plutus-bpm-tests:/tests:ro]
+  plutus-bpm-seed:
+    image: ${PLUTUS_BPM_TEST_IMAGE:?Informe a imagem construída pelo Dockerfile do módulo}
+    user: "0:0"
+    entrypoint: [sh, -c]
+    command: ["tar -xf - -C /tests && chmod 755 /tests/bpm/fake-codex.mjs"]
+    read_only: true
+    network_mode: none
+    security_opt: [no-new-privileges:true]
+    volumes: [plutus-bpm-tests:/tests]
+volumes:
+  plutus-bpm-tests:

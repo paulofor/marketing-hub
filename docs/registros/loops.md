@@ -373,6 +373,27 @@ bem-estar para mulheres de 35 a 60 anos` e `consultoria de imagem` retornaram 12
   entrega parecer, causa e ação da versão anterior, exige nova versão e retorna ao harness antes de
   liberar os três cenários sequenciais de Psique. Testes protegem o direcionamento na tela, o
   bloqueio da repetição prematura, o contexto entre versões e as setas `REWORK` sem ciclo.
+- **Recorrência em 10/09/2026 — Vega #358:** depois do cancelamento da execução órfã, a leitura
+  e o comando BPM recusavam `CANCELLED`, embora o serviço de tarefas já preservasse a ocorrência
+  terminal e abrisse outra. A elegibilidade passa a ser única na leitura e no comando, com
+  **Reiniciar tarefa**, gates atuais e nova ocorrência no mesmo contexto. Testes protegem
+  cancelamento, bloqueio, preservação da ocorrência, idempotência e recusa de trabalho ativo/concluído.
+
+## LOOP-EXPERIMENTO-LISTA-PROXY-FORA-SESSAO — campanha existente derruba o cadastro
+
+- **Data:** 10/09/2026.
+- **Sintoma:** `/api/experiments` retorna 500 e impede selecionar o #92 na mesa da Atena.
+- **Evidência:** request `30b0201b-266c-4cb5-9bf7-b87c132f744f`; `LazyInitializationException`
+  ao ler `FacebookAdsCampaign#120250589861080326.metricsLastSyncedAt`. MCP confirma que a
+  campanha e suas métricas existem no experimento #71. A exceção de analytics do #69 no mesmo
+  log já era capturada e não era a causa desse 500.
+- **Causa:** o mapper administrativo acessa associações lazy depois do término da consulta;
+  faltava carregar o contrato inteiro. O teste local também reproduziu a falha na jornada.
+- **Correção:** grafo de leitura administrativa explícito, compartilhado pelas consultas
+  de lista, página, detalhe e nicho, incluindo jornada, produto e auditoria da campanha.
+  Não mudar relações globalmente para eager, esconder a exceção ou retornar métricas falsas.
+- **Prevenção:** teste JPA real limpa a sessão antes de usar o mapper e confere datas, erro
+  histórico, gasto e jornada nas quatro consultas. Nenhum dado comercial é sobrescrito.
 
 ## LOOP-PLUTUS-HEALTH-VERSION-DRIFT — worker vigente permanece bloqueado após o rebuild
 
@@ -3754,6 +3775,16 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   protegem a fronteira Atena → Plutus, data ISO, cenário único, duas leituras e ausência de efeitos
   comerciais. O schema versionado bloqueia gasto, meta de vendas ou receita na validação privada,
   e o catálogo do harness registra prompt e schema v5 para impedir versão executável sem auditoria.
+- **Recorrência confirmada em 10/09/2026 no Vega:** Atena #359 concluiu com estratégia v3,
+  mas Plutus #360 selecionou prompt/schema v4 porque a origem era `experiment:92`,
+  embora a tarefa pertencesse à versão 6. Produziu prazo com horário e contribuição
+  com deduções incompatíveis com o validador. A ocorrência antiga #238 pertencia ao
+  contrato histórico; seu sucesso não autorizava relaxar a regra da versão atual.
+  A seleção agora depende da versão do BPM, inclusive para sucessores. Dez cenários
+  percorrem HTTP `pending`, processo Codex simulado, auditoria e callback, cobrindo
+  origens, versões, predecessor ausente/obsoleto, prazo, contribuição, gasto e STOP.
+  Os mesmos cenários são executados na imagem final sem rede externa. Ver
+  [homologação e recuperação do Vega](../homologacao/actions-capacidade-agentes-vega-2026-09-10.md).
 
 ## LOOP-SCHEMA-CODEX-UNIQUEITEMS-INCOMPATIVEL — atividade termina antes da inferência
 
@@ -4166,6 +4197,20 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   usa a referência SHA como último desempate determinístico. Imagem de qualquer container, revisão
   corrente e aliases da identidade retida continuam fora da remoção. Testes reproduzem recência OCI,
   nanos no mesmo segundo, metadado legado empatado e a engine real com três horários idênticos.
+
+- **Recorrência de capacidade confirmada em 10/09/2026:** Atena `34418552643`, Psique
+  `34419726095` e Íris/Têmis `34419726185` passaram nos testes e bloquearam antes do restart.
+  Sem cache de build no VPS e com apenas o rollback mínimo, havia 11.051 MiB para um pacote que
+  exigia 11.409 MiB. A inspeção confirmou bases de navegador diferentes e caches npm nas imagens.
+- **Correção complementar:** quatro agentes compartilham a base Playwright por digest; Atena e o
+  revisor de Íris removem cache na camada de instalação e compartilham o cliente. O workflow de
+  Íris verifica previamente dois pacotes e carrega um de cada vez, mantendo a reserva de 4 GiB e
+  duas vezes o tamanho da carga. Artefatos antigos continuam usando o contrato original, sem
+  reinterpretar sua reserva. Nenhum restart ocorre antes de ambas as provas de conteúdo.
+- **Prevenção:** contratos dos quatro navegadores, cache, branches reais do shell para pacote
+  novo/legado/incompleto e falhas de carga, transferência Docker, retenção e SSH reais. Duas
+  rodadas locais de 32 controles passaram; evidências e estado operacional em
+  `docs/homologacao/actions-capacidade-agentes-vega-2026-09-10.md`.
 
 ## LOOP-ACTIONS-CONTAINERD-CARGA-INCOMPLETA — camada íntegra não materializa no image store
 

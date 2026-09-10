@@ -8,8 +8,14 @@ FROM eclipse-temurin:21-jre-noble AS java-runtime
 
 FROM mwader/static-ffmpeg:7.1.1@sha256:6769881cc02c80d33e387750a8e144d162adfab2775e934dd97899261dda3a0c AS ffmpeg-runtime
 
-FROM mcr.microsoft.com/playwright:v1.49.0-noble
+FROM mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
 ARG CODEX_VERSION=0.146.0
+# Compartilha a base e o cliente com os demais agentes sem carregar cache de instalação.
+RUN test -s /etc/ssl/certs/ca-certificates.crt \
+    && node --version | grep -Eq '^v2[0-9]\.' \
+    && npm install -g @openai/codex@${CODEX_VERSION} \
+    && npm cache clean --force
+
 WORKDIR /app
 COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk
 COPY --from=ffmpeg-runtime /ffmpeg /usr/local/bin/ffmpeg
@@ -20,8 +26,8 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN node --version | grep -Eq '^v2[0-9]\.' \
     && java -version \
-    && npm install -g @openai/codex@${CODEX_VERSION} \
     && npm ci --omit=dev \
+    && npm cache clean --force \
     && groupadd --gid 10001 approver \
     && useradd --create-home --uid 10001 --gid approver approver
 COPY --from=build /build/target/app.jar /app/app.jar

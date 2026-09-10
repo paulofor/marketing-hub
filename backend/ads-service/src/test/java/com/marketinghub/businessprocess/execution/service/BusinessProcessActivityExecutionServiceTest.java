@@ -1274,11 +1274,10 @@ class BusinessProcessActivityExecutionServiceTest {
         .contains("Diagnóstico vigente", "#350", "homologação técnica");
   }
 
-  /**
-   * Libera reinício de tarefa bloqueada sem exigir um gate especializado e preserva a tentativa.
-   */
-  @Test
-  void exposesGenericBlockedTaskRestartAndUsesAuditableRetry() {
+  /** Libera reinício após bloqueio ou cancelamento e mantém os gates de estado e produto. */
+  @ParameterizedTest
+  @CsvSource({"BLOCKED,tentativa bloqueada", "CANCELLED,ocorrência cancelada"})
+  void exposesGenericTaskRestartAndUsesAuditableRetry(String previousStatus, String auditReason) {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
         mock(BusinessProcessActivityDefinitionRepository.class);
     AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
@@ -1323,14 +1322,14 @@ class BusinessProcessActivityExecutionServiceTest {
     blockedTask.setProcessActivityId("humanExperienceReview");
     blockedTask.setProcessActivityName("Validar experiência humana da jornada");
     blockedTask.setSourceReference("experiment:89");
-    blockedTask.setStatus("BLOCKED");
+    blockedTask.setStatus(previousStatus);
     blockedTask.setAssignedAgent(
         Agent.builder().agentKey("customer-agent").nickname("Psique").build());
     BusinessProcessActivityInstance blockedInstance =
         activityInstance(
             139L,
             activity,
-            "BLOCKED",
+            previousStatus,
             false,
             "SHA-256 divergente para a prova comercial.",
             blockedTask.getUpdatedAt());
@@ -1359,7 +1358,11 @@ class BusinessProcessActivityExecutionServiceTest {
 
     assertThat(history.activities().getFirst().executionRequestAvailable()).isTrue();
     assertThat(history.activities().getFirst().executionRequestReason())
-        .contains("tentativa bloqueada será preservada");
+        .contains(auditReason + " será preservada");
+    assertThat(history.activities().getFirst().executionControl().actionLabel())
+        .isEqualTo("Reiniciar tarefa");
+    assertThat(blockedTask.getStatus()).isEqualTo(previousStatus);
+    assertThat(blockedInstance.getStatus()).isEqualTo(previousStatus);
     assertThat(request.tasks()).hasSize(1);
     ArgumentCaptor<CreateAgentTaskRequest> retryRequest =
         ArgumentCaptor.forClass(CreateAgentTaskRequest.class);

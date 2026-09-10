@@ -50,7 +50,7 @@ class CodexStrategistRunnerTest {
         .noneMatch(value -> value.contains("api-token"));
   }
 
-  /** Confirma que navegador, pesquisa externa e procedência entram no artefato versionado. */
+  /** Confirma base de navegador compartilhada, pesquisa externa e procedência no artefato. */
   @Test
   void packagesAuditableBrowserResearch() throws Exception {
     String dockerfile = Files.readString(Path.of("Dockerfile"));
@@ -62,11 +62,12 @@ class CodexStrategistRunnerTest {
             Path.of("src/main/resources/prompts/experiment-strategist/v2/research-schema.json"));
 
     assertThat(dockerfile)
-        .contains("FROM node:20-bookworm-slim AS node-runtime")
-        .contains("FROM eclipse-temurin:21-jre-noble")
-        .contains("ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm")
+        .contains("FROM mcr.microsoft.com/playwright:v1.54.2-noble@sha256:")
+        .contains("FROM eclipse-temurin:21-jre-noble AS java-runtime")
+        .contains("COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk")
         .contains("node --version | grep -Eq '^v2[0-9]\\.'")
-        .contains("npx playwright-core install --with-deps chromium")
+        .contains("npm cache clean --force")
+        .doesNotContain("playwright-core install", "apt-get", "chmod -R a+rX /ms-playwright")
         .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
     assertThat(prompt)
         .contains("node /app/browser/public-research.mjs")

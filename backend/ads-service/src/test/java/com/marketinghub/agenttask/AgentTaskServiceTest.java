@@ -247,9 +247,11 @@ class AgentTaskServiceTest {
     verify(repository).save(any(AgentTask.class));
   }
 
-  /** Cria nova tentativa para o revisor bloqueado sem duplicar outra tarefa ainda pendente. */
+  /**
+   * Preserva bloqueio ou cancelamento e só repete uma conclusão quando o gate exige revalidação.
+   */
   @ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {"BLOCKED", "COMPLETED"})
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"BLOCKED", "CANCELLED", "COMPLETED"})
   void retriesBlockedHumanReviewAndRefreshesPendingContext(String previousStatus) {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
@@ -293,7 +295,10 @@ class AgentTaskServiceTest {
     if ("COMPLETED".equals(previousStatus)) {
       assertThat(service.retryBlockedByHumanOrRefreshPending(request).id()).isEqualTo(601L);
     }
-    AgentTaskResponse retry = service.retryBlockedByHumanOrRefreshPending(request, true);
+    AgentTaskResponse retry =
+        "COMPLETED".equals(previousStatus)
+            ? service.retryBlockedByHumanOrRefreshPending(request, true)
+            : service.retryBlockedByHumanOrRefreshPending(request);
     assertThat(blocked.getStatus()).isEqualTo(previousStatus);
 
     assertThat(retry.id()).isEqualTo(602L);
@@ -325,9 +330,10 @@ class AgentTaskServiceTest {
     assertThat(service.retryBlockedByHumanOrRefreshPending(request, true).id()).isEqualTo(602L);
   }
 
-  /** Persiste atividade, instância e tentativas como níveis distintos do mesmo trabalho. */
-  @Test
-  void persistsActivityInstanceAndGroupsItsAttempts() {
+  /** Preserva a ocorrência terminal e abre outra numerada sem misturar tentativas nem objetivos. */
+  @ParameterizedTest
+  @ValueSource(strings = {"COMPLETED", "CANCELLED"})
+  void persistsActivityInstanceAndGroupsItsAttempts(String terminalStatus) {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     BusinessProcessActivityInstanceRepository instances =
         mock(BusinessProcessActivityInstanceRepository.class);
@@ -400,13 +406,13 @@ class AgentTaskServiceTest {
                 false,
                 null));
     service.updateStatus(created.id(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
-    service.updateStatus(created.id(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+    service.updateStatus(created.id(), new UpdateAgentTaskStatusRequest(terminalStatus));
 
     BusinessProcessActivityInstance instance = savedInstance.get();
     assertThat(savedTask.get().getActivityInstance()).isSameAs(instance);
     assertThat(savedTask.get().getReceivedAt()).isEqualTo(now);
-    assertThat(instance.getStatus()).isEqualTo("COMPLETED");
-    assertThat(instance.isObjectiveAchieved()).isTrue();
+    assertThat(instance.getStatus()).isEqualTo(terminalStatus);
+    assertThat(instance.isObjectiveAchieved()).isEqualTo("COMPLETED".equals(terminalStatus));
     assertThat(instance.getEnteredAt()).isEqualTo(now);
     assertThat(instance.getExitedAt()).isEqualTo(now);
     ProcessInstanceResponse processInstance = service.processInstances("experiment:88").getFirst();
@@ -416,6 +422,39 @@ class AgentTaskServiceTest {
         .isEqualTo("Entregar HTML funcional e responsivo.");
     assertThat(processInstance.activities().getFirst().tasks()).hasSize(1);
     assertThat(processInstance.activities().getFirst().tasks().getFirst().attemptNumber()).isOne();
+
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            401L, "experiment:88"))
+        .thenReturn(Optional.of(instance));
+    when(instances.save(any(BusinessProcessActivityInstance.class)))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessActivityInstance value = invocation.getArgument(0);
+              if (value.getId() == null) value.setId(502L);
+              savedInstance.set(value);
+              return value;
+            });
+    AgentTask original = savedTask.get();
+    service.createByHuman(
+        new CreateAgentTaskRequest(
+            "landing-generator",
+            "Operador",
+            "Nova ocorrência",
+            "Entregar HTML responsivo.",
+            "HIGH",
+            "experiment:88",
+            9L,
+            "html",
+            false,
+            null));
+    assertThat(savedInstance.get().getId()).isEqualTo(502L);
+    assertThat(savedInstance.get().getOccurrenceNumber()).isEqualTo(2);
+    assertThat(savedInstance.get().getSourceReference()).isEqualTo("experiment:88");
+    assertThat(savedInstance.get().getStatus()).isEqualTo("PENDING");
+    assertThat(savedInstance.get().isObjectiveAchieved()).isFalse();
+    assertThat(instance.getStatus()).isEqualTo(terminalStatus);
+    assertThat(original.getActivityInstance()).isSameAs(instance);
+    assertThat(savedTask.get().getActivityInstance()).isNotSameAs(instance);
   }
 
   /** Conclui a ocorrência conjunta somente depois dos pareceres de Psique e Têmis. */

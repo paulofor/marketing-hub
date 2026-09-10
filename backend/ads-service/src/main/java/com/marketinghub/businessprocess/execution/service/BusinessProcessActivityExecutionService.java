@@ -662,9 +662,16 @@ public class BusinessProcessActivityExecutionService {
         null);
   }
 
-  /** Aceita somente atividade inédita ou bloqueada, impedindo reinício de trabalho ainda ativo. */
+  /** Reconhece estados sem trabalho ativo que podem receber uma tentativa após os gates atuais. */
+  private boolean requestableActivityState(String operationalState) {
+    return List.of("NOT_STARTED", "BLOCKED", "CANCELLED").contains(operationalState);
+  }
+
+  /**
+   * Permite nova tentativa após cancelamento ou bloqueio, preservando conclusões e trabalho ativo.
+   */
   private void requireRequestableActivityState(String operationalState) {
-    if ("NOT_STARTED".equals(operationalState) || "BLOCKED".equals(operationalState)) return;
+    if (requestableActivityState(operationalState)) return;
     if ("COMPLETED".equals(operationalState)) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O objetivo da atividade já foi atingido neste ciclo.");
@@ -856,7 +863,9 @@ public class BusinessProcessActivityExecutionService {
     }
   }
 
-  /** Explica por que a tela pode ou não solicitar a execução dessa atividade. */
+  /**
+   * Explica a prontidão atual e a preservação de tentativas bloqueadas ou canceladas na auditoria.
+   */
   private String executionRequestReason(
       BusinessProcessActivityDefinition definition,
       BusinessProcessDefinition process,
@@ -877,7 +886,7 @@ public class BusinessProcessActivityExecutionService {
     if ("COMPLETED".equals(operationalState)) {
       return "O objetivo da atividade já foi atingido neste ciclo.";
     }
-    if (!"NOT_STARTED".equals(operationalState) && !"BLOCKED".equals(operationalState)) {
+    if (!requestableActivityState(operationalState)) {
       return "A atividade já possui execução registrada neste ciclo.";
     }
     if (!hasExecutionContext) {
@@ -901,13 +910,18 @@ public class BusinessProcessActivityExecutionService {
     if ("BLOCKED".equals(operationalState)) {
       return "A tentativa bloqueada será preservada e uma nova tarefa será aberta.";
     }
+    if ("CANCELLED".equals(operationalState)) {
+      return "A ocorrência cancelada será preservada e uma nova ocorrência será aberta no mesmo contexto.";
+    }
     if (hasBackendExecutor && backendReadiness != null) return backendReadiness.reason();
     if (hasHumanExecutor && humanReadiness != null) return humanReadiness.reason();
     if (hasAgentReadinessProvider && agentReadiness != null) return agentReadiness.reason();
     return "A atividade está pronta para abrir todas as tarefas responsáveis.";
   }
 
-  /** Monta o comando uniforme de agente, backend, subprocesso ou aprovação humana. */
+  /**
+   * Monta o comando uniforme e identifica a nova tentativa de agente após bloqueio ou cancelamento.
+   */
   private ProductProcessActivityExecutionControlResponse executionControl(
       BusinessProcessActivityDefinition definition,
       BusinessProcessDefinition process,
@@ -1026,7 +1040,9 @@ public class BusinessProcessActivityExecutionService {
           "AGENT",
           "COMMAND",
           configuredActionLabel == null
-              ? "BLOCKED".equals(operationalState) ? "Reiniciar tarefa" : "Executar atividade"
+              ? List.of("BLOCKED", "CANCELLED").contains(operationalState)
+                  ? "Reiniciar tarefa"
+                  : "Executar atividade"
               : configuredActionLabel,
           configuredDescription == null
               ? "Abre todas as tarefas responsáveis no mesmo ciclo auditável."
@@ -1309,7 +1325,7 @@ public class BusinessProcessActivityExecutionService {
     return activityIds;
   }
 
-  /** Monta os grupos distinguindo conclusões históricas da validação exigida pela versão atual. */
+  /** Projeta o estado e a mesma elegibilidade do comando, preservando tentativas históricas. */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
       Map<String, List<AgentTask>> tasksByActivityId,
@@ -1391,29 +1407,21 @@ public class BusinessProcessActivityExecutionService {
       boolean selectedVersionActivity =
           definition != null
               && conditionalActivitySelected(definition, situation, executions, agentReadiness);
-      boolean backendStateAllowsRequest =
-          "NOT_STARTED".equals(situation.operationalState())
-              || "BLOCKED".equals(situation.operationalState());
-      boolean agentStateAllowsRequest =
-          "NOT_STARTED".equals(situation.operationalState())
-              || "BLOCKED".equals(situation.operationalState());
-      boolean humanStateAllowsRequest =
-          "NOT_STARTED".equals(situation.operationalState())
-              || "BLOCKED".equals(situation.operationalState());
+      boolean stateAllowsRequest = requestableActivityState(situation.operationalState());
       boolean executionRequestAvailable =
           definition != null
               && "PUBLISHED".equals(selectedProcess.getStatus())
               && hasExecutionContext
               && productExecutionEnabled
               && ((!responsibleAgents.isEmpty()
-                      && agentStateAllowsRequest
+                      && stateAllowsRequest
                       && (agentReadiness == null || agentReadiness.ready()))
                   || (backendExecutor.isPresent()
-                      && backendStateAllowsRequest
+                      && stateAllowsRequest
                       && backendReadiness != null
                       && backendReadiness.ready())
                   || (humanExecutor.isPresent()
-                      && humanStateAllowsRequest
+                      && stateAllowsRequest
                       && humanReadiness != null
                       && humanReadiness.ready()));
       String executionRequestReason =

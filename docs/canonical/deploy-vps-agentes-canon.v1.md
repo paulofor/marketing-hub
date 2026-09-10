@@ -100,6 +100,12 @@ consolidando posteriormente pelo seu fluxo de PR. Essa autorização não altera
 nem permite contornar destinos negados pelo helper SSH, compartilhar sessões dos agentes,
 reduzir reservas de disco ou descartar dados. Registrar imagem, diff, validação, estado anterior,
 retorno e resultado na UI; preservar rollback. O fluxo normal dos demais serviços permanece pelo PR.
+Na continuidade de 10/09/2026, essa recuperação inclui as correções causalmente necessárias
+no backend (retomada de ocorrência cancelada e leitura do experimento) e em Plutus
+(contrato econômico da atividade seguinte do #92), conforme a autorização do usuário
+para resolver o fluxo e avançar pela tela. Cada imagem exige aceite local completo,
+origem nos arquivos versionados, configuração preservada e evidência de saúde/resultado.
+Isso não autoriza publicar manualmente as otimizações gerais de Psique ou Íris.
 
 Imagem fora da lista explícita de agentes ou da PDE Platform continua exigindo revisão operacional individual da
 referência imutável, origem, idade, ausência de containers e versões de recuperação; não entra na
@@ -111,17 +117,23 @@ o pacote para impedir divergência entre a revisão versionada e o runtime.
 
 ## Imagens aprovadas no runner e carga sem recompilação
 
-Argos e Psique devem usar a base oficial Playwright alinhada à versão exata de `playwright-core`
+Argos, Psique, Atena e o revisor do workflow de Íris devem compartilhar a mesma base oficial
+Playwright, pelo mesmo digest, alinhada à versão exata de `playwright-core`
 no `package.json` e no lock, fixada também pelo digest no Dockerfile e no teste do workflow.
 Os testes de navegador rodam dentro dessa base, com dependências Node resolvidas antes, rede
 externa desabilitada e o usuário do checkout. É proibido instalar Chromium ou suas bibliotecas
-por APT/`playwright install --with-deps` nesses gates ou nos runtimes desses agentes. O JRE de
-Psique continua vindo do estágio Temurin 21 e as duas imagens mantêm usuário sem privilégios.
+por APT/`playwright install --with-deps` nesses gates ou nos runtimes desses agentes. O JRE dos
+agentes Java vem do estágio Temurin 21 e os runtimes mantêm usuário sem privilégios.
+Instalações de dependências e do cliente devem remover o cache npm na mesma camada que o criou.
+O cliente comum deve preceder as camadas específicas de cada agente, permitindo compartilhar
+conteúdo sem misturar credenciais ou estado. O estúdio de imagens permanece em sua imagem Java
+independente, sem instalar navegador ou cliente de agente.
 Browser ausente ou incompatível deve reprovar o gate, preservando a versão anterior.
 O contrato `scripts/test-agent-browser-version-contract.mjs` protege imagem, pacote, lock e
 workflow no check central de Actions. Uma atualização do Playwright deve alinhar esses quatro
 contratos e validar novamente captura real, permissões e imagens antes de publicação.
 Evidências: `docs/homologacao/actions-navegador-versionado-2026-09-09.md`.
+Complemento de capacidade e Atena: `docs/homologacao/actions-capacidade-agentes-vega-2026-09-10.md`.
 
 Os oito publicadores que antes faziam build no VPS devem construir e validar suas imagens no job
 de testes do Actions, empacotá-las por `scripts/agent-image-bundle.mjs` e transportá-las pelo artefato
@@ -133,6 +145,11 @@ no GHCR.
 A transferência usa a configuração SSH já autenticada, gzip por stdin e `docker image load`,
 sem gravar outro arquivo tar no host. Antes da carga, medir reserva de 4 GiB mais duas vezes a soma
 dos tamanhos descompactados reportados pelo Docker, cobrindo camadas e extração transitória.
+Quando um workflow publica serviços independentes, como revisor e estúdio de Íris, empacotar cada
+imagem separadamente no mesmo artefato de revisão. Verificar todos os pacotes antes de acessar o
+host e carregar um por vez, medindo a reserva proporcional antes e os 4 GiB depois de cada carga.
+Isso evita somar picos de extração simultâneos desnecessários. O restart conjunto continua
+proibido até todas as imagens passarem pela prova portátil e pela verificação de capacidade.
 Depois da carga, conferir cada imagem por prova criptográfica portátil composta pela plataforma,
 camadas `RootFS` e configuração funcional normalizada; então medir novamente os 4 GiB operacionais
 antes de liberar o restart. O campo Docker `.Id` é apenas diagnóstico: stores clássicos e

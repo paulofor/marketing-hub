@@ -15,6 +15,7 @@ const processName = "Estratégia, economia e protótipo privado do PDE";
 // Simula exclusivamente os contratos HTTP locais; não registra tarefas ou métricas produtivas.
 function history(state) {
   const completed = state === "COMPLETED";
+  const retryable = ["BLOCKED", "CANCELLED"].includes(state);
   const activities = [
     ["marketStrategy", "Selecionar para protótipo privado", "Atena"],
     ["economics", "Limitar economia da validação", "Plutus"],
@@ -33,17 +34,15 @@ function history(state) {
       index === 0 ? `Atena: ${state}` : "Aguardando predecessora aprovada.",
     objectiveAchieved: index === 0 && completed,
     stateEvidence: index === 0 ? "DIRECT" : "NOT_RECORDED",
-    executionRequestAvailable: index === 0 ? state === "BLOCKED" : true,
+    executionRequestAvailable: index === 0 ? retryable : true,
     executionControl: {
       executorType: "AGENT",
       interactionType: "COMMAND",
       actionLabel:
-        index === 0 && state === "BLOCKED"
-          ? "Reiniciar tarefa"
-          : "Executar atividade",
+        index === 0 && retryable ? "Reiniciar tarefa" : "Executar atividade",
       description:
         "Abre todas as tarefas responsáveis no mesmo ciclo auditável.",
-      actionAvailable: index === 0 ? state === "BLOCKED" : true,
+      actionAvailable: index === 0 ? retryable : true,
       availabilityReason:
         index === 0
           ? `Atena: ${state}`
@@ -144,7 +143,8 @@ try {
     const context = await browser.newContext(options);
     const page = await context.newPage();
     page.on("pageerror", (error) => errors.push(error.message));
-    await context.route("**/api/**", async (route) => {
+    // Intercepta somente endpoints; módulos /src/api do Vite precisam continuar carregando.
+    await context.route(`${new URL(baseUrl).origin}/api/**`, async (route) => {
       const request = route.request();
       const url = new URL(request.url());
       if (url.pathname.endsWith("/activity-executions")) {
@@ -198,24 +198,28 @@ try {
         .getByRole("button", { name: "Reiniciar tarefa" }),
     ).toHaveCount(0);
 
-    // Somente o bloqueio persistido libera nova solicitação; tarefa ativa não é duplicada.
-    state = "BLOCKED";
-    await page.reload();
-    await page
-      .locator("#activity-marketStrategy")
-      .getByRole("button", { name: "Reiniciar tarefa" })
-      .click();
-    await expect.poll(() => posts.length).toBe(1);
-    await expect(
-      page
+    // Bloqueio e cancelamento preservados liberam nova tentativa; trabalho ativo não é duplicado.
+    for (const previousState of ["BLOCKED", "CANCELLED"]) {
+      state = previousState;
+      await page.reload();
+      await page
         .locator("#activity-marketStrategy")
-        .getByRole("button", { name: "Reiniciar tarefa" }),
-    ).toHaveCount(0);
-    await expect(
-      page
-        .locator("#activity-marketStrategy")
-        .getByText("Atena: IN_PROGRESS", { exact: true }),
-    ).toBeVisible();
+        .getByRole("button", { name: "Reiniciar tarefa" })
+        .click();
+      await expect
+        .poll(() => posts.length)
+        .toBe(previousState === "BLOCKED" ? 1 : 2);
+      await expect(
+        page
+          .locator("#activity-marketStrategy")
+          .getByRole("button", { name: "Reiniciar tarefa" }),
+      ).toHaveCount(0);
+      await expect(
+        page
+          .locator("#activity-marketStrategy")
+          .getByText("Atena: IN_PROGRESS", { exact: true }),
+      ).toBeVisible();
+    }
 
     // O backend pode aceitar solicitações antecipadas; só consome a fila após a predecessora.
     // Aqui a UI deve refletir a conclusão recebida e enviar o próximo comando no mesmo ciclo.
@@ -236,8 +240,8 @@ try {
       fullPage: true,
     });
     await next.getByRole("button", { name: "Executar atividade" }).click();
-    await expect.poll(() => posts.length).toBe(2);
-    assert.ok(posts[1].includes("/economics/"));
+    await expect.poll(() => posts.length).toBe(3);
+    assert.ok(posts[2].includes("/economics/"));
     assert.deepEqual(errors, []);
     const width = await page.evaluate(() => [
       document.documentElement.scrollWidth,

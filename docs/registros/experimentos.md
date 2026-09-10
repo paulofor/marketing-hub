@@ -7108,3 +7108,38 @@ ponta nem teste de publicação do sucessor.
 - **Estado:** nenhuma imagem publicada, nenhuma tarefa produtiva criada/cancelada/concluída e
   nenhum gasto iniciado nesta recuperação. #358 continua pendente; #92 não foi colocado em RUNNING.
   Matriz, testes e limitações: [homologação de Atena](../homologacao/vega-atena-callback-resiliente-v1.md).
+
+## 2026-09-10 — Vega #92: Atena e Plutus concluídos pela Cadeia de Valor
+
+- **SSH recuperado:** o helper autenticou no host dos agentes. O run `34418552643`
+  publicou o artefato já aprovado de Atena (`dc004fe1…`) e terminou com sucesso.
+- **Retomada:** a tentativa órfã #358 foi cancelada pela UI. Após corrigir e
+  homologar localmente o reinício de cancelamentos e a leitura lazy de experimentos,
+  o backend foi recuperado com seu Dockerfile/Compose versionados pela autorização
+  excepcional vigente. O botão da atividade 2.1 criou a #359, concluída `APPROVE`.
+- **Hipótese aprovada por Atena:** cartão de microação pronto, com salvar e retomar,
+  para melhorar o primeiro resultado útil. O aprendizado continua ligado ao #91;
+  quatro sessões e nenhuma venda não demonstram causa de abandono nem conversão.
+- **Plutus:** a tentativa #360 bloqueou por selecionar o contrato antigo usando a
+  origem `experiment:92`, apesar do BPM v6 e da estratégia v3. O histórico #328/#329
+  comprovou sucesso do contrato v5 para descoberta. A seleção passou a depender da
+  versão do BPM, preservando o contrato histórico e os gates privados.
+- **Resultado real após validação:** a imagem corrigida de Plutus foi enviada e
+  ficou saudável, com configuração, sessão e rollback preservados. Pela UI, a
+  atividade 2.2 criou #361, concluída às 02:53:16 UTC em `APPROVE`, prompt v5,
+  prazo ISO e contribuição reconciliada. Preço R$ 67, custo R$ 12 e contribuição
+  R$ 55 são hipóteses do protótipo/checkout simulado; não autorizam gasto.
+- **BPM preservado:** instância 225 de Atena e 226 de Plutus concluídas, objetivos
+  atingidos. #360 permanece bloqueada como tentativa anterior; #361 retentou na
+  mesma instância 226. #358/instância 224 permanecem canceladas. Nenhuma conclusão
+  foi fabricada nem parecer antigo sobrescrito.
+- **Próxima atividade disponível:** [2.3 — Dédalo — Projetar protótipo e harness PDE](http://191.252.181.168:5173/products/4/value-chain-history/processes/67/activities?learningCycleId=2&chainId=14#activity-productArchitecture),
+  ainda não iniciada. UI em desktop/iPhone/Pixel e MCP confirmaram o avanço.
+  #91 continua `USER_STOPPED`; #92 continua `PLANNED`, sem campanha nova.
+- **Actions restantes:** Psique e Íris/Têmis seguem sem capacidade para carregar
+  seus artefatos. A reserva e o rollback foram preservados; a expansão do host
+  depende do usuário. As otimizações de imagens/workflows continuam locais.
+- **Aceite:** duas rodadas completas de 40 controles após a última correção,
+  incluindo 2.577 testes backend, 535 frontend, 160 dos três módulos agentes,
+  Docker, SSH e navegação por rodada. Cinco testes backend ignorados preexistentes.
+  Nenhum commit, push ou PR. [Evidências completas](../homologacao/actions-capacidade-agentes-vega-2026-09-10.md).

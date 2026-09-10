@@ -27,6 +27,14 @@ services:
     <<: *browser-tests
     working_dir: /workspace/customer-agent-worker
     command: [npm, test]
+  atena-ci:
+    <<: *browser-tests
+    working_dir: /workspace/experiment-strategist-worker
+    command: [npm, test]
+  iris-ci:
+    <<: *browser-tests
+    working_dir: /workspace/meta-ad-approver-worker
+    command: [npm, test]
   argos-runtime:
     <<: *runtime
     image: ${ARGOS_TEST_IMAGE:-unused-argos-test-image}
@@ -37,6 +45,14 @@ services:
     profiles: [runtime]
     environment:
       CUSTOMER_AGENT_BPM_VISUAL_SCRIPT: /app/browser/bpm-visual-evidence.mjs
+  atena-runtime:
+    <<: *runtime
+    image: ${ATENA_TEST_IMAGE:-unused-atena-test-image}
+    profiles: [runtime]
+  iris-runtime:
+    <<: *runtime
+    image: ${IRIS_TEST_IMAGE:-unused-iris-test-image}
+    profiles: [runtime]
 
 volumes:
   browser-workspace:

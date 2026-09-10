@@ -4,6 +4,23 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-MIRA-SEGURANCA-ENCERRADA-SEM-ORIENTACAO — bloqueio correto perde contexto na tela
+
+- **Data:** 2026-09-10. Tarefa #367, cenário SAFETY, versão `mira-private-v2`.
+- **Confirmação histórica:** #350 já identificara perda de conteúdo no fim do cenário
+  aderente. A #355 aprovou sua correção na v2, mas o ramo terminal de segurança continuou
+  substituindo causa, limite e orientação por uma confirmação administrativa (artefato 94).
+- **Causa sistêmica:** os testes verificavam eventos e o bloqueio antes da conclusão;
+  não exigiam o conteúdo funcional no estado final retomado. O harness também confundia
+  a ausência de `label` com falta de nome acessível em botões que já têm texto.
+- **Correção:** manter a causa da API, orientações e saída explícita no encerramento;
+  verificar a retomada no harness real e os nomes dos controles conforme sua semântica.
+  Novas sessões da v3 persistem a própria versão, sem converter as anteriores em provas novas.
+- **Prevenção:** regressão de perda do conteúdo final, falha de callback, sessão encerrada
+  imutável, versões históricas, desktop/iPhone/Pixel e frontend/backend/harness reais.
+  Retorno `3.9 → 3.6 → 3.5 → 3.7 → 3.8 → 3.9`, sem aprovações artificiais.
+  Matriz em `docs/homologacao/mira-tarefa-367-seguranca-v1.md`.
+
 ## LOOP-PSIQUE-CLIQUE-ANTES-DA-PERSISTENCIA — recuperação disputa ordem com uso
 
 - **Data:** 2026-09-10.
@@ -4073,6 +4090,13 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   versão, estratégia, economia sem gasto, harness, protótipo, momento de compra, resultado pronto,
   cinco eventos, checkout simulado e limite de publicação. Testes protegem exposição segregada,
   contexto completo e ausência fora do processo privado.
+- **Recorrência em 10/09/2026 — Vega #368:** o cadastro comercial histórico permanecia `v1/v7`,
+  enquanto #359/#361/#362 aprovavam o sucessor #92/v8. A #366 recebeu o contrato completo e
+  concluiu; a #368 voltou a receber contexto ausente após mudança do runtime. O backend passa
+  a montar a construção pelo experimento e pela cadeia do ciclo, com versões e IDs das três
+  aprovações, sem alterar o produto histórico. Contrato incompleto não volta silenciosamente à v7.
+  Testes de isolamento, ordem das aprovações e contrato backend → consumidor de Dédalo cobrem a
+  recorrência. Evidências: `docs/homologacao/vega-ciclo2-contexto-continuidade-v1.md`.
 
 ## LOOP-APOLO-BPM-AUDIOVISUAL-SEM-CONSUMIDOR — atividade opcional permanece pendente
 
@@ -4614,6 +4638,12 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 `AgentTaskServiceTest` e segunda rejeição em `PdeAgentValidationReworkReadinessProviderTest`.
 
 ## LOOP-BPM-CICLO-SEM-CHAMADA-DO-PAI — ciclo fora do fluxo de valor
+
+- **Continuidade em 10/09/2026:** a conclusão do Processo 2 no segundo ciclo não indicava o
+  trabalho seguinte; o ciclo ainda apontava à arquitetura já concluída. A orientação passa a
+  consultar a mesma situação oficial das atividades, com ciclo, experimento, número da passagem,
+  memória e próximo destino dentro da cadeia. Tarefas e custos históricos não entram na passagem
+  selecionada. Navegação é somente leitura e não encerra etapas ou aprova gates.
 
 - Confirmado em 08/09/2026: o ciclo v2 tinha pai no cadastro, mas o BPM de venda v4
   terminava em `consolidate → decision → end`. O painel anterior aos processos reforçava

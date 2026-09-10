@@ -448,7 +448,7 @@ public class ProductCatalogService {
     private static ProductExperienceResponse createMiraPrivateProduct() {
         return new ProductExperienceResponse(
                 "mira-private-validation",
-                "mira-private-v2",
+                "mira-private-v3",
                 "mira-private-validation",
                 "mira-private-validation-v1",
                 "Mira",

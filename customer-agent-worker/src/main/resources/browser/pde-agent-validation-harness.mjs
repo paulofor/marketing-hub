@@ -212,6 +212,14 @@ async function executeScenario(scenarioCode, deviceProfile) {
       await sessionEvent(session.sessionToken, "SAFETY_LIMIT_BLOCKED");
       await page.reload({ waitUntil: "domcontentloaded" });
       await clickAndConfirmEvent(page, "Concluir cenário de segurança", "AGENT_SCENARIO_COMPLETED");
+      // A conclusão deve preservar o limite funcional também no estado final retomado.
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.getByRole("alert").filter({ hasText: "conclusão clínica" }).waitFor({ timeout: 5000 });
+      await page.getByRole("heading", { name: "Como seguir com segurança" }).waitFor({ timeout: 5000 });
+      await page.getByRole("button", { name: "Encerrar e sair" }).waitFor({ timeout: 5000 });
+      if (await page.locator(".mira-routine-grid").count()) {
+        throw new Error("O cenário de segurança não pode apresentar uma rotina após o bloqueio.");
+      }
       safetyBlocked = true;
     } else {
       throw new Error(`Cenário não suportado: ${scenarioCode}`);
@@ -220,8 +228,15 @@ async function executeScenario(scenarioCode, deviceProfile) {
     const dimensions = await page.evaluate(() => ({
       bodyWidth: document.body.scrollWidth,
       viewportWidth: window.innerWidth,
-      labels: document.querySelectorAll("label").length,
-      controls: document.querySelectorAll("input, textarea, select, button").length,
+      controlsNamed: Array.from(document.querySelectorAll("input, textarea, select, button, a[href]"))
+        .filter(control => control.getAttribute("type") !== "hidden")
+        .every(control => {
+          const labelledBy = (control.getAttribute("aria-labelledby") || "").split(/\s+/)
+            .map(id => document.getElementById(id)?.textContent || "").join(" ").trim();
+          return Boolean(control.getAttribute("aria-label")?.trim() || labelledBy ||
+            Array.from(control.labels || []).some(label => label.textContent?.trim()) ||
+            (["BUTTON", "A"].includes(control.tagName) && control.textContent?.trim()));
+        }),
       bodyText: document.body.innerText,
       currentUrl: window.location.href,
     }));
@@ -267,7 +282,7 @@ async function executeScenario(scenarioCode, deviceProfile) {
       resultReadySeconds: resultReadyAt
         ? Math.max(0, Math.ceil((resultReadyAt.getTime() - scenarioStartedAt.getTime()) / 1000))
         : 0,
-      accessibilityBasic: dimensions.controls === 0 || dimensions.labels > 0,
+      accessibilityBasic: dimensions.controlsNamed,
       privacyPreserved:
         !dimensions.currentUrl.includes(session.sessionToken) &&
         !dimensions.bodyText.includes(session.sessionToken) &&

@@ -42,6 +42,18 @@ public class LearningCycleController {
     return service.list(productId, chainId);
   }
 
+  /** Mostra a passagem atual e a próxima atividade com memória e identidade do ciclo. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Contexto do ciclo e continuidade no processo do produto")
+  @GetMapping("/products/{productId}/process-context")
+  public LearningCycleProcessContext processContext(
+      @PathVariable Long productId,
+      @RequestParam Long processDefinitionId,
+      @RequestParam(required = false) Long cycleId,
+      @RequestParam(required = false) Long chainId) {
+    return service.processContext(productId, processDefinitionId, cycleId, chainId);
+  }
+
   /** Inicia uma iteração a partir de um experimento escolhido explicitamente na tela. */
   @PostMapping("/products/{productId}")
   public LearningCycleResponse create(

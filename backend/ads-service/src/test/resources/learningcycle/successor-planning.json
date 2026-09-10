@@ -1,0 +1,29 @@
+{
+  "strategy": {
+    "decision": "APPROVE",
+    "marketStrategicContract": {
+      "contractVersion": "MARKET_STRATEGY_V3", "status": "READY_FOR_PRIVATE_VALIDATION",
+      "buyer": "Participante consentida", "problem": "Aplicar um ajuste sem comprar itens",
+      "desiredOutcome": "Uma microação utilizável", "valueMechanism": "Cartão pessoal com instrução e autoavaliação",
+      "privateValidationPlan": {
+        "purchaseScene": {"trigger": "Preparar-se para sair"},
+        "humanValueDelivery": {"minimumCustomerInput": "Ocasião e peça", "readyMadeOutcome": "Cartão aplicável"}
+      }
+    }
+  },
+  "economics": {
+    "contractVersion": "PDE_PRIVATE_ECONOMICS_V1", "decision": "APPROVE",
+    "economics": {"commercialSpendAuthorized": false, "offerPriceBrl": 67},
+    "metrics": {"primary": "Primeiros resultados por início"}
+  },
+  "architecture": {
+    "decision": "APPROVE", "productArchitecture": {
+      "audiovisualRequired": false,
+      "privatePrototype": {
+        "simpleInput": "Ocasião e peça", "readyResult": "Cartão aplicável", "maxValueTimeMinutes": 5,
+        "instrumentationEvents": ["EXPERIENCE_STARTED", "VALUE_MOMENT", "READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED"],
+        "checkoutMode": "SIMULATED_NO_CHARGE"
+      }
+    }
+  }
+}

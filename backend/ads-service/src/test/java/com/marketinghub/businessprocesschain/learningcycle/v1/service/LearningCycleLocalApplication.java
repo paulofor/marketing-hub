@@ -64,6 +64,7 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.product.service.valuechainposition.PdeProcessCodeResolver.class,
   com.marketinghub.product.web.ProductValueChainPositionController.class,
   LearningCycleExecutionContext.class,
+  LearningCycleWorkResolver.class,
   com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService.class,
   com.marketinghub.businessprocess.execution.controller.BusinessProcessActivityExecutionController
       .class,
@@ -86,6 +87,13 @@ public class LearningCycleLocalApplication {
   static final Map<Long, ExperimentRun> RUNS = new ConcurrentHashMap<>();
   static final Map<Long, HistoricalCampaignReceipt> CAMPAIGNS = new ConcurrentHashMap<>();
   static final Map<Long, Map<String, Object>> MEASUREMENTS = new ConcurrentHashMap<>();
+
+  /** Simula a biblioteca de referências sem consultar fontes ou agentes produtivos. */
+  @Bean
+  com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService
+      researchIntelligence() {
+    return mock(com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService.class);
+  }
 
   /** Inicia somente a fixture local, sem importar executores, agendamentos ou credenciais reais. */
   public static void main(String[] args) {

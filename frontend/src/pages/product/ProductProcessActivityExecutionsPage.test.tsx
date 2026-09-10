@@ -11,8 +11,12 @@ import axios from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ProductProcessActivityExecutionsPage from "./ProductProcessActivityExecutionsPage";
+import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
 
 vi.mock("axios");
+vi.mock("../../api/learningCycle/useCycleProcessContext", () => ({
+  useCycleProcessContext: vi.fn(),
+}));
 
 const dedaloTask = {
   taskId: 243,
@@ -382,6 +386,96 @@ describe("ProductProcessActivityExecutionsPage", () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.mocked(useCycleProcessContext).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useCycleProcessContext>);
+  });
+
+  it("identifies the second cycle and uses its official successor, memory and execution context", async () => {
+    vi.mocked(useCycleProcessContext).mockReturnValue({
+      data: {
+        cycleId: 2,
+        cycleNumber: 2,
+        experimentId: 92,
+        chainDefinitionId: 14,
+        productVersion: "vega-v8",
+        status: "OPEN",
+        stageLabel: "Ajustar produto e comunicação",
+        hypothesis: "Melhorar o primeiro resultado útil",
+        mainChange: "Uma microação aplicável",
+        cycleUrl:
+          "/business-process-chains/learning-cycles?chainId=14&productId=9&cycleId=2",
+        previousLearning: [
+          {
+            cycleId: 1,
+            experimentId: 91,
+            action: "ADJUST",
+            summary: "Resultado conciliado",
+            evidenceReference: "learning-cycle:1/event:3",
+            learning: "Quatro sessões e nenhuma venda",
+            nextHypothesis: "Mais utilidade",
+            limitation: "Sem causa de abandono comprovada",
+          },
+        ],
+        nextWork: {
+          processDefinitionId: 70,
+          processNumber: 3,
+          processName: "Construção",
+          activityId: "deliverables",
+          activityNumber: 2,
+          activityName: "Produzir componentes",
+          responsible: "Dédalo",
+          state: "NOT_STARTED",
+          reason: "Disponível no BPM",
+          url: "/products/9/value-chain-history/processes/70/activities?learningCycleId=2&chainId=14#activity-deliverables",
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useCycleProcessContext>);
+    vi.mocked(axios.get).mockResolvedValue({ data: history });
+    renderPage();
+    expect(
+      await screen.findByText("2º ciclo de vendas · Experimento #92"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Quatro sessões e nenhuma venda"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Sem causa de abandono comprovada/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir próxima atividade" }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringContaining(
+        "learningCycleId=2&chainId=14#activity-deliverables",
+      ),
+    );
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith(
+        "/api/business-processes/18/products/9/activity-executions?learningCycleId=2&chainId=14",
+      ),
+    );
+  });
+
+  it("blocks task controls when the cycle context cannot be read", async () => {
+    vi.mocked(useCycleProcessContext).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: true,
+    } as ReturnType<typeof useCycleProcessContext>);
+    vi.mocked(axios.get).mockResolvedValue({ data: history });
+    renderPage();
+    expect(
+      await screen.findByText(/Não foi possível identificar o ciclo/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Executar atividade" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("keeps the cycle entry inside its calling activity and reflects the backend state", async () => {

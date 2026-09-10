@@ -177,6 +177,20 @@ export function MiraPrivatePrototype() {
     }
   }
 
+  /** Encerra apenas o acesso deste navegador, preservando a evidência no backend. */
+  function leaveSession() {
+    window.sessionStorage.removeItem("mira-private-session");
+    setAccessToken("");
+    setSession(null);
+    setConsent(false);
+    setError("");
+    setObjective("Organizar os produtos que já possuo em uma rotina simples");
+    setProducts([
+      { name: "", labelDirections: "" },
+      { name: "", labelDirections: "" },
+    ]);
+  }
+
   if (!session) {
     return (
       <main className="mira-private-shell">
@@ -416,6 +430,47 @@ export function MiraPrivatePrototype() {
       </main>
     );
   }
+
+  if (session.readingFinished && session.status === "BLOCKED")
+    return (
+      <main className="mira-private-shell" data-testid="safety-finished">
+        <p className="mira-private-kicker">Seu cuidado vem primeiro</p>
+        <h1>Sessão encerrada com segurança</h1>
+        <p>
+          Não geramos uma rotina para este pedido. O motivo permanece aqui para
+          você consultar com calma.
+        </p>
+        <div className="mira-private-alert" role="alert">
+          {session.blocker}
+        </div>
+        <section aria-labelledby="mira-safe-next-steps">
+          <h2 id="mira-safe-next-steps">Como seguir com segurança</h2>
+          <p>
+            Esta experiência organiza os produtos informados conforme os
+            rótulos. Não faz diagnóstico, prescrição ou tratamento.
+          </p>
+          <ul>
+            <li>
+              Para organizar o autocuidado, tenha os rótulos à mão. Em uma nova
+              sessão, você pode usar um objetivo como “Organizar os produtos que
+              já tenho conforme os rótulos”.
+            </li>
+            <li>
+              Para dúvidas clínicas ou tratamento, procure avaliação de um
+              profissional de saúde.
+            </li>
+          </ul>
+          <p>
+            Esta sessão está encerrada e seu registro será preservado. Para uma
+            nova tentativa, será necessário um novo acesso. Nenhuma compra foi
+            realizada.
+          </p>
+        </section>
+        <button className="primary-button" onClick={leaveSession}>
+          Encerrar e sair
+        </button>
+      </main>
+    );
 
   if (session.readingFinished)
     return (

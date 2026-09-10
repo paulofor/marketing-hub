@@ -308,6 +308,37 @@ public class BusinessProcessActivityExecutionService {
     List<BusinessProcessActivityDefinition> selectedActivities =
         activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
 
+    String currentExecutionReference =
+        salesFlow != null
+            ? "experiment:" + salesFlow.experimentId()
+            : learningCycleId == null
+                ? resolveExecutionReference(
+                    selectedProcess, product, productExperiments, productPlans, tasks, instances)
+                : cycleSource(learningCycleId, product, selectedProcess, false);
+    if (learningCycleId != null) {
+      var startedAt = learningCycleContext.startedAt(learningCycleId, productId);
+      tasks =
+          tasks.stream()
+              .filter(task -> Objects.equals(currentExecutionReference, task.getSourceReference()))
+              .filter(
+                  task ->
+                      startedAt == null
+                          || task.getCreatedAt() != null
+                              && !task.getCreatedAt().isBefore(startedAt))
+              .toList();
+      instances =
+          instances.stream()
+              .filter(
+                  instance ->
+                      Objects.equals(currentExecutionReference, instance.getSourceReference()))
+              .filter(
+                  instance ->
+                      startedAt == null
+                          || instance.getCreatedAt() != null
+                              && !instance.getCreatedAt().isBefore(startedAt))
+              .toList();
+    }
+
     Map<String, BusinessProcessActivityDefinition> selectedByActivityId = new LinkedHashMap<>();
     Map<String, List<AgentTask>> tasksByActivityId = new LinkedHashMap<>();
     Map<String, String> historicalActivityNames = new LinkedHashMap<>();
@@ -344,13 +375,6 @@ public class BusinessProcessActivityExecutionService {
     Map<Long, BusinessProcessActivityExecutionResponse> taskResponses = new LinkedHashMap<>();
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
-    String currentExecutionReference =
-        salesFlow != null
-            ? "experiment:" + salesFlow.experimentId()
-            : learningCycleId == null
-                ? resolveExecutionReference(
-                    selectedProcess, product, productExperiments, productPlans, tasks, instances)
-                : cycleSource(learningCycleId, product, selectedProcess, false);
     String readinessSourceReference =
         currentExecutionReference == null
             ? initialSourceReference(selectedProcess, product, productExperiments, productPlans)

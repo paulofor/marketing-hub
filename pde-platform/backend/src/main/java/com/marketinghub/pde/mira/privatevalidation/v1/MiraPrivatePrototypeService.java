@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
 public class MiraPrivatePrototypeService {
     private static final Logger log = LoggerFactory.getLogger(MiraPrivatePrototypeService.class);
     private static final String PRODUCT_SLUG = "mira-private-validation";
-    private static final String VERSION = "mira-private-v2";
+    private static final String VERSION = "mira-private-v3";
     private static final Set<String> HUMAN_EVENTS =
             Set.of("READY_RESULT_USED", "PREFERRED_OVER_FREE", "CHECKOUT_STARTED");
     private static final Set<String> AGENT_EVENTS = Set.of(
@@ -228,7 +228,7 @@ public class MiraPrivatePrototypeService {
         return response(session);
     }
 
-    /** Expõe somente prova sanitizada da leitura solicitada, sem acesso, sessão ou dados de entrada. */
+    /** Expõe a prova sanitizada com a versão preservada da leitura, sem dados de acesso. */
     public synchronized ReadingEvidence readingEvidence(int readingNumber) {
         if (readingNumber != 1 && readingNumber != 2) {
             throw new IllegalArgumentException("Informe primeira ou segunda leitura privada.");
@@ -240,7 +240,7 @@ public class MiraPrivatePrototypeService {
                 .findFirst().orElse(null);
         Map<String, Boolean> signals = new LinkedHashMap<>();
         contract().instrumentationEvents().forEach(event -> signals.put(event, session != null && session.events.contains(event)));
-        return new ReadingEvidence(PRODUCT_SLUG, VERSION, participant,
+        return new ReadingEvidence(PRODUCT_SLUG, session == null ? VERSION : session.prototypeVersion, participant,
                 session == null ? "NOT_STARTED" : session.trafficClass,
                 session == null ? null : session.evidenceId,
                 session == null ? null : session.consentedAt,
@@ -249,7 +249,7 @@ public class MiraPrivatePrototypeService {
                 "SIMULATED_NO_CHARGE", false, false, 0);
     }
 
-    /** Expõe ao harness somente a prova sintética sanitizada da sessão solicitada. */
+    /** Expõe ao harness a prova sintética sanitizada sem reclassificar a versão da sessão. */
     public synchronized AgentValidationEvidence agentValidationEvidence(String evidenceId) {
         StoredSession session = sessions.values().stream()
                 .filter(this::isAgentValidation)
@@ -263,7 +263,7 @@ public class MiraPrivatePrototypeService {
         sideEffects.put("mediaSpendBrl", 0);
         return new AgentValidationEvidence(
                 PRODUCT_SLUG,
-                VERSION,
+                session.prototypeVersion,
                 session.sourceReference,
                 session.scenarioCode,
                 session.trafficClass,
@@ -300,7 +300,7 @@ public class MiraPrivatePrototypeService {
         return null;
     }
 
-    /** Registra cada evento apenas uma vez por sessão e por contrato. */
+    /** Registra cada evento uma vez, mantendo a versão do contrato que originou a sessão. */
     private void recordOnce(StoredSession session, String eventType) {
         if (session.events.contains(eventType)) return;
         Map<String, Object> metadata = new LinkedHashMap<>();
@@ -308,7 +308,7 @@ public class MiraPrivatePrototypeService {
             metadata.put("participantReference", session.participantReference);
         }
         metadata.put("sessionId", session.evidenceId);
-        metadata.put("experienceVersion", VERSION);
+        metadata.put("experienceVersion", session.prototypeVersion);
         metadata.put("trafficClass", session.trafficClass);
         if (isAgentValidation(session)) {
             metadata.put("mh_internal_test", true);
@@ -334,12 +334,12 @@ public class MiraPrivatePrototypeService {
         return session;
     }
 
-    /** Monta a projeção sanitizada utilizada pela interface. */
+    /** Monta a projeção sanitizada com a versão persistida utilizada pela sessão. */
     private SessionResponse response(StoredSession session) {
         return new SessionResponse(session.sessionToken, session.participantReference, session.trafficClass,
                 session.status, session.ageRange, session.objective, session.products == null ? List.of() : session.products,
                 session.routine == null ? List.of() : session.routine, session.blocker,
-                List.copyOf(session.events), VERSION, "SIMULATED_NO_CHARGE", session.finishedAt != null,
+                List.copyOf(session.events), session.prototypeVersion, "SIMULATED_NO_CHARGE", session.finishedAt != null,
                 isAgentValidation(session), session.scenarioCode, session.evidenceId);
     }
 
@@ -491,6 +491,8 @@ public class MiraPrivatePrototypeService {
 
     /** Estado interno persistido de uma única sessão segregada. */
     public static final class StoredSession {
+        // Checkpoints sem versão mantêm o contrato exposto antes da introdução da v3.
+        public String prototypeVersion = "mira-private-v2";
         public String sessionToken;
         public String participantReference;
         public String trafficClass;
@@ -511,8 +513,9 @@ public class MiraPrivatePrototypeService {
         /** Construtor vazio utilizado exclusivamente pela persistência JSON. */
         public StoredSession() {}
 
-        /** Cria uma nova sessão vinculada ao participante e à classe de tráfego. */
+        /** Cria uma nova sessão vinculada ao participante, à classe de tráfego e à versão vigente. */
         StoredSession(String sessionToken, String participantReference, String trafficClass) {
+            this.prototypeVersion = VERSION;
             this.sessionToken = sessionToken;
             this.participantReference = participantReference;
             this.trafficClass = trafficClass;

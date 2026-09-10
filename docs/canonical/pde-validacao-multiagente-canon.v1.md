@@ -106,6 +106,15 @@ Psique deve executar no mínimo três jornadas isoladas da mesma versão:
 3. **Limite e segurança**: pedido fora do escopo, dado sensível ou situação de risco; o produto deve
    bloquear, explicar o limite e oferecer orientação segura sem inventar resultado.
 
+A conclusão e a retomada de um cenário bloqueado devem manter na tela a causa persistida,
+o limite e uma próxima ação funcional e acessível. A confirmação administrativa não pode
+substituir esse conteúdo. Encerrar o acesso no navegador não reabre nem apaga a evidência.
+O harness deve verificar também esse estado terminal, sem depender somente do evento de bloqueio.
+Em Mira, a `mira-private-v3` corrige esse encerramento; sessões novas registram sua versão
+na criação e as projeções/eventos mantêm essa versão após atualizações do serviço. Checkpoints
+legados sem versão preservam o contrato v2 já exposto antes desta migração, sem reclassificá-los
+como prova da v3. A revalidação da v3 exige sessões frescas e retorno explícito no BPM.
+
 Os cenários são avaliações sintéticas e devem usar `trafficClass=AGENT_VALIDATION` e marcador
 interno equivalente a `mh_internal_test`. Podem explorar personas do público, mas nunca recebem
 nome, consentimento, depoimento ou identificador de participante humana.

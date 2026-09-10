@@ -7,7 +7,7 @@ RUN npm run build:mira \
     && mv dist-mira/mira.html dist-mira/index.html
 
 FROM nginx:1.27-alpine
-ARG PDE_FRONTEND_VERSION_ID=mira-private-v2
+ARG PDE_FRONTEND_VERSION_ID=mira-private-v3
 COPY --from=build /app/dist-mira /usr/share/nginx/html
 COPY nginx.mira.conf /etc/nginx/templates/default.conf.template
 COPY docker-entrypoint-mira.d/ /docker-entrypoint.d/

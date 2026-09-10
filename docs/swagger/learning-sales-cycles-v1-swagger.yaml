@@ -16,6 +16,42 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/process-context:
+    get:
+      summary: Identificar o ciclo da atividade, memória herdada e próximo trabalho na cadeia
+      description: >-
+        Somente leitura. Sem cycleId, resolve o único ciclo aberto compatível; não cria tarefas.
+        cycleNumber é o ordinal na linhagem do produto, distinto do id e da versão do BPM.
+        nextWork usa a situação oficial das atividades e conserva os bloqueios e o retorno original.
+      parameters:
+        - {$ref: '#/components/parameters/ProductId'}
+        - {name: processDefinitionId, in: query, required: true, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: query, schema: {type: integer, format: int64}}
+        - {name: chainId, in: query, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Contexto segregado; corpo vazio quando não há ciclo aberto aplicável
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cycleId: {type: integer, format: int64}
+                  cycleNumber: {type: integer}
+                  experimentId: {type: integer, format: int64}
+                  chainDefinitionId: {type: integer, format: int64}
+                  productVersion: {type: string}
+                  status: {type: string}
+                  stageLabel: {type: string}
+                  hypothesis: {type: string}
+                  mainChange: {type: string}
+                  cycleUrl: {type: string}
+                  previousLearning:
+                    type: array
+                    items: {type: object, description: 'cycleId, experimentId, action, summary, evidenceReference, learning, nextHypothesis e limitation preservados da memória herdada.'}
+                  nextWork: {type: object, nullable: true, description: 'processDefinitionId, processNumber, processName, activityId, activityNumber, activityName, responsible, state, reason e url da situação oficial.'}
+        '404': {description: Produto, processo ou ciclo inexistente}
+        '409': {description: Ciclo ambíguo, linhagem inválida ou produto/cadeia divergente}
   /catalog:
     get:
       summary: Consultar BPM versionado, destinos de correção e experimentos elegíveis

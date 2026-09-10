@@ -1,0 +1,60 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: mira_safety
+      MYSQL_ROOT_PASSWORD: mira-local-root
+    healthcheck:
+      test: [CMD, mysqladmin, ping, -h, 127.0.0.1, -pmira-local-root]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - safety-mysql:/var/lib/mysql
+  pde-backend:
+    image: ${MIRA_PDE_IMAGE:?Informe a imagem PDE construída pelo Dockerfile do repositório}
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:ActiveProcessorCount=2 -Xmx512m
+      PDE_INTERNAL_API_TOKEN: mira-local-internal
+      PDE_ACCESS_REQUIRE_JDBC: "true"
+      PDE_ACCESS_JDBC_URL: jdbc:mysql://mysql:3306/mira_safety?useSSL=false&allowPublicKeyRetrieval=true
+      PDE_ACCESS_JDBC_USERNAME: root
+      PDE_ACCESS_JDBC_PASSWORD: mira-local-root
+      PDE_MIRA_PRIVATE_QA_TOKEN: mira-qa-local
+      PDE_SMTP_HOST: sandbox-mail
+      PDE_SMTP_PORT: "1025"
+    ports:
+      - "18096:8096"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - safety-data:/data/pde
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://127.0.0.1:8096/actuator/health]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  mira-ui:
+    image: ${MIRA_FRONTEND_IMAGE:?Informe a imagem frontend construída pelo Dockerfile do repositório}
+    environment:
+      PDE_BACKEND_UPSTREAM: pde-backend:8096
+    ports:
+      - "18180:80"
+    depends_on:
+      pde-backend:
+        condition: service_healthy
+  psique-runtime:
+    image: ${MIRA_PSIQUE_IMAGE:?Informe a imagem Psique construída pelo Dockerfile do repositório}
+    profiles: [runtime]
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,nosuid
+    entrypoint: node
+    environment:
+      PDE_INTERNAL_API_TOKEN: mira-local-internal
+      PDE_HARNESS_TEST_SCRIPT: /app/browser/pde-agent-validation-harness.mjs
+volumes:
+  safety-mysql:
+  safety-data:

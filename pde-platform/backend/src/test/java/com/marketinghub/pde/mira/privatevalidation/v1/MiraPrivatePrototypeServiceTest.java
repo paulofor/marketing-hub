@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.pde.service.AccessService;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.List;
 import org.mockito.ArgumentCaptor;
 import com.marketinghub.pde.dto.FunnelEventRequest;
@@ -267,6 +268,66 @@ class MiraPrivatePrototypeServiceTest {
         var json = new ObjectMapper();
         assertThat(json.writeValueAsString(event.getValue())).doesNotContain(started.sessionToken(), "participant-one");
         assertThat(json.writeValueAsString(service.readingEvidence(1))).doesNotContain(started.sessionToken(), "participant-one");
+    }
+
+    /** Preserva versões explícitas e checkpoints legados durante a abertura de sessões da v3. */
+    @Test
+    void keepsHistoricalVersionsSeparateFromNewSessions() throws Exception {
+        ObjectMapper json = new ObjectMapper();
+        var first = service(mock(AccessService.class));
+        var legacy = first.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "SAFETY"));
+        var explicit = first.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "ADHERENT"));
+        var file = temporaryDirectory.resolve("sessions.json");
+        var checkpoint = json.readTree(file.toFile());
+        ((com.fasterxml.jackson.databind.node.ObjectNode) checkpoint.get(legacy.sessionToken())).remove("prototypeVersion");
+        ((com.fasterxml.jackson.databind.node.ObjectNode) checkpoint.get(explicit.sessionToken()))
+                .put("prototypeVersion", "mira-private-v1");
+        Files.writeString(file, json.writeValueAsString(checkpoint));
+
+        AccessService access = mock(AccessService.class);
+        var restarted = service(access);
+        assertThat(restarted.session(legacy.sessionToken()).prototypeVersion()).isEqualTo("mira-private-v2");
+        assertThat(restarted.agentValidationEvidence(explicit.evidenceId()).prototypeVersion()).isEqualTo("mira-private-v1");
+        var current = restarted.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "SAFETY"));
+        assertThat(current.prototypeVersion()).isEqualTo("mira-private-v3");
+        var input = new MiraPrivatePrototypeService.InputRequest("45-54", "Diagnosticar manchas", List.of(
+                new MiraPrivatePrototypeService.ProductInput("Limpador", "Limpar e enxaguar")));
+        restarted.saveInput(legacy.sessionToken(), input);
+        restarted.generate(legacy.sessionToken());
+        restarted.event(legacy.sessionToken(), new MiraPrivatePrototypeService.EventRequest("SAFETY_LIMIT_BLOCKED", null));
+        var events = ArgumentCaptor.forClass(FunnelEventRequest.class);
+        verify(access, times(2)).recordFunnelEvent(events.capture());
+        assertThat(events.getAllValues().get(0).metadata()).containsEntry("experienceVersion", "mira-private-v3");
+        assertThat(events.getAllValues().get(1).metadata()).containsEntry("experienceVersion", "mira-private-v2");
+        assertThat(service(mock(AccessService.class)).session(current.sessionToken()).prototypeVersion()).isEqualTo("mira-private-v3");
+    }
+
+    /** Mantém a causa após concluir segurança, sem permitir reabrir a evidência encerrada. */
+    @Test
+    void preservesCompletedSafetyBlockerOnRestart() {
+        var service = service(mock(AccessService.class));
+        var started = service.startAgentValidation(new MiraPrivatePrototypeService.AgentSessionRequest(
+                "product:10@agent-validation-v1", "SAFETY"));
+        var input = new MiraPrivatePrototypeService.InputRequest("45-54", "Diagnosticar manchas", List.of(
+                new MiraPrivatePrototypeService.ProductInput("Limpador", "Limpar e enxaguar")));
+        service.saveInput(started.sessionToken(), input);
+        service.generate(started.sessionToken());
+        service.event(started.sessionToken(), new MiraPrivatePrototypeService.EventRequest("SAFETY_LIMIT_BLOCKED", null));
+        service.event(started.sessionToken(), new MiraPrivatePrototypeService.EventRequest("AGENT_SCENARIO_COMPLETED", null));
+        var resumed = service(mock(AccessService.class));
+        var state = resumed.session(started.sessionToken());
+        assertThat(state.readingFinished()).isTrue();
+        assertThat(state.status()).isEqualTo("BLOCKED");
+        assertThat(state.blocker()).contains("conclusão clínica", "avaliação profissional");
+        assertThat(state.routine()).isEmpty();
+        assertThat(state.events()).containsExactlyInAnyOrder("EXPERIENCE_STARTED", "SAFETY_LIMIT_BLOCKED", "AGENT_SCENARIO_COMPLETED");
+        assertThatThrownBy(() -> resumed.generate(started.sessionToken())).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> resumed.saveInput(started.sessionToken(),
+                new MiraPrivatePrototypeService.InputRequest("45-54", "Organizar meus produtos", input.products())))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     /** Cria o serviço com acessos separados e armazenamento temporário. */

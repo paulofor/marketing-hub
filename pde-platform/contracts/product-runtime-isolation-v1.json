@@ -76,7 +76,7 @@
       "productSlug": "pde-planejado-36",
       "surfaces": [
         {
-          "versionId": "mira-private-v2",
+          "versionId": "mira-private-v3",
           "serviceName": "pde-platform-frontend-mira",
           "containerName": "pde-platform-frontend-mira",
           "imageName": "pde-platform-frontend-mira",

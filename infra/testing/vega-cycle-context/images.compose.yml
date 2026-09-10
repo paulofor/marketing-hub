@@ -1,0 +1,15 @@
+# Inspeciona os artefatos finais; a API funcional é homologada pela aplicação local com MySQL.
+services:
+  backend:
+    image: ${VEGA_BACKEND_IMAGE:?Imagem do backend obrigatório}
+    entrypoint: ["/bin/sh", "-c", "sha256sum /app/app.jar && java -version && exec tail -f /dev/null"]
+    healthcheck:
+      disable: true
+    mem_limit: 192m
+  frontend:
+    image: ${VEGA_FRONTEND_IMAGE:?Imagem do frontend obrigatório}
+    depends_on:
+      - backend
+    ports:
+      - "15174:5173"
+    mem_limit: 128m

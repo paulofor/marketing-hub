@@ -134,6 +134,18 @@ Todo retorno identifica origem, destino, condição, motivo, responsável, horá
 experimento. Ajustes e escala preservam os gates dos processos responsáveis antes da nova operação.
 O BPM deve modelar esses caminhos e a tela deve expor sua evidência e próxima ação.
 
+**Clareza da segunda passagem — decisão de 10/09/2026:** ao retomar um processo a partir
+de um ciclo, a tela deve destacar o número ordinal do ciclo do produto, o identificador do
+ciclo, o experimento, a versão alvo e o predecessor. A versão do BPM não é o número do ciclo.
+O aprendizado anterior, suas evidências e limitações devem aparecer no mesmo contexto da
+atividade e acompanhar a entrada dos agentes. Tarefas e custos de outras passagens ficam
+no histórico; não contam como execução do ciclo selecionado. Concluir um processo deve
+apresentar a próxima atividade fornecida pelo backend dentro da mesma cadeia. O retorno
+aprovado permanece auditável, mas não prende a navegação em uma atividade já concluída.
+Contratos de construção de um sucessor vêm das aprovações do próprio experimento e da
+versão alvo do ciclo; nunca do cadastro comercial histórico do produto. Ausência de aprovação
+compatível bloqueia explicitamente, sem reutilizar silenciosamente o contrato do predecessor.
+
 - **Ajustar:** registrar causa, evidências, aprendizado e atividade/processo de retorno. Encerrar a
   iteração e vincular um experimento novo, inicialmente planejado, do mesmo produto. O sucessor
   recebe a memória do anterior e percorre novamente planejamento, ajustes e gates afetados.

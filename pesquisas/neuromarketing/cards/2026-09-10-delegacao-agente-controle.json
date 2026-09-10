@@ -1,0 +1,18 @@
+{
+  "cardKey": "delegacao-agente-com-controle-humano",
+  "collection": "neuromarketing",
+  "title": "Agentes funcionam melhor com autonomia delimitada e aprovação sensível",
+  "finding": "Sinais recentes convergem para uma fronteira de delegação: consumidores usam IA para pesquisar e mudar decisões, mas demonstram bem menos confiança em entregar o pagamento; produtos agentic reais preservam aprovação e auditabilidade nas ações sensíveis.",
+  "mechanism": "A IA reduz esforço em descoberta, comparação e preparação, enquanto risco percebido cresce na transição para ação irreversível. Infraestrutura de pagamento confiável, permissões explícitas, confirmação e trilha de auditoria podem reduzir essa incerteza sem exigir autorização em cada microetapa.",
+  "commercialApplication": "Implementar DelegationPolicy em agentes de Click-to-WhatsApp, separando ações autônomas de ações sensíveis, com limites, confirmação, fonte de execução confiável e audit trail.",
+  "evidenceStrength": "Moderada: convergência de surveys recentes nos EUA com milhares de consumidores e um caso de produto lançado pela Meta, mas os surveys são autorrelatados e as empresas envolvidas têm interesse comercial no tema.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-09",
+  "experimentHypothesis": "Autonomia para pesquisar, comparar e preparar, com confirmação apenas em ações sensíveis, reduzirá fricção sem reduzir confiança em comparação com confirmação a cada microetapa ou automação irrestrita.",
+  "risks": "Executar ação irreversível sem consentimento claro, ampliar permissões silenciosamente, ocultar o que o agente fez, misturar dados pessoais com publicidade ou tratar confiança em uma marca de pagamento como confiança geral no agente.",
+  "limits": "A evidência é dos Estados Unidos e não prova efeito causal em conversão. A adoção do Muse ainda é inicial. O comportamento brasileiro e ofertas do Marketing Hub precisam de validação própria.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-10-delegacao-agente-controle.md",
+  "sourceTitle": "Fonte revisada — IA ajuda a comprar, mas confiança e controle continuam concentrados na etapa de pagamento",
+  "sourceSha256": "d37ba1f672df33c9de70f6149f8e5be2119db99339d7c9fdadf51a2d82c3a4d6"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-geracao-contextual-timeline-multimodelo",
+  "collection": "video",
+  "title": "Usar frames da timeline como contexto e rotear a geração por tarefa",
+  "finding": "O Premiere 26.5 passou a gerar vídeo e efeitos sonoros diretamente em um intervalo da timeline, podendo usar primeiro frame, primeiro/último frame ou múltiplos frames do próprio projeto como referências e escolher entre Firefly e modelos parceiros.",
+  "mechanism": "O contexto visual já aprovado na montagem reduz a necessidade de reconstruir a cena apenas por prompt, enquanto uma camada de orquestração pode selecionar o modelo conforme a tarefa e devolver o resultado ao ponto exato da sequência.",
+  "commercialApplication": "No videomaker do Marketing Hub, extrair frames e metadados da cena aprovada antes de cada geração e rotear a tomada para o modelo mais adequado, preservando a edição como fonte de contexto.",
+  "evidenceStrength": "Evidência forte de disponibilidade do workflow em produto oficial; evidência ainda inexistente de redução de retrabalho ou impacto comercial.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2026-10-25",
+  "experimentHypothesis": "Usar frames adjacentes aprovados como contexto reduzirá regenerações por inconsistência visual e o tempo até uma tomada aceitável em comparação com gerar apenas a partir do briefing textual.",
+  "risks": "Modelos parceiros têm políticas e disponibilidade diferentes; contexto visual pode propagar erros já presentes na edição; não assumir que menor atrito de produção melhora conversão.",
+  "limits": "A Adobe não publicou métricas de redução de regenerações, tempo total ou desempenho de anúncios; alguns modelos variam por plano e música/soundscape permanecem beta.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-10-premiere-contexto-timeline.md",
+  "sourceTitle": "Fonte revisada — geração contextual na timeline do Premiere",
+  "sourceSha256": "87cb55419fa73b3eadc4f94242b0bf10756612885a3e807ecafb5239f6f84660"
+}

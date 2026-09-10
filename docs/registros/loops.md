@@ -4,6 +4,26 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-PDE-HOMOLOGACAO-SEM-PROTOTIPO — especificação libera teste sem alvo executável
+
+- **Data:** 2026-09-10. Vega, ciclo #2, experimento #92, tarefa #377.
+- **Evidência:** tela, banco via MCP e log de Psique confirmam bloqueio técnico por URL inválida.
+  O resolvedor do sucessor entrega `publicUrl=null` e plano `PLANNED`; #376 entregou uma
+  especificação de acesso. Mira #349/#354/#371 tinha URL privada aceita e concluiu o mesmo passo.
+- **Causa:** a disponibilidade considerava predecessoras concluídas, sem validar o alvo
+  executável. O cadastro também apresentava a ferramenta Harness como responsável, apesar de
+  `responsibleAgentKeys=[customer-agent]` já apontar para Psique. O navegador existente possui
+  cenários de Mira, e não pode servir como prova de outro produto.
+- **Correção local:** validar identidade, URL e aceitação da versão antes do comando; manter
+  a pendência atual na orientação e o erro original na auditoria; corrigir metadados do processo
+  v8 para Psique e explicar o modo determinístico. O worker também recusa ausência de alvo,
+  referência de outro produto e uso dos cenários de Mira em outro PDE.
+- **Prevenção:** regressões de leitura/comando HTTP sem criação de tarefa, matriz de contratos,
+  testes do navegador e migração/reaplicação no MySQL 5.7. Fixture física incluída no workflow
+  Liquibase do PR. Registro: `docs/homologacao/vega-tarefa-377-harness-v1.md`.
+- **Limite:** essa correção não materializa o protótipo v8 nem aprova a tarefa #377. A versão
+  executável e seus cenários próprios continuam necessários para homologar o segundo ciclo.
+
 ## LOOP-MIRA-SEGURANCA-ENCERRADA-SEM-ORIENTACAO — bloqueio correto perde contexto na tela
 
 - **Data:** 2026-09-10. Tarefa #367, cenário SAFETY, versão `mira-private-v2`.

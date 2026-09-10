@@ -2063,3 +2063,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-09-learning-cycle-decision-atena-v4.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-10-pde-harness-responsibility-v1.yaml
+      relativeToChangelogFile: true

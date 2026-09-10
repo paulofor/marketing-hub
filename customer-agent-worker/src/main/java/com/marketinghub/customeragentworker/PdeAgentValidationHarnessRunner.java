@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: executar e validar o harness determinístico multiagente de um PDE real. */
+/** Responsabilidade: executar e validar o harness determinístico nos protótipos suportados. */
 @Component
 public class PdeAgentValidationHarnessRunner {
   private static final byte[] PNG_SIGNATURE =
@@ -61,7 +61,7 @@ public class PdeAgentValidationHarnessRunner {
     this.allowLocalUrls = allowLocalUrls;
   }
 
-  /** Executa caminho feliz, recuperação e segurança sem enviar segredo no arquivo de entrada. */
+  /** Valida o alvo implementado e executa os cenários sem enviar segredo no arquivo de entrada. */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
       throws Exception {
@@ -71,6 +71,11 @@ public class PdeAgentValidationHarnessRunner {
     }
     JsonNode target = json.valueToTree(task.get("taskTarget"));
     String sourceUrl = target.path("publicUrl").asText("").trim();
+    if (sourceUrl.isBlank()) {
+      throw new HarnessException(
+          "O protótipo desta passagem não possui URL executável. Conclua a implementação "
+              + "e registre a aceitação privada antes de repetir a homologação.");
+    }
     validateUrl(sourceUrl);
     String sourceReference = String.valueOf(task.get("sourceReference"));
     if (!sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")) {
@@ -81,6 +86,16 @@ public class PdeAgentValidationHarnessRunner {
     String prototypeVersion = target.path("experienceVersion").asText("").trim();
     if (productId < 1 || productSlug.isBlank() || prototypeVersion.isBlank()) {
       throw new HarnessException("O alvo da tarefa multiagente está incompleto.");
+    }
+    if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)) {
+      throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
+    }
+    if (!"orientacao-digital-rotina-pele-madura".equals(productSlug)
+        || !prototypeVersion.startsWith("mira-private-v")
+        || !"/mira-private".equals(URI.create(sourceUrl).getPath())) {
+      throw new HarnessException(
+          "O harness instalado possui cenários somente para o protótipo privado de Mira. "
+              + "Implemente os cenários do produto alvo antes de homologá-lo; não reutilize outro PDE.");
     }
     Files.createDirectories(workDirectory);
     Path inputPath = workDirectory.resolve("agent-validation-input.json");
@@ -273,13 +288,14 @@ public class PdeAgentValidationHarnessRunner {
     }
   }
 
-  /** Bloqueia credenciais na URL e redes privadas fora da homologação local explícita. */
+  /** Bloqueia credenciais, parâmetros, fragmentos e redes privadas fora da homologação local. */
   private void validateUrl(String value) throws Exception {
     URI uri = URI.create(value == null ? "" : value.trim());
     if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
         || uri.getHost() == null
         || uri.getUserInfo() != null
-        || uri.getRawQuery() != null) {
+        || uri.getRawQuery() != null
+        || uri.getRawFragment() != null) {
       throw new HarnessException("A URL do PDE é inválida ou contém parâmetros não permitidos.");
     }
     if (allowLocalUrls) return;

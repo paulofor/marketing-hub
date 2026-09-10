@@ -58,7 +58,7 @@ paths:
                 type: object
                 properties:
                   productSlug: {type: string, enum: [mira-private-validation]}
-                  prototypeVersion: {type: string, enum: [mira-private-v2]}
+                  prototypeVersion: {type: string, description: Versão preservada da sessão; novas sessões usam mira-private-v3., example: mira-private-v3}
                   participantReference: {type: string}
                   trafficClass: {type: string, enum: [NOT_STARTED, PRIVATE_READING]}
                   evidenceId: {type: string, nullable: true}
@@ -137,7 +137,7 @@ components:
         trafficClass: {type: string, enum: [AGENT_VALIDATION]}
         status: {type: string}
         events: {type: array, items: {type: string}}
-        prototypeVersion: {type: string, enum: [mira-private-v2]}
+        prototypeVersion: {type: string, description: Versão preservada da sessão; novas sessões usam mira-private-v3., example: mira-private-v3}
         checkoutMode: {type: string, enum: [SIMULATED_NO_CHARGE]}
         readingFinished: {type: boolean}
         agentValidation: {type: boolean, enum: [true]}
@@ -149,7 +149,7 @@ components:
       required: [productSlug, prototypeVersion, sourceReference, scenarioCode, trafficClass, mhInternalTest, evidenceId, status, products, routine, events, sideEffects, humanEvidenceClaimed, commercialEvidenceClaimed]
       properties:
         productSlug: {type: string, enum: [mira-private-validation]}
-        prototypeVersion: {type: string, enum: [mira-private-v2]}
+        prototypeVersion: {type: string, description: Versão preservada da sessão; novas sessões usam mira-private-v3., example: mira-private-v3}
         sourceReference: {type: string, pattern: '^product:[1-9][0-9]*@agent-validation-v1$'}
         scenarioCode: {type: string, enum: [ADHERENT, RECOVERY, SAFETY]}
         trafficClass: {type: string, enum: [AGENT_VALIDATION]}

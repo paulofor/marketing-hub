@@ -9,8 +9,11 @@ import path from "node:path";
 // Executa a interface e o harness reais com atraso de rede antes da persistência do uso.
 const root = path.resolve(import.meta.dirname, "../../..");
 const outputDirectory = path.resolve(process.argv[2]);
-const backend = process.env.MIRA_LOCAL_PDE_BACKEND || "http://127.0.0.1:18096";
-assert.match(backend, /^http:\/\/(127\.0\.0\.1|localhost):\d+$/);
+const dockerHost = process.env.DOCKER_HOST?.startsWith("tcp:")
+  ? new URL(process.env.DOCKER_HOST).hostname : "127.0.0.1";
+const backend = process.env.MIRA_LOCAL_PDE_BACKEND || `http://${dockerHost}:18096`;
+assert.equal(new URL(backend).protocol, "http:");
+assert.ok(["127.0.0.1", "localhost", dockerHost].includes(new URL(backend).hostname));
 await fs.mkdir(outputDirectory, { recursive: true });
 const calls = [];
 const server = http.createServer(async (request, response) => {
@@ -69,7 +72,7 @@ try {
   assert.equal(code, 0, log);
   const result = JSON.parse(await fs.readFile(outputPath, "utf8"));
   assert.equal(result.decision, "APPROVED");
-  assert.equal(result.prototypeVersion, "mira-private-v2");
+  assert.equal(result.prototypeVersion, "mira-private-v3");
   assert.equal(result.scenarios.length, 5);
   assert.equal(result.devices.length, 3);
   assert.equal(result.artifacts.length, 5);

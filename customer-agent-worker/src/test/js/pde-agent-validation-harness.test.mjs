@@ -24,7 +24,7 @@ async function api(p,body,method=body?'POST':'GET'){
 }
 function render(){
  const root=document.querySelector('main');
- if(state.readingFinished){root.innerHTML='<h1>Homologação interna concluída</h1><label>Rotina preservada</label><button>Consultar rotina</button>';return}
+ if(state.readingFinished){root.innerHTML=state.scenarioCode==='SAFETY'?'<h1>Sessão encerrada com segurança</h1><div role="alert">O objetivo pede conclusão clínica.</div><h2>Como seguir com segurança</h2><button>Encerrar e sair</button>':'<h1>Homologação interna concluída</h1><label>Rotina preservada</label><button>Consultar rotina</button>';return}
  if(state.status==='READY'){
   root.innerHTML='<h1>Uma ordem simples para consultar</h1><label>Rotina</label><button id="used">Marcar uma parte como consultada</button>'+(state.events.includes('READY_RESULT_USED')?'<button id="finish">Concluir cenário interno</button>':'');
   document.querySelector('#used').onclick=()=>event('READY_RESULT_USED');
@@ -46,7 +46,7 @@ api('/session').then(s=>{state=s;render()});
 </script></body></html>`;
 
 /** Executa o script produtivo contra HTTP e navegador reais, com persistência simulada. */
-async function executeHarness(mode, fault) {
+async function executeHarness(mode, fault, scenarioCode = "RECOVERY") {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "mira-harness-contract-"));
   const sessions = new Map();
   const calls = [];
@@ -54,7 +54,9 @@ async function executeHarness(mode, fault) {
   const server = http.createServer(async (request, response) => {
     if (!request.url.startsWith(apiPath)) {
       response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-      response.end(pageHtml);
+      response.end(fault === "lost-safety" ? pageHtml.replace(
+        '<div role="alert">O objetivo pede conclusão clínica.</div><h2>Como seguir com segurança</h2>',
+        '<p>Limite registrado apenas na auditoria.</p>') : pageHtml);
       return;
     }
     const chunks = [];
@@ -109,7 +111,7 @@ async function executeHarness(mode, fault) {
   await once(server, "listening");
   const inputPath = path.join(directory, "input.json");
   const outputPath = path.join(directory, "output.json");
-  await fs.writeFile(inputPath, JSON.stringify({ mode, scenarioCode: "RECOVERY",
+  await fs.writeFile(inputPath, JSON.stringify({ mode, scenarioCode,
     captureSessionId: randomUUID(), sourceReference: "product:10@agent-validation-v1", productId: 10,
     productSlug: "pde-planejado-36", sourceUrl: `http://127.0.0.1:${server.address().port}/mira-private` }));
   try {
@@ -153,6 +155,13 @@ test("aguarda uso persistido antes de confirmar recuperação nos cinco cenário
   ]);
   assert.equal(result.output.humanEvidenceClaimed, false);
   assert.equal(result.output.commercialEvidenceClaimed, false);
+});
+
+test("rejeita segurança quando a conclusão perde a causa e o próximo passo", async () => {
+  const result = await executeHarness("SCENARIO", "lost-safety", "SAFETY");
+  assert.notEqual(result.code, 0);
+  assert.equal(result.output, undefined);
+  assert.match(result.log, /conclusão clínica/);
 });
 
 for (const [fault, diagnostic] of [["http", /HTTP 503/], ["missing", /não confirmou.*READY_RESULT_USED/], ["json", /JSON inválido/]]) {

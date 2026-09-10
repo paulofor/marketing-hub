@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Responsabilidade: registrar e classificar a prontidão operacional dos executores dos agentes. */
 @Service
 public class AgentExecutorHealthService {
+  private static final AgentExecutorVersionCatalog VERSIONS = AgentExecutorVersionCatalog.load();
   private static final Duration MAX_AGE = Duration.ofMinutes(10);
   private static final Set<String> CODEX_EXECUTORS =
       Set.of(
@@ -243,14 +244,15 @@ public class AgentExecutorHealthService {
         item.getCompletedAt());
   }
 
-  /** Persiste a prova recebida e calcula o estado sem confiar no status do remetente. */
+  /** Persiste a prova e compara o executor ao manifesto técnico, sem usar a versão do cadastro. */
   @Transactional
   public AgentExecutorHealthResponse report(AgentExecutorHealthReportRequest request) {
     Agent agent =
         agents
             .findByAgentKey(request.agentKey())
             .orElseThrow(() -> new IllegalArgumentException("Agente técnico não encontrado."));
-    boolean versionCurrent = agent.getCurrentVersion().equals(request.deployedVersion());
+    boolean versionCurrent =
+        request.deployedVersion().equals(VERSIONS.expectedVersion(agent.getAgentKey()));
     String status =
         versionCurrent && request.backendAccessible() && request.codexAuthenticated()
             ? "READY"
@@ -275,19 +277,31 @@ public class AgentExecutorHealthService {
     return checks
         .findTopByAgentAgentKeyOrderByCheckedAtDesc(agent.getAgentKey())
         .map(check -> response(agent, check))
-        .orElseGet(() -> AgentExecutorHealthResponse.unknown(agent.getCurrentVersion()));
+        .orElseGet(
+            () ->
+                AgentExecutorHealthResponse.unknown(VERSIONS.expectedVersion(agent.getAgentKey())));
   }
 
-  /** Converte a leitura persistida em diagnóstico de versão, rede e autenticação. */
+  /**
+   * Revalida a leitura pelo manifesto técnico vigente, rede e autenticação, preservando o
+   * vencimento.
+   */
   private AgentExecutorHealthResponse response(Agent agent, AgentExecutorHealthCheck check) {
-    boolean versionCurrent = agent.getCurrentVersion().equals(check.getDeployedVersion());
+    Integer expectedVersion = VERSIONS.expectedVersion(agent.getAgentKey());
+    boolean versionCurrent =
+        expectedVersion != null && expectedVersion.equals(check.getDeployedVersion());
     boolean stale = check.getCheckedAt().isBefore(clock.instant().minus(MAX_AGE));
-    String status = stale ? "UNKNOWN" : check.getStatus();
+    String status =
+        stale
+            ? "UNKNOWN"
+            : versionCurrent && check.isBackendAccessible() && check.isCodexAuthenticated()
+                ? "READY"
+                : "BLOCKED";
     String detail =
         stale ? "Verificação vencida; o executor deve repetir o health-check." : check.getDetail();
     return new AgentExecutorHealthResponse(
         status,
-        agent.getCurrentVersion(),
+        expectedVersion,
         check.getDeployedVersion(),
         versionCurrent,
         check.isBackendAccessible(),

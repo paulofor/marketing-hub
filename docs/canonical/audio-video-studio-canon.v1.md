@@ -370,6 +370,26 @@ pode ser introduzido depois de ganho comercial mensuravel que justifique custo e
 
 #### Cadastro externo e curadoria dos cartões
 
+Por decisão de 2026-09-10, cartões da biblioteca podem ser direcionados explicitamente aos agentes
+para uso em suas tarefas na Cadeia de Valor, inclusive fora do audiovisual. O vínculo usa a entrada
+versionada do cadastro do agente: tipo `HARNESS_RESEARCH_CARD`, nome igual ao `cardId` e descrição
+curta da aplicação pretendida. A referência não copia o artigo e não altera a responsabilidade do
+agente ou o fluxo BPM. O cadastro é feito pelo frontend; o backend resolve os cartões e entrega a
+seleção no contrato da tarefa. Editar apenas um texto de governança não comprova esse consumo.
+
+A seleção permanece limitada a quatro cartões, exclui fontes vencidas/futuras e informa referências
+indisponíveis. Preserva ID, hash da fonte e orientação de aplicação, sem tratar a orientação como
+achado científico. Nas tarefas BPM, a curadoria explícita tem precedência sobre a seleção lexical
+genérica, sem exigir palavras audiovisuais para entregar referências de produto ou estratégia.
+Nos projetos do Estúdio de Vídeo, a curadoria prioriza cartões dentro das coleções canônicas e mantém
+a cobertura obrigatória de cada coleção. A biblioteca apresenta os vínculos que o backend leu.
+Pesquisas são hipóteses e critérios de avaliação: resultado comercial exige eventos humanos,
+pagamento, entrega e custos reconciliados. O vínculo não inicia tarefa, gasto ou publicação.
+
+Na compilação de Markdown, títulos como `Evidência encontrada`, `Evidência revisada`,
+`Hipótese interpretativa`, `Aplicação possível`, `Uso como hipótese` e `Limites` devem ser reconhecidos;
+data e procedência não substituem o conteúdo da evidência entregue ao executor.
+
 Por decisão de 2026-09-04, a Biblioteca de Inteligência também deve aceitar cartões cadastrados por
 uma API JSON independente da interface administrativa do Marketing Hub. Essa API é uma porta de
 entrada operacional: o backend principal continua sendo a única fonte de verdade, o único módulo que

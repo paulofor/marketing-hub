@@ -62,6 +62,7 @@ while IFS= read -r file; do
     .dockerignore) backend=true; frontend=true ;;
     backend/settings.xml) backend=true ;;
     backend/ads-service/*) backend=true ;;
+    config/agents/codex-agent-health-compliance.json) backend=true ;;
     pesquisas/*) backend=true ;;
     frontend/*) frontend=true ;;
     deploy/bin/*) app_deploy_sync=true ;;

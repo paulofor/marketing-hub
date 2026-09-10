@@ -71,7 +71,10 @@ test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () =>
   assert.ok(
     result.plan.publicQueries.some((query) => /Instagram Reel/.test(query)),
   );
-  assert.equal(result.plan.metaAdRequests[0].query, "preparação entrevista emprego");
+  assert.equal(
+    result.plan.metaAdRequests[0].query,
+    "preparação entrevista emprego",
+  );
   assert.equal(result.plan.metaAdRequests[0].publisherPlatform, "INSTAGRAM");
   assert.ok(
     result.plan.stopConditions.some((condition) =>
@@ -92,7 +95,8 @@ test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () =>
 
 test("planejamento reduz briefing nichado a categoria Meta ampla", () => {
   const result = deterministicPlan({
-    theme: "Beleza e bem-estar feminino para mulheres de 35 a 60 anos no Brasil",
+    theme:
+      "Beleza e bem-estar feminino para mulheres de 35 a 60 anos no Brasil",
     targetAudience: "mulheres brasileiras entre 35 e 60 anos",
     acquisitionChannel: "Instagram",
     marketType: "B2C",
@@ -162,6 +166,20 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
       theme: "propostas comerciais",
       targetAudience: "prestadores locais",
       objective: "priorizar uma oportunidade PDE",
+      researchIntelligence: {
+        routes: [
+          {
+            agentKey: "market-radar",
+            cards: [
+              {
+                cardId: "RI1-3B283DA81459",
+                sourceSha256: "a".repeat(64),
+                finding: "CURADORIA-ARGOS-CENA-PAGA",
+              },
+            ],
+          },
+        ],
+      },
     },
     {
       enabled: true,
@@ -177,6 +195,9 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   );
 
   assert.match(receivedInput, /ciclo 33/);
+  assert.match(receivedInput, /RI1-3B283DA81459/);
+  assert.match(receivedInput, /CURADORIA-ARGOS-CENA-PAGA/);
+  assert.equal(receivedInput.split("CURADORIA-ARGOS-CENA-PAGA").length - 1, 1);
   assert.match(receivedInput, /propostas comerciais/);
   assert.match(receivedInput, /B2B disfarçado/);
   assert.doesNotMatch(receivedInput, /{{[^}]+}}/);
@@ -249,8 +270,8 @@ test("planejamento recebe lacunas anteriores para criar lente adjacente", async 
   expected.expansionAxis = "ADJACENT_LIFE_MOMENT";
   expected.expansionRationale =
     "A primeira rodada teve apenas uma oferta e precisa de uma cena de decisão mais concreta.";
-  expected.publicQueries = expected.publicQueries.map(
-    (query, index) => `reencontro fotografia 40+ ${index + 1} ${query}`.slice(0, 180),
+  expected.publicQueries = expected.publicQueries.map((query, index) =>
+    `reencontro fotografia 40+ ${index + 1} ${query}`.slice(0, 180),
   );
 
   await planDirectedResearch(

@@ -675,12 +675,22 @@ components:
         authority:
           type: string
           enum:
-            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY]
+            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY, FACTUAL_ADVISORY, STRATEGY_ADVISORY, PRODUCT_ADVISORY, MEASUREMENT_ADVISORY]
         collections:
           type: array
-          minItems: 1
           items: { type: string }
         maxCardsPerContext: { type: integer, minimum: 1, maximum: 4 }
+        agentId: { type: integer, format: int64, nullable: true }
+        assignments:
+          type: array
+          description: Entradas HARNESS_RESEARCH_CARD do cadastro versionado do agente; não autorizam execução.
+          items:
+            type: object
+            required: [cardId, guidance, available]
+            properties:
+              cardId: { type: string }
+              guidance: { type: string, maxLength: 255 }
+              available: { type: boolean, description: Fonte presente e dentro da validade na data avaliada. }
     ResearchIntelligenceRoute:
       type: object
       required:
@@ -692,7 +702,7 @@ components:
         authority:
           type: string
           enum:
-            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY]
+            [PRODUCTION_ADVISORY, COMMUNICATION_ADVISORY, REVIEW_CRITERIA_ONLY, FACTUAL_ADVISORY, STRATEGY_ADVISORY, PRODUCT_ADVISORY, MEASUREMENT_ADVISORY]
         selectionReason: { type: string }
         cards:
           type: array

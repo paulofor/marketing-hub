@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "config/agents/codex-agent-health-compliance.json"
       - ".github/workflows/backend-ci.yml"
       - ".github/workflows/deploy-containers.yml"
       - "scripts/test-backend-ci-workflow.py"

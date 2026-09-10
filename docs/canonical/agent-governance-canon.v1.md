@@ -6,6 +6,15 @@ O cadastro de agentes do Marketing Hub é a fonte operacional para identidade, v
 objetivo, métricas, gatilhos, ferramentas e limites de autoridade. Prompt e schema permanecem
 versionados no módulo executor responsável.
 
+Por decisão de 2026-09-10, a curadoria da Biblioteca do Harness usa entradas versionadas do agente
+com tipo `HARNESS_RESEARCH_CARD`, nome igual ao ID do cartão e descrição curta da aplicação.
+O cadastro pela tela conserva entradas anteriores e o histórico da versão. O backend entrega
+as referências no contexto das tarefas BPM, na pesquisa de Argos, na proposta comercial de Atena
+e nos projetos audiovisuais aplicáveis; o executor preserva o contexto na auditoria da chamada.
+O vínculo não cria uma tarefa, não altera a Cadeia de Valor e não concede autoridade adicional.
+As regras de validade, seleção e evidência estão em
+`docs/canonical/audio-video-studio-canon.v1.md`, seção Biblioteca de Inteligência do Harness.
+
 ## Contrato mínimo
 
 Todo agente deve possuir `agentKey` estável, `nickname` curto e exclusivo para comunicação, versão incremental, status operacional, responsável,

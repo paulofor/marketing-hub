@@ -861,7 +861,9 @@ class ProductDiscoveryServiceTest {
     verify(opportunityRepository).save(any(ProductDiscoveryOpportunity.class));
   }
 
-  /** Deve recuperar ciclo abandonado com novo lease e tentativa auditável. */
+  /**
+   * Recupera ciclo abandonado com novo lease, tentativa auditável e curadoria no contrato de Argos.
+   */
   @Test
   void recoversExpiredResearchExecution() {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
@@ -883,9 +885,26 @@ class ProductDiscoveryServiceTest {
         new ProductDiscoveryService(
             cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
+    var research =
+        org.mockito.Mockito.mock(
+            com.marketinghub.researchintelligence.v1.service.ResearchIntelligenceService.class);
+    var selection =
+        new com.marketinghub.researchintelligence.v1.service.select
+            .ResearchIntelligenceSelectionResponse(
+            "HARNESS_RESEARCH_INTELLIGENCE_V1",
+            "hash-teste",
+            1,
+            List.of(),
+            List.of("Evidência externa não comprova venda."));
+    when(research.selectForAgentTask(
+            "market-radar", cycle.getTheme(), cycle.getTargetAudience(), cycle.getObjective()))
+        .thenReturn(selection);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "researchIntelligenceService", research);
     List<ProductDiscoveryPendingResponse> pending = service.pending();
 
     assertThat(pending).hasSize(1);
+    assertThat(pending.getFirst().researchIntelligence()).isEqualTo(selection);
     assertThat(pending.getFirst().executionAttempt()).isEqualTo(2);
     assertThat(pending.getFirst().executionLeaseId()).isNotBlank().isNotEqualTo("lease-expirado");
     assertThat(cycle.getLeaseExpiresAt()).isAfter(Instant.now());

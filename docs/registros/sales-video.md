@@ -333,3 +333,18 @@
   campanha Meta e sem gasto de mídia.
 - **Custo preservado:** houve somente pós-produção determinística; nenhuma segunda geração de 648
   créditos foi solicitada à Runway.
+
+
+## 2026-09-10 — Curadoria do Harness direcionada aos agentes da Cadeia de Valor
+
+- Revisado o catálogo com 156 cards; selecionadas 14 fontes, com 25 vínculos consultivos em nove
+  agentes, priorizando resultado útil, clareza da comunicação, continuidade ao pagamento e medição.
+- Os vínculos foram salvos pela tela e confirmados no MCP, inclusive nos snapshots versionados.
+  Entradas anteriores e autoridade foram preservadas; nenhum fluxo paralelo ou tarefa foi criado.
+- Encontrada lacuna entre o cadastro e o contexto recebido pelas tarefas: seleção antes limitada
+  ao audiovisual. A correção local conecta referências explícitas ao BPM, Argos e decisões de Atena,
+  com validade, limites, orientação editorial e hashes; preserva cobertura dos projetos de vídeo.
+- Duas rodadas locais de backend, frontend, Argos e navegador aprovadas com dependências simuladas.
+  O consumo ampliado depende de publicação pelo PR do usuário; nenhuma imagem ou código foi publicado.
+- [Curadoria, fontes e versões](../marketing/harness-curadoria-agentes-2026-09-10.md) e
+  [matriz e evidências](../homologacao/harness-curadoria-agentes-v1.md).

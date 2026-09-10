@@ -1,10 +1,7 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  executeCodexWithInput,
-  parseCodexUsage,
-} from "./argos-codex.js";
+import { executeCodexWithInput, parseCodexUsage } from "./argos-codex.js";
 
 /** Sintetiza candidatas factuais usando somente os identificadores coletados pelo executor. */
 export async function synthesizeMarketCandidates(context, options = {}) {
@@ -32,7 +29,8 @@ export async function synthesizeMarketCandidates(context, options = {}) {
   let execution;
   try {
     await writeFile(schema, schemaContract);
-    const command = options.command || process.env.ARGOS_CODEX_COMMAND || "codex";
+    const command =
+      options.command || process.env.ARGOS_CODEX_COMMAND || "codex";
     const args = [
       "exec",
       "-",
@@ -145,10 +143,14 @@ export function validateSynthesis(synthesis, context) {
   for (const candidate of synthesis.candidates) {
     const name = String(candidate?.name || "").trim();
     if (!name || names.has(name.toLowerCase())) {
-      throw new Error("Síntese de Argos contém candidata sem identidade distinta");
+      throw new Error(
+        "Síntese de Argos contém candidata sem identidade distinta",
+      );
     }
     names.add(name.toLowerCase());
-    if (/^(diagnóstico|plano de primeira ação|simulador prático)\b/i.test(name)) {
+    if (
+      /^(diagnóstico|plano de primeira ação|simulador prático)\b/i.test(name)
+    ) {
       throw new Error("Síntese de Argos repetiu um molde genérico de produto");
     }
     if (
@@ -222,7 +224,9 @@ async function buildResearchPrompt(context) {
     )
     .trim();
   if (/{{[^}]+}}/.test(activityPromptPart)) {
-    throw new Error("Prompt de síntese de Argos possui placeholder não resolvido");
+    throw new Error(
+      "Prompt de síntese de Argos possui placeholder não resolvido",
+    );
   }
   return {
     fullPrompt: `${agentPromptPart}\n\n${activityPromptPart}`,
@@ -236,6 +240,7 @@ function sanitizedContext(context) {
   return {
     job: compactJob(context.job),
     plan: compactPlan(context.plan),
+    researchIntelligence: context.job?.researchIntelligence || null,
     publicEvidence: (context.publicEvidence || []).map(compactPublicEvidence),
     repositoryEvidence: (context.repositoryEvidence || []).map(
       compactRepositoryEvidence,
@@ -278,9 +283,9 @@ function compactPlan(plan = {}) {
     researchLens: plan.researchLens,
     expansionAxis: plan.expansionAxis,
     expansionRationale: plan.expansionRationale,
-    questions: (plan.questions || []).slice(0, 12).map((item) =>
-      truncateForPrompt(item, 350),
-    ),
+    questions: (plan.questions || [])
+      .slice(0, 12)
+      .map((item) => truncateForPrompt(item, 350)),
     metaAdRequests: plan.metaAdRequests || [],
     minimumComparableOffers: plan.minimumComparableOffers,
   };
@@ -368,7 +373,9 @@ function compactMetaCoverage(item = {}) {
 
 /** Aplica teto por campo no prompt sem alterar os fatos completos persistidos no relatório. */
 function truncateForPrompt(value, maxChars) {
-  return Array.from(String(value || "").trim()).slice(0, maxChars).join("");
+  return Array.from(String(value || "").trim())
+    .slice(0, maxChars)
+    .join("");
 }
 
 /** Consolida as famílias de evidência em uma única identidade verificável. */

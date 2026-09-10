@@ -612,6 +612,11 @@ components:
         stageCode: { type: string, enum: [research] }
         executionLeaseId: { type: string, format: uuid }
         executionAttempt: { type: integer, minimum: 1 }
+        researchIntelligence:
+          nullable: true
+          description: Curadoria consultiva do cadastro de Argos, preservada no planejamento e síntese factual.
+          allOf:
+            - $ref: './video-studio-swagger.yaml#/components/schemas/ResearchIntelligenceSelection'
         theme: { type: string, maxLength: 191 }
         targetAudience: { type: string, maxLength: 191, nullable: true }
         country: { type: string }

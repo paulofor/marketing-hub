@@ -119,4 +119,70 @@ describe("ResearchIntelligenceLibraryPage", () => {
     expect(screen.getByText(/artigo histórico vencido/i)).toBeTruthy();
     expect(screen.getByText("Vencido")).toBeTruthy();
   });
+
+  it("mostra o vínculo de um agente fora do audiovisual e filtra pela referência persistida", async () => {
+    const user = userEvent.setup();
+    (axios.get as any).mockResolvedValue({
+      data: {
+        ...catalog,
+        agentPolicies: [
+          ...catalog.agentPolicies,
+          {
+            agentKey: "landing-generator",
+            agentId: 7,
+            agentName: "Dédalo",
+            purpose: "Orientar o primeiro resultado útil.",
+            authority: "PRODUCT_ADVISORY",
+            collections: [],
+            maxCardsPerContext: 4,
+            assignments: [
+              {
+                cardId: "RI1-AAAAAAAAAAAA",
+                guidance: "Testar clareza da próxima ação.",
+                available: true,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    setup();
+    await screen.findByText("Direcionado a Dédalo");
+    await user.selectOptions(
+      screen.getByLabelText("Agente"),
+      "landing-generator",
+    );
+    expect(screen.getByText("Testar clareza da próxima ação.")).toBeTruthy();
+    expect(
+      screen
+        .getByRole("link", { name: "Editar referências de Dédalo" })
+        .getAttribute("href"),
+    ).toBe("/agents/7/edit");
+    expect(screen.getByText(/1 cartões encontrados/)).toBeTruthy();
+  });
+
+  it("expõe referência indisponível sem apresentar evidência fictícia", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: {
+        ...catalog,
+        agentPolicies: [
+          {
+            ...catalog.agentPolicies[0],
+            assignments: [
+              {
+                cardId: "RI1-INEXISTENTE",
+                guidance: "Revisar fonte.",
+                available: false,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    setup();
+    expect(
+      await screen.findByText("Referência indisponível: RI1-INEXISTENTE"),
+    ).toBeTruthy();
+    expect(screen.queryByText("Direcionado a Apolo")).toBeNull();
+  });
 });

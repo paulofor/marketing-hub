@@ -9,6 +9,20 @@ import {
 
 test("síntese usa somente evidências coletadas e preserva o schema estrito", async () => {
   const context = researchContext();
+  context.job.researchIntelligence = {
+    routes: [
+      {
+        agentKey: "market-radar",
+        cards: [
+          {
+            cardId: "RI1-3B283DA81459",
+            sourceSha256: "a".repeat(64),
+            finding: "CURADORIA-ARGOS-CENA-PAGA",
+          },
+        ],
+      },
+    ],
+  };
   const expected = validSynthesis();
   let prompt;
   let schema;
@@ -41,6 +55,8 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
     8,
   );
   assert.match(prompt, /DISCOVER_MARKETS/);
+  assert.match(prompt, /RI1-3B283DA81459/);
+  assert.equal(prompt.split("CURADORIA-ARGOS-CENA-PAGA").length - 1, 1);
   assert.match(prompt, /P1/);
   assert.match(prompt, /R1/);
   assert.doesNotMatch(prompt, /{{[^}]+}}/);
@@ -62,12 +78,9 @@ test("síntese usa somente evidências coletadas e preserva o schema estrito", a
 test("síntese não duplica biblioteca e limita trechos extensos no prompt", async () => {
   const context = researchContext();
   context.job.researchLibraryContext = {
-    documents: [
-      { content: `BIBLIOTECA-DUPLICADA ${"z".repeat(60000)}` },
-    ],
+    documents: [{ content: `BIBLIOTECA-DUPLICADA ${"z".repeat(60000)}` }],
   };
-  context.repositoryEvidence[0].excerpt =
-    `RECORTE-PRESERVADO ${"x".repeat(12000)} RECORTE-CORTADO`;
+  context.repositoryEvidence[0].excerpt = `RECORTE-PRESERVADO ${"x".repeat(12000)} RECORTE-CORTADO`;
   let prompt;
 
   await synthesizeMarketCandidates(context, {
@@ -141,7 +154,10 @@ test("modo degradado não fabrica as três sugestões genéricas antigas", () =>
   assert.equal(result.mode, "DETERMINISTIC");
   assert.deepEqual(result.synthesis.candidates, []);
   assert.match(result.synthesis.decisionSummary, /modelo.*desabilitado/i);
-  assert.doesNotMatch(result.rawResponse, /Diagnóstico|Plano de primeira ação|Simulador/);
+  assert.doesNotMatch(
+    result.rawResponse,
+    /Diagnóstico|Plano de primeira ação|Simulador/,
+  );
 });
 
 function researchContext() {
@@ -192,21 +208,25 @@ function researchContext() {
 
 function validSynthesis() {
   return {
-    decisionSummary: "Há uma situação pesquisável, ainda sem priorização estratégica.",
+    decisionSummary:
+      "Há uma situação pesquisável, ainda sem priorização estratégica.",
     candidates: [
       {
         name: "Decisão de roupa para evento próximo",
         primaryAudience: "Mulheres 40+ com evento marcado",
         purchaseSituation: "Evento próximo e receio de comprar a peça errada.",
-        rootPain: "Dificuldade de decidir com o que já possui e o que precisa comprar.",
+        rootPain:
+          "Dificuldade de decidir com o que já possui e o que precisa comprar.",
         practicalPain: "Comparação fragmentada entre peças, clima e ocasião.",
         emotionalPain: "Insegurança de se sentir inadequada no evento.",
         observedLanguage: ["não sei o que vestir", "vale a pena comprar"],
         currentAlternatives: ["vídeos gratuitos", "consultoria de estilo"],
-        residualEffort: "A pessoa ainda precisa juntar sugestões e montar o resultado.",
+        residualEffort:
+          "A pessoa ainda precisa juntar sugestões e montar o resultado.",
         scaleEvidence: "A dor aparece em duas fontes públicas independentes.",
         unmetnessEvidence: "Alternativas exigem comparação e montagem manual.",
-        pdeValueBoundary: "Reduzir comparação e montagem, sem definir o produto.",
+        pdeValueBoundary:
+          "Reduzir comparação e montagem, sem definir o produto.",
         pdeDeliveryFit: {
           deliveryMode: "AI_DIGITAL_EXPERIENCE",
           minimumInput: "Foto da roupa e ocasião informada em uma escolha.",
@@ -214,7 +234,8 @@ function validSynthesis() {
           readyDigitalOutcome: "Orientação visual individual pronta para usar.",
           physicalDependency: "NONE",
         },
-        instagramFitEvidence: "A cena permite contraste visual entre alternativas.",
+        instagramFitEvidence:
+          "A cena permite contraste visual entre alternativas.",
         commercialRisk: "Cobertura Meta ainda não observada.",
         evidenceIds: ["P1", "P2", "O1", "R1"],
         maturity: "RESEARCHABLE",

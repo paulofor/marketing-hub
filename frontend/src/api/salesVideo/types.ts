@@ -421,6 +421,8 @@ export interface ResearchIntelligenceAgentPolicy {
   authority: string;
   collections: string[];
   maxCardsPerContext: number;
+  agentId?: number | null;
+  assignments?: { cardId: string; guidance: string; available: boolean }[];
 }
 
 export interface ResearchIntelligenceCatalog {

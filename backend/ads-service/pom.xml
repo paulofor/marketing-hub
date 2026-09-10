@@ -128,6 +128,12 @@
     <finalName>app</finalName>
     <resources>
       <resource>
+        <targetPath>agent-runtime</targetPath>
+        <filtering>false</filtering>
+        <directory>${project.basedir}/../..</directory>
+        <includes><include>config/agents/codex-agent-health-compliance.json</include></includes>
+      </resource>
+      <resource>
         <directory>${project.basedir}/src/main/resources</directory>
       </resource>
       <resource>

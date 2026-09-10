@@ -4,6 +4,39 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-PSIQUE-CLIQUE-ANTES-DA-PERSISTENCIA — recuperação disputa ordem com uso
+
+- **Data:** 2026-09-10.
+- **Evidência:** tarefa #363 de Mira, atividade `psiqueRecovery`, falhou ao emitir
+  `RECOVERY_COMPLETED` enquanto a requisição `READY_RESULT_USED` ainda estava em curso.
+  Os logs do PDE registraram ambas em `03:30:45.053Z`; o banco preservou uso, mas não
+  recuperação ou conclusão. As homologações #349 e #354 já haviam passado pelo cenário.
+- **Causa-raiz:** o harness tratava o retorno de `locator.click()` como confirmação do
+  callback HTTP iniciado pelo frontend. A próxima requisição podia chegar primeiro.
+- **Correção:** aguardar a resposta da ação exata e sua confirmação funcional antes de
+  prosseguir; aplicar também à conclusão dos cenários aderente e de segurança. O backend
+  continua exigindo a ordem dos eventos. Diagnóstico de falha identifica operação/status
+  sem imprimir resposta bruta ou tokens.
+- **Prevenção:** executor real com HTTP/navegador locais, atraso deliberado antes do uso,
+  falha HTTP, JSON inválido e resposta sem evento; integração adicional com frontend e
+  backend PDE reais e MySQL 5.7. Matriz e resultado operacional em
+  `docs/homologacao/mira-tarefa-363-recuperacao-v1.md`.
+
+## LOOP-HEALTH-VERSAO-CADASTRO-COMO-BINARIO — curadoria invalida executor compatível
+
+- **Data:** 2026-09-10.
+- **Evidência:** após as associações de cards pelo frontend, Psique passou de cadastro 6 para 7
+  e o health registrou `esperado=7 implantado=6`, com rede e autenticação disponíveis. O manifesto
+  técnico e o Compose continuavam exigindo executor 6. Outros agentes apresentaram a mesma diferença.
+- **Causa:** `AgentExecutorHealthService` comparava `deployedVersion` ao contador editável
+  `agent.current_version`, confundindo conteúdo de cadastro e compatibilidade do binário.
+- **Correção:** carregar no backend o manifesto técnico já versionado e empacotá-lo no JAR.
+  Recalcular leituras pelo contrato técnico, rede, autenticação e validade temporal; versões
+  incompatíveis ou não catalogadas continuam bloqueadas. Não copiar a versão esperada para o worker.
+- **Prevenção:** cadastro 7/8/9 com executor compatível, binário antigo, rede/autenticação ausentes,
+  prova vencida, releitura, callback HTTP e inicialização do catálogo no JAR. O CI do backend
+  passa a observar alterações do manifesto. Matriz em `docs/homologacao/mira-tarefa-363-recuperacao-v1.md`.
+
 ## LOOP-ACTIONS-BACKEND-TESTES-SEM-ISOLAMENTO — PR verde falha no deploy
 
 - **Data:** 2026-09-08.

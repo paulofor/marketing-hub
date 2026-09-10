@@ -1,0 +1,18 @@
+{
+  "cardKey": "chatbot-commerce-qualidade-informacao-continuidade",
+  "collection": "neuromarketing",
+  "title": "Em chatbots de comércio, priorize qualidade informacional e continuidade",
+  "finding": "Em survey com 493 consumidores chineses experientes em chatbots de e-commerce, personalização, presença social, qualidade da informação e continuidade humano-IA estiveram associadas à utilidade percebida; personalização, qualidade da informação e continuidade também estiveram associadas à satisfação, enquanto presença social não teve efeito direto significativo sobre satisfação. Qualidade da informação foi a dimensão mais forte entre as avaliadas.",
+  "mechanism": "Utilidade percebida e satisfação mediaram associações entre dimensões de qualidade do chatbot e intenção de compra. Em jornadas utilitárias, informação correta e completa e continuidade de serviço podem reduzir incerteza e esforço percebido mais diretamente do que sinais sociais isolados.",
+  "commercialApplication": "No customer-agent do Marketing Hub, priorizar respostas corretas e completas, contexto individual relevante e handoff contínuo entre IA e humano antes de investir em antropomorfismo ou presença social. Tratar tom e persona como camada secundária a ser testada.",
+  "evidenceStrength": "Moderada: artigo peer-reviewed aceito, survey N=493 e PLS-SEM com 5.000 bootstraps; desenho transversal e intenção autorrelatada não estabelecem causalidade.",
+  "publishedOn": "2026-09-10",
+  "validUntil": "2027-03-10",
+  "experimentHypothesis": "Em jornadas utilitárias, uma variante do customer-agent otimizada para qualidade informacional e continuidade aumentará resolução, satisfação e avanço para CTA em relação a uma variante que prioriza principalmente presença social, sem elevar abandono.",
+  "risks": "Não usar personalização para inferir atributos sensíveis nem coletar dados desnecessários; não reduzir o agente a uma experiência fria quando acolhimento for funcionalmente relevante; não tratar intenção declarada como compra.",
+  "limits": "A amostra é chinesa e específica de e-commerce; o estudo é observacional e mede intenção de compra. Somente eventos reais do funil, especialmente payment_reconciled, podem demonstrar efeito comercial no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-10-chatbot-commerce-qualidade-informacao-continuidade.md",
+  "sourceTitle": "Fonte revisada — Qualidade funcional de chatbots no e-commerce",
+  "sourceSha256": "57621be11d4da0dfa5cee68d5439868a9e22911aca00dc561f087c23736113ca"
+}

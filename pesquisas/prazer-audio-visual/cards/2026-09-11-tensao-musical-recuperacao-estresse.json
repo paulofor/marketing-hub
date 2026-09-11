@@ -1,0 +1,18 @@
+{
+  "cardKey": "tensao-musical-recuperacao-pos-estresse",
+  "collection": "prazer-audio-visual",
+  "title": "Usar tensão e resolução musical na recuperação após esforço",
+  "finding": "Em dois experimentos com 120 adultos jovens, música relaxante superou sons naturais na recuperação após estresse agudo, com maior melhora de humor positivo e recuperação autonômica mais rápida; o benefício não apareceu como redução clara da resposta inicial quando a música veio antes do estressor.",
+  "mechanism": "Flutuações de tensão musical acompanharam reorganização temporal da conectividade entre córtex auditivo, ínsula e tálamo, sugerindo que a estrutura de antecipação e resolução pode servir como suporte temporal para regulação pós-estresse.",
+  "commercialApplication": "Testar trilhas com ciclos claros de tensão e resolução após etapas frustrantes, espera, erro ou esforço cognitivo, comparando com sons naturais relaxantes ou trilhas estruturalmente planas.",
+  "evidenceStrength": "Média-alta: estudo humano controlado, N=120, medidas psicológicas, autonômicas e fMRI; aplicação a UX e marketing é extrapolação e precisa de teste no próprio produto.",
+  "publishedOn": "2026-09-08",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Após um momento de esforço ou frustração, uma trilha com tensão e resolução bem estruturadas melhorará recuperação de humor, retomada da tarefa e satisfação em relação a um controle relaxante, sem aumentar abandono.",
+  "risks": "Não usar tensão excessiva nem assumir que música antes de um estressor previne estresse; uma trilha mal calibrada pode elevar ativação ou irritação.",
+  "limits": "O estudo usa adultos jovens, estresse agudo em laboratório e música relaxante; não mede retenção, CTA, compra ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-tensao-musical-recuperacao-estresse.md",
+  "sourceTitle": "Fonte revisada — tensão musical e recuperação após estresse",
+  "sourceSha256": "87b82b852052d1a4af4a50b75fa19bf95d9245d7cc615f1ca08c8d4166d4dad0"
+}

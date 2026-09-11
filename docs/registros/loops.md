@@ -1,5 +1,21 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-DEPLOY-INTERVENCAO-SEM-COORDENACAO — publicação automática restaura versão anterior
+
+- Confirmado em 11/09/2026: `Build & Deploy containers`, run `34592882916`, recriou o backend
+  enquanto a v11 privada do Vega era conferida. O histórico registra restauração do contrato v9;
+  o run e seus horários foram confirmados pela API do GitHub.
+- Causa: a fila dos Actions excluía outros Actions, mas não incluía intervenções externas;
+  revisões antigas pendentes continuavam podendo substituir a versão em homologação.
+- Correção: coordenador de pausa por componentes, drenagem, lock entre operadores, registro
+  persistente fora de rsync e retomada após comprovação do commit integrado e da validação.
+  Descarte opcional atinge somente runs APP pending/queued sem jobs; comandos interrompidos mantêm
+  estado OPERATING até conferência explícita. Não expira a proteção por tempo.
+- Prevenção: `scripts/test-deploy-intervention.py`, executado no CI de contratos, cobre
+  concorrência real de processos, queda da sessão, filas, escopo, falhas parciais, retomada e
+  publicação indevida após comando interrompido. Uso obrigatório em `AGENTS.md`.
+- Matriz, procedimento e evidências: `docs/homologacao/deploy-intervencao-coordenada-v1.md`.
+
 > Documento auxiliar de prevenção de recorrência.
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.

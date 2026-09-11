@@ -2,6 +2,45 @@
 
 ## Contrato operacional
 
+### Intervenções autorizadas e versão em homologação
+
+Antes de uma intervenção autorizada em um serviço publicado, usar o coordenador
+`scripts/coordinate-deploy-intervention.py`. Ele pausa somente os workflows dos componentes
+selecionados e suas continuações dependentes, preserva os estados anteriores e espera todas
+as execuções já iniciadas terminarem. Uma intervenção só pode começar no estado `ACTIVE`,
+com os publicadores desativados e a fila vazia. Pausar um workflow sozinho não prova esse estado.
+
+O registro e a exclusão entre operadores ficam no host administrativo, fora de diretórios de
+rsync/deploy. Motivo, autorização, responsável, versão protegida, escopo, SHA inicial, execuções
+observadas e decisões de retomada permanecem auditáveis. A perda da conexão, erro da API ou
+fim da sessão não libera automaticamente a pausa. Não cancelar uma transação remota em curso.
+Não usar PR, push, dispatch ou deploy para testar este controle.
+
+Quando a fila global do APP contiver revisões antigas que sequer iniciaram jobs, o comando
+explícito `discard-unstarted` pode removê-las: exige publicadores pausados, status `pending` ou `queued`,
+zero jobs e nova leitura do estado antes do pedido de cancelamento. Runs iniciados e filas de
+outros publicadores continuam em drenagem. `--keep-run` preserva uma execução existente da
+`main` atual, permitindo terminar a publicação já enfileirada da correção integrada antes
+de iniciar a intervenção. O aceite do cancelamento não libera a proteção; a fila é reconsultada.
+
+Comandos operacionais passam por `execute`, que mantém o lock e registra `OPERATING` antes
+de iniciar o processo. Se houver desconexão sem resultado, `protect` e `resume` recusam a
+liberação. Conferir o término no host e registrar a evidência por `reconcile-command` antes
+de prosseguir; liberar o lock de transporte sozinho não comprova o término de um subprocesso.
+
+A retomada exige o identificador da intervenção, evidência da validação e um commit completo
+com a correção, já integrado à `main`. Para homologação ainda em curso, manter a pausa. Ao
+retomar, restaurar somente os workflows que estavam ativos antes; não reativar os previamente
+desativados. Não reexecutar automaticamente runs antigos nem disparar uma publicação: eventos
+perdidos exigem reconciliação pelo fluxo normal, na revisão integrada e validada.
+
+Esta coordenação é um comando operacional, não uma autorização adicional para publicar código.
+O fluxo normal continua passando por PR; exceções exigem a autorização explícita do usuário.
+O histórico do Vega (run `34592882916`) confirmou que filas exclusivas dos Actions não coordenam
+uma publicação externa. A pausa atua sobre os workflows já existentes, inclusive revisões antigas.
+
+Procedimento e matriz: [coordenação de intervenções](../homologacao/deploy-intervencao-coordenada-v1.md).
+
 O workflow `Build & Deploy containers` publica backend e frontend administrativos a partir
 de código integrado em `main`. Deve aceitar `push` e `workflow_dispatch`; a detecção de
 módulos só executa para `refs/heads/main`. Todos os jobs de publicação dependem dessa detecção,

@@ -8,8 +8,10 @@ Escopo: cards da tela de atividades do produto na Cadeia de Valor.
 O ícone deve ficar imediatamente ao lado do título, conforme a imagem do usuário.
 O texto identifica processo e atividade com seus números oficiais, produto pelo nome
 interno, agente pelo nome do responsável cadastrado e ciclo quando identificado.
-IDs, versão do processo, experimento, versão do produto e link contextual ajudam a
-distinguir passagens sem enviar prompts, resultados ou dados pessoais das tarefas.
+IDs, versões explícitas do processo e da atividade, experimento, versão do produto e link
+contextual ajudam a distinguir passagens sem enviar prompts, resultados ou dados pessoais
+das tarefas. A versão da atividade identifica sua definição dentro da versão imutável do
+processo, sem confundir o número ordinal mostrado na Cadeia de Valor com versão técnica.
 
 | Alternativa | Benefício | Risco / esforço | Escolha |
 | --- | --- | --- | --- |
@@ -30,7 +32,7 @@ comando de backend, criação de tarefa ou alteração de estado de negócio.
 | Controle | Critério de aceite |
 | --- | --- |
 | Localização | Ícone junto ao título de cada card, inclusive bloqueados e históricos |
-| Contexto | Processo e atividade numerados; nomes internos de produto e agente; IDs e versão distintos dos números ordinais |
+| Contexto | Processo e atividade numerados; nomes internos de produto e agente; versões e IDs das duas definições distintos dos números ordinais |
 | Ciclo | Copia o ciclo efetivo informado pelo backend, inclusive entrada sem parâmetro; mantém cadeia, experimento e versão; não inventa ciclo ausente |
 | Link | Abre o produto, processo e card copiado com cadeia e ciclo, mesmo se a página estiver ancorada em outro card |
 | Ausências | Nome interno ou número não informado aparece explicitamente; atividade humana/backend não se transforma em agente |
@@ -54,11 +56,15 @@ acima responderam HTTP 200. O navegador confirmou `isSecureContext=false` e
 Não foi necessário alterar banco, backend, worker ou contrato de API.
 
 O texto usa `productInternalName`, `activityOwnerName`, `sequenceLabel`, a sequência
-da atividade e a identidade oficial do ciclo. O link é montado para o próprio card,
+da atividade, `selectedProcessVersionNumber`, os IDs das definições e a identidade oficial
+do ciclo. O link é montado para o próprio card,
 com uma lista explícita de parâmetros (`learningCycleId` e `chainId`); não reaproveita
 a âncora de outro card nem parâmetros desconhecidos da página. IDs e versão técnica
 aparecem separados dos números ordinais do BPM. Responsáveis humanos e backend são
-identificados como tal, sem inventar agente.
+identificados como tal, sem inventar agente. As linhas `Versão do processo` e
+`Versão da atividade` deixam explícita a definição usada; quando uma atividade histórica
+não possui definição recuperável, o texto declara a ausência em vez de atribuir a versão
+selecionada ou o número ordinal.
 
 ## Ajuste encontrado na validação
 
@@ -103,3 +109,29 @@ Logs, texto efetivamente colado, capturas e `results.json` ficam em
 versionados. iPhone e Pixel são emulações de Chromium, sem validação em Safari físico.
 O build apresenta avisos já existentes de tamanho do bundle e API CJS do Vite, sem
 falha de compilação. Não houve commit, PR, deploy ou publicação.
+
+## Evolução de 11/09/2026 — versões explícitas
+
+O texto copiado passou a apresentar, imediatamente após suas identidades, `Versão do
+processo` e `Versão da atividade`. Cada linha combina a versão imutável do processo com o
+ID da definição correspondente. Atividades históricas usam as versões presentes nas tarefas
+auditadas; quando o contrato não recupera a definição, a ausência é declarada sem fabricar
+versão.
+
+A primeira rodada completa encontrou uma condição de corrida no foco do botão em contexto
+seguro: o elemento podia ser focalizado enquanto ainda estava desabilitado pela cópia
+assíncrona. A restauração passou a ocorrer somente depois de o React aplicar o estado final.
+O cenário foi repetido duas vezes isoladamente e, após a última correção, duas rodadas
+completas e consecutivas foram aprovadas:
+
+| Verificação | version-fields-final1 | version-fields-final2 |
+| --- | --- | --- |
+| Testes da tela, painel, acompanhamento e consulta | 36 aprovados | 36 aprovados |
+| TypeScript e build do frontend | Aprovados | Aprovados |
+| Clipboard real em desktop, iPhone e Pixel; HTTP e contexto seguro | 6 combinações aprovadas | 6 combinações aprovadas |
+| Versões do processo e da atividade, IDs, histórico e ausências | Aprovados | Aprovados |
+| Foco, teclado, formatação e diff | Aprovados | Aprovados |
+
+Evidências locais: `artifacts/activity-context-copy/version-fields-final1/` e
+`artifacts/activity-context-copy/version-fields-final2/`. Nenhum endpoint, banco, tarefa,
+campanha, PR, deploy ou publicação foi alterado durante a homologação.

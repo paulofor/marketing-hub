@@ -1,0 +1,18 @@
+{
+  "cardKey": "ritmo-auditivo-suporte-atencao-visual-dinamica",
+  "collection": "prazer-audio-visual",
+  "title": "Usar ritmo auditivo como scaffold de atenção visual contínua",
+  "finding": "Em 71 participantes, beats auditivos de 1, 2 ou 5 Hz melhoraram acurácia e velocidade de resposta numa busca visual dinâmica sem ritmo próprio; o maior benefício médio ocorreu em 2 Hz e variou com o ritmo motor espontâneo individual.",
+  "mechanism": "Um ritmo externo pode fornecer estrutura temporal geral para atenção sustentada mesmo sem prever o momento do alvo; os dados são compatíveis com suporte rítmico crossmodal, mas não isolam entrainment de alerta ou arousal.",
+  "commercialApplication": "Em interfaces ou experiências que exigem monitoramento visual contínuo, comparar ausência de beat com pulsos auditivos discretos em diferentes ritmos e, quando viável, testar adaptação ao ritmo individual.",
+  "evidenceStrength": "Média-alta para desempenho visual: experimento controlado com N=71 e melhora convergente em precisão e tempo de resposta; mecanismo neural específico e generalização para UX precisam de teste próprio.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Um pulso auditivo discreto e bem calibrado aumentará detecção e reduzirá tempo de resposta em tarefas visuais contínuas sem elevar fadiga ou distração em relação à condição sem beat.",
+  "risks": "Um ritmo muito saliente ou inadequado pode distrair, irritar ou aumentar carga; 2 Hz não deve ser tratado como frequência universal e diferenças individuais podem inverter o benefício.",
+  "limits": "Foram testadas somente três frequências numa tarefa de laboratório; não mede prazer, retenção, CTA, compra ou receita e não demonstra entrainment cerebral causal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-ritmo-auditivo-atencao-visual-dinamica.md",
+  "sourceTitle": "Fonte revisada — ritmo auditivo e atenção visual dinâmica",
+  "sourceSha256": "716914e1ae01edfe3c745085b55fa8496b669df8ca917eca350b674af6b9729b"
+}

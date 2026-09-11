@@ -1,0 +1,18 @@
+{
+  "cardKey": "accountability-retencao-produto-digital",
+  "collection": "neuromarketing",
+  "title": "Accountability pode valer mais que ampliar a biblioteca de conteúdo",
+  "finding": "A Habuild reportou 690 mil usuários ativos, 50% a 55% de renovação entre assinantes anuais, cerca de 70% de presença nas aulas, receita de ₹112 crore no FY25 e aproximadamente 90% dos novos usuários vindos de indicação, em grande parte via WhatsApp.",
+  "mechanism": "Em categorias com excesso de informação, compromisso recorrente, horário, acompanhamento e sensação de progresso podem reduzir paralisia por opções e transformar intenção em ação repetida. O caso é consistente com esse mecanismo, mas não o prova causalmente.",
+  "commercialApplication": "Em produtos digitais de aprendizado, produtividade, vendas ou mudança de comportamento, testar uma camada de compromisso com próxima ação, lembrete contextual e feedback de conclusão contra uma experiência baseada principalmente em conteúdo sob demanda.",
+  "evidenceStrength": "Caso comercial relevante e lucrativo, com métricas de uso, renovação e aquisição orgânica divulgadas em entrevista jornalística; evidência observacional, sem experimento controlado que isole accountability de preço, comunidade, instrutores ou seleção de usuários.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2026-12-10",
+  "experimentHypothesis": "Adicionar um ciclo de compromisso explícito com próxima ação e feedback de conclusão aumentará execução da primeira tarefa, retorno em 7 e 30 dias, renovação e indicação sem elevar notificações ignoradas ou rejeição percebida.",
+  "risks": "Accountability pode virar pressão, culpa, spam ou dark pattern. Evitar notificações invasivas, punições artificiais e linguagem que explore insegurança; oferecer controle de frequência e saída simples.",
+  "limits": "Os resultados vêm de bem-estar e yoga, com dinâmica de comunidade e rotina própria; não generalizam automaticamente para outros produtos. As métricas são reportadas pela empresa e não demonstram que accountability causou retenção ou crescimento.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-11-accountability-retencao-produto-digital.md",
+  "sourceTitle": "Fonte revisada — Accountability e recorrência em produto digital de bem-estar",
+  "sourceSha256": "079a883fb2740dc38cc9ffe1c68e5fb3dbdb9b052c4d9b0a221d241c0ee3d08b"
+}

@@ -1,0 +1,23 @@
+name: Hash fontes prazer audiovisual 2026-09-11
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/hash-prazer-audio-visual-2026-09-11.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  hash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Calcular SHA-256
+        run: |
+          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-tensao-musical-recuperacao-estresse.md
+          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-arousal-intermediario-conforto-prazer.md
+          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-vibrotatil-sincronizado-musica.md

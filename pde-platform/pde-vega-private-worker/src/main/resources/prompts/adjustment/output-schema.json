@@ -1,0 +1,1 @@
+{"type":"object","additionalProperties":false,"required":["cardId","action","application","occasion","selfAssessmentPrompt","usesOnlyAvailableItems"],"properties":{"cardId":{"type":"string"},"action":{"type":"string"},"application":{"type":"string"},"occasion":{"type":"string"},"selfAssessmentPrompt":{"type":"string"},"usesOnlyAvailableItems":{"type":"boolean","enum":[true]}}}

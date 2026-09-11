@@ -1,0 +1,144 @@
+{
+  "cycle": {
+    "id": 91002,
+    "productId": 91004,
+    "experimentId": 91092,
+    "previousCycleId": 91001,
+    "successorCycleId": null,
+    "chainDefinitionId": 91014,
+    "processDefinitionId": 76,
+    "revision": 2,
+    "stage": "ADJUSTMENT",
+    "stageLabel": "Ajustar produto e comunicação",
+    "status": "OPEN",
+    "baseline": false,
+    "productVersion": "musa-pde-entry-v8-primeiro-ajuste-aplicavel",
+    "budgetLimitBrl": 100,
+    "windowStart": "2026-09-10T03:00:00Z",
+    "windowEnd": "2026-09-17T02:59:00Z",
+    "nextAction": "Corrigir a versão privada com Dédalo.",
+    "responsible": "Dédalo",
+    "returnProcessId": 67,
+    "returnActivityId": "productArchitecture",
+    "workUrl": "/products/91004/value-chain-history",
+    "diagram": {
+      "nodes": [],
+      "flows": []
+    },
+    "brief": {
+      "hypothesis": "Teste sintético: ajuste útil",
+      "mainChange": "Aplicação clara",
+      "successCriterion": "Cartão e retomada"
+    },
+    "inheritedLearning": {
+      "events": []
+    },
+    "events": [],
+    "workLinks": [],
+    "commands": [
+      {
+        "action": "COMPLETE",
+        "label": "Concluir etapa com evidência",
+        "available": true,
+        "reason": "O backend conferirá os requisitos e preservará a decisão."
+      },
+      {
+        "action": "REWORK",
+        "label": "Devolver para correção",
+        "available": true,
+        "reason": "O backend conferirá os requisitos e preservará a decisão."
+      },
+      {
+        "action": "STOP",
+        "label": "Encerrar ciclo",
+        "available": true,
+        "reason": "O backend conferirá os requisitos e preservará a decisão."
+      }
+    ],
+    "canCreateSuccessor": false,
+    "createdAt": "2026-09-09T19:02:00.119166Z",
+    "closedAt": null
+  },
+  "catalog": {
+    "processDefinitionId": 76,
+    "version": 4,
+    "diagram": {
+      "nodes": [],
+      "flows": []
+    },
+    "returnTargets": [
+      {
+        "processDefinitionId": 70,
+        "processName": "Protótipo, validação multiagente e aprovação do PDE",
+        "activityId": "prototypeCorrection",
+        "activityName": "Corrigir o protótipo a partir do parecer",
+        "owner": "Dédalo",
+        "processCode": "pde-construction-approval"
+      }
+    ],
+    "experiments": [],
+    "entry": {
+      "chainDefinitionId": 91014,
+      "chainName": "Criação e entrega de valor de Produtos Digitais Experienciais",
+      "parentProcessDefinitionId": 75,
+      "parentProcessName": "Venda, entrega e aprendizado do PDE",
+      "sequenceNumber": 6,
+      "activityId": "learningCycle",
+      "processDefinitionId": 76,
+      "processName": "Ciclos de aprendizado e vendas",
+      "integrated": true,
+      "canStartCycle": true,
+      "guidance": "Após consolidar os resultados, abra o ciclo deste produto e experimento. Registre a decisão e execute a próxima atividade orientada. Uma mudança comercial abre um sucessor; uma correção técnica preserva o experimento e exige revalidação.",
+      "workspaceUrl": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+      "actionLabel": "Retomar ciclo #2",
+      "parentUrl": "/products/4/value-chain-history/processes/75/activities?chainId=14#activity-learningCycle",
+      "returnRoutes": [
+        {
+          "label": "Estratégia e economia",
+          "condition": "A evidência exige rever oferta, preço ou viabilidade. Defina a hipótese do sucessor.",
+          "processDefinitionId": 67,
+          "sequenceNumber": 2,
+          "processName": "Estratégia, economia e protótipo privado do PDE",
+          "url": "/business-processes?processId=67&chainId=14&productId=4"
+        },
+        {
+          "label": "Utilidade do produto",
+          "condition": "A cliente não consegue aplicar o resultado ou perceber valor. Corrija a entrega e renove os pareceres.",
+          "processDefinitionId": 70,
+          "sequenceNumber": 3,
+          "processName": "Protótipo, validação multiagente e aprovação do PDE",
+          "url": "/business-processes?processId=70&chainId=14&productId=4"
+        },
+        {
+          "label": "Comunicação e vídeos",
+          "condition": "O benefício ou a entrada não são compreendidos. Ajuste mensagem, demonstração e criativo.",
+          "processDefinitionId": 63,
+          "sequenceNumber": 4,
+          "processName": "Comunicação e jornada de venda do PDE",
+          "url": "/business-processes?processId=63&chainId=14&productId=4"
+        },
+        {
+          "label": "Homologação e autorização",
+          "condition": "Depois dos ajustes, valide a mesma versão e obtenha autorização explícita antes de publicar ou expandir.",
+          "processDefinitionId": 56,
+          "sequenceNumber": 5,
+          "processName": "Homologação e ativação comercial do PDE",
+          "url": "/business-processes?processId=56&chainId=14&productId=4"
+        },
+        {
+          "label": "Coleta e medição",
+          "condition": "Continuar somente com dados válidos dentro dos limites; corrigir dados inválidos antes de decidir sobre desempenho.",
+          "processDefinitionId": 75,
+          "sequenceNumber": 6,
+          "processName": "Venda, entrega e aprendizado do PDE",
+          "url": "/business-processes?processId=75&chainId=14&productId=4"
+        }
+      ],
+      "activityName": "Conduzir o ciclo de aprendizado e vendas",
+      "activitySequenceNumber": 4
+    },
+    "successorChainDefinitionId": 14,
+    "successorChainName": "Criação e entrega de valor de Produtos Digitais Experienciais · v14",
+    "createExperimentUrl": "/experiments/new?productId=4&nicheId=31"
+  }
+}

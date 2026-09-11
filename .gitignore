@@ -73,3 +73,9 @@ local/
 *.m3u8
 **/hls/*.ts
 **/assets/hls/**/*.ts
+
+# Dependências e bundles locais do protótipo privado
+/customer-agent-worker/node_modules/
+/pde-platform/frontend/dist-vega/
+
+__pycache__/

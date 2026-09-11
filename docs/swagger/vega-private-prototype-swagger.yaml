@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Vega — protótipo privado por ciclo
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /api/pde/vega/private/v1/contract:
+    get:
+      summary: Capacidades da versão privada sem criar sessão ou evento
+      responses:
+        '200': {description: Versão, cinco sinais e ausência de pagamento}
+  /api/pde/vega/private/v1/access:
+    post:
+      summary: Trocar convite opaco por sessão após consentimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessToken, consentAccepted]
+              properties:
+                accessToken: {type: string}
+                consentAccepted: {type: boolean, enum: [true]}
+      responses:
+        '200': {description: Sessão retomável da mesma leitura}
+        '401': {description: Convite inválido, revogado ou expirado}
+  /api/pde/vega/private/v1/session:
+    get:
+      summary: Retomar cartão e sinais sem regenerar
+      security: [{Session: []}]
+      responses:
+        '200': {description: Estado persistido sanitizado}
+  /api/pde/vega/private/v1/start:
+    post:
+      summary: Registrar o início explícito idempotente
+      security: [{Session: []}]
+      responses:
+        '200': {description: Estado com início registrado}
+  /api/pde/vega/private/v1/generate:
+    post:
+      summary: Validar entrada e enfileirar geração segregada
+      security: [{Session: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [occasion, existingSelection]
+              properties:
+                occasion: {type: string, maxLength: 160}
+                existingSelection: {type: string, maxLength: 300}
+                optionalNote: {type: string, maxLength: 300}
+      responses:
+        '200': {description: Execução pendente ou cartão já gerado sem duplicação}
+        '400': {description: Entrada inválida}
+        '409': {description: Início explícito ausente}
+  /api/pde/vega/private/v1/events:
+    post:
+      summary: Registrar compreensão, uso, preferência ou abertura voluntária da simulação
+      security: [{Session: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventType]
+              properties:
+                eventType: {type: string, enum: [VALUE_MOMENT, READY_RESULT_USED, PREFERENCE, CHECKOUT_STARTED]}
+                answer: {type: string, maxLength: 500}
+      responses:
+        '200': {description: Sinal idempotente; PREFERENCE FREE não emite preferência pelo produto}
+        '409': {description: Pré-requisito funcional ausente}
+  /api/pde/vega/private/v1/finish:
+    post:
+      summary: Encerrar mantendo cartão e limites disponíveis
+      security: [{Session: []}]
+      responses:
+        '200': {description: Leitura encerrada sem apagar evidência}
+  /api/pde/vega/private/v1/internal/sessions:
+    post:
+      summary: Abrir sessão de teste ou emitir um dos dois convites humanos
+      security: [{Internal: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cycleId, prototypeVersion, origin]
+              properties:
+                cycleId: {type: integer, format: int64}
+                prototypeVersion: {type: string}
+                origin: {type: string, enum: [QA_INTERNAL, AGENT_VALIDATION, HUMAN]}
+                readingNumber: {type: integer, minimum: 1, maximum: 2}
+      responses:
+        '200': {description: Identidade e credencial opaca, sem início automático}
+        '409': {description: Ciclo ou versão incompatível, ou convite ativo já existente}
+  /api/pde/vega/private/v1/internal/sessions/{id}:
+    delete:
+      summary: Revogar convite e sessão mantendo a auditoria
+      security: [{Internal: []}]
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: Acesso revogado}
+  /api/pde/vega/private/v1/internal/adjustment/stage-executions/pending:
+    get:
+      summary: Ponto inicial canônico do executor, incluindo reservas expiradas
+      security: [{Internal: []}]
+      responses:
+        '200': {description: Até dez execuções com contexto segregado e aprendizado}
+  /api/pde/vega/private/v1/internal/adjustment/stage-executions/{id}/claim:
+    post:
+      summary: Reservar atomicamente uma execução por dez minutos
+      security: [{Internal: []}]
+      parameters: [{name: id, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses:
+        '200': {description: Execução reservada ou resultado terminal preservado}
+        '409': {description: Reserva concorrente ainda válida}
+  /api/pde/vega/private/v1/internal/adjustment/stage-executions/{id}/request:
+    post:
+      summary: Persistir request e modelo antes de chamar IA
+      security: [{Internal: []}]
+      parameters: [{name: id, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request, model]
+              properties:
+                request: {type: object}
+                model: {type: string}
+      responses:
+        '200': {description: Request sanitizado preservado}
+  /api/pde/vega/private/v1/internal/adjustment/stage-executions/{id}/result:
+    post:
+      summary: Receber callback idempotente com artefato separado da auditoria
+      security: [{Internal: []}]
+      parameters: [{name: id, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, model]
+              properties:
+                status: {type: string, enum: [COMPLETED, FAILED, BLOCKED]}
+                model: {type: string}
+                card: {type: object, nullable: true}
+                rawResponse: {type: object, nullable: true}
+                inputTokens: {type: integer, nullable: true}
+                outputTokens: {type: integer, nullable: true}
+                costUsd: {type: number, nullable: true}
+                error: {type: string, maxLength: 4000, nullable: true}
+      responses:
+        '200': {description: Resultado validado ou falha persistida; cartão inválido nunca vira sucesso}
+  /api/pde/vega/private/v1/internal/cycles/{cycleId}/report:
+    get:
+      summary: Relatório persistido por leitura, tentativa, origem e sinal
+      security: [{Internal: []}]
+      parameters: [{name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses:
+        '200': {description: Entradas, saídas, request, response, modelo, tokens e custo quando informado}
+components:
+  securitySchemes:
+    Session: {type: apiKey, in: header, name: X-Vega-Session}
+    Internal: {type: apiKey, in: header, name: X-PDE-Internal-Token}

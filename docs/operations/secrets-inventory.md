@@ -81,3 +81,18 @@ Defaults sensiveis em arquivos versionados devem ser tratados como legado a remo
 3. Script automatico de auditoria de secrets: mais forte, mas exige padronizar todos os deploys antes.
 
 Decisao atual: manter inventario central agora e evoluir depois para auditoria automatica de `.env` remoto sem imprimir valores.
+
+## Vega privado — ciclo de correção
+
+`pde-platform/vega-private.compose.yml`, host PDE `163.245.200.7`: o executor requer
+`PDE_INTERNAL_API_TOKEN` (mesmo contrato do backend), `VEGA_BACKEND_URL`,
+`VEGA_OPENAI_API_KEY` fornecido como `OPENAI_API_KEY` no ambiente do executor e
+`VEGA_OPENAI_MODEL` (padrão gpt-5-mini). Nenhum segredo entra em artefato, imagem ou log.
+O backend principal lê `integrations.pde-platform.internal-token`, já montado por configtree em
+`/run/secrets/pde/`, com fallback de ambiente `PDE_INTERNAL_API_TOKEN`, para proteger sessões internas,
+relatório, pending e callbacks. Validar credenciais por status HTTP e conclusão de QA segregado.
+Ausência bloqueia geração ou auditoria; nunca usar convite humano para substituir a credencial.
+O volume do worker preserva respostas pendentes durante reinício do backend.
+O script versionado `pde-platform/scripts/deploy-vega-private.py` lê o arquivo OpenAI protegido
+no próprio host e a credencial interna do container PDE existente, sem copiá-los para `.env`,
+imprimir seus valores ou elevar o usuário do executor. A validação final usa uma sessão QA.

@@ -1,0 +1,33 @@
+services:
+  vega-private-frontend:
+    image: ${VEGA_PRIVATE_FRONTEND_IMAGE:?Imagem versionada do Vega é obrigatória}
+    container_name: pde-platform-frontend-vega-private
+    restart: unless-stopped
+    environment:
+      VEGA_BACKEND_URL: ${VEGA_BACKEND_URL:-http://191.252.181.168}
+    ports:
+      - "127.0.0.1:5181:80"
+    networks:
+      - public-net
+    mem_limit: 128m
+    labels:
+      com.marketinghub.pde.product-id: "4"
+      com.marketinghub.pde.surface: vega-private-v1
+  vega-private-worker:
+    image: ${VEGA_PRIVATE_WORKER_IMAGE:?Imagem versionada do worker é obrigatória}
+    container_name: pde-vega-private-worker
+    restart: unless-stopped
+    environment:
+      VEGA_BACKEND_URL: ${VEGA_BACKEND_URL:-http://191.252.181.168}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?Credencial interna obrigatória}
+      VEGA_OPENAI_MODEL: ${VEGA_OPENAI_MODEL:-gpt-5-mini}
+      OPENAI_API_KEY: ${VEGA_OPENAI_API_KEY:?Credencial OpenAI obrigatória}
+      VEGA_OUTBOX: /data/outbox
+    volumes:
+      - vega-private-outbox:/data
+    mem_limit: 256m
+volumes:
+  vega-private-outbox:
+networks:
+  public-net:
+    external: true

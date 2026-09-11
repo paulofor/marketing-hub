@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-11-vega-private-prototype-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS vega_private_session_v1 (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                cycle_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                prototype_version VARCHAR(160) NOT NULL,
+                origin VARCHAR(32) NOT NULL,
+                reading_number INT NULL,
+                grant_hash VARCHAR(64) NULL,
+                session_hash VARCHAR(64) NULL,
+                revoked BIT NOT NULL DEFAULT 0,
+                expires_at DATETIME(6) NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                consented_at DATETIME(6) NULL,
+                input_json LONGTEXT NULL,
+                events_json LONGTEXT NOT NULL,
+                execution_id BIGINT NULL,
+                state VARCHAR(32) NOT NULL,
+                preference VARCHAR(32) NULL,
+                UNIQUE KEY uk_vega_grant (grant_hash),
+                UNIQUE KEY uk_vega_session (session_hash),
+                KEY ix_vega_cycle (cycle_id, created_at),
+                CONSTRAINT fk_vega_session_cycle FOREIGN KEY (cycle_id) REFERENCES learning_sales_cycle_v1(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+              CREATE TABLE IF NOT EXISTS vega_adjustment_execution_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                session_id VARCHAR(36) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                input_json LONGTEXT NOT NULL,
+                request_json LONGTEXT NULL,
+                response_json LONGTEXT NULL,
+                result_json LONGTEXT NULL,
+                error LONGTEXT NULL,
+                model VARCHAR(160) NULL,
+                input_tokens BIGINT NULL,
+                output_tokens BIGINT NULL,
+                cost_usd DECIMAL(16,8) NULL,
+                created_at DATETIME(6) NOT NULL,
+                started_at DATETIME(6) NULL,
+                finished_at DATETIME(6) NULL,
+                lease_until DATETIME(6) NULL,
+                KEY ix_vega_execution_pending (status, lease_until, id),
+                KEY ix_vega_execution_session (session_id, id),
+                CONSTRAINT fk_vega_execution_session FOREIGN KEY (session_id) REFERENCES vega_private_session_v1(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -81,6 +81,57 @@ class PdeAgentValidationHarnessRunnerTest {
         .isTrue();
   }
 
+  /** Vincula o executável do sucessor ao experimento e despacha os cenários próprios de Vega. */
+  @Test
+  void acceptsVegaCycleWithOwnHarnessAndExplicitLineage() throws Exception {
+    Path mira = fakeHarness(false, true);
+    Path vega = mira.resolveSibling("vega-agent-validation-harness.mjs");
+    Files.writeString(
+        vega,
+        Files.readString(mira)
+            .replace("product:10@agent-validation-v1", "experiment:92")
+            .replace("\"productId\":10", "\"productId\":4")
+            .replace("orientacao-digital-rotina-pele-madura", "metodo-musa-7-dias")
+            .replace("mira-private-v1", "musa-pde-entry-v9-primeiro-ajuste-aplicavel")
+            .replace("/mira-private", "/vega-private"));
+    var target = new HashMap<String, Object>();
+    target.put("productId", 4L);
+    target.put("experimentId", 92L);
+    target.put("productSlug", "metodo-musa-7-dias");
+    target.put("experienceVersion", "musa-pde-entry-v9-primeiro-ajuste-aplicavel");
+    target.put("publicUrl", "http://127.0.0.1:5176/vega-private");
+    target.put(
+        "pdeContext",
+        Map.of("lineage", Map.of("productId", 4L, "experimentId", 92L, "learningCycleId", 2L)));
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/bin/sh", mira.toString(), "synthetic", true);
+    var execution =
+        runner.run(
+            Map.of("taskId", 901L, "sourceReference", "experiment:92", "taskTarget", target),
+            "TECHNICAL",
+            null,
+            temporaryDirectory.resolve("vega"));
+    assertThat(execution.result().path("decision").asText()).isEqualTo("APPROVED");
+    assertThat(json.readTree(execution.serializedInput()).path("cycleId").asLong()).isEqualTo(2L);
+    assertThat(execution.visualEvidence().capture().artifacts())
+        .allMatch(a -> "FULL_PAGE".equals(a.evidenceType()));
+  }
+
+  /** Recusa metadado que o backend não aceita, antes de enviar screenshots ao callback. */
+  @Test
+  void rejectsUnsupportedScreenshotTypeBeforeCallback() throws Exception {
+    Path script = fakeHarness(false, true);
+    Files.writeString(
+        script,
+        Files.readString(script)
+            .replace("\"evidenceType\":\"FULL_PAGE\"", "\"evidenceType\":\"SCREENSHOT\""));
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/bin/sh", script.toString(), "synthetic", true);
+    assertThatThrownBy(
+            () -> runner.run(task(), "TECHNICAL", null, temporaryDirectory.resolve("invalid-type")))
+        .isInstanceOf(PdeAgentValidationHarnessRunner.HarnessException.class);
+  }
+
   /** Rejeita uma saída que tente transformar o harness em prova humana. */
   @Test
   void rejectsHumanEvidenceClaimBeforeCallback() throws Exception {

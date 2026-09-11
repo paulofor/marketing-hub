@@ -4832,3 +4832,14 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - Prevenção: contratos de fontes, revisão, concorrência, callbacks, falha/retentativa, autoria e
   três alternativas; integração real em MySQL e worker com modelo simulado; browser desktop/mobile.
   [Matriz e resultados](../homologacao/ciclo-vendas-decisao-atena-v1.md).
+
+## LOOP-VEGA-CORRECAO-SEM-EXECUTAVEL-DO-CICLO — prevenção em 2026-09-11
+
+- #377 falhou na entrada de homologação; #378, #379 e #380 repetiram bloqueio porque o
+  ciclo #2 possuía somente especificações. O resolvedor descartava URL e aceitação do sucessor.
+- O contraste histórico é Mira #370, que recebeu implementação e aceitação da mesma versão.
+- Correção: runtime privado próprio do Vega, fila/artefatos no backend principal, worker de
+  geração, cartão retomável e handoff versionado no evento REWORK do ciclo. A v7 não muda.
+- Prevenção: contratos recusam URL com parâmetros, prova incompleta ou versão divergente;
+  harness próprio percorre geração, uso, retomada, falha e limite em desktop e celulares.
+- Evidência e limites: `docs/homologacao/vega-tarefa-380-prototipo-v1.md`.

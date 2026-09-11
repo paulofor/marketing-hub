@@ -78,7 +78,8 @@ public class PdeAgentValidationHarnessRunner {
     }
     validateUrl(sourceUrl);
     String sourceReference = String.valueOf(task.get("sourceReference"));
-    if (!sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")) {
+    if (!sourceReference.matches(
+        "product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*")) {
       throw new HarnessException("A tarefa não pertence à referência multiagente canônica.");
     }
     long productId = target.path("productId").asLong();
@@ -87,12 +88,22 @@ public class PdeAgentValidationHarnessRunner {
     if (productId < 1 || productSlug.isBlank() || prototypeVersion.isBlank()) {
       throw new HarnessException("O alvo da tarefa multiagente está incompleto.");
     }
-    if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference)) {
+    JsonNode lineage = target.path("pdeContext").path("lineage");
+    boolean vega =
+        "metodo-musa-7-dias".equals(productSlug)
+            && prototypeVersion.startsWith("musa-pde-entry-v9-")
+            && "/vega-private".equals(URI.create(sourceUrl).getPath())
+            && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
+            && lineage.path("learningCycleId").asLong() > 0
+            && lineage.path("experimentId").asLong() == target.path("experimentId").asLong()
+            && lineage.path("productId").asLong() == productId;
+    if (!("product:" + productId + "@agent-validation-v1").equals(sourceReference) && !vega) {
       throw new HarnessException("A referência da homologação não corresponde ao produto alvo.");
     }
-    if (!"orientacao-digital-rotina-pele-madura".equals(productSlug)
-        || !prototypeVersion.startsWith("mira-private-v")
-        || !"/mira-private".equals(URI.create(sourceUrl).getPath())) {
+    if (!vega
+        && (!"orientacao-digital-rotina-pele-madura".equals(productSlug)
+            || !prototypeVersion.startsWith("mira-private-v")
+            || !"/mira-private".equals(URI.create(sourceUrl).getPath()))) {
       throw new HarnessException(
           "O harness instalado possui cenários somente para o protótipo privado de Mira. "
               + "Implemente os cenários do produto alvo antes de homologá-lo; não reutilize outro PDE.");
@@ -103,29 +114,35 @@ public class PdeAgentValidationHarnessRunner {
     Path evidenceDirectory = workDirectory.resolve("agent-validation-evidence");
     String captureSessionId = UUID.randomUUID().toString();
     Map<String, Object> input =
-        Map.of(
-            "mode",
-            mode,
-            "scenarioCode",
-            scenarioCode == null ? "" : scenarioCode,
-            "captureSessionId",
-            captureSessionId,
-            "sourceUrl",
-            sourceUrl,
-            "sourceReference",
-            sourceReference,
-            "productId",
-            productId,
-            "productSlug",
-            productSlug,
-            "prototypeVersion",
-            prototypeVersion);
+        new java.util.LinkedHashMap<>(
+            Map.of(
+                "mode",
+                mode,
+                "scenarioCode",
+                scenarioCode == null ? "" : scenarioCode,
+                "captureSessionId",
+                captureSessionId,
+                "sourceUrl",
+                sourceUrl,
+                "sourceReference",
+                sourceReference,
+                "productId",
+                productId,
+                "productSlug",
+                productSlug,
+                "prototypeVersion",
+                prototypeVersion));
+    if (vega) input.put("cycleId", lineage.path("learningCycleId").asLong());
+    String executionScript =
+        vega
+            ? Path.of(scriptPath).resolveSibling("vega-agent-validation-harness.mjs").toString()
+            : scriptPath;
     String serializedInput = json.writeValueAsString(input);
     Files.writeString(inputPath, serializedInput, StandardCharsets.UTF_8);
     ProcessBuilder builder =
         new ProcessBuilder(
                 nodeBinary,
-                scriptPath,
+                executionScript,
                 inputPath.toString(),
                 outputPath.toString(),
                 evidenceDirectory.toString())
@@ -156,7 +173,7 @@ public class PdeAgentValidationHarnessRunner {
         sourceUrl);
   }
 
-  /** Exige contrato, cenários, dispositivos, efeitos nulos e arquivos PNG da mesma execução. */
+  /** Exige contrato, cenários, dispositivos, efeitos nulos e páginas PNG completas da execução. */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
       String captureSessionId,
@@ -229,7 +246,9 @@ public class PdeAgentValidationHarnessRunner {
     List<BpmVisualEvidenceRunner.VisualArtifact> artifacts = new ArrayList<>();
     for (JsonNode artifact : result.path("artifacts")) {
       Path file = Path.of(artifact.path("localPath").asText()).toAbsolutePath().normalize();
-      if (!captureSessionId.equals(artifact.path("captureSessionId").asText())
+      if (!"FULL_PAGE".equals(artifact.path("evidenceType").asText())
+          || !artifact.path("foldNumber").isNull()
+          || !captureSessionId.equals(artifact.path("captureSessionId").asText())
           || !file.startsWith(evidenceDirectory.toAbsolutePath().normalize())
           || !Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)
           || !file.toRealPath().startsWith(realEvidenceDirectory)

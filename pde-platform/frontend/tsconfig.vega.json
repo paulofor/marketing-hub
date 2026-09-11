@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","include":["vega-private/**/*.tsx"]}

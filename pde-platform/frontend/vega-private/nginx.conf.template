@@ -1,0 +1,18 @@
+server {
+ listen 80;
+ server_name _;
+ root /usr/share/nginx/html;
+ add_header Cache-Control "no-store" always;
+ add_header Referrer-Policy "no-referrer" always;
+ add_header X-Robots-Tag "noindex, nofollow" always;
+ location /healthz { return 200 'ok'; }
+ location /api/pde/vega/private/v1/ {
+  proxy_pass ${VEGA_BACKEND_URL};
+  proxy_set_header Host $proxy_host;
+  # A auditoria pode crescer; transmite a resposta sem gravar payload privado em disco temporário.
+  proxy_buffering off;
+  proxy_read_timeout 45s;
+ }
+ location /api/ { return 404; }
+ location / {try_files $uri $uri/ /vega-private/index.html;}
+}

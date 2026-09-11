@@ -50,6 +50,9 @@ public class LearningCycleService {
 
   @Autowired private LearningCycleWorkResolver workResolver;
 
+  @Autowired(required = false)
+  private LearningCyclePrototypeContext prototypeContext;
+
   @Autowired private LearningCycleExecutionContext executionContext;
 
   /** Apresenta o ciclo selecionado, sua posição e a memória histórica dentro do processo. */
@@ -736,7 +739,9 @@ public class LearningCycleService {
             + "/measurement-unchanged");
   }
 
-  /** Valida o movimento e resolve a próxima etapa sem permitir bypass por campos da tela. */
+  /**
+   * Valida movimento e prova privada da versão antes de registrar o retorno e invalidar aprovações.
+   */
   private void apply(
       LearningSalesCycle cycle, Experiment experiment, LearningCycleCommand request, Instant now) {
     JsonNode data = request.evidence();
@@ -796,6 +801,8 @@ public class LearningCycleService {
             "Declare uma versão nova para invalidar as aprovações anteriores.");
         selectTarget(cycle, data);
         text(data, "rootCause");
+        if (prototypeContext != null)
+          prototypeContext.validate(data.path("privatePrototype"), version);
         cycle.setProductVersion(version);
         cycle.setVersionChangedAt(now);
         cycle.setStage("ADJUSTMENT");

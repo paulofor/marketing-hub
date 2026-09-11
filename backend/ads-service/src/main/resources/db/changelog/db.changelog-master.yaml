@@ -2066,3 +2066,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-10-pde-harness-responsibility-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-11-vega-private-prototype-v1.yaml
+      relativeToChangelogFile: true

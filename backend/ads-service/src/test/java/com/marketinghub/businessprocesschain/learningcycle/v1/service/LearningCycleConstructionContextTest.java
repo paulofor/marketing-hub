@@ -253,4 +253,23 @@ class LearningCycleConstructionContextTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("produtos diferentes");
   }
+
+  /** Entrega ao executor a URL somente após aceitação da mesma versão do ciclo. */
+  @Test
+  void includesAcceptedImplementationWithoutChangingHistoricalProduct() throws Exception {
+    var prototype = mock(LearningCyclePrototypeContext.class);
+    var acceptance =
+        mapper.readTree(
+            "{\"status\":\"READY\",\"prototypeVersion\":\"successor-v8\",\"privateAccessUrl\":\"https://private.invalid/vega-private\"}");
+    when(prototype.resolve(cycle)).thenReturn(Optional.of(acceptance));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        resolver, "prototypeContext", prototype);
+    var result =
+        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+    assertThat(result.publicUrl()).isEqualTo("https://private.invalid/vega-private");
+    assertThat(result.pdeContext().path("status").asText()).isEqualTo("PRIVATE_PROTOTYPE_READY");
+    assertThat(result.pdeContext().path("inheritedLearning").path("experimentId").asLong())
+        .isEqualTo(91);
+    assertThat(product.getPdeExperienceJson()).contains("historical-v7");
+  }
 }

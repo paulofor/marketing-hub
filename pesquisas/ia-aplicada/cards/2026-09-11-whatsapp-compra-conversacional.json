@@ -1,0 +1,18 @@
+{
+  "cardKey": "whatsapp-compra-conversacional",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Agente conversacional pode fechar a jornada quando a intenção já está alta",
+  "finding": "No Brasil, o Daycoval relatou que um fluxo com IA para crédito CLT reconhece dados, gera proposta, negocia pelo WhatsApp, acompanha assinatura e confirma liberação por Pix; as vendas subiram 5x na primeira semana e, após ajustes e canais adicionais, 12x versus o patamar inicial.",
+  "mechanism": "Em situações de alta intenção e competição simultânea, resposta rápida e continuidade entre proposta, objeção e fechamento podem reduzir perda por espera e troca de contexto. O caso não isola causalmente o efeito de WhatsApp, IA ou demais mudanças operacionais.",
+  "commercialApplication": "Em ofertas não reguladas e de menor risco no Marketing Hub, comparar um fluxo conversacional com qualificação, objeções, oferta previamente autorizada e pagamento/agendamento contra resposta manual ou redirecionamento precoce para landing page.",
+  "evidenceStrength": "Sinal operacional brasileiro forte, com resultado comercial quantitativo reportado por uma empresa e descrição detalhada do fluxo, mas sem grupo de controle, decomposição por canal ou auditoria independente do uplift.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2026-10-26",
+  "experimentHypothesis": "Para leads de alta intenção, um fluxo conversacional contínuo reduzirá tempo até resposta e elevará pagamento reconciliado ou agendamento confirmado sem aumentar cancelamento, reclamação ou necessidade de atendimento humano.",
+  "risks": "Não transpor práticas de crédito regulado para outras ofertas nem usar automação para pressão indevida. Restringir ofertas e negociações a parâmetros aprovados, preservar handoff humano e monitorar reclamações e consentimento.",
+  "limits": "O aumento de vendas foi informado pelo banco e ocorreu junto com ajustes e inclusão de canais adicionais; não prova que WhatsApp ou IA causaram o resultado, nem que o efeito generaliza para outros nichos, tickets ou jornadas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-11-whatsapp-agente-end-to-end-brasil.md",
+  "sourceTitle": "Fonte revisada — Agente conversacional end-to-end no WhatsApp com resultado operacional no Brasil",
+  "sourceSha256": "680204221bdb01bcdce1d83e787a7f99b6bb10364d4fd465db83e67ecb0782f0"
+}

@@ -17,6 +17,25 @@ type Props = {
   loading?: boolean;
 };
 
+/** Identifica a definição versionada da atividade sem confundir versão com número ordinal. */
+function activityVersion(
+  history: ProductProcessActivityExecutionHistory,
+  activity: ProductProcessActivityExecutionGroup,
+) {
+  if (activity.activityDefinitionId)
+    return `v${history.selectedProcessVersionNumber} · definição ID ${activity.activityDefinitionId}`;
+  const historicalVersions = [
+    ...new Set(
+      activity.tasks
+        .map((task) => task.processVersionNumber)
+        .filter((version): version is number => Number.isInteger(version)),
+    ),
+  ].sort((left, right) => right - left);
+  if (historicalVersions.length)
+    return `${historicalVersions.map((version) => `v${version}`).join(", ")} · definição histórica não informada`;
+  return "Não informada · definição histórica não disponível";
+}
+
 /** Formata apenas identidades recebidas do backend, sem inferir ciclo ou responsável. */
 function activityContext({
   history,
@@ -50,7 +69,9 @@ function activityContext({
 
   return [
     `Processo: ${processSequence || "Número não informado"} — ${history.processName}`,
+    `Versão do processo: v${history.selectedProcessVersionNumber} · definição ID ${history.selectedProcessDefinitionId}`,
     `Atividade: ${number} — ${activity.activityName}`,
+    `Versão da atividade: ${activityVersion(history, activity)}`,
     `Produto (nome interno): ${history.productInternalName?.trim() || "Não informado"} (ID: ${history.productId})`,
     `Agente (nome interno): ${agent}`,
     ...(executor === "HUMAN" || executor === "BACKEND"
@@ -68,7 +89,6 @@ function activityContext({
         ? [`Ciclo: ID ${effectiveCycleId} (número não informado)`]
         : []),
     ...(effectiveChainId ? [`Cadeia de valor: #${effectiveChainId}`] : []),
-    `Processo selecionado: ID ${history.selectedProcessDefinitionId} · versão ${history.selectedProcessVersionNumber}`,
     `Identificador da atividade: ${activity.activityId}`,
     ...(!activity.selectedVersionActivity
       ? ["Registro da atividade: histórico (fora da versão selecionada)"]
@@ -119,6 +139,7 @@ export default function ProductActivityContextCopyButton(props: Props) {
     "idle",
   );
   const pending = useRef(false);
+  const restoreFocus = useRef<HTMLElement | null>(null);
   const text = activityContext(props);
   const number = `${props.processSequence ? `${props.processSequence}.` : ""}${props.activity.sequenceNumber}`;
   useEffect(() => {
@@ -126,9 +147,19 @@ export default function ProductActivityContextCopyButton(props: Props) {
     const timer = window.setTimeout(() => setStatus("idle"), 3000);
     return () => window.clearTimeout(timer);
   }, [status]);
+  useEffect(() => {
+    if (status === "copying" || !restoreFocus.current) return;
+    const focused = restoreFocus.current;
+    restoreFocus.current = null;
+    if (focused.isConnected) focused.focus({ preventScroll: true });
+  }, [status]);
 
   async function handleCopy() {
     if (pending.current) return;
+    restoreFocus.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     pending.current = true;
     setStatus("copying");
     try {

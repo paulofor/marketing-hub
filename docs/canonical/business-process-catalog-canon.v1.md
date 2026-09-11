@@ -90,12 +90,15 @@ com resultado verificável. Quantidade de tarefas concluídas não substitui res
 - **Copiar contexto da atividade (10/09/2026):** cada card da tela de atividades do produto
   oferece um ícone de copiar junto ao título. Um clique copia processo (número e nome),
   atividade (número e nome), produto e agente pelos nomes internos e ciclo quando houver.
-  O texto inclui IDs, versão do processo e link para o próprio card, conservando a cadeia
-  e o ciclo efetivamente informados pelo backend; experimento e versão do produto acompanham
-  o ciclo. Ausências são explícitas, sem substituir nome interno por nome comercial nem
-  confundir responsável humano/backend com agente. A cópia confirma sucesso junto ao ícone
-  e oferece seleção manual em caso de bloqueio, inclusive no acesso HTTP. Essa ação não
-  executa atividade, cria tarefa nem altera o BPM.
+  O texto inclui em linhas próprias a versão e o ID da definição do processo e a versão e o
+  ID da definição da atividade, além do link para o próprio card, conservando a cadeia e o
+  ciclo efetivamente informados pelo backend; experimento e versão do produto acompanham o
+  ciclo. A atividade herda a versão imutável do processo que contém sua definição; registros
+  históricos sem definição disponível exibem essa ausência e nunca usam o número ordinal da
+  atividade como versão. Ausências são explícitas, sem substituir nome interno por nome
+  comercial nem confundir responsável humano/backend com agente. A cópia confirma sucesso
+  junto ao ícone e oferece seleção manual em caso de bloqueio, inclusive no acesso HTTP. Essa
+  ação não executa atividade, cria tarefa nem altera o BPM.
 - **Rastreabilidade:** tarefas e resultados se vinculam à atividade e à versão do processo dentro
   da cadeia, com produto, experimento e ciclo quando aplicáveis. Execução independente de produto
   continua pertencendo ao BPM da cadeia; não se deve inventar produto para iniciar descoberta.

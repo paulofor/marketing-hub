@@ -63,6 +63,7 @@ const history = {
     },
     {
       ...activity,
+      activityDefinitionId: null,
       activityId: "historical",
       activityName: "Validação anterior",
       activityOwnerName: "Psique",
@@ -183,6 +184,8 @@ async function paste(page) {
                   mode === "missing" ? null : "Mira";
                 response.activities[0].activityOwnerName =
                   mode === "missing" ? null : "Backend principal";
+                if (mode === "missing")
+                  response.activities[0].activityDefinitionId = null;
                 if (mode !== "missing")
                   response.activities[0].executionControl = {
                     executorType: "BACKEND",
@@ -277,10 +280,14 @@ async function paste(page) {
             "Processo: 3 — Protótipo, validação multiagente e aprovação do PDE\n",
           ),
         );
+        assert(copied.includes("Versão do processo: v8 · definição ID 70\n"));
         assert(
           copied.includes(
             "Atividade: 3.6 — Corrigir o protótipo a partir do parecer\n",
           ),
+        );
+        assert(
+          copied.includes("Versão da atividade: v8 · definição ID 900006\n"),
         );
         assert(
           copied.includes(
@@ -289,7 +296,7 @@ async function paste(page) {
         );
         assert(copied.includes("Ciclo: 2º ciclo (ID: 2)\nExperimento: #92\n"));
         assert(copied.includes(`Versão do produto: ${cycle.productVersion}\n`));
-        assert(copied.includes("Processo selecionado: ID 70 · versão 8"));
+        assert(!copied.includes("Processo selecionado:"));
         const link = copied.split("Link da atividade: ")[1];
         assert.equal(
           link,
@@ -322,9 +329,15 @@ async function paste(page) {
         await expect(historical.getByRole("status")).toHaveText(
           "Contexto copiado!",
         );
+        const historicalText = await paste(page);
         assert(
-          (await paste(page)).includes(
+          historicalText.includes(
             "Registro da atividade: histórico (fora da versão selecionada)",
+          ),
+        );
+        assert(
+          historicalText.includes(
+            "Versão da atividade: Não informada · definição histórica não disponível",
           ),
         );
 
@@ -426,6 +439,11 @@ async function paste(page) {
           missing.includes("Produto (nome interno): Não informado (ID: 10)"),
         );
         assert(missing.includes("Agente (nome interno): Não informado"));
+        assert(
+          missing.includes(
+            "Versão da atividade: Não informada · definição histórica não disponível",
+          ),
+        );
         assert(!missing.includes(history.productName));
 
         mode = "loading";

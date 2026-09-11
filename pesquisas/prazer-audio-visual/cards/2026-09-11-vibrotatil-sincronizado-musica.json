@@ -1,0 +1,18 @@
+{
+  "cardKey": "vibrotatil-sincronizado-musica-prazer",
+  "collection": "prazer-audio-visual",
+  "title": "Adicionar haptics sincronizados à música quando o dispositivo permitir",
+  "finding": "Em 18 adultos num simulador de direção autônoma, adicionar vibração sincronizada à mesma música elevou prazer em autorrelato e no índice EEG usado pelos autores, com padrão semelhante para arousal.",
+  "mechanism": "A vibração mapeada à energia e estrutura musical pode reforçar integração áudio-tátil e presença sem adicionar carga visual, desde que a sincronização seja temporalmente precisa.",
+  "commercialApplication": "Em dispositivos com haptics, comparar música isolada com vibração sincronizada de baixa intensidade mantendo visual e áudio constantes.",
+  "evidenceStrength": "Baixa-média: efeito dentro do participante e convergência entre autorrelato e EEG, mas N=18 e cenário automotivo específico limitam a generalização.",
+  "publishedOn": "2026-06-16",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Haptics sincronizados à música aumentarão prazer e presença sem elevar fadiga, distração ou abandono em comparação com música sem haptics.",
+  "risks": "Vibração excessiva, latência ou mapeamento inadequado podem causar desconforto, fadiga ou enjoo; acessibilidade e sensibilidade individual precisam ser consideradas.",
+  "limits": "Amostra pequena e simulador de direção; não demonstra generalização para vídeo mobile, wearables, games, interfaces comerciais ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-vibrotatil-sincronizado-musica.md",
+  "sourceTitle": "Fonte revisada — música com vibração sincronizada",
+  "sourceSha256": "cac8d03a5974ac6bbadd798caf75d0d36bc345cc0984726b758e744c8a9078ba"
+}

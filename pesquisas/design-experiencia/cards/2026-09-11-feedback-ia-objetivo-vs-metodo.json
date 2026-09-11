@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-ia-objetivo-vs-metodo",
+  "collection": "neuromarketing",
+  "title": "Separe erro de objetivo de erro de método no feedback ao agente",
+  "finding": "Pesquisa peer-reviewed de Neural Value Alignment mostrou que sinais distintos de erro de resultado/objetivo (RPE) e de estado/método (SPE) podem ser diferenciados e, em simulações, sua combinação acelera o alinhamento humano-IA mesmo com decodificação imperfeita.",
+  "mechanism": "Objetivo e forma de execução são fontes diferentes de desalinhamento. Tratar toda rejeição como um único sinal força o agente a reaprender intenção e método ao mesmo tempo; separar as duas causas pode direcionar a correção para a variável realmente errada.",
+  "commercialApplication": "No customer-agent e em agentes operacionais do Marketing Hub, após rejeição, undo ou correção, testar feedback de baixa fricção com duas rotas: objetivo entendido errado versus objetivo certo com execução errada. Usar a resposta para decidir se o agente deve rever intenção ou apenas plano, ferramenta, sequência ou apresentação.",
+  "evidenceStrength": "Forte para a dissociação neurocomputacional e moderada como inspiração de arquitetura: artigo peer-reviewed no IEEE Transactions on Cybernetics com EEG e simulações. A transposição para feedback textual/comercial é hipótese e ainda não foi testada no Marketing Hub.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Ao dividir feedback negativo em erro de objetivo versus erro de método, o agente reduzirá re-prompts e tempo de recuperação e aumentará conclusão da tarefa em relação a um feedback genérico, sem elevar fricção ou abandono.",
+  "risks": "Adicionar uma pergunta em toda falha pode aumentar atrito; classificações binárias podem simplificar problemas mistos; não inferir estado cognitivo sensível sem consentimento nem usar o estudo como justificativa para coleta biométrica.",
+  "limits": "O estudo usou EEG e simulações de alinhamento, não uma interface comercial. Não demonstra impacto em CTA, venda ou satisfação no Marketing Hub; a adaptação por feedback explícito deve ser validada separadamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-11-feedback-ia-objetivo-vs-metodo.md",
+  "sourceTitle": "Fonte revisada — Feedback de IA: objetivo errado vs. método errado",
+  "sourceSha256": "bfd59e5ccd156c1bb380426af9d94e06aa85e0babfe58d02e3862d5c1458d563"
+}

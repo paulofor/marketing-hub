@@ -1,0 +1,38 @@
+.product-process-activity-executions__activity-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.product-activity-context-copy {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 100%;
+  font-size: 0.85rem;
+}
+
+.product-activity-context-copy__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.product-activity-context-copy__error {
+  flex-basis: 100%;
+  min-width: 0;
+  color: #842029;
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+  .product-activity-context-copy__button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}

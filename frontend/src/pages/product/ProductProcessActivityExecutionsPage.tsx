@@ -37,6 +37,7 @@ import { SalesFlowTransitions } from "../../components/ProductSalesFlow";
 import { salesActivityStateLabels } from "../../api/learningCycle/salesFlow";
 import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
 import ProductLearningCycleContext from "./ProductLearningCycleContext";
+import ProductActivityContextCopyButton from "./ProductActivityContextCopyButton";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -524,12 +525,28 @@ export default function ProductProcessActivityExecutionsPage() {
                         ? " · versão histórica"
                         : ""}
                     </span>
-                    <h2>
-                      <BusinessProcessEntityName
-                        kind="activity"
-                        name={activity.activityName}
+                    <div className="product-process-activity-executions__activity-heading">
+                      <h2>
+                        <BusinessProcessEntityName
+                          kind="activity"
+                          name={activity.activityName}
+                        />
+                      </h2>
+                      <ProductActivityContextCopyButton
+                        key={`${data.productId}/${data.selectedProcessDefinitionId}/${effectiveCycleId}/${effectiveChainId}/${activity.activityId}`}
+                        history={data}
+                        activity={activity}
+                        processSequence={selectedProcessSequence}
+                        cycle={cycleContext.data}
+                        cycleId={effectiveCycleId}
+                        chainId={
+                          effectiveChainId ??
+                          valueChainPosition.data?.chainDefinitionId ??
+                          undefined
+                        }
+                        loading={valueChainPosition.isLoading}
                       />
-                    </h2>
+                    </div>
                     {activity.activityOwnerName ? (
                       <small>Responsável: {activity.activityOwnerName}</small>
                     ) : null}

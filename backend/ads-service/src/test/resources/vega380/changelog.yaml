@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: vega380-local-baseline
+      author: local
+      changes:
+        - sqlFile:
+            path: baseline.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+  - include:
+      file: db/changelog/changesets/2026-09-11-vega-private-prototype-v1.yaml

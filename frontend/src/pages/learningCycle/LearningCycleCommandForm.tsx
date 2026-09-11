@@ -117,6 +117,7 @@ export default function LearningCycleCommandForm({
   decisionProposal?: DecisionProposal;
   onUpdated: (cycle: LearningCycle) => void;
 }) {
+  const [registerPrototype, setRegisterPrototype] = useState(false);
   const mutation = useCycleMutation(cycle.productId, cycle.id);
   const [action, setAction] = useState(
     decisionProposal?.proposal?.action ?? cycle.commands[0]?.action ?? "",
@@ -172,6 +173,24 @@ export default function LearningCycleCommandForm({
               ? new Date(String(value)).toISOString()
               : String(value ?? "");
     });
+    if (action === "REWORK" && registerPrototype) {
+      evidence.privatePrototype = {
+        prototypeVersion: evidence.productVersion,
+        privateAccessUrl: form.get("privateAccessUrl"),
+        image: form.get("prototypeImage"),
+        evidenceReference: form.get("prototypeEvidence"),
+        observedAt: new Date(
+          String(form.get("prototypeObservedAt")),
+        ).toISOString(),
+        desktopValidated: form.has("desktopValidated"),
+        mobileValidated: form.has("mobileValidated"),
+        firstResultValidated: form.has("firstResultValidated"),
+        resumeValidated: form.has("resumeValidated"),
+        failuresValidated: form.has("failuresValidated"),
+        testDataExcluded: form.has("testDataExcluded"),
+        noExternalSideEffects: form.has("noExternalSideEffects"),
+      };
+    }
     if (returnRequired) {
       const [process, activity] = String(form.get("returnTarget")).split(":");
       Object.assign(evidence, {
@@ -321,6 +340,88 @@ export default function LearningCycleCommandForm({
             </select>
           </label>
         ) : null}
+        {action === "REWORK" && (
+          <fieldset className="border rounded p-3">
+            <legend className="h6">Protótipo executável desta versão</legend>
+            <label className="form-check">
+              <input
+                type="checkbox"
+                checked={registerPrototype}
+                onChange={(e) => setRegisterPrototype(e.target.checked)}
+                className="form-check-input"
+              />
+              A nova versão já foi implementada e testada
+            </label>
+            {registerPrototype && (
+              <>
+                <p className="small">
+                  Registre as provas da versão privada. Isso libera a correção
+                  para revisão; a homologação multiagente continua obrigatória.
+                </p>
+                <label className="form-label">
+                  URL privada sem parâmetros *
+                  <input
+                    className="form-control"
+                    type="url"
+                    name="privateAccessUrl"
+                    required
+                  />
+                </label>
+                <label className="form-label">
+                  Imagem Docker testada *
+                  <input
+                    className="form-control"
+                    name="prototypeImage"
+                    required
+                  />
+                </label>
+                <label className="form-label">
+                  Relatório dos testes *
+                  <textarea
+                    className="form-control"
+                    name="prototypeEvidence"
+                    required
+                    minLength={20}
+                  />
+                </label>
+                <label className="form-label">
+                  Data da verificação *
+                  <input
+                    className="form-control"
+                    type="datetime-local"
+                    name="prototypeObservedAt"
+                    required
+                  />
+                </label>
+                {[
+                  ["desktopValidated", "Desktop validado"],
+                  ["mobileValidated", "Celular validado"],
+                  [
+                    "firstResultValidated",
+                    "Primeiro resultado aplicável validado",
+                  ],
+                  ["resumeValidated", "Salvar e retomar validados"],
+                  ["failuresValidated", "Falhas e recuperação validadas"],
+                  ["testDataExcluded", "Dados de teste segregados"],
+                  [
+                    "noExternalSideEffects",
+                    "Sem cobrança, campanha ou gasto de mídia",
+                  ],
+                ].map(([key, label]) => (
+                  <label className="form-check" key={key}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      name={key}
+                      required
+                    />
+                    {label} *
+                  </label>
+                ))}
+              </>
+            )}
+          </fieldset>
+        )}
         {fields.map(([key, label, type]) => (
           <label
             className={

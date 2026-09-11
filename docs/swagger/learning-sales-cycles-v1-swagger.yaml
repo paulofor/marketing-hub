@@ -272,6 +272,13 @@ components:
             (gate canônico real do mesmo produto/versão), journeyEvidence, humanObservationEvidence opcional,
             instrumentationVerified=true. AUTHORIZATION: confirmed=true, productVersion, budgetLimitBrl.
             REWORK: productVersion nova, rootCause, returnProcessId, returnActivityId.
+            REWORK pode incluir privatePrototype após implementação e testes locais da nova versão:
+            prototypeVersion igual a productVersion, privateAccessUrl HTTPS sem parâmetros/fragmento,
+            image, evidenceReference com ao menos 20 caracteres, observedAt ISO-8601 recente (7 dias),
+            desktopValidated=true, mobileValidated=true, firstResultValidated=true, resumeValidated=true,
+            failuresValidated=true, testDataExcluded=true e noExternalSideEffects=true. A prova fica
+            vinculada ao evento e à versão do ciclo; não altera o cadastro comercial nem substitui
+            homologação técnica, validação humana, autorização de mídia ou aprovação comercial.
             ADJUST: rootCause, learning, nextHypothesis, returnProcessId, returnActivityId.
             FIX_MEASUREMENT: rootCause, correctionPlan. SCALE: scaleHypothesis.
             AUTHORIZE_SCALE: confirmed, productVersion, budgetLimitBrl novo, windowEnd novo.

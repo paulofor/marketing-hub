@@ -64,7 +64,15 @@ public class PdeTechnicalHomologationReadinessProvider
         return blocked("O alvo da homologação diverge do produto ou da passagem selecionada.");
       }
       String expectedReference = "product:" + product.getId() + "@agent-validation-v1";
-      if (!expectedReference.equals(sourceReference)) {
+      JsonNode lineage = target.pdeContext() == null ? null : target.pdeContext().path("lineage");
+      boolean cycleReference =
+          target.experimentId() != null
+              && ("experiment:" + target.experimentId()).equals(sourceReference)
+              && lineage != null
+              && lineage.path("learningCycleId").asLong() > 0
+              && lineage.path("experimentId").asLong() == target.experimentId()
+              && lineage.path("productId").asLong() == target.productId();
+      if (!expectedReference.equals(sourceReference) && !cycleReference) {
         return blocked(
             "Esta passagem ainda não possui um contrato de homologação compatível com o executor. "
                 + "Conclua a integração do protótipo com o ciclo antes de abrir outra tarefa; "

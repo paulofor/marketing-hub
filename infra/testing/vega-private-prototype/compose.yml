@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:5.7
+    command: ["--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_DATABASE: vega_local
+      MYSQL_USER: vega
+      MYSQL_PASSWORD: vega-local-only
+      MYSQL_ROOT_PASSWORD: root-vega-local-only
+    ports: ["18316:3306"]
+    tmpfs: ["/var/lib/mysql"]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot-vega-local-only"]
+      interval: 3s
+      timeout: 3s
+      retries: 30

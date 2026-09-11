@@ -1,0 +1,13 @@
+FROM node:22-alpine AS build
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY vega-private ./vega-private
+COPY vite.vega.config.ts ./
+RUN npx vite build --config vite.vega.config.ts
+FROM nginx:1.27-alpine
+COPY --from=build /build/dist-vega /usr/share/nginx/html/vega-private
+COPY vega-private/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY vega-private/version-diagnostics.json /usr/share/nginx/html/vega-private/version-diagnostics.json
+EXPOSE 80
+HEALTHCHECK CMD wget -qO- http://127.0.0.1/healthz || exit 1

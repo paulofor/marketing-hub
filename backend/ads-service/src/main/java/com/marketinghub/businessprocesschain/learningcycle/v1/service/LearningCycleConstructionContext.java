@@ -27,6 +27,9 @@ public class LearningCycleConstructionContext {
   private final AgentTaskRepository tasks;
   private final ObjectMapper mapper;
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private LearningCyclePrototypeContext prototypeContext;
+
   /** Resolve construção por experimento sem substituir o cadastro ou a experiência histórica. */
   @Transactional(readOnly = true)
   public Optional<AgentTaskTargetResponse> resolve(
@@ -38,6 +41,14 @@ public class LearningCycleConstructionContext {
     var product = experiment.getProduct();
     if (product == null || !Objects.equals(cycle.getProductId(), product.getId()))
       throw new IllegalStateException("Ciclo e experimento pertencem a produtos diferentes.");
+    JsonNode privateContext = context(cycle);
+    String privateUrl =
+        privateContext == null
+            ? null
+            : privateContext
+                .path("privatePrototypeAcceptance")
+                .path("privateAccessUrl")
+                .asText(null);
     return Optional.of(
         new AgentTaskTargetResponse(
             reference,
@@ -47,12 +58,12 @@ public class LearningCycleConstructionContext {
             product.getName(),
             product.getInternalName(),
             cycle.getProductVersion(),
-            null,
+            privateUrl,
             null,
             null,
             null,
             experiment.getUnitPrice(),
-            context(cycle)));
+            privateContext));
   }
 
   /**
@@ -100,6 +111,16 @@ public class LearningCycleConstructionContext {
       context.put("contractVersion", "PDE_HARNESS_PLAN_V1");
       context.put("experienceVersion", cycle.getProductVersion());
       context.put("status", "PLANNED");
+      if (prototypeContext != null) {
+        prototypeContext
+            .resolve(cycle)
+            .ifPresent(
+                acceptance -> {
+                  context.set("privatePrototypeAcceptance", acceptance);
+                  context.put("status", "PRIVATE_PROTOTYPE_READY");
+                  context.set("implementationEvidence", acceptance);
+                });
+      }
       context
           .putObject("lineage")
           .put("learningCycleId", cycle.getId())

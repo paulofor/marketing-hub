@@ -53,6 +53,9 @@ public class PdeAgentValidationReworkReadinessProvider
   private final AgentTaskRepository tasks;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.agenttask.AgentTaskTargetContextProvider taskTargets;
+
   /** Configura a ordem do grafo, as tentativas auditadas e o leitor dos contratos. */
   public PdeAgentValidationReworkReadinessProvider(
       ProductProcessActivityPredecessorService predecessors,
@@ -86,7 +89,7 @@ public class PdeAgentValidationReworkReadinessProvider
       return blocked("A atividade não pertence ao contrato de retrabalho da validação PDE.");
     }
     List<AgentTask> history = processHistory(sourceReference);
-    String expectedVersion = expectedPrototypeVersion(product);
+    String expectedVersion = expectedPrototypeVersion(product, sourceReference);
     Optional<AgentTask> rejection = unresolvedFunctionalRejection(history, expectedVersion);
     if (CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId())) {
       return correctionReadiness(correctionSource(history, expectedVersion));
@@ -128,7 +131,7 @@ public class PdeAgentValidationReworkReadinessProvider
       String sourceReference) {
     if (!supports(process, activityDefinition)) return false;
     List<AgentTask> history = processHistory(sourceReference);
-    String version = expectedPrototypeVersion(product);
+    String version = expectedPrototypeVersion(product, sourceReference);
     String activityId = activityDefinition.getActivityId();
     boolean currentBlock =
         latestCurrentProcessTask(history, process, activityId)
@@ -296,8 +299,18 @@ public class PdeAgentValidationReworkReadinessProvider
         .toList();
   }
 
-  /** Lê a versão aceita do contrato do produto e falha fechada diante de JSON inválido. */
-  private String expectedPrototypeVersion(Product product) {
+  /** Lê a versão do ciclo explícito ou a aceitação privada original sem misturar passagens. */
+  private String expectedPrototypeVersion(Product product, String sourceReference) {
+    if (product == null) return null;
+    if (taskTargets != null
+        && sourceReference != null
+        && sourceReference.startsWith("experiment:")) {
+      return taskTargets
+          .resolve(sourceReference, "pde-construction-approval")
+          .filter(target -> java.util.Objects.equals(product.getId(), target.productId()))
+          .map(com.marketinghub.agenttask.AgentTaskTargetResponse::experienceVersion)
+          .orElse(null);
+    }
     if (product == null || product.getValidationDefinitionJson() == null) return null;
     try {
       return text(

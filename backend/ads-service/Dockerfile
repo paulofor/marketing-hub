@@ -12,7 +12,9 @@ ENV BACKEND_BUILD_BRANCH=${BACKEND_BUILD_BRANCH}
 WORKDIR /app
 
 # Install curl for healthcheck probes and socat to forward 80 -> 8000 inside the container
-RUN apt-get update \
+# Índices e downloads são transitórios; não ocupam disco nem camadas da imagem final.
+RUN --mount=type=tmpfs,target=/var/cache/apt --mount=type=tmpfs,target=/var/lib/apt/lists \
+    apt-get update \
     && apt-get install -y --no-install-recommends curl socat \
     && rm -rf /var/lib/apt/lists/*
 

@@ -1075,6 +1075,24 @@
   color: #174f9b;
 }
 
+.product-process-situation__running-icon {
+  flex-shrink: 0;
+  animation: product-process-activity-spin 1s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes product-process-activity-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-process-situation__running-icon {
+    animation: none;
+  }
+}
+
 .product-process-situation__process-state--pending,
 .product-process-situation__activity-state--pending,
 .product-process-situation__activity-state--not_started {

@@ -12,21 +12,18 @@ export type ProductProcessActivityExecutionCommand = {
   decision?: ProductProcessActivityHumanDecision;
 };
 
-/** Consulta as atividades e tarefas auditáveis de um produto no processo selecionado. */
-export function useProductProcessActivityExecutions(
+/** Lê a orientação oficial das atividades sem iniciar acompanhamento periódico de tarefas. */
+export function useProductProcessActivityHistory(
   productId?: number,
   processDefinitionId?: number,
   learningCycleId?: number,
   chainId?: number,
 ) {
-  const queryClient = useQueryClient();
-  const previousProgress = useRef<string | undefined>(undefined);
-  const lastRefreshTick = useRef<string | undefined>(undefined);
   const query = new URLSearchParams();
   if (learningCycleId) query.set("learningCycleId", String(learningCycleId));
   if (chainId) query.set("chainId", String(chainId));
   const queryString = query.toString();
-  const history = useQuery({
+  return useQuery({
     queryKey: [
       "products",
       productId,
@@ -45,6 +42,24 @@ export function useProductProcessActivityExecutions(
         )
       ).data,
   });
+}
+
+/** Consulta as atividades auditáveis e acompanha revisões das tarefas do processo selecionado. */
+export function useProductProcessActivityExecutions(
+  productId?: number,
+  processDefinitionId?: number,
+  learningCycleId?: number,
+  chainId?: number,
+) {
+  const queryClient = useQueryClient();
+  const previousProgress = useRef<string | undefined>(undefined);
+  const lastRefreshTick = useRef<string | undefined>(undefined);
+  const history = useProductProcessActivityHistory(
+    productId,
+    processDefinitionId,
+    learningCycleId,
+    chainId,
+  );
   const sourceReference = history.data?.currentExecutionReference;
   const progress = useQuery({
     queryKey: [

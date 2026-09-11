@@ -46,9 +46,13 @@ describe("Card do produto com ciclo", () => {
     expect(axios.get).toHaveBeenCalledTimes(1);
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-process-chains/learning-cycles/v1/products/4/process-context",
-      { params: { processDefinitionId: 75, cycleId: 2, chainId: 14 } },
+      {
+        params: { processDefinitionId: 75, cycleId: 2, chainId: 14 },
+        signal: expect.any(AbortSignal),
+        timeout: 45000,
+      },
     );
-    expect(screen.getByText("Pendência do ciclo")).toBeVisible();
+    expect(screen.getByText("Atividade com pendência")).toBeVisible();
     expect(screen.getByText(/Processo 3 — Protótipo/)).toBeVisible();
     expect(screen.getByText("Responsável: Psique")).toBeVisible();
     expect(
@@ -192,7 +196,7 @@ describe("Card do produto com ciclo", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Tentar novamente" }),
     );
-    expect(await screen.findByText("Pendência do ciclo")).toBeVisible();
+    expect(await screen.findByText("Atividade com pendência")).toBeVisible();
     expect(axios.get).toHaveBeenCalledTimes(2);
   });
 
@@ -211,7 +215,7 @@ describe("Card do produto com ciclo", () => {
   it("não oculta falha de atualização atrás de uma resposta em cache", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: contextFixture });
     const { client } = renderCard();
-    await screen.findByText("Pendência do ciclo");
+    await screen.findByText("Atividade com pendência");
     vi.mocked(axios.get).mockRejectedValue(new Error("Falha ao atualizar"));
     await client.invalidateQueries({ queryKey: ["cycle-process-context"] });
     expect(await screen.findByRole("alert")).toBeVisible();
@@ -228,6 +232,9 @@ describe("Card do produto com ciclo", () => {
     } as Position;
     renderCard(position);
     await waitFor(() => expect(screen.getByText("Etapa 6 de 6")).toBeVisible());
-    expect(axios.get).not.toHaveBeenCalled();
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/business-processes/75/products/10/activity-executions?chainId=14",
+      { signal: expect.any(AbortSignal), timeout: 45000 },
+    );
   });
 });

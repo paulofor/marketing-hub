@@ -18,7 +18,7 @@ describe("ProductProcessActivityExecutionPanel", () => {
     onExecute.mockReset();
   });
 
-  it("offers one action and follows the backend recovery destination", () => {
+  it("navigates to the recovery activity without creating its task in another card", () => {
     const activity = blockedHomologation();
     renderPanel(activity);
     expect(
@@ -26,15 +26,15 @@ describe("ProductProcessActivityExecutionPanel", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText("Responsável: Dédalo")).toBeVisible();
     fireEvent.click(
-      screen.getByRole("button", { name: "Criar tarefa de correção" }),
+      screen.getByRole("link", { name: /Ir para.*Corrigir o protótipo/ }),
     );
-    expect(onExecute).toHaveBeenCalledTimes(1);
-    expect(onExecute).toHaveBeenCalledWith({
-      activityId: "prototypeCorrection",
-    });
+    expect(onExecute).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Criar tarefa de correção" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("prevents duplicate recovery and displays the pending request", () => {
+  it("keeps navigation available while the recovery task is being created at its origin", () => {
     render(
       <MemoryRouter>
         <ProductProcessActivityExecutionPanel
@@ -46,10 +46,8 @@ describe("ProductProcessActivityExecutionPanel", () => {
         />
       </MemoryRouter>,
     );
-    const button = screen.getByRole("button", { name: "Criando tarefa..." });
-    expect(button).toBeDisabled();
-    expect(button.querySelector(".spinner-border")).not.toBeNull();
-    fireEvent.click(button);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: /Ir para.*Corrigir/ }));
     expect(onExecute).not.toHaveBeenCalled();
   });
 
@@ -60,12 +58,54 @@ describe("ProductProcessActivityExecutionPanel", () => {
       "A correção já possui execução ativa neste ciclo.";
     renderPanel(activity);
     expect(
-      screen.getByRole("button", { name: "Criar tarefa de correção" }),
-    ).toBeDisabled();
-    expect(
-      screen.getByText("A correção já possui execução ativa neste ciclo."),
+      screen.getByRole("link", { name: /Ir para.*Corrigir/ }),
     ).toBeVisible();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
+
+  it.each(["PENDING", "IN_PROGRESS", "BLOCKED", "COMPLETED"])(
+    "keeps the own task and never presents the %s recovery task as its execution",
+    (status) => {
+      const activity = blockedHomologation();
+      activity.recoveryAction!.latestTask = {
+        taskId: 385,
+        status,
+        agentName: "Dédalo",
+        createdAt: "2026-09-11T03:37:31Z",
+      };
+      render(
+        <MemoryRouter
+          initialEntries={[
+            "/products/4/value-chain-history/processes/70/activities?learningCycleId=2&chainId=14#activity-psiqueAdherent",
+          ]}
+        >
+          <ProductProcessActivityExecutionPanel
+            activity={activity}
+            productId={4}
+            processSequence="3"
+            pending={false}
+            onExecute={onExecute}
+            currentTask={{
+              taskId: 384,
+              status: "BLOCKED",
+              agentName: "Psique",
+              createdAt: "2026-09-11T03:22:42Z",
+            }}
+          />
+        </MemoryRouter>,
+      );
+      expect(screen.getByText("Tarefa #384 · Bloqueada")).toBeVisible();
+      expect(screen.queryByText(/#385/)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("link", {
+          name: "Ir para 3.6 — Corrigir o protótipo a partir do parecer",
+        }),
+      ).toHaveAttribute(
+        "href",
+        "/products/4/value-chain-history/processes/70/activities?learningCycleId=2&chainId=14#activity-prototypeCorrection",
+      );
+    },
+  );
 
   it("does not invent a recovery command when the backend has no destination", () => {
     const activity = blockedHomologation();
@@ -561,6 +601,7 @@ describe("ProductProcessActivityExecutionPanel", () => {
       recoveryAction: {
         activityId: "prototypeCorrection",
         activityName: "Corrigir o protótipo a partir do parecer",
+        sequenceNumber: 6,
         ownerName: "Dédalo",
         actionLabel: "Criar tarefa de correção",
         actionAvailable: true,

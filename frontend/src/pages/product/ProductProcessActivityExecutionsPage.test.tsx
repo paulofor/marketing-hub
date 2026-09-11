@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import axios from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ProductProcessActivityExecutionsPage from "./ProductProcessActivityExecutionsPage";
 import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
 
@@ -383,8 +383,9 @@ function renderPage(
 }
 
 describe("ProductProcessActivityExecutionsPage", () => {
+  afterEach(cleanup);
+
   beforeEach(() => {
-    cleanup();
     vi.clearAllMocks();
     vi.mocked(useCycleProcessContext).mockReturnValue({
       data: null,
@@ -657,7 +658,7 @@ describe("ProductProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText(/Tarefa #243/)).toHaveLength(4);
     expect(
-      screen.getAllByText("Nenhuma tarefa registrada para este produto."),
+      screen.getAllByText("Nenhuma tarefa registrada para esta atividade."),
     ).toHaveLength(2);
     expect(
       screen.getByRole("link", { name: "Histórico de atividades" }),

@@ -397,7 +397,7 @@ try {
     await expect(page.getByText(/Tarefa #243/).first()).toBeVisible();
     await expect(page.getByText("gpt-5.6-sol").first()).toBeVisible();
     await expect(
-      page.getByText("Nenhuma tarefa registrada para este produto.").first(),
+      page.getByText("Nenhuma tarefa registrada para esta atividade.").first(),
     ).toBeVisible();
     await page.getByText("Visualizar JSON em árvore").first().click();
     await expect(page.getByText("summary:").first()).toBeVisible();

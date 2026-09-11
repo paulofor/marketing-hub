@@ -65,6 +65,9 @@ export default function ProductProcessTaskTracking({
       ) : null}
       {task && !awaitingRead ? (
         <div className="product-process-task-tracking__task">
+          <small className="d-block text-body-secondary mb-1">
+            Tarefa desta atividade
+          </small>
           <p
             className="mb-1 d-flex align-items-center gap-2"
             role="status"

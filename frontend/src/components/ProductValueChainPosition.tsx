@@ -1,6 +1,7 @@
 import { ArrowRight, History, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
 import ProductValueChainCycleSummary from "./ProductValueChainCycleSummary";
+import ProductNextActivitySummary from "./ProductNextActivitySummary";
 import { sortProductStageMeasurements } from "../api/product/useProductValueChainPositions";
 import type {
   ProductStageMeasurement,
@@ -226,6 +227,12 @@ export default function ProductValueChainPosition({
       className={`product-value-chain-position${stateClass}${compactClass}`}
       aria-label={`Posição de ${productName} na cadeia de valor`}
     >
+      {identified && position.productId === historyProductId ? (
+        <ProductNextActivitySummary
+          position={position}
+          isPositionError={isError}
+        />
+      ) : null}
       <div className="product-value-chain-position__heading">
         <span>
           <Workflow size={16} aria-hidden="true" />

@@ -262,6 +262,11 @@ cobertura. Resultado técnico embutido em comentário, prompt ou JSON não concl
 instância ou cobertura persistida. Ausência de ambos deve aparecer como atividade não iniciada, sem
 inferir sucesso a partir do estado comercial, da landing, do experimento ou de outra tarefa.
 
+Nos cards e no resumo de atividades, o ícone de **Em execução** gira apenas enquanto o contrato
+informar `IN_PROGRESS`. O rótulo permanece legível e estático; os demais estados não giram.
+A preferência de movimento reduzido do navegador desativa a animação, preservando ícone e texto.
+O movimento apresenta o estado recebido, sem indicar percentual de progresso nem avanço do BPM.
+
 Quando uma atividade ou um subprocesso atingir o objetivo, a mesma resposta do backend deve expor
 o próximo passo oficial da composição publicada. Se o subprocesso concluído retornar ao processo
 pai, a próxima atividade do pai deve aparecer como continuação prevista, sem fabricar entrada,
@@ -299,10 +304,17 @@ atividade sem saída operacional quando todos os demais critérios permitirem a 
 
 ### Controle padronizado de execução das atividades
 
-O comando assíncrono deve confirmar a tarefa no próprio card em que ocorreu o clique, com
-número, responsável e andamento automático. Quando o backend oferecer recuperação, ela é
-a única ação principal do card bloqueado. Erros de envio e de atualização aparecem junto ao
-comando; reler o histórico não reposiciona a página nem apaga a última situação conhecida.
+O comando assíncrono deve confirmar a tarefa no card da atividade responsável, com número,
+responsável e andamento automático. Por ajuste de 2026-09-11 (Vega, tarefa 385), a referência de
+recuperação é uma dependência, não uma tarefa da atividade que aguarda. O card dependente oferece
+um link para o número, nome e responsável da atividade de correção, preservando produto, processo,
+ciclo e cadeia. Criação, confirmação e acompanhamento da correção ficam somente na atividade de
+origem. Tarefas e pareceres próprios dos cards dependentes continuam visíveis; ausência de tarefa
+continua explícita. Referências de recuperação não aumentam contagem, custo ou conclusão e deixam
+de ser oferecidas quando o objetivo da correção estiver atingido. Isso não reclassifica coberturas
+compostas históricas realmente persistidas.
+Erros de envio e de atualização aparecem junto ao comando; reler o histórico não reposiciona a
+página nem apaga a última situação conhecida.
 `GET /api/business-processes/{processDefinitionId}/products/{productId}/execution-progress`
 consulta somente ID, estado e instante de alteração das tarefas, filtrados pela referência
 exata e pela versão do processo. O backend valida a pertença da referência ao produto. A tela

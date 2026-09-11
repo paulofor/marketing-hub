@@ -89,20 +89,23 @@ alvo, e o contrato do ciclo precisa ser compatível com o executor antes de libe
 
 Por ajuste de 2026-09-10, uma falha `TECHNICAL_FAILURE` da atividade
 `technicalHomologation` também disponibiliza **Criar tarefa de correção** para Dédalo.
-O card bloqueado deve expor esse comando com destino, responsável e disponibilidade
+O card bloqueado deve indicar essa correção com destino, responsável e disponibilidade
 fornecidos pelo backend, usando a mesma referência de produto/ciclo. O modo legado
 `ON_FUNCTIONAL_REJECTION` inclui essa recuperação técnica da homologação; falhas técnicas
 de outras atividades não são promovidas a parecer funcional. A tentativa original permanece
 na auditoria. Uma homologação posterior aprovada supera a falha técnica; uma rejeição
 funcional continua exigindo a correção versionada conforme as regras abaixo.
 
-Por decisão de 2026-09-10, a atividade bloqueada apresenta **uma única ação principal**:
-o comando de correção quando ele for o caminho vigente, ou o comando da própria atividade
-quando seus requisitos estiverem satisfeitos. Não apresentar simultaneamente uma retentativa
-inoperante de homologação e um botão de correção. O clique deve confirmar a solicitação no
-próprio card e mostrar a tarefa criada, seu responsável e sua situação, com atualização
-automática até o resultado persistido. Falhas de envio ou de acompanhamento também ficam
-visíveis junto à ação; o usuário não precisa procurar mensagens no topo nem recarregar a página.
+Por decisão de 2026-09-10, refinada em 2026-09-11 após a tarefa 385 do Vega, a atividade bloqueada
+apresenta **uma única ação principal**: um link para a atividade de correção quando esse for o
+caminho vigente, ou o comando da própria atividade quando seus requisitos estiverem satisfeitos.
+O link identifica número, nome e responsável; preserva produto, processo, cadeia e ciclo.
+A tarefa de Dédalo pertence somente a `prototypeCorrection`; os cenários de Psique e a revisão
+de Têmis mantêm tarefas, resultados e estados próprios. A referência `recoveryAction.latestTask`
+nunca substitui o acompanhamento próprio nem transforma um card sem tarefa em execução.
+Criar e acompanhar a correção acontece somente no card responsável, com confirmação, número,
+agente e atualização automática até o resultado persistido. Falhas de envio ou de acompanhamento
+também ficam visíveis junto à ação; o usuário não precisa procurar mensagens no topo nem recarregar.
 Uma tarefa já ativa é acompanhada sem duplicação. Reabrir a página restaura esse acompanhamento
 pelo backend. A tarefa encerrada e seu motivo continuam visíveis, com a auditoria sob demanda.
 

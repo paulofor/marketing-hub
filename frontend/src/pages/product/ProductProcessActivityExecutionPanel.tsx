@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  ArrowRight,
   Bot,
   CheckCircle2,
   Loader2,
@@ -8,7 +9,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { ProductProcessActivityExecutionCommand } from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type {
   ProductProcessActivityExecutionGroup,
@@ -23,6 +24,7 @@ import PrivateReadingAssistant from "./PrivateReadingAssistant";
 type Props = {
   activity: ProductProcessActivityExecutionGroup;
   productId: number;
+  processSequence?: string;
   pending: boolean;
   pendingActivityId?: string;
   onExecute: (command: ProductProcessActivityExecutionCommand) => void;
@@ -51,6 +53,7 @@ const privateReadingSignals = [
 export default function ProductProcessActivityExecutionPanel({
   activity,
   productId,
+  processSequence,
   pending,
   pendingActivityId,
   onExecute,
@@ -58,16 +61,18 @@ export default function ProductProcessActivityExecutionPanel({
   trackingError,
   currentTask,
 }: Props) {
+  const location = useLocation();
   const control = activity.executionControl;
   if (!control) return null;
   const executing = pending && pendingActivityId === activity.activityId;
   const recovery = activity.recoveryAction;
-  const recovering = pending && pendingActivityId === recovery?.activityId;
   const controlCompleted = activity.operationalState === "COMPLETED";
-  const trackedTask = recovery ? recovery.latestTask : currentTask;
+  const recoveryLabel = recovery
+    ? `${recovery.sequenceNumber ? `${processSequence ? `${processSequence}.` : ""}${recovery.sequenceNumber} — ` : ""}${recovery.activityName}`
+    : "";
   const waitingForTask = Boolean(
     feedback?.taskIds?.length &&
-      !feedback.taskIds.includes(trackedTask?.taskId ?? -1),
+      !feedback.taskIds.includes(currentTask?.taskId ?? -1),
   );
 
   return (
@@ -78,12 +83,14 @@ export default function ProductProcessActivityExecutionPanel({
       <header className="product-process-activity-control__header">
         <div>
           <span className="product-process-activity-control__eyebrow">
-            Como executar
+            {recovery ? "Antes de continuar" : "Como executar"}
           </span>
           <h3>
-            {control.interactionType === "SUBPROCESS"
-              ? "Subprocesso"
-              : executorLabels[control.executorType]}
+            {recovery
+              ? "Correção em outra atividade"
+              : control.interactionType === "SUBPROCESS"
+                ? "Subprocesso"
+                : executorLabels[control.executorType]}
           </h3>
         </div>
         <ExecutionIcon executorType={control.executorType} />
@@ -91,7 +98,7 @@ export default function ProductProcessActivityExecutionPanel({
 
       <p className="product-process-activity-control__description">
         {recovery
-          ? "Solicite a correção e acompanhe a tarefa aqui. O resultado e os eventuais impedimentos aparecem abaixo."
+          ? "A criação e o acompanhamento da tarefa de correção ficam na atividade responsável abaixo. Cada atividade mantém suas próprias tarefas e resultados."
           : control.description}
       </p>
 
@@ -155,32 +162,28 @@ export default function ProductProcessActivityExecutionPanel({
         ) : null)}
 
       {recovery ? (
-        <aside className="mt-3" aria-label="Resolver bloqueio da atividade">
-          <strong>{recovery.activityName}</strong>
+        <aside
+          className="mt-3"
+          aria-label="Atividade responsável pela correção"
+        >
+          <strong>{recoveryLabel}</strong>
           <p className="mb-2">Responsável: {recovery.ownerName}</p>
-          {!recovery.latestTask ? <p>{recovery.availabilityReason}</p> : null}
-          <button
-            className="btn btn-primary d-inline-flex align-items-center gap-2"
-            type="button"
-            disabled={pending || waitingForTask || !recovery.actionAvailable}
-            onClick={() => onExecute({ activityId: recovery.activityId })}
+          <Link
+            className="btn btn-primary d-inline-flex align-items-center gap-2 text-wrap"
+            to={{
+              pathname: location.pathname,
+              search: location.search,
+              hash: `#activity-${recovery.activityId}`,
+            }}
           >
-            {recovering ? (
-              <Loader2
-                className="spinner-border spinner-border-sm"
-                size={16}
-                aria-hidden="true"
-              />
-            ) : (
-              <PlayCircle size={17} aria-hidden="true" />
-            )}
-            {recovering ? "Criando tarefa..." : recovery.actionLabel}
-          </button>
+            <ArrowRight size={17} aria-hidden="true" />
+            Ir para {recoveryLabel}
+          </Link>
         </aside>
       ) : null}
 
       <ProductProcessTaskTracking
-        task={trackedTask}
+        task={currentTask}
         feedback={feedback}
         trackingError={trackingError}
       />

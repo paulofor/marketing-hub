@@ -4,6 +4,21 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-BPM-TAREFA-DE-CORRECAO-REPETIDA — dependência parece execução de outra atividade
+
+- **Data:** 2026-09-11. Vega, ciclo 2, experimento 92, tarefa 385.
+- **Evidência:** MCP confirmou vínculo único da tarefa com `prototypeCorrection`, sem cobertura
+  adicional. HTTP e tela repetiam `recoveryAction.latestTask` nos quatro cards dependentes,
+  inclusive 3.8–3.10 com zero tarefas; 3.7 tem o parecer próprio 384.
+- **Causa-raiz:** o painel substituía o acompanhamento próprio pela tentativa de recuperação e
+  oferecia o comando de outra atividade em vários cards. O resolvedor também oferecia correção
+  concluída quando restava histórico.
+- **Correção:** comando e acompanhamento na atividade responsável; dependentes recebem link com
+  número, nome, agente e contexto preservados. Correção concluída deixa de ser pendência. Tarefas,
+  instâncias, status, contagens e custos permanecem auditáveis sem duplicação.
+- **Prevenção:** contratos Java de recuperação e isolamento, ciclo de comando/fila/callback,
+  testes de tela e navegação desktop/mobile. Registro: `docs/homologacao/tarefa-385-atividade-origem-v1.md`.
+
 ## LOOP-PDE-HOMOLOGACAO-SEM-PROTOTIPO — especificação libera teste sem alvo executável
 
 - **Data:** 2026-09-10. Vega, ciclo #2, experimento #92, tarefa #377.

@@ -1,7 +1,8 @@
-import { ArrowRight, History, RefreshCw } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { SalesFlow } from "../api/learningCycle/salesFlow";
 import { useCycleProcessContext } from "../api/learningCycle/useCycleProcessContext";
+import ProductNextActivityLink from "./ProductNextActivityLink";
 import "./ProductValueChainCycleSummary.css";
 
 const cycleStatuses: Record<string, string> = {
@@ -34,8 +35,6 @@ export default function ProductValueChainCycleSummary({
   const unavailable = query.isError || isPositionError || !consistent;
   const current = context?.status === "OPEN";
   const work = current ? context?.nextWork : null;
-  const blocked = work?.state === "BLOCKED";
-  const running = work?.state === "IN_PROGRESS";
   const previousExperiments = [
     ...new Set(
       context?.previousLearning.map((item) => item.experimentId) ?? [],
@@ -60,7 +59,7 @@ export default function ProductValueChainCycleSummary({
         · Experimento #{flow.experimentId}
       </h3>
 
-      {query.isLoading ? (
+      {query.isLoading && !query.isFetched ? (
         <p role="status">
           Consultando a atividade e o aprendizado deste ciclo...
         </p>
@@ -83,39 +82,8 @@ export default function ProductValueChainCycleSummary({
         </div>
       ) : (
         <>
-          <p className="product-cycle-summary__stage">
-            {current
-              ? context.stageLabel
-              : cycleStatuses[context.status] || "Ciclo encerrado"}
-          </p>
           {work ? (
-            <div
-              className={`product-cycle-summary__work${blocked ? " product-cycle-summary__work--blocked" : ""}`}
-            >
-              <span className="product-cycle-summary__label">
-                {blocked
-                  ? "Pendência do ciclo"
-                  : running
-                    ? "Atividade em execução"
-                    : "Próxima atividade"}
-              </span>
-              <strong>
-                Processo {work.processNumber} — {work.processName}
-              </strong>
-              <p>
-                {work.processNumber}.{work.activityNumber} — {work.activityName}
-              </p>
-              <small>Responsável: {work.responsible}</small>
-              <p>{work.reason}</p>
-              <Link className="btn btn-primary btn-sm" to={work.url}>
-                {blocked
-                  ? "Ver atividade e pendência"
-                  : running
-                    ? "Acompanhar atividade"
-                    : "Abrir próxima atividade"}
-                <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
+            <ProductNextActivityLink {...work} />
           ) : (
             <p>
               {current
@@ -123,6 +91,11 @@ export default function ProductValueChainCycleSummary({
                 : "Esta passagem está encerrada. Consulte a decisão e a continuidade no histórico do ciclo."}
             </p>
           )}
+          <p className="product-cycle-summary__stage">
+            {current
+              ? context.stageLabel
+              : cycleStatuses[context.status] || "Ciclo encerrado"}
+          </p>
           <details className="product-cycle-summary__details">
             <summary>Melhoria e hipótese desta passagem</summary>
             <p>{context.mainChange || "Melhoria ainda não registrada."}</p>
@@ -173,11 +146,13 @@ export default function ProductValueChainCycleSummary({
       )}
 
       <Link
-        className="product-cycle-summary__cycle-link"
+        className={`product-cycle-summary__cycle-link${consistent && !unavailable && !work ? " btn btn-primary" : ""}`}
         to={consistent ? context.cycleUrl : flow.navigationUrl}
       >
         <History size={15} aria-hidden="true" />
-        Ver ciclo e decisões
+        {consistent && !unavailable && !work && current
+          ? "Abrir etapa do ciclo"
+          : "Ver ciclo e decisões"}
       </Link>
       <small className="product-cycle-summary__coordination">
         Coordenação na cadeia:{" "}

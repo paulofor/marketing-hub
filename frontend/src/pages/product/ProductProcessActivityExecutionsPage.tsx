@@ -88,7 +88,13 @@ function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
     return <AlertTriangle size={17} aria-hidden="true" />;
   }
   if (state === "IN_PROGRESS") {
-    return <Loader2 size={17} aria-hidden="true" />;
+    return (
+      <Loader2
+        className="product-process-situation__running-icon"
+        size={17}
+        aria-hidden="true"
+      />
+    );
   }
   if (state === "CANCELLED") {
     return <CircleOff size={17} aria-hidden="true" />;
@@ -644,6 +650,7 @@ export default function ProductProcessActivityExecutionsPage() {
                 <ProductProcessActivityExecutionPanel
                   activity={activity}
                   productId={productId}
+                  processSequence={selectedProcessSequence}
                   pending={requestExecution.isPending}
                   pendingActivityId={requestExecution.variables?.activityId}
                   onExecute={(command) => {
@@ -656,16 +663,7 @@ export default function ProductProcessActivityExecutionsPage() {
                     cycleContext.isRefetchError
                   }
                   currentTask={(() => {
-                    const trackedActivity =
-                      requestOrigin === activity.activityId &&
-                      requestExecution.variables?.activityId
-                        ? (data.activities.find(
-                            (item) =>
-                              item.activityId ===
-                              requestExecution.variables?.activityId,
-                          ) ?? activity)
-                        : activity;
-                    const task = trackedActivity.tasks.find(
+                    const task = activity.tasks.find(
                       (item) =>
                         item.sourceReference ===
                           data.currentExecutionReference &&
@@ -730,7 +728,7 @@ export default function ProductProcessActivityExecutionsPage() {
                 ) : (
                   <div className="product-process-activity-executions__empty">
                     <Bot size={24} aria-hidden="true" />
-                    <span>Nenhuma tarefa registrada para este produto.</span>
+                    <span>Nenhuma tarefa registrada para esta atividade.</span>
                   </div>
                 )}
               </article>

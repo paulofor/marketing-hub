@@ -18,7 +18,7 @@ public final class ProductProcessActivityRecoveryResolver {
   /** Restringe o uso à projeção pura, sem instanciação nem acesso a persistência. */
   private ProductProcessActivityRecoveryResolver() {}
 
-  /** Expõe comando e última tentativa da mesma versão e referência operacional do card. */
+  /** Expõe a atividade de correção ainda necessária na mesma versão e referência operacional. */
   public static List<ProductProcessActivityExecutionGroupResponse> resolve(
       List<ProductProcessActivityExecutionGroupResponse> groups,
       Map<String, BusinessProcessActivityDefinition> definitions,
@@ -32,6 +32,7 @@ public final class ProductProcessActivityRecoveryResolver {
       if (definition == null
           || definition.getDefinitionJson() == null
           || !candidate.selectedVersionActivity()
+          || candidate.objectiveAchieved()
           || control == null
           || !"AGENT".equals(control.executorType())
           || !"COMMAND".equals(control.interactionType())
@@ -43,6 +44,7 @@ public final class ProductProcessActivityRecoveryResolver {
             new ProductProcessActivityRecoveryResponse(
                 candidate.activityId(),
                 candidate.activityName(),
+                candidate.sequenceNumber(),
                 candidate.activityOwnerName(),
                 actionLabel(candidate),
                 control.actionAvailable(),

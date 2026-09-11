@@ -10,6 +10,15 @@ entre essas origens. Falha técnica não comprova reprovação funcional do prod
 Se `completedActivities` já contém homologação posterior à falha técnica, essa falha está
 superada e não deve ser escolhida como origem da correção.
 
+A política vigente está em `processContextJson.validationPolicy`. Quando `mode=AGENT_VALIDATION`,
+a homologação exige cenários sintéticos segregados, não recrutamento nem duas leituras humanas.
+Exigências humanas em pareceres, estratégia ou tentativas anteriores são contexto histórico e
+não substituem esse contrato. Não repita uma exigência incompatível como pré-requisito da correção.
+Se o parecer foi produzido pelo modo legado ou por uma captura sem sessão, verifique a correção
+do executor, do acesso e das evidências na nova versão; não confunda tela privada protegida com
+resultado funcional ausente. A evidência de mercado e a venda continuam dependentes de pessoas
+reais em etapas comerciais posteriores, sem serem simuladas ou declaradas nesta atividade.
+
 Quando faltar implementação, URL ou aceitação do protótipo, use as especificações já concluídas
 e `TASK_CONTEXT.processContextJson.learningSalesCycle` para preservar o ciclo e o aprendizado
 anterior. Descreva a implementação causal necessária e os testes próprios do produto. Não use

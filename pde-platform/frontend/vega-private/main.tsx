@@ -30,12 +30,40 @@ const params = new URLSearchParams(location.hash.slice(1));
 const invitation = params.get("access");
 if (location.hash) history.replaceState(null, "", location.pathname);
 function App() {
+  const [accessToken, setAccessToken] = useState(invitation || "");
+  const [invitationText, setInvitationText] = useState("");
   const [session, setSession] = useState<Session | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [consent, setConsent] = useState(false);
   const [saved, setSaved] = useState(false);
+  function recoverInvitation(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    try {
+      const url = new URL(invitationText.trim());
+      const token = new URLSearchParams(url.hash.slice(1)).get("access");
+      if (
+        url.origin !== location.origin ||
+        url.pathname.replace(/\/$/, "") !== "/vega-private" ||
+        url.search ||
+        url.username ||
+        url.password ||
+        !token
+      )
+        throw new Error(
+          "Use o convite privado desta experiência, recebido de quem o compartilhou com você.",
+        );
+      setAccessToken(token);
+      setInvitationText("");
+      setConsent(false);
+      setError("");
+    } catch {
+      setError(
+        "Não reconhecemos este convite. Confira o link completo recebido e tente novamente.",
+      );
+    }
+  }
   async function api(path: string, body?: unknown) {
     const token = localStorage.getItem(storageKey) || "";
     const response = await fetch(API + path, {
@@ -78,7 +106,7 @@ function App() {
   }
   useEffect(() => {
     let active = true;
-    if (invitation) {
+    if (invitation || !localStorage.getItem(storageKey)) {
       setLoading(false);
       return;
     }
@@ -160,7 +188,7 @@ function App() {
             Esta experiência usa um convite individual. Suas escolhas e seu
             ajuste ficam salvos por até sete dias. Não há compra ou cobrança.
           </p>
-          {invitation ? (
+          {accessToken ? (
             <>
               <label className="consent">
                 <input
@@ -175,16 +203,50 @@ function App() {
                 disabled={!consent || busy}
                 onClick={() =>
                   act("/access", {
-                    accessToken: invitation,
+                    accessToken,
                     consentAccepted: true,
                   })
                 }
               >
                 {busy ? "Abrindo…" : "Acessar meu ajuste"}
               </button>
+              <button
+                className="text-button"
+                disabled={busy}
+                onClick={() => {
+                  setAccessToken("");
+                  setConsent(false);
+                  setError("");
+                }}
+              >
+                Usar outro convite
+              </button>
             </>
           ) : (
-            <p>Abra o link do seu convite para começar ou retomar.</p>
+            <form onSubmit={recoverInvitation}>
+              <p>
+                Já recebeu um convite? Cole o link abaixo para começar ou
+                retomar seu ajuste.
+              </p>
+              <label>
+                Seu convite privado *
+                <input
+                  type="password"
+                  autoComplete="off"
+                  required
+                  value={invitationText}
+                  onChange={(e) => setInvitationText(e.target.value)}
+                  placeholder="Cole o link completo recebido"
+                />
+              </label>
+              <button disabled={busy || !invitationText.trim()}>
+                Continuar com meu convite
+              </button>
+              <p className="small">
+                Sem o convite ou com acesso vencido, peça um novo link a quem
+                compartilhou esta experiência. Suas escolhas ficam protegidas.
+              </p>
+            </form>
           )}
         </section>
       ) : (

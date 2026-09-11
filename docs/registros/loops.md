@@ -4858,3 +4858,19 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - Prevenção: contratos recusam URL com parâmetros, prova incompleta ou versão divergente;
   harness próprio percorre geração, uso, retomada, falha e limite em desktop e celulares.
 - Evidência e limites: `docs/homologacao/vega-tarefa-380-prototipo-v1.md`.
+
+## LOOP-PSIQUE-CICLO-DESVIADO-PARA-LEITURA-HUMANA — correção em 2026-09-11
+
+- #383 aprovou a homologação técnica de Vega; #384 usou prompt v4 humano e capturou a
+  entrada sem sessão, mesmo sendo `psiqueAdherent` do processo v8. #385 e #386 herdaram
+  a exigência de duas pessoas e repetiram bloqueios sem evidência funcional nova.
+- Causa: seleção, schema e validador sintético reconheciam somente `product:*@agent-validation-v1`,
+  embora o backend entregue `experiment:92` com a linhagem íntegra do ciclo 2. O desvio também
+  incorporava o catálogo global de outros PDEs. Logs antigos já fora da retenção; request,
+  resposta persistida, código e contraste com #383 e Mira confirmam o diagnóstico.
+- Correção: contrato coerente de ciclo em todas as fronteiras, política vigente explícita
+  no backend, sessão sintética, cartão/eventos/capturas correlacionados e recuperação privada
+  na v10. Histórico humano não é apagado nem transformado em avaliação sintética.
+- Prevenção: teste do consumidor completo da fila ao callback com navegador real, versão
+  local de Vega e MySQL; teste de identidade divergente; schema de saída e dois modos
+  históricos protegidos. Matriz: `docs/homologacao/vega-ciclo2-validacao-correta-v1.md`.

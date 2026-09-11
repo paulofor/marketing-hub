@@ -1823,7 +1823,7 @@ public class AgentTaskService {
                     "O recurso especializado da atividade não está disponível."));
   }
 
-  /** Consolida o trabalho anterior e a memória do ciclo exato para orientar a próxima atividade. */
+  /** Consolida histórico, memória do ciclo e política vigente sem converter QA em prova humana. */
   private String processContext(AgentTask task) {
     try {
       List<AgentTask> processTasks = processContextTasks(task);
@@ -1864,6 +1864,32 @@ public class AgentTaskService {
       context.put("completedActivities", completedActivities);
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);
+      if ("pde-construction-approval".equals(task.getProcessDefinition().getProcessCode())
+          && task.getProcessDefinition().getVersionNumber() != null
+          && task.getProcessDefinition().getVersionNumber() >= 7) {
+        context.put(
+            "validationPolicy",
+            Map.of(
+                "contractVersion",
+                "PDE_AGENT_VALIDATION_POLICY_V1",
+                "mode",
+                "AGENT_VALIDATION",
+                "humanReadingsRequired",
+                false,
+                "humanEvidenceClaimed",
+                false,
+                "commercialEvidenceClaimed",
+                false,
+                "canonicalReference",
+                "docs/canonical/pde-validacao-multiagente-canon.v1.md",
+                "requiredSequence",
+                List.of(
+                    "technicalHomologation",
+                    "psiqueAdherent",
+                    "psiqueRecovery",
+                    "psiqueSafety",
+                    "commercialIntegrityReview")));
+      }
       if (learningCycleTaskContext != null) {
         learningCycleTaskContext
             .resolve(task.getSourceReference(), task.getCreatedAt())

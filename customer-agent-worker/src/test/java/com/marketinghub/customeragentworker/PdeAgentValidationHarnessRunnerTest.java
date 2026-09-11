@@ -82,8 +82,9 @@ class PdeAgentValidationHarnessRunnerTest {
   }
 
   /** Vincula o executável do sucessor ao experimento e despacha os cenários próprios de Vega. */
-  @Test
-  void acceptsVegaCycleWithOwnHarnessAndExplicitLineage() throws Exception {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"9", "10", "11"})
+  void acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String version) throws Exception {
     Path mira = fakeHarness(false, true);
     Path vega = mira.resolveSibling("vega-agent-validation-harness.mjs");
     Files.writeString(
@@ -92,13 +93,13 @@ class PdeAgentValidationHarnessRunnerTest {
             .replace("product:10@agent-validation-v1", "experiment:92")
             .replace("\"productId\":10", "\"productId\":4")
             .replace("orientacao-digital-rotina-pele-madura", "metodo-musa-7-dias")
-            .replace("mira-private-v1", "musa-pde-entry-v9-primeiro-ajuste-aplicavel")
+            .replace("mira-private-v1", "musa-pde-entry-v" + version + "-primeiro-ajuste-aplicavel")
             .replace("/mira-private", "/vega-private"));
     var target = new HashMap<String, Object>();
     target.put("productId", 4L);
     target.put("experimentId", 92L);
     target.put("productSlug", "metodo-musa-7-dias");
-    target.put("experienceVersion", "musa-pde-entry-v9-primeiro-ajuste-aplicavel");
+    target.put("experienceVersion", "musa-pde-entry-v" + version + "-primeiro-ajuste-aplicavel");
     target.put("publicUrl", "http://127.0.0.1:5176/vega-private");
     target.put(
         "pdeContext",

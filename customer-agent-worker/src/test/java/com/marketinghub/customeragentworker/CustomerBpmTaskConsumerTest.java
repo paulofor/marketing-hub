@@ -348,6 +348,89 @@ class CustomerBpmTaskConsumerTest {
         .doesNotContain("duas leituras humanas persistidas");
   }
 
+  /** Reproduz a referência da #384 e exige cenário autenticado sem pacote global ou modo humano. */
+  @Test
+  void routesLearningCycleScenariosToAuthenticatedHarnessAndSyntheticPrompt() throws Exception {
+    var consumer =
+        new CustomerBpmTaskConsumer(
+            "http://backend:8000",
+            "codex",
+            "gpt-5.6-sol",
+            "max",
+            "/workspace-inexistente",
+            "/workspace-inexistente",
+            json);
+    for (String activity : List.of("psiqueAdherent", "psiqueRecovery", "psiqueSafety")) {
+      Map<String, Object> task = cycleTask(activity, 4L, 92L, 2L);
+      org.assertj.core.api.Assertions.assertThat(
+              CustomerBpmTaskConsumer.isAgentValidationTask(task))
+          .isTrue();
+      org.assertj.core.api.Assertions.assertThat(consumer.prompt(task, List.of()))
+          .contains(
+              "revisão sintética de cenário PDE v5",
+              "experiment:92",
+              "learningCycleId",
+              "AGENT_VALIDATION")
+          .doesNotContain(
+              "revisão humana da validação privada",
+              "versionedExperienceEvidence",
+              "duas leituras humanas persistidas",
+              "Kit Manual de Atendimento");
+    }
+  }
+
+  /** Recusa referências incoerentes antes de captura ou inferência sem voltar ao fluxo legado. */
+  @Test
+  void rejectsMismatchedCycleInsteadOfFallingBackToHumanReview() {
+    for (Map<String, Object> task :
+        List.of(
+            cycleTask("psiqueAdherent", 10L, 92L, 2L),
+            cycleTask("psiqueAdherent", 4L, 91L, 2L),
+            cycleTask("psiqueAdherent", 4L, 92L, 0L))) {
+      assertThatThrownBy(() -> CustomerBpmTaskConsumer.isAgentValidationTask(task))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("identidade coerente");
+    }
+    var legacy = new java.util.HashMap<>(cycleTask("psiqueAdherent", 4L, 92L, 2L));
+    legacy.put("processVersion", 6);
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.isAgentValidationTask(legacy))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  /** Monta a identidade real do sucessor e permite variar a linhagem para testar isolamento. */
+  private Map<String, Object> cycleTask(
+      String activity, long productId, long experimentId, long cycleId) {
+    return Map.of(
+        "processCode",
+        "pde-construction-approval",
+        "processVersion",
+        8,
+        "activityId",
+        activity,
+        "sourceReference",
+        "experiment:92",
+        "taskTarget",
+        Map.of(
+            "productId",
+            4L,
+            "experimentId",
+            92L,
+            "productSlug",
+            "metodo-musa-7-dias",
+            "experienceVersion",
+            "musa-pde-entry-v10-primeiro-ajuste-aplicavel",
+            "pdeContext",
+            Map.of(
+                "lineage",
+                Map.of(
+                    "learningCycleId",
+                    cycleId,
+                    "productId",
+                    productId,
+                    "experimentId",
+                    experimentId))));
+  }
+
   /** Usa somente o alvo e as leituras da tarefa privada, sem herdar provas de outro PDE. */
   @Test
   void composesPrivateValidationPromptWithoutGlobalProductEvidence() throws Exception {

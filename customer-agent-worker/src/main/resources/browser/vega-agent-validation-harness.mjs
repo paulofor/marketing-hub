@@ -65,6 +65,8 @@ for(const [scenarioCode,deviceProfile] of plans){
   await page.getByText('Este é o mesmo ajuste').waitFor();
  }
  const report=await api(`/internal/cycles/${input.cycleId}/report`);const evidence=report.readings.find(r=>r.id===session.id);assert.ok(evidence);
+ const scenarioInput=evidence.executions[0]?.context?.input;
+ assert.ok(scenarioInput,'O cenário precisa preservar a entrada realmente executada');
  const expected=scenarioCode==='SAFETY'?['EXPERIENCE_STARTED']:['EXPERIENCE_STARTED','VALUE_MOMENT','READY_RESULT_USED','PREFERRED_OVER_FREE','CHECKOUT_STARTED'];
  assert.deepEqual(Object.keys(evidence.events).sort(),expected.sort());assert.equal(evidence.origin,'AGENT_VALIDATION');assert.equal(evidence.paymentEnabled,false);assert.equal(evidence.published,false);assert.equal(evidence.mediaSpendBrl,0);
  assert.equal(evidence.executions.length,1);assert.equal(evidence.executions[0].status,scenarioCode==='SAFETY'?'BLOCKED':'COMPLETED');
@@ -73,7 +75,7 @@ for(const [scenarioCode,deviceProfile] of plans){
  const screenshotPath=resolve(evidenceDirectory,`${scenarioCode}-${deviceProfile}.png`);await page.screenshot({path:screenshotPath,fullPage:true});const viewport=page.viewportSize();
  const evidenceKey=`vega-${session.id}`;
  artifacts.push({captureSessionId:input.captureSessionId,evidenceKey,evidenceType:'FULL_PAGE',deviceProfile,pageNumber:1,foldNumber:null,viewportWidth:viewport.width,viewportHeight:viewport.height,pageHeightPx:await page.evaluate(()=>document.documentElement.scrollHeight),scrollY:0,sourceUrl:input.sourceUrl,finalUrl:page.url(),capturedAt:new Date().toISOString(),localPath:screenshotPath});
- scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:input.prototypeVersion,evidenceId:session.id,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,resultReadySeconds:Math.ceil((Date.now()-generatedAt)/1000),resumed,recovered,safetyBlocked:scenarioCode==='SAFETY',accessibilityBasic,noHorizontalOverflow,privacyPreserved,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0}});
+ scenarios.push({scenarioCode,deviceProfile,status:'PASS',prototypeVersion:input.prototypeVersion,evidenceId:session.id,screenshotEvidenceKeys:[evidenceKey],input:scenarioInput,card:evidence.card,events:evidence.events,trafficClass:'AGENT_VALIDATION',mhInternalTest:true,resultReadySeconds:Math.ceil((Date.now()-generatedAt)/1000),resumed,recovered,safetyBlocked:scenarioCode==='SAFETY',accessibilityBasic,noHorizontalOverflow,privacyPreserved,humanEvidenceClaimed:false,commercialEvidenceClaimed:false,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0}});
  await context.close();
 }
 }finally{await browser.close();}

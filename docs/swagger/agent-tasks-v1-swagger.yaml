@@ -570,6 +570,11 @@ components:
             Contexto legado serializado do processo. No retrabalho PDE, blockedActivities contém
             os pareceres de origem e correctionAttempts preserva separadamente as tentativas
             de correção bloqueadas; cada item mantém tarefa, causa, ação e resultado estruturados.
+            No processo pde-construction-approval v7 ou posterior, validationPolicy publica
+            PDE_AGENT_VALIDATION_POLICY_V1, mode AGENT_VALIDATION, humanReadingsRequired false
+            e requiredSequence. Essa política governa a avaliação atual sem apagar evidências
+            humanas ou pareceres históricos. Referências experiment:<id> preservam a linhagem
+            do ciclo e usam os mesmos contratos sintéticos das referências iniciais do produto.
         researchIntelligence:
           nullable: true
           description: Seleção compacta da Biblioteca de Inteligência aplicável à atividade audiovisual.

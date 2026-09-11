@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 const base='http://127.0.0.1:18080/api/pde/vega/private/v1';const internal='vega-local-internal-only';
+const prototypeVersion=process.env.VEGA_TEST_VERSION||'musa-pde-entry-v9-primeiro-ajuste-aplicavel';
 let controls=0;
 const request=async(path,body,token,method)=>{const response=await fetch(base+path,{method:method||(body===undefined?'GET':'POST'),headers:{'Content-Type':'application/json',...(token?{'X-Vega-Session':token}:{'X-PDE-Internal-Token':internal})},body:body===undefined?undefined:JSON.stringify(body)});let data;try{data=await response.json();}catch{}return {status:response.status,data};};
 const check=(condition,label)=>{assert.ok(condition,label);controls++;console.log('PASS',label);};
-const create=async(origin='QA_INTERNAL',readingNumber)=>{let r=await request('/internal/sessions',{cycleId:91002,prototypeVersion:'musa-pde-entry-v9-primeiro-ajuste-aplicavel',origin,readingNumber});assert.equal(r.status,200);return r.data;};
+const create=async(origin='QA_INTERNAL',readingNumber)=>{let r=await request('/internal/sessions',{cycleId:91002,prototypeVersion,origin,readingNumber});assert.equal(r.status,200);return r.data;};
 const waitResult=async(token)=>{for(let i=0;i<40;i++){let r=await request('/session',undefined,token);if(['COMPLETED','FAILED','BLOCKED'].includes(r.data.generationStatus))return r.data;await new Promise(r=>setTimeout(r,500));}throw new Error('Timeout da geração local');};
 check((await request('/session',undefined,'invalid')).status===401,'acesso inválido rejeitado');
 check((await fetch(base+'/internal/cycles/91002/report')).status===401,'relatório protegido');

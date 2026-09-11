@@ -5,6 +5,7 @@ cd "$(dirname "$0")/../../.."
 : "${VEGA_TEST_DOCKER_HOST:?Informe endereço da engine isolada}"
 : "${VEGA_COMPOSE_PROJECT:?Informe projeto exclusivo}"
 compose=(docker compose -p "$VEGA_COMPOSE_PROJECT" -f infra/testing/vega-private-prototype/compose.yml -f infra/testing/vega-private-prototype/images.compose.yml)
+if [[ -n "${VEGA_COMPOSE_OVERRIDE:-}" ]]; then compose+=(-f "$VEGA_COMPOSE_OVERRIDE"); fi
 node infra/testing/vega-private-prototype/prepare-images.mjs
 "${compose[@]}" create --force-recreate proxy
 "${compose[@]}" cp lead-portal-payments-service/nginx.conf proxy:/etc/nginx/conf.d/default.conf

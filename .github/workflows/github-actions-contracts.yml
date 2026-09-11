@@ -26,6 +26,10 @@ on:
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/coordinate-agent-deployment.mjs"
       - "scripts/coordinate-agent-deployment.test.mjs"
+      - "scripts/coordinate-deploy-intervention.py"
+      - "scripts/deploy_intervention_store.py"
+      - "scripts/deploy-intervention-scopes.json"
+      - "scripts/test-deploy-intervention.py"
       - "scripts/detect-deployment-changes.sh"
       - "scripts/test-deploy-transactional-contract.sh"
       - "scripts/test-deployment-change-resume.sh"
@@ -109,6 +113,10 @@ on:
       - "scripts/wait-for-shared-vps-docker-capacity.sh"
       - "scripts/coordinate-agent-deployment.mjs"
       - "scripts/coordinate-agent-deployment.test.mjs"
+      - "scripts/coordinate-deploy-intervention.py"
+      - "scripts/deploy_intervention_store.py"
+      - "scripts/deploy-intervention-scopes.json"
+      - "scripts/test-deploy-intervention.py"
       - "scripts/detect-deployment-changes.sh"
       - "scripts/test-deploy-transactional-contract.sh"
       - "scripts/test-deployment-change-resume.sh"
@@ -195,6 +203,9 @@ jobs:
 
       - name: Validar suíte completa do backend antes do merge
         run: python3 scripts/test-backend-ci-workflow.py
+
+      - name: Validar coordenação de intervenções sem publicar ou acessar hosts reais
+        run: python3 scripts/test-deploy-intervention.py
 
       - name: Validar sintaxe dos contratos shell
         run: |

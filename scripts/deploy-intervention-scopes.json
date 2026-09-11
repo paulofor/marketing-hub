@@ -1,0 +1,18 @@
+{
+  "app": [
+    "product-discovery-worker-ci.yml",
+    "customer-agent-worker-ci.yml",
+    "meta-ad-approver-worker-ci.yml",
+    "deploy-containers.yml"
+  ],
+  "pde": ["recover-public-proxy.yml", "pde-platform-metodo-musa-ci.yml"],
+  "dedalo": ["landing-generator-agent-worker-ci.yml"],
+  "psique": ["customer-agent-worker-ci.yml"],
+  "atena": ["experiment-strategist-worker-ci.yml"],
+  "plutus": ["financial-agent-worker-ci.yml"],
+  "argos": ["product-discovery-worker-ci.yml"],
+  "iris": ["meta-ad-approver-worker-ci.yml"],
+  "temis": ["communication-agent-worker-ci.yml"],
+  "hermes": ["growth-operator-worker-ci.yml"],
+  "controle-agentes": ["agent-executor-admin-controller-ci.yml"]
+}

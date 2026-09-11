@@ -1,0 +1,18 @@
+{
+  "cardKey": "compatibilidade-metodo-pagamento-checkout",
+  "collection": "neuromarketing",
+  "title": "Compatibilidade do método de pagamento pode evitar abandono tardio",
+  "finding": "Pesquisa com 2.179 adultos nos EUA indica abandono relevante quando o método de pagamento preferido não está disponível; a ausência de carteiras digitais respondeu por uma parcela importante dos casos estimados.",
+  "mechanism": "Depois de formar intenção de compra, o consumidor ainda pode tratar a forma de pagamento como requisito da experiência; incompatibilidade entre preferência e checkout adiciona fricção no ponto de maior proximidade da conversão.",
+  "commercialApplication": "Criar um PaymentMethodFitAudit por oferta e testar se os métodos prioritários para o público estão realmente disponíveis e coerentes com o que a landing comunica, acompanhando abandono e pagamento reconciliado.",
+  "evidenceStrength": "Moderada: survey de 2.179 adultos com amostra balanceada e análise explícita de abandono, mas patrocinado pelo PayPal, baseado em autorrelato e dados dos Estados Unidos; exige validação causal no funil brasileiro.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Para a mesma oferta, um checkout que suporte e comunique claramente os métodos de pagamento prioritários do público reduzirá abandono entre checkout iniciado e pagamento reconciliado em relação ao checkout atual.",
+  "risks": "Adicionar opções indiscriminadamente pode aumentar complexidade, custo ou fraude; não prometer um meio de pagamento que o checkout não suporta e não inferir preferência individual sem base ou consentimento.",
+  "limits": "Os números vêm de pesquisa norte-americana e extrapolações populacionais; não provam que adicionar uma carteira específica aumentará conversão no Brasil. O resultado real deve ser medido por eventos de checkout e pagamentos reconciliados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-11-compatibilidade-metodo-pagamento-checkout.md",
+  "sourceTitle": "Fonte revisada — Compatibilidade do método de pagamento no checkout",
+  "sourceSha256": "99a2000a11b8b01e08936476ea451ef849dc19ce6e934cea090fa317bce29b7e"
+}

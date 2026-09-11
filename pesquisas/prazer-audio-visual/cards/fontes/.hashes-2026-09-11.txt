@@ -1,3 +1,4 @@
 87b82b852052d1a4af4a50b75fa19bf95d9245d7cc615f1ca08c8d4166d4dad0  pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-tensao-musical-recuperacao-estresse.md
 72b7799fbfb4f595355c09fdbed8fe5cc8b66a1d3398cb64a110b14b3d2597b1  pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-arousal-intermediario-conforto-prazer.md
 cac8d03a5974ac6bbadd798caf75d0d36bc345cc0984726b758e744c8a9078ba  pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-vibrotatil-sincronizado-musica.md
+716914e1ae01edfe3c745085b55fa8496b669df8ca917eca350b674af6b9729b  pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-ritmo-auditivo-atencao-visual-dinamica.md

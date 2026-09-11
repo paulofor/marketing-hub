@@ -8,7 +8,7 @@ on:
       - '.github/workflows/hash-prazer-audio-visual-2026-09-11.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   hash:
@@ -16,8 +16,17 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - name: Calcular SHA-256
+        with:
+          ref: main
+      - name: Calcular e registrar SHA-256
         run: |
-          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-tensao-musical-recuperacao-estresse.md
-          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-arousal-intermediario-conforto-prazer.md
-          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-vibrotatil-sincronizado-musica.md
+          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-tensao-musical-recuperacao-estresse.md > /tmp/hashes.txt
+          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-arousal-intermediario-conforto-prazer.md >> /tmp/hashes.txt
+          sha256sum pesquisas/prazer-audio-visual/cards/fontes/2026-09-11-vibrotatil-sincronizado-musica.md >> /tmp/hashes.txt
+          cp /tmp/hashes.txt pesquisas/prazer-audio-visual/cards/fontes/.hashes-2026-09-11.txt
+          cat pesquisas/prazer-audio-visual/cards/fontes/.hashes-2026-09-11.txt
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add pesquisas/prazer-audio-visual/cards/fontes/.hashes-2026-09-11.txt
+          git commit -m 'Registra hashes temporários das fontes de 11-09' || exit 0
+          git push origin main

@@ -88,7 +88,13 @@ function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
     return <AlertTriangle size={17} aria-hidden="true" />;
   }
   if (state === "IN_PROGRESS") {
-    return <Loader2 size={17} aria-hidden="true" />;
+    return (
+      <Loader2
+        className="product-process-situation__running-icon"
+        size={17}
+        aria-hidden="true"
+      />
+    );
   }
   if (state === "CANCELLED") {
     return <CircleOff size={17} aria-hidden="true" />;

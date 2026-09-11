@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import axios from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ProductProcessActivityExecutionsPage from "./ProductProcessActivityExecutionsPage";
 import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
 
@@ -383,8 +383,9 @@ function renderPage(
 }
 
 describe("ProductProcessActivityExecutionsPage", () => {
+  afterEach(cleanup);
+
   beforeEach(() => {
-    cleanup();
     vi.clearAllMocks();
     vi.mocked(useCycleProcessContext).mockReturnValue({
       data: null,

@@ -262,6 +262,11 @@ cobertura. Resultado técnico embutido em comentário, prompt ou JSON não concl
 instância ou cobertura persistida. Ausência de ambos deve aparecer como atividade não iniciada, sem
 inferir sucesso a partir do estado comercial, da landing, do experimento ou de outra tarefa.
 
+Nos cards e no resumo de atividades, o ícone de **Em execução** gira apenas enquanto o contrato
+informar `IN_PROGRESS`. O rótulo permanece legível e estático; os demais estados não giram.
+A preferência de movimento reduzido do navegador desativa a animação, preservando ícone e texto.
+O movimento apresenta o estado recebido, sem indicar percentual de progresso nem avanço do BPM.
+
 Quando uma atividade ou um subprocesso atingir o objetivo, a mesma resposta do backend deve expor
 o próximo passo oficial da composição publicada. Se o subprocesso concluído retornar ao processo
 pai, a próxima atividade do pai deve aparecer como continuação prevista, sem fabricar entrada,

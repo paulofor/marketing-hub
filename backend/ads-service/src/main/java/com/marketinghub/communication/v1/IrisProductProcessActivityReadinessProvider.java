@@ -38,9 +38,7 @@ public class IrisProductProcessActivityReadinessProvider
         && ACTIVITY_ID.equals(activityDefinition.getActivityId());
   }
 
-  /**
-   * Recusa a execução antes do modelo quando Atena, Plutus, Dédalo ou suas provas estão ausentes.
-   */
+  /** Exige os contratos aprovados do ciclo privado ou do plano, sem misturar os dois regimes. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -48,13 +46,21 @@ public class IrisProductProcessActivityReadinessProvider
       Product product,
       String sourceReference) {
     List<String> missing = new ArrayList<>();
-    Map<String, Object> strategy = marketStrategy.resolve(sourceReference).orElse(Map.of());
-    if (!"AVAILABLE".equals(strategy.get("availability"))
-        || !"MARKET_STRATEGY_V2".equals(strategy.get("contractVersion"))
-        || !hasText(strategy.get("contentHash"))) {
-      missing.add("Contrato Estratégico de Mercado v2 concluído de Atena");
-    }
     Map<String, Object> context = communicationContext.resolve(sourceReference).orElse(Map.of());
+    boolean cycle = IrisLearningCycleContext.MODE.equals(context.get("mode"));
+    Map<?, ?> strategy =
+        cycle
+            ? (context.get("marketStrategicContract") instanceof Map<?, ?> value ? value : Map.of())
+            : marketStrategy.resolve(sourceReference).orElse(Map.of());
+    if (!"AVAILABLE".equals(strategy.get("availability"))
+        || !(cycle ? "MARKET_STRATEGY_V3" : "MARKET_STRATEGY_V2")
+            .equals(strategy.get("contractVersion"))
+        || !hasText(strategy.get("contentHash"))) {
+      missing.add(
+          cycle
+              ? "Contrato Estratégico de Mercado V3 aprovado no próprio ciclo"
+              : "Contrato Estratégico de Mercado v2 concluído de Atena");
+    }
     if (!"AVAILABLE".equals(context.get("availability"))) {
       missing.add(
           hasText(context.get("reason"))

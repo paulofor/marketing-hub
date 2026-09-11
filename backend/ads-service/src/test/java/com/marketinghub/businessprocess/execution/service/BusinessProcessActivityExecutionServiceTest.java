@@ -254,7 +254,7 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(execution.finishedAt()).isEqualTo("2026-08-27T03:35:14Z");
   }
 
-  /** Agrupa tarefas do produto por atividade, preserva cobertura composta e não duplica custo. */
+  /** Preserva tarefas, estados e custos; a leitura leve omite somente os prompts extensos. */
   @Test
   void returnsProductActivitiesAndUniqueTasksWithoutCrossProcessLeakage() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -310,6 +310,8 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(select, html, technical, customer, human));
 
     AgentTask compound = executionTask(243L);
+    compound.setExecutionPrompt("Contexto histórico persistido. ".repeat(160000));
+    compound.setExecutionActivityPrompt(compound.getExecutionPrompt());
     compound.setProcessDefinition(landing);
     compound.setProcessActivityId("html");
     compound.setProcessActivityName("Construir HTML");
@@ -414,6 +416,20 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(result.activities().get(0).tasks().getFirst().productInternalName())
         .isEqualTo("Rigel");
     assertThat(result.activities()).allMatch(activity -> activity.executionControl() != null);
+    var compact = productService.productProcessExecutions(18L, 9L, null, null, false);
+    assertThat(compact)
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*promptSent", ".*agentPromptPart", ".*activityPromptPart")
+        .isEqualTo(result);
+    assertThat(compact.activities().stream().flatMap(item -> item.tasks().stream()))
+        .allSatisfy(
+            task -> {
+              assertThat(task.promptSent()).isNull();
+              assertThat(task.agentPromptPart()).isNull();
+              assertThat(task.activityPromptPart()).isNull();
+            });
+    assertThat(result.activities().getFirst().tasks().getFirst().promptSent())
+        .hasSizeGreaterThan(4_000_000);
   }
 
   /** Expõe o comando backend bloqueado sem quebrar a tela de produto ainda sem experimento. */

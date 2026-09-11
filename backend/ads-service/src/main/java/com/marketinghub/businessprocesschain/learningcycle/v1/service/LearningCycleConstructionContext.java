@@ -30,14 +30,20 @@ public class LearningCycleConstructionContext {
   @org.springframework.beans.factory.annotation.Autowired
   private LearningCyclePrototypeContext prototypeContext;
 
-  /** Resolve construção por experimento sem substituir o cadastro ou a experiência histórica. */
+  /**
+   * Entrega construção e comunicação do ciclo sem substituir a experiência histórica do produto.
+   */
   @Transactional(readOnly = true)
   public Optional<AgentTaskTargetResponse> resolve(
       String reference, Experiment experiment, String processCode) {
-    if (experiment == null || !"pde-construction-approval".equals(processCode))
-      return Optional.empty();
+    if (experiment == null
+        || processCode == null
+        || !java.util.Set.of("pde-construction-approval", "pde-communication-sales-journey")
+            .contains(processCode)) return Optional.empty();
     var cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
-    if (cycle == null) return Optional.empty();
+    if (cycle == null
+        || (cycle.isBaseline() && "pde-communication-sales-journey".equals(processCode)))
+      return Optional.empty();
     var product = experiment.getProduct();
     if (product == null || !Objects.equals(cycle.getProductId(), product.getId()))
       throw new IllegalStateException("Ciclo e experimento pertencem a produtos diferentes.");
@@ -67,7 +73,8 @@ public class LearningCycleConstructionContext {
   }
 
   /**
-   * Mantém ausência explícita se as aprovações estiverem incompletas, recusadas ou incompatíveis.
+   * Publica plano multiagente e linhagem próprios; mantém ausência explícita se as aprovações
+   * falharem.
    */
   private JsonNode context(LearningSalesCycle cycle) {
     try {
@@ -111,6 +118,12 @@ public class LearningCycleConstructionContext {
       context.put("contractVersion", "PDE_HARNESS_PLAN_V1");
       context.put("experienceVersion", cycle.getProductVersion());
       context.put("status", "PLANNED");
+      try (var input =
+          getClass().getResourceAsStream("/contracts/pde-agent-validation-plan-v1.json")) {
+        var plan = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(input);
+        plan.put("sourceReference", "experiment:" + cycle.getExperimentId());
+        context.set("agentValidationPlan", plan);
+      }
       if (prototypeContext != null) {
         prototypeContext
             .resolve(cycle)

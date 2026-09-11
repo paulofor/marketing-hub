@@ -4,6 +4,7 @@ import com.marketinghub.businessprocess.execution.service.BusinessProcessActivit
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
+import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessTaskPromptAuditResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,20 +44,35 @@ public class BusinessProcessActivityExecutionController {
     return service.recentExecutions(processDefinitionId, activityId);
   }
 
-  /** Retorna as atividades preservando o ciclo e a versão de cadeia explicitamente selecionados. */
+  /** Retorna atividades do ciclo e permite adiar a leitura dos prompts mantendo compatibilidade. */
   @Operation(summary = "Mostra a situação, as atividades e as tarefas do produto no processo")
   @GetMapping("/{processDefinitionId}/products/{productId}/activity-executions")
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       @PathVariable Long processDefinitionId,
       @PathVariable Long productId,
       @RequestParam(required = false) Long learningCycleId,
-      @RequestParam(required = false) Long chainId) {
+      @RequestParam(required = false) Long chainId,
+      @RequestParam(defaultValue = "true") boolean includePromptAudit) {
+    if (!includePromptAudit)
+      return service.productProcessExecutions(
+          processDefinitionId, productId, learningCycleId, chainId, false);
     if (chainId != null)
       return service.productProcessExecutions(
           processDefinitionId, productId, learningCycleId, chainId);
     return learningCycleId == null
         ? service.productProcessExecutions(processDefinitionId, productId)
         : service.productProcessExecutions(processDefinitionId, productId, learningCycleId);
+  }
+
+  /** Entrega a auditoria integral somente da tarefa e do contexto solicitados. */
+  @Operation(summary = "Lê os prompts persistidos de uma tarefa do produto e processo exatos")
+  @GetMapping("/{processDefinitionId}/products/{productId}/tasks/{taskId}/prompt-audit")
+  public BusinessProcessTaskPromptAuditResponse taskPromptAudit(
+      @PathVariable Long processDefinitionId,
+      @PathVariable Long productId,
+      @PathVariable Long taskId,
+      @RequestParam String sourceReference) {
+    return service.taskPromptAudit(processDefinitionId, productId, taskId, sourceReference);
   }
 
   /** Entrega somente revisões de tarefas para acompanhar mudanças sem retransmitir auditorias. */

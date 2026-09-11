@@ -44,9 +44,11 @@ class VegaCycleScenarioIntegrationTest {
             "productSlug",
             "metodo-musa-7-dias",
             "experienceVersion",
-            "musa-pde-entry-v11-primeiro-ajuste-aplicavel",
+            System.getenv()
+                .getOrDefault("VEGA_TEST_VERSION", "musa-pde-entry-v11-primeiro-ajuste-aplicavel"),
             "publicUrl",
-            "http://127.0.0.1:18083/vega-private",
+            System.getenv()
+                .getOrDefault("VEGA_SCENARIO_LOCAL_URL", "http://127.0.0.1:18083/vega-private"),
             "pdeContext",
             Map.of(
                 "lineage",
@@ -153,6 +155,11 @@ class VegaCycleScenarioIntegrationTest {
       JsonNode result = json.readTree(callback.get().path("resultJson").asText());
       assertThat(result.path("sourceReference").asText()).isEqualTo("experiment:91092");
       assertThat(result.path("scenarioCode").asText()).isEqualTo(scenario);
+      String flowOutput = System.getenv("VEGA_GATE_FLOW_ARTIFACTS");
+      if (flowOutput != null) {
+        Files.createDirectories(Path.of(flowOutput));
+        Files.writeString(Path.of(flowOutput, scenario + ".json"), result.toPrettyString());
+      }
       String prompt = Files.readString(directory.resolve("prompt.txt"));
       assertThat(prompt)
           .contains(
@@ -182,7 +189,10 @@ class VegaCycleScenarioIntegrationTest {
     result.put("sourceReference", "experiment:91092");
     result.put("productId", 91004L);
     result.put("productSlug", "metodo-musa-7-dias");
-    result.put("prototypeVersion", "musa-pde-entry-v11-primeiro-ajuste-aplicavel");
+    result.put(
+        "prototypeVersion",
+        System.getenv()
+            .getOrDefault("VEGA_TEST_VERSION", "musa-pde-entry-v11-primeiro-ajuste-aplicavel"));
     result.put("trafficClass", "AGENT_VALIDATION");
     result.put("internalMarker", "mh_internal_test");
     result.put("syntheticEvaluation", true);

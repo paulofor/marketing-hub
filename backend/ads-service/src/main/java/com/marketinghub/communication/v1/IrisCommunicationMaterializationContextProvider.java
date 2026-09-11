@@ -44,6 +44,9 @@ public class IrisCommunicationMaterializationContextProvider
   private final FinancialAgentExecutionRepository financialExecutions;
   private final ObjectMapper objectMapper;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private IrisLearningCycleContext learningCycles;
+
   /** Configura as fontes canônicas de plano, produto e provas aprovadas. */
   public IrisCommunicationMaterializationContextProvider(
       CommercialPlanRepository plans,
@@ -60,10 +63,16 @@ public class IrisCommunicationMaterializationContextProvider
     this.objectMapper = objectMapper;
   }
 
-  /** Resolve plano e experimento sem consultar banco fora do backend ou misturar produtos. */
+  /**
+   * Resolve primeiro o ciclo privado; mantém o contrato de plano comercial para os demais casos.
+   */
   @Override
   @Transactional(readOnly = true)
   public Optional<Map<String, Object>> resolve(String sourceReference) {
+    if (learningCycles != null) {
+      var cycle = learningCycles.resolve(sourceReference);
+      if (cycle.isPresent()) return cycle;
+    }
     Optional<ResolvedScope> scope = scope(sourceReference);
     if (scope.isEmpty()) return Optional.empty();
     return Optional.of(context(sourceReference, scope.get()));

@@ -42,7 +42,8 @@ class PdeAgentValidationReworkReadinessProviderTest {
             .validationDefinitionJson(
                 "{\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"mira-private-v2\"}}")
             .build();
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc(SOURCE)).thenReturn(history);
+    when(tasks.findPdeValidationTaskSnapshots(SOURCE, "pde-construction-approval"))
+        .thenAnswer(call -> history.stream().map(this::snapshot).toList());
   }
 
   /** Encaminha o parecer rejeitado para Dédalo com causa, ação e retorno explícitos. */
@@ -288,5 +289,18 @@ class PdeAgentValidationReworkReadinessProviderTest {
     activity.setProcessDefinition(process);
     activity.setActivityId(activityId);
     return activity;
+  }
+
+  /** Projeta os mesmos registros do cenário sem fornecer os prompts à decisão de retrabalho. */
+  private PdeValidationTaskSnapshot snapshot(AgentTask task) {
+    return new PdeValidationTaskSnapshot(
+        task.getId(),
+        task.getProcessDefinition().getId(),
+        task.getProcessActivityId(),
+        task.getStatus(),
+        task.getBlockerCategory(),
+        task.getBlockerAction(),
+        task.getResultJson(),
+        task.getExecutionError());
   }
 }

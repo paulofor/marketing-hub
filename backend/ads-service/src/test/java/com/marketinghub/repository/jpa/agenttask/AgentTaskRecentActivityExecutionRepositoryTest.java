@@ -16,13 +16,102 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 
-/** Responsabilidade: comprovar a segregação e a ordenação da consulta recente de tarefas BPM. */
+/** Responsabilidade: comprovar consultas leves, segregação e ordenação das tarefas BPM. */
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private TestEntityManager entityManager;
   @Autowired private AgentTaskRepository repository;
   @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
+
+  /** A fila de recuperação lê somente falhas candidatas do agente e preserva sua ordem. */
+  @Test
+  void filtersCallbackCandidatesBeforeLoadingHistoricalTaskAudits() {
+    var agent = agent();
+    var process = process("pde-construction-approval", 8);
+    var functional = task(agent, process, "prototypeCorrection", 40, "2026-09-10T09:00:00Z");
+    functional.setTaskKind("WORK");
+    functional.setStatus("BLOCKED");
+    functional.setExecutionError("Protótipo precisa de correção funcional.");
+    functional.setExecutionPrompt("Auditoria histórica extensa. ".repeat(150000));
+    var candidates = new java.util.ArrayList<Long>();
+    var errors =
+        java.util.List.of(
+            "500 : backend indisponível",
+            "resposta: Internal Server Error",
+            "HTML integral alterou o destino protegido do checkout");
+    for (int index = 0; index < errors.size(); index++) {
+      var candidate =
+          task(agent, process, "prototypeCorrection", 41 + index, "2026-09-10T10:00:00Z");
+      candidate.setTaskKind("WORK");
+      candidate.setStatus("BLOCKED");
+      candidate.setExecutionError(errors.get(index));
+      candidates.add(candidate.getId());
+    }
+    var completed = task(agent, process, "prototypeCorrection", 44, "2026-09-10T08:00:00Z");
+    completed.setTaskKind("WORK");
+    completed.setExecutionError("Internal Server Error");
+    var nonWork = task(agent, process, "prototypeCorrection", 45, "2026-09-10T07:00:00Z");
+    nonWork.setStatus("BLOCKED");
+    nonWork.setExecutionError("Internal Server Error");
+    entityManager.flush();
+    entityManager.clear();
+
+    assertThat(repository.findRetryableCallbackCandidates(agent.getAgentKey()))
+        .extracting(AgentTask::getId)
+        .containsExactlyElementsOf(candidates);
+    assertThat(repository.findRetryableCallbackCandidates("outro-agente")).isEmpty();
+  }
+
+  /**
+   * O retrabalho preserva provas e versões históricas sem hidratar tarefas ou seus prompts
+   * extensos.
+   */
+  @Test
+  void readsReworkDecisionsWithoutLoadingPromptColumnsOrForeignContexts() {
+    var agent = agent();
+    var previous = process("pde-construction-approval", 7);
+    var current = process("pde-construction-approval", 8);
+    var other = process("another-process", 8);
+    var rejected = task(agent, previous, "psiqueAdherent", 31, "2026-09-10T10:00:00Z");
+    rejected.setSourceReference("experiment:92");
+    rejected.setStatus("BLOCKED");
+    rejected.setBlockerCategory("FUNCTIONAL_ADJUSTMENT");
+    rejected.setBlockerAction("Preserve o ajuste na retomada.");
+    rejected.setResultJson("{\"decision\":\"BLOCKED\",\"rootCause\":\"Resultado perdido\"}");
+    rejected.setExecutionError("Resultado perdido");
+    rejected.setExecutionPrompt("Contexto extenso que não participa deste gate. ".repeat(100000));
+    rejected.setExecutionActivityPrompt(rejected.getExecutionPrompt());
+    var corrected = task(agent, current, "prototypeCorrection", 32, "2026-09-10T11:00:00Z");
+    corrected.setSourceReference("experiment:92");
+    corrected.setResultJson("{\"decision\":\"READY\"}");
+    task(agent, current, "prototypeCorrection", 33, "2026-09-10T12:00:00Z")
+        .setSourceReference("experiment:91");
+    task(agent, other, "prototypeCorrection", 34, "2026-09-10T13:00:00Z")
+        .setSourceReference("experiment:92");
+    entityManager.flush();
+    entityManager.clear();
+    var stats =
+        entityManager
+            .getEntityManager()
+            .getEntityManagerFactory()
+            .unwrap(org.hibernate.SessionFactory.class)
+            .getStatistics();
+    stats.setStatisticsEnabled(true);
+    stats.clear();
+    var rows =
+        repository.findPdeValidationTaskSnapshots("experiment:92", "pde-construction-approval");
+    assertThat(rows)
+        .extracting(row -> row.id())
+        .containsExactly(rejected.getId(), corrected.getId());
+    assertThat(rows.getFirst().processDefinitionId()).isEqualTo(previous.getId());
+    assertThat(rows.getFirst().blockerAction()).isEqualTo("Preserve o ajuste na retomada.");
+    assertThat(rows.getFirst().resultJson()).contains("Resultado perdido");
+    assertThat(rows.getFirst().executionError()).isEqualTo("Resultado perdido");
+    assertThat(stats.getEntityLoadCount()).isZero();
+    assertThat(stats.getPrepareStatementCount()).isEqualTo(1);
+    stats.setStatisticsEnabled(false);
+  }
 
   /** A consulta de progresso usa projeção escalar e mantém o isolamento de versão e ciclo. */
   @Test

@@ -108,6 +108,9 @@ public class PdeAgentValidationGateActivityExecutor
   @Autowired(required = false)
   private LearningCycleExecutionContext learningCycleContext;
 
+  @Autowired(required = false)
+  private PdeAgentValidationCycleContract cycleContracts;
+
   /** Configura as fontes persistidas e o relógio do gate. */
   @Autowired
   public PdeAgentValidationGateActivityExecutor(
@@ -167,7 +170,9 @@ public class PdeAgentValidationGateActivityExecutor
               ? "Harness, três cenários de Psique e Têmis estão aprovados na mesma versão."
               : evaluation.issues().getFirst(),
           "Calcular gate multiagente",
-          "O backend verificará as provas persistidas e manterá o produto em STOP antes da comunicação.",
+          preservesCommercialState(product, sourceReference)
+              ? "O backend verificará as provas deste ciclo e preservará o estado comercial e operacional do produto."
+              : "O backend verificará as provas persistidas e manterá o produto em STOP antes da comunicação.",
           null,
           product == null ? null : product.getId(),
           requirements(evaluation));
@@ -183,7 +188,10 @@ public class PdeAgentValidationGateActivityExecutor
     }
   }
 
-  /** Persiste a decisão, avança para comunicação em STOP e não cria efeito comercial externo. */
+  /**
+   * Persiste a decisão; no ciclo preserva a operação, na primeira validação libera comunicação em
+   * STOP.
+   */
   @Override
   @Transactional
   public BackendProductProcessActivityExecutionResult execute(
@@ -197,13 +205,15 @@ public class PdeAgentValidationGateActivityExecutor
     Optional<BusinessProcessActivityInstance> latest =
         instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
             activityDefinition.getId(), sourceReference);
-    if (latest.isPresent() && "COMPLETED".equals(latest.orElseThrow().getStatus())) {
+    if (latest.isPresent() && sameApproval(latest.orElseThrow(), evaluation, product, now)) {
       advanceProduct(product, evaluation, now);
       return new BackendProductProcessActivityExecutionResult(
           sourceReference,
           "COMPLETED",
           true,
-          "A validação multiagente já estava aprovada; a preparação comercial permanece liberada em STOP.");
+          preservesCommercialState(product, sourceReference)
+              ? "A validação multiagente deste ciclo já estava aprovada; o estado comercial e operacional foi preservado."
+              : "A validação multiagente já estava aprovada; a preparação comercial permanece liberada em STOP.");
     }
     BusinessProcessActivityInstance instance = new BusinessProcessActivityInstance();
     instance.setActivityDefinition(activityDefinition);
@@ -226,14 +236,16 @@ public class PdeAgentValidationGateActivityExecutor
         sourceReference,
         "COMPLETED",
         true,
-        "Validação multiagente aprovada. O PDE foi liberado para preparar comunicação e continua em STOP, sem campanha ou gasto.");
+        preservesCommercialState(product, sourceReference)
+            ? "Validação multiagente deste ciclo aprovada para preparar comunicação. Estado comercial e operacional preservado, sem autorizar campanha ou gasto."
+            : "Validação multiagente aprovada. O PDE foi liberado para preparar comunicação e continua em STOP, sem campanha ou gasto.");
   }
 
   /** Avalia separadamente contrato, harness, Psique, Têmis, ordem e efeitos externos. */
   private GateEvaluation evaluate(
       BusinessProcessDefinition process, Product product, String sourceReference) {
     List<String> issues = new ArrayList<>();
-    AgentValidationContract contract = contract(product, sourceReference, issues);
+    AgentValidationContract contract = contract(process, product, sourceReference, issues);
     List<AgentTask> processTasks =
         process == null || process.getId() == null || sourceReference == null
             ? List.of()
@@ -251,6 +263,7 @@ public class PdeAgentValidationGateActivityExecutor
     AgentTask temis = completedTask(processTasks, "commercialIntegrityReview").orElse(null);
     boolean temisApproved = validateTemis(temis, contract, issues);
     boolean chronologyApproved = validateChronology(technical, psique, temis, issues);
+    chronologyApproved &= validateCorrectionOrder(processTasks, technical, issues);
     List<AgentTask> evidenceTasks = new ArrayList<>();
     if (technical != null) evidenceTasks.add(technical);
     psique.values().stream().filter(java.util.Objects::nonNull).forEach(evidenceTasks::add);
@@ -272,26 +285,40 @@ public class PdeAgentValidationGateActivityExecutor
 
   /** Valida o contrato inicial ou a revalidação da mesma versão em um ciclo comercial aberto. */
   private AgentValidationContract contract(
-      Product product, String sourceReference, List<String> issues) {
+      BusinessProcessDefinition process,
+      Product product,
+      String sourceReference,
+      List<String> issues) {
     if (product == null || product.getId() == null) {
       issues.add("O produto da validação multiagente não foi encontrado.");
       return AgentValidationContract.invalid();
     }
-    String expectedReference = "product:" + product.getId() + SOURCE_SUFFIX;
+    boolean cycle = sourceReference != null && sourceReference.startsWith("experiment:");
+    String expectedReference =
+        cycle ? sourceReference : "product:" + product.getId() + SOURCE_SUFFIX;
     if (!expectedReference.equals(sourceReference)) {
       issues.add("A referência da execução não corresponde ao produto e à versão multiagente.");
     }
-    if (!ACTIVE_CONTRACT.equals(product.getValidationDefinitionVersion())
+    if (!cycle
+        && !ACTIVE_CONTRACT.equals(product.getValidationDefinitionVersion())
         && !COMPLETED_CONTRACT.equals(product.getValidationDefinitionVersion())) {
       issues.add("O produto não possui o contrato PDE_AGENT_VALIDATION_V1 vigente.");
     }
-    if (!"PLANNED".equals(product.getCommercialStatus())
+    if (!cycle
+        && !"PLANNED".equals(product.getCommercialStatus())
         && !"COMUNICACAO_E_JORNADA".equals(product.getCommercialStatus())
         && !cycleRevalidation(product)) {
       issues.add("O produto está fora da etapa permitida para a validação multiagente.");
     }
     try {
-      JsonNode validation = json.readTree(product.getValidationDefinitionJson());
+      JsonNode validation;
+      if (cycle) {
+        if (cycleContracts == null)
+          throw new IllegalStateException("Resolvedor do contrato do ciclo indisponível.");
+        validation = cycleContracts.resolve(product, process, sourceReference);
+      } else {
+        validation = json.readTree(product.getValidationDefinitionJson());
+      }
       JsonNode plan = validation.path("agentValidationPlan");
       JsonNode acceptance = validation.path("privatePrototypeAcceptance");
       String publicUrl = acceptance.path("privateAccessUrl").asText();
@@ -446,17 +473,75 @@ public class PdeAgentValidationGateActivityExecutor
     return valid;
   }
 
-  /** Localiza a tentativa concluída mais recente de uma atividade sem aceitar bloqueio antigo. */
+  /** Impede que uma correção mais recente reutilize aprovações produzidas antes de sua entrega. */
+  private boolean validateCorrectionOrder(
+      List<AgentTask> processTasks, AgentTask technical, List<String> issues) {
+    var latest =
+        processTasks.stream()
+            .filter(task -> "prototypeCorrection".equals(task.getProcessActivityId()))
+            .max(Comparator.comparing(AgentTask::getCreatedAt).thenComparing(AgentTask::getId));
+    if (latest.isEmpty()) return true;
+    var correction = latest.orElseThrow();
+    boolean valid =
+        "COMPLETED".equals(correction.getStatus())
+            && deliveredAt(correction) != null
+            && deliveredAt(technical) != null
+            && !deliveredAt(technical).isBefore(deliveredAt(correction));
+    if (!valid)
+      issues.add("A última correção precisa ser concluída e seguida de nova homologação técnica.");
+    return valid;
+  }
+
+  /**
+   * Reutiliza apenas aprovação com a mesma versão e as mesmas tarefas, preservando novas
+   * ocorrências.
+   */
+  private boolean sameApproval(
+      BusinessProcessActivityInstance instance,
+      GateEvaluation evaluation,
+      Product product,
+      Instant now) {
+    if (!"COMPLETED".equals(instance.getStatus()) || instance.getObjectiveEvidenceJson() == null)
+      return false;
+    try {
+      var previous = json.readTree(instance.getObjectiveEvidenceJson());
+      var current = gateEvidence(product, evaluation, now);
+      return previous.path("prototypeVersion").equals(current.path("prototypeVersion"))
+          && previous.path("sourceReference").equals(current.path("sourceReference"))
+          && previous.path("taskEvidence").size() == evaluation.evidenceTasks().size()
+          && evaluation.evidenceTasks().stream()
+              .allMatch(
+                  task ->
+                      java.util.stream.StreamSupport.stream(
+                              previous.path("taskEvidence").spliterator(), false)
+                          .anyMatch(
+                              value ->
+                                  value.path("taskId").asLong() == task.getId()
+                                      && value
+                                          .path("resultSha256")
+                                          .asText()
+                                          .equals(sha256(task.getResultJson()))));
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao conferir aprovação anterior. productId={} instanceId={}",
+          product.getId(),
+          instance.getId(),
+          ex);
+      throw new IllegalStateException("A aprovação anterior não contém evidência auditável.", ex);
+    }
+  }
+
+  /** Exige conclusão da tentativa mais recente; aprovação antiga não supera falha ou fila nova. */
   private Optional<AgentTask> completedTask(List<AgentTask> values, String activityId) {
     return values.stream()
         .filter(task -> activityId.equals(task.getProcessActivityId()))
+        .max(Comparator.comparing(AgentTask::getCreatedAt).thenComparing(AgentTask::getId))
         .filter(task -> "COMPLETED".equals(task.getStatus()))
         .filter(
             task ->
                 task.getActivityInstance() == null
                     || ("COMPLETED".equals(task.getActivityInstance().getStatus())
-                        && task.getActivityInstance().isObjectiveAchieved()))
-        .max(Comparator.comparing(AgentTask::getCreatedAt).thenComparing(AgentTask::getId));
+                        && task.getActivityInstance().isObjectiveAchieved()));
   }
 
   /** Lê um resultado JSON concluído preservando a causa no log e no requisito. */
@@ -573,7 +658,12 @@ public class PdeAgentValidationGateActivityExecutor
     evidence.put("internalMarker", "mh_internal_test");
     evidence.put("completedAt", completedAt.toString());
     evidence.put("nextProcessCode", "pde-communication-sales-journey");
-    evidence.put("productExecutionState", "STOP");
+    evidence.put(
+        "productExecutionState",
+        preservesCommercialState(product, evaluation.contract().sourceReference())
+                && Boolean.TRUE.equals(product.getAutomaticExecutionEnabled())
+            ? "PLAY"
+            : "STOP");
     evidence.put("humanEvidenceClaimed", false);
     evidence.put("commercialEvidenceClaimed", false);
     evidence.put("paymentEnabled", false);
@@ -640,8 +730,15 @@ public class PdeAgentValidationGateActivityExecutor
     return learningCycleContext != null && learningCycleContext.permitsRevalidation(product);
   }
 
-  /** Registra aprovação e preserva a operação comercial durante uma revalidação por ciclo. */
+  /** Identifica passagens de aprendizado que não podem mudar a operação comercial vigente. */
+  private boolean preservesCommercialState(Product product, String sourceReference) {
+    return (sourceReference != null && sourceReference.startsWith("experiment:"))
+        || cycleRevalidation(product);
+  }
+
+  /** Preserva o cadastro comercial no ciclo; a aprovação fica na instância BPM dessa passagem. */
   private void advanceProduct(Product product, GateEvaluation evaluation, Instant completedAt) {
+    if (evaluation.contract().sourceReference().startsWith("experiment:")) return;
     boolean revalidation = cycleRevalidation(product);
     if (!revalidation
         && COMPLETED_CONTRACT.equals(product.getValidationDefinitionVersion())

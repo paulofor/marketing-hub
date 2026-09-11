@@ -6,11 +6,13 @@ import {
   StructuredExecutionContent,
 } from "./BusinessProcessExecutionPresentation";
 import PsiqueTaskAudit from "./PsiqueTaskAudit";
+import type { TaskPromptAuditRequest } from "./DeferredTaskPromptAudit";
 
 type BusinessProcessExecutionCardProps = {
   execution: BusinessProcessActivityExecution;
   defaultOpen?: boolean;
   contentHeadingLevel?: "h2" | "h3";
+  promptAudit?: TaskPromptAuditRequest;
 };
 
 /** Exibe a auditoria completa de uma tarefa real em um cartão reutilizável. */
@@ -18,6 +20,7 @@ export default function BusinessProcessExecutionCard({
   execution,
   defaultOpen = false,
   contentHeadingLevel = "h2",
+  promptAudit,
 }: BusinessProcessExecutionCardProps) {
   const ContentHeading = contentHeadingLevel;
   const guidance = execution.blockerGuidance;
@@ -39,6 +42,7 @@ export default function BusinessProcessExecutionCard({
         <BusinessProcessExecutionAudit
           execution={execution}
           headingLevel={contentHeadingLevel}
+          promptAudit={promptAudit}
         />
 
         <ContentHeading className="h6 mt-3">

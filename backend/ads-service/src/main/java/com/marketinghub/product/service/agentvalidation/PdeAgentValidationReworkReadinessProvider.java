@@ -2,7 +2,6 @@ package com.marketinghub.product.service.agentvalidation;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.agentactivity.AgentProductProcessActivityReadiness;
@@ -88,9 +87,10 @@ public class PdeAgentValidationReworkReadinessProvider
     if (!supports(process, activityDefinition)) {
       return blocked("A atividade não pertence ao contrato de retrabalho da validação PDE.");
     }
-    List<AgentTask> history = processHistory(sourceReference);
+    List<PdeValidationTaskSnapshot> history = processHistory(sourceReference);
     String expectedVersion = expectedPrototypeVersion(product, sourceReference);
-    Optional<AgentTask> rejection = unresolvedFunctionalRejection(history, expectedVersion);
+    Optional<PdeValidationTaskSnapshot> rejection =
+        unresolvedFunctionalRejection(history, expectedVersion);
     if (CORRECTION_ACTIVITY.equals(activityDefinition.getActivityId())) {
       return correctionReadiness(correctionSource(history, expectedVersion));
     }
@@ -130,16 +130,16 @@ public class PdeAgentValidationReworkReadinessProvider
       Product product,
       String sourceReference) {
     if (!supports(process, activityDefinition)) return false;
-    List<AgentTask> history = processHistory(sourceReference);
+    List<PdeValidationTaskSnapshot> history = processHistory(sourceReference);
     String version = expectedPrototypeVersion(product, sourceReference);
     String activityId = activityDefinition.getActivityId();
     boolean currentBlock =
         latestCurrentProcessTask(history, process, activityId)
-            .filter(task -> "BLOCKED".equals(task.getStatus()))
+            .filter(task -> "BLOCKED".equals(task.status()))
             .filter(
                 task ->
                     CORRECTION_ACTIVITY.equals(activityId)
-                        || task.getId() > latestCorrectionId(history, version))
+                        || task.id() > latestCorrectionId(history, version))
             .isPresent();
     if (currentBlock) return false;
     if (CORRECTION_ACTIVITY.equals(activityId)) {
@@ -151,52 +151,53 @@ public class PdeAgentValidationReworkReadinessProvider
 
   /** Aceita somente prova da versão atual produzida depois da última correção aplicável. */
   private boolean hasCurrentApproval(
-      List<AgentTask> history,
+      List<PdeValidationTaskSnapshot> history,
       BusinessProcessDefinition process,
       String activityId,
       String version) {
     long correctionId = latestCorrectionId(history, version);
     return latestCurrentProcessTask(history, process, activityId)
-        .filter(task -> "COMPLETED".equals(task.getStatus()))
-        .filter(task -> task.getId() > correctionId)
+        .filter(task -> "COMPLETED".equals(task.status()))
+        .filter(task -> task.id() > correctionId)
         .filter(task -> approvedForVersion(task, activityId, version))
         .isPresent();
   }
 
   /** Identifica a última correção válida para separar pendências atuais de pareceres superados. */
-  private long latestCorrectionId(List<AgentTask> history, String version) {
+  private long latestCorrectionId(List<PdeValidationTaskSnapshot> history, String version) {
     return history.stream()
-        .filter(task -> CORRECTION_ACTIVITY.equals(task.getProcessActivityId()))
-        .filter(task -> "COMPLETED".equals(task.getStatus()))
+        .filter(task -> CORRECTION_ACTIVITY.equals(task.processActivityId()))
+        .filter(task -> "COMPLETED".equals(task.status()))
         .filter(task -> validCorrection(task, version))
-        .mapToLong(AgentTask::getId)
+        .mapToLong(PdeValidationTaskSnapshot::id)
         .max()
         .orElse(0L);
   }
 
   /** Expõe o diagnóstico funcional ou técnico que originará a tarefa condicional de correção. */
-  private AgentProductProcessActivityReadiness correctionReadiness(Optional<AgentTask> rejection) {
+  private AgentProductProcessActivityReadiness correctionReadiness(
+      Optional<PdeValidationTaskSnapshot> rejection) {
     if (rejection.isEmpty()) {
       return blocked(
           "Nenhuma rejeição funcional ou falha de homologação pendente exige correção do protótipo.");
     }
-    AgentTask task = rejection.orElseThrow();
+    PdeValidationTaskSnapshot task = rejection.orElseThrow();
     return ready(correctionRequiredReason(task));
   }
 
   /**
    * Distingue falha técnica de rejeição funcional e preserva causa, origem e retorno aos testes.
    */
-  private String correctionRequiredReason(AgentTask rejection) {
+  private String correctionRequiredReason(PdeValidationTaskSnapshot rejection) {
     String rootCause = rootCause(rejection);
-    String action = text(rejection.getBlockerAction());
+    String action = text(rejection.blockerAction());
     if (action == null) action = "Aplique a menor correção funcional descrita no parecer.";
     return limit(
         "A tarefa #"
-            + rejection.getId()
+            + rejection.id()
             + " ("
-            + activityLabel(rejection.getProcessActivityId())
-            + ("TECHNICAL_FAILURE".equals(rejection.getBlockerCategory())
+            + activityLabel(rejection.processActivityId())
+            + ("TECHNICAL_FAILURE".equals(rejection.blockerCategory())
                 ? ") não conseguiu homologar o protótipo. Causa registrada: "
                 : ") rejeitou a versão. Causa-raiz: ")
             + rootCause
@@ -207,46 +208,48 @@ public class PdeAgentValidationReworkReadinessProvider
   }
 
   /** Seleciona a origem mais recente sem confundir falha técnica com reprovação funcional. */
-  private Optional<AgentTask> correctionSource(List<AgentTask> history, String version) {
-    Optional<AgentTask> functional = unresolvedFunctionalRejection(history, version);
+  private Optional<PdeValidationTaskSnapshot> correctionSource(
+      List<PdeValidationTaskSnapshot> history, String version) {
+    Optional<PdeValidationTaskSnapshot> functional =
+        unresolvedFunctionalRejection(history, version);
     long correctionId = latestCorrectionId(history, version);
-    Optional<AgentTask> technical =
+    Optional<PdeValidationTaskSnapshot> technical =
         history.stream()
-            .filter(task -> "technicalHomologation".equals(task.getProcessActivityId()))
-            .max(Comparator.comparing(AgentTask::getId))
-            .filter(task -> "BLOCKED".equals(task.getStatus()))
-            .filter(task -> "TECHNICAL_FAILURE".equals(task.getBlockerCategory()))
-            .filter(task -> task.getId() > correctionId);
+            .filter(task -> "technicalHomologation".equals(task.processActivityId()))
+            .max(Comparator.comparing(PdeValidationTaskSnapshot::id))
+            .filter(task -> "BLOCKED".equals(task.status()))
+            .filter(task -> "TECHNICAL_FAILURE".equals(task.blockerCategory()))
+            .filter(task -> task.id() > correctionId);
     return java.util.stream.Stream.concat(functional.stream(), technical.stream())
-        .max(Comparator.comparing(AgentTask::getId));
+        .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
   }
 
   /** Localiza a rejeição funcional mais recente ainda sem correção válida posterior. */
-  private Optional<AgentTask> unresolvedFunctionalRejection(
-      List<AgentTask> history, String expectedVersion) {
-    Optional<AgentTask> rejection =
+  private Optional<PdeValidationTaskSnapshot> unresolvedFunctionalRejection(
+      List<PdeValidationTaskSnapshot> history, String expectedVersion) {
+    Optional<PdeValidationTaskSnapshot> rejection =
         history.stream()
-            .filter(task -> REVIEW_ACTIVITIES.contains(task.getProcessActivityId()))
-            .filter(task -> "BLOCKED".equals(task.getStatus()))
-            .filter(task -> "FUNCTIONAL_ADJUSTMENT".equals(task.getBlockerCategory()))
-            .max(Comparator.comparing(AgentTask::getId));
+            .filter(task -> REVIEW_ACTIVITIES.contains(task.processActivityId()))
+            .filter(task -> "BLOCKED".equals(task.status()))
+            .filter(task -> "FUNCTIONAL_ADJUSTMENT".equals(task.blockerCategory()))
+            .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
     if (rejection.isEmpty()) return Optional.empty();
-    Optional<AgentTask> correction =
+    Optional<PdeValidationTaskSnapshot> correction =
         history.stream()
-            .filter(task -> CORRECTION_ACTIVITY.equals(task.getProcessActivityId()))
-            .filter(task -> "COMPLETED".equals(task.getStatus()))
+            .filter(task -> CORRECTION_ACTIVITY.equals(task.processActivityId()))
+            .filter(task -> "COMPLETED".equals(task.status()))
             .filter(task -> validCorrection(task, expectedVersion))
-            .max(Comparator.comparing(AgentTask::getId));
-    return correction.filter(task -> task.getId() > rejection.orElseThrow().getId()).isPresent()
+            .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
+    return correction.filter(task -> task.id() > rejection.orElseThrow().id()).isPresent()
         ? Optional.empty()
         : rejection;
   }
 
   /** Confirma que Dédalo registrou versão nova e retorno obrigatório à homologação técnica. */
-  private boolean validCorrection(AgentTask task, String expectedVersion) {
-    if (expectedVersion == null || task.getResultJson() == null) return false;
+  private boolean validCorrection(PdeValidationTaskSnapshot task, String expectedVersion) {
+    if (expectedVersion == null || task.resultJson() == null) return false;
     try {
-      JsonNode result = json.readTree(task.getResultJson());
+      JsonNode result = json.readTree(task.resultJson());
       JsonNode plan = result.path("correctionPlan");
       return "READY".equals(result.path("decision").asText())
           && expectedVersion.equals(plan.path("correctedPrototypeVersion").asText())
@@ -255,48 +258,47 @@ public class PdeAgentValidationReworkReadinessProvider
           && plan.path("verification").path("technicalRevalidationRequired").asBoolean(false)
           && plan.path("verification").path("noExternalSideEffects").asBoolean(false);
     } catch (Exception ex) {
-      log.error("Falha ao ler correção PDE. taskId={}", task.getId(), ex);
+      log.error("Falha ao ler correção PDE. taskId={}", task.id(), ex);
       return false;
     }
   }
 
   /** Localiza a tentativa mais recente da versão do processo, inclusive falhas ainda atuais. */
-  private Optional<AgentTask> latestCurrentProcessTask(
-      List<AgentTask> history, BusinessProcessDefinition process, String activityId) {
+  private Optional<PdeValidationTaskSnapshot> latestCurrentProcessTask(
+      List<PdeValidationTaskSnapshot> history,
+      BusinessProcessDefinition process,
+      String activityId) {
     return history.stream()
-        .filter(task -> task.getProcessDefinition() != null)
-        .filter(task -> process.getId().equals(task.getProcessDefinition().getId()))
-        .filter(task -> activityId.equals(task.getProcessActivityId()))
-        .max(Comparator.comparing(AgentTask::getId));
+        .filter(task -> process.getId().equals(task.processDefinitionId()))
+        .filter(task -> activityId.equals(task.processActivityId()))
+        .max(Comparator.comparing(PdeValidationTaskSnapshot::id));
   }
 
   /** Valida decisão e versão da prova predecessora sem confiar somente no status técnico. */
   private boolean approvedForVersion(
-      AgentTask task, String activityId, String expectedPrototypeVersion) {
+      PdeValidationTaskSnapshot task, String activityId, String expectedPrototypeVersion) {
     try {
-      JsonNode result = json.readTree(task.getResultJson());
+      JsonNode result = json.readTree(task.resultJson());
       return expectedPrototypeVersion.equals(result.path("prototypeVersion").asText())
           && EXPECTED_DECISION.get(activityId).equals(result.path("decision").asText());
     } catch (Exception ex) {
       log.error(
           "Falha ao ler prova predecessora PDE. taskId={} activityId={}",
-          task.getId(),
+          task.id(),
           activityId,
           ex);
       return false;
     }
   }
 
-  /** Lista tarefas de todas as versões do mesmo processo sem misturar outra origem. */
-  private List<AgentTask> processHistory(String sourceReference) {
+  /**
+   * Consulta decisões e bloqueios de todas as versões do processo, sem retransmitir auditorias
+   * extensas.
+   */
+  private List<PdeValidationTaskSnapshot> processHistory(String sourceReference) {
     if (sourceReference == null || sourceReference.isBlank()) return List.of();
-    return tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference).stream()
-        .filter(task -> task.getProcessDefinition() != null)
-        .filter(
-            task ->
-                PdeAgentValidationGateActivityExecutor.PROCESS_CODE.equals(
-                    task.getProcessDefinition().getProcessCode()))
-        .toList();
+    return tasks.findPdeValidationTaskSnapshots(
+        sourceReference, PdeAgentValidationGateActivityExecutor.PROCESS_CODE);
   }
 
   /** Lê a versão do ciclo explícito ou a aceitação privada original sem misturar passagens. */
@@ -325,16 +327,16 @@ public class PdeAgentValidationReworkReadinessProvider
   }
 
   /** Usa primeiro a causa funcional estruturada e mantém o erro auditado como fallback. */
-  private String rootCause(AgentTask task) {
-    if (task.getResultJson() != null) {
+  private String rootCause(PdeValidationTaskSnapshot task) {
+    if (task.resultJson() != null) {
       try {
-        String value = text(json.readTree(task.getResultJson()).path("rootCause").asText(null));
+        String value = text(json.readTree(task.resultJson()).path("rootCause").asText(null));
         if (value != null) return value;
       } catch (Exception ex) {
-        log.error("Falha ao ler causa-raiz do parecer PDE. taskId={}", task.getId(), ex);
+        log.error("Falha ao ler causa-raiz do parecer PDE. taskId={}", task.id(), ex);
       }
     }
-    String error = text(task.getExecutionError());
+    String error = text(task.executionError());
     return error == null ? "O parecer funcional não atingiu os critérios publicados." : error;
   }
 

@@ -716,6 +716,18 @@ export default function ProductProcessActivityExecutionsPage() {
                         key={`${activity.activityId}-${execution.taskId}`}
                         execution={execution}
                         contentHeadingLevel="h3"
+                        promptAudit={
+                          execution.sourceReference &&
+                          !execution.promptSent &&
+                          !execution.agentPromptPart &&
+                          !execution.activityPromptPart
+                            ? {
+                                taskId: execution.taskId,
+                                sourceReference: execution.sourceReference,
+                                url: `/api/business-processes/${execution.processDefinitionId}/products/${productId}/tasks/${execution.taskId}/prompt-audit?sourceReference=${encodeURIComponent(execution.sourceReference)}`,
+                              }
+                            : undefined
+                        }
                       />
                     ))}
                   </div>

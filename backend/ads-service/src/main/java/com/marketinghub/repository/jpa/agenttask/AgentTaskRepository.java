@@ -4,6 +4,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
+import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,21 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /**
+   * Consulta o retrabalho da origem e processo exatos sem carregar prompts ou entidades completas.
+   */
+  @Query(
+      """
+      select new com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot(
+        task.id, process.id, task.processActivityId, task.status,
+        task.blockerCategory, task.blockerAction, task.resultJson, task.executionError)
+      from AgentTask task join task.processDefinition process
+      where task.sourceReference = :sourceReference and process.processCode = :processCode
+      order by task.id
+      """)
+  List<PdeValidationTaskSnapshot> findPdeValidationTaskSnapshots(
+      @Param("sourceReference") String sourceReference, @Param("processCode") String processCode);
+
   /**
    * Consulta somente identidade, estado e revisão das tarefas do contexto exato em acompanhamento.
    */
@@ -150,6 +166,20 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
       String agentKey, String taskKind, String status);
+
+  /** Filtra falhas candidatas no banco e mantém a reserva exclusiva antes da validação final. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      select task from AgentTask task
+      where task.assignedAgent.agentKey = :agentKey
+        and task.taskKind = 'WORK' and task.status = 'BLOCKED'
+        and (task.executionError like '500 :%'
+          or task.executionError like '%Internal Server Error%'
+          or task.executionError like '%HTML integral alterou o destino protegido do checkout%')
+      order by task.createdAt asc, task.id asc
+      """)
+  List<AgentTask> findRetryableCallbackCandidates(@Param("agentKey") String agentKey);
 
   /** Lista as tarefas da mesma execução de processo para validar predecessoras e gates. */
   List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(

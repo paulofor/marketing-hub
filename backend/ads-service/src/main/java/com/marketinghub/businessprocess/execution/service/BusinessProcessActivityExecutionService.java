@@ -28,6 +28,7 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessTaskPromptAuditResponse;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleActivityProjection;
@@ -293,6 +294,17 @@ public class BusinessProcessActivityExecutionService {
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId, Long productId, Long learningCycleId, Long chainId) {
+    return productProcessExecutions(processDefinitionId, productId, learningCycleId, chainId, true);
+  }
+
+  /** Mantém estados e evidências na lista, permitindo consultar prompts extensos sob demanda. */
+  @Transactional(readOnly = true)
+  public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
+      Long processDefinitionId,
+      Long productId,
+      Long learningCycleId,
+      Long chainId,
+      boolean includePromptAudit) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
     var salesFlow =
@@ -376,7 +388,9 @@ public class BusinessProcessActivityExecutionService {
 
     Map<Long, BusinessProcessActivityExecutionResponse> taskResponses = new LinkedHashMap<>();
     tasks.forEach(
-        task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
+        task ->
+            taskResponses.put(
+                task.getId(), response(task, product.getInternalName(), includePromptAudit)));
     String readinessSourceReference =
         currentExecutionReference == null
             ? initialSourceReference(selectedProcess, product, productExperiments, productPlans)
@@ -493,6 +507,40 @@ public class BusinessProcessActivityExecutionService {
           HttpStatus.CONFLICT, "A referência acompanhada não pertence a este produto.");
     }
     return taskRepository.findProductProcessExecutionProgress(processDefinitionId, sourceReference);
+  }
+
+  /**
+   * Lê os prompts integrais de uma única tarefa, validando produto, processo e referência exatos.
+   */
+  @Transactional(readOnly = true)
+  public BusinessProcessTaskPromptAuditResponse taskPromptAudit(
+      Long processDefinitionId, Long productId, Long taskId, String sourceReference) {
+    if (!productRepository.existsById(productId)
+        || !progressReferenceBelongsToProduct(productId, sourceReference)) {
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Auditoria não encontrada neste produto.");
+    }
+    AgentTask task =
+        taskRepository
+            .findById(taskId)
+            .filter(
+                value ->
+                    value.getProcessDefinition() != null
+                        && Objects.equals(processDefinitionId, value.getProcessDefinition().getId())
+                        && Objects.equals(sourceReference, value.getSourceReference()))
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Auditoria não encontrada neste processo e referência."));
+    return new BusinessProcessTaskPromptAuditResponse(
+        task.getId(),
+        task.getSourceReference(),
+        firstPresent(
+            task.getExecutionPrompt(),
+            landingExecution(task).map(GeraLandingStageExecution::getPrompt).orElse(null)),
+        task.getExecutionAgentPrompt(),
+        task.getExecutionActivityPrompt());
   }
 
   /** Valida a propriedade da referência exata sem ler auditorias de tarefas ou outro produto. */
@@ -1943,6 +1991,14 @@ public class BusinessProcessActivityExecutionService {
   /** Converte a tarefa usando a identidade de produto já validada pelo contexto da consulta. */
   private BusinessProcessActivityExecutionResponse response(
       AgentTask task, String knownProductInternalName) {
+    return response(task, knownProductInternalName, true);
+  }
+
+  /**
+   * Projeta os dados operacionais sem retransmitir prompts quando a lista solicita leitura leve.
+   */
+  private BusinessProcessActivityExecutionResponse response(
+      AgentTask task, String knownProductInternalName, boolean includePromptAudit) {
     BusinessProcessDefinition process = task.getProcessDefinition();
     Optional<GeraLandingStageExecution> technicalExecution = landingExecution(task);
     return new BusinessProcessActivityExecutionResponse(
@@ -1976,11 +2032,13 @@ public class BusinessProcessActivityExecutionService {
         task.getExecutionMode(),
         executionReasoningEffort(task, technicalExecution.orElse(null)),
         knownProductInternalName,
-        firstPresent(
-            task.getExecutionPrompt(),
-            technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null)),
-        task.getExecutionAgentPrompt(),
-        task.getExecutionActivityPrompt(),
+        includePromptAudit
+            ? firstPresent(
+                task.getExecutionPrompt(),
+                technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null))
+            : null,
+        includePromptAudit ? task.getExecutionAgentPrompt() : null,
+        includePromptAudit ? task.getExecutionActivityPrompt() : null,
         AgentTaskAuditView.blockerGuidance(task),
         AgentTaskAuditView.accessedUrls(task),
         AgentTaskAuditView.visualEvidence(task),

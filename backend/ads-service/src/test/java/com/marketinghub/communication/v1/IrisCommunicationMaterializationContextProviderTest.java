@@ -28,6 +28,30 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar o contexto segregado que o backend entrega à Íris. */
 class IrisCommunicationMaterializationContextProviderTest {
 
+  /**
+   * Mantém o contrato privado ou seu bloqueio explícito, sem recorrer a um plano de outro regime.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"AVAILABLE", "MISSING"})
+  void keepsThePrivateCycleContextWithoutFallingBackToCommercialPlan(String availability) {
+    var plans = mock(CommercialPlanRepository.class);
+    var cycle = mock(IrisLearningCycleContext.class);
+    var provider =
+        new IrisCommunicationMaterializationContextProvider(
+            plans,
+            mock(CommercialPlanVersionService.class),
+            mock(CommercialPlanLandingAssetService.class),
+            mock(AgentTaskRepository.class),
+            mock(FinancialAgentExecutionRepository.class),
+            new ObjectMapper());
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "learningCycles", cycle);
+    Map<String, Object> result =
+        Map.of("availability", availability, "mode", IrisLearningCycleContext.MODE);
+    when(cycle.resolve("experiment:92")).thenReturn(Optional.of(result));
+    assertThat(provider.resolve("experiment:92").orElseThrow()).isSameAs(result);
+    org.mockito.Mockito.verifyNoInteractions(plans);
+  }
+
   /** Consolida plano, produto, provas e predecessores da mesma versão com hash auditável. */
   @Test
   void shouldResolveReadyVersionedJourneyContext() {

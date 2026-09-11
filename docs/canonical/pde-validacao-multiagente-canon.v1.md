@@ -177,6 +177,20 @@ distinguindo gate vigente de exigências humanas presentes nos pareceres histór
 Cada cenário deve vincular suas capturas persistidas e expor entrada, saída e eventos
 da sessão segregada realmente executada, sem segredos ou evidências de outros produtos.
 
+Têmis e o gate final também devem reconhecer a referência `experiment:<id>` do ciclo,
+validando produto, experimento, cadeia, ciclo aberto, versão e aceitação com a mesma fonte
+usada pela fila. O plano técnico do ciclo usa o recurso versionado
+`contracts/pde-agent-validation-plan-v1.json`, exposto no contexto antes das execuções.
+Não importar catálogos globais nem trocar essa referência pela referência histórica do produto.
+Estratégia, arquitetura, versões e pareceres anteriores são linhagem: devem ser preservados,
+mas não substituem as provas atuais nem reintroduzem exigências humanas retiradas do gate.
+
+No ciclo, a aprovação final permanece na ocorrência BPM, com as tarefas e os hashes utilizados;
+não sobrescreve o cadastro comercial, a referência da passagem ou o PLAY/STOP do produto.
+Uma tentativa recente bloqueada/em execução impede usar a aprovação anterior da atividade.
+A última correção exige homologação posterior. Repetir o mesmo gate é idempotente; novas provas
+ou versão produzem nova ocorrência auditável.
+
 ## Evidência obrigatória
 
 Ao recriar o backend compartilhado, o deploy deve revalidar a ligação de todos os frontends PDE

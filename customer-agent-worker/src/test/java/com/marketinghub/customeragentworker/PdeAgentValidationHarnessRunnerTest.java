@@ -83,7 +83,7 @@ class PdeAgentValidationHarnessRunnerTest {
 
   /** Vincula o executável do sucessor ao experimento e despacha os cenários próprios de Vega. */
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings = {"9", "10", "11"})
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"9", "10", "11", "12", "20", "100"})
   void acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String version) throws Exception {
     Path mira = fakeHarness(false, true);
     Path vega = mira.resolveSibling("vega-agent-validation-harness.mjs");
@@ -116,6 +116,39 @@ class PdeAgentValidationHarnessRunnerTest {
     assertThat(json.readTree(execution.serializedInput()).path("cycleId").asLong()).isEqualTo(2L);
     assertThat(execution.visualEvidence().capture().artifacts())
         .allMatch(a -> "FULL_PAGE".equals(a.evidenceType()));
+  }
+
+  /**
+   * Recusa especificações antigas e nomes fora da família executável antes de iniciar navegador.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"8", "012", "12-outra-familia"})
+  void rejectsUnsupportedVegaVersion(String version) {
+    var target =
+        Map.of(
+            "productId",
+            4L,
+            "experimentId",
+            92L,
+            "productSlug",
+            "metodo-musa-7-dias",
+            "experienceVersion",
+            "musa-pde-entry-v" + version + "-primeiro-ajuste-aplicavel",
+            "publicUrl",
+            "http://127.0.0.1:5176/vega-private",
+            "pdeContext",
+            Map.of("lineage", Map.of("productId", 4L, "experimentId", 92L, "learningCycleId", 2L)));
+    var runner =
+        new PdeAgentValidationHarnessRunner(json, "/must-not-run", "/absent", "test", true);
+    assertThatThrownBy(
+            () ->
+                runner.run(
+                    Map.of(
+                        "taskId", 900L, "sourceReference", "experiment:92", "taskTarget", target),
+                    "TECHNICAL",
+                    null,
+                    temporaryDirectory))
+        .hasMessageContaining("não corresponde ao produto alvo");
   }
 
   /** Recusa metadado que o backend não aceita, antes de enviar screenshots ao callback. */

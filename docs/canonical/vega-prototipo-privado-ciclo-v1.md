@@ -69,3 +69,17 @@ A v11 consolida a correção da v10 e elimina a consulta de sessão sem credenci
 entrada anônima. O convite continua obrigatório. A matriz verifica explicitamente
 que a página não envia essa chamada protegida e que não recebe HTTP 5xx. Cada registro
 de aceitação referencia a imagem que efetivamente será avaliada; a v10 permanece no histórico.
+
+## Integridade e gate do ciclo após as tarefas #392 e #393
+
+A v12 mantém o primeiro ajuste aplicável e consolida a integração do dossiê sintético:
+Têmis usa a identidade do ciclo em prompt/schema v4, sem materiais globais de outro produto.
+O gate do backend usa a mesma aceitação e fonte das tarefas, preserva o cadastro comercial
+e não reutiliza aprovação antiga após bloqueio ou correção posterior. A aprovação fica
+na ocorrência BPM de `experiment:92`; a v11 e seus resultados permanecem no histórico.
+O harness reconhece a família executável `musa-pde-entry-vN-primeiro-ajuste-aplicavel`
+a partir da v9, preservando a verificação da identidade, linhagem, URL e saída do contrato.
+Não manter uma lista fechada de números de versão que precise de nova correção a cada iteração.
+Uma família funcional diferente exige integração própria; a antiga especificação v8 não é executável.
+
+Referência: `docs/homologacao/vega-integridade-gate-ciclo-v1.md`.

@@ -1,0 +1,14 @@
+{
+  "contractVersion": "PDE_AGENT_VALIDATION_V1",
+  "trafficClass": "AGENT_VALIDATION",
+  "internalMarker": "mh_internal_test",
+  "requiredScenarios": ["ADHERENT", "RECOVERY", "SAFETY"],
+  "requiredDevices": ["DESKTOP_1440", "IPHONE_15_PRO", "PIXEL_7"],
+  "maxReadyResultSeconds": 600,
+  "humanEvidenceClaimed": false,
+  "commercialEvidenceClaimed": false,
+  "paymentEnabled": false,
+  "publicationAuthorized": false,
+  "campaignAuthorized": false,
+  "mediaSpendAuthorizedBrl": 0
+}

@@ -2,6 +2,7 @@ package com.marketinghub.businessprocess.execution.service.predecessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +24,7 @@ class ProductProcessActivityPredecessorServiceTest {
   private final ProductProcessActivityPredecessorService service =
       new ProductProcessActivityPredecessorService(tasks, instances, new ObjectMapper());
 
-  /** Libera a atividade depois que a predecessora direta atingiu seu objetivo. */
+  /** Libera pela instância concluída sem reler tarefas ou seus prompts históricos. */
   @Test
   void allowsActivityAfterCompletedPredecessor() {
     BusinessProcessDefinition process = process();
@@ -47,9 +48,10 @@ class ProductProcessActivityPredecessorServiceTest {
 
     assertThat(result.ready()).isTrue();
     assertThat(result.reason()).contains("conclusão comprovada");
+    verifyNoInteractions(tasks);
   }
 
-  /** Explica qual atividade precisa ser concluída antes de liberar a decisão seguinte. */
+  /** Mantém o bloqueio da instância pendente sem reler tarefas ou seus prompts históricos. */
   @Test
   void blocksActivityWhilePredecessorIsPending() {
     BusinessProcessDefinition process = process();
@@ -73,6 +75,7 @@ class ProductProcessActivityPredecessorServiceTest {
 
     assertThat(result.ready()).isFalse();
     assertThat(result.reason()).contains("Revisar evidências");
+    verifyNoInteractions(tasks);
   }
 
   /** Ignora setas visuais de retrabalho para não transformar a correção em ciclo predecessor. */

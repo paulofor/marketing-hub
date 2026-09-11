@@ -197,7 +197,7 @@ class CommercialBpmTaskConsumerTest {
         .hasMessageContaining("incompleto");
   }
 
-  /** Usa o parecer v3 somente para a referência sintética, mantendo o histórico privado. */
+  /** Usa o parecer v4 somente para a referência sintética, mantendo o histórico privado. */
   @Test
   void composesAgentIntegrityPromptWithoutHumanApproval() throws Exception {
     MetaAdApproverProperties properties = new MetaAdApproverProperties();
@@ -221,10 +221,58 @@ class CommercialBpmTaskConsumerTest {
 
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
-            "integridade da validação multiagente PDE v3",
+            "integridade da validação multiagente PDE v4",
             "nunca comprova desejo, compra ou satisfação",
             "commercialEvidenceClaimed")
         .doesNotContain("duas leituras sustentam");
+  }
+
+  /** Seleciona o ciclo sem carregar o catálogo e rejeita linhagem inconsistente antes da IA. */
+  @Test
+  void cycleUsesSyntheticPromptAndRejectsWrongIdentity() throws Exception {
+    var properties = new MetaAdApproverProperties();
+    var consumer =
+        new CommercialBpmTaskConsumer(
+            properties,
+            "codex",
+            "test-double",
+            "/absent-global-catalog",
+            "/absent-global-catalog",
+            json);
+    var lineage =
+        new java.util.HashMap<String, Object>(
+            Map.of("learningCycleId", 2L, "productId", 4L, "experimentId", 92L));
+    var task =
+        new java.util.HashMap<String, Object>(
+            Map.of(
+                "taskId",
+                910392L,
+                "processCode",
+                "pde-construction-approval",
+                "processVersion",
+                8,
+                "activityId",
+                "commercialIntegrityReview",
+                "sourceReference",
+                "experiment:92",
+                "taskTarget",
+                Map.of(
+                    "productId",
+                    4L,
+                    "experimentId",
+                    92L,
+                    "pdeContext",
+                    Map.of("lineage", lineage))));
+    org.assertj.core.api.Assertions.assertThat(consumer.prompt(task))
+        .contains(
+            "integridade da validação multiagente PDE v4", "versões históricas", "experiment:92")
+        .doesNotContain(
+            "versionedArtifactEvidence", "kit-whatsapp-pronto", "pde-private-validation-review");
+    lineage.put("productId", 10L);
+    assertThatThrownBy(() -> consumer.prompt(task)).hasMessageContaining("identidade coerente");
+    lineage.put("productId", 4L);
+    task.put("sourceReference", "experiment:91");
+    assertThatThrownBy(() -> consumer.prompt(task)).hasMessageContaining("identidade coerente");
   }
 
   /** Usa somente o contexto privado da tarefa e não carrega entregáveis globais de outro PDE. */

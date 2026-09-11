@@ -1662,8 +1662,7 @@ class AgentTaskServiceTest {
     AgentTask blocked = processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "BLOCKED");
     blocked.setExecutionError("500 : Internal Server Error");
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
-    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
-            "landing-generator", "WORK", "BLOCKED"))
+    when(repository.findRetryableCallbackCandidates("landing-generator"))
         .thenReturn(List.of(blocked));
     when(repository.save(blocked)).thenReturn(blocked);
 
@@ -1688,8 +1687,7 @@ class AgentTaskServiceTest {
         "Dédalo produziu a candidata, mas o backend não conseguiu aplicá-la: "
             + "HTML integral alterou o destino protegido do checkout");
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
-    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
-            "landing-generator", "WORK", "BLOCKED"))
+    when(repository.findRetryableCallbackCandidates("landing-generator"))
         .thenReturn(List.of(blocked));
     when(repository.save(blocked)).thenReturn(blocked);
 
@@ -1701,6 +1699,32 @@ class AgentTaskServiceTest {
     assertThat(recovered.taskId()).isEqualTo(30L);
     assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
     assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+  }
+
+  /** A filtragem SQL não permite repetir a recuperação nem aceitar erro funcional. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "AUTO_RETRY_ONCE|500 : Internal Server Error",
+        "AUTO_RETRY_CALLBACK_ONCE|Internal Server Error",
+        "internal server error",
+        "Protótipo precisa de correção funcional."
+      })
+  void preservesRetryLimitAndExactErrorValidationForCandidates(String error) {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask blocked = processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "BLOCKED");
+    blocked.setExecutionError(error);
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findRetryableCallbackCandidates("landing-generator"))
+        .thenReturn(List.of(blocked));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("landing-generator"))
+        .isEmpty();
+    verify(repository, never()).save(any());
   }
 
   /** Mantém a atividade seguinte bloqueada enquanto sua predecessora não foi entregue. */
@@ -3234,6 +3258,48 @@ class AgentTaskServiceTest {
     value.setCreatedAt(Instant.parse("2026-08-15T04:12:00Z"));
     value.setUpdatedAt(value.getCreatedAt());
     return value;
+  }
+
+  /** A fila de Íris recebe a mesma estratégia privada V3 do gate, inclusive ausência explícita. */
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+  void deliversPrivateIrisStrategyInsteadOfTheLegacyPlan(boolean ready) throws Exception {
+    var repository = mock(AgentTaskRepository.class);
+    var agents = mock(AgentRepository.class);
+    var iris = agent(9L, "communication-director", "Íris");
+    var process = process("PUBLISHED", "Íris");
+    process.setProcessCode("pde-communication-sales-journey");
+    var task = processTask(910400L, iris, process, "communicationContract", "IN_PROGRESS");
+    task.setSourceReference("experiment:91092");
+    when(repository.findById(910400L)).thenReturn(Optional.of(task));
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var contract = new java.util.LinkedHashMap<String, Object>();
+    contract.put("mode", "LEARNING_CYCLE_PRIVATE");
+    contract.put("availability", ready ? "AVAILABLE" : "MISSING");
+    if (ready)
+      contract.put(
+          "marketStrategicContract",
+          Map.of(
+              "availability",
+              "AVAILABLE",
+              "contractVersion",
+              "MARKET_STRATEGY_V3",
+              "contentHash",
+              "a".repeat(64)));
+    when(communication.resolve("experiment:91092")).thenReturn(Optional.of(contract));
+    var service = service(repository, agents, Clock.systemUTC());
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "communicationMaterializationContextProvider", communication);
+    var pending = service.claimedProcessTask("communication-director", 910400L);
+    var context = new ObjectMapper().readTree(pending.processContextJson());
+    assertThat(context.path("marketStrategicContract").path("availability").asText())
+        .isEqualTo(ready ? "AVAILABLE" : "MISSING");
+    if (ready)
+      assertThat(context.path("marketStrategicContract").path("contractVersion").asText())
+          .isEqualTo("MARKET_STRATEGY_V3");
+    assertThat(context.path("communicationMaterializationContext").path("mode").asText())
+        .isEqualTo("LEARNING_CYCLE_PRIVATE");
+    verify(repository, never()).save(any());
   }
 
   /** Monta o serviço com as dependências do vínculo BPM para testes isolados. */

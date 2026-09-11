@@ -4890,3 +4890,47 @@ Proteção: `PdeRevalidationActivityExecutionTest`, revalidação idempotente em
 - Prevenção: teste do consumidor completo da fila ao callback com navegador real, versão
   local de Vega e MySQL; teste de identidade divergente; schema de saída e dois modos
   históricos protegidos. Matriz: `docs/homologacao/vega-ciclo2-validacao-correta-v1.md`.
+- Recorrência em Têmis e no gate, confirmada pelas tarefas #392–#393 em 11/09/2026:
+  Psique já aceitava o ciclo, mas Têmis selecionava o prompt humano e carregava Kit WhatsApp
+  porque reconhecia somente `product:*`. O gate final tinha a mesma limitação. Corrigidos
+  seleção, schema e isolamento de Têmis; o backend resolve a aceitação pelo ciclo e conserva
+  sua referência após aprovação. O gate exige a tentativa mais recente, técnica posterior
+  à correção e identidade das provas para idempotência. A matriz atravessa técnica, três
+  cenários, callback de Têmis e gate local, além de regressões de produto/versão/linhagem.
+  Evidências: `docs/homologacao/vega-integridade-gate-ciclo-v1.md`.
+
+
+## LOOP-BPM-ACOMPANHAMENTO-RETRANSMITE-PROMPTS — correção em 2026-09-11
+
+- **Sintoma:** a tarefa #396 do Vega estava COMPLETED, mas a tela permanecia em
+  “Consultando o andamento”; as releituras expiravam e geravam Broken pipe no backend.
+- **Causa confirmada:** 25 tarefas do ciclo acumulavam resposta de 9.274.127 bytes,
+  com prompts integrais repetidos em duas partes; uma consulta demorou 100 segundos,
+  enquanto o frontend permitia 45. A fonte persistida já continha a conclusão correta.
+- **Correção sistêmica:** lista operacional sem os três campos extensos de prompt;
+  consulta individual sob demanda pelo mesmo módulo, validando produto/processo/referência.
+  Estados, custos, resultados e evidências permanecem na lista. Nenhum histórico é removido.
+- **Prevenção:** teste do serviço com prompt acima de 4 MB exige equivalência funcional
+  da projeção leve; contrato HTTP preserva conteúdo e rejeita contexto divergente;
+  testes de interface exigem ausência de leitura antecipada, retry visível e nenhuma nova
+  tarefa durante recuperação da auditoria. Matriz Chromium desktop/iPhone/Pixel cobre o fluxo.
+
+- **Revisão da causa:** só reduzir o payload não eliminou a demora. O perfil da JVM
+  confirmou releitura das entidades completas em cada card de prontidão; consultas
+  concorrentes de recuperação liam 32,8 MB de prompts de 104 bloqueios sem candidato.
+  A prontidão agora usa projeção SQL sem prompts e a recuperação filtra candidatos antes
+  da hidratação. A decisão continua atual, sem cache nem afrouxamento do gate.
+- **Prevenção adicional:** testes JPA verificam consulta escalar, segregação por
+  origem/processo/versão e seleção dos erros recuperáveis; testes do service mantêm
+  validação exata e impedem repetição de retry.
+
+
+### Continuidade de LOOP-BPM-UI-WORKER-READINESS-DIVERGENTE — ciclo privado, 11/09/2026
+
+Após o gate 258 do Vega, 4.1 bloqueou por procurar o regime de plano/V2, embora as
+tarefas 359/361/362 contenham os contratos privados V3/economia/arquitetura do ciclo 2.
+A projeção privada de Íris preserva os artefatos originais e exige gate atual com
+identidade, hashes e últimas tentativas válidos; a mesma entrada abastece UI e worker.
+Testes não permitem usar plano alheio, repetir prova ultrapassada ou liberar antes do gate.
+A checagem de predecessoras usa instâncias BPM como autoridade sem reler os prompts das
+tarefas quando todas as predecessoras já possuem instância, inclusive quando bloqueadas.

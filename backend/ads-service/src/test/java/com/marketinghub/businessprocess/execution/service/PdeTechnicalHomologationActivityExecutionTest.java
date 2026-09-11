@@ -30,6 +30,7 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.agentvalidation.PdeAgentValidationReworkReadinessProvider;
 import com.marketinghub.product.service.agentvalidation.PdeTechnicalHomologationReadinessProvider;
+import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
@@ -59,7 +60,7 @@ class PdeTechnicalHomologationActivityExecutionTest {
   /**
    * Preserva o bloqueio, oferece a correção configurada e mantém a homologação sujeita aos
    * pré-requisitos; concentra tarefas na origem e remove a dependência de correção concluída.
-   * Exporta estados auditáveis para a homologação visual do acompanhamento.
+   * Exporta estados auditáveis para a homologação visual com a mesma projeção leve da prontidão.
    */
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
@@ -215,6 +216,22 @@ class PdeTechnicalHomologationActivityExecutionTest {
     when(definitions.findByProcessDefinitionIdAndActivityId(70L, "technicalHomologation"))
         .thenReturn(Optional.of(activity));
     when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:92")).thenReturn(history);
+    when(tasks.findPdeValidationTaskSnapshots("experiment:92", "pde-construction-approval"))
+        .thenAnswer(
+            ignored ->
+                history.stream()
+                    .map(
+                        value ->
+                            new PdeValidationTaskSnapshot(
+                                value.getId(),
+                                value.getProcessDefinition().getId(),
+                                value.getProcessActivityId(),
+                                value.getStatus(),
+                                value.getBlockerCategory(),
+                                value.getBlockerAction(),
+                                value.getResultJson(),
+                                value.getExecutionError()))
+                    .toList());
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
                 "pde-construction-approval", "experiment:92"))

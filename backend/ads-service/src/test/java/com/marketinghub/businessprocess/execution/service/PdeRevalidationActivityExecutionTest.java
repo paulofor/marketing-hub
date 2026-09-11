@@ -12,6 +12,7 @@ import com.marketinghub.businessprocess.*;
 import com.marketinghub.businessprocess.execution.service.predecessor.*;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.service.agentvalidation.PdeAgentValidationReworkReadinessProvider;
+import com.marketinghub.product.service.agentvalidation.PdeValidationTaskSnapshot;
 import com.marketinghub.repository.jpa.agenttask.*;
 import com.marketinghub.repository.jpa.businessprocess.*;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -127,8 +128,22 @@ class PdeRevalidationActivityExecutionTest {
         .thenReturn(Optional.of(technical));
     when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:10@"))
         .thenReturn(history);
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("product:10@agent-validation-v1"))
-        .thenReturn(history);
+    when(tasks.findPdeValidationTaskSnapshots(
+            "product:10@agent-validation-v1", "pde-construction-approval"))
+        .thenReturn(
+            history.stream()
+                .map(
+                    task ->
+                        new PdeValidationTaskSnapshot(
+                            task.getId(),
+                            task.getProcessDefinition().getId(),
+                            task.getProcessActivityId(),
+                            task.getStatus(),
+                            task.getBlockerCategory(),
+                            task.getBlockerAction(),
+                            task.getResultJson(),
+                            task.getExecutionError()))
+                .toList());
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
                 "pde-construction-approval", "product:10@"))

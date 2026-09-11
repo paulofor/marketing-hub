@@ -157,3 +157,22 @@ promessa.
 
 Essas métricas não substituem visitantes, checkouts, vendas, receita, entrega ou satisfação reais.
 Com instrumentação ausente, Hermes permanece bloqueado para otimização comercial baseada em eventos.
+
+
+### Comunicação do sucessor privado após o gate do ciclo
+
+Para `experiment:<id>` de um ciclo sucessor aberto, a entrada pode ser
+`IRIS_INPUT_V1` em modo `LEARNING_CYCLE_PRIVATE`. Ela usa o `MARKET_STRATEGY_V3`
+aprovado pela tarefa de Atena daquele ciclo, o `PDE_PRIVATE_ECONOMICS_V1` aprovado
+por Plutus e a arquitetura/aceitação de Dédalo. Não deve inventar plano comercial,
+rebaixar V3 para V2 nem aceitar tarefa financeira genérica como substituição.
+
+A projeção só fica READY após o gate multiagente da mesma cadeia, referência, versão
+e URL. IDs, hashes e estados das últimas provas devem continuar iguais aos aprovados;
+novo planejamento, correção, bloqueio ou versão invalida a disponibilidade. A tela e
+o worker recebem os mesmos contratos. A versão e a URL privadas do ciclo prevalecem
+sobre a página histórica do produto. Critérios humanos da estratégia antiga são
+histórico; o gate vigente permanece AGENT_VALIDATION, sem alegação de prova humana ou
+comercial. A aprovação permite preparar comunicação, sem publicar, cobrar ou gastar.
+O contrato anterior por plano e projeção financeira canônica permanece obrigatório
+fora desse regime de ciclo privado.

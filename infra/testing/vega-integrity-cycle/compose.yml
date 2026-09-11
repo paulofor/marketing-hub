@@ -1,0 +1,15 @@
+services:
+  vega-frontend:
+    image: marketing-hub/pde-platform-frontend-vega:vega393-gate-v12
+  image-harness:
+    image: marketing-hub/customer-agent-worker:vega393-gate-v12
+  backend-image:
+    image: marketing-hub/backend:vega393-gate-v12-ui3
+  admin-image:
+    image: marketing-hub/frontend:vega393-gate-v12-ui
+  temis-image:
+    image: marketing-hub/meta-ad-approver-worker:vega393-gate-v12
+    entrypoint: ["sh", "-c"]
+    command: ["java -version && codex --version && test -s /app/app.jar"]
+    mem_limit: 512m
+    profiles: [checks]

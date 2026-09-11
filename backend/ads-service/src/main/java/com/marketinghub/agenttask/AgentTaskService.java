@@ -1691,14 +1691,12 @@ public class AgentTaskService {
   }
 
   /**
-   * Retoma uma única vez callbacks interrompidos ou rejeições corrigíveis do contrato de landing.
+   * Retoma uma única vez falhas candidatas filtradas no banco, preservando contrato e limite de
+   * tentativa sem reler os prompts de todos os bloqueios funcionais.
    */
   private Optional<AgentTask> recoverInterruptedCallbackOnce(
       String agentKey, String processCode, String activityId, String executionResourceCode) {
-    return repository
-        .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
-            agentKey.trim(), "WORK", "BLOCKED")
-        .stream()
+    return repository.findRetryableCallbackCandidates(agentKey.trim()).stream()
         .filter(task -> task.getProcessDefinition() != null)
         .filter(
             task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
@@ -1823,7 +1821,10 @@ public class AgentTaskService {
                     "O recurso especializado da atividade não está disponível."));
   }
 
-  /** Consolida histórico, memória do ciclo e política vigente sem converter QA em prova humana. */
+  /**
+   * Consolida histórico e contratos do ciclo para os agentes, preservando a entrada privada de
+   * Íris.
+   */
   private String processContext(AgentTask task) {
     try {
       List<AgentTask> processTasks = processContextTasks(task);
@@ -1911,7 +1912,16 @@ public class AgentTaskService {
       if ("communication-director".equals(task.getAssignedAgent().getAgentKey())) {
         communicationMaterializationContextProvider
             .resolve(task.getSourceReference())
-            .ifPresent(contract -> context.put("communicationMaterializationContext", contract));
+            .ifPresent(
+                contract -> {
+                  context.put("communicationMaterializationContext", contract);
+                  if ("LEARNING_CYCLE_PRIVATE".equals(contract.get("mode"))) {
+                    context.put(
+                        "marketStrategicContract",
+                        contract.getOrDefault(
+                            "marketStrategicContract", Map.of("availability", "MISSING")));
+                  }
+                });
       }
       return objectMapper.writeValueAsString(context);
     } catch (Exception ex) {

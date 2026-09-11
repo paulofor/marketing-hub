@@ -61,7 +61,9 @@ public class PdeAgentValidationHarnessRunner {
     this.allowLocalUrls = allowLocalUrls;
   }
 
-  /** Valida o alvo implementado e executa os cenários sem enviar segredo no arquivo de entrada. */
+  /**
+   * Valida a família executável e a identidade do ciclo antes de executar seus cenários isolados.
+   */
   HarnessExecution run(
       Map<String, Object> task, String mode, String scenarioCode, Path workDirectory)
       throws Exception {
@@ -91,7 +93,8 @@ public class PdeAgentValidationHarnessRunner {
     JsonNode lineage = target.path("pdeContext").path("lineage");
     boolean vega =
         "metodo-musa-7-dias".equals(productSlug)
-            && prototypeVersion.matches("musa-pde-entry-v(?:9|10|11)-primeiro-ajuste-aplicavel")
+            && prototypeVersion.matches(
+                "musa-pde-entry-v(?:9|[1-9][0-9]+)-primeiro-ajuste-aplicavel")
             && "/vega-private".equals(URI.create(sourceUrl).getPath())
             && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0

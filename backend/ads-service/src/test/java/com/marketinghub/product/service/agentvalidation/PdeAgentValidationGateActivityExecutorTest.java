@@ -180,6 +180,89 @@ class PdeAgentValidationGateActivityExecutorTest {
     verify(periods, never()).recordTransition(any(), any());
   }
 
+  /** Aprova o ciclo sem alterar o produto comercial nem trocar a referência das tarefas. */
+  @Test
+  void approvesExperimentCycleAndKeepsItsAuditIdempotent() throws Exception {
+    var cycles = mock(PdeAgentValidationCycleContract.class);
+    ReflectionTestUtils.setField(executor, "cycleContracts", cycles);
+    String reference = "experiment:92";
+    var contract = json.readTree(validationContract().replace(SOURCE, reference));
+    when(cycles.resolve(product, process, reference)).thenReturn(contract);
+    product.setValidationDefinitionVersion("v1");
+    product.setCommercialStatus("EXPERIMENTING");
+    String originalDefinition = product.getValidationDefinitionJson();
+    String originalExperience = product.getPdeExperienceJson();
+    for (var task : completedTasks) {
+      task.setSourceReference(reference);
+      task.setResultJson(task.getResultJson().replace(SOURCE, reference));
+    }
+    when(tasks.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(70L, reference))
+        .thenReturn(completedTasks);
+    assertThat(executor.readiness(process, gate, product, reference).ready()).isTrue();
+    assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
+    ArgumentCaptor<BusinessProcessActivityInstance> saved =
+        ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getSourceReference()).isEqualTo(reference);
+    assertThat(saved.getValue().getObjectiveEvidenceJson())
+        .contains(reference)
+        .contains("\"productExecutionState\":\"PLAY\"");
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            710L, reference))
+        .thenReturn(Optional.of(saved.getValue()));
+    assertThat(executor.execute(process, gate, product, reference).objectiveAchieved()).isTrue();
+    verify(instances).saveAndFlush(any());
+    verify(products, never()).save(any());
+    assertThat(product.getCommercialStatus()).isEqualTo("EXPERIMENTING");
+    assertThat(product.getAutomaticExecutionEnabled()).isTrue();
+    assertThat(product.getValidationDefinitionVersion()).isEqualTo("v1");
+    assertThat(product.getValidationDefinitionJson()).isEqualTo(originalDefinition);
+    assertThat(product.getPdeExperienceJson()).isEqualTo(originalExperience);
+    // Uma nova prova exige outra ocorrência mesmo quando o protótipo mantém a versão.
+    completedTasks.getLast().setId(105L);
+    executor.execute(process, gate, product, reference);
+    verify(instances, org.mockito.Mockito.times(2)).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getOccurrenceNumber()).isEqualTo(2);
+  }
+
+  /** Não usa aprovação antiga quando existe tentativa posterior bloqueada ou ainda em execução. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"BLOCKED", "IN_PROGRESS", "PENDING"})
+  void latestAttemptMustBeApproved(String status) {
+    var pending =
+        task(
+            105L,
+            "commercialIntegrityReview",
+            "meta-ad-approver",
+            "MODEL",
+            "gpt-5.6-sol",
+            temisResult(),
+            NOW.minusSeconds(10));
+    pending.setStatus(status);
+    completedTasks.add(pending);
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
+  /** Exige técnica posterior à última correção, mesmo se houver aprovações antigas completas. */
+  @Test
+  void correctionRequiresFreshTechnicalEvidence() {
+    var correction =
+        task(
+            106L,
+            "prototypeCorrection",
+            "landing-generator",
+            "MODEL",
+            "gpt-5.6-sol",
+            "{}",
+            NOW.minusSeconds(10));
+    completedTasks.add(correction);
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+    correction.setDeliveredAt(NOW.minusSeconds(600));
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isTrue();
+    correction.setStatus("BLOCKED");
+    assertThat(executor.readiness(process, gate, product, SOURCE).ready()).isFalse();
+  }
+
   /** Mantém o gate fechado quando falta um dos três cenários independentes. */
   @Test
   void blocksWhenOnePsiqueScenarioIsMissing() {

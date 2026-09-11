@@ -30,7 +30,7 @@ async function internal(path, body, method) {
       page.on('response', response => {
         if (response.status() >= 500) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`);
       });
-      const session = await internal('/internal/sessions', {cycleId:91002, prototypeVersion:'musa-pde-entry-v11-primeiro-ajuste-aplicavel', origin:'HUMAN', readingNumber:2});
+      const session = await internal('/internal/sessions', {cycleId:91002, prototypeVersion:process.env.VEGA_TEST_VERSION || 'musa-pde-entry-v11-primeiro-ajuste-aplicavel', origin:'HUMAN', readingNumber:2});
       try {
         await page.goto(base + '/vega-private/');
         const field = page.getByLabel('Seu convite privado');

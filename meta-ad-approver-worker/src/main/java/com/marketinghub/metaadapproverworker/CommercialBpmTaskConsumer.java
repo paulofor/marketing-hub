@@ -450,14 +450,14 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona a auditoria multiagente sem substituir o contrato privado histórico. */
   private String promptResourceFor(Map<String, Object> task) {
     return isAgentValidationTask(task)
-        ? "prompts/bpm/pde-agent-validation-review-v3.md"
+        ? "prompts/bpm/pde-agent-validation-review-v4.md"
         : promptResourceFor(processCode(task));
   }
 
   /** Seleciona o schema que proíbe alegações humanas na validação sintética. */
   private String schemaResourceFor(Map<String, Object> task) {
     return isAgentValidationTask(task)
-        ? "prompts/bpm/pde-agent-validation-review-v3-schema.json"
+        ? "prompts/bpm/pde-agent-validation-review-v4-schema.json"
         : schemaResourceFor(processCode(task));
   }
 
@@ -469,6 +469,7 @@ public class CommercialBpmTaskConsumer {
 
   /** Reconhece a validação privada para não importar entregáveis globais de outro produto. */
   private boolean isPrivateValidationTask(Map<String, Object> task) {
+    if (isAgentValidationTask(task)) return true;
     Object value = task.get("sourceReference");
     String sourceReference = value == null ? "" : value.toString();
     return sourceReference.startsWith("product:")
@@ -476,12 +477,28 @@ public class CommercialBpmTaskConsumer {
             || sourceReference.contains("@agent-validation-v1"));
   }
 
-  /** Distingue a ocorrência v7 sem inferir validação humana a partir do mesmo processo. */
-  private boolean isAgentValidationTask(Map<String, Object> task) {
+  /** Reconhece produto ou ciclo coerente, recusando desvio silencioso para o parecer humano. */
+  static boolean isAgentValidationTask(Map<String, Object> task) {
     Object value = task.get("sourceReference");
     String sourceReference = value == null ? "" : value.toString();
-    return sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")
-        && "pde-construction-approval".equals(processCode(task));
+    if (!"pde-construction-approval".equals(task.get("processCode"))) return false;
+    if (sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")) return true;
+    boolean multiagent =
+        task.get("processVersion") instanceof Number version && version.intValue() >= 7;
+    if (!multiagent) return false;
+    JsonNode target = new ObjectMapper().valueToTree(task.get("taskTarget"));
+    JsonNode lineage = target.path("pdeContext").path("lineage");
+    long experimentId = target.path("experimentId").asLong();
+    long productId = target.path("productId").asLong();
+    if ("commercialIntegrityReview".equals(task.get("activityId"))
+        && experimentId > 0
+        && productId > 0
+        && sourceReference.equals("experiment:" + experimentId)
+        && lineage.path("learningCycleId").asLong() > 0
+        && lineage.path("experimentId").asLong() == experimentId
+        && lineage.path("productId").asLong() == productId) return true;
+    throw new IllegalArgumentException(
+        "Revisão multiagente sem identidade coerente de produto, experimento e ciclo.");
   }
 
   /** Exige decisão, evidências e nota de preço coerente quando o contrato a declarar. */
@@ -564,7 +581,7 @@ public class CommercialBpmTaskConsumer {
         || !result
             .path("sourceReference")
             .asText()
-            .matches("product:[1-9][0-9]*@agent-validation-v1")
+            .matches("product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*")
         || !expectedReference.equals(result.path("sourceReference").asText())
         || expectedProductId < 1
         || expectedProductId != result.path("productId").asLong()

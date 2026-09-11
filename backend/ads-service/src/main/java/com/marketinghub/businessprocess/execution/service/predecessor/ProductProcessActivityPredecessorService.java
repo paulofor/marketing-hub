@@ -40,7 +40,9 @@ public class ProductProcessActivityPredecessorService {
     this.objectMapper = objectMapper;
   }
 
-  /** Confirma que todas as atividades anteriores do caminho vigente atingiram o objetivo. */
+  /**
+   * Confirma as instâncias anteriores e lê tarefas históricas apenas onde falta essa autoridade.
+   */
   @Transactional(readOnly = true)
   public ProductProcessActivityPredecessorReadiness readiness(
       BusinessProcessDefinition process,
@@ -65,16 +67,18 @@ public class ProductProcessActivityPredecessorService {
       Map<String, BusinessProcessActivityInstance> latestInstances =
           latestInstances(process.getId(), sourceReference);
       Map<String, List<AgentTask>> tasksByActivity =
-          taskRepository
-              .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-                  process.getId(), sourceReference)
-              .stream()
-              .filter(task -> task.getProcessActivityId() != null)
-              .collect(
-                  java.util.stream.Collectors.groupingBy(
-                      AgentTask::getProcessActivityId,
-                      LinkedHashMap::new,
-                      java.util.stream.Collectors.toList()));
+          predecessors.stream().allMatch(latestInstances::containsKey)
+              ? Map.of()
+              : taskRepository
+                  .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+                      process.getId(), sourceReference)
+                  .stream()
+                  .filter(task -> task.getProcessActivityId() != null)
+                  .collect(
+                      java.util.stream.Collectors.groupingBy(
+                          AgentTask::getProcessActivityId,
+                          LinkedHashMap::new,
+                          java.util.stream.Collectors.toList()));
       for (String predecessorId : predecessors) {
         if (!completed(latestInstances.get(predecessorId), tasksByActivity.get(predecessorId))) {
           return new ProductProcessActivityPredecessorReadiness(

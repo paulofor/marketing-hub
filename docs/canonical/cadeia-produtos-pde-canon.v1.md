@@ -775,8 +775,11 @@ formato de componente ou tarefa duplicada.
 Psique e Têmis não podem consultar prova global de outro produto nesse fluxo. Seus pareceres devem
 ser explícitos e posteriores à homologação da mesma versão. O backend recalcula cenários, sinais,
 ordem temporal, vigência da fonte, segregação do tráfego interno e vínculo da versão antes do gate.
-O produto aprovado avança apenas para `COMUNICACAO_E_JORNADA`, permanece em `STOP` e continua sem
-experimento, publicação, cobrança, mídia, pagamento, venda ou receita. O contrato detalhado está em
+Na primeira validação, o produto aprovado avança apenas para `COMUNICACAO_E_JORNADA`, permanece
+em `STOP` e continua sem experimento, publicação, cobrança, mídia, pagamento, venda ou receita.
+Em um ciclo sucessor já vinculado ao experimento planejado, o gate registra a aprovação da versão
+privada no BPM e preserva o estado comercial e operacional existente do produto, sem ativar o
+experimento, cobrar ou publicar campanha. O contrato detalhado está em
 `docs/canonical/pde-validacao-multiagente-canon.v1.md`.
 
 ## Vídeos no ciclo comercial PDE — 08/09/2026
@@ -787,3 +790,24 @@ existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. 
 ativos, criativo e contrato da mesma versão; o usuário recebe links para as telas oficiais.
 A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
 Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.
+
+
+## Acompanhamento leve e auditoria integral — 11/09/2026
+
+A lista operacional pode usar `includePromptAudit=false` no contrato de atividades:
+conserva tarefas, custos, evidências, estados e orientação do ciclo, adiando apenas
+`promptSent`, `agentPromptPart` e `activityPromptPart`. O histórico integral permanece
+compatível para os consumidores existentes. A interface lê os prompts quando o usuário
+solicita **Ver prompts desta tarefa**, com falha visível e nova tentativa independente
+da execução do agente.
+
+O endpoint canônico `GET /api/business-processes/{processDefinitionId}/products/{productId}/tasks/{taskId}/prompt-audit?sourceReference=...`
+valida produto, processo e referência exatos antes de entregar os textos integrais.
+Atualizar o acompanhamento não deve retransmitir todos os prompts históricos.
+
+
+A prontidão de retrabalho deve consultar somente campos usados na decisão, filtrando
+origem e processo no banco. Prompts completos não participam da consulta de prontidão.
+A seleção de falhas recuperáveis deve filtrar candidatos no SQL antes de hidratar as
+tarefas, preservando reserva exclusiva, contrato e limite de tentativa. O crescimento
+da auditoria não deve impedir o usuário de acompanhar ou executar a próxima atividade.

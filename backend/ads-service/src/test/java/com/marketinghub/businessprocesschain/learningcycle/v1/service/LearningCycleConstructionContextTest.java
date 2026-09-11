@@ -106,11 +106,18 @@ class LearningCycleConstructionContextTest {
   /**
    * Confirma que a versão e as provas vêm do ciclo sem modificar produto, checkout ou histórico.
    */
-  @Test
-  void buildsSuccessorWithExactApprovalsAndInheritedLearning() {
-    var result =
-        resolver.resolve("experiment:92", experiment, "pde-construction-approval").orElseThrow();
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"pde-construction-approval", "pde-communication-sales-journey"})
+  void buildsSuccessorWithExactApprovalsAndInheritedLearning(String processCode) {
+    var result = resolver.resolve("experiment:92", experiment, processCode).orElseThrow();
     assertThat(result.experienceVersion()).isEqualTo("successor-v8");
+    var plan = result.pdeContext().path("agentValidationPlan");
+    assertThat(plan.path("sourceReference").asText()).isEqualTo("experiment:92");
+    assertThat(plan.path("contractVersion").asText()).isEqualTo("PDE_AGENT_VALIDATION_V1");
+    assertThat(plan.path("requiredScenarios").size()).isEqualTo(3);
+    assertThat(plan.path("requiredDevices").size()).isEqualTo(3);
+    assertThat(plan.path("humanEvidenceClaimed").asBoolean()).isFalse();
     assertThat(result.publicUrl()).isNull();
     assertThat(result.commercialCheckoutUrl()).isNull();
     assertThat(result.pdeContext().path("lineage").path("architectureTaskId").asLong())

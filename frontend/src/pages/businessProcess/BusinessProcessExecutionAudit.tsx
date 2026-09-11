@@ -4,6 +4,9 @@ import {
   formattedDuration,
 } from "./BusinessProcessExecutionPresentation";
 import PromptAuditCards from "./PromptAuditCards";
+import DeferredTaskPromptAudit, {
+  type TaskPromptAuditRequest,
+} from "./DeferredTaskPromptAudit";
 import "./BusinessProcessesPage.css";
 
 export type BusinessProcessExecutionAuditData = Pick<
@@ -31,12 +34,14 @@ export type BusinessProcessExecutionAuditData = Pick<
 type BusinessProcessExecutionAuditProps = {
   execution: BusinessProcessExecutionAuditData;
   headingLevel?: "h2" | "h3" | "h4";
+  promptAudit?: TaskPromptAuditRequest;
 };
 
 /** Exibe metadados e prompt persistidos de uma tarefa sem inferir dados no frontend. */
 export default function BusinessProcessExecutionAudit({
   execution,
   headingLevel = "h2",
+  promptAudit,
 }: BusinessProcessExecutionAuditProps) {
   return (
     <>
@@ -106,14 +111,23 @@ export default function BusinessProcessExecutionAudit({
         </div>
       </dl>
 
-      <PromptAuditCards
-        executionMode={execution.executionMode}
-        agentNickname={execution.assignedAgentNickname}
-        agentPromptPart={execution.agentPromptPart}
-        activityPromptPart={execution.activityPromptPart}
-        promptSent={execution.promptSent}
-        headingLevel={headingLevel}
-      />
+      {promptAudit ? (
+        <DeferredTaskPromptAudit
+          request={promptAudit}
+          executionMode={execution.executionMode}
+          agentNickname={execution.assignedAgentNickname}
+          headingLevel={headingLevel}
+        />
+      ) : (
+        <PromptAuditCards
+          executionMode={execution.executionMode}
+          agentNickname={execution.assignedAgentNickname}
+          agentPromptPart={execution.agentPromptPart}
+          activityPromptPart={execution.activityPromptPart}
+          promptSent={execution.promptSent}
+          headingLevel={headingLevel}
+        />
+      )}
     </>
   );
 }

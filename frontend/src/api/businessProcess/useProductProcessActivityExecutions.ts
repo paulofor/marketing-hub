@@ -38,7 +38,7 @@ export function useProductProcessActivityHistory(
       (
         await axios.get<ProductProcessActivityExecutionHistory>(
           `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions${queryString ? `?${queryString}` : ""}`,
-          { signal, timeout: 45000 },
+          { signal, timeout: 45000, params: { includePromptAudit: false } },
         )
       ).data,
   });

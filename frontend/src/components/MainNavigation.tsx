@@ -65,11 +65,17 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/products",
         label: "Gestão de Produto",
         icon: Package,
+        end: true,
       },
       {
         to: "/agents",
         label: "Gestão de Agentes",
         icon: Bot,
+      },
+      {
+        to: "/products/all",
+        label: "Todos os produtos",
+        icon: List,
       },
       {
         to: "/product-types",

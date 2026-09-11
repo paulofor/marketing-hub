@@ -1,0 +1,18 @@
+{
+  "cardKey": "explicacao-ia-especifica-coerente",
+  "collection": "neuromarketing",
+  "title": "Explique recomendações de IA com especificidade e coerência",
+  "finding": "Em experimento within-participant com 40 pessoas, explicações de um sistema de apoio à decisão geralmente aumentaram aceitação e confiança versus ausência de explicação, e os participantes preferiram justificativas informativas, tecnicamente específicas e logicamente coerentes, com concisão adequada.",
+  "mechanism": "Uma justificativa específica reduz incerteza interpretativa e ajuda o usuário a formar um modelo mental verificável da recomendação. Mais texto, por si só, não é o mecanismo; o valor está na relação clara entre recomendação, critério e evidência.",
+  "commercialApplication": "Nas recomendações dos agentes do Marketing Hub, testar um padrão curto de explicação: recomendação → critério principal → evidência específica → limite ou incerteza quando relevante, comparando-o com justificativa genérica e sem explicação.",
+  "evidenceStrength": "Moderada: experimento controlado within-participant publicado no International Journal of Industrial Ergonomics, mas com N=40 e tarefa simulada de procurement. Evidência suficiente para gerar hipótese de UX, não para afirmar efeito comercial.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Explicações curtas, específicas e coerentes aumentarão compreensão e aceitação adequada das recomendações do agente e reduzirão correções desnecessárias em relação a justificativas genéricas, sem elevar carga cognitiva.",
+  "risks": "Explicações convincentes podem aumentar confiança em recomendações erradas; não revelar detalhes irrelevantes ou sensíveis; evitar rationale decorativo que pareça verificável sem corresponder ao processo real.",
+  "limits": "Amostra pequena, cenário simulado e domínio de procurement. Aceitação e confiança não equivalem a decisão correta nem a conversão; impacto no Marketing Hub precisa ser medido com compreensão, erro, CTA e eventos reais do funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-11-explicacao-ia-especifica-coerente.md",
+  "sourceTitle": "Fonte revisada — Explicações de IA específicas, coerentes e concisas",
+  "sourceSha256": "d4f73b26c9efd132e2e60a3824baa584965c0c1be787fc161607b6e8c56e63f0"
+}

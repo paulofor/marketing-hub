@@ -658,7 +658,7 @@ describe("ProductProcessActivityExecutionsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText(/Tarefa #243/)).toHaveLength(4);
     expect(
-      screen.getAllByText("Nenhuma tarefa registrada para este produto."),
+      screen.getAllByText("Nenhuma tarefa registrada para esta atividade."),
     ).toHaveLength(2);
     expect(
       screen.getByRole("link", { name: "Histórico de atividades" }),

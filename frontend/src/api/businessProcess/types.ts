@@ -421,6 +421,7 @@ export type ProductProcessActivityExecutionGroup = {
   recoveryAction?: {
     activityId: string;
     activityName: string;
+    sequenceNumber?: number | null;
     ownerName: string;
     actionLabel: string;
     actionAvailable: boolean;

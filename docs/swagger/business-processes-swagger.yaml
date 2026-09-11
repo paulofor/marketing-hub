@@ -800,11 +800,12 @@ components:
     ProductProcessActivityRecovery:
       type: object
       nullable: true
-      description: Comando da atividade de recuperação declarada no mesmo processo. Usa o endpoint execution-requests com activityId e o mesmo learningCycleId. Não libera a atividade bloqueada nem altera suas tarefas. Disponibilidade recalculada pelo backend, inclusive quando já existe tarefa ativa ou o produto está em STOP.
+      description: Referência à atividade responsável por uma correção ainda necessária no mesmo processo. O card dependente apresenta link para a atividade de origem, preservando learningCycleId e chainId; somente no destino são exibidos comando e acompanhamento da correção. Não altera tarefas, custos ou status da atividade dependente. Correção com objetivo atingido deixa de ser oferecida como pendência.
       required: [activityId, activityName, ownerName, actionLabel, actionAvailable, availabilityReason, operationalState, objectiveAchieved]
       properties:
         activityId: { type: string }
         activityName: { type: string }
+        sequenceNumber: { type: integer, nullable: true, description: Número da atividade de correção dentro do processo selecionado. }
         ownerName: { type: string }
         actionLabel: { type: string }
         actionAvailable: { type: boolean }
@@ -814,7 +815,7 @@ components:
         latestTask:
           type: object
           nullable: true
-          description: Última tentativa da correção na mesma referência e versão do processo. Não duplica prompts nem resultados completos.
+          description: Referência histórica compatível à última tentativa da correção na mesma referência e versão. Não pertence ao card dependente e não deve ser exibida como sua tarefa; acompanhamento e auditoria ficam na atividade de origem.
           properties:
             taskId: { type: integer, format: int64 }
             status: { type: string }

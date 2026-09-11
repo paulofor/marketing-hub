@@ -58,7 +58,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class PdeTechnicalHomologationActivityExecutionTest {
   /**
    * Preserva o bloqueio, oferece a correção configurada e mantém a homologação sujeita aos
-   * pré-requisitos; exporta estados auditáveis para a homologação visual do acompanhamento.
+   * pré-requisitos; concentra tarefas na origem e remove a dependência de correção concluída.
+   * Exporta estados auditáveis para a homologação visual do acompanhamento.
    */
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
@@ -416,10 +417,21 @@ class PdeTechnicalHomologationActivityExecutionTest {
                 .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         var recoveryView =
             json.readTree(stateResponse).path("activities").get(4).path("recoveryAction");
-        assertThat(recoveryView.path("latestTask").path("status").asText()).isEqualTo(state);
-        assertThat(recoveryView.path("latestTask").path("taskId").asLong()).isEqualTo(900378L);
-        assertThat(recoveryView.path("objectiveAchieved").asBoolean())
-            .isEqualTo("COMPLETED".equals(state));
+        if ("COMPLETED".equals(state)) {
+          assertThat(recoveryView.isNull()).isTrue();
+        } else {
+          assertThat(recoveryView.path("activityId").asText()).isEqualTo("prototypeCorrection");
+          assertThat(recoveryView.path("sequenceNumber").asInt()).isEqualTo(6);
+          assertThat(recoveryView.path("latestTask").path("status").asText()).isEqualTo(state);
+          assertThat(recoveryView.path("latestTask").path("taskId").asLong()).isEqualTo(900378L);
+          assertThat(recoveryView.path("objectiveAchieved").asBoolean()).isFalse();
+        }
+        var originTask =
+            json.readTree(stateResponse).path("activities").get(5).path("tasks").get(0);
+        assertThat(originTask.path("taskId").asLong()).isEqualTo(900378L);
+        assertThat(originTask.path("status").asText()).isEqualTo(state);
+        assertThat(json.readTree(stateResponse).path("activities").get(4).path("tasks").toString())
+            .doesNotContain("900378");
         if (output != null)
           Files.writeString(Path.of(output + "." + state + ".json"), stateResponse);
       }

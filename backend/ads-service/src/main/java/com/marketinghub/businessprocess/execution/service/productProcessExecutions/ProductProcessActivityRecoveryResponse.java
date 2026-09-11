@@ -1,11 +1,13 @@
 package com.marketinghub.businessprocess.execution.service.productProcessExecutions;
 
 /**
- * Responsabilidade: expor o comando canônico que trata o bloqueio de outra atividade do processo.
+ * Responsabilidade: identificar a atividade responsável pela correção e sua disponibilidade, sem
+ * atribuir a tarefa de correção à atividade dependente.
  */
 public record ProductProcessActivityRecoveryResponse(
     String activityId,
     String activityName,
+    Integer sequenceNumber,
     String ownerName,
     String actionLabel,
     boolean actionAvailable,

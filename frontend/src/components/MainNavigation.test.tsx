@@ -55,6 +55,23 @@ describe("MainNavigation", () => {
     ).toHaveLength(1);
   });
 
+  it("oferece uma visão separada com todos os produtos", () => {
+    render(
+      <MemoryRouter initialEntries={["/products/all"]}>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    const allProductsLink = screen.getByRole("link", {
+      name: "Todos os produtos",
+    });
+    expect(allProductsLink).toHaveAttribute("href", "/products/all");
+    expect(allProductsLink).toHaveClass("is-active");
+    expect(
+      screen.getByRole("link", { name: "Gestão de Produto" }),
+    ).not.toHaveClass("is-active");
+  });
+
   it("oferece acesso direto ao dossiê de oportunidades", () => {
     render(
       <MemoryRouter>

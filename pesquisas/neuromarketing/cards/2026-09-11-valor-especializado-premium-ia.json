@@ -1,0 +1,18 @@
+{
+  "cardKey": "valor-especializado-premium-ia",
+  "collection": "neuromarketing",
+  "title": "IA premium precisa tornar o valor especializado concreto",
+  "finding": "Dados recentes da Parks Associates indicam aumento da adoção paga de IA e maior disposição a pagar quando a experiência oferece produtividade clara ou valor especializado; usuários pagos também reportaram NPS mais alto nas plataformas avaliadas.",
+  "mechanism": "O rótulo IA pode gerar curiosidade, mas a disposição a pagar tende a ser mais defensável quando o usuário consegue ligar a ferramenta a um trabalho específico, economia de esforço ou resultado percebido.",
+  "commercialApplication": "Adicionar ValueSpecificity ao desenho de ofertas e creative variants, comparando posicionamento genérico de IA com propostas centradas em produtividade ou resultado especializado mantendo funcionalidade, preço e canal constantes.",
+  "evidenceStrength": "Moderada-baixa: pesquisa comercial recente e consistente com adoção paga crescente, porém o release público é resumido e NPS maior entre pagantes pode refletir auto-seleção; não há demonstração causal de disposição a pagar por uma mensagem específica.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Para a mesma funcionalidade e preço, posicionar a oferta por um resultado especializado e verificável aumentará checkout e pagamento em relação a uma proposta genérica centrada apenas no fato de usar IA.",
+  "risks": "Especialização de fachada, promessas de produtividade não demonstradas ou claims vagos podem reduzir confiança; evitar apresentar associação entre usuários pagos e NPS como causalidade.",
+  "limits": "Os dados são dos Estados Unidos e vêm de material público resumido de uma empresa de pesquisa comercial. Não medem elasticidade de preço no Brasil nem garantem impacto em CTR, conversão, retenção ou receita.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-11-valor-especializado-premium-ia.md",
+  "sourceTitle": "Fonte revisada — Valor especializado como justificativa para IA premium",
+  "sourceSha256": "9a30b55b06a4626ed7f1fcddcbdd7c701e80b22bff1bd59cc5f897dff9356d86"
+}

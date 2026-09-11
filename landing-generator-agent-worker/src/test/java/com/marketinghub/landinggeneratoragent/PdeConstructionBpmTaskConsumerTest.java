@@ -221,6 +221,9 @@ class PdeConstructionBpmTaskConsumerTest {
     assertThat(read("prompts/pde-construction/v3/prototype-correction.md"))
         .contains(
             "blockedActivities",
+            "processContextJson.validationPolicy",
+            "mode=AGENT_VALIDATION",
+            "não recrutamento nem duas leituras humanas",
             "FUNCTIONAL_ADJUSTMENT",
             "TECHNICAL_FAILURE",
             "learningSalesCycle",

@@ -35,7 +35,7 @@
       "type": "string",
       "enum": ["ADHERENT", "RECOVERY", "SAFETY"]
     },
-    "sourceReference": {"type": "string", "pattern": "^product:[1-9][0-9]*@agent-validation-v1$"},
+    "sourceReference": {"type": "string", "pattern": "^(product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*)$"},
     "productId": {"type": "integer", "minimum": 1},
     "productSlug": {"type": "string", "minLength": 1, "maxLength": 160},
     "prototypeVersion": {"type": "string", "minLength": 1, "maxLength": 120},

@@ -167,6 +167,16 @@ Os cenários são avaliações sintéticas e devem usar `trafficClass=AGENT_VALI
 interno equivalente a `mh_internal_test`. Podem explorar personas do público, mas nunca recebem
 nome, consentimento, depoimento ou identificador de participante humana.
 
+Na passagem de um ciclo de vendas, a referência canônica pode ser `experiment:<id>`.
+O consumidor deve validar produto, experimento, ciclo e versão fornecidos pelo backend;
+a forma da referência nunca pode desviar uma atividade sintética para o prompt de leitura
+humana ou para capturas anônimas. Identidade inconsistente bloqueia antes de qualquer
+inferência. Prompt, schema e validação do callback devem aceitar o mesmo contrato.
+O backend publica `validationPolicy` na fila para a versão multiagente do processo,
+distinguindo gate vigente de exigências humanas presentes nos pareceres históricos.
+Cada cenário deve vincular suas capturas persistidas e expor entrada, saída e eventos
+da sessão segregada realmente executada, sem segredos ou evidências de outros produtos.
+
 ## Evidência obrigatória
 
 Ao recriar o backend compartilhado, o deploy deve revalidar a ligação de todos os frontends PDE

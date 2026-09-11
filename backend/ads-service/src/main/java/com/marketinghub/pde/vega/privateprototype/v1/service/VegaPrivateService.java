@@ -35,7 +35,7 @@ public class VegaPrivateService {
   private final ProductRepository products;
   private final ObjectMapper json;
 
-  @Value("${PDE_VEGA_PROTOTYPE_VERSION:musa-pde-entry-v9-primeiro-ajuste-aplicavel}")
+  @Value("${PDE_VEGA_PROTOTYPE_VERSION:musa-pde-entry-v11-primeiro-ajuste-aplicavel}")
   private String version;
 
   private static final Set<String> TERMINAL = Set.of("COMPLETED", "FAILED", "BLOCKED");

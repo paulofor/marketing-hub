@@ -291,6 +291,11 @@ public class CustomerBpmTaskConsumer {
         .forEach(
             value -> {
               ObjectNode scenario = (ObjectNode) value;
+              if (!scenario.path("screenshotEvidenceKeys").isArray()
+                  || scenario.path("screenshotEvidenceKeys").isEmpty()) {
+                throw new PdeAgentValidationHarnessRunner.HarnessException(
+                    "Cenário sem vínculo explícito com a captura desta execução.");
+              }
               ArrayNode ids = scenario.putArray("screenshotEvidenceIds");
               scenario
                   .path("screenshotEvidenceKeys")
@@ -672,6 +677,7 @@ public class CustomerBpmTaskConsumer {
 
   /** Reconhece o produto privado para não misturar provas globais de outro PDE no parecer. */
   private boolean isPrivateValidationTask(Map<String, Object> task) {
+    if (isAgentValidationTask(task)) return true;
     Object value = task.get("sourceReference");
     String sourceReference = value == null ? "" : value.toString();
     return sourceReference.startsWith("product:")
@@ -679,12 +685,29 @@ public class CustomerBpmTaskConsumer {
             || sourceReference.contains("@agent-validation-v1"));
   }
 
-  /** Reconhece somente as três tarefas sintéticas da versão multiagente. */
-  private boolean isAgentValidationTask(Map<String, Object> task) {
+  /** Reconhece os cenários do produto ou do ciclo sem desviar para a revisão humana histórica. */
+  static boolean isAgentValidationTask(Map<String, Object> task) {
     Object value = task.get("sourceReference");
     String sourceReference = value == null ? "" : value.toString();
-    return sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")
-        && Set.of("psiqueAdherent", "psiqueRecovery", "psiqueSafety").contains(activityId(task));
+    if (!Set.of("psiqueAdherent", "psiqueRecovery", "psiqueSafety").contains(activityId(task)))
+      return false;
+    if (!"pde-construction-approval".equals(task.get("processCode")))
+      throw new IllegalArgumentException("Cenário de Psique fora do processo multiagente.");
+    if (sourceReference.matches("product:[1-9][0-9]*@agent-validation-v1")) return true;
+    JsonNode target = new ObjectMapper().valueToTree(task.get("taskTarget"));
+    JsonNode lineage = target.path("pdeContext").path("lineage");
+    long experimentId = target.path("experimentId").asLong();
+    long productId = target.path("productId").asLong();
+    if (task.get("processVersion") instanceof Number version
+        && version.intValue() >= 7
+        && experimentId > 0
+        && productId > 0
+        && sourceReference.equals("experiment:" + experimentId)
+        && lineage.path("learningCycleId").asLong() > 0
+        && lineage.path("experimentId").asLong() == experimentId
+        && lineage.path("productId").asLong() == productId) return true;
+    throw new IllegalArgumentException(
+        "Cenário multiagente sem identidade coerente de produto, experimento e ciclo.");
   }
 
   /** Mapeia cada atividade publicada para exatamente um cenário canônico. */
@@ -731,7 +754,7 @@ public class CustomerBpmTaskConsumer {
         || !result
             .path("sourceReference")
             .asText()
-            .matches("product:[1-9][0-9]*@agent-validation-v1")
+            .matches("product:[1-9][0-9]*@agent-validation-v1|experiment:[1-9][0-9]*")
         || !expectedReference.equals(result.path("sourceReference").asText())
         || expectedProductId < 1
         || expectedProductId != result.path("productId").asLong()

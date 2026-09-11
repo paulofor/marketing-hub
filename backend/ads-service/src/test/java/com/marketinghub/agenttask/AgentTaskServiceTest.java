@@ -2766,6 +2766,10 @@ class AgentTaskServiceTest {
             .orElseThrow();
 
     var context = new ObjectMapper().readTree(pending.processContextJson());
+    assertThat(context.path("validationPolicy").path("mode").asText())
+        .isEqualTo("AGENT_VALIDATION");
+    assertThat(context.path("validationPolicy").path("humanReadingsRequired").asBoolean(true))
+        .isFalse();
     if ("TECHNICAL_FAILURE".equals(category)) {
       assertThat(context.path("learningSalesCycle").path("cycleId").asLong()).isEqualTo(2L);
       assertThat(

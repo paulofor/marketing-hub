@@ -91,7 +91,7 @@ public class PdeAgentValidationHarnessRunner {
     JsonNode lineage = target.path("pdeContext").path("lineage");
     boolean vega =
         "metodo-musa-7-dias".equals(productSlug)
-            && prototypeVersion.startsWith("musa-pde-entry-v9-")
+            && prototypeVersion.matches("musa-pde-entry-v(?:9|10|11)-primeiro-ajuste-aplicavel")
             && "/vega-private".equals(URI.create(sourceUrl).getPath())
             && sourceReference.equals("experiment:" + target.path("experimentId").asLong())
             && lineage.path("learningCycleId").asLong() > 0

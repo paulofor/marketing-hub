@@ -7,6 +7,11 @@ Use somente `taskTarget`, `agentScenarioExecution`, `visualEvidence` e o histór
 `processContext`. A execução do cenário já foi realizada pelo harness; inspecione os pixels anexos
 e os fatos estruturados. Não navegue na web e não tente repetir a jornada por conta própria.
 
+A política atual `processContext.validationPolicy` governa esta passagem. Exigências de duas
+leituras humanas em contratos ou pareceres antigos são históricas: não constituem pré-requisito
+do cenário sintético. Julgue o percurso novo e as capturas autenticadas da versão atual; uma
+rejeição anterior ou uma página anônima de convite não substitui a evidência desta execução.
+
 Esta avaliação não representa uma cliente. Não invente nome, consentimento, depoimento,
 preferência, intenção de compra, satisfação, venda ou receita. Descreva a perspectiva como
 simulação explícita de uma persona aderente ao público, sempre limitada às evidências observadas.

@@ -47,3 +47,25 @@ data recente e confirmações dos testes. Ele libera a revisão da correção, s
 parecer, a homologação, contatos, campanha, cobrança ou gasto de mídia.
 
 A tabela de testes e evidências fica em `docs/homologacao/vega-tarefa-380-prototipo-v1.md`.
+
+## Correção do ciclo 2 após a tarefa #384
+
+A v10 `musa-pde-entry-v10-primeiro-ajuste-aplicavel` mantém resultado, oferta e privacidade,
+e oferece recuperação do convite sem publicar acesso. O link é validado pela mesma origem,
+fica apenas em memória e exige consentimento antes da troca pelo endpoint `/access` existente.
+Convite inválido, expirado ou revogado mantém erro e opção de usar outro convite.
+
+Psique deve reconhecer `experiment:<id>` com produto, experimento e ciclo coerentes no
+alvo oficial, abrir uma sessão `AGENT_VALIDATION` e avaliar seu cartão, eventos e captura.
+Não usar captura anônima nem o contrato histórico de duas leituras humanas para as
+atividades 3.7–3.9. O backend explicita `validationPolicy` no contexto da tarefa; esse
+contrato governa o gate atual, preservando os pareceres e a estratégia anteriores como
+histórico. Convites humanos continuam disponíveis para seu uso próprio, sem serem
+pré-requisito inventado da homologação multiagente.
+
+Evidência e matriz: `docs/homologacao/vega-ciclo2-validacao-correta-v1.md`.
+
+A v11 consolida a correção da v10 e elimina a consulta de sessão sem credencial na
+entrada anônima. O convite continua obrigatório. A matriz verifica explicitamente
+que a página não envia essa chamada protegida e que não recebe HTTP 5xx. Cada registro
+de aceitação referencia a imagem que efetivamente será avaliada; a v10 permanece no histórico.

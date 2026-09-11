@@ -178,6 +178,13 @@ execução ainda estiver em uma atividade do processo pai, a tela deve declarar 
 apresentar o próximo subprocesso. Ausência de histórico deve aparecer como planejamento, nunca como
 subprocesso concluído.
 
+Decisão de 11/09/2026: início e catálogo destacam, antes dos detalhes do processo, um link
+direto para a atividade orientada de cada produto. Número, nome e responsável vêm do contrato
+canônico de execução; produto, cadeia, ciclo quando existir e âncora da atividade são
+preservados. O acesso acompanha tarefas ativas e abre pendências bloqueadas sem disparar
+execuções. Para ciclos, seguir `nextWork` conforme o cânone de ciclos; para produtos sem ciclo,
+usar `currentActivityId` no processo/subprocesso atual, nunca deduzir sequência no frontend.
+
 Cada permanência de produto em processo ou subprocesso deve expor data de entrada, data de saída
 quando houver avanço comprovado, dias corridos e custo estimado conhecido em dólares. O backend é a
 fonte desses cálculos: macroprocessos usam períodos auditáveis abertos e fechados na mudança real de

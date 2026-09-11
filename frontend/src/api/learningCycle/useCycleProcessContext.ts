@@ -53,12 +53,14 @@ export function useCycleProcessContext(
       chainId,
     ],
     enabled: Boolean(productId && processDefinitionId),
-    queryFn: async () =>
+    queryFn: async ({ signal }) =>
       (
         await axios.get<CycleProcessContext | null>(
           `${cycleApi}/products/${productId}/process-context`,
           {
             params: { processDefinitionId, cycleId, chainId },
+            signal,
+            timeout: 45000,
           },
         )
       ).data || null,

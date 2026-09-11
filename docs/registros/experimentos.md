@@ -1,3 +1,13 @@
+## 2026-09-11 — Cards com acesso direto à atividade de cada produto
+
+- Início e catálogo passam a destacar número, nome, responsável e link da atividade
+  orientada pelo backend, incluindo produtos sem ciclo, como Rigel.
+- O segundo ciclo de Vega preserva experimento, cadeia, âncora da atividade e aprendizado
+  anterior. Tarefas ativas oferecem acompanhamento; bloqueios abrem a pendência.
+- O acesso apenas navega. Nenhuma execução, aprovação, métrica ou publicação foi criada.
+- Contratos existentes reutilizados; mudanças locais no frontend. Matriz, alternativas e
+  resultados em [Cards: próxima atividade](../homologacao/cards-proxima-atividade-v1.md).
+
 ## 2026-09-10 — Vega: ação única e acompanhamento da tarefa de correção
 
 - Causa confirmada na tela, endpoint e MCP: o clique criou #378 no ciclo #2/experimento #92,

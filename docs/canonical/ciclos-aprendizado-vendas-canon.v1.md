@@ -63,6 +63,16 @@ Carregamento, falha de consulta e ciclo encerrado devem aparecer explicitamente,
 silenciosamente a orientação por “Etapa 6 de 6” ou presumir operação comercial.
 O card reutiliza o contrato canônico `process-context`; não decide transições nem cria tarefas.
 
+Decisão de 11/09/2026: os cards do início e do catálogo devem destacar um acesso direto à
+atividade orientada, com número, nome e responsável, acima dos detalhes do processo. Produtos
+com ciclo preservam `learningCycleId`, `chainId` e a âncora da atividade de `nextWork.url`.
+Atividade pendente ou em execução oferece acompanhamento; atividade bloqueada oferece acesso
+à pendência. O link apenas navega, sem criar tarefas, aprovar, publicar ou avançar o ciclo.
+Produtos sem ciclo usam o `currentActivityId` do contrato canônico `activity-executions`,
+no processo/subprocesso identificado pelo backend; o frontend não procura a primeira atividade
+incompleta. Ausência de orientação, consulta em andamento ou falha devem ser explícitas. A
+consulta possui timeout e retentativa visível, sem manter o card carregando indefinidamente.
+
 Evoluções do BPM pai e da cadeia criam versões novas. Definições, tarefas e ciclos anteriores
 permanecem auditáveis. Retornos comerciais são registrados no ciclo e não entram como
 predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.

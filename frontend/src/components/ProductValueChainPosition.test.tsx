@@ -1,7 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import ProductValueChainPosition from "./ProductValueChainPosition";
+
+// A consulta e o destino são cobertos em ProductNextActivitySummary e no navegador integrado.
+vi.mock("./ProductNextActivitySummary", () => ({ default: () => null }));
 
 describe("ProductValueChainPosition", () => {
   afterEach(() => cleanup());

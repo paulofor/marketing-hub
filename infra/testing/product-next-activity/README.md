@@ -1,4 +1,10 @@
-# Cards com acesso direto à próxima atividade
+> Atualização de 12/09/2026: o destaque dos cards agora abre o **processo**. O caminho
+> deste runner é mantido para compatibilidade; os resultados ficam em
+> `artifacts/product-next-process/<rodada>`. A matriz atual está em
+> `docs/homologacao/cards-proximo-processo-v1.md`. O roteiro antigo de `vega-cycle-card`
+> delega a este mesmo navegador para impedir divergência de contratos.
+
+# Cards com acesso direto ao próximo processo
 
 Execute a partir da raiz do repositório:
 
@@ -7,10 +13,10 @@ npm --prefix frontend ci --no-audit --no-fund
 bash infra/testing/product-next-activity/run-round.sh local
 ```
 
-O runner executa 87 testes relacionados, TypeScript, build, navegação real no frontend,
+O runner executa 99 testes relacionados, TypeScript, build, navegação real no frontend,
 Prettier e revisão de whitespace. Requer Node/npm, Chromium e `@playwright/test` resolvível
 pelo Node (disponíveis na sandbox). As evidências ficam em
-`artifacts/product-next-activity/<rodada>/`.
+`artifacts/product-next-process/<rodada>/`.
 
 A extração do hook de leitura também foi conferida pelo teste existente de acompanhamento:
 
@@ -19,9 +25,9 @@ npm --prefix frontend test -- --run src/api/businessProcess/useProductProcessAct
 ```
 
 O navegador simula GETs oficiais para Vega com segundo ciclo e Rigel sem ciclo. Exercita
-início e catálogo, desktop, iPhone 15 Pro e Pixel 7, chegada à âncora da atividade, retorno,
+início e catálogo, desktop, iPhone 15 Pro e Pixel 7, chegada ao painel de execução do processo, retorno,
 isolamento de produto/ciclo, memória, erro e retentativa, resposta divergente, bloqueio,
-conclusão sem continuidade e mudança da atividade orientada. Testes unitários complementam
+conclusão sem continuidade, coordenação do ciclo e mudança da atividade orientada. Testes unitários complementam
 subprocesso, tarefas pendentes e falha de atualização com cache anterior.
 
 As fixtures são locais e identificadas como QA. Nenhuma sessão comercial, tarefa, campanha,
@@ -29,4 +35,4 @@ cobrança ou chamada de IA é criada. Toda escrita e integração externa é blo
 fecha servidor e navegador ao terminar e não cria topologia Docker. A emulação Chromium
 não equivale a teste em Safari ou celular físico.
 
-Critérios e evidências: [homologação](../../../docs/homologacao/cards-proxima-atividade-v1.md).
+Critérios e evidências: [homologação](../../../docs/homologacao/cards-proximo-processo-v1.md).

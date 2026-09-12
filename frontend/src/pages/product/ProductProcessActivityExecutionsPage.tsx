@@ -130,7 +130,10 @@ export default function ProductProcessActivityExecutionsPage() {
   const data = cycleContextUnavailable ? undefined : history.data;
   const loaded = Boolean(data);
   useEffect(() => {
-    if (loaded && hash.startsWith("#activity-"))
+    if (
+      loaded &&
+      (hash.startsWith("#activity-") || hash === "#process-execution")
+    )
       document
         .getElementById(hash.slice(1))
         ?.scrollIntoView?.({ block: "start" });

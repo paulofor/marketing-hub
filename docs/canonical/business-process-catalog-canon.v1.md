@@ -36,6 +36,20 @@ O backend é a autoridade de progressão; um executor externo pode consultar pen
 solicitar sua conciliação, mas não escolher, encadear ou disparar atividades por conta própria.
 Essa mudança evolui a execução dos processos existentes, preservando suas definições BPM.
 
+**Entrada pelos cards de produto — decisão de 12/09/2026:** em `/products` e nos cards
+compartilhados do início, o destaque passa a ser **Abrir próximo processo**, com número e
+nome do processo indicado pelos contratos oficiais de execução/ciclo. O link preserva
+produto, definição, cadeia e ciclo e abre o cabeçalho com o painel de execução, sem âncora
+de atividade. Navegar não inicia tarefas, não aprova gates e não altera PLAY/STOP.
+A atividade atual, o responsável e os impedimentos continuam como contexto do processo,
+sem deduzir o estado do processo a partir do estado de uma única atividade.
+Quando o ciclo aberto não indicar outro trabalho, oferecer **Abrir processo do ciclo**
+para seu processo coordenador oficial, mantendo acesso às decisões. Ciclo encerrado,
+processo concluído sem continuidade informada, posição desconhecida e falha de consulta
+devem ser explícitos; nunca inventar o processo seguinte por numeração ou status comercial.
+As leituras canônicas de `businessprocess.execution` e `businessprocesschain.learningcycle.v1`
+já suportam esses destinos; a navegação reutiliza seus contratos sem nova regra de avanço.
+
 O Marketing Hub mantém um cadastro próprio e versionado de processos de negócio. Esse catálogo é a
 fonte de verdade para propósito, responsáveis, eventos, atividades, gates, entradas, saídas e relação
 com contratos técnicos. A tela canônica é `/business-processes` e a API é

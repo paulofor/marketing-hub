@@ -1,7 +1,7 @@
 import { ArrowRight, History, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
 import ProductValueChainCycleSummary from "./ProductValueChainCycleSummary";
-import ProductNextActivitySummary from "./ProductNextActivitySummary";
+import ProductNextProcessSummary from "./ProductNextProcessSummary";
 import { sortProductStageMeasurements } from "../api/product/useProductValueChainPositions";
 import type {
   ProductStageMeasurement,
@@ -194,6 +194,11 @@ export default function ProductValueChainPosition({
               ? position.sequenceNumber
               : null
           }
+          processName={
+            position.processDefinitionId === flow.modelProcessDefinitionId
+              ? position.processName
+              : undefined
+          }
           isPositionError={isError}
         />
         <details className="product-value-chain-position__history">
@@ -228,7 +233,7 @@ export default function ProductValueChainPosition({
       aria-label={`Posição de ${productName} na cadeia de valor`}
     >
       {identified && position.productId === historyProductId ? (
-        <ProductNextActivitySummary
+        <ProductNextProcessSummary
           position={position}
           isPositionError={isError}
         />

@@ -2,7 +2,7 @@ import { History, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { SalesFlow } from "../api/learningCycle/salesFlow";
 import { useCycleProcessContext } from "../api/learningCycle/useCycleProcessContext";
-import ProductNextActivityLink from "./ProductNextActivityLink";
+import ProductNextProcessLink from "./ProductNextProcessLink";
 import "./ProductValueChainCycleSummary.css";
 
 const cycleStatuses: Record<string, string> = {
@@ -15,10 +15,12 @@ const cycleStatuses: Record<string, string> = {
 export default function ProductValueChainCycleSummary({
   flow,
   processNumber,
+  processName,
   isPositionError = false,
 }: {
   flow: SalesFlow;
   processNumber?: number | null;
+  processName?: string | null;
   isPositionError?: boolean;
 }) {
   const query = useCycleProcessContext(
@@ -61,7 +63,7 @@ export default function ProductValueChainCycleSummary({
 
       {query.isLoading && !query.isFetched ? (
         <p role="status">
-          Consultando a atividade e o aprendizado deste ciclo...
+          Consultando o processo e o aprendizado deste ciclo...
         </p>
       ) : unavailable ? (
         <div role="alert" className="product-cycle-summary__work">
@@ -72,6 +74,12 @@ export default function ProductValueChainCycleSummary({
             onClick={() => void query.refetch()}
             disabled={query.isFetching || isPositionError}
           >
+            {query.isFetching ? (
+              <span
+                className="spinner-border spinner-border-sm me-1"
+                aria-hidden="true"
+              />
+            ) : null}
             {query.isFetching ? "Consultando..." : "Tentar novamente"}
           </button>
           {isPositionError ? (
@@ -83,12 +91,24 @@ export default function ProductValueChainCycleSummary({
       ) : (
         <>
           {work ? (
-            <ProductNextActivityLink {...work} />
+            <ProductNextProcessLink {...work} />
+          ) : current ? (
+            <>
+              <ProductNextProcessLink
+                processNumber={processNumber}
+                processName={processName || "Coordenação do ciclo de vendas"}
+                url={parentUrl}
+                cycleProcess
+              />
+              <p>
+                A próxima ação está na etapa do ciclo. Consulte os critérios e
+                as decisões.
+              </p>
+            </>
           ) : (
             <p>
-              {current
-                ? "A próxima ação está na etapa do ciclo. Consulte os critérios e as decisões."
-                : "Esta passagem está encerrada. Consulte a decisão e a continuidade no histórico do ciclo."}
+              Esta passagem está encerrada. Consulte a decisão e a continuidade
+              no histórico do ciclo.
             </p>
           )}
           <p className="product-cycle-summary__stage">
@@ -146,7 +166,7 @@ export default function ProductValueChainCycleSummary({
       )}
 
       <Link
-        className={`product-cycle-summary__cycle-link${consistent && !unavailable && !work ? " btn btn-primary" : ""}`}
+        className="product-cycle-summary__cycle-link"
         to={consistent ? context.cycleUrl : flow.navigationUrl}
       >
         <History size={15} aria-hidden="true" />

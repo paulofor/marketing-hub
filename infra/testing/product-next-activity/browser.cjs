@@ -8,8 +8,7 @@ const assert = require("node:assert/strict");
 (async () => {
   const root = path.resolve("infra/testing/vega-cycle-card/fixtures");
   const output = path.resolve(
-    process.env.NEXT_ACTIVITY_OUTPUT ||
-      "artifacts/product-next-activity/browser",
+    process.env.NEXT_PROCESS_OUTPUT || "artifacts/product-next-process/browser",
   );
   const uiDir = path.resolve("frontend/dist");
   const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
@@ -176,6 +175,19 @@ const assert = require("node:assert/strict");
             data = activities;
           } else if (
             url.pathname ===
+            "/api/business-processes/75/products/4/activity-executions"
+          ) {
+            assert.equal(url.searchParams.get("learningCycleId"), "2");
+            assert.equal(url.searchParams.get("chainId"), "14");
+            data = {
+              ...rigelActivities,
+              productId: 4,
+              productName: "Vega · QA local",
+              productInternalName: "Vega",
+              currentExecutionReference: "experiment:92",
+            };
+          } else if (
+            url.pathname ===
             "/api/business-processes/75/products/9/activity-executions"
           ) {
             assert.equal(url.searchParams.get("learningCycleId"), null);
@@ -190,7 +202,6 @@ const assert = require("node:assert/strict");
             if (mode === "mismatch") data.productId = 4;
             if (mode === "complete")
               Object.assign(data, {
-                currentActivityId: null,
                 objectiveAchieved: true,
               });
             if (mode === "updated") {
@@ -207,6 +218,48 @@ const assert = require("node:assert/strict");
             }
             if (mode === "slow")
               await new Promise((resolve) => setTimeout(resolve, 600));
+          } else if (url.pathname.endsWith("/automation/v1")) {
+            const match = url.pathname.match(
+              /business-processes\/(\d+)\/products\/(\d+)/,
+            );
+            const processId = Number(match[1]),
+              productId = Number(match[2]);
+            assert.equal(url.searchParams.get("chainId"), "14");
+            assert.equal(
+              url.searchParams.get("learningCycleId"),
+              productId === 4 ? "2" : null,
+            );
+            data = {
+              id: productId,
+              productId,
+              processDefinitionId: processId,
+              chainId: 14,
+              learningCycleId: productId === 4 ? 2 : null,
+              sourceReference:
+                productId === 4 ? "experiment:92" : "experiment:89",
+              status: "RUNNING",
+              reason: "Execução simulada na sandbox.",
+              currentActivityId: null,
+              currentActivityName: null,
+              currentOwnerName: null,
+              currentSequence: null,
+              totalActivities: 4,
+              completedActivities: 1,
+              remainingActivities: 3,
+              omittedActivities: 0,
+              completionPercentage: 25,
+              knownCostUsd: 0,
+              costCoverage: "NO_EXECUTIONS",
+              canStart: false,
+              canPause: true,
+              canResume: false,
+              automaticExecution: true,
+              childRunId: null,
+              navigationUrl: null,
+              lastReconciledAt: null,
+              updatedAt: "2026-09-12T10:00:00Z",
+              revision: 1,
+            };
           } else if (url.pathname.endsWith("/execution-progress")) data = [];
           else if (
             [
@@ -239,18 +292,24 @@ const assert = require("node:assert/strict");
       ]) {
         await page.goto(origin + pathname, { waitUntil: "domcontentloaded" });
         await expect(
-          card("Vega").getByText("3.7 — Psique · cenário aderente", {
-            exact: true,
-          }),
+          card("Vega").getByText(
+            "Atividade em andamento: 3.7 — Psique · cenário aderente",
+            {
+              exact: true,
+            },
+          ),
         ).toBeVisible();
         await expect(
-          card("Vega").getByRole("link", { name: "Acompanhar atividade" }),
-        ).toHaveAttribute("href", context.nextWork.url);
-        await expect(
-          card("Rigel").getByRole("link", { name: "Abrir próxima atividade" }),
+          card("Vega").getByRole("link", { name: "Abrir próximo processo" }),
         ).toHaveAttribute(
           "href",
-          "/products/9/value-chain-history/processes/75/activities?chainId=14#activity-optimization",
+          `${context.nextWork.url.split("#")[0]}#process-execution`,
+        );
+        await expect(
+          card("Rigel").getByRole("link", { name: "Abrir próximo processo" }),
+        ).toHaveAttribute(
+          "href",
+          "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
         );
         await expect(
           card("Rigel").getByText("Responsável: Hermes"),
@@ -270,8 +329,8 @@ const assert = require("node:assert/strict");
           const link = card(product).getByRole("link", {
             name:
               product === "Vega"
-                ? "Acompanhar atividade"
-                : "Abrir próxima atividade",
+                ? "Abrir próximo processo"
+                : "Abrir próximo processo",
           });
           const box = await link.boundingBox();
           assert(
@@ -287,13 +346,17 @@ const assert = require("node:assert/strict");
             await page.keyboard.press("Enter");
           } else await link.click();
           await expect(page).toHaveURL(origin + href);
-          const activity = page.locator(
-            product === "Vega"
-              ? "#activity-psiqueAdherent"
-              : "#activity-optimization",
-          );
-          await expect(activity).toBeVisible();
-          await expect(activity).toBeInViewport();
+          const panel = page.getByRole("region", {
+            name: "Execução automática do processo",
+          });
+          await expect(panel).toBeVisible();
+          await expect(
+            panel.getByText("Execução do processo", { exact: true }),
+          ).toBeInViewport();
+          assert.equal(new URL(page.url()).hash, "#process-execution");
+          await expect(
+            panel.getByRole("button", { name: "Pausar", exact: true }),
+          ).toBeVisible();
           if (product === "Vega") {
             await expect(
               page.getByRole("heading", {
@@ -320,8 +383,8 @@ const assert = require("node:assert/strict");
             card(product).getByRole("link", {
               name:
                 product === "Vega"
-                  ? "Acompanhar atividade"
-                  : "Abrir próxima atividade",
+                  ? "Abrir próximo processo"
+                  : "Abrir próximo processo",
             }),
           ).toBeVisible();
           results.push({
@@ -349,7 +412,7 @@ const assert = require("node:assert/strict");
         timeout: 20000,
       });
       await expect(
-        card("Rigel").getByRole("link", { name: "Abrir próxima atividade" }),
+        card("Rigel").getByRole("link", { name: "Abrir próximo processo" }),
       ).toHaveCount(0);
       mode = "slow";
       await card("Rigel")
@@ -359,7 +422,7 @@ const assert = require("node:assert/strict");
         card("Rigel").getByRole("button", { name: "Consultando..." }),
       ).toBeDisabled();
       await expect(
-        card("Rigel").getByRole("link", { name: "Abrir próxima atividade" }),
+        card("Rigel").getByRole("link", { name: "Abrir próximo processo" }),
       ).toBeVisible();
       for (const variant of [
         "mismatch",
@@ -381,7 +444,7 @@ const assert = require("node:assert/strict");
         if (variant === "blocked") {
           await expect(
             card("Vega").getByRole("link", {
-              name: "Ver atividade e pendência",
+              name: "Abrir próximo processo",
             }),
           ).toBeVisible();
           await expect(
@@ -390,18 +453,38 @@ const assert = require("node:assert/strict");
             ),
           ).toBeVisible();
         }
-        if (variant === "cycle-step")
+        if (variant === "cycle-step") {
           await expect(
             card("Vega").getByRole("link", { name: "Abrir etapa do ciclo" }),
           ).toHaveAttribute("href", context.cycleUrl);
+          const link = card("Vega").getByRole("link", {
+            name: "Abrir processo do ciclo",
+          });
+          await expect(link).toHaveAttribute(
+            "href",
+            "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14#process-execution",
+          );
+          await link.click();
+          await expect(
+            page
+              .getByRole("region", { name: "Execução automática do processo" })
+              .getByText("Execução do processo", { exact: true }),
+          ).toBeInViewport();
+          results.push({
+            device,
+            product: "Vega",
+            cycleProcess: "PASS",
+            writes: 0,
+          });
+        }
         if (variant === "updated")
           await expect(
             card("Rigel").getByRole("link", {
-              name: "Abrir próxima atividade",
+              name: "Abrir próximo processo",
             }),
           ).toHaveAttribute(
             "href",
-            "/products/9/value-chain-history/processes/75/activities?chainId=14#activity-delivery",
+            "/products/9/value-chain-history/processes/75/activities?chainId=14#process-execution",
           );
       }
       assert.deepEqual(errors, [], "Nenhum erro de renderização.");

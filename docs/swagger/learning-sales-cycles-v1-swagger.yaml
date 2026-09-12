@@ -58,9 +58,14 @@ paths:
   /catalog:
     get:
       summary: Consultar BPM versionado, destinos de correção e experimentos elegíveis
+      description: >-
+        Com cycleId, exige o produto e a versão exatos da cadeia e usa o BPM persistido
+        dessa ocorrência. O retorno ao processo pai inclui learningCycleId, inclusive para
+        um predecessor encerrado; não substitui a seleção pelo ciclo aberto.
       parameters:
         - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
         - {name: productId, in: query, required: false, schema: {type: integer, format: int64}}
+        - {name: cycleId, in: query, required: false, schema: {type: integer, format: int64}}
       responses:
         '200':
           description: Grafo persistido, versão, atividades reais e opções segregadas pelo produto
@@ -80,6 +85,7 @@ paths:
                   successorChainName: {type: string, nullable: true}
                   createExperimentUrl: {type: string, nullable: true, description: 'Cadastro oficial com produto e nicho existentes; não usar o wizard que recria a descoberta.'}
         '404': {description: Cadeia, produto ou BPM não instalado}
+        '409': {description: Ciclo não pertence ao produto ou à versão da cadeia solicitados}
   /entry:
     get:
       summary: Resolver a entrada do ciclo pelo processo de venda ou pelo subprocesso
@@ -268,6 +274,10 @@ components:
             O backend confere status, aprovação, vínculos e URLs e grava assinaturas do conteúdo lido.
             Revalida a integração antes da homologação, autorização e publicação, exigindo o contrato
             publicado na confirmação produtiva. Nenhum comando gera vídeo ou autoriza consumo externo.
+            A seleção e o comando usam a fonte canônica da construção (experiment:<id> para
+            o ciclo comercial ou a fonte privada explícita do produto), sem fallback entre fontes.
+            A última ocorrência do gate precisa aprovar o produto e a versão exatos depois do ajuste;
+            provas contextuais também declaram sourceReference no JSON.
             VALIDATION: approvalInstanceId
             (gate canônico real do mesmo produto/versão), journeyEvidence, humanObservationEvidence opcional,
             instrumentationVerified=true. AUTHORIZATION: confirmed=true, productVersion, budgetLimitBrl.

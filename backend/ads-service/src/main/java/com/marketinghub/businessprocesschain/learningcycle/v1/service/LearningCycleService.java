@@ -237,11 +237,31 @@ public class LearningCycleService {
     return selected.stream().map(this::response).toList();
   }
 
-  /** Expõe o grafo instalado e os destinos reais da cadeia, com experimentos do próprio produto. */
+  /** Mantém a consulta do catálogo sem uma ocorrência explicitamente selecionada. */
   @Transactional(readOnly = true)
   public LearningCycleCatalog catalog(Long chainId, Long productId) {
+    return catalog(chainId, productId, null);
+  }
+
+  /** Expõe o grafo e o retorno da ocorrência exata, sem substituí-la pelo ciclo aberto. */
+  @Transactional(readOnly = true)
+  public LearningCycleCatalog catalog(Long chainId, Long productId, Long cycleId) {
     var chain = requiredChain(chainId);
-    var process = requiredCycleProcess();
+    var selectedCycle =
+        cycleId == null
+            ? null
+            : cycles.findById(cycleId).orElseThrow(() -> notFound("Ciclo não encontrado."));
+    require(
+        selectedCycle == null
+            || (Objects.equals(productId, selectedCycle.getProductId())
+                && Objects.equals(chainId, selectedCycle.getChainDefinitionId())),
+        "Selecione um ciclo deste produto e desta versão da cadeia.");
+    var process =
+        selectedCycle == null
+            ? requiredCycleProcess()
+            : processes
+                .findById(selectedCycle.getProcessDefinitionId())
+                .orElseThrow(() -> notFound("Processo do ciclo não encontrado."));
     List<LearningCycleCatalog.ExperimentOption> options = List.of();
     if (productId != null) {
       requireProduct(productId, false);
@@ -286,7 +306,11 @@ public class LearningCycleService {
         json.read(process.getDiagramJson()),
         targets(chain),
         options,
-        organization.describe(chain, process, productId, openCycle(productId, chain)),
+        organization.describe(
+            chain,
+            process,
+            productId,
+            selectedCycle == null ? openCycle(productId, chain) : selectedCycle),
         successorChain == null ? null : successorChain.getId(),
         successorChain == null
             ? null
@@ -1088,7 +1112,17 @@ public class LearningCycleService {
       nextAction = "Abra a atividade orientada e execute «" + target.getName() + "». " + nextAction;
       responsible = target.getOwnerName();
     }
-    var nextWork = workResolver == null ? null : workResolver.resolve(cycle);
+    var preparation = workResolver == null ? null : workResolver.resolvePreparation(cycle);
+    var nextWork = preparation == null ? null : preparation.nextWork();
+    if (preparation != null && preparation.completed()) {
+      workUrl = null;
+      nextAction =
+          "As atividades delegadas desta etapa já comprovaram seus objetivos. "
+              + "Registre as evidências neste ciclo para seguir para "
+              + label(next(cycle.getStage(), videoWorkflow(cycle)))
+              + ". Esse registro não autoriza publicação, campanha ou cobrança.";
+      responsible = "Operador do ciclo · registro das evidências";
+    }
     if (nextWork != null) {
       workUrl = nextWork.url();
       nextAction =

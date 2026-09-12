@@ -24,10 +24,21 @@ public class LearningCycleWorkResolver {
     this.executions = executions;
   }
 
-  /** Avança a orientação depois de uma atividade concluída sem alterar etapas ou aprovações. */
+  /**
+   * Responsabilidade: distinguir trabalho pendente, conclusão comprovada e ausência de contexto.
+   */
+  public record Resolution(Work nextWork, boolean completed) {}
+
+  /** Mantém o contrato de navegação para consumidores que precisam apenas do próximo trabalho. */
   public Work resolve(LearningSalesCycle cycle) {
+    return resolvePreparation(cycle).nextWork();
+  }
+
+  /** Confere todos os trabalhos delegados antes de orientar o registro da etapa no ciclo. */
+  public Resolution resolvePreparation(LearningSalesCycle cycle) {
     if (!"OPEN".equals(cycle.getStatus())
-        || !Set.of("PLANNING", "ADJUSTMENT", "VALIDATION").contains(cycle.getStage())) return null;
+        || !Set.of("PLANNING", "ADJUSTMENT", "VALIDATION").contains(cycle.getStage()))
+      return new Resolution(null, false);
     var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
     String initialCode =
         "PLANNING".equals(cycle.getStage())
@@ -42,7 +53,7 @@ public class LearningCycleWorkResolver {
                         : initialCode.equals(item.getProcessDefinition().getProcessCode()))
             .findFirst()
             .orElse(null);
-    if (initial == null) return null;
+    if (initial == null) return new Resolution(null, false);
     var allowed =
         "ADJUSTMENT".equals(cycle.getStage())
             ? Set.of(
@@ -50,12 +61,14 @@ public class LearningCycleWorkResolver {
                 "pde-construction-approval",
                 "pde-communication-sales-journey")
             : Set.of(initialCode);
-    for (var item :
+    var delegated =
         chain.getItems().stream()
             .filter(value -> value.getSequenceNumber() >= initial.getSequenceNumber())
             .filter(value -> allowed.contains(value.getProcessDefinition().getProcessCode()))
             .sorted(Comparator.comparing(BusinessProcessChainItem::getSequenceNumber))
-            .toList()) {
+            .toList();
+    if (delegated.isEmpty()) return new Resolution(null, false);
+    for (var item : delegated) {
       var process = item.getProcessDefinition();
       var state =
           executions.productProcessExecutions(
@@ -66,28 +79,30 @@ public class LearningCycleWorkResolver {
               .filter(value -> value.activityId().equals(state.currentActivityId()))
               .findFirst()
               .orElse(null);
-      if (activity == null) return null;
-      return new Work(
-          process.getId(),
-          item.getSequenceNumber(),
-          process.getName(),
-          activity.activityId(),
-          activity.sequenceNumber(),
-          activity.activityName(),
-          activity.activityOwnerName(),
-          activity.operationalState(),
-          activity.stateReason(),
-          "/products/"
-              + cycle.getProductId()
-              + "/value-chain-history/processes/"
-              + process.getId()
-              + "/activities?learningCycleId="
-              + cycle.getId()
-              + "&chainId="
-              + cycle.getChainDefinitionId()
-              + "#activity-"
-              + activity.activityId());
+      if (activity == null) return new Resolution(null, false);
+      return new Resolution(
+          new Work(
+              process.getId(),
+              item.getSequenceNumber(),
+              process.getName(),
+              activity.activityId(),
+              activity.sequenceNumber(),
+              activity.activityName(),
+              activity.activityOwnerName(),
+              activity.operationalState(),
+              activity.stateReason(),
+              "/products/"
+                  + cycle.getProductId()
+                  + "/value-chain-history/processes/"
+                  + process.getId()
+                  + "/activities?learningCycleId="
+                  + cycle.getId()
+                  + "&chainId="
+                  + cycle.getChainDefinitionId()
+                  + "#activity-"
+                  + activity.activityId()),
+          false);
     }
-    return null;
+    return new Resolution(null, true);
   }
 }

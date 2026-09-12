@@ -19,11 +19,16 @@ import org.springframework.web.bind.annotation.*;
 public class LearningCycleController {
   private final LearningCycleService service;
 
-  /** Expõe o grafo e as opções oficiais para a cadeia e o produto selecionados. */
+  /** Expõe o grafo e o retorno oficiais, preservando a ocorrência selecionada quando informada. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary =
+          "Catálogo do ciclo com retorno ao processo pai no mesmo produto, cadeia e ocorrência")
   @GetMapping("/catalog")
   public LearningCycleCatalog catalog(
-      @RequestParam Long chainId, @RequestParam(required = false) Long productId) {
-    return service.catalog(chainId, productId);
+      @RequestParam Long chainId,
+      @RequestParam(required = false) Long productId,
+      @RequestParam(required = false) Long cycleId) {
+    return service.catalog(chainId, productId, cycleId);
   }
 
   /** Resolve a entrada pelo BPM pai ou subprocesso sem criar nenhuma ocorrência. */

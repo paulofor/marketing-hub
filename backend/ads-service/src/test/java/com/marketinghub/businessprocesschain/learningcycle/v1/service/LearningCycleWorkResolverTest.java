@@ -100,8 +100,36 @@ class LearningCycleWorkResolverTest {
     cycle.setStage("PLANNING");
     state(67, true, null);
     assertThat(resolver.resolve(cycle)).isNull();
+    assertThat(resolver.resolvePreparation(cycle).completed()).isTrue();
     assertThat(cycle.getStage()).isEqualTo("PLANNING");
     verify(executions, never()).productProcessExecutions(70L, 4L, 2L, 14L);
+  }
+
+  /** A conclusão da preparação se distingue de contexto ausente sem modificar a etapa. */
+  @Test
+  void recognizesCompletedPreparationWithoutRepeatingOldReturn() {
+    state(67, true, null);
+    state(70, true, null);
+    assertThat(resolver.resolvePreparation(cycle).completed()).isTrue();
+    assertThat(cycle.getStage()).isEqualTo("ADJUSTMENT");
+    assertThat(cycle.getReturnProcessId()).isEqualTo(67L);
+  }
+
+  /** Uma cadeia sem o destino original não pode apresentar a preparação como concluída. */
+  @Test
+  void missingReturnIsNotCompletedPreparation() {
+    cycle.setReturnProcessId(999L);
+    assertThat(resolver.resolvePreparation(cycle).completed()).isFalse();
+    verifyNoInteractions(executions);
+  }
+
+  /** Ausência de atividade atual em processo incompleto é desconhecimento, nunca sucesso. */
+  @Test
+  void missingCurrentActivityIsNotCompletion() {
+    var state = mock(ProductProcessActivityExecutionHistoryResponse.class);
+    when(state.activities()).thenReturn(List.of());
+    when(executions.productProcessExecutions(67L, 4L, 2L, 14L)).thenReturn(state);
+    assertThat(resolver.resolvePreparation(cycle).completed()).isFalse();
   }
 
   /** Decisão encerrada e atividade chamadora não geram recursão nem novos comandos. */

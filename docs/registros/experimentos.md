@@ -7181,3 +7181,21 @@ ponta nem teste de publicação do sucessor.
   Criá-la não aprova o protótipo: implementação, aceitação e homologação continuam necessárias.
 - Nenhuma tarefa produtiva, publicação, campanha ou venda foi gerada nesta solicitação.
   [Contratos, matriz e evidências](../homologacao/vega-criar-tarefa-correcao-v1.md).
+
+### 2026-09-12 — Vega #92: continuidade do processo 6 e identidade do gate
+
+- Tela, código e MCP confirmaram o ciclo 2 em ajuste apesar da construção e comunicação
+  concluídas. O consumidor do gate procurava fonte legada diferente de `experiment:92`.
+- Correção local homologada: origem canônica compartilhada entre produtor e consumidor,
+  bloqueio de prova divergente e orientação de registro quando o trabalho delegado terminou.
+- Duas rodadas completas passaram: 2.774 backend, 629 frontend e 33 Atena por rodada,
+  REST/MySQL 5.7 e navegador desktop/iPhone/Pixel. Nenhuma conclusão comercial é inferida.
+- Vídeos, slot comercial e autorizações do sucessor permanecem requisitos próprios;
+  não há orçamento aprovado registrado para #92.
+- [Diagnóstico, alternativas, matriz e evidências](../homologacao/vega-processo6-recuperacao-ciclo-v1.md).
+
+- Continuação da mesma recuperação: o retorno ao pai também preserva a ocorrência
+  selecionada, incluindo histórico com sucessor aberto. Duas rodadas finais (4 e 5)
+  aprovaram backend, frontend, executores, REST/MySQL e desktop/iPhone/Pixel.
+- Registro produtivo feito pela tela: evento 10 do ciclo 2, revisão 7, conclui ADJUSTMENT
+  com os gates 258 e 270 e avança a VIDEO_BRIEF. Não aprova gasto, campanha ou cobrança.

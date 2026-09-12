@@ -5048,3 +5048,28 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
 - **Prevenção:** `PrivateCommunicationJourneyTest`, replay offline dos contratos exportados, testes dos controles de execução e três cenários HTTP/MySQL para troca de destino, tarefa em curso e ciclo novo, com navegação desktop/mobile. Cânone: `docs/canonical/iris-communication-agent-canon.v1.md`; matriz e resultados: `docs/homologacao/vega-destino-aprovado-ciclo-v1.md`.
 - **Revisão da causa-raiz:** dois testes adicionais reproduziram a perda da conclusão após `ADJUSTED` ou avanço para `MEASUREMENT`: o validador confundia falta de autorização para novo trabalho com prova passada inválida. A consulta agora preserva o registro arquivado e seu destino; a preparação aberta continua revalidando provas. Isso também respeita o histórico do ciclo 1, encerrado com evidências preservadas, e o contrato já protegido pelo conciliador.
 - **Contrato físico de leitura e escrita:** a validação publicada revelou HTTP 500 nos GETs do histórico/contexto: o leitor novo reutilizava uma consulta com `PESSIMISTIC_WRITE` dentro de transação somente leitura. O MySQL 5.7 rejeitou o SQL com erro 1792. `PrivateCommunicationJourneyPersistenceTest` reproduziu as duas falhas com JPA, transações Spring e banco real; consultas passaram a usar um método sem lock, enquanto a conclusão conserva a reserva. O runner integral agora executa esse teste também no MySQL isolado, além da suíte comum, para impedir que mocks escondam novamente o contrato transacional.
+
+
+## LOOP-CICLO-GATE-FONTE-DIVERGENTE — homologação ignora o gate do experimento
+
+- **Evidência em 12/09/2026:** Vega, ciclo 2, experimento 92. Gate #258 concluído na v12
+  e integração privada #270 comprovados no MCP. `LearningCycleEvidence` consultava apenas
+  a fonte privada do produto; o produtor e o fluxo atual usam `experiment:92`.
+- **Causa:** duplicação da regra de identidade no consumidor e retorno antigo usado como
+  orientação depois de todos os trabalhos delegados concluírem.
+- **Correção:** produtor e consumidor compartilham a resolução canônica de fonte; seleção,
+  comando e revalidação preservam escopo e reprovação posterior. Orientação distingue
+  preparação concluída de contexto ausente e direciona ao registro no ciclo.
+- **Prevenção:** LearningCycleEvidenceTest, LearningCycleWorkResolverTest,
+  LearningCycleContinuationTest e fixture HTTP/MySQL que agora produz gates na fonte real
+  do ciclo. Contratos legados têm cobertura própria, sem fallback entre referências.
+- **Limite comercial:** vídeos de campanha e de entrada continuam pendentes no #92;
+  valores propostos não são autorização de produção ou mídia. Matriz e resultados em
+  `docs/homologacao/vega-processo6-recuperacao-ciclo-v1.md`.
+
+### Continuidade — retorno do ciclo ao pai sem ocorrência, 12/09/2026
+
+A navegação publicada do Vega omitia `learningCycleId` no `parentUrl`. O catálogo conhecia
+apenas o ciclo aberto, mesmo quando a tela selecionava histórico. A correção recebe o ciclo
+explícito, valida produto/cadeia e preserva o BPM persistido e o retorno. A regressão exige
+predecessor encerrado com sucessor aberto em REST/MySQL e nos três perfis de navegador.

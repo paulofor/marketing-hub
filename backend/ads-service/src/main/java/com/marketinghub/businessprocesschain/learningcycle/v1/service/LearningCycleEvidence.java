@@ -13,6 +13,7 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,7 @@ public class LearningCycleEvidence {
   private final ExperimentRunRepository runs;
   private final LearningCycleJson json;
   private final LearningCyclePublicationHistory publicationHistory;
+  private final ProductRepository products;
 
   /** Exige gate canônico aprovado para o mesmo produto e versão depois do último ajuste. */
   public void validation(LearningSalesCycle cycle, JsonNode data) {
@@ -53,8 +55,7 @@ public class LearningCycleEvidence {
         "PDE_AGENT_VALIDATION_GATE_V1".equals(proof.path("evidenceType").asText())
             && proof.path("productId").asLong(-1) == cycle.getProductId()
             && cycle.getProductVersion().equals(proof.path("prototypeVersion").asText())
-            && ("product:" + cycle.getProductId() + "@agent-validation-v1")
-                .equals(gate.getSourceReference()),
+            && sourceMatches(cycle, gate, proof),
         "A aprovação deve pertencer ao produto e à versão exatos deste ciclo.");
     require(
         gate.getExitedAt() != null && !gate.getExitedAt().isBefore(cycle.getVersionChangedAt()),
@@ -85,7 +86,8 @@ public class LearningCycleEvidence {
               var proof = json.read(gate.getObjectiveEvidenceJson());
               return "PDE_AGENT_VALIDATION_GATE_V1".equals(proof.path("evidenceType").asText())
                   && proof.path("productId").asLong(-1) == cycle.getProductId()
-                  && cycle.getProductVersion().equals(proof.path("prototypeVersion").asText());
+                  && cycle.getProductVersion().equals(proof.path("prototypeVersion").asText())
+                  && sourceMatches(cycle, gate, proof);
             })
         .map(
             gate ->
@@ -100,14 +102,29 @@ public class LearningCycleEvidence {
         .toList();
   }
 
-  /** Usa a última ocorrência do gate; uma reprovação posterior invalida aprovações históricas. */
+  /** Consulta a fonte canônica exata; uma reprovação posterior invalida o gate dessa fonte. */
   private Optional<BusinessProcessActivityInstance> latestGate(LearningSalesCycle cycle) {
     return instances
         .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
-            "pde-construction-approval", "product:" + cycle.getProductId() + "@agent-validation-v1")
+            "pde-construction-approval", approvalSource(cycle))
         .stream()
         .filter(gate -> "agentValidationGate".equals(gate.getActivityDefinition().getActivityId()))
         .findFirst();
+  }
+
+  /** Usa o mesmo contrato da execução sem buscar aprovação em outro experimento ou alias. */
+  private String approvalSource(LearningSalesCycle cycle) {
+    var product = products.findById(cycle.getProductId()).orElseThrow();
+    return LearningCycleExecutionContext.constructionSource(product, cycle);
+  }
+
+  /** Confere também a fonte da prova; somente o contrato legado pode omitir esse campo. */
+  private boolean sourceMatches(
+      LearningSalesCycle cycle, BusinessProcessActivityInstance gate, JsonNode proof) {
+    String source = approvalSource(cycle);
+    return source.equals(gate.getSourceReference())
+        && (source.equals(proof.path("sourceReference").asText())
+            || !source.startsWith("experiment:") && !proof.has("sourceReference"));
   }
 
   /** Confere autorização explícita sem escrever limites de mídia no experimento. */

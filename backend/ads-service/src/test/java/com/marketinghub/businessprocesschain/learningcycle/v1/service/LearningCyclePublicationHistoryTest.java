@@ -122,7 +122,8 @@ class LearningCyclePublicationHistoryTest {
             mock(BusinessProcessActivityInstanceRepository.class),
             runs,
             new LearningCycleJson(new ObjectMapper()),
-            history);
+            history,
+            mock(com.marketinghub.repository.jpa.product.ProductRepository.class));
     var cycle = new LearningSalesCycle();
     cycle.setExperimentId(experiment.getId());
     cycle.setBudgetLimitBrl(BigDecimal.valueOf(100));

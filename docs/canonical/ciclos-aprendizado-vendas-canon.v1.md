@@ -288,3 +288,28 @@ nem alterar campanhas, preço ou orçamento.
 Vega #91 permanece histórico interrompido. O #90 não pode substituí-lo silenciosamente. A adoção e
 a criação de ciclos produtivos acontecem pela interface depois do deploy. A migração instala o
 contrato e o BPM; não cria experimentos, campanhas, aprovações, vendas nem tarefas de agentes reais.
+
+
+## Continuidade e identidade da homologação — correção de 12/09/2026
+
+A leitura das aprovações e o comando de homologação devem usar a mesma referência canônica
+que a execução da construção. Produtos com contrato privado explícito preservam a fonte
+`product:<id>@agent-validation-v1`; produtos cujo trabalho pertence ao ciclo usam
+`experiment:<id>`. A consulta nunca procura aprovação de outro experimento ou utiliza uma
+fonte legada como fallback. Provas contextuais precisam declarar a mesma fonte no JSON,
+produto e versão exatos, conclusão posterior ao ajuste e última ocorrência vigente do gate.
+Uma reprovação posterior invalida a aprovação para seleção, autorização e publicação.
+
+Quando todos os processos delegados de uma etapa comprovarem os objetivos, a orientação
+passa ao registro das evidências no próprio ciclo. O retorno original permanece auditável,
+mas não manda refazer uma atividade já concluída. Ausência de contexto ou de atividade atual
+não equivale a preparação concluída. A consulta não avança etapas nem autoriza gastos.
+
+As etapas de vídeo e suas autorizações continuam obrigatórias nas versões que as incluem;
+provas de preparação privada, checkout simulado e aprovação sintética não substituem vídeo,
+publicação comercial, venda, entrega ou observação humana.
+
+O catálogo aceita `cycleId` para conservar o BPM e o retorno da ocorrência selecionada.
+Essa seleção exige produto e versão da cadeia exatos. O frontend envia a ocorrência lida
+e usa o retorno oficial com `learningCycleId`, inclusive quando consulta um predecessor
+encerrado com sucessor aberto. O histórico nunca é substituído pelo ciclo vigente.

@@ -1,6 +1,7 @@
 package com.marketinghub.businessprocesschain.learningcycle.v1.service;
 
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
@@ -80,13 +81,18 @@ public class LearningCycleExecutionContext {
                                       HttpStatus.CONFLICT,
                                       "Processo pai indisponível nesta cadeia.")));
     }
-    if ("pde-construction-approval".equals(process.getProcessCode())) {
-      String contract = product.getValidationDefinitionVersion();
-      if ("PDE_AGENT_VALIDATION_V1".equals(contract) || "PDE_AGENT_VALIDATED_V1".equals(contract))
-        return "product:" + product.getId() + "@agent-validation-v1";
-      if ("PDE_PRIVATE_VALIDATION_V1".equals(contract))
-        return "product:" + product.getId() + "@private-validation-v1";
-    }
+    if ("pde-construction-approval".equals(process.getProcessCode()))
+      return constructionSource(product, cycle);
+    return "experiment:" + cycle.getExperimentId();
+  }
+
+  /** Compartilha a identidade da construção entre quem produz e quem consome seus gates. */
+  public static String constructionSource(Product product, LearningSalesCycle cycle) {
+    String contract = product.getValidationDefinitionVersion();
+    if ("PDE_AGENT_VALIDATION_V1".equals(contract) || "PDE_AGENT_VALIDATED_V1".equals(contract))
+      return "product:" + product.getId() + "@agent-validation-v1";
+    if ("PDE_PRIVATE_VALIDATION_V1".equals(contract))
+      return "product:" + product.getId() + "@private-validation-v1";
     return "experiment:" + cycle.getExperimentId();
   }
 

@@ -32,7 +32,7 @@ const catalog: CycleCatalog = {
     workspaceUrl: "/business-process-chains/learning-cycles?chainId=1",
     actionLabel: "Abrir ciclo por produto e experimento",
     parentUrl:
-      "/products/4/value-chain-history/processes/73/activities?chainId=1#activity-learningCycle",
+      "/products/4/value-chain-history/processes/73/activities?chainId=12&learningCycleId=2#activity-learningCycle",
     returnRoutes: [],
   },
   processDefinitionId: 70,
@@ -273,8 +273,36 @@ describe("Ciclos de aprendizado e vendas", () => {
       screen.getByRole("combobox", { name: "Cadeia de Valor *" }),
     ).toHaveValue("12");
     expect(axios.get).toHaveBeenCalledWith(`${cycleApi}/catalog`, {
-      params: { chainId: 12, productId: 4 },
+      params: { chainId: 12, productId: 4, cycleId: 2 },
     });
+  });
+  it("consulta o retorno do ciclo histórico selecionado mesmo com um sucessor aberto", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    const historical = { ...cycle, id: 1, status: "CLOSED", commands: [] };
+    const parentUrl =
+      "/products/4/value-chain-history/processes/60/activities?chainId=12&learningCycleId=1#activity-learningCycle";
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) => {
+      if (url === `${cycleApi}/products/4`)
+        return { data: [cycle, historical] };
+      if (url === `${cycleApi}/catalog` && args[0]?.params.cycleId === 1)
+        return { data: { ...catalog, entry: { ...catalog.entry, parentUrl } } };
+      return original(url, ...args);
+    });
+    wrapper(
+      <LearningCyclesPage />,
+      "/business-process-chains/learning-cycles?productId=4&chainId=12&cycleId=1",
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("link", {
+          name: "Voltar à atividade 4 do Processo 6",
+        }),
+      ).toHaveAttribute("href", parentUrl),
+    );
+    expect(axios.get).toHaveBeenCalledWith(`${cycleApi}/catalog`, {
+      params: { chainId: 12, productId: 4, cycleId: 1 },
+    });
+    expect(axios.post).not.toHaveBeenCalled();
   });
   it("preserva a confirmação de instrumentação marcada na homologação", async () => {
     const user = userEvent.setup();

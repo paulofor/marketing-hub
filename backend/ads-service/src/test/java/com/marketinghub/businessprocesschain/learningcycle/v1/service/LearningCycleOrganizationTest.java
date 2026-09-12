@@ -76,6 +76,19 @@ class LearningCycleOrganizationTest {
     assertThat(entry.actionLabel()).isEqualTo("Retomar ciclo #91");
   }
 
+  /** O retorno inclui a ocorrência histórica selecionada, mesmo depois do fechamento. */
+  @Test
+  void parentReturnPreservesSelectedClosedCycle() {
+    var cycle = new LearningSalesCycle();
+    cycle.setId(91L);
+    cycle.setChainDefinitionId(13L);
+    cycle.setStatus("ADJUSTED");
+    var entry = organization.describe(chain(), cycleProcess(), 4L, cycle);
+    assertThat(entry.parentUrl())
+        .isEqualTo(
+            "/products/4/value-chain-history/processes/60/activities?chainId=13&learningCycleId=91#activity-learningCycle");
+  }
+
   /** Cadeias aposentadas continuam legíveis sem permitir novas iterações nesse contrato. */
   @Test
   void preservesRetiredReadOnlyPlacement() {

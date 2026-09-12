@@ -7199,3 +7199,14 @@ ponta nem teste de publicação do sucessor.
   aprovaram backend, frontend, executores, REST/MySQL e desktop/iPhone/Pixel.
 - Registro produtivo feito pela tela: evento 10 do ciclo 2, revisão 7, conclui ADJUSTMENT
   com os gates 258 e 270 e avança a VIDEO_BRIEF. Não aprova gasto, campanha ou cobrança.
+- Publicação excepcional concluída: backend e frontend da revisão local `8f6219b8c4e7467781a52b892e7cd4499d2c4e49`
+  foram construídos com os Dockerfiles/Compose versionados e aplicados pelo coordenador.
+  Saúde, identidade da revisão e navegação publicada passaram em desktop, iPhone e Pixel.
+  Retorno histórico preserva também o ciclo anterior, sem adotar o sucessor aberto.
+- Situação real: processo 75 v6, execução 4, ainda WAITING_ACTIVITY e zero de quatro
+  objetivos concluídos. Ciclo 2 agora pede os dois vídeos; teto de produção/revisão ainda
+  depende de resposta do usuário. Slot comercial, autorizações e resultados reais continuam
+  necessários. Nenhuma tarefa paga de IA foi repetida e nenhum PR foi aberto.
+- Homologação técnica encerrada com rollback preservado. O coordenador registrou
+  AWAITING_MERGE e a retomada automática dos quatro publicadores APP após comprovar
+  integração da revisão validada na `main`; não depende de novo pedido para reativá-los.

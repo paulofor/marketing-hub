@@ -206,3 +206,88 @@ O escopo final da aplicação é **backend e frontend**, ambos com seus Dockerfi
 Compose do repositório. Os executores não precisam de nova imagem. A transferência foi
 verificada localmente contra checksum, duplicação, truncamento e excesso de bytes.
 O registro de aplicação e os resultados publicados serão acrescentados abaixo.
+
+## Resultado publicado — 12/09/2026
+
+A revisão validada e aplicada é `8f6219b8c4e7467781a52b892e7cd4499d2c4e49`, consolidada
+localmente após as duas rodadas finais. Não houve push nem PR. O código, os testes e o
+aplicador mantêm o manifesto do aceite final; este complemento registra apenas evidências.
+
+Backend e frontend foram construídos pelos respectivos Dockerfiles do repositório e
+aplicados pelo Compose versionado, exclusivamente por `execute` da intervenção
+`a47006925d7b4e2e9b9b735a3dd9437d`, em estado ACTIVE. O worker de processos permaneceu
+na imagem existente. Não foram canceladas transações em andamento nem removidos serviços
+adjacentes. As configurações dos serviços foram preservadas sem registrar seus valores.
+
+| Serviço | Imagem aplicada | Identidade no host | Imagem anterior preservada |
+| --- | --- | --- | --- |
+| Backend | `marketing-hub/backend:vega-cycle6-9b2c6ea9d2c8` | `sha256:54557df43a69de2995fe6951b97c05aca752bcdd1e6adf9150ff6e132111133f` | `sha256:ec4f4eb5a57bb821e709aea349dfae3e6c61e1ab063783eedbde1dea9273bfe3` |
+| Frontend | `marketing-hub/frontend:vega-cycle6-9b2c6ea9d2c8` | `sha256:5c64a4aef846622a2dca987cff071005d50afa8924df624c8e04cb1b36034d3c` | `sha256:1537d7e7eaca01f1e923bbf5821222f4119300da33db99c68a9434e15af5b39e` |
+
+O arquivo transferido teve 244.481.661 bytes e SHA-256
+`00558baffb1e17fd8a0de184aa9a1097d731c97c19813632a6b48da80e697c14`, conferidos no host
+antes da carga. As camadas e a configuração efetiva das imagens são idênticas às locais.
+As APIs Docker diferiram apenas na serialização de valores padrão vazios ou falsos;
+a conferência normalizou exclusivamente esses padrões, preservando comandos, usuário,
+variáveis e labels efetivos. Controles locais rejeitaram revisão, usuário e flags diferentes.
+O JAR da imagem corresponde ao pacote validado, e os nove arquivos do frontend correspondem
+ao build conferido. Nada foi reconstruído manualmente no host.
+
+Após a inicialização, os dois serviços responderam saudáveis e identificaram a revisão
+`8f6219b8c4e7467781a52b892e7cd4499d2c4e49` em duas consultas consecutivas. A conferência
+publicada passou em desktop, iPhone 15 Pro e Pixel 7: processo 75 → pendência do ciclo 2 →
+etapa VIDEO_BRIEF → retorno ao processo 75 com `chainId=14&learningCycleId=2`.
+O histórico do ciclo 1 também mantém seu próprio processo 73, cadeia 13 e experimento 91,
+sem migrar para o sucessor aberto. Evidências brutas em `live-published/`,
+`current-and-historical-parent-links.json`, `backend-health-final.json`,
+`frontend-health-final.json` e `remote-image-identities.json`, sob o diretório desta recuperação.
+
+### Objetivos comprovados e limites reais
+
+- A construção e a comunicação já aprovadas foram reconhecidas pela referência canônica,
+  preservando gate 258, integração privada 270, versão v12 e segregação dos testes.
+- A UI registrou uma única decisão de conclusão do ajuste: evento 10, revisão 7 do ciclo 2,
+  que avançou de ADJUSTMENT para VIDEO_BRIEF. Não houve repetição de tarefa paga de IA.
+- Produto 4, cadeia 14, processo 75 v6, ciclo 2 e experimento 92 permanecem os mesmos.
+  A execução 4 continua WAITING_ACTIVITY em `learningCycle`; **o processo 6 tem zero de
+  quatro objetivos concluídos**. Esse estado não representa falha técnica do executor.
+- Os próximos requisitos são briefing com referência de Íris e limite avaliado por Plutus,
+  produção e revisão dos vídeos AD e LANDING_HERO, integração no destino comercial do #92
+  e os gates posteriores de homologação, autorização e publicação. Venda, entrega e
+  aprendizado exigem observações e evidências próprias; testes não as substituem.
+- O pedido de teto para produzir e revisar as duas peças foi apresentado ao usuário e
+  permanece sem resposta no encerramento desta homologação. A aprovação #361 cobre
+  hipóteses de validação privada, com gasto comercial não autorizado; não é orçamento
+  para produção. O teto proposto do ciclo e custos simulados não foram tratados como aceite.
+- Não foi iniciada campanha, cobrança, render pago ou publicação comercial. Nenhum resultado
+  de venda do sucessor foi inventado. As sugestões comerciais acima permanecem hipóteses.
+
+[Processo 6](http://191.252.181.168:5173/products/4/value-chain-history/processes/75/activities?chainId=14&learningCycleId=2)
+e [próxima etapa do ciclo](http://191.252.181.168:5173/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2).
+
+A homologação da correção técnica termina neste ponto, independentemente da autorização
+financeira pendente. A retomada dos publicadores deve aguardar a integração da revisão
+validada na `main`. O PR futuro precisa preservar a revisão aplicada em seu histórico;
+um SHA diferente sem a ancestralidade comprovada não libera a proteção automaticamente.
+
+### Encerramento da intervenção técnica
+
+Às 22:30:33 UTC, `prepare-resume` registrou a revisão validada e as evidências; a intervenção
+está em **AWAITING_MERGE**. Os quatro publicadores APP anteriormente ativos permanecem
+protegidos: `deploy-containers.yml`, `product-discovery-worker-ci.yml`,
+`customer-agent-worker-ci.yml` e `meta-ad-approver-worker-ci.yml`. O reconciliador automático
+retomará esses publicadores e recuperará as publicações pendentes quando comprovar a
+integração na `main`. Nenhum `resume` antecipado, push ou PR foi executado.
+Recibo: `artifacts/vega-processo6-recovery/intervention-final-receipt.json`.
+
+O retorno foi preservado nos tags `marketing-hub/backend:vega-cycle6-ec4f4eb5a57b` e
+`marketing-hub/frontend:vega-cycle6-1537d7e7eaca`, conferidos contra os IDs anteriores.
+Somente o arquivo temporário transferido por esta sessão foi removido após conferir seu
+hash e as imagens em execução. A primeira pré-checagem de encerramento recusou um nome
+presumido de container antes de qualquer alteração; a consulta ao Compose confirmou os
+nomes explícitos `marketinghub-backend` e `marketinghub-frontend`. O encerramento posterior
+passou, sem alterar código aplicado nem recriar containers. Recibo: `runtime-finalization.json`.
+Não restam containers, redes, volumes do projeto Compose local nem servidor Vite desta
+homologação. Os 19 arquivos de código, testes e aplicação continuam idênticos ao manifesto
+final e ao commit aplicado. As evidências posteriores permanecem como complemento local
+para o mesmo PR futuro, sem reescrever a identidade da revisão validada.

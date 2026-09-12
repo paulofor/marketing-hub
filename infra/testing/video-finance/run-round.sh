@@ -6,7 +6,7 @@ round="${1:?Informe o nome da rodada}"
 [[ "$round" =~ ^[a-zA-Z0-9_-]+$ ]] || exit 2
 output="$PWD/artifacts/video-finance/$round"
 mkdir -p "$output"
-project=aihub-ba82c67b-308c-4abf-bd0e-761b9b14b74d-1ac859cde1
+project="${VIDEO_FINANCE_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo da sandbox}"
 compose=(docker compose -p "$project" -f backend/ads-service/docker-compose.learning-cycles-local.yml)
 api_pid=''
 ui_pid=''
@@ -46,7 +46,7 @@ run buildx-version docker buildx version
 run compose-version docker compose version
 run mysql "${compose[@]}" up -d --wait --wait-timeout 120
 rm -rf backend/ads-service/target/surefire-reports
-run backend mvn -q -f backend/ads-service/pom.xml '-Dtest=LearningCycle*Test,SalesFlow*Test,ArquiteturaTest' test
+run backend mvn -q -f backend/ads-service/pom.xml '-Dtest=LearningCycle*Test,SalesFlow*Test,Process*Test,ArquiteturaTest' test
 python3 - "$output/backend-count.json" <<'PY'
 import pathlib, json, sys, xml.etree.ElementTree as E
 counts = {k: 0 for k in ('tests', 'failures', 'errors', 'skipped')}
@@ -57,17 +57,20 @@ assert counts['tests'] > 0 and not counts['failures'] and not counts['errors'], 
 pathlib.Path(sys.argv[1]).write_text(json.dumps(counts))
 print(json.dumps(counts))
 PY
-run frontend npm --prefix frontend test -- --run src/pages/financial src/pages/learningCycle src/components/MainNavigation.test.tsx
+run frontend npm --prefix frontend test -- --run src/pages/financial src/pages/learningCycle src/components/MainNavigation.test.tsx src/pages/product/ProductProcessAutomationPanel.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/product/productProcessContext.test.tsx
 run typecheck npm --prefix frontend run typecheck
 run build env VITE_API_URL=http://127.0.0.1:15173 npm --prefix frontend run build
-run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*learningcycle.*[.]java'
+run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*(learningcycle|automation).*java'
 run prettier npm exec --yes --package=prettier@3.6.2 -- prettier --check \
   frontend/src/api/financial/useVideoBudget.ts frontend/src/pages/financial/VideoFinancePage.tsx \
   frontend/src/pages/financial/VideoFinancePage.css frontend/src/pages/financial/VideoFinancePage.test.tsx \
   frontend/src/components/MainNavigation.tsx frontend/src/components/MainNavigation.test.tsx \
   frontend/src/pages/learningCycle/LearningCycleCommandForm.tsx frontend/src/api/learningCycle/useLearningCycles.ts \
+  frontend/src/api/businessProcess/useProcessAutomation.ts frontend/src/pages/product/ProductProcessAutomationPanel.tsx \
+  frontend/src/pages/product/ProductProcessAutomationPanel.test.tsx frontend/src/pages/product/productProcessContext.ts \
+  frontend/src/pages/product/productProcessContext.test.tsx \
   frontend/e2e/video-finance-responsive.mjs
-run swagger python3 -c 'import yaml; yaml.safe_load(open("docs/swagger/learning-sales-cycles-v1-swagger.yaml")); print("Swagger YAML válido")'
+run swagger python3 -c 'import yaml; [yaml.safe_load(open(p)) for p in ["docs/swagger/learning-sales-cycles-v1-swagger.yaml", "docs/swagger/process-automation-v1-swagger.yaml"]]; print("Swagger YAML válido")'
 run classpath mvn -q -f backend/ads-service/pom.xml dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=target/video-finance-classpath
 LEARNING_CYCLES_DB_HOST=sandbox-docker java -Xmx768m \
   -Dlogging.level.com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBudget=INFO \

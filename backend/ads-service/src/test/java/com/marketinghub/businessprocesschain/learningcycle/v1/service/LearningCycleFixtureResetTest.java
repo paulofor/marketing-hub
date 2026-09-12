@@ -114,7 +114,9 @@ class LearningCycleFixtureResetTest {
           new ObjectMapper(),
           mock(LearningSalesCycleRepository.class),
           events,
-          proposals);
+          proposals,
+          mock(com.marketinghub.repository.jpa.processautomation.ProcessRunRepository.class),
+          mock(com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository.class));
     }
   }
 }

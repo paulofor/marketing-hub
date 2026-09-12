@@ -23,7 +23,7 @@ try {
     const cycle = JSON.parse(
       execFileSync(
         "python3",
-        ["infra/testing/video-finance/validate.py", "--prepare"],
+        ["infra/testing/video-finance/validate.py", "--prepare-process"],
         { encoding: "utf8" },
       ),
     );
@@ -46,6 +46,8 @@ try {
       if (
         url.pathname.startsWith("/api/") &&
         !url.pathname.startsWith(api) &&
+        !url.pathname.startsWith("/api/business-processes/") &&
+        !url.pathname.startsWith("/api/products/value-chain-positions/") &&
         !["/api/products", "/api/business-process-chains"].includes(
           url.pathname,
         )
@@ -60,9 +62,36 @@ try {
       return route.continue();
     });
     const cycleUrl = `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91002&cycleId=${cycle.id}`;
-    await page.goto(cycleUrl);
+    const processUrl = `${base}/products/91001/value-chain-history/processes/${cycle.automation.processDefinitionId}/activities?learningCycleId=${cycle.id}&chainId=91002#process-execution`;
+    await page.goto(processUrl);
+    const panel = () =>
+      page.getByRole("region", { name: "Execução automática do processo" });
+    await expect(
+      panel().getByText("Precisa da sua decisão", { exact: true }),
+    ).toBeVisible();
+    await expect(panel().getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    await expect(
+      panel().locator(".product-process-situation__running-icon"),
+    ).toHaveCount(0);
+    await expect(
+      panel().getByRole("link", { name: "Abrir pendência", exact: true }),
+    ).toHaveCount(0);
+    await panel().getByText("Ver contexto completo", { exact: true }).click();
+    await expect(
+      panel().getByLabel("Contexto completo do processo", { exact: true }),
+    ).toContainText(
+      "Próxima ação necessária: Falta informar o teto dos dois vídeos",
+    );
+    await panel().getByText("Ver contexto completo", { exact: true }).click();
+    await page.screenshot({
+      path: `${output}/${name}-process-pending.png`,
+      fullPage: true,
+    });
     await page
-      .getByRole("link", { name: "Financeiro dos vídeos", exact: true })
+      .getByRole("link", { name: "Informar teto dos vídeos", exact: true })
       .click();
     await expect(
       page.getByRole("heading", { name: "Financeiro de vídeos", exact: true }),
@@ -135,6 +164,40 @@ try {
       "href",
       new RegExp(`learningCycleId=${cycle.id}`),
     );
+    await parent.click();
+    await expect(
+      panel().getByText("Teto registrado. Falta definir os vídeos", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      panel().getByRole("link", { name: "Continuar definição dos vídeos" }),
+    ).toHaveAttribute("href", new RegExp(`cycleId=${cycle.id}`));
+    await expect(panel().getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    await expect(
+      panel().getByRole("link", { name: "Informar teto dos vídeos" }),
+    ).toHaveCount(0);
+    await page.screenshot({
+      path: `${output}/${name}-process-after-budget.png`,
+      fullPage: true,
+    });
+    const bounds = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      view: innerWidth,
+    }));
+    assert(
+      bounds.scroll <= bounds.view + 1,
+      `${name}: overflow do processo ${JSON.stringify(bounds)}`,
+    );
+    await panel()
+      .getByRole("link", { name: "Continuar definição dos vídeos" })
+      .click();
+    await expect(reference).toHaveValue(
+      new RegExp(`internal://learning-cycles/${cycle.id}/video-budget/`),
+    );
     const persisted = await (
       await fetch(
         `http://127.0.0.1:18091${api}/products/91001/${cycle.id}/video-budget?chainId=91002`,
@@ -163,7 +226,18 @@ try {
       savedTotalUsd: 20.5,
       posts: posts.length,
       overflow: false,
-      checks: 12,
+      checks: [
+        "Processo identifica espera humana sem spinner",
+        "Contexto copiado inclui a decisão",
+        "Link direto ao financeiro preserva ciclo",
+        "Formulário rejeita teto inválido",
+        "Gravação única com indicador de carregamento",
+        "Recibo persiste após recarga",
+        "Retorno ao processo atualiza próxima ação",
+        "Briefing recebe referência oficial",
+        "Outro contexto e produto sem ciclo não oferecem formulário",
+        "Sem consumo externo, erro de página ou overflow",
+      ],
       pageErrors: errors,
       externalCalls: external,
     });

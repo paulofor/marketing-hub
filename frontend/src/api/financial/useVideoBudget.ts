@@ -97,6 +97,12 @@ export function useAuthorizeVideoBudget(
       await client.invalidateQueries({
         queryKey: ["learning-cycles", productId],
       });
+      await client.invalidateQueries({
+        queryKey: ["process-automation", productId],
+      });
+      await client.invalidateQueries({
+        queryKey: ["cycle-process-context", productId],
+      });
     },
   });
 }

@@ -145,6 +145,19 @@ components:
                 enum: [READY, UNAVAILABLE, QUEUED, WAITING_ACTIVITY, WAITING_INPUT, WAITING_HUMAN, WAITING_SUBPROCESS, WAITING_PARENT, PAUSING, PAUSED, BLOCKED, ERROR, COMPLETED, CLOSED, REVALIDATION_REQUIRED]
                 description: CLOSED encerra o controle de um ciclo fechado com objetivos pendentes; preserva contagens e evidências, sem aprovação artificial ou reserva indefinida do produto.
               reason: {type: string}
+              userAction:
+                type: object
+                nullable: true
+                description: Próxima intervenção humana comprovada pelo contexto persistido. A leitura não altera estado; o conciliador registra WAITING_HUMAN e o motivo no diário. Autorização financeira não conclui objetivos nem libera consumo.
+                properties:
+                  code: {type: string, enum: [AUTHORIZE_VIDEO_BUDGET, COMPLETE_VIDEO_BRIEF]}
+                  title: {type: string}
+                  reason: {type: string}
+                  responsible: {type: string}
+                  actionLabel: {type: string}
+                  actionUrl: {type: string, description: Caminho administrativo com produto, cadeia e ciclo exatos}
+                  afterAction: {type: string}
+                  evidenceReference: {type: string, nullable: true}
               currentActivityId: {type: string, nullable: true}
               currentActivityName: {type: string, nullable: true}
               currentOwnerName: {type: string, nullable: true}

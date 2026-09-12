@@ -37,4 +37,5 @@ public record ProcessRunResponse(
     Instant finishedAt,
     long revision,
     List<ProcessRunRelationResponse> parentProcesses,
-    List<ProcessRunRelationResponse> subprocesses) {}
+    List<ProcessRunRelationResponse> subprocesses,
+    ProcessRunUserAction userAction) {}

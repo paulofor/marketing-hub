@@ -7210,3 +7210,15 @@ ponta nem teste de publicação do sucessor.
 - Homologação técnica encerrada com rollback preservado. O coordenador registrou
   AWAITING_MERGE e a retomada automática dos quatro publicadores APP após comprovar
   integração da revisão validada na `main`; não depende de novo pedido para reativá-los.
+
+## 2026-09-12 — Vega: decisão financeira explícita no acompanhamento
+
+Consulta à UI, API, banco e logs MCP confirmou que a preparação anterior terminou,
+mas o processo de venda/entrega/aprendizado permanece 0/4 no ciclo 2, experimento 92.
+O teto dos dois vídeos ainda não foi informado; a tela financeira existe na sandbox,
+mas está ausente na revisão produtiva consultada. O card escondia essa decisão sob
+uma mensagem genérica de execução. A correção local explicita decisão, responsável,
+financeiro e continuidade após o teto, com pausa coerente e sem autorizações implícitas.
+
+Não houve gravação produtiva, render pago, campanha, venda ou receita simulada no
+ambiente real. Matriz e evidências: `docs/homologacao/vega-proxima-acao-financeiro-v1.md`.

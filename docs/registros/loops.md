@@ -5073,3 +5073,20 @@ A navegação publicada do Vega omitia `learningCycleId` no `parentUrl`. O catá
 apenas o ciclo aberto, mesmo quando a tela selecionava histórico. A correção recebe o ciclo
 explícito, valida produto/cadeia e preserva o BPM persistido e o retorno. A regressão exige
 predecessor encerrado com sucessor aberto em REST/MySQL e nos três perfis de navegador.
+
+## LOOP-BPM-DECISAO-HUMANA-COMO-EXECUCAO — identificação em 12/09/2026
+
+- **Evidência:** Vega #4, cadeia #14, processo 75/v6, execução #4, ciclo #2/#92.
+  UI/API/MySQL mostram `VIDEO_BRIEF`, revisão 7, sem teto registrado; o card anuncia
+  `WAITING_ACTIVITY` com spinner e mensagem genérica. O endpoint financeiro ainda
+  não está na revisão publicada. O histórico do processo 4 concluído foi preservado.
+- **Causa:** o coordenador trata `IN_PROGRESS` agregado do ciclo como tarefa em curso,
+  descartando a ação necessária. Na fixture REST/MySQL isso também impede a pausa
+  sem existir tarefa real. Não há evidência de worker parado ou necessidade de refazer IA.
+- **Correção local:** orientação pelo teto vigente da versão exata, estado `WAITING_HUMAN`,
+  motivo e ação direta no card e no contexto copiado. Após teto, orientar briefing e
+  avaliação. A conciliação registra o motivo; leitura não grava nem aprova objetivo.
+  Pausa diferencia entrada humana de tarefas reais e mantém a proteção das delegações.
+- **Prevenção:** `ProcessRunGuidanceTest`, testes do card/contexto, matriz REST/MySQL e
+  navegação processo → financeiro → retorno em desktop/iPhone/Pixel. Cânone de ciclos;
+  evidências em `docs/homologacao/vega-proxima-acao-financeiro-v1.md`.

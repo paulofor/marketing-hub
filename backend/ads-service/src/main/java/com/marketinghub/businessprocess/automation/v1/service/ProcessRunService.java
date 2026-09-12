@@ -33,6 +33,7 @@ public class ProcessRunService {
   private final ProcessRunContext context;
   private final ProcessRunNavigation navigation;
   private final ProcessRunSubprocesses subprocesses;
+  private final ProcessRunGuidance guidance;
   private final BusinessProcessActivityExecutionService activities;
   private final ObjectMapper json;
   private final TransactionTemplate transaction;
@@ -45,6 +46,7 @@ public class ProcessRunService {
       ProcessRunContext context,
       ProcessRunNavigation navigation,
       ProcessRunSubprocesses subprocesses,
+      ProcessRunGuidance guidance,
       BusinessProcessActivityExecutionService activities,
       ObjectMapper json,
       PlatformTransactionManager manager) {
@@ -54,6 +56,7 @@ public class ProcessRunService {
     this.context = context;
     this.navigation = navigation;
     this.subprocesses = subprocesses;
+    this.guidance = guidance;
     this.activities = activities;
     this.json = json;
     this.transaction = new TransactionTemplate(manager);
@@ -274,9 +277,7 @@ public class ProcessRunService {
         });
   }
 
-  /**
-   * Observa provas antes dos bloqueios de novos disparos e aplica no máximo um comando canônico.
-   */
+  /** Observa provas e decisões humanas antes dos novos disparos e aplica um comando canônico. */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
       return response(run);
@@ -301,10 +302,16 @@ public class ProcessRunService {
         ordered.stream().filter(a -> ACTIVE_TASK.contains(a.operationalState())).findFirst();
     if (active.isPresent()) {
       current(run, active.get());
+      var userAction = guidance.resolve(run);
+      if (userAction != null) run.setCurrentOwnerName(userAction.responsible());
       transition(
           run,
-          "WAITING_ACTIVITY",
-          "Aguardando a conclusão validada da atividade. A duração não reduz os critérios de qualidade.",
+          userAction == null ? "WAITING_ACTIVITY" : "WAITING_HUMAN",
+          userAction == null
+              ? (active.get().stateReason() == null || active.get().stateReason().isBlank()
+                  ? "Aguardando a conclusão validada da atividade."
+                  : active.get().stateReason())
+              : userAction.reason(),
           "WAITING");
       return response(run);
     }
@@ -774,13 +781,23 @@ public class ProcessRunService {
     return false;
   }
 
-  /** Mantém a reserva do produto enquanto houver tarefa ativa no processo ou em suas delegações. */
+  /** Aguarda trabalho real, permitindo pausar um ciclo que espera apenas entrada do operador. */
   private boolean inFlight(ProcessRun run, Set<Long> seen) {
     if (!seen.add(run.getId())) throw new IllegalStateException("Ciclo inválido de subprocessos.");
     var snapshot = context.read(run, false);
     updateCounts(run, snapshot);
-    return snapshot.activities().stream().anyMatch(a -> ACTIVE_TASK.contains(a.operationalState()))
+    return snapshot.activities().stream().anyMatch(a -> activityInFlight(run, a))
         || runs.findAllByParentRunId(run.getId()).stream().anyMatch(child -> inFlight(child, seen));
+  }
+
+  /** Preserva tarefas reais em curso sem confundir o estado geral do ciclo com uma execução. */
+  private boolean activityInFlight(
+      ProcessRun run, ProductProcessActivityExecutionGroupResponse activity) {
+    if (!ACTIVE_TASK.contains(activity.operationalState())) return false;
+    if (activity.tasks().stream().anyMatch(task -> ACTIVE_TASK.contains(task.status())))
+      return true;
+    return !Objects.equals(run.getCurrentActivityId(), activity.activityId())
+        || !guidance.awaitingInput(run);
   }
 
   /** Registra apenas alterações de estado e causa, mantendo o diário legível durante esperas. */
@@ -831,7 +848,7 @@ public class ProcessRunService {
     return response(run, null);
   }
 
-  /** Expõe invalidação funcional sem alterar histórico durante leitura nem disparar nova tarefa. */
+  /** Expõe provas e pendência humana atual sem gravar durante leitura nem disparar nova tarefa. */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
     boolean persisted = run.getId() != null;
@@ -845,6 +862,7 @@ public class ProcessRunService {
     int omitted =
         readiness == null ? run.getOmittedActivities() : Math.max(0, total - completed - remaining);
     int applicable = total - omitted;
+    var userAction = guidance.resolve(run);
     return new ProcessRunResponse(
         run.getId(),
         run.getProductId(),
@@ -852,13 +870,15 @@ public class ProcessRunService {
         run.getChainDefinitionId(),
         run.getLearningCycleId(),
         run.getSourceReference(),
-        revalidation ? "REVALIDATION_REQUIRED" : run.getStatus(),
+        revalidation
+            ? "REVALIDATION_REQUIRED"
+            : userAction != null ? "WAITING_HUMAN" : run.getStatus(),
         revalidation
             ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
-            : run.getReason(),
+            : userAction != null ? userAction.reason() : run.getReason(),
         run.getCurrentActivityId(),
         run.getCurrentActivityName(),
-        run.getCurrentOwnerName(),
+        userAction != null ? userAction.responsible() : run.getCurrentOwnerName(),
         run.getCurrentSequence(),
         total,
         completed,
@@ -882,7 +902,8 @@ public class ProcessRunService {
         run.getFinishedAt(),
         run.getRevision(),
         navigation.parents(run),
-        navigation.children(run));
+        navigation.children(run),
+        userAction);
   }
 
   /** Gera identidade compacta com todos os limites de segregação, inclusive ciclo ausente. */

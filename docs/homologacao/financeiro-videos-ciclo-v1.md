@@ -83,9 +83,14 @@ e PyYAML no ambiente Python. A topologia usa o projeto exclusivo desta sessão e
 locais da fixture; dados de terceiros, SMTP real e credenciais de providers não participam.
 
 ```bash
+export VIDEO_FINANCE_COMPOSE_PROJECT='<projeto exclusivo informado pela sandbox>'
 bash infra/testing/video-finance/run-round.sh round1
 bash infra/testing/video-finance/run-round.sh round2
 ```
+
+O runner agora exige o projeto recebido do ambiente, sem reutilizar o identificador
+de outra sessão. A matriz foi ampliada para cobrir processo → financeiro → próxima ação,
+conforme `docs/homologacao/vega-proxima-acao-financeiro-v1.md`.
 
 Cada rodada cria e remove MySQL, rede e volumes temporários, usa API/backend reais e simula
 somente fontes adjacentes. O runner termina a topologia também quando falha. Os recibos, erros,

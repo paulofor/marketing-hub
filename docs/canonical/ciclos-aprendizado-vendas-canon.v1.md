@@ -321,6 +321,16 @@ não há conversão implícita nem valor previamente autorizado. O teto é compa
 duas peças e suas revisões, não é um teto por vídeo.
 
 - A entrada fica no menu financeiro e nos links oficiais das etapas de vídeo do ciclo.
+- No card do processo de venda, entrega e aprendizado, a etapa `VIDEO_BRIEF` sem teto
+  vigente deve aparecer como **Precisa da sua decisão**, com motivo, responsável e botão
+  **Informar teto dos vídeos**. Não apresentar espera por decisão como execução de agente.
+  Depois do teto, orientar a conclusão do briefing e a avaliação financeira no mesmo ciclo.
+  Essa orientação vem do backend e também integra o contexto copiado para AIHUB. Consultar
+  não avança o ciclo; a conciliação registra a espera no diário. Pausas, encerramento,
+  outras etapas e outros processos preservam seus estados próprios.
+  A espera por entrada do operador, sem tarefa reservada ou em curso, não impede
+  concluir uma pausa. O estado agregado `IN_PROGRESS` do ciclo não comprova trabalho
+  automático em execução; tarefas reais e delegações em curso continuam protegidas.
 - Produto, cadeia, ciclo, experimento e versão são conferidos pelo backend. A autorização
   contém responsável declarado, justificativa, data, limite, escopo e referência auditável.
 - O registro permite prosseguir com a avaliação financeira. Não constitui aprovação de

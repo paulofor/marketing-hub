@@ -32,6 +32,29 @@ afterEach(() => {
 });
 
 describe("Contexto do processo", () => {
+  it("copia decisão pendente, destino e continuidade sem confundir teto com conclusão", () => {
+    context.automation!.userAction = {
+      code: "AUTHORIZE_VIDEO_BUDGET",
+      title: "Falta informar o teto dos dois vídeos",
+      reason: "Informe o valor em USD.",
+      responsible: "Responsável pelo orçamento",
+      actionLabel: "Informar teto dos vídeos",
+      actionUrl:
+        "/financial/videos?productId=92004&chainId=92014&cycleId=92002",
+      afterAction: "Continue no briefing. Não autoriza mídia.",
+      evidenceReference: null,
+    };
+    const text = processContextText(context, origin);
+    expect(text).toContain(
+      "Próxima ação necessária: Falta informar o teto dos dois vídeos",
+    );
+    expect(text).toContain(
+      "http://marketing-hub.test/financial/videos?productId=92004&chainId=92014&cycleId=92002",
+    );
+    expect(text).toContain(
+      "Depois desta ação: Continue no briefing. Não autoriza mídia.",
+    );
+  });
   it("preserva produto, versões, ciclo, aprendizado, tarefas e links com seu próprio destino", () => {
     context.history.activities[0].executionControl!.navigationUrl =
       "https://local.example/private";

@@ -32,6 +32,16 @@ export interface ProcessAutomation {
   revision: number;
   parentProcesses?: ProcessRelation[];
   subprocesses?: ProcessRelation[];
+  userAction?: {
+    code: string;
+    title: string;
+    reason: string;
+    responsible: string;
+    actionLabel: string;
+    actionUrl: string;
+    afterAction: string;
+    evidenceReference: string | null;
+  } | null;
 }
 
 export interface ProcessRelation {

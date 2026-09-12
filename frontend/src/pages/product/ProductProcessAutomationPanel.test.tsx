@@ -54,6 +54,17 @@ const running = {
   canPause: true,
   reason: "Aguardando validação do objetivo.",
 };
+const financeAction = {
+  code: "AUTHORIZE_VIDEO_BUDGET",
+  title: "Falta informar o teto dos dois vídeos",
+  reason: "O processo aguarda sua decisão sobre o valor total em USD.",
+  responsible: "Você · responsável pelo orçamento",
+  actionLabel: "Informar teto dos vídeos",
+  actionUrl: "/financial/videos?productId=92001&chainId=92014&cycleId=92001",
+  afterAction:
+    "Depois de registrar o teto, continue no ciclo para concluir o briefing.",
+  evidenceReference: null,
+};
 let clients: QueryClient[] = [];
 function setup(sourceReference: string | null = "experiment:92001") {
   const client = new QueryClient({
@@ -90,6 +101,66 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("explica a espera humana e aponta ao financeiro sem animação ou comando de execução", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "WAITING_HUMAN",
+        userAction: financeAction,
+        navigationUrl: "/business-process-chains/learning-cycles?cycleId=92001",
+      },
+    });
+    setup();
+    expect(await screen.findByText("Precisa da sua decisão")).toBeVisible();
+    expect(screen.getByText(financeAction.title)).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: financeAction.actionLabel }),
+    ).toHaveAttribute("href", financeAction.actionUrl);
+    expect(
+      screen.queryByRole("link", { name: "Abrir pendência" }),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".product-process-situation__running-icon"),
+    ).toBeNull();
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "33",
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("atualiza a próxima ação após novo recibo sem marcar o processo concluído", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "WAITING_HUMAN", userAction: financeAction },
+    });
+    const client = setup();
+    await screen.findByRole("link", { name: financeAction.actionLabel });
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "WAITING_HUMAN",
+        userAction: {
+          ...financeAction,
+          code: "COMPLETE_VIDEO_BRIEF",
+          title: "Teto registrado. Falta definir os vídeos",
+          actionLabel: "Continuar definição dos vídeos",
+          actionUrl:
+            "/business-process-chains/learning-cycles?chainId=92014&productId=92001&cycleId=92001",
+        },
+      },
+    });
+    await client.invalidateQueries({ queryKey: ["process-automation", 92001] });
+    expect(
+      await screen.findByRole("link", {
+        name: "Continuar definição dos vídeos",
+      }),
+    ).toHaveAttribute("href", expect.stringContaining("cycleId=92001"));
+    expect(
+      screen.queryByRole("link", { name: financeAction.actionLabel }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Processo concluído")).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
   it("mostra filhos e mantém retorno ao pai após conclusão com contexto oficial", async () => {
     const parentUrl =
       "/products/92001/value-chain-history/processes/63/activities?chainId=92014&learningCycleId=92001#activity-creatives";
@@ -218,6 +289,26 @@ describe("Controle de processo", () => {
     );
     await screen.findByRole("alert");
     expect(axios.post).toHaveBeenCalledTimes(1);
+  });
+  it("falha de atualização pede nova leitura antes de oferecer a ação anterior", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, status: "WAITING_HUMAN", userAction: financeAction },
+    });
+    const client = setup();
+    await screen.findByRole("link", { name: financeAction.actionLabel });
+    vi.mocked(axios.get).mockRejectedValue(
+      new Error("Falha de leitura simulada"),
+    );
+    await client.invalidateQueries({ queryKey: ["process-automation", 92001] });
+    expect(
+      await screen.findByText(
+        "Atualize a execução para confirmar a próxima ação.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: financeAction.actionLabel }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
   });
   it("consulta relações antes do primeiro experimento sem autorizar tarefas", async () => {
     vi.mocked(axios.get).mockResolvedValue({

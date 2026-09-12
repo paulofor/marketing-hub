@@ -1,0 +1,18 @@
+{
+  "cardKey": "pos-compra-recursivo-impulso-social",
+  "collection": "neuromarketing",
+  "title": "Conversão por impulso deve ser avaliada também no pós-compra",
+  "finding": "Revisão sistemática de 124 estudos empíricos sobre compra por impulso em redes sociais propõe um processo temporal recursivo em que risco, emoção, comportamento e nova exposição podem mudar antes, durante e depois da compra.",
+  "mechanism": "Urgência, prova social, conveniência e arousal podem reduzir temporariamente a percepção de risco na compra; depois, arrependimento, culpa ou dissonância podem emergir, enquanto cliques e compras geram sinais capazes de alimentar novas exposições personalizadas.",
+  "commercialApplication": "Avaliar experimentos de Meta Ads e funil com métricas pós-compra como satisfação, cancelamento, reembolso, reclamação e retorno, especialmente quando a peça usa urgência, escassez, prova social ou alta frequência.",
+  "evidenceStrength": "Boa como síntese teórica e guardrail: revisão sistemática de 124 estudos empíricos; o modelo recursivo integra evidências heterogêneas e não é um único experimento causal que quantifique efeito comercial.",
+  "publishedOn": "2026-09-06",
+  "validUntil": "2027-09-30",
+  "experimentHypothesis": "Uma variante que mantém conversão inicial com menor pressão de urgência produzirá menor taxa de reembolso ou arrependimento e melhor resposta a campanhas posteriores durante 30 dias.",
+  "risks": "Não otimizar para impulsividade, ansiedade ou perda de controle; evitar ciclos de urgência e reexposição que aumentem conversão curta à custa de bem-estar, satisfação ou confiança.",
+  "limits": "A revisão não demonstra que todo evento pós-compra cause nova exposição algorítmica e não fornece um tamanho de efeito único para Meta Ads ou produtos digitais do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-12-pos-compra-recursivo-impulso-social.md",
+  "sourceTitle": "Fonte revisada — Pós-compra como parte do ciclo de impulso em redes sociais",
+  "sourceSha256": "a7a930ea9b6bdb31f6d48efd14c58afb85cc9f132c78dd8fe2283ce847541db1"
+}

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class LearningCycleOrganization {
   private final LearningCycleJson json;
 
-  /** Expõe a atividade de origem, o pai e os retornos pertencentes à versão exata da cadeia. */
+  /** Expõe a origem e o retorno ao pai preservando também a ocorrência selecionada do ciclo. */
   public LearningCycleEntry describe(
       BusinessProcessChainDefinition chain,
       BusinessProcessDefinition cycleProcess,
@@ -97,6 +97,11 @@ public class LearningCycleOrganization {
             ? "Abrir ciclo por produto e experimento"
             : "Retomar ciclo #" + activeCycle.getId(),
         processUrl(parent, productId, chain.getId())
+            + (productId != null
+                    && activeCycle != null
+                    && chain.getId().equals(activeCycle.getChainDefinitionId())
+                ? "&learningCycleId=" + activeCycle.getId()
+                : "")
             + (productId != null && integrated ? "#activity-" + activityId : ""),
         List.copyOf(routes),
         activityName,

@@ -180,9 +180,15 @@ try {
       const beforeNavigation = await (
         await fetch(`${api}${cycleApi}/products/91001?chainId=91002`)
       ).json();
+      await expect(
+        page.getByRole("link", { name: "Voltar à atividade 4 do Processo 6" }),
+      ).toHaveAttribute("href", new RegExp(`learningCycleId=${current.id}#`));
       await page
         .getByRole("link", { name: "Voltar à atividade 4 do Processo 6" })
         .click();
+      await expect(page).toHaveURL(
+        new RegExp(`learningCycleId=${current.id}(?:&|#|$)`),
+      );
       const call = page.locator("#activity-learningCycle");
       await expect(call).toBeInViewport();
       await expect(page.locator("#activity-optimization")).toContainText(
@@ -202,7 +208,7 @@ try {
       ).toHaveCount(0);
       const history = await (
         await fetch(
-          `${api}/api/business-processes/${catalog.entry.parentProcessDefinitionId}/products/91001/activity-executions`,
+          `${api}/api/business-processes/${catalog.entry.parentProcessDefinitionId}/products/91001/activity-executions?chainId=91002&learningCycleId=${current.id}`,
         )
       ).json();
       assert.equal(
@@ -299,6 +305,19 @@ try {
     const before = await (
       await fetch(`${api}/fixture/experiments/91001/state`)
     ).json();
+    await page.goto(
+      `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91002&cycleId=${current.id}`,
+    );
+    await returnToParent("COMPLETED", "Sucessor vinculado");
+    await page.goto(
+      `${base}/business-process-chains/learning-cycles?productId=91001&chainId=91002&cycleId=${successor.id}`,
+    );
+    await expect(
+      page.getByRole("heading", {
+        name: `Ciclo #${successor.id} · experimento #91002`,
+        exact: true,
+      }),
+    ).toBeVisible();
     assert.deepEqual(before, {
       status: "USER_STOPPED",
       runCount: 0,

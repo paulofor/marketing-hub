@@ -173,6 +173,7 @@ check('Entrada pelo BPM e subprocesso conserva contexto; seis processos; GET nã
 started=http(f'{API}/products/91001',brief())
 resumed=http(f'{API}/entry?processDefinitionId={parent_id}&productId=91001')
 assert f'cycleId={started["id"]}' in resumed['workspaceUrl']
+assert f'learningCycleId={started["id"]}' in resumed['parentUrl']
 assert 'cycleId=' not in http(f'{API}/entry?processDefinitionId={parent_id}&productId=91002')['workspaceUrl']
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='1'
 parent=parent_history()
@@ -213,7 +214,14 @@ assert cycle['stage']=='ADJUSTMENT' and cycle['experimentId']==91001
 cycle=with_videos(command(cycle,evidence=dict(productVersion='fixture-v2',changeEvidence='Correção aplicada')))
 command(cycle,evidence=validation_data(cycle,old_gate),expected=409)
 command(cycle,evidence=validation_data(cycle,approval(cycle,product=91002)),expected=409)
+foreign_proof=http('/fixture/approval',dict(productId=cycle['productId'],
+    productVersion=cycle['productVersion'],proofSourceReference='experiment:91002'))['approvalInstanceId']
+current_cycle=next(item for item in http(f'{API}/products/91001') if item['id']==cycle['id'])
+assert current_cycle['approvalOptions']==[]
+command(cycle,evidence=validation_data(cycle,foreign_proof),expected=409)
 good_gate=approval(cycle)
+assert sql(f'SELECT source_reference FROM business_process_activity_instance WHERE id={good_gate}')==f'experiment:{cycle["experimentId"]}'
+check('Gate selecionado na fonte persistida do experimento; divergência da fonte no JSON bloqueada')
 http('/fixture/approval',dict(productId=cycle['productId'],productVersion=cycle['productVersion'],approved=False))
 command(cycle,evidence=validation_data(cycle,good_gate),expected=409)
 cycle=command(cycle,evidence=validation_data(cycle))
@@ -307,6 +315,15 @@ predecessor=next(c for c in http(f'{API}/products/91001?chainId=91002') if c['id
 assert predecessor['workUrl'].endswith(f'cycleId={successor["id"]}')
 assert not predecessor['canCreateSuccessor'] and predecessor['commands']==[]
 assert sql('SELECT COUNT(*) FROM learning_sales_cycle_v1')=='2'
+historical_catalog=http(f'{API}/catalog?chainId=91002&productId=91001&cycleId={cycle["id"]}')
+successor_catalog=http(f'{API}/catalog?chainId=91002&productId=91001&cycleId={successor["id"]}')
+assert f'learningCycleId={cycle["id"]}#' in historical_catalog['entry']['parentUrl']
+assert f'learningCycleId={successor["id"]}#' in successor_catalog['entry']['parentUrl']
+http(f'{API}/catalog?chainId=91002&productId=91002&cycleId={cycle["id"]}',expected=409)
+http(f'{API}/catalog?chainId=91000&productId=91001&cycleId={cycle["id"]}',expected=409)
+http(f'{API}/catalog?chainId=91002&cycleId={cycle["id"]}',expected=409)
+http(f'{API}/catalog?chainId=91002&productId=91001&cycleId=999999',expected=404)
+check('Retorno ao pai preserva predecessor ou sucessor selecionado e recusa produto/cadeia/ciclo divergentes')
 command(cycle,'STOP',expected=409)
 check('Sucessor com experimento novo, hipótese e memória herdada; predecessor permanece imutável')
 

@@ -7181,3 +7181,32 @@ ponta nem teste de publicação do sucessor.
   Criá-la não aprova o protótipo: implementação, aceitação e homologação continuam necessárias.
 - Nenhuma tarefa produtiva, publicação, campanha ou venda foi gerada nesta solicitação.
   [Contratos, matriz e evidências](../homologacao/vega-criar-tarefa-correcao-v1.md).
+
+### 2026-09-12 — Vega #92: continuidade do processo 6 e identidade do gate
+
+- Tela, código e MCP confirmaram o ciclo 2 em ajuste apesar da construção e comunicação
+  concluídas. O consumidor do gate procurava fonte legada diferente de `experiment:92`.
+- Correção local homologada: origem canônica compartilhada entre produtor e consumidor,
+  bloqueio de prova divergente e orientação de registro quando o trabalho delegado terminou.
+- Duas rodadas completas passaram: 2.774 backend, 629 frontend e 33 Atena por rodada,
+  REST/MySQL 5.7 e navegador desktop/iPhone/Pixel. Nenhuma conclusão comercial é inferida.
+- Vídeos, slot comercial e autorizações do sucessor permanecem requisitos próprios;
+  não há orçamento aprovado registrado para #92.
+- [Diagnóstico, alternativas, matriz e evidências](../homologacao/vega-processo6-recuperacao-ciclo-v1.md).
+
+- Continuação da mesma recuperação: o retorno ao pai também preserva a ocorrência
+  selecionada, incluindo histórico com sucessor aberto. Duas rodadas finais (4 e 5)
+  aprovaram backend, frontend, executores, REST/MySQL e desktop/iPhone/Pixel.
+- Registro produtivo feito pela tela: evento 10 do ciclo 2, revisão 7, conclui ADJUSTMENT
+  com os gates 258 e 270 e avança a VIDEO_BRIEF. Não aprova gasto, campanha ou cobrança.
+- Publicação excepcional concluída: backend e frontend da revisão local `8f6219b8c4e7467781a52b892e7cd4499d2c4e49`
+  foram construídos com os Dockerfiles/Compose versionados e aplicados pelo coordenador.
+  Saúde, identidade da revisão e navegação publicada passaram em desktop, iPhone e Pixel.
+  Retorno histórico preserva também o ciclo anterior, sem adotar o sucessor aberto.
+- Situação real: processo 75 v6, execução 4, ainda WAITING_ACTIVITY e zero de quatro
+  objetivos concluídos. Ciclo 2 agora pede os dois vídeos; teto de produção/revisão ainda
+  depende de resposta do usuário. Slot comercial, autorizações e resultados reais continuam
+  necessários. Nenhuma tarefa paga de IA foi repetida e nenhum PR foi aberto.
+- Homologação técnica encerrada com rollback preservado. O coordenador registrou
+  AWAITING_MERGE e a retomada automática dos quatro publicadores APP após comprovar
+  integração da revisão validada na `main`; não depende de novo pedido para reativá-los.

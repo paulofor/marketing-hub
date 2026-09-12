@@ -157,14 +157,18 @@ export function useLearningCycleEntry(
     },
   });
 }
-export function useCycleCatalog(chainId?: number, productId?: number) {
+export function useCycleCatalog(
+  chainId?: number,
+  productId?: number,
+  cycleId?: number,
+) {
   return useQuery({
-    queryKey: ["learning-cycle-catalog", chainId, productId],
+    queryKey: ["learning-cycle-catalog", chainId, productId, cycleId],
     enabled: !!chainId,
     queryFn: async () =>
       (
         await axios.get<CycleCatalog>(`${cycleApi}/catalog`, {
-          params: { chainId, productId },
+          params: { chainId, productId, ...(cycleId ? { cycleId } : {}) },
         })
       ).data,
   });

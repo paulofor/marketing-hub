@@ -90,4 +90,33 @@ class LearningCycleContinuationTest {
     assertThat(result.canCreateSuccessor()).isFalse();
     assertThat(result.commands()).isEmpty();
   }
+
+  /** Preparação comprovada orienta seu registro e não encaminha à correção já terminada. */
+  @Test
+  void completedPreparationDirectsToEvidenceRegistration() {
+    var cycle = adjustedCycle();
+    cycle.setStage("ADJUSTMENT");
+    cycle.setStatus("OPEN");
+    cycle.setChainDefinitionId(14L);
+    var chains =
+        mock(
+            com.marketinghub.repository.jpa.businessprocesschain
+                .BusinessProcessChainDefinitionRepository.class);
+    when(chains.findById(14L))
+        .thenReturn(
+            Optional.of(
+                new com.marketinghub.businessprocesschain.BusinessProcessChainDefinition()));
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "chains", chains);
+    var resolver = mock(LearningCycleWorkResolver.class);
+    when(resolver.resolvePreparation(cycle))
+        .thenReturn(new LearningCycleWorkResolver.Resolution(null, true));
+    org.springframework.test.util.ReflectionTestUtils.setField(service, "workResolver", resolver);
+    var result = service.list(4L).getFirst();
+    assertThat(result.workUrl()).isNull();
+    assertThat(result.nextAction())
+        .contains("já comprovaram", "Registre as evidências", "não autoriza");
+    assertThat(result.nextAction()).doesNotContain("execute «");
+    assertThat(result.stage()).isEqualTo("ADJUSTMENT");
+    verify(cycles, never()).save(any());
+  }
 }

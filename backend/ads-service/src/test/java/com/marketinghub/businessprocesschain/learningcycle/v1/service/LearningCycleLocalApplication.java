@@ -714,7 +714,9 @@ public class LearningCycleLocalApplication {
       return Map.of("planned", true);
     }
 
-    /** Persiste a evidência canônica emitida pelo gate com especialistas simulados. */
+    /**
+     * Persiste o gate simulado na fonte canônica do ciclo, permitindo fontes inválidas no teste.
+     */
     @PostMapping("/fixture/approval")
     Map<String, Object> approval(@RequestBody Map<String, Object> input) {
       Long productId = ((Number) input.get("productId")).longValue();
@@ -726,7 +728,15 @@ public class LearningCycleLocalApplication {
               .orElseThrow();
       var gate = new BusinessProcessActivityInstance();
       gate.setActivityDefinition(activity);
-      gate.setSourceReference("product:" + productId + "@agent-validation-v1");
+      String canonicalSource =
+          cycles.findByProductIdOrderByIdDesc(productId).stream()
+              .findFirst()
+              .map(
+                  cycle ->
+                      LearningCycleExecutionContext.constructionSource(product(productId), cycle))
+              .orElse("experiment:91003");
+      String source = String.valueOf(input.getOrDefault("sourceReference", canonicalSource));
+      gate.setSourceReference(source);
       gate.setOccurrenceNumber((int) (System.nanoTime() % Integer.MAX_VALUE));
       gate.setStatus(Boolean.FALSE.equals(input.get("approved")) ? "BLOCKED" : "COMPLETED");
       gate.setObjectiveAchieved(!Boolean.FALSE.equals(input.get("approved")));
@@ -744,6 +754,8 @@ public class LearningCycleLocalApplication {
                       "PDE_AGENT_VALIDATION_GATE_V1",
                       "productId",
                       productId,
+                      "sourceReference",
+                      input.getOrDefault("proofSourceReference", source),
                       "prototypeVersion",
                       input.get("productVersion"),
                       "taskEvidence",

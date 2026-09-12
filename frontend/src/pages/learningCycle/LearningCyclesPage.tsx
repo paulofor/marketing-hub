@@ -109,7 +109,11 @@ export default function LearningCyclesPage() {
   const chainId =
     requestedChainId ||
     (explicitCycle ? cycle?.chainDefinitionId : queryChainId);
-  const catalog = useCycleCatalog(chainId, productId);
+  const catalog = useCycleCatalog(
+    explicitCycle && !cycle ? undefined : chainId,
+    productId,
+    cycle?.id,
+  );
   function select(key: string, value: string) {
     const next = new URLSearchParams(params);
     next.set(key, value);

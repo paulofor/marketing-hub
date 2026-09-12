@@ -5,6 +5,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.Le
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.videoBudget.*;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -82,5 +83,27 @@ public class LearningCycleController {
       @PathVariable Long cycleId,
       @Valid @RequestBody ReconcileLearningCycleMeasurementRequest request) {
     return service.reconcileMeasurement(productId, cycleId, request);
+  }
+
+  /** Apresenta o teto de produção e revisão das duas peças e seu histórico por ciclo. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Consultar financeiro dos dois vídeos do ciclo")
+  @GetMapping("/products/{productId}/{cycleId}/video-budget")
+  public VideoBudgetResponse videoBudget(
+      @PathVariable("productId") Long productId,
+      @PathVariable("cycleId") Long cycleId,
+      @RequestParam("chainId") Long chainId) {
+    return service.videoBudget(productId, cycleId, chainId);
+  }
+
+  /** Registra autorização humana restrita sem gerar vídeos, mídia, cobrança ou publicação. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Autorizar teto total de produção e revisão dos dois vídeos")
+  @PostMapping("/products/{productId}/{cycleId}/video-budget")
+  public VideoBudgetResponse authorizeVideoBudget(
+      @PathVariable("productId") Long productId,
+      @PathVariable("cycleId") Long cycleId,
+      @Valid @RequestBody AuthorizeVideoBudgetRequest request) {
+    return service.authorizeVideoBudget(productId, cycleId, request);
   }
 }

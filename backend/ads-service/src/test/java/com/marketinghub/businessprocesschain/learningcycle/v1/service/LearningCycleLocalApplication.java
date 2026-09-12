@@ -80,6 +80,7 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleEvidence.class,
   LearningCyclePublicationHistory.class,
   LearningCycleVideoEvidence.class,
+  LearningCycleVideoBudget.class,
   LearningCycleVideoFixtures.class,
   LearningCycleBpmLedger.class,
   LearningCycleController.class

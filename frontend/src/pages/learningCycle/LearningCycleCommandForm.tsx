@@ -496,18 +496,26 @@ export default function LearningCycleCommandForm({
                     : undefined
                 }
                 maxLength={4000}
+                readOnly={
+                  key === "productionBudgetReference" &&
+                  Boolean(cycle.videoBudget)
+                }
                 defaultValue={
-                  decisionProposal?.proposal && key in decisionProposal.proposal
-                    ? String(
-                        decisionProposal.proposal[
-                          key as keyof typeof decisionProposal.proposal
-                        ] ?? "",
-                      )
-                    : key === "productVersion" && action !== "REWORK"
-                      ? cycle.productVersion
-                      : key === "budgetLimitBrl" && action !== "AUTHORIZE_SCALE"
-                        ? cycle.budgetLimitBrl
-                        : undefined
+                  key === "productionBudgetReference" && cycle.videoBudget
+                    ? cycle.videoBudget.reference
+                    : decisionProposal?.proposal &&
+                        key in decisionProposal.proposal
+                      ? String(
+                          decisionProposal.proposal[
+                            key as keyof typeof decisionProposal.proposal
+                          ] ?? "",
+                        )
+                      : key === "productVersion" && action !== "REWORK"
+                        ? cycle.productVersion
+                        : key === "budgetLimitBrl" &&
+                            action !== "AUTHORIZE_SCALE"
+                          ? cycle.budgetLimitBrl
+                          : undefined
                 }
               />
             )}

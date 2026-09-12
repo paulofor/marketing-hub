@@ -11,6 +11,10 @@ public interface LearningSalesCycleEventRepository
   /** Lista somente as transições do ciclo solicitado, na ordem em que ocorreram. */
   List<LearningSalesCycleEvent> findByCycleIdOrderByRevisionAsc(Long cycleId);
 
+  /** Filtra recibos de uma operação financeira no banco, preservando a ordem de substituição. */
+  List<LearningSalesCycleEvent> findByCycleIdAndActionOrderByRevisionDesc(
+      Long cycleId, String action);
+
   /** Lê o último resultado sem perder bloqueios cuja próxima instância já foi aberta. */
   Optional<LearningSalesCycleEvent> findFirstByCycleIdOrderByRevisionDesc(Long cycleId);
 

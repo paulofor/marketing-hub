@@ -313,3 +313,27 @@ O catálogo aceita `cycleId` para conservar o BPM e o retorno da ocorrência sel
 Essa seleção exige produto e versão da cadeia exatos. O frontend envia a ocorrência lida
 e usa o retorno oficial com `learningCycleId`, inclusive quando consulta um predecessor
 encerrado com sucessor aberto. O histórico nunca é substituído pelo ciclo vigente.
+# Financeiro dos dois vídeos — decisão de 12/09/2026
+
+A tela **Financeiro de vídeos** registra o teto total em USD para produzir e revisar o anúncio
+e a demonstração na entrada do PDE. A moeda acompanha o contrato de custos do Estúdio;
+não há conversão implícita nem valor previamente autorizado. O teto é compartilhado entre as
+duas peças e suas revisões, não é um teto por vídeo.
+
+- A entrada fica no menu financeiro e nos links oficiais das etapas de vídeo do ciclo.
+- Produto, cadeia, ciclo, experimento e versão são conferidos pelo backend. A autorização
+  contém responsável declarado, justificativa, data, limite, escopo e referência auditável.
+- O registro permite prosseguir com a avaliação financeira. Não constitui aprovação de
+  Plutus, não cria jobs pagos, não compra créditos nem autoriza mídia, cobrança ou publicação comercial.
+- O valor pode ser registrado ou substituído enquanto o ciclo está em **Definir os dois vídeos**.
+  Depois dessa etapa, o registro fica disponível para consulta. A versão nova exige nova autorização.
+- A auditoria usa eventos imutáveis do próprio ciclo, com lock, revisão esperada e chave de
+  idempotência. Registrar o teto não conclui atividade nem avança o processo.
+- O briefing recebe a referência financeira oficial e o teto correspondente, mantendo o contexto
+  para a avaliação. Referências anteriores de orçamento permanecem legadas e não são convertidas
+  retroativamente em autorizações estruturadas. Tetos históricos de outros experimentos não
+  autorizam o sucessor.
+- O monitor de provedores continua separado: saldo, estimativa, custo confirmado e autorização
+  são conceitos distintos. O investimento deve resultar em comunicação verificável da experiência
+  real; validar visitas qualificadas, primeiros resultados por início, checkout e vendas líquidas,
+  sem confundir produção de vídeo com receita comprovada.

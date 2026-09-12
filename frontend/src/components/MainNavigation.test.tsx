@@ -117,11 +117,14 @@ describe("MainNavigation", () => {
 
     expect(
       screen
-        .getAllByRole("link", { name: "Financeiro de vídeo" })
+        .getAllByRole("link", { name: "Saldo dos provedores de vídeo" })
         .every(
           (link) => link.getAttribute("href") === "/financial/video-providers",
         ),
     ).toBe(true);
+    expect(
+      screen.getByRole("link", { name: "Financeiro de vídeos" }),
+    ).toHaveAttribute("href", "/financial/videos");
   });
 
   it("oferece acesso ao aprendizado governado dos agentes", () => {

@@ -28,7 +28,7 @@ run() {
     return 1
   fi
 }
-run backend env MAVEN_OPTS=-Xmx1g mvn -q -f backend/ads-service/pom.xml "-Dvega377.output=$output/screen.json" '-Dtest=PdeTechnicalHomologation*Test,PdeAgentValidation*Test,PdeRevalidationActivityExecutionTest,BusinessProcessActivityExecution*Test,BusinessProcessTaskPromptAuditTest,ProductProcessExecutionProgressTest,ProductProcessActivityRecoveryResolverTest,ProductProcessRecoveryLifecycleTest,ProductProcessActivityPredecessorServiceTest,LearningCycle*Test,Iris*Test,AgentTaskServiceTest,AgentTaskRecentActivityExecutionRepositoryTest,VegaPrivateServiceTest,ArquiteturaTest' test
+run backend env MAVEN_OPTS=-Xmx1g mvn -q -f backend/ads-service/pom.xml "-Dvega377.output=$output/screen.json" '-Dtest=PdeTechnicalHomologation*Test,PdeAgentValidation*Test,PdeRevalidationActivityExecutionTest,BusinessProcessActivityExecution*Test,BusinessProcessTaskPromptAuditTest,ProductProcessExecutionProgressTest,ProductProcessActivityRecoveryResolverTest,ProductProcessRecoveryLifecycleTest,ProductProcessActivityPredecessorServiceTest,LearningCycle*Test,Iris*Test,AgentTaskServiceTest,AgentTaskRecentActivityExecutionRepositoryTest,AgentHarnessCatalogTest,VegaPrivateServiceTest,ArquiteturaTest' test
 run iris env MAVEN_OPTS=-Xmx512m mvn -q -f communication-agent-worker/pom.xml test
 run api node infra/testing/vega-private-prototype/integration.mjs
 node - "$output" <<'JS'

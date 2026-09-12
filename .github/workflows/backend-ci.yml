@@ -12,6 +12,7 @@ on:
       - "scripts/test-backend-packaged-resources.py"
       - "scripts/verify-backend-packaged-resources.py"
       - "scripts/BackendResearchPackageSmoke.java"
+      - "infra/testing/vega-integrity-cycle/run-round.sh"
       - "**/src/main/resources/prompts/**"
       - "experiment-strategist-worker/src/main/resources/behavioral-science/**"
       - "product-discovery-worker/prompts/**"

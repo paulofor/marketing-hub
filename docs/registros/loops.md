@@ -243,6 +243,13 @@
   identidade, fronteiras de evidência sintética, tráfego interno e efeitos externos nulos.
 - **Prevenção:** `AgentHarnessCatalogTest` compara todos os prompts e schemas reais de cada worker com
   o manifesto; qualquer novo arquivo comportamental fora do catálogo bloqueia a suíte completa.
+- **Recorrência em 11/09/2026:** o Backend CI `34655813807` detectou os dois arquivos v4 de
+  Têmis fora do manifesto; a execução anterior `34597501762` passara. A matriz local do Vega
+  não incluía o teste do catálogo. Correção local em 12/09: registrar prompt/schema `bpm-v4`,
+  preservar v3, verificar versão/conteúdo/hash de ambos os pares e incluir o teste de cobertura
+  na matriz do ciclo, com contrato que impede sua retirada. O smoke do JAR também inicializa
+  o catálogo comportamental. Evidências e resultados em
+  `docs/homologacao/actions-harness-temis-2026-09-12.md`.
 
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 

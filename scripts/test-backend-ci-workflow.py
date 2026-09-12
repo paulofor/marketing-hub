@@ -22,6 +22,7 @@ class BackendCiWorkflowTest(unittest.TestCase):
             ".github/workflows/backend-ci.yml",
             ".github/workflows/deploy-containers.yml",
             "scripts/test-backend-ci-workflow.py",
+            "infra/testing/vega-integrity-cycle/run-round.sh",
             "**/src/main/resources/prompts/**",
             "product-discovery-worker/prompts/**",
             "pesquisas/**",
@@ -33,6 +34,12 @@ class BackendCiWorkflowTest(unittest.TestCase):
         deployment = (REPO / ".github/workflows/deploy-containers.yml").read_text()
         self.assertIn("mvn -B -q test | tee", deployment)
         self.assertNotRegex(self.workflow, r"-Dtest=|testFailureIgnore|continue-on-error|\|\| true")
+
+    def test_local_vega_matrix_covers_shared_agent_catalog(self):
+        script = (REPO / "infra/testing/vega-integrity-cycle/run-round.sh").read_text()
+        backend = next(line for line in script.splitlines() if line.startswith("run backend "))
+        selected_tests = re.search(r"'-Dtest=([^']+)'", backend).group(1).split(",")
+        self.assertIn("AgentHarnessCatalogTest", selected_tests)
 
     def test_packages_only_after_full_suite(self):
         tests = self.workflow.index("run: mvn -B test")

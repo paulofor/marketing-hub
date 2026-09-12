@@ -32,7 +32,10 @@ import "../businessProcess/BusinessProcessesPage.css";
 import ProductProcessActivityExecutionPanel from "./ProductProcessActivityExecutionPanel";
 import DirectContactSamplePanel from "./DirectContactSamplePanel";
 import { SalesFlowTransitions } from "../../components/ProductSalesFlow";
-import { salesActivityStateLabels } from "../../api/learningCycle/salesFlow";
+import {
+  activityStateLabels,
+  processStateLabels,
+} from "./productProcessPresentation";
 import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
 import ProductLearningCycleContext from "./ProductLearningCycleContext";
 import ProductActivityContextCopyButton from "./ProductActivityContextCopyButton";
@@ -54,29 +57,6 @@ const coverageLabels = {
 
 type ActivityOperationalState =
   ProductProcessActivityExecutionGroup["operationalState"];
-
-const activityStateLabels: Record<ActivityOperationalState, string> = {
-  HISTORICAL: salesActivityStateLabels.HISTORICAL,
-  NOT_APPLICABLE: salesActivityStateLabels.NOT_APPLICABLE,
-  RECORDED: salesActivityStateLabels.RECORDED,
-  WAITING: salesActivityStateLabels.WAITING,
-  NOT_STARTED: "Não iniciada",
-  PENDING: "Pendente",
-  IN_PROGRESS: "Em execução",
-  BLOCKED: "Bloqueada",
-  COMPLETED: "Concluída",
-  CANCELLED: "Cancelada",
-};
-
-const processStateLabels = {
-  NOT_RECORDED: "Sem atividades registradas",
-  NOT_STARTED: "Não iniciado",
-  PENDING: "Aguardando execução",
-  IN_PROGRESS: "Em andamento",
-  BLOCKED: "Bloqueado",
-  COMPLETED: "Concluído",
-  CANCELLED: "Cancelado",
-} as const;
 
 /** Escolhe o ícone semântico do estado já calculado pelo backend. */
 function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
@@ -281,6 +261,37 @@ export default function ProductProcessActivityExecutionsPage() {
                 undefined
               }
               sourceReference={data.currentExecutionReference}
+              copyContext={{
+                history: data,
+                processSequence: selectedProcessSequence,
+                cycle: cycleContext.data,
+                cycleId: effectiveCycleId,
+                chainId:
+                  effectiveChainId ??
+                  valueChainPosition.data?.chainDefinitionId ??
+                  undefined,
+                position: valueChainPosition.data,
+                warnings: [
+                  ...(history.isRefetchError
+                    ? [
+                        "A consulta das atividades falhou; exibindo o último histórico disponível.",
+                      ]
+                    : []),
+                  ...(cycleContext.isError
+                    ? [
+                        "A consulta do ciclo falhou; exibindo o último contexto disponível.",
+                      ]
+                    : []),
+                  ...(valueChainPosition.isError
+                    ? [
+                        "Não foi possível atualizar a posição na cadeia de valor.",
+                      ]
+                    : []),
+                ],
+              }}
+              contextLoading={
+                valueChainPosition.isLoading || cycleContext.isLoading
+              }
             />
           ) : null}
         </div>

@@ -1,30 +1,15 @@
+import { automationStateLabels } from "./productProcessPresentation";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
 import { Loader2, PauseCircle, PlayCircle } from "lucide-react";
 import axios from "axios";
+import ProductProcessContextCopy from "./ProductProcessContextCopy";
+import type { ProcessContext } from "./productProcessContext";
 import {
   useProcessAutomation,
   useProcessAutomationEvents,
 } from "../../api/businessProcess/useProcessAutomation";
-
-const labels: Record<string, string> = {
-  READY: "Pronto para executar",
-  UNAVAILABLE: "Indisponível",
-  QUEUED: "Na fila",
-  WAITING_ACTIVITY: "Em execução",
-  WAITING_INPUT: "Aguardando condições",
-  WAITING_HUMAN: "Precisa da sua decisão",
-  WAITING_SUBPROCESS: "Subprocesso em execução",
-  WAITING_PARENT: "Aguardando processo de origem",
-  BLOCKED: "Precisa de atenção",
-  PAUSING: "Concluindo a pausa",
-  PAUSED: "Pausado",
-  COMPLETED: "Processo concluído",
-  CLOSED: "Encerrado com pendências",
-  ERROR: "Falha técnica",
-  REVALIDATION_REQUIRED: "Revalidação necessária",
-};
 
 /** Centraliza execução e progresso do processo no cabeçalho, usando a verdade persistida. */
 export default function ProductProcessAutomationPanel({
@@ -33,12 +18,16 @@ export default function ProductProcessAutomationPanel({
   chainId,
   cycleId,
   sourceReference,
+  copyContext,
+  contextLoading,
 }: {
   productId: number;
   processId: number;
   chainId?: number;
   cycleId?: number;
   sourceReference?: string | null;
+  copyContext?: Omit<ProcessContext, "automation">;
+  contextLoading?: boolean;
 }) {
   const { status, command, root } = useProcessAutomation(
     productId,
@@ -101,10 +90,30 @@ export default function ProductProcessAutomationPanel({
         <strong>Execução do processo</strong>
         {data && (
           <span className="badge text-bg-light">
-            {labels[data.status] || data.status}
+            {automationStateLabels[data.status] || data.status}
           </span>
         )}
       </div>
+      {copyContext && (
+        <ProductProcessContextCopy
+          {...copyContext}
+          automation={data}
+          loading={
+            contextLoading ||
+            Boolean(chainId && sourceReference && status.isPending)
+          }
+          warnings={[
+            ...(copyContext.warnings ?? []),
+            ...(status.isError
+              ? [
+                  data
+                    ? "A última consulta da execução falhou; os dados abaixo são da última leitura disponível."
+                    : "Não foi possível consultar a execução automática.",
+                ]
+              : []),
+          ]}
+        />
+      )}
       {!chainId || !sourceReference ? (
         <p className="mb-0">
           Aguardando o contexto oficial da cadeia e do ciclo.

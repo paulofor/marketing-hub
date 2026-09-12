@@ -11,6 +11,14 @@ necessárias. Fechar a tela não interrompe a execução. Os cards preservam con
 e histórico; deixam de exigir disparos individuais para atividades automatizáveis.
 
 Cada execução preserva produto, cadeia, versão do processo, ciclo e referência operacional.
+O card do processo oferece **Copiar contexto do processo**, com confirmação e alternativa
+manual inclusive em HTTP. O texto identifica produto interno e comercial, cadeia, processo
+e definições versionadas, ciclo/experimento/versão do produto, aprendizados anteriores,
+execução automática, progresso, atividade atual e todas as atividades retornadas na consulta,
+com responsáveis, objetivos, pendências, tarefas e links contextuais. Históricos permanecem
+identificados; ausência ou falha de consulta é explícita. A cópia usa os contratos oficiais
+já disponíveis, sem inferir conclusões, misturar cadeias/ciclos, iniciar tarefas ou incluir
+prompts brutos e credenciais. O contexto completo também pode ser consultado no próprio card.
 Comandos repetidos não duplicam trabalho. Processos de produtos distintos podem avançar em
 paralelo; execuções que compartilham o mesmo contexto são coordenadas para evitar conflitos.
 A qualidade prevalece sobre duração: tempo decorrido não comprova conclusão nem autoriza

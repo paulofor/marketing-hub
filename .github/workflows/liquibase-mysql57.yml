@@ -95,6 +95,8 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Validar descoberta de testes e falhas do runner no Node 22
+        run: python3 infra/testing/process-automation/test-runner-contract.py
       - name: Preparar interface e navegador locais
         run: |
           npm --prefix frontend ci --no-audit --no-fund
@@ -109,7 +111,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: process-automation-${{ github.run_id }}
+          name: process-automation-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/process-automation/ci/
           retention-days: 7
   validate-pde-harness-responsibility:

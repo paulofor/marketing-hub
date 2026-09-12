@@ -4942,6 +4942,19 @@ Testes não permitem usar plano alheio, repetir prova ultrapassada ou liberar an
 A checagem de predecessoras usa instâncias BPM como autoridade sem reler os prompts das
 tarefas quando todas as predecessoras já possuem instância, inclusive quando bloqueadas.
 
+## LOOP-ACTIONS-PROCESSOS-NODE-DIVERGENTE — correção em 12/09/2026
+
+- Evidência: o job `103490231388`, run `34670279765`, passou backend/interface e falhou com
+  `MODULE_NOT_FOUND` em `node --test process-execution-worker/test`. Dois artefatos preservaram
+  a mesma falha. O comando passa no Node 20 local e falha no Node 22.23.2 do CI.
+- Causa: o runner duplicava a entrada de testes do módulo e aceitava runtime diferente do CI.
+  Testar a imagem Node 22 não validava a descoberta de testes executada pelo Node do host.
+- Correção: `npm test` no módulo, preflight Node 22 e gates com progresso/erro visíveis no console.
+  Os artefatos incluem a tentativa do Actions para preservar a investigação.
+- Prevenção: contrato executa runner e Node reais, encontra teste aninhado novo, bloqueia após
+  falha, preserva código/diagnóstico e verifica limpeza com dependências simuladas.
+  Matriz: `docs/homologacao/actions-process-automation-node22-2026-09-12.md`.
+
 ## LOOP-BPM-DISPARO-MANUAL-SEM-CONTROLE-DE-PROCESSO — prevenção em 12/09/2026
 
 - Histórico confirmado via MCP: Vega #379–399 teve tentativas bloqueadas e concluídas na mesma

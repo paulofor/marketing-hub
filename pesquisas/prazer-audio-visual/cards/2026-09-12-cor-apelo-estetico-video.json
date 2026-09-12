@@ -1,0 +1,18 @@
+{
+  "cardKey": "cor-prediz-apelo-estetico-video-dinamico",
+  "collection": "prazer-audio-visual",
+  "title": "Usar cor como variável experimental do apelo estético em vídeo",
+  "finding": "Em dois filmes visualmente muito diferentes, modelos baseados em atributos computáveis dos quadros previram avaliações estéticas momento a momento; estatísticas de cor foram o grupo mais consistente na generalização entre os filmes.",
+  "mechanism": "Propriedades cromáticas de baixo e médio nível parecem contribuir para mecanismos perceptivos compartilhados do apelo estético, em paralelo a fatores narrativos e semânticos. O estudo é preditivo e não demonstra que alterar cor isoladamente cause maior prazer.",
+  "commercialApplication": "Em vídeo, criativos e interfaces, medir saturação, colorfulness, contraste de matiz e brilho ao longo do tempo e testar variantes cromáticas controladas, mantendo mensagem e estrutura equivalentes.",
+  "evidenceStrength": "Média-alta para associação preditiva com apelo estético dinâmico: dois experimentos, avaliações contínuas, validação em trechos não vistos e generalização entre dois filmes; causalidade e generalização ampla ainda não foram demonstradas.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Uma variante cujo perfil cromático seja otimizado com base em métricas de cor elevará a avaliação estética e/ou retenção em relação a uma variante visualmente equivalente não otimizada, sem reduzir compreensão.",
+  "risks": "Otimização excessiva pode produzir saturação visual, prejudicar legibilidade ou reforçar uma correlação específica dos filmes estudados. Não assumir que mais cor, saturação ou contraste sempre melhora a experiência.",
+  "limits": "O estudo usou apenas dois filmes e 67 participantes, não manipulou cor isoladamente e não mediu CTA, compra ou resultado comercial. Apelo estético deve ser medido separadamente de atenção e conversão.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-12-cor-apelo-estetico-video.md",
+  "sourceTitle": "Fonte revisada — cor e apelo estético em vídeo dinâmico",
+  "sourceSha256": "a88aa61243c9bf19ff637f88ffd488cb43584a7605c16b4d5036e7ee3e8e5d0d"
+}

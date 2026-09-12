@@ -175,7 +175,16 @@ jobs:
         env:
           LEARNING_CYCLES_COMPOSE_PROJECT: aihub-learning-cycles-${{ github.run_id }}
           LEARNING_CYCLES_DB_HOST: 127.0.0.1
+          LEARNING_CYCLES_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/learning-cycles/ci/${{ github.run_id }}-${{ github.run_attempt }}
         run: bash backend/ads-service/scripts/homologate-learning-cycles-local.sh --persistence-only
+      - name: Preservar evidências dos ciclos, inclusive nas falhas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learning-cycles-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/learning-cycles/ci/
+          if-no-files-found: warn
+          retention-days: 7
 
   validate-product-process-recovery:
     name: Validar retomada da migração de períodos

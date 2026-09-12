@@ -1,5 +1,19 @@
 # Registros de loops operacionais — Experimentos
 
+## LOOP-HOMOLOGACAO-CICLOS-RESET-CONCORRENTE — limpeza disputa dados com agente simulado
+
+- Confirmado em 12/09/2026: run `34709785328` falha entre cenários de ciclos; a mesma
+  falha foi reproduzida na sandbox com MySQL 5.7. Outras rodadas do mesmo código passaram.
+- A limpeza SQL duplicada e o endpoint da fixture executavam exclusões em transações
+  independentes. Atena simulada continuava reservando e respondendo às propostas apagadas;
+  a janela ampliada reproduziu callbacks órfãos e duplicação de ocorrência rejeitada pelo banco.
+- Correção local: um único reset HTTP de teste, transação completa com locks ordenados dos
+  ciclos, verificação de ausência de resíduos e preservação do diagnóstico e artefatos do CI.
+- Prevenção: `LearningCycleFixtureResetTest` comprova commit e rollback reais; a matriz HTTP/MySQL
+  mantém o consumidor ativo e verifica a limpeza entre os cenários. Controle negativo sem
+  transação reproduziu a escrita parcial. Nenhuma classe produtiva ou changelog foi alterado.
+- Registro e resultado: `docs/homologacao/prompt-aihub-publicacao-2026-09-12.md`.
+
 ## LOOP-DEPLOY-INTERVENCAO-SEM-COORDENACAO — publicação automática restaura versão anterior
 
 - Confirmado em 11/09/2026: `Build & Deploy containers`, run `34592882916`, recriou o backend

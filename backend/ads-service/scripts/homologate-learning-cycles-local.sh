@@ -8,7 +8,8 @@ case "$cycle_scope" in full|--video-matrix|--persistence-only) ;; *) exit 2 ;; e
 case "$LEARNING_CYCLES_COMPOSE_PROJECT" in aihub-*) ;; *) exit 2 ;; esac
 export LEARNING_CYCLES_DB_HOST=${LEARNING_CYCLES_DB_HOST:-127.0.0.1}
 case "$LEARNING_CYCLES_DB_HOST" in 127.0.0.1|sandbox-docker) ;; *) exit 2 ;; esac
-cycle_output=$(mktemp -d /tmp/learning-sales-cycle-round-XXXXXX)
+cycle_output=${LEARNING_CYCLES_EVIDENCE_DIR:-$(mktemp -d /tmp/learning-sales-cycle-round-XXXXXX)}
+mkdir -p "$cycle_output"
 cycle_api_pid=""
 cycle_ui_pid=""
 cycle_atena_pid=""
@@ -16,8 +17,8 @@ compose=(docker compose -p "$LEARNING_CYCLES_COMPOSE_PROJECT" -f backend/ads-ser
 cleanup() {
   local result=$?
   trap - EXIT
-  if [[ -n "$cycle_api_pid" ]]; then kill "$cycle_api_pid" 2>/dev/null || true; wait "$cycle_api_pid" 2>/dev/null || true; fi
   if [[ -n "$cycle_atena_pid" ]]; then kill "$cycle_atena_pid" 2>/dev/null || true; wait "$cycle_atena_pid" 2>/dev/null || true; fi
+  if [[ -n "$cycle_api_pid" ]]; then kill "$cycle_api_pid" 2>/dev/null || true; wait "$cycle_api_pid" 2>/dev/null || true; fi
   if [[ -n "$cycle_ui_pid" ]]; then kill "$cycle_ui_pid" 2>/dev/null || true; wait "$cycle_ui_pid" 2>/dev/null || true; fi
   "${compose[@]}" down --volumes --remove-orphans > "$cycle_output/cleanup.log" 2>&1 || result=1
   printf 'Resultado=%s Evidências=%s\n' "$result" "$cycle_output"
@@ -75,6 +76,7 @@ run typecheck npm --prefix frontend run typecheck
 run build env VITE_API_URL=http://127.0.0.1:15173 npm --prefix frontend run build
 else
 run compile mvn -q -f backend/ads-service/pom.xml -DskipTests test-compile
+run reset-transaction mvn -q -f backend/ads-service/pom.xml -Dtest=LearningCycleFixtureResetTest test
 fi
 run atena-tests mvn -q -f experiment-strategist-worker/pom.xml test
 run atena-spotless mvn -q -f experiment-strategist-worker/pom.xml spotless:check
@@ -101,6 +103,9 @@ run decision-rest python3 backend/ads-service/scripts/validate-learning-cycle-de
 java -Xmx256m -cp "experiment-strategist-worker/target/test-classes:experiment-strategist-worker/target/classes:$(cat experiment-strategist-worker/target/decision-classpath)" com.marketinghub.experimentstrategistworker.learningcyclev1.decision.LearningCycleDecisionLocalRunner > "$cycle_output/atena-local.log" 2>&1 &
 cycle_atena_pid=$!
 run rest-mysql python3 backend/ads-service/scripts/validate-learning-cycles-e2e.py
+if [[ "$cycle_scope" == --persistence-only ]]; then
+run cycle-context python3 infra/testing/vega-cycle-context/integration.py
+fi
 if [[ "$cycle_scope" != --persistence-only ]]; then
 node frontend/node_modules/vite/bin/vite.js preview frontend --config frontend/vite.learning-cycles-local.config.ts > "$cycle_output/ui.log" 2>&1 &
 cycle_ui_pid=$!

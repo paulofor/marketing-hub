@@ -36,6 +36,8 @@ import org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypes;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -621,10 +623,16 @@ public class LearningCycleLocalApplication {
       return List.of(product(91001L), product(91002L));
     }
 
-    /** Reinicia somente estados simulados para outra rodada local. */
+    /** Serializa e limpa a fixture em uma transação, sem disputar dados com o consumidor local. */
     @PostMapping("/fixture/reset")
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     Map<String, Object> reset() {
-      var existing = cycles.findAll();
+      var existing =
+          cycles.findAll().stream()
+              .sorted(Comparator.comparing(LearningSalesCycle::getId))
+              .map(cycle -> cycles.findLockedById(cycle.getId()))
+              .flatMap(Optional::stream)
+              .toList();
       existing.forEach(cycle -> cycle.setCurrentInstanceId(null));
       cycles.saveAllAndFlush(existing);
       decisionProposals.deleteAllInBatch();

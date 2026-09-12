@@ -308,6 +308,7 @@ public class ProcessRunService {
           "WAITING");
       return response(run);
     }
+    if (!closeUnneededChildren(run, snapshot)) return response(run);
     if (completedObjectives(snapshot)) {
       complete(run);
       return response(run);
@@ -511,6 +512,68 @@ public class ProcessRunService {
             "retryEpoch",
             run.getRetryEpoch()));
     return response(run);
+  }
+
+  /**
+   * Encerra filhos cuja chamada foi substituída por objetivo backend comprovado, sem aprovar
+   * tarefas.
+   */
+  private boolean closeUnneededChildren(
+      ProcessRun parent, ProductProcessActivityExecutionHistoryResponse snapshot) {
+    for (var child : runs.findAllByParentRunId(parent.getId())) {
+      if (Set.of("COMPLETED", "CLOSED").contains(child.getStatus())) continue;
+      var relation =
+          navigation.children(parent).stream()
+              .filter(r -> child.getProcessDefinitionId().equals(r.processDefinitionId()))
+              .findFirst();
+      if (relation.isEmpty()) continue;
+      var activity =
+          snapshot.activities().stream()
+              .filter(a -> relation.get().activityId().equals(a.activityId()))
+              .findFirst();
+      if (activity.isEmpty() || !activity.get().objectiveAchieved()) continue;
+      var control = activity.get().executionControl();
+      if (control == null
+          || !"BACKEND".equals(control.executorType())
+          || !"COMMAND".equals(control.interactionType())
+          || control.targetProcessDefinitionId() != null) continue;
+      if (inFlight(child, new HashSet<>())) {
+        transition(
+            parent,
+            "WAITING_SUBPROCESS",
+            "O objetivo do destino já foi comprovado; aguardando a tarefa em curso antes de encerrar a chamada anterior.",
+            "WAITING_SUPERSEDED_SUBPROCESS");
+        return false;
+      }
+      closeUnneededTree(child);
+      if (Objects.equals(parent.getChildRunId(), child.getId())) parent.setChildRunId(null);
+      event(
+          parent,
+          "SUBPROCESS_NOT_REQUIRED",
+          "Destino aprovado confirmado; o subprocesso anterior foi encerrado.",
+          null,
+          Map.of(
+              "childRunId",
+              child.getId(),
+              "activityId",
+              activity.get().activityId(),
+              "activityInstanceId",
+              activity.get().activityInstanceId()));
+    }
+    return true;
+  }
+
+  /** Preserva resultados e custos ao encerrar uma árvore sem trabalho em curso e sem uso no pai. */
+  private void closeUnneededTree(ProcessRun run) {
+    for (var child : runs.findAllByParentRunId(run.getId())) {
+      if (!Set.of("COMPLETED", "CLOSED").contains(child.getStatus())) closeUnneededTree(child);
+    }
+    run.setFinishedAt(Instant.now());
+    transition(
+        run,
+        "CLOSED",
+        "Subprocesso não necessário neste ciclo: o destino aprovado já atende ao objetivo do processo pai. Consulte as tentativas anteriores no histórico.",
+        "SUBPROCESS_NOT_REQUIRED");
   }
 
   /** Expõe as lacunas da última tentativa bloqueada sem substituir sua causa pela prontidão. */

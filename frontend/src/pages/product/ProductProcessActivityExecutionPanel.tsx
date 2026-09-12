@@ -184,6 +184,18 @@ export default function ProductProcessActivityExecutionPanel({
           </p>
         )}
 
+      {control.navigationUrl &&
+        ["COMMAND", "WORKSPACE"].includes(control.interactionType) && (
+          <a
+            className="btn btn-outline-primary mb-2"
+            href={control.navigationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Abrir destino aprovado
+          </a>
+        )}
+
       {recovery ? (
         <aside
           className="mt-3"

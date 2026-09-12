@@ -199,6 +199,11 @@ class IrisLearningCycleContextTest {
     assertThat(result.get("inputReadiness")).isEqualTo("READY");
     assertThat(result).doesNotContainKeys("commercialPlanId", "commercialPlanSnapshot");
     assertThat(result.get("publicationAuthorized")).isEqualTo(false);
+    var destination = json.valueToTree(result.get("approvedDestination"));
+    assertThat(destination.path("type").asText()).isEqualTo("APPROVED_PRIVATE_PDE");
+    assertThat(destination.path("prototypeVersion").asText()).isEqualTo(VERSION);
+    assertThat(destination.path("url").asText()).isEqualTo("https://local.example/vega-private");
+    assertThat(destination.path("requiresLandingGeneration").asBoolean(true)).isFalse();
     var strategy = json.valueToTree(result.get("marketStrategicContract"));
     assertThat(strategy.path("contractVersion").asText()).isEqualTo("MARKET_STRATEGY_V3");
     assertThat(strategy.path("strategistTaskId").asLong()).isEqualTo(359);

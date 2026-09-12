@@ -76,6 +76,8 @@ public class PdeSalesJourneyIntegrationActivityExecutor
   @Autowired(required = false)
   private com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository learningCycles;
 
+  @Autowired private com.marketinghub.communication.v1.PrivateCommunicationJourney privateJourney;
+
   /** Configura as fontes canônicas usadas para validar e registrar a integração comercial. */
   @Autowired
   public PdeSalesJourneyIntegrationActivityExecutor(
@@ -173,6 +175,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
       if (predecessorIssue.isPresent()) {
         return new BackendProductProcessActivityReadiness(false, predecessorIssue.get());
       }
+      if (scopedCycle) {
+        return privateJourney.readiness(process, activityDefinition, product, sourceReference);
+      }
     } catch (RuntimeException ex) {
       log.error(
           "Falha ao verificar pré-requisitos da integração PDE. processDefinitionId={} productId={} activityId={}",
@@ -188,9 +193,7 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         "Comunicação, criativos e destino estão aprovados; a jornada pode validar URL, checkout, acesso e eventos.");
   }
 
-  /**
-   * Valida contratos reais, registra sucesso ou bloqueio e só então move o produto ao processo 5.
-   */
+  /** Registra a jornada no regime do ciclo; somente a integração comercial pode mover o produto. */
   @Override
   @Transactional
   public BackendProductProcessActivityExecutionResult execute(
@@ -204,6 +207,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
       throw new IllegalStateException(readiness.reason());
     }
     var cycle = scopedCycle(product, sourceReference);
+    if (cycle.isPresent()) {
+      return privateJourney.complete(process, activityDefinition, product, sourceReference);
+    }
     Experiment experiment = sourceExperiment(product, sourceReference);
     CommercialPlan plan = latestPlan(product.getId(), experiment.getId());
     String resolvedReference =

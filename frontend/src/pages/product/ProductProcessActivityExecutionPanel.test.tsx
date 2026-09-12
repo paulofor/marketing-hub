@@ -18,6 +18,24 @@ describe("ProductProcessActivityExecutionPanel", () => {
     onExecute.mockReset();
   });
 
+  it("opens the destination supplied by the backend without requesting a new task", () => {
+    const activity = blockedHomologation();
+    activity.recoveryAction = null;
+    activity.operationalState = "COMPLETED";
+    activity.executionControl = {
+      ...activity.executionControl!,
+      executorType: "BACKEND",
+      interactionType: "COMMAND",
+      actionAvailable: false,
+      navigationUrl: "https://local.example/private",
+    };
+    renderPanel(activity);
+    const link = screen.getByRole("link", { name: "Abrir destino aprovado" });
+    expect(link).toHaveAttribute("href", "https://local.example/private");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
   it("navigates to the recovery activity without creating its task in another card", () => {
     const activity = blockedHomologation();
     renderPanel(activity);

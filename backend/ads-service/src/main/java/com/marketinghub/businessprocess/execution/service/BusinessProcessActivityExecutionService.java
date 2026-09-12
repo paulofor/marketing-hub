@@ -579,7 +579,7 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, activityId, request, null);
   }
 
-  /** Executa contratos gerais; decisões do ciclo usam sua fila e aprovação específicas. */
+  /** Executa contratos gerais com revalidação das provas; decisões humanas conservam sua fila. */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId,
@@ -655,9 +655,7 @@ public class BusinessProcessActivityExecutionService {
             currentInstancesByActivityId(process.getId(), sourceReference, processInstances)
                 .getOrDefault(normalizedActivityId, List.of()));
     List<AgentProductProcessActivityReadinessProvider> agentReadinessProviders =
-        backendExecutor.isEmpty() && humanExecutor.isEmpty()
-            ? agentActivityReadinessProviders(process, activityDefinition)
-            : List.of();
+        agentActivityReadinessProviders(process, activityDefinition);
     boolean freshExecutionRequired =
         requiresFreshExecution(
             agentReadinessProviders, process, activityDefinition, product, sourceReference);
@@ -1027,9 +1025,7 @@ public class BusinessProcessActivityExecutionService {
     return "A atividade está pronta para abrir todas as tarefas responsáveis.";
   }
 
-  /**
-   * Monta o comando uniforme e identifica a nova tentativa de agente após bloqueio ou cancelamento.
-   */
+  /** Monta o comando contextual e preserva a consulta do subprocesso após o objetivo concluído. */
   private ProductProcessActivityExecutionControlResponse executionControl(
       BusinessProcessActivityDefinition definition,
       BusinessProcessDefinition process,
@@ -1125,6 +1121,23 @@ public class BusinessProcessActivityExecutionService {
             null,
             List.of());
       }
+      if (backendReadiness.targetProcessDefinitionId() != null) {
+        return new ProductProcessActivityExecutionControlResponse(
+            "BACKEND",
+            "SUBPROCESS",
+            "Abrir subprocesso",
+            backendReadiness.description(),
+            true,
+            requestReason,
+            false,
+            null,
+            null,
+            null,
+            null,
+            null,
+            backendReadiness.targetProcessDefinitionId(),
+            backendReadiness.requirements());
+      }
       return new ProductProcessActivityExecutionControlResponse(
           "BACKEND",
           backendReadiness.workspaceCode() == null ? "COMMAND" : "WORKSPACE",
@@ -1139,7 +1152,10 @@ public class BusinessProcessActivityExecutionService {
           backendReadiness.workspaceCode(),
           backendReadiness.workspaceReferenceId(),
           null,
-          backendReadiness.requirements());
+          backendReadiness.requirements(),
+          "DETAILED",
+          null,
+          backendReadiness.navigationUrl());
     }
     if (!responsibleAgents.isEmpty()) {
       String configuredActionLabel = activityMetadataText(definition, "actionLabel");

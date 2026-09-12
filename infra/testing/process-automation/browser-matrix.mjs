@@ -59,24 +59,30 @@ try {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
+      const requestProduct = Number(
+        url.pathname.match(/\/products\/(\d+)/)?.[1] || product,
+      );
       if (url.pathname.endsWith("/process-context"))
         return route.fulfill({
           json: {
-            cycleId: product,
+            cycleId: requestProduct,
             cycleNumber: 2,
-            experimentId: product,
+            experimentId: requestProduct,
             chainDefinitionId: 92014,
             productVersion: "local-v1",
             status: "OPEN",
             stageLabel: "Validação",
             hypothesis: "Comprovar o resultado útil antes da oferta.",
             mainChange: "Controle automático com qualidade comprovada.",
-            cycleUrl: `/business-process-chains/learning-cycles?productId=${product}&cycleId=${product}`,
+            cycleUrl: `/business-process-chains/learning-cycles?productId=${requestProduct}&cycleId=${requestProduct}`,
             previousLearning: [],
             nextWork: null,
           },
         });
       if (url.pathname.includes("/automation/v1")) {
+        // Reproduz latência na confirmação para impedir callbacks anteriores à retomada.
+        if (url.pathname.endsWith("/resume"))
+          await new Promise((resolve) => setTimeout(resolve, 350));
         if (
           failStatus &&
           route.request().method() === "GET" &&
@@ -197,7 +203,18 @@ try {
     await expect(panel.getByText("Pausado", { exact: true })).toBeVisible({
       timeout: 12000,
     });
-    await panel.getByRole("button", { name: "Retomar processo" }).click();
+    const resumeProcess = async () => {
+      const responsePromise = page.waitForResponse(
+        (response) =>
+          response.request().method() === "POST" &&
+          response.url().endsWith(`/automation/v1/${result.id}/resume`),
+      );
+      await panel.getByRole("button", { name: "Retomar processo" }).click();
+      const response = await responsePromise;
+      assert.equal(response.status(), 200, await response.text());
+      assert.equal((await response.json()).status, "QUEUED");
+    };
+    await resumeProcess();
     await post(
       `/api/internal/business-processes/automation/v1/stage-executions/${result.id}/reconcile`,
     );
@@ -226,7 +243,7 @@ try {
     await expect(
       panel.getByRole("button", { name: "Retomar processo" }),
     ).toBeEnabled({ timeout: 12000 });
-    await panel.getByRole("button", { name: "Retomar processo" }).click();
+    await resumeProcess();
     await post(
       `/api/internal/business-processes/automation/v1/stage-executions/${result.id}/reconcile`,
     );
@@ -316,6 +333,40 @@ try {
     await expect(
       panel.getByText(/Subprocesso concluído e confirmado/),
     ).toBeVisible({ timeout: 12000 });
+    // A recuperação mantém o filho bloqueado no histórico e oferece o destino já aprovado.
+    await page.goto(
+      `${base}/products/92027/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=92027`,
+    );
+    await expect(
+      panel.getByText("Processo concluído", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    const approvedDestination = page.getByRole("link", {
+      name: "Abrir destino aprovado",
+    });
+    await expect(approvedDestination).toHaveAttribute(
+      "href",
+      "https://local.example/private",
+    );
+    await expect(approvedDestination).toHaveAttribute("target", "_blank");
+    await panel
+      .getByRole("link", { name: "Processo de teste 92005 · v1" })
+      .click();
+    await expect(panel.getByText(/Subprocesso não necessário/)).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      panel.getByRole("link", { name: /Voltar ao processo pai/ }),
+    ).toHaveAttribute(
+      "href",
+      "/products/92027/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=92027#activity-a",
+    );
+    await panel.screenshot({ path: `${output}/${name}-unneeded-child.png` });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth + 1,
+      ),
+      false,
+    );
     assert.equal(
       mutations.some((u) => u.includes("/execution-requests")),
       false,

@@ -10,10 +10,15 @@ import org.springframework.data.jpa.repository.Lock;
 /** Responsabilidade: persistir ocorrências de atividades e seus estados consolidados. */
 public interface BusinessProcessActivityInstanceRepository
     extends JpaRepository<BusinessProcessActivityInstance, Long> {
-  /** Busca a ocorrência atual ou mais recente de uma atividade para a referência operacional. */
+  /** Reserva a ocorrência mais recente para comandos de escrita na referência operacional. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   Optional<BusinessProcessActivityInstance>
       findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+          Long activityDefinitionId, String sourceReference);
+
+  /** Consulta a ocorrência mais recente sem adquirir lock de escrita durante a leitura. */
+  Optional<BusinessProcessActivityInstance>
+      findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
           Long activityDefinitionId, String sourceReference);
 
   /** Lista as ocorrências de uma versão de processo para montar a visão hierárquica. */

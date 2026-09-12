@@ -69,6 +69,8 @@ run_check deploy-resume.log bash scripts/test-deployment-change-resume.sh
 run_check delivery-contract.log python3 infra/testing/process-automation/test-delivery-contract.py
 run_check worker-container.log bash scripts/run-docker-homologation.sh bash infra/testing/process-automation/worker-container-test.sh
 run_check mysql.log compose up -d --wait
+run_check private-journey-schema.log compose exec -T process-mysql mysql -uroot -pprocess-local-only -e "CREATE DATABASE IF NOT EXISTS private_journey_local CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+run_check private-journey-persistence.log mvn -q -f backend/ads-service/pom.xml -Dprivate.journey.mysql57=true -Dtest=PrivateCommunicationJourneyPersistenceTest test
 start_backend
 run_check api.log node infra/testing/process-automation/api-matrix.mjs
 run_check lifecycle.log node infra/testing/process-automation/lifecycle-matrix.mjs

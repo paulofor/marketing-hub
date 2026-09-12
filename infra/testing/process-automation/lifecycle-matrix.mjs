@@ -162,6 +162,102 @@ await scenario(
   },
 );
 
+await scenario(
+  "destino aprovado encerra filho indevido e preserva sua falha",
+  async () => {
+    const product = 92027;
+    const parent = await start(product, 92004);
+    const childId = (await tick(parent.id)).childRunId;
+    await tick(childId);
+    await request(`/fixture/${product}/92005/a`, {
+      status: "BLOCKED",
+      achieved: false,
+    });
+    await request(root(product, 92004) + `/${parent.id}/pause`, {});
+    assert.equal((await tick(parent.id)).status, "PAUSED");
+    await request(`/fixture/products/${product}`, {
+      destination: "PRIVATE_PDE",
+    });
+    await request(root(product, 92004) + `/${parent.id}/resume`, {});
+    assert.equal((await tick(parent.id)).status, "WAITING_ACTIVITY");
+    await tick(parent.id);
+    const child = await request(
+      root(product, 92005) +
+        `?chainId=92014&learningCycleId=${product}&sourceReference=experiment:${product}`,
+    );
+    assert.equal(child.status, "CLOSED");
+    assert.equal(child.completedActivities, 0);
+    assert.equal(child.remainingActivities, 3);
+    assert.match(child.reason, /não necessário/);
+    assert(
+      child.parentProcesses.some(
+        (relation) => relation.processDefinitionId === 92004,
+      ),
+    );
+    await callback(product, "b", 92004);
+    await tick(parent.id);
+    assert.equal((await tick(parent.id)).status, "COMPLETED");
+    assert.equal(
+      (await tasks(product)).filter((task) => task.process_id === 92005).length,
+      1,
+    );
+    assert.equal(
+      (await tasks(product)).find((task) => task.process_id === 92005).status,
+      "BLOCKED",
+    );
+  },
+);
+
+await scenario(
+  "mudança de destino aguarda tarefa já iniciada sem cancelar transação",
+  async () => {
+    const product = 92028;
+    const parent = await start(product, 92004);
+    const childId = (await tick(parent.id)).childRunId;
+    await tick(childId);
+    await request(`/fixture/products/${product}`, {
+      destination: "PRIVATE_PDE",
+    });
+    await tick(parent.id);
+    assert.equal((await tick(parent.id)).status, "WAITING_SUBPROCESS");
+    assert.equal(
+      (await tasks(product)).find((task) => task.process_id === 92005).status,
+      "PENDING",
+    );
+    await request(`/fixture/${product}/92005/a`, {
+      status: "BLOCKED",
+      achieved: false,
+    });
+    await tick(parent.id);
+    await callback(product, "b", 92004);
+    await tick(parent.id);
+    assert.equal((await tick(parent.id)).status, "COMPLETED");
+    assert.equal((await tick(childId)).status, "CLOSED");
+  },
+);
+
+await scenario(
+  "ciclo privado novo conclui pelo destino aprovado sem abrir landing",
+  async () => {
+    const product = 92029;
+    await request(`/fixture/products/${product}`, {
+      destination: "PRIVATE_PDE",
+    });
+    const parent = await start(product, 92004);
+    assert.equal((await tick(parent.id)).childRunId, null);
+    await tick(parent.id);
+    await callback(product, "b", 92004);
+    await tick(parent.id);
+    const completed = await tick(parent.id);
+    assert.equal(completed.status, "COMPLETED");
+    assert.equal(completed.completedActivities, 3);
+    assert.equal(
+      (await tasks(product)).some((task) => task.process_id === 92005),
+      false,
+    );
+  },
+);
+
 console.log(
   JSON.stringify({
     passed,

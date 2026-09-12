@@ -202,7 +202,7 @@ export default function ProductProcessAutomationPanel({
           {Boolean(data.subprocesses?.length) && (
             <nav aria-label="Subprocessos deste processo" className="mb-3">
               <strong className="small">
-                Atividades executadas em subprocessos
+                Subprocessos e histórico de execução
               </strong>
               <ul className="mb-0 ps-3">
                 {data.subprocesses?.map((child) => (

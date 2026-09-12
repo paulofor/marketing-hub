@@ -94,7 +94,7 @@ public class ProcessAutomationLocalApplication {
       jdbc.execute(
           "CREATE TABLE IF NOT EXISTS " + table + " (id BIGINT PRIMARY KEY) ENGINE=InnoDB");
     jdbc.execute(
-        "CREATE TABLE IF NOT EXISTS fixture_product (id BIGINT PRIMARY KEY, enabled BIT NOT NULL DEFAULT 1, version_number INT NOT NULL DEFAULT 1, cycle_status VARCHAR(32) NOT NULL DEFAULT 'OPEN') ENGINE=InnoDB");
+        "CREATE TABLE IF NOT EXISTS fixture_product (id BIGINT PRIMARY KEY, enabled BIT NOT NULL DEFAULT 1, version_number INT NOT NULL DEFAULT 1, cycle_status VARCHAR(32) NOT NULL DEFAULT 'OPEN', destination_code VARCHAR(32) NOT NULL DEFAULT 'LANDING') ENGINE=InnoDB");
     jdbc.execute(
         "CREATE TABLE IF NOT EXISTS fixture_task (id BIGINT AUTO_INCREMENT PRIMARY KEY, product_id BIGINT NOT NULL, process_id BIGINT NOT NULL, activity_id VARCHAR(100) NOT NULL, status VARCHAR(32) NOT NULL, achieved BIT NOT NULL DEFAULT 0, reason VARCHAR(300) NOT NULL, KEY ix_fixture_task(product_id,process_id,activity_id,id)) ENGINE=InnoDB");
     for (long id = 92001; id <= 92030; id++) {
@@ -335,7 +335,11 @@ public class ProcessAutomationLocalApplication {
               if (previous != null
                   && Set.of("PENDING", "IN_PROGRESS").contains(previous.get("status")))
                 throw new IllegalStateException("Duplicação de tarefa ativa.");
-              boolean gate = "gate".equals(activity);
+              boolean gate =
+                  "gate".equals(activity)
+                      || (process == 92004
+                          && "a".equals(activity)
+                          && privateDestination(jdbc, product));
               jdbc.update(
                   "INSERT INTO fixture_task(product_id,process_id,activity_id,status,achieved,reason) VALUES (?,?,?,?,?,?)",
                   product,
@@ -371,7 +375,7 @@ public class ProcessAutomationLocalApplication {
     return tasks.isEmpty() ? null : tasks.getFirst();
   }
 
-  /** Projeta prontidão e objetivo do contrato simulado, sem decidir a ordem pelo executor. */
+  /** Projeta prontidão, escolha de destino e objetivo, sem decidir a ordem pelo executor. */
   static ProductProcessActivityExecutionHistoryResponse snapshot(
       JdbcTemplate jdbc, Long product, Long process) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new ArrayList<>();
@@ -388,7 +392,7 @@ public class ProcessAutomationLocalApplication {
       String interaction =
           process == 92002 && id.equals("b")
               ? "APPROVAL"
-              : process == 92004 && id.equals("a")
+              : process == 92004 && id.equals("a") && !privateDestination(jdbc, product)
                   ? "SUBPROCESS"
                   : process == 92010 && id.equals("gate") ? "WORKSPACE" : "COMMAND";
       boolean available =
@@ -397,7 +401,14 @@ public class ProcessAutomationLocalApplication {
               && (!id.equals("fix") || needsFix);
       var control =
           new ProductProcessActivityExecutionControlResponse(
-              interaction.equals("APPROVAL") ? "HUMAN" : id.equals("gate") ? "BACKEND" : "AGENT",
+              interaction.equals("APPROVAL")
+                  ? "HUMAN"
+                  : id.equals("gate")
+                          || (process == 92004
+                              && id.equals("a")
+                              && privateDestination(jdbc, product))
+                      ? "BACKEND"
+                      : "AGENT",
               interaction,
               "Executar atividade",
               "Contrato local",
@@ -410,7 +421,12 @@ public class ProcessAutomationLocalApplication {
               null,
               null,
               interaction.equals("SUBPROCESS") ? 92005L : null,
-              List.of());
+              List.of(),
+              null,
+              null,
+              process == 92004 && id.equals("a") && privateDestination(jdbc, product)
+                  ? "https://local.example/private"
+                  : null);
       groups.add(
           new ProductProcessActivityExecutionGroupResponse(
               (long) groups.size() + 1,
@@ -472,6 +488,14 @@ public class ProcessAutomationLocalApplication {
         groups);
   }
 
+  /** Simula a decisão persistida de reutilizar o destino, sem mudar o grafo ou aprovar um filho. */
+  private static boolean privateDestination(JdbcTemplate jdbc, Long product) {
+    return "PRIVATE_PDE"
+        .equals(
+            jdbc.queryForObject(
+                "SELECT destination_code FROM fixture_product WHERE id=?", String.class, product));
+  }
+
   /** Responsabilidade: fornecer callbacks e consultas de teste, ausentes na aplicação produtiva. */
   @RestController
   static class FixtureController {
@@ -522,7 +546,7 @@ public class ProcessAutomationLocalApplication {
       return Map.of("ok", true);
     }
 
-    /** Permite testar STOP, encerramento do ciclo e mudança de entrada sem editar a execução. */
+    /** Permite testar STOP, encerramento, mudança de entrada e destino sem editar a execução. */
     @PostMapping("/fixture/products/{product}")
     Object productState(@PathVariable Long product, @RequestBody Map<String, Object> state) {
       if (state.containsKey("play"))
@@ -536,6 +560,11 @@ public class ProcessAutomationLocalApplication {
         jdbc.update(
             "UPDATE fixture_product SET cycle_status=? WHERE id=?",
             state.get("cycleStatus"),
+            product);
+      if (state.containsKey("destination"))
+        jdbc.update(
+            "UPDATE fixture_product SET destination_code=? WHERE id=?",
+            state.get("destination"),
             product);
       return Map.of("ok", true);
     }

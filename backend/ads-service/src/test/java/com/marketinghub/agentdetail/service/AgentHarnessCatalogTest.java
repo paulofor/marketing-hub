@@ -8,7 +8,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -122,6 +125,39 @@ class AgentHarnessCatalogTest {
     assertThat(core.mediaType()).isEqualTo("text/markdown");
     assertThat(core.sha256()).matches("[a-f0-9]{64}");
     assertThat(core.content()).isEqualTo(Files.readString(repositoryRoot.resolve(core.path())));
+  }
+
+  /** Preserva a identidade e o conteúdo dos contratos atual e histórico de Têmis na auditoria. */
+  @ParameterizedTest
+  @CsvSource({
+    "bpm-v3, pde-agent-validation-review-v3.md, PROMPT, text/markdown",
+    "bpm-v3, pde-agent-validation-review-v3-schema.json, OUTPUT_SCHEMA, application/json",
+    "bpm-v4, pde-agent-validation-review-v4.md, PROMPT, text/markdown",
+    "bpm-v4, pde-agent-validation-review-v4-schema.json, OUTPUT_SCHEMA, application/json"
+  })
+  void exposesTemisValidationRevisionsWithExactIdentity(
+      String version, String filename, String behaviorType, String mediaType)
+      throws IOException, NoSuchAlgorithmException {
+    String path = "meta-ad-approver-worker/src/main/resources/prompts/bpm/" + filename;
+    Path source = repositoryRoot().resolve(path);
+    String content = Files.readString(source);
+    String sha256 =
+        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(source)));
+    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("meta-ad-approver");
+
+    assertThat(harness.behaviorFiles())
+        .filteredOn(file -> path.equals(file.path()))
+        .singleElement()
+        .satisfies(
+            file -> {
+              assertThat(file.version()).isEqualTo(version);
+              assertThat(file.behaviorType()).isEqualTo(behaviorType);
+              assertThat(file.mediaType()).isEqualTo(mediaType);
+              assertThat(file.name()).isNotBlank();
+              assertThat(file.description()).isNotBlank();
+              assertThat(file.content()).isEqualTo(content);
+              assertThat(file.sha256()).isEqualTo(sha256);
+            });
   }
 
   /** Impede que o backend anuncie como versionado um arquivo ausente no repositório. */

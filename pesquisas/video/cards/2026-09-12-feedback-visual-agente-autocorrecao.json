@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-feedback-visual-agente-autocorrecao",
+  "collection": "video",
+  "title": "Fechar o loop do videomaker com inspeção visual antes da próxima tomada",
+  "finding": "O Vidu S2 descreve um agente visual que revisa frames gerados, verifica se a ação foi concluída ou desviou do pedido e usa essa observação para corrigir prompts seguintes e preservar apenas estados visualmente confirmados.",
+  "mechanism": "Um loop geração → inspeção visual → atualização de estado → próxima instrução reduz a dependência de prompts cegos em sequência: o agente pode detectar falhas de continuidade, confirmar objetos, roupas, cenário e ações e adaptar a próxima geração com base no que realmente apareceu no vídeo.",
+  "commercialApplication": "Adicionar ao videomaker do Marketing Hub uma etapa automática de revisão visual de frames-chave após cada tomada, aceitando o trecho, regenerando-o ou ajustando o próximo prompt; carregar para o contexto persistente somente estados confirmados pela inspeção.",
+  "evidenceStrength": "Moderada: há descrição técnica primária detalhada da arquitetura Vidu S2, mas os resultados são do próprio fornecedor e o S2 ainda está anunciado para 15/09/2026, sem API pública ou benchmark independente suficiente.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Em peças multi-shot equivalentes, revisar visualmente cada tomada antes de gerar a seguinte reduzirá regenerações tardias e erros de continuidade, diminuindo o tempo até um criativo aceitável sem piorar retenção, CTA ou aprovação.",
+  "risks": "O revisor visual pode alucinar falhas ou aprovar artefatos; a checagem aumenta custo e latência; regras excessivas podem reduzir criatividade; não se deve tratar coerência visual como prova de desempenho comercial.",
+  "limits": "O Vidu S2 ainda não está publicamente disponível em 12/09/2026 e não há evidência de impacto em conversão ou vendas. O ganho do loop deve ser medido no próprio pipeline com métricas de regeneração, tempo, custo e eventos reais do funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-12-feedback-visual-agente-autocorrecao.md",
+  "sourceTitle": "Fonte revisada — Feedback visual agêntico em vídeo em tempo real",
+  "sourceSha256": "ee4c5abbcb8a6f196a2ee5590b7f5e106bb3751226b1e0c5332dcc00d248eb59"
+}

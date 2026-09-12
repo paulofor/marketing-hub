@@ -36,6 +36,15 @@ public record LearningCycleResponse(
     List<ApprovalOption> approvalOptions,
     Map<String, List<ApprovalOption>> evidenceOptions,
     List<WorkLink> workLinks,
+    com.marketinghub
+            .businessprocesschain
+            .learningcycle
+            .v1
+            .service
+            .videoBudget
+            .VideoBudgetResponse
+            .Authorization
+        videoBudget,
     List<CommandOption> commands,
     boolean canCreateSuccessor,
     Instant createdAt,

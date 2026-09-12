@@ -41,6 +41,10 @@ class LearningCycleContinuationTest {
 
   /** Reproduz o predecessor conciliado e encerrado, sem inventar execução do sucessor. */
   private LearningSalesCycle adjustedCycle() {
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service,
+        "videoBudget",
+        new LearningCycleVideoBudget(events, new LearningCycleJson(new ObjectMapper())));
     var cycle = new LearningSalesCycle();
     cycle.setId(1L);
     cycle.setProductId(4L);

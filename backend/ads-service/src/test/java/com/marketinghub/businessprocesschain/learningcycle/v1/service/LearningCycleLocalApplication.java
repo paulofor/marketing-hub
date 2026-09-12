@@ -80,6 +80,13 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleEvidence.class,
   LearningCyclePublicationHistory.class,
   LearningCycleVideoEvidence.class,
+  LearningCycleVideoBudget.class,
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunService.class,
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunContext.class,
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunNavigation.class,
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunSubprocesses.class,
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunGuidance.class,
+  com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController.class,
   LearningCycleVideoFixtures.class,
   LearningCycleBpmLedger.class,
   LearningCycleController.class
@@ -122,6 +129,7 @@ public class LearningCycleLocalApplication {
             "spring.config.location",
             "optional:classpath:learningcycle/no-production-config.properties"),
         Map.entry("spring.profiles.active", "learning-cycles-fixture"),
+        Map.entry("process-execution.worker-token", "cycles-process-fixture-only"),
         Map.entry(
             "spring.datasource.url",
             "jdbc:mysql://"
@@ -176,7 +184,7 @@ public class LearningCycleLocalApplication {
     return runner;
   }
 
-  /** Limita o modelo persistente às entidades realmente usadas pelo ciclo e pelo ledger BPM. */
+  /** Limita a persistência ao ciclo, sua execução de processo e ao ledger BPM homologados. */
   @Bean
   @DependsOn("liquibase")
   LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource source) {
@@ -185,6 +193,8 @@ public class LearningCycleLocalApplication {
     factory.setManagedTypes(
         PersistenceManagedTypes.of(
             LearningSalesCycle.class.getName(),
+            com.marketinghub.businessprocess.automation.v1.ProcessRun.class.getName(),
+            com.marketinghub.businessprocess.automation.v1.ProcessRunEvent.class.getName(),
             com.marketinghub.businessprocesschain.learningcycle.v1.decision
                 .LearningCycleDecisionProposal.class
                 .getName(),
@@ -230,6 +240,22 @@ public class LearningCycleLocalApplication {
   @Bean
   LearningSalesCycleRepository cycles(EntityManagerFactory factory) {
     return repository(factory, LearningSalesCycleRepository.class);
+  }
+
+  /** Persiste o estado real de execução dos processos vinculados aos ciclos de teste. */
+  @Bean
+  com.marketinghub.repository.jpa.processautomation.ProcessRunRepository processRuns(
+      EntityManagerFactory factory) {
+    return repository(
+        factory, com.marketinghub.repository.jpa.processautomation.ProcessRunRepository.class);
+  }
+
+  /** Preserva as decisões reais do conciliador, sem simular sucesso de atividade. */
+  @Bean
+  com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository processRunEvents(
+      EntityManagerFactory factory) {
+    return repository(
+        factory, com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository.class);
   }
 
   /** Simula somente o ledger de tarefas externas, que não executam durante a homologação. */
@@ -592,6 +618,10 @@ public class LearningCycleLocalApplication {
     private final LearningSalesCycleRepository cycles;
     private final LearningSalesCycleEventRepository events;
     private final LearningCycleDecisionProposalRepository decisionProposals;
+    private final com.marketinghub.repository.jpa.processautomation.ProcessRunRepository
+        processRuns;
+    private final com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+        processRunEvents;
 
     /** Recebe as fontes persistidas da fixture. */
     FixtureController(
@@ -601,7 +631,12 @@ public class LearningCycleLocalApplication {
         ObjectMapper mapper,
         LearningSalesCycleRepository cycles,
         LearningSalesCycleEventRepository events,
-        LearningCycleDecisionProposalRepository decisionProposals) {
+        LearningCycleDecisionProposalRepository decisionProposals,
+        com.marketinghub.repository.jpa.processautomation.ProcessRunRepository processRuns,
+        com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+            processRunEvents) {
+      this.processRuns = processRuns;
+      this.processRunEvents = processRunEvents;
       this.decisionProposals = decisionProposals;
       this.cycles = cycles;
       this.events = events;
@@ -623,10 +658,12 @@ public class LearningCycleLocalApplication {
       return List.of(product(91001L), product(91002L));
     }
 
-    /** Serializa e limpa a fixture em uma transação, sem disputar dados com o consumidor local. */
+    /** Limpa execuções e ciclos em uma transação, preservando a ordem das referências locais. */
     @PostMapping("/fixture/reset")
     @Transactional(isolation = Isolation.READ_COMMITTED)
     Map<String, Object> reset() {
+      processRunEvents.deleteAllInBatch();
+      processRuns.deleteAllInBatch();
       var existing =
           cycles.findAll().stream()
               .sorted(Comparator.comparing(LearningSalesCycle::getId))

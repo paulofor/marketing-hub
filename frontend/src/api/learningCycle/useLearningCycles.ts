@@ -73,6 +73,9 @@ export type CycleEvent = {
   createdAt: string;
 };
 export type LearningCycle = {
+  videoBudget?:
+    | import("../financial/useVideoBudget").VideoBudgetAuthorization
+    | null;
   id: number;
   productId: number;
   experimentId: number;

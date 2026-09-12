@@ -146,6 +146,18 @@ export function processContextText(context: ProcessContext, origin: string) {
         ? [`Link de acompanhamento: ${new URL(run.navigationUrl, origin).href}`]
         : []),
     );
+    if (run.userAction) {
+      lines.push(
+        `Próxima ação necessária: ${run.userAction.title} (${run.userAction.code})`,
+        `Responsável pela pendência: ${run.userAction.responsible}`,
+        `O que fazer agora: ${run.userAction.reason}`,
+        `Botão: ${run.userAction.actionLabel} · ${new URL(run.userAction.actionUrl, origin).href}`,
+        `Depois desta ação: ${run.userAction.afterAction}`,
+        ...(run.userAction.evidenceReference
+          ? [`Evidência da decisão: ${run.userAction.evidenceReference}`]
+          : []),
+      );
+    }
   } else lines.push("Execução automática: não disponível nesta consulta.");
   lines.push(
     "",

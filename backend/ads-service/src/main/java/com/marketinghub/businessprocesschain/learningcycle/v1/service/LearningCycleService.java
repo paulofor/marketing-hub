@@ -11,6 +11,7 @@ import com.marketinghub.businessprocesschain.learningcycle.v1.service.command.Le
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.createCycle.CreateLearningCycleRequest;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.getCycles.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.reconcileMeasurement.ReconcileLearningCycleMeasurementRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.service.videoBudget.*;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentType;
@@ -49,6 +50,8 @@ public class LearningCycleService {
   private final LearningCycleMeasurementCollector measurementCollector;
 
   @Autowired private LearningCycleWorkResolver workResolver;
+
+  @Autowired private LearningCycleVideoBudget videoBudget;
 
   @Autowired(required = false)
   private LearningCyclePrototypeContext prototypeContext;
@@ -235,6 +238,38 @@ public class LearningCycleService {
             : cycles.findByProductIdAndChainCodeOrderByIdDesc(
                 productId, requiredChain(chainId).getChainCode());
     return selected.stream().map(this::response).toList();
+  }
+
+  /** Consulta o financeiro da ocorrência exata, recusando contexto divergente na URL. */
+  @Transactional(readOnly = true)
+  public VideoBudgetResponse videoBudget(Long productId, Long cycleId, Long chainId) {
+    var cycle = requiredCycle(productId, cycleId);
+    require(
+        Objects.equals(chainId, cycle.getChainDefinitionId()),
+        "A cadeia informada não pertence a este ciclo.");
+    requiredExperiment(productId, cycle.getExperimentId());
+    return videoBudget.response(
+        cycle, products.findById(productId).orElseThrow(), videoWorkflow(cycle));
+  }
+
+  /** Persiste o teto humano de vídeos sem avançar BPM, abrir jobs ou aprovar consumo. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public VideoBudgetResponse authorizeVideoBudget(
+      Long productId, Long cycleId, AuthorizeVideoBudgetRequest request) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    requiredExperiment(productId, cycle.getExperimentId());
+    videoBudget.authorize(
+        cycle,
+        request,
+        videoWorkflow(cycle),
+        Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+    cycles.saveAndFlush(cycle);
+    return videoBudget.response(
+        cycle, products.findById(productId).orElseThrow(), videoWorkflow(cycle));
   }
 
   /** Mantém a consulta do catálogo sem uma ocorrência explicitamente selecionada. */
@@ -793,6 +828,7 @@ public class LearningCycleService {
           case "VIDEO_BRIEF" -> {
             require(videoWorkflow(cycle), "Este BPM não possui etapas de vídeo.");
             videoEvidence.brief(data);
+            videoBudget.attachToBrief(cycle, data);
           }
           case "CAMPAIGN_VIDEO" ->
               videoEvidence.production(
@@ -1188,6 +1224,7 @@ public class LearningCycleService {
         approvalOptions,
         videoWorkflow(cycle) ? videoOptions(cycle) : Map.of(),
         workLinks(cycle),
+        videoBudget.current(cycle),
         commands,
         "ADJUSTED".equals(cycle.getStatus()) && successor.isEmpty(),
         cycle.getCreatedAt(),
@@ -1306,11 +1343,12 @@ public class LearningCycleService {
   }
 
   /**
-   * Expõe caminhos oficiais para produção, revisão e integração sem comandos externos implícitos.
+   * Expõe caminhos oficiais para financeiro, produção, revisão e integração sem consumo implícito.
    */
   private List<LearningCycleResponse.WorkLink> workLinks(LearningSalesCycle cycle) {
     if (!videoWorkflow(cycle) || !VIDEO_STAGES.contains(cycle.getStage())) return List.of();
     return List.of(
+        new LearningCycleResponse.WorkLink("Financeiro dos vídeos", videoBudget.financeUrl(cycle)),
         new LearningCycleResponse.WorkLink("Produzir no Estúdio", "/audio-video-studio"),
         new LearningCycleResponse.WorkLink(
             "Vídeos e criativos do experimento #" + cycle.getExperimentId(),

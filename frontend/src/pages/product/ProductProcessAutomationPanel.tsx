@@ -183,7 +183,33 @@ export default function ProductProcessAutomationPanel({
               </span>
             </Link>
           )}
-          <p className="small mb-2">{data.reason}</p>
+          {data.userAction ? (
+            <div
+              className="alert alert-warning mt-2 mb-3"
+              aria-label="Próxima ação necessária"
+            >
+              <strong>{data.userAction.title}</strong>
+              <p className="mt-2 mb-2">{data.userAction.reason}</p>
+              <p className="small mb-2">
+                Responsável: {data.userAction.responsible}
+              </p>
+              {status.isError ? (
+                <p role="alert" className="mb-2">
+                  Atualize a execução para confirmar a próxima ação.
+                </p>
+              ) : (
+                <Link
+                  className="btn btn-primary text-wrap"
+                  to={data.userAction.actionUrl}
+                >
+                  {data.userAction.actionLabel}
+                </Link>
+              )}
+              <p className="small mt-2 mb-0">{data.userAction.afterAction}</p>
+            </div>
+          ) : (
+            <p className="small mb-2">{data.reason}</p>
+          )}
           {Boolean(data.parentProcesses?.length) && (
             <nav aria-label="Retorno ao processo pai" className="mb-3">
               {data.parentProcesses?.map((parent) => (
@@ -284,7 +310,7 @@ export default function ProductProcessAutomationPanel({
                 {showEvents ? "Fechar histórico" : "Histórico da execução"}
               </button>
             )}
-            {data.navigationUrl && (
+            {data.navigationUrl && !data.userAction && (
               <Link className="btn btn-outline-primary" to={data.navigationUrl}>
                 Abrir pendência
               </Link>

@@ -16,6 +16,57 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/{cycleId}/video-budget:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    get:
+      summary: Consultar financeiro de produção e revisão dos dois vídeos
+      description: Retorna autorização vigente, histórico imutável e disponibilidade calculada pelo backend. Não cria reserva, tarefa ou débito.
+      parameters:
+        - {name: chainId, in: query, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Contexto exato e autorizações do ciclo
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VideoBudget'}
+        '404': {description: Produto ou ciclo não encontrado no escopo}
+        '409': {description: Cadeia ou experimento divergente}
+    post:
+      summary: Registrar teto humano compartilhado entre anúncio e demonstração na entrada
+      description: >-
+        USD, produção e revisão de AD e LANDING_HERO. Somente em VIDEO_BRIEF de ciclo OPEN com BPM de vídeos.
+        Usa o lock do produto/ciclo, revisão esperada e evento AUTHORIZE_VIDEO_BUDGET. Não muda a etapa.
+        Não equivale ao parecer de Plutus, não inicia produção, compra créditos, autoriza mídia, cobrança ou publicação.
+        Repetição idêntica preserva o recibo; chave com outro conteúdo ou revisão antiga retornam conflito.
+        operatorName identifica o responsável declarado, conforme os demais comandos administrativos do ciclo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, chainDefinitionId, experimentId, productVersion, budgetLimitUsd, operatorName, justification, confirmed]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, minimum: 0}
+                chainDefinitionId: {type: integer, format: int64, minimum: 1}
+                experimentId: {type: integer, format: int64, minimum: 1}
+                productVersion: {type: string, minLength: 1, maxLength: 160}
+                budgetLimitUsd: {type: number, minimum: 0.01, maximum: 999999.99, multipleOf: 0.01}
+                operatorName: {type: string, minLength: 1, maxLength: 160}
+                justification: {type: string, minLength: 1, maxLength: 4000}
+                confirmed: {type: boolean, enum: [true]}
+      responses:
+        '200':
+          description: Teto registrado sem efeitos externos, com histórico e revisão atualizados
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/VideoBudget'}
+        '400': {description: Campo obrigatório, teto inválido ou confirmação ausente}
+        '404': {description: Produto ou ciclo não encontrado no escopo}
+        '409': {description: Etapa, versão, contexto, revisão ou chave de idempotência incompatíveis}
   /products/{productId}/process-context:
     get:
       summary: Identificar o ciclo da atividade, memória herdada e próximo trabalho na cadeia
@@ -194,6 +245,44 @@ components:
   parameters:
     ProductId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
   schemas:
+    VideoBudgetAuthorization:
+      type: object
+      properties:
+        eventId: {type: integer, format: int64}
+        reference: {type: string, description: 'Referência internal://learning-cycles/{cycleId}/video-budget/{requestKey}'}
+        budgetLimitUsd: {type: number}
+        operatorName: {type: string}
+        justification: {type: string}
+        createdAt: {type: string, format: date-time}
+        productVersion: {type: string}
+        current: {type: boolean, description: Último teto da versão vigente; os demais são históricos}
+    VideoBudget:
+      type: object
+      properties:
+        productId: {type: integer, format: int64}
+        productName: {type: string, nullable: true}
+        internalName: {type: string, nullable: true}
+        chainDefinitionId: {type: integer, format: int64}
+        processDefinitionId: {type: integer, format: int64}
+        cycleId: {type: integer, format: int64}
+        experimentId: {type: integer, format: int64}
+        productVersion: {type: string}
+        revision: {type: integer}
+        stageLabel: {type: string}
+        status: {type: string, enum: [AWAITING_LIMIT, LIMIT_RECORDED]}
+        instruction: {type: string}
+        scope: {type: string, enum: [TWO_VIDEOS_PRODUCTION_AND_REVIEW]}
+        currency: {type: string, enum: [USD]}
+        canAuthorize: {type: boolean}
+        blocker: {type: string, nullable: true}
+        currentAuthorization:
+          allOf: [{$ref: '#/components/schemas/VideoBudgetAuthorization'}]
+          nullable: true
+        history:
+          type: array
+          items: {$ref: '#/components/schemas/VideoBudgetAuthorization'}
+        cycleUrl: {type: string}
+        financeUrl: {type: string}
     Entry:
       type: object
       nullable: true
@@ -330,7 +419,12 @@ components:
         evidenceOptions:
           type: object
           description: Seleções lidas no backend para campaignVideoAssetId, pdeVideoAssetId, creativeId e pdeSlotId
-          additionalProperties: {type: array, items: {type: object, properties: {id: {type: integer}, label: {type: string}}}}
+          additionalProperties:
+            type: array
+            items: {type: object, properties: {id: {type: integer}, label: {type: string}}}
+        videoBudget:
+          allOf: [{$ref: '#/components/schemas/VideoBudgetAuthorization'}]
+          nullable: true
         workLinks: {type: array, items: {type: object, properties: {label: {type: string}, url: {type: string}}}}
         brief: {type: object}
         inheritedLearning: {type: object, description: Snapshot do predecessor; memória mais antiga permanece acessível por referência ao ciclo anterior}

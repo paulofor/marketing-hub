@@ -50,6 +50,12 @@ import org.springframework.web.bind.annotation.*;
   ProcessAutomationLocalApplication.FixtureController.class
 })
 public class ProcessAutomationLocalApplication {
+  /** Isola a orientação financeira, coberta na fixture integrada de ciclos e orçamento reais. */
+  @Bean
+  ProcessRunGuidance guidance() {
+    return mock(ProcessRunGuidance.class);
+  }
+
   /** Inicia somente a aplicação de teste, sem importar agendamentos ou credenciais produtivas. */
   public static void main(String[] args) {
     start();

@@ -1,0 +1,18 @@
+{
+  "cardKey": "indulgencia-visual-depende-posicionamento",
+  "collection": "neuromarketing",
+  "title": "Indulgência visual depende do posicionamento da marca",
+  "finding": "Estudo publicado em Marketing Letters combinou 98.081 imagens de 363 marcas com dois experimentos controlados e encontrou efeito oposto da indulgência visual sobre compartilhamento: negativo para marcas mainstream e positivo para marcas de luxo.",
+  "mechanism": "Para marcas mainstream, compartilhar imagens muito indulgentes pode elevar o custo reputacional percebido por quem compartilha; em marcas de luxo, esse custo diminui e a ativação emocional pode favorecer o compartilhamento.",
+  "commercialApplication": "Classificar o posicionamento da oferta antes de usar visuais altamente indulgentes e testar creative variants indulgentes versus contidas separadamente por posicionamento, acompanhando compartilhamento e qualidade pós-clique.",
+  "evidenceStrength": "Boa para o efeito sobre compartilhamento: grande conjunto de campo e dois experimentos controlados replicam o padrão e apoiam os mecanismos; não há prova direta sobre CTR, lead ou venda.",
+  "publishedOn": "2026-09-09",
+  "validUntil": "2027-09-30",
+  "experimentHypothesis": "Em ofertas mainstream do Marketing Hub, peças menos indulgentes ou socialmente mais seguras gerarão maior compartilhamento sem piorar qualidade pós-clique; em ofertas premium, o efeito poderá ser diferente.",
+  "risks": "Não transformar o achado em regra estética universal nem usar sexualização, excesso ou estigma para explorar vulnerabilidades; avaliar adequação cultural e de marca.",
+  "limits": "O desfecho principal é compartilhamento/intenção de compartilhamento; o estudo de campo é observacional e os experimentos foram realizados fora do Brasil e não com produtos digitais de baixo ticket.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-12-indulgencia-visual-posicionamento.md",
+  "sourceTitle": "Fonte revisada — Indulgência visual e posicionamento de marca",
+  "sourceSha256": "dfb7f5bb70bca33f9ea3e2b4dbb37f03f76de55f5a758d6748a901b9cee681f7"
+}

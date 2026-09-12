@@ -30,6 +30,11 @@ on:
       - "scripts/deploy_intervention_store.py"
       - "scripts/deploy-intervention-scopes.json"
       - "scripts/test-deploy-intervention.py"
+      - "scripts/deploy_publisher_recovery.py"
+      - "scripts/deploy-publisher-recovery.json"
+      - "scripts/validate-publisher-recovery.py"
+      - "scripts/test-publisher-recovery.py"
+      - "scripts/deploy-control-known-hosts"
       - "scripts/detect-deployment-changes.sh"
       - "scripts/test-deploy-transactional-contract.sh"
       - "scripts/test-deployment-change-resume.sh"
@@ -117,6 +122,11 @@ on:
       - "scripts/deploy_intervention_store.py"
       - "scripts/deploy-intervention-scopes.json"
       - "scripts/test-deploy-intervention.py"
+      - "scripts/deploy_publisher_recovery.py"
+      - "scripts/deploy-publisher-recovery.json"
+      - "scripts/validate-publisher-recovery.py"
+      - "scripts/test-publisher-recovery.py"
+      - "scripts/deploy-control-known-hosts"
       - "scripts/detect-deployment-changes.sh"
       - "scripts/test-deploy-transactional-contract.sh"
       - "scripts/test-deployment-change-resume.sh"
@@ -205,7 +215,9 @@ jobs:
         run: python3 scripts/test-backend-ci-workflow.py
 
       - name: Validar coordenação de intervenções sem publicar ou acessar hosts reais
-        run: python3 scripts/test-deploy-intervention.py
+        run: |
+          python3 scripts/test-deploy-intervention.py
+          python3 scripts/test-publisher-recovery.py
 
       - name: Validar sintaxe dos contratos shell
         run: |

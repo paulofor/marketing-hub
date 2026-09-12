@@ -51,9 +51,12 @@ falha após a última correção. Limitações e operação real serão registra
    cancelamento de transações em execução, não cancela filas de agentes e não dispara builds.
 5. Em `ACTIVE`, executar os comandos já autorizados sob `execute`, mantendo a exclusão entre
    operadores durante toda a alteração e a conferência. O registro permanece aberto entre comandos.
-6. Ao encerrar a homologação, fornecer em `resume` o commit integrado que contém a correção
-   e a evidência correspondente. Workflows previamente desativados permanecem desativados.
-   Um evento perdido não é repetido automaticamente; recuperar só se necessário pelo fluxo normal.
+6. Ao encerrar a homologação e identificar o commit exato validado, registrar `prepare-resume`
+   com o commit e a evidência correspondente, mesmo que ainda aguarde integração pelo PR.
+   O reconciliador chama `resume` após comprovar a integração e recupera eventos perdidos.
+   Workflows previamente desativados permanecem desativados. A preparação encerra comandos
+   operacionais naquela intervenção; não registrar homologação ainda incompleta.
+   O comando manual `resume` permanece compatível para recuperações explícitas do histórico.
 
 Exemplo para uma intervenção autorizada no Vega (preencher os campos com dados reais):
 
@@ -69,8 +72,8 @@ python3 scripts/coordinate-deploy-intervention.py protect --id <id>
 python3 scripts/coordinate-deploy-intervention.py execute --id <id> --scope app \
   -- sandbox-ssh root@191.252.181.168 docker ps
 
-python3 scripts/coordinate-deploy-intervention.py resume --id <id> \
-  --integrated-commit <sha-completo-com-a-correcao> \
+python3 scripts/coordinate-deploy-intervention.py prepare-resume --id <id> \
+  --validated-commit <sha-completo-validado> \
   --evidence 'referência ao relatório de validação aprovado'
 ```
 

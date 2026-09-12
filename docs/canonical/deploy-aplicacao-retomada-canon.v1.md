@@ -29,10 +29,19 @@ liberação. Conferir o término no host e registrar a evidência por `reconcile
 de prosseguir; liberar o lock de transporte sozinho não comprova o término de um subprocesso.
 
 A retomada exige o identificador da intervenção, evidência da validação e um commit completo
-com a correção, já integrado à `main`. Para homologação ainda em curso, manter a pausa. Ao
-retomar, restaurar somente os workflows que estavam ativos antes; não reativar os previamente
-desativados. Não reexecutar automaticamente runs antigos nem disparar uma publicação: eventos
-perdidos exigem reconciliação pelo fluxo normal, na revisão integrada e validada.
+com a correção. Após encerrar a homologação, `prepare-resume` registra esses dados e encerra
+as intervenções operacionais naquele registro. O reconciliador automático aguarda comprovação
+de integração à `main`, usa `resume` e recupera os eventos de publicação perdidos pelos
+workflows versionados. A decisão do usuário de 12/09/2026 torna essa retomada automática;
+não é necessário outro pedido para reativar cada publicador após o merge.
+
+Para homologação ainda em curso, manter a pausa. Registros antigos sem preparação de retomada
+continuam protegidos. Restaurar somente workflows anteriormente ativos; não reativar os que já
+estavam desativados. Falta de evidência, comando interrompido, erro de consulta ou passagem do
+tempo nunca autorizam liberação. Recuperação usa a `main`, com revisão conferida no próprio
+workflow, sem reexecutar runs antigos, duplicar solicitações incertas ou repetir builds com falha.
+Agentes dependentes exigem publicação bem-sucedida da aplicação na mesma revisão. Comandos
+emergenciais como recuperação de proxy não são publicadores automáticos de código.
 
 Esta coordenação é um comando operacional, não uma autorização adicional para publicar código.
 O fluxo normal continua passando por PR; exceções exigem a autorização explícita do usuário.
@@ -47,8 +56,8 @@ módulos só executa para `refs/heads/main`. Todos os jobs de publicação depen
 inclusive os que usam `always()`. Selecionar outra branch ou uma tag não libera o deploy.
 
 Reativar um workflow não recupera o evento perdido durante a pausa. Após a reativação,
-consultar a revisão atual e procurar uma execução correspondente; se ela não existir,
-disparar manualmente `main`. O checkout e as imagens continuam vinculados ao SHA congelado
+o reconciliador consulta a revisão atual e procura uma execução correspondente; se ela não
+existir, solicita automaticamente a publicação de `main`. O checkout e as imagens continuam vinculados ao SHA congelado
 pelo evento, com testes, fila, rollback, retenção e confirmação das revisões publicadas.
 A detecção compara o histórico com a revisão efetivamente publicada, recuperando módulos
 pendentes mesmo quando o evento manual não contém `github.event.before`.

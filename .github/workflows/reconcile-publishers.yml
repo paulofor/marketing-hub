@@ -1,0 +1,54 @@
+name: Reconcile automatic publishers
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Build & Deploy containers
+      - CI - PDE Platform Metodo MUSA
+      - Product Discovery Worker CI
+      - Customer Agent Worker CI/CD
+      - Meta Ad Approver Worker CI/CD
+      - Landing Generator Agent Worker CI
+      - Experiment Strategist Worker CI/CD
+      - Financial Agent Worker CI/CD
+      - Communication Agent Worker CI/CD
+      - Growth Operator Worker CI/CD
+      - Agent Executor Admin Controller CI/CD
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: reconcile-automatic-publishers
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.repository == 'paulofor/marketing-hub' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure control host authentication
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_CHAVE }}
+
+      - name: Pin control host identity
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          install -m 600 scripts/deploy-control-known-hosts "$HOME/.ssh/known_hosts"
+
+      - name: Reconcile validated and integrated interventions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/coordinate-deploy-intervention.py reconcile-publishers --actions-ssh

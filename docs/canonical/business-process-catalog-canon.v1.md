@@ -19,6 +19,22 @@ com responsáveis, objetivos, pendências, tarefas e links contextuais. Históri
 identificados; ausência ou falha de consulta é explícita. A cópia usa os contratos oficiais
 já disponíveis, sem inferir conclusões, misturar cadeias/ciclos, iniciar tarefas ou incluir
 prompts brutos e credenciais. O contexto completo também pode ser consultado no próprio card.
+
+**Pedido de ajuda ao AIHUB — decisão de 12/09/2026:** o mesmo card oferece **Prompt para
+AIHUB**, inclusive quando a execução está bloqueada ou sem referência operacional. O botão
+copia uma solicitação de ajuda em português junto ao contexto completo da consulta atual,
+com prévia, confirmação específica e seleção manual se a área de transferência falhar.
+O texto orienta retentativa pela tela, investigação da causa-raiz, correções e homologação
+completas primeiro na sandbox, melhoria dos agentes envolvidos e entrega orientada à
+qualidade, sem limite artificial de duração. Ao final, solicita oportunidades fundamentadas
+de aumento de vendas, receita e lucro, separando sugestões de resultados medidos.
+O modelo do prompt fica em Markdown versionado no frontend; não há chamada de IA para copiá-lo.
+A autorização excepcional de imagens antes do PR, solicitada para esse texto de ajuda,
+fica restrita à recuperação descrita, após validação local completa, usando os arquivos do
+repositório e o coordenador de intervenções. Não altera o fluxo normal de publicação nem
+autoriza campanhas, cobranças ou aprovação automática de gates humanos. Copiar ou visualizar
+o prompt não o envia ao AIHUB, não executa comandos e não publica; o usuário o revisa e envia.
+
 Comandos repetidos não duplicam trabalho. Processos de produtos distintos podem avançar em
 paralelo; execuções que compartilham o mesmo contexto são coordenadas para evitar conflitos.
 A qualidade prevalece sobre duração: tempo decorrido não comprova conclusão nem autoriza

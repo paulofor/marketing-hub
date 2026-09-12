@@ -5,6 +5,15 @@ const { createServer } = require("node:http");
 const path = require("node:path");
 const assert = require("node:assert/strict");
 const fixture = require("./fixture.json");
+const aihub = process.env.PROCESS_COPY_KIND === "aihub";
+const copyLabel = aihub ? "Prompt para AIHUB" : "Copiar contexto do processo";
+const copiedMessage = aihub
+  ? "Prompt copiado! Cole na conversa do AIHUB."
+  : "Contexto copiado!";
+const previewLabel = aihub ? "Ver prompt para AIHUB" : "Ver contexto completo";
+const manualLabel = aihub
+  ? "Prompt para AIHUB para copiar manualmente"
+  : "Contexto do processo para copiar manualmente";
 
 async function paste(page) {
   await page.evaluate(() => {
@@ -219,7 +228,7 @@ async function paste(page) {
           name: "Execução automática do processo",
         });
         const button = panel.getByRole("button", {
-          name: "Copiar contexto do processo",
+          name: copyLabel,
           exact: true,
         });
         await page.goto(initial, { waitUntil: "networkidle" });
@@ -229,7 +238,7 @@ async function paste(page) {
         await button.focus();
         const scroll = await page.evaluate(() => window.scrollY);
         await button.press("Enter");
-        await expect(panel.getByRole("status")).toHaveText("Contexto copiado!");
+        await expect(panel.getByRole("status")).toHaveText(copiedMessage);
         await expect(button).toBeFocused();
         assert.equal(page.url(), initial, "Copiar não navega.");
         assert(
@@ -237,6 +246,19 @@ async function paste(page) {
           "Foco não desloca a página.",
         );
         const copied = await paste(page);
+        if (aihub) {
+          for (const part of [
+            "Não estou conseguindo executar esse processo da tela.",
+            "ambiente local da sandbox",
+            "Você tem acesso SSH",
+            "imagens Docker manualmente no host",
+            "aguarde `ACTIVE`",
+            "Melhoria dos agentes",
+            "A solicitação pode demorar",
+            "vendas, receitas e lucros",
+          ])
+            assert(copied.includes(part), part);
+        }
 
         for (const part of [
           "Produto (nome interno): Vega (ID: 92004)",
@@ -288,7 +310,7 @@ async function paste(page) {
           "Botão acessível e dentro do card.",
         );
         await panel.screenshot({ path: path.join(output, `${name}-card.png`) });
-        await panel.getByText("Ver contexto completo", { exact: true }).click();
+        await panel.getByText(previewLabel, { exact: true }).click();
         await expect(panel.locator("pre")).toBeVisible();
         assert.equal(
           copied,
@@ -308,7 +330,7 @@ async function paste(page) {
         await page.goto(processUrl, { waitUntil: "networkidle" });
         await expect(button).toBeEnabled();
         await button.click();
-        await expect(panel.getByRole("status")).toHaveText("Contexto copiado!");
+        await expect(panel.getByRole("status")).toHaveText(copiedMessage);
         assert.equal(
           await paste(page),
           copied,
@@ -325,9 +347,7 @@ async function paste(page) {
               );
           });
           await button.click();
-          await expect(panel.getByRole("status")).toHaveText(
-            "Contexto copiado!",
-          );
+          await expect(panel.getByRole("status")).toHaveText(copiedMessage);
           assert.equal(
             await paste(page),
             copied,
@@ -343,7 +363,7 @@ async function paste(page) {
           "Não foi possível copiar automaticamente",
         );
         const manual = panel.getByRole("textbox", {
-          name: "Contexto do processo para copiar manualmente",
+          name: manualLabel,
         });
         await expect(manual).toHaveValue(copied);
         await expect(panel.getByRole("status")).toHaveCount(0);
@@ -361,7 +381,7 @@ async function paste(page) {
             navigator.clipboard.writeText = window.savedWriteText;
         });
         await button.click();
-        await expect(panel.getByRole("status")).toHaveText("Contexto copiado!");
+        await expect(panel.getByRole("status")).toHaveText(copiedMessage);
         await expect(manual).toHaveCount(0);
         assert.equal(await paste(page), copied);
         for (const state of ["blocked", "paused", "completed"]) {
@@ -369,9 +389,7 @@ async function paste(page) {
           await page.reload({ waitUntil: "networkidle" });
           await expect(button).toBeEnabled();
           await button.click();
-          await expect(panel.getByRole("status")).toHaveText(
-            "Contexto copiado!",
-          );
+          await expect(panel.getByRole("status")).toHaveText(copiedMessage);
           const text = await paste(page);
           assert(
             text.includes(
@@ -391,9 +409,7 @@ async function paste(page) {
           );
           await expect(button).toBeEnabled();
           await button.click();
-          await expect(panel.getByRole("status")).toHaveText(
-            "Contexto copiado!",
-          );
+          await expect(panel.getByRole("status")).toHaveText(copiedMessage);
           const text = await paste(page);
           assert(
             text.includes(
@@ -424,7 +440,7 @@ async function paste(page) {
         );
         await expect(button).toBeEnabled();
         await button.click();
-        await expect(panel.getByRole("status")).toHaveText("Contexto copiado!");
+        await expect(panel.getByRole("status")).toHaveText(copiedMessage);
         assert(
           (await paste(page)).includes(
             "Atenção: Não foi possível consultar a execução automática.",
@@ -443,6 +459,7 @@ async function paste(page) {
         );
         results.push({
           name,
+          kind: aihub ? "aihub" : "context",
           status: "PASS",
           realClipboard: true,
           mutations,

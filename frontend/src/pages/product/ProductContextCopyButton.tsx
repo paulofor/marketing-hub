@@ -43,12 +43,14 @@ export default function ProductContextCopyButton({
   text,
   label,
   manualLabel,
+  successMessage = "Contexto copiado!",
   loading,
   showLabel = false,
 }: {
   text: string;
   label: string;
   manualLabel: string;
+  successMessage?: string;
   loading?: boolean;
   showLabel?: boolean;
 }) {
@@ -116,7 +118,7 @@ export default function ProductContextCopyButton({
         aria-live="polite"
         className="text-success"
       >
-        {status === "copied" ? "Contexto copiado!" : ""}
+        {status === "copied" ? successMessage : ""}
       </span>
       {status === "error" ? (
         <div role="alert" className="product-activity-context-copy__error">

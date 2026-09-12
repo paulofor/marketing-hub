@@ -1,0 +1,18 @@
+{
+  "cardKey": "recuperacao-falha-genai-competencia-contextual",
+  "collection": "neuromarketing",
+  "title": "Após falha utilitária de GenAI, restaure competência antes de calor social",
+  "finding": "Em estudo publicado em Scientific Reports, pistas que induziam uma interpretação mais intencional da IA elevaram percepções de warmth e competence após falhas, mas apenas competence mediou menor intenção de troca de serviço; esse efeito indireto apareceu em tarefas mecânicas e não em tarefas emocionais.",
+  "mechanism": "Em tarefas utilitárias, a falha ameaça principalmente a percepção de capacidade do sistema. Recuperação que demonstra competência concreta pode reduzir intenção de abandono mais do que acolhimento genérico. O padrão não se generalizou para tarefas emocionais.",
+  "commercialApplication": "No customer-agent do Marketing Hub, classificar o tipo de tarefa ao recuperar uma falha. Em interações utilitárias, responder com reconhecimento do erro, correção verificável, evidência de capacidade e próxima ação clara; não depender apenas de linguagem calorosa.",
+  "evidenceStrength": "Moderada: artigo peer-reviewed com experimento de cenário e ERP; o efeito comportamental é contextual e mede intenção de troca, não churn real.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2027-03-12",
+  "experimentHypothesis": "Após uma falha utilitária do customer-agent, uma recuperação centrada em correção concreta e competência reduzirá abandono e repetição de contato mais do que uma resposta centrada principalmente em empatia, sem reduzir satisfação.",
+  "risks": "Não usar enquadramentos antropomórficos para elevar artificialmente expectativas; não minimizar emoção quando a tarefa for realmente emocional; uma demonstração de competência precisa ser verdadeira e verificável.",
+  "limits": "O estudo usa cenários experimentais e intenção de troca. O efeito foi dependente do tipo de serviço e não autoriza uma regra universal de recuperação. É necessário validar com churn, resolução e comportamento real.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-12-recuperacao-falha-genai-competencia-contextual.md",
+  "sourceTitle": "Fonte revisada — Recuperação de falhas de GenAI deve priorizar competência conforme o tipo de serviço",
+  "sourceSha256": "a062cf86e4f9c7c1bc73c1291f1e0e3f91828fb4407a09d77ad6be51eccfa1c3"
+}

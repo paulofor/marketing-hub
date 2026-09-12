@@ -1,0 +1,18 @@
+{
+  "cardKey": "microdrama-serial-cliffhanger-retencao",
+  "collection": "video",
+  "title": "Validar a narrativa antes de escalar uma série curta em vídeo",
+  "finding": "Pocket FM informa US$ 500 milhões de receita anualizada e retenção de receita em 12 meses de 76%, enquanto o Pocket Saga, microdrama em vídeo lançado há cerca de três meses, teria alcançado aproximadamente US$ 15 milhões de receita anualizada usando inclusive histórias de áudio já validadas.",
+  "mechanism": "Sinais prévios de consumo podem ajudar a escolher quais narrativas merecem continuação ou adaptação, reduzindo o custo de testar ideias caras em vídeo. Serialização, catálogo, personalização e reaproveitamento de IP coexistem no caso e não foram isolados causalmente.",
+  "commercialApplication": "No Marketing Hub, produzir vídeo seriado principalmente para conceitos que já demonstraram retenção, CTA ou avanço de funil em formatos mais baratos; comparar essa estratégia com produzir vídeo para conceitos ainda não validados.",
+  "evidenceStrength": "Forte como sinal de tração comercial do modelo de entretenimento seriado; moderada para a tese de reutilizar narrativas já validadas; baixa para transferir causalmente o efeito a anúncios ou produtos digitais brasileiros.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Conceitos que primeiro provarem interesse em formatos de menor custo e só depois forem adaptados para uma sequência curta em vídeo produzirão mais avanço de funil por real investido em produção do que conceitos enviados diretamente para vídeo.",
+  "risks": "Otimizar para retenção sem ganho comercial, criar cliffhangers artificiais, superestimar sinais de formatos baratos e confundir redução de custo de produção com aumento de vendas.",
+  "limits": "Os números são informados pela empresa e usam receita anualizada, não ARR contratual auditado. O caso é de entretenimento e não prova que serialização, IA ou adaptação de IP aumentem conversão publicitária.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-12-microdrama-pocket-saga-retencao.md",
+  "sourceTitle": "Fonte revisada — Pocket FM, Pocket Saga e economia de conteúdo seriado",
+  "sourceSha256": "85a93196475ce92c4b17375023ceb6c1013742c4dfbccaaa1d0acdb46457e739"
+}

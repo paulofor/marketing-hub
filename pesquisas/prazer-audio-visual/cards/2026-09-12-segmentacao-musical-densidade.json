@@ -1,0 +1,18 @@
+{
+  "cardKey": "densidade-acustica-fronteiras-segmentacao-musical",
+  "collection": "prazer-audio-visual",
+  "title": "Detectar fronteiras musicais além do beat",
+  "finding": "Em 65 ouvintes e 26 excertos, a percepção de fronteiras musicais variou com densidade de eventos e pistas acústicas. Em música esparsa, onsets e mudanças de intensidade/espectro pesaram mais; em música densa, onsets isolados perderam valor e surgiram estratégias de simplificação.",
+  "mechanism": "A segmentação auditiva parece combinar timing, densidade e mudanças acústicas em vez de depender apenas de beat. Quando há poucos eventos, mudanças individuais funcionam como pistas; quando há eventos demais, o sistema reduz a complexidade e apoia-se em padrões agregados.",
+  "commercialApplication": "Em edição audiovisual por IA, gerar candidatos de corte e transição a partir de densidade de onsets, RMS, fluxo, centroide e complexidade espectral, comparando-os com uma estratégia baseada somente em beat.",
+  "evidenceStrength": "Média-alta para o mecanismo de segmentação explícita: estudo peer-reviewed com 65 participantes, 26 excertos diversos e modelagem temporal Bayesiana; a aplicação audiovisual e qualquer efeito sobre prazer ou retenção ainda precisam de teste.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2027-03-11",
+  "experimentHypothesis": "Cortes e transições guiados por fronteiras acústicas multivariadas aumentarão compreensão, memória ou preferência em relação ao beat-sync puro, principalmente em trechos pouco métricos ou com densidade extrema de eventos.",
+  "risks": "Seguir cada mudança acústica pode gerar edição excessiva; em áudio denso, muitos candidatos podem aumentar carga visual. A escolha das métricas deve considerar o gênero e a função narrativa.",
+  "limits": "A tarefa mediu segmentação por tapping, não prazer, emoção ou resultado comercial. A amostra era majoritariamente jovem e os estímulos tinham ordem fixa. Não foi demonstrado um ponto ótimo causal de densidade.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-12-segmentacao-musical-densidade.md",
+  "sourceTitle": "Fonte revisada — densidade acústica e fronteiras de segmentação musical",
+  "sourceSha256": "3bf33e746a50de8c81251b7e247984dfcc16e785387e14c4a7432c26d75e16dd"
+}

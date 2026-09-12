@@ -1,0 +1,15 @@
+{
+  "deploy-containers.yml": {},
+  "pde-platform-metodo-musa-ci.yml": {
+    "inputs": {"target_environment": "production", "frontend_version": "all", "mira_proxy_mode": "isolated"}
+  },
+  "product-discovery-worker-ci.yml": {"requires_app": true, "publication_job": "deploy"},
+  "customer-agent-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy worker"},
+  "meta-ad-approver-worker-ci.yml": {"requires_app": true, "publication_job": "Deploy independent agent"},
+  "landing-generator-agent-worker-ci.yml": {},
+  "experiment-strategist-worker-ci.yml": {},
+  "financial-agent-worker-ci.yml": {},
+  "communication-agent-worker-ci.yml": {},
+  "growth-operator-worker-ci.yml": {},
+  "agent-executor-admin-controller-ci.yml": {}
+}

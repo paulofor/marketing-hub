@@ -29,6 +29,13 @@
   concorrência real de processos, queda da sessão, filas, escopo, falhas parciais, retomada e
   publicação indevida após comando interrompido. Uso obrigatório em `AGENTS.md`.
 - Matriz, procedimento e evidências: `docs/homologacao/deploy-intervencao-coordenada-v1.md`.
+- Complemento em 12/09/2026: a pausa protegeu as intervenções, mas sua saída manual e os
+  eventos de push perdidos causaram recorrência de telas desatualizadas, inclusive Prompt para AIHUB.
+  A retomada agora é preparada após homologação e conciliada automaticamente após integração,
+  pelos workflows existentes. O controle permanece fora do escopo pausável. A matriz local
+  também revelou drenagem presa após retomada parcial; o reconciliador continua após os runs
+  atrasados terminarem, preservando locks e sem cancelamentos. Testes em
+  `scripts/test-publisher-recovery.py`; evidências em `docs/homologacao/publicadores-automaticos-2026-09-12.md`.
 
 > Documento auxiliar de prevenção de recorrência.
 >

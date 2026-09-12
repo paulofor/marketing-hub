@@ -40,6 +40,11 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      recovery_sha:
+        description: "Revisão esperada pelo reconciliador automático; vazio preserva a execução normal"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -57,6 +62,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -143,6 +156,14 @@ jobs:
       source_sha: ${{ steps.resolve.outputs.source_sha }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -182,6 +203,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.DEPLOY_SOURCE_SHA }}
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - uses: actions/download-artifact@v4
         with:
           name: agent-images-${{ env.DEPLOY_SOURCE_SHA }}

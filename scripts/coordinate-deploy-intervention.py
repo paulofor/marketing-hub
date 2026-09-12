@@ -6,13 +6,18 @@ import base64
 import contextlib
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import selectors
+import shlex
 import subprocess
 import sys
 import time
 import uuid
+from urllib.parse import urlencode
+
+from deploy_publisher_recovery import PublisherRecovery
 
 ROOT = Path(__file__).resolve().parent.parent
 SCOPES = json.loads((ROOT / "scripts/deploy-intervention-scopes.json").read_text())
@@ -35,25 +40,48 @@ class CoordinationError(RuntimeError):
 class GitHub:
     """Usa a autenticação existente do gh, sem ler, transportar ou registrar tokens."""
 
-    def api(self, path, method="GET"):
+    def api(self, path, method="GET", payload=None):
         """Executa uma chamada limitada e só publica diagnóstico sem credenciais."""
         try:
+            command = ["gh", "api", "--method", method, "-H", "Accept: application/vnd.github+json",
+                       "-H", "X-GitHub-Api-Version: 2026-03-10", f"repos/{REPOSITORY}/{path}"]
+            if payload is not None:
+                command += ["--input", "-"]
             result = subprocess.run(
-                ["gh", "api", "--method", method, "-H", "Accept: application/vnd.github+json",
-                 f"repos/{REPOSITORY}/{path}"],
+                command, input=json.dumps(payload) if payload is not None else None,
                 capture_output=True, text=True, timeout=45, check=False,
             )
         except subprocess.TimeoutExpired as error:
-            raise CoordinationError(f"Timeout do GitHub em {method} {path}; pausa mantida.") from error
+            raise CoordinationError(f"Timeout do GitHub em {method} {path}; conferir recibo antes de repetir mutação.") from error
         if result.returncode:
             # Não reproduzir stderr de ferramentas autenticadas.
             status = re.search(r"HTTP (\d{3})", result.stderr)
             detail = f"HTTP {status[1]}" if status else f"exit {result.returncode}"
-            raise CoordinationError(f"GitHub recusou {method} {path} ({detail}); pausa mantida.")
+            raise CoordinationError(f"GitHub recusou {method} {path} ({detail}); operação não confirmada.")
         try:
             return json.loads(result.stdout) if result.stdout.strip() else None
         except ValueError as error:
             raise CoordinationError(f"Resposta inválida do GitHub em {path}.") from error
+
+    def runs_for(self, workflow, sha, since):
+        """Lista runs da revisão recuperada sem confundir PR, outra branch ou histórico anterior."""
+        query = urlencode({"head_sha": sha, "branch": "main", "created": ">=" + since})
+        return self.pages(f"actions/workflows/{workflow}/runs?{query}", "workflow_runs")
+
+    def pages(self, path, field):
+        """Recusa páginas incompletas em consultas usadas para decidir publicação."""
+        items = []
+        for page in range(1, 11):
+            separator = "&" if "?" in path else "?"
+            data = self.api(f"{path}{separator}per_page=100&page={page}")
+            if not isinstance(data, dict) or not isinstance(data.get(field), list) or data.get("total_count", 1000) >= 1000:
+                raise CoordinationError("Consulta paginada incompleta; recuperação não liberada.")
+            items.extend(data[field])
+            if len(data[field]) < 100:
+                if len(items) < data["total_count"]:
+                    raise CoordinationError("Consulta truncada; recuperação não liberada.")
+                return items
+        raise CoordinationError("Paginação excedida; recuperação não liberada.")
 
     def live_runs(self, workflow_id):
         """Consulta todos os estados não terminais com paginação e recusa truncamento."""
@@ -80,10 +108,18 @@ class GitHub:
 class RemoteStore:
     """Mantém uma conexão SSH com lock real durante cada operação de coordenação."""
 
-    def __init__(self, command=None):
+    def __init__(self, command=None, actions_ssh=False):
         source = base64.b64encode((ROOT / "scripts/deploy_intervention_store.py").read_bytes()).decode()
         remote_code = f"import base64; exec(compile(base64.b64decode('{source}'), '<deploy-control>', 'exec'))"
-        self.command = command or ["sandbox-ssh", CONTROL_HOST, "python3", "-c", remote_code, CONTROL_DIRECTORY]
+        if actions_ssh:
+            if os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("GITHUB_REPOSITORY") != REPOSITORY:
+                raise CoordinationError("Transporte Actions restrito ao repositório oficial.")
+            remote_command = shlex.join(["python3", "-c", remote_code, CONTROL_DIRECTORY])
+            self.command = ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes",
+                            "-o", "ConnectTimeout=20", "-o", "ServerAliveInterval=15",
+                            "-o", "ServerAliveCountMax=3", CONTROL_HOST, remote_command]
+        else:
+            self.command = command or ["sandbox-ssh", CONTROL_HOST, "python3", "-c", remote_code, CONTROL_DIRECTORY]
         self.process = None
 
     def __enter__(self):
@@ -199,6 +235,8 @@ class Coordinator:
             raise CoordinationError("Intervenção encerrada; abra outra com autorização própria.")
         if state["phase"] == "OPERATING":
             raise CoordinationError("Comando interrompido sem resultado; conferir o host e usar reconcile-command.")
+        if state["phase"] == "AWAITING_MERGE":
+            raise CoordinationError("Homologação encerrada; aguarde a retomada automática após integração.")
         state["phase"] = "DRAINING"
         self.checkpoint(state, "protecting")
         for workflow in state["workflows"]:
@@ -272,6 +310,8 @@ class Coordinator:
     def check(self, identifier):
         """Exige proteção atual imediatamente antes de qualquer intervenção no runtime."""
         state = self.current(identifier)
+        if state.get("automatic_resume"):
+            raise CoordinationError("Homologação encerrada; comandos de intervenção não estão mais disponíveis.")
         enabled, pending = self.inspect(state)
         if state["phase"] != "ACTIVE" or enabled or pending:
             if state["phase"] == "ACTIVE":
@@ -279,6 +319,17 @@ class Coordinator:
                 state["pending_runs"] = pending
                 self.checkpoint(state, "protection_lost", enabled=enabled, pending=pending)
             raise CoordinationError("Intervenção ainda não protegida; execute protect e aguarde ACTIVE.")
+        return state
+
+    def prepare_resume(self, identifier, validated_commit, evidence):
+        """Encerra a homologação e registra a revisão validada para retomada automática após merge."""
+        if not re.fullmatch(r"[a-f0-9]{40}", validated_commit or "") or not evidence.strip():
+            raise CoordinationError("Informe commit completo validado e evidência da homologação concluída.")
+        state = self.check(identifier)
+        state["automatic_resume"] = {"validated_commit": validated_commit, "evidence": evidence,
+                                     "prepared_at": now()}
+        state["phase"] = "AWAITING_MERGE"
+        self.checkpoint(state, "automatic_resume_prepared")
         return state
 
     def resume(self, identifier, integrated_commit, evidence):
@@ -291,7 +342,9 @@ class Coordinator:
         if state["phase"] == "RESUMING":
             # Uma tentativa parcial volta a pausar antes de reconciliar a retomada.
             state = self.protect(identifier)
-        self.check(identifier)
+        enabled, pending = self.inspect(state)
+        if state["phase"] not in {"ACTIVE", "AWAITING_MERGE"} or enabled or pending:
+            raise CoordinationError("Retomada aguarda proteção, fila vazia e término da operação.")
         current_sha = self.github.api("git/ref/heads/main")["object"]["sha"]
         for commit in (state["initial_sha"], integrated_commit):
             comparison = self.github.api(f"compare/{commit}...{current_sha}")
@@ -347,11 +400,14 @@ def main():
     for argument in ("owner", "reason", "authorization", "protected-version"):
         begin.add_argument("--" + argument, required=True)
     commands.add_parser("status", help="Consultar o registro persistido e a situação real")
-    for name in ("protect", "check", "resume", "discard-unstarted"):
+    for name in ("protect", "check", "resume", "prepare-resume", "discard-unstarted"):
         command = commands.add_parser(name)
         command.add_argument("--id", required=True)
         if name == "resume":
             command.add_argument("--integrated-commit", required=True)
+            command.add_argument("--evidence", required=True)
+        if name == "prepare-resume":
+            command.add_argument("--validated-commit", required=True)
             command.add_argument("--evidence", required=True)
         if name == "discard-unstarted":
             command.add_argument("--keep-run", type=int, help="Preservar um run existente da main atual")
@@ -363,9 +419,11 @@ def main():
     reconcile.add_argument("--id", required=True)
     reconcile.add_argument("--evidence", required=True)
     reconcile.add_argument("--confirmed-stopped", action="store_true")
+    automatic = commands.add_parser("reconcile-publishers", help="Retomar após merge e recuperar publicações pendentes")
+    automatic.add_argument("--actions-ssh", action="store_true")
     args = parser.parse_args()
     try:
-        with RemoteStore() as store:
+        with RemoteStore(actions_ssh=getattr(args, "actions_ssh", False)) as store:
             coordinator = Coordinator(GitHub(), store)
             if args.command == "begin":
                 state = coordinator.begin(args.scope, args.owner, args.reason, args.authorization, args.protected_version)
@@ -374,9 +432,18 @@ def main():
                 if state:
                     enabled, pending = coordinator.inspect(state)
                     state = {**state, "live_enabled": enabled, "live_pending_runs": pending,
-                             "safe_to_intervene": state["phase"] == "ACTIVE" and not enabled and not pending}
+                             "safe_to_intervene": state["phase"] == "ACTIVE" and not state.get("automatic_resume") and not enabled and not pending}
             elif args.command == "resume":
                 state = coordinator.resume(args.id, args.integrated_commit, args.evidence)
+            elif args.command == "prepare-resume":
+                state = coordinator.prepare_resume(args.id, args.validated_commit, args.evidence)
+            elif args.command == "reconcile-publishers":
+                result = PublisherRecovery(coordinator).reconcile()
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+                if os.environ.get("GITHUB_STEP_SUMMARY"):
+                    with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+                        stream.write("```json\n" + json.dumps(result, ensure_ascii=False, indent=2) + "\n```\n")
+                return 1 if result.get("status") == "BLOCKED" else 0
             elif args.command == "execute":
                 command = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
                 return coordinator.execute(args.id, args.scope, command)
@@ -388,7 +455,7 @@ def main():
                 state = getattr(coordinator, args.command)(args.id)
             print(json.dumps(state, ensure_ascii=False, indent=2))
             return 75 if state and state["phase"] == "DRAINING" else 0
-    except (CoordinationError, OSError, KeyError, TypeError) as error:
+    except (CoordinationError, OSError, KeyError, TypeError, ValueError) as error:
         print(json.dumps({"error": str(error), "automatic_resume": False}, ensure_ascii=False), file=sys.stderr)
         return 1
 

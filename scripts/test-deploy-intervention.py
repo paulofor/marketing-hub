@@ -407,7 +407,7 @@ class ApiAndInventoryTest(unittest.TestCase):
         for file in ("coordinate-deploy-intervention.py", "deploy_intervention_store.py",
                      "deploy-intervention-scopes.json", "test-deploy-intervention.py"):
             self.assertEqual(source.count(f'      - "scripts/{file}"'), 2)
-        self.assertIn("run: python3 scripts/test-deploy-intervention.py", source)
+        self.assertIn("python3 scripts/test-deploy-intervention.py", source)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,11 @@ name: Landing Generator Agent Worker CI
 
 on:
   workflow_dispatch:
+    inputs:
+      recovery_sha:
+        description: "Revisão esperada pelo reconciliador automático; vazio preserva a execução normal"
+        required: false
+        type: string
   push:
     branches: [main]
     paths:
@@ -27,6 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -68,6 +81,14 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - name: Validate automatic publisher recovery
+        if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
+        working-directory: ${{ github.workspace }}
+        env:
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/validate-publisher-recovery.py
+
       - uses: actions/download-artifact@v4
         with:
           name: agent-images-${{ github.sha }}

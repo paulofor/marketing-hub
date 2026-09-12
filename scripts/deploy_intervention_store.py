@@ -2,6 +2,7 @@
 """Mantém o registro operacional de intervenções sob lock exclusivo, fora do diretório de deploy."""
 
 import fcntl
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -16,13 +17,24 @@ def validate_state(state):
         raise ValueError("Registro de intervenção inválido; requer recuperação operacional.")
     if not re.fullmatch(r"[a-f0-9]{32}", state.get("id", "")):
         raise ValueError("Identificador de intervenção inválido.")
-    if state.get("phase") not in {"DRAINING", "ACTIVE", "OPERATING", "RESUMING", "RELEASED"}:
+    if state.get("phase") not in {"DRAINING", "ACTIVE", "OPERATING", "AWAITING_MERGE", "RESUMING", "RELEASED"}:
         raise ValueError("Estado de intervenção desconhecido.")
     for field in ("repository", "owner", "reason", "authorization", "protected_version", "initial_sha"):
         if not isinstance(state.get(field), str) or not state[field].strip():
             raise ValueError("Metadados obrigatórios da intervenção ausentes.")
     if not state.get("workflows") or not isinstance(state.get("history"), list):
         raise ValueError("Escopo ou histórico da intervenção ausente.")
+    automatic = state.get("automatic_resume")
+    if automatic is not None:
+        if (not isinstance(automatic, dict)
+                or not re.fullmatch(r"[a-f0-9]{40}", automatic.get("validated_commit", ""))
+                or not isinstance(automatic.get("evidence"), str) or not automatic["evidence"].strip()
+                or not isinstance(automatic.get("prepared_at"), str) or not automatic["prepared_at"].strip()):
+            raise ValueError("Preparação de retomada automática inválida.")
+        if datetime.fromisoformat(automatic["prepared_at"].replace("Z", "+00:00")).tzinfo is None:
+            raise ValueError("Preparação de retomada exige data com fuso horário.")
+    if state.get("phase") == "AWAITING_MERGE" and automatic is None:
+        raise ValueError("Espera de merge sem comprovação de homologação.")
 
 
 def atomic_write(path, payload):

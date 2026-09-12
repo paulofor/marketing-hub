@@ -957,7 +957,7 @@ class BusinessProcessActivityExecutionServiceTest {
         .isEqualTo("product:901@private-validation-v1");
   }
 
-  /** Executa uma atividade determinística no backend e preserva a referência do ciclo atual. */
+  /** Expõe a rota escolhida e renova prova backend superada sem criar tarefa de agente. */
   @Test
   void requestsBackendOwnedProductActivityWithoutCreatingAgentTask() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -1020,12 +1020,94 @@ class BusinessProcessActivityExecutionServiceTest {
                 eq("commercial-plan:4@"), anyString()))
         .thenReturn(List.of(previous));
     when(backendExecutor.supports(process, integration)).thenReturn(true);
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(55L))
+        .thenReturn(List.of(integration));
     when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
-        .thenReturn(new BackendProductProcessActivityReadiness(true, "Pronta."));
+        .thenReturn(
+            new BackendProductProcessActivityReadiness(
+                true,
+                "Pronta.",
+                "Confirmar destino",
+                "Destino homologado",
+                null,
+                null,
+                List.of(),
+                null,
+                "https://local.example/private"));
     when(backendExecutor.execute(process, integration, rigel, "commercial-plan:4@v3:journey"))
         .thenReturn(
             new BackendProductProcessActivityExecutionResult(
                 "commercial-plan:4@v3:journey", "COMPLETED", true, "Integração concluída."));
+
+    var control =
+        executionService
+            .productProcessExecutions(55L, 9L)
+            .activities()
+            .getFirst()
+            .executionControl();
+    assertThat(control.interactionType()).isEqualTo("COMMAND");
+    assertThat(control.navigationUrl()).isEqualTo("https://local.example/private");
+    when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(
+            new BackendProductProcessActivityReadiness(
+                true,
+                "Pronta.",
+                "Abrir subprocesso",
+                "Landing comercial",
+                null,
+                null,
+                List.of(),
+                65L,
+                null));
+    control =
+        executionService
+            .productProcessExecutions(55L, 9L)
+            .activities()
+            .getFirst()
+            .executionControl();
+    assertThat(control.interactionType()).isEqualTo("SUBPROCESS");
+    assertThat(control.targetProcessDefinitionId()).isEqualTo(65L);
+    when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(new BackendProductProcessActivityReadiness(true, "Pronta."));
+
+    var completed = new BusinessProcessActivityInstance();
+    completed.setId(260L);
+    completed.setCreatedAt(Instant.parse("2026-09-12T12:00:00Z"));
+    completed.setUpdatedAt(Instant.parse("2026-09-12T12:01:00Z"));
+    completed.setActivityDefinition(integration);
+    completed.setOccurrenceNumber(1);
+    completed.setSourceReference("commercial-plan:4@v3:journey");
+    completed.setStatus("COMPLETED");
+    completed.setObjectiveAchieved(true);
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                process.getProcessCode(), "commercial-plan:4@"))
+        .thenReturn(List.of(completed));
+    when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(
+            new BackendProductProcessActivityReadiness(
+                true,
+                "Objetivo comprovado.",
+                "Abrir subprocesso",
+                "Histórico comercial",
+                null,
+                null,
+                List.of(),
+                65L,
+                null));
+    var achieved = executionService.productProcessExecutions(55L, 9L).activities().getFirst();
+    assertThat(achieved.objectiveAchieved()).isTrue();
+    assertThat(achieved.executionControl().actionAvailable()).isTrue();
+    assertThat(achieved.executionControl().targetProcessDefinitionId()).isEqualTo(65L);
+    when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(new BackendProductProcessActivityReadiness(true, "Pronta."));
+    var freshness = mock(AgentProductProcessActivityReadinessProvider.class);
+    when(freshness.supports(process, integration)).thenReturn(true);
+    when(freshness.requiresFreshExecution(
+            process, integration, rigel, "commercial-plan:4@v3:journey"))
+        .thenReturn(true);
+    ReflectionTestUtils.setField(
+        executionService, "agentActivityReadinessProviders", List.of(freshness));
 
     var result = executionService.requestProductActivityExecution(55L, 9L, "integration");
 

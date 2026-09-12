@@ -199,6 +199,10 @@ export function processContextText(context: ProcessContext, origin: string) {
         lines.push(
           `Referência de evidência: ${control.auditEvidenceReference}`,
         );
+      if (control.navigationUrl)
+        lines.push(
+          `Destino da atividade: ${new URL(control.navigationUrl, origin).href}`,
+        );
     }
     if (activity.recoveryAction) {
       const recovery = activity.recoveryAction;

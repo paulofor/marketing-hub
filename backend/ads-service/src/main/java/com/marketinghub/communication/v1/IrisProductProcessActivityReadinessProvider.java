@@ -30,12 +30,15 @@ public class IrisProductProcessActivityReadinessProvider
     this.communicationContext = communicationContext;
   }
 
-  /** Reconhece exclusivamente a abertura do contrato de comunicação no processo canônico. */
+  /** Governa a abertura da comunicação e as atividades de landing executadas por Íris. */
   @Override
   public boolean supports(
       BusinessProcessDefinition process, BusinessProcessActivityDefinition activityDefinition) {
-    return PROCESS_CODE.equals(process.getProcessCode())
-        && ACTIVITY_ID.equals(activityDefinition.getActivityId());
+    return (PROCESS_CODE.equals(process.getProcessCode())
+            && ACTIVITY_ID.equals(activityDefinition.getActivityId()))
+        || ("landing-page-generation".equals(process.getProcessCode())
+            && java.util.Set.of("select", "strategy", "compose", "html")
+                .contains(activityDefinition.getActivityId()));
   }
 
   /** Exige os contratos aprovados do ciclo privado ou do plano, sem misturar os dois regimes. */
@@ -48,6 +51,12 @@ public class IrisProductProcessActivityReadinessProvider
     List<String> missing = new ArrayList<>();
     Map<String, Object> context = communicationContext.resolve(sourceReference).orElse(Map.of());
     boolean cycle = IrisLearningCycleContext.MODE.equals(context.get("mode"));
+    boolean landing = process != null && "landing-page-generation".equals(process.getProcessCode());
+    if (cycle && landing) {
+      return new AgentProductProcessActivityReadiness(
+          false,
+          "Este ciclo usa a experiência privada já homologada como destino. Retome o processo de comunicação; uma landing comercial separada não faz parte do contrato aprovado.");
+    }
     Map<?, ?> strategy =
         cycle
             ? (context.get("marketStrategicContract") instanceof Map<?, ?> value ? value : Map.of())
@@ -71,6 +80,11 @@ public class IrisProductProcessActivityReadinessProvider
       if (predecessors instanceof Collection<?> values) {
         values.stream().map(String::valueOf).filter(this::hasText).forEach(missing::add);
       }
+    }
+    if (landing
+        && (!(context.get("approvedLandingAssets") instanceof Collection<?> assets)
+            || assets.isEmpty())) {
+      missing.add("Provas visuais aprovadas e rastreáveis para a landing");
     }
     List<String> uniqueMissing = missing.stream().distinct().toList();
     if (!uniqueMissing.isEmpty()) {

@@ -11,7 +11,30 @@ public record BackendProductProcessActivityReadiness(
     String description,
     String workspaceCode,
     Long workspaceReferenceId,
-    List<ProductProcessActivityRequirementResponse> requirements) {
+    List<ProductProcessActivityRequirementResponse> requirements,
+    Long targetProcessDefinitionId,
+    String navigationUrl) {
+
+  /** Preserva executores sem decisão de delegação ou destino contextual. */
+  public BackendProductProcessActivityReadiness(
+      boolean ready,
+      String reason,
+      String actionLabel,
+      String description,
+      String workspaceCode,
+      Long workspaceReferenceId,
+      List<ProductProcessActivityRequirementResponse> requirements) {
+    this(
+        ready,
+        reason,
+        actionLabel,
+        description,
+        workspaceCode,
+        workspaceReferenceId,
+        requirements,
+        null,
+        null);
+  }
 
   /** Mantém o contrato simples dos executores que não precisam de uma área operacional própria. */
   public BackendProductProcessActivityReadiness(boolean ready, String reason) {

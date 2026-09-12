@@ -5,9 +5,16 @@ cd "$(dirname "$0")/../../.."
 round=${1:?Informe uma identificação única para a rodada}
 [[ "$round" =~ ^[a-zA-Z0-9_-]+$ ]]
 : "${PROCESS_COMPOSE_PROJECT:?Informe o projeto Compose exclusivo da sandbox}"
+: "${VEGA_CREATIVE_SOURCE:?Informe o PNG aprovado de origem para a homologação visual local}"
+[[ -r "$VEGA_CREATIVE_SOURCE" ]] || { echo "PNG de origem não encontrado: $VEGA_CREATIVE_SOURCE" >&2; exit 1; }
+[[ -s frontend/node_modules/typescript/package.json ]] || {
+  echo "Instale as dependências locais: npm --prefix frontend ci" >&2
+  exit 1
+}
 output="$PWD/artifacts/vega-process-recovery/$round"
 mkdir -p "$output"
 export VEGA_IRIS_INPUT_FILE="$output/iris-input.json"
+export VEGA_CREATIVE_PREVIEW="${VEGA_CREATIVE_PREVIEW:-$output/creative-preview.png}"
 run() {
   local name=$1
   shift

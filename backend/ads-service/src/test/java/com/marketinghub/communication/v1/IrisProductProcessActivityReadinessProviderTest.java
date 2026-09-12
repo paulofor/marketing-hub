@@ -78,7 +78,7 @@ class IrisProductProcessActivityReadinessProviderTest {
     assertThat(readiness.reason()).contains("Plutus").doesNotContain("Dédalo");
   }
 
-  /** Reconhece apenas a primeira atividade do processo comercial governado por Íris. */
+  /** Reconhece a comunicação e a landing, sem assumir a produção de criativos. */
   @Test
   void shouldSupportOnlyIrisCommunicationContract() {
     IrisProductProcessActivityReadinessProvider provider =
@@ -90,6 +90,36 @@ class IrisProductProcessActivityReadinessProviderTest {
     BusinessProcessActivityDefinition anotherActivity = activity();
     anotherActivity.setActivityId("creatives");
     assertThat(provider.supports(process(), anotherActivity)).isFalse();
+  }
+
+  /** Explica o destino privado antes de criar uma tarefa de landing que não pertence ao ciclo. */
+  @Test
+  void blocksSeparateLandingForApprovedPrivateDestination() {
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    when(communication.resolve("experiment:92"))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "mode",
+                    IrisLearningCycleContext.MODE,
+                    "availability",
+                    "AVAILABLE",
+                    "inputReadiness",
+                    "READY")));
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+    var landing = process();
+    landing.setProcessCode("landing-page-generation");
+    for (String code : List.of("select", "strategy", "compose", "html")) {
+      var activity = activity();
+      activity.setActivityId(code);
+      assertThat(provider.supports(landing, activity)).isTrue();
+      var readiness = provider.readiness(landing, activity, null, "experiment:92");
+      assertThat(readiness.ready()).isFalse();
+      assertThat(readiness.reason())
+          .contains("experiência privada", "Retome o processo de comunicação");
+    }
   }
 
   /** Cria a versão publicada mínima do processo de comunicação. */

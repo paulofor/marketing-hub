@@ -180,6 +180,27 @@ o produto demonstrado nos criativos do sucessor. O destino comercial conserva se
 O contrato anterior por plano e projeção financeira canônica permanece obrigatório
 fora desse regime de ciclo privado.
 
+O destino da comunicação deve ser resolvido pelo backend antes de chamar uma produção de
+landing. No sucessor `LEARNING_CYCLE_PRIVATE`, o destino é a URL e a versão do protótipo cujo
+gate vigente foi comprovado no próprio ciclo. A atividade `destination` registra sua reutilização
+com identidade e hashes; não cria uma página intermediária nem interpreta ausência de assets
+comerciais como ausência da prova privada. A integração desse regime usa os contratos privados
+homologados de acesso, retomada, checkout simulado e eventos, sem consultar plano ou slot do
+experimento anterior. Produção de landing comercial conserva seu subprocesso e seus gates.
+Um filho aberto indevidamente é encerrado como não necessário, preservando suas falhas e
+aguardando qualquer tarefa em curso; não recebe conclusão fictícia. A conclusão do pai comprova
+somente a preparação no regime aprovado, sem autorizar mercado, cobrança, campanha ou gasto.
+
+Objetivos comprovados permanecem como histórico ao encerrar o ciclo ou avançar para outra fase.
+A indisponibilidade de autorização para novas tarefas não invalida uma conclusão anterior.
+O destino e a versão registrados continuam consultáveis; durante a preparação aberta,
+mudanças de versão, contrato, peça ou parecer continuam exigindo revalidação.
+
+As consultas de prontidão, histórico e validade da prova usam repositórios sem lock de
+escrita, compatíveis com transações somente leitura do MySQL 5.7. A conclusão mantém
+reserva pessimista e idempotência. Testes com repositório JPA real devem comprovar ambos
+os contratos; doubles isolados não comprovam a compatibilidade transacional.
+
 Correção de 12/09/2026, confirmada nas tarefas #400 e #401: requisitos são avaliados por
 atividade. `COMMUNICATION_PACKAGE` prepara mensagem e briefings; não depende de checkout
 comercial, peças finais, vendas ou validação humana. Essas ausências permanecem lacunas

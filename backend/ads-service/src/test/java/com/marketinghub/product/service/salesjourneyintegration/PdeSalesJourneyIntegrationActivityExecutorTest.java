@@ -101,7 +101,23 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
             .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
                 process.getId(), "experiment:92"))
         .thenReturn(List.of(creatives, destination));
+    var privateJourney = mock(com.marketinghub.communication.v1.PrivateCommunicationJourney.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        executor, "privateJourney", privateJourney);
+    when(privateJourney.readiness(process, integration, rigel, "experiment:92"))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityReadiness(true, "Jornada privada comprovada."));
+    when(privateJourney.complete(process, integration, rigel, "experiment:92"))
+        .thenReturn(
+            new com.marketinghub.businessprocess.execution.service.backendactivity
+                .BackendProductProcessActivityExecutionResult(
+                "experiment:92", "COMPLETED", true, "Integração privada comprovada."));
     assertThat(executor.readiness(process, integration, rigel, "experiment:92").ready()).isTrue();
+    assertThat(executor.execute(process, integration, rigel, "experiment:92").objectiveAchieved())
+        .isTrue();
+    verify(privateJourney).complete(process, integration, rigel, "experiment:92");
+    verifyNoInteractions(plans, slots, experiments);
     cycle.setStatus("CLOSED");
     assertThat(executor.readiness(process, integration, rigel, "experiment:92").ready()).isFalse();
     verifyNoInteractions(slotService, products, periods);

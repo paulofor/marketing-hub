@@ -33,6 +33,8 @@ afterEach(() => {
 
 describe("Contexto do processo", () => {
   it("preserva produto, versões, ciclo, aprendizado, tarefas e links com seu próprio destino", () => {
+    context.history.activities[0].executionControl!.navigationUrl =
+      "https://local.example/private";
     const text = processContextText(context, origin);
     for (const expected of [
       "Produto (nome interno): Vega (ID: 92004)",
@@ -56,6 +58,7 @@ describe("Contexto do processo", () => {
       "Versão da atividade: v6 · definição histórica não informada",
       "Registro da atividade: histórico (fora da versão selecionada)",
       "Link do processo: http://marketing-hub.test/products/92004/value-chain-history/processes/92063/activities?chainId=92014&learningCycleId=92002\n",
+      "Destino da atividade: https://local.example/private",
       "learningCycleId=92002#activity-commercialReview",
     ])
       expect(text).toContain(expected);

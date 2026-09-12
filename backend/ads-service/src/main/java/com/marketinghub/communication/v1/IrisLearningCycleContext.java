@@ -235,6 +235,19 @@ public class IrisLearningCycleContext {
     result.put(
         "experiment", Map.of("id", experiment.getId(), "status", experiment.getStatus().name()));
     result.put("privatePrototypeAcceptance", pde.path("privatePrototypeAcceptance"));
+    result.put(
+        "approvedDestination",
+        Map.of(
+            "contractVersion",
+            "PRIVATE_PDE_DESTINATION_V1",
+            "type",
+            "APPROVED_PRIVATE_PDE",
+            "url",
+            target.publicUrl(),
+            "prototypeVersion",
+            target.experienceVersion(),
+            "requiresLandingGeneration",
+            false));
     result.put("approvedUpstreamArtifacts", List.copyOf(artifacts));
     result.put("communicationArtifacts", communicationArtifacts(reference, cycle));
     result.put("approvedLandingAssets", List.of());

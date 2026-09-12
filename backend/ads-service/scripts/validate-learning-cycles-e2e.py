@@ -41,14 +41,18 @@ def http(path, body=None, expected=200):
 def sql(query):
     result = subprocess.run(COMPOSE + ['exec', '-T', 'learning-cycles-mysql', 'mysql', '-ucycles_local',
         '-pcycles-local-only', '--default-character-set=utf8mb4', '--batch', '--skip-column-names', 'learning_cycles_local', '-e', query],
-        capture_output=True, text=True, check=True)
+        capture_output=True, text=True, check=False)
+    if result.returncode:
+        raise RuntimeError(f'Falha no MySQL da homologação local: {result.stderr.strip()}')
     return result.stdout.strip()
 
 
 def reset():
-    sql('UPDATE learning_sales_cycle_v1 SET current_instance_id=NULL; DELETE FROM learning_cycle_decision_proposal_v1; DELETE FROM learning_sales_cycle_event_v1; '
-        'DELETE FROM learning_sales_cycle_v1 ORDER BY id DESC; DELETE FROM business_process_activity_instance;')
-    http('/fixture/reset', {})
+    assert http('/fixture/reset', {})['reset'] is True
+    assert sql('SELECT (SELECT COUNT(*) FROM learning_sales_cycle_v1) + '
+        '(SELECT COUNT(*) FROM learning_cycle_decision_proposal_v1) + '
+        '(SELECT COUNT(*) FROM learning_sales_cycle_event_v1) + '
+        '(SELECT COUNT(*) FROM business_process_activity_instance)') == '0', 'A limpeza deixou dados de outra passagem'
 
 
 def brief(experiment=91001, predecessor=None, baseline=False):

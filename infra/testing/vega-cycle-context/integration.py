@@ -18,7 +18,8 @@ def get(path,expected=200):
  except urllib.error.HTTPError as e: code,data=e.code,e.read()
  assert code==expected,(path,code,data[:1000]); return json.loads(data) if data else None
 
-sql('UPDATE learning_sales_cycle_v1 SET current_instance_id=NULL; DELETE FROM learning_cycle_decision_proposal_v1; DELETE FROM learning_sales_cycle_event_v1; DELETE FROM learning_sales_cycle_v1 ORDER BY id DESC; DELETE FROM business_process_activity_instance;')
+with urllib.request.urlopen(urllib.request.Request(BASE+'/fixture/reset',data=b'{}',headers={'Content-Type':'application/json'}),timeout=30) as response:
+ assert json.load(response)['reset'] is True
 process=int(sql("SELECT id FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' ORDER BY version_number DESC LIMIT 1"))
 chain=int(sql("SELECT id FROM business_process_chain_definition ORDER BY version_number DESC LIMIT 1"))
 cols='id,product_id,chain_definition_id,chain_code,process_definition_id,experiment_id,previous_cycle_id,request_key,creation_json,brief_json,inherited_learning_json,stage,status,product_version,budget_limit_brl,window_start,window_end,return_process_id,return_activity_id,open_slot,revision,baseline,created_at,updated_at,version_changed_at,closed_at'

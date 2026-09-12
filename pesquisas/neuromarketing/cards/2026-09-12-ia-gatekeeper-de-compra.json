@@ -1,0 +1,18 @@
+{
+  "cardKey": "ia-gatekeeper-de-compra",
+  "collection": "neuromarketing",
+  "title": "IA pode auditar preço, oferta e confiabilidade antes da compra",
+  "finding": "Em estudo brasileiro sobre Black Friday 2026, consumidores relataram intenção de usar IA para comparar preços, conferir ofertas e avaliar a confiabilidade de lojas e marcas; a metodologia descrita combina painel com 1.000 respondentes, análise de 180 prompts e simulações em sete ambientes de IA.",
+  "mechanism": "A IA pode atuar como camada de due diligence entre anúncio e decisão, agregando informações de preço, condições, reputação e fontes externas; isso pode reforçar ou enfraquecer a confiança formada pela campanha.",
+  "commercialApplication": "Evoluir o AgentGatekeeperAudit para verificar como agentes descrevem preço, condições promocionais, reputação e claims da oferta, corrigindo ambiguidades reais e mantendo evidências legítimas e atualizadas.",
+  "evidenceStrength": "Moderada: evidência brasileira recente e multimétodo, mas proveniente de estudo comercial sazonal; intenção declarada e simulações de IA não demonstram causalidade sobre vendas.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Tornar preço, condições e evidências da oferta mais claras e verificáveis reduzirá objeções recorrentes observadas em agentes e poderá melhorar conversão posterior, efeito que deve ser medido separadamente no funil real.",
+  "risks": "Não fabricar histórico de preço, reviews, reputação ou fontes para influenciar agentes; não usar urgência ou desconto enganoso e não tratar uma resposta de IA como validação objetiva da oferta.",
+  "limits": "O estudo é focado em Black Friday e não permite generalizar os percentuais para todas as categorias, datas ou ofertas do Marketing Hub; impacto comercial exige teste local com pagamentos reconciliados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-12-ia-validacao-oferta-brasil.md",
+  "sourceTitle": "Fonte revisada — IA na validação de ofertas",
+  "sourceSha256": "4b5eec9c52b55dcc84e2832f05b94fd555f7eac629f411cc0a1f27207304b30b"
+}

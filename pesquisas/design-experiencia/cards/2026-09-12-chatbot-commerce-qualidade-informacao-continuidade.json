@@ -1,0 +1,18 @@
+{
+  "cardKey": "chatbot-commerce-qualidade-informacao-continuidade",
+  "collection": "neuromarketing",
+  "title": "Em chatbots utilitários, trate linguagem e informação como parte da qualidade do serviço",
+  "finding": "Duas evidências recentes e complementares associam qualidade funcional da comunicação a melhores avaliações do chatbot: em e-commerce, qualidade da informação e continuidade estiveram associadas à satisfação, enquanto presença social não teve efeito direto significativo; em outro survey com 411 respondentes, qualidade linguística percebida esteve associada à confiança e, junto com confiança, explicou 50,7% da variância em satisfação.",
+  "mechanism": "Clareza, coerência, adequação pragmática, precisão informacional e continuidade podem reduzir incerteza e esforço de interpretação. A evidência é compatível com uma sequência em que qualidade percebida sustenta confiança e satisfação, e satisfação se relaciona mais diretamente com intenção de reengajamento.",
+  "commercialApplication": "No customer-agent do Marketing Hub, medir e otimizar separadamente qualidade linguística e informacional: clareza semântica, coerência com o histórico, adequação ao contexto e completude da resposta. Tratar persona, tom e presença social como camadas secundárias, não como substitutos de qualidade funcional.",
+  "evidenceStrength": "Moderada: dois artigos peer-reviewed recentes, com surveys de N=493 e N=411 e análises multivariadas; ambos são transversais, dependem de autorrelato e não estabelecem causalidade nem vendas observadas.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2027-03-12",
+  "experimentHypothesis": "Uma variante do customer-agent com maior clareza, coerência contextual e qualidade informacional aumentará resolução, satisfação e avanço para CTA em relação a uma variante equivalente que prioriza sobretudo presença social e estilo, sem elevar abandono.",
+  "risks": "Evitar manipular confiança por polimento linguístico quando a informação estiver incerta ou errada; linguagem fluida não deve ocultar limites, fontes ou necessidade de confirmação.",
+  "limits": "As amostras são específicas de China e Eslováquia, com forte presença de jovens no estudo linguístico. Reengajamento e intenção de compra são autorrelatados. Somente comportamento real e payment_reconciled podem demonstrar impacto comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-12-chatbot-commerce-qualidade-informacao-continuidade.md",
+  "sourceTitle": "Fonte revisada — Qualidade funcional e linguística de chatbots em serviço digital",
+  "sourceSha256": "7a5bdde30e4dbcde9b41c90c26fd1e41b68cdf3b8ad72fafcd200931f93385f7"
+}

@@ -2,6 +2,32 @@
 
 ## Decisão
 
+### Execução automática por processo — decisão de 12/09/2026
+
+O usuário inicia o **processo**, pelo cabeçalho da tela de atividades do produto. O backend
+controla a sequência e só avança após comprovação do objetivo da atividade pelos contratos
+canônicos. O painel informa a atividade atual, concluídas, restantes, bloqueios e decisões
+necessárias. Fechar a tela não interrompe a execução. Os cards preservam contexto, evidências
+e histórico; deixam de exigir disparos individuais para atividades automatizáveis.
+
+Cada execução preserva produto, cadeia, versão do processo, ciclo e referência operacional.
+Comandos repetidos não duplicam trabalho. Processos de produtos distintos podem avançar em
+paralelo; execuções que compartilham o mesmo contexto são coordenadas para evitar conflitos.
+A qualidade prevalece sobre duração: tempo decorrido não comprova conclusão nem autoriza
+pular atividade, liberar gate, fabricar evidência ou repetir indefinidamente uma falha.
+Correções seguem os retornos canônicos do backend. Decisões humanas, gasto e publicação
+conservam seus contratos de autorização. Pausa, retomada e motivos ficam persistidos.
+
+Uma conclusão anterior não certifica provas invalidadas posteriormente. Nesse caso, a leitura
+informa **revalidação necessária** e permite retomar explicitamente o processo, preservando
+as conclusões anteriores no diário. Subprocessos são revalidados quando exigidos pelo processo
+de origem autorizado. O estado mutável da execução só é carregado depois do lock do produto,
+inclusive com Open EntityManager in View ativo, para impedir decisões com versão desatualizada.
+
+O backend é a autoridade de progressão; um executor externo pode consultar pendências e
+solicitar sua conciliação, mas não escolher, encadear ou disparar atividades por conta própria.
+Essa mudança evolui a execução dos processos existentes, preservando suas definições BPM.
+
 O Marketing Hub mantém um cadastro próprio e versionado de processos de negócio. Esse catálogo é a
 fonte de verdade para propósito, responsáveis, eventos, atividades, gates, entradas, saídas e relação
 com contratos técnicos. A tela canônica é `/business-processes` e a API é
@@ -624,3 +650,47 @@ Uma leitura coerente avança para a decisão; indisponibilidade, desatualizaçã
 o bloqueio na própria atividade, sem fabricar zero. Versões anteriores e seus eventos permanecem
 auditáveis. O contrato completo está em
 [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md#conciliação-automática-de-resultados--decisão-de-09092026).
+
+## Contrato de execução automática v1
+
+A decisão de 12/09/2026 substitui o disparo individual de atividades automatizáveis na tela do
+produto. Os endpoints de atividade continuam como contratos de domínio usados pelo coordenador;
+formulários e decisões humanas continuam acessíveis nos cards. O painel oficial ocupa o espaço
+do cabeçalho à direita dos atalhos, reorganizado verticalmente em celular.
+
+Comandos `WORKSPACE` do backend, como criar e executar o preflight técnico, também são
+automáticos quando o contrato os libera sem confirmação. A existência de uma área de trabalho
+não é uma decisão humana. Formulários de evidências e aprovações nessa área continuam exigindo
+seus contratos; a automação não preenche provas nem autoriza publicação por inferência.
+
+- Pacote backend: `businessprocess.automation.v1`; executor: `process-execution-worker/src/v1`.
+- Entrada administrativa: `/api/business-processes/{processId}/products/{productId}/automation/v1`.
+- Entrada do conciliador: `/api/internal/business-processes/automation/v1/stage-executions/pending`.
+- Persistência: `product_process_run_v1` e `product_process_run_event_v1`; chaves de escopo e de
+  entrada impedem duplicação. O lock do produto ordena comandos concorrentes e interage com STOP.
+- Uma autorização conserva cadeia, processo/versionamento, produto, ciclo e referência. Publicar
+  outra versão não migra automaticamente a execução. A definição retirada pode terminar seus
+  callbacks existentes, mas novos disparos continuam sujeitos ao contrato de versão publicada.
+- Produtos diferentes avançam em paralelo. Processos do mesmo produto aguardam uma execução
+  anterior terminar ou pausar; subprocessos da mesma raiz compartilham a autorização da chamada.
+- Pausa primeiro aguarda tarefas em curso no processo e nas delegações. Só depois libera o produto
+  para outro processo. Não cancela tarefas, não as conclui e não abandona sua auditoria.
+- Esperas de entrada, evento ou decisão permanecem duráveis. Nenhum limite de duração conclui
+  atividade. Falha técnica de conciliação tem diagnóstico preservado fora da transação revertida.
+- Observar resultados e autorizar novos disparos são decisões separadas. Ciclo encerrado, STOP,
+  pausa ou conclusão do pai não podem ocultar provas já recebidas: o backend registra a conclusão
+  somente quando todos os objetivos aplicáveis estiverem comprovados e não restarem tarefas
+  pendentes. Se um ciclo fechado ainda tiver objetivos pendentes e nenhuma tarefa em curso,
+  encerra o controle como `CLOSED`, preservando as pendências e liberando a reserva do produto.
+  Esse estado não equivale a sucesso e não permite retomar o ciclo fechado. Nunca reabre o ciclo
+  nem inicia outra atividade para conseguir atualizar o acompanhamento.
+- Retornos de correção exigem declaração no BPM e prontidão no contrato do domínio. A mesma
+  entrada sem progresso não é reenviada indefinidamente: o painel mostra a causa e a retomada
+  explícita. Nova versão/entrada ou prova concluída permite reavaliar a tentativa sem apagar falhas.
+- O progresso usa objetivos comprovados; histórico e dispensa explícita são apresentados
+  separadamente. Custo desconhecido permanece desconhecido, e conclusão técnica não é venda.
+- Todas as atividades TASK do BPM precisam ter definição e contrato de acompanhamento, inclusive
+  as condicionais atualmente dispensadas. Contrato ausente, duplicado ou fora do BPM impede
+  autorização/conclusão, sem omitir silenciosamente uma obrigação do processo.
+- O acompanhamento do cabeçalho lê a projeção persistida e o diário paginado sob demanda; não
+  retransmite prompts. A auditoria integral continua na tarefa e nos endpoints do módulo original.

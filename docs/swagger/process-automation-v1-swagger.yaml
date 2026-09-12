@@ -1,0 +1,168 @@
+openapi: 3.0.3
+info:
+  title: Execução automática de processos v1
+  version: 1.0.0
+  description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita.
+paths:
+  /api/business-processes/{processId}/products/{productId}/automation/v1:
+    parameters:
+      - $ref: '#/components/parameters/processId'
+      - $ref: '#/components/parameters/productId'
+    get:
+      summary: Consulta a projeção persistida do cabeçalho
+      parameters:
+        - name: chainId
+          in: query
+          required: true
+          schema: {type: integer, format: int64}
+        - name: learningCycleId
+          in: query
+          schema: {type: integer, format: int64}
+        - name: sourceReference
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/run'}
+        '409': {description: Contexto divergente ou indisponível}
+    post:
+      summary: Autoriza uma execução idempotente do processo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chainId, sourceReference]
+              properties:
+                chainId: {type: integer, format: int64, minimum: 1}
+                learningCycleId: {type: integer, format: int64, minimum: 1, nullable: true}
+                sourceReference: {type: string, maxLength: 255}
+      responses:
+        '200': {$ref: '#/components/responses/run'}
+        '400': {description: Contexto inválido}
+        '409': {description: Produto STOP, ciclo encerrado, versão ou referência divergente}
+  /api/business-processes/{processId}/products/{productId}/automation/v1/{runId}/pause:
+    parameters:
+      - $ref: '#/components/parameters/processId'
+      - $ref: '#/components/parameters/productId'
+      - $ref: '#/components/parameters/runId'
+    post:
+      summary: Pausa novos disparos e aguarda as tarefas em curso sem cancelamento
+      responses:
+        '200': {$ref: '#/components/responses/run'}
+        '404': {description: Execução fora do produto ou processo}
+  /api/business-processes/{processId}/products/{productId}/automation/v1/{runId}/resume:
+    parameters:
+      - $ref: '#/components/parameters/processId'
+      - $ref: '#/components/parameters/productId'
+      - $ref: '#/components/parameters/runId'
+    post:
+      summary: Retoma e revalida condições preservando tentativas anteriores
+      responses:
+        '200': {$ref: '#/components/responses/run'}
+        '404': {description: Execução fora do produto ou processo}
+        '409': {description: Condições atuais não permitem retomar}
+  /api/business-processes/{processId}/products/{productId}/automation/v1/{runId}/events:
+    parameters:
+      - $ref: '#/components/parameters/processId'
+      - $ref: '#/components/parameters/productId'
+      - $ref: '#/components/parameters/runId'
+    get:
+      summary: Lista até cinquenta decisões auditáveis, mais recentes primeiro
+      parameters:
+        - name: beforeId
+          in: query
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: Diário com entradas e saídas estruturadas e referência às tarefas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: {type: integer, format: int64}
+                    eventType: {type: string}
+                    status: {type: string}
+                    activityId: {type: string, nullable: true}
+                    message: {type: string}
+                    details: {type: object, additionalProperties: true}
+                    createdAt: {type: string, format: date-time}
+  /api/internal/business-processes/automation/v1/stage-executions/pending:
+    get:
+      summary: Lista IDs das execuções menos recentemente conciliadas
+      security: [{workerToken: []}]
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, default: 20, minimum: 1, maximum: 100}
+      responses:
+        '200':
+          description: IDs sem payload comercial ou instrução de próxima atividade
+          content:
+            application/json:
+              schema: {type: array, items: {type: integer, format: int64}}
+        '401': {description: Credencial inválida}
+        '503': {description: Conciliador não configurado}
+  /api/internal/business-processes/automation/v1/stage-executions/{runId}/reconcile:
+    parameters:
+      - $ref: '#/components/parameters/runId'
+    post:
+      summary: Backend decide e aplica no máximo um comando, sob lock do produto
+      security: [{workerToken: []}]
+      responses:
+        '200': {$ref: '#/components/responses/run'}
+        '401': {description: Credencial inválida}
+        '404': {description: Execução não encontrada}
+        '503': {description: Conciliador não configurado}
+components:
+  securitySchemes:
+    workerToken: {type: apiKey, in: header, name: X-Process-Worker-Token}
+  parameters:
+    productId: {name: productId, in: path, required: true, schema: {type: integer, format: int64}}
+    processId: {name: processId, in: path, required: true, schema: {type: integer, format: int64}}
+    runId: {name: runId, in: path, required: true, schema: {type: integer, format: int64}}
+  responses:
+    run:
+      description: Estado e comandos permitidos calculados pelo backend
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              id: {type: integer, format: int64, nullable: true}
+              productId: {type: integer, format: int64}
+              processDefinitionId: {type: integer, format: int64}
+              chainId: {type: integer, format: int64}
+              learningCycleId: {type: integer, format: int64, nullable: true}
+              sourceReference: {type: string}
+              status:
+                type: string
+                enum: [READY, UNAVAILABLE, QUEUED, WAITING_ACTIVITY, WAITING_INPUT, WAITING_HUMAN, WAITING_SUBPROCESS, WAITING_PARENT, PAUSING, PAUSED, BLOCKED, ERROR, COMPLETED, CLOSED, REVALIDATION_REQUIRED]
+                description: CLOSED encerra o controle de um ciclo fechado com objetivos pendentes; preserva contagens e evidências, sem aprovação artificial ou reserva indefinida do produto.
+              reason: {type: string}
+              currentActivityId: {type: string, nullable: true}
+              currentActivityName: {type: string, nullable: true}
+              currentOwnerName: {type: string, nullable: true}
+              currentSequence: {type: integer, nullable: true}
+              totalActivities: {type: integer}
+              completedActivities: {type: integer}
+              remainingActivities: {type: integer}
+              omittedActivities: {type: integer}
+              completionPercentage: {type: integer, minimum: 0, maximum: 100}
+              knownCostUsd: {type: number, nullable: true}
+              costCoverage: {type: string, nullable: true}
+              canStart: {type: boolean}
+              canPause: {type: boolean}
+              canResume: {type: boolean}
+              automaticExecution: {type: boolean}
+              childRunId: {type: integer, format: int64, nullable: true}
+              navigationUrl: {type: string, nullable: true}
+              createdAt: {type: string, format: date-time, nullable: true}
+              updatedAt: {type: string, format: date-time, nullable: true}
+              lastReconciledAt: {type: string, format: date-time, nullable: true}
+              finishedAt: {type: string, format: date-time, nullable: true}
+              revision: {type: integer, format: int64}

@@ -96,3 +96,16 @@ O volume do worker preserva respostas pendentes durante reinício do backend.
 O script versionado `pde-platform/scripts/deploy-vega-private.py` lê o arquivo OpenAI protegido
 no próprio host e a credencial interna do container PDE existente, sem copiá-los para `.env`,
 imprimir seus valores ou elevar o usuário do executor. A validação final usa uma sessão QA.
+
+### Conciliador de processos v1
+
+- Serviços: backend principal e `process-execution-worker`, no host APP `191.252.181.168`.
+- Segredo: `PROCESS_EXECUTION_WORKER_TOKEN` ou arquivo em `PROCESS_EXECUTION_WORKER_TOKEN_FILE`.
+- Deploy canônico: `deploy/bin/prepare-process-worker-secret.sh` gera uma credencial aleatória somente
+  se ausente e preserva as existentes em `volumes/process-execution/token`, com diretório restrito.
+  O Compose monta o mesmo arquivo como somente leitura nos dois serviços. Nenhum valor vai ao Git,
+  ao comando SSH ou aos logs.
+- Validação: `pending` responde 401 sem credencial, 503 sem configuração e 200 com a credencial
+  correta; health do worker exige consulta recente ao backend. A homologação usa segredo sintético.
+- Impacto de falha: processos autorizados permanecem persistidos, mas não avançam até a reconexão.
+  Nenhuma falha de credencial autoriza concluir objetivos, pular gates ou perder tarefas.

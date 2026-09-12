@@ -325,12 +325,18 @@ jobs:
           cache-to: type=gha,mode=max,scope=backend-image
 
       - name: Save image as artifact
-        run: docker save ${BACKEND_IMAGE}:${{ github.sha }} -o backend-image.tar
+        run: |
+          docker save ${BACKEND_IMAGE}:${{ github.sha }} -o backend-image.tar
+          docker build -t marketinghub-process-execution-worker:${{ github.sha }} process-execution-worker
+          docker run --rm --entrypoint node marketinghub-process-execution-worker:${{ github.sha }} --check src/main.mjs
+          docker save marketinghub-process-execution-worker:${{ github.sha }} -o process-worker-image.tar
 
       - uses: actions/upload-artifact@v4
         with:
           name: backend-image
-          path: backend-image.tar
+          path: |
+            backend-image.tar
+            process-worker-image.tar
           retention-days: 1
 
   frontend-image:
@@ -570,6 +576,7 @@ jobs:
 
           if [[ -f artifacts/backend-image.tar ]]; then
             retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image-${{ github.sha }}.tar
+            retry rsync -az --partial -e "ssh ${SSH_OPTS}" artifacts/process-worker-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/process-worker-image-${{ github.sha }}.tar
           fi
 
           if [[ -f artifacts/frontend-image.tar ]]; then

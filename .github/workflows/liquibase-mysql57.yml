@@ -59,6 +59,14 @@ on:
       - "infra/testing/vega-harness-readiness/**"
       - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/PdeHarnessResponsibilityMysql57Test.java"
       - "scripts/test-docker-pull-with-transient-retry.sh"
+      - "infra/testing/process-automation/**"
+      - "process-execution-worker/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/**"
+      - "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/processautomation/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/**"
+      - "backend/ads-service/src/test/resources/process-automation/**"
+      - "frontend/src/pages/product/ProductProcessAutomationPanel*"
+      - "frontend/src/api/businessProcess/useProcessAutomation.ts"
       - ".github/workflows/liquibase-mysql57.yml"
   workflow_dispatch:
 
@@ -70,6 +78,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-process-automation:
+    name: Processos automáticos com MySQL 5.7 e concorrência
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/ads-service/pom.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Preparar interface e navegador locais
+        run: |
+          npm --prefix frontend ci --no-audit --no-fund
+          npm --prefix frontend run build
+          cd frontend && npx playwright install --with-deps chromium
+      - name: Homologar sem publicação ou credenciais externas
+        env:
+          PROCESS_COMPOSE_PROJECT: aihub-process-${{ github.run_id }}
+          PROCESS_TEST_DB_HOST: 127.0.0.1
+          PROCESS_TEST_BROWSER: bundled
+        run: bash infra/testing/process-automation/run-round.sh ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: process-automation-${{ github.run_id }}
+          path: artifacts/process-automation/ci/
+          retention-days: 7
   validate-pde-harness-responsibility:
     name: Validar responsável da homologação PDE no MySQL 5.7
     runs-on: ubuntu-latest

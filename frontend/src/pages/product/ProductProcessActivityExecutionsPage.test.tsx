@@ -828,7 +828,7 @@ describe("ProductProcessActivityExecutionsPage", () => {
   });
 
   it.each([undefined, 7])(
-    "starts responsible tasks in the explicit cycle %s when supplied",
+    "keeps explicit cycle %s while moving automated commands to the process",
     async (learningCycleId) => {
       vi.mocked(axios.get).mockResolvedValue({
         data: {
@@ -885,9 +885,7 @@ describe("ProductProcessActivityExecutionsPage", () => {
         `/products/4/value-chain-history/processes/45/activities${suffix}`,
       );
 
-      const button = await screen.findByRole("button", {
-        name: "Executar atividade",
-      });
+      await screen.findAllByText("Validar fatos, controle e valor do PDE");
       expect(axios.get).toHaveBeenCalledWith(
         `/api/business-processes/45/products/4/activity-executions${suffix}`,
         expect.objectContaining({
@@ -895,20 +893,14 @@ describe("ProductProcessActivityExecutionsPage", () => {
           timeout: 45000,
         }),
       );
-      fireEvent.click(button);
-
-      await waitFor(() =>
-        expect(axios.post).toHaveBeenCalledWith(
-          `/api/business-processes/45/products/4/activities/pdeGate/execution-requests${suffix}`,
-        ),
-      );
-      expect(await screen.findByRole("status")).toHaveTextContent(
-        "Todas as tarefas responsáveis foram abertas",
-      );
+      expect(
+        screen.queryByRole("button", { name: "Executar atividade" }),
+      ).not.toBeInTheDocument();
+      expect(axios.post).not.toHaveBeenCalled();
     },
   );
 
-  it("restarts a blocked task while preserving its audited attempt", async () => {
+  it("preserves blocked attempts without offering individual restart", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {
         ...history,
@@ -962,17 +954,14 @@ describe("ProductProcessActivityExecutionsPage", () => {
 
     renderPage("/products/9/value-chain-history/processes/63/activities");
 
-    const button = await screen.findByRole("button", {
-      name: "Reiniciar tarefa",
-    });
-    expect(button.querySelector(".lucide-rotate-ccw")).toBeInTheDocument();
-    fireEvent.click(button);
-
-    await waitFor(() =>
-      expect(axios.post).toHaveBeenCalledWith(
-        "/api/business-processes/63/products/9/activities/communicationContract/execution-requests",
-      ),
-    );
+    await screen.findAllByText("Materializar contrato de comunicação");
+    expect(
+      screen.queryByRole("button", { name: "Reiniciar tarefa" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getAllByText("A tentativa anterior foi bloqueada.").length,
+    ).toBeGreaterThan(0);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("routes a Psique rejection to the explicit prototype correction", async () => {
@@ -1080,20 +1069,20 @@ describe("ProductProcessActivityExecutionsPage", () => {
       screen.getByText("Conclua a correção antes de repetir Psique."),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Reiniciar tarefa" }),
-    ).toBeDisabled();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Criar tarefa de correção" }),
-    );
-
-    await waitFor(() =>
-      expect(axios.post).toHaveBeenCalledWith(
-        "/api/business-processes/80/products/10/activities/prototypeCorrection/execution-requests",
+      screen.queryByRole("button", { name: "Reiniciar tarefa" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Criar tarefa de correção" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        /executada automaticamente pelo controle do processo/,
       ),
-    );
+    ).toHaveLength(2);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it("validates a backend-owned integration and shows the persisted result", async () => {
+  it("moves backend integration execution to the process control", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {
         ...history,
@@ -1146,18 +1135,11 @@ describe("ProductProcessActivityExecutionsPage", () => {
 
     renderPage("/products/9/value-chain-history/processes/55/activities");
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Validar integração" }),
-    );
-
-    await waitFor(() =>
-      expect(axios.post).toHaveBeenCalledWith(
-        "/api/business-processes/55/products/9/activities/integration/execution-requests",
-      ),
-    );
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "O Rigel avançou para Homologação e ativação comercial",
-    );
+    await screen.findAllByText("Integrar canal, checkout, acesso e eventos");
+    expect(
+      screen.queryByRole("button", { name: "Validar integração" }),
+    ).not.toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("makes a backend failure explicit", async () => {

@@ -1,0 +1,90 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-12-product-process-automation-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS product_process_run_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                product_id BIGINT NOT NULL,
+                process_definition_id BIGINT NOT NULL,
+                chain_definition_id BIGINT NOT NULL,
+                learning_cycle_id BIGINT NULL,
+                parent_run_id BIGINT NULL,
+                scope_key VARCHAR(64) NOT NULL,
+                source_reference VARCHAR(255) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                reason TEXT NOT NULL,
+                current_activity_id VARCHAR(100) NULL,
+                current_activity_name VARCHAR(255) NULL,
+                current_owner_name VARCHAR(160) NULL,
+                current_sequence INT NULL,
+                child_run_id BIGINT NULL,
+                navigation_url VARCHAR(1000) NULL,
+                total_activities INT NOT NULL DEFAULT 0,
+                completed_activities INT NOT NULL DEFAULT 0,
+                remaining_activities INT NOT NULL DEFAULT 0,
+                omitted_activities INT NOT NULL DEFAULT 0,
+                retry_epoch INT NOT NULL DEFAULT 0,
+                failure_count INT NOT NULL DEFAULT 0,
+                known_cost_usd DECIMAL(19,8) NULL,
+                cost_coverage VARCHAR(32) NULL,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                last_reconciled_at DATETIME(6) NOT NULL,
+                finished_at DATETIME(6) NULL,
+                revision BIGINT NOT NULL DEFAULT 0,
+                UNIQUE KEY uk_process_run_scope (scope_key),
+                KEY ix_process_run_pending (status, last_reconciled_at, id),
+                KEY ix_process_run_product (product_id, parent_run_id, status, id),
+                CONSTRAINT fk_process_run_product FOREIGN KEY (product_id) REFERENCES product(id),
+                CONSTRAINT fk_process_run_definition FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id),
+                CONSTRAINT fk_process_run_chain FOREIGN KEY (chain_definition_id) REFERENCES business_process_chain_definition(id),
+                CONSTRAINT fk_process_run_cycle FOREIGN KEY (learning_cycle_id) REFERENCES learning_sales_cycle_v1(id),
+                CONSTRAINT fk_process_run_parent FOREIGN KEY (parent_run_id) REFERENCES product_process_run_v1(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE product_process_run_v1;
+  - changeSet:
+      id: 2026-09-12-product-process-automation-events-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS product_process_run_event_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                run_id BIGINT NOT NULL,
+                event_type VARCHAR(40) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                activity_id VARCHAR(100) NULL,
+                message TEXT NOT NULL,
+                action_key VARCHAR(64) NULL,
+                details_json LONGTEXT NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                UNIQUE KEY uk_process_run_action (run_id, action_key),
+                KEY ix_process_run_event (run_id, id),
+                CONSTRAINT fk_process_run_event FOREIGN KEY (run_id) REFERENCES product_process_run_v1(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE product_process_run_event_v1;

@@ -1,0 +1,26 @@
+services:
+  process-backend-double:
+    image: ${PROCESS_TEST_WORKER_IMAGE:?Imagem temporária obrigatória}
+    command: ["node", "/fixture/backend.mjs"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8000/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  process-worker-fixture:
+    image: ${PROCESS_TEST_WORKER_IMAGE:?Imagem temporária obrigatória}
+    depends_on:
+      process-backend-double:
+        condition: service_healthy
+    environment:
+      BACKEND_BASE_URL: http://process-backend-double:8000
+      PROCESS_EXECUTION_WORKER_TOKEN_FILE: /fixture/token
+      PROCESS_EXECUTION_POLL_MS: "100"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 60s

@@ -4941,3 +4941,23 @@ identidade, hashes e últimas tentativas válidos; a mesma entrada abastece UI e
 Testes não permitem usar plano alheio, repetir prova ultrapassada ou liberar antes do gate.
 A checagem de predecessoras usa instâncias BPM como autoridade sem reler os prompts das
 tarefas quando todas as predecessoras já possuem instância, inclusive quando bloqueadas.
+
+## LOOP-BPM-DISPARO-MANUAL-SEM-CONTROLE-DE-PROCESSO — prevenção em 12/09/2026
+
+- Histórico confirmado via MCP: Vega #379–399 teve tentativas bloqueadas e concluídas na mesma
+  referência `experiment:92`. A navegação exigia interpretar dependências e disparar cada atividade.
+- Causa estrutural: existiam execução e validação por atividade, mas faltava uma autorização durável
+  do processo, responsável por conciliar resultados e acionar a sequência automaticamente.
+- Correção: coordenador versionado no backend, conciliador externo sem autoridade de sequência,
+  painel no cabeçalho, diário, deduplicação por entrada e serialização por produto. Retornos continuam
+  sujeitos aos contratos; a mesma falha sem progresso não gera tentativas ilimitadas.
+- Prevenção: transações e concorrência no MySQL 5.7, fluxo HTTP com agentes simulados, reinício,
+  pausas, correções e gates, testes de interface e navegadores desktop/mobile. A revisão também
+  exige cobertura de todos os TASKs do BPM antes de autorizar ou apresentar conclusão; um contrato
+  ausente ou duplicado não pode ser ignorado, e uma condição não aplicável preserva sua definição.
+  A conciliação observa resultados antes de bloquear novos disparos: STOP, ciclo fechado e pai
+  concluído não podem impedir registro de provas já obtidas. Se o ciclo encerrar com pendências,
+  o estado CLOSED preserva os objetivos não atingidos e libera a fila sem apresentar sucesso.
+  O histórico do ciclo 1 do Vega (ADJUSTED com closed_at) e o contrato de fechamento confirmam
+  esse caminho; seis cenários no MySQL protegem a conclusão, a pausa e a liberação da fila.
+  Matriz: `docs/homologacao/execucao-automatica-processos-v1.md`.

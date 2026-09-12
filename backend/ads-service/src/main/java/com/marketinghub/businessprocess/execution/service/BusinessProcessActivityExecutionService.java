@@ -297,7 +297,7 @@ public class BusinessProcessActivityExecutionService {
     return productProcessExecutions(processDefinitionId, productId, learningCycleId, chainId, true);
   }
 
-  /** Mantém estados e evidências na lista, permitindo consultar prompts extensos sob demanda. */
+  /** Expõe a referência inicial canônica e mantém estados, evidências e prompts sob demanda. */
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId,
@@ -451,7 +451,7 @@ public class BusinessProcessActivityExecutionService {
         selectedProcess.getName(),
         selectedProcess.getVersionNumber(),
         selectedProcess.getStatus(),
-        currentExecutionReference,
+        readinessSourceReference,
         situation.operationalState(),
         situation.objectiveAchieved(),
         situation.selectedActivityCount(),

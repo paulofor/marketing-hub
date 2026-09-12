@@ -31,6 +31,7 @@ type Props = {
   feedback?: ActivityExecutionFeedback;
   trackingError?: boolean;
   currentTask?: ProductProcessRecoveryTask | null;
+  processManaged?: boolean;
 };
 
 const executorLabels = {
@@ -60,6 +61,7 @@ export default function ProductProcessActivityExecutionPanel({
   feedback,
   trackingError,
   currentTask,
+  processManaged = false,
 }: Props) {
   const location = useLocation();
   const control = activity.executionControl;
@@ -138,7 +140,8 @@ export default function ProductProcessActivityExecutionPanel({
               {control.actionLabel || "Abrir subprocesso"}
             </Link>
           ) : null
-        ) : ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
+        ) : !processManaged &&
+          ["COMMAND", "WORKSPACE"].includes(control.interactionType) &&
           control.actionLabel &&
           (control.actionAvailable ||
             activity.operationalState === "BLOCKED") ? (
@@ -160,6 +163,14 @@ export default function ProductProcessActivityExecutionPanel({
             {executing ? "Executando..." : control.actionLabel}
           </button>
         ) : null)}
+
+      {processManaged &&
+        ["COMMAND", "WORKSPACE"].includes(control.interactionType) && (
+          <p className="small text-body-secondary mb-2">
+            Esta atividade é executada automaticamente pelo controle do processo
+            no cabeçalho.
+          </p>
+        )}
 
       {recovery ? (
         <aside

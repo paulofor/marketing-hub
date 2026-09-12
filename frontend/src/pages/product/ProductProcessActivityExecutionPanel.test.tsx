@@ -119,44 +119,47 @@ describe("ProductProcessActivityExecutionPanel", () => {
     ).toBeDisabled();
   });
 
-  it("requires an explicit and audited human decision", () => {
-    renderPanel(humanActivity());
+  it.each([false, true])(
+    "requires an explicit and audited human decision with processManaged=%s",
+    (processManaged) => {
+      renderPanel(humanActivity(), processManaged);
 
-    const submit = screen.getByRole("button", { name: "Autorizar ativação" });
-    expect(submit).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/Responsável/), {
-      target: { value: "Paulo Operador" },
-    });
-    fireEvent.change(screen.getByLabelText(/Justificativa/), {
-      target: {
-        value: "Os gates e o teto financeiro foram revisados e aprovados.",
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/Evidência auditável/), {
-      target: { value: "experiment-run:12" },
-    });
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: /Confirmo a ativação dentro do teto/,
-      }),
-    );
-    expect(submit).toBeEnabled();
+      const submit = screen.getByRole("button", { name: "Autorizar ativação" });
+      expect(submit).toBeDisabled();
+      fireEvent.change(screen.getByLabelText(/Responsável/), {
+        target: { value: "Paulo Operador" },
+      });
+      fireEvent.change(screen.getByLabelText(/Justificativa/), {
+        target: {
+          value: "Os gates e o teto financeiro foram revisados e aprovados.",
+        },
+      });
+      fireEvent.change(screen.getByLabelText(/Evidência auditável/), {
+        target: { value: "experiment-run:12" },
+      });
+      fireEvent.click(
+        screen.getByRole("checkbox", {
+          name: /Confirmo a ativação dentro do teto/,
+        }),
+      );
+      expect(submit).toBeEnabled();
 
-    fireEvent.click(submit);
+      fireEvent.click(submit);
 
-    expect(onExecute).toHaveBeenCalledWith({
-      activityId: "authorization",
-      decision: {
-        decision: "APPROVE",
-        operatorName: "Paulo Operador",
-        justification:
-          "Os gates e o teto financeiro foram revisados e aprovados.",
-        evidenceReference: "experiment-run:12",
-        confirmationToken:
-          "CONFIRM:pde-commercial-homologation-activation:authorization",
-      },
-    });
-  });
+      expect(onExecute).toHaveBeenCalledWith({
+        activityId: "authorization",
+        decision: {
+          decision: "APPROVE",
+          operatorName: "Paulo Operador",
+          justification:
+            "Os gates e o teto financeiro foram revisados e aprovados.",
+          evidenceReference: "experiment-run:12",
+          confirmationToken:
+            "CONFIRM:pde-commercial-homologation-activation:authorization",
+        },
+      });
+    },
+  );
 
   it("lets the operator review and authorize without retyping backend evidence", () => {
     renderPanel(reviewAndAcceptActivity());
@@ -436,6 +439,36 @@ describe("ProductProcessActivityExecutionPanel", () => {
     ).toBeVisible();
   });
 
+  it("mantém a área de evidências sem exigir clique no comando backend automatizado", () => {
+    renderPanel(
+      {
+        ...baseActivity(),
+        activityId: "preflight",
+        executionControl: {
+          executorType: "BACKEND",
+          interactionType: "WORKSPACE",
+          actionLabel: "Criar e executar preflight",
+          actionAvailable: true,
+          availabilityReason: "Pré-requisitos comprovados.",
+          description: "Cria e confere os gates técnicos.",
+          confirmationRequired: false,
+          workspaceCode: "EXPERIMENT_PREFLIGHT",
+          workspaceReferenceId: 89,
+          requirements: [],
+        },
+      },
+      true,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Criar e executar preflight" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Run do experimento 89")).toBeVisible();
+    expect(
+      screen.getByText(/executada automaticamente pelo controle do processo/),
+    ).toBeVisible();
+    expect(onExecute).not.toHaveBeenCalled();
+  });
+
   it("presents a completed control as success even when no new action is available", () => {
     renderPanel({
       ...baseActivity(),
@@ -460,12 +493,16 @@ describe("ProductProcessActivityExecutionPanel", () => {
     expect(availability?.querySelector("svg")).not.toBeNull();
   });
 
-  function renderPanel(activity: ProductProcessActivityExecutionGroup) {
+  function renderPanel(
+    activity: ProductProcessActivityExecutionGroup,
+    processManaged = false,
+  ) {
     render(
       <MemoryRouter>
         <ProductProcessActivityExecutionPanel
           activity={activity}
           productId={9}
+          processManaged={processManaged}
           pending={false}
           onExecute={onExecute}
         />

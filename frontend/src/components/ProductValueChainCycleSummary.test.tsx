@@ -234,7 +234,11 @@ describe("Card do produto com ciclo", () => {
     await waitFor(() => expect(screen.getByText("Etapa 6 de 6")).toBeVisible());
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-processes/75/products/10/activity-executions?chainId=14",
-      { signal: expect.any(AbortSignal), timeout: 45000 },
+      {
+        signal: expect.any(AbortSignal),
+        timeout: 45000,
+        params: { includePromptAudit: false },
+      },
     );
   });
 });

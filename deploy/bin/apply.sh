@@ -9,6 +9,8 @@ BACKEND_IMAGE=${BACKEND_IMAGE:-marketinghub-backend}
 FRONTEND_IMAGE=${FRONTEND_IMAGE:-marketinghub-frontend}
 VIDEO_IMAGE=${VIDEO_IMAGE:-marketinghub-video-management}
 IMAGE_TAG=${IMAGE_TAG:-latest}
+PROCESS_WORKER_TAR=${PROCESS_WORKER_TAR:-/tmp/process-worker-image-${IMAGE_TAG}.tar}
+PROCESS_WORKER_IMAGE=marketinghub-process-execution-worker
 IMAGE_LOAD_TIMEOUT=${IMAGE_LOAD_TIMEOUT:-12m}
 COMMAND_TIMEOUT_KILL_AFTER=${COMMAND_TIMEOUT_KILL_AFTER:-30s}
 COMPOSE_RECREATE_TIMEOUT=${COMPOSE_RECREATE_TIMEOUT:-8m}
@@ -148,6 +150,14 @@ cd "${DEPLOY_DIR}"
 log "Preparando diretórios persistentes em ${DEPLOY_DIR}"
 mkdir -p volumes/backend/uploads volumes/backend/logs
 
+# A credencial fica em arquivo protegido e é reutilizada por todas as publicações posteriores.
+bash "${DEPLOY_DIR}/bin/prepare-process-worker-secret.sh" "${DEPLOY_DIR}/volumes/process-execution"
+if [[ -f "${PROCESS_WORKER_TAR}" ]]; then
+  prepare_image_load "process-execution-worker" "${PROCESS_WORKER_TAR}"
+  run_with_timeout_and_diagnostics "docker load process-execution-worker" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${PROCESS_WORKER_TAR}"
+  require_loaded_image "${PROCESS_WORKER_IMAGE}:${IMAGE_TAG}"
+fi
+
 if [[ -f "${BACKEND_TAR}" ]]; then
   prepare_image_load "backend" "${BACKEND_TAR}"
   run_with_timeout_and_diagnostics "docker load backend (${BACKEND_TAR})" "${IMAGE_LOAD_TIMEOUT}" docker load -i "${BACKEND_TAR}"
@@ -197,6 +207,9 @@ preserve_current_image() {
 rollback_app_stack() {
   local rollback_backend="${BACKEND_IMAGE}:rollback"
   local rollback_frontend="${FRONTEND_IMAGE}:rollback"
+
+  # O conciliador aguarda uma versão compatível do backend após rollback, preservando o diário.
+  docker compose stop process-execution-worker || true
 
   log "Nova versão não ficou saudável; restaurando imagens anteriores"
   tag_image_if_exists "${rollback_backend}" "${BACKEND_IMAGE}:latest"
@@ -261,16 +274,19 @@ remove_conflicting_container() {
 
 preserve_current_image "${BACKEND_IMAGE}:latest" "${BACKEND_IMAGE}:rollback"
 preserve_current_image "${FRONTEND_IMAGE}:latest" "${FRONTEND_IMAGE}:rollback"
+preserve_current_image "${PROCESS_WORKER_IMAGE}:latest" "${PROCESS_WORKER_IMAGE}:rollback"
 
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
   tag_image_if_exists "${BACKEND_IMAGE}:${IMAGE_TAG}" "${BACKEND_IMAGE}:latest"
   tag_image_if_exists "${FRONTEND_IMAGE}:${IMAGE_TAG}" "${FRONTEND_IMAGE}:latest"
+  tag_image_if_exists "${PROCESS_WORKER_IMAGE}:${IMAGE_TAG}" "${PROCESS_WORKER_IMAGE}:latest"
   tag_image_if_exists "${VIDEO_IMAGE}:${IMAGE_TAG}" "${VIDEO_IMAGE}:latest"
 fi
 
 remove_conflicting_container "backend" "marketinghub-backend"
 remove_conflicting_container "backend-log-reader" "marketinghub-backend-log-reader"
 remove_conflicting_container "frontend" "marketinghub-frontend"
+docker compose stop process-execution-worker || true
 
 if ! run_with_timeout_and_diagnostics \
   "recriar backend, leitor independente de logs e frontend" \
@@ -294,6 +310,12 @@ if ! wait_backend_container_http \
 fi
 wait_http "frontend" "${FRONTEND_HEALTH_URL}" 12 5
 
+if ! run_with_timeout_and_diagnostics "iniciar conciliador de processos" "${COMPOSE_RECREATE_TIMEOUT}" \
+  docker compose up -d --no-deps --wait --wait-timeout 120 process-execution-worker; then
+  rollback_app_stack || true
+  exit 1
+fi
+
 backend_token_length="$(docker inspect marketinghub-backend --format '{{range .Config.Env}}{{println .}}{{end}}' \
   | sed -n 's/^LEAD_PORTAL_PAYMENTS_AUTH_TOKEN=//p' \
   | awk '{ print length }')"
@@ -313,12 +335,13 @@ log "Secret interno da Biblioteca do Harness confirmado no backend (conteúdo pr
 
 cleanup_previous_tags "${BACKEND_IMAGE}" "latest"
 cleanup_previous_tags "${FRONTEND_IMAGE}" "latest"
+cleanup_previous_tags "${PROCESS_WORKER_IMAGE}" "latest"
 cleanup_previous_tags "${VIDEO_IMAGE}" "latest"
 
 log "Executando docker image prune"
 docker image prune -f >/dev/null 2>&1 || true
 
 log "Removendo arquivos temporários de imagem"
-rm -f "${BACKEND_TAR}" "${FRONTEND_TAR}" "${VIDEO_TAR}" >/dev/null 2>&1 || true
+rm -f "${BACKEND_TAR}" "${FRONTEND_TAR}" "${VIDEO_TAR}" "${PROCESS_WORKER_TAR}" >/dev/null 2>&1 || true
 
 log "Deploy backend/frontend concluído"

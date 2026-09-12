@@ -1,0 +1,21 @@
+services:
+  process-execution-worker:
+    build:
+      context: .
+    image: marketinghub/process-execution-worker:${PROCESS_EXECUTION_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:?Configure o backend principal}
+      PROCESS_EXECUTION_WORKER_TOKEN: ${PROCESS_EXECUTION_WORKER_TOKEN:?Configure o token compartilhado com o backend}
+      PROCESS_EXECUTION_CONCURRENCY: ${PROCESS_EXECUTION_CONCURRENCY:-4}
+      PROCESS_EXECUTION_BATCH_SIZE: ${PROCESS_EXECUTION_BATCH_SIZE:-20}
+      PROCESS_EXECUTION_POLL_MS: ${PROCESS_EXECUTION_POLL_MS:-5000}
+    stop_grace_period: 60s

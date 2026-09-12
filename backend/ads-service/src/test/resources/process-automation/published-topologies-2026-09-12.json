@@ -1,0 +1,1190 @@
+[
+  {
+    "processCode": "pde-commercial-homologation-activation",
+    "definitionId": 56,
+    "version": 6,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK"
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK"
+        },
+        {
+          "id": "preflight",
+          "type": "TASK"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "authorization",
+          "type": "TASK"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "humanExperienceReview"
+        },
+        {
+          "from": "humanExperienceReview",
+          "to": "commercialIntegrityReview"
+        },
+        {
+          "from": "commercialIntegrityReview",
+          "to": "preflight"
+        },
+        {
+          "from": "preflight",
+          "to": "decision"
+        },
+        {
+          "from": "decision",
+          "to": "authorization"
+        },
+        {
+          "from": "authorization",
+          "to": "end"
+        },
+        {
+          "from": "decision",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "experiment-homologation-activation",
+    "definitionId": 58,
+    "version": 5,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "surfaces",
+          "type": "TASK"
+        },
+        {
+          "id": "transaction",
+          "type": "TASK"
+        },
+        {
+          "id": "measurement",
+          "type": "TASK"
+        },
+        {
+          "id": "financialGuardrails",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "surfaces"
+        },
+        {
+          "from": "surfaces",
+          "to": "transaction"
+        },
+        {
+          "from": "transaction",
+          "to": "measurement"
+        },
+        {
+          "from": "measurement",
+          "to": "financialGuardrails"
+        },
+        {
+          "from": "financialGuardrails",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "pde-tasting-proof-of-value",
+    "definitionId": 61,
+    "version": 2,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "strategy",
+          "type": "TASK"
+        },
+        {
+          "id": "economics",
+          "type": "TASK"
+        },
+        {
+          "id": "materialization",
+          "type": "TASK"
+        },
+        {
+          "id": "humanExperienceReview",
+          "type": "TASK"
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK"
+        },
+        {
+          "id": "integration",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "strategy"
+        },
+        {
+          "from": "strategy",
+          "to": "economics"
+        },
+        {
+          "from": "economics",
+          "to": "materialization"
+        },
+        {
+          "from": "materialization",
+          "to": "humanExperienceReview"
+        },
+        {
+          "from": "humanExperienceReview",
+          "to": "commercialIntegrityReview"
+        },
+        {
+          "from": "commercialIntegrityReview",
+          "to": "integration"
+        },
+        {
+          "from": "integration",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "venda-entrega-satisfacao-cliente",
+    "definitionId": 62,
+    "version": 4,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "reconcile",
+          "type": "TASK"
+        },
+        {
+          "id": "materialization",
+          "type": "TASK"
+        },
+        {
+          "id": "integrity",
+          "type": "TASK"
+        },
+        {
+          "id": "delivery",
+          "type": "TASK"
+        },
+        {
+          "id": "satisfaction",
+          "type": "TASK"
+        },
+        {
+          "id": "financial",
+          "type": "TASK"
+        },
+        {
+          "id": "learning",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "reconcile"
+        },
+        {
+          "from": "reconcile",
+          "to": "materialization"
+        },
+        {
+          "from": "materialization",
+          "to": "integrity"
+        },
+        {
+          "from": "integrity",
+          "to": "delivery"
+        },
+        {
+          "from": "delivery",
+          "to": "satisfaction"
+        },
+        {
+          "from": "satisfaction",
+          "to": "financial"
+        },
+        {
+          "from": "financial",
+          "to": "learning"
+        },
+        {
+          "from": "learning",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "pde-communication-sales-journey",
+    "definitionId": 63,
+    "version": 7,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "communicationContract",
+          "type": "TASK"
+        },
+        {
+          "id": "creatives",
+          "type": "TASK"
+        },
+        {
+          "id": "destination",
+          "type": "TASK"
+        },
+        {
+          "id": "integration",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "communicationContract"
+        },
+        {
+          "from": "communicationContract",
+          "to": "creatives"
+        },
+        {
+          "from": "creatives",
+          "to": "destination"
+        },
+        {
+          "from": "destination",
+          "to": "integration"
+        },
+        {
+          "from": "integration",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "creative-production-approval",
+    "definitionId": 64,
+    "version": 8,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "route",
+          "type": "TASK"
+        },
+        {
+          "id": "nonAudiovisual",
+          "type": "TASK"
+        },
+        {
+          "id": "audiovisual",
+          "type": "TASK"
+        },
+        {
+          "id": "customer",
+          "type": "TASK"
+        },
+        {
+          "id": "commercial",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "human",
+          "type": "TASK"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "route"
+        },
+        {
+          "from": "route",
+          "to": "nonAudiovisual"
+        },
+        {
+          "from": "nonAudiovisual",
+          "to": "audiovisual"
+        },
+        {
+          "from": "audiovisual",
+          "to": "customer"
+        },
+        {
+          "from": "customer",
+          "to": "commercial"
+        },
+        {
+          "from": "commercial",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "human"
+        },
+        {
+          "from": "human",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "landing-page-generation",
+    "definitionId": 65,
+    "version": 6,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "select",
+          "type": "TASK"
+        },
+        {
+          "id": "strategy",
+          "type": "TASK"
+        },
+        {
+          "id": "compose",
+          "type": "TASK"
+        },
+        {
+          "id": "html",
+          "type": "TASK"
+        },
+        {
+          "id": "technical",
+          "type": "TASK"
+        },
+        {
+          "id": "customer",
+          "type": "TASK"
+        },
+        {
+          "id": "commercial",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "human",
+          "type": "TASK"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "select"
+        },
+        {
+          "from": "select",
+          "to": "strategy"
+        },
+        {
+          "from": "strategy",
+          "to": "compose"
+        },
+        {
+          "from": "compose",
+          "to": "html"
+        },
+        {
+          "from": "html",
+          "to": "technical"
+        },
+        {
+          "from": "technical",
+          "to": "customer"
+        },
+        {
+          "from": "customer",
+          "to": "commercial"
+        },
+        {
+          "from": "commercial",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "human"
+        },
+        {
+          "from": "human",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "operacao-otimizacao-experimento",
+    "definitionId": 66,
+    "version": 5,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "task-1",
+          "type": "TASK"
+        },
+        {
+          "id": "task-2",
+          "type": "TASK"
+        },
+        {
+          "id": "task-3",
+          "type": "TASK"
+        },
+        {
+          "id": "task-4",
+          "type": "TASK"
+        },
+        {
+          "id": "task-5",
+          "type": "TASK"
+        },
+        {
+          "id": "task-6",
+          "type": "TASK"
+        },
+        {
+          "id": "task-7",
+          "type": "TASK"
+        },
+        {
+          "id": "task-8",
+          "type": "TASK"
+        },
+        {
+          "id": "task-9",
+          "type": "TASK"
+        },
+        {
+          "id": "task-10",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "task-1"
+        },
+        {
+          "from": "task-1",
+          "to": "task-2"
+        },
+        {
+          "from": "task-2",
+          "to": "task-3"
+        },
+        {
+          "from": "task-3",
+          "to": "task-4"
+        },
+        {
+          "from": "task-4",
+          "to": "task-5"
+        },
+        {
+          "from": "task-5",
+          "to": "task-6"
+        },
+        {
+          "from": "task-6",
+          "to": "task-7"
+        },
+        {
+          "from": "task-7",
+          "to": "task-8"
+        },
+        {
+          "from": "task-8",
+          "to": "task-9"
+        },
+        {
+          "from": "task-9",
+          "to": "task-10"
+        },
+        {
+          "from": "task-10",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "pde-commercial-plan-offer",
+    "definitionId": 67,
+    "version": 6,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "marketStrategy",
+          "type": "TASK"
+        },
+        {
+          "id": "economics",
+          "type": "TASK"
+        },
+        {
+          "id": "productArchitecture",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "marketStrategy"
+        },
+        {
+          "from": "marketStrategy",
+          "to": "economics"
+        },
+        {
+          "from": "economics",
+          "to": "productArchitecture"
+        },
+        {
+          "from": "productArchitecture",
+          "to": "gate"
+        },
+        {
+          "from": "gate",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "pde-construction-approval",
+    "definitionId": 70,
+    "version": 8,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "journey",
+          "type": "TASK"
+        },
+        {
+          "id": "deliverables",
+          "type": "TASK"
+        },
+        {
+          "id": "audiovisual",
+          "type": "TASK"
+        },
+        {
+          "id": "access",
+          "type": "TASK"
+        },
+        {
+          "id": "technicalHomologation",
+          "type": "TASK"
+        },
+        {
+          "id": "prototypeCorrection",
+          "type": "TASK",
+          "activationMode": "ON_FUNCTIONAL_REJECTION",
+          "remediatesActivities": [
+            "technicalHomologation",
+            "psiqueAdherent",
+            "psiqueRecovery",
+            "psiqueSafety",
+            "commercialIntegrityReview"
+          ]
+        },
+        {
+          "id": "psiqueAdherent",
+          "type": "TASK"
+        },
+        {
+          "id": "psiqueRecovery",
+          "type": "TASK"
+        },
+        {
+          "id": "psiqueSafety",
+          "type": "TASK"
+        },
+        {
+          "id": "commercialIntegrityReview",
+          "type": "TASK"
+        },
+        {
+          "id": "agentValidationGate",
+          "type": "TASK"
+        },
+        {
+          "id": "gate",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "to": "journey",
+          "from": "start"
+        },
+        {
+          "to": "deliverables",
+          "from": "journey"
+        },
+        {
+          "to": "audiovisual",
+          "from": "deliverables"
+        },
+        {
+          "to": "access",
+          "from": "audiovisual"
+        },
+        {
+          "to": "technicalHomologation",
+          "from": "access"
+        },
+        {
+          "to": "psiqueAdherent",
+          "from": "technicalHomologation"
+        },
+        {
+          "to": "psiqueRecovery",
+          "from": "psiqueAdherent"
+        },
+        {
+          "to": "psiqueSafety",
+          "from": "psiqueRecovery"
+        },
+        {
+          "to": "commercialIntegrityReview",
+          "from": "psiqueSafety"
+        },
+        {
+          "to": "agentValidationGate",
+          "from": "commercialIntegrityReview"
+        },
+        {
+          "to": "gate",
+          "from": "agentValidationGate"
+        },
+        {
+          "to": "end",
+          "from": "gate"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "technicalHomologation",
+          "kind": "REWORK"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueAdherent",
+          "kind": "REWORK"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueRecovery",
+          "kind": "REWORK"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "psiqueSafety",
+          "kind": "REWORK"
+        },
+        {
+          "to": "prototypeCorrection",
+          "from": "commercialIntegrityReview",
+          "kind": "REWORK"
+        },
+        {
+          "to": "technicalHomologation",
+          "from": "prototypeCorrection",
+          "kind": "REWORK"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "pde-sales-delivery-learning",
+    "definitionId": 75,
+    "version": 6,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "entry",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "parallel",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "sales",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "optimization",
+          "type": "TASK"
+        },
+        {
+          "id": "delivery",
+          "type": "TASK"
+        },
+        {
+          "id": "consolidate",
+          "type": "TASK"
+        },
+        {
+          "id": "learningCycle",
+          "type": "TASK"
+        },
+        {
+          "id": "decision",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "join",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "returnTarget",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "returnAuthorization",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "entry"
+        },
+        {
+          "from": "entry",
+          "to": "parallel"
+        },
+        {
+          "from": "entry",
+          "to": "consolidate"
+        },
+        {
+          "from": "parallel",
+          "to": "optimization"
+        },
+        {
+          "from": "parallel",
+          "to": "sales"
+        },
+        {
+          "from": "sales",
+          "to": "delivery"
+        },
+        {
+          "from": "sales",
+          "to": "join"
+        },
+        {
+          "from": "optimization",
+          "to": "join"
+        },
+        {
+          "from": "delivery",
+          "to": "join"
+        },
+        {
+          "from": "join",
+          "to": "consolidate"
+        },
+        {
+          "from": "consolidate",
+          "to": "learningCycle"
+        },
+        {
+          "from": "consolidate",
+          "to": "consolidate",
+          "kind": "REWORK"
+        },
+        {
+          "from": "consolidate",
+          "to": "delivery",
+          "kind": "REWORK"
+        },
+        {
+          "from": "learningCycle",
+          "to": "decision"
+        },
+        {
+          "from": "decision",
+          "to": "optimization",
+          "kind": "REWORK"
+        },
+        {
+          "from": "decision",
+          "to": "consolidate",
+          "kind": "REWORK"
+        },
+        {
+          "from": "decision",
+          "to": "returnTarget",
+          "kind": "REWORK"
+        },
+        {
+          "from": "returnTarget",
+          "to": "learningCycle",
+          "kind": "REWORK"
+        },
+        {
+          "from": "decision",
+          "to": "returnAuthorization",
+          "kind": "REWORK"
+        },
+        {
+          "from": "returnTarget",
+          "to": "returnAuthorization"
+        },
+        {
+          "from": "returnAuthorization",
+          "to": "optimization",
+          "kind": "REWORK"
+        },
+        {
+          "from": "returnAuthorization",
+          "to": "consolidate"
+        },
+        {
+          "from": "decision",
+          "to": "end"
+        }
+      ]
+    }
+  },
+  {
+    "processCode": "value-chain-learning-sales-cycle",
+    "definitionId": 76,
+    "version": 4,
+    "diagram": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START"
+        },
+        {
+          "id": "LEARNING",
+          "type": "TASK"
+        },
+        {
+          "id": "PLANNING",
+          "type": "TASK"
+        },
+        {
+          "id": "ADJUSTMENT",
+          "type": "TASK"
+        },
+        {
+          "id": "VIDEO_BRIEF",
+          "type": "TASK"
+        },
+        {
+          "id": "CAMPAIGN_VIDEO",
+          "type": "TASK"
+        },
+        {
+          "id": "PDE_ENTRY_VIDEO",
+          "type": "TASK"
+        },
+        {
+          "id": "VIDEO_APPROVAL",
+          "type": "TASK"
+        },
+        {
+          "id": "VALIDATION",
+          "type": "TASK"
+        },
+        {
+          "id": "qualityDecision",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "AUTHORIZATION",
+          "type": "TASK"
+        },
+        {
+          "id": "PUBLICATION",
+          "type": "TASK"
+        },
+        {
+          "id": "MEASUREMENT",
+          "type": "TASK"
+        },
+        {
+          "id": "DECISION",
+          "type": "TASK"
+        },
+        {
+          "id": "commercialDecision",
+          "type": "GATEWAY"
+        },
+        {
+          "id": "SCALE_AUTHORIZATION",
+          "type": "TASK"
+        },
+        {
+          "id": "end",
+          "type": "END"
+        }
+      ],
+      "flows": [
+        {
+          "to": "LEARNING",
+          "from": "start"
+        },
+        {
+          "to": "PLANNING",
+          "from": "LEARNING"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "PLANNING"
+        },
+        {
+          "to": "VIDEO_BRIEF",
+          "from": "ADJUSTMENT"
+        },
+        {
+          "to": "CAMPAIGN_VIDEO",
+          "from": "VIDEO_BRIEF"
+        },
+        {
+          "to": "PDE_ENTRY_VIDEO",
+          "from": "CAMPAIGN_VIDEO"
+        },
+        {
+          "to": "VIDEO_APPROVAL",
+          "from": "PDE_ENTRY_VIDEO"
+        },
+        {
+          "to": "VALIDATION",
+          "from": "VIDEO_APPROVAL"
+        },
+        {
+          "to": "qualityDecision",
+          "from": "VALIDATION"
+        },
+        {
+          "to": "PUBLICATION",
+          "from": "AUTHORIZATION"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "PUBLICATION"
+        },
+        {
+          "to": "DECISION",
+          "from": "MEASUREMENT"
+        },
+        {
+          "to": "commercialDecision",
+          "from": "DECISION"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "qualityDecision",
+          "kind": "REWORK"
+        },
+        {
+          "to": "AUTHORIZATION",
+          "from": "qualityDecision"
+        },
+        {
+          "to": "LEARNING",
+          "from": "commercialDecision",
+          "kind": "REWORK"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK"
+        },
+        {
+          "to": "SCALE_AUTHORIZATION",
+          "from": "commercialDecision"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "SCALE_AUTHORIZATION",
+          "kind": "REWORK"
+        },
+        {
+          "to": "end",
+          "from": "commercialDecision"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "VIDEO_APPROVAL",
+          "kind": "REWORK"
+        }
+      ]
+    }
+  }
+]

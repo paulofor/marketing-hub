@@ -1,14 +1,28 @@
-# Validação estática de Liquibase para MySQL 5.7
+# Validação de Liquibase para MySQL 5.7
 
-O workflow `.github/workflows/liquibase-mysql57.yml` executa somente a validação estática dos changelogs do backend destinados ao MySQL 5.7.
+O workflow `.github/workflows/liquibase-mysql57.yml` executa a validação estática dos changelogs do backend e os jobs físicos das fixtures MySQL 5.7 versionadas no repositório.
 
 Ele é executado automaticamente em Pull Requests que alteram changelogs, o validador estático ou o próprio workflow. Também pode ser iniciado manualmente pelo GitHub Actions.
 
-## Etapa executada no workflow
+## Etapa estática do workflow
 
 Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativos, includes duplicados, dependências conhecidas, campos temporais e risco do erro MySQL 1093 nos arquivos alterados.
 
-O workflow não inicia MySQL, não executa `liquibase:update` e não usa banco, credenciais ou dados de produção. A compatibilidade física de uma migração continua sendo responsabilidade da homologação controlada do ambiente antes da publicação em produção.
+A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs físicos usam bancos descartáveis e credenciais sintéticas, sem dados de produção, para conferir as migrações cobertas por suas fixtures antes da publicação.
+
+## Execução automática de processos — fixture v1
+
+O job `validate-process-automation` deste workflow executa a matriz física da execução automática
+em MySQL 5.7, além da validação estática geral. Usa o changelog incremental
+`2026-09-12-product-process-automation-v1.yaml`, entidades reais, transações concorrentes,
+reinício e reaplicação sem duplicidade. As tabelas mínimas de referência e os agentes são
+simulados; nenhum dado, credencial ou serviço comercial de produção participa do teste.
+
+O runner local é `infra/testing/process-automation/run-round.sh`. Ele exige
+`PROCESS_COMPOSE_PROJECT` com o projeto exclusivo da sandbox, reconstrói o frontend e encerra
+a topologia com `down --volumes --remove-orphans`. A matriz e seus resultados ficam em
+`docs/homologacao/execucao-automatica-processos-v1.md`.
+
 
 ## Execução manual após publicar uma branch
 

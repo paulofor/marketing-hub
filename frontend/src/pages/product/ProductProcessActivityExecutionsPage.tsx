@@ -8,8 +8,6 @@ import {
   ListChecks,
   ListTree,
   Loader2,
-  PlayCircle,
-  RotateCcw,
   Target,
   Workflow,
 } from "lucide-react";
@@ -38,6 +36,7 @@ import { salesActivityStateLabels } from "../../api/learningCycle/salesFlow";
 import { useCycleProcessContext } from "../../api/learningCycle/useCycleProcessContext";
 import ProductLearningCycleContext from "./ProductLearningCycleContext";
 import ProductActivityContextCopyButton from "./ProductActivityContextCopyButton";
+import ProductProcessAutomationPanel from "./ProductProcessAutomationPanel";
 
 const usdFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -243,31 +242,47 @@ export default function ProductProcessActivityExecutionsPage() {
               : "Carregando o histórico auditável do processo..."}
           </p>
         </div>
-        <div className="product-process-activity-executions__actions">
-          {data?.commercialPlanId ? (
+        <div className="product-process-automation-row">
+          <div className="product-process-activity-executions__actions">
+            {data?.commercialPlanId ? (
+              <Link
+                className="btn btn-primary"
+                to={`/planning/${data.commercialPlanId}`}
+                title={data.commercialPlanName || "Plano comercial do produto"}
+              >
+                <Target size={17} aria-hidden="true" />
+                Plano comercial
+              </Link>
+            ) : null}
             <Link
-              className="btn btn-primary"
-              to={`/planning/${data.commercialPlanId}`}
-              title={data.commercialPlanName || "Plano comercial do produto"}
+              className="btn btn-outline-secondary"
+              to={`/products/${productId}/value-chain-history`}
             >
-              <Target size={17} aria-hidden="true" />
-              Plano comercial
+              <ListTree size={17} aria-hidden="true" />
+              Histórico de atividades
             </Link>
+            <Link
+              className="btn btn-outline-primary"
+              to={`/business-processes?processId=${processDefinitionId}`}
+            >
+              <Workflow size={17} aria-hidden="true" />
+              Abrir BPM
+            </Link>
+          </div>
+          {data ? (
+            <ProductProcessAutomationPanel
+              key={`${productId}/${processDefinitionId}/${effectiveCycleId}/${effectiveChainId}/${data.currentExecutionReference}`}
+              productId={productId}
+              processId={processDefinitionId}
+              cycleId={effectiveCycleId}
+              chainId={
+                effectiveChainId ??
+                valueChainPosition.data?.chainDefinitionId ??
+                undefined
+              }
+              sourceReference={data.currentExecutionReference}
+            />
           ) : null}
-          <Link
-            className="btn btn-outline-secondary"
-            to={`/products/${productId}/value-chain-history`}
-          >
-            <ListTree size={17} aria-hidden="true" />
-            Histórico de atividades
-          </Link>
-          <Link
-            className="btn btn-outline-primary"
-            to={`/business-processes?processId=${processDefinitionId}`}
-          >
-            <Workflow size={17} aria-hidden="true" />
-            Abrir BPM
-          </Link>
         </div>
       </header>
 
@@ -568,48 +583,6 @@ export default function ProductProcessActivityExecutionsPage() {
                       {activity.taskCount} tarefa
                       {activity.taskCount === 1 ? "" : "s"}
                     </span>
-                    {!activity.executionControl &&
-                    activity.executionRequestAvailable ? (
-                      <button
-                        className="btn btn-primary btn-sm"
-                        type="button"
-                        disabled={requestExecution.isPending}
-                        onClick={() =>
-                          requestExecution.mutate({
-                            activityId: activity.activityId,
-                          })
-                        }
-                      >
-                        {requestExecution.isPending &&
-                        requestExecution.variables?.activityId ===
-                          activity.activityId ? (
-                          <Loader2
-                            className="spinner-border spinner-border-sm"
-                            size={16}
-                            aria-hidden="true"
-                          />
-                        ) : activity.operationalState === "BLOCKED" ? (
-                          <RotateCcw size={16} aria-hidden="true" />
-                        ) : (
-                          <PlayCircle size={16} aria-hidden="true" />
-                        )}
-                        {requestExecution.isPending &&
-                        requestExecution.variables?.activityId ===
-                          activity.activityId
-                          ? activity.activityId === "integration"
-                            ? "Validando..."
-                            : activity.operationalState === "BLOCKED"
-                              ? "Reiniciando..."
-                              : "Iniciando..."
-                          : activity.activityId === "integration"
-                            ? activity.operationalState === "BLOCKED"
-                              ? "Revalidar integração"
-                              : "Validar integração"
-                            : activity.operationalState === "BLOCKED"
-                              ? "Reiniciar tarefa"
-                              : "Executar atividade"}
-                      </button>
-                    ) : null}
                   </div>
                 </header>
 
@@ -648,6 +621,7 @@ export default function ProductProcessActivityExecutionsPage() {
                 ) : null}
 
                 <ProductProcessActivityExecutionPanel
+                  processManaged
                   activity={activity}
                   productId={productId}
                   processSequence={selectedProcessSequence}

@@ -85,7 +85,11 @@ describe("Acesso à atividade oficial nos cards sem ciclo", () => {
     expect(axios.get).toHaveBeenCalledTimes(1);
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-processes/75/products/9/activity-executions?chainId=14",
-      { signal: expect.any(AbortSignal), timeout: 45000 },
+      {
+        signal: expect.any(AbortSignal),
+        timeout: 45000,
+        params: { includePromptAudit: false },
+      },
     );
     expect(axios.post).not.toHaveBeenCalled();
   });

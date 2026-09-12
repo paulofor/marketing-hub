@@ -1,0 +1,4 @@
+ARG PROCESS_TEST_BASE_IMAGE
+FROM ${PROCESS_TEST_BASE_IMAGE}
+COPY --chown=node:node worker-container-backend.mjs /fixture/backend.mjs
+COPY --chown=node:node worker-container-token.txt /fixture/token

@@ -983,6 +983,88 @@
   gap: 0.4rem;
 }
 
+.product-process-automation-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.product-process-automation-row
+  > .product-process-activity-executions__actions {
+  flex: 1 1 300px;
+}
+.product-process-automation {
+  flex: 1 1 420px;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #b7cdfb;
+  border-radius: 12px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+.product-process-automation__heading,
+.product-process-automation__buttons {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+.product-process-automation__buttons {
+  justify-content: flex-start;
+}
+.product-process-automation__buttons .btn,
+.product-process-automation__current {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.product-process-automation__progress {
+  height: 7px;
+  border-radius: 5px;
+  background: #e8eef8;
+  overflow: hidden;
+}
+.product-process-automation__progress > span {
+  display: block;
+  background: #2563eb;
+  height: 100%;
+}
+.product-process-automation__counts {
+  margin: 0.5rem 0;
+}
+.product-process-automation__current {
+  margin-bottom: 0.5rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+.product-process-automation__current > svg {
+  flex-shrink: 0;
+}
+.product-process-automation__events {
+  max-height: 280px;
+  overflow: auto;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.product-process-automation__events ol {
+  padding-left: 1.2rem;
+}
+.product-process-automation__events li {
+  margin-bottom: 0.6rem;
+}
+@media (max-width: 600px) {
+  .product-process-automation {
+    flex-basis: 100%;
+    padding: 0.8rem;
+  }
+  .product-process-automation__buttons .btn {
+    min-height: 44px;
+  }
+}
+
 .product-process-activity-executions__title {
   align-items: center;
   display: inline-flex;

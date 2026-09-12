@@ -82,6 +82,70 @@ class AgentTaskVisualEvidenceServiceTest {
 
   /** Persiste PNG criptografado e expõe somente a rota governada vinculada à tarefa. */
   @Test
+  void storesDerivedCreativeWithoutLabelingItAsProductScreenshot() throws Exception {
+    var process = new com.marketinghub.businessprocess.BusinessProcessDefinition();
+    process.setProcessCode("creative-production-approval");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("nonAudiovisual");
+    task.getAssignedAgent().setAgentKey("communication-director");
+    when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
+    when(targetContextProvider.resolve(task.getSourceReference(), "creative-production-approval"))
+        .thenReturn(
+            Optional.of(
+                new AgentTaskTargetResponse(
+                    task.getSourceReference(),
+                    89L,
+                    9L,
+                    "rigel",
+                    "Agenda Cheia",
+                    "Rigel",
+                    "rigel-v2",
+                    "https://rigel.example/jornada",
+                    null,
+                    null,
+                    null,
+                    null)));
+    when(evidenceRepository.saveAndFlush(any()))
+        .thenAnswer(
+            invocation -> {
+              AgentTaskVisualEvidence image = invocation.getArgument(0);
+              image.setId(910130L);
+              return image;
+            });
+    var pixels =
+        new java.awt.image.BufferedImage(1080, 1350, java.awt.image.BufferedImage.TYPE_INT_RGB);
+    var bytes = new java.io.ByteArrayOutputStream();
+    ImageIO.write(pixels, "png", bytes);
+    var request =
+        new AgentTaskVisualEvidenceRequest(
+            "creative-test",
+            "creative-1",
+            "CREATIVE_RENDER",
+            "CREATIVE_1080X1350",
+            1,
+            null,
+            1080,
+            1350,
+            1350,
+            0,
+            "https://rigel.example/jornada",
+            "https://rigel.example/jornada",
+            Instant.parse("2026-09-12T09:00:00Z"));
+    var response =
+        service.store(
+            "communication-director",
+            258L,
+            request,
+            new MockMultipartFile("file", "creative.png", "image/png", bytes.toByteArray()));
+    assertThat(response.evidenceType()).isEqualTo("CREATIVE_RENDER");
+    assertThat(response.label()).contains("Criativo estático").doesNotContain("dobra");
+    assertThatThrownBy(
+            () -> service.store("communication-director", 258L, request, png("wrong-size")))
+        .hasMessageContaining("PNG inválido");
+  }
+
+  /** Persiste PNG criptografado e expõe somente a rota governada vinculada à tarefa. */
+  @Test
   void storesEncryptedSnapshotWithImmutableMetadata() throws Exception {
     when(taskRepository.findById(258L)).thenReturn(Optional.of(task));
     when(evidenceRepository.findByTaskIdAndCaptureSessionIdAndEvidenceKey(

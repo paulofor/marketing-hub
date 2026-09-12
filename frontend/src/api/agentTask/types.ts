@@ -12,9 +12,10 @@ export interface AgentTaskVisualEvidence {
   id: number;
   captureSessionId: string;
   evidenceKey: string;
-  evidenceType: "FULL_PAGE" | "FOLD";
+  evidenceType: "FULL_PAGE" | "FOLD" | "CREATIVE_RENDER";
   label: string;
-  deviceProfile: "IPHONE_15_PRO" | "PIXEL_7" | "DESKTOP_1440";
+  deviceProfile:
+    "IPHONE_15_PRO" | "PIXEL_7" | "DESKTOP_1440" | "CREATIVE_1080X1350";
   pageNumber: number;
   foldNumber?: number;
   viewportWidth: number;

@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.*;
 @Import({
   ProcessRunService.class,
   ProcessRunContext.class,
+  ProcessRunNavigation.class,
   ProcessRunController.class,
   ProcessAutomationLocalApplication.FixtureController.class
 })
@@ -180,6 +181,29 @@ public class ProcessAutomationLocalApplication {
     return repository(factory, ProcessRunEventRepository.class);
   }
 
+  /** Simula apenas a escrita da prova do filho no pai, sem inferir conclusão durante leitura. */
+  @Bean
+  ProcessRunSubprocesses subprocesses(JdbcTemplate jdbc) {
+    var subprocesses = mock(ProcessRunSubprocesses.class);
+    doAnswer(
+            inv -> {
+              ProcessRun parent = inv.getArgument(0);
+              ProductProcessActivityExecutionGroupResponse activity = inv.getArgument(1);
+              jdbc.update(
+                  "INSERT INTO fixture_task(product_id,process_id,activity_id,status,achieved,reason) VALUES (?,?,?,?,?,?)",
+                  parent.getProductId(),
+                  parent.getProcessDefinitionId(),
+                  activity.activityId(),
+                  "COMPLETED",
+                  true,
+                  "Objetivo comprovado pelo subprocesso");
+              return null;
+            })
+        .when(subprocesses)
+        .complete(any(), any(), any(), any());
+    return subprocesses;
+  }
+
   /** Compartilha a conexão transacional com os contratos de teste. */
   @Bean
   JdbcTemplate jdbc(DataSource source) {
@@ -226,6 +250,9 @@ public class ProcessAutomationLocalApplication {
     var processes = mock(BusinessProcessDefinitionRepository.class);
     when(processes.findById(anyLong()))
         .thenAnswer(inv -> Optional.of(definition(inv.getArgument(0))));
+    when(processes.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "local-process-92005", "PUBLISHED"))
+        .thenReturn(Optional.of(definition(92005L)));
     return processes;
   }
 
@@ -243,7 +270,9 @@ public class ProcessAutomationLocalApplication {
             ? ", {\"id\":\"fix\",\"type\":\"TASK\",\"activationMode\":\"ON_FUNCTIONAL_REJECTION\",\"remediatesActivities\":[\"a\"]}"
             : "";
     process.setDiagramJson(
-        "{\"nodes\":[{\"id\":\"b\",\"type\":\"TASK\"},{\"id\":\"a\",\"type\":\"TASK\"},{\"id\":\"gate\",\"type\":\"TASK\"}"
+        "{\"nodes\":[{\"id\":\"b\",\"type\":\"TASK\"},{\"id\":\"a\",\"type\":\"TASK\""
+            + (id == 92004 ? ",\"subprocessCode\":\"local-process-92005\"" : "")
+            + "},{\"id\":\"gate\",\"type\":\"TASK\"}"
             + rework
             + (id == 92011 ? ", {\"id\":\"missing\",\"type\":\"TASK\"}" : "")
             + "],\"flows\":[{\"from\":\"a\",\"to\":\"b\"},{\"from\":\"b\",\"to\":\"gate\"}]}");
@@ -362,8 +391,6 @@ public class ProcessAutomationLocalApplication {
               : process == 92004 && id.equals("a")
                   ? "SUBPROCESS"
                   : process == 92010 && id.equals("gate") ? "WORKSPACE" : "COMMAND";
-      if (process == 92004 && id.equals("a"))
-        achieved = snapshot(jdbc, product, 92005L).objectiveAchieved();
       boolean available =
           !achieved
               && Set.of("NOT_STARTED", "BLOCKED").contains(state)

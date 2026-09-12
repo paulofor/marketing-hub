@@ -199,6 +199,41 @@ async function paste(page) {
               }
               return route.fulfill({ json: response });
             }
+            if (url.pathname.endsWith("/automation/v1")) {
+              // A navegação oficial pode ser consultada sem referência, sem iniciar execução.
+              assert.equal(url.searchParams.has("sourceReference"), false);
+              assert.equal(url.searchParams.get("chainId"), "14");
+              const productId = Number(
+                url.pathname.match(/\/products\/(\d+)\//)[1],
+              );
+              assert([4, 10].includes(productId));
+              return route.fulfill({
+                json: {
+                  id: null,
+                  productId,
+                  processDefinitionId: 70,
+                  chainId: 14,
+                  learningCycleId: url.searchParams.has("learningCycleId")
+                    ? Number(url.searchParams.get("learningCycleId"))
+                    : null,
+                  sourceReference: null,
+                  status: "UNAVAILABLE",
+                  reason:
+                    "Aguardando referência oficial; consulta sem escrita.",
+                  totalActivities: 2,
+                  completedActivities: 0,
+                  remainingActivities: 2,
+                  omittedActivities: 0,
+                  completionPercentage: 0,
+                  canStart: false,
+                  canPause: false,
+                  canResume: false,
+                  automaticExecution: true,
+                  parentProcesses: [],
+                  subprocesses: [],
+                },
+              });
+            }
             if (url.pathname.endsWith("/process-context"))
               return route.fulfill({
                 json: mode === "cycle" || mode === "loading" ? cycle : null,

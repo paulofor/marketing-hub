@@ -633,6 +633,8 @@ export default function ProductProcessActivityExecutionsPage() {
 
                 <ProductProcessActivityExecutionPanel
                   processManaged
+                  chainId={effectiveChainId}
+                  cycleId={effectiveCycleId}
                   activity={activity}
                   productId={productId}
                   processSequence={selectedProcessSequence}

@@ -6,7 +6,7 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 ARG CODEX_VERSION=0.146.0
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates fontconfig fonts-dejavu-core \
     && npm install -g @openai/codex@${CODEX_VERSION} \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app

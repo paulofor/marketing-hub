@@ -1,0 +1,18 @@
+{
+  "cardKey": "intencao-clara-canal-proprio-recompra",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Intenção clara pode favorecer uma jornada própria de recompra",
+  "finding": "No Kobe App Commerce Report 2026, 61% dos consumidores pesquisados disseram preferir o app da marca quando já sabem o que querem e 80% diante de promoção exclusiva, enquanto marketplaces aparecem mais fortes em descoberta, comparação e validação.",
+  "mechanism": "Quando a intenção já está definida, conveniência, histórico, pagamento salvo, rastreio, benefício exclusivo e continuidade podem ganhar importância relativa frente à amplitude de escolha do marketplace. O estudo não demonstra causalidade.",
+  "commercialApplication": "No Marketing Hub, testar jornadas diferentes por estágio: conteúdo e prova durante exploração; recompra, benefício exclusivo e fechamento simplificado quando houver intenção clara ou histórico de compra.",
+  "evidenceStrength": "Moderada como evidência de preferência declarada e divisão de papéis entre canais no mobile brasileiro; baixa para afirmar aumento causal de conversão ou LTV.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2026-12-11",
+  "experimentHypothesis": "Entre usuários com intenção clara ou histórico de compra, uma jornada direta de recompra com benefício e pagamento simplificado aumentará pagamento e recompra versus uma jornada genérica de descoberta.",
+  "risks": "A mudança de canal pode adicionar atrito, fragmentar atribuição ou oferecer incentivo sem ganho incremental.",
+  "limits": "O estudo é proprietário de uma empresa de app commerce e inclui preferências declaradas; o efeito deve ser validado em público e oferta comparáveis por pagamento e recompra observados.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-12-intencao-clara-canal-proprio-recompra.md",
+  "sourceTitle": "Fonte revisada — Intenção clara, canal próprio e recompra no mobile brasileiro",
+  "sourceSha256": "cf7ee5a62648ab00704397e5f258e4d3abff0517279dc045e79036dec5875753"
+}

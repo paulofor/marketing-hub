@@ -78,9 +78,21 @@ public class IrisCommunicationMaterializationContextProvider
     return Optional.of(context(sourceReference, scope.get()));
   }
 
-  /** Expõe o experimento exato para aplicar uma landing materializada no mesmo escopo. */
+  /** Expõe o experimento validado do ciclo privado ou do plano sem recorrer à versão histórica. */
   @Transactional(readOnly = true)
   public Optional<Long> experimentId(String sourceReference) {
+    if (learningCycles != null) {
+      var cycle = learningCycles.resolve(sourceReference);
+      if (cycle.isPresent()) {
+        var value = cycle.get();
+        if (!"AVAILABLE".equals(value.get("availability"))
+            || !"READY".equals(value.get("inputReadiness"))) return Optional.empty();
+        Object experiment = value.get("experiment");
+        if (experiment instanceof Map<?, ?> map && map.get("id") instanceof Number id)
+          return Optional.of(id.longValue());
+        return Optional.empty();
+      }
+    }
     return scope(sourceReference).map(ResolvedScope::experiment).map(Experiment::getId);
   }
 

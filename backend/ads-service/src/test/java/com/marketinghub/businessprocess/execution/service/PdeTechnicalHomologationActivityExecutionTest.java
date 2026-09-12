@@ -215,7 +215,9 @@ class PdeTechnicalHomologationActivityExecutionTest {
     when(definitions.findAllByProcessDefinitionIdOrderByIdAsc(70L)).thenReturn(selectedActivities);
     when(definitions.findByProcessDefinitionIdAndActivityId(70L, "technicalHomologation"))
         .thenReturn(Optional.of(activity));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:92")).thenReturn(history);
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            "experiment:92", "pde-construction-approval"))
+        .thenReturn(history);
     when(tasks.findPdeValidationTaskSnapshots("experiment:92", "pde-construction-approval"))
         .thenAnswer(
             ignored ->

@@ -22,6 +22,12 @@ async function post(path, body = {}) {
   assert.equal(r.status, 200, await r.clone().text());
   return r.json();
 }
+
+// O proxy HTTP local acompanha o cancelamento nativo sem responder novamente a uma rota encerrada.
+function forwardLocal(route) {
+  const url = new URL(route.request().url());
+  return route.continue({ url: base + url.pathname + url.search });
+}
 const browser = await chromium.launch({
   ...(process.env.PROCESS_TEST_BROWSER === "bundled"
     ? {}
@@ -80,28 +86,10 @@ try {
             status: 503,
             json: { message: "Indisponibilidade simulada" },
           });
-        const response = await route.fetch({
-          url: backend + url.pathname + url.search,
-        });
-        return route.fulfill({
-          response,
-          headers: {
-            ...response.headers(),
-            "access-control-allow-origin": "*",
-          },
-        });
+        return forwardLocal(route);
       }
       if (url.pathname.endsWith("/activity-executions")) {
-        const response = await route.fetch({
-          url: backend + url.pathname + url.search,
-        });
-        return route.fulfill({
-          response,
-          headers: {
-            ...response.headers(),
-            "access-control-allow-origin": "*",
-          },
-        });
+        return forwardLocal(route);
       }
       if (url.pathname.endsWith("/execution-progress"))
         return route.fulfill({ json: [] });
@@ -260,14 +248,84 @@ try {
       "100",
     );
     await page.screenshot({ path: `${output}/${name}-completed.png` });
+    const parentRoot = `/api/business-processes/92004/products/${product}/automation/v1`;
+    const parent = await post(parentRoot, {
+      chainId: 92014,
+      learningCycleId: product,
+      sourceReference: `experiment:${product}`,
+    });
+    const waitingChild = await post(
+      `/api/internal/business-processes/automation/v1/stage-executions/${parent.id}/reconcile`,
+    );
+    await page.goto(
+      `${base}/products/${product}/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=${product}`,
+    );
+    const childLink = panel.getByRole("link", {
+      name: "Processo de teste 92005 · v1",
+    });
+    await expect(childLink).toBeVisible({ timeout: 15000 });
+    await childLink.click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/92005/activities\\?chainId=92014&learningCycleId=${product}`,
+      ),
+    );
+    const backLink = panel.getByRole("link", {
+      name: /Voltar ao processo pai/,
+    });
+    await expect(backLink).toHaveAttribute(
+      "href",
+      `/products/${product}/value-chain-history/processes/92004/activities?chainId=92014&learningCycleId=${product}#activity-a`,
+    );
+    const reconcile = () =>
+      post(
+        `/api/internal/business-processes/automation/v1/stage-executions/${waitingChild.childRunId}/reconcile`,
+      );
+    await reconcile();
+    await post(`/fixture/${product}/92005/a`, {
+      status: "COMPLETED",
+      achieved: true,
+    });
+    await reconcile();
+    await post(`/fixture/${product}/92005/b`, {
+      status: "COMPLETED",
+      achieved: true,
+    });
+    await reconcile();
+    await reconcile();
+    await expect(
+      panel.getByText("Processo concluído", { exact: true }),
+    ).toBeVisible({ timeout: 12000 });
+    await expect(backLink).toBeVisible();
+    await panel.screenshot({ path: `${output}/${name}-child-return.png` });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth + 1,
+      ),
+      false,
+    );
+    await backLink.click();
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/92004/activities\\?chainId=92014&learningCycleId=${product}#activity-a`,
+      ),
+    );
+    await post(
+      `/api/internal/business-processes/automation/v1/stage-executions/${parent.id}/reconcile`,
+    );
+    await expect(
+      panel.getByText(/Subprocesso concluído e confirmado/),
+    ).toBeVisible({ timeout: 12000 });
     assert.equal(
       mutations.some((u) => u.includes("/execution-requests")),
       false,
     );
     assert.equal(errors.length, 0, errors.join("\n"));
+    // Aguarda as consultas interceptadas antes de descartar o contexto e suas respostas.
+    await page.unrouteAll({ behavior: "wait" });
     await ctx.close();
     console.log(
-      `PASS ${name}: início, contagem, pausa, retomada, falha, histórico, conclusão e acessibilidade`,
+      `PASS ${name}: início, contagem, pausa, retomada, falha, histórico, conclusão, subprocesso, retorno contextual e acessibilidade`,
     );
   }
 } finally {

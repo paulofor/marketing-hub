@@ -186,3 +186,15 @@ publicação; esses resultados não são homologação da funcionalidade em prod
 
 Referências: [API de workflows do GitHub](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event)
 e [semântica de reexecução](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs).
+
+
+### Correspondência entre compilação testada, JAR e imagem
+
+O backend usa uma imagem de runtime que incorpora `backend/ads-service/target/app-exec.jar`.
+`mvn test` não substitui `mvn package`. Antes de construir ou aplicar uma imagem, empacote a
+revisão testada e execute `scripts/verify-backend-packaged-resources.py`: as classes no JAR devem
+coincidir em presença e bytes com `target/classes`, além da integridade dos recursos e do catálogo.
+Na homologação local, confira também que `/app/app.jar` dentro da imagem é exatamente o pacote
+verificado. Tag, revisão declarada, saúde e digest de transporte não substituem essa correspondência.
+A matriz `infra/testing/vega-process-recovery/run-round.sh` incorpora essa conferência sem iniciar
+containers de produção e sem usar publicação para descobrir omissões de empacotamento.

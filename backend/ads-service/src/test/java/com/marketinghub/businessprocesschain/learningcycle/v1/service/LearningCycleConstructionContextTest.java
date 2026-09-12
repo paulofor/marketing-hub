@@ -85,10 +85,23 @@ class LearningCycleConstructionContextTest {
                     "marketStrategy",
                     "experiment-strategist",
                     "{\"decision\":\"APPROVE\",\"marketStrategicContract\":{\"contractVersion\":\"MARKET_STRATEGY_V3\",\"status\":\"READY_FOR_PRIVATE_VALIDATION\",\"privateValidationPlan\":{}}}")));
-    when(tasks
-            .findByProcessDefinitionIdAndSourceReferenceAndCreatedAtGreaterThanEqualOrderByCreatedAtDescIdDesc(
-                67L, "experiment:92", cycle.getCreatedAt()))
-        .thenReturn(approved);
+    when(tasks.findFunctionalSnapshotsByProcessSince(67L, "experiment:92", cycle.getCreatedAt()))
+        .thenAnswer(
+            ignored ->
+                approved.stream()
+                    .map(
+                        value ->
+                            new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+                                value.getId(),
+                                67L,
+                                "pde-commercial-plan-offer",
+                                value.getProcessActivityId(),
+                                value.getAssignedAgent().getAgentKey(),
+                                value.getStatus(),
+                                value.getCreatedAt(),
+                                value.getDeliveredAt(),
+                                value.getResultJson()))
+                    .toList());
   }
 
   /** Cria uma entrega pertencente ao especialista e com ordem temporal verificável. */
@@ -108,7 +121,11 @@ class LearningCycleConstructionContextTest {
    */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(
-      strings = {"pde-construction-approval", "pde-communication-sales-journey"})
+      strings = {
+        "pde-construction-approval",
+        "pde-communication-sales-journey",
+        "creative-production-approval"
+      })
   void buildsSuccessorWithExactApprovalsAndInheritedLearning(String processCode) {
     var result = resolver.resolve("experiment:92", experiment, processCode).orElseThrow();
     assertThat(result.experienceVersion()).isEqualTo("successor-v8");

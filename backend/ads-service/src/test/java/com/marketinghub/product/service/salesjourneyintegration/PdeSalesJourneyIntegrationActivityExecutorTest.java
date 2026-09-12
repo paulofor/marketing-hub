@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,6 +65,47 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
   private Experiment experiment;
   private CommercialPlan plan;
   private PdeProductionSlot slot;
+
+  /**
+   * O ciclo corrente recebe seu próprio diagnóstico, mesmo quando o produto tem posição histórica.
+   */
+  @Test
+  void usesCyclePredecessorsInsteadOfHistoricalCommercialPosition() {
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(executor, "learningCycles", cycles);
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(2L);
+    cycle.setProductId(rigel.getId());
+    cycle.setExperimentId(92L);
+    cycle.setStatus("OPEN");
+    cycle.setBaseline(false);
+    when(cycles.findByExperimentId(92L)).thenReturn(Optional.of(cycle));
+    rigel.setCommercialStatus("EM_OPERACAO");
+    var readiness = executor.readiness(process, integration, rigel, "experiment:92");
+    assertThat(readiness.ready()).isFalse();
+    assertThat(readiness.reason())
+        .contains("neste ciclo", "Produzir criativos")
+        .doesNotContain("rota histórica");
+    var creatives = new BusinessProcessActivityInstance();
+    creatives.setActivityDefinition(activity(171L, process, "creatives"));
+    creatives.setStatus("COMPLETED");
+    creatives.setObjectiveAchieved(true);
+    creatives.setOccurrenceNumber(1);
+    var destination = new BusinessProcessActivityInstance();
+    destination.setActivityDefinition(activity(172L, process, "destination"));
+    destination.setStatus("COMPLETED");
+    destination.setObjectiveAchieved(true);
+    destination.setOccurrenceNumber(1);
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                process.getId(), "experiment:92"))
+        .thenReturn(List.of(creatives, destination));
+    assertThat(executor.readiness(process, integration, rigel, "experiment:92").ready()).isTrue();
+    cycle.setStatus("CLOSED");
+    assertThat(executor.readiness(process, integration, rigel, "experiment:92").ready()).isFalse();
+    verifyNoInteractions(slotService, products, periods);
+  }
 
   /** Monta o processo 4 completo com as fontes persistidas do Rigel. */
   @BeforeEach

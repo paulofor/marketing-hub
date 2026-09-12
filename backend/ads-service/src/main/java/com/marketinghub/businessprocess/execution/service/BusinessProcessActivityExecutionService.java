@@ -1168,11 +1168,7 @@ public class BusinessProcessActivityExecutionService {
     }
     Optional<BusinessProcessDefinition> subprocess = publishedSubprocess(definition);
     if (subprocess.isPresent()) {
-      boolean navigationAvailable =
-          "PUBLISHED".equals(process.getStatus())
-              && hasExecutionContext
-              && productExecutionEnabled
-              && !"COMPLETED".equals(operationalState);
+      boolean navigationAvailable = true;
       String reason =
           navigationAvailable
               ? "Abra o subprocesso oficial; ele preserva tarefas, evidências e custos próprios."
@@ -1327,8 +1323,8 @@ public class BusinessProcessActivityExecutionService {
     Map<Long, AgentTask> uniqueTasks = new LinkedHashMap<>();
     for (CommercialPlan plan : productPlans) {
       taskRepository
-          .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
-              "commercial-plan:" + plan.getId() + "@")
+          .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+              "commercial-plan:" + plan.getId() + "@", processCode)
           .stream()
           .filter(task -> task.getProcessDefinition() != null)
           .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
@@ -1336,14 +1332,16 @@ public class BusinessProcessActivityExecutionService {
     }
     for (Experiment experiment : productExperiments) {
       taskRepository
-          .findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:" + experiment.getId())
+          .findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+              "experiment:" + experiment.getId(), processCode)
           .stream()
           .filter(task -> task.getProcessDefinition() != null)
           .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
           .forEach(task -> uniqueTasks.put(task.getId(), task));
     }
     taskRepository
-        .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:" + productId + "@")
+        .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+            "product:" + productId + "@", processCode)
         .stream()
         .filter(task -> task.getProcessDefinition() != null)
         .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
@@ -1577,7 +1575,7 @@ public class BusinessProcessActivityExecutionService {
               selectedVersionActivity,
               situation.operationalState(),
               agentReadiness != null
-                      && (executionRequestAvailable
+                      && ("NOT_STARTED".equals(situation.operationalState())
                           || (!agentReadiness.ready()
                               && "BLOCKED".equals(situation.operationalState())))
                   ? agentReadiness.reason()

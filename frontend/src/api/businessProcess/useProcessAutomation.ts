@@ -7,7 +7,7 @@ export interface ProcessAutomation {
   processDefinitionId: number;
   chainId: number;
   learningCycleId: number | null;
-  sourceReference: string;
+  sourceReference: string | null;
   status: string;
   reason: string;
   currentActivityId: string | null;
@@ -30,6 +30,17 @@ export interface ProcessAutomation {
   lastReconciledAt: string | null;
   updatedAt: string | null;
   revision: number;
+  parentProcesses?: ProcessRelation[];
+  subprocesses?: ProcessRelation[];
+}
+
+export interface ProcessRelation {
+  processDefinitionId: number;
+  processName: string;
+  processVersion: number;
+  activityId: string;
+  activityName: string;
+  navigationUrl: string;
 }
 
 export interface ProcessAutomationEvent {
@@ -63,7 +74,7 @@ export function useProcessAutomation(
   const context = { chainId, learningCycleId, sourceReference };
   const status = useQuery({
     queryKey,
-    enabled: Boolean(chainId && sourceReference),
+    enabled: Boolean(chainId),
     queryFn: async ({ signal }) =>
       (
         await axios.get<ProcessAutomation>(root, {

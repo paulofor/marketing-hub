@@ -132,6 +132,34 @@ async function paste(page) {
             if (url.pathname.endsWith("/execution-progress"))
               return route.fulfill({ json: [] });
             if (url.pathname.endsWith("/automation/v1")) {
+              if (!url.searchParams.get("sourceReference")) {
+                assert.equal(url.searchParams.get("chainId"), "92014");
+                return route.fulfill({
+                  json: {
+                    ...fixture.automation,
+                    id: null,
+                    productId: ["no-cycle", "missing"].includes(mode)
+                      ? 92010
+                      : 92004,
+                    sourceReference: null,
+                    learningCycleId: url.searchParams.has("learningCycleId")
+                      ? Number(url.searchParams.get("learningCycleId"))
+                      : null,
+                    childRunId: null,
+                    navigationUrl: null,
+                    status: "UNAVAILABLE",
+                    canStart: false,
+                    canResume: false,
+                    canPause: false,
+                    currentActivityId: null,
+                    currentActivityName: null,
+                    currentOwnerName: null,
+                    reason: "Aguardando o contexto oficial de execução.",
+                    parentProcesses: [],
+                    subprocesses: [],
+                  },
+                });
+              }
               assert.equal(
                 url.searchParams.get("sourceReference"),
                 "experiment:92092",
@@ -437,6 +465,7 @@ async function paste(page) {
             "query-failure",
           ],
         });
+        await page.unrouteAll({ behavior: "wait" });
         await context.close();
         console.log(`PASS ${name}`);
       }

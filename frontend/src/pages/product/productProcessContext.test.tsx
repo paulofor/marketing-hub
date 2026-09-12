@@ -74,6 +74,39 @@ describe("Contexto do processo", () => {
     expect(text).toContain("cobertura: NOT_REPORTED");
   });
 
+  it("copia as chamadas oficiais e o retorno ao pai com o mesmo ciclo", () => {
+    context.automation!.parentProcesses = [
+      {
+        processDefinitionId: 63,
+        processName: "Comunicação",
+        processVersion: 7,
+        activityId: "creatives",
+        activityName: "Criativos",
+        navigationUrl:
+          "/products/92004/value-chain-history/processes/63/activities?chainId=92014&learningCycleId=92002#activity-creatives",
+      },
+    ];
+    context.automation!.subprocesses = [
+      {
+        processDefinitionId: 65,
+        processName: "Landing",
+        processVersion: 6,
+        activityId: "destination",
+        activityName: "Destino",
+        navigationUrl:
+          "/products/92004/value-chain-history/processes/65/activities?chainId=92014&learningCycleId=92002",
+      },
+    ];
+    const text = processContextText(context, origin);
+    expect(text).toContain("Comunicação");
+    expect(text).toContain("Landing");
+    expect(text).toContain(
+      "http://marketing-hub.test/products/92004/value-chain-history/processes/63/activities?chainId=92014&learningCycleId=92002#activity-creatives",
+    );
+    expect(text).toContain(
+      "http://marketing-hub.test/products/92004/value-chain-history/processes/65/activities?chainId=92014&learningCycleId=92002",
+    );
+  });
   it("declara dados ausentes sem substituir nome interno por comercial ou inventar ciclo", () => {
     context.cycle = null;
     context.cycleId = undefined;

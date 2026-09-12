@@ -31,6 +31,8 @@ public class ProcessRunService {
   private final ProcessRunEventRepository events;
   private final ProductRepository products;
   private final ProcessRunContext context;
+  private final ProcessRunNavigation navigation;
+  private final ProcessRunSubprocesses subprocesses;
   private final BusinessProcessActivityExecutionService activities;
   private final ObjectMapper json;
   private final TransactionTemplate transaction;
@@ -41,6 +43,8 @@ public class ProcessRunService {
       ProcessRunEventRepository events,
       ProductRepository products,
       ProcessRunContext context,
+      ProcessRunNavigation navigation,
+      ProcessRunSubprocesses subprocesses,
       BusinessProcessActivityExecutionService activities,
       ObjectMapper json,
       PlatformTransactionManager manager) {
@@ -48,6 +52,8 @@ public class ProcessRunService {
     this.events = events;
     this.products = products;
     this.context = context;
+    this.navigation = navigation;
+    this.subprocesses = subprocesses;
     this.activities = activities;
     this.json = json;
     this.transaction = new TransactionTemplate(manager);
@@ -72,20 +78,26 @@ public class ProcessRunService {
           boolean enabled =
               !Boolean.FALSE.equals(
                   products.findById(productId).orElseThrow().getAutomaticExecutionEnabled());
+          boolean missingReference =
+              command.sourceReference() == null || command.sourceReference().isBlank();
           preview.setStatus(
-              history.objectiveAchieved()
-                  ? "COMPLETED"
-                  : enabled && "PUBLISHED".equals(history.selectedProcessStatus())
-                      ? "READY"
-                      : "UNAVAILABLE");
+              missingReference
+                  ? "UNAVAILABLE"
+                  : history.objectiveAchieved()
+                      ? "COMPLETED"
+                      : enabled && "PUBLISHED".equals(history.selectedProcessStatus())
+                          ? "READY"
+                          : "UNAVAILABLE");
           preview.setReason(
-              history.objectiveAchieved()
-                  ? "Os objetivos aplicáveis deste processo já foram comprovados."
-                  : !enabled
-                      ? "O produto está em STOP."
-                      : !"PUBLISHED".equals(history.selectedProcessStatus())
-                          ? "Esta versão não está publicada."
-                          : "Execute o processo para iniciar as atividades em sequência. Você pode fechar esta tela.");
+              missingReference
+                  ? "Aguardando o contexto oficial de execução; a navegação entre os processos continua disponível."
+                  : history.objectiveAchieved()
+                      ? "Os objetivos aplicáveis deste processo já foram comprovados."
+                      : !enabled
+                          ? "O produto está em STOP."
+                          : !"PUBLISHED".equals(history.selectedProcessStatus())
+                              ? "Esta versão não está publicada."
+                              : "Execute o processo para iniciar as atividades em sequência. Você pode fechar esta tela.");
           return response(preview);
         });
   }
@@ -377,7 +389,12 @@ public class ProcessRunService {
         return response(run);
       }
       var childCommand = context.command(run);
-      Long childProcess = control.targetProcessDefinitionId();
+      Long childProcess =
+          navigation.children(run).stream()
+              .filter(relation -> activity.activityId().equals(relation.activityId()))
+              .map(ProcessRunRelationResponse::processDefinitionId)
+              .findFirst()
+              .orElse(control.targetProcessDefinitionId());
       var childReadiness = context.read(run.getProductId(), childProcess, childCommand, true);
       var child =
           runs.findByScopeKey(scope(run.getProductId(), childProcess, childCommand))
@@ -425,10 +442,26 @@ public class ProcessRunService {
             "REVALIDATION_REQUESTED");
       }
       run.setChildRunId(child.getId());
+      run.setNavigationUrl(
+          navigation.children(run).stream()
+              .filter(relation -> activity.activityId().equals(relation.activityId()))
+              .map(ProcessRunRelationResponse::navigationUrl)
+              .findFirst()
+              .orElse(null));
+      if ("COMPLETED".equals(child.getStatus()) && completedObjectives(childReadiness)) {
+        if (child.getParentRunId() == null) child.setParentRunId(run.getId());
+        subprocesses.complete(run, activity, child, childReadiness);
+        transition(
+            run,
+            "RUNNING",
+            "Subprocesso concluído e confirmado na atividade de origem.",
+            "SUBPROCESS_COMPLETED");
+        return response(run);
+      }
       transition(
           run,
           "WAITING_SUBPROCESS",
-          "Aguardando o objetivo do subprocesso e sua confirmação no processo de origem.",
+          "Aguardando o subprocesso " + childReadiness.processName() + ": " + child.getReason(),
           "SUBPROCESS");
       return response(run);
     }
@@ -444,7 +477,7 @@ public class ProcessRunService {
           run,
           "BLOCKED",
           "A tentativa não comprovou o objetivo e as entradas continuam iguais. "
-              + activity.stateReason()
+              + failureReason(activity)
               + " Corrija o impedimento antes de retomar o processo.",
           "NO_PROGRESS");
       return response(run);
@@ -478,6 +511,36 @@ public class ProcessRunService {
             "retryEpoch",
             run.getRetryEpoch()));
     return response(run);
+  }
+
+  /** Expõe as lacunas da última tentativa bloqueada sem substituir sua causa pela prontidão. */
+  private String failureReason(ProductProcessActivityExecutionGroupResponse activity) {
+    var task =
+        activity.tasks().stream()
+            .filter(t -> "BLOCKED".equals(t.status()))
+            .max(Comparator.comparing(t -> t.taskId()));
+    if (task.isEmpty()) return activity.stateReason();
+    String reason = task.get().executionError();
+    if (task.get().comments() != null) {
+      try {
+        var gaps = json.readTree(task.get().comments()).path("evidenceGaps");
+        List<String> details = new ArrayList<>();
+        if (gaps.isArray())
+          for (var gap : gaps)
+            if (gap.isTextual() && !gap.asText().isBlank()) details.add(gap.asText());
+        if (!details.isEmpty()) reason = String.join("; ", details);
+      } catch (Exception ex) {
+        log.warn(
+            "Falha ao ler lacunas da tentativa. taskId={} activityId={}",
+            task.get().taskId(),
+            activity.activityId(),
+            ex);
+      }
+    }
+    return "Tarefa #"
+        + task.get().taskId()
+        + ": "
+        + (reason == null ? activity.stateReason() : reason);
   }
 
   /** Exige todos os objetivos aplicáveis comprovados e nenhuma tarefa ainda pendente. */
@@ -754,7 +817,9 @@ public class ProcessRunService {
         persisted ? run.getUpdatedAt() : null,
         persisted ? run.getLastReconciledAt() : null,
         run.getFinishedAt(),
-        run.getRevision());
+        run.getRevision(),
+        navigation.parents(run),
+        navigation.children(run));
   }
 
   /** Gera identidade compacta com todos os limites de segregação, inclusive ciclo ausente. */

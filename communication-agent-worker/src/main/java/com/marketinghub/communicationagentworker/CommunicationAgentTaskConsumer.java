@@ -28,6 +28,7 @@ public class CommunicationAgentTaskConsumer {
   private final CommunicationAgentProperties properties;
   private final AutomaticExecutionControl automaticExecution;
   private final ObjectMapper json;
+  private final IrisCreativeMaterializer creatives;
 
   /** Configura fila, executor, controle PLAY/STOP e auditoria da agente. */
   public CommunicationAgentTaskConsumer(
@@ -35,12 +36,14 @@ public class CommunicationAgentTaskConsumer {
       CommunicationAgentCodexRunner runner,
       CommunicationAgentProperties properties,
       AutomaticExecutionControl automaticExecution,
-      ObjectMapper json) {
+      ObjectMapper json,
+      IrisCreativeMaterializer creatives) {
     this.backend = backend;
     this.runner = runner;
     this.properties = properties;
     this.automaticExecution = automaticExecution;
     this.json = json;
+    this.creatives = creatives;
   }
 
   /** Reserva e executa no máximo uma atividade elegível por ciclo. */
@@ -50,12 +53,23 @@ public class CommunicationAgentTaskConsumer {
     Map<String, Object> task = null;
     CommunicationAgentCodexRunner.Execution execution = null;
     Instant startedAt = Instant.now();
+    IrisCreativeMaterializer.Prepared visual = null;
     try {
       task = claimNext();
       if (task == null) return;
-      execution = runner.run(task);
+      task = new LinkedHashMap<>(task);
+      visual = creatives.prepare(task);
+      execution = runner.run(task, visual.paths());
       if ("COMPLETED".equals(execution.result().path("executionStatus").asText())) {
-        backend.complete(taskId(task), successPayload(task, execution, startedAt));
+        JsonNode materialized = creatives.materialize(task, execution.result(), visual);
+        var payload = successPayload(task, execution, startedAt);
+        payload.put("resultJson", json.writeValueAsString(materialized));
+        var evidence =
+            (com.fasterxml.jackson.databind.node.ObjectNode)
+                json.readTree(String.valueOf(payload.get("evidenceJson")));
+        evidence.put("rawModelResponse", execution.rawResponse());
+        payload.put("evidenceJson", json.writeValueAsString(evidence));
+        backend.complete(taskId(task), payload);
       } else {
         backend.fail(
             taskId(task),
@@ -73,6 +87,17 @@ public class CommunicationAgentTaskConsumer {
           task == null ? null : task.get("activityId"),
           ex);
       if (task != null) failSafely(task, execution, startedAt, ex);
+    } finally {
+      if (visual != null) {
+        try {
+          visual.close();
+        } catch (Exception ex) {
+          log.error(
+              "Falha ao remover arquivos temporários de Íris. taskId={}",
+              task == null ? null : task.get("taskId"),
+              ex);
+        }
+      }
     }
   }
 
@@ -150,6 +175,7 @@ public class CommunicationAgentTaskConsumer {
                   : null;
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("error", ex.toString());
+      if (execution != null) payload.put("resultJson", execution.rawResponse());
       payload.put("evidenceJson", evidence(task, startedAt, Instant.now(), false));
       putUsage(payload, usage);
       if (prompt != null) {

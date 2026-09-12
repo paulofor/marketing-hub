@@ -44,9 +44,9 @@ import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
 public class AgentTaskVisualEvidenceService {
   private static final Logger log = LoggerFactory.getLogger(AgentTaskVisualEvidenceService.class);
   private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z0-9._-]+");
-  private static final Set<String> EVIDENCE_TYPES = Set.of("FULL_PAGE", "FOLD");
+  private static final Set<String> EVIDENCE_TYPES = Set.of("FULL_PAGE", "FOLD", "CREATIVE_RENDER");
   private static final Set<String> DEVICE_PROFILES =
-      Set.of("IPHONE_15_PRO", "PIXEL_7", "DESKTOP_1440");
+      Set.of("IPHONE_15_PRO", "PIXEL_7", "DESKTOP_1440", "CREATIVE_1080X1350");
   private static final Set<String> SENSITIVE_QUERY_PARAMETERS =
       Set.of(
           "accesstoken",
@@ -104,7 +104,7 @@ public class AgentTaskVisualEvidenceService {
     this.clock = clock;
   }
 
-  /** Persiste um PNG validado antes que o worker possa iniciar o parecer de Psique. */
+  /** Persiste uma captura ou criativo derivado antes que outro agente possa avaliá-lo. */
   @Transactional
   public AgentTaskVisualEvidenceResponse store(
       String agentKey, Long taskId, AgentTaskVisualEvidenceRequest request, MultipartFile file)
@@ -204,6 +204,20 @@ public class AgentTaskVisualEvidenceService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Tipo de evidência ou dispositivo inválido.");
     }
+    boolean creative = "CREATIVE_RENDER".equals(evidenceType);
+    if (creative != "CREATIVE_1080X1350".equals(deviceProfile)
+        || (creative
+            && (!"communication-director".equals(task.getAssignedAgent().getAgentKey())
+                || !"nonAudiovisual".equals(task.getProcessActivityId())
+                || task.getProcessDefinition() == null
+                || !"creative-production-approval"
+                    .equals(task.getProcessDefinition().getProcessCode())
+                || !Integer.valueOf(1080).equals(request.viewportWidth())
+                || !Integer.valueOf(1350).equals(request.viewportHeight())
+                || !Integer.valueOf(1350).equals(request.pageHeightPx())))) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Criativo fora do contrato de produção de Íris.");
+    }
     positive(request.pageNumber(), "página");
     positive(request.viewportWidth(), "largura do viewport");
     positive(request.viewportHeight(), "altura do viewport");
@@ -218,7 +232,7 @@ public class AgentTaskVisualEvidenceService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dimensões visuais inválidas.");
     }
     if (("FOLD".equals(evidenceType) && (request.foldNumber() == null || request.foldNumber() < 1))
-        || ("FULL_PAGE".equals(evidenceType)
+        || (("FULL_PAGE".equals(evidenceType) || creative)
             && (request.foldNumber() != null || request.scrollY() != 0))) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Numeração incompatível com o tipo de evidência.");
@@ -314,6 +328,10 @@ public class AgentTaskVisualEvidenceService {
       var image = ImageIO.read(new ByteArrayInputStream(bytes));
       if (image == null || image.getWidth() < 1 || image.getHeight() < 1) {
         throw new IllegalArgumentException("PNG sem dimensões válidas.");
+      }
+      if ("CREATIVE_RENDER".equals(request.evidenceType())
+          && (image.getWidth() != 1080 || image.getHeight() != 1350)) {
+        throw new IllegalArgumentException("Os pixels não correspondem ao formato do criativo.");
       }
     } catch (Exception ex) {
       log.warn(
@@ -524,9 +542,11 @@ public class AgentTaskVisualEvidenceService {
   /** Converte a entidade sem expor chave privada ou bucket. */
   static AgentTaskVisualEvidenceResponse response(AgentTaskVisualEvidence value) {
     String label =
-        "FULL_PAGE".equals(value.getEvidenceType())
-            ? "Página " + value.getPageNumber() + " · visão completa"
-            : "Página " + value.getPageNumber() + " · dobra " + value.getFoldNumber();
+        "CREATIVE_RENDER".equals(value.getEvidenceType())
+            ? "Criativo estático " + value.getPageNumber() + " · 1080 × 1350"
+            : "FULL_PAGE".equals(value.getEvidenceType())
+                ? "Página " + value.getPageNumber() + " · visão completa"
+                : "Página " + value.getPageNumber() + " · dobra " + value.getFoldNumber();
     return new AgentTaskVisualEvidenceResponse(
         value.getId(),
         value.getCaptureSessionId(),

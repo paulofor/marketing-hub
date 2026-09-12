@@ -2,6 +2,7 @@ package com.marketinghub.businessprocess.automation.v1.service.status;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /** Responsabilidade: expor o progresso persistido e os comandos permitidos para o cabeçalho. */
 public record ProcessRunResponse(
@@ -34,4 +35,6 @@ public record ProcessRunResponse(
     Instant updatedAt,
     Instant lastReconciledAt,
     Instant finishedAt,
-    long revision) {}
+    long revision,
+    List<ProcessRunRelationResponse> parentProcesses,
+    List<ProcessRunRelationResponse> subprocesses) {}

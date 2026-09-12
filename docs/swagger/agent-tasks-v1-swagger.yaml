@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.5.0
+  version: 1.6.0
 paths:
   /api/agent-tasks/process-instances:
     get:
@@ -143,6 +143,49 @@ paths:
               schema: { $ref: "#/components/schemas/PendingTaskResponse" }
         "404": { description: Tarefa não encontrada }
         "409": { description: Tarefa não está reservada pelo agente informado }
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/visual-inputs:
+    get:
+      summary: Lista imagens governadas da atividade criativa já reservada
+      description: >-
+        Só atende tarefas IN_PROGRESS do agente informado no subprocesso
+        creative-production-approval. Íris recebe capturas aprovadas da versão vigente;
+        Psique e Têmis recebem PNGs finais da produção mais recente da mesma definição
+        e referência. Confere origem, versão e SHA-256 sem reservar nova tarefa.
+      parameters:
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Entradas privadas autorizadas para esta tentativa
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CreativeVisualInput" }
+        "404": { description: Tarefa não encontrada }
+        "409": { description: Reserva, versão, imagem ou aprovação de origem inválida }
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/visual-inputs/{sourceTaskId}/{evidenceId}/content:
+    get:
+      summary: Entrega PNG privado após revalidar sua origem na tentativa
+      parameters:
+        - $ref: "#/components/parameters/AgentKey"
+        - $ref: "#/components/parameters/TaskId"
+        - name: sourceTaskId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: evidenceId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Bytes originais da entrada autorizada, sem expor o endereço do storage
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404": { description: Tarefa ou arquivo não encontrado }
+        "409": { description: Imagem fora das entradas aprovadas ou reserva inválida }
   /api/internal/agent-tasks/v1/{taskId}/gate-decision:
     post:
       summary: Registra a decisão do gate pelo agente destinatário
@@ -216,7 +259,8 @@ paths:
         "409": { description: Tarefa não reservada pelo agente }
   /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/visual-evidence:
     post:
-      summary: Persiste um snapshot Playwright privado antes do parecer visual
+      summary: Persiste uma captura privada ou o PNG final produzido por Íris
+      description: CREATIVE_RENDER exige tarefa Íris nonAudiovisual, perfil CREATIVE_1080X1350 e dimensões reais 1080 por 1350; não representa captura Playwright nem prova de consumidor.
       parameters:
         - $ref: "#/components/parameters/AgentKey"
         - $ref: "#/components/parameters/TaskId"
@@ -245,9 +289,9 @@ paths:
               properties:
                 captureSessionId: { type: string, maxLength: 64 }
                 evidenceKey: { type: string, maxLength: 160 }
-                evidenceType: { type: string, enum: [FULL_PAGE, FOLD] }
+                evidenceType: { type: string, enum: [FULL_PAGE, FOLD, CREATIVE_RENDER] }
                 deviceProfile:
-                  { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440] }
+                  { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440, CREATIVE_1080X1350] }
                 pageNumber: { type: integer, minimum: 1 }
                 foldNumber: { type: integer, minimum: 1, nullable: true }
                 viewportWidth: { type: integer, minimum: 1 }
@@ -761,6 +805,13 @@ components:
         url: { type: string }
         accessMethod: { type: string, nullable: true }
         accessedAt: { type: string, format: date-time, nullable: true }
+    CreativeVisualInput:
+      type: object
+      required: [sourceTaskId, prototypeVersion, evidence]
+      properties:
+        sourceTaskId: { type: integer, format: int64 }
+        prototypeVersion: { type: string }
+        evidence: { $ref: "#/components/schemas/VisualEvidence" }
     VisualEvidence:
       type: object
       required:
@@ -787,10 +838,10 @@ components:
         id: { type: integer, format: int64 }
         captureSessionId: { type: string }
         evidenceKey: { type: string }
-        evidenceType: { type: string, enum: [FULL_PAGE, FOLD] }
+        evidenceType: { type: string, enum: [FULL_PAGE, FOLD, CREATIVE_RENDER] }
         label: { type: string }
         deviceProfile:
-          { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440] }
+          { type: string, enum: [IPHONE_15_PRO, PIXEL_7, DESKTOP_1440, CREATIVE_1080X1350] }
         pageNumber: { type: integer, minimum: 1 }
         foldNumber: { type: integer, minimum: 1, nullable: true }
         viewportWidth: { type: integer, minimum: 1 }

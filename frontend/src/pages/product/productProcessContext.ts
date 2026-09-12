@@ -80,6 +80,14 @@ export function processContextText(context: ProcessContext, origin: string) {
     `Situação da definição: ${h.selectedProcessStatus}`,
     `Referência de execução: ${value(h.currentExecutionReference)}`,
     `Link do processo: ${link()}`,
+    ...(run?.parentProcesses ?? []).map(
+      (parent) =>
+        `Processo pai: ${parent.processName} · v${parent.processVersion} · definição ID ${parent.processDefinitionId} · atividade ${parent.activityName} (${parent.activityId}) · ${new URL(parent.navigationUrl, origin).href}`,
+    ),
+    ...(run?.subprocesses ?? []).map(
+      (child) =>
+        `Subprocesso: ${child.processName} · v${child.processVersion} · definição ID ${child.processDefinitionId} · chamado por ${child.activityName} (${child.activityId}) · ${new URL(child.navigationUrl, origin).href}`,
+    ),
     "",
     "CICLO E APRENDIZADOS",
     `Ciclo: ${cycle ? `${cycle.cycleNumber}º ciclo (ID: ${cycle.cycleId})` : cycleId ? `ID ${cycleId} (detalhes não disponíveis)` : "Não informado pelo backend para este processo"}`,

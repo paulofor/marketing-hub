@@ -4974,3 +4974,46 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   O histórico do ciclo 1 do Vega (ADJUSTED com closed_at) e o contrato de fechamento confirmam
   esse caminho; seis cenários no MySQL protegem a conclusão, a pausa e a liberação da fila.
   Matriz: `docs/homologacao/execucao-automatica-processos-v1.md`.
+
+## LOOP-IRIS-PREPARACAO-EXIGE-PUBLICACAO — investigação de 12/09/2026
+
+- Evidência: Vega, ciclo 2, experimento 92, tarefas 400/401; MCP e callbacks de Íris
+  confirmaram bloqueio por checkout comercial, ativos finais e prova humana, apesar de entrada
+  privada pronta com gate multiagente vigente. A constituição exigia checkout sem diferenciar
+  planejamento da mensagem e materialização de uma página comercial.
+- Correção: requisitos por atividade; preparação privada preserva lacunas e não autoriza
+  publicação/cobrança. Prontidão para retomada não sobrescreve motivo persistido da falha.
+- A revisão completa também identificou `route` sem executor e confirmação do filho dependente
+  de uma integração posterior do pai. O resolvedor de formatos e o registro de conclusão da
+  chamada eliminam essas dependências; a integração do ciclo usa suas próprias ocorrências.
+- O alvo das tarefas do subprocesso criativo também preserva a versão privada do sucessor,
+  sem voltar à versão global histórica quando o trabalho sai do processo pai.
+- Proteções: contratos de Íris, segregação de fontes, prova de subprocesso, navegação contextual,
+  matriz HTTP/MySQL e navegadores. Evidências e resultados em
+  `docs/homologacao/vega-processo-comunicacao-recuperacao-v1.md`.
+
+
+## LOOP-CRIATIVO-BRIEFING-SEM-PECA — produção concluída sem pixels para revisão
+
+- Confirmado em 2026-09-12: Vega ciclo 2, experiment:92, tarefas 403 e 404. O produtor entregou render brief; Psique recebeu texto sem PNG e pediu a peça real. O prompt mandava SINGLE_CREATIVE sem modalidade VISUAL; o validador bloqueou e o callback técnico descartou o parecer.
+- Causa sistêmica: contratos de conclusão distintos entre produção e revisão e perda da saída funcional quando a validação falha.
+- Correção: renderização determinística dentro da atividade de Íris, tipo CREATIVE_RENDER, fonte/hash/versão/crop auditados; backend exige arquivos reais; revisores recebem PNGs e auditam hashes; neutralidade visual explícita sem pixels; callbacks preservam response bruto; ADJUST retorna à produção e exige nova revisão.
+- Prevenção: testes de CreativeVisualEvidenceService, CreativeProductionReadinessProvider, ProofCardRenderer, IrisCreativeMaterializer, CreativeVisualInput e CreativeReviewImages, além da matriz completa em infra/testing/vega-process-recovery/run-round.sh. Não liberar imagem apenas com briefing, substituir prova por desenho ou marcar aprovação sem parecer.
+- Cânone: docs/canonical/iris-communication-agent-canon.v1.md. Evidências: docs/homologacao/vega-processo-comunicacao-recuperacao-v1.md.
+
+
+## LOOP-BACKEND-JAR-ANTIGO-APOS-TESTES — imagem recebe pacote de uma revisão anterior
+
+- **Data:** 2026-09-12.
+- **Evidência:** a imagem backend `vega-processos-de46b407adf0` recebeu o `target/app-exec.jar` anterior. As classes `CreativeVisualEvidenceService` e `AgentTaskFunctionalSnapshot`, já compiladas e testadas, não existiam nesse JAR. O Dockerfile correto incorpora um pacote pronto; `mvn test` não atualiza esse pacote. A retomada criou a tarefa #405, bloqueada sem imagem disponível; nenhum parecer foi aprovado artificialmente.
+- **Causa-raiz:** a matriz local ampliada executava os testes, mas não repetia a etapa de empacotamento que o CI já executa antes de construir o backend. Conferir tags e o transporte da imagem não provava correspondência com as classes testadas.
+- **Correção sistêmica:** a matriz executa package, compara todas as classes compiladas com o JAR, confere recursos e inicialização do catálogo e verifica o hash do JAR efetivamente dentro da imagem Docker. O verificador já utilizado pelo Backend CI também passa a rejeitar classes ausentes, extras e bytecode divergente.
+- **Prevenção:** nove testes do verificador de pacote e cinco testes da imagem reproduzem ausência, revisão antiga, substituição por camada posterior e remoção do JAR. A contagem das duas rodadas finais é reiniciada após essa correção.
+
+## LOOP-HISTORICO-FUNCIONAL-DATA-VAZIA — o gate perde as tentativas persistidas
+
+- **Data:** 2026-09-12.
+- **Evidência:** após conferir o JAR efetivamente em execução, a tarefa 403 continuava concluída na tela, e Psique aguardava a imagem. MCP confirmou três tarefas da definição 64 e referência `experiment:92`; comparar suas datas com NULL não selecionava nenhuma delas. Duas asserções com JPA real reproduziram a lista vazia e a ausência de retorno à produção.
+- **Causa-raiz:** os consumidores consultavam toda a referência com corte de data nulo, mas a consulta por definição tratava esse parâmetro como obrigatório. Os testes mockados devolviam histórico mesmo para uma combinação que o SQL descartava.
+- **Correção sistêmica:** tornar o corte temporal explicitamente opcional, preservando obrigatoriamente os filtros de definição e referência no SQL, no mesmo padrão da consulta por código de processo.
+- **Prevenção:** `AgentTaskRepositoryDocumentTest` cobre data preenchida e ausente, outra referência, ausência de hidratação da auditoria e integração do provedor de prontidão com o repositório real. A matriz completa é repetida antes da publicação; nenhuma tarefa é encerrada ou sobrescrita para contornar o gate.

@@ -183,6 +183,39 @@ export default function ProductProcessAutomationPanel({
             </Link>
           )}
           <p className="small mb-2">{data.reason}</p>
+          {Boolean(data.parentProcesses?.length) && (
+            <nav aria-label="Retorno ao processo pai" className="mb-3">
+              {data.parentProcesses?.map((parent) => (
+                <Link
+                  key={`${parent.processDefinitionId}-${parent.activityId}`}
+                  className="btn btn-outline-primary text-wrap mb-1"
+                  to={parent.navigationUrl}
+                >
+                  Voltar ao processo pai: {parent.processName} · v
+                  {parent.processVersion}
+                  {" — "}
+                  {parent.activityName}
+                </Link>
+              ))}
+            </nav>
+          )}
+          {Boolean(data.subprocesses?.length) && (
+            <nav aria-label="Subprocessos deste processo" className="mb-3">
+              <strong className="small">
+                Atividades executadas em subprocessos
+              </strong>
+              <ul className="mb-0 ps-3">
+                {data.subprocesses?.map((child) => (
+                  <li key={`${child.processDefinitionId}-${child.activityId}`}>
+                    <span className="small">{child.activityName}: </span>
+                    <Link to={child.navigationUrl}>
+                      {child.processName} · v{child.processVersion}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
           <div className="product-process-automation__buttons">
             {data.canStart && (
               <button

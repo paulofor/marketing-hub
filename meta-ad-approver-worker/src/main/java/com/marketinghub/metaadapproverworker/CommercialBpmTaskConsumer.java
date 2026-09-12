@@ -108,8 +108,11 @@ public class CommercialBpmTaskConsumer {
     try {
       task = claimNext();
       if (task == null) return;
+      task = new HashMap<>(task);
       execution = execute(task);
       JsonNode result = execution.result();
+      if ("creative-production-approval".equals(processCode(task)))
+        CreativeReviewImages.validate(result, json.valueToTree(task.get("creativeVisualInputs")));
       if (isAgentValidationTask(task)) {
         validateAgentValidation(result, task);
       } else {
@@ -162,15 +165,23 @@ public class CommercialBpmTaskConsumer {
                     && contract.activityId().equals(activityId));
   }
 
-  /** Executa o prompt versionado e valida coerência, compliance e prontidão comercial. */
+  /** Executa o gate com a peça exata quando a atividade exige revisão criativa. */
   BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
+    try (var images = CreativeReviewImages.load(backend, task)) {
+      return executeWithImages(task, images);
+    }
+  }
+
+  /** Executa o prompt versionado preservando os anexos durante todas as tentativas locais. */
+  private BpmExecution executeWithImages(Map<String, Object> task, CreativeReviewImages images)
+      throws IOException, InterruptedException {
     PromptComposition prompt = promptComposition(task);
     validatePromptSize(prompt.fullPrompt());
     Path schema = materialize(schemaResourceFor(task), ".json");
     TokenUsage accumulatedUsage = TokenUsage.empty();
     try {
       for (int attempt = 1; attempt <= maxModelAttempts; attempt++) {
-        AttemptExecution execution = executeAttempt(task, schema, prompt);
+        AttemptExecution execution = executeAttempt(task, schema, prompt, images);
         accumulatedUsage = accumulatedUsage.plus(execution.usage());
         if (execution.outcome() == CodexProcessSupervisor.WaitOutcome.COMPLETED) {
           return new BpmExecution(
@@ -178,7 +189,8 @@ public class CommercialBpmTaskConsumer {
               accumulatedUsage,
               prompt.fullPrompt(),
               prompt.agentPromptPart(),
-              prompt.activityPromptPart());
+              prompt.activityPromptPart(),
+              execution.rawResponse());
         }
         if (execution.outcome() == CodexProcessSupervisor.WaitOutcome.INACTIVITY_TIMEOUT
             && attempt < maxModelAttempts) {
@@ -205,14 +217,14 @@ public class CommercialBpmTaskConsumer {
 
   /** Executa uma tentativa isolada e devolve conclusão ou motivo técnico de interrupção. */
   private AttemptExecution executeAttempt(
-      Map<String, Object> task, Path schema, PromptComposition prompt)
+      Map<String, Object> task, Path schema, PromptComposition prompt, CreativeReviewImages images)
       throws IOException, InterruptedException {
     Path output = Files.createTempFile("temis-bpm-result-", ".json");
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
     Process process = null;
     try {
       process =
-          new ProcessBuilder(command(output, schema))
+          new ProcessBuilder(images.attach(command(output, schema)))
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
@@ -222,7 +234,7 @@ public class CommercialBpmTaskConsumer {
           processSupervisor.awaitCompletion(process, processLog);
       TokenUsage usage = readTokenUsage(json, processLog);
       if (outcome != CodexProcessSupervisor.WaitOutcome.COMPLETED) {
-        return new AttemptExecution(null, usage, outcome);
+        return new AttemptExecution(null, usage, outcome, null);
       }
       if (process.exitValue() != 0) {
         throw new BpmExecutionException(
@@ -233,10 +245,12 @@ public class CommercialBpmTaskConsumer {
             prompt.activityPromptPart());
       }
       try {
+        String rawResponse = Files.readString(output);
         return new AttemptExecution(
-            json.readTree(Files.readString(output)),
+            json.readTree(rawResponse),
             usage,
-            CodexProcessSupervisor.WaitOutcome.COMPLETED);
+            CodexProcessSupervisor.WaitOutcome.COMPLETED,
+            rawResponse);
       } catch (IOException ex) {
         log.error(
             "Resposta inválida no gate BPM de Têmis. taskId={} output={}",
@@ -322,7 +336,7 @@ public class CommercialBpmTaskConsumer {
   /** Persiste a decisão auditável sem publicar landing, campanha ou experimento. */
   private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
-    body.put("resultJson", json.writeValueAsString(execution.result()));
+    body.put("resultJson", execution.rawResponse());
     body.put("evidenceJson", evidence(task));
     putModelUsage(body, execution.usage());
     body.put(
@@ -356,15 +370,16 @@ public class CommercialBpmTaskConsumer {
           execution != null
               ? execution.activityPromptPart()
               : bpm == null ? null : bpm.activityPromptPart();
+      var failure =
+          failureBody(task, ex.toString(), usage, promptSent, agentPromptPart, activityPromptPart);
+      if (execution != null) failure.put("resultJson", execution.rawResponse());
       backend
           .post()
           .uri(
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(
-              failureBody(
-                  task, ex.toString(), usage, promptSent, agentPromptPart, activityPromptPart))
+          .body(failure)
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -375,7 +390,7 @@ public class CommercialBpmTaskConsumer {
   /** Preserva o parecer funcional e mantém o processo fechado quando o gate reprova. */
   private void block(Map<String, Object> task, BpmExecution execution) throws IOException {
     JsonNode result = execution.result();
-    String resultJson = json.writeValueAsString(result);
+    String resultJson = execution.rawResponse();
     Map<String, Object> body = new HashMap<>();
     String rationale =
         isAgentValidationTask(task)
@@ -813,11 +828,25 @@ public class CommercialBpmTaskConsumer {
       TokenUsage usage,
       String promptSent,
       String agentPromptPart,
-      String activityPromptPart) {}
+      String activityPromptPart,
+      String rawResponse) {
+    /** Mantém os contratos de teste existentes e preserva a resposta original em produção. */
+    BpmExecution(
+        JsonNode result,
+        TokenUsage usage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart) {
+      this(result, usage, promptSent, agentPromptPart, activityPromptPart, result.toString());
+    }
+  }
 
   /** Preserva o resultado técnico de uma tentativa antes da política de repetição. */
   private record AttemptExecution(
-      JsonNode result, TokenUsage usage, CodexProcessSupervisor.WaitOutcome outcome) {}
+      JsonNode result,
+      TokenUsage usage,
+      CodexProcessSupervisor.WaitOutcome outcome,
+      String rawResponse) {}
 
   /** Representa as duas partes e a composição exata enviada ao modelo. */
   private record PromptComposition(

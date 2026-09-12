@@ -661,6 +661,35 @@ auditáveis. O contrato completo está em
 
 ## Contrato de execução automática v1
 
+### Navegação entre processo pai e subprocessos — decisão de 12/09/2026
+
+Toda atividade que delega trabalho deve identificar no processo pai o subprocesso de destino,
+sua versão e o link oficial para abri-lo no mesmo produto, cadeia, ciclo e referência. O
+subprocesso deve oferecer retorno ao processo pai durante a execução e após a conclusão,
+preservando a atividade de origem. A relação vem da composição e da execução no backend,
+nunca de suposição pelo nome ou de um endereço de retorno arbitrário recebido na URL.
+Quando existirem vários pais legítimos, apresentar as chamadas oficiais em vez de escolher
+silenciosamente um pai. A conclusão do filho não remove o caminho de volta.
+
+Uma versão nova do catálogo não troca o filho já delegado pela execução corrente. Mesmo sem
+experimento ainda definido, a consulta pode expor as relações da cadeia; iniciar trabalho
+continua exigindo referência oficial e validação completa de identidade.
+
+O contexto copiável do card inclui essas relações, as identidades, os objetivos, as atividades,
+os ciclos e os bloqueios disponíveis. Prontidão para tentar novamente e motivo da última falha
+são informações distintas; uma mensagem de entrada pronta não substitui a causa persistida.
+
+A conciliação registra a prova do filho na atividade chamadora antes de selecionar a próxima
+atividade do pai. O registro vincula as duas execuções, as definições e a referência; custos
+permanecem no filho. A tela do pai mostra a causa da espera do filho. Conclusão técnica sem
+objetivos comprovados e resultados de outro produto/ciclo não liberam a chamada.
+
+No subprocesso de criativos, `route` resolve formatos usando o último `COMMUNICATION_PACKAGE`
+concluído na referência atual. Ausência de briefing audiovisual significa que esse formato
+condicional não está previsto: o backend persiste `NOT_APPLICABLE`, motivo e tarefa fonte,
+sem alegar produção ou aprovação de vídeo. Leitura, fila e avanço reconhecem a mesma dispensa
+auditável. Havendo briefing, o trabalho de Apolo continua obrigatório.
+
 A decisão de 12/09/2026 substitui o disparo individual de atividades automatizáveis na tela do
 produto. Os endpoints de atividade continuam como contratos de domínio usados pelo coordenador;
 formulários e decisões humanas continuam acessíveis nos cards. O painel oficial ocupa o espaço

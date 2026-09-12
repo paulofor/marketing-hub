@@ -19,9 +19,16 @@ reinício e reaplicação sem duplicidade. As tabelas mínimas de referência e 
 simulados; nenhum dado, credencial ou serviço comercial de produção participa do teste.
 
 O runner local é `infra/testing/process-automation/run-round.sh`. Ele exige
+Node 22 (a mesma versão principal do CI e da imagem do executor) e
 `PROCESS_COMPOSE_PROJECT` com o projeto exclusivo da sandbox, reconstrói o frontend e encerra
 a topologia com `down --volumes --remove-orphans`. A matriz e seus resultados ficam em
 `docs/homologacao/execucao-automatica-processos-v1.md`.
+
+O runner executa o `npm test` do próprio `process-execution-worker`, antes dos gates mais longos.
+Cada gate identifica seu log, preserva o código de erro e mostra o trecho final no console em caso
+de falha. O contrato `infra/testing/process-automation/test-runner-contract.py` usa Node real para
+validar descoberta recursiva, bloqueio diante de teste novo com falha e limpeza da fixture. Os
+artefatos do Actions incluem o número da tentativa para manter os diagnósticos separados.
 
 
 ## Execução manual após publicar uma branch

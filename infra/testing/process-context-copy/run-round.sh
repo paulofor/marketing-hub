@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Valida integralmente a cópia do processo e a regressão da cópia de atividades, sem produção.
+# Valida contexto, prompt de ajuda e regressão da cópia de atividades, sem produção.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 round=${1:?Informe a rodada}
@@ -18,14 +18,19 @@ run() {
 }
 run frontend npm --prefix frontend test -- --run \
   src/pages/product/productProcessContext.test.tsx \
+  src/pages/product/productProcessAihubPrompt.test.tsx \
   src/pages/product/ProductProcessActivityExecutionsPage.test.tsx \
   src/pages/product/ProductProcessAutomationPanel.test.tsx \
   src/pages/product/ProductProcessActivityExecutionPanel.test.tsx \
   src/pages/product/ProductProcessTaskTracking.test.tsx \
-  src/api/businessProcess/useProductProcessActivityExecutions.test.tsx
+  src/api/businessProcess/useProductProcessActivityExecutions.test.tsx \
+  src/components/ProductValueChainPosition.test.tsx \
+  src/components/ProductValueChainCycleSummary.test.tsx \
+  src/pages/product/ProductListPage.test.tsx
 run typecheck npm --prefix frontend run typecheck
 run build npm --prefix frontend run build
 run browser env "PROCESS_COPY_OUTPUT=$output/browser" node infra/testing/process-context-copy/browser.cjs
+run aihub-browser env PROCESS_COPY_KIND=aihub "PROCESS_COPY_OUTPUT=$output/aihub-browser" node infra/testing/process-context-copy/browser.cjs
 run activity-copy-regression env "ACTIVITY_COPY_OUTPUT=$output/activity-browser" node infra/testing/activity-context-copy/browser.cjs
 run format npm exec --yes --package=prettier@3.6.2 -- prettier --check \
   frontend/src/pages/product/ProductContextCopyButton.tsx \
@@ -35,7 +40,9 @@ run format npm exec --yes --package=prettier@3.6.2 -- prettier --check \
   frontend/src/pages/product/productProcessContext.ts \
   frontend/src/pages/product/productProcessPresentation.ts \
   frontend/src/pages/product/productProcessContext.test.tsx \
+  frontend/src/pages/product/productProcessAihubPrompt.test.tsx \
   frontend/src/pages/product/ProductProcessContextCopy.tsx \
+  frontend/src/pages/product/prompts/process-aihub-help.v1.md \
   frontend/src/pages/product/ProductProcessAutomationPanel.tsx \
   frontend/src/pages/product/ProductProcessActivityExecutionsPage.tsx \
   infra/testing/process-context-copy/browser.cjs \

@@ -19,6 +19,22 @@ com responsáveis, objetivos, pendências, tarefas e links contextuais. Históri
 identificados; ausência ou falha de consulta é explícita. A cópia usa os contratos oficiais
 já disponíveis, sem inferir conclusões, misturar cadeias/ciclos, iniciar tarefas ou incluir
 prompts brutos e credenciais. O contexto completo também pode ser consultado no próprio card.
+
+**Pedido de ajuda ao AIHUB — decisão de 12/09/2026:** o mesmo card oferece **Prompt para
+AIHUB**, inclusive quando a execução está bloqueada ou sem referência operacional. O botão
+copia uma solicitação de ajuda em português junto ao contexto completo da consulta atual,
+com prévia, confirmação específica e seleção manual se a área de transferência falhar.
+O texto orienta retentativa pela tela, investigação da causa-raiz, correções e homologação
+completas primeiro na sandbox, melhoria dos agentes envolvidos e entrega orientada à
+qualidade, sem limite artificial de duração. Ao final, solicita oportunidades fundamentadas
+de aumento de vendas, receita e lucro, separando sugestões de resultados medidos.
+O modelo do prompt fica em Markdown versionado no frontend; não há chamada de IA para copiá-lo.
+A autorização excepcional de imagens antes do PR, solicitada para esse texto de ajuda,
+fica restrita à recuperação descrita, após validação local completa, usando os arquivos do
+repositório e o coordenador de intervenções. Não altera o fluxo normal de publicação nem
+autoriza campanhas, cobranças ou aprovação automática de gates humanos. Copiar ou visualizar
+o prompt não o envia ao AIHUB, não executa comandos e não publica; o usuário o revisa e envia.
+
 Comandos repetidos não duplicam trabalho. Processos de produtos distintos podem avançar em
 paralelo; execuções que compartilham o mesmo contexto são coordenadas para evitar conflitos.
 A qualidade prevalece sobre duração: tempo decorrido não comprova conclusão nem autoriza
@@ -35,6 +51,20 @@ inclusive com Open EntityManager in View ativo, para impedir decisões com vers�
 O backend é a autoridade de progressão; um executor externo pode consultar pendências e
 solicitar sua conciliação, mas não escolher, encadear ou disparar atividades por conta própria.
 Essa mudança evolui a execução dos processos existentes, preservando suas definições BPM.
+
+**Entrada pelos cards de produto — decisão de 12/09/2026:** em `/products` e nos cards
+compartilhados do início, o destaque passa a ser **Abrir próximo processo**, com número e
+nome do processo indicado pelos contratos oficiais de execução/ciclo. O link preserva
+produto, definição, cadeia e ciclo e abre o cabeçalho com o painel de execução, sem âncora
+de atividade. Navegar não inicia tarefas, não aprova gates e não altera PLAY/STOP.
+A atividade atual, o responsável e os impedimentos continuam como contexto do processo,
+sem deduzir o estado do processo a partir do estado de uma única atividade.
+Quando o ciclo aberto não indicar outro trabalho, oferecer **Abrir processo do ciclo**
+para seu processo coordenador oficial, mantendo acesso às decisões. Ciclo encerrado,
+processo concluído sem continuidade informada, posição desconhecida e falha de consulta
+devem ser explícitos; nunca inventar o processo seguinte por numeração ou status comercial.
+As leituras canônicas de `businessprocess.execution` e `businessprocesschain.learningcycle.v1`
+já suportam esses destinos; a navegação reutiliza seus contratos sem nova regra de avanço.
 
 O Marketing Hub mantém um cadastro próprio e versionado de processos de negócio. Esse catálogo é a
 fonte de verdade para propósito, responsáveis, eventos, atividades, gates, entradas, saídas e relação

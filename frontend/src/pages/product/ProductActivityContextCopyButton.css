@@ -44,6 +44,13 @@
   min-width: 0;
 }
 
+.product-process-context__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem 0.75rem;
+}
+
 .product-process-context details {
   margin-top: 0.5rem;
   font-size: 0.85rem;

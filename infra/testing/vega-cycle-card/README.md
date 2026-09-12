@@ -7,7 +7,8 @@ identificados como **QA local**. Nenhuma fixture representa uma nova execução 
 
 `browser.cjs` serve o build real do frontend em uma porta local temporária, intercepta todas as
 APIs com respostas locais, proíbe escrita e bloqueia conexões externas. Valida início, catálogo
-e destino 3.5 em desktop, iPhone e Pixel. Chromium mobile é emulação, não Safari/iOS físico.
+e o painel do processo em desktop, iPhone e Pixel. Desde 12/09/2026, reutiliza o roteiro
+`product-next-activity/browser.cjs`, que também cobre Rigel e o processo coordenador do ciclo. Chromium mobile é emulação, não Safari/iOS físico.
 
 Para reproduzir a matriz: `bash infra/testing/vega-cycle-card/run-round.sh <rodada>`.
 Não é necessário Docker ou banco local: esta alteração reutiliza os endpoints existentes,

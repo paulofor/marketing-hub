@@ -83,6 +83,7 @@ export default function ProductProcessAutomationPanel({
 
   return (
     <section
+      id="process-execution"
       className="product-process-automation"
       aria-label="Execução automática do processo"
     >

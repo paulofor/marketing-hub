@@ -52,15 +52,18 @@ describe("Card do produto com ciclo", () => {
         timeout: 45000,
       },
     );
-    expect(screen.getByText("Atividade com pendência")).toBeVisible();
+    expect(screen.getByText(/Atividade com pendência:/)).toBeVisible();
     expect(screen.getByText(/Processo 3 — Protótipo/)).toBeVisible();
     expect(screen.getByText("Responsável: Psique")).toBeVisible();
     expect(
       screen.getByText(/ainda não possui uma URL executável aceita/),
     ).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "Ver atividade e pendência" }),
-    ).toHaveAttribute("href", contextFixture.nextWork!.url);
+      screen.getByRole("link", { name: "Abrir próximo processo" }),
+    ).toHaveAttribute(
+      "href",
+      `${contextFixture.nextWork!.url.split("#")[0]}#process-execution`,
+    );
     expect(
       screen.getByRole("link", { name: "Ver ciclo e decisões" }),
     ).toHaveAttribute("href", contextFixture.cycleUrl);
@@ -119,9 +122,9 @@ describe("Card do produto com ciclo", () => {
   });
 
   it.each([
-    ["AVAILABLE", "Abrir próxima atividade"],
-    ["IN_PROGRESS", "Acompanhar atividade"],
-    ["BLOCKED", "Ver atividade e pendência"],
+    ["AVAILABLE", "Abrir próximo processo"],
+    ["IN_PROGRESS", "Abrir próximo processo"],
+    ["BLOCKED", "Abrir próximo processo"],
   ])("respeita o trabalho %s calculado pelo backend", async (state, label) => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {
@@ -132,14 +135,14 @@ describe("Card do produto com ciclo", () => {
     renderCard();
     expect(await screen.findByRole("link", { name: label })).toHaveAttribute(
       "href",
-      contextFixture.nextWork!.url,
+      `${contextFixture.nextWork!.url.split("#")[0]}#process-execution`,
     );
     expect(
       screen.queryByRole("button", { name: /Executar|Aprovar/ }),
     ).not.toBeInTheDocument();
   });
 
-  it("não fabrica próximo processo quando o trabalho está dentro do ciclo", async () => {
+  it("abre o processo coordenador quando o próximo trabalho está dentro do ciclo", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {
         ...contextFixture,
@@ -153,6 +156,16 @@ describe("Card do produto com ciclo", () => {
       screen.getByText(/A próxima ação está na etapa do ciclo/),
     ).toBeVisible();
     expect(screen.queryByText(/Próxima atividade/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Abrir processo do ciclo" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/4/value-chain-history/processes/75/activities?learningCycleId=2&chainId=14#process-execution",
+    );
+    expect(
+      screen.getByRole("link", { name: "Abrir etapa do ciclo" }),
+    ).toHaveAttribute("href", contextFixture.cycleUrl);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
   it("distingue ordinal de identificador e não reabre ciclo encerrado", async () => {
@@ -170,7 +183,10 @@ describe("Card do produto com ciclo", () => {
     expect(screen.getByText("Último ciclo de vendas")).toBeVisible();
     expect(screen.getByText("Encerrado para ajuste")).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "Ver atividade e pendência" }),
+      screen.queryByRole("link", { name: "Abrir processo do ciclo" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Abrir próximo processo" }),
     ).not.toBeInTheDocument();
   });
 
@@ -178,7 +194,7 @@ describe("Card do produto com ciclo", () => {
     vi.mocked(axios.get).mockImplementation(() => new Promise(() => {}));
     renderCard();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Consultando a atividade",
+      "Consultando o processo",
     );
     expect(screen.queryByText("Etapa 6 de 6")).not.toBeInTheDocument();
   });
@@ -196,7 +212,7 @@ describe("Card do produto com ciclo", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Tentar novamente" }),
     );
-    expect(await screen.findByText("Atividade com pendência")).toBeVisible();
+    expect(await screen.findByText(/Atividade com pendência:/)).toBeVisible();
     expect(axios.get).toHaveBeenCalledTimes(2);
   });
 
@@ -215,12 +231,12 @@ describe("Card do produto com ciclo", () => {
   it("não oculta falha de atualização atrás de uma resposta em cache", async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: contextFixture });
     const { client } = renderCard();
-    await screen.findByText("Atividade com pendência");
+    await screen.findByText(/Atividade com pendência:/);
     vi.mocked(axios.get).mockRejectedValue(new Error("Falha ao atualizar"));
     await client.invalidateQueries({ queryKey: ["cycle-process-context"] });
     expect(await screen.findByRole("alert")).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "Ver atividade e pendência" }),
+      screen.queryByRole("link", { name: "Abrir próximo processo" }),
     ).not.toBeInTheDocument();
   });
 

@@ -29,13 +29,13 @@ public class ProcessRunContext {
   private final ProductRepository products;
   private final ObjectMapper json;
 
-  /** Valida identidade e cobertura do BPM antes de apresentar conclusão ou executar trabalho. */
+  /** Valida identidade e BPM; permite consulta da navegação sem referência, mas nunca execução. */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
     if (command == null
         || command.chainId() == null
-        || command.sourceReference() == null
-        || command.sourceReference().isBlank())
+        || (execution
+            && (command.sourceReference() == null || command.sourceReference().isBlank())))
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Informe cadeia e referência operacional do processo.");
     var process = process(processId);
@@ -69,7 +69,9 @@ public class ProcessRunContext {
     var result =
         activities.productProcessExecutions(
             processId, productId, command.learningCycleId(), command.chainId(), false);
-    if (!Objects.equals(command.sourceReference(), result.currentExecutionReference()))
+    if (command.sourceReference() != null
+        && !command.sourceReference().isBlank()
+        && !Objects.equals(command.sourceReference(), result.currentExecutionReference()))
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "O contexto operacional mudou. Atualize a tela antes de iniciar outro processo.");

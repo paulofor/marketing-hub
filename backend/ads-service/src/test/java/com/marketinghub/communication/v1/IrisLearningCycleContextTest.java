@@ -239,6 +239,55 @@ class IrisLearningCycleContextTest {
     verify(instances, never()).save(any());
   }
 
+  /** Expõe apenas provas vigentes e mantém auditoria extensa fora da leitura de prontidão. */
+  @Test
+  void communicatesLatestFunctionalProofWithoutHydratingAudit() {
+    var now = java.time.Instant.parse("2026-09-12T08:00:00Z");
+    String result =
+        "{\"contractVersion\":\"IRIS_COMMUNICATION_V1\",\"sourceReference\":\"" + SOURCE + "\"}";
+    var contract =
+        new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+            402L,
+            63L,
+            "pde-communication-sales-journey",
+            "communicationContract",
+            "communication-director",
+            "COMPLETED",
+            now,
+            now,
+            result);
+    var superseded =
+        new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+            403L,
+            64L,
+            "creative-production-approval",
+            "nonAudiovisual",
+            "communication-director",
+            "COMPLETED",
+            now,
+            now,
+            result);
+    var blocked =
+        new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+            404L,
+            64L,
+            "creative-production-approval",
+            "nonAudiovisual",
+            "communication-director",
+            "BLOCKED",
+            now,
+            null,
+            null);
+    when(tasks.findFunctionalSnapshots(eq(SOURCE), anyCollection(), isNull()))
+        .thenReturn(List.of(contract, superseded, blocked));
+    var context = provider.resolve(SOURCE).orElseThrow();
+    assertThat(context.get("inputReadiness")).isEqualTo("READY");
+    var artifacts = json.valueToTree(context.get("communicationArtifacts"));
+    assertThat(artifacts).hasSize(1);
+    assertThat(artifacts.get(0).path("taskId").asLong()).isEqualTo(402L);
+    verify(tasks, never()).findBySourceReferenceOrderByCreatedAtAscIdAsc(anyString());
+  }
+
   /** Rejeita identidades divergentes e qualquer autorização comercial indevida na prova. */
   @ParameterizedTest
   @ValueSource(

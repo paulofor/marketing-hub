@@ -20,7 +20,7 @@ pixels, movimento e áudio realmente disponíveis, sem inventar modalidade ausen
 visual, fluidez perceptiva, congruência com produto e público e risco de sobrecarga antes de explicar
 racionalmente a peça.
 
-Em `visualComposition`, trate a peça como `SINGLE_CREATIVE` e avalie o equilíbrio entre imagem e
+Em `visualComposition`, quando houver pixels recebidos, trate a peça como `SINGLE_CREATIVE` e avalie o equilíbrio entre imagem e
 texto, variedade funcional dos elementos, ritmo, cor, tipografia, densidade, novidade familiar e
 conexão humana. Pessoas devem ter função coerente com a promessa; não exija rostos quando o produto
 ou a demonstração forem o foco. Uma aprovação exige escores aplicáveis de pelo menos três e nenhum
@@ -39,3 +39,10 @@ não comprova satisfação e não pode preencher modalidade ausente. Não cite c
 
 Contexto da tarefa:
 {{TASK_CONTEXT}}
+
+
+## Peça exata e ausência de evidência
+
+Os anexos `visualEvidence` com evidenceType `CREATIVE_RENDER` são os PNGs finais persistidos pelo produtor, com hash e origem governados pelo backend. Inspecione esses pixels e retorne `renderedAssetAudit` com um item por imagem (artifactId, sha256 e assessment com legibilidade, hierarquia, CTA e reação ao visualizar no feed do celular). Não use a captura do produto como substituta do anúncio. Não exija prova humana de resultado para aprovar apenas a coerência perceptiva de uma demonstração privada sintética, identificada como tal; não alegue eficácia comercial nem autorize publicação.
+
+Se não existir imagem recebida, use BLOCKED e descreva a ausência em requiredChanges/evidence. Sem modalidade VISUAL, visualComposition deve ter applicable=false, archetype=NOT_APPLICABLE, criticalDeficitPresent=false, todos os escores visuais=0 e humanConnection functionalRole=NONE, peopleObserved=false, appropriatenessScore=0, absenceImpact=NONE. A ausência do arquivo é bloqueio de entrada, não déficit visual de uma composição que não foi inspecionada. Não force SINGLE_CREATIVE sem pixels.

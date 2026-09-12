@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.agenttask;
 
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskIndependentExecutionSummarySnapshot;
 import com.marketinghub.agenttask.AgentTaskMeasurementSnapshot;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessExecutionProgressResponse;
@@ -16,6 +17,53 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Seleciona provas funcionais do contexto exato sem carregar prompts de nenhuma atividade. */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        task.id, process.id, process.processCode, task.processActivityId,
+        agent.agentKey, task.status, task.createdAt, task.deliveredAt, task.resultJson)
+      from AgentTask task join task.processDefinition process left join task.assignedAgent agent
+      where task.sourceReference = :reference and process.processCode in :processCodes
+        and (:since is null or task.createdAt >= :since)
+      order by task.createdAt desc, task.id desc
+      """)
+  List<AgentTaskFunctionalSnapshot> findFunctionalSnapshots(
+      @Param("reference") String reference,
+      @Param("processCodes") java.util.Collection<String> processCodes,
+      @Param("since") java.time.Instant since);
+
+  /**
+   * Consulta a definição e referência exatas, com corte de data opcional e sem hidratar auditoria.
+   */
+  @Query(
+      """
+      select new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+        task.id, process.id, process.processCode, task.processActivityId,
+        agent.agentKey, task.status, task.createdAt, task.deliveredAt, task.resultJson)
+      from AgentTask task join task.processDefinition process left join task.assignedAgent agent
+      where process.id = :processId and task.sourceReference = :reference
+        and (:since is null or task.createdAt >= :since)
+      order by task.createdAt desc, task.id desc
+      """)
+  List<AgentTaskFunctionalSnapshot> findFunctionalSnapshotsByProcessSince(
+      @Param("processId") Long processId,
+      @Param("reference") String reference,
+      @Param("since") java.time.Instant since);
+
+  /** Impede dispensa de atividade em execução sem hidratar todo o histórico da entidade. */
+  boolean existsByProcessDefinitionIdAndSourceReferenceAndProcessActivityIdAndStatusIn(
+      Long processId, String reference, String activityId, java.util.Collection<String> statuses);
+
+  /** Filtra no banco o processo antes de carregar tarefas destinadas ao relatório completo. */
+  List<AgentTask> findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+      String sourceReference, String processCode);
+
+  /** Mantém o histórico de versões da origem limitado ao processo consultado no SQL. */
+  List<AgentTask>
+      findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+          String sourceReferencePrefix, String processCode);
+
   /**
    * Consulta o retrabalho da origem e processo exatos sem carregar prompts ou entidades completas.
    */

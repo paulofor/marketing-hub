@@ -33,7 +33,7 @@ function orderedEvidence(values: AgentTaskVisualEvidence[]) {
   });
 }
 
-/** Expõe pixels, análise por dobra e antecipação emocional registradas por Psique. */
+/** Expõe as peças produzidas e as provas de revisão, preservando a autoria de cada artefato. */
 export default function PsiqueTaskAudit({
   assignedAgentKey,
   visualEvidence = [],
@@ -50,6 +50,9 @@ export default function PsiqueTaskAudit({
     return null;
   }
   const Heading = headingLevel;
+  const hasCreative = visualEvidence.some(
+    (value) => value.evidenceType === "CREATIVE_RENDER",
+  );
   const foldAnalysisById = new Map(
     (visualAudit?.foldAnalyses ?? []).map((analysis) => [
       analysis.artifactId,
@@ -59,44 +62,56 @@ export default function PsiqueTaskAudit({
 
   return (
     <>
-      <section className="mt-3" aria-label="Antecipação emocional de Psique">
-        <Heading className="h6">Antes e depois imaginados pela cliente</Heading>
-        {purchaseEmotion ? (
-          <dl className="business-process-document__audit mb-0">
-            <div>
-              <dt>Expectativa ao adquirir</dt>
-              <dd>{purchaseEmotion.acquisitionExpectation}</dd>
-            </div>
-            <div>
-              <dt>Ansiedade antes da compra</dt>
-              <dd>{purchaseEmotion.acquisitionAnxiety}</dd>
-            </div>
-            <div>
-              <dt>Como imagina se sentir depois</dt>
-              <dd>{purchaseEmotion.expectedPostDeliveryFeeling}</dd>
-            </div>
-            <div>
-              <dt>Tensão emocional</dt>
-              <dd>{purchaseEmotion.emotionalTension}</dd>
-            </div>
-            <div>
-              <dt>Limite da evidência</dt>
-              <dd>{purchaseEmotion.evidenceBoundary}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="mb-0 text-body-secondary">
-            Esta execução legada não registrou expectativa, ansiedade e sensação
-            pós-entrega.
-          </p>
-        )}
-      </section>
+      {(assignedAgentKey === "customer-agent" || purchaseEmotion) && (
+        <section className="mt-3" aria-label="Antecipação emocional de Psique">
+          <Heading className="h6">
+            Antes e depois imaginados pela cliente
+          </Heading>
+          {purchaseEmotion ? (
+            <dl className="business-process-document__audit mb-0">
+              <div>
+                <dt>Expectativa ao adquirir</dt>
+                <dd>{purchaseEmotion.acquisitionExpectation}</dd>
+              </div>
+              <div>
+                <dt>Ansiedade antes da compra</dt>
+                <dd>{purchaseEmotion.acquisitionAnxiety}</dd>
+              </div>
+              <div>
+                <dt>Como imagina se sentir depois</dt>
+                <dd>{purchaseEmotion.expectedPostDeliveryFeeling}</dd>
+              </div>
+              <div>
+                <dt>Tensão emocional</dt>
+                <dd>{purchaseEmotion.emotionalTension}</dd>
+              </div>
+              <div>
+                <dt>Limite da evidência</dt>
+                <dd>{purchaseEmotion.evidenceBoundary}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="mb-0 text-body-secondary">
+              Esta execução legada não registrou expectativa, ansiedade e
+              sensação pós-entrega.
+            </p>
+          )}
+        </section>
+      )}
 
       <section
         className="mt-3"
-        aria-label="Prova visual e análise por dobra de Psique"
+        aria-label={
+          hasCreative
+            ? "Peças visuais produzidas"
+            : "Prova visual e análise por dobra de Psique"
+        }
       >
-        <Heading className="h6">Snapshots mobile e análise por dobra</Heading>
+        <Heading className="h6">
+          {hasCreative
+            ? "Imagens finais do criativo"
+            : "Snapshots mobile e análise por dobra"}
+        </Heading>
         {visualEvidence.length > 0 ? (
           <>
             <div className="row g-3">
@@ -113,7 +128,7 @@ export default function PsiqueTaskAudit({
                       >
                         <img
                           src={evidence.contentUrl}
-                          alt={`Snapshot de Psique — ${evidence.label}`}
+                          alt={`${evidence.evidenceType === "CREATIVE_RENDER" ? "Criativo produzido" : "Snapshot de Psique"} — ${evidence.label}`}
                           className="img-fluid rounded-top psique-visual-evidence__image"
                           loading="lazy"
                         />
@@ -121,15 +136,19 @@ export default function PsiqueTaskAudit({
                       <div className="card-body">
                         <strong>{evidence.label}</strong>
                         <p className="small text-body-secondary mb-2">
-                          {evidence.deviceProfile} · {evidence.viewportWidth}×
-                          {evidence.viewportHeight}px · página{" "}
-                          {evidence.pageHeightPx}px · rolagem {evidence.scrollY}
+                          {evidence.evidenceType === "CREATIVE_RENDER"
+                            ? "PNG · "
+                            : `${evidence.deviceProfile} · `}
+                          {evidence.viewportWidth}×{evidence.viewportHeight}px ·
+                          página {evidence.pageHeightPx}px · rolagem{" "}
+                          {evidence.scrollY}
                           px · {formattedBytes(evidence.sizeBytes)}
                           <br />
-                          Capturado em {formattedDateTime(
-                            evidence.capturedAt,
-                          )}{" "}
-                          · SHA-256 <code>{evidence.sha256.slice(0, 12)}…</code>
+                          {evidence.evidenceType === "CREATIVE_RENDER"
+                            ? "Produzido em "
+                            : "Capturado em "}
+                          {formattedDateTime(evidence.capturedAt)} · SHA-256{" "}
+                          <code>{evidence.sha256.slice(0, 12)}…</code>
                         </p>
                         {analysis ? (
                           <dl className="mb-0">
@@ -172,12 +191,12 @@ export default function PsiqueTaskAudit({
                   </dd>
                 </div>
               </dl>
-            ) : (
+            ) : !hasCreative ? (
               <p className="alert alert-warning mt-3 mb-0">
                 Há snapshots, mas a análise visual estruturada não foi
                 registrada.
               </p>
-            )}
+            ) : null}
           </>
         ) : (
           <p className="mb-0 text-body-secondary">

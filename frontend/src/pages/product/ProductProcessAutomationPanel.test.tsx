@@ -55,7 +55,7 @@ const running = {
   reason: "Aguardando validação do objetivo.",
 };
 let clients: QueryClient[] = [];
-function setup() {
+function setup(sourceReference: string | null = "experiment:92001") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -72,7 +72,7 @@ function setup() {
           processId={92001}
           chainId={92014}
           cycleId={92001}
-          sourceReference="experiment:92001"
+          sourceReference={sourceReference}
         />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -90,6 +90,50 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("mostra filhos e mantém retorno ao pai após conclusão com contexto oficial", async () => {
+    const parentUrl =
+      "/products/92001/value-chain-history/processes/63/activities?chainId=92014&learningCycleId=92001#activity-creatives";
+    const childUrl =
+      "/products/92001/value-chain-history/processes/65/activities?chainId=92014&learningCycleId=92001";
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...ready,
+        status: "COMPLETED",
+        canStart: false,
+        parentProcesses: [
+          {
+            processDefinitionId: 63,
+            processName: "Comunicação",
+            processVersion: 7,
+            activityId: "creatives",
+            activityName: "Criativos",
+            navigationUrl: parentUrl,
+          },
+        ],
+        subprocesses: [
+          {
+            processDefinitionId: 65,
+            processName: "Landing",
+            processVersion: 6,
+            activityId: "destination",
+            activityName: "Destino",
+            navigationUrl: childUrl,
+          },
+        ],
+      },
+    });
+    setup();
+    expect(
+      await screen.findByRole("link", {
+        name: /Voltar ao processo pai: Comunicação/,
+      }),
+    ).toHaveAttribute("href", parentUrl);
+    expect(screen.getByRole("link", { name: "Landing · v6" })).toHaveAttribute(
+      "href",
+      childUrl,
+    );
+    expect(axios.post).not.toHaveBeenCalled();
+  });
   it("usa contagens do backend e inicia somente o processo com contexto completo", async () => {
     vi.mocked(axios.post).mockResolvedValue({ data: running });
     setup();
@@ -174,6 +218,36 @@ describe("Controle de processo", () => {
     );
     await screen.findByRole("alert");
     expect(axios.post).toHaveBeenCalledTimes(1);
+  });
+  it("consulta relações antes do primeiro experimento sem autorizar tarefas", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...ready,
+        status: "UNAVAILABLE",
+        canStart: false,
+        sourceReference: null,
+        parentProcesses: [
+          {
+            processDefinitionId: 63,
+            processName: "Comunicação",
+            processVersion: 7,
+            activityId: "creatives",
+            activityName: "Criativos",
+            navigationUrl:
+              "/products/92001/value-chain-history/processes/63/activities?chainId=92014&learningCycleId=92001#activity-creatives",
+          },
+        ],
+      },
+    });
+    setup(null);
+    expect(
+      await screen.findByRole("link", { name: /Voltar ao processo pai/ }),
+    ).toHaveAttribute("href", expect.stringContaining("learningCycleId=92001"));
+    expect(axios.get).toHaveBeenCalled();
+    expect(axios.post).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Executar processo" }),
+    ).not.toBeInTheDocument();
   });
   it("decisão humana permanece explícita", async () => {
     vi.mocked(axios.get).mockResolvedValue({

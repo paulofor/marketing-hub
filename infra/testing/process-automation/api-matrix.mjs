@@ -55,6 +55,36 @@ async function scenario(name, run) {
 }
 
 await scenario(
+  "relações disponíveis sem experimento não autorizam trabalho",
+  async () => {
+    const before = (await request("/fixture/tasks")).length;
+    const parent = await request(
+      `${root(92026, 92004)}?chainId=92014&learningCycleId=92026`,
+    );
+    assert.equal(parent.canStart, false);
+    assert.equal(parent.status, "UNAVAILABLE");
+    assert.equal(parent.id, null);
+    assert.equal(parent.subprocesses[0].processDefinitionId, 92005);
+    const child = await request(
+      `${root(92026, 92005)}?chainId=92014&learningCycleId=92026`,
+    );
+    assert(
+      child.parentProcesses.some(
+        (p) =>
+          p.processDefinitionId === 92004 &&
+          p.navigationUrl.endsWith("#activity-a"),
+      ),
+    );
+    await request(
+      root(92026, 92004),
+      { chainId: 92014, learningCycleId: 92026 },
+      400,
+    );
+    assert.equal((await request("/fixture/tasks")).length, before);
+  },
+);
+
+await scenario(
   "duplo clique e concorrência criam uma execução e um único disparo",
   async () => {
     const runs = await Promise.all(
@@ -252,9 +282,14 @@ await scenario(
     await tick(waiting.childRunId);
     await tick(waiting.childRunId);
     await tick(a.id);
+    assert.equal(
+      (await tasks(92008, 92004)).find((t) => t.activity_id === "a")?.status,
+      "COMPLETED",
+    );
+    await tick(a.id);
     assert.deepEqual(
       (await tasks(92008, 92004)).map((t) => t.activity_id),
-      ["b"],
+      ["a", "b"],
     );
   },
 );

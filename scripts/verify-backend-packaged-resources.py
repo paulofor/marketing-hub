@@ -47,6 +47,34 @@ def verify(repo, jar):
     return checked
 
 
+def verify_compiled_backend(repo, jar):
+    """Exige as mesmas classes testadas no JAR que o Dockerfile incorpora, sem classes antigas."""
+    compiled = repo / "backend/ads-service/target/classes"
+    expected = {
+        path.relative_to(compiled).as_posix(): path
+        for path in compiled.rglob("*.class")
+    }
+    if not expected:
+        raise ValueError("Classes compiladas ausentes; compile e teste antes de empacotar.")
+    prefix = "BOOT-INF/classes/"
+    with ZipFile(jar) as archive:
+        actual = {
+            name[len(prefix):]
+            for name in archive.namelist()
+            if name.startswith(prefix) and name.endswith(".class")
+        }
+        missing = sorted(expected.keys() - actual)
+        extra = sorted(actual - expected.keys())
+        if missing or extra:
+            raise ValueError(
+                f"Classes do JAR não correspondem à compilação testada: ausentes={missing[:5]}; extras={extra[:5]}"
+            )
+        for name, path in expected.items():
+            if archive.read(prefix + name) != path.read_bytes():
+                raise ValueError(f"Classe divergente no JAR: {name}; empacote a revisão testada.")
+    return len(expected)
+
+
 def smoke(repo, jar):
     with tempfile.TemporaryDirectory(prefix="backend-package-smoke-") as work:
         subprocess.run([
@@ -65,6 +93,7 @@ def main():
     args = parser.parse_args()
     repo = args.repo.resolve()
     jar = (args.jar or repo / "backend/ads-service/target/app-exec.jar").resolve()
+    print(f"Classes testadas e empacotadas idênticas: {verify_compiled_backend(repo, jar)}", flush=True)
     print(f"Recursos externos íntegros: {verify(repo, jar)}", flush=True)
     smoke(repo, jar)
 

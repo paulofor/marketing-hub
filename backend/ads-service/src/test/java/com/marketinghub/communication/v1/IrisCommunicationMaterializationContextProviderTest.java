@@ -49,6 +49,18 @@ class IrisCommunicationMaterializationContextProviderTest {
         Map.of("availability", availability, "mode", IrisLearningCycleContext.MODE);
     when(cycle.resolve("experiment:92")).thenReturn(Optional.of(result));
     assertThat(provider.resolve("experiment:92").orElseThrow()).isSameAs(result);
+    assertThat(provider.experimentId("experiment:92")).isEmpty();
+    when(cycle.resolve("experiment:92"))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "inputReadiness",
+                    "READY",
+                    "experiment",
+                    Map.of("id", 92L))));
+    assertThat(provider.experimentId("experiment:92")).contains(92L);
     org.mockito.Mockito.verifyNoInteractions(plans);
   }
 

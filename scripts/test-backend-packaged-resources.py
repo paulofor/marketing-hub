@@ -61,5 +61,49 @@ class PackagedResourcesTest(unittest.TestCase):
             module.verify(self.repo, self.jar)
 
 
+class CompiledBackendPackageTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.repo = Path(self.temp.name)
+        self.classes = self.repo / "backend/ads-service/target/classes/com/marketinghub"
+        self.classes.mkdir(parents=True)
+        self.jar = self.repo / "app-exec.jar"
+        self.current = b"classe da revisao testada"
+        (self.classes / "CreativeVisualEvidenceService.class").write_bytes(self.current)
+
+    def package(self, content=None, extra=False):
+        with ZipFile(self.jar, "w") as archive:
+            if content is not None:
+                archive.writestr("BOOT-INF/classes/com/marketinghub/CreativeVisualEvidenceService.class", content)
+            if extra:
+                archive.writestr("BOOT-INF/classes/com/marketinghub/Removed.class", b"antiga")
+
+    def test_exact_tested_class_is_accepted(self):
+        self.package(self.current)
+        self.assertEqual(1, module.verify_compiled_backend(self.repo, self.jar))
+
+    def test_old_jar_without_new_class_is_rejected(self):
+        self.package()
+        with self.assertRaisesRegex(ValueError, "não correspondem"):
+            module.verify_compiled_backend(self.repo, self.jar)
+
+    def test_changed_bytecode_is_rejected(self):
+        self.package(b"revisao anterior")
+        with self.assertRaisesRegex(ValueError, "Classe divergente"):
+            module.verify_compiled_backend(self.repo, self.jar)
+
+    def test_removed_class_cannot_remain_in_jar(self):
+        self.package(self.current, extra=True)
+        with self.assertRaisesRegex(ValueError, "extras="):
+            module.verify_compiled_backend(self.repo, self.jar)
+
+    def test_missing_compilation_cannot_authorize_package(self):
+        (self.classes / "CreativeVisualEvidenceService.class").unlink()
+        self.package(self.current)
+        with self.assertRaisesRegex(ValueError, "Classes compiladas ausentes"):
+            module.verify_compiled_backend(self.repo, self.jar)
+
+
 if __name__ == "__main__":
     unittest.main()

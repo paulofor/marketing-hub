@@ -1,30 +1,15 @@
+import { automationStateLabels } from "./productProcessPresentation";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
 import { Loader2, PauseCircle, PlayCircle } from "lucide-react";
 import axios from "axios";
+import ProductProcessContextCopy from "./ProductProcessContextCopy";
+import type { ProcessContext } from "./productProcessContext";
 import {
   useProcessAutomation,
   useProcessAutomationEvents,
 } from "../../api/businessProcess/useProcessAutomation";
-
-const labels: Record<string, string> = {
-  READY: "Pronto para executar",
-  UNAVAILABLE: "Indisponível",
-  QUEUED: "Na fila",
-  WAITING_ACTIVITY: "Em execução",
-  WAITING_INPUT: "Aguardando condições",
-  WAITING_HUMAN: "Precisa da sua decisão",
-  WAITING_SUBPROCESS: "Subprocesso em execução",
-  WAITING_PARENT: "Aguardando processo de origem",
-  BLOCKED: "Precisa de atenção",
-  PAUSING: "Concluindo a pausa",
-  PAUSED: "Pausado",
-  COMPLETED: "Processo concluído",
-  CLOSED: "Encerrado com pendências",
-  ERROR: "Falha técnica",
-  REVALIDATION_REQUIRED: "Revalidação necessária",
-};
 
 /** Centraliza execução e progresso do processo no cabeçalho, usando a verdade persistida. */
 export default function ProductProcessAutomationPanel({
@@ -33,12 +18,16 @@ export default function ProductProcessAutomationPanel({
   chainId,
   cycleId,
   sourceReference,
+  copyContext,
+  contextLoading,
 }: {
   productId: number;
   processId: number;
   chainId?: number;
   cycleId?: number;
   sourceReference?: string | null;
+  copyContext?: Omit<ProcessContext, "automation">;
+  contextLoading?: boolean;
 }) {
   const { status, command, root } = useProcessAutomation(
     productId,
@@ -101,10 +90,30 @@ export default function ProductProcessAutomationPanel({
         <strong>Execução do processo</strong>
         {data && (
           <span className="badge text-bg-light">
-            {labels[data.status] || data.status}
+            {automationStateLabels[data.status] || data.status}
           </span>
         )}
       </div>
+      {copyContext && (
+        <ProductProcessContextCopy
+          {...copyContext}
+          automation={data}
+          loading={
+            contextLoading ||
+            Boolean(chainId && sourceReference && status.isPending)
+          }
+          warnings={[
+            ...(copyContext.warnings ?? []),
+            ...(status.isError
+              ? [
+                  data
+                    ? "A última consulta da execução falhou; os dados abaixo são da última leitura disponível."
+                    : "Não foi possível consultar a execução automática.",
+                ]
+              : []),
+          ]}
+        />
+      )}
       {!chainId || !sourceReference ? (
         <p className="mb-0">
           Aguardando o contexto oficial da cadeia e do ciclo.
@@ -174,6 +183,39 @@ export default function ProductProcessAutomationPanel({
             </Link>
           )}
           <p className="small mb-2">{data.reason}</p>
+          {Boolean(data.parentProcesses?.length) && (
+            <nav aria-label="Retorno ao processo pai" className="mb-3">
+              {data.parentProcesses?.map((parent) => (
+                <Link
+                  key={`${parent.processDefinitionId}-${parent.activityId}`}
+                  className="btn btn-outline-primary text-wrap mb-1"
+                  to={parent.navigationUrl}
+                >
+                  Voltar ao processo pai: {parent.processName} · v
+                  {parent.processVersion}
+                  {" — "}
+                  {parent.activityName}
+                </Link>
+              ))}
+            </nav>
+          )}
+          {Boolean(data.subprocesses?.length) && (
+            <nav aria-label="Subprocessos deste processo" className="mb-3">
+              <strong className="small">
+                Atividades executadas em subprocessos
+              </strong>
+              <ul className="mb-0 ps-3">
+                {data.subprocesses?.map((child) => (
+                  <li key={`${child.processDefinitionId}-${child.activityId}`}>
+                    <span className="small">{child.activityName}: </span>
+                    <Link to={child.navigationUrl}>
+                      {child.processName} · v{child.processVersion}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
           <div className="product-process-automation__buttons">
             {data.canStart && (
               <button

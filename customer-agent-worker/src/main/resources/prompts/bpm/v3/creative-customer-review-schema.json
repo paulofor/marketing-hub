@@ -7,7 +7,8 @@
     "behavioralResponse",
     "purchaseEmotion",
     "evidence",
-    "requiredChanges"
+    "requiredChanges",
+    "renderedAssetAudit"
   ],
   "properties": {
     "decision": {
@@ -438,6 +439,32 @@
       "type": "array",
       "items": {
         "type": "string"
+      }
+    },
+    "renderedAssetAudit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifactId",
+          "sha256",
+          "assessment"
+        ],
+        "properties": {
+          "artifactId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "assessment": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     }
   }

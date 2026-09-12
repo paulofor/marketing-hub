@@ -136,7 +136,9 @@ public class CustomerBpmTaskConsumer {
             AGENT_KEY,
             jsonTextValues(result.path("evidence")),
             !"BLOCKED".equals(result.path("decision").asText()));
-        validateVisualAudit(result, visualEvidence.uploaded());
+        if ("creative-production-approval".equals(processCode(task)))
+          validateCreativeAudit(result, visualEvidence.uploaded());
+        else validateVisualAudit(result, visualEvidence.uploaded());
       }
       if ("APPROVED".equals(result.path("decision").asText())) report(task, execution);
       else block(task, execution);
@@ -193,8 +195,22 @@ public class CustomerBpmTaskConsumer {
         .contains(processCode);
   }
 
-  /** Captura e persiste a página pública da tarefa antes de montar o prompt de Psique. */
+  /** Obtém a peça criativa real ou captura a página conforme o contrato da atividade. */
   private PreparedVisualEvidence prepareVisualEvidence(Map<String, Object> task) throws Exception {
+    if ("creative-production-approval".equals(processCode(task))) {
+      Path directory = Files.createTempDirectory("psique-creative-" + taskId(task) + "-");
+      try {
+        return new PreparedVisualEvidence(
+            null,
+            visualEvidenceBackendClient.creativeInputs(taskId(task), directory),
+            null,
+            directory);
+      } catch (Exception ex) {
+        log.error("Falha na preparação criativa de Psique. taskId={}", taskId(task), ex);
+        deleteDirectory(directory, taskId(task));
+        throw ex;
+      }
+    }
     if (!requiresVisualAudit(processCode(task))) return PreparedVisualEvidence.empty();
     if (isAgentValidationTask(task)) return prepareAgentScenarioEvidence(task);
     if (visualEvidenceRunner == null || visualEvidenceBackendClient == null) {
@@ -363,7 +379,8 @@ public class CustomerBpmTaskConsumer {
             visualEvidence);
       }
       try {
-        JsonNode result = json.readTree(Files.readString(output));
+        String rawResponse = Files.readString(output);
+        JsonNode result = json.readTree(rawResponse);
         return new BpmExecution(
             result,
             usage,
@@ -371,7 +388,8 @@ public class CustomerBpmTaskConsumer {
             prompt.agentPromptPart(),
             prompt.activityPromptPart(),
             mergeAccessedUrls(visualAccesses, readAccessedUrls(json, processLog)),
-            visualEvidence);
+            visualEvidence,
+            rawResponse);
       } catch (IOException ex) {
         log.error(
             "Resposta inválida na atividade BPM de Psique. taskId={} output={}",
@@ -481,7 +499,7 @@ public class CustomerBpmTaskConsumer {
   /** Persiste o parecer e as evidências na própria atividade BPM. */
   private void report(Map<String, Object> task, BpmExecution execution) throws IOException {
     Map<String, Object> body = new HashMap<>();
-    body.put("resultJson", json.writeValueAsString(execution.result()));
+    body.put("resultJson", execution.rawResponse());
     body.put("evidenceJson", evidence(task, execution.visualEvidence()));
     putModelUsage(body, execution.usage());
     body.put(
@@ -532,22 +550,24 @@ public class CustomerBpmTaskConsumer {
               : bpm != null
                   ? bpm.visualEvidence()
                   : preparedVisualEvidence == null ? List.of() : preparedVisualEvidence.uploaded();
+      var failure =
+          failureBody(
+              task,
+              ex,
+              usage,
+              promptSent,
+              agentPromptPart,
+              activityPromptPart,
+              urls,
+              visualEvidence);
+      if (execution != null) failure.put("resultJson", execution.rawResponse());
       backend
           .post()
           .uri(
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(
-              failureBody(
-                  task,
-                  ex,
-                  usage,
-                  promptSent,
-                  agentPromptPart,
-                  activityPromptPart,
-                  urls,
-                  visualEvidence))
+          .body(failure)
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -558,7 +578,7 @@ public class CustomerBpmTaskConsumer {
   /** Preserva o parecer funcional e impede avanço quando a cliente exige ajuste. */
   private void block(Map<String, Object> task, BpmExecution execution) throws IOException {
     JsonNode result = execution.result();
-    String resultJson = json.writeValueAsString(result);
+    String resultJson = execution.rawResponse();
     Map<String, Object> body = new HashMap<>();
     String perspective =
         isAgentValidationTask(task)
@@ -876,6 +896,31 @@ public class CustomerBpmTaskConsumer {
         && !purchaseEmotion.path("evidenceBoundary").asText().isBlank();
   }
 
+  /**
+   * Exige avaliação rastreável de cada peça final, sem confundir criativo com captura de página.
+   */
+  static void validateCreativeAudit(
+      JsonNode result, List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> images) {
+    var audit = result.path("renderedAssetAudit");
+    if (images == null || images.isEmpty() || !audit.isArray() || audit.size() != images.size())
+      throw new IllegalArgumentException("A revisão criativa não auditou todas as imagens finais.");
+    Set<Long> seen = new LinkedHashSet<>();
+    for (JsonNode item : audit) {
+      var image =
+          images.stream()
+              .filter(i -> i.id() == item.path("artifactId").asLong())
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException("O parecer menciona uma imagem não recebida."));
+      if (!seen.add(image.id())
+          || !image.sha256().equals(item.path("sha256").asText())
+          || item.path("assessment").asText().isBlank())
+        throw new IllegalArgumentException(
+            "A análise não corresponde à imagem exata recebida por Psique.");
+    }
+  }
+
   /** Confirma que toda imagem persistida foi referenciada e cada dobra recebeu análise estética. */
   static void validateVisualAudit(
       JsonNode result, List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {
@@ -1042,12 +1087,16 @@ public class CustomerBpmTaskConsumer {
         .toBodilessEntity();
   }
 
-  /** Converte páginas comprovadamente capturadas em URLs acessadas pelo método Playwright. */
+  /**
+   * Registra capturas de página e arquivos criativos sem atribuir ao agente uma navegação
+   * inexistente.
+   */
   private List<Map<String, Object>> visualAccessedUrls(
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {
     LinkedHashMap<String, Map<String, Object>> accesses = new LinkedHashMap<>();
     if (visualEvidence == null) return List.of();
     for (var evidence : visualEvidence) {
+      if ("CREATIVE_RENDER".equals(evidence.evidenceType())) continue;
       if (evidence.finalUrl() == null || accesses.containsKey(evidence.finalUrl())) continue;
       Map<String, Object> access = new LinkedHashMap<>();
       access.put("url", evidence.finalUrl());
@@ -1268,8 +1317,8 @@ public class CustomerBpmTaskConsumer {
 
   /** Remove a topologia temporária visual depois que o callback já preservou a auditoria. */
   private void deleteVisualWorkDirectory(PreparedVisualEvidence visualEvidence, long taskId) {
-    if (visualEvidence == null || visualEvidence.bundle() == null) return;
-    deleteDirectory(visualEvidence.bundle().workDirectory(), taskId);
+    if (visualEvidence == null || visualEvidence.directory() == null) return;
+    deleteDirectory(visualEvidence.directory(), taskId);
   }
 
   /** Apaga arquivos temporários em ordem reversa sem ocultar a causa principal da tarefa. */
@@ -1320,7 +1369,19 @@ public class CustomerBpmTaskConsumer {
   private record PreparedVisualEvidence(
       BpmVisualEvidenceRunner.VisualEvidenceBundle bundle,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded,
-      JsonNode scenarioExecution) {
+      JsonNode scenarioExecution,
+      Path directory) {
+    /**
+     * Preserva o ciclo de vida das capturas existentes e permite entradas criativas sem captura
+     * nova.
+     */
+    private PreparedVisualEvidence(
+        BpmVisualEvidenceRunner.VisualEvidenceBundle bundle,
+        List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> uploaded,
+        JsonNode scenarioExecution) {
+      this(bundle, uploaded, scenarioExecution, bundle == null ? null : bundle.workDirectory());
+    }
+
     /** Representa uma atividade que não avalia uma tela digital. */
     private static PreparedVisualEvidence empty() {
       return new PreparedVisualEvidence(null, List.of(), null);
@@ -1335,7 +1396,28 @@ public class CustomerBpmTaskConsumer {
       String agentPromptPart,
       String activityPromptPart,
       List<Map<String, Object>> accessedUrls,
-      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {}
+      List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence,
+      String rawResponse) {
+    /** Preserva os consumidores de teste sem perder a resposta bruta capturada no runtime. */
+    BpmExecution(
+        JsonNode result,
+        TokenUsage usage,
+        String promptSent,
+        String agentPromptPart,
+        String activityPromptPart,
+        List<Map<String, Object>> accessedUrls,
+        List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence) {
+      this(
+          result,
+          usage,
+          promptSent,
+          agentPromptPart,
+          activityPromptPart,
+          accessedUrls,
+          visualEvidence,
+          result.toString());
+    }
+  }
 
   /** Representa as duas partes e a composição exata enviada ao modelo. */
   private record PromptComposition(

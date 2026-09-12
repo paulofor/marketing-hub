@@ -107,6 +107,9 @@ await scenario(
     const child = { id: waiting.childRunId };
     assert(child.id);
     await prove(child, 92019, 92005);
+    assert.equal((await tick(child.id)).status, "COMPLETED");
+    await tick(parent.id);
+    // O pai persiste a prova do filho antes de despachar sua próxima atividade.
     await tick(parent.id);
     await callback(92019, "b", 92004);
     await tick(parent.id);

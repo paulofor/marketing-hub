@@ -345,7 +345,9 @@ class BusinessProcessActivityExecutionServiceTest {
     AgentTask anotherProcessTask = executionTask(245L);
     anotherProcessTask.getProcessDefinition().setProcessCode("another-process");
     anotherProcessTask.setSourceReference("commercial-plan:4@v3");
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+    when(tasks
+            .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                eq("commercial-plan:4@"), anyString()))
         .thenReturn(List.of(compound, customerReview, oldTechnicalReview, anotherProcessTask));
     BusinessProcessActivityInstance humanPending =
         activityInstance(
@@ -565,7 +567,8 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(authorization));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(56L, "authorization"))
         .thenReturn(Optional.of(authorization));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            eq("experiment:89"), anyString()))
         .thenReturn(List.of());
     when(humanExecutor.supports(process, authorization)).thenReturn(true);
     when(humanExecutor.readiness(process, authorization, product, "experiment:89"))
@@ -761,9 +764,11 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(taskOne));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(66L, "task-1"))
         .thenReturn(Optional.of(taskOne));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:91"))
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            eq("experiment:91"), anyString()))
         .thenReturn(List.of(wrongAttempt));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:90"))
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            eq("experiment:90"), anyString()))
         .thenReturn(List.of());
     when(coverages.findAllByAgentTaskIdIn(List.of(340L))).thenReturn(List.of());
     when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
@@ -926,7 +931,9 @@ class BusinessProcessActivityExecutionServiceTest {
     when(commercialPlans.findByProductId(901L)).thenReturn(List.of());
     when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(67L))
         .thenReturn(List.of(technical));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:901@"))
+    when(tasks
+            .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                eq("product:901@"), anyString()))
         .thenReturn(List.of());
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
@@ -1002,12 +1009,15 @@ class BusinessProcessActivityExecutionServiceTest {
     when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(55L, "integration"))
         .thenReturn(Optional.of(integration));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            eq("experiment:89"), anyString()))
         .thenReturn(List.of());
     CommercialPlan plan = new CommercialPlan();
     plan.setId(4L);
     when(commercialPlans.findByProductId(9L)).thenReturn(List.of(plan));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+    when(tasks
+            .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                eq("commercial-plan:4@"), anyString()))
         .thenReturn(List.of(previous));
     when(backendExecutor.supports(process, integration)).thenReturn(true);
     when(backendExecutor.readiness(process, integration, rigel, "commercial-plan:4@v3:journey"))
@@ -1105,7 +1115,8 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(communicationContract));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(63L, "communicationContract"))
         .thenReturn(Optional.of(communicationContract));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            eq("experiment:89"), anyString()))
         .thenReturn(List.of(blockedTask));
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
@@ -1153,6 +1164,7 @@ class BusinessProcessActivityExecutionServiceTest {
         executionService.requestProductActivityExecution(63L, 9L, "communicationContract");
 
     assertThat(ready.activities().getFirst().executionRequestAvailable()).isTrue();
+    assertThat(ready.activities().getFirst().stateReason()).isEqualTo("Parecer econômico ausente.");
     assertThat(request.tasks()).hasSize(1);
     verify(agentTasks).retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class));
   }
@@ -1237,7 +1249,9 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(correction, psique));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(80L, "prototypeCorrection"))
         .thenReturn(Optional.of(correction));
-    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("product:10@"))
+    when(tasks
+            .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                eq("product:10@"), anyString()))
         .thenReturn(List.of(rejected));
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
@@ -1359,7 +1373,8 @@ class BusinessProcessActivityExecutionServiceTest {
         .thenReturn(List.of(activity));
     when(activityDefinitions.findByProcessDefinitionIdAndActivityId(56L, "humanExperienceReview"))
         .thenReturn(Optional.of(activity));
-    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+    when(tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+            eq("experiment:89"), anyString()))
         .thenReturn(List.of(blockedTask));
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(

@@ -121,11 +121,14 @@ public class ProductProcessActivityPredecessorService {
     return latest;
   }
 
-  /** Considera a instância autoridade e usa tarefas apenas para compatibilidade histórica. */
+  /**
+   * Considera conclusão ou dispensa auditável da instância e preserva compatibilidade histórica.
+   */
   private boolean completed(
       BusinessProcessActivityInstance instance, List<AgentTask> historicalTasks) {
     if (instance != null) {
-      return "COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved();
+      return ("COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved())
+          || com.marketinghub.agenttask.BusinessProcessOptionalActivity.isOmitted(instance);
     }
     if (historicalTasks == null || historicalTasks.isEmpty()) {
       return false;

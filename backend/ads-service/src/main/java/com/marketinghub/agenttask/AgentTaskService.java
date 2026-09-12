@@ -2850,11 +2850,15 @@ public class AgentTaskService {
     }
   }
 
-  /** Usa a instância como autoridade e mantém tarefas antigas apenas como compatibilidade. */
+  /**
+   * Usa conclusão ou dispensa auditável da instância, mantendo tarefas antigas como
+   * compatibilidade.
+   */
   private boolean completedPredecessor(
       BusinessProcessActivityInstance instance, Map<String, AgentTask> historicalTasks) {
     if (instance != null) {
-      return "COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved();
+      return ("COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved())
+          || BusinessProcessOptionalActivity.isOmitted(instance);
     }
     return historicalTasks != null
         && !historicalTasks.isEmpty()

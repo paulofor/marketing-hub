@@ -35,6 +35,12 @@ public class CommunicationAgentCodexRunner {
 
   /** Executa uma atividade em sandbox somente leitura e devolve resultado, prompt e tokens. */
   public Execution run(Map<String, Object> task) throws IOException, InterruptedException {
+    return run(task, List.of());
+  }
+
+  /** Executa com imagens de origem verificadas para que o briefing preserve os pixels aprovados. */
+  public Execution run(Map<String, Object> task, List<Path> images)
+      throws IOException, InterruptedException {
     Contract contract = contractFor(task);
     validateInput(task);
     PromptComposition prompt = promptComposition(task, contract);
@@ -43,10 +49,13 @@ public class CommunicationAgentCodexRunner {
     Path schema = materialize("prompts/iris/v1/output-schema.json", ".json");
     Path mcp = materialize("mcp/communication-agent.mjs", ".mjs");
     try {
+      List<String> command = command(answer, schema, mcp);
+      for (Path image : images) {
+        command.add("--image");
+        command.add(image.toAbsolutePath().toString());
+      }
       ProcessBuilder builder =
-          new ProcessBuilder(command(answer, schema, mcp))
-              .redirectErrorStream(true)
-              .redirectOutput(processLog.toFile());
+          new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(processLog.toFile());
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getBackendUrl());
       builder.environment().put("MCP_TASK_ID", String.valueOf(task.get("taskId")));
       builder

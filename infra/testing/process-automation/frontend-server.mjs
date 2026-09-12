@@ -13,6 +13,17 @@ const mime = {
 createServer(async (req, res) => {
   try {
     if (req.url.startsWith("/api/") || req.url.startsWith("/fixture/")) {
+      // O bundle usa a porta 80; o navegador de teste redireciona somente para este proxy local.
+      const cors = {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET,HEAD,OPTIONS,POST",
+        "access-control-allow-headers": "content-type,x-process-worker-token",
+      };
+      if (req.method === "OPTIONS") {
+        res.writeHead(204, cors);
+        res.end();
+        return;
+      }
       let input = "";
       for await (const chunk of req) input += chunk;
       const response = await fetch("http://127.0.0.1:18092" + req.url, {
@@ -28,6 +39,7 @@ createServer(async (req, res) => {
         body: ["GET", "HEAD"].includes(req.method) ? undefined : input,
       });
       res.writeHead(response.status, {
+        ...cors,
         "content-type":
           response.headers.get("content-type") || "application/json",
       });

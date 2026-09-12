@@ -30,6 +30,122 @@ class AgentTaskRepositoryDocumentTest {
   @Autowired private EntityManager entityManager;
   @Autowired private org.springframework.transaction.PlatformTransactionManager transactions;
 
+  /** Prova que prontidão usa resultados escalares e ignora auditoria volumosa e outras origens. */
+  @Test
+  void functionalSnapshotsDoNotHydrateAuditAndPreserveExactScope() {
+    var agent = persistedAgent();
+    var process = persistedProcess();
+    var now = Instant.parse("2026-09-12T08:00:00Z");
+    var current = task(agent, process, "communicationContract", "COMPLETED", "{\"proof\":1}", now);
+    current.setSourceReference("experiment:91092");
+    current.setExecutionPrompt("auditoria-sintetica-".repeat(220000));
+    tasks.save(current);
+    var older =
+        task(
+            agent,
+            process,
+            "communicationContract",
+            "COMPLETED",
+            "{\"proof\":0}",
+            now.minusSeconds(86400));
+    older.setSourceReference("experiment:91092");
+    tasks.save(older);
+    var another = task(agent, process, "communicationContract", "IN_PROGRESS", null, now);
+    another.setSourceReference("experiment:91093");
+    tasks.save(another);
+    entityManager.flush();
+    entityManager.clear();
+
+    var summary =
+        tasks.findFunctionalSnapshots(
+            "experiment:91092", java.util.Set.of(process.getProcessCode()), now.minusSeconds(3600));
+    assertThat(summary).hasSize(1);
+    assertThat(summary.getFirst().id()).isEqualTo(current.getId());
+    assertThat(summary.getFirst().resultJson()).isEqualTo("{\"proof\":1}");
+    assertThat(summary.getFirst().agentKey()).isEqualTo(agent.getAgentKey());
+    assertThat(entityManager.unwrap(org.hibernate.Session.class).getStatistics().getEntityCount())
+        .isZero();
+    assertThat(
+            tasks.findFunctionalSnapshotsByProcessSince(
+                process.getId(), "experiment:91092", now.minusSeconds(3600)))
+        .containsExactlyElementsOf(summary);
+    assertThat(
+            tasks.findFunctionalSnapshotsByProcessSince(process.getId(), "experiment:91092", null))
+        .extracting(com.marketinghub.agenttask.AgentTaskFunctionalSnapshot::id)
+        .containsExactly(current.getId(), older.getId());
+    assertThat(
+            tasks.findFunctionalSnapshotsByProcessSince(process.getId(), "experiment:91094", null))
+        .isEmpty();
+    assertThat(
+            tasks.findFunctionalSnapshots(
+                "experiment:91092", java.util.Set.of("outro-processo"), null))
+        .isEmpty();
+    assertThat(entityManager.unwrap(org.hibernate.Session.class).getStatistics().getEntityCount())
+        .isZero();
+    assertThat(
+            tasks.existsByProcessDefinitionIdAndSourceReferenceAndProcessActivityIdAndStatusIn(
+                process.getId(),
+                "experiment:91092",
+                "communicationContract",
+                java.util.Set.of("PENDING", "IN_PROGRESS")))
+        .isFalse();
+    assertThat(
+            tasks.existsByProcessDefinitionIdAndSourceReferenceAndProcessActivityIdAndStatusIn(
+                process.getId(),
+                "experiment:91093",
+                "communicationContract",
+                java.util.Set.of("PENDING", "IN_PROGRESS")))
+        .isTrue();
+    assertThat(
+            tasks.findBySourceReferenceAndProcessDefinitionProcessCodeOrderByCreatedAtAscIdAsc(
+                "experiment:91092", process.getProcessCode()))
+        .extracting(AgentTask::getId)
+        .containsExactly(older.getId(), current.getId());
+    assertThat(
+            tasks
+                .findBySourceReferenceStartingWithAndProcessDefinitionProcessCodeOrderByUpdatedAtDescIdDesc(
+                    "experiment:9109", "outro-processo"))
+        .isEmpty();
+  }
+
+  /** Comprova o retorno à produção usando o repositório real, inclusive sem corte de data. */
+  @Test
+  void reopensCreativeBriefUsingPersistedHistoryWithoutDateFilter() {
+    var agent = persistedAgent();
+    var process = persistedProcess();
+    process.setProcessCode("creative-production-approval");
+    processes.save(process);
+    var now = Instant.parse("2026-09-12T08:00:00Z");
+    var brief =
+        task(
+            agent,
+            process,
+            "nonAudiovisual",
+            "COMPLETED",
+            "{\"functionalOutput\":{\"staticAssets\":[{}]}}",
+            now);
+    brief.setSourceReference("experiment:91092");
+    tasks.saveAndFlush(brief);
+    entityManager.clear();
+    var provider =
+        new com.marketinghub.communication.v1.CreativeProductionReadinessProvider(
+            tasks,
+            org.mockito.Mockito.mock(
+                com.marketinghub.businessprocess.execution.service.predecessor
+                    .ProductProcessActivityPredecessorService.class),
+            new com.fasterxml.jackson.databind.ObjectMapper());
+    var activity = new com.marketinghub.businessprocess.BusinessProcessActivityDefinition();
+    activity.setActivityId("nonAudiovisual");
+    var product = com.marketinghub.product.Product.builder().id(91004L).build();
+
+    assertThat(provider.requiresFreshExecution(process, activity, product, "experiment:91092"))
+        .isTrue();
+    assertThat(provider.requiresFreshExecution(process, activity, product, "experiment:91093"))
+        .isFalse();
+    assertThat(entityManager.unwrap(org.hibernate.Session.class).getStatistics().getEntityCount())
+        .isZero();
+  }
+
   /**
    * Comprova no banco que dois callbacks concorrentes observam o commit antes de repetir efeitos.
    */

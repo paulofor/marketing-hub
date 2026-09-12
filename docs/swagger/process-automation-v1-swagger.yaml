@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Execução automática de processos v1
-  version: 1.0.0
+  version: 1.1.0
   description: Controle durável por produto, processo, cadeia, ciclo e referência. Somente o backend decide a próxima atividade; nenhum comando confirma decisão humana ou autorização comercial implícita.
 paths:
   /api/business-processes/{processId}/products/{productId}/automation/v1:
@@ -9,7 +9,7 @@ paths:
       - $ref: '#/components/parameters/processId'
       - $ref: '#/components/parameters/productId'
     get:
-      summary: Consulta a projeção persistida do cabeçalho
+      summary: Consulta progresso e relações oficiais entre processo pai e subprocessos
       parameters:
         - name: chainId
           in: query
@@ -20,7 +20,8 @@ paths:
           schema: {type: integer, format: int64}
         - name: sourceReference
           in: query
-          required: true
+          required: false
+          description: Sem referência, retorna prévia UNAVAILABLE com relações navegáveis e comandos desabilitados, sem criar execução.
           schema: {type: string}
       responses:
         '200': {$ref: '#/components/responses/run'}
@@ -138,7 +139,7 @@ components:
               processDefinitionId: {type: integer, format: int64}
               chainId: {type: integer, format: int64}
               learningCycleId: {type: integer, format: int64, nullable: true}
-              sourceReference: {type: string}
+              sourceReference: {type: string, nullable: true}
               status:
                 type: string
                 enum: [READY, UNAVAILABLE, QUEUED, WAITING_ACTIVITY, WAITING_INPUT, WAITING_HUMAN, WAITING_SUBPROCESS, WAITING_PARENT, PAUSING, PAUSED, BLOCKED, ERROR, COMPLETED, CLOSED, REVALIDATION_REQUIRED]
@@ -166,3 +167,22 @@ components:
               lastReconciledAt: {type: string, format: date-time, nullable: true}
               finishedAt: {type: string, format: date-time, nullable: true}
               revision: {type: integer, format: int64}
+              parentProcesses:
+                type: array
+                description: Chamadas oficiais ao processo, com retorno à atividade do pai antes e depois da conclusão.
+                items: {$ref: '#/components/schemas/ProcessRelation'}
+              subprocesses:
+                type: array
+                description: Subprocessos publicados, identificados pela atividade chamadora; o backend preserva produto, cadeia, ciclo e versão nos links.
+                items: {$ref: '#/components/schemas/ProcessRelation'}
+  schemas:
+    ProcessRelation:
+      type: object
+      required: [processDefinitionId, processName, processVersion, activityId, activityName, navigationUrl]
+      properties:
+        processDefinitionId: {type: integer, format: int64}
+        processName: {type: string}
+        processVersion: {type: integer}
+        activityId: {type: string}
+        activityName: {type: string}
+        navigationUrl: {type: string, description: Caminho oficial para navegar; abrir o link não executa a atividade.}

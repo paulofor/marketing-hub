@@ -1,0 +1,353 @@
+{
+  "history": {
+    "productId": 92004,
+    "productName": "Método MUSA — simulação local",
+    "productInternalName": "Vega",
+    "commercialPlanId": 92014,
+    "commercialPlanName": "Plano do Vega",
+    "selectedProcessDefinitionId": 92063,
+    "processCode": "pde-communication",
+    "processName": "Comunicação e jornada de venda do PDE",
+    "selectedProcessVersionNumber": 7,
+    "selectedProcessStatus": "PUBLISHED",
+    "currentExecutionReference": "experiment:92092",
+    "operationalState": "IN_PROGRESS",
+    "objectiveAchieved": false,
+    "selectedActivityCount": 4,
+    "completedActivityCount": 0,
+    "remainingActivityCount": 3,
+    "blockedActivityCount": 2,
+    "currentActivityId": "communicationContract",
+    "currentActivityName": "Materializar contrato de comunicação",
+    "currentActivityState": "IN_PROGRESS",
+    "currentActivityStateReason": "Aguardando contrato e prova.",
+    "activityCount": 5,
+    "activitiesWithTasksCount": 2,
+    "uniqueTaskCount": 2,
+    "knownEstimatedCostUsd": 0,
+    "costCoverage": "NOT_REPORTED",
+    "activities": [
+      {
+        "activityDefinitionId": 920061,
+        "activityId": "communicationContract",
+        "activityName": "Materializar contrato de comunicação",
+        "activityObjective": "Comunicar o resultado com provas verificáveis.",
+        "activityOwnerName": "Íris",
+        "sequenceNumber": 1,
+        "selectedVersionActivity": true,
+        "operationalState": "IN_PROGRESS",
+        "stateReason": "Aguardando contrato e prova.",
+        "objectiveAchieved": false,
+        "stateEvidence": "DIRECT",
+        "activityInstanceId": 920501,
+        "occurrenceNumber": 2,
+        "taskCount": 1,
+        "executionRequestAvailable": false,
+        "executionRequestReason": "Tarefa já em execução.",
+        "tasks": [
+          {
+            "taskId": 920401,
+            "processDefinitionId": 92063,
+            "processVersionNumber": 7,
+            "title": "Contrato de comunicação — simulação local",
+            "status": "IN_PROGRESS",
+            "sourceReference": "experiment:92092",
+            "assignedAgentKey": "communication-agent",
+            "assignedAgentNickname": "Íris",
+            "costEstimationStatus": "NOT_REPORTED",
+            "createdAt": "2026-09-12T01:00:00Z",
+            "startedAt": "2026-09-12T01:01:00Z",
+            "modelCode": "modelo-simulado",
+            "executionMode": "MODEL",
+            "reasoningEffort": "high",
+            "promptSent": "PROMPT_BRUTO_NAO_COPIAR",
+            "evidenceJson": "{\"private\":\"PAYLOAD_NAO_COPIAR\"}"
+          }
+        ],
+        "executionControl": {
+          "executorType": "AGENT",
+          "interactionType": "COMMAND",
+          "actionLabel": "Acompanhar contrato",
+          "description": "Preservar a prova aprovada.",
+          "actionAvailable": false,
+          "availabilityReason": "Tarefa em andamento.",
+          "confirmationRequired": false,
+          "confirmationToken": "TOKEN_NAO_COPIAR",
+          "requirements": [
+            {
+              "code": "PROOF",
+              "title": "Prova aprovada",
+              "satisfied": true,
+              "detail": "Prova do ciclo selecionado.",
+              "recommendation": "Preservar evidência."
+            }
+          ]
+        }
+      },
+      {
+        "activityDefinitionId": 920062,
+        "activityId": "commercialReview",
+        "activityName": "Revisar a comunicação",
+        "activityObjective": "Comunicar o resultado com provas verificáveis.",
+        "activityOwnerName": "Têmis",
+        "sequenceNumber": 2,
+        "selectedVersionActivity": true,
+        "operationalState": "BLOCKED",
+        "stateReason": "Aguardando o contrato de comunicação.",
+        "objectiveAchieved": false,
+        "stateEvidence": "DIRECT",
+        "activityInstanceId": 920501,
+        "occurrenceNumber": 2,
+        "taskCount": 0,
+        "executionRequestAvailable": false,
+        "executionRequestReason": "Tarefa já em execução.",
+        "tasks": [],
+        "executionControl": {
+          "executorType": "AGENT",
+          "interactionType": "COMMAND",
+          "actionLabel": "Acompanhar contrato",
+          "description": "Preservar a prova aprovada.",
+          "actionAvailable": false,
+          "availabilityReason": "Tarefa em andamento.",
+          "confirmationRequired": false,
+          "confirmationToken": "TOKEN_NAO_COPIAR",
+          "requirements": [
+            {
+              "code": "PROOF",
+              "title": "Prova aprovada",
+              "satisfied": true,
+              "detail": "Prova do ciclo selecionado.",
+              "recommendation": "Preservar evidência."
+            }
+          ]
+        },
+        "recoveryAction": {
+          "activityId": "communicationContract",
+          "activityName": "Materializar contrato de comunicação",
+          "sequenceNumber": 1,
+          "ownerName": "Íris",
+          "actionLabel": "Abrir contrato",
+          "actionAvailable": false,
+          "availabilityReason": "Contrato pendente."
+        }
+      },
+      {
+        "activityDefinitionId": 920063,
+        "activityId": "approval",
+        "activityName": "Aprovar comunicação",
+        "activityObjective": "Comunicar o resultado com provas verificáveis.",
+        "activityOwnerName": "Responsável pelo produto",
+        "sequenceNumber": 3,
+        "selectedVersionActivity": true,
+        "operationalState": "BLOCKED",
+        "stateReason": "Aguardando o contrato de comunicação.",
+        "objectiveAchieved": false,
+        "stateEvidence": "DIRECT",
+        "activityInstanceId": 920501,
+        "occurrenceNumber": 2,
+        "taskCount": 0,
+        "executionRequestAvailable": false,
+        "executionRequestReason": "Tarefa já em execução.",
+        "tasks": [],
+        "executionControl": {
+          "executorType": "HUMAN",
+          "interactionType": "APPROVAL",
+          "actionLabel": "Acompanhar contrato",
+          "description": "Preservar a prova aprovada.",
+          "actionAvailable": false,
+          "availabilityReason": "Tarefa em andamento.",
+          "confirmationRequired": false,
+          "confirmationToken": "TOKEN_NAO_COPIAR",
+          "requirements": [
+            {
+              "code": "PROOF",
+              "title": "Prova aprovada",
+              "satisfied": true,
+              "detail": "Prova do ciclo selecionado.",
+              "recommendation": "Preservar evidência."
+            }
+          ]
+        },
+        "recoveryAction": null
+      },
+      {
+        "activityDefinitionId": 920064,
+        "activityId": "gate",
+        "activityName": "Calcular gate",
+        "activityObjective": "Comunicar o resultado com provas verificáveis.",
+        "activityOwnerName": "Backend",
+        "sequenceNumber": 4,
+        "selectedVersionActivity": true,
+        "operationalState": "NOT_APPLICABLE",
+        "stateReason": "Dispensada neste caminho.",
+        "objectiveAchieved": false,
+        "stateEvidence": "DIRECT",
+        "activityInstanceId": 920501,
+        "occurrenceNumber": 2,
+        "taskCount": 0,
+        "executionRequestAvailable": false,
+        "executionRequestReason": "Tarefa já em execução.",
+        "tasks": [],
+        "executionControl": {
+          "executorType": "BACKEND",
+          "interactionType": "AUTOMATIC",
+          "actionLabel": "Acompanhar contrato",
+          "description": "Preservar a prova aprovada.",
+          "actionAvailable": false,
+          "availabilityReason": "Tarefa em andamento.",
+          "confirmationRequired": false,
+          "confirmationToken": "TOKEN_NAO_COPIAR",
+          "requirements": [
+            {
+              "code": "PROOF",
+              "title": "Prova aprovada",
+              "satisfied": true,
+              "detail": "Prova do ciclo selecionado.",
+              "recommendation": "Preservar evidência."
+            }
+          ]
+        },
+        "recoveryAction": null
+      },
+      {
+        "activityDefinitionId": null,
+        "activityId": "historical",
+        "activityName": "Contrato anterior",
+        "activityObjective": "Comunicar o resultado com provas verificáveis.",
+        "activityOwnerName": "Têmis",
+        "sequenceNumber": 1,
+        "selectedVersionActivity": false,
+        "operationalState": "HISTORICAL",
+        "stateReason": "Aguardando o contrato de comunicação.",
+        "objectiveAchieved": false,
+        "stateEvidence": "DIRECT",
+        "activityInstanceId": 920501,
+        "occurrenceNumber": 2,
+        "taskCount": 1,
+        "executionRequestAvailable": false,
+        "executionRequestReason": "Tarefa já em execução.",
+        "tasks": [
+          {
+            "taskId": 920301,
+            "processDefinitionId": 92062,
+            "processVersionNumber": 6,
+            "title": "Contrato de comunicação — simulação local",
+            "status": "BLOCKED",
+            "sourceReference": "experiment:92091",
+            "assignedAgentKey": "communication-agent",
+            "assignedAgentNickname": "Têmis",
+            "costEstimationStatus": "NOT_REPORTED",
+            "createdAt": "2026-09-12T01:00:00Z",
+            "startedAt": "2026-09-12T01:01:00Z",
+            "modelCode": "modelo-simulado",
+            "executionMode": "MODEL",
+            "reasoningEffort": "high",
+            "promptSent": "PROMPT_BRUTO_NAO_COPIAR",
+            "evidenceJson": "{\"private\":\"PAYLOAD_NAO_COPIAR\"}",
+            "executionError": "Contrato anterior não comprovou o objetivo.",
+            "blockerGuidance": {
+              "category": "FUNCTIONAL_ADJUSTMENT",
+              "recommendedAction": "Corrigir a prova.",
+              "helpLinks": []
+            }
+          }
+        ],
+        "executionControl": {
+          "executorType": "AGENT",
+          "interactionType": "COMMAND",
+          "actionLabel": "Acompanhar contrato",
+          "description": "Preservar a prova aprovada.",
+          "actionAvailable": false,
+          "availabilityReason": "Tarefa em andamento.",
+          "confirmationRequired": false,
+          "confirmationToken": "TOKEN_NAO_COPIAR",
+          "requirements": [
+            {
+              "code": "PROOF",
+              "title": "Prova aprovada",
+              "satisfied": true,
+              "detail": "Prova do ciclo selecionado.",
+              "recommendation": "Preservar evidência."
+            }
+          ]
+        },
+        "recoveryAction": null
+      }
+    ]
+  },
+  "cycle": {
+    "cycleId": 92002,
+    "cycleNumber": 2,
+    "experimentId": 92092,
+    "chainDefinitionId": 92014,
+    "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "status": "OPEN",
+    "stageLabel": "Ajustar comunicação",
+    "hypothesis": "Explicar o primeiro ajuste aplicável favorece continuidade.",
+    "mainChange": "Mostrar resultado com prova.",
+    "cycleUrl": "/business-process-chains/learning-cycles?productId=92004&cycleId=92002&chainId=92014",
+    "previousLearning": [
+      {
+        "cycleId": 92001,
+        "experimentId": 92091,
+        "action": "ADJUST",
+        "summary": "Sem evidência suficiente para atribuição causal.",
+        "evidenceReference": "urn:marketinghub:test:process-context-copy",
+        "learning": "Não atribuir abandono sem evidência.",
+        "nextHypothesis": "Explicar o primeiro ajuste.",
+        "limitation": "Simulação local; não integra métricas comerciais."
+      }
+    ],
+    "nextWork": null
+  },
+  "position": {
+    "productId": 92004,
+    "commercialStatus": "ACTIVE",
+    "resolutionStatus": "IDENTIFIED",
+    "resolutionMessage": "Simulação local.",
+    "chainDefinitionId": 92014,
+    "chainName": "Cadeia PDE de teste",
+    "chainVersion": 3,
+    "processDefinitionId": 92063,
+    "sequenceNumber": 4,
+    "processMeasurements": [
+      {
+        "processDefinitionId": 92063,
+        "sequenceLabel": "4"
+      }
+    ]
+  },
+  "automation": {
+    "id": 920001,
+    "productId": 92004,
+    "processDefinitionId": 92063,
+    "chainId": 92014,
+    "learningCycleId": 92002,
+    "sourceReference": "experiment:92092",
+    "status": "WAITING_ACTIVITY",
+    "reason": "Aguardando contrato e validação do objetivo.",
+    "currentActivityId": "communicationContract",
+    "currentActivityName": "Materializar contrato de comunicação",
+    "currentOwnerName": "Íris",
+    "currentSequence": 1,
+    "totalActivities": 4,
+    "completedActivities": 0,
+    "remainingActivities": 3,
+    "omittedActivities": 1,
+    "completionPercentage": 0,
+    "knownCostUsd": null,
+    "costCoverage": "NOT_REPORTED",
+    "canStart": false,
+    "canPause": true,
+    "canResume": false,
+    "automaticExecution": true,
+    "childRunId": null,
+    "navigationUrl": null,
+    "lastReconciledAt": "2026-09-12T01:02:00Z",
+    "updatedAt": "2026-09-12T01:02:00Z",
+    "revision": 5
+  },
+  "processSequence": "4",
+  "chainId": 92014,
+  "cycleId": 92002
+}

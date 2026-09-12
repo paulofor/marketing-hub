@@ -84,7 +84,7 @@ recurso executor é `iris-communication-worker`. O módulo independente
 endpoints oficiais do backend por MCP próprio e reporta resultado ou falha pelos callbacks oficiais.
 O backend decide qualquer avanço.
 
-Imagens bitmap de comunicação usam o executor técnico isolado `iris-image-studio`, com
+Imagens bitmap geradas por IA usam o executor técnico isolado `iris-image-studio`, com
 `gpt-image-2`. Ele aceita somente `LANDING`, `ADS` e `SOCIAL`, exige prova real `PRODUCT_PROOF` ou
 `DELIVERY` aprovada para criação e persiste o resultado como `DRAFT`. O código Java permanece
 temporariamente no módulo `meta-ad-approver-worker` por compatibilidade histórica, mas o container,
@@ -174,5 +174,30 @@ o worker recebem os mesmos contratos. A versão e a URL privadas do ciclo preval
 sobre a página histórica do produto. Critérios humanos da estratégia antiga são
 histórico; o gate vigente permanece AGENT_VALIDATION, sem alegação de prova humana ou
 comercial. A aprovação permite preparar comunicação, sem publicar, cobrar ou gastar.
+As tarefas de produção e revisão do subprocesso `creative-production-approval` recebem a
+mesma versão e URL privadas do ciclo. O alvo histórico global do produto não pode substituir
+o produto demonstrado nos criativos do sucessor. O destino comercial conserva seu contrato próprio.
 O contrato anterior por plano e projeção financeira canônica permanece obrigatório
 fora desse regime de ciclo privado.
+
+Correção de 12/09/2026, confirmada nas tarefas #400 e #401: requisitos são avaliados por
+atividade. `COMMUNICATION_PACKAGE` prepara mensagem e briefings; não depende de checkout
+comercial, peças finais, vendas ou validação humana. Essas ausências permanecem lacunas
+explícitas das etapas posteriores. Produto real, estratégia íntegra, economia e gate atuais
+continuam obrigatórios. Materialização de CTA de compra e página comercial exige checkout
+canônico; `approvedLandingAssets` é requisito de composição final, não de planejamento da
+mensagem. O worker nunca reintroduz o gate humano histórico quando `validationPolicy` é
+`AGENT_VALIDATION`, e preparação privada nunca autoriza publicação, cobrança ou mídia.
+
+
+## Materialização determinística da prova em criativo — 2026-09-12
+
+O briefing não encerra `nonAudiovisual` quando a entrega exige imagem. O executor de Íris pode compor uma peça determinística `PROOF_CARD_V1` com texto e um recorte dos pixels aprovados, sem geração de imagem por IA. Esta alternativa usa o mesmo worker, fontes versionadas e nenhum gasto adicional de geração; não altera o executor `iris-image-studio` para imagens que requerem geração por IA. O formato inicial é PNG 1080 × 1350. Outros formatos exigem contrato e renderizador próprios, nunca mera troca de rótulo.
+
+O backend entrega a origem pelo contrato `GET /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}/visual-inputs` somente depois da reserva pelo `pending`. Cada entrada informa sourceTaskId, prototypeVersion e evidence com hash e identidade. O conteúdo usa a subrota `/{sourceTaskId}/{evidenceId}/content`, validando novamente o vínculo. Não há acesso direto a outro módulo ou ao storage.
+
+O worker anexa os pixels ao modelo, valida o renderSpec, renderiza, persiste por `visual-evidence` como `CREATIVE_RENDER` e acrescenta `functionalOutput.renderedAssets` com artifactId, hash, URL privada, dimensões, template, tarefa e artefato de origem, hash de origem, versão e crop. A resposta bruta do modelo fica separada em evidenceJson.rawModelResponse. Falhas de texto, recorte, hash ou storage bloqueiam o callback de sucesso. O backend confere a derivação contra o gate vigente e os arquivos persistidos.
+
+Psique e Têmis recebem os PNGs finais por esse mesmo contrato, conferem o hash e os anexam ao modelo. Cada parecer registra renderedAssetAudit com id/hash/avaliação. Captura do produto e briefing não substituem a peça final. Em contexto privado, a peça identifica demonstração sintética sem compra ou cobrança; aprovação perceptiva ou de integridade não constitui prova humana nem autorização comercial.
+
+Briefings históricos sem imagem voltam à produção com nova ocorrência. Um ADJUST posterior de revisor solicita correção pela mesma atividade de Íris; a revisão anterior fica superada pela nova peça. BLOCKED por ausência essencial ou falha técnica permanece explícito. Todo parecer disponível é preservado mesmo que a validação técnica falhe. Nenhuma regra de aprovação é relaxada para concluir o processo.

@@ -19,6 +19,46 @@ class CommunicationAgentCodexRunnerTest {
   private static final String STRATEGY_HASH = "a".repeat(64);
   private final ObjectMapper json = new ObjectMapper();
 
+  /**
+   * Reproduz a entrada privada sem checkout e impede instruções conflitantes sobre lacunas futuras.
+   */
+  @Test
+  void preparesPrivateCommunicationWithoutInventingCommercialPrerequisites() throws Exception {
+    var input =
+        task("pde-communication-sales-journey", "communicationContract", context("READY", false));
+    CommunicationAgentCodexRunner.validateInput(input);
+    var runner =
+        new CommunicationAgentCodexRunner(properties(), json, mock(CodexTelemetryReporter.class));
+    var prompt = runner.promptComposition(input, CommunicationAgentCodexRunner.contractFor(input));
+    assertThat(prompt.agentPromptPart())
+        .contains(
+            "LEARNING_CYCLE_PRIVATE",
+            "AGENT_VALIDATION",
+            "não bloqueia o `COMMUNICATION_PACKAGE`",
+            "Checkout canônico é obrigatório",
+            "`nextHandoff`")
+        .doesNotContain("atividades posteriores em `evidenceGaps`");
+    assertThat(prompt.activityPromptPart())
+        .contains("executionStatus=COMPLETED", "gate vigente", "checkout canônico posterior");
+    CommunicationAgentCodexRunner.validate(
+        result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED"),
+        input,
+        CommunicationAgentCodexRunner.contractFor(input));
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validateInput(
+                    task("landing-page-generation", "html", context("READY", false))))
+        .hasMessageContaining("prova visual aprovada");
+    assertThatThrownBy(
+            () ->
+                CommunicationAgentCodexRunner.validateInput(
+                    task(
+                        "pde-communication-sales-journey",
+                        "communicationContract",
+                        context("BLOCKED", false))))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
   /** Confirma pesquisa, MCP próprio, sandbox somente leitura e política não interativa. */
   @Test
   void shouldBuildReadOnlyCodexCommand() {

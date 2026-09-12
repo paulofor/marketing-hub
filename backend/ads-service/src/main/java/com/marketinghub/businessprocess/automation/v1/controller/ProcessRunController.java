@@ -41,15 +41,19 @@ public class ProcessRunController {
     }
   }
 
-  /** Retorna o progresso e a disponibilidade oficial no contexto solicitado. */
-  @Operation(summary = "Consulta execução e progresso do processo")
+  /**
+   * Retorna progresso e relações; sem referência oferece somente consulta, sem permitir execução.
+   */
+  @Operation(
+      summary =
+          "Consulta execução, progresso e relações do processo, inclusive antes do primeiro ciclo")
   @GetMapping(ROOT)
   public ProcessRunResponse status(
       @PathVariable Long productId,
       @PathVariable Long processId,
       @RequestParam Long chainId,
       @RequestParam(required = false) Long learningCycleId,
-      @RequestParam String sourceReference) {
+      @RequestParam(required = false) String sourceReference) {
     return service.status(
         productId, processId, new ProcessRunCommand(chainId, learningCycleId, sourceReference));
   }

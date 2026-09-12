@@ -73,6 +73,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
   private final ObjectMapper objectMapper;
   private final Clock clock;
 
+  @Autowired(required = false)
+  private com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository learningCycles;
+
   /** Configura as fontes canônicas usadas para validar e registrar a integração comercial. */
   @Autowired
   public PdeSalesJourneyIntegrationActivityExecutor(
@@ -156,13 +159,17 @@ public class PdeSalesJourneyIntegrationActivityExecutor
       return new BackendProductProcessActivityReadiness(
           false, "Não existe executor backend para esta atividade.");
     }
-    if (!ELIGIBLE_COMMERCIAL_STATUSES.contains(product.getCommercialStatus())) {
-      return new BackendProductProcessActivityReadiness(
-          false,
-          "O produto não está no processo de comunicação e jornada; a execução por uma rota histórica foi bloqueada.");
-    }
     try {
-      Optional<String> predecessorIssue = predecessorIssue(process, product);
+      boolean scopedCycle = scopedCycle(product, sourceReference).isPresent();
+      if (!scopedCycle && !ELIGIBLE_COMMERCIAL_STATUSES.contains(product.getCommercialStatus())) {
+        return new BackendProductProcessActivityReadiness(
+            false,
+            "O produto não está no processo de comunicação e jornada; a execução por uma rota histórica foi bloqueada.");
+      }
+      Optional<String> predecessorIssue =
+          scopedCycle
+              ? cyclePredecessorIssue(process, sourceReference)
+              : predecessorIssue(process, product);
       if (predecessorIssue.isPresent()) {
         return new BackendProductProcessActivityReadiness(false, predecessorIssue.get());
       }
@@ -196,20 +203,22 @@ public class PdeSalesJourneyIntegrationActivityExecutor
     if (!readiness.ready()) {
       throw new IllegalStateException(readiness.reason());
     }
-    Experiment experiment = latestExperiment(product.getId());
+    var cycle = scopedCycle(product, sourceReference);
+    Experiment experiment = sourceExperiment(product, sourceReference);
     CommercialPlan plan = latestPlan(product.getId(), experiment.getId());
     String resolvedReference =
         StringUtils.hasText(sourceReference)
             ? sourceReference.trim()
             : "experiment:" + experiment.getId();
     Instant startedAt = Instant.now(clock);
-    synchronizeCompletedSubprocesses(process, product, resolvedReference, startedAt);
+    if (cycle.isEmpty())
+      synchronizeCompletedSubprocesses(process, product, resolvedReference, startedAt);
     Optional<BusinessProcessActivityInstance> latest =
         activityInstanceRepository
             .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
                 activityDefinition.getId(), resolvedReference);
     if (latest.isPresent() && "COMPLETED".equals(latest.get().getStatus())) {
-      advanceProductIfNeeded(product);
+      if (cycle.isEmpty()) advanceProductIfNeeded(product);
       return new BackendProductProcessActivityExecutionResult(
           resolvedReference,
           "COMPLETED",
@@ -226,7 +235,8 @@ public class PdeSalesJourneyIntegrationActivityExecutor
 
     Optional<PdeProductionSlot> persistedSlot =
         slotRepository.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(experiment.getId());
-    List<String> blockers = staticBlockers(product, experiment, persistedSlot.orElse(null));
+    List<String> blockers =
+        staticBlockers(product, experiment, persistedSlot.orElse(null), cycle.orElse(null));
     PostDeployPdeProductionSlotDto validatedSlot = null;
     if (blockers.isEmpty()) {
       PdeProductionSlot slot = persistedSlot.orElseThrow();
@@ -251,12 +261,65 @@ public class PdeSalesJourneyIntegrationActivityExecutor
     experiment.setFollowUpActionUrl(slot.getPublicUrl());
     experimentRepository.save(experiment);
     completeApproved(instance, evidence, completedAt);
-    advanceProductIfNeeded(product);
+    if (cycle.isEmpty()) advanceProductIfNeeded(product);
     return new BackendProductProcessActivityExecutionResult(
         resolvedReference,
         "COMPLETED",
         true,
-        "Canal, checkout, acesso e eventos foram preparados. O Rigel avançou para Homologação e ativação comercial.");
+        "Canal, checkout, acesso e eventos foram preparados na referência selecionada para homologação.");
+  }
+
+  /** Identifica o ciclo aberto exato sem usar a posição histórica global como bloqueio. */
+  private Optional<com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle>
+      scopedCycle(Product product, String reference) {
+    if (learningCycles == null || reference == null || !reference.matches("experiment:[1-9][0-9]*"))
+      return Optional.empty();
+    var cycle = learningCycles.findByExperimentId(Long.parseLong(reference.substring(11)));
+    if (cycle.isEmpty() || cycle.get().isBaseline()) return Optional.empty();
+    if (!Objects.equals(product.getId(), cycle.get().getProductId())
+        || !"OPEN".equals(cycle.get().getStatus()))
+      throw new IllegalStateException("O ciclo não está aberto para este produto.");
+    return cycle;
+  }
+
+  /**
+   * Usa o experimento explícito e recusa identidade de outro produto em vez de selecionar o mais
+   * recente.
+   */
+  private Experiment sourceExperiment(Product product, String reference) {
+    if (reference == null || !reference.matches("experiment:[1-9][0-9]*"))
+      return latestExperiment(product.getId());
+    var experiment =
+        experimentRepository.findById(Long.parseLong(reference.substring(11))).orElseThrow();
+    if (experiment.getProduct() == null
+        || !Objects.equals(product.getId(), experiment.getProduct().getId()))
+      throw new IllegalStateException("O experimento de integração pertence a outro produto.");
+    return experiment;
+  }
+
+  /** Exige as ocorrências do próprio ciclo, incluindo as chamadas comprovadas dos subprocessos. */
+  private Optional<String> cyclePredecessorIssue(
+      BusinessProcessDefinition process, String reference) {
+    var instances =
+        activityInstanceRepository
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                process.getId(), reference);
+    for (var node : orderedTaskNodes(process)) {
+      String activityId = node.path("id").asText();
+      if (ACTIVITY_ID.equals(activityId)) break;
+      var latest =
+          instances.stream()
+              .filter(i -> activityId.equals(i.getActivityDefinition().getActivityId()))
+              .max(
+                  java.util.Comparator.comparing(
+                      BusinessProcessActivityInstance::getOccurrenceNumber));
+      if (latest.isEmpty()
+          || !"COMPLETED".equals(latest.get().getStatus())
+          || !latest.get().isObjectiveAchieved())
+        return Optional.of(
+            "Conclua neste ciclo a atividade " + node.path("label").asText(activityId) + ".");
+    }
+    return Optional.empty();
   }
 
   /** Localiza o experimento mais recente sem misturar outro produto no gate de integração. */
@@ -446,7 +509,10 @@ public class PdeSalesJourneyIntegrationActivityExecutor
 
   /** Reúne lacunas persistidas antes da validação HTTP da superfície pública. */
   private List<String> staticBlockers(
-      Product product, Experiment experiment, PdeProductionSlot slot) {
+      Product product,
+      Experiment experiment,
+      PdeProductionSlot slot,
+      com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle cycle) {
     List<String> blockers = new ArrayList<>();
     if (slot == null) {
       blockers.add("Nenhum slot PDE está vinculado ao experimento #" + experiment.getId() + ".");
@@ -468,10 +534,13 @@ public class PdeSalesJourneyIntegrationActivityExecutor
     if (!isHttps(slot.getPublicUrl())) {
       blockers.add("A URL pública do PDE precisa usar HTTPS.");
     }
-    if (!StringUtils.hasText(product.getPublicUrl())
-        || !normalizeUrl(product.getPublicUrl()).equals(normalizeUrl(slot.getPublicUrl()))) {
+    if (cycle == null
+        && (!StringUtils.hasText(product.getPublicUrl())
+            || !normalizeUrl(product.getPublicUrl()).equals(normalizeUrl(slot.getPublicUrl())))) {
       blockers.add("A URL pública do produto diverge do slot PDE aprovado.");
     }
+    if (cycle != null && !Objects.equals(cycle.getProductVersion(), slot.getExperienceVersion()))
+      blockers.add("O slot PDE não usa a versão aprovada neste ciclo.");
     if (!StringUtils.hasText(slot.getBackendUrl())) {
       blockers.add("O slot PDE não declara o backend responsável por acesso e eventos.");
     }

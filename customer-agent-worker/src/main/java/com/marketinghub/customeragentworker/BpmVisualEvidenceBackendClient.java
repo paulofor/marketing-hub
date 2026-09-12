@@ -11,9 +11,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: persistir no backend as capturas Playwright produzidas para uma tarefa. */
+/** Responsabilidade: trocar provas visuais privadas com o backend dentro da tarefa reservada. */
 @Component
 public class BpmVisualEvidenceBackendClient {
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(BpmVisualEvidenceBackendClient.class);
   private static final String AGENT_KEY = "customer-agent";
   private final RestClient backend;
 
@@ -21,6 +23,64 @@ public class BpmVisualEvidenceBackendClient {
   public BpmVisualEvidenceBackendClient(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
+  }
+
+  /**
+   * Baixa peças renderizadas autorizadas para revisão sem criar uma nova captura nem mudar sua
+   * origem.
+   */
+  List<UploadedVisualEvidence> creativeInputs(long taskId, Path directory)
+      throws java.io.IOException {
+    String endpoint =
+        "/api/internal/agent-tasks/" + AGENT_KEY + "/stage-executions/" + taskId + "/visual-inputs";
+    try {
+      var inputs =
+          backend
+              .get()
+              .uri(endpoint)
+              .retrieve()
+              .body(com.fasterxml.jackson.databind.JsonNode.class);
+      if (inputs == null || !inputs.isArray() || inputs.isEmpty())
+        throw new IllegalStateException("A imagem final do criativo não está disponível.");
+      var mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+      List<UploadedVisualEvidence> result = new ArrayList<>();
+      for (var input : inputs) {
+        var evidence = mapper.treeToValue(input.path("evidence"), UploadedVisualEvidence.class);
+        if (!"CREATIVE_RENDER".equals(evidence.evidenceType()))
+          throw new IllegalStateException(
+              "A revisão exige a peça renderizada, não uma captura de origem.");
+        String content =
+            endpoint + "/" + input.path("sourceTaskId").asLong() + "/" + evidence.id() + "/content";
+        log.info(
+            "Baixando criativo para Psique. taskId={} endpoint={} artifactId={}",
+            taskId,
+            content,
+            evidence.id());
+        byte[] bytes = backend.get().uri(content).retrieve().body(byte[].class);
+        if (bytes == null
+            || !java.util.HexFormat.of()
+                .formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes))
+                .equals(evidence.sha256()))
+          throw new IllegalStateException("O hash da imagem de Psique diverge da peça persistida.");
+        Path file = directory.resolve("creative-" + evidence.id() + ".png");
+        java.nio.file.Files.write(file, bytes);
+        var pixels = javax.imageio.ImageIO.read(file.toFile());
+        if (pixels == null || pixels.getWidth() != 1080 || pixels.getHeight() != 1350)
+          throw new IllegalStateException("Imagem criativa fora do formato contratado.");
+        result.add(evidence.withLocalPath(file.toAbsolutePath().toString()));
+        log.info(
+            "Criativo recebido por Psique. taskId={} artifactId={} bytes={} sha256={}",
+            taskId,
+            evidence.id(),
+            bytes.length,
+            evidence.sha256());
+      }
+      return List.copyOf(result);
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao receber peça real para Psique. taskId={} endpoint={}", taskId, endpoint, ex);
+      throw new java.io.IOException("Não foi possível carregar a imagem final do criativo.", ex);
+    }
   }
 
   /** Envia todos os snapshots e devolve ids persistidos na mesma ordem da captura. */

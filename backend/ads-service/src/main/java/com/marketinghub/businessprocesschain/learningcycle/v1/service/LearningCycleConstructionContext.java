@@ -2,7 +2,7 @@ package com.marketinghub.businessprocesschain.learningcycle.v1.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskFunctionalSnapshot;
 import com.marketinghub.agenttask.AgentTaskTargetResponse;
 import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.experiment.Experiment;
@@ -31,18 +31,20 @@ public class LearningCycleConstructionContext {
   private LearningCyclePrototypeContext prototypeContext;
 
   /**
-   * Entrega construção e comunicação do ciclo sem substituir a experiência histórica do produto.
+   * Entrega construção, comunicação e criativos do ciclo sem substituir a experiência histórica.
    */
   @Transactional(readOnly = true)
   public Optional<AgentTaskTargetResponse> resolve(
       String reference, Experiment experiment, String processCode) {
     if (experiment == null
         || processCode == null
-        || !java.util.Set.of("pde-construction-approval", "pde-communication-sales-journey")
+        || !java.util.Set.of(
+                "pde-construction-approval",
+                "pde-communication-sales-journey",
+                "creative-production-approval")
             .contains(processCode)) return Optional.empty();
     var cycle = cycles.findByExperimentId(experiment.getId()).orElse(null);
-    if (cycle == null
-        || (cycle.isBaseline() && "pde-communication-sales-journey".equals(processCode)))
+    if (cycle == null || (cycle.isBaseline() && !"pde-construction-approval".equals(processCode)))
       return Optional.empty();
     var product = experiment.getProduct();
     if (product == null || !Objects.equals(cycle.getProductId(), product.getId()))
@@ -73,8 +75,8 @@ public class LearningCycleConstructionContext {
   }
 
   /**
-   * Publica plano multiagente e linhagem próprios; mantém ausência explícita se as aprovações
-   * falharem.
+   * Publica plano multiagente e linhagem por projeções sem prompts; mantém ausência se as
+   * aprovações falharem.
    */
   private JsonNode context(LearningSalesCycle cycle) {
     try {
@@ -88,15 +90,14 @@ public class LearningCycleConstructionContext {
               .findFirst()
               .orElseThrow();
       var approved =
-          tasks
-              .findByProcessDefinitionIdAndSourceReferenceAndCreatedAtGreaterThanEqualOrderByCreatedAtDescIdDesc(
-                  planningId, "experiment:" + cycle.getExperimentId(), cycle.getCreatedAt());
+          tasks.findFunctionalSnapshotsByProcessSince(
+              planningId, "experiment:" + cycle.getExperimentId(), cycle.getCreatedAt());
       var strategyTask = latest(approved, "marketStrategy", "experiment-strategist");
       var economicsTask = latest(approved, "economics", "financial-agent");
       var architectureTask = latest(approved, "productArchitecture", "landing-generator");
-      var strategyResult = mapper.readTree(strategyTask.getResultJson());
-      var economicsResult = mapper.readTree(economicsTask.getResultJson());
-      var architectureResult = mapper.readTree(architectureTask.getResultJson());
+      var strategyResult = mapper.readTree(strategyTask.resultJson());
+      var economicsResult = mapper.readTree(economicsTask.resultJson());
+      var architectureResult = mapper.readTree(architectureTask.resultJson());
       var strategy = strategyResult.path("marketStrategicContract");
       var economics = economicsResult.path("economics");
       var architecture = architectureResult.path("productArchitecture");
@@ -110,8 +111,8 @@ public class LearningCycleConstructionContext {
           || !"APPROVE".equals(architectureResult.path("decision").asText())
           || !architecture.path("privatePrototype").isObject()
           || !strategy.path("privateValidationPlan").isObject()
-          || architectureTask.getDeliveredAt().isBefore(economicsTask.getDeliveredAt())
-          || economicsTask.getDeliveredAt().isBefore(strategyTask.getDeliveredAt()))
+          || architectureTask.deliveredAt().isBefore(economicsTask.deliveredAt())
+          || economicsTask.deliveredAt().isBefore(strategyTask.deliveredAt()))
         throw new IllegalStateException(
             "Aprovações privadas ausentes, incompatíveis ou desatualizadas.");
       var context = mapper.createObjectNode();
@@ -139,9 +140,9 @@ public class LearningCycleConstructionContext {
           .put("learningCycleId", cycle.getId())
           .put("productId", cycle.getProductId())
           .put("experimentId", cycle.getExperimentId())
-          .put("strategyTaskId", strategyTask.getId())
-          .put("economicsTaskId", economicsTask.getId())
-          .put("architectureTaskId", architectureTask.getId());
+          .put("strategyTaskId", strategyTask.id())
+          .put("economicsTaskId", economicsTask.id())
+          .put("architectureTaskId", architectureTask.id());
       context.set("marketStrategy", strategy);
       context.set("economics", economics);
       context.set("metrics", economicsResult.path("metrics"));
@@ -167,16 +168,17 @@ public class LearningCycleConstructionContext {
   /**
    * Exige aprovação da tentativa mais recente, sem reaproveitar entrega substituída ou bloqueada.
    */
-  private AgentTask latest(List<AgentTask> candidates, String activity, String agent) {
+  private AgentTaskFunctionalSnapshot latest(
+      List<AgentTaskFunctionalSnapshot> candidates, String activity, String agent) {
     var task =
         candidates.stream()
-            .filter(value -> activity.equals(value.getProcessActivityId()))
+            .filter(value -> activity.equals(value.processActivityId()))
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Aprovação ausente: " + activity));
-    if (!"COMPLETED".equals(task.getStatus())
-        || task.getDeliveredAt() == null
-        || task.getAssignedAgent() == null
-        || !agent.equals(task.getAssignedAgent().getAgentKey()))
+    if (!"COMPLETED".equals(task.status())
+        || task.deliveredAt() == null
+        || task.agentKey() == null
+        || !agent.equals(task.agentKey()))
       throw new IllegalStateException(
           "Última tentativa ainda não é uma aprovação válida: " + activity);
     return task;

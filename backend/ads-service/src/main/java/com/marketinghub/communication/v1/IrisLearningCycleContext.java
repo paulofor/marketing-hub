@@ -236,6 +236,7 @@ public class IrisLearningCycleContext {
         "experiment", Map.of("id", experiment.getId(), "status", experiment.getStatus().name()));
     result.put("privatePrototypeAcceptance", pde.path("privatePrototypeAcceptance"));
     result.put("approvedUpstreamArtifacts", List.copyOf(artifacts));
+    result.put("communicationArtifacts", communicationArtifacts(reference, cycle));
     result.put("approvedLandingAssets", List.of());
     result.put("missingRequiredPredecessors", List.of());
     result.put("gateInstanceId", gate.getId());
@@ -260,6 +261,58 @@ public class IrisLearningCycleContext {
         "publicationBoundary",
         "Preparar comunicação privada com provas sintéticas; sem alegar preferência, venda ou satisfação humana e sem autorizar publicação, cobrança ou mídia.");
     return java.util.Collections.unmodifiableMap(result);
+  }
+
+  /** Entrega somente a última tentativa de cada atividade de comunicação do próprio ciclo. */
+  private List<Map<String, Object>> communicationArtifacts(
+      String reference, LearningSalesCycle cycle) throws Exception {
+    Map<String, com.marketinghub.agenttask.AgentTaskFunctionalSnapshot> latest =
+        new LinkedHashMap<>();
+    for (var task :
+        tasks.findFunctionalSnapshots(
+            reference,
+            Set.of(
+                "pde-communication-sales-journey",
+                "creative-production-approval",
+                "landing-page-generation"),
+            cycle.getCreatedAt())) {
+      if (task.processDefinitionId() == null
+          || task.agentKey() == null
+          || !"communication-director".equals(task.agentKey())
+          || task.createdAt() == null
+          || (cycle.getCreatedAt() != null && task.createdAt().isBefore(cycle.getCreatedAt())))
+        continue;
+      String process = task.processCode();
+      if (!Set.of(
+              "pde-communication-sales-journey",
+              "creative-production-approval",
+              "landing-page-generation")
+          .contains(process)) continue;
+      latest.merge(
+          process + ":" + task.processActivityId(), task, (a, b) -> a.id() > b.id() ? a : b);
+    }
+    List<Map<String, Object>> result = new ArrayList<>();
+    for (var task : latest.values()) {
+      if (!"COMPLETED".equals(task.status())) continue;
+      var output = json.readTree(task.resultJson());
+      require(
+          "IRIS_COMMUNICATION_V1".equals(output.path("contractVersion").asText())
+              && reference.equals(output.path("sourceReference").asText()),
+          "Artefato de comunicação divergente.");
+      result.add(
+          Map.of(
+              "taskId",
+              task.id(),
+              "processDefinitionId",
+              task.processDefinitionId(),
+              "activityId",
+              task.processActivityId(),
+              "result",
+              output,
+              "resultSha256",
+              sha(task.resultJson())));
+    }
+    return List.copyOf(result);
   }
 
   /** Expõe a versão privada correta em vez da página histórica publicada do produto. */

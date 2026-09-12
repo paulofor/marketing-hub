@@ -32,6 +32,8 @@ type Props = {
   trackingError?: boolean;
   currentTask?: ProductProcessRecoveryTask | null;
   processManaged?: boolean;
+  chainId?: number;
+  cycleId?: number;
 };
 
 const executorLabels = {
@@ -62,11 +64,21 @@ export default function ProductProcessActivityExecutionPanel({
   trackingError,
   currentTask,
   processManaged = false,
+  chainId,
+  cycleId,
 }: Props) {
   const location = useLocation();
   const control = activity.executionControl;
   if (!control) return null;
   const executing = pending && pendingActivityId === activity.activityId;
+  const subprocessSearch = new URLSearchParams();
+  const currentSearch = new URLSearchParams(location.search);
+  for (const key of ["chainId", "learningCycleId"]) {
+    const value = currentSearch.get(key);
+    if (value && /^[1-9][0-9]*$/.test(value)) subprocessSearch.set(key, value);
+  }
+  if (chainId) subprocessSearch.set("chainId", String(chainId));
+  if (cycleId) subprocessSearch.set("learningCycleId", String(cycleId));
   const recovery = activity.recoveryAction;
   const controlCompleted = activity.operationalState === "COMPLETED";
   const recoveryLabel = recovery
@@ -74,7 +86,7 @@ export default function ProductProcessActivityExecutionPanel({
     : "";
   const waitingForTask = Boolean(
     feedback?.taskIds?.length &&
-      !feedback.taskIds.includes(currentTask?.taskId ?? -1),
+    !feedback.taskIds.includes(currentTask?.taskId ?? -1),
   );
 
   return (
@@ -133,7 +145,7 @@ export default function ProductProcessActivityExecutionPanel({
               className="btn btn-primary"
               to={
                 control.navigationUrl ||
-                `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities`
+                `/products/${productId}/value-chain-history/processes/${control.targetProcessDefinitionId}/activities${subprocessSearch.size ? `?${subprocessSearch}` : ""}`
               }
             >
               <Workflow size={17} aria-hidden="true" />

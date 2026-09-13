@@ -1,0 +1,22 @@
+{
+  "baseCommit": "d90427871c46d34aaf8cf4acd06d798e9bb55463",
+  "sourceFingerprint": "660b7aab7c088fd59e3d533aed0325bbaa7107fdecf6d152640b1a24fb7b5a7a",
+  "productionFiles": {
+    "backend/ads-service/src/main/java/com/marketinghub/agenttask/AgentTaskService.java": "be040e2e1f78812a148d0d39e2bd73ddadcb1accd0627cd4a77ecfd6550a5535",
+    "backend/ads-service/src/main/java/com/marketinghub/businessprocess/execution/service/BusinessProcessActivityExecutionService.java": "fcec8cdfc57291a78b0760df551cded1d0ba9eb99507b135b8c9bbcb7541d4da",
+    "backend/ads-service/src/main/java/com/marketinghub/communication/v1/CommunicationFormatsActivityExecutor.java": "608cf82b1625175c875d729eac140c38e66e85a15868c09531126632e7780e89",
+    "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisCommunicationMaterializationContextProvider.java": "e0bc6a3319da10ddc978fd325285514e642b7b8fd591082589617a5319b5b17c",
+    "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisPrivateCommunicationCompletionHook.java": "fbbbe9da06960f0bc0b9bec052efca096f3c88f56024282eec066dfa2c8f3efa",
+    "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisPrivateProductContext.java": "21fb15ef1b95cce774f3355d239a13f963e1f79b7349a39c5deef83eee07c867",
+    "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisProductProcessActivityReadinessProvider.java": "7dd8c3a6c2193fc989f704cd2ee39078a5fa3e9b98b0d51abfa209db8a851647",
+    "backend/ads-service/src/main/java/com/marketinghub/communication/v1/PrivateCommunicationJourney.java": "55656fe4f87f1da58c8bcba217252a728e87be3125e34ef11c48a8642a1e3787",
+    "backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentAgentTaskTargetContextProvider.java": "27ce7ab71d49c6b00c7bdafa05e7863f3e1e8796c773007fb83bbadcb26df348",
+    "communication-agent-worker/src/main/resources/mcp/communication-agent.mjs": "bb596dad781ac1189a5716af5442030963eb0500fc635110ec63b0106dda28c2",
+    "communication-agent-worker/src/main/resources/prompts/iris/v1/behavioral-core.md": "a9d834f57439822f0c31753634580d18dd1cbbb04a3ff0d5deff833dab4a6f64",
+    "communication-agent-worker/src/main/resources/prompts/iris/v1/communication-package.md": "918c6d60eb68943ee2a1fd21cf9d353675d170cdbcbdee75a9c6cf9db8ac9209",
+    "communication-agent-worker/src/main/resources/prompts/iris/v1/non-audiovisual-package.md": "9cbdc6c02920c3ce156db068e2604bc965d424bb0373930df76a64cbd673a9c2",
+    "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review.md": "36eb1d91f033ad9cee38d01698f65738ea8a97f31ca886168492d11f49300ac9"
+  },
+  "committed": false,
+  "pushed": false
+}

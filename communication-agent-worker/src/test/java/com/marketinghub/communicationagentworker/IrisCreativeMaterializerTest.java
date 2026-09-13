@@ -23,6 +23,7 @@ class IrisCreativeMaterializerTest {
   private byte[] source;
   private String sourceHash;
   private boolean rejectUpload;
+  private String mode = "LEARNING_CYCLE_PRIVATE";
   private final AtomicReference<byte[]> saved = new AtomicReference<>();
   private IrisCreativeMaterializer materializer;
 
@@ -83,9 +84,15 @@ class IrisCreativeMaterializerTest {
     if (server != null) server.stop(0);
   }
 
-  /** Executa fila, modelo simulado, renderização real, upload e callback com rastreabilidade. */
-  @Test
-  void completesOnlyAfterPersistingImageAndPreservesRawResponse() throws Exception {
+  /**
+   * Executa os dois contextos privados, modelo simulado, pixels reais, upload e callback auditável.
+   */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"LEARNING_CYCLE_PRIVATE", "PRODUCT_PRIVATE"})
+  void completesOnlyAfterPersistingImageAndPreservesRawResponse(String privateMode)
+      throws Exception {
+    mode = privateMode;
     var backend = mock(CommunicationAgentBackendClient.class);
     var runner = mock(CommunicationAgentCodexRunner.class);
     var control = mock(AutomaticExecutionControl.class);
@@ -158,7 +165,7 @@ class IrisCreativeMaterializerTest {
     var result =
         json.createObjectNode()
             .put("executionStatus", "COMPLETED")
-            .put("sourceReference", "experiment:91092");
+            .put("sourceReference", reference());
     var spec = ProofCardRendererTest.spec().put("sourceSha256", sourceHash);
     result
         .putObject("functionalOutput")
@@ -179,9 +186,18 @@ class IrisCreativeMaterializerTest {
             "activityId",
             "nonAudiovisual",
             "sourceReference",
-            "experiment:91092",
+            reference(),
             "processContextJson",
-            "{\"communicationMaterializationContext\":{\"mode\":\"LEARNING_CYCLE_PRIVATE\"}}"));
+            "{\"communicationMaterializationContext\":{\"mode\":\""
+                + mode
+                + "\",\"privatePrototypeAcceptance\":{\"prototypeVersion\":\"sandbox-v12\"}}}"));
+  }
+
+  /** Preserva a origem privada e impede que a simulação do produto fabrique um experimento. */
+  private String reference() {
+    return "PRODUCT_PRIVATE".equals(mode)
+        ? "product:91004@agent-validation-v1"
+        : "experiment:91092";
   }
 
   /** Configura apenas o servidor efêmero da matriz local. */

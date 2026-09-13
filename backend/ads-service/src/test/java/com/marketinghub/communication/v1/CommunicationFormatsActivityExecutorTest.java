@@ -71,6 +71,49 @@ class CommunicationFormatsActivityExecutorTest {
         .thenAnswer(ignored -> List.of(snapshot(task)));
   }
 
+  /** Resolve formatos pelo produto privado sem criar experimento e rejeita outra identidade. */
+  @Test
+  void acceptsApprovedPrivateProductWithoutExperiment() {
+    String reference = "product:" + product.getId() + "@agent-validation-v1";
+    task.setSourceReference(reference);
+    task.setResultJson(task.getResultJson().replace("experiment:91092", reference));
+    when(tasks.findFunctionalSnapshots(eq(reference), anyCollection(), isNull()))
+        .thenAnswer(i -> List.of(snapshot(task)));
+    when(context.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "inputReadiness",
+                    "READY",
+                    "product",
+                    Map.of("id", product.getId()),
+                    "communicationArtifacts",
+                    List.of(
+                        Map.of(
+                            "taskId",
+                            task.getId(),
+                            "processDefinitionId",
+                            task.getProcessDefinition().getId())))));
+    assertThat(executor.readiness(process, route, product, reference).ready()).isTrue();
+    assertThat(executor.execute(process, route, product, reference).objectiveAchieved()).isTrue();
+    verify(experiments, never()).findById(anyLong());
+    when(context.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "inputReadiness",
+                    "READY",
+                    "product",
+                    Map.of("id", product.getId()),
+                    "communicationArtifacts",
+                    List.of())));
+    assertThat(executor.readiness(process, route, product, reference).ready()).isFalse();
+    when(context.resolve(reference))
+        .thenReturn(
+            Optional.of(Map.of("inputReadiness", "READY", "product", Map.of("id", 91999L))));
+    assertThat(executor.readiness(process, route, product, reference).ready()).isFalse();
+  }
+
   /** Impede que a leitura da prontidão volte a carregar prompts de todas as tarefas do ciclo. */
   @Test
   void readinessDoesNotHydrateUnrelatedTaskAudit() {

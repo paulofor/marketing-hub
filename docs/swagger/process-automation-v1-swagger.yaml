@@ -21,7 +21,7 @@ paths:
         - name: sourceReference
           in: query
           required: false
-          description: Sem referência, retorna prévia UNAVAILABLE com relações navegáveis e comandos desabilitados, sem criar execução.
+          description: A preparação privada pode usar product:<id>@agent-validation-v1, fornecida pelo histórico oficial após validação do produto, sem learningCycleId. Sem referência, retorna prévia UNAVAILABLE com relações navegáveis e comandos desabilitados, sem criar execução.
           schema: {type: string}
       responses:
         '200': {$ref: '#/components/responses/run'}

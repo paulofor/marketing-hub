@@ -810,7 +810,10 @@ public class BusinessProcessActivityExecutionService {
     return learningCycleContext.source(cycleId, product, process, command);
   }
 
-  /** Prioriza a seleção já operada do plano vigente sem fabricar contexto pré-comercial. */
+  /**
+   * Prioriza o experimento operado e reconhece preparação privada por produto sem fabricar
+   * contexto.
+   */
   private String initialSourceReference(
       BusinessProcessDefinition process,
       Product product,
@@ -858,6 +861,14 @@ public class BusinessProcessActivityExecutionService {
     }
     if ("pde-construction-approval".equals(process.getProcessCode())
         && usesPdeAgentValidationV1(product)) {
+      return "product:" + product.getId() + "@agent-validation-v1";
+    }
+    if (Set.of(
+                "pde-communication-sales-journey",
+                "creative-production-approval",
+                "landing-page-generation")
+            .contains(process.getProcessCode())
+        && "PDE_AGENT_VALIDATED_V1".equals(product.getValidationDefinitionVersion())) {
       return "product:" + product.getId() + "@agent-validation-v1";
     }
     return null;

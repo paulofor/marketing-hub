@@ -33,7 +33,7 @@ URL, forma de pagamento ou condição comercial. Preserve literalmente `sourceRe
 recebidos. Nunca inclua dados pessoais ou razão social/endereço desnecessários em superfície
 pública. Nenhuma saída autoriza publicação ou gasto.
 
-Em `communicationMaterializationContext.mode=LEARNING_CYCLE_PRIVATE`, a tarefa prepara comunicação
+Em `communicationMaterializationContext.mode=LEARNING_CYCLE_PRIVATE` ou `PRODUCT_PRIVATE`, a tarefa prepara comunicação
 privada sobre o protótipo e o gate atuais. Use `validationPolicy` vigente: critérios humanos do
 contrato histórico não substituem `AGENT_VALIDATION`. Ausência de vendas, preferência humana,
 checkout comercial ou `approvedLandingAssets` não bloqueia o `COMMUNICATION_PACKAGE`; registre

@@ -115,19 +115,31 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
    * Confere o produto e a última prova funcional da comunicação sem carregar prompts ou auditoria.
    */
   private AgentTaskFunctionalSnapshot source(Product product, String reference) {
-    Long experimentId =
-        reference != null && reference.matches("experiment:[1-9][0-9]*")
-            ? Long.parseLong(reference.substring(11))
-            : context
-                .experimentId(reference)
-                .orElseThrow(
-                    () ->
-                        new IllegalStateException(
-                            "Informe o experimento ou plano comercial oficial deste produto para resolver formatos."));
-    var experiment = experiments.findById(experimentId).orElseThrow();
-    if (experiment.getProduct() == null
-        || !Objects.equals(product.getId(), experiment.getProduct().getId()))
-      throw new IllegalStateException("O contrato de comunicação pertence a outro produto.");
+    JsonNode privateInput = null;
+    if (IrisPrivateProductContext.supports(reference)) {
+      var input = context.resolve(reference).orElseThrow();
+      var identity = json.valueToTree(input);
+      privateInput = identity;
+      if (!reference.equals("product:" + product.getId() + "@agent-validation-v1")
+          || !"READY".equals(identity.path("inputReadiness").asText())
+          || product.getId() != identity.path("product").path("id").asLong())
+        throw new IllegalStateException(
+            "Confirme o gate e o contrato privado deste produto antes de resolver formatos.");
+    } else {
+      Long experimentId =
+          reference != null && reference.matches("experiment:[1-9][0-9]*")
+              ? Long.parseLong(reference.substring(11))
+              : context
+                  .experimentId(reference)
+                  .orElseThrow(
+                      () ->
+                          new IllegalStateException(
+                              "Informe o experimento ou plano comercial oficial deste produto para resolver formatos."));
+      var experiment = experiments.findById(experimentId).orElseThrow();
+      if (experiment.getProduct() == null
+          || !Objects.equals(product.getId(), experiment.getProduct().getId()))
+        throw new IllegalStateException("O contrato de comunicação pertence a outro produto.");
+    }
     var task =
         tasks
             .findFunctionalSnapshots(
@@ -148,6 +160,16 @@ public class CommunicationFormatsActivityExecutor implements BackendProductProce
     if (!"COMPLETED".equals(task.status()))
       throw new IllegalStateException(
           "A última tentativa do contrato de comunicação ainda não está concluída.");
+    if (privateInput != null) {
+      boolean current = false;
+      for (var artifact : privateInput.path("communicationArtifacts"))
+        if (task.id() == artifact.path("taskId").asLong()
+            && task.processDefinitionId() == artifact.path("processDefinitionId").asLong())
+          current = true;
+      if (!current)
+        throw new IllegalStateException(
+            "O contrato de comunicação precisa refletir o gate e a versão privada atuais.");
+    }
     var result = result(task);
     if (!"IRIS_COMMUNICATION_V1".equals(result.path("contractVersion").asText())
         || !"COMPLETED".equals(result.path("executionStatus").asText())

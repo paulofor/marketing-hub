@@ -5114,3 +5114,27 @@ ProcessRunVideoGuidanceTest, ProcessRunGuidanceTest, VideoProductionCycleGuidanc
 REST/MySQL em `infra/testing/video-finance/validate-video-preflight.py` e navegador
 cobrem segregação, persistência, pausa e ausência de consumo. A configuração externa
 continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
+
+## LOOP-IRIS-PRODUTO-VALIDADO-SEM-EXPERIMENTO — continuidade privada ausente
+
+- **Confirmado em 13/09/2026:** Mira/produto 10, processo 63/v7, cadeia 14. A tela
+  retornava referência ausente/UNAVAILABLE, apesar do gate 242 concluído e provas
+  371–374/381 aprovadas na versão `mira-private-v3`. O histórico de construção 70
+  confirma os onze objetivos. Não havia tarefa de comunicação a repetir.
+- **Causa:** o resolvedor de referência limitava produto privado à construção;
+  comunicação, formatos, alvos dos revisores e integração dependiam de plano ou
+  experimento/ciclo. O handoff privado anterior ao primeiro experimento não existia.
+- **Correção:** contrato `PRODUCT_PRIVATE` por referência de produto, com gate e
+  pareceres de origem ainda válidos. Sem experimento/ciclo fabricado, sem provas
+  humanas fictícias, sem relaxamento de produção visual/revisão/decisão humana.
+- **Prevenção:** testes de referência, alvos versionados, contratos de origem,
+  mudanças durante callback, fila/persistência, formatos e integração privada.
+  Matriz e resultados em `docs/homologacao/mira-comunicacao-contexto-privado-v1.md`.
+
+- **Regressões adicionais desta recuperação (13/09/2026):** o MCP de Íris também
+  recusava `product:<id>@agent-validation-v1` antes de inicializar; a matriz agora
+  executa o servidor Node real contra HTTP local, incluindo isolamento de memória
+  e regressões de plano/experimento. O callback compara contratos após transporte
+  JSON, evitando falso bloqueio por `Long`/`Integer` sem aceitar mudança de valor.
+  A falha foi reproduzida antes da correção; as duas rodadas finais foram reiniciadas
+  e concluídas com 3.157 testes executados por rodada.

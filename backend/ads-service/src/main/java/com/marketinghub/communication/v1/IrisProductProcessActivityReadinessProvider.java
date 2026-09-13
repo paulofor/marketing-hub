@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 /** Responsabilidade: alinhar o gate operacional da tela aos contratos exigidos por Íris. */
@@ -21,6 +22,9 @@ public class IrisProductProcessActivityReadinessProvider
   private static final String ACTIVITY_ID = "communicationContract";
   private final MarketStrategicContextProvider marketStrategy;
   private final CommunicationMaterializationContextProvider communicationContext;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.repository.jpa.agenttask.AgentTaskRepository tasks;
 
   /** Configura os mesmos contextos estratégicos e funcionais entregues ao worker de Íris. */
   public IrisProductProcessActivityReadinessProvider(
@@ -41,7 +45,7 @@ public class IrisProductProcessActivityReadinessProvider
                 .contains(activityDefinition.getActivityId()));
   }
 
-  /** Exige os contratos aprovados do ciclo privado ou do plano, sem misturar os dois regimes. */
+  /** Exige os contratos aprovados do produto privado, ciclo ou plano, preservando cada regime. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -50,12 +54,14 @@ public class IrisProductProcessActivityReadinessProvider
       String sourceReference) {
     List<String> missing = new ArrayList<>();
     Map<String, Object> context = communicationContext.resolve(sourceReference).orElse(Map.of());
-    boolean cycle = IrisLearningCycleContext.MODE.equals(context.get("mode"));
+    boolean cycle =
+        Set.of(IrisLearningCycleContext.MODE, IrisPrivateProductContext.MODE)
+            .contains(context.getOrDefault("mode", ""));
     boolean landing = process != null && "landing-page-generation".equals(process.getProcessCode());
     if (cycle && landing) {
       return new AgentProductProcessActivityReadiness(
           false,
-          "Este ciclo usa a experiência privada já homologada como destino. Retome o processo de comunicação; uma landing comercial separada não faz parte do contrato aprovado.");
+          "Esta preparação usa a experiência privada já homologada como destino. Retome o processo de comunicação; uma landing comercial separada não faz parte do contrato aprovado.");
     }
     Map<?, ?> strategy =
         cycle
@@ -67,7 +73,7 @@ public class IrisProductProcessActivityReadinessProvider
         || !hasText(strategy.get("contentHash"))) {
       missing.add(
           cycle
-              ? "Contrato Estratégico de Mercado V3 aprovado no próprio ciclo"
+              ? "Contrato Estratégico de Mercado V3 aprovado na origem deste contexto"
               : "Contrato Estratégico de Mercado v2 concluído de Atena");
     }
     if (!"AVAILABLE".equals(context.get("availability"))) {
@@ -93,6 +99,32 @@ public class IrisProductProcessActivityReadinessProvider
     }
     return new AgentProductProcessActivityReadiness(
         true, "Estratégia, economia, PDE e provas estão prontos para Íris.");
+  }
+
+  /** Reabre a mensagem do produto quando o novo gate ou contrato substitui a prova usada. */
+  @Override
+  public boolean requiresFreshExecution(
+      BusinessProcessDefinition process,
+      BusinessProcessActivityDefinition activity,
+      Product product,
+      String reference) {
+    if (tasks == null
+        || !IrisPrivateProductContext.supports(reference)
+        || !ACTIVITY_ID.equals(activity.getActivityId())) return false;
+    var latest =
+        tasks.findFunctionalSnapshotsByProcessSince(process.getId(), reference, null).stream()
+            .filter(t -> ACTIVITY_ID.equals(t.processActivityId()))
+            .max(java.util.Comparator.comparing(t -> t.id()));
+    if (latest.isEmpty() || !"COMPLETED".equals(latest.get().status())) return false;
+    var context = communicationContext.resolve(reference).orElse(Map.of());
+    if (!"READY".equals(context.get("inputReadiness"))) return true;
+    Object artifacts = context.get("communicationArtifacts");
+    return !(artifacts instanceof Collection<?> values)
+        || values.stream()
+            .noneMatch(
+                value ->
+                    value instanceof Map<?, ?> artifact
+                        && latest.get().id().equals(artifact.get("taskId")));
   }
 
   /** Verifica se um valor de contrato possui texto útil. */

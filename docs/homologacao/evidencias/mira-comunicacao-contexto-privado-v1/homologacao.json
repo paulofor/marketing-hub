@@ -1,0 +1,172 @@
+[
+  {
+    "round": "final3",
+    "result": "PASS",
+    "backend": {
+      "tests": 2878,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 8
+    },
+    "iris": {
+      "tests": 27,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "psique": {
+      "tests": 107,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 1
+    },
+    "temis": {
+      "tests": 92,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 1
+    },
+    "mysql57Tests": 3,
+    "frontendTests": 50,
+    "irisMcpTests": 4,
+    "browser": [
+      {
+        "profile": "desktop",
+        "initialCommand": true,
+        "onlyOneWrite": true,
+        "privateReferenceCopied": true,
+        "completionFromBackend": true,
+        "noOverflow": true,
+        "noJavascriptErrors": true
+      },
+      {
+        "profile": "iphone",
+        "initialCommand": true,
+        "onlyOneWrite": true,
+        "privateReferenceCopied": true,
+        "completionFromBackend": true,
+        "noOverflow": true,
+        "noJavascriptErrors": true
+      },
+      {
+        "profile": "pixel",
+        "initialCommand": true,
+        "onlyOneWrite": true,
+        "privateReferenceCopied": true,
+        "completionFromBackend": true,
+        "noOverflow": true,
+        "noJavascriptErrors": true
+      }
+    ],
+    "images": [
+      {
+        "module": "backend",
+        "image": "aihub-5839c75c-219a-448c-b049-f34f0c5827fe-280beccfb9/mira-backend:final3",
+        "imageId": "sha256:7bbce431978669615a93f8120a0f37e19bb59c502758c6eca23d4fb113797060",
+        "jarSha256": "4a2cb52d34709cc7c4218120f99d565025cd32da3df8e9998659311a678adc38",
+        "status": "PASS"
+      },
+      {
+        "module": "communication-agent-worker",
+        "image": "aihub-5839c75c-219a-448c-b049-f34f0c5827fe-280beccfb9/mira-communication-agent-worker:final3",
+        "imageId": "sha256:a94343a1b2f8dc2759483810c9e166007e90f751db4d4874dd1123ec54ae042d",
+        "jarSha256": "4729d9156ceb4e99fe2b45e37e3191e15cf4e550b34a4872ecb15d801832afc6",
+        "status": "PASS"
+      },
+      {
+        "module": "meta-ad-approver-worker",
+        "image": "aihub-5839c75c-219a-448c-b049-f34f0c5827fe-280beccfb9/mira-meta-ad-approver-worker:final3",
+        "imageId": "sha256:dff7765cab5b80de64c78fc8e8d2d098f189d428aa0be24fe0f9a6a3621a9e62",
+        "jarSha256": "0dcef5c93316ee75784085309c5d115e1b058add5765f63d6ec0d7ec34f47789",
+        "status": "PASS"
+      }
+    ],
+    "processWorkerTests": 6,
+    "executedTests": 3157
+  },
+  {
+    "round": "final4",
+    "result": "PASS",
+    "backend": {
+      "tests": 2878,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 8
+    },
+    "iris": {
+      "tests": 27,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "psique": {
+      "tests": 107,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 1
+    },
+    "temis": {
+      "tests": 92,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 1
+    },
+    "mysql57Tests": 3,
+    "frontendTests": 50,
+    "irisMcpTests": 4,
+    "browser": [
+      {
+        "profile": "desktop",
+        "initialCommand": true,
+        "onlyOneWrite": true,
+        "privateReferenceCopied": true,
+        "completionFromBackend": true,
+        "noOverflow": true,
+        "noJavascriptErrors": true
+      },
+      {
+        "profile": "iphone",
+        "initialCommand": true,
+        "onlyOneWrite": true,
+        "privateReferenceCopied": true,
+        "completionFromBackend": true,
+        "noOverflow": true,
+        "noJavascriptErrors": true
+      },
+      {
+        "profile": "pixel",
+        "initialCommand": true,
+        "onlyOneWrite": true,
+        "privateReferenceCopied": true,
+        "completionFromBackend": true,
+        "noOverflow": true,
+        "noJavascriptErrors": true
+      }
+    ],
+    "images": [
+      {
+        "module": "backend",
+        "image": "aihub-5839c75c-219a-448c-b049-f34f0c5827fe-280beccfb9/mira-backend:final4",
+        "imageId": "sha256:384bb7a123363a2f6b73729bc439186d5f4e6c2c462f6f9986e72abdfcdbef15",
+        "jarSha256": "d3003f7e03ab0ebd64e3e816fd3b992250054747bfdbe2aabb317b5149553385",
+        "status": "PASS"
+      },
+      {
+        "module": "communication-agent-worker",
+        "image": "aihub-5839c75c-219a-448c-b049-f34f0c5827fe-280beccfb9/mira-communication-agent-worker:final4",
+        "imageId": "sha256:a94343a1b2f8dc2759483810c9e166007e90f751db4d4874dd1123ec54ae042d",
+        "jarSha256": "4729d9156ceb4e99fe2b45e37e3191e15cf4e550b34a4872ecb15d801832afc6",
+        "status": "PASS"
+      },
+      {
+        "module": "meta-ad-approver-worker",
+        "image": "aihub-5839c75c-219a-448c-b049-f34f0c5827fe-280beccfb9/mira-meta-ad-approver-worker:final4",
+        "imageId": "sha256:dff7765cab5b80de64c78fc8e8d2d098f189d428aa0be24fe0f9a6a3621a9e62",
+        "jarSha256": "0dcef5c93316ee75784085309c5d115e1b058add5765f63d6ec0d7ec34f47789",
+        "status": "PASS"
+      }
+    ],
+    "processWorkerTests": 6,
+    "executedTests": 3157
+  }
+]

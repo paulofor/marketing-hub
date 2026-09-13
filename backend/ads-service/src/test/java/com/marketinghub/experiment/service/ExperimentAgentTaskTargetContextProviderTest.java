@@ -377,6 +377,47 @@ class ExperimentAgentTaskTargetContextProviderTest {
     assertThat(target.pdeContext()).isNull();
   }
 
+  /** A comunicação privada usa a versão aceita e não expõe o checkout comercial histórico. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "pde-communication-sales-journey",
+        "creative-production-approval",
+        "landing-page-generation"
+      })
+  void resolvesPrivateCommunicationTarget(String process) {
+    var experiments = mock(ExperimentRepository.class);
+    var products = mock(ProductRepository.class);
+    var product =
+        Product.builder()
+            .id(91010L)
+            .slug("local-mira")
+            .name("Mira local")
+            .validationDefinitionVersion("PDE_AGENT_VALIDATED_V1")
+            .validationDefinitionJson(
+                "{\"privatePrototypeAcceptance\":{\"status\":\"READY\",\"prototypeVersion\":\"local-v3\",\"privateAccessUrl\":\"https://mira.example/private\"}}")
+            .pdeExperienceJson(
+                "{\"experienceVersion\":\"local-v1\",\"harness\":{\"format\":\"privado\"}}")
+            .publicUrl("https://commercial.example")
+            .build();
+    when(products.findById(91010L)).thenReturn(Optional.of(product));
+    var provider =
+        new ExperimentAgentTaskTargetContextProvider(experiments, products, new ObjectMapper());
+    var target = provider.resolve("product:91010@agent-validation-v1", process).orElseThrow();
+    assertThat(target.experienceVersion()).isEqualTo("local-v3");
+    assertThat(target.publicUrl()).isEqualTo("https://mira.example/private");
+    assertThat(target.experimentId()).isNull();
+    assertThat(target.commercialCheckoutUrl()).isNull();
+    assertThat(
+            target
+                .pdeContext()
+                .path("privatePrototypeAcceptance")
+                .path("prototypeVersion")
+                .asText())
+        .isEqualTo("local-v3");
+    org.mockito.Mockito.verifyNoInteractions(experiments);
+  }
+
   /** Bloqueia uma revisão que combine o checkout versionado com preço de outro experimento. */
   @Test
   void rejectsVersionedCheckoutWithDivergentExperimentPrice() {

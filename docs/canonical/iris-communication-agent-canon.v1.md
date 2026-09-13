@@ -222,3 +222,39 @@ O worker anexa os pixels ao modelo, valida o renderSpec, renderiza, persiste por
 Psique e Têmis recebem os PNGs finais por esse mesmo contrato, conferem o hash e os anexam ao modelo. Cada parecer registra renderedAssetAudit com id/hash/avaliação. Captura do produto e briefing não substituem a peça final. Em contexto privado, a peça identifica demonstração sintética sem compra ou cobrança; aprovação perceptiva ou de integridade não constitui prova humana nem autorização comercial.
 
 Briefings históricos sem imagem voltam à produção com nova ocorrência. Um ADJUST posterior de revisor solicita correção pela mesma atividade de Íris; a revisão anterior fica superada pela nova peça. BLOCKED por ausência essencial ou falha técnica permanece explícito. Todo parecer disponível é preservado mesmo que a validação técnica falhe. Nenhuma regra de aprovação é relaxada para concluir o processo.
+
+## Comunicação privada anterior ao experimento — 2026-09-13
+
+O produto em `PDE_AGENT_VALIDATED_V1` pode preparar sua comunicação pela referência
+`product:<id>@agent-validation-v1`, em modo `PRODUCT_PRIVATE`, sem criar experimento
+ou ciclo de vendas artificial. O backend resolve essa referência no processo de
+comunicação e seus subprocessos e entrega a mesma URL/versão privada aceita aos executores.
+
+A entrada exige gate multiagente persistido e ainda válido, cinco provas da mesma
+versão com IDs/hashes correspondentes, e os últimos pareceres aprovados de Atena,
+Plutus e Dédalo da descoberta que materializou o produto. O contrato materializado
+precisa corresponder aos pareceres e à seleção de dossiê/oportunidade. Planejamento
+posterior exige nova homologação; mudar versão ou prova invalida a continuidade.
+O ciclo de descoberta da linhagem não é um ciclo de aprendizado/vendas.
+
+`PRODUCT_PRIVATE` usa `MARKET_STRATEGY_V3`, economia hipotética, destino privado
+homologado, checkout simulado e tráfego sintético segregado. Critérios humanos
+presentes nos pareceres históricos não substituem o gate multiagente vigente.
+Formatos seguem o contrato aprovado: ausência de audiovisual obrigatório é uma
+omissão explícita; vídeo previsto conserva produção, orçamento e revisão próprios.
+A imagem final continua obrigatória antes das revisões independentes, e a decisão
+humana de uso continua no subprocesso. Concluir preparação não autoriza campanha,
+cobrança, contato ou publicação comercial e não comprova vendas.
+
+O callback da mensagem compara a entrada auditada com os contratos vigentes para
+recusar mudanças ocorridas durante a execução. Mensagem anterior a um novo gate
+precisa ser refeita. A produção visual conserva seu handler exclusivo de hashes e
+origem, sem disputa entre handlers da mesma tarefa.
+
+Evidência da correção: [Mira — continuidade privada](../homologacao/mira-comunicacao-contexto-privado-v1.md).
+
+A comparação de entradas no callback usa a mesma representação JSON do transporte.
+Diferença interna `Long`/`Integer` do JPA/Jackson não é mudança de identidade; diferença
+no valor ou no conteúdo de qualquer contrato continua impedindo a conclusão.
+O MCP de Íris aceita a referência privada e mantém sua memória no escopo `PRODUCT/<id>`,
+sem convertê-la em plano ou experimento e sem permitir que argumentos troquem o escopo.

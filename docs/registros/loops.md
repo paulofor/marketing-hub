@@ -168,6 +168,14 @@
   integral no PR com relatórios em falha. Gates dos agentes permanecem restritos ao sucesso
   do deploy da mesma revisão. Evidências e matriz: [homologação](../homologacao/actions-backend-isolamento-testes-2026-09-08.md).
 
+### Recorrência detectada pelo gate — Mira, 13/09/2026
+
+- Backend CI `34736615047` bloqueou a nova `PrivateProductCommunicationLifecycleTest`
+  por URL H2 fixa, antes de executar Maven. A reprodução local confirmou a falha.
+- Correção: URL identifica classe e UUID e conserva `DB_CLOSE_DELAY=0`; runner local
+  de Mira executa o mesmo contrato do CI antes da suíte. O gate permanece obrigatório.
+- Evidências e matriz: `docs/homologacao/actions-mira-ciclos-2026-09-13.md`.
+
 ## LOOP-ACTIONS-RETOMADA-SEM-GATILHO — workflow ativo não recupera merge perdido
 
 - **Data:** 2026-09-08.
@@ -5138,3 +5146,17 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
   JSON, evitando falso bloqueio por `Long`/`Integer` sem aceitar mudança de valor.
   A falha foi reproduzida antes da correção; as duas rodadas finais foram reiniciadas
   e concluídas com 3.157 testes executados por rodada.
+
+## LOOP-ACTIONS-CICLOS-ROLLBACK-POSICIONAL — fixture cresce e confere a versão errada
+
+- **Confirmado em 13/09/2026:** Liquibase run `34725144902` passou; `d32cba915` incluiu
+  duas migrações de automação na fixture, e `34726287023`/`34736615044` falharam.
+  A reprodução local removeu a tabela de eventos, enquanto o teste já esperava BPM v3.
+- **Causa:** o verificador usava quantidades fixas de rollback a partir do último
+  changeset. A extensão da fixture deslocou todos os marcos esperados.
+- **Correção:** resolver cada marco pelo ID único no histórico aplicado do Liquibase;
+  comprovar também a remoção das tabelas de automação, mantendo os gates do BPM.
+  Changelogs produtivos e seus checksums permanecem preservados.
+- **Prevenção:** regressões para migração posterior, marco final, ausente e ambíguo;
+  runner físico MySQL 5.7 com API, rollback, reaplicação e idempotência.
+  Evidências: `docs/homologacao/actions-mira-ciclos-2026-09-13.md`.

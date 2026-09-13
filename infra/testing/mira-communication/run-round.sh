@@ -26,6 +26,7 @@ assert totals['tests'] > 0 and totals['errors'] == 0 and totals['failures'] == 0
 pathlib.Path(sys.argv[2]).write_text(json.dumps(totals) + '\n')
 PY
 }
+run backend-ci-contract python3 scripts/test-backend-ci-workflow.py
 run backend mvn -q -f backend/ads-service/pom.xml "-Dmira.lifecycle.output=$output/browser-contract.json" test
 counts backend/ads-service/target/surefire-reports backend
 run mysql57 mvn -q -f backend/ads-service/pom.xml -Dprivate.journey.mysql57=true -Dtest=PrivateCommunicationJourneyPersistenceTest test

@@ -133,3 +133,16 @@ persistido, produzindo falso positivo ou falso negativo na homologação.
 ## DDL e backfill retomáveis
 
 No MySQL 5.7, operações DDL podem permanecer aplicadas mesmo quando o processo é interrompido antes de o Liquibase registrar o changeset. Por isso, a criação de tabela e o backfill devem ficar em changesets separados. A criação deve aceitar retomada somente quando o schema esperado já existir, e o backfill deve ser idempotente, ignorando registros já materializados sem mascarar divergência estrutural. Quando um changeset já puder ter sido concluído em outro ambiente, preserve também o checksum anterior de forma explícita e teste essa compatibilidade.
+
+## Reversão da fixture de ciclos por marcos identificados
+
+`LearningCycleMigrationVerifier` resolve o ID único de cada marco no histórico aplicado
+antes de solicitar o rollback ao Liquibase. Migrações posteriores são revertidas junto
+com o marco; ID ausente ou ambíguo interrompe a validação antes da alteração física.
+Isso evita que a inclusão de novas migrações desloque contagens fixas e faça o teste
+conferir uma versão que ainda não foi revertida. A fixture confere separadamente as
+remoções da automação, do BPM e das tabelas de ciclos, mantendo as provas de histórico,
+chaves estrangeiras, precisão temporal, reaplicação e idempotência.
+
+A regressão de setembro está registrada em
+[homologação local do CI](../homologacao/actions-mira-ciclos-2026-09-13.md).

@@ -13,7 +13,7 @@ public final class LearningCycleMigrationVerifier {
   /** Impede instâncias de um verificador de linha de comando. */
   private LearningCycleMigrationVerifier() {}
 
-  /** Executa uma fase da migração em JVM própria, somente no banco reservado à homologação. */
+  /** Executa aplicação ou reversão por marcos identificados, somente no banco da homologação. */
   public static void main(String[] args) throws Exception {
     if (args.length != 1 || !Set.of("verify-and-rollback", "update-and-verify").contains(args[0]))
       throw new IllegalArgumentException("Informe a fase explícita de homologação.");
@@ -74,7 +74,17 @@ public final class LearningCycleMigrationVerifier {
           "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND DATETIME_PRECISION=6 AND ((TABLE_NAME IN ('agent_task','facebook_ads_campaign') AND COLUMN_NAME='created_at') OR (TABLE_NAME='business_process_activity_instance' AND COLUMN_NAME IN ('entered_at','exited_at','created_at','updated_at')))",
           6);
       verifyOrganization(connection);
-      migration.rollback(1, new Contexts(), new LabelExpression());
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('product_process_run_v1','product_process_run_event_v1')",
+          2);
+      rollbackThrough(migration, "2026-09-12-product-process-automation-v1");
+      assertCount(
+          connection,
+          "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('product_process_run_v1','product_process_run_event_v1')",
+          0);
+      verifyOrganization(connection);
+      rollbackThrough(migration, "2026-09-09-learning-cycle-decision-atena-v4-bpm");
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=3 AND status='PUBLISHED'",
@@ -83,17 +93,17 @@ public final class LearningCycleMigrationVerifier {
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=4",
           0);
-      migration.rollback(1, new Contexts(), new LabelExpression());
+      rollbackThrough(migration, "2026-09-09-learning-cycle-decision-atena-v1-table");
       assertCount(
           connection,
           "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='learning_cycle_decision_proposal_v1'",
           0);
-      migration.rollback(1, new Contexts(), new LabelExpression());
+      rollbackThrough(migration, "2026-09-09-pde-sales-flow-v6");
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=6 AND status='RETIRED'",
           1);
-      migration.rollback(1, new Contexts(), new LabelExpression());
+      rollbackThrough(migration, "2026-09-09-learning-cycle-automatic-measurement-v3");
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='value-chain-learning-sales-cycle' AND version_number=2 AND status='PUBLISHED'",
@@ -106,7 +116,7 @@ public final class LearningCycleMigrationVerifier {
           connection,
           "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=13 AND status='PUBLISHED'",
           1);
-      migration.rollback(1, new Contexts(), new LabelExpression());
+      rollbackThrough(migration, "2026-09-08-pde-learning-cycle-organization-v1");
       assertCount(
           connection,
           "SELECT COUNT(*) FROM business_process_chain_definition WHERE version_number=12 AND status='PUBLISHED'",
@@ -120,7 +130,7 @@ public final class LearningCycleMigrationVerifier {
           "SELECT COUNT(*) FROM business_process_definition WHERE process_code='pde-sales-delivery-learning' AND version_number=5 AND status='RETIRED'",
           1);
       // A reaplicação ocorre em outra JVM para não reutilizar o estado do executor de rollback.
-      migration.rollback(5, new Contexts(), new LabelExpression());
+      rollbackThrough(migration, "2026-09-08-learning-sales-cycles-v1-cycle-table");
       assertCount(
           connection,
           "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('learning_sales_cycle_v1','learning_sales_cycle_event_v1')",
@@ -132,6 +142,22 @@ public final class LearningCycleMigrationVerifier {
     }
     System.out.println(
         "PASS MySQL 5.7: schema, 7 FKs, DATETIME, BPM v4 com Atena, rollback e preservação histórica.");
+  }
+
+  /** Reverte até o ID único aplicado, incluindo migrações posteriores sem contar posições fixas. */
+  static void rollbackThrough(Liquibase migration, String changeSetId) throws Exception {
+    var applied = migration.getDatabase().getRanChangeSetList();
+    int target = -1;
+    for (int index = 0; index < applied.size(); index++) {
+      if (!changeSetId.equals(applied.get(index).getId())) continue;
+      if (target >= 0) throw new IllegalStateException("Marco de rollback ambíguo: " + changeSetId);
+      target = index;
+    }
+    if (target < 0)
+      throw new IllegalStateException("Marco de rollback não aplicado: " + changeSetId);
+    int count = applied.size() - target;
+    System.out.println("Rollback até " + changeSetId + ": " + count + " changesets aplicados.");
+    migration.rollback(count, new Contexts(), new LabelExpression());
   }
 
   /** Confere hierarquia, chamada, retornos, idempotência e preservação da definição anterior. */

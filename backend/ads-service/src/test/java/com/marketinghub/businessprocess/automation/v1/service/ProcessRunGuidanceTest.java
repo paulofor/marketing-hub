@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.automation.v1.ProcessRun;
+import com.marketinghub.businessprocess.automation.v1.service.status.ProcessRunUserAction;
 import com.marketinghub.businessprocesschain.learningcycle.v1.*;
 import com.marketinghub.businessprocesschain.learningcycle.v1.service.*;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
@@ -24,11 +25,13 @@ class ProcessRunGuidanceTest {
       mock(BusinessProcessDefinitionRepository.class);
   private final LearningSalesCycleEventRepository events =
       mock(LearningSalesCycleEventRepository.class);
+  private final ProcessRunVideoGuidance videoGuidance = mock(ProcessRunVideoGuidance.class);
   private final ProcessRunGuidance guidance =
       new ProcessRunGuidance(
           cycles,
           processes,
-          new LearningCycleVideoBudget(events, new LearningCycleJson(new ObjectMapper())));
+          new LearningCycleVideoBudget(events, new LearningCycleJson(new ObjectMapper())),
+          videoGuidance);
   private final LearningSalesCycle cycle = new LearningSalesCycle();
   private final ProcessRun run = new ProcessRun();
   private final BusinessProcessDefinition parent = new BusinessProcessDefinition();
@@ -134,6 +137,38 @@ class ProcessRunGuidanceTest {
   @ValueSource(strings = {"CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "MEASUREMENT", "ADJUSTMENT"})
   void otherStagesDoNotRequestBudgetAgain(String stage) {
     cycle.setStage(stage);
+    assertThat(guidance.resolve(run)).isNull();
+    verifyNoInteractions(events);
+  }
+
+  /** O bloqueio de fornecedor exige intervenção e permite pausa sem fingir execução automática. */
+  @Test
+  void blockedVideoGuidesCorrectionAndAllowsPausing() {
+    cycle.setStage("CAMPAIGN_VIDEO");
+    var action =
+        new ProcessRunUserAction(
+            "RESOLVE_VIDEO_PREFLIGHT",
+            "Produção bloqueada",
+            "Configuração ausente",
+            "Integração",
+            "Ver impedimento",
+            "/audio-video-studio/projects/4",
+            "Novo preflight após correção",
+            "internal://preflight/12");
+    when(videoGuidance.resolve(cycle)).thenReturn(action);
+    assertThat(guidance.resolve(run)).isEqualTo(action);
+    assertThat(guidance.awaitingInput(run)).isTrue();
+    run.setStatus("PAUSING");
+    assertThat(guidance.awaitingInput(run)).isTrue();
+    assertThat(guidance.resolve(run)).isNull();
+    verifyNoInteractions(events);
+  }
+
+  /** Produção sem bloqueio humano preserva o tratamento normal de trabalho em curso. */
+  @Test
+  void activeVideoDoesNotAllowPausingAsManualInput() {
+    cycle.setStage("CAMPAIGN_VIDEO");
+    assertThat(guidance.awaitingInput(run)).isFalse();
     assertThat(guidance.resolve(run)).isNull();
     verifyNoInteractions(events);
   }

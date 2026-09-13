@@ -21,7 +21,7 @@ paths:
         - name: sourceReference
           in: query
           required: false
-          description: Sem referência, retorna prévia UNAVAILABLE com relações navegáveis e comandos desabilitados, sem criar execução.
+          description: A preparação privada pode usar product:<id>@agent-validation-v1, fornecida pelo histórico oficial após validação do produto, sem learningCycleId. Sem referência, retorna prévia UNAVAILABLE com relações navegáveis e comandos desabilitados, sem criar execução.
           schema: {type: string}
       responses:
         '200': {$ref: '#/components/responses/run'}
@@ -150,12 +150,12 @@ components:
                 nullable: true
                 description: Próxima intervenção humana comprovada pelo contexto persistido. A leitura não altera estado; o conciliador registra WAITING_HUMAN e o motivo no diário. Autorização financeira não conclui objetivos nem libera consumo.
                 properties:
-                  code: {type: string, enum: [AUTHORIZE_VIDEO_BUDGET, COMPLETE_VIDEO_BRIEF]}
+                  code: {type: string, enum: [AUTHORIZE_VIDEO_BUDGET, COMPLETE_VIDEO_BRIEF, RESOLVE_VIDEO_PREFLIGHT]}
                   title: {type: string}
                   reason: {type: string}
                   responsible: {type: string}
                   actionLabel: {type: string}
-                  actionUrl: {type: string, description: Caminho administrativo com produto, cadeia e ciclo exatos}
+                  actionUrl: {type: string, description: Caminho administrativo do contexto exato ou do projeto audiovisual identificado pelo backend na peça e versão vigentes}
                   afterAction: {type: string}
                   evidenceReference: {type: string, nullable: true}
               currentActivityId: {type: string, nullable: true}

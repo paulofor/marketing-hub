@@ -47,6 +47,9 @@ public class IrisCommunicationMaterializationContextProvider
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private IrisLearningCycleContext learningCycles;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private IrisPrivateProductContext privateProducts;
+
   /** Configura as fontes canônicas de plano, produto e provas aprovadas. */
   public IrisCommunicationMaterializationContextProvider(
       CommercialPlanRepository plans,
@@ -64,11 +67,16 @@ public class IrisCommunicationMaterializationContextProvider
   }
 
   /**
-   * Resolve primeiro o ciclo privado; mantém o contrato de plano comercial para os demais casos.
+   * Resolve preparação privada por produto ou ciclo e conserva o contrato comercial dos demais
+   * casos.
    */
   @Override
   @Transactional(readOnly = true)
   public Optional<Map<String, Object>> resolve(String sourceReference) {
+    if (privateProducts != null) {
+      var product = privateProducts.resolve(sourceReference);
+      if (product.isPresent()) return product;
+    }
     if (learningCycles != null) {
       var cycle = learningCycles.resolve(sourceReference);
       if (cycle.isPresent()) return cycle;

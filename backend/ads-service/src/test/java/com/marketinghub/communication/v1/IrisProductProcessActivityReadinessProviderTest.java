@@ -129,6 +129,49 @@ class IrisProductProcessActivityReadinessProviderTest {
     return process;
   }
 
+  /** Reabre comunicação superada sem repetir uma tarefa que ainda conserva o gate vigente. */
+  @Test
+  void refreshesPrivateCommunicationWhenApprovedContextChanges() {
+    String reference = "product:900010@agent-validation-v1";
+    var communication = mock(CommunicationMaterializationContextProvider.class);
+    var repository = mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
+    var provider =
+        new IrisProductProcessActivityReadinessProvider(
+            MarketStrategicContextProvider.empty(), communication);
+    org.springframework.test.util.ReflectionTestUtils.setField(provider, "tasks", repository);
+    var process = process();
+    process.setId(900063L);
+    when(repository.findFunctionalSnapshotsByProcessSince(process.getId(), reference, null))
+        .thenReturn(
+            List.of(
+                new com.marketinghub.agenttask.AgentTaskFunctionalSnapshot(
+                    900402L,
+                    process.getId(),
+                    process.getProcessCode(),
+                    "communicationContract",
+                    "communication-director",
+                    "COMPLETED",
+                    null,
+                    null,
+                    "{}")));
+    when(communication.resolve(reference))
+        .thenReturn(
+            Optional.of(
+                Map.of(
+                    "inputReadiness",
+                    "READY",
+                    "communicationArtifacts",
+                    List.of(Map.of("taskId", 900402L)))));
+    assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isFalse();
+    when(communication.resolve(reference))
+        .thenReturn(
+            Optional.of(Map.of("inputReadiness", "READY", "communicationArtifacts", List.of())));
+    assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isTrue();
+    when(communication.resolve(reference))
+        .thenReturn(Optional.of(Map.of("inputReadiness", "BLOCKED")));
+    assertThat(provider.requiresFreshExecution(process, activity(), null, reference)).isTrue();
+  }
+
   /** Cria a atividade mínima de materialização do contrato. */
   private BusinessProcessActivityDefinition activity() {
     BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();

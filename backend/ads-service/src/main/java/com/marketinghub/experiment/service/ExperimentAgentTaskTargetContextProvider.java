@@ -175,7 +175,9 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
                 .anyMatch(experiment -> Objects.equals(experiment.getId(), experimentId)));
   }
 
-  /** Monta a identidade mínima exigida para impedir mistura de produtos ou versões. */
+  /**
+   * Monta o alvo comercial ou privado, preservando a versão aceita e impedindo mistura de produtos.
+   */
   private Optional<AgentTaskTargetResponse> target(
       String sourceReference, Experiment experiment, Product product, String processCode) {
     if (product == null || product.getId() == null || blank(product.getSlug())) {
@@ -184,6 +186,16 @@ public class ExperimentAgentTaskTargetContextProvider implements AgentTaskTarget
     if (cycleConstructionContext != null) {
       var cycleTarget = cycleConstructionContext.resolve(sourceReference, experiment, processCode);
       if (cycleTarget.isPresent()) return cycleTarget;
+    }
+    // A preparação anterior ao experimento conserva a versão privada aceita em todos os executores.
+    if (sourceReference.equals("product:" + product.getId() + "@agent-validation-v1")
+        && "PDE_AGENT_VALIDATED_V1".equals(product.getValidationDefinitionVersion())
+        && java.util.Set.of(
+                "pde-communication-sales-journey",
+                "creative-production-approval",
+                "landing-page-generation")
+            .contains(Objects.requireNonNullElse(processCode, ""))) {
+      processCode = "pde-construction-approval";
     }
     String experienceVersion = experienceVersion(product, processCode);
     if (blank(experienceVersion)) return Optional.empty();

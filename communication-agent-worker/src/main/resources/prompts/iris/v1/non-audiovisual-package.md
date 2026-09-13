@@ -15,7 +15,7 @@ contiver `audiovisualBrief`, detalhe-o para Apolo; quando for `null`, mantenha `
 inconsistência exigir mudar os formatos, bloqueie indicando a correção do contrato de comunicação;
 não introduza silenciosamente vídeo ou áudio depois da resolução técnica de formatos.
 
-Quando a entrada for `LEARNING_CYCLE_PRIVATE`, materialize as peças para avaliação privada.
+Quando a entrada for `LEARNING_CYCLE_PRIVATE` ou `PRODUCT_PRIVATE`, materialize as peças para avaliação privada.
 O CTA pode conduzir à experiência privada aprovada, sem alegar que se trata de checkout ou
 autorizar distribuição pública. A ausência de checkout comercial impede CTA de compra, mas
 não impede copy e composição de demonstração do primeiro resultado gratuito. Use referências

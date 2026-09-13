@@ -101,6 +101,46 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("mostra o bloqueio do vídeo e o projeto correto sem anunciar execução ou conclusão", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "WAITING_HUMAN",
+        completionPercentage: 0,
+        completedActivities: 0,
+        remainingActivities: 4,
+        totalActivities: 4,
+        userAction: {
+          ...financeAction,
+          code: "RESOLVE_VIDEO_PREFLIGHT",
+          title: "Produção do anúncio bloqueada",
+          reason:
+            "A configuração de produção não está acessível na conta do fornecedor.",
+          responsible: "Responsável pela integração de vídeo",
+          actionLabel: "Ver impedimento do vídeo",
+          actionUrl: "/audio-video-studio/projects/4",
+          evidenceReference:
+            "internal://sales-videos/autonomy/v1/cycles/12/provider-preflight/12",
+        },
+      },
+    });
+    setup();
+    expect(
+      await screen.findByText("Produção do anúncio bloqueada"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Ver impedimento do vídeo" }),
+    ).toHaveAttribute("href", "/audio-video-studio/projects/4");
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    expect(
+      document.querySelector(".product-process-situation__running-icon"),
+    ).toBeNull();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("explica a espera humana e aponta ao financeiro sem animação ou comando de execução", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

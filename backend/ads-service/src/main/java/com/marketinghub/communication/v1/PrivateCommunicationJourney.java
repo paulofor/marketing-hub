@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -26,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: comprovar e registrar a preparação da jornada privada no próprio ciclo. */
+/** Responsabilidade: comprovar e registrar a jornada privada na referência do produto ou ciclo. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -56,10 +57,13 @@ public class PrivateCommunicationJourney {
   private final PrivateCommunicationCreativeProof creativeProof;
   private final ObjectMapper json;
 
-  /** Reconhece também ciclos privados bloqueados, impedindo fallback para o plano histórico. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private IrisPrivateProductContext privateProducts;
+
+  /** Reconhece produtos e ciclos privados mesmo bloqueados, sem fallback para plano histórico. */
   @Transactional(readOnly = true)
   public boolean applies(String reference) {
-    return privateCycle(reference).isPresent();
+    return IrisPrivateProductContext.supports(reference) || privateCycle(reference).isPresent();
   }
 
   /** Expõe o destino e seus requisitos antes de criar uma tentativa ou consumir modelo. */
@@ -93,13 +97,13 @@ public class PrivateCommunicationJourney {
           true,
           "O destino aprovado é a experiência privada "
               + evidence.path("prototypeVersion").asText()
-              + "; acesso, retomada, eventos e checkout simulado possuem provas do próprio ciclo.",
+              + "; acesso, retomada, eventos e checkout simulado possuem provas do próprio contexto.",
           "integration".equals(activity.getActivityId())
               ? "Confirmar integração privada"
               : "Confirmar destino aprovado",
           "integration".equals(activity.getActivityId())
-              ? "Registra destino, acesso, retomada e eventos no ciclo, com checkout simulado."
-              : "Reutiliza a experiência homologada e registra suas provas no ciclo.",
+              ? "Registra destino, acesso, retomada e eventos no contexto, com checkout simulado."
+              : "Reutiliza a experiência homologada e registra suas provas no contexto.",
           null,
           null,
           List.of(),
@@ -164,7 +168,7 @@ public class PrivateCommunicationJourney {
         true,
         "integration".equals(activity.getActivityId())
             ? "Jornada privada integrada com destino, acesso, retomada, eventos e checkout simulado comprovados."
-            : "Destino aprovado reutilizado; nenhuma landing adicional é necessária neste ciclo privado.");
+            : "Destino aprovado reutilizado; nenhuma landing adicional é necessária nesta preparação privada.");
   }
 
   /** Invalida uma conclusão quando sua prova deixa de corresponder à versão e aos predecessores. */
@@ -264,10 +268,13 @@ public class PrivateCommunicationJourney {
         "A atividade não pertence à preparação da jornada privada.");
     var input =
         json.valueToTree(
-            cycles
-                .resolve(reference)
+            (IrisPrivateProductContext.supports(reference)
+                    ? privateProducts == null
+                        ? Optional.<Map<String, Object>>empty()
+                        : privateProducts.resolve(reference)
+                    : cycles.resolve(reference))
                 .orElseThrow(
-                    () -> new IllegalStateException("O ciclo privado não foi encontrado.")));
+                    () -> new IllegalStateException("O contexto privado não foi encontrado.")));
     require(
         "AVAILABLE".equals(input.path("availability").asText())
             && "READY".equals(input.path("inputReadiness").asText()),
@@ -291,7 +298,7 @@ public class PrivateCommunicationJourney {
             && !input.path("publicationAuthorized").asBoolean(true)
             && !input.path("paymentEnabled").asBoolean(true)
             && !input.path("externalMediaSpendAuthorized").asBoolean(true),
-        "O destino não preserva o contrato e os limites privados do ciclo.");
+        "O destino não preserva o contrato e os limites privados do contexto.");
     var preceding = predecessors.readiness(process, activity, reference);
     require(preceding.ready(), preceding.reason());
     var communication = communication(input, process.getId(), reference);
@@ -302,7 +309,7 @@ public class PrivateCommunicationJourney {
         "integration".equals(activity.getActivityId())
             ? "PDE_COMMUNICATION_PRIVATE_INTEGRATION_V1"
             : "PDE_COMMUNICATION_PRIVATE_DESTINATION_V1");
-    evidence.put("mode", IrisLearningCycleContext.MODE);
+    evidence.set("mode", input.path("mode"));
     evidence.put("productId", product.getId());
     evidence.put("sourceReference", reference);
     evidence.set("cycleId", input.path("cycleId"));
@@ -345,7 +352,7 @@ public class PrivateCommunicationJourney {
                   () -> new IllegalStateException("Conclua neste ciclo a atividade " + code + "."));
       require(
           "COMPLETED".equals(instance.getStatus()) && instance.isObjectiveAchieved(),
-          "A atividade " + code + " não possui objetivo comprovado neste ciclo.");
+          "A atividade " + code + " não possui objetivo comprovado neste contexto.");
       if ("creatives".equals(code))
         evidence.set("creativeApproval", creativeProof.resolve(instance, reference, version));
       if ("destination".equals(code))
@@ -390,7 +397,8 @@ public class PrivateCommunicationJourney {
           "O contrato de comunicação não corresponde à estratégia e à definição deste ciclo.");
       return artifact;
     }
-    throw new IllegalStateException("Conclua o contrato de comunicação do próprio ciclo com Íris.");
+    throw new IllegalStateException(
+        "Conclua o contrato de comunicação do próprio contexto com Íris.");
   }
 
   /** Exige os controles de integração comprovados pelo executor técnico no gate vigente. */

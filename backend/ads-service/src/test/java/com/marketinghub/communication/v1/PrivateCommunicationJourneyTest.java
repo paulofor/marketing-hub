@@ -23,7 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /** Responsabilidade: homologar a jornada privada completa, seus bloqueios e a rota comercial. */
 class PrivateCommunicationJourneyTest {
-  private static final String REFERENCE = "experiment:91092";
+  private String REFERENCE = "experiment:91092";
   private static final String VERSION = "private-pde-v12-test";
   private static final String URL = "https://local.example/private";
   private final ObjectMapper json = new ObjectMapper();
@@ -378,6 +378,40 @@ class PrivateCommunicationJourneyTest {
     var privateRoute = destination.readiness(parent, destinationActivity, product, REFERENCE);
     assertThat(privateRoute.ready()).isFalse();
     assertThat(privateRoute.targetProcessDefinitionId()).isNull();
+  }
+
+  /** O produto validado conclui destino e integração sem fabricar ciclo ou experimento. */
+  @Test
+  void completesPrivateProductJourneyAndRejectsRevokedApproval() throws Exception {
+    persisted.clear();
+    creativeTasks.clear();
+    input.removeAll();
+    reset(instances, tasks);
+    REFERENCE = "product:" + product.getId() + "@agent-validation-v1";
+    fixture();
+    input.put("mode", IrisPrivateProductContext.MODE);
+    input.remove(List.of("cycleId", "chainDefinitionId"));
+    var privateProducts = mock(IrisPrivateProductContext.class);
+    when(privateProducts.resolve(REFERENCE))
+        .thenAnswer(i -> Optional.of(json.convertValue(input, Map.class)));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        journey, "privateProducts", privateProducts);
+    assertThat(journey.applies(REFERENCE)).isTrue();
+    assertThat(destination.readiness(parent, destinationActivity, product, REFERENCE).ready())
+        .isTrue();
+    destination.execute(parent, destinationActivity, product, REFERENCE);
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    journey.complete(parent, integrationActivity, product, REFERENCE);
+    assertThat(persisted).hasSize(5);
+    var evidence = json.readTree(persisted.getLast().getObjectiveEvidenceJson());
+    assertThat(evidence.path("mode").asText()).isEqualTo("PRODUCT_PRIVATE");
+    assertThat(evidence.path("sourceReference").asText()).isEqualTo(REFERENCE);
+    assertThat(evidence.path("cycleId").isMissingNode() || evidence.path("cycleId").isNull())
+        .isTrue();
+    input.put("inputReadiness", "BLOCKED");
+    assertThat(journey.stale(parent, integrationActivity, product, REFERENCE)).isTrue();
+    assertThat(journey.readiness(parent, integrationActivity, product, REFERENCE).ready())
+        .isFalse();
   }
 
   /** Cria uma definição isolada mantendo o processo proprietário. */

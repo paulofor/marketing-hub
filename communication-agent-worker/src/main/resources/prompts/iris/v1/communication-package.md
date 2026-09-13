@@ -19,7 +19,7 @@ Use `nextHandoff` para pendências das próximas etapas. `evidenceGaps` contém 
 lacunas que impedem comprovar o objetivo desta atividade; quando o contrato estiver
 completo, deixe esse array vazio. Não classifique ausência de checkout futuro como
 falta de prova da mensagem já sustentada pelo PDE aprovado.
-No ciclo privado, mantenha o CTA de experimentação e a versão privada aprovada; qualquer CTA
+Na preparação privada por produto ou ciclo, mantenha o CTA de experimentação e a versão privada aprovada; qualquer CTA
 de compra permanece condicionado ao checkout canônico posterior. Use os critérios de
 `validationPolicy` atuais, preservando os critérios humanos anteriores apenas como histórico.
 
@@ -28,3 +28,8 @@ vídeo ou áudio obrigatório, preencha `audiovisualBrief` agora com o briefing 
 se não houver, use `null`. Essa decisão governa a rota técnica do subprocesso e não pode
 ser adiada para a produção das peças. Não acrescente um formato ou canal sem fundamento
 no contrato estratégico vigente.
+
+Em `PRODUCT_PRIVATE`, não exija nem invente experimento, ciclo de aprendizado ou plano
+comercial: a origem é a descoberta auditada e a versão aprovada do próprio produto.
+Use `approvedUpstreamArtifacts` e o gate vigente; eventual necessidade comercial futura
+pertence ao próximo processo e deve aparecer em `nextHandoff`.

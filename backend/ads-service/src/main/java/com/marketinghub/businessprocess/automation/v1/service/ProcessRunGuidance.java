@@ -11,13 +11,14 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: distinguir a decisão financeira pendente de trabalho automático do ciclo. */
+/** Responsabilidade: distinguir ações pendentes do operador de trabalho automático do ciclo. */
 @Component
 @RequiredArgsConstructor
 public class ProcessRunGuidance {
   private final LearningSalesCycleRepository cycles;
   private final BusinessProcessDefinitionRepository processes;
   private final LearningCycleVideoBudget videoBudget;
+  private final ProcessRunVideoGuidance videoGuidance;
 
   /** Resolve a próxima ação pela ocorrência exata, sem autorizar consumo ou alterar estado. */
   public ProcessRunUserAction resolve(ProcessRun run) {
@@ -25,6 +26,7 @@ public class ProcessRunGuidance {
       return null;
     var cycle = manualCycle(run);
     if (cycle == null) return null;
+    if (!"VIDEO_BRIEF".equals(cycle.getStage())) return videoGuidance.resolve(cycle);
     var authorization = videoBudget.current(cycle);
     if (authorization == null)
       return new ProcessRunUserAction(
@@ -52,12 +54,14 @@ public class ProcessRunGuidance {
         authorization.reference());
   }
 
-  /** Identifica espera por entrada também durante a pausa, sem exibir ação no processo pausado. */
+  /** Reconhece entrada ou correção pendente durante a pausa, sem confundir com preflight ativo. */
   public boolean awaitingInput(ProcessRun run) {
-    return manualCycle(run) != null;
+    var cycle = manualCycle(run);
+    return cycle != null
+        && ("VIDEO_BRIEF".equals(cycle.getStage()) || videoGuidance.resolve(cycle) != null);
   }
 
-  /** Confere o vínculo e a etapa cuja continuidade exige entrada do operador. */
+  /** Confere vínculo, versão e etapas elegíveis para orientar uma intervenção do operador. */
   private LearningSalesCycle manualCycle(ProcessRun run) {
     if (run.getLearningCycleId() == null || !"learningCycle".equals(run.getCurrentActivityId()))
       return null;
@@ -68,7 +72,9 @@ public class ProcessRunGuidance {
         || !Objects.equals(run.getChainDefinitionId(), cycle.getChainDefinitionId())
         || !Objects.equals(run.getSourceReference(), "experiment:" + cycle.getExperimentId()))
       throw new IllegalStateException("A pendência pertence a outro contexto de execução.");
-    if (!"OPEN".equals(cycle.getStatus()) || !"VIDEO_BRIEF".equals(cycle.getStage())) return null;
+    if (!"OPEN".equals(cycle.getStatus())
+        || !Set.of("VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO").contains(cycle.getStage()))
+      return null;
     var definition = processes.findById(cycle.getProcessDefinitionId()).orElseThrow();
     return definition.getVersionNumber() >= 2 ? cycle : null;
   }

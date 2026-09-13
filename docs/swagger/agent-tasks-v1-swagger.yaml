@@ -1,7 +1,14 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
-  version: 1.6.0
+  version: 1.6.1
+  description: >-
+    Comunicação pré-comercial aceita product:<id>@agent-validation-v1 após o gate
+    multiagente do produto. O contexto IRIS_INPUT_V1 usa mode PRODUCT_PRIVATE,
+    estratégia V3 da descoberta e URL/versão privada aceita, sem experimento ou
+    ciclo de vendas fabricado. O callback da mensagem exige communicationInputReference
+    auditado e correspondente ao gate e aos contratos vigentes. Preparação privada
+    não autoriza campanha, publicação comercial, pagamento ou gasto.
 paths:
   /api/agent-tasks/process-instances:
     get:

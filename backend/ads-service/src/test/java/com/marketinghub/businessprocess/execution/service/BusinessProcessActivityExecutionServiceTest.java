@@ -870,6 +870,80 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(request.getValue().sourceReference()).isEqualTo("product:901@private-validation-v1");
   }
 
+  /** Reconhece a referência privada aprovada tanto na consulta quanto no comando de comunicação. */
+  @Test
+  void requestsPrivateCommunicationWithApprovedProductBeforeExperiment() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(66L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-communication-sales-journey");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"communicationContract\",\"type\":\"TASK\","
+            + "\"label\":\"Construir jornada de valor\","
+            + "\"description\":\"Materializar o protótipo privado.\","
+            + "\"responsibleAgentKeys\":[\"communication-director\"]}]}");
+    Product product = Product.builder().id(901L).internalName("PDE privado").build();
+    product.setAutomaticExecutionEnabled(true);
+    product.setValidationDefinitionVersion("PDE_AGENT_VALIDATED_V1");
+    product.setPdeExperienceJson(
+        "{\"contractVersion\":\"PDE_HARNESS_PLAN_V1\","
+            + "\"experienceVersion\":\"agent-validation-v1\"}");
+    BusinessProcessActivityDefinition communicationContract =
+        activity(601L, process, "communicationContract", "Construir jornada de valor");
+    communicationContract.setDefinitionJson(
+        "{\"responsibleAgentKeys\":[\"communication-director\"]}");
+    when(processes.findById(66L)).thenReturn(Optional.of(process));
+    when(products.findById(901L)).thenReturn(Optional.of(product));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(901L)).thenReturn(List.of());
+    when(commercialPlans.findByProductId(901L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(66L))
+        .thenReturn(List.of(communicationContract));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(66L, "communicationContract"))
+        .thenReturn(Optional.of(communicationContract));
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var history = executionService.productProcessExecutions(66L, 901L);
+    var result =
+        executionService.requestProductActivityExecution(66L, 901L, "communicationContract");
+
+    assertThat(history.activities())
+        .singleElement()
+        .satisfies(
+            activity -> {
+              assertThat(activity.executionRequestAvailable()).isTrue();
+              assertThat(activity.executionRequestReason()).contains("pronta");
+            });
+    assertThat(result.sourceReference()).isEqualTo("product:901@agent-validation-v1");
+    ArgumentCaptor<CreateAgentTaskRequest> request =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
+    assertThat(request.getValue().assignedAgentKey()).isEqualTo("communication-director");
+    assertThat(request.getValue().sourceReference()).isEqualTo("product:901@agent-validation-v1");
+  }
+
   /** Mantém a ocorrência v7 atual mesmo quando a atividade v6 histórica é mais recente. */
   @Test
   void isolatesAgentValidationReferenceFromHistoricalPrivateReading() {

@@ -1,0 +1,85 @@
+{
+  "productId": 10,
+  "chainId": 14,
+  "processDefinitionId": 63,
+  "processVersion": 7,
+  "sourceReference": "product:10@agent-validation-v1",
+  "prototypeVersion": "mira-private-v3",
+  "capturedPublishedState": {
+    "availability": "UNAVAILABLE",
+    "objectiveAchieved": false,
+    "completedActivities": 0,
+    "totalActivities": 4
+  },
+  "localReadOnlyReplay": {
+    "inputReadiness": "READY",
+    "mode": "PRODUCT_PRIVATE",
+    "gateInstanceId": 242,
+    "constructionProcessDefinitionId": 70,
+    "reviewTaskIds": [
+      371,
+      372,
+      373,
+      374,
+      381,
+      329,
+      331
+    ],
+    "strategyTaskId": 327,
+    "callbackAfterJsonTransport": "COMPLETE"
+  },
+  "sourceFileSha256": {
+    "product.json": "20a04c1edc9feda3e94ae2bd13891e8b725ed1461e3a27a894c5dcc72fb9df29",
+    "gate-db.json": "b4349fc1c2a52febaa9fbe1247165598cd76a3feb7a3edaea041664582b746af",
+    "replay-tasks.json": "b3705069de596bf3082343a6b0a62218e61ac3e3e2a1aec11f1d4cfcd871021e",
+    "replayed-input.json": "f97eface4449cee5d8d1a06509693f9b5f5e51307d422ca70b1d6599da5f5849",
+    "visual-sources-db.json": "a95e2d2b98e7c95a967cbd82ea579d9622c380017e96c2bc473b5f4a581995fc",
+    "approved-source-95.png": "a57f12a7b3a223e98315312a58d00feb33dd96fb4d6fba36566310188ca9eb6b"
+  },
+  "visualEvidence": {
+    "taskId": 371,
+    "artifactId": 95,
+    "bytes": 99318,
+    "sha256": "a57f12a7b3a223e98315312a58d00feb33dd96fb4d6fba36566310188ca9eb6b",
+    "downloadHashVerified": true
+  },
+  "publication": {
+    "performed": false,
+    "reason": "Coordinator rejected begin: previous intervention AWAITING_MERGE",
+    "priorInterventionId": "6f6602b97d734d819e32dd23fb60772d",
+    "pendingPr": "https://github.com/paulofor/marketing-hub/pull/5180",
+    "priorValidatedCommit": "d90427871c46d34aaf8cf4acd06d798e9bb55463",
+    "mainObserved": "1a15c5944eca27e7556124387ade7452a71eac78",
+    "coordinatorFinalPhase": "AWAITING_MERGE"
+  },
+  "productionWrites": 0,
+  "paidTasksCreated": 0,
+  "commercialPermissionsGranted": false,
+  "publishedFinalBrowser": [
+    {
+      "profile": "desktop",
+      "status": 200,
+      "runStatus": "UNAVAILABLE",
+      "canStart": false,
+      "sourceReference": null,
+      "buttons": []
+    },
+    {
+      "profile": "iphone",
+      "status": 200,
+      "runStatus": "UNAVAILABLE",
+      "canStart": false,
+      "sourceReference": null,
+      "buttons": []
+    },
+    {
+      "profile": "pixel",
+      "status": 200,
+      "runStatus": "UNAVAILABLE",
+      "canStart": false,
+      "sourceReference": null,
+      "buttons": []
+    }
+  ],
+  "localTopologyRemoved": true
+}

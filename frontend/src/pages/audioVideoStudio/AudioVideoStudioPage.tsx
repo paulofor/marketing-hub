@@ -95,6 +95,8 @@ type StudioBriefing = {
   title: string;
   objective: string;
   story: string;
+  hookText?: string;
+  scriptText?: string;
   product: string;
   audience: string;
   pain: string;
@@ -1018,6 +1020,8 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     title: project.title,
     objective: project.objective,
     story: project.storyText || project.objective,
+    hookText: project.hookText ?? "",
+    scriptText: project.scriptText ?? "",
     product: project.contextType || defaultBriefing.product,
     audience:
       getStudioCommercialLabel(project.targetChannel) ||
@@ -1417,8 +1421,10 @@ export default function AudioVideoStudioPage() {
     learningDecision: briefing.learningDecision,
     confirmedLearning: briefing.confirmedLearning,
     nextVersionRecommendation: briefing.nextVersionRecommendation,
-    hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
-    scriptText: scriptDraft.join("\n\n"),
+    hookText:
+      briefing.hookText ??
+      `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
+    scriptText: briefing.scriptText ?? scriptDraft.join("\n\n"),
     scenePlan: briefing.scenePlan,
     visualReferences: briefing.proof,
     characterBible: briefing.characterBible,
@@ -1841,18 +1847,18 @@ export default function AudioVideoStudioPage() {
             </label>
             <label>
               Campanha
-              <select
+              <input
+                list="studio-campaign-suggestions"
                 value={briefing.campaignKey}
                 onChange={updateBriefing("campaignKey")}
-              >
-                {optionsWithCurrent(campaignOptions, briefing.campaignKey).map(
-                  (option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ),
-                )}
-              </select>
+              />
+              <datalist id="studio-campaign-suggestions">
+                {campaignOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </datalist>
               <small>
                 {getOptionDescription(campaignOptions, briefing.campaignKey)}
               </small>
@@ -1947,43 +1953,47 @@ export default function AudioVideoStudioPage() {
               rows={7}
             />
           </label>
-          <label>
-            Produto
-            <input
-              value={briefing.product}
-              onChange={updateBriefing("product")}
-            />
-          </label>
-          <label>
-            Publico
-            <input
-              value={briefing.audience}
-              onChange={updateBriefing("audience")}
-            />
-          </label>
-          <label>
-            Dor principal
-            <textarea
-              value={briefing.pain}
-              onChange={updateBriefing("pain")}
-              rows={2}
-            />
-          </label>
-          <label>
-            Promessa
-            <textarea
-              value={briefing.promise}
-              onChange={updateBriefing("promise")}
-              rows={2}
-            />
-          </label>
-          <label>
-            Mecanismo
-            <input
-              value={briefing.mechanism}
-              onChange={updateBriefing("mechanism")}
-            />
-          </label>
+          {!isEditingProject && (
+            <>
+              <label>
+                Produto
+                <input
+                  value={briefing.product}
+                  onChange={updateBriefing("product")}
+                />
+              </label>
+              <label>
+                Publico
+                <input
+                  value={briefing.audience}
+                  onChange={updateBriefing("audience")}
+                />
+              </label>
+              <label>
+                Dor principal
+                <textarea
+                  value={briefing.pain}
+                  onChange={updateBriefing("pain")}
+                  rows={2}
+                />
+              </label>
+              <label>
+                Promessa
+                <textarea
+                  value={briefing.promise}
+                  onChange={updateBriefing("promise")}
+                  rows={2}
+                />
+              </label>
+              <label>
+                Mecanismo
+                <input
+                  value={briefing.mechanism}
+                  onChange={updateBriefing("mechanism")}
+                />
+              </label>
+            </>
+          )}
           <div className="audio-video-studio-page__briefing-grid">
             <label>
               Etapa do funil
@@ -2090,16 +2100,30 @@ export default function AudioVideoStudioPage() {
           </div>
           <div className="audio-video-studio-page__draft">
             <div className="audio-video-studio-page__section-heading">
-              <h2>Rascunho narrativo</h2>
+              <h2>Roteiro do vídeo</h2>
               <p>
-                Base pronta para transformar em roteiro falado e plano de cenas.
+                Revise o gancho e o texto completo antes de produzir as cenas.
               </p>
             </div>
-            <ol>
-              {scriptDraft.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ol>
+            <label>
+              Gancho do vídeo
+              <textarea
+                value={
+                  briefing.hookText ??
+                  `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`
+                }
+                onChange={updateBriefing("hookText")}
+                rows={2}
+              />
+            </label>
+            <label>
+              Roteiro completo
+              <textarea
+                value={briefing.scriptText ?? scriptDraft.join("\n\n")}
+                onChange={updateBriefing("scriptText")}
+                rows={8}
+              />
+            </label>
           </div>
           <div
             className="audio-video-studio-page__visual-bible"

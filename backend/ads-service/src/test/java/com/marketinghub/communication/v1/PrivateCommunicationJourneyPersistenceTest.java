@@ -148,7 +148,7 @@ class PrivateCommunicationJourneyPersistenceTest {
     reading.executeWithoutResult(
         status -> {
           var result = journey.readiness(process, activity, product, "experiment:92041");
-          assertThat(result.reason()).isEqualTo("O ciclo privado não foi encontrado.");
+          assertThat(result.reason()).isEqualTo("O contexto privado não foi encontrado.");
           assertThat(instances.count()).isZero();
         });
     assertThat(statements).noneMatch(sql -> sql.toLowerCase().contains("for update"));

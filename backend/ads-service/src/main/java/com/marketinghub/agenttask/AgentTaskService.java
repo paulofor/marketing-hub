@@ -1915,7 +1915,8 @@ public class AgentTaskService {
             .ifPresent(
                 contract -> {
                   context.put("communicationMaterializationContext", contract);
-                  if ("LEARNING_CYCLE_PRIVATE".equals(contract.get("mode"))) {
+                  if (java.util.Set.of("LEARNING_CYCLE_PRIVATE", "PRODUCT_PRIVATE")
+                      .contains(contract.getOrDefault("mode", ""))) {
                     context.put(
                         "marketStrategicContract",
                         contract.getOrDefault(

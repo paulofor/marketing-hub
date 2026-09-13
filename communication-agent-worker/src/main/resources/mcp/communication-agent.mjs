@@ -95,12 +95,14 @@ async function request(method, path, body, toolName) {
 }
 
 function sourceScope(reference) {
+  const product = /^product:([1-9][0-9]*)@agent-validation-v1$/.exec(reference);
+  if (product) return { type: "PRODUCT", id: product[1] };
   const plan =
     /^commercial-plan:([1-9][0-9]*)(?:@v[1-9][0-9]*)?(?::[A-Za-z0-9_-]+)*$/.exec(reference);
   if (plan) return { type: "COMMERCIAL_PLAN", id: plan[1] };
   const experiment = /^experiment:([1-9][0-9]*)$/.exec(reference);
   if (experiment) return { type: "EXPERIMENT", id: experiment[1] };
-  throw new Error("Íris exige sourceReference de plano ou experimento.");
+  throw new Error("Íris exige sourceReference oficial de produto privado, plano ou experimento.");
 }
 
 function tool(name, description, properties, readOnly, required = []) {

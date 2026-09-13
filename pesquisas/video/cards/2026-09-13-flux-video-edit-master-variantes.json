@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-master-variantes-edicao-localizada",
+  "collection": "video",
+  "title": "Editar um master para gerar variantes localizadas sem regenerar a peça",
+  "finding": "FLUX Video Edit expõe uma API que altera seletivamente objetos, cenário, texto e diálogo com lip sync enquanto preserva duração, enquadramento, movimento de câmera, timing e áudio não editado do vídeo-fonte.",
+  "mechanism": "Preservar a estrutura temporal do master reduz a quantidade de conteúdo que precisa ser regenerada e permite transformar uma peça aprovada em variantes de produto, idioma ou contexto por mudanças localizadas.",
+  "commercialApplication": "No Marketing Hub, usar um criativo master aprovado e produzir variantes por oferta, embalagem, texto, idioma ou cenário antes de testes A/B, mantendo performance e montagem constantes sempre que possível.",
+  "evidenceStrength": "Forte para capacidade técnica, limites e preço porque a evidência principal vem da documentação oficial da BFL; ainda não há evidência de efeito sobre CTR, checkout ou vendas.",
+  "publishedOn": "2026-09-13",
+  "validUntil": "2026-11-12",
+  "experimentHypothesis": "Variantes derivadas de um master por edição localizada reduzirão tempo e custo por variação sem aumentar a taxa de rejeição visual, permitindo mais testes no mesmo orçamento.",
+  "risks": "Alterações podem criar artefatos, modificar atributos do produto indevidamente, produzir texto ou lip sync incorretos ou violar claims e identidade visual; cada variante precisa de revisão antes de publicação.",
+  "limits": "A API atual aceita até 15 segundos e 50 MiB, com saída a 24 fps e até 720p; benchmarks de qualidade e velocidade do fornecedor não são validação independente, e melhoria comercial precisa ser medida no funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-13-flux-video-edit-master-variantes.md",
+  "sourceTitle": "FLUX Video Edit: edição localizada de vídeo a partir de um master",
+  "sourceSha256": "ff19103aa7161971d9b07458a6ee42f2f1f6cddb7f6387565ce1698730a075fc"
+}

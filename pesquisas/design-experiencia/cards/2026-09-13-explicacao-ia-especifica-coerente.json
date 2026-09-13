@@ -1,0 +1,18 @@
+{
+  "cardKey": "explicacao-ia-especifica-coerente",
+  "collection": "neuromarketing",
+  "title": "Explique recomendações de IA com seletividade e evidência relacionada",
+  "finding": "Em experimento com 301 participantes, explicações suficientes, compactas e mínimas foram escolhidas mais frequentemente que o esperado; a preferência mais consistente foi por explicações curtas compostas por argumentos diretamente relacionados, e a extensão cresceu apenas cerca de 25% quando havia mais informação disponível.",
+  "mechanism": "A seletividade reduz informação irrelevante e provavelmente limita carga cognitiva, preservando o vínculo entre conclusão e evidência. Carga cognitiva é uma explicação plausível, não um mecanismo causal isolado pelo estudo.",
+  "commercialApplication": "Atualizar as justificativas dos agentes do Marketing Hub para usar recomendação → critério principal → evidência diretamente relacionada → limite ou incerteza, deixando detalhes adicionais expansíveis sob demanda em vez de expor todo o rationale.",
+  "evidenceStrength": "Moderada: experimento preregistrado com 301 participantes de 42 países, publicado em Cognitive Computation, com comparação contra baselines. O cenário era de baixo risco e baixa pressão temporal e mediu preferência de explicação, não qualidade de decisão comercial.",
+  "publishedOn": "2026-09-13",
+  "validUntil": "2027-03-13",
+  "experimentHypothesis": "Explicações seletivas com apenas evidência diretamente relacionada aumentarão compreensão e reduzirão esforço e re-prompts sem piorar decisões, em comparação com justificativas longas ou com argumentos periféricos.",
+  "risks": "Explicações curtas podem omitir ressalvas necessárias e aumentar confiança indevida. Em decisões de maior consequência, permitir expansão e garantir que limitações críticas permaneçam visíveis.",
+  "limits": "O estudo mede seleção de argumentos em cenários experimentais, não confiança calibrada, CTA, compra ou conversão. Preferências podem mudar em contextos de alto risco ou sob pressão temporal.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-13-explicacao-ia-especifica-coerente.md",
+  "sourceTitle": "Fonte revisada — Explicações seletivas, curtas e relacionadas",
+  "sourceSha256": "7dd378460f4e4f5ea5da114103a5e8569ecfcffe3542b9abe827c80844fb4c52"
+}

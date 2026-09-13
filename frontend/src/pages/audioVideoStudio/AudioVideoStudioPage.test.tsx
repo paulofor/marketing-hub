@@ -247,6 +247,91 @@ afterEach(() => {
 });
 
 describe("AudioVideoStudioPage", () => {
+  it("adiciona a quinta cena ao briefing existente sem redefinir identidade ou produzir vídeo", async () => {
+    const originalScenes = ["Dor", "Mecanismo", "Resultado", "Prova"];
+    let project = {
+      id: 1,
+      productId: 91001,
+      experimentId: 91002,
+      campaignKey: "fixture-video-v1",
+      title: "Briefing local com quatro cenas",
+      videoCategory: "COMMERCIAL_SHORT",
+      targetDurationSeconds: 15,
+      hookText: "Gancho aprovado",
+      scriptText: "Roteiro aprovado",
+      captionPlan: "Legenda aprovada",
+      ctaText: "CTA aprovado",
+      scenePlan: originalScenes.join("\n"),
+      status: "DRAFT",
+    };
+    (axios.get as any).mockImplementation((url: string) =>
+      Promise.resolve({
+        data: url === "/api/sales-videos/projects/1" ? project : [],
+      }),
+    );
+    (axios.patch as any).mockImplementation((_url: string, payload: any) => {
+      project = { ...project, ...payload };
+      return Promise.resolve({ data: project });
+    });
+    setupProject();
+    await screen.findByDisplayValue(project.title);
+    expect(screen.getAllByLabelText(/Cena \d+ ·/)).toHaveLength(4);
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar cena" }));
+    fireEvent.change(screen.getByLabelText(/Cena 5 ·/), {
+      target: { value: "CTA: convite privado" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    );
+    await screen.findByText(`Projeto atualizado: #1 - ${project.title}`);
+    expect(project.scenePlan.split("\n")).toEqual([
+      ...originalScenes,
+      "CTA: convite privado",
+    ]);
+    expect(project).toMatchObject({
+      productId: 91001,
+      experimentId: 91002,
+      campaignKey: "fixture-video-v1",
+      hookText: "Gancho aprovado",
+      scriptText: "Roteiro aprovado",
+      captionPlan: "Legenda aprovada",
+      ctaText: "CTA aprovado",
+      targetDurationSeconds: 15,
+      status: "DRAFT",
+    });
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("preserva o limite de cenas ao ampliar um briefing", async () => {
+    (axios.get as any).mockImplementation((url: string) =>
+      Promise.resolve({
+        data:
+          url === "/api/sales-videos/projects/1"
+            ? {
+                id: 1,
+                productId: 91001,
+                title: "Briefing no limite",
+                objective: "Validar o limite local",
+                hookText: "Gancho",
+                scriptText: "Roteiro",
+                videoCategory: "COMMERCIAL_SHORT",
+                targetDurationSeconds: 15,
+                scenePlan: Array.from(
+                  { length: 48 },
+                  (_, index) => `Plano ${index + 1}`,
+                ).join("\n"),
+              }
+            : [],
+      }),
+    );
+    setupProject();
+    await screen.findByDisplayValue("Briefing no limite");
+    expect(screen.getAllByLabelText(/Cena \d+ ·/)).toHaveLength(48);
+    expect(
+      screen.getByRole("button", { name: "Adicionar cena" }),
+    ).toBeDisabled();
+  });
+
   it("preserva roteiro e gancho exatos ao salvar outra configuração do projeto", async () => {
     let project = {
       id: 1,

@@ -5274,3 +5274,15 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
 - Regressões: VideoProductProofServiceTest, PdeProductProofOverlayTest (FFmpeg real na homologação),
   SalesVideoJobServiceTest, SalesVideoAssetControllerTest e persistência do campo no Estúdio.
 - Cânone: apollo-plutus-video-production-canon.v1.md. Nenhuma prova de teste libera campanha.
+
+## LOOP-ESTUDIO-BRIEFING-SEM-ADICAO-DE-CENA
+
+- **Causa confirmada (13/09/2026):** `updateScenePrompt` substitui quebras de linha
+  por espaços e o editor só renderizava as cenas já persistidas. Um plano revisado
+  de cinco cortes não podia ser salvo a partir do briefing histórico de quatro.
+- **Proteção:** controle explícito de adicionar cena, sem preset ou novo projeto;
+  PATCH oficial preserva campos e não inicia produção. Manter o limite do editor.
+- **Contrato de regressão:** `AudioVideoStudioPage.test.tsx` e
+  `frontend/e2e/video-preflight-guidance-responsive.mjs` devem partir de quatro
+  cenas, salvar a quinta e reabrir em desktop e celulares, sem chamada paga.
+- **Registro:** `docs/homologacao/vega-producao-apos-preflight-v1.md`.

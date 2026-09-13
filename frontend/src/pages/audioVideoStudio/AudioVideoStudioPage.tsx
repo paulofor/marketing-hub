@@ -1289,6 +1289,14 @@ export default function AudioVideoStudioPage() {
     });
   };
 
+  const addScenePrompt = () => {
+    setBriefing((current) => {
+      const prompts = current.scenePlan.split("\n");
+      if (prompts.length >= MAX_CINEMATIC_SCENES) return current;
+      return { ...current, scenePlan: [...prompts, ""].join("\n") };
+    });
+  };
+
   const applyPreset = (preset: StudioPreset) => {
     setBriefing(preset.briefing);
     setSaveFeedback("");
@@ -2362,6 +2370,20 @@ export default function AudioVideoStudioPage() {
                         />
                       </label>
                     ))}
+                    <button
+                      type="button"
+                      className="audio-video-studio-page__secondary-action"
+                      onClick={addScenePrompt}
+                      disabled={
+                        selectedScenePrompts.length >= MAX_CINEMATIC_SCENES ||
+                        isSavingProject
+                      }
+                    >
+                      Adicionar cena
+                    </button>
+                    <small>
+                      Salve o plano atualizado antes de solicitar a produção.
+                    </small>
                   </fieldset>
                 </div>
                 <div className="audio-video-studio-page__panel">

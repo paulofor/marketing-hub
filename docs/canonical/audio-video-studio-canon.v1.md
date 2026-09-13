@@ -527,3 +527,16 @@ redação não representam dados recuperados quando não possuem persistência p
 Campanhas aceitam identificador próprio, com os presets como sugestões. Produto,
 experimento, grupo e referências preservam a atribuição da versão em produção.
 Salvar narrativa não aprova qualidade do vídeo nem autoriza consumo ou publicação.
+
+## Ampliação de briefing persistido — 13/09/2026
+
+O Estúdio deve permitir adicionar cenas ao plano existente sem trocar o preset,
+recriar o projeto ou redefinir roteiro, oferta, experimento e referências. A adição
+é uma edição local do formulário, limitada à capacidade do editor, e só persiste
+por `PATCH /api/sales-videos/projects/{id}` ao salvar a continuidade. Não gera
+clipe, não altera o histórico de jobs e não autoriza gasto. O backend continua
+validando o contrato próprio da rota de produção ou montagem selecionada.
+
+A homologação de mudanças no número de cortes deve começar também por um projeto
+histórico com menos cenas: adicionar, editar, salvar, reabrir e conferir o plano
+completo em desktop e celular, preservando a identidade e os demais campos.

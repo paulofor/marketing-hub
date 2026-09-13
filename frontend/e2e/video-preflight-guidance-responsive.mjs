@@ -26,6 +26,24 @@ try {
       errors = [],
       writes = [],
       external = [];
+    let project = {
+      id: 91004,
+      productId: 91001,
+      experimentId: 91001,
+      campaignKey: "fixture-video-finance-v1",
+      title: "Vídeo sintético segregado",
+      objective: "Primeiro ajuste",
+      scriptText: "Aplicar, avaliar e retomar.",
+      hookText: "Primeiro ajuste",
+      captionPlan: "Aplicar, avaliar e retomar.",
+      ctaText: "Ver o ajuste",
+      scenePlan: "Dor\nMecanismo\nResultado\nProva",
+      referencePerformanceUri:
+        "internal://agent-tasks/91005/visual-evidence/91006#crop=10,20,300,400",
+      status: "DRAFT",
+      targetDurationSeconds: 15,
+      videoCategory: "COMMERCIAL_SHORT",
+    };
     page.on("pageerror", (e) => errors.push(e.message));
     await page.route("**/*", async (route) => {
       const request = route.request(),
@@ -35,24 +53,43 @@ try {
         return route.abort();
       }
       if (request.method() !== "GET") writes.push(url.pathname);
-      if (url.pathname === "/api/sales-videos/projects/91004")
+      if (url.pathname === "/api/sales-videos/projects/91004") {
+        if (request.method() === "PATCH") {
+          const update = request.postDataJSON();
+          for (const key of [
+            "productId",
+            "experimentId",
+            "campaignKey",
+            "scriptText",
+            "hookText",
+            "captionPlan",
+            "ctaText",
+            "referencePerformanceUri",
+            "targetDurationSeconds",
+          ])
+            assert.equal(update[key], project[key], key);
+          project = { ...project, ...update };
+        }
+        return route.fulfill({ json: project });
+      }
+      if (
+        url.pathname === "/api/sales-videos/autonomy/v1/cycles" &&
+        request.method() === "POST"
+      ) {
+        const requestBody = request.postDataJSON();
+        assert.equal(requestBody.videoProjectId, project.id);
+        assert.equal(requestBody.budgetLimitUsd, 8);
+        assert.equal(requestBody.productionProfile, "FINAL_CAMPAIGN");
+        assert.equal(project.scenePlan.split("\n").length, 5);
         return route.fulfill({
+          status: 201,
           json: {
-            id: 91004,
-            productId: 91001,
-            experimentId: 91001,
-            campaignKey: "fixture-video-finance-v1",
-            title: "Vídeo sintético segregado",
-            objective: "Primeiro ajuste",
-            scriptText: "Aplicar, avaliar e retomar.",
-            hookText: "Primeiro ajuste",
-            referencePerformanceUri:
-              "internal://agent-tasks/91005/visual-evidence/91006#crop=10,20,300,400",
-            status: "DRAFT",
-            targetDurationSeconds: 15,
-            videoCategory: "COMMERCIAL_SHORT",
+            id: 91009,
+            ...requestBody,
+            status: "WAITING_PROVIDER_PREFLIGHT",
           },
         });
+      }
       if (
         url.pathname.startsWith("/api/") &&
         !url.pathname.startsWith(
@@ -115,12 +152,67 @@ try {
       .getByLabel("Referência da captura homologada")
       .scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${output}/${name}-proof-reference.png` });
+    await expect(page.getByLabel(/^Cena \d+ ·/)).toHaveCount(4);
+    await page
+      .getByRole("button", { name: "Adicionar cena", exact: true })
+      .click();
+    await page.getByLabel(/^Cena 5 ·/).fill("CTA: ver o ajuste privado");
+    const saved = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/sales-videos/projects/91004") &&
+        response.request().method() === "PATCH",
+    );
+    await page
+      .getByRole("button", { name: "Salvar continuidade", exact: true })
+      .click();
+    assert.equal((await saved).status(), 200);
+    assert.deepEqual(project.scenePlan.split("\n"), [
+      "Dor",
+      "Mecanismo",
+      "Resultado",
+      "Prova",
+      "CTA: ver o ajuste privado",
+    ]);
+    await page.reload();
+    await expect(page.getByLabel(/^Cena 5 ·/)).toHaveValue(
+      "CTA: ver o ajuste privado",
+    );
+    await expect(page.getByLabel("Roteiro completo")).toHaveValue(
+      "Aplicar, avaliar e retomar.",
+    );
+    await page.getByLabel(/^Cena 5 ·/).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${output}/${name}-fifth-scene.png` });
+    await page.getByLabel("Teto do ciclo em USD", { exact: true }).fill("8");
+    await page
+      .getByLabel("Perfil de produção do ciclo", { exact: true })
+      .selectOption("FINAL_CAMPAIGN");
+    await page
+      .getByLabel("Objetivo de aprendizado", { exact: true })
+      .fill("Validar a solicitação do projeto local segregado.");
+    await page
+      .getByLabel("Critério de sucesso", { exact: true })
+      .fill("Persistir cinco cenas e solicitar somente o ciclo governado.");
+    const requested = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/sales-videos/autonomy/v1/cycles") &&
+        response.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", {
+        name: "Solicitar produção a Apolo sob controle de Plutus",
+        exact: true,
+      })
+      .click();
+    assert.equal((await requested).status(), 201);
     await page.goBack();
     await expect(
       panel.getByText(data.action.title, { exact: true }),
     ).toBeVisible();
     assert.deepEqual(errors, []);
-    assert.deepEqual(writes, []);
+    assert.deepEqual(writes, [
+      "/api/sales-videos/projects/91004",
+      "/api/sales-videos/autonomy/v1/cycles",
+    ]);
     assert.deepEqual(external, []);
     results.push({
       device: name,
@@ -129,6 +221,8 @@ try {
       exactProject: true,
       return: true,
       externalCalls: 0,
+      legacyFourToFiveScenesPersisted: true,
+      governedProductionRequested: true,
     });
     await context.close();
   }

@@ -121,3 +121,115 @@ job ou custo. Os dois projetos pertenciam a produto 4/experimento 92/v12; nenhum
 produção desta recuperação havia sido solicitada. As pré-checagens somente de
 leitura confirmaram que os três serviços publicados usam os Compose versionados
 esperados e que a configuração operacional pode ser preservada na aplicação.
+
+## Imagens da revisão validada
+
+Revisão local: `b8283442948497a181641b81ea0bbd09591415d6`, sobre a `main`
+`9a5d4361ff2a0fabde650201352dcf9145e138a7`, novamente conferida antes da aplicação.
+Sem push ou PR. Imagens construídas pelos Dockerfiles versionados de backend,
+frontend e `video-management-service`, identificadas por `vega-cycle6-b82834429484`
+e pelo rótulo OCI da revisão completa.
+
+- Backend: JAR SHA-256 `3cac62cf8b27b5c19d4804d0982a9c678a13361c5a9a2d90f12b5dbc547b6fce`,
+  idêntico ao pacote testado, conferido dentro da imagem sem iniciar a aplicação produtiva.
+- Executor: 135 classes e prompt conferidos byte a byte contra a compilação local;
+  JAR SHA-256 `15784cf97d4d5604229820a2f727acdf39660287d33892f2832f31916cda39c1`.
+  A imagem executou `pending → dry runs 10s/5s → callback READY` na rede de mocks.
+- Frontend: bundle produtivo com revisão explícita; Chromium desktop/iPhone/Pixel
+  confirmaram a nova referência e a API na porta 80, com todas as APIs simuladas.
+  A fixture da imagem precisou fornecer o DNS `backend` exigido pelo Nginx e uma
+  rede acessível ao navegador; isso não exigiu alteração no produto ou na imagem.
+
+Os testes das imagens também encerraram o projeto Compose exclusivo com volumes
+e órfãos. O MCP confirmou zero jobs de vídeo/roteiro pendentes ou em processamento
+antes de iniciar a intervenção `405517f219104aac8e0257aeada71410`, em `ACTIVE`,
+com os quatro publicadores APP pausados e nenhuma execução em drenagem.
+
+Decisão operacional: comparadas produção simultânea (mais rápida, duas reservas
+concorrentes), recarga prévia (gasto externo desnecessário e dependente de nova
+autorização) e produção sequencial (permite conciliar saldo e qualidade por peça).
+Escolhida a sequência anúncio → inspeção → demonstração, preservando USD 8 por peça
+e USD 4 para revisão dentro do teto humano total de USD 20. Teto não é meta de gasto.
+
+## Preparação editorial sem nova geração
+
+A prévia local reutilizou a captura homologada 118, com o hash já validado, e
+as legendas exatas dos dois projetos divididas pelo separador canônico `|`.
+A normalização das cinco legendas conserva cada palavra aprovada; os separadores
+não alteram o roteiro nem a hipótese. O enquadramento explícito preserva o ajuste,
+a autoavaliação e o estado salvo, reservando uma área independente para a legenda.
+
+As duas prévias passaram pelo acabamento real com HTTP/TTS simulados e foram
+reproduzidas em desktop, iPhone 15 Pro e Pixel 7, a 1080×1920/15 s, sem estouro
+do layout. A inspeção visual confirmou a captura e a legenda separadas. São
+prévias técnicas com tom sintético, não vídeos finais ou evidência comercial.
+Arquivos locais: `.sandbox/vega-recuperacao/layout-4/` e `layout-5/`.
+
+O backend aplicado apresentou saúde `UP`, revisão `b82834429484` e a ação
+`REQUEST_VIDEO_PRODUCTION` no processo correto. O processo permaneceu com
+zero de quatro objetivos comprovados e os links dos três subprocessos preservados.
+
+## Aplicação coordenada confirmada
+
+Os três serviços foram aplicados por `execute` na intervenção citada, mantendo
+configurações e mounts e preservando tags de rollback. Os hashes portáveis das
+imagens locais e carregadas nos hosts coincidiram:
+
+- Backend: `sha256:9b7bd035ac07e2983002ffd0956fcfacc2ed89f07fb7beea0e9076fcc8e510e8`.
+- Executor: `sha256:09552779a2a240351679059d732243cf6c27578782c206b0e813117941deb47e`.
+- Frontend: `sha256:db96524262435de533dd2225770107200c74c5ec19722a028831fd02010e8bec`.
+
+Backend e banco confirmaram `UP` no endpoint canônico de observabilidade. O
+executor iniciou normalmente em 28,738 s, com health `UP`. A primeira consulta
+MCP de logs durante o bootstrap retornou `ConnectException`; a nova consulta
+funcionou e confirmou o início sem erro. A tela publicou `healthz` com revisão
+completa `b8283442948497a181641b81ea0bbd09591415d6`. Nenhum publicador foi retomado.
+
+## Lacuna encontrada na preparação do briefing histórico
+
+Antes de qualquer solicitação de produção, a navegação publicada confirmou que
+o editor não permitia adicionar a quinta cena ao projeto original de quatro
+cenas. Quebras de linha são normalizadas dentro de uma cena. A matriz anterior
+validava planejamento de cinco cortes, referência privada e navegação, mas não
+a transição de quatro para cinco cenas no formulário histórico. Nenhum save ou
+job foi criado nessas tentativas de preparação.
+
+Alternativas comparadas: trocar o preset e reconstruir o briefing (alto risco de
+perder contexto, esforço alto); expor somente um bloco de texto integral (esforço
+baixo, edição pouco segura); adicionar uma cena sem tocar nas existentes (esforço
+baixo, identidade preservada). Escolhida a terceira, usando o PATCH já existente.
+A revisão adiciona o controle ao editor e testes de persistência e limite.
+
+A matriz foi ampliada **antes dos testes** para cobrir o projeto legado com quatro
+cenas, quinta cena editável, PATCH, reabertura, preservação de copy/CTA/identidade/
+prova, limite de cenas e ausência de render/gasto ao editar. O mesmo percurso deve
+passar em desktop/iPhone/Pixel. Duas novas rodadas completas consecutivas são
+obrigatórias; `final2`/`final3` permanecem como evidência da revisão anterior.
+
+A rodada `final4` passou com 2.922 testes executados no backend, 170 no executor,
+38 no financeiro e 130 no frontend, total **3.260**, sem falhas. Também passaram
+os contratos de pacote, MySQL, mídia e navegação nos três dispositivos. O roteiro
+visual acrescenta a confirmação de `POST /api/sales-videos/autonomy/v1/cycles`
+somente após o PATCH e a reabertura; o POST usa mock e não inicia um provedor.
+Os 32 arquivos de implementação/testes foram conferidos por hash antes da rodada
+consecutiva `final5`. O limite de cenas usou fixture com os campos obrigatórios
+do projeto; sua primeira versão incompleta foi corrigida antes dessas rodadas.
+
+Nova consulta MCP após a primeira rodada confirmou somente os ciclos 12–16 nos
+projetos 4/5, todos de preflight isolado, sem `agent_task_id` ou `sales_video_job_id`.
+Nenhuma produção paga foi usada para descobrir a limitação de edição.
+
+## Homologação final da edição de cenas
+
+As rodadas completas consecutivas **`final4` e `final5` passaram**, com **3.260
+testes executados por rodada** (2.922 backend, 170 vídeo, 38 financeiro, 130
+frontend), oito testes opcionais do backend fora da contagem, e os mesmos 32
+arquivos de implementação/testes conferidos por SHA-256. MySQL 5.7, contrato de
+planejamento, prova privada, FFmpeg/ffprobe, TTS simulado, legendas, empacotamento
+e navegação desktop/iPhone/Pixel passaram novamente. O percurso visual inclui
+adicionar a quinta cena a quatro cenas persistidas, salvar por PATCH, reabrir
+e solicitar o ciclo governado por POST simulado, preservando copy e identidade.
+
+O diff adicional contém somente o controle de cenas, seus testes e registros.
+Não houve alteração adicional em Java, configuração publicada ou imagem do
+backend/executor. Os Compose temporários foram encerrados com volumes e órfãos.

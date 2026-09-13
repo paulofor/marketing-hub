@@ -1,0 +1,18 @@
+{
+  "cardKey": "autenticidade-criativo-ia",
+  "collection": "neuromarketing",
+  "title": "Criativos com IA devem preservar autenticidade e variar padrões sintéticos",
+  "finding": "Experimento com 117 adultos mostrou que pessoas podem melhorar a detecção de conteúdo sintético após ver exemplos corretamente rotulados; o estudo também encontrou maior homogeneidade semântica e visual entre materiais gerados por IA do que entre materiais humanos/reais.",
+  "mechanism": "Repetição de padrões de linguagem, composição e aparência pode funcionar como sinal de origem sintética. Exemplos rotulados parecem recalibrar a atenção para pistas diagnósticas, tornando parte do público mais sensível a essas regularidades.",
+  "commercialApplication": "Em creative variants, preservar âncoras reais e verificáveis do produto, evitar séries excessivamente homogêneas e testar diversidade de linguagem/composição. Quando disclosure de IA for pertinente ou exigido, tratá-lo como componente de confiança em vez de tentar ocultar a origem sintética.",
+  "evidenceStrength": "Moderada: experimento controlado com melhora de 9,4 pontos percentuais na detecção no grupo treinado, mas com N=117, jovens dos EUA e desfecho de discernimento, não confiança, CTR ou venda.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2027-01-31",
+  "experimentHypothesis": "Uma variante que combine geração por IA com evidência real verificável e maior diversidade de linguagem/composição manterá confiança e CTA melhor do que uma série sintética homogênea, sem alterar a promessa da oferta.",
+  "risks": "Não usar o achado para ensinar ocultação deliberada da origem de conteúdo sintético; não fabricar prova humana, depoimento, produto, resultado ou cenário real; respeitar regras de disclosure aplicáveis.",
+  "limits": "O estudo mede capacidade de distinguir IA de conteúdo humano em listagens de aluguel, não desempenho comercial. Os modelos geradores usados são anteriores aos atuais e os sinais de homogeneidade podem mudar rapidamente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-13-autenticidade-discernimento-sintetico.md",
+  "sourceTitle": "Fonte revisada — Discernimento de conteúdo sintético e autenticidade",
+  "sourceSha256": "3d4e5e16494eff3e6c18f73817b10905c1f3157b17d76812100c02f8a9186cd7"
+}

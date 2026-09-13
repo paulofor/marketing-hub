@@ -105,3 +105,78 @@ Conferência publicada anterior à aplicação: execução 6 ainda `BLOCKED`, 1 
 concluído, 4 restantes, 1 dispensa; custo conhecido USD 0,694708. Nenhuma tarefa paga
 foi repetida durante o diagnóstico e a homologação local. A decisão humana de uso
 permanece reservada ao usuário, depois das revisões independentes da peça corrigida.
+
+## Aplicação autorizada e recuperação publicada
+
+Revisão de código validada: `3222f37dd60bb0794ef50ffc4f720b57760eb0ed`.
+Intervenção `398d1f700931474c9e7d89b8194f47dd`, escopos `app` e `temis`
+(os arquivos atuais de escopo abrangem os cinco publicadores da aplicação e de Íris).
+A coordenação chegou a `ACTIVE` sem transações de publicação pendentes. O processo 6
+foi pausado pela tela antes da troca; as imagens foram transferidas e aplicadas por
+`execute`, primeiro Íris e depois backend. Ambas responderam saudáveis antes da retomada.
+
+As imagens usam a tag `mira-creative-review-v1-3222f37dd60b` em
+`marketing-hub/backend` e `marketing-hub/communication-agent-worker`. A versão anterior
+de cada serviço foi conservada sob `mira-creative-review-rollback-3222f37dd60b`.
+Os JARs lidos nos containers publicados são idênticos aos homologados:
+
+- Backend: `d57438a582194e5ab8f72a291bf4f74c0f40667af08575557fc90a27bc20e8ee`.
+- Íris: `be1d4a2d2ef4803ea6b7aad874adeba9e0cb6c889e2112dc75101b0c7cb6eba8`.
+
+O helper SSH recusa quebras de linha em argumentos: a primeira chamada de aplicação
+foi recusada antes de modificar containers. A invocação suportada usa `python3 -`
+com o script pela entrada padrão. A mesma revisão homologada foi então aplicada;
+não houve publicação de uma versão parcial para testar comportamento do produto.
+
+Retomada pela tela confirmada. O evento 131 registra `RECOVERY_REQUESTED`, tarefa 414,
+referência privada preservada e hash do parecer
+`2ff8e5a3fe00bbbe6c3c13aec3ee16c7917bd720b64e2fdfa8ab686ed51cb1fb`.
+O evento 123 de `NO_PROGRESS` permanece no histórico.
+
+Íris concluiu 414 e o backend abriu 415 para Psique. A peça real é o artefato 128,
+1080×1350, SHA-256 `16c7b3574b7512b540a1ccd3c5c86839b08ed482f9fda1d9d02de0588a66f9ed`.
+Ela identifica a aplicação web privada, amplia o primeiro passo da fonte mobile 96
+e preserva instrução, limite e ressalva sintética. O log de Psique confirma o download
+do mesmo artefato e hash. [Consultar a peça](http://191.252.181.168/api/agent-tasks/414/visual-evidence/128/content).
+
+Psique 415 e Têmis 416 concluíram com `decision=APPROVED`, vinculadas ao artefato 128.
+Psique não requer novo ajuste: a aplicação, a participação da cliente, o resultado,
+o CTA e os limites estão claros. Têmis qualifica o PNG somente para avaliação privada;
+a aprovação não autoriza publicação, campanha, contato, cobrança ou mudança comercial.
+
+A conferência final da tela publicada, em desktop, iPhone e Pixel simulados, registra
+execução 6 em `WAITING_HUMAN`, atividade `human`: **4 objetivos concluídos, 1 atividade
+dispensada e 1 decisão restante**. O formulário da atividade 4.1.6 está disponível,
+exige decisão explícita, responsável, justificativa e referência verificável. A decisão
+foi solicitada ao usuário nesta conversa; nenhuma aprovação foi inferida ou preenchida.
+O objetivo integral do subprocesso ainda não está comprovado enquanto ela permanecer pendente.
+
+Custos conhecidos das novas tarefas: 414 = USD 0,448420; 415 = USD 0,433520;
+416 = USD 0,4641336. Adicional estimado: **USD 1,3460736**. Total histórico da execução:
+**USD 2,0407816**, incluindo as tentativas 412/413 preservadas. Não há medição de vendas
+nesta referência privada, e resultados de testes não foram registrados como resultados comerciais.
+
+### Oportunidade comercial, fora da recuperação
+
+O parecer aprovado de Psique ainda registra uma hipótese: mostrar um único passo pode
+fazer a entrega parecer básica. Prioridade alta, esforço baixo: numa próxima peça autorizada,
+demonstrar também como o conjunto dos produtos informados vira uma rotina consultável,
+preservando a legibilidade e os limites reais. Validar entendimento da entrega e primeiros
+resultados por início; quando houver experimento comercial autorizado, comparar checkout
+e vendas líquidas. A observação do agente não é comportamento medido de clientes.
+As revisões atuais agregaram valor ao identificar e comprovar a correção da ambiguidade;
+não há evidência neste caso para removê-las da cadeia.
+
+### Encerramento técnico
+
+`prepare-resume` foi confirmado às 06:21:10 UTC de 13/09/2026. A intervenção permanece
+em `AWAITING_MERGE`, com retomada automática preparada para a revisão validada
+`3222f37dd60bb0794ef50ffc4f720b57760eb0ed` após comprovação de integração na `main`.
+Os cinco publicadores continuam protegidos; nenhum PR foi aberto ou enviado.
+Essa proteção não suspende o acompanhamento nem substitui a decisão humana do processo.
+
+A topologia MySQL de homologação foi removida com `docker compose -p
+aihub-b7a2f5ae-06b8-44b6-bdfc-8ab6574b7e22-ea750ce69a -f
+infra/testing/process-automation/compose.yml down --volumes --remove-orphans`.
+O servidor local de frontend foi encerrado. Os logs, screenshots, hashes e contratos
+permanecem nos artefatos da solicitação; os serviços publicados não fazem parte dessa limpeza.

@@ -120,6 +120,9 @@ class VideoJobProcessorTest {
         assertThat(payload.assetId()).isEqualTo(20L);
         assertThat(payload.status()).isEqualTo(SalesVideoStatus.VIDEO_READY);
         verify(learningReporter).observe(job, job);
+        var order = org.mockito.Mockito.inOrder(videoProvider, apolloStoryboardPlanner);
+        order.verify(videoProvider).validateInput(any(), any());
+        order.verify(apolloStoryboardPlanner).planAndApprove(any(), any(), any());
         verify(backendClient, never()).failJob(any(), any());
     }
 
@@ -127,7 +130,6 @@ class VideoJobProcessorTest {
     @Test
     void shouldFailJobWhenNoProviderIsFound() {
         SalesVideoJob job = job();
-        when(apolloStoryboardPlanner.planAndApprove(any(), any(), any())).thenReturn(job);
         when(backendClient.fetchProfile(2L)).thenReturn(profile());
         when(providerRegistry.resolve(job)).thenReturn(Optional.empty());
 

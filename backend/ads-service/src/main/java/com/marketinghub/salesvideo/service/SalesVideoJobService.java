@@ -532,11 +532,14 @@ public class SalesVideoJobService {
     }
   }
 
-  /** Enfileira a finalização premium após a fonte visual governada concluir com sucesso. */
+  /**
+   * Enfileira voz, legenda e prova determinística quando a fonte governada solicita finalização.
+   */
   private void enqueuePremiumFinalization(SalesVideoJob job, String requestedJobMetadata) {
     if (job.getStatus() != SalesVideoStatus.VIDEO_READY
         || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(job.getProviderName())
-            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.getProviderName()))
+            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.getProviderName())
+            || "RUNWAY_ROUTER".equalsIgnoreCase(job.getProviderName()))
         || !StringUtils.hasText(requestedJobMetadata)) {
       return;
     }
@@ -699,7 +702,45 @@ public class SalesVideoJobService {
     return toDto(newJob);
   }
 
-  /** Cria um job de pós-produção a partir de um vídeo bruto já aprovado para visualização. */
+  private com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
+      productionCycleRepository;
+
+  /** Conecta a referência persistida do ciclo ao job que está realmente em acabamento. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setProductionCycleRepository(
+      com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository repository) {
+    this.productionCycleRepository = repository;
+  }
+
+  /** Acompanha o filho de acabamento sem sobrescrever uma tentativa posterior do mesmo ciclo. */
+  private void trackGovernedFinalization(SalesVideoJob source, SalesVideoJob child) {
+    if (productionCycleRepository == null) return;
+    JsonNode metadata = readJobMetadata(source);
+    long cycleId = metadata.path("videoProductionCycleId").asLong();
+    if (cycleId <= 0) return;
+    productionCycleRepository
+        .findById(cycleId)
+        .filter(cycle -> java.util.Objects.equals(cycle.getSalesVideoJobId(), source.getId()))
+        .filter(
+            cycle ->
+                java.util.Objects.equals(
+                    cycle.getVideoProjectId(), metadata.path("videoProjectId").asLong()))
+        .filter(
+            cycle ->
+                java.util.Objects.equals(
+                    cycle.getExperimentId(), metadata.path("experimentId").asLong()))
+        .ifPresent(
+            cycle -> {
+              cycle.setSalesVideoJobId(child.getId());
+              cycle.setStatus("QUEUED_FOR_APOLLO");
+              cycle.setUpdatedAt(Instant.now());
+              productionCycleRepository.save(cycle);
+            });
+  }
+
+  /**
+   * Cria acabamento, preserva o bruto e aponta o ciclo para o filho que reportará sucesso ou falha.
+   */
   @Transactional
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
@@ -728,6 +769,7 @@ public class SalesVideoJobService {
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
     jobRepository.save(postProductionJob);
     syncStudioCostLedger(postProductionJob, null, false);
+    trackGovernedFinalization(sourceJob, postProductionJob);
     registerEvent(
         sourceJob,
         SalesVideoJobEventType.RETRIED,
@@ -876,16 +918,37 @@ public class SalesVideoJobService {
     SalesVideoJob sourceJob = job.getRetryOfJob();
     if (sourceJob == null
         || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())
-            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName()))) {
+            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName())
+            || isVerifiedPrivatePdeSource(sourceJob, metadata))) {
       blockers.add("A peça não deriva de uma fonte visual narrativa auditável.");
     }
     if (sourceJob != null && "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName())) {
       addProductUgcQualityBlockers(metadata, blockers);
     }
+    if (sourceJob != null && "RUNWAY_ROUTER".equalsIgnoreCase(sourceJob.getProviderName())) {
+      JsonNode sync = metadata.path("caption_narration_sync");
+      if (!"APPROVED".equals(sync.path("status").asText())
+          || !"APPROVED".equals(sync.path("timing_status").asText())
+          || !"APPROVED_FOR_TEST".equals(metadata.at("/audio/review/status").asText())) {
+        blockers.add("A prova do PDE exige narração natural e sincronismo técnico aprovados.");
+      }
+    }
     if (job.getProfile() == null || job.getProfile().getHumanReviewApprovedAt() == null) {
       blockers.add("A revisão humana final ainda não foi aprovada.");
     }
     return new CommercialReadiness(blockers.isEmpty() ? "READY" : "BLOCKED", List.copyOf(blockers));
+  }
+
+  /** Reconhece a rota genérica somente quando a prova final confere com o hash solicitado. */
+  private boolean isVerifiedPrivatePdeSource(SalesVideoJob sourceJob, JsonNode metadata) {
+    JsonNode expected = readJobMetadata(sourceJob).at("/post_production/product_proof");
+    JsonNode actual = metadata.path("product_reference_overlay");
+    return "RUNWAY_ROUTER".equalsIgnoreCase(sourceJob.getProviderName())
+        && "PDE_PRIVATE_VIDEO_PROOF_V1".equals(expected.path("contractVersion").asText())
+        && "APPLIED".equals(actual.path("status").asText())
+        && !expected.path("sha256").asText().isBlank()
+        && expected.path("sha256").asText().equals(actual.path("sha256").asText())
+        && !actual.path("commercialEvidenceClaimed").asBoolean(true);
   }
 
   /** Lê os metadados persistidos sem transformar JSON inválido em aprovação comercial. */
@@ -1015,6 +1078,7 @@ public class SalesVideoJobService {
       JsonNode source = objectMapper.readTree(sourceJob.getMetadataJson());
       List.of(
               "videoProductionCycleId",
+              "tenantId",
               "videoProjectId",
               "studio_project_id",
               "productId",

@@ -348,9 +348,62 @@ class SalesVideoJobServiceTest {
     assertThat(result.getCommercialReadinessBlockers()).isEmpty();
   }
 
-  /** Encadeia Product UGC aprovado na pós-produção preservando os gates técnicos de Apolo. */
-  @Test
-  void shouldEnqueuePremiumFinalizationForProductUgc() {
+  /** Exige prova íntegra, voz, sincronismo e decisão humana também na rota genérica. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"complete", "hash", "audio", "human"})
+  void shouldGatePrivatePdePostProduction(String scenario) throws Exception {
+    SalesVideoProfile profile = SalesVideoProfile.builder().id(10L).build();
+    if (!"human".equals(scenario))
+      profile.setHumanReviewApprovedAt(Instant.parse("2026-09-13T12:00:00Z"));
+    SalesVideoJob source =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .providerName("RUNWAY_ROUTER")
+            .metadataJson(
+                "{\"post_production\":{\"product_proof\":{\"contractVersion\":\"PDE_PRIVATE_VIDEO_PROOF_V1\",\"sha256\":\"fixture-hash\"}}}")
+            .build();
+    var metadata =
+        new ObjectMapper()
+            .readTree(
+                """
+        {"audio":{"voice_over":true,"language":"pt-BR","review":{"status":"APPROVED_FOR_TEST"}},
+         "captions":{"burned_in":true,"vtt_asset":true},
+         "caption_narration_sync":{"status":"APPROVED","timing_status":"APPROVED"},
+         "product_reference_overlay":{"status":"APPLIED","sha256":"fixture-hash","commercialEvidenceClaimed":false}}
+        """);
+    if ("hash".equals(scenario))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) metadata.path("product_reference_overlay"))
+          .put("sha256", "different");
+    if ("audio".equals(scenario))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) metadata.at("/audio/review"))
+          .put("status", "PENDING");
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(91011L)
+            .profile(profile)
+            .retryOfJob(source)
+            .script(SalesVideoScript.builder().ctaText("Ver primeiro ajuste").build())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://fixture.invalid/video.m3u8")
+            .vttAsset(Asset.builder().id(91012L).build())
+            .metadataJson(metadata.toString())
+            .build();
+    given(profileRepository.findById(10L)).willReturn(Optional.of(profile));
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(10L)).willReturn(List.of(job));
+    var result = service.listJobsByProfile(10L).get(0);
+    assertThat(result.getCommercialReadinessStatus())
+        .isEqualTo("complete".equals(scenario) ? "READY" : "BLOCKED");
+    if (!"complete".equals(scenario))
+      assertThat(result.getCommercialReadinessBlockers()).hasSize(1);
+  }
+
+  /** Encadeia fontes governadas na pós-produção preservando os gates técnicos de Apolo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"RUNWAY_PRODUCT_UGC", "RUNWAY_ROUTER"})
+  void shouldEnqueuePremiumFinalizationForGovernedSource(String sourceProvider) {
     TenantContextHolder.set(new TenantContext("tenant-a", "operator@tenant.io", false));
     SalesVideoProfile profile =
         SalesVideoProfile.builder()
@@ -366,13 +419,13 @@ class SalesVideoJobServiceTest {
             .profile(profile)
             .jobType(SalesVideoJobType.RENDER)
             .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
-            .providerName("RUNWAY_PRODUCT_UGC")
+            .providerName(sourceProvider)
             .status(SalesVideoStatus.VIDEO_PROCESSING)
             .executionMode(SalesVideoExecutionMode.TEST)
             .requestedBy("Apolo")
             .requestedAt(Instant.parse("2026-09-04T10:00:00Z"))
             .metadataJson(
-                "{\"videoProductionCycleId\":91,\"experimentId\":91,"
+                "{\"videoProductionCycleId\":91,\"videoProjectId\":91001,\"experimentId\":91,"
                     + "\"technicalQualityGate\":{\"continuousTakeRequired\":true,"
                     + "\"captionMustMatchNarration\":true},"
                     + "\"referenceGovernance\":{\"productIsDigitalExperience\":true},"
@@ -380,6 +433,16 @@ class SalesVideoJobServiceTest {
                     + "\"captionText\":\"Você se arruma | Faça o diagnóstico gratuito\","
                     + "\"voiceOverScript\":\"Você se arruma | Faça o diagnóstico gratuito\"}}")
             .build();
+    var cycles =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
+    var cycle = new com.marketinghub.salesvideo.VideoProductionCycle();
+    cycle.setId(91L);
+    cycle.setVideoProjectId(91001L);
+    cycle.setExperimentId(91L);
+    cycle.setSalesVideoJobId(source.getId());
+    given(cycles.findById(91L)).willReturn(Optional.of(cycle));
+    service.setProductionCycleRepository(cycles);
     Asset sourceAsset =
         Asset.builder().id(903L).url("https://cdn.example.com/vega-91-ugc.mp4").build();
     given(jobRepository.findById(20522L)).willReturn(Optional.of(source));
@@ -413,6 +476,9 @@ class SalesVideoJobServiceTest {
               .findFirst()
               .orElseThrow();
       assertThat(postProduction.getRetryOfJob()).isSameAs(source);
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(postProduction.getId());
+      assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
+      verify(cycles).save(cycle);
       assertThat(source.getMetadataJson()).contains("\"captionMustMatchNarration\":true");
       assertThat(postProduction.getMetadataJson())
           .contains(

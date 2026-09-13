@@ -108,9 +108,7 @@ public class VideoProjectService {
             .characterPerformanceUri(
                 validatedHttpsOptional(
                     request.characterPerformanceUri(), "Personagem da performance"))
-            .referencePerformanceUri(
-                validatedHttpsOptional(
-                    request.referencePerformanceUri(), "Performance de referência"))
+            .referencePerformanceUri(validatedProofReference(request.referencePerformanceUri()))
             .referencePerformanceDurationSeconds(
                 validatedReferencePerformanceDuration(
                     request.referencePerformanceDurationSeconds()))
@@ -182,8 +180,7 @@ public class VideoProjectService {
         validatedCharacterPerformanceType(request.characterPerformanceType()));
     project.setCharacterPerformanceUri(
         validatedHttpsOptional(request.characterPerformanceUri(), "Personagem da performance"));
-    project.setReferencePerformanceUri(
-        validatedHttpsOptional(request.referencePerformanceUri(), "Performance de referência"));
+    project.setReferencePerformanceUri(validatedProofReference(request.referencePerformanceUri()));
     project.setReferencePerformanceDurationSeconds(
         validatedReferencePerformanceDuration(request.referencePerformanceDurationSeconds()));
     project.setPerformanceConsentEvidence(trimToNull(request.performanceConsentEvidence()));
@@ -240,6 +237,12 @@ public class VideoProjectService {
     throw VideoModuleException.badRequest(
         VideoModuleErrorCode.BAD_REQUEST,
         "Tipo de personagem da performance deve ser image ou video");
+  }
+
+  /** Aceita prova interna homologada ou referência HTTPS, sem transformar texto livre em URL. */
+  private static String validatedProofReference(String value) {
+    if (VideoProductProofService.isInternalReference(value)) return value.trim();
+    return validatedHttpsOptional(value, "Performance de referência");
   }
 
   /** Valida URL HTTPS opcional antes de persistir uma referência de mídia externa. */

@@ -8,8 +8,13 @@ import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
  */
 public interface VideoProvider {
 
+    /** Identifica os jobs atendidos por esta integração. */
     boolean supports(SalesVideoJob job);
 
+    /** Valida entradas determinísticas antes de qualquer planejador ou provedor pago. */
+    default void validateInput(SalesVideoJob job, SalesVideoProfile profile) { }
+
+    /** Executa a produção contratada e devolve arquivo e auditoria para o backend. */
     ProviderArtifacts render(SalesVideoJob job,
                              SalesVideoProfile profile,
                              ProgressCallback progressCallback);

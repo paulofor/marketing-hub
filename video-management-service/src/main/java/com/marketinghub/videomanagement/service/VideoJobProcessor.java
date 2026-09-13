@@ -66,7 +66,7 @@ public class VideoJobProcessor {
         this.productUgcContractResolver = productUgcContractResolver;
     }
 
-    /** Executa um job e impede o provider quando o planejamento ou gate prévio falhar. */
+    /** Valida entradas antes de planejar e impede qualquer gasto após falha de contexto ou prova. */
     public void process(SalesVideoJob job) {
         try (AutoCloseable ignored = putMdc(job)) {
             log.info("Processando job {} para profile {}", job.id(), job.profileId());
@@ -78,12 +78,13 @@ public class VideoJobProcessor {
                     "Job em execução pelo worker " + properties.getWorkerId(), null));
             SalesVideoProfile profile = loadProfile(job);
             job = productUgcContractResolver.resolve(job);
+            VideoProvider provider = providerRegistry.resolve(job)
+                    .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
+            provider.validateInput(job, profile);
             SalesVideoJob originalJob = job;
             job = apolloStoryboardPlanner.planAndApprove(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));
             learningReporter.observe(originalJob, job);
-            VideoProvider provider = providerRegistry.resolve(job)
-                    .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
             ProviderArtifacts artifacts = provider.render(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));
             artifacts = technicalVideoQualityGate.validate(job, artifacts);

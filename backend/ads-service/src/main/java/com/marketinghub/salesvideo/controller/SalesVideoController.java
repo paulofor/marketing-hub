@@ -79,6 +79,19 @@ public class SalesVideoController {
     this.assetMapper = assetMapper;
   }
 
+  /** Entrega pixels privados da prova técnica homologada para o projeto, sem publicar a captura. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Ler prova visual homologada do projeto de vídeo")
+  @GetMapping(
+      value = "/api/sales-videos/projects/{projectId}/product-proof",
+      produces = "image/png")
+  public org.springframework.http.ResponseEntity<byte[]> productProof(
+      @PathVariable Long projectId) {
+    return org.springframework.http.ResponseEntity.ok()
+        .cacheControl(org.springframework.http.CacheControl.noStore())
+        .body(salesVideoService.readProductProof(projectId));
+  }
+
   /** Consulta o catalogo operacional do estudio de audio e video. */
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {

@@ -75,8 +75,26 @@ def run():
     http('/fixture/video-preflights', sample)
     blocked = reconcile(run)
     assert '/cycles/92013/' in blocked['userAction']['evidenceReference']
+    for status in ['READY', 'EXPIRED']:
+        sample.update(status='PROVIDER_PREFLIGHT_ONLY_COMPLETED', preflightStatus=status)
+        http('/fixture/video-preflights', sample)
+        waiting = reconcile(run)
+        assert waiting['status'] == 'WAITING_HUMAN' and waiting['completedActivities'] == 0
+        assert waiting['userAction']['code'] == 'REQUEST_VIDEO_PRODUCTION'
+        assert waiting['userAction']['actionUrl'] == '/audio-video-studio/projects/91004'
+        assert sql(f'SELECT status FROM product_process_run_v1 WHERE id={run["id"]}') == 'WAITING_HUMAN'
+        assert process_read(cycle)['userAction'] == waiting['userAction']
+    requested = waiting
+    for status in ['PENDING_PROVIDER_PREFLIGHT', 'PENDING_FINANCIAL_REVIEW', 'QUEUED_FOR_APOLLO']:
+        sample['status'] = status
+        http('/fixture/video-preflights', sample)
+        active = reconcile(run)
+        assert active['status'] == 'WAITING_ACTIVITY' and active['userAction'] is None
+    sample.update(status='PROVIDER_PREFLIGHT_ONLY_COMPLETED', preflightStatus='EXPIRED')
+    http('/fixture/video-preflights', sample)
+    waiting = reconcile(run)
     assert http('/fixture/experiments/91001/state') == dict(status='PLANNED', runCount=0, campaignCount=0)
-    result = dict(sqlChecks=sql_checks,restChecks=8,externalCalls=0,cycle=cycle['id'],processUrl=process_path(cycle),action=blocked['userAction'])
+    result = dict(sqlChecks=sql_checks,restChecks=13,externalCalls=0,cycle=cycle['id'],processUrl=process_path(cycle),action=waiting['userAction'])
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

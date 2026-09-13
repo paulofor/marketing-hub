@@ -37,6 +37,31 @@ class SalesVideoAssetControllerTest {
 
   @MockBean private SalesVideoService salesVideoService;
 
+  /** Exige tenant e entrega prova pelo módulo de vídeo com cache privado desabilitado. */
+  @Test
+  void shouldExposePrivateProductProofThroughVideoModule() throws Exception {
+    byte[] pixels = "fixture-png".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    when(salesVideoService.readProductProof(91001L)).thenReturn(pixels);
+    mockMvc
+        .perform(get("/api/sales-videos/projects/91001/product-proof"))
+        .andExpect(status().isBadRequest());
+    mockMvc
+        .perform(
+            get("/api/sales-videos/projects/91001/product-proof")
+                .header("X-Tenant-ID", "tenant-test"))
+        .andExpect(status().isOk())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .contentType("image/png"))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                .bytes(pixels))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                .string("Cache-Control", "no-store"));
+    verify(salesVideoService).readProductProof(91001L);
+  }
+
   /** Deve expor o catalogo visual do estudio para personagens e legendas. */
   @Test
   void shouldExposeStudioCatalog() throws Exception {

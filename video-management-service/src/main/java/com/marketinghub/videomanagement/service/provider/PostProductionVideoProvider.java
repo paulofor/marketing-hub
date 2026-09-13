@@ -51,6 +51,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     private final WebClient downloadWebClient;
     private final WebClient openAiWebClient;
     private final ProductUgcReferenceOverlay productReferenceOverlay;
+    private final PdeProductProofOverlay pdeProductProofOverlay;
 
     /** Inicializa o provider de pós-produção com configuração e cliente de download. */
     public PostProductionVideoProvider(VideoManagementProperties properties,
@@ -70,6 +71,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
                 .build();
+        this.pdeProductProofOverlay = new PdeProductProofOverlay(properties, webClientBuilder);
         this.productReferenceOverlay =
                 new ProductUgcReferenceOverlay(properties, objectMapper, webClientBuilder);
     }
@@ -86,7 +88,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Baixa a fonte, corrige cenas de produto e aplica legenda e voz quando houver roteiro. */
+    /** Compõe a prova íntegra do produto e aplica legenda e voz somente depois de validá-la. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -109,7 +111,9 @@ public class PostProductionVideoProvider implements VideoProvider {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
             ProductUgcReferenceOverlay.OverlayResult overlay =
-                    productReferenceOverlay.apply(source, metadata, job.id());
+                    metadata.at("/post_production/product_proof").isMissingNode()
+                            ? productReferenceOverlay.apply(source, metadata, job.id())
+                            : pdeProductProofOverlay.apply(source, metadata, job.id());
             preparedSource = overlay.videoFile();
             productReferenceAudit = overlay.audit();
             double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());

@@ -75,20 +75,50 @@ class ProcessRunVideoGuidanceTest {
     verifyNoInteractions(preflights);
   }
 
-  /** A tentativa nova em curso ou concluída prevalece sobre o bloqueio histórico. */
+  /** A tentativa nova em curso ou com vídeo prevalece sobre o bloqueio histórico. */
   @ParameterizedTest
   @ValueSource(
       strings = {
         "PENDING_PROVIDER_PREFLIGHT_ONLY",
         "PENDING_FINANCIAL_REVIEW",
         "APOLLO_QUEUED",
-        "VIDEO_READY_FOR_REVIEW",
-        "PROVIDER_PREFLIGHT_ONLY_COMPLETED"
+        "VIDEO_READY_FOR_REVIEW"
       })
   void doesNotCallActiveOrFinishedWorkAHumanBlocker(String status) {
     production.setStatus(status);
     assertThat(guidance.resolve(cycle)).isNull();
     verifyNoInteractions(preflights);
+  }
+
+  /** Consulta encerrada exige outro comando mesmo quando seu snapshot já venceu. */
+  @ParameterizedTest
+  @ValueSource(strings = {"READY", "EXPIRED"})
+  void completedDryRunExplainsProductionRequestWithoutAuthorizingSpend(String status) {
+    production.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+    preflight.setStatus(status);
+    preflight.setFailureCode(null);
+    var action = guidance.resolve(cycle);
+    assertThat(action).isNotNull();
+    assertThat(action.code()).isEqualTo("REQUEST_VIDEO_PRODUCTION");
+    assertThat(action.title()).contains("anúncio", "produção");
+    assertThat(action.reason()).contains("consulta", "Plutus", "não iniciou");
+    assertThat(action.actionUrl()).isEqualTo("/audio-video-studio/projects/4");
+    assertThat(action.afterAction()).contains("novo preflight", "aprovações");
+    assertThat(action.evidenceReference()).endsWith("/cycles/12/provider-preflight/12");
+    verify(productions, never()).save(any());
+    verify(preflights, never()).save(any());
+  }
+
+  /** Histórico inconsistente não pode sugerir duplicação de uma tarefa ou de um job. */
+  @Test
+  void completedDryRunWithExecutionDoesNotSuggestAnotherRequest() {
+    production.setStatus("PROVIDER_PREFLIGHT_ONLY_COMPLETED");
+    preflight.setStatus("READY");
+    production.setAgentTaskId(900L);
+    assertThat(guidance.resolve(cycle)).isNull();
+    production.setAgentTaskId(null);
+    production.setSalesVideoJobId(901L);
+    assertThat(guidance.resolve(cycle)).isNull();
   }
 
   /** Falta de auditoria ou preflight liberado não é prova de bloqueio. */

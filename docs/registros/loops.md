@@ -5235,3 +5235,42 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
   sucesso e bloqueio revisável no executor, com `models` dentro de objeto. A matriz
   passa a executar o callback exato da imagem no service real do backend, além
   dos doubles HTTP; não aceitar retorno 204 simulado como prova dessa integração.
+
+
+### Continuidade de LOOP-BPM-DECISAO-HUMANA-COMO-EXECUCAO — consulta de vídeo encerrada
+
+- Confirmado em 13/09/2026 por UI, MCP e código: Vega/#92, ciclos 15/16,
+  `PROVIDER_PREFLIGHT_ONLY_COMPLETED`, zero tarefas ou jobs. O processo pai
+  permanecia em `WAITING_ACTIVITY`, sem comando de solicitação de produção.
+- A consulta termina corretamente sem gerar nem reservar. A orientação do pai
+  deve explicar essa diferença e abrir o projeto exato para o comando governado,
+  inclusive após o snapshot vencer. Preflight/Plutus/Apolo ativos não oferecem
+  disparo duplicado. Nenhuma leitura cria gasto ou aprovação.
+- Prevenção: `ProcessRunVideoGuidanceTest`, API/MySQL com estado persistido,
+  contexto copiado e navegação em desktop/iPhone/Pixel.
+
+## LOOP-APOLO-QUATRO-CORTES-CONTRA-SCHEMA-CINCO
+
+- Identificado localmente em 13/09/2026 antes de nova geração: os projetos de
+  quinze segundos recebem quatro cortes do backend, mas o schema versionado e
+  `ApolloStoryboardPlanner.validatePrerequisites` exigem cinco. A produção
+  histórica bem-sucedida de Product UGC segue outra receita; não contradiz a falha.
+- Causa: o teste entre módulos conferia somente o request do preflight, sem
+  consumir os metadados de produção no planejador do executor. O backend agora
+  preserva cinco funções comerciais em quinze segundos e nos mesmos dois clipes.
+- Não reduzir o mínimo do schema nem remover prova/CTA para fazer o gate passar.
+  `VerifyWorker.java` executa o planejador real com os metadados exportados pelo
+  backend e resposta de IA simulada, sem chamadas externas.
+- Matriz e evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
+
+### LOOP-APOLO-ROUTER-SEM-FINALIZACAO-PDE
+
+- 13/09/2026, Vega, produto 4/ciclo 2/experimento 92: revisão local do caminho completo mostrou
+  que Router gerava clipes brutos sem compor a prova privada nem disparar acabamento; Product UGC
+  já tinha pós-produção própria. Ciclo ligado somente ao bruto também ocultava falha do filho.
+- Causa: o contrato de finalização e a elegibilidade reconheciam só Product UGC/montagem.
+- Correção: prova privada explícita validada contra homologação técnica da versão exata, hash
+  conferido antes de gasto e composição, acabamento canônico do Router e acompanhamento do filho.
+- Regressões: VideoProductProofServiceTest, PdeProductProofOverlayTest (FFmpeg real na homologação),
+  SalesVideoJobServiceTest, SalesVideoAssetControllerTest e persistência do campo no Estúdio.
+- Cânone: apollo-plutus-video-production-canon.v1.md. Nenhuma prova de teste libera campanha.

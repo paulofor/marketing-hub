@@ -46,6 +46,8 @@ try {
             objective: "Primeiro ajuste",
             scriptText: "Aplicar, avaliar e retomar.",
             hookText: "Primeiro ajuste",
+            referencePerformanceUri:
+              "internal://agent-tasks/91005/visual-evidence/91006#crop=10,20,300,400",
             status: "DRAFT",
             targetDurationSeconds: 15,
             videoCategory: "COMMERCIAL_SHORT",
@@ -70,7 +72,7 @@ try {
       name: "Execução automática do processo",
     });
     await expect(
-      panel.getByText("Produção do anúncio bloqueada", { exact: true }),
+      panel.getByText(data.action.title, { exact: true }),
     ).toBeVisible();
     await expect(panel.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
@@ -83,11 +85,11 @@ try {
     const copied = panel.getByLabel("Contexto completo do processo", {
       exact: true,
     });
-    await expect(copied).toContainText("RESOLVE_VIDEO_PREFLIGHT");
+    await expect(copied).toContainText(data.action.code);
     await expect(copied).toContainText(data.action.evidenceReference);
     await panel.getByText("Ver contexto completo", { exact: true }).click();
     const action = panel.getByRole("link", {
-      name: "Ver impedimento do vídeo",
+      name: data.action.actionLabel,
       exact: true,
     });
     await expect(action).toHaveAttribute(
@@ -104,16 +106,25 @@ try {
       new URL(page.url()).pathname,
       "/audio-video-studio/projects/91004",
     );
+    await expect(
+      page.getByLabel("Referência da captura homologada"),
+    ).toHaveValue(
+      "internal://agent-tasks/91005/visual-evidence/91006#crop=10,20,300,400",
+    );
+    await page
+      .getByLabel("Referência da captura homologada")
+      .scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${output}/${name}-proof-reference.png` });
     await page.goBack();
     await expect(
-      panel.getByText("Produção do anúncio bloqueada", { exact: true }),
+      panel.getByText(data.action.title, { exact: true }),
     ).toBeVisible();
     assert.deepEqual(errors, []);
     assert.deepEqual(writes, []);
     assert.deepEqual(external, []);
     results.push({
       device: name,
-      blocker: true,
+      actionCode: data.action.code,
       persistedEvidence: true,
       exactProject: true,
       return: true,

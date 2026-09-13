@@ -2707,7 +2707,8 @@ export default function AudioVideoStudioPage() {
                         onChange={(event) =>
                           setCycleProductionProfile(
                             event.target.value as
-                              "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN",
+                              | "DRAFT_INSTAGRAM"
+                              | "FINAL_CAMPAIGN",
                           )
                         }
                       >
@@ -3115,6 +3116,30 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
+              {selectedProvider.providerName !== "RUNWAY_PRODUCT_UGC" &&
+              selectedProvider.providerName !== "RUNWAY_ACT_TWO" ? (
+                <article className="audio-video-studio-page__project-card">
+                  <strong>Prova real do PDE na finalização</strong>
+                  <p>
+                    Use uma captura homologada da mesma versão. Ela será
+                    inserida nos cortes de mecanismo, resultado e prova, com voz
+                    e legendas. A captura continua privada.
+                  </p>
+                  <label>
+                    Referência da captura homologada
+                    <input
+                      value={briefing.referencePerformanceUri}
+                      onChange={updateBriefing("referencePerformanceUri")}
+                      placeholder="Referência interna da captura aprovada"
+                    />
+                  </label>
+                  <small>
+                    Uma captura de teste demonstra o funcionamento; não comprova
+                    resultado de cliente ou venda. A finalização continua
+                    sujeita às revisões independentes.
+                  </small>
+                </article>
+              ) : null}
               {selectedProvider.providerName === "RUNWAY_ACT_TWO" ||
               selectedProvider.providerName === "RUNWAY_PRODUCT_UGC" ? (
                 <article className="audio-video-studio-page__project-card">

@@ -45,9 +45,14 @@ class VideoProjectServiceTest {
     TenantContextHolder.clear();
   }
 
-  /** Cria projeto preservando briefing comercial completo e tenant ativo. */
-  @Test
-  void shouldCreateVideoProjectForCurrentTenant() {
+  /** Cria projeto preservando briefing, tenant e referência HTTPS ou prova interna explícita. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {
+        "https://assets.example/performance-autorizada.mp4",
+        "internal://agent-tasks/91004/visual-evidence/91005#crop=10,20,300,400"
+      })
+  void shouldCreateVideoProjectForCurrentTenant(String reference) {
     CreateVideoProjectRequest request =
         new CreateVideoProjectRequest(
             4L,
@@ -93,7 +98,7 @@ class VideoProjectServiceTest {
             "Runway para cenas, FFmpeg para montagem",
             "image",
             "https://assets.example/personagem-autorizada.png",
-            "https://assets.example/performance-autorizada.mp4",
+            reference,
             12,
             "consentimento-91",
             "direitos-91",
@@ -118,6 +123,7 @@ class VideoProjectServiceTest {
     assertThat(result.contextType()).isEqualTo("ORGANIC");
     assertThat(result.videoCategory()).isEqualTo("COMMERCIAL_SHORT");
     assertThat(result.storyText()).contains("presença digital");
+    assertThat(result.referencePerformanceUri()).isEqualTo(reference);
     assertThat(result.referencePerformanceDurationSeconds()).isEqualTo(12);
     assertThat(result.performanceConsentEvidence()).isEqualTo("consentimento-91");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_SCRIPT);

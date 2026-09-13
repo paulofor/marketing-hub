@@ -91,6 +91,19 @@ public class SalesVideoService {
     this.providerCatalogService = new SalesVideoProviderCatalogService(providerModelRepository);
   }
 
+  private VideoProductProofService productProofService;
+
+  /** Conecta o acesso governado à captura privada que o executor de vídeo irá compor. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setProductProofService(VideoProductProofService service) {
+    this.productProofService = service;
+  }
+
+  /** Entrega a prova homologada pelo contrato do próprio módulo de vídeo. */
+  public byte[] readProductProof(Long projectId) {
+    return productProofService.read(projectId);
+  }
+
   /** Lista o catálogo administrável de provedores e modelos de vídeo. */
   public List<SalesVideoProviderModelDto> listProviderModels() {
     return providerCatalogService.list();

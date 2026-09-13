@@ -84,6 +84,15 @@ public class VideoProductionCycleService {
     this.objectMapper = objectMapper;
   }
 
+  private com.marketinghub.salesvideo.service.VideoProductProofService productProofService;
+
+  /** Conecta a validação da prova privada antes de qualquer preparação paga. */
+  @Autowired(required = false)
+  public void setProductProofService(
+      com.marketinghub.salesvideo.service.VideoProductProofService service) {
+    this.productProofService = service;
+  }
+
   /** Conecta a biblioteca comum usada para auditar o contexto entregue a Apolo. */
   @Autowired
   public void setResearchIntelligenceMapper(
@@ -110,6 +119,7 @@ public class VideoProductionCycleService {
       VideoProductionCycleContracts.CreateRequest request, String initialStatus) {
     VideoProject project = project(request.videoProjectId());
     validateProviderPlan(project);
+    productProof(project);
     if (project.getSalesVideoProfileId() == null) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O projeto precisa de um perfil de vídeo antes do ciclo autônomo.");
@@ -417,6 +427,7 @@ public class VideoProductionCycleService {
       List<LinkedHashMap<String, Object>> cuts =
           productUgc ? List.of() : cutPlan(project, duration);
       metadata.put("videoProductionCycleId", cycle.getId());
+      metadata.put("tenantId", project.getTenantId());
       metadata.put("videoProjectId", project.getId());
       metadata.put("productId", cycle.getProductId());
       metadata.put("commercialPlanId", cycle.getCommercialPlanId());
@@ -460,6 +471,8 @@ public class VideoProductionCycleService {
       postProduction.put("caption_plan", nullToEmpty(project.getCaptionPlan()));
       postProduction.put("cta_text", nullToEmpty(project.getCtaText()));
       postProduction.put("editing_notes", nullToEmpty(project.getEditingNotes()));
+      var proof = productProof(project);
+      if (!proof.isEmpty()) postProduction.put("product_proof", proof);
       metadata.put("post_production", postProduction);
       if (productUgc) {
         LinkedHashMap<String, Object> technicalGate = new LinkedHashMap<>();
@@ -487,12 +500,50 @@ public class VideoProductionCycleService {
         finalization.put("requiredReviewers", List.of("Psique", "Temis", "HUMAN"));
         metadata.put("premiumFinalization", finalization);
       }
+      if (!productUgc && !proof.isEmpty()) {
+        if (project.getCaptionPlan() == null || project.getCaptionPlan().isBlank()) {
+          throw new ResponseStatusException(
+              HttpStatus.CONFLICT, "Prova de PDE exige legenda e narração aprovadas.");
+        }
+        metadata.put("technicalQualityGate", java.util.Map.of("captionMustMatchNarration", true));
+        metadata.put(
+            "referenceGovernance",
+            java.util.Map.of("presenterIsSynthetic", true, "productIsDigitalExperience", true));
+        metadata.put(
+            "premiumFinalization",
+            java.util.Map.of(
+                "enabled",
+                true,
+                "voiceOverScript",
+                narrationFromCaption(project.getCaptionPlan()),
+                "captionText",
+                project.getCaptionPlan().trim(),
+                "requiredReviewers",
+                List.of("Psique", "Temis", "HUMAN")));
+      }
       if (previous != null) metadata.put("replacesFailedJobId", previous.getId());
       return objectMapper.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {
       log.error("Falha ao serializar contrato do ciclo premium; cycleId={}", cycle.getId(), ex);
       throw new IllegalStateException("Não foi possível auditar o ciclo de vídeo.", ex);
     }
+  }
+
+  /** Resolve somente a prova explícita e homologada, sem usar capturas de outra versão. */
+  private java.util.Map<String, Object> productProof(VideoProject project) {
+    if (!com.marketinghub.salesvideo.service.VideoProductProofService.isInternalReference(
+        project.getReferencePerformanceUri())) {
+      return java.util.Map.of();
+    }
+    if (productProofService == null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Serviço de prova do PDE indisponível.");
+    }
+    if (project.getCaptionPlan() == null || project.getCaptionPlan().isBlank()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Prova de PDE exige legenda e narração aprovadas.");
+    }
+    return productProofService.resolve(project);
   }
 
   /** Valida o contrato da receita premium antes de abrir preflight ou tarefa de agente. */
@@ -563,9 +614,9 @@ public class VideoProductionCycleService {
         .collect(java.util.stream.Collectors.joining(" "));
   }
 
-  /** Cria cortes comerciais curtos que serão agrupados nos clipes cobrados pelo provider. */
+  /** Preserva as cinco funções comerciais exigidas por Apolo sem aumentar clipes ou duração. */
   private List<LinkedHashMap<String, Object>> cutPlan(VideoProject project, int duration) {
-    int cutCount = Math.max(4, Math.min(48, (int) Math.ceil(duration / 4.0)));
+    int cutCount = Math.max(5, Math.min(48, (int) Math.ceil(duration / 4.0)));
     int baseDuration = duration / cutCount;
     int remainder = duration % cutCount;
     List<String> sceneObjectives = sceneObjectives(project.getScenePlan());

@@ -358,3 +358,9 @@ autoriza transportar o histórico de outra peça. Uma tentativa nova ativa preva
 sobre a falha anterior. Leitura não grava status nem inicia consumo; o conciliador
 registra WAITING_HUMAN e o motivo. Pausa preserva o bloqueio e a auditoria. Corrigir
 uma configuração ou concluir um preflight não comprova vídeo aprovado ou venda.
+
+Quando a última tentativa for uma consulta isolada concluída, sem tarefa financeira nem job,
+o processo deve orientar `REQUEST_VIDEO_PRODUCTION` para o projeto exato no Estúdio. O snapshot
+pode estar READY ou vencido; nenhum dos dois equivale a produção em andamento. A solicitação
+governada renova o preflight, passa por Plutus e mantém todas as aprovações. O endpoint de
+consulta continua sem reserva, tarefa ou geração automática.

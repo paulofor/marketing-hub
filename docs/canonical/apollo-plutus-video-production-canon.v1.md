@@ -107,6 +107,18 @@ Plutus ou job de Apolo, ainda que a conta possua saldo. O teto informado nesse m
 limite analítico para avaliar o Router e não constitui autorização financeira. Produção e preflight
 isolado devem usar endpoints e estados distintos para impedir que uma verificação avance por engano.
 
+O processo pai deve apresentar o comando de solicitar produção quando a consulta isolada terminar
+sem tarefa financeira ou job. Um snapshot READY ou vencido não significa produção em andamento.
+A nova solicitação usa o comando governado do Estúdio, renova o preflight e preserva Plutus, teto,
+histórico e aprovações. Não converter a consulta isolada em geração automática.
+
+No contrato de storyboard narrativo, o backend deve fornecer pelo menos cinco cortes editoriais,
+incluindo gancho/dor, mecanismo, resultado, prova e CTA, antes de chamar o planejador de Apolo.
+Quinze segundos comportam cinco cortes de três segundos; isso não acrescenta clipes faturáveis.
+O teste de integração precisa consumir os metadados do backend no planejador real do executor,
+além de conferir duração no Router. A receita Product UGC mantém seu contrato próprio.
+Referência: [continuidade após preflight](../homologacao/vega-producao-apos-preflight-v1.md).
+
 O parecer de Plutus deve registrar prompt, resposta bruta, modelo e uso antes do callback funcional.
 Se o callback falhar, a próxima leitura reutiliza a resposta auditada e não consome uma segunda
 interação de IA.
@@ -202,3 +214,22 @@ existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. 
 ativos, criativo e contrato da mesma versão; o usuário recebe links para as telas oficiais.
 A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
 Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.
+
+## Prova privada de PDE na rota genérica
+
+Uma captura informada no projeto como `internal://agent-tasks/<taskId>/visual-evidence/<evidenceId>`
+(com `#crop=x,y,largura,altura` opcional) só pode ser usada quando o resultado técnico persistido
+for `PDE_AGENT_TECHNICAL_HOMOLOGATION_V1`, aprovado, do mesmo produto, experimento e versão do
+projeto. A captura precisa constar nos artefatos com hash idêntico e tráfego AGENT_VALIDATION.
+Ela demonstra funcionamento com dados de teste; nunca comprova resultado humano ou venda.
+
+O backend congela `PDE_PRIVATE_VIDEO_PROOF_V1` no contrato do job e expõe os bytes pelo módulo
+de vídeo em `GET /api/sales-videos/projects/{projectId}/product-proof`, com `Cache-Control: no-store`. A requisição do executor preserva `X-Tenant-ID` congelado no contrato; leitura sem tenant ou de outro proprietário é recusada.
+O executor confere identidade, hash e enquadramento antes do provider e novamente antes da voz.
+Ele insere os pixels nos cortes de mecanismo, resultado e prova, sem redesenhar ou gerar a tela.
+
+A rota Runway Router com prova explícita enfileira a finalização existente no backend. O filho
+de acabamento passa a ser o job acompanhado pelo ciclo; falha de voz/composição não exige
+gerar o bruto novamente. Voz e legenda têm a mesma fonte textual e gate temporal. Fonte sem
+prova aplicada, hash divergente, áudio ou sincronismo reprovados e ausência de aprovação humana
+continuam bloqueando elegibilidade comercial. Os gates independentes não são substituídos.

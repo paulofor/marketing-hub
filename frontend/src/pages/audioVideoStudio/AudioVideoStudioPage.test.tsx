@@ -275,6 +275,15 @@ describe("AudioVideoStudioPage", () => {
     });
     setupProject();
     await screen.findByDisplayValue("Vega v12");
+    fireEvent.change(
+      screen.getByLabelText("Referência da captura homologada"),
+      {
+        target: {
+          value:
+            "internal://agent-tasks/395/visual-evidence/118#crop=10,20,300,400",
+        },
+      },
+    );
     for (const title of ["Vega v12 revisado", "Vega v12 pronto"]) {
       fireEvent.change(screen.getByLabelText(/titulo do projeto/i), {
         target: { value: title },
@@ -293,6 +302,9 @@ describe("AudioVideoStudioPage", () => {
         "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
       );
       expect(project.experimentId).toBe(92);
+      expect((project as any).referencePerformanceUri).toBe(
+        "internal://agent-tasks/395/visual-evidence/118#crop=10,20,300,400",
+      );
     }
   });
 

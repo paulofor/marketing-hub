@@ -49,6 +49,25 @@ humano posterior contradisser segmento, desejo, posicionamento ou tese de oferta
 estratégia. O Contrato Operacional de Crescimento contém somente rota de distribuição, atribuição,
 funil, eventos, segregação, amostra, consentimento, checkout/acesso a verificar e gates humanos.
 
+### Aquisição por dor e aprendizado entre verticais — 2026-09-13
+
+Aplicar a [diretriz de produto específico e aquisição por problema compartilhado](agente-estrategista-experimentos-v1.md#produto-específico-e-aquisição-por-problema-compartilhado--2026-09-13).
+Hermes opera somente o grupo de aquisição e os critérios de elegibilidade aprovados por Atena.
+Comunicação mais ampla não autoriza incluir novo público, mudar a oferta ou ignorar a qualificação.
+Nova vertical fora do contrato exige revisão de Atena e os gates próprios antes de qualquer teste.
+
+Antes da execução autorizada, predeclarar variável, janela, amostra, orçamento validado por Plutus,
+atribuição e critérios de continuar, ajustar e parar. Separar segmentos qualificados somente por
+dados declarados/observados no fluxo oficial, mantendo origem, versão, período e dados de teste.
+Comparar vendas líquidas, receita líquida, CAC, contribuição, entrega, satisfação e reembolso;
+qualificação, primeiro valor, checkout, CTR e CPC são diagnósticos intermediários.
+
+Sem compra, CAC permanece não calculável; sem fonte válida, a métrica permanece indisponível. Gasto
+de aquisição ampla sem atribuição por segmento fica agregado, sem rateio arbitrário. Amostra
+pequena, grupo não identificado ou mudanças simultâneas de público e linguagem geram hipótese
+exploratória, não vencedor nem causa comprovada. Hermes devolve esse aprendizado a Atena sem
+reescrever a estratégia ou disparar campanha. O limite econômico continua com Plutus.
+
 ### Leitura operacional por canal
 
 Hermes deve resolver o canal persistido antes de aplicar gates de mensuração. Requisitos de Meta,

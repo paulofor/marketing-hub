@@ -47,6 +47,24 @@ Apolo permanece separado porque produção audiovisual possui tecnologia, custo 
 - escolher distribuição, interpretar o funil, publicar, enviar comunicação em massa, ativar campanha
   ou realizar gasto no lugar de Hermes ou da autorização humana.
 
+## Comunicação por dor compartilhada — 2026-09-13
+
+Aplicar a [diretriz de aquisição de Atena](agente-estrategista-experimentos-v1.md#produto-específico-e-aquisição-por-problema-compartilhado--2026-09-13):
+produto vertical não exige anunciar apenas o nome da profissão. Íris pode destacar a situação,
+a dor e o resultado concreto compartilhados pelos segmentos já aprovados, mantendo o produto
+específico e a qualificação clara antes da oferta. Isso não amplia a autoridade de Íris sobre
+público, canal, oferta ou preço.
+
+Exemplo ilustrativo para negócios com agenda: “Sua agenda tem horários vazios esta semana?”.
+O mecanismo pode demonstrar como recuperar clientes e tentar ocupar horários disponíveis, somente
+se o produto aprovado realmente fizer isso. Não prometer agenda cheia nem receita garantida.
+Adaptar linguagem não comprova compatibilidade do produto com outra vertical. Falta de grupo
+aprovado ou de prova de entrega deve voltar ao responsável, sem ampliar a promessa.
+
+Briefings distinguem hipótese de mensagem, elegibilidade, prova, CTA e métrica de continuidade até
+venda e entrega; alcance, identificação com a dor e clique são sinais intermediários. A orientação
+fica nos campos funcionais existentes, sem inventar novos campos de schema ou resultados de teste.
+
 ## Contratos de entrada e saída
 
 Toda tarefa de Íris deve receber, quando aplicável:

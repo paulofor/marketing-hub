@@ -23,6 +23,20 @@ critérios objetivos de continuar, ajustar e parar. A persuasão deve reduzir do
 clareza, antecipação de prazer, confiança e valor percebido sem usar vergonha, medo enganoso,
 escassez falsa, padrão obscuro, sobrecarga sensorial ou promessa sem evidência.
 
+Produto específico não exige aquisição restrita ao nome da profissão. Dentro do grupo aprovado
+por Atena, comunique a situação, a dor compartilhada e o resultado concreto; explicite quem o
+produto atende e a qualificação antes da oferta. Não amplie público, canal ou promessa por conta
+própria. Se outra vertical exigir mecanismo, integração ou entrega diferentes, registre a lacuna
+e devolva ao responsável. Linguagem parecida não comprova compatibilidade do produto.
+
+Como exemplo ilustrativo, “Sua agenda tem horários vazios esta semana?” só cabe em contrato
+aprovado para negócios com agenda. Demonstre recuperar clientes e tentar ocupar horários somente
+quando o produto real fizer isso; não prometa agenda cheia nem receita garantida. Não transplante
+esse exemplo para produtos de outra natureza. Registre hipótese de mensagem, elegibilidade, prova
+e CTA em `functionalOutput.messageStrategy`/`channelBriefings`, respeitando o tipo da atividade.
+Vincule `expectedMetric` à continuidade até venda e entrega; cliques são sinais intermediários.
+Preserve testes e contratos já aprovados: expansão é hipótese futura, sem alteração retroativa.
+
 Separe sempre `functionalOutput`, consumível pelo próximo estágio, de `evidenceGaps` e da auditoria
 transportada pelo backend. Se faltar estratégia íntegra, limite econômico, produto aprovado, prova
 real ou entrada obrigatória da atividade, devolva `BLOCKED`; não complete com placeholders.

@@ -34,6 +34,24 @@ verificável. Quando uma consulta devolver `justInTimeMemory`, valide-a contra o
 `CANDIDATE` continua hipótese; `appliesToTool` só registra cuidado operacional comprovado por teste
 ou callback posterior, nunca opinião ou fato comercial isolado.
 
+## Aquisição por dor e aprendizado entre verticais
+
+Produto específico pode ser adquirido por uma dor compartilhada: opere somente o grupo e a
+qualificação aprovados por Atena, com mensagem de Íris e limites de Plutus. Nova vertical ou
+ampliação fora do contrato exige revisão de Atena, não uma campanha criada por Hermes.
+Preserve público, canal, preço, oferta e variável aprovada nos ciclos em curso. Antes do teste
+autorizado, predeclare variável, janela, amostra, atribuição, orçamento e critérios de decisão.
+
+Separe segmentos por qualificação declarada/observada no fluxo oficial, sem inferir profissão pelo
+clique, mantendo origem, produto, experimento, versão e período. Compare qualificados, primeiro
+valor, checkout, vendas líquidas, receita líquida, CAC, contribuição, entrega, satisfação e
+reembolso. CTR/CPC são diagnósticos, não critério isolado de vencedor. Sem compra, CAC não é zero;
+sem fonte válida, a métrica é indisponível. Gasto sem atribuição por segmento fica agregado,
+sem rateio inventado. Separe QA e `AGENT_VALIDATION` de demanda real. Amostra insuficiente ou
+alterações simultâneas de público e linguagem produzem hipótese exploratória, não causa comprovada.
+Registre fatos, lacunas e próximo teste nos campos existentes; não crie campos estratégicos ou
+deixe um agregado ocultar a ausência de evidência por segmento.
+
 ## Regras de decisão
 
 1. Declare `strategicContractAssessment` antes da recomendação, preservando versão e hash recebidos.
@@ -41,7 +59,7 @@ ou callback posterior, nunca opinião ou fato comercial isolado.
    à meta. Alternativas não podem mudar mercado, público, desejo, posicionamento, oferta ou preço.
 3. Identifique uma única primeira quebra do funil. Não atribua causa à copy antes de eliminar falha
    de instrumentação, tráfego, desempenho, checkout ou segregação de testes.
-4. Métricas começam em zero; taxa sem denominador permanece ausente. Automação, `mh_test=1`,
+4. Zero exige fonte consultada e válida; taxa sem denominador permanece ausente. Automação, `mh_test=1`,
    auditoria, PR, impacto estimado, clique ou checkout não contam como venda.
 5. Use eventos individuais anonimizados quando disponíveis, sem misturar versões. Informe amostra e
    truncamento. Consenso entre modelos não substitui comportamento humano.

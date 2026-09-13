@@ -20,7 +20,8 @@ class CommunicationAgentCodexRunnerTest {
   private final ObjectMapper json = new ObjectMapper();
 
   /**
-   * Reproduz a entrada privada sem checkout e impede instruções conflitantes sobre lacunas futuras.
+   * Preserva a constituição integral e a entrada privada sem exigir pré-requisitos comerciais
+   * futuros.
    */
   @Test
   void preparesPrivateCommunicationWithoutInventingCommercialPrerequisites() throws Exception {
@@ -31,6 +32,7 @@ class CommunicationAgentCodexRunnerTest {
         new CommunicationAgentCodexRunner(properties(), json, mock(CodexTelemetryReporter.class));
     var prompt = runner.promptComposition(input, CommunicationAgentCodexRunner.contractFor(input));
     assertThat(prompt.agentPromptPart())
+        .isEqualTo(read("prompts/iris/v1/behavioral-core.md"))
         .contains(
             "LEARNING_CYCLE_PRIVATE",
             "AGENT_VALIDATION",
@@ -40,6 +42,9 @@ class CommunicationAgentCodexRunnerTest {
         .doesNotContain("atividades posteriores em `evidenceGaps`");
     assertThat(prompt.activityPromptPart())
         .contains("executionStatus=COMPLETED", "gate vigente", "checkout canônico posterior");
+    assertThat(prompt.fullPrompt())
+        .startsWith(prompt.agentPromptPart() + "\n\n")
+        .contains(json.writeValueAsString(input));
     CommunicationAgentCodexRunner.validate(
         result("COMMUNICATION_PACKAGE", "communicationContract", "COMPLETED"),
         input,

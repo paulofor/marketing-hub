@@ -56,6 +56,58 @@ produto. Atena não pode usar parecer desses agentes, conclusão de tarefa ou ch
 preferência humana ou venda. A priorização posterior continua sendo decisão recalculada pelo backend
 e mantém o produto em `STOP` até autorizações separadas de publicação e operação.
 
+## Produto específico e aquisição por problema compartilhado — 2026-09-13
+
+Por orientação do usuário, a pergunta inicial é: **qual problema repetitivo aparece em vários
+nichos e dói o suficiente para alguém pagar pela solução?** Produto específico não exige aquisição
+restrita a uma profissão. A precisão deve estar no problema, no resultado e no mecanismo que o
+produto realmente entrega. Alcance maior, por si só, não comprova demanda nem reduz CAC.
+
+Atena distingue o público que o produto consegue atender, o grupo de aquisição permitido e a
+qualificação necessária antes da oferta. Em novas estratégias, compare três caminhos aplicáveis:
+
+| Caminho | Benefício | Risco | Custo/esforço | Quando faz sentido |
+| --- | --- | --- | --- | --- |
+| Uma vertical | Linguagem e entrega concentradas | Mercado acessível pequeno ou distribuição cara | Menos adaptações; aquisição a verificar | Evidência e mecanismo dependem daquela vertical |
+| Dor compartilhada com aquisição ampla e qualificação posterior | Descobrir compradores além de uma profissão | Atrair interessados que o produto não atende | Mais qualificação e mensuração | Produto e prova atendem todo o grupo admitido |
+| Grupo de verticais próximas com teste comparável | Reutilizar mecanismo e descobrir onde há compra rentável | Confundir afinidade com capacidade real de entrega | Esforço intermediário de adaptação e atribuição | Mesma dor, situação de compra e mecanismo, com diferenças conhecidas |
+
+Para o exemplo de horários vazios, o terceiro caminho é a hipótese inicial preferida: negócios de
+beleza que atendem com agenda podem compartilhar o problema, permitindo comparar segmentos sem
+abrir para qualquer pequeno negócio. A escolha equilibra alcance e entrega; não é um vencedor
+medido nem uma regra para sempre ampliar. Manicures, cabeleireiros, barbeiros e esteticistas são
+candidatos ilustrativos, não públicos já validados. Similaridade de linguagem não basta: verificar
+rotina, comprador, canal acessível, integrações, prova, custo de atendimento e limites do produto.
+
+O contrato deve registrar, nos campos existentes de segmento/comprador, problema, hipótese,
+alternativas, evidências e critérios:
+
+- frequência, urgência e consequência econômica da dor, com fonte ou lacuna;
+- sinais de disposição e capacidade de pagar, distinguindo declaração, gasto com alternativas e
+  compra efetiva; profissão ou clique não comprovam orçamento;
+- acesso real ao público, grupo elegível, exclusões, qualificação e capacidade de entrega;
+- hipótese de aquisição, variável isolada, janela, amostra e critérios de continuar, ajustar e
+  parar; estimativas de CAC, margem e orçamento continuam sob Plutus;
+- métricas comerciais por segmento quando houver atribuição: qualificados, primeiro valor,
+  checkout, vendas líquidas, receita líquida, CAC, contribuição, entrega, satisfação e reembolso.
+
+Íris materializa comunicação centrada na dor dentro desse grupo aprovado e deixa clara a
+elegibilidade antes da oferta. Hermes mede a descoberta entre verticais já permitidas e devolve
+evidência a Atena; não escolhe novo público, não reescreve o contrato e não infere profissão pelo
+clique. Plutus valida custos de distribuição e entrega, limites e viabilidade econômica.
+
+Testes com linguagem e público alterados juntos são exploratórios; não isolam efeito causal da
+vertical. Declaração de vencedor exige amostra e consequência comercial/entrega auditáveis, não
+CTR ou CPC isolados. Sem vendas, CAC não é zero; sem fonte válida, a métrica é indisponível. Em
+aquisição ampla, gasto sem atribuição por segmento permanece agregado, sem rateio inventado para
+declarar uma vertical mais rentável. Dados de QA e validação de agentes ficam segregados.
+
+Esta orientação vale para novas análises e revisões autorizadas. Não altera retroativamente
+contratos, campanhas ou ciclos em curso, nem autoriza publicação ou gasto. Em sucessor com variável
+isolada já aprovada, compare três maneiras de executar essa melhoria preservando público, canal,
+preço e oferta; registre expansão como hipótese futura. No caso histórico Vega #92, preservar o
+teste de utilidade do primeiro ajuste. O exemplo de agenda não redefine Vega ou Mira.
+
 ## Fontes de verdade
 
 - sessões e eventos persistidos do experimento;

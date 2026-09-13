@@ -60,7 +60,7 @@ public class RunwayProviderPreflightService {
         this.webClient = builder.baseUrl(properties.getProviders().getRunway().getBaseUrl().toString()).build();
     }
 
-    /** Executa snapshot e dry runs, devolvendo bloqueio estruturado em qualquer incerteza. */
+    /** Executa dry runs e devolve snapshots de quotas em objeto, com bloqueio em qualquer incerteza. */
     public ProviderPreflightResultPayload execute(ProviderPreflightJob job) {
         Instant observedAt = Instant.now();
         String sourceUrl = sourceUrl();
@@ -153,11 +153,11 @@ public class RunwayProviderPreflightService {
                         executionRequestsJson,
                         payloadSha256,
                         estimatedCredits,
-                        objectMapper.writeValueAsString(quota.details()));
+                        quotaSnapshot(quota));
             }
             BigDecimal balance = sanitizedOrganization.path("creditBalance").decimalValue();
             Long maxMonthly = sanitizedOrganization.path("tier").path("maxMonthlyCreditSpend").longValue();
-            String quotaJson = objectMapper.writeValueAsString(quota.details());
+            String quotaJson = quotaSnapshot(quota);
             boolean unsafeCeiling = maximumAuthorizedCredits.compareTo(job.maxCredits()) > 0;
             log.info(
                     "Preflight Runway concluído; cycleId={} account={} configId={} requests={} credits={} balance={} source={}",
@@ -185,7 +185,7 @@ public class RunwayProviderPreflightService {
                     Instant.now());
         } catch (VideoProviderException ex) {
             log.error(
-                    "Referência Product UGC bloqueou o preflight; cycleId={} code={}",
+                    "Contrato audiovisual bloqueou o preflight; cycleId={} code={}",
                     job.cycleId(),
                     ex.getCode(),
                     ex);
@@ -424,6 +424,11 @@ public class RunwayProviderPreflightService {
                     "A Runway não informou limites completos para: " + String.join(", ", missing) + ".", details);
         }
         return new QuotaValidation(true, null, null, details);
+    }
+
+    /** Preserva todas as quotas por modelo no objeto exigido pelo contrato de callback do backend. */
+    private String quotaSnapshot(QuotaValidation quota) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(Map.of("models", quota.details()));
     }
 
     /** Resume fabricante, modelo, agregador e custo de cada rota retornada pelo dry run. */

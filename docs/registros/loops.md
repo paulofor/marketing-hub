@@ -5200,3 +5200,29 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
   Nenhuma alteração de duração autoriza rota, gasto, publicação ou aprovação.
 - **Cânone e evidências:** `docs/canonical/apollo-plutus-video-production-canon.v1.md`
   e `docs/homologacao/vega-runway-acesso-e-dimensionamento-v1.md`.
+
+## LOOP-RUNWAY-ROUTER-SCHEMA-UNIVERSAL — opções válidas no Router eliminam o modelo escolhido
+
+- **Confirmado em 13/09/2026:** após cadastrar a configuração ausente dos projetos 4/5
+  de Vega/#92, o ciclo de produção 14/preflight 7 retornou `PROVIDER_NO_ELIGIBLE_MODEL`.
+  O executor enviava sempre `negativePrompt` e até 20.000 caracteres de contexto.
+- **Causa comprovada:** simulações oficiais isolaram `input_support` para o campo não
+  suportado e `prompt_length` para o limite de 1.000 unidades UTF-16 de Gen-4.5.
+  Sem o campo e com prompt curto, os mesmos áudio desligado, resolução, proporção e
+  duração foram aceitos. O sucesso antigo de Product UGC é outro contrato, não uma
+  evidência de elegibilidade do Router.
+- **Correção:** direção visual por clipe em recurso versionado, preservando cena,
+  personagem, ambiente, estilo e continuidade; sem campo opcional incompatível nem
+  truncamento silencioso. Contexto comercial completo permanece no projeto.
+- **Prevenção:** `RunwayGen45ContractTest` percorre poller, cliente, adapter e callback
+  reais com APIs locais que reproduzem os filtros observados; protege payload
+  congelado, ausência de geração e bloqueio explícito de direção visual longa.
+- **Cânone e evidências:** `docs/canonical/apollo-plutus-video-production-canon.v1.md`
+  e `docs/homologacao/vega-runway-contrato-gen45-v1.md`.
+
+- **Contrato de callback confirmado na mesma recuperação:** o ciclo 15/preflight 8
+  permaneceu PENDING porque o Router enviava quota como array e o backend exige
+  objeto. Product UGC já cumpria esse contrato nos preflights 2/3/4. Corrigidos
+  sucesso e bloqueio revisável no executor, com `models` dentro de objeto. A matriz
+  passa a executar o callback exato da imagem no service real do backend, além
+  dos doubles HTTP; não aceitar retorno 204 simulado como prova dessa integração.

@@ -57,6 +57,24 @@ imutáveis, mas não cria ou altera allowlists automaticamente. Somente modelos 
 preço, licença comercial e QA verificados no catálogo do Marketing Hub podem superar o gate; modelo
 novo escolhido pelo Router permanece bloqueado até homologação explícita.
 
+O schema universal do Router não comprova suporte de cada campo pelo modelo selecionado.
+O request compartilhado não deve impor `negativePrompt`: esse campo elimina Gen-4.5 no
+filtro de capacidade de entrada. As restrições visuais permanecem no prompt versionado
+`prompts/sales-video/runway-router-v1.md`, junto da cena, personagem, ambiente, estilo e
+continuidade completos. Esse prompt visual tem limite de 1.000 unidades UTF-16 para
+preservar compatibilidade com Gen-4.5. Se ainda exceder o limite, bloquear com
+`PROVIDER_PROMPT_TOO_LONG`, sem cortar texto ou remover regras silenciosamente. O roteiro,
+a copy e os demais dados comerciais continuam integrais no contexto persistido do projeto;
+não precisam ser repetidos no prompt de cada tomada. Dry run e request faturável devem
+continuar idênticos, exceto por `dryRun`. O preflight comprova elegibilidade técnica,
+nunca substitui o plano da prova real, a revisão independente ou a decisão financeira.
+O callback deve serializar `quotaSnapshotJson` como objeto JSON; para o Router,
+`models` contém a lista completa de quotas por modelo, em sucessos e bloqueios
+revisáveis. Array na raiz é inválido. A homologação entre módulos deve consumir
+o resultado real do executor no validador real do backend; um mock que aceita
+qualquer callback não comprova integração.
+Regressão: [contrato Gen-4.5 de Vega](../homologacao/vega-runway-contrato-gen45-v1.md).
+
 Por decisão de 2026-09-04, `RUNWAY_PRODUCT_UGC` é a primeira rota de receita. Ela usa
 `product_ugc@2026-06`, uma imagem licenciada da apresentadora, uma captura limpa do PDE, no máximo 15
 segundos e áudio nativo desligado. Plutus reserva o custo contratual integral antes de Apolo; a

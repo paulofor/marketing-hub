@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: proteger os dois perfis reutilizáveis de roteamento audiovisual. */
 class RunwayRouterRequestFactoryTest {
 
-    /** Divide o lote em clipes e usa a configuração econômica de rascunho. */
+    /** Divide o lote sem impor negativePrompt e mantém as regras visuais no prompt versionado. */
     @Test
     void shouldBuildDraftInstagramBatchWithStableVisualRules() {
         VideoManagementProperties properties = new VideoManagementProperties();
@@ -25,8 +25,10 @@ class RunwayRouterRequestFactoryTest {
             assertThat(request.get("configId"))
                     .isEqualTo("marketing-hub-instagram-draft-v1");
             assertThat(request).doesNotContainKey("dryRun");
-            assertThat(((Map<?, ?>) request.get("input")).get("negativePrompt").toString())
-                    .contains("flicker", "camera shake", "embedded text");
+            Map<?, ?> input = (Map<?, ?>) request.get("input");
+            assertThat(input.containsKey("negativePrompt")).isFalse();
+            assertThat(input.get("promptText").toString())
+                    .contains("flicker", "shake", "No text", "post-production");
         });
         assertThat(((Map<?, ?>) result.get(0).get("input")).get("duration")).isEqualTo(10);
         assertThat(((Map<?, ?>) result.get(1).get("input")).get("duration")).isEqualTo(10);

@@ -7240,3 +7240,17 @@ ambiente real. Matriz e evidências: `docs/homologacao/vega-proxima-acao-finance
   Vega ignorado por ausência da entrada específica. Nenhuma homologação produtiva, execução paga,
   alteração comercial, commit, PR ou publicação nesta tarefa.
 - [Decisões, matriz, limites e evidências](../homologacao/aquisicao-problema-compartilhado-v1.md).
+
+
+## 2026-09-13 — Vega/#92: recuperação da verificação dos vídeos
+
+Preservados produto 4, cadeia 14/v14, processo 75/v6 e ciclo 2. Corrigidos Router
+ausente, parâmetros incompatíveis com Gen-4.5 e formato de quotas do callback.
+Duas rodadas finais de 451 testes, imagem local e validador real do backend.
+Preflights 8/9 prontos nos projetos 4/5; tentativas anteriores preservadas, sem
+geração paga ou reserva. O processo passou a WAITING_ACTIVITY e permanece 0/4:
+produção, revisão e objetivos comerciais não foram substituídos pela verificação.
+Apolo voltou ao PLAY anterior. O monitor #92 ainda exige slot próprio de analytics;
+resposta indisponível não comprova zero vendas. Revisão operacional validada:
+`ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1`; retomada de publicadores após integração.
+[Diagnóstico, decisões e evidências](../homologacao/vega-runway-contrato-gen45-v1.md).

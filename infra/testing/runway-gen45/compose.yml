@@ -1,0 +1,34 @@
+services:
+  mock:
+    image: node:22-alpine
+    command: [node, /tmp/mock.mjs]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  worker:
+    image: ${GEN45_IMAGE:?Informe a imagem construída pelo Dockerfile versionado}
+    depends_on:
+      mock:
+        condition: service_healthy
+    environment:
+      VIDEO_BACKEND_BASE_URL: http://mock:8080
+      BACKEND_URL: http://mock:8080
+      VIDEO_JOBS_POLLING_ENABLED: 'true'
+      VIDEO_JOBS_ORPHAN_RECOVERY_ENABLED: 'false'
+      VIDEO_JOBS_POLL_INTERVAL: PT3S
+      VIDEO_PROVIDERS_RUNWAY_ENABLED: 'true'
+      VIDEO_PROVIDERS_RUNWAY_BASE_URL: http://mock:8080
+      VIDEO_PROVIDERS_RUNWAY_FINAL_ROUTER_CONFIG_ID: qa-gen45
+      RUNWAY_API_KEY: runway-local-test
+      APOLLO_PLANNER_ENABLED: 'false'
+      VIDEO_REFERENCE_ANALYSIS_ENABLED: 'false'
+      VIDEO_PDE_AUDIOVISUAL_ENABLED: 'false'
+      JAVA_OPTS: -Xmx512m
+      AGENT_BUILD_REFERENCE: gen45-local-contract
+    mem_limit: 768m
+    cpus: 1.5
+networks:
+  default:
+    internal: true

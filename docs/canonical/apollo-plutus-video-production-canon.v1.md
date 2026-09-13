@@ -43,6 +43,15 @@ teto; divergência interrompe as cenas restantes e preserva a task já aceita pa
 reserva precisa estar vigente no início de cada cena, reservas vencidas sem consumo devem ser
 liberadas sob lock da conta e nenhum retry pago automático é permitido.
 
+A duração por clipe deve vir da mesma política backend para a fila de preflight, o painel e os
+metadados de Apolo. A seleção explícita do Estúdio prevalece sobre alternativas citadas no texto.
+Gen-4.5 em um projeto de quinze segundos representa dois clipes, de dez e cinco segundos; não
+pode aparecer como um clipe de quinze segundos por herdar a preferência de Seedance. Planos
+legados de Luma preservam a substituição por Seedance já definida, inclusive no dimensionamento
+do preflight. Uma referência sem modelo identificado usa o limite genérico conservador de dez
+segundos. Isso não escolhe o modelo externo, não aumenta teto e não substitui o Router ou Plutus.
+Regressão: [acesso e dimensionamento de Vega](../homologacao/vega-runway-acesso-e-dimensionamento-v1.md).
+
 Configurações Runway são recursos externos previamente provisionados. O código referencia slugs
 imutáveis, mas não cria ou altera allowlists automaticamente. Somente modelos `ACTIVE` com adapter,
 preço, licença comercial e QA verificados no catálogo do Marketing Hub podem superar o gate; modelo

@@ -23,6 +23,7 @@ import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.mapper.VideoProjectResearchIntelligenceMapper;
+import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightData;
 import com.marketinghub.salesvideo.service.providerpreflight.VideoProviderFinancialPreflightService;
@@ -402,16 +403,7 @@ public class VideoProductionCycleService {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
   }
 
-  /** Identifica o modelo preferido apenas para dimensionar clipes antes do roteamento externo. */
-  private String preferredProvider(VideoProject project) {
-    String plan = project.getProviderPlan();
-    if (isProductUgc(plan)) return RUNWAY_PRODUCT_UGC;
-    if (plan != null && plan.contains("RUNWAY_SEEDANCE_2_5")) return "RUNWAY_SEEDANCE_2_5";
-    if (plan != null && plan.contains("RUNWAY_HAILUO_3")) return "RUNWAY_HAILUO_3";
-    return "RUNWAY_SEEDANCE_2_5";
-  }
-
-  /** Monta metadados auditáveis sem autorizar publicação. */
+  /** Monta metadados com o mesmo limite de clipe do preflight, sem autorizar publicação. */
   private String metadata(
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     try {
@@ -419,9 +411,9 @@ public class VideoProductionCycleService {
       VideoCreditReservation reservation =
           providerPreflightService.requireActiveReservation(cycle.getId());
       int duration = project.getTargetDurationSeconds();
-      String provider = preferredProvider(project);
-      boolean productUgc = RUNWAY_PRODUCT_UGC.equals(provider);
-      int providerClipDuration = providerClipDurationSeconds(provider);
+      boolean productUgc = isProductUgc(project.getProviderPlan());
+      int providerClipDuration =
+          SalesVideoProviderDurationPolicy.maxClipSecondsForPlan(project.getProviderPlan());
       List<LinkedHashMap<String, Object>> cuts =
           productUgc ? List.of() : cutPlan(project, duration);
       metadata.put("videoProductionCycleId", cycle.getId());
@@ -501,14 +493,6 @@ public class VideoProductionCycleService {
       log.error("Falha ao serializar contrato do ciclo premium; cycleId={}", cycle.getId(), ex);
       throw new IllegalStateException("Não foi possível auditar o ciclo de vídeo.", ex);
     }
-  }
-
-  /** Resolve a duração de geração por modelo sem tratá-la como duração de cada corte editorial. */
-  private int providerClipDurationSeconds(String provider) {
-    if (RUNWAY_PRODUCT_UGC.equals(provider)) return 15;
-    if (provider != null && provider.contains("SEEDANCE_2")) return 15;
-    if (provider != null && provider.contains("VEO_3_1")) return 8;
-    return 10;
   }
 
   /** Valida o contrato da receita premium antes de abrir preflight ou tarefa de agente. */
@@ -777,12 +761,13 @@ public class VideoProductionCycleService {
         value.releasedAt());
   }
 
-  /** Converte a entidade no contrato externo. */
+  /** Expõe o ciclo com a mesma duração e quantidade de clipes usadas pelo preflight. */
   private VideoProductionCycleContracts.Response response(VideoProductionCycle cycle) {
     VideoProject project = project(cycle.getVideoProjectId());
     int duration = project.getTargetDurationSeconds();
-    boolean productUgc = RUNWAY_PRODUCT_UGC.equals(preferredProvider(project));
-    int providerClipDuration = providerClipDurationSeconds(preferredProvider(project));
+    boolean productUgc = isProductUgc(project.getProviderPlan());
+    int providerClipDuration =
+        SalesVideoProviderDurationPolicy.maxClipSecondsForPlan(project.getProviderPlan());
     return new VideoProductionCycleContracts.Response(
         cycle.getId(),
         cycle.getVideoProjectId(),

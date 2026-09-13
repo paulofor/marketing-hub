@@ -1,0 +1,18 @@
+{
+  "slug": "marketing-hub-campaign-final-v1",
+  "name": "Marketing Hub — Gen-4.5 final",
+  "description": "Configuração candidata para os projetos 4/5 de Vega, experimento 92. Exige provisionamento coordenado, dry run vigente e gates financeiros antes de qualquer geração.",
+  "settings": {
+    "models": {
+      "mode": "allowlist_only",
+      "ids": ["gen4.5"]
+    },
+    "optimizeFor": "quality",
+    "maxCreditsPerGeneration": {
+      "video": 400
+    },
+    "fallback": {
+      "onCapacity": false
+    }
+  }
+}

@@ -37,7 +37,7 @@ public class CreativeProductionReadinessProvider
         && Set.of("nonAudiovisual", "customer", "commercial").contains(activity.getActivityId());
   }
 
-  /** Exige os predecessores reais e a imagem final antes de iniciar qualquer parecer. */
+  /** Exige prova real e explica qual parecer devolveu a peça à produção antes de nova revisão. */
   @Override
   public AgentProductProcessActivityReadiness readiness(
       BusinessProcessDefinition process,
@@ -51,6 +51,17 @@ public class CreativeProductionReadinessProvider
       return new AgentProductProcessActivityReadiness(
           false,
           "Conclua a produção da imagem final com Íris; briefing não é peça visual para revisão.");
+    if ("nonAudiovisual".equals(activity.getActivityId())) {
+      var correction =
+          producer(process, reference)
+              .flatMap(producer -> correction(process, reference, producer.id()));
+      if (correction.isPresent())
+        return new AgentProductProcessActivityReadiness(
+            true,
+            "Íris deve corrigir a peça conforme o parecer da tarefa #"
+                + correction.get().id()
+                + "; depois, Psique e Têmis revisarão a nova imagem.");
+    }
     return new AgentProductProcessActivityReadiness(
         true, "Os predecessores estão prontos para produzir ou revisar a peça real.");
   }
@@ -70,7 +81,7 @@ public class CreativeProductionReadinessProvider
     if ("nonAudiovisual".equals(activity.getActivityId()))
       return "COMPLETED".equals(producer.get().status())
           && (!rendered(producer.get())
-              || needsCorrection(process, reference, producer.get().id()));
+              || correction(process, reference, producer.get().id()).isPresent());
     var review = latest(process, reference, activity.getActivityId());
     return review
         .filter(t -> "COMPLETED".equals(t.status()) && t.id() < producer.get().id())
@@ -94,7 +105,7 @@ public class CreativeProductionReadinessProvider
   }
 
   /** Retorna à produção quando o revisor registra um ajuste funcional posterior à peça atual. */
-  private boolean needsCorrection(
+  private Optional<AgentTaskFunctionalSnapshot> correction(
       BusinessProcessDefinition process, String reference, Long producerId) {
     for (String reviewer : Set.of("customer", "commercial")) {
       var review = latest(process, reference, reviewer);
@@ -104,12 +115,12 @@ public class CreativeProductionReadinessProvider
           || review.get().resultJson() == null) continue;
       try {
         if ("ADJUST".equals(json.readTree(review.get().resultJson()).path("decision").asText()))
-          return true;
+          return review;
       } catch (Exception ex) {
         log.error("Parecer de correção criativa inválido. taskId={}", review.get().id(), ex);
       }
     }
-    return false;
+    return Optional.empty();
   }
 
   /**

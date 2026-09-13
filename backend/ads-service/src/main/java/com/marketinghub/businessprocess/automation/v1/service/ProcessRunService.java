@@ -479,7 +479,8 @@ public class ProcessRunService {
       transition(run, "WAITING_INPUT", control.availabilityReason(), "WAITING");
       return response(run);
     }
-    String actionKey = actionKey(run, activity, ordered);
+    var correctionInputs = ProcessRunCorrectionInputs.resolve(run, activity, ordered, graph, json);
+    String actionKey = actionKey(run, activity, ordered, correctionInputs);
     if (events.existsByRunIdAndActionKey(run.getId(), actionKey)) {
       transition(
           run,
@@ -506,7 +507,9 @@ public class ProcessRunService {
         "DISPATCHED");
     event(
         run,
-        recovery.isPresent() ? "RECOVERY_REQUESTED" : "ACTIVITY_REQUESTED",
+        recovery.isPresent() || !correctionInputs.isEmpty()
+            ? "RECOVERY_REQUESTED"
+            : "ACTIVITY_REQUESTED",
         run.getReason(),
         actionKey,
         Map.of(
@@ -517,7 +520,9 @@ public class ProcessRunService {
             "taskIds",
             result.tasks().stream().map(t -> t.id()).toList(),
             "retryEpoch",
-            run.getRetryEpoch()));
+            run.getRetryEpoch(),
+            "correctionInputHash",
+            correctionInputs.isEmpty() ? "" : hash(correctionInputs.toString())));
     return response(run);
   }
 
@@ -667,13 +672,14 @@ public class ProcessRunService {
   }
 
   /**
-   * Relaciona uma tentativa à versão da entrada e às provas concluídas, sem incluir a própria
-   * falha.
+   * Relaciona a tentativa à entrada, às provas e ao parecer novo; preserva chaves históricas quando
+   * não há correção e nunca inclui a própria falha como progresso.
    */
   private String actionKey(
       ProcessRun run,
       ProductProcessActivityExecutionGroupResponse activity,
-      List<ProductProcessActivityExecutionGroupResponse> ordered) {
+      List<ProductProcessActivityExecutionGroupResponse> ordered,
+      List<String> correctionInputs) {
     var proofs =
         ordered.stream()
             .filter(a -> !a.activityId().equals(activity.activityId()) && a.objectiveAchieved())
@@ -700,7 +706,8 @@ public class ProcessRunService {
             + "|"
             + activity.activityObjective()
             + "|"
-            + proofs);
+            + proofs
+            + (correctionInputs.isEmpty() ? "" : "|correction:" + correctionInputs));
   }
 
   /** Cria o controle com referência explícita, sem executar trabalho durante sua construção. */

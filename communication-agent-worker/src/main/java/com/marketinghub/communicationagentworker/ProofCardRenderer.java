@@ -16,7 +16,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ProofCardRenderer {
-  /** Compõe texto e recorte exato da origem sem inventar telas, pessoas ou resultados. */
+  /**
+   * Compõe prova fiel e ressalva privada legível junto ao CTA, sem inventar telas ou resultados.
+   */
   public byte[] render(JsonNode spec, byte[] source, boolean privateValidation) throws IOException {
     if (!"PROOF_CARD_V1".equals(spec.path("templateVersion").asText()))
       throw new IllegalArgumentException("Template criativo não suportado.");
@@ -90,10 +92,10 @@ public class ProofCardRenderer {
               ? "Demonstração sintética · sem compra ou cobrança"
               : spec.path("footer").asText(),
           64,
-          1245,
+          privateValidation ? 1228 : 1245,
           952,
-          68,
-          25,
+          privateValidation ? 100 : 68,
+          privateValidation ? 36 : 25,
           Font.PLAIN);
     } finally {
       g.dispose();

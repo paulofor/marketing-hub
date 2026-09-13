@@ -23,6 +23,8 @@ class IrisCreativeMaterializerTest {
   private byte[] source;
   private String sourceHash;
   private boolean rejectUpload;
+  private boolean mobileAvailable;
+  private boolean invalidMobileHash;
   private String mode = "LEARNING_CYCLE_PRIVATE";
   private final AtomicReference<byte[]> saved = new AtomicReference<>();
   private IrisCreativeMaterializer materializer;
@@ -40,13 +42,30 @@ class IrisCreativeMaterializerTest {
           String contentType = "application/json";
           int status = 200;
           String path = exchange.getRequestURI().getPath();
-          if (path.endsWith("/visual-inputs"))
+          if (path.endsWith("/visual-inputs")) {
             response =
                 ("[{\"sourceTaskId\":910395,\"prototypeVersion\":\"sandbox-v12\",\"evidence\":{\"id\":910118,\"deviceProfile\":\"DESKTOP_1440\",\"sha256\":\""
                         + sourceHash
                         + "\",\"sourceUrl\":\"https://sandbox.example/prototype\",\"finalUrl\":\"https://sandbox.example/prototype\"}}]")
                     .getBytes(StandardCharsets.UTF_8);
-          else if (path.endsWith("/910395/910118/content")) {
+            if (mobileAvailable) {
+              var inputs = (com.fasterxml.jackson.databind.node.ArrayNode) json.readTree(response);
+              var mobile = inputs.get(0).deepCopy();
+              ((ObjectNode) mobile.path("evidence"))
+                  .put("id", 910119)
+                  .put("deviceProfile", "IPHONE_15_PRO")
+                  .put("viewportWidth", 393)
+                  .put("sha256", invalidMobileHash ? "0".repeat(64) : sourceHash);
+              inputs.add(mobile);
+              var extra = mobile.deepCopy();
+              ((ObjectNode) extra.path("evidence"))
+                  .put("id", 910120)
+                  .put("deviceProfile", "PIXEL_7");
+              inputs.add(extra);
+              response = json.writeValueAsBytes(inputs);
+            }
+          } else if (path.endsWith("/910395/910118/content")
+              || path.endsWith("/910395/910119/content")) {
             response = source;
             contentType = "image/png";
           } else if (path.endsWith("/visual-evidence")
@@ -76,6 +95,70 @@ class IrisCreativeMaterializerTest {
     server.start();
     var properties = properties();
     materializer = new IrisCreativeMaterializer(properties, new ProofCardRenderer(), json);
+  }
+
+  /** Uma captura mobile aprovada chega ao modelo e pode originar a peça sem perder o desktop. */
+  @Test
+  void suppliesMobileAndDesktopAndRendersSelectedMobile() throws Exception {
+    mobileAvailable = true;
+    var task = task();
+    try (var prepared = materializer.prepare(task)) {
+      assertThat(prepared.inputs()).hasSize(2);
+      assertThat(prepared.inputs().getFirst().metadata().path("evidence").path("id").asLong())
+          .isEqualTo(910119L);
+      assertThat(json.valueToTree(task.get("approvedVisualInputs")).size()).isEqualTo(2);
+      var output = result();
+      ((ObjectNode) output.path("functionalOutput").path("staticAssets").get(0).path("renderSpec"))
+          .put("sourceArtifactId", 910119L);
+      var rendered = materializer.materialize(task, output, prepared);
+      assertThat(
+              rendered
+                  .path("functionalOutput")
+                  .path("renderedAssets")
+                  .get(0)
+                  .path("sourceArtifactId")
+                  .asLong())
+          .isEqualTo(910119L);
+    }
+  }
+
+  /** Uma fonte mobile com hash divergente bloqueia antes de solicitar modelo ou salvar peça. */
+  @Test
+  void refusesCorruptedMobileProof() {
+    mobileAvailable = true;
+    invalidMobileHash = true;
+    assertThatThrownBy(() -> materializer.prepare(task())).hasMessageContaining("Hash da prova");
+    assertThat(saved.get()).isNull();
+  }
+
+  /** Correção sem mudança de pixels é recusada antes do upload e do parecer seguinte. */
+  @Test
+  void refusesIdenticalRejectedImage() throws Exception {
+    var task = task();
+    var output = result();
+    String hash =
+        IrisCreativeMaterializer.sha(
+            new ProofCardRenderer()
+                .render(
+                    output.path("functionalOutput").path("staticAssets").get(0).path("renderSpec"),
+                    source,
+                    true));
+    var context = (ObjectNode) json.readTree(String.valueOf(task.get("processContextJson")));
+    context
+        .putArray("blockedActivities")
+        .addObject()
+        .put("taskId", 910413L)
+        .putObject("result")
+        .put("decision", "ADJUST")
+        .putArray("renderedAssetAudit")
+        .addObject()
+        .put("sha256", hash);
+    task.put("processContextJson", context.toString());
+    try (var prepared = materializer.prepare(task)) {
+      assertThatThrownBy(() -> materializer.materialize(task, output, prepared))
+          .hasMessageContaining("repetiu a imagem reprovada");
+      assertThat(saved.get()).isNull();
+    }
   }
 
   /** Encerra o backend simulado sem deixar portas ou tarefas locais em execução. */

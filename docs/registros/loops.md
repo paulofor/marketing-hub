@@ -5160,3 +5160,43 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
 - **Prevenção:** regressões para migração posterior, marco final, ausente e ambíguo;
   runner físico MySQL 5.7 com API, rollback, reaplicação e idempotência.
   Evidências: `docs/homologacao/actions-mira-ciclos-2026-09-13.md`.
+
+## LOOP-CRIATIVO-PARECER-NOVO-TRATADO-COMO-ENTRADA-IGUAL
+
+- **Confirmado em 13/09/2026:** Mira, produto 10, processo 64/v8 e referência
+  `product:10@agent-validation-v1`. Íris concluiu #412, Psique pediu três ajustes em
+  #413. O domínio reabriu a produção, mas o evento #123 de NO_PROGRESS impediu a
+  criação da tarefa corretiva. Vega #406–408 comprova produção/revisões bem-sucedidas;
+  o bloqueio de Mira não justifica remover o gate de experiência.
+- **Causa:** a identidade de disparo ignorava pareceres reprovados, considerando
+  apenas objetivos concluídos. No executor, a seleção fixa do desktop e a ressalva
+  fixa pequena também limitavam o atendimento ao parecer mobile.
+- **Correção:** parecer ADJUST posterior, da mesma referência/definição e dependente
+  no BPM, integra a identidade da correção já liberada pelo domínio; falha própria
+  não muda a chave. Íris recebe fonte mobile aprovada, preserva pixels/hash, identifica
+  a aplicação junto à promessa e renderiza a ressalva maior perto do CTA. Repetição
+  dos mesmos pixels reprovados impede nova revisão paga.
+- **Prevenção:** ProcessRunCorrectionInputsTest, ProcessRunCreativeRecoveryPersistenceTest,
+  CreativeProductionReadinessProviderTest, IrisCreativeMaterializerTest e replay de
+  ProofCardRendererTest; rodadas e navegação em `mira-criativos-retorno-parecer-v1.md`.
+- **Cânone:** `docs/canonical/iris-communication-agent-canon.v1.md`. Complementa
+  LOOP-CRIATIVO-BRIEFING-SEM-PECA; a produção agora precisa corrigir a peça, além de existir.
+
+## LOOP-VIDEO-PREFLIGHT-PLANO-CLIPES-DIVERGENTE
+
+- **Confirmado em 13/09/2026:** os projetos 4/5 de Vega, experimento 92, selecionam
+  explicitamente Gen-4.5. O preflight prevê dois clipes de até dez segundos para o
+  vídeo final de quinze segundos, mas painel e metadados de Apolo informam um clipe
+  de quinze segundos. O teste de contrato reproduziu a divergência nos dois aliases.
+- **Causa:** os services mantinham resolvedores independentes. O ciclo não reconhecia
+  `(RUNWAY)` nem `(RUNWAY_GEN_4_5)` e assumia o limite de Seedance. A falta do Router
+  na conta é um bloqueio externo separado, confirmado por lista autenticada vazia.
+- **Correção local:** fila, painel e metadados compartilham a política de duração.
+  A seleção explícita prevalece; os limites de Veo, Seedance e UGC são preservados.
+  O plano legado Luma é dimensionado como Seedance também no preflight.
+- **Prevenção:** `SalesVideoProviderDurationPolicyTest`, contrato integrado em
+  `VideoProductionCycleServiceTest` e replay do pending real no executor em
+  `infra/testing/runway-clip-plan/VerifyWorker.java`; projeção em desktop/iPhone/Pixel.
+  Nenhuma alteração de duração autoriza rota, gasto, publicação ou aprovação.
+- **Cânone e evidências:** `docs/canonical/apollo-plutus-video-production-canon.v1.md`
+  e `docs/homologacao/vega-runway-acesso-e-dimensionamento-v1.md`.

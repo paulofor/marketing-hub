@@ -276,3 +276,26 @@ Diferença interna `Long`/`Integer` do JPA/Jackson não é mudança de identidad
 no valor ou no conteúdo de qualquer contrato continua impedindo a conclusão.
 O MCP de Íris aceita a referência privada e mantém sua memória no escopo `PRODUCT/<id>`,
 sem convertê-la em plano ou experimento e sem permitir que argumentos troquem o escopo.
+
+### Retorno criativo motivado por parecer — 2026-09-13
+
+Quando o domínio reabrir a produção após `ADJUST`, o controle do processo deve
+considerar o parecer posterior como entrada nova: mesma definição e referência,
+revisor dependente no BPM, resultado estruturado e ajustes obrigatórios presentes.
+A identidade dessa entrada e a solicitação corretiva ficam no diário. A falha da
+própria correção, polling repetido, parecer antigo ou técnico não constituem
+progresso nem autorizam repetição paga. As chaves históricas sem correção continuam
+válidas. Produção nova exige novas revisões de Psique e Têmis; a decisão humana
+não pode ser executada automaticamente.
+
+Íris deve identificar o produto real junto à promessa: o que é, qual informação
+recebe e qual resultado entrega. “Experiência privada” não substitui identificar
+uma aplicação web quando essa for a capacidade comprovada. Em criativos de feed,
+o executor disponibiliza uma captura mobile e uma desktop explicitamente aprovadas,
+com arquivos e hashes conferidos. A composição deve preservar um detalhe funcional
+legível a 393 pixels, incluindo seus limites; a ressalva privada fica próxima do CTA
+em fonte de 36 pixels no PNG 1080 × 1350. Não redesenhar a prova. Repetir exatamente
+os pixels de uma peça com ADJUST bloqueia a materialização antes da revisão seguinte.
+
+Confirmação: Mira #412/413 e evento de execução #123, comparados a Vega #406–408.
+Matriz e regressões: `docs/homologacao/mira-criativos-retorno-parecer-v1.md`.

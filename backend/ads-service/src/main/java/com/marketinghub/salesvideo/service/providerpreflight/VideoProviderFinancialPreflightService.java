@@ -15,6 +15,7 @@ import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.VideoProviderAccount;
 import com.marketinghub.salesvideo.VideoProviderPreflight;
+import com.marketinghub.salesvideo.service.SalesVideoProviderDurationPolicy;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -122,7 +123,7 @@ public class VideoProviderFinancialPreflightService {
     return preflightRepository.findByStatusOrderByCreatedAtAsc("PENDING");
   }
 
-  /** Monta o contrato do executor sem incorporar detalhes tecnológicos ao backend. */
+  /** Monta o contrato do executor usando a política de clipes compartilhada com o ciclo. */
   @Transactional(readOnly = true)
   public VideoProviderFinancialPreflightData.Pending pendingResponse(
       VideoProviderPreflight preflight, VideoProductionCycle cycle, VideoProject project) {
@@ -131,7 +132,8 @@ public class VideoProviderFinancialPreflightService {
             .findById(preflight.getProviderAccountId())
             .orElseThrow(() -> conflict("Conta agregadora do preflight não encontrada."));
     int targetDuration = Math.max(2, project.getTargetDurationSeconds());
-    int clipDuration = providerClipDuration(project.getProviderPlan());
+    int clipDuration =
+        SalesVideoProviderDurationPolicy.maxClipSecondsForPlan(project.getProviderPlan());
     int clips = Math.max(1, (targetDuration + clipDuration - 1) / clipDuration);
     boolean productUgc = isProductUgc(project.getProviderPlan());
     return new VideoProviderFinancialPreflightData.Pending(
@@ -1033,15 +1035,6 @@ public class VideoProviderFinancialPreflightService {
       log.error("SHA-256 indisponível ao validar preflight", ex);
       throw new IllegalStateException("SHA-256 indisponível.", ex);
     }
-  }
-
-  /** Resolve a duração máxima de clipe permitida pelo plano sem escolher o modelo externo. */
-  private int providerClipDuration(String providerPlan) {
-    String plan = providerPlan == null ? "" : providerPlan.toUpperCase(Locale.ROOT);
-    if (plan.contains("(RUNWAY_PRODUCT_UGC)")) return 15;
-    if (plan.contains("VEO_3_1")) return 8;
-    if (plan.contains("SEEDANCE_2")) return 15;
-    return 10;
   }
 
   /** Identifica a receita Product UGC sem inferir escolha a partir de texto comercial livre. */

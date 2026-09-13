@@ -2,9 +2,12 @@ package com.marketinghub.salesvideo.service;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /** Centraliza os limites de duração aceitos por cada provider de vídeo comercial. */
 public final class SalesVideoProviderDurationPolicy {
+  private static final Pattern RUNWAY_PLAN_SELECTION =
+      Pattern.compile("\\((RUNWAY(?:_[A-Z0-9]+)*)\\)");
   private static final int KLING_MAX_SECONDS = 10;
   private static final int RUNWAY_MAX_SECONDS = 10;
   private static final int RUNWAY_PRODUCT_UGC_MAX_SECONDS = 15;
@@ -35,6 +38,27 @@ public final class SalesVideoProviderDurationPolicy {
   public static Integer maxSeconds(String providerName) {
     ProviderLimit limit = resolveLimit(providerName);
     return limit == null ? null : limit.maxSeconds();
+  }
+
+  /** Compartilha o limite por clipe entre preflight, painel e planejamento do ciclo. */
+  public static int maxClipSecondsForPlan(String providerPlan) {
+    String plan = Optional.ofNullable(providerPlan).orElse("").toUpperCase(Locale.ROOT);
+    // A receita mantém o mesmo marcador explícito exigido pelo backend e pelo executor.
+    if (plan.contains("(RUNWAY_PRODUCT_UGC)")) {
+      return maxSeconds("RUNWAY_PRODUCT_UGC");
+    }
+    var selected = RUNWAY_PLAN_SELECTION.matcher(plan);
+    if (selected.find()) {
+      return Optional.ofNullable(maxSeconds(selected.group(1))).orElse(RUNWAY_MAX_SECONDS);
+    }
+    // Planos antigos de Luma continuam usando o padrão Seedance já definido para os ciclos.
+    if (plan.contains("LUMA") || plan.contains("SEEDANCE_2")) {
+      return maxSeconds("RUNWAY_SEEDANCE_2_5");
+    }
+    if (plan.contains("VEO_3_1")) {
+      return maxSeconds("RUNWAY_VEO_3_1");
+    }
+    return RUNWAY_MAX_SECONDS;
   }
 
   /** Resolve aliases conhecidos dos providers integrados. */

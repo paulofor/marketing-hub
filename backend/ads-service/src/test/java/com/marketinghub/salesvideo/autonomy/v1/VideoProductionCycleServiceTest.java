@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -323,6 +325,97 @@ class VideoProductionCycleServiceTest {
             "\"sourceSha256\"");
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
+  }
+
+  /** Mantém Gen-4.5 coerente entre fila de preflight, painel e job após o gate financeiro. */
+  @ParameterizedTest
+  @ValueSource(strings = {"(RUNWAY)", "(RUNWAY_GEN_4_5)"})
+  void shouldPreserveGen45ClipPlanAcrossPreflightAndApprovedJob(String provider) throws Exception {
+    VideoProductionCycle cycle = cycle();
+    cycle.setExperimentId(88L);
+    cycle.setLearningObjective("Conferir o contrato entre fila e executor na sandbox.");
+    cycle.setSuccessCriterion("Dois clipes com duração final de quinze segundos, sem rede.");
+    cycle.setBudgetLimitUsd(new BigDecimal("8.00"));
+    VideoProject project = project();
+    project.setObjective("Homologação local de clipes, sem campanha ou participante real.");
+    project.setContextType("PDE");
+    project.setVideoCategory("COMMERCIAL_SHORT");
+    project.setProductionMode("STORY_FIRST_AUDIO_VIDEO");
+    project.setTargetChannel("INSTAGRAM");
+    project.setFormat("VERTICAL_9_16");
+    project.setProviderPlan("Provider escolhido no Estudio: Runway Gen-4.5 " + provider + ".");
+    SalesVideoJobDto job = new SalesVideoJobDto();
+    job.setId(321L);
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestRender(any(), any())).thenReturn(job);
+    VideoCreditReservation reservation = activeReservation();
+    when(providerPreflightService.reserve(cycle)).thenReturn(reservation);
+    when(providerPreflightService.requireActiveReservation(11L)).thenReturn(reservation);
+    when(providerPreflightService.executionRequests(11L))
+        .thenReturn("[{\"input\":{\"duration\":10}},{\"input\":{\"duration\":5}}]");
+
+    var accountRepository =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProviderAccountRepository.class);
+    var account = new com.marketinghub.salesvideo.VideoProviderAccount();
+    account.setId(5L);
+    account.setAggregatorName("Runway");
+    account.setAccountKey("RUNWAY_PRIMARY");
+    account.setCreditUnitUsd(new BigDecimal("0.01"));
+    when(accountRepository.findById(5L)).thenReturn(Optional.of(account));
+    ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+    var actualPreflight =
+        new VideoProviderFinancialPreflightService(
+            accountRepository,
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.salesvideo.VideoProviderPreflightRepository.class),
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.salesvideo.VideoCreditReservationRepository.class),
+            org.mockito.Mockito.mock(
+                com.marketinghub.repository.jpa.salesvideo.SalesVideoProviderModelRepository.class),
+            org.mockito.Mockito.mock(
+                com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService
+                    .class),
+            mapper);
+    var preflight = new VideoProviderPreflight();
+    preflight.setId(31L);
+    preflight.setProviderAccountId(5L);
+    preflight.setProductionProfile("FINAL_CAMPAIGN");
+    var pending = actualPreflight.pendingResponse(preflight, cycle, project);
+    assertThat(pending.providerClipDurationSeconds()).isEqualTo(10);
+    assertThat(pending.generationClipCount()).isEqualTo(2);
+
+    var result =
+        service.decide(
+            11L,
+            financialDecision(
+                "APPROVED", "Gate financeiro simulado na sandbox.", "financial-agent"));
+    ArgumentCaptor<RequestVideoRenderRequest> render =
+        ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
+    verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
+    var metadata = mapper.readTree(render.getValue().getMetadataJson());
+    assertThat(result.providerClipDurationSeconds())
+        .isEqualTo(pending.providerClipDurationSeconds());
+    assertThat(result.generationClipCount()).isEqualTo(pending.generationClipCount());
+    assertThat(metadata.path("providerClipDurationSeconds").asInt()).isEqualTo(10);
+    assertThat(metadata.path("sceneCount").asInt()).isEqualTo(2);
+    assertThat(metadata.path("targetDurationSeconds").asInt()).isEqualTo(15);
+    assertThat(metadata.path("assemblyRequired").asBoolean()).isTrue();
+    assertThat(metadata.path("publicationAllowed").asBoolean()).isFalse();
+    assertThat(result.knownCostUsd()).isEqualByComparingTo("0");
+    assertThat(result.budgetLimitUsd()).isEqualByComparingTo("8");
+    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_ROUTER");
+    if (provider.equals("(RUNWAY)")) {
+      var path = java.nio.file.Path.of("target/runway-clip-contract.json");
+      java.nio.file.Files.createDirectories(path.getParent());
+      mapper
+          .writerWithDefaultPrettyPrinter()
+          .writeValue(
+              path.toFile(),
+              java.util.Map.of(
+                  "pending", pending, "cycle", result, "metadata", metadata, "project", project));
+    }
   }
 
   /** Enfileira Product UGC como tomada única e preserva copy, direitos e gates de Apolo. */

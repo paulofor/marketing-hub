@@ -1,0 +1,18 @@
+{
+  "cardKey": "personalizacao-limite-contextual",
+  "collection": "neuromarketing",
+  "title": "Personalização útil precisa permanecer dentro do contexto esperado",
+  "finding": "Revisão de 135 estudos sobre recomendação com IA destaca transparência, explicabilidade, privacidade e autonomia como desafios centrais; um caso recente do Meta AI mostrou que conectar informações pessoais tecnicamente acessíveis pode ser percebido como invasivo quando ultrapassa a expectativa contextual do usuário.",
+  "mechanism": "Relevância não depende apenas de acertar a recomendação. Explicações, controle percebido e coerência entre o dado usado e a tarefa atual podem reduzir incerteza, enquanto conexões inesperadas entre contextos pessoais podem aumentar sensação de vigilância ou perda de autonomia.",
+  "commercialApplication": "Em agentes, Click-to-WhatsApp e páginas personalizadas, priorizar dados explicitamente fornecidos ou diretamente ligados à tarefa atual, registrar por que a personalização foi aplicada e permitir correção simples de preferências; evitar inferências sensíveis só porque os dados estão disponíveis.",
+  "evidenceStrength": "Moderada: revisão sistemática/bibliométrica peer-reviewed de 135 estudos oferece convergência conceitual, complementada por um caso real de produto; não há efeito causal medido sobre conversão no Marketing Hub.",
+  "publishedOn": "2026-09-12",
+  "validUntil": "2027-03-12",
+  "experimentHypothesis": "Uma personalização que explique brevemente a razão da recomendação e permita editar a preferência aumentará controle percebido e reduzirá abandono sem prejudicar CTA em comparação com personalização silenciosa equivalente.",
+  "risks": "Usar dados fora da finalidade esperada, inferir atributos sensíveis, misturar contextos pessoais sem necessidade, transformar explicação em justificativa para coleta excessiva ou violar LGPD e políticas da plataforma.",
+  "limits": "A revisão não é meta-análise de efeitos e não avaliou formalmente risco de viés dos estudos; o caso Meta é incidente de produto, não experimento. O efeito comercial de qualquer interface de explicação precisa ser validado localmente.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-13-personalizacao-limite-contextual.md",
+  "sourceTitle": "Fonte revisada — Personalização útil precisa respeitar limite contextual",
+  "sourceSha256": "e0eeeb5bff1eaf3ec5d67bf7124126fe3b1dc158ed90eca3055d2fc7976a3753"
+}

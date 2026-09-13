@@ -1,0 +1,20 @@
+{
+  "dryRun": true,
+  "routing": {
+    "model": "gen4.5",
+    "provider": "runway",
+    "configId": "qa-gen45",
+    "resolvedSettings": {
+      "optimizeFor": "quality",
+      "priceCeiling": 400
+    },
+    "resolvedInput": {
+      "duration": 10,
+      "ratio": "720:1280",
+      "resolution": "720p"
+    },
+    "estimatedCost": {
+      "credits": 120
+    }
+  }
+}

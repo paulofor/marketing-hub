@@ -2,23 +2,31 @@ package com.marketinghub.videomanagement.service.provider;
 
 import com.marketinghub.videomanagement.client.dto.ProviderPreflightJob;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /** Responsabilidade: montar requisições universais e determinísticas para o Model Router da Runway. */
 @Component
 public class RunwayRouterRequestFactory {
-    private static final String NEGATIVE_PROMPT =
-            "embedded text, captions, subtitles, logos, watermarks, flicker, camera shake, jitter, blur, distorted hands, body-focused framing, seductive posing, luxury ostentation";
+    private static final Logger log = LoggerFactory.getLogger(RunwayRouterRequestFactory.class);
+    private static final String PROMPT_PATH = "prompts/sales-video/runway-router-v1.md";
+    private static final int MAX_PROMPT_LENGTH = 1000;
     private final VideoManagementProperties properties;
+    private final String promptTemplate;
 
-    /** Configura os perfis de router e limites operacionais do executor. */
+    /** Carrega a direção visual versionada e configura os perfis de roteamento do executor. */
     public RunwayRouterRequestFactory(VideoManagementProperties properties) {
         this.properties = properties;
+        this.promptTemplate = resource();
     }
 
     /** Cria exatamente uma requisição por clipe previsto, sem o sinal transitório de dry run. */
@@ -41,7 +49,6 @@ public class RunwayRouterRequestFactory {
             int duration = Math.max(2, Math.min(clipDuration, targetDuration - consumedBefore));
             LinkedHashMap<String, Object> input = new LinkedHashMap<>();
             input.put("promptText", prompt(job, index, sceneCount, sceneObjectives));
-            input.put("negativePrompt", NEGATIVE_PROMPT);
             input.put("duration", duration);
             input.put("aspectRatio", fallback(job.aspectRatio(), "9:16"));
             input.put("resolution", fallback(job.resolution(), "720p"));
@@ -54,7 +61,7 @@ public class RunwayRouterRequestFactory {
         return requests;
     }
 
-    /** Monta um prompt comercial por clipe mantendo texto e CTA fora da imagem gerada. */
+    /** Resolve a direção visual de cada clipe sem truncar regras nem enviar campos incompatíveis. */
     private String prompt(
             ProviderPreflightJob job, int index, int sceneCount, List<String> sceneObjectives) {
         String role = role(index, sceneCount);
@@ -62,33 +69,34 @@ public class RunwayRouterRequestFactory {
                 ? role
                 : sceneObjectives.get(Math.min(sceneObjectives.size() - 1,
                         index * sceneObjectives.size() / sceneCount));
-        String prompt = """
-                Vertical Instagram sales video for a valuable AI-powered digital experience.
-                Clip %d of %d. Commercial role: %s.
-                Required visual action: %s.
-                Project: %s. Objective: %s.
-                Approved hook: %s.
-                Approved script context: %s.
-                Character continuity: %s.
-                Environment continuity: %s.
-                Visual style: %s.
-                Continuity rules: %s.
-                Use one stable continuous camera move. Keep the image steady, sharp and temporally consistent without flicker or jitter.
-                Do not render letters, words, captions, subtitles, UI copy, logos or watermarks. Preserve clean space for deterministic Portuguese text added only in post-production.
-                """.formatted(
+        String prompt = promptTemplate.formatted(
                 index + 1,
                 sceneCount,
-                role,
                 fallback(scene, role),
-                fallback(job.title(), "Produto digital"),
-                fallback(job.objective(), job.learningObjective()),
-                fallback(job.hookText(), "Dor reconhecível e transformação plausível"),
-                fallback(job.scriptText(), job.successCriterion()),
                 fallback(job.characterBible(), "Mesma personagem em todos os clipes"),
                 fallback(job.environmentBible(), "Mesmo ambiente e luz"),
                 fallback(job.visualStyleGuide(), "Natural, claro e comercial"),
-                fallback(job.continuityRules(), "Preservar identidade, figurino, objetos e direção de movimento"));
-        return prompt.length() <= 20_000 ? prompt : prompt.substring(0, 20_000);
+                fallback(job.continuityRules(), "Preservar identidade, figurino, luz e movimento")).trim();
+        if (prompt.length() > MAX_PROMPT_LENGTH) {
+            throw new VideoProviderException(
+                    "PROVIDER_PROMPT_TOO_LONG",
+                    "A direção visual do clipe %d tem %d caracteres; o contrato aceita até %d. "
+                            .formatted(index + 1, prompt.length(), MAX_PROMPT_LENGTH)
+                            + "Resuma a cena, personagem, ambiente, estilo ou continuidade no Estúdio; "
+                            + "o roteiro completo permanece no projeto e nenhuma regra foi truncada.");
+        }
+        return prompt;
+    }
+
+    /** Exige o prompt empacotado antes de aceitar qualquer trabalho do Router. */
+    private String resource() {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(PROMPT_PATH)) {
+            if (input == null) throw new IOException("Recurso ausente: " + PROMPT_PATH);
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            log.error("Falha ao carregar direção visual Runway; path={}", PROMPT_PATH, ex);
+            throw new IllegalStateException("Prompt Runway não foi empacotado: " + PROMPT_PATH, ex);
+        }
     }
 
     /** Distribui a progressão comercial sem repetir uma única função em todos os clipes. */

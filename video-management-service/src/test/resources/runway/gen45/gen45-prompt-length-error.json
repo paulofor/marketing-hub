@@ -1,0 +1,35 @@
+{
+  "error": "No eligible model: promptText exceeds every eligible model\u2019s max length.",
+  "code": "no_eligible_model",
+  "pipeline": [
+    {
+      "type": "filter",
+      "filter": "allow_deny",
+      "models": [
+        "gen4.5"
+      ]
+    },
+    {
+      "type": "filter",
+      "filter": "capability",
+      "models": [
+        "gen4.5"
+      ]
+    },
+    {
+      "type": "filter",
+      "filter": "input_support",
+      "models": [
+        "gen4.5"
+      ]
+    },
+    {
+      "type": "filter",
+      "filter": "prompt_length",
+      "models": []
+    }
+  ],
+  "emptiedBy": [
+    "prompt_length"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "error": "No eligible model: requested inputs (negativePrompt, seed, audio, reference videos/images/audio, first/last frames, keyframes, resolution, duration, and/or aspect ratio) are unsupported by remaining models.",
+  "code": "no_eligible_model",
+  "pipeline": [
+    {
+      "type": "filter",
+      "filter": "allow_deny",
+      "models": [
+        "gen4.5"
+      ]
+    },
+    {
+      "type": "filter",
+      "filter": "capability",
+      "models": [
+        "gen4.5"
+      ]
+    },
+    {
+      "type": "filter",
+      "filter": "input_support",
+      "models": []
+    }
+  ],
+  "emptiedBy": [
+    "input_support"
+  ]
+}

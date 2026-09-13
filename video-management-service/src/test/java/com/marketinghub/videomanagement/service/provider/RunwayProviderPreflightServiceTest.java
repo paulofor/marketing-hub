@@ -77,7 +77,7 @@ class RunwayProviderPreflightServiceTest {
                 .isEqualTo("marketing-hub-campaign-final-v1");
         assertThat(body.path("input").path("duration").asInt()).isEqualTo(10);
         assertThat(body.path("input").path("promptText").asText())
-                .contains("AI-powered digital experience")
+                .contains("Clip 1/1", "Preservar rosto, figurino, luz e direção")
                 .contains("steady, sharp")
                 .contains("post-production");
         assertThat(server.getRequestCount()).isEqualTo(2);

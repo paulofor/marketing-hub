@@ -1,0 +1,19 @@
+{
+  "creditBalance": 2000,
+  "tier": {
+    "maxMonthlyCreditSpend": 5000,
+    "models": {
+      "gen4.5": {
+        "maxConcurrentGenerations": 3,
+        "maxDailyGenerations": 500
+      }
+    }
+  },
+  "usage": {
+    "models": {
+      "gen4.5": {
+        "dailyGenerations": 0
+      }
+    }
+  }
+}

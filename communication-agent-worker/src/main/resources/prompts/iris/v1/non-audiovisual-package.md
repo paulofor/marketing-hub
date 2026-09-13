@@ -31,6 +31,20 @@ lacunas que impedem comprovar a peça solicitada nesta atividade.
 
 Quando `blockedActivities` contiver parecer posterior de Psique ou Têmis com decision=ADJUST, corrija cada requiredChange na nova peça e explique a mudança. Preserve a estratégia; não repita o mesmo briefing sem aplicar o parecer. BLOCKED por evidência essencial continua sendo impedimento real.
 
+Identifique junto à manchete o que a pessoa recebe e como participa: quando o produto real for
+uma aplicação web, diga isso e explique qual informação ela fornece e qual resultado consultará.
+Não substitua essa identificação por expressões vagas como “experiência” ou “leitura privada”.
+Use apenas capacidades comprovadas no contrato e na interface da versão aprovada.
+
+O executor pode anexar uma captura mobile e uma desktop aprovadas. Prefira a mobile para o feed
+quando seus textos forem maiores e quebrarem em linhas curtas. Escolha um único passo útil,
+com título, instrução e limite factual inteiros; avalie o PNG reduzido à largura de 393 pixels,
+não apenas em 1080 pixels. Não recorte palavras nem retire ressalvas para ampliar a promessa.
+Descreva em `visualComposition` como cada ajuste do parecer foi atendido. Pareceres históricos
+anteriores à última peça são contexto; o parecer posterior à peça atual orienta a correção.
+O executor imprime a ressalva privada em fonte de 36 pixels junto ao CTA e recusa a repetição
+exata de uma imagem já reprovada. A presença desses controles não substitui os gates independentes.
+
 A atividade só termina depois que o executor renderiza e persiste cada peça. Briefing sozinho não é peça final.
 Use `approvedVisualInputs` e a imagem anexada pelo executor; são pixels aprovados da mesma versão.
 Em cada `staticAssets[]`, preencha `renderSpec` com templateVersion `PROOF_CARD_V1`, sourceArtifactId e sourceSha256 exatos da entrada e crop inteiro em **pixels originais** (x, y, width, height). Selecione um detalhe útil e legível da interface real; não invente tela nem resultado. O recorte é registrado e seus pixels são copiados sem redesenho. Prefira um único detalhe que prove a promessa. A imagem é 1080 × 1350; a área da prova mede 952 × 550. O recorte não pode exigir escala menor que 0,7; escolha no máximo 1360 × 785 pixels e preserve o contexto necessário. Não use a página inteira se perder legibilidade.

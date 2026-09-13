@@ -754,6 +754,12 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
 - Retornos de correção exigem declaração no BPM e prontidão no contrato do domínio. A mesma
   entrada sem progresso não é reenviada indefinidamente: o painel mostra a causa e a retomada
   explícita. Nova versão/entrada ou prova concluída permite reavaliar a tentativa sem apagar falhas.
+  Desde 13/09/2026, um parecer `ADJUST` novo de revisão dependente declarada no grafo também
+  compõe a entrada quando o domínio já reabriu a produção. Exige a mesma definição/referência,
+  parecer posterior à produção, instruções de ajuste e vínculo de dependência ou reparação no BPM.
+  A chave histórica permanece igual quando não há ajuste novo. Falha da própria correção não
+  muda sua entrada; polling não cria outra tentativa. `RECOVERY_REQUESTED` registra o hash do
+  parecer usado, e as revisões da nova peça continuam obrigatórias antes da decisão humana.
 - O progresso usa objetivos comprovados; histórico e dispensa explícita são apresentados
   separadamente. Custo desconhecido permanece desconhecido, e conclusão técnica não é venda.
 - Todas as atividades TASK do BPM precisam ter definição e contrato de acompanhamento, inclusive

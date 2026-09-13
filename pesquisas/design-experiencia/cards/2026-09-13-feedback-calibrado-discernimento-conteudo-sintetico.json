@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-calibrado-discernimento-conteudo-sintetico",
+  "collection": "neuromarketing",
+  "title": "Calibre o discernimento de conteúdo sintético com exemplos e feedback",
+  "finding": "Em estudo com 117 adultos, a acurácia inicial para distinguir anúncios humanos de sintéticos foi de 57,4%; maior engajamento prévio com IA correlacionou-se com pior discernimento, enquanto uma intervenção com exemplos rotulados, feedback imediato e incentivo produziu melhora significativa em relação ao baseline, ao contrário do controle.",
+  "mechanism": "Exemplos com origem conhecida e feedback rápido podem recalibrar as pistas usadas no julgamento. O estudo combinou rotulagem, feedback e incentivo, portanto não permite isolar qual componente causou o ganho.",
+  "commercialApplication": "No Marketing Hub, não usar familiaridade com IA como proxy de capacidade para detectar artificialidade. Quando isso importar na revisão de criativos ou mensagens, testar calibração com exemplos de origem conhecida e medir diretamente percepção de artificialidade no público.",
+  "evidenceStrength": "Moderada: estudo controlado com grupo experimental e controle, N=117, publicado em AI & SOCIETY. A associação entre uso prévio de IA e discernimento é correlacional; a intervenção é composta por múltiplos elementos e o domínio foi aluguel de temporada.",
+  "publishedOn": "2026-09-13",
+  "validUntil": "2027-03-13",
+  "experimentHypothesis": "Uma etapa curta de calibração com exemplos de origem conhecida e feedback aumentará a acurácia e a consistência dos revisores ao avaliar sinais de conteúdo sintético, em comparação com revisão sem calibração.",
+  "risks": "Não transformar detecção de origem em julgamento automático de qualidade; conteúdo humano pode ser ruim e conteúdo sintético pode ser útil. Evitar usar heurísticas de estilo como acusação de autoria ou como justificativa para discriminação.",
+  "limits": "Participantes de 18 a 34 anos nos EUA, estímulos de aluguel de temporada e intervenção composta. O estudo não mede CTR, preferência, conversão ou vendas; qualquer impacto comercial precisa ser testado no próprio funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-13-feedback-calibrado-discernimento-conteudo-sintetico.md",
+  "sourceTitle": "Fonte revisada — Calibração humana para discernir conteúdo sintético",
+  "sourceSha256": "42f1689377dc64c63642de819f8c9671a5a3faff5a222f624d916421c9591bf1"
+}

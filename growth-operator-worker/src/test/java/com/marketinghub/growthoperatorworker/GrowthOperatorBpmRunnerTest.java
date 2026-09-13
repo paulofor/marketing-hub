@@ -184,7 +184,7 @@ class GrowthOperatorBpmRunnerTest {
     }
   }
 
-  /** Executa o fluxo local completo com processo simulado e escopo exclusivo do experimento. */
+  /** Executa o experimento simulado e compara a instrução recebida com a auditoria integral. */
   @Test
   void shouldRunBpmContractWithExperimentEnvironmentAndTelemetry() throws Exception {
     Path fakeCodex = Files.createTempFile("fake-codex-hermes-", ".sh");
@@ -204,7 +204,7 @@ class GrowthOperatorBpmRunnerTest {
             fi
             shift
           done
-          cat >/dev/null
+          cat > "$0.prompt"
           printf '%s' '{"executionStatus":"BLOCKED","activityOutcome":"Instrumentação ainda sem amostra comercial válida.","observedFacts":["Meta com zero impressões"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":["Primeira impressão"],"strategicContractReference":{"strategistExecutionId":41,"contractVersion":"MARKET_STRATEGY_V2","contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false,"revisionReason":null},"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","expectedMetric":"Primeira impressão real","continueCriteria":"Eventos íntegros","adjustCriteria":"Divergência persistente","stopCriteria":"Gasto sem evento","recommendedAction":"Aguardar exposição e preservar a configuração atual."}' > "$answer"
           printf '%s\n' '{"usage":{"input_tokens":90,"cached_input_tokens":10,"output_tokens":25}}'
           """,
@@ -229,12 +229,18 @@ class GrowthOperatorBpmRunnerTest {
       assertThat(execution.result().path("executionStatus").asText()).isEqualTo("BLOCKED");
       assertThat(execution.usage())
           .isEqualTo(new GrowthOperatorBpmRunner.TokenUsage(90L, 10L, 25L));
+      assertThat(Files.readString(Path.of(fakeCodex + ".prompt")))
+          .isEqualTo(execution.promptSent());
+      assertThat(execution.agentPromptPart())
+          .isEqualTo(read("prompts/growth-operator/v2/agent-core.md"));
+      assertThat(execution.promptSent()).startsWith(execution.agentPromptPart() + "\n\n");
     } finally {
       Files.deleteIfExists(fakeCodex);
+      Files.deleteIfExists(Path.of(fakeCodex + ".prompt"));
     }
   }
 
-  /** Executa o contrato do PDE com planejamento segregado e sem expor outro experimento. */
+  /** Preserva instruções e escopo do plano ao transportar o contrato ao processo simulado. */
   @Test
   void shouldRunPdeCommunicationWithCommercialPlanEnvironment() throws Exception {
     Path fakeCodex = Files.createTempFile("fake-codex-hermes-plan-", ".sh");
@@ -253,7 +259,7 @@ class GrowthOperatorBpmRunnerTest {
             fi
             shift
           done
-          cat >/dev/null
+          cat > "$0.prompt"
           printf '%s' '{"executionStatus":"COMPLETED","activityOutcome":"Contrato operacional pronto para homologação.","observedFacts":["Canal autorizado no plano"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":[],"strategicContractReference":{"strategistExecutionId":41,"contractVersion":"MARKET_STRATEGY_V2","contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false,"revisionReason":null},"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","growthOperationContract":{"selectedDistributionRoute":"Abordagem individual consentida","channelExecutionBoundary":"Sem contato ou mídia antes de aprovação humana","funnelStages":["visita","checkout","compra"],"attributionPlan":"Correlacionar origem, versão e pagamento aprovado.","eventContracts":[{"eventName":"PURCHASE_COMPLETED","trigger":"Pagamento aprovado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Venda real"},{"eventName":"ACCESS_RELEASED","trigger":"Acesso liberado","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Acesso real"},{"eventName":"DELIVERY_COMPLETED","trigger":"Entrega concluída","requiredMetadata":["missionId"],"correlationKeys":["missionId"],"authoritativeSource":"PDE","commercialMeaning":"Entrega real"},{"eventName":"FIRST_USE","trigger":"Primeiro uso","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Uso real"},{"eventName":"REFUND_CONFIRMED","trigger":"Reembolso confirmado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Receita revertida"}],"instrumentationGate":"Todos os eventos canônicos persistidos e correlacionados.","checkoutAndAccessVerification":"Validar checkout e acesso no preflight segregado.","samplePlan":"Quinze contatos qualificados após autorização.","testTrafficSegregation":"mh_test","refundGuardrail":"Qualquer reembolso pausa a primeira coorte.","consentAndPrivacy":"Somente contato consentido e dados mínimos.","humanApprovalGates":["contato","mídia","gasto"]},"expectedMetric":"Três vendas","continueCriteria":"Compromisso comercial","adjustCriteria":"Sem checkout","stopCriteria":"Sem entrega","recommendedAction":"Homologar instrumentação antes de ativar distribuição."}' > "$answer"
           printf '%s\n' '{"usage":{"input_tokens":110,"cached_input_tokens":20,"output_tokens":35}}'
           """,
@@ -284,8 +290,14 @@ class GrowthOperatorBpmRunnerTest {
           .contains("Abordagem individual");
       assertThat(execution.usage())
           .isEqualTo(new GrowthOperatorBpmRunner.TokenUsage(110L, 20L, 35L));
+      assertThat(Files.readString(Path.of(fakeCodex + ".prompt")))
+          .isEqualTo(execution.promptSent());
+      assertThat(execution.agentPromptPart())
+          .isEqualTo(read("prompts/growth-operator/v2/agent-core.md"));
+      assertThat(execution.promptSent()).startsWith(execution.agentPromptPart() + "\n\n");
     } finally {
       Files.deleteIfExists(fakeCodex);
+      Files.deleteIfExists(Path.of(fakeCodex + ".prompt"));
     }
   }
 
@@ -348,7 +360,7 @@ class GrowthOperatorBpmRunnerTest {
     assertThat(prompt)
         .contains(
             "exatamente três alternativas",
-            "Têmis transforma a estratégia",
+            "Íris transforma a estratégia",
             "não devolva campos",
             "instrumentação",
             "eventContracts",

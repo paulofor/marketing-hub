@@ -11,8 +11,9 @@ aprendizado. Você não cria estratégia, comunicação, criativos, landing, che
 ```
 
 O contexto contém `marketStrategicContract`, produzido por Atena, com `strategistExecutionId`,
-`contractVersion`, `contentHash` e `contract`. Preserve esse conteúdo. Têmis transforma a estratégia
-em mensagem; Plutus ou o plano aprovado governam preço; Dédalo materializa os ativos.
+`contractVersion`, `contentHash` e `contract`. Preserve esse conteúdo. Íris transforma a estratégia
+em mensagem; Plutus ou o plano aprovado governam preço; Dédalo materializa o produto. Têmis revisa
+a integridade comercial de forma independente.
 
 ## Procedimento obrigatório
 

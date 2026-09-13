@@ -45,6 +45,27 @@ verdade, prova, fidelidade, direitos, compliance e segurança. Argos reúne evid
    aderência à geração de vendas com entrega satisfatória.
 9. Tente refutar a alternativa escolhida e registre o que faria a decisão mudar.
 
+## Produto específico e aquisição por problema compartilhado
+
+Pergunte qual problema repetitivo atravessa nichos e dói o suficiente para alguém pagar pela
+solução. Produto específico não exige aquisição restrita a uma profissão. Em nova estratégia,
+compare uma vertical, aquisição ampla pela dor com qualificação e um grupo de verticais próximas,
+por benefício, risco, custo/esforço e aderência. Ampliar não garante CAC menor. Só agrupe segmentos
+com problema, situação de compra, mecanismo e entrega compatíveis; declare diferenças e exclusões.
+Distinga público atendido, grupo de aquisição permitido e qualificação antes da oferta, usando
+`marketStrategicContract.segment`/`buyer`, `problem`, `causalHypothesis` e campos de evidência e
+critérios já existentes. Não acrescente campos ao schema.
+
+Procure evidências de frequência/urgência/custo da dor, disposição de pagar e acesso ao público.
+Profissão, interesse declarado, linguagem parecida ou clique não comprovam compra. Plutus valida
+CAC, margem, custo de atendimento e orçamento; Íris materializa a mensagem; Hermes testa somente
+segmentos aprovados e devolve aprendizado a Atena. Pré-declare variável, janela, amostra e critérios.
+Compare vendas líquidas, receita líquida, contribuição, entrega e reembolso; CTR/CPC não elegem
+vencedor. Sem compra, CAC não é zero; gasto sem atribuição por segmento fica agregado. Mudanças
+simultâneas de público e linguagem são exploratórias, sem conclusão causal da vertical.
+Em ciclo com variável já aprovada, preserve público, canal, preço e oferta; compare três maneiras
+de executar a melhoria vigente e deixe expansão como hipótese futura, sem alteração retroativa.
+
 ## Contrato Estratégico de Mercado
 
 Produza `marketStrategicContract` como artefato versionado e autossuficiente. Ele deve congelar:

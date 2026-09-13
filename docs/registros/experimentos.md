@@ -7222,3 +7222,21 @@ financeiro e continuidade após o teto, com pausa coerente e sem autorizações 
 
 Não houve gravação produtiva, render pago, campanha, venda ou receita simulada no
 ambiente real. Matriz e evidências: `docs/homologacao/vega-proxima-acao-financeiro-v1.md`.
+
+## 2026-09-13 — Diretriz de aquisição por problema compartilhado
+
+- Orientação do usuário incorporada localmente ao cânone e aos prompts ativos de Atena, Íris e
+  Hermes: produto específico pode atrair compradores por uma dor comum, com qualificação antes
+  da oferta e entrega compatível. A economia e os limites permanecem sob Plutus.
+- Comparar uma vertical, aquisição ampla pela dor e grupo de verticais próximas. O exemplo de
+  horários vazios em negócios com agenda é hipótese ilustrativa, sem campanha ou venda medida.
+- Julgar por vendas líquidas, receita, CAC, contribuição e entrega; cliques não elegem vencedor.
+  Gasto sem atribuição por segmento permanece agregado. Novas verticais exigem decisão de Atena;
+  os contratos e as variáveis já aprovados em ciclos vigentes permanecem preservados.
+- Alinhadas duas instruções conflitantes de Hermes: mensagem pertence a Íris e falta de medição
+  não equivale a zero. Testes existentes reforçados para comprovar instrução integral no executor
+  e na auditoria, além dos limites e hashes já protegidos.
+- Uma rodada local: 93 testes aprovados, zero falhas/erros e um teste opcional de integração de
+  Vega ignorado por ausência da entrada específica. Nenhuma homologação produtiva, execução paga,
+  alteração comercial, commit, PR ou publicação nesta tarefa.
+- [Decisões, matriz, limites e evidências](../homologacao/aquisicao-problema-compartilhado-v1.md).

@@ -1,0 +1,260 @@
+{
+  "observedAt": "2026-09-13T18:44:12.611339+00:00",
+  "scope": {
+    "productId": 4,
+    "chainId": 14,
+    "processDefinitionId": 75,
+    "processVersion": 6,
+    "learningCycleId": 2,
+    "experimentId": 92,
+    "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"
+  },
+  "sourceCommit": "ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1",
+  "interventionId": "4f22ad2cf2ce4d839bb5d34b1a6f7ce9",
+  "deployment": {
+    "status": "APPLIED",
+    "commit": "ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1",
+    "image": "marketinghub-video-management:ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1",
+    "imageId": "sha256:4d804f8bf3f8232f20853a9e2711b8074780b70eebe73eb888f93fa3d1ffddc7",
+    "sandboxImageId": "sha256:b8f0ad1e8091ccd4bb41d1ab53e2bda0877794c9cd7516ebae43bc2dcb9e3e6a",
+    "contentVerified": "all RootFS layers, effective Config, architecture, OS and revision",
+    "previousImage": "marketinghub-video-management:fcb5defca6c8e3c9873d7a519942935f7c916692",
+    "previousImageId": "sha256:b32638e22c9035929cc516a58c150b9ac278b4734d246dc533efe942338fbcc2",
+    "rollbackImage": "marketinghub-video-management-rollback:vega-ad982590c5ca",
+    "health": "healthy",
+    "composeSha256": "977fb6fdd6024121a78d8ede2acb7def08b192ceee96ebc69e3d21753f832562",
+    "observedAt": "2026-09-13T18:38:46Z"
+  },
+  "preflightHistory": [
+    {
+      "id": 5,
+      "video_production_cycle_id": 12,
+      "status": "BLOCKED",
+      "router_config_id": null,
+      "quota_type": null,
+      "payload_sha256": null,
+      "estimated_credits": null,
+      "estimated_cost_usd": null,
+      "failure_code": "PROVIDER_ROUTER_CONFIG_MISSING",
+      "observed_at": "2026-09-13T01:07:15",
+      "video_project_id": 4,
+      "product_id": 4,
+      "experiment_id": 92,
+      "cycle_status": "PROVIDER_PREFLIGHT_ONLY_BLOCKED",
+      "known_cost_usd": 0.0,
+      "sales_video_job_id": null,
+      "agent_task_id": null
+    },
+    {
+      "id": 6,
+      "video_production_cycle_id": 13,
+      "status": "BLOCKED",
+      "router_config_id": null,
+      "quota_type": null,
+      "payload_sha256": null,
+      "estimated_credits": null,
+      "estimated_cost_usd": null,
+      "failure_code": "PROVIDER_ROUTER_CONFIG_MISSING",
+      "observed_at": "2026-09-13T01:07:46",
+      "video_project_id": 5,
+      "product_id": 4,
+      "experiment_id": 92,
+      "cycle_status": "PROVIDER_PREFLIGHT_ONLY_BLOCKED",
+      "known_cost_usd": 0.0,
+      "sales_video_job_id": null,
+      "agent_task_id": null
+    },
+    {
+      "id": 7,
+      "video_production_cycle_id": 14,
+      "status": "BLOCKED",
+      "router_config_id": null,
+      "quota_type": null,
+      "payload_sha256": null,
+      "estimated_credits": null,
+      "estimated_cost_usd": null,
+      "failure_code": "PROVIDER_NO_ELIGIBLE_MODEL",
+      "observed_at": "2026-09-13T17:34:17",
+      "video_project_id": 4,
+      "product_id": 4,
+      "experiment_id": 92,
+      "cycle_status": "PROVIDER_PREFLIGHT_ONLY_BLOCKED",
+      "known_cost_usd": 0.0,
+      "sales_video_job_id": null,
+      "agent_task_id": null
+    },
+    {
+      "id": 8,
+      "video_production_cycle_id": 15,
+      "status": "READY",
+      "router_config_id": "marketing-hub-campaign-final-v1",
+      "quota_type": "OBJECT",
+      "payload_sha256": "5112866bae5d782ceb11c5cfc8b0ac6ae3d1a42e881514d00f0e94371346bc60",
+      "estimated_credits": 180.0,
+      "estimated_cost_usd": 1.8,
+      "failure_code": null,
+      "observed_at": "2026-09-13T18:40:06",
+      "video_project_id": 4,
+      "product_id": 4,
+      "experiment_id": 92,
+      "cycle_status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "known_cost_usd": 0.0,
+      "sales_video_job_id": null,
+      "agent_task_id": null
+    },
+    {
+      "id": 9,
+      "video_production_cycle_id": 16,
+      "status": "READY",
+      "router_config_id": "marketing-hub-campaign-final-v1",
+      "quota_type": "OBJECT",
+      "payload_sha256": "e894adab28bc7dc6afc7ae34341e75d727c4dfa65479950541378f45ef61cdde",
+      "estimated_credits": 180.0,
+      "estimated_cost_usd": 1.8,
+      "failure_code": null,
+      "observed_at": "2026-09-13T18:41:07",
+      "video_project_id": 5,
+      "product_id": 4,
+      "experiment_id": 92,
+      "cycle_status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "known_cost_usd": 0.0,
+      "sales_video_job_id": null,
+      "agent_task_id": null
+    }
+  ],
+  "providerAccount": {
+    "account_key": "RUNWAY_PRIMARY",
+    "official_balance_credits": 1372.0,
+    "reserved_credits": 0.0,
+    "snapshot_status": "READY"
+  },
+  "videoJobsForProfiles59And60": 0,
+  "browserVerification": [
+    {
+      "device": "desktop",
+      "project": 4,
+      "cycle": 15,
+      "preflight": 8,
+      "status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "errors": []
+    },
+    {
+      "device": "desktop",
+      "project": 5,
+      "cycle": 16,
+      "preflight": 9,
+      "status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "errors": []
+    },
+    {
+      "device": "iphone",
+      "project": 4,
+      "cycle": 15,
+      "preflight": 8,
+      "status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "errors": []
+    },
+    {
+      "device": "iphone",
+      "project": 5,
+      "cycle": 16,
+      "preflight": 9,
+      "status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "errors": []
+    },
+    {
+      "device": "pixel",
+      "project": 4,
+      "cycle": 15,
+      "preflight": 8,
+      "status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "errors": []
+    },
+    {
+      "device": "pixel",
+      "project": 5,
+      "cycle": 16,
+      "preflight": 9,
+      "status": "PROVIDER_PREFLIGHT_ONLY_COMPLETED",
+      "errors": []
+    }
+  ],
+  "processStatus": {
+    "status": "WAITING_ACTIVITY",
+    "completedActivities": 0,
+    "remainingActivities": 4,
+    "currentActivityId": "learningCycle",
+    "reason": "Ciclo #2 · experimento #92 · Produzir vídeo do criativo de campanha. Retorno registrado: Protótipo, validação multiagente e aprovação do PDE · atividade prototypeCorrection.",
+    "sourceReference": "experiment:92"
+  },
+  "localRounds": [
+    {
+      "name": "gen45callback1",
+      "counts": {
+        "backend": {
+          "tests": 254,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "worker": {
+          "tests": 160,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "frontendTests": 39,
+      "backendActualCallback": "READY persists; unknown quota blocks; legacy array rejected; no reservation",
+      "image": {
+        "classesMatched": 133,
+        "promptMatched": true,
+        "jarSha256": "e512e2befe7c51872b2d9ab40bc46d410bcfbe7d9d85c69e9c173b4453e2ba9d"
+      }
+    },
+    {
+      "name": "gen45callback2",
+      "counts": {
+        "backend": {
+          "tests": 254,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "worker": {
+          "tests": 160,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "frontendTests": 39,
+      "backendActualCallback": "READY persists; unknown quota blocks; legacy array rejected; no reservation",
+      "image": {
+        "classesMatched": 133,
+        "promptMatched": true,
+        "jarSha256": "e512e2befe7c51872b2d9ab40bc46d410bcfbe7d9d85c69e9c173b4453e2ba9d"
+      }
+    }
+  ],
+  "apolloOperationalControl": {
+    "temporarilyPaused": true,
+    "restored": {
+      "agentId": 8,
+      "agentKey": "videomaker",
+      "automaticExecutionEnabled": true,
+      "automaticExecutionStatus": "PLAY",
+      "changedAt": "2026-09-13T18:38:53.792515892Z",
+      "changedBy": "marketing-hub-admin"
+    }
+  },
+  "publisherProtection": {
+    "phase": "AWAITING_MERGE",
+    "previouslyActivePublishers": 4,
+    "automaticResume": {
+      "validated_commit": "ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1",
+      "evidence": "Vega produto 4 processo 75/v6 ciclo 2 experimento 92: gen45callback1 e gen45callback2 com 451 testes cada, callback da imagem validado pelo service real do backend; 133 classes e prompt conferidos; projetos 4/5 preflights 8/9 READY via UI e MCP; zero jobs/reservas; desktop iPhone Pixel verificados; Apolo restaurado PLAY. docs/homologacao/vega-runway-contrato-gen45-v1.md e recibo JSON versionado. Processo comercial WAITING_ACTIVITY 0/4, sem geração paga.",
+      "prepared_at": "2026-09-13T18:44:22.623059+00:00"
+    }
+  }
+}

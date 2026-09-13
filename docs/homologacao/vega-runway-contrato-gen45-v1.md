@@ -94,8 +94,8 @@ Isso é estimativa dos clipes, não custo total nem aprovação da produção.
 O catálogo persistido confirma modelo ativo e gates técnicos/econômicos
 verificados. Não houve geração nem reserva financeira.
 
-Aplicação do complemento de quotas e confirmação final pela tela ainda
-pendentes neste registro de revisão local. O processo comercial não foi concluído.
+Complemento aplicado e verificado conforme encerramento abaixo. O processo
+comercial não foi concluído.
 
 
 ## Complemento: contrato real do callback
@@ -121,7 +121,7 @@ persistência simulada. Confere sucesso, custo, ausência de reserva, preservaç
 do bloqueio de quota e rejeição do array legado. A matriz completa foi reiniciada
 após essa correção. Apolo (agente 8) foi colocado em STOP pela UI às 18:21:57 UTC,
 com estado anterior PLAY registrado, somente para evitar novas tentativas do
-preflight pendente. Restaurar PLAY após aplicar e validar a correção completa.
+preflight pendente. O estado PLAY foi restaurado após aplicar e validar a correção.
 
 
 Resultado do complemento local: as duas rodadas finais `gen45callback1/2`
@@ -130,3 +130,44 @@ READY, bloqueou quota desconhecida, recusou o array legado e comprovou que o
 preflight não cria reserva. O JAR de ambas coincide com o SHA registrado acima.
 A reprovação anterior permanece em `reproduce-quota-callback.log`; o teste
 não foi satisfeito flexibilizando o validador do backend.
+
+
+## Encerramento técnico e situação comercial
+
+- Revisão aplicada: `ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1`, construída pelo
+  Dockerfile versionado. Imagem anterior preservada para rollback. As camadas,
+  configuração efetiva, arquitetura e revisão coincidem com a imagem testada;
+  o Docker remoto omite metadados vazios e por isso apresenta outro ID de imagem.
+- Apolo retomado pela UI em PLAY às 18:38:53 UTC, preservando seu estado anterior.
+- Projeto 4/anúncio: ciclo de produção 15, preflight 8, `READY`; a tentativa
+  pendente foi concluída sem criar outra. Projeto 5/demonstração: ciclo 16,
+  preflight 9, `READY`. Ambos persistidos e conferidos via MCP e UI.
+- Histórico dos preflights 5/6/7 mantido. Zero jobs nos perfis 59/60, zero tarefas
+  de agentes vinculadas a esses ciclos, custo conhecido zero e nenhuma reserva.
+  Saldo Runway observado: 1.372 créditos; reserva: zero. Os 180 créditos/US$ 1,80
+  de cada vídeo são estimativa dos clipes, não custo total nem autorização de gasto.
+- Chromium desktop, iPhone 15 Pro e Pixel 7 emulados conferiram os dois projetos,
+  sem erros JavaScript. Os subprocessos 66/62/76 preservam o retorno ao processo 75
+  com produto 4, cadeia 14 e ciclo 2.
+- Execução automática 4: `WAITING_ACTIVITY`, zero de quatro objetivos comerciais
+  concluídos. O impedimento de integração saiu do card; a etapa segue na produção
+  do anúncio. Produção e revisão sob Plutus, seleção dos ativos, homologação,
+  autorização comercial e medição continuam exigindo evidências próprias.
+- O painel do experimento 92 retornou `PDE_ANALYTICS_SLOT_REQUIRED`: não há medição
+  válida desse sucessor enquanto faltar seu slot de analytics. Os zeros dessa
+  resposta indisponível não foram interpretados como resultado comercial.
+- Intervenção `4f22ad2cf2ce4d839bb5d34b1a6f7ce9`: retomada automática preparada
+  às 18:44:22 UTC para a revisão acima, estado `AWAITING_MERGE`; os quatro
+  publicadores só retornam após comprovação da integração na main.
+  Nenhum PR, push, workflow de teste remoto ou campanha foi criado nesta solicitação.
+
+Evidência consolidada versionada: [recibo da recuperação](evidencias/vega-runway-contrato-gen45-v1.json).
+[Anúncio](http://191.252.181.168:5173/audio-video-studio/projects/4) ·
+[Demonstração](http://191.252.181.168:5173/audio-video-studio/projects/5) ·
+[Processo preservado](http://191.252.181.168:5173/products/4/value-chain-history/processes/75/activities?chainId=14&learningCycleId=2).
+
+Hipótese comercial, fora desta recuperação: priorizar a captura fiel da microação
+com roupas que a participante já possui e do recurso de salvar/retomar. Impacto
+esperado alto, esforço baixo no roteiro; validar primeiros resultados por início,
+checkouts e vendas líquidas, preservando público, preço, canal e oferta. A geração
+sintética de apoio não demonstra sozinha o diferencial de uma experiência personalizada.

@@ -41,6 +41,12 @@ class BackendCiWorkflowTest(unittest.TestCase):
         selected_tests = re.search(r"'-Dtest=([^']+)'", backend).group(1).split(",")
         self.assertIn("AgentHarnessCatalogTest", selected_tests)
 
+    def test_local_mira_matrix_checks_ci_contract_before_backend(self):
+        script = (REPO / "infra/testing/mira-communication/run-round.sh").read_text()
+        contract = script.index("run backend-ci-contract python3 scripts/test-backend-ci-workflow.py")
+        backend = script.index("run backend mvn ")
+        self.assertLess(contract, backend)
+
     def test_packages_only_after_full_suite(self):
         tests = self.workflow.index("run: mvn -B test")
         package = self.workflow.index("run: mvn -B package -DskipTests")

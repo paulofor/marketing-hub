@@ -51,7 +51,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
     properties = {
       "spring.liquibase.enabled=false",
       "spring.jpa.show-sql=false",
-      "spring.datasource.url=jdbc:h2:mem:private-product-communication-lifecycle;DB_CLOSE_DELAY=0"
+      "spring.datasource.url=jdbc:h2:mem:com.marketinghub.businessprocess.execution.service.PrivateProductCommunicationLifecycleTest-${random.uuid};DB_CLOSE_DELAY=0"
     })
 class PrivateProductCommunicationLifecycleTest {
   @Autowired private TestEntityManager em;

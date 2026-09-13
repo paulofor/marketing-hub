@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-agente-edicao-regras-explicitas-mcp",
+  "collection": "video",
+  "title": "Operar edição audiovisual por agente com regras explícitas e MCP",
+  "finding": "Reuters e CuttingRoom conectaram um servidor MCP a um editor assistido por IA que pode localizar mídia, cortar, mixar, corrigir cor, legendar e reenquadrar em linguagem natural seguindo regras editoriais definidas pelo cliente; DaVinci Resolve 21.1 reforça a mesma direção com integração de assistentes e MCP.",
+  "mechanism": "Acesso a ferramentas reais do editor transforma o LLM em orquestrador de ações de pós-produção, enquanto regras explícitas, estado do projeto e gates podem limitar o que o agente faz e tornar decisões mais auditáveis.",
+  "commercialApplication": "No Marketing Hub, separar geração de assets da pós-produção: Apolo pode operar montagem, versões, legendas e renders por ferramentas expostas ao agente, com regras de marca e claims como política e revisão independente antes da publicação.",
+  "evidenceStrength": "Forte para disponibilidade e adoção profissional do padrão porque Reuters e Blackmagic documentam integrações reais; moderada para autonomia, pois não há evidência independente de confiabilidade em projetos complexos sem supervisão.",
+  "publishedOn": "2026-09-13",
+  "validUntil": "2026-11-12",
+  "experimentHypothesis": "Um agente de edição restrito por regras explícitas e ferramentas de projeto reduzirá operações manuais e retrabalho sem aumentar violações de marca, claims ou formato em comparação com um fluxo de pós-produção sem orquestração agêntica.",
+  "risks": "O agente pode executar cortes ou renders incorretos, aplicar regras de forma errada, alterar material não autorizado ou expor dados ao provedor do assistente; usar permissões mínimas, checkpoints reversíveis, logs e aprovação humana.",
+  "limits": "As integrações têm escopo de ferramentas e planos próprios, e a capacidade de executar tarefas não prova julgamento criativo, qualidade final nem impacto comercial. O experimento deve medir erros, intervenções, tempo e custo.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-13-agente-edicao-mcp-regras.md",
+  "sourceTitle": "Edição audiovisual por agente com regras explícitas e MCP",
+  "sourceSha256": "03121993fe219f8dbd590d7c402dc65d17a348c68a655c8d8674b2ded4a98a4c"
+}

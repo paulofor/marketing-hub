@@ -1,0 +1,18 @@
+{
+  "cardKey": "coerencia-emocional-musica-cor",
+  "collection": "prazer-audio-visual",
+  "title": "Usar emoção percebida para testar coerência entre música e cor",
+  "finding": "Em 80 participantes, dimensões emocionais da música predizeram escolhas de cor mesmo após controlar tonalidade, tempo e BPM: maior prazer se associou a cores mais claras e saturadas, enquanto maior arousal se associou a cores mais escuras.",
+  "mechanism": "O padrão é compatível com uma mediação emocional das correspondências música-cor: parte da coerência crossmodal pode surgir do estado afetivo evocado pela música, em vez de uma regra fixa entre característica acústica e cor.",
+  "commercialApplication": "Em vídeo, criativos e interfaces gerados por IA, inferir valência/prazer e arousal da trilha e comparar paletas emocionalmente congruentes, neutras e incongruentes, mantendo mensagem e estrutura equivalentes.",
+  "evidenceStrength": "Média: estudo experimental com manipulação de tonalidade e andamento e 80 participantes, mas as relações emoção-cor são associativas e foram testadas principalmente com repertório clássico.",
+  "publishedOn": "2026-09-13",
+  "validUntil": "2027-03-13",
+  "experimentHypothesis": "Uma paleta visual congruente com a emoção percebida da trilha aumentará coerência e apelo estético em relação a uma paleta incongruente, sem reduzir compreensão; retenção e CTA devem ser medidos separadamente.",
+  "risks": "Transformar associações em regras universais de cor, ignorar diferenças culturais ou de gênero musical e otimizar estética às custas de legibilidade ou compreensão.",
+  "limits": "O estudo não mediu retenção, compra ou conversão e não demonstra que alterar a cor cause aumento de prazer. A emoção foi derivada de respostas textuais mapeadas para dimensões PAD.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-13-musica-cor-emocao.md",
+  "sourceTitle": "Fonte revisada — coerência emocional entre música e cor",
+  "sourceSha256": "da27c6187419c18e24a4bc14c9d1d13a3e783b0b8454b0133595b4f86c43f186"
+}

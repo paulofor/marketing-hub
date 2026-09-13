@@ -99,6 +99,15 @@ fontes diretamente dos módulos executores; o frontend não lê o repositório, 
 consulta o banco para inferi-las. Um teste de contrato deve comparar os diretórios comportamentais
 registrados com o manifesto e impedir a omissão de qualquer arquivo elegível.
 
+A homologação local que altera prompts de um executor deve validar também seus consumidores
+compartilhados no backend. Na matriz de vídeo Runway, executar o contrato do Backend CI, a suíte
+integral do backend e o empacotamento com verificação dos recursos e inicialização dos catálogos no
+JAR, antes das validações do executor e da imagem candidata. A seleção exclusiva de testes de vídeo
+não comprova a integridade do catálogo central. A inclusão, remoção ou mudança de versão de um prompt
+deve atualizar no mesmo conjunto o manifesto e preservar conteúdo, autoria e hash da fonte.
+
+Recorrência de 13/09/2026 e evidências: `docs/homologacao/actions-vega-catalogo-apolo-2026-09-13.md`.
+
 ### Controle operacional PLAY/STOP
 
 Por decisão de 2026-08-20, cada agente possui na tela `Gestão de agentes` um controle operacional

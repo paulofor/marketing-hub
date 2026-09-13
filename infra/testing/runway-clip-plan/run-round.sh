@@ -17,7 +17,11 @@ run() {
   fi
 }
 rm -rf backend/ads-service/target/surefire-reports video-management-service/target/surefire-reports
-run backend mvn -q -f backend/ads-service/pom.xml '-Dtest=SalesVideo*Test,Video*Test,ArquiteturaTest' test
+run backend-ci-contract python3 scripts/test-backend-ci-workflow.py
+run backend mvn -B -ntp -f backend/ads-service/pom.xml test
+run backend-package mvn -B -ntp -f backend/ads-service/pom.xml package -DskipTests
+run backend-package-contract python3 scripts/test-backend-packaged-resources.py
+run backend-package-integrity python3 scripts/verify-backend-packaged-resources.py
 run worker mvn -q -f video-management-service/pom.xml test
 run frontend npm --prefix frontend test -- --run src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx src/api/salesVideo
 run classpath mvn -q -f video-management-service/pom.xml dependency:build-classpath -Dmdep.outputFile=target/runway-classpath

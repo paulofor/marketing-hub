@@ -23,6 +23,8 @@ class BackendCiWorkflowTest(unittest.TestCase):
             ".github/workflows/deploy-containers.yml",
             "scripts/test-backend-ci-workflow.py",
             "infra/testing/vega-integrity-cycle/run-round.sh",
+            "infra/testing/runway-clip-plan/run-round.sh",
+            "infra/testing/runway-gen45/run-round.sh",
             "**/src/main/resources/prompts/**",
             "product-discovery-worker/prompts/**",
             "pesquisas/**",
@@ -46,6 +48,24 @@ class BackendCiWorkflowTest(unittest.TestCase):
         contract = script.index("run backend-ci-contract python3 scripts/test-backend-ci-workflow.py")
         backend = script.index("run backend mvn ")
         self.assertLess(contract, backend)
+
+    def test_local_runway_matrices_cover_full_backend_and_packaged_catalog(self):
+        script = (REPO / "infra/testing/runway-clip-plan/run-round.sh").read_text()
+        steps = [
+            "run backend-ci-contract python3 scripts/test-backend-ci-workflow.py",
+            "run backend mvn -B -ntp -f backend/ads-service/pom.xml test",
+            "run backend-package mvn -B -ntp -f backend/ads-service/pom.xml package -DskipTests",
+            "run backend-package-contract python3 scripts/test-backend-packaged-resources.py",
+            "run backend-package-integrity python3 scripts/verify-backend-packaged-resources.py",
+            "run worker mvn ",
+        ]
+        positions = [script.index(step) for step in steps]
+        self.assertEqual(positions, sorted(positions))
+        self.assertNotRegex(script, r"-Dtest=|testFailureIgnore|continue-on-error|\|\| true")
+        gen45 = (REPO / "infra/testing/runway-gen45/run-round.sh").read_text()
+        shared = gen45.index('bash infra/testing/runway-clip-plan/run-round.sh "$round"')
+        image = gen45.index("bash infra/testing/runway-gen45/verify-image.sh")
+        self.assertLess(shared, image)
 
     def test_packages_only_after_full_suite(self):
         tests = self.workflow.index("run: mvn -B test")

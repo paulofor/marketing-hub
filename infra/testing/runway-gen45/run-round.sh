@@ -9,4 +9,10 @@ round="${1:?Informe a rodada}"
 bash infra/testing/runway-clip-plan/run-round.sh "$round"
 export GEN45_EVIDENCE_DIR="$PWD/artifacts/runway-access-recovery/$round/image"
 bash infra/testing/runway-gen45/verify-image.sh
+mvn -q -f backend/ads-service/pom.xml dependency:build-classpath -Dmdep.outputFile=target/gen45-classpath
+mkdir -p "$GEN45_EVIDENCE_DIR/backend-verifier"
+javac -cp "backend/ads-service/target/classes:$(cat backend/ads-service/target/gen45-classpath)" \
+  -d "$GEN45_EVIDENCE_DIR/backend-verifier" infra/testing/runway-gen45/VerifyBackendCallback.java
+java --class-path "$GEN45_EVIDENCE_DIR/backend-verifier:backend/ads-service/target/classes:$(cat backend/ads-service/target/gen45-classpath)" \
+  com.marketinghub.salesvideo.service.providerpreflight.VerifyBackendCallback "$GEN45_EVIDENCE_DIR/result.json"
 printf 'MATRIZ GEN45 COMPLETA APROVADA: %s\n' "$round"

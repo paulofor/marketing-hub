@@ -37,6 +37,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/internal/sales-videos/autonomy/v1/cycles/91014/provider-preflight-result') {
       assert.equal(body.status, 'READY');
       assert.equal(body.estimatedCredits, 180);
+      assert.ok(!Array.isArray(JSON.parse(body.quotaSnapshotJson)));
+      assert.equal(JSON.parse(body.quotaSnapshotJson).models.length, 1);
       assert.equal(state.dryRuns.length, 2);
       assert.equal(body.payloadSha256.length, 64);
       assert.deepEqual(JSON.parse(body.executionRequestsJson), state.dryRuns.map(({ request }) => { const copy = { ...request }; delete copy.dryRun; return copy; }));

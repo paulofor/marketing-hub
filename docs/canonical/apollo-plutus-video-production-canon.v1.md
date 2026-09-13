@@ -68,6 +68,11 @@ a copy e os demais dados comerciais continuam integrais no contexto persistido d
 não precisam ser repetidos no prompt de cada tomada. Dry run e request faturável devem
 continuar idênticos, exceto por `dryRun`. O preflight comprova elegibilidade técnica,
 nunca substitui o plano da prova real, a revisão independente ou a decisão financeira.
+O callback deve serializar `quotaSnapshotJson` como objeto JSON; para o Router,
+`models` contém a lista completa de quotas por modelo, em sucessos e bloqueios
+revisáveis. Array na raiz é inválido. A homologação entre módulos deve consumir
+o resultado real do executor no validador real do backend; um mock que aceita
+qualquer callback não comprova integração.
 Regressão: [contrato Gen-4.5 de Vega](../homologacao/vega-runway-contrato-gen45-v1.md).
 
 Por decisão de 2026-09-04, `RUNWAY_PRODUCT_UGC` é a primeira rota de receita. Ela usa

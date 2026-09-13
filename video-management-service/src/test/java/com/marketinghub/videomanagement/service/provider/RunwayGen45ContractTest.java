@@ -95,6 +95,10 @@ class RunwayGen45ContractTest {
             assertThat(result.path("status").asText()).isEqualTo("READY");
             assertThat(result.path("failureCode").isNull()).isTrue();
             assertThat(result.path("estimatedCredits").asInt()).isEqualTo(180);
+            JsonNode quotas = mapper.readTree(result.path("quotaSnapshotJson").asText());
+            assertThat(quotas.isObject()).isTrue();
+            assertThat(quotas.path("models")).hasSize(1);
+            assertThat(quotas.path("models").get(0).path("requestedGenerations").asInt()).isEqualTo(2);
             assertThat(result.path("payloadSha256").asText()).hasSize(64);
             assertThat(result.path("routerConfigId").asText()).isEqualTo("qa-gen45");
             JsonNode frozen = mapper.readTree(result.path("executionRequestsJson").asText());

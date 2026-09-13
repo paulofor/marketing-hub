@@ -5219,3 +5219,10 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
   congelado, ausência de geração e bloqueio explícito de direção visual longa.
 - **Cânone e evidências:** `docs/canonical/apollo-plutus-video-production-canon.v1.md`
   e `docs/homologacao/vega-runway-contrato-gen45-v1.md`.
+
+- **Contrato de callback confirmado na mesma recuperação:** o ciclo 15/preflight 8
+  permaneceu PENDING porque o Router enviava quota como array e o backend exige
+  objeto. Product UGC já cumpria esse contrato nos preflights 2/3/4. Corrigidos
+  sucesso e bloqueio revisável no executor, com `models` dentro de objeto. A matriz
+  passa a executar o callback exato da imagem no service real do backend, além
+  dos doubles HTTP; não aceitar retorno 204 simulado como prova dessa integração.

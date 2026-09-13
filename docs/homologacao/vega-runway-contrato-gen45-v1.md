@@ -65,8 +65,8 @@ As simulações são evidência técnica, não aprovação de qualidade nem resu
 
 ## Resultado
 
-Duas rodadas completas consecutivas aprovadas: `gen45complete1` e
-`gen45complete2`. Cada uma executou 252 testes de backend (mais dois testes
+Duas rodadas finais completas consecutivas aprovadas: `gen45callback1` e
+`gen45callback2`. Cada uma executou 252 testes de backend (mais dois testes
 opcionais de navegador não habilitados nessa suíte), 160 de executor e 39 de
 frontend: **451 testes executados por rodada**, sem falhas. Além dos testes,
 passaram os contratos de duração/schema/teto, ArchUnit, conferência do diff,
@@ -75,7 +75,7 @@ em rede Docker interna sem saída para provedores.
 
 A imagem contém as mesmas 133 classes testadas, byte a byte, e o prompt
 versionado. SHA-256 do JAR:
-`754d24bc6e03443461f8b524c13b5c3bf36db5f61c9b3ae90374040ffc827ed9`.
+`e512e2befe7c51872b2d9ab40bc46d410bcfbe7d9d85c69e9c173b4453e2ba9d`.
 A configuração da simulação usa IDs 91007/91014 e slug `qa-gen45`, sem chaves,
 clientes ou receita reais. Os arquivos entram nos containers por `compose cp`,
 pois o filesystem da engine não compartilha os bind mounts da sandbox. Todas
@@ -85,7 +85,7 @@ Reprodução: construir `video-management-service/Dockerfile`, preparar o
 frontend local servido em 4173 conforme `infra/testing/runway-clip-plan`,
 exportar `GEN45_IMAGE` e `GEN45_COMPOSE_PROJECT` da sandbox e executar
 `bash infra/testing/runway-gen45/run-round.sh <rodada>`. Evidências detalhadas:
-`artifacts/runway-access-recovery/gen45complete1/` e `gen45complete2/`.
+`artifacts/runway-access-recovery/gen45callback1/` e `gen45callback2/`.
 
 Os quatro requests exatos dos projetos 4/5 foram aceitos pela API oficial em
 `dryRun: true`, HTTP 200, modelo `gen4.5`: 120 créditos para 10s e 60 para 5s,
@@ -94,5 +94,39 @@ Isso é estimativa dos clipes, não custo total nem aprovação da produção.
 O catálogo persistido confirma modelo ativo e gates técnicos/econômicos
 verificados. Não houve geração nem reserva financeira.
 
-Aplicação no executor e confirmação final pela tela ainda pendentes neste
-registro de revisão local. O processo comercial não foi concluído.
+Aplicação do complemento de quotas e confirmação final pela tela ainda
+pendentes neste registro de revisão local. O processo comercial não foi concluído.
+
+
+## Complemento: contrato real do callback
+
+O retorno produtivo do ciclo de produção 15/preflight 8 expôs uma lacuna da
+primeira matriz: o mock de backend aceitava o callback sem executar o validador
+canônico. A Runway aprovou os dois clipes, mas o backend retornou HTTP 400:
+`snapshot de quotas deve ser um objeto JSON`. O executor do Router serializava
+uma lista; Product UGC já enviava objeto. O banco confirmou quotas `OBJECT`
+nos preflights bem-sucedidos 2/3/4; não havia sucesso anterior do Router.
+
+| Alternativa | Benefício | Risco/esforço | Decisão |
+| --- | --- | --- | --- |
+| Aceitar lista e objeto no backend | Aceitaria o callback atual | Amplia contrato e consumidores sem necessidade; esforço médio | Não |
+| Normalizar lista no recebimento do backend | Compatibilidade com executor antigo | Esconde divergência de contrato; esforço médio | Não |
+| Enviar objeto `models` no executor e validar no service real | Preserva todas as quotas e o contrato existente | Mudança pequena; teste integrado obrigatório | Escolhida |
+
+O executor agora usa objeto com `models` em sucessos e bloqueios revisáveis,
+sem alterar os limites, a decisão de Plutus ou a receita Product UGC. O teste
+`VerifyBackendCallback.java` consome o callback exato produzido pela imagem e
+executa `VideoProviderFinancialPreflightService.complete`, com apenas a
+persistência simulada. Confere sucesso, custo, ausência de reserva, preservação
+do bloqueio de quota e rejeição do array legado. A matriz completa foi reiniciada
+após essa correção. Apolo (agente 8) foi colocado em STOP pela UI às 18:21:57 UTC,
+com estado anterior PLAY registrado, somente para evitar novas tentativas do
+preflight pendente. Restaurar PLAY após aplicar e validar a correção completa.
+
+
+Resultado do complemento local: as duas rodadas finais `gen45callback1/2`
+passaram incluindo o consumidor real do backend. Cada uma preservou o callback
+READY, bloqueou quota desconhecida, recusou o array legado e comprovou que o
+preflight não cria reserva. O JAR de ambas coincide com o SHA registrado acima.
+A reprovação anterior permanece em `reproduce-quota-callback.log`; o teste
+não foi satisfeito flexibilizando o validador do backend.

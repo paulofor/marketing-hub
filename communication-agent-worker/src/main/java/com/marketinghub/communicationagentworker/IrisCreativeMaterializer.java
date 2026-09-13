@@ -38,7 +38,7 @@ public class IrisCreativeMaterializer {
     this.json = json;
   }
 
-  /** Baixa uma prova aprovada para o modelo escolher um recorte dos pixels reais. */
+  /** Disponibiliza provas aprovadas mobile e desktop para escolher um recorte legível no feed. */
   public Prepared prepare(Map<String, Object> task) throws IOException {
     if (!"creative-production-approval".equals(task.get("processCode"))
         || !"nonAudiovisual".equals(task.get("activityId"))) return new Prepared(null, List.of());
@@ -50,47 +50,82 @@ public class IrisCreativeMaterializer {
       JsonNode inputs = backend.get().uri(endpoint).retrieve().body(JsonNode.class);
       if (inputs == null || !inputs.isArray() || inputs.isEmpty())
         throw new IllegalStateException("Nenhuma prova visual aprovada disponível para Íris.");
-      JsonNode selected = inputs.get(0);
-      for (JsonNode input : inputs)
-        if ("DESKTOP_1440".equals(input.path("evidence").path("deviceProfile").asText())) {
-          selected = input;
-          break;
-        }
-      JsonNode evidence = selected.path("evidence");
-      String content =
-          endpoint
-              + "/"
-              + selected.path("sourceTaskId").asLong()
-              + "/"
-              + evidence.path("id").asLong()
-              + "/content";
-      log.info(
-          "Baixando prova aprovada para Íris. taskId={} endpoint={} sha256={}",
-          taskId,
-          content,
-          evidence.path("sha256").asText());
-      byte[] bytes = backend.get().uri(content).retrieve().body(byte[].class);
-      if (bytes == null || !sha(bytes).equals(evidence.path("sha256").asText()))
-        throw new IllegalStateException("Hash da prova de Íris não corresponde ao backend.");
-      Path file = directory.resolve("source-" + evidence.path("id").asLong() + ".png");
-      Files.write(file, bytes);
-      var pixels = ImageIO.read(file.toFile());
-      if (pixels == null) throw new IllegalStateException("Origem criativa não é PNG válido.");
-      ObjectNode metadata = selected.deepCopy();
-      metadata.put("pixelWidth", pixels.getWidth());
-      metadata.put("pixelHeight", pixels.getHeight());
-      prepared.inputs().add(new Input(metadata, file));
+      for (JsonNode selected : selectSources(inputs)) {
+        JsonNode evidence = selected.path("evidence");
+        String content =
+            endpoint
+                + "/"
+                + selected.path("sourceTaskId").asLong()
+                + "/"
+                + evidence.path("id").asLong()
+                + "/content";
+        log.info(
+            "Baixando prova aprovada para Íris. taskId={} endpoint={} sha256={}",
+            taskId,
+            content,
+            evidence.path("sha256").asText());
+        byte[] bytes = backend.get().uri(content).retrieve().body(byte[].class);
+        if (bytes == null || !sha(bytes).equals(evidence.path("sha256").asText()))
+          throw new IllegalStateException("Hash da prova de Íris não corresponde ao backend.");
+        Path file = directory.resolve("source-" + evidence.path("id").asLong() + ".png");
+        Files.write(file, bytes);
+        var pixels = ImageIO.read(file.toFile());
+        if (pixels == null) throw new IllegalStateException("Origem criativa não é PNG válido.");
+        ObjectNode metadata = selected.deepCopy();
+        metadata.put("pixelWidth", pixels.getWidth());
+        metadata.put("pixelHeight", pixels.getHeight());
+        prepared.inputs().add(new Input(metadata, file));
+        log.info(
+            "Prova visual recebida por Íris. taskId={} artifactId={} bytes={}",
+            taskId,
+            evidence.path("id").asLong(),
+            bytes.length);
+      }
       task.put("approvedVisualInputs", prepared.inputs().stream().map(Input::metadata).toList());
-      log.info(
-          "Prova visual recebida por Íris. taskId={} artifactId={} bytes={}",
-          taskId,
-          evidence.path("id").asLong(),
-          bytes.length);
       return prepared;
     } catch (Exception ex) {
       log.error("Falha ao preparar fonte criativa. taskId={}", taskId, ex);
       prepared.close();
       throw ex;
+    }
+  }
+
+  /** Limita o contexto a uma prova mobile e uma desktop, sem aceitar fonte fora do contrato. */
+  private static List<JsonNode> selectSources(JsonNode inputs) {
+    JsonNode mobile = null, desktop = null;
+    for (JsonNode input : inputs) {
+      var evidence = input.path("evidence");
+      int width = evidence.path("viewportWidth").asInt();
+      String profile = evidence.path("deviceProfile").asText();
+      if (mobile == null
+          && ((width > 0 && width <= 480)
+              || profile.startsWith("IPHONE")
+              || profile.startsWith("PIXEL")
+              || profile.startsWith("MOBILE"))) mobile = input;
+      if (desktop == null && profile.startsWith("DESKTOP")) desktop = input;
+    }
+    List<JsonNode> selected = new ArrayList<>();
+    if (mobile != null) selected.add(mobile);
+    if (desktop != null && !desktop.equals(mobile)) selected.add(desktop);
+    return selected.isEmpty() ? List.of(inputs.get(0)) : List.copyOf(selected);
+  }
+
+  /** Impede enviar à revisão paga os mesmos pixels que já receberam um pedido de ajuste. */
+  private static void rejectUnchangedCorrection(
+      JsonNode context, String renderedHash, long taskId) {
+    for (var blocked : context.path("blockedActivities")) {
+      var review = blocked.path("result");
+      if (!"ADJUST".equals(review.path("decision").asText())) continue;
+      for (var audit : review.path("renderedAssetAudit"))
+        if (renderedHash.equals(audit.path("sha256").asText())) {
+          log.warn(
+              "Correção criativa repetiu peça reprovada. taskId={} reviewerTaskId={} sha256={}",
+              taskId,
+              blocked.path("taskId").asLong(),
+              renderedHash);
+          throw new IllegalStateException(
+              "A correção repetiu a imagem reprovada. Aplique os ajustes do parecer antes de solicitar nova revisão.");
+        }
     }
   }
 
@@ -137,6 +172,7 @@ public class IrisCreativeMaterializer {
                       new IllegalArgumentException(
                           "O briefing não identifica a prova visual aprovada."));
       byte[] bytes = renderer.render(spec, Files.readAllBytes(source.path()), privateValidation);
+      rejectUnchangedCorrection(context, sha(bytes), taskId);
       Path file = prepared.directory().resolve("creative-" + (++index) + ".png");
       Files.write(file, bytes);
       var body = new LinkedMultiValueMap<String, Object>();

@@ -66,6 +66,20 @@ class ProofCardRendererTest {
     Files.write(destination, output);
   }
 
+  /** Reproduz a composição com arquivos locais conferidos sem enviar artefatos de QA ao backend. */
+  @Test
+  void replaysApprovedSourceAndExportsLocalComposition() throws Exception {
+    String source = System.getProperty("creative.replay.source");
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        source != null, "Replay opcional com fonte aprovada");
+    var spec = json.readTree(Files.readString(Path.of(System.getProperty("creative.replay.spec"))));
+    byte[] rendered = renderer.render(spec, Files.readAllBytes(Path.of(source)), true);
+    var image = ImageIO.read(new ByteArrayInputStream(rendered));
+    assertThat(image.getWidth()).isEqualTo(1080);
+    assertThat(image.getHeight()).isEqualTo(1350);
+    Files.write(Path.of(System.getProperty("creative.replay.output")), rendered);
+  }
+
   /** Monta um briefing sintético curto dentro da área legível do template. */
   static ObjectNode spec() throws Exception {
     return (ObjectNode)

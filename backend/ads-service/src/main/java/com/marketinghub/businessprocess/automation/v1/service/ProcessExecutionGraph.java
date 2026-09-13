@@ -99,6 +99,16 @@ final class ProcessExecutionGraph {
                             || other.recoveryAction() != null));
   }
 
+  /** Reconhece parecer de etapa dependente ou explicitamente atendida pela correção no BPM. */
+  boolean canSupplyCorrection(String activityId, String reviewerId) {
+    if (predecessors(reviewerId, new HashSet<>()).contains(activityId)) return true;
+    var activity = nodes.get(activityId);
+    if (activity != null)
+      for (var target : activity.path("remediatesActivities"))
+        if (reviewerId.equals(target.asText())) return true;
+    return false;
+  }
+
   /** Coleta tarefas anteriores atravessando eventos e gates do grafo sem executar condições. */
   private Set<String> predecessors(String id, Set<String> visited) {
     Set<String> result = new LinkedHashSet<>();

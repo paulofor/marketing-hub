@@ -76,6 +76,26 @@ class CreativeProductionReadinessProviderTest {
         .isFalse();
   }
 
+  /** O card informa a tarefa que motivou a correção, em vez de apresentar prontidão genérica. */
+  @Test
+  void explainsWhichReviewRequiresCorrection() {
+    var process = new BusinessProcessDefinition();
+    process.setId(91064L);
+    process.setProcessCode("creative-production-approval");
+    var activity = new BusinessProcessActivityDefinition();
+    activity.setActivityId("nonAudiovisual");
+    when(predecessors.readiness(process, activity, "experiment:91092"))
+        .thenReturn(new ProductProcessActivityPredecessorReadiness(true, "Pronto"));
+    when(tasks.findFunctionalSnapshotsByProcessSince(91064L, "experiment:91092", null))
+        .thenReturn(
+            List.of(
+                snapshot(10, "nonAudiovisual", "COMPLETED", "{}"),
+                snapshot(11, "customer", "BLOCKED", "{\"decision\":\"ADJUST\"}")));
+    var readiness = provider.readiness(process, activity, new Product(), "experiment:91092");
+    assertThat(readiness.ready()).isTrue();
+    assertThat(readiness.reason()).contains("tarefa #11", "Íris", "Psique e Têmis");
+  }
+
   /** Cria somente os dados funcionais necessários à decisão, sem auditoria pesada. */
   private AgentTaskFunctionalSnapshot snapshot(
       long id, String activity, String status, String result) {

@@ -516,3 +516,14 @@ Quando existir uma playlist HLS ja publicada fora do fluxo completo de render, e
 - Apolo permanece aguardando enquanto o gate financeiro estiver pendente; Plutus aparece como responsável pela decisão do mesmo ciclo.
 - Todo novo ciclo pago deve persistir antes do gate um objetivo de aprendizado verificável e um criterio de sucesso observavel. O ledger deve ser segregado por `videoProductionCycleId`, iniciar vazio e registrar cada tentativa nova sem misturar custos historicos. Apolo deve primeiro montar com ativos existentes; somente a cena causal que continuar impedindo a qualidade pode originar novo ciclo pago.
 - Falha não recuperável do provider, saldo insuficiente, custo desconhecido ou job que já possua asset bloqueia a reconciliação automática de Apolo. Uma substituição automática pode ocorrer apenas uma vez para migrar job legado; nova tentativa exige avaliação explícita do material existente e novo gate financeiro. Montagens devem registrar duração e custo do conjunto completo, nunca apenas da última cena.
+
+## Preservação da narrativa na edição — 13/09/2026
+
+O Estúdio preserva `hookText` e `scriptText` recebidos da API ao reabrir e salvar um
+projeto. Alterar título, referências ou configuração não reescreve a copy. O gancho
+não é a dor, o canal não é o público e a métrica não é a promessa. O editor mostra
+o texto persistido e permite alteração explícita; os campos auxiliares da primeira
+redação não representam dados recuperados quando não possuem persistência própria.
+Campanhas aceitam identificador próprio, com os presets como sugestões. Produto,
+experimento, grupo e referências preservam a atribuição da versão em produção.
+Salvar narrativa não aprova qualidade do vídeo nem autoriza consumo ou publicação.

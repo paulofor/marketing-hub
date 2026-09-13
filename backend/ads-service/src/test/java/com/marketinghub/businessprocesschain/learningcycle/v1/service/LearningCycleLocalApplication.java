@@ -86,6 +86,8 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunNavigation.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunSubprocesses.class,
   com.marketinghub.businessprocess.automation.v1.service.ProcessRunGuidance.class,
+  com.marketinghub.businessprocess.automation.v1.service.ProcessRunVideoGuidance.class,
+  LearningCycleVideoPreflightFixtures.class,
   com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController.class,
   LearningCycleVideoFixtures.class,
   LearningCycleBpmLedger.class,
@@ -658,7 +660,7 @@ public class LearningCycleLocalApplication {
       return List.of(product(91001L), product(91002L));
     }
 
-    /** Limpa execuções e ciclos em uma transação, preservando a ordem das referências locais. */
+    /** Limpa execuções, ciclos e retornos simulados, preservando a ordem das referências locais. */
     @PostMapping("/fixture/reset")
     @Transactional(isolation = Isolation.READ_COMMITTED)
     Map<String, Object> reset() {
@@ -679,6 +681,7 @@ public class LearningCycleLocalApplication {
           .forEach(cycle -> cycles.deleteById(cycle.getId()));
       instances.deleteAllInBatch();
       resetExperiments();
+      LearningCycleVideoPreflightFixtures.clear();
       return Map.of("reset", true);
     }
 

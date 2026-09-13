@@ -247,6 +247,83 @@ afterEach(() => {
 });
 
 describe("AudioVideoStudioPage", () => {
+  it("preserva roteiro e gancho exatos ao salvar outra configuração do projeto", async () => {
+    let project = {
+      id: 1,
+      productId: 4,
+      experimentId: 92,
+      commercialPlanId: 3,
+      campaignKey: "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      title: "Vega v12",
+      objective: "Demonstrar o ajuste aplicável",
+      videoCategory: "COMMERCIAL_SHORT",
+      targetDurationSeconds: 15,
+      hookText: "Seu primeiro ajuste, pronto para aplicar.",
+      scriptText:
+        "Uma ocasião. O que você já tem.\nVeja seu primeiro ajuste MUSA.",
+      providerPlan: "Runway Gen-4.5 como principal",
+      status: "DRAFT",
+    };
+    (axios.get as any).mockImplementation((url: string) =>
+      Promise.resolve({
+        data: url === "/api/sales-videos/projects/1" ? project : [],
+      }),
+    );
+    (axios.patch as any).mockImplementation((_url: string, payload: any) => {
+      project = { ...project, ...payload };
+      return Promise.resolve({ data: project });
+    });
+    setupProject();
+    await screen.findByDisplayValue("Vega v12");
+    for (const title of ["Vega v12 revisado", "Vega v12 pronto"]) {
+      fireEvent.change(screen.getByLabelText(/titulo do projeto/i), {
+        target: { value: title },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /salvar continuidade/i }),
+      );
+      await screen.findByText(`Projeto atualizado: #1 - ${title}`);
+      expect(project.hookText).toBe(
+        "Seu primeiro ajuste, pronto para aplicar.",
+      );
+      expect(project.scriptText).toBe(
+        "Uma ocasião. O que você já tem.\nVeja seu primeiro ajuste MUSA.",
+      );
+      expect(project.campaignKey).toBe(
+        "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      );
+      expect(project.experimentId).toBe(92);
+    }
+  });
+
+  it("permite uma campanha própria e texto final explícito para o novo ciclo", async () => {
+    setup();
+    fireEvent.click(
+      screen.getByRole("button", { name: /musa v7 hero cinematografico/i }),
+    );
+    expect(screen.getByLabelText(/^campanha/i).tagName).toBe("INPUT");
+    fireEvent.change(screen.getByLabelText(/^campanha/i), {
+      target: { value: "vega-92-ciclo2-v12" },
+    });
+    fireEvent.change(screen.getByLabelText(/gancho do vídeo/i), {
+      target: { value: "Seu primeiro ajuste, pronto." },
+    });
+    fireEvent.change(screen.getByLabelText(/roteiro completo/i), {
+      target: { value: "Aplicar, avaliar e retomar. Sem compra ou cobrança." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /criar blueprint/i }));
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/sales-videos/projects",
+        expect.objectContaining({
+          campaignKey: "vega-92-ciclo2-v12",
+          hookText: "Seu primeiro ajuste, pronto.",
+          scriptText: "Aplicar, avaliar e retomar. Sem compra ou cobrança.",
+        }),
+      ),
+    );
+  });
+
   it("classifica os quatro planos conforme o contrato comercial da montagem", () => {
     expect(
       Array.from({ length: 4 }, (_, index) => resolveStudioSceneRole(index, 4)),

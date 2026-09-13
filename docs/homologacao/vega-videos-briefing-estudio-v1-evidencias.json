@@ -1,0 +1,175 @@
+{
+  "recordedAt": "2026-09-13T01:57:41.989786+00:00",
+  "scope": {
+    "productId": 4,
+    "chainId": 14,
+    "processDefinitionId": 75,
+    "processVersion": 6,
+    "learningCycleId": 2,
+    "experimentId": 92,
+    "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"
+  },
+  "process": {
+    "id": 4,
+    "product_id": 4,
+    "process_definition_id": 75,
+    "chain_definition_id": 14,
+    "learning_cycle_id": 2,
+    "source_reference": "experiment:92",
+    "status": "WAITING_HUMAN",
+    "reason": "A configuração de produção não foi encontrada ou não está acessível na conta do fornecedor. O responsável pela integração precisa corrigir o acesso ou a configuração antes de um novo preflight.",
+    "current_activity_id": "learningCycle",
+    "current_owner_name": "Responsável pela integração de vídeo",
+    "completed_activities": 0,
+    "remaining_activities": 4,
+    "known_cost_usd": null,
+    "cost_coverage": "NO_EXECUTIONS",
+    "last_reconciled_at": "2026-09-13T01:54:53.780237"
+  },
+  "cycle": {
+    "id": 2,
+    "product_id": 4,
+    "chain_definition_id": 14,
+    "process_definition_id": 76,
+    "experiment_id": 92,
+    "product_version": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "status": "OPEN",
+    "stage": "CAMPAIGN_VIDEO",
+    "revision": 9
+  },
+  "projects": [
+    {
+      "id": 4,
+      "product_id": 4,
+      "commercial_plan_id": 3,
+      "experiment_id": 92,
+      "campaign_key": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "strategy_role": "CAMPAIGN_QUALIFICATION",
+      "status": "DRAFT"
+    },
+    {
+      "id": 5,
+      "product_id": 4,
+      "commercial_plan_id": 3,
+      "experiment_id": 92,
+      "campaign_key": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "strategy_role": "PDE_HERO_CONVERSION",
+      "status": "DRAFT"
+    }
+  ],
+  "videoPreflights": [
+    {
+      "id": 12,
+      "video_project_id": 4,
+      "product_id": 4,
+      "experiment_id": 92,
+      "status": "PROVIDER_PREFLIGHT_ONLY_BLOCKED",
+      "sales_video_job_id": null,
+      "agent_task_id": null,
+      "known_cost_usd": 0.0,
+      "preflight_id": 5,
+      "preflight_status": "BLOCKED",
+      "failure_code": "PROVIDER_ROUTER_CONFIG_MISSING",
+      "failure_detail": "Runway respondeu HTTP 404 no preflight: {\"error\":\"Router config 'marketing-hub-campaign-final-v1' was not found or is not accessible.\",\"code\":\"router_config_not_found\"}",
+      "observed_at": "2026-09-13T01:07:15"
+    },
+    {
+      "id": 13,
+      "video_project_id": 5,
+      "product_id": 4,
+      "experiment_id": 92,
+      "status": "PROVIDER_PREFLIGHT_ONLY_BLOCKED",
+      "sales_video_job_id": null,
+      "agent_task_id": null,
+      "known_cost_usd": 0.0,
+      "preflight_id": 6,
+      "preflight_status": "BLOCKED",
+      "failure_code": "PROVIDER_ROUTER_CONFIG_MISSING",
+      "failure_detail": "Runway respondeu HTTP 404 no preflight: {\"error\":\"Router config 'marketing-hub-campaign-final-v1' was not found or is not accessible.\",\"code\":\"router_config_not_found\"}",
+      "observed_at": "2026-09-13T01:07:46"
+    }
+  ],
+  "validation": {
+    "consecutiveCompleteLocalRounds": [
+      "final2",
+      "final3"
+    ],
+    "perRound": {
+      "backendTests": 341,
+      "frontendTests": 71,
+      "financialRestGroups": 8,
+      "preflightRestGroups": 8,
+      "mysql57QueryScenarios": 9,
+      "failures": 0,
+      "skipped": 0
+    },
+    "publishedBrowser": [
+      {
+        "device": "desktop",
+        "blockedGuidance": true,
+        "progress": 0,
+        "exactProject": 4,
+        "contextAndReturn": true,
+        "apiErrors": 0,
+        "mutations": 0,
+        "pageErrors": 0
+      },
+      {
+        "device": "iphone",
+        "blockedGuidance": true,
+        "progress": 0,
+        "exactProject": 4,
+        "contextAndReturn": true,
+        "apiErrors": 0,
+        "mutations": 0,
+        "pageErrors": 0
+      },
+      {
+        "device": "pixel",
+        "blockedGuidance": true,
+        "progress": 0,
+        "exactProject": 4,
+        "contextAndReturn": true,
+        "apiErrors": 0,
+        "mutations": 0,
+        "pageErrors": 0
+      }
+    ],
+    "testedClassesMatchJar": 3941,
+    "externalResourcesMatchJar": 415
+  },
+  "images": {
+    "frontend": {
+      "sourceId": "sha256:d4a354cd43aec7c96d860bc21f33630b43759f5e985de0f64b77fd0fd8af1c1d",
+      "loadedId": "sha256:0985554bbbd61265671635fcd9c6b44fbd5f6cb9c7d03adb3b7f6e2dbd8ad445",
+      "contentSha256": "74e7fadbd3e251374a1405b6fd5ec1ed934c0254a9ed3b2cef3abb0090f1cbf1",
+      "sameLayersAndFunctionalConfig": true
+    },
+    "backend": {
+      "sourceId": "sha256:ce9647d3c1dccfb488fb24ef6fdb5f3b2985716ac513a791bf9911d8d3cec6a6",
+      "loadedId": "sha256:8b2d07b505b314c3af0f83a14c7483ff0269129c4d72bc4f4b200764aebc3bc8",
+      "contentSha256": "b6c5188b9770f698931eff6c07dc5a32e8e20dc27f14e004cd155ffb457344b5",
+      "sameLayersAndFunctionalConfig": true
+    }
+  },
+  "validatedSource": {
+    "base": "1a15c5944eca27e7556124387ade7452a71eac78",
+    "code": {
+      "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunGuidance.java": "3064fba88bbe07f2fc517e8d039cce13c385a6ba3537ce347c3994fa8c8f50eb",
+      "backend/ads-service/src/main/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunVideoGuidance.java": "6a7b5d998288c1e985d9a493578d2aa6e25352bcb056b64175aa6bf5ecbb2c90",
+      "backend/ads-service/src/main/java/com/marketinghub/repository/jpa/salesvideo/VideoProductionCycleRepository.java": "5489d26e92c7176800b93ad4b0b67cc2a8bfd74001567c26e2e4c3872e601f0e",
+      "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunGuidanceTest.java": "3c6cb8533b5ba216a85968fab22d90af45c9286874729896024529e09d8afeb0",
+      "backend/ads-service/src/test/java/com/marketinghub/businessprocess/automation/v1/service/ProcessRunVideoGuidanceTest.java": "ccd97ce82907f6fb0113fdcb53467ca5479546b10a80a7043cea884b11545f14",
+      "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleLocalApplication.java": "4d4de66c3ff5b7bb88baae03bea06750230d2b50f37189346e9917257778024f",
+      "backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleVideoPreflightFixtures.java": "9237b20c1f2777032b9d37f26499e3a9392be971d6be592bfe5da3f7e6816cb4",
+      "backend/ads-service/src/test/java/com/marketinghub/repository/jpa/salesvideo/VideoProductionCycleGuidanceQueryTest.java": "d19faae51a53a5c654c4b0a699d0c0cf1842dafe718e71726ec83231cf5f9890",
+      "frontend/e2e/video-preflight-guidance-responsive.mjs": "59777edac43878740bd26cd4843e77b14f27b89358126bb425314c15e2f30000",
+      "frontend/src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx": "50c0b7285f2ceaa5deeca4b3d7be812c30fd7d30f432c9e2bae962f87f8672fe",
+      "frontend/src/pages/audioVideoStudio/AudioVideoStudioPage.tsx": "154dfdaa30d73da0dcc4d4670a99d21c4c1ae6b921c35b4535c729281917d2e0",
+      "frontend/src/pages/product/ProductProcessAutomationPanel.test.tsx": "b1554414b3a11c2a0dd7986707d4bb6182a78e7740718683657b23634aa5464c",
+      "infra/testing/video-finance/validate-video-preflight.py": "8280a7f40f24edb3a19c6ba17f05ee1ce46c59bd78a07ed5c6e1d13ffa21c087"
+    }
+  },
+  "interventionId": "6f6602b97d734d819e32dd23fb60772d",
+  "remainingDependency": "Acesso seguro à conta Runway/configuração marketing-hub-campaign-final-v1 ou ao executor 177.153.62.107 pelo helper autorizado. Nenhuma geração paga iniciada; mídia, cobrança e publicação comercial preservam consentimentos próprios."
+}

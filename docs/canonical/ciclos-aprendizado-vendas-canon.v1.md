@@ -347,3 +347,14 @@ duas peças e suas revisões, não é um teto por vídeo.
   são conceitos distintos. O investimento deve resultar em comunicação verificável da experiência
   real; validar visitas qualificadas, primeiros resultados por início, checkout e vendas líquidas,
   sem confundir produção de vídeo com receita comprovada.
+# Orientação para bloqueio audiovisual — 13/09/2026
+
+Nas etapas CAMPAIGN_VIDEO e PDE_ENTRY_VIDEO, o processo pai deve expor o preflight
+bloqueado da última tentativa da peça e versão vigentes como intervenção necessária,
+com responsável, ação e evidência persistida. O card não deve representar essa espera
+como worker executando. A consulta usa produto, experimento, campanha correspondente
+à versão, função da peça e marco temporal da versão; ausência ou ambiguidade não
+autoriza transportar o histórico de outra peça. Uma tentativa nova ativa prevalece
+sobre a falha anterior. Leitura não grava status nem inicia consumo; o conciliador
+registra WAITING_HUMAN e o motivo. Pausa preserva o bloqueio e a auditoria. Corrigir
+uma configuração ou concluir um preflight não comprova vídeo aprovado ou venda.

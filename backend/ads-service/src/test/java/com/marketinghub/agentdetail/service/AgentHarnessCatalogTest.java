@@ -108,23 +108,34 @@ class AgentHarnessCatalogTest {
         });
   }
 
-  /**
-   * Confirma que a API entrega conteúdo integral e identidade criptográfica do arquivo original.
-   */
-  @Test
-  void exposesExactBehaviorFileContentAndIntegrity() throws IOException {
-    Path repositoryRoot = repositoryRoot();
-    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("customer-agent");
-    var core =
-        harness.behaviorFiles().stream()
-            .filter(file -> file.path().endsWith("prompts/psique/behavioral-core-v4.md"))
-            .findFirst()
-            .orElseThrow();
+  /** Confirma versão, unicidade, conteúdo e hash exatos dos prompts de Psique e Apolo na API. */
+  @ParameterizedTest
+  @CsvSource({
+    "customer-agent, v4, customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v4.md",
+    "videomaker, v1, video-management-service/src/main/resources/prompts/sales-video/runway-router-v1.md"
+  })
+  void exposesExactBehaviorFileContentAndIntegrity(String agentKey, String version, String path)
+      throws IOException, NoSuchAlgorithmException {
+    Path source = repositoryRoot().resolve(path);
+    String content = Files.readString(source);
+    String sha256 =
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(source)));
+    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey(agentKey);
 
-    assertThat(core.behaviorType()).isEqualTo("PROMPT");
-    assertThat(core.mediaType()).isEqualTo("text/markdown");
-    assertThat(core.sha256()).matches("[a-f0-9]{64}");
-    assertThat(core.content()).isEqualTo(Files.readString(repositoryRoot.resolve(core.path())));
+    assertThat(harness.behaviorFiles())
+        .filteredOn(file -> path.equals(file.path()))
+        .singleElement()
+        .satisfies(
+            file -> {
+              assertThat(file.version()).isEqualTo(version);
+              assertThat(file.behaviorType()).isEqualTo("PROMPT");
+              assertThat(file.mediaType()).isEqualTo("text/markdown");
+              assertThat(file.name()).isNotBlank();
+              assertThat(file.description()).isNotBlank();
+              assertThat(file.content()).isEqualTo(content);
+              assertThat(file.sha256()).isEqualTo(sha256);
+            });
   }
 
   /** Preserva a identidade e o conteúdo dos contratos atual e histórico de Têmis na auditoria. */
@@ -142,7 +153,8 @@ class AgentHarnessCatalogTest {
     Path source = repositoryRoot().resolve(path);
     String content = Files.readString(source);
     String sha256 =
-        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(source)));
+        HexFormat.of()
+            .formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(source)));
     var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("meta-ad-approver");
 
     assertThat(harness.behaviorFiles())

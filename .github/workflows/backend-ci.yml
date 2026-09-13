@@ -13,6 +13,8 @@ on:
       - "scripts/verify-backend-packaged-resources.py"
       - "scripts/BackendResearchPackageSmoke.java"
       - "infra/testing/vega-integrity-cycle/run-round.sh"
+      - "infra/testing/runway-clip-plan/run-round.sh"
+      - "infra/testing/runway-gen45/run-round.sh"
       - "**/src/main/resources/prompts/**"
       - "experiment-strategist-worker/src/main/resources/behavioral-science/**"
       - "product-discovery-worker/prompts/**"

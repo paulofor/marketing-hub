@@ -279,6 +279,15 @@
   na matriz do ciclo, com contrato que impede sua retirada. O smoke do JAR também inicializa
   o catálogo comportamental. Evidências e resultados em
   `docs/homologacao/actions-harness-temis-2026-09-12.md`.
+- **Recorrência em 13/09/2026:** o Backend CI `34775747406` detectou
+  `sales-video/runway-router-v1.md` fora do manifesto de Apolo; o run anterior
+  `34744400914` passara. O novo runner Gen-4.5 reutilizava uma matriz de vídeo que
+  selecionava apenas testes de vídeo e arquitetura, omitindo novamente o catálogo.
+  A correção registra o prompt com versão e finalidade, confere conteúdo/hash e
+  faz a matriz compartilhada executar toda a suíte e o empacotamento do Backend CI.
+  O contrato do CI impede reintroduzir seleção parcial e garante gatilhos para
+  alterações nos dois runners. Evidências e resultados em
+  `docs/homologacao/actions-vega-catalogo-apolo-2026-09-13.md`.
 
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 

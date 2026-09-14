@@ -1,0 +1,18 @@
+{
+  "cardKey": "interpretacao-atencao-eye-tracking",
+  "collection": "neuromarketing",
+  "title": "Atenção visual não valida compreensão",
+  "finding": "Três estudos peer-reviewed, incluindo eye-tracking por webcam com 500 participantes em uma simulação de e-commerce, mostraram que disclosures podem receber atenção visual substancial sem preservar ganhos de compreensão quando múltiplas pistas competem; o formato mais saliente também apresentou mais respostas conflitantes.",
+  "mechanism": "Captura de gaze e interpretação são etapas diferentes: um elemento pode reter o olhar por interesse, esforço ou dificuldade. Saliência visual, competição entre pistas e mensagens complexas ou negativas podem elevar atenção sem garantir codificação e recuperação corretas.",
+  "commercialApplication": "No Marketing Hub, tratar eye-tracking, mapas de atenção previstos por IA e dwell time como sinais diagnósticos, não como prova de preferência. Em anúncios, landings e formulários, combinar atenção com compreensão, lembrança e eventos reais do funil; para claims complexos, testar menos pistas concorrentes e linguagem afirmativa direta.",
+  "evidenceStrength": "Moderada a forte para a dissociação entre atenção e compreensão neste contexto: artigo peer-reviewed com dois estudos representativos nos EUA (N=300 e N=1500) e eye-tracking em e-commerce simulado (N=500). Generalização para Meta Ads e conversão comercial ainda exige teste próprio.",
+  "publishedOn": "2026-09-11",
+  "validUntil": "2027-09-11",
+  "experimentHypothesis": "Entre creative variants ou landing pages pareadas, uma versão com menos pistas concorrentes e um claim complexo expresso de forma direta melhorará compreensão correta sem piorar CTA ou qualidade do lead; métricas de gaze isoladas não predirão esse resultado de forma confiável.",
+  "risks": "Confundir atenção com preferência, remover informação material para simplificar, inferir emoção a partir de gaze ou otimizar um mapa de calor sem medir compreensão e comportamento.",
+  "limits": "O estudo trata de claims climáticos e não mediu CTR, CPL, vendas ou retenção; o eye-tracking foi por webcam. O contraste específico de respostas conflitantes entre traffic-light e controle foi p=0,085 e não deve ser tratado como significância estatística convencional.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-14-atencao-compreensao-eye-tracking.md",
+  "sourceTitle": "Fonte revisada — Atenção visual não valida compreensão",
+  "sourceSha256": "f4f996f3885af192c8078dfaa1fe428bb816b19fc627aa78c763e28b83e94323"
+}

@@ -5394,3 +5394,22 @@ Os testes `ExecutionProfileOmissionsTest`, `ExecutionProfileContextTest` e a mat
 `infra/testing/product-execution-profiles` protegem a mesma prova usada na tela e no worker,
 a composição versionada e a preservação de cadeia/ciclo/experimento. Regras e escopo em
 [product-execution-profiles-canon.v1.md](../canonical/product-execution-profiles-canon.v1.md).
+
+## LOOP-ACTIONS-IMAGE-CONTRACT-DEPENDENCIA-IMPLICITA — verificador não executa no runner
+
+- **Confirmado em 14/09/2026:** as execuções `34839660534`, `34877695049` e
+  `34888686294` falharam com `rg: command not found`. O arquivo `.env.example` já tinha
+  o modelo correto. O sucesso local dependia de uma ferramenta existente somente na
+  sandbox; o workflow não instalava suas dependências.
+- **Falha associada reproduzida localmente:** a pesquisa por modelos aposentados usava
+  o mesmo ramo para ausência de correspondências e erro técnico. Remover um diretório
+  de uma fixture fazia o scanner imprimir erro e, ainda assim, aprovar o contrato.
+- **Correção:** instalar `ripgrep`/`python3` antes dos testes e da validação; verificar
+  ferramenta disponível e diferenciar os códigos de saída do scanner. Falha de leitura
+  ou de PCRE2 bloqueia, preservando o diagnóstico técnico e os critérios originais.
+- **Prevenção:** `scripts/test-canonical-image-model.py` executa o verificador real com
+  arquivos temporários, PATH sem `rg`, erros simulados e configurações inválidas nos
+  módulos ativos. O workflow acompanha alterações nessa suíte em push e pull request.
+- **Evidências e alternativas:**
+  [homologação local](../homologacao/actions-image-model-dependencies-2026-09-14.md).
+  Correção na sandbox, sem reexecução de Actions para testar e sem publicação.

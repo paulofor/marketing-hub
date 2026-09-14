@@ -165,6 +165,7 @@ public class VideoManagementProperties {
     @Getter
     @Setter
     public static class Luma {
+        private static final String CANONICAL_IMAGE_TOOL_MODEL = "gpt-image-2.5-sunburst";
         private boolean enabled = false;
 
         /**
@@ -207,7 +208,12 @@ public class VideoManagementProperties {
         private String openAiApiKey;
         private String openAiApiKeyFile;
         private String openAiImageModel = "gpt-5.6";
-        private String openAiImageToolModel = "gpt-image-2";
+        private String openAiImageToolModel = CANONICAL_IMAGE_TOOL_MODEL;
+
+        /** Normaliza qualquer configuração antiga para o modelo visual canônico. */
+        public void setOpenAiImageToolModel(String value) {
+            openAiImageToolModel = CANONICAL_IMAGE_TOOL_MODEL;
+        }
     }
 
     /** Configura o provedor Kling para renderizações de texto ou imagem para vídeo. */

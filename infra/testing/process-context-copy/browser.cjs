@@ -249,6 +249,11 @@ async function paste(page) {
         if (aihub) {
           for (const part of [
             "Não estou conseguindo executar esse processo da tela.",
+            "O objetivo principal e mais importante é gerar VENDAS e receitas.",
+            "Product Digital Experience",
+            "Não presuma que todo PDE deva ser um webapp com IA.",
+            "Exemplo: no tipo Quartzo",
+            "não autoriza reclassificar produtos",
             "ambiente local da sandbox",
             "Pull Request executado pelo usuário",
             "Nunca use SSH",

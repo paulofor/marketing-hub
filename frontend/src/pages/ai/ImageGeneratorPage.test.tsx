@@ -27,7 +27,7 @@ vi.mock("../../api/ai/useGenerateImage", () => ({
       images: [
         {
           jobId: "img-ok",
-          model: "gpt-5.6",
+          model: "gpt-image-2.5-sunburst",
           serviceTier: "flex",
           outputFormat: "png",
           imageBase64: "abc123",
@@ -37,7 +37,7 @@ vi.mock("../../api/ai/useGenerateImage", () => ({
       ],
       failures: [
         {
-          model: "gpt-image-2",
+          model: "gpt-image-2.5-sunburst",
           message: "OpenAI recusou a geração da imagem: limite momentâneo.",
           finishedAt: "2026-07-25T00:00:01Z",
         },
@@ -83,7 +83,7 @@ vi.mock("../../api/ai/useRecentImageGenerations", () => ({
       {
         jobId: "img-old",
         batchJobId: "img-batch-old",
-        model: "gpt-image-2",
+        model: "gpt-image-2.5-sunburst",
         prompt: "Prompt persistido",
         generatedAt: "2026-08-08T10:00:00Z",
       },
@@ -110,10 +110,12 @@ describe("ImageGeneratorPage", () => {
     render(<ImageGeneratorPage />);
 
     expect(screen.getByText(/parte do lote comparativo falhou/i)).toBeTruthy();
-    expect(screen.getByText(/gpt-image-2:/i)).toBeTruthy();
+    expect(screen.getByText(/gpt-image-2\.5-sunburst:/i)).toBeTruthy();
     expect(screen.getByText(/limite momentâneo/i)).toBeTruthy();
     expect(
-      screen.getByAltText(/resultado gerado por IA com gpt-5.6/i),
+      screen.getByAltText(
+        /resultado gerado por IA com gpt-image-2\.5-sunburst/i,
+      ),
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /selecionar imagem/i }),

@@ -1,5 +1,6 @@
 package com.marketinghub.pipeline.service;
 
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.openai.OpenAiModel;
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
@@ -42,8 +43,10 @@ public class PipelineService {
       buildGeraLandingStageAliases();
   private static final String TEXT_DEFAULT_MODEL_CODE = "gpt-5.2";
   private static final String TEXT_DEFAULT_MODEL_NAME = "GPT-5.2";
-  private static final String IMAGE_DEFAULT_MODEL_CODE = "gpt-image-2";
-  private static final String IMAGE_DEFAULT_MODEL_NAME = "GPT Image 2";
+  private static final String IMAGE_DEFAULT_MODEL_CODE =
+      OpenAiImageGenerationPolicy.CANONICAL_MODEL;
+  private static final String IMAGE_DEFAULT_MODEL_NAME =
+      OpenAiImageGenerationPolicy.CANONICAL_DISPLAY_NAME;
   private static final String PRICING_MODE_FLEX = "flex";
 
   private final PipelineRepository pipelineRepository;

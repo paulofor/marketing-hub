@@ -6,10 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Responsabilidade: validar a montagem dos contratos de geração visual dos anúncios. */
 class AdImagePayloadBuilderTest {
 
     private final AdImagePayloadBuilder builder = new AdImagePayloadBuilder();
 
+    /** Garante parâmetros e copy coerentes para uma variante de dor no feed. */
     @Test
     void buildDorFeedVariant() {
         AdImagePayloadBuilder.BuildAdImagePayloadsInput input = baseInput(List.of(
@@ -30,11 +32,14 @@ class AdImagePayloadBuilderTest {
         AdImagePayloadBuilder.ImageBuildPayload payload = output.imageBuildPayloads().getFirst();
         assertThat(payload.placement()).isEqualTo("feed");
         assertThat(payload.imageParams().size()).isEqualTo("1024x1536");
+        assertThat(payload.imageParams().model()).isEqualTo("gpt-image-2.5-sunburst");
+        assertThat(payload.imageParams().quality()).isEqualTo("high");
         assertThat(payload.overlayCopy().headline()).isEqualTo("Energia em 7 dias");
         assertThat(payload.consistency().ctaMatch()).isEqualTo("Quero emagrecer com saúde");
         assertThat(payload.imagePrompt()).contains("nicho", "Instagram/Meta Ads", "foco visual único");
     }
 
+    /** Garante a adaptação da variante de resultado para stories. */
     @Test
     void buildResultadoStoriesVariant() {
         AdImagePayloadBuilder.BuildAdImagePayloadsInput input = baseInput(List.of(
@@ -57,6 +62,7 @@ class AdImagePayloadBuilderTest {
         assertThat(payload.assetId()).isEqualTo("AD-10-V2-stories");
     }
 
+    /** Garante a montagem da variante de prova no feed. */
     @Test
     void buildProvaFeedVariant() {
         AdImagePayloadBuilder.BuildAdImagePayloadsInput input = baseInput(List.of(
@@ -78,6 +84,7 @@ class AdImagePayloadBuilderTest {
         assertThat(payload.experimentMetadata().assetRole()).isEqualTo("ad-image-build");
     }
 
+    /** Bloqueia briefing visual sem copy correspondente. */
     @Test
     void blocksWhenVisualVariantDoesNotMatchCopyVariant() {
         AdImagePayloadBuilder.BuildAdImagePayloadsInput input = baseInput(List.of(
@@ -97,6 +104,7 @@ class AdImagePayloadBuilderTest {
                 .hasMessageContaining("copy correspondente");
     }
 
+    /** Exercita uma montagem completa com dados comerciais realistas. */
     @Test
     void exampleUsageWithRealisticMock() {
         AdImagePayloadBuilder.BuildAdImagePayloadsInput input = baseInput(List.of(
@@ -121,6 +129,7 @@ class AdImagePayloadBuilderTest {
         assertThat(payload.overlayCopy().headline()).isEqualTo("Energia para render no trabalho");
     }
 
+    /** Cria um contrato base compartilhado pelos cenários de teste. */
     private AdImagePayloadBuilder.BuildAdImagePayloadsInput baseInput(List<AdImagePayloadBuilder.VisualVariant> variants) {
         return new AdImagePayloadBuilder.BuildAdImagePayloadsInput(
                 new AdImagePayloadBuilder.ExperimentMetadata("10", "V1", "AD", "treatment", null),

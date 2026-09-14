@@ -50,6 +50,8 @@ public class CreativeImageClient {
     private static final int MAX_TRANSIENT_ATTEMPTS = 3;
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofMinutes(15);
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
+    private static final String CANONICAL_IMAGE_QUALITY = "high";
 
     /**
      * Monta o cliente de imagem da OpenAI com timeout e tier compatíveis com Flex.
@@ -59,7 +61,7 @@ public class CreativeImageClient {
                                CreativeImageOptimizer imageOptimizer,
                                @Value("${openai.api-key:}") String apiKey,
                                @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                               @Value("${openai.image-model:gpt-image-2}") String model,
+                               @Value("${openai.image-model:gpt-image-2.5-sunburst}") String model,
                                @Value("${openai.responses-model:gpt-5.5}") String responsesModel,
                                @Value("${openai.image-service-tier:flex}") String serviceTier,
                                @Value("${openai.image-timeout-seconds:900}") long requestTimeoutSeconds) {
@@ -191,6 +193,7 @@ public class CreativeImageClient {
         imageTool.put("type", "image_generation");
         imageTool.put("action", referenceImageUrls.isEmpty() ? "generate" : "edit");
         imageTool.put("model", model);
+        imageTool.put("quality", CANONICAL_IMAGE_QUALITY);
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", responsesModel);
@@ -235,6 +238,7 @@ public class CreativeImageClient {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("prompt", prompt);
+        payload.put("quality", CANONICAL_IMAGE_QUALITY);
         if (supportsResponseFormat(model)) {
             payload.put("response_format", "b64_json");
         }
@@ -486,17 +490,12 @@ public class CreativeImageClient {
         return Duration.ofSeconds(requestTimeoutSeconds);
     }
 
-    /**
-     * Normaliza valores de configuração vazios para padrões operacionais explícitos.
-     */
-    /** Normaliza o modelo visual e impede reativação de variantes Image 1 por ambiente. */
+    /** Normaliza o modelo visual e impede reativação de qualquer variante aposentada. */
     private String normalizeImageModel(String value) {
-        String normalized = normalizeConfig(value, "gpt-image-2");
-        return normalized.toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")
-                ? "gpt-image-2"
-                : normalized;
+        return CANONICAL_IMAGE_MODEL;
     }
 
+    /** Normaliza valores de configuração vazios para padrões operacionais explícitos. */
     private String normalizeConfig(String value, String defaultValue) {
         if (value == null || value.isBlank()) {
             return defaultValue;

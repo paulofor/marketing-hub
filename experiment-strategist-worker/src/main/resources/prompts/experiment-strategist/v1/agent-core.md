@@ -35,3 +35,13 @@ Em ciclo com melhoria já aprovada, preserve público, canal, preço, oferta e v
 compare três execuções dessa melhoria. Expansão é hipótese futura, não alteração retroativa nem
 autorização de campanha ou gasto. A ausência de vendas não impede planejar validação privada
 quando o contrato da atividade permitir; nunca equivale a validação comercial.
+
+## Handoff econômico a Plutus
+
+Descreva o resultado comprado, frequência de uso esperada, período de acesso, volume incluído e
+custos gerados pela entrega como premissas para Plutus avaliar. Em Quartzo, isso pode significar
+um pacote de imagens personalizadas e suas regenerações. Não prometa uso ilimitado oneroso sem
+envelope defensável. Peça comparação da economia por cliente e cenário conservador, incluindo
+aquisição, sem calcular preço, margem ou CAC no lugar de Plutus. Se surgir risco de perda por uso
+ou mudança de modelo, franquia ou oferta, encaminhe a hipótese para revalidação financeira pelos
+campos existentes; não transforme parecer em autorização de gasto ou em receita comprovada.

@@ -13,3 +13,12 @@ for incompatível com a contribuição, ou quando a evidência for insuficiente.
 Use `APPROVE` somente se todas as premissas mínimas tiverem valores defensáveis. A aprovação apenas
 versiona hipóteses no plano; não libera orçamento, campanha, preço público ou gasto. Retorne somente
 o JSON do schema.
+
+Em `risks` e `executiveSummary`, explicite volume incluído, período de acesso, custo acumulado de
+IA por cliente, uso intenso e retries, margem mínima proposta ou aprovada e fonte/validade das
+tarifas. `variableCostPerSaleBrl` deve cobrir a entrega completa, não apenas a primeira geração;
+deduções já incluídas não podem ser descontadas duas vezes. CAC fica separado. Comprove que a
+contribuição após CAC suporta a política de margem e os custos fixos no cenário conservador.
+Se isso não puder ser sustentado, use `REJECT` e proponha ajuste de custo, pacote/franquia ou preço
+como hipótese para o responsável, sem alterar a oferta. Ausência de vendas anteriores não invalida
+sozinha uma hipótese calculável; aprovação de premissas não comprova rentabilidade realizada.

@@ -3,6 +3,7 @@ package com.marketinghub.imagegeneration.service;
 import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationPrice;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.imagegeneration.dto.ImageGenerationModelDto;
 import com.marketinghub.imagegeneration.dto.ImageGenerationPriceDto;
 import com.marketinghub.imagegeneration.dto.ImageGenerationQualityDto;
@@ -17,8 +18,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class ImageGenerationCatalogService {
 
-  private static final String OBSOLETE_OPENAI_IMAGE_PREFIX = "gpt-image-1";
-
   private final ImageGenerationModelRepository modelRepository;
 
   /** Inicializa o catálogo com o repositório canônico de modelos. */
@@ -29,20 +28,14 @@ public class ImageGenerationCatalogService {
   /** Lista somente modelos disponíveis para novas gerações, com qualidades e preços. */
   public List<ImageGenerationModelDto> listModels() {
     return modelRepository.findAll(Sort.by(Sort.Direction.ASC, "displayName")).stream()
-        .filter(model -> !isObsolete(model))
+        .filter(this::isAvailableForNewGeneration)
         .map(this::toDto)
         .collect(Collectors.toList());
   }
 
-  /**
-   * Oculta modelos OpenAI aposentados, preservando seus registros apenas para auditoria histórica.
-   */
-  private boolean isObsolete(ImageGenerationModel model) {
-    return model.getApiModel() != null
-        && model
-            .getApiModel()
-            .toLowerCase(java.util.Locale.ROOT)
-            .startsWith(OBSOLETE_OPENAI_IMAGE_PREFIX);
+  /** Expõe somente o modelo canônico, preservando modelos anteriores apenas no histórico. */
+  private boolean isAvailableForNewGeneration(ImageGenerationModel model) {
+    return OpenAiImageGenerationPolicy.isCanonicalModel(model.getApiModel());
   }
 
   /** Converte um modelo persistido para o contrato público do catálogo. */

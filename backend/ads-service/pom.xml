@@ -131,7 +131,9 @@
         <targetPath>agent-runtime</targetPath>
         <filtering>false</filtering>
         <directory>${project.basedir}/../..</directory>
-        <includes><include>config/agents/codex-agent-health-compliance.json</include></includes>
+        <includes>
+          <include>config/agents/codex-agent-health-compliance.json</include>
+        </includes>
       </resource>
       <resource>
         <directory>${project.basedir}/src/main/resources</directory>

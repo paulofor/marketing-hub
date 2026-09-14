@@ -18,7 +18,7 @@ comunicação pode apresentá-las, mas não redesenhá-las como prova.
 
 ## Executor e modelo
 
-O executor independente é `landing-generator-agent-worker`, implantado no mesmo host dos demais módulos, com identidade exclusiva em `/opt/marketing-hub/agents/landing-generator/codex-home`. Ele executa Codex ChatGPT com `gpt-5.6-sol`, raciocínio `max`, timeout de 40 minutos, pesquisa web e sandbox `read-only`. O modelo visual permanece `gpt-image-2` e somente é acionado pelo Gerador de Imagens oficial do Marketing Hub.
+O executor independente é `landing-generator-agent-worker`, implantado no mesmo host dos demais módulos, com identidade exclusiva em `/opt/marketing-hub/agents/landing-generator/codex-home`. Ele executa Codex ChatGPT com `gpt-5.6-sol`, raciocínio `max`, timeout de 40 minutos, pesquisa web e sandbox `read-only`. O modelo visual é `gpt-image-2.5-sunburst` e somente é acionado pelo Gerador de Imagens oficial do Marketing Hub.
 
 Decisão do usuário registrada em 2026-09-08: toda chamada de Dédalo, incluindo construção,
 correção, personalização e linhagens históricas de HTML, envia `max` explicitamente. Configuração

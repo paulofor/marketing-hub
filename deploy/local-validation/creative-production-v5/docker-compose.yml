@@ -75,7 +75,7 @@ services:
       SERVER_PORT: "8098"
       LOG_FILE_NAME: /tmp/themis-image-studio.log
       OPENAI_API_KEY: ${OPENAI_API_KEY:?Defina OPENAI_API_KEY}
-      OPENAI_IMAGE_MODEL: gpt-image-2
+      OPENAI_IMAGE_MODEL: gpt-image-2.5-sunburst
       TEMIS_IMAGE_STUDIO_PENDING_LIMIT: "1"
     ports:
       - "18098:8098"

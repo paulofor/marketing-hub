@@ -214,7 +214,8 @@ class LumaRayVideoProviderTest {
         assertThat(openAiRequest.getBody().readUtf8())
                 .contains("\"service_tier\":\"flex\"")
                 .contains("\"reasoning\":{\"effort\":\"max\"}")
-                .contains("\"model\":\"gpt-image-2\"")
+                .contains("\"model\":\"gpt-image-2.5-sunburst\"")
+                .contains("\"quality\":\"high\"")
                 .contains("anti-sensualizacao");
         RecordedRequest lumaCreate = server.takeRequest();
         assertThat(lumaCreate.getPath()).isEqualTo("/v1/generations");

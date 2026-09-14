@@ -29,7 +29,7 @@ entregues pelo backend ao produtor correspondente.
 
 O backend continua sendo a autoridade exclusiva para criar a nova versão, publicar a pendência,
 controlar custo e tentativas e devolver a peça ao gate. O estúdio `iris-image-studio` materializa
-somente imagens comerciais de Íris com `gpt-image-2` em qualidade `high`; os códigos legados do
+somente imagens comerciais de Íris com `gpt-image-2.5-sunburst` em qualidade `high`; os códigos legados do
 recurso não concedem autoria a Têmis. Têmis recebe somente o ativo materializado e sua evidência para
 revisão independente.
 
@@ -69,7 +69,7 @@ O executor canônico de revisão é `meta-ad-approver-worker`. Para revisão, el
 ChatGPT em sandbox própria `read-only` e envia o parecer exclusivamente pelo callback do backend.
 Para criação, edição e retrabalho de imagens comerciais, o recurso isolado `iris-image-studio`, sob
 controle PLAY/STOP de Íris, consome as filas versionadas do backend, exige prova aprovada, usa
-`gpt-image-2` e devolve o binário e a auditoria ao backend. Íris usa também o executor independente
+`gpt-image-2.5-sunburst` e devolve o binário e a auditoria ao backend. Íris usa também o executor independente
 `communication-agent-worker` para contratos, copy, peças estruturadas e landing. Os três
 containers são construídos pelo mesmo módulo e workflow, mas ativam papéis Spring mutuamente
 exclusivos: o revisor não recebe a chave OpenAI e o Estúdio não recebe Codex, repositório, browser ou

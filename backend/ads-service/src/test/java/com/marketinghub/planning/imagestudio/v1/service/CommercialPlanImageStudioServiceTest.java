@@ -189,6 +189,28 @@ class CommercialPlanImageStudioServiceTest {
     assertThat(captor.getValue().getReferenceAssetIdsJson()).isEqualTo("[12]");
   }
 
+  /** Bloqueia callback visual de modelo aposentado antes de armazenar qualquer arquivo. */
+  @Test
+  void rejectsCompletionProducedByRetiredImageModel() {
+    CommercialPlanImageStudioJob job = job(81L, plan(2L), "producer-81");
+    job.setStatus(CommercialPlanImageStudioStatus.PROCESSING);
+    when(jobRepository.findById(81L)).thenReturn(Optional.of(job));
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    81L,
+                    "producer-81",
+                    mock(org.springframework.web.multipart.MultipartFile.class),
+                    "gpt-image-2",
+                    "{}",
+                    "{}",
+                    "{}",
+                    BigDecimal.ZERO))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("gpt-image-2.5-sunburst");
+  }
+
   /** Preserva origem e referências do próprio plano numa edição não destrutiva. */
   @Test
   void createsEditWithSourceAndReusablePurposes() {

@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.web;
 
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.dto.LeadPortalFlowDto;
 import com.marketinghub.leadportal.dto.LeadPortalImagePromptMetadataDto;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/lead-portal/image-prompts")
 public class LeadPortalImagePromptController {
 
-  private static final String DEFAULT_IMAGE_MODEL = "gpt-image-2";
+  private static final String DEFAULT_IMAGE_MODEL = OpenAiImageGenerationPolicy.CANONICAL_MODEL;
   private static final int DEFAULT_BATCH_SIZE = 6;
   private static final String DEFAULT_TEMPLATE =
 """

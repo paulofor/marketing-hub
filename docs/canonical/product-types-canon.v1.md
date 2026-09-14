@@ -6,6 +6,31 @@ Definir os tipos de produto do Marketing Hub para orientar decisoes futuras de n
 
 Este documento e a descricao canonica unica dos tipos de produto do sistema. Qualquer novo tipo, subtipo ou mudanca de regra comercial sobre tipos de produto deve ser registrado aqui antes de orientar implementacao, campanhas, experimentos ou relatorios.
 
+## Experiência, implementação e objetivo comercial — decisão de 14/09/2026
+
+Nos pedidos ao AIHUB, **PDE significa experiência de produto digital (Product Digital
+Experience)**. A implementação varia conforme o tipo de produto, o problema resolvido e
+o resultado comprado. Não é obrigatório que a experiência seja um webapp com IA: pode
+ser um gerador de imagens personalizadas, um kit digital, uma automação, uma experiência
+guiada ou uma combinação de formatos, conforme o contrato aprovado.
+
+O exemplo **Quartzo** pode oferecer geração e entrega de imagens personalizadas quando
+esse for o valor vendido. Isso não reclassifica os produtos existentes: Quartzo continua
+identificando `LOW_TICKET_DIGITAL_PRODUCT`, e o código de catálogo `PDE` continua associado
+a Opala. O uso amplo de PDE como experiência não altera códigos, vínculos ou jornadas.
+
+O objetivo principal e mais importante é **gerar VENDAS e receitas com produtos incríveis
+e comunicação eficaz**, entregando valor real ao cliente. A escolha deve comparar formatos
+viáveis por utilidade, esforço de uso, prova do resultado, custo de entrega, margem e
+capacidade de escala, seguindo `cadeia-produtos-pde-canon.v1.md`. A comunicação deve mostrar
+o que o cliente recebe e como usa, com fidelidade à entrega real.
+
+Homologar e medir a jornada pertinente ao formato escolhido. Para imagens personalizadas,
+comprovar entradas, personalização, qualidade, acesso e entrega; para outros formatos,
+comprovar seu resultado funcional. Compra, receita líquida, margem e satisfação devem ser
+medidas quando disponíveis; clique, imagem gerada ou teste aprovado não comprovam venda.
+Esta diretriz não modifica por si só ofertas, funis, versões aprovadas ou gates humanos.
+
 ## Catálogo extensível e apelidos
 
 Os tipos não são um `enum` fechado. O Marketing Hub deve manter um cadastro operacional com:

@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 @Component("temisImageStudio")
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioHealthIndicator implements HealthIndicator {
+  private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
   private final MetaAdApproverProperties properties;
 
   /** Configura a verificação com o mesmo contrato operacional usado pelo cliente de imagens. */
@@ -21,10 +22,10 @@ public class TemisImageStudioHealthIndicator implements HealthIndicator {
     this.properties = properties;
   }
 
-  /** Verifica modelo GPT Image 2 e disponibilidade da chave sem expor seu conteúdo. */
+  /** Verifica o modelo Sunburst e a disponibilidade da chave sem expor seu conteúdo. */
   @Override
   public Health health() {
-    if (!"gpt-image-2".equals(normalized(properties.getImageModel()))) {
+    if (!CANONICAL_IMAGE_MODEL.equals(normalized(properties.getImageModel()))) {
       return Health.down().withDetail("reason", "modelo_visual_invalido").build();
     }
     if (StringUtils.hasText(properties.getOpenAiApiKey())) {

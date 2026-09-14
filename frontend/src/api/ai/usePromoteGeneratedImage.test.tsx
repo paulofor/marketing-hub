@@ -32,7 +32,7 @@ describe("usePromoteGeneratedImage", () => {
       result.current.mutate({
         experimentId: 85,
         jobId: "img-1",
-        model: "gpt-image-2",
+        model: "gpt-image-2.5-sunburst",
         prompt: "Orgulho profissional",
         format: "png",
         imageBase64: "YWJj",

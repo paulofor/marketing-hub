@@ -3,6 +3,7 @@ package com.marketinghub.imagegenerator.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.imagegenerator.ImageGenerationRequest;
 import com.marketinghub.imagegenerator.dto.ImageGenerationHistoryItem;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
@@ -50,6 +51,7 @@ public class ImageGeneratorService {
   private static final Logger log = LoggerFactory.getLogger(ImageGeneratorService.class);
   private static final String SERVICE_TIER = "flex";
   private static final String OUTPUT_FORMAT = "png";
+  private static final String IMAGE_QUALITY = OpenAiImageGenerationPolicy.CANONICAL_QUALITY;
   private static final String PROMPT_TEMPLATE_PATH =
       "prompts/image-generator/user-image-generation.md";
 
@@ -79,7 +81,7 @@ public class ImageGeneratorService {
       StudioCostLedgerService costLedgerService,
       ObjectMapper objectMapper,
       @Value("${image-generator.openai.model:gpt-5.6}") String model,
-      @Value("${image-generator.openai.comparison-image-model:gpt-image-2}")
+      @Value("${image-generator.openai.comparison-image-model:gpt-image-2.5-sunburst}")
           String comparisonImageModel,
       AssetStorageService assetStorageService) {
     this.openAiWebClient = openAiWebClient;
@@ -92,7 +94,8 @@ public class ImageGeneratorService {
     this.costLedgerService = costLedgerService;
     this.objectMapper = objectMapper;
     this.model = model;
-    this.comparisonImageModel = comparisonImageModel;
+    this.comparisonImageModel =
+        OpenAiImageGenerationPolicy.normalizeToCanonicalModel(comparisonImageModel);
     this.assetStorageService = assetStorageService;
   }
 
@@ -224,10 +227,7 @@ public class ImageGeneratorService {
         HttpStatus.CONFLICT, "Slot não encontrado no manifesto de imagens da landing.");
   }
 
-  /**
-   * Gera duas imagens comparativas a partir do prompt do usuário usando Responses API com
-   * ferramenta de imagem.
-   */
+  /** Gera duas variações comparativas com o mesmo modelo visual canônico usando a Responses API. */
   public ImageGeneratorResponse generate(ImageGeneratorRequest request) {
     if (!openAiProperties.isEnabled()) {
       throw new ResponseStatusException(
@@ -239,7 +239,9 @@ public class ImageGeneratorService {
     String finalPrompt = buildPrompt(request.prompt());
     CompletableFuture<ImageGeneratorResult> defaultModelGeneration =
         CompletableFuture.supplyAsync(
-            () -> generateSingleImage(request, batchJobId, finalPrompt, model, null));
+            () ->
+                generateSingleImage(
+                    request, batchJobId, finalPrompt, comparisonImageModel, comparisonImageModel));
     CompletableFuture<ImageGeneratorResult> comparisonModelGeneration =
         CompletableFuture.supplyAsync(
             () ->
@@ -249,7 +251,7 @@ public class ImageGeneratorService {
     ImageGenerationBatchResult batchResult =
         collectGenerationResults(
             List.of(
-                new NamedGeneration(model, defaultModelGeneration),
+                new NamedGeneration(comparisonImageModel, defaultModelGeneration),
                 new NamedGeneration(comparisonImageModel, comparisonModelGeneration)));
 
     if (batchResult.images().isEmpty()) {
@@ -494,26 +496,25 @@ public class ImageGeneratorService {
    * image_generation.
    */
   Map<String, Object> buildRequestBody(String prompt) {
-    return buildRequestBody(prompt, null);
+    return buildRequestBody(prompt, comparisonImageModel);
   }
 
   /** Monta o corpo da Responses API podendo definir modelo específico na ferramenta de imagem. */
   Map<String, Object> buildRequestBody(String prompt, String imageToolModel) {
+    String selectedImageModel =
+        OpenAiImageGenerationPolicy.normalizeToCanonicalModel(imageToolModel);
     Map<String, Object> imageTool =
-        StringUtils.hasText(imageToolModel)
-            ? Map.of(
-                "type",
-                "image_generation",
-                "action",
-                "generate",
-                "model",
-                imageToolModel,
-                "output_format",
-                OUTPUT_FORMAT)
-            : Map.of(
-                "type", "image_generation",
-                "action", "generate",
-                "output_format", OUTPUT_FORMAT);
+        Map.of(
+            "type",
+            "image_generation",
+            "action",
+            "generate",
+            "model",
+            selectedImageModel,
+            "quality",
+            IMAGE_QUALITY,
+            "output_format",
+            OUTPUT_FORMAT);
     return Map.of(
         "model", model,
         "input", prompt,

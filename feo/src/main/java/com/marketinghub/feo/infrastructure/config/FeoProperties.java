@@ -3,6 +3,8 @@ package com.marketinghub.feo.infrastructure.config;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 
@@ -21,6 +23,22 @@ public record FeoProperties(
         String imageModel,
         String imageQuality,
         boolean visualAssetsEnabled) {
+
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
+    private static final String DEFAULT_IMAGE_QUALITY = "high";
+    private static final Set<String> SUPPORTED_IMAGE_QUALITIES =
+            Set.of("low", "medium", "high", "xhigh", "max", "auto");
+
+    /** Normaliza modelo e qualidade para impedir downgrade silencioso em novas execuções. */
+    public FeoProperties {
+        imageModel = CANONICAL_IMAGE_MODEL;
+        String normalizedQuality = StringUtils.hasText(imageQuality)
+                ? imageQuality.trim().toLowerCase(Locale.ROOT)
+                : DEFAULT_IMAGE_QUALITY;
+        imageQuality = SUPPORTED_IMAGE_QUALITIES.contains(normalizedQuality)
+                ? normalizedQuality
+                : DEFAULT_IMAGE_QUALITY;
+    }
 
     /**
      * Retorna o limite de pendencias protegido contra valores invalidos.

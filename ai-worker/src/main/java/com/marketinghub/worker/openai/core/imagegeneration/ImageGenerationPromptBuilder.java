@@ -14,6 +14,9 @@ import org.springframework.util.StringUtils;
 /** Responsabilidade: montar o request OpenAI da etapa imagegeneration no formato do core OpenAI. */
 public class ImageGenerationPromptBuilder implements StagePromptBuilder<ImageGenerationInput> {
 
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
+    private static final String CANONICAL_IMAGE_QUALITY = "high";
+
     private final ObjectMapper objectMapper;
     private final ImageGenerationWorkerProperties properties;
 
@@ -74,6 +77,7 @@ public class ImageGenerationPromptBuilder implements StagePromptBuilder<ImageGen
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("model", selectedModel);
+            payload.put("quality", CANONICAL_IMAGE_QUALITY);
             payload.put("images", images);
             payload.put("responseFormat", supportsResponseFormat(selectedModel) ? "b64_json" : "default");
             return objectMapper.writeValueAsString(payload);
@@ -94,13 +98,9 @@ public class ImageGenerationPromptBuilder implements StagePromptBuilder<ImageGen
         return builder.toString();
     }
 
-    /** Resolve o modelo efetivo de imagem usando o padrão configurado quando o valor está ausente. */
+    /** Resolve toda configuração antiga ou divergente para o modelo visual homologado. */
     private String resolveModel(String requestedModel) {
-        if (!StringUtils.hasText(requestedModel)
-                || requestedModel.trim().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
-            return "gpt-image-2";
-        }
-        return requestedModel.trim();
+        return CANONICAL_IMAGE_MODEL;
     }
 
     /** Indica se o modelo aceita o parâmetro explícito response_format no payload de geração. */

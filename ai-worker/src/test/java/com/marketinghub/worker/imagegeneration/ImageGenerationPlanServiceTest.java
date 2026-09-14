@@ -13,14 +13,15 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a seleção canônica do plano de geração de imagens. */
 class ImageGenerationPlanServiceTest {
 
-    /** Confirma que pacotes legados com Image 1 migram para Image 2, nunca para a ordem do catálogo. */
+    /** Confirma que pacotes legados migram para Sunburst, nunca para a ordem do catálogo. */
     @Test
     void resolvesPersistedModelBeforeCatalogFallback() {
         ImageGenerationCatalogService catalog = mock(ImageGenerationCatalogService.class);
         ImageGenerationModelDto dalle = model(4L, "dall-e-2", 9L);
         ImageGenerationModelDto legacyImage = model(1L, "gpt-image-1", 2L);
-        ImageGenerationModelDto gptImage = model(5L, "gpt-image-2", 6L);
-        when(catalog.getCatalog()).thenReturn(List.of(dalle, legacyImage, gptImage));
+        ImageGenerationModelDto previousImage = model(5L, "gpt-image-2", 6L);
+        ImageGenerationModelDto sunburst = model(7L, "gpt-image-2.5-sunburst", 8L);
+        when(catalog.getCatalog()).thenReturn(List.of(dalle, legacyImage, previousImage, sunburst));
 
         var imagePackage = new LeadPortalImagePackageClient.ImagePackage(
                 163L,
@@ -38,8 +39,8 @@ class ImageGenerationPlanServiceTest {
                 .resolvePlan(imagePackage, ImageOrientation.SQUARE);
 
         assertThat(plan).isNotNull();
-        assertThat(plan.modelId()).isEqualTo(5L);
-        assertThat(plan.apiModel()).isEqualTo("gpt-image-2");
+        assertThat(plan.modelId()).isEqualTo(7L);
+        assertThat(plan.apiModel()).isEqualTo("gpt-image-2.5-sunburst");
     }
 
     /** Monta um modelo mínimo com qualidade e preço quadrados para o cenário de seleção. */

@@ -59,7 +59,9 @@ class LeadPortalOpenAiImageClientTest {
         var result = client.generateFromPrompt("prompt", plan);
 
         assertThat(capturedPayload.get()).isNotNull();
-        assertThat(capturedPayload.get()).containsEntry("model", "gpt-image-2");
+        assertThat(capturedPayload.get())
+                .containsEntry("model", "gpt-image-2.5-sunburst")
+                .containsEntry("quality", "high");
         assertThat(capturedPayload.get()).doesNotContainKey("response_format");
         assertThat(downloaded.get()).isTrue();
         assertThat(result).isNotNull();
@@ -90,7 +92,7 @@ class LeadPortalOpenAiImageClientTest {
     }
 
     @Test
-    void includesResponseFormatForNonGptModels() throws Exception {
+    void normalizesRetiredNonGptModelsToSunburst() throws Exception {
         AtomicReference<Map<String, Object>> capturedPayload = new AtomicReference<>();
         String base64 = Base64.getEncoder().encodeToString(samplePng());
         String generationResponse = "{\"data\":[{\"b64_json\":\"" + base64 + "\"}]}";
@@ -107,7 +109,10 @@ class LeadPortalOpenAiImageClientTest {
 
         var result = client.generateFromPrompt("prompt", plan);
 
-        assertThat(capturedPayload.get()).containsEntry("response_format", "b64_json");
+        assertThat(capturedPayload.get())
+                .containsEntry("model", "gpt-image-2.5-sunburst")
+                .containsEntry("quality", "high")
+                .doesNotContainKey("response_format");
         assertThat(result).isNotNull();
         assertThat(result.extension()).isEqualTo("jpg");
         assertThat(result.content()).isNotEmpty();

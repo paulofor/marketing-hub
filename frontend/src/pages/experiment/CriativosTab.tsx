@@ -252,7 +252,9 @@ const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
   {
     label: "Modelo do Worker IA",
     source: "buildPipelineImagePrompt (base)",
-    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-image-2."],
+    markers: [
+      "Lembre-se de que o Worker AI usará o modelo gpt-image-2.5-sunburst.",
+    ],
   },
   {
     label: "Restrição de logos e rostos",
@@ -450,12 +452,12 @@ export default function CriativosTab({
     creativeGenerationStatus === "REQUESTED"
       ? "Worker AI aguardando a fila de imagens"
       : creativeGenerationStatus === "PROCESSING"
-        ? "Worker AI processando imagens com gpt-image-2"
+        ? "Worker AI processando imagens com gpt-image-2.5-sunburst"
         : creativeGenerationStatus === "FAILED"
           ? "Geração falhou; revise a causa e tente novamente"
           : creativeGenerationStatus === "TIMEOUT"
             ? "Geração excedeu o tempo operacional; tente novamente"
-            : "Worker AI processando imagens com gpt-image-2";
+            : "Worker AI processando imagens com gpt-image-2.5-sunburst";
   const pipelineButtonDisabled =
     alterationLocked ||
     pipelineRequest.isPending ||

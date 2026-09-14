@@ -1,0 +1,3 @@
+FROM mysql:5.7.44
+
+COPY src/test/resources/liquibase-mysql57/gpt-image-2-5-sunburst-baseline.sql /docker-entrypoint-initdb.d/10-baseline.sql

@@ -51,6 +51,10 @@ public class LeadPortalOpenAiImageClient {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
+    private static final String DEFAULT_IMAGE_QUALITY = "high";
+    private static final java.util.Set<String> SUPPORTED_IMAGE_QUALITIES =
+            java.util.Set.of("low", "medium", "high", "xhigh", "max", "auto");
 
     private final WebClient webClient;
     private final CreativeImageOptimizer imageOptimizer;
@@ -60,12 +64,13 @@ public class LeadPortalOpenAiImageClient {
     private final Duration batchPollInterval;
     private final Duration batchTimeout;
 
+    /** Inicializa o cliente com o modelo canônico e os limites das chamadas de imagem. */
     public LeadPortalOpenAiImageClient(
             WebClient.Builder builder,
             CreativeImageOptimizer imageOptimizer,
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            @Value("${openai.image-model:gpt-image-2}") String model,
+            @Value("${openai.image-model:gpt-image-2.5-sunburst}") String model,
             @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
             @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
         this.imageOptimizer = imageOptimizer;
@@ -84,10 +89,12 @@ public class LeadPortalOpenAiImageClient {
         }
     }
 
+    /** Retorna o modelo efetivo usado em novas gerações. */
     public String getModel() {
         return defaultModel;
     }
 
+    /** Informa se existe credencial para chamar o provedor. */
     public boolean isEnabled() {
         return enabled;
     }
@@ -120,6 +127,7 @@ public class LeadPortalOpenAiImageClient {
         return Collections.unmodifiableMap(results);
     }
 
+    /** Edita uma imagem-base usando o plano visual homologado. */
     public CreativeImageOptimizer.OptimizedImage generateFromBase(byte[] baseImage, String prompt, ImageGenerationPlan plan) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key is not configured");
@@ -143,6 +151,7 @@ public class LeadPortalOpenAiImageClient {
         return toOptimizedImage(response);
     }
 
+    /** Gera uma imagem sem base usando o plano visual homologado. */
     public CreativeImageOptimizer.OptimizedImage generateFromPrompt(String prompt, ImageGenerationPlan plan) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key is not configured");
@@ -160,10 +169,12 @@ public class LeadPortalOpenAiImageClient {
         return toOptimizedImage(response);
     }
 
+    /** Monta o payload JSON da geração direta com modelo e qualidade canônicos. */
     private Map<String, Object> buildGenerationPayload(String prompt, ImageGenerationPlan plan) {
         Map<String, Object> payload = new LinkedHashMap<>();
         String selectedModel = normalizeImageModel(plan != null ? plan.apiModel() : null);
         payload.put("model", selectedModel);
+        payload.put("quality", resolveQuality(plan));
         if (supportsResponseFormat(selectedModel)) {
             payload.put("response_format", "b64_json");
         }
@@ -216,10 +227,12 @@ public class LeadPortalOpenAiImageClient {
         return withAlpha;
     }
 
+    /** Monta o multipart da edição com modelo e qualidade canônicos. */
     private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt, ImageGenerationPlan plan) {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         String selectedModel = normalizeImageModel(plan != null ? plan.apiModel() : null);
         body.add("model", selectedModel);
+        body.add("quality", resolveQuality(plan));
         if (supportsResponseFormat(selectedModel)) {
             // We need the binary payload because the downstream optimizer expects it.
             // By default OpenAI returns URLs, so we explicitly request the base64 variant.
@@ -365,14 +378,18 @@ public class LeadPortalOpenAiImageClient {
         return candidate;
     }
 
-    /** Normaliza o modelo visual e impede reativação de variantes Image 1 por pacote ou ambiente. */
+    /** Normaliza o modelo visual e impede reativação de qualquer variante aposentada. */
     private String normalizeImageModel(String requestedModel) {
-        if (requestedModel == null
-                || requestedModel.isBlank()
-                || requestedModel.trim().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
-            return defaultModel == null || defaultModel.isBlank() ? "gpt-image-2" : defaultModel.trim();
+        return CANONICAL_IMAGE_MODEL;
+    }
+
+    /** Usa a qualidade homologada quando um pacote antigo trouxer nomenclatura incompatível. */
+    private String resolveQuality(ImageGenerationPlan plan) {
+        String requested = plan == null ? null : plan.apiQuality();
+        if (requested == null || !SUPPORTED_IMAGE_QUALITIES.contains(requested.trim().toLowerCase(Locale.ROOT))) {
+            return DEFAULT_IMAGE_QUALITY;
         }
-        return requestedModel.trim();
+        return requested.trim().toLowerCase(Locale.ROOT);
     }
 
     public record BatchPromptRequest(String customId, String prompt, ImageGenerationPlan plan) {}

@@ -1,0 +1,57 @@
+name: Canonical Image Model Contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".env.example"
+      - ".github/workflows/image-model-contract.yml"
+      - ".github/workflows/meta-ad-approver-worker-ci.yml"
+      - "scripts/validate-canonical-image-model.sh"
+      - "ai-worker/**"
+      - "backend/ads-service/src/main/**"
+      - "deploy/**"
+      - "docker-compose.yml"
+      - "feo/**"
+      - "frontend/src/**"
+      - "landing-generator-agent-worker/src/main/resources/prompts/**"
+      - "lead-portal/backend/src/main/**"
+      - "lead-portal-payments-service/**"
+      - "meta-ad-approver-worker/**"
+      - "video-management-service/**"
+  pull_request:
+    paths:
+      - ".env.example"
+      - ".github/workflows/image-model-contract.yml"
+      - ".github/workflows/meta-ad-approver-worker-ci.yml"
+      - "scripts/validate-canonical-image-model.sh"
+      - "ai-worker/**"
+      - "backend/ads-service/src/main/**"
+      - "deploy/**"
+      - "docker-compose.yml"
+      - "feo/**"
+      - "frontend/src/**"
+      - "landing-generator-agent-worker/src/main/resources/prompts/**"
+      - "lead-portal/backend/src/main/**"
+      - "lead-portal-payments-service/**"
+      - "meta-ad-approver-worker/**"
+      - "video-management-service/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-model-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validar modelo visual canônico
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v7
+      - name: Impedir regressão para modelos visuais aposentados
+        run: bash scripts/validate-canonical-image-model.sh

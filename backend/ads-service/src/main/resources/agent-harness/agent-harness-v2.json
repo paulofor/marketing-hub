@@ -795,7 +795,7 @@
           "description": "Configuração efetiva da materialização de comunicação.",
           "items": [
             { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Sessão individual de Íris sem chave OpenAI no prompt.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
-            { "key": "image-engine", "label": "Motor visual", "value": "OpenAI · gpt-image-2", "description": "Produz somente LANDING, ADS e SOCIAL apoiados em prova real aprovada.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md" },
+            { "key": "image-engine", "label": "Motor visual", "value": "OpenAI · gpt-image-2.5-sunburst", "description": "Produz somente LANDING, ADS e SOCIAL apoiados em prova real aprovada.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável e auditado por execução.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
             { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "A agente devolve artefatos pelo callback e não escreve no repositório.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentCodexRunner.java" }
           ]

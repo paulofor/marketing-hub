@@ -21,7 +21,7 @@ public class MetaAdApproverProperties {
   private String openAiBaseUrl = "https://api.openai.com/v1";
   private String openAiApiKey;
   private String openAiApiKeyFile = "/run/secrets/openai_api_key";
-  private String imageModel = "gpt-image-2";
+  private String imageModel = "gpt-image-2.5-sunburst";
   private Duration imageTimeout = Duration.ofMinutes(3);
   private int imageStudioPendingLimit = 1;
 

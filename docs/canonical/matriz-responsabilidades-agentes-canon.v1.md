@@ -47,6 +47,10 @@ O fluxo canônico é:
   priorizá-las, escolher posicionamento, oferta, formato PDE ou canal; essa passagem continua sendo
   decisão exclusiva de Atena.
 - Plutus valida a viabilidade econômica sem reescrever a proposta de valor.
+- Plutus reavalia margem e custo total de uso ao mudar modelo, tarifa, preço, volume incluído ou
+  consumo observado. Atena entrega a hipótese; Dédalo comprova limites e instrumentação; Íris
+  comunica a franquia real; Hermes devolve desvios. Seguir `financial-agent-canon.v1.md`, sem
+  transferir coordenação ao worker nem permitir que o agente autorize venda, gasto ou excedente.
 - Dédalo materializa a experiência usada depois da compra e suas provas reais.
 - Íris transforma estratégia e produto em comunicação pré-compra; Apolo materializa vídeo e áudio
   a partir do briefing aprovado.

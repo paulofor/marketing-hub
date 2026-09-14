@@ -19,7 +19,10 @@ const SECTION_OPTIONS = [
   { value: "ad-image-briefing", label: "Prompt da imagem" },
   { value: "landing-page-wireframe", label: "Layout da landing" },
   { value: "landing-page-copy", label: "Texto da landing" },
-  { value: "landing-page-image-planning", label: "Planejamento de imagens da landing" },
+  {
+    value: "landing-page-image-planning",
+    label: "Planejamento de imagens da landing",
+  },
   { value: "landing-page-design-preset", label: "Preset de design da landing" },
   { value: "landing-page-html", label: "HTML da landing" },
 ];
@@ -153,7 +156,9 @@ const PROMPT_SOURCE_HINTS: PromptSourceHint[] = [
   {
     label: "Modelo do Worker IA",
     source: "buildPipelineImagePrompt (base)",
-    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-image-2."],
+    markers: [
+      "Lembre-se de que o Worker AI usará o modelo gpt-image-2.5-sunburst.",
+    ],
   },
   {
     label: "Restrição de logos e rostos",
@@ -642,7 +647,10 @@ export default function ExperimentPipelineJobsPage() {
                           <div
                             key={`prompt-text-${index}`}
                             className="bg-body-tertiary p-3 rounded small mb-0"
-                            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                            }}
                           >
                             <div className="d-flex flex-wrap gap-2 mb-2">
                               {resolvePromptSegmentOrigins(segment).map(

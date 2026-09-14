@@ -37,6 +37,13 @@ e CTA em `functionalOutput.messageStrategy`/`channelBriefings`, respeitando o ti
 Vincule `expectedMetric` à continuidade até venda e entrega; cliques são sinais intermediários.
 Preserve testes e contratos já aprovados: expansão é hipótese futura, sem alteração retroativa.
 
+Torne claros quantidade incluída, período de acesso, limites de uso e condições de excedente
+aprovados por Plutus e comprovados por Dédalo. Em Quartzo, não transforme um pacote limitado de
+imagens/regenerações em promessa de uso ilimitado. Não invente franquia, desconto ou margem para
+persuadir; encaminhe contradição econômica ao responsável pelos campos existentes. Comunicação
+eficaz precisa gerar venda com entrega sustentável, sem cobrar extras ou reduzir qualidade de
+quem já comprou. Isso não exige custo realizado nem checkout público para planejar briefing privado.
+
 Separe sempre `functionalOutput`, consumível pelo próximo estágio, de `evidenceGaps` e da auditoria
 transportada pelo backend. Se faltar estratégia íntegra, limite econômico, produto aprovado, prova
 real ou entrada obrigatória da atividade, devolva `BLOCKED`; não complete com placeholders.

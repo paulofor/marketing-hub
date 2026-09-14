@@ -34,6 +34,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class FrameworkImageOpenAiBatchClient {
     private static final Logger log = LoggerFactory.getLogger(FrameworkImageOpenAiBatchClient.class);
     private static final String IMAGE_GENERATION_ENDPOINT = "/images/generations";
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
+    private static final String CANONICAL_IMAGE_QUALITY = "high";
     private static final String FLEX_EXECUTION_ID = "flex";
     private static final int DEFAULT_MAX_IN_MEMORY_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
@@ -47,14 +49,15 @@ public class FrameworkImageOpenAiBatchClient {
     private final Duration batchTimeout;
     private final int maxInMemorySizeBytes;
 
+    /** Inicializa o cliente com o modelo visual canônico e os limites operacionais configurados. */
     public FrameworkImageOpenAiBatchClient(WebClient.Builder builder,
                                            @Value("${openai.api-key:}") String apiKey,
                                            @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                           @Value("${openai.image-model:gpt-image-2}") String defaultModel,
+                                           @Value("${openai.image-model:gpt-image-2.5-sunburst}") String defaultModel,
                                            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes,
                                            @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
                                            @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
-        this.defaultModel = defaultModel;
+        this.defaultModel = normalizeImageModel(defaultModel);
         this.enabled = StringUtils.hasText(apiKey);
         this.maxInMemorySizeBytes = normalizeMaxInMemorySize(maxInMemorySizeBytes);
         WebClient.Builder clientBuilder = builder.clone()
@@ -122,17 +125,19 @@ public class FrameworkImageOpenAiBatchClient {
     }
 
     /** Monta o payload da chamada direta de geração de imagem para a OpenAI. */
-    private Map<String, Object> buildGenerationPayload(FrameworkImageJobDto job) {
+    Map<String, Object> buildGenerationPayload(FrameworkImageJobDto job) {
         Map<String, Object> payload = new LinkedHashMap<>();
         String selectedModel = resolveModel(job.model());
         payload.put("model", selectedModel);
         payload.put("prompt", job.prompt());
+        payload.put("quality", CANONICAL_IMAGE_QUALITY);
         if (supportsResponseFormat(selectedModel)) {
             payload.put("response_format", "b64_json");
         }
         return payload;
     }
 
+    /** Mantém o buffer positivo ou aplica o limite seguro padrão. */
     private int normalizeMaxInMemorySize(int configuredValue) {
         if (configuredValue > 0) {
             return configuredValue;
@@ -142,6 +147,7 @@ public class FrameworkImageOpenAiBatchClient {
         return DEFAULT_MAX_IN_MEMORY_SIZE_BYTES;
     }
 
+    /** Decodifica o binário base64 retornado pela API de imagens. */
     private byte[] decodeBase64(String base64) {
         if (!StringUtils.hasText(base64)) {
             return null;
@@ -153,6 +159,7 @@ public class FrameworkImageOpenAiBatchClient {
         }
     }
 
+    /** Substitui durações ausentes ou inválidas pelo valor operacional seguro. */
     private Duration normalizeDuration(Duration candidate, Duration fallback) {
         if (candidate == null || candidate.isNegative() || candidate.isZero()) {
             return fallback;
@@ -160,19 +167,20 @@ public class FrameworkImageOpenAiBatchClient {
         return candidate;
     }
 
+    /** Impede que jobs antigos ou configuração externa reativem um modelo visual aposentado. */
     private String resolveModel(String requestedModel) {
-        String normalizedDefaultModel = StringUtils.hasText(defaultModel) ? defaultModel.trim() : "gpt-image-2";
-        if (!StringUtils.hasText(requestedModel)) {
-            return normalizedDefaultModel;
-        }
-
-        String trimmed = requestedModel.trim();
-        if (trimmed.toLowerCase(Locale.ROOT).startsWith("gpt-image-1")) {
-            return normalizedDefaultModel;
-        }
-        return trimmed;
+        return CANONICAL_IMAGE_MODEL.equalsIgnoreCase(
+                StringUtils.hasText(requestedModel) ? requestedModel.trim() : "")
+                ? CANONICAL_IMAGE_MODEL
+                : defaultModel;
     }
 
+    /** Normaliza qualquer configuração para o único modelo homologado para novas execuções. */
+    private String normalizeImageModel(String configuredModel) {
+        return CANONICAL_IMAGE_MODEL;
+    }
+
+    /** Indica se o modelo aceita solicitar explicitamente o formato de resposta legado. */
     private boolean supportsResponseFormat(String selectedModel) {
         if (!StringUtils.hasText(selectedModel)) {
             return true;
@@ -180,6 +188,7 @@ public class FrameworkImageOpenAiBatchClient {
         return !selectedModel.toLowerCase(Locale.ROOT).startsWith("gpt-image-");
     }
 
+    /** Responsabilidade: transportar o resultado auditável de uma geração visual do framework. */
     public record FrameworkImageBatchResult(UUID jobId,
                                             String batchId,
                                             String model,
@@ -188,6 +197,7 @@ public class FrameworkImageOpenAiBatchClient {
                                             String imageUrl,
                                             boolean success,
                                             String errorMessage) {
+        /** Cria um resultado concluído com imagem ou URL retornada. */
         public static FrameworkImageBatchResult success(UUID jobId,
                                                         String batchId,
                                                         String model,
@@ -197,14 +207,17 @@ public class FrameworkImageOpenAiBatchClient {
             return new FrameworkImageBatchResult(jobId, batchId, model, prompt, imageContent, imageUrl, true, null);
         }
 
+        /** Cria um resultado de falha sem fabricar conteúdo visual. */
         public static FrameworkImageBatchResult failure(UUID jobId, String batchId, String errorMessage) {
             return new FrameworkImageBatchResult(jobId, batchId, null, null, null, null, false, errorMessage);
         }
     }
 
+    /** Responsabilidade: representar a parte necessária da resposta da API de imagens. */
     private record ImageGenerationResponse(String model,
                                            String prompt,
                                            List<ImageData> data) {
+        /** Retorna a primeira imagem utilizável ou nulo quando a resposta não contém mídia. */
         ImageData firstImageData() {
             if (data == null || data.isEmpty()) {
                 return null;
@@ -220,6 +233,7 @@ public class FrameworkImageOpenAiBatchClient {
         }
     }
 
+    /** Responsabilidade: representar uma imagem retornada por URL ou base64. */
     private record ImageData(String url,
                              @JsonProperty("b64_json") String base64) {
     }

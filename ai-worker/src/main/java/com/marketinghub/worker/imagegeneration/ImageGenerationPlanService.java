@@ -20,7 +20,7 @@ import org.springframework.util.StringUtils;
 public class ImageGenerationPlanService {
 
     private static final Logger log = LoggerFactory.getLogger(ImageGenerationPlanService.class);
-    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2";
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
 
     private final ImageGenerationCatalogService catalogService;
 
@@ -95,11 +95,11 @@ public class ImageGenerationPlanService {
                 unitPrice);
     }
 
-    /** Identifica modelos Image 1 que devem ser preservados apenas em registros históricos. */
+    /** Identifica qualquer modelo anterior que deve permanecer somente no histórico. */
     private boolean isObsolete(ImageGenerationModelDto model) {
         return model != null
                 && StringUtils.hasText(model.apiModel())
-                && model.apiModel().strip().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1");
+                && !CANONICAL_IMAGE_MODEL.equalsIgnoreCase(model.apiModel().strip());
     }
 
     /** Seleciona a qualidade solicitada, a padrão ou a primeira disponível para o modelo. */

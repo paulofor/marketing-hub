@@ -34,7 +34,7 @@ class TemisImageStudioOpenAiClientTest {
     properties = new MetaAdApproverProperties();
     properties.setOpenAiBaseUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/v1");
     properties.setOpenAiApiKey("test-only-key");
-    properties.setImageModel("gpt-image-2");
+    properties.setImageModel("gpt-image-2.5-sunburst");
   }
 
   /** Encerra a API de homologação após cada cenário. */
@@ -45,21 +45,21 @@ class TemisImageStudioOpenAiClientTest {
 
   /** Confirma criação orientada por prova, modelo canônico e auditoria da peça. */
   @Test
-  void createsPremiumCommercialAssetWithGptImage2() {
+  void createsPremiumCommercialAssetWithSunburst() {
     String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
     TemisImageStudioOpenAiClient.Result result =
         client().execute(job(List.of(referenceUrl), "CREATE"));
 
     assertThat(result.imageBytes()).isEqualTo("premium-image".getBytes(StandardCharsets.UTF_8));
-    assertThat(result.model()).isEqualTo("gpt-image-2");
-    assertThat(result.requestJson()).contains("ADS", "gpt-image-2", "produza");
+    assertThat(result.model()).isEqualTo("gpt-image-2.5-sunburst");
+    assertThat(result.requestJson()).contains("ADS", "gpt-image-2.5-sunburst", "produza");
     assertThat(result.responseJson())
         .contains("BINÁRIO PERSISTIDO SEPARADAMENTE", "image_sha256", "image_bytes")
         .doesNotContain(Base64.getEncoder().encodeToString(result.imageBytes()));
-    assertThat(result.costUsd()).isEqualByComparingTo("0.00034000");
+    assertThat(result.costUsd()).isEqualByComparingTo("0.00033000");
     assertThat(result.usageJson()).contains("input_tokens");
     assertThat(requestContentType.get()).startsWith("multipart/form-data");
-    assertThat(requestBody.get()).contains("gpt-image-2");
+    assertThat(requestBody.get()).contains("gpt-image-2.5-sunburst");
   }
 
   /** Diferencia uma peça comercial de um entregável e proíbe prova visual inventada. */

@@ -110,6 +110,7 @@ public class ImageGenerationOpenAiClient implements OpenAiClientPort {
         try {
             Map<String, Object> requestBody = objectMapper.readValue(request.requestBodyJson(), new TypeReference<>() {});
             String model = asString(requestBody.get("model"));
+            String quality = asString(requestBody.get("quality"));
             String responseFormat = asString(requestBody.get("responseFormat"));
             List<Map<String, Object>> images = asMapList(requestBody.get("images"));
             if (images.isEmpty()) {
@@ -120,7 +121,9 @@ public class ImageGenerationOpenAiClient implements OpenAiClientPort {
             Integer totalInputTokens = null;
             Integer totalOutputTokens = null;
             for (Map<String, Object> image : images) {
-                Map<String, Object> openAiBody = buildOpenAiImageBody(model, asString(image.get("prompt")), responseFormat);
+                Map<String, Object> openAiBody =
+                        buildOpenAiImageBody(
+                                model, quality, asString(image.get("prompt")), responseFormat);
                 String openAiBodyJson = objectMapper.writeValueAsString(openAiBody);
                 log.info(
                         "Envio cru para OpenAI Images API [jobId={}, openAiJobId={}, planningItemKey={}, requestBodyJson={}]",
@@ -191,9 +194,11 @@ public class ImageGenerationOpenAiClient implements OpenAiClientPort {
     }
 
     /** Monta o payload real da Images API para um único prompt planejado. */
-    private Map<String, Object> buildOpenAiImageBody(String model, String prompt, String responseFormat) {
+    Map<String, Object> buildOpenAiImageBody(
+            String model, String quality, String prompt, String responseFormat) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
+        payload.put("quality", quality);
         payload.put("prompt", prompt);
         if ("b64_json".equals(responseFormat)) {
             payload.put("response_format", "b64_json");

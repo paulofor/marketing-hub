@@ -30,7 +30,7 @@ São personalizados por compra: nome profissional, região, WhatsApp, serviços,
 
 ## Modelo de geração do acervo
 
-- O gerador de lotes usa o modelo de imagem de maior qualidade homologado pelo Marketing Hub. Na validação de 2026-08-03, o padrão é `gpt-image-2`, com qualidade `high` e saída mínima de 1024 × 1024.
+- O gerador de lotes usa o modelo de imagem de maior qualidade homologado pelo Marketing Hub. Na validação de 2026-09-14, o padrão é `gpt-image-2.5-sunburst`, com qualidade `high` e saída mínima de 1024 × 1024.
 - O modelo é configurável e deve seguir `docs/canonical/image-generation-model-canon.v1.md`; o identificador exato efetivamente usado fica persistido no lote para auditoria.
 - A geração acontece antes das vendas. Durante a compra, o pipeline apenas seleciona fotografias aprovadas e personaliza o material da cliente.
 - A troca para um modelo de ponta mais novo exige novo lote comparativo e aprovação visual humana mínima 9/10 antes de substituir fotografias do acervo comercial.

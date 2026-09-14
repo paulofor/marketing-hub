@@ -4049,6 +4049,14 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   mas o gate tratou “sem revelar interface legível” como ordem para inserir interface. O detector
   agora bloqueia somente verbos positivos de geração de texto e aceita proibições explícitas; teste
   protege simultaneamente os dois sentidos antes de qualquer chamada paga.
+- **Recorrência em 14/09/2026, Vega #92:** o job 21240 (ciclo audiovisual 19) foi bloqueado
+  antes de Runway por “sem apontar, celebrar, depor ou mostrar tela, logo…”. A remoção da
+  pontuação e a janela curta da negação deixavam “mostrar” fora da proibição. Evento 79184
+  preserva a resposta; o sucesso 21237/evento 79086 permite comparar o mesmo fluxo.
+  O classificador agora mantém pontuação, reconhece listas explicitamente negadas e
+  avalia separadamente outras ordens positivas. Replays dos dois planos e testes de
+  contraste/ponto/outra proibição impedem liberar “não mostrar texto; inserir logo”.
+  Matriz e evidências: [continuidade da produção](../homologacao/vega-producao-apos-preflight-v1.md).
 - **Recorrência operacional em 2026-09-03:** o deploy que introduziu o preflight Runway construiu a
   imagem do executor, mas parou antes da aplicação porque o diretório legado da credencial OpenAI
   continha dados e `rmdir` recusou removê-lo. Como somente a revisão global do APP era persistida, o

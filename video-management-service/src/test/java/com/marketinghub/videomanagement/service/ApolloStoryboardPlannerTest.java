@@ -24,6 +24,8 @@ import com.marketinghub.videomanagement.service.provider.ProgressCallback;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Responsabilidade: comprovar o gate determinístico anterior ao consumo audiovisual de Apolo. */
 class ApolloStoryboardPlannerTest {
@@ -113,6 +115,42 @@ class ApolloStoryboardPlannerTest {
                 metadata("20.00"), safePlan, "RUNWAY_SEEDANCE_2_5");
 
         assertThat(decision.approved()).isTrue();
+    }
+
+    /** Reproduz respostas reais de sucesso e falso bloqueio, preservando o plano e sua auditoria. */
+    @ParameterizedTest
+    @ValueSource(strings = {"21237", "21240"})
+    void shouldReplayHistoricalPlanWithoutChangingItsInstructions(String historicalJob) throws Exception {
+        JsonNode savedPlan;
+        try (var input = getClass().getResourceAsStream("/fixtures/apollo/storyboard-" + historicalJob + ".json")) {
+            savedPlan = objectMapper.readTree(input);
+        }
+        var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("8.00");
+        metadata.put("videoProductionCycleId", 91001);
+        metadata.put("targetDurationSeconds", 15);
+        metadata.put("providerClipDurationSeconds", 10);
+        SalesVideoJob job = mock(SalesVideoJob.class);
+        when(job.id()).thenReturn(91001L);
+        when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
+        when(job.providerName()).thenReturn("RUNWAY_ROUTER");
+        when(job.metadataJson()).thenReturn(metadata.toString());
+        SalesVideoScript script = new SalesVideoScript(91001L, 1, "Roteiro de teste", "Gancho", "CTA", null,
+                null, null, null, null, SalesVideoScriptStatus.APPROVED, null, null, null);
+        SalesVideoProfile profile = new SalesVideoProfile(91001L, 91001L, null, "TEST", "Replay local",
+                null, null, null, "pt-BR", 15, SalesVideoStatus.VIDEO_REQUESTED,
+                null, null, script, null);
+        var response = objectMapper.createObjectNode();
+        response.putArray("output").addObject().putArray("content").addObject()
+                .put("type", "output_text").put("text", savedPlan.toString());
+        when(aiClient.plan(eq(91001L), any())).thenReturn(response);
+
+        SalesVideoJob approved = planner.planAndApprove(job, profile, mock(ProgressCallback.class));
+
+        JsonNode persisted = objectMapper.readTree(approved.metadataJson());
+        assertThat(persisted.path("apollo_planner_status").asText()).isEqualTo("APPROVED");
+        assertThat(persisted.path("apollo_ai_plan")).isEqualTo(savedPlan);
+        assertThat(persisted.path("apollo_planner_response")).isEqualTo(response);
+        assertThat(persisted.path("expectedCostUsd").decimalValue()).isLessThanOrEqualTo(new java.math.BigDecimal("8.00"));
     }
 
     /** Aprova o storyboard quando Apolo aplica ao menos um cartão de cada coleção entregue. */

@@ -1,0 +1,61 @@
+{
+  "creativeRationale": "Peça vertical 9:16 de 15 segundos, em cinco cortes de 3 segundos, para a participante adulta da experiência privada MUSA. O objetivo é partir da dúvida diante de roupas que ela já possui, mostrar somente o mecanismo funcional registrado da v12 — ocasião e peças informadas levando ao primeiro ajuste — e sustentar a promessa aprovada “Seu primeiro ajuste, pronto para aplicar”. O CTA preservado é “Ver meu primeiro ajuste MUSA”, aplicado apenas na pós-produção, acompanhado de “Experiência privada, sem compra ou cobrança”. Com cinco cortes fixos para sete beats, descoberta e demonstração compartilham o corte 3; a transformação do estado do artefato e a prova compartilham o corte 4, mantendo progressão sem retrocesso. A participante sintética é apoio, não depoimento; a captura v12 é prova funcional em cenário sintético, não evidência de satisfação, demanda ou resultado comercial. A peça permanece sem autorização de publicação.",
+  "researchApplicationRationale": "Como orientação externa limitada, RI1-AF2ACDE03006 levou à fixação do estado persistente — mesma participante, figurino cotidiano, peças, ambiente creme e vinho, luz clara e câmera estável — enquanto apenas uma ação temporal muda por corte; também reforçou manter a rota homologada Runway gen4.5, sem migrar para provider em research preview. RI1-8EB0EABA1344 orientou os cinco cortes de 3 segundos pelas fronteiras das cinco frases aprovadas e por pequenas quedas de loudness na pós, em vez de cortes guiados apenas pelo beat. RI1-AC85EF9A7C43 manteve o áudio do provider desligado e definiu voz em stem isolado, sem efeitos concorrentes; eventual trilha aprovada deve ficar separada e abaixo da narração. Essas decisões são hipóteses editoriais e não comprovam venda, retenção, demanda ou satisfação.",
+  "appliedCardIds": [
+    "RI1-AF2ACDE03006",
+    "RI1-8EB0EABA1344",
+    "RI1-AC85EF9A7C43"
+  ],
+  "cuts": [
+    {
+      "order": 1,
+      "durationSeconds": 3,
+      "commercialRole": "HOOK_DOR",
+      "narrativePhase": "HOOK",
+      "visualObjective": "Em plano médio vertical e câmera travada, a participante adulta sintética desliza uma camisa branca até perto de uma calça preta sobre o banco e pausa antes de juntá-las, tornando visível a dúvida de uso sem dramatização, depoimento ou antes/depois. O frame gerado permanece limpo e nítido, sem letras, legendas, interface, preço, logo ou CTA.",
+      "continuityAnchor": "Estado-base: participante adulta sintética, roupa cotidiana neutra, camisa branca e calça preta como peças de cena, banco creme, acentos vinho, luz clara e suave, câmera vertical 9:16 estável.",
+      "reuseExistingMaterial": false,
+      "postProductionText": "Narração e legenda determinísticas, idênticas: “Uma ocasião.”"
+    },
+    {
+      "order": 2,
+      "durationSeconds": 3,
+      "commercialRole": "MECANISMO",
+      "narrativePhase": "SETUP",
+      "visualObjective": "A participante conclui o movimento pousando as peças; um match cut pelo deslocamento descendente leva a um plate neutro. Na montagem, o executor inicia a captura real aprovada da v12 exatamente no trecho registrado em que ocasião e peças informadas orientam o ajuste. O provider fornece apenas o apoio ao redor da inserção, sem sintetizar tela, letras ou interação.",
+      "continuityAnchor": "O movimento descendente conecta os cortes 1 e 2; preservam-se participante, roupa cotidiana, camisa branca, calça preta, paleta creme e vinho, luz e eixo de câmera. A prova entra no crop homologado [370,20,700,880].",
+      "reuseExistingMaterial": true,
+      "postProductionText": "Narração e legenda determinísticas, idênticas: “O que você já tem.”"
+    },
+    {
+      "order": 3,
+      "durationSeconds": 3,
+      "commercialRole": "RESULTADO",
+      "narrativePhase": "DISCOVERY",
+      "visualObjective": "Um cut-in determinístico revela, na mesma captura v12, o estado registrado do primeiro ajuste: meio-tuck da camisa branca na calça preta. A edição percorre o detalhe dentro do crop aprovado, sem interpolar ou redesenhar pixels; a descoberta vira demonstração do artefato, não resultado da participante.",
+      "continuityAnchor": "A captura começa no frame seguinte ao corte 2 e mantém crop, escala, pixels, fundo neutro e eixo cromático branco e preto, sem salto de estado.",
+      "reuseExistingMaterial": true,
+      "postProductionText": "Narração e legenda determinísticas, idênticas: “Seu primeiro ajuste, pronto para aplicar.”"
+    },
+    {
+      "order": 4,
+      "durationSeconds": 3,
+      "commercialRole": "PROVA",
+      "narrativePhase": "PROOF",
+      "visualObjective": "A captura aprovada prossegue sem salto até o trecho já registrado de orientação de conforto e equilíbrio e ajuste salvo; nos últimos instantes, o editor sustenta o frame verificado. A transformação é apenas do estado funcional informado para o ajuste salvo, seguida da prova do artefato; não há gesto de satisfação, depoimento, métrica, antes/depois ou alegação humana.",
+      "continuityAnchor": "Continuação direta da mesma v12, com o mesmo crop [370,20,700,880], fundo neutro e estado salvo; os pixels permanecem inalterados durante a sustentação final.",
+      "reuseExistingMaterial": true,
+      "postProductionText": "Narração e legenda determinísticas, idênticas: “Veja seu primeiro ajuste MUSA.”"
+    },
+    {
+      "order": 5,
+      "durationSeconds": 3,
+      "commercialRole": "CTA",
+      "narrativePhase": "CTA",
+      "visualObjective": "Retorna ao ambiente sintético inicial com a mesma participante neutra e as duas peças lado a lado no banco. O quadro do provider fica travado; um recuo digital determinístico de 3% na pós abre margem segura para o convite e encerra sem gesto ou resultado encenado. O material gerado não contém palavra, legenda, logo, preço, tela, botão ou CTA.",
+      "continuityAnchor": "Retoma a mesma personagem, figurino cotidiano, banco, paleta creme e vinho, luz clara e eixo do corte 1; camisa branca e calça preta preservam o vínculo visual com a v12.",
+      "reuseExistingMaterial": false,
+      "postProductionText": "Narração e legenda determinísticas, idênticas: “Experiência privada, sem compra ou cobrança.” CTA em overlay determinístico, somente na pós-produção: “Ver meu primeiro ajuste MUSA”."
+    }
+  ]
+}

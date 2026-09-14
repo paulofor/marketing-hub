@@ -377,3 +377,135 @@ Relatórios por rodada ficam em `artifacts/video-production-continuity/final11`
 e `final12`, com contagens, logs, capturas e mídia sintética. Os XMLs foram
 compactados com conferência dos hashes individuais, sem descarte de evidência.
 A aprovação técnica da recuperação não é aprovação dos vídeos para uso comercial.
+
+## Aplicação e recuperação confirmada do anúncio em 14/09/2026
+
+A revisão local `a4acf26515f1121b1e012ef4594efbee962ebd7c` foi construída pelos
+Dockerfiles versionados e aplicada, após a homologação completa, pelo coordenador
+`405517f219104aac8e0257aeada71410`, escopo `app`, usando `execute`. Backend,
+frontend e executor ficaram saudáveis. Nenhum PR, push ou Actions foi usado para
+testar a alteração. Cada aplicação preservou uma tag de rollback da imagem anterior.
+
+Os conteúdos portáteis local/remoto conferem, apesar da conversão de formato do
+Docker alterar o identificador externo da imagem:
+
+| Serviço | Tag | SHA-256 do conteúdo portátil |
+| --- | --- | --- |
+| Backend | `marketing-hub/backend:vega-cycle6-a4acf26515f1` | `0c5adc6c38f002e1b4c395b66b7beefd621c880dfdf95d4bf1e4f7eda08442cf` |
+| Frontend | `marketing-hub/frontend:vega-cycle6-a4acf26515f1` | `29d6664026143ac6472e160e29bb716307a6b5ab69933deac513b4c6ccc4fe68` |
+| Vídeo | `marketing-hub/video-management:vega-cycle6-a4acf26515f1` | `a95776ab2db414d00844f0846c13191c3dcc2dbf2a4efab97553ad0e6a09aa64` |
+
+O CORS foi aplicado pelo script versionado sob o mesmo coordenador, conferindo
+os hashes anterior e candidato já registrados. O MP4 respondeu com a origem
+administrativa autorizada. A sandbox chegou ao limite de espaço após os builds;
+somente cópias temporárias desta tarefa foram removidas após comparar seus hashes
+com imagens ou relatórios compactados preservados. Nenhum recurso alheio foi limpo.
+
+Pelo processo 75 → ciclo 2 → projeto 4, o comando **Preparar reprodução HLS** fez
+um único POST oficial e criou o job **21239**, filho do acabamento **21238**, em
+modo `TEST`. O executor registrou reaproveitamento por hash, dois segmentos e
+playlist **2809**. O callback concluiu o job com MP4 **2804** e manteve o ativo
+comercial **41**, agora no papel correto **AD**, com revisão **PENDING**.
+
+O novo MP4 tem exatamente o hash do anterior:
+`29fbb7ce12675bb323f32219e613f2f56beb07f11d825ae216ebe663ca6dfcb2`.
+O metadado registra `delivery_only=true`, `generation_repeated=false` e custo
+incremental de geração zero. O ciclo audiovisual **18** mantém custo conhecido
+de renderização **USD 1,80**. Voz registra `PENDING_PROVIDER_RECONCILIATION`;
+portanto, esse valor não deve ser apresentado como custo total conciliado de IA.
+
+A navegação publicada passou em desktop, iPhone 15 Pro e Pixel 7 simulados:
+MP4 de 15 s, HLS de 15,010666 s, H.264/AAC, 1080×1920, reprodução e avanço para 6 s,
+sem erro de mídia ou escrita de aprovação. O teste HLS usa um player de diagnóstico
+na origem real administrativa, lendo manifesto/segmentos no storage com CORS;
+isso não comprova integração do vídeo numa página PDE publicada. A captura
+homologada 118 continua visível e legível no trecho demonstrado.
+
+Evidências operacionais desta sessão: `ad-hls-request.json`, `ad-recovery-runtime.json`,
+`mcp-job21239-logs.json` e `real-delivery-4/results.json`, em
+`.sandbox/vega-recuperacao`. O MCP confirmou o percurso, incluindo a mensagem
+“Acabamento reaproveitado sem geração” e a conclusão com a playlist persistida.
+
+O comando **COMPLETE** de `CAMPAIGN_VIDEO` foi registrado pela tela com ativo 41,
+evidência técnica e identificação de Codex como executor da recuperação autorizada.
+O backend avançou o mesmo ciclo **2** para **PDE_ENTRY_VIDEO**. Essa conclusão
+prova produção técnica; não constitui aprovação humana, campanha, cobrança ou venda.
+
+## Solicitação governada da demonstração
+
+Pela entrada do mesmo processo, o projeto **5**, perfil **60**, preservou produto 4,
+plano 3, experimento 92, canal `PDE_HERO_DIAGNOSTIC`, versão v12, roteiro, CTA e
+identidade. Foram salvas as cinco cenas e a prova homologada 118 pelo PATCH da tela,
+com conferência posterior. O pedido de produção criou ciclo audiovisual **19**,
+preflight **12**, teto individual **USD 8** e tarefa financeira **418**.
+
+O preflight ficou `READY`: dois clipes de 10/5 s, 180 créditos, estimativa
+**USD 1,80**, saldo oficial de 1.192 créditos e reserva **4** de 800 créditos.
+Plutus aprovou produção privada, sem compra de créditos nem mídia. O backend
+enfileirou o job **21240** de Apolo. Os logs via MCP confirmam a captura íntegra,
+com hash `58320a0f1f7205d78a4e5f9d771d6eea6ca9ef8b6edaf9584a17cd74a770b339`,
+e planejamento com prompt/schema versionados em modo Flex. Nenhum job pago anterior
+foi repetido para iniciar a demonstração.
+
+## Falso bloqueio de Apolo e ampliação da matriz
+
+O job **21240** parou em `APOLLO_STORYBOARD_BLOCKED`, antes de chamar Runway,
+porque o detector interpretou “sem apontar, celebrar, depor ou mostrar tela,
+logo, letras ou CTA gerados” como solicitação positiva. Request, response e plano
+foram preservados no evento **79184**. A comparação com o sucesso **21237**,
+evento **79086**, e o precedente **21217** em `loops.md` confirma a recorrência:
+o detector removia pontuação e reconhecia negação apenas numa janela curta.
+
+Alternativas: reescrever o briefing e repetir a IA (baixo esforço, recorrência
+provável), adicionar outra IA para revisar a interpretação (custo/latência e
+nova incerteza) ou corrigir o detector e reproduzir as respostas históricas
+(esforço moderado, causa fechada sem alterar o storyboard). Escolhida a terceira.
+O contrato permanece proibindo texto gerado; cada ordem positiva é avaliada
+separadamente, preservando a pontuação e listas de verbos explicitamente negadas.
+
+Matriz ampliada **antes dos testes**: replay completo dos storyboards 21237 e
+21240 com cliente de IA simulado, auditoria idêntica, negação simples/listada,
+conjunções, ordem positiva após ponto/contraste/outra proibição, custo e duração
+inalterados. A suíte integral anterior, MySQL, HLS, mídia e três dispositivos
+continua obrigatória. A contagem das rodadas reinicia em **final13/final14** após
+esta correção; nenhuma repetição paga foi solicitada para testar o detector.
+
+Os 32 testes focados passaram, incluindo os dois replays completos. A rodada
+`final13` não iniciou testes: o MySQL local acusou `OS error 28 / No space left
+on device` na criação de `ibdata1`. A reprodução preservou o log e encerrou o
+Compose. A topologia efêmera passou a usar um override local de **tmpfs de 256 MB
+somente para `/var/lib/mysql`**, mantendo MySQL 5.7, SQL, credenciais sintéticas,
+endpoints, verificações e projeto Compose exclusivos. Isso não altera o banco
+publicado nem substitui MySQL por um test double. As rodadas finais passaram a
+ser **final14/final15**; durabilidade de disco não é critério desta correção de
+interpretação textual, e nenhum changelog foi alterado.
+
+A `final14` passou com **3.301 testes executados** (2.934 backend, 195 vídeo,
+38 financeiro, 134 frontend), além dos contratos e da matriz de mídia/navegação.
+Os 56 arquivos de implementação/testes permanecem iguais ao manifesto
+`9de85f501a5b0b40bd1086dce1cc5c4d4df1c2bf1e211ae70a5f072855f488e9`.
+A imagem candidata contém as mesmas **139 classes** testadas; JAR SHA-256
+`c97699d61c8c7a2548c6ff7cd56fd740ca9c1c70851696bcbb9fc5147e574cec`.
+
+Custos da tentativa bloqueada não foram apagados: Plutus 418 tem estimativa
+persistida de **USD 0,112836**; o planejamento 21240 registra 12.345 tokens de
+entrada e 11.699 de saída. Pelo catálogo persistido, a tarifa standard conservadora
+representa **USD 0,28336**, embora a chamada tenha usado Flex; não é valor faturado.
+A reserva de Runway foi liquidada com zero créditos e nenhuma tarefa do provider.
+A próxima solicitação terá teto reduzido de **USD 6**, dentro dos USD 8 originais
+da peça e dos USD 20 conjuntos, preservando margem para os custos auxiliares.
+
+As rodadas completas consecutivas **final14 e final15 passaram**, ambas com
+**3.301 testes executados**, zero falhas e os mesmos 56 arquivos conferidos por
+hash. MySQL 5.7 com dados efêmeros, integração financeira, preflight, entrega HLS,
+FFmpeg, reprodução/avanço e navegação nos três dispositivos passaram nas duas.
+Os Compose foram encerrados com volumes e órfãos. O replay também foi executado
+na JVM da **imagem candidata**, carregando as classes do seu JAR, sem rede:
+os planos 21237/21240 passaram e ordens positivas continuaram bloqueadas.
+Esse teste não chamou IA, provider de vídeo ou banco publicado.
+
+O diff foi revisado: alteração produtiva adicional restrita ao classificador
+e à preservação de pontuação na chamada do planejador; fixtures, regressões e
+documentação correspondentes. Nenhuma mudança nova no backend, frontend,
+prompt, schema, orçamento aprovado ou gate humano. A revisão anterior da
+entrega HLS permanece válida; a nova imagem altera somente o executor.

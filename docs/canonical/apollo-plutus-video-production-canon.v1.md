@@ -233,3 +233,17 @@ de acabamento passa a ser o job acompanhado pelo ciclo; falha de voz/composiçã
 gerar o bruto novamente. Voz e legenda têm a mesma fonte textual e gate temporal. Fonte sem
 prova aplicada, hash divergente, áudio ou sincronismo reprovados e ausência de aprovação humana
 continuam bloqueando elegibilidade comercial. Os gates independentes não são substituídos.
+
+## Gate de instruções visuais e negações
+
+O gate de Apolo deve avaliar cada ordem de texto no seu contexto, preservando
+pontuação e listas explícitas de verbos negados. “Sem apontar, celebrar, depor ou
+mostrar logo” é proibição; “não mostrar texto; inserir logo” mantém uma ordem
+positiva proibida. Não remover todas as palavras depois de uma negação nem
+transformar a ausência de um termo numa aprovação global do plano. Custo,
+duração, funções narrativas, fontes, prova e revisões continuam obrigatórios.
+
+Quando houver falso bloqueio, reproduzir localmente a resposta persistida,
+comparar sucessos e falhas e adicionar regressão antes de nova tarefa paga.
+As fixtures dos jobs 21237 e 21240 preservam esse aprendizado; a aprovação do
+gate técnico não equivale à aprovação humana do vídeo resultante.

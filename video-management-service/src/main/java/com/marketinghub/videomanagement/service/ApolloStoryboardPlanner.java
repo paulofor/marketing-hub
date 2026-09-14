@@ -326,7 +326,7 @@ public class ApolloStoryboardPlanner {
                 return GateDecision.blocked("continuidade visual não definida");
             }
             if (!objectives.add(objective)) return GateDecision.blocked("cenas visualmente repetidas");
-            if (containsEmbeddedTextInstruction(objective)) {
+            if (containsEmbeddedTextInstruction(cut.path("visualObjective").asText())) {
                 return GateDecision.blocked("texto solicitado dentro do vídeo do provider");
             }
         }
@@ -436,17 +436,9 @@ public class ApolloStoryboardPlanner {
         return 12;
     }
 
-    /** Detecta ordens positivas de texto sem confundir proibições visuais com solicitação. */
+    /** Preserva a pontuação para distinguir ordens de texto e proibições coordenadas. */
     private boolean containsEmbeddedTextInstruction(String objective) {
-        String normalized = normalize(objective);
-        String withoutProhibitions = normalized.replaceAll(
-                "\\b(sem|nao|não|evitar)\\s+(?:[a-z0-9áàâãéêíóôõúç]+\\s+){0,3}"
-                        + "(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b",
-                " ");
-        return withoutProhibitions.matches(
-                ".*\\b(mostrar|exibir|incluir|aplicar|gerar|inserir|desenhar|revelar)\\b"
-                        + "(?:\\s+[a-z0-9áàâãéêíóôõúç]+){0,4}\\s+"
-                        + "\\b(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b.*");
+        return EmbeddedTextInstructionGuard.isRequested(objective);
     }
 
     /** Normaliza texto para comparação de redundância e termos proibidos. */

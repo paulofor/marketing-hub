@@ -4,6 +4,12 @@ Data: 13/09/2026. Contexto preservado: produto 4, cadeia 14/v14, processo
 75/v6, execução 4, ciclo de aprendizado 2, experimento 92, versão
 `musa-pde-entry-v12-primeiro-ajuste-aplicavel`, projetos 4/5 e perfis 59/60.
 
+Situação conferida em 14/09/2026, após a recuperação: anúncio #41 e demonstração
+#42 prontos tecnicamente, produção registrada pela tela e ciclo 2 na etapa
+`VIDEO_APPROVAL`. O processo 75 continua com **0/4 objetivos comprovados**, em
+`WAITING_HUMAN`: revisões, decisão humana e integração da versão ainda pendentes.
+O encerramento técnico e seus limites estão registrados ao final deste documento.
+
 ## Diagnóstico confirmado antes da correção
 
 UI, endpoints oficiais e MCP (`marketinghubdb`) confirmam os ciclos de produção
@@ -715,3 +721,137 @@ permaneceram iguais. A revisão do diff confirmou preservação de gates, histó
 identidades e custos; não há nova migração. A descrição OpenAPI de recuperação
 e idempotência foi conferida pelo parser SnakeYAML já disponível no backend.
 O Compose exclusivo encerrou a topologia e os volumes ao final da rodada.
+
+## Imagens da recuperação do acabamento
+
+Revisão validada `6f16c05ad2295dfec680b1c8eec9e9e06bd82d53`, sem push ou PR.
+As três imagens foram construídas pelos Dockerfiles versionados. JAR do backend:
+`4196282c7c0f272d9ba0a9fa41e225d88d74e81d99a3ae573181d2a4f041753f`,
+idêntico ao pacote testado. JAR do executor:
+`cae9ce46ffdccf12324a183bb6954ca4ff9f680c7776d7bbaa252fee7f8fbbab`, com
+141 classes e os 15 arquivos de prompts/schemas idênticos aos arquivos validados.
+
+A imagem do executor passou pela montagem real, prova, cinco respostas TTS
+sintéticas, uploads HTTP locais, HLS e recuperação sem regeneração, em container
+sem rede externa. A interface empacotada passou nos três dispositivos, com APIs
+simuladas e porta produtiva 80 conferida. Na primeira inicialização isolada do
+Nginx faltava o alias da dependência `backend`; o alias foi configurado apenas
+na fixture. Não houve alteração de código ou imagem nessa preparação.
+
+O MCP confirmou zero jobs de vídeo ativos antes da troca. Backend e interface
+foram aplicados por `execute`, com recibos, configuração preservada e tags de
+rollback. Os conteúdos portáveis no host coincidem com as imagens locais. O
+backend chegou a `UP` após a inicialização. A navegação publicada passou em
+desktop/iPhone/Pixel sem escritas: pai 75 aponta o projeto 5, bruto 21242 e anúncio
+21239 permanecem, sem falso diagnóstico de luz. Revisão visual continua pendente.
+O executor segue a mesma aplicação coordenada; só após seu recibo e saúde será
+solicitada uma finalização do bruto 21242 pela tela.
+
+## Encerramento técnico da recuperação — 14/09/2026
+
+A aplicação do executor terminou às 05:29:26 UTC, com saúde `UP`, sem operação
+remota interrompida. Backend, interface e executor usam a revisão validada
+`6f16c05ad2295dfec680b1c8eec9e9e06bd82d53`. Os três recibos de comparação
+confirmam `sameContent: true`; as tags de rollback preservam os antecessores.
+Os IDs locais e remotos das imagens diferem pelo reempacotamento OCI, mas o
+conteúdo portável, as revisões e os JARs coincidem. Evidências:
+`narration-images-verified.json`, `narration-*-image-comparison.json`,
+`narration-apply-{backend,frontend,worker}.log`, em `.sandbox/vega-recuperacao/`.
+
+Após essa conferência, o roteiro da demonstração foi salvo pelo front-end com
+22 palavras, conservando as cinco funções, o CTA privado, a ausência de cobrança
+e a duração contratada:
+
+> Escolha ocasião e combinação. | Veja seu ajuste. Aplique e avalie. | Salve para retomar. | Experimente o primeiro ajuste MUSA. | Sem compra ou cobrança.
+
+Uma única solicitação de acabamento pela tela criou o job **21244** a partir do
+bruto **21242**. O job terminou `READY`, gerando o ativo **42 / LANDING_HERO**.
+Não houve nova geração Runway nem novo planejamento de clipes. O ciclo de produção
+22 foi atualizado para `VIDEO_READY_FOR_REVIEW`; a tentativa 21243 continua
+registrada como falha por narração de 15,552 s, com seu histórico preservado.
+A narração nova mede **14,76 s**, nos cinco segmentos de 3,264 / 3,768 / 2,016 /
+3,552 / 2,160 s. O limite não foi aumentado e a voz não foi acelerada.
+
+Os cinco áudios recebidos estão persistidos nos ativos **2812–2816**. Foram
+baixados e conferidos por tamanho e SHA-256 contra os recibos:
+`demo-final/audit-verification.json`. Isso comprova a retenção dos novos dados;
+os bytes descartados pela versão antiga na tentativa 21243 não foram recuperados.
+O MP4 final, mídia **2817**, tem SHA-256
+`f8b6e74a37c8c8a07a09a6df0e37fad0738e6ecf735bd4948227931cd5bf3be6`.
+
+### Objetivos técnicos comprovados e limites
+
+| Critério | Evidência e resultado |
+| --- | --- |
+| Anúncio final | Projeto 4, job de entrega 21239, ativo 41 / AD, `READY`; bytes reutilizados na recuperação da entrega |
+| Demonstração final | Projeto 5, job 21244, ativo 42 / LANDING_HERO, `READY`; bruto 21242 preservado |
+| Integridade da demonstração | FFprobe: MP4 15,000 s, 1080×1920, H.264/AAC; decodificação integral sem erros; HLS 15,010666 s |
+| Áudio técnico | Narração 14,76 s; -17,3 LUFS e pico -2,1 dBFS; gate técnico de áudio aprovado para teste |
+| Reprodução efetiva | MP4 e HLS dos dois ativos, controle e avanço da reprodução, em Chromium desktop, iPhone 15 Pro e Pixel 7 emulados; playlists/segmentos HTTP 200 e CORS correto na origem administrativa |
+| Prova da entrega | Inspeção dos frames reais da demonstração: captura privada da v12 legível, ocasião, ajuste, autoavaliação e retomada; indicação de apresentação/voz por IA; não é testemunho nem resultado de cliente |
+| Retorno ao processo | Produções `CAMPAIGN_VIDEO` e `PDE_ENTRY_VIDEO` registradas pelo front-end; ciclo 2 avançou a `VIDEO_APPROVAL`, preservando experimento 92 |
+| Orientação na tela | Pai 75 / execução 4 em `WAITING_HUMAN`, ação `REVIEW_AND_INTEGRATE_VIDEOS`; link correto para cadeia 14 / produto 4 / ciclo 2, nos três dispositivos, sem escritas nem erros |
+| Regressões locais | `final21` e `final22`: 3.353 testes executados por rodada, sem falhas; contratos REST, MySQL 5.7, mídia e interface adicionais descritos acima |
+
+Os players foram exercitados com áudio silenciado. Medições de áudio e reprodução
+não comprovam escuta humana, naturalidade de pronúncia, aceitação ou intenção de
+compra. A conferência HLS usa a origem administrativa; não constitui integração
+na versão PDE publicada. A captura privada usada na prova permanece dado técnico
+de teste e não foi contada como sessão, primeiro resultado ou venda humana.
+
+Recibos finais: `campaign_video-complete.json`, `pde_entry_video-complete.json`,
+`demo-finalization-project-save.json`, `demo-finalization-recovery-request.json`,
+`demo-final/{ffprobe.json,player-results.json}`, `real-delivery-4/results.json`,
+`real-delivery-5/results.json`, `final-review-guidance-results.json` e os três
+snapshots `final-process.json`, `final-cycle-context.json`, `final-activities.json`.
+As evidências brutas permanecem na pasta da sandbox, sem tokens ou credenciais.
+
+### Situação real e decisão ainda necessária
+
+O backend confirma **0 concluídas / 4 restantes** no processo 75. Produzir os
+vídeos é um pré-requisito do ciclo, não a comprovação de operação, entrega,
+resultado comercial ou aprendizado. A atividade `learningCycle` está em execução;
+`optimization`, `delivery` e `consolidate` aguardam seus gates. Os subprocessos
+66/v5, 62/v4 e 76/v4 e seus links preservam a cadeia e o ciclo selecionados.
+
+Os ativos 41 e 42 estão com revisão `PENDING`. Foi solicitado ao usuário assistir
+aos dois com áudio e informar parecer e responsável, para avaliação privada.
+Nenhuma aprovação foi inferida do silêncio ou da conclusão técnica. O contrato
+atual de uso em anúncio exige primeiro o vídeo aprovado e depois a revisão de
+Têmis e a decisão do criativo; não foi criado anúncio pago antecipadamente.
+O consumidor BPM de Psique para criativos estáticos exige `CREATIVE_RENDER`
+1080×1350; enviar-lhe um MP4 por esse contrato não comprovaria avaliação audiovisual.
+As revisões independentes aplicáveis, a integração exata da v12, a homologação e
+as autorizações comerciais permanecem pendentes, sem empréstimo das provas da v7.
+
+Custos: Runway confirmado de **USD 3,60** nos dois vídeos; pareceres financeiros
+estimados em **USD 0,552240** e planejamento estimado conservador em
+**USD 0,980576** pelo catálogo padrão, sem tratá-lo como fatura Flex. A soma parcial
+é **USD 5,132816**, ainda sem conciliação do custo de voz, inclusive a tentativa
+de acabamento que falhou. O teto humano de **USD 20** permanece registrado.
+`NO_EXECUTIONS` no pai descreve a cobertura de tarefas daquele processo e não
+significa produção gratuita. Não houve gasto de mídia, campanha, cobrança ou venda.
+
+Os 69 arquivos do manifesto final foram novamente conferidos: nenhum mudou desde
+as duas rodadas aprovadas. O `git diff --check` passou. A topologia Compose
+exclusiva foi removida com `down --volumes --remove-orphans`; os testes não
+alteraram dados comerciais. A correção permanece sem push ou Pull Request.
+
+Às 05:48:10 UTC, `prepare-resume` registrou a revisão validada
+`6f16c05ad2295dfec680b1c8eec9e9e06bd82d53` e as evidências desta homologação na
+intervenção **405517f219104aac8e0257aeada71410**. O coordenador confirmou
+`AWAITING_MERGE`; recibo em `final-prepare-resume.json`. Os quatro publicadores
+continuam protegidos. O reconciliador só poderá retomá-los após comprovar a
+integração dessa revisão na `main`. Não foi executado `resume`, nem alegada
+integração inexistente. O encerramento da intervenção técnica não aprova os
+vídeos nem conclui o processo comercial.
+
+### Oportunidade comercial fora da recuperação
+
+Hipótese de impacto alto e esforço médio: em um teste futuro, mostrar a ação
+real de salvar e retomar o ajuste pode tornar mais perceptível o valor do PDE
+personalizado. A peça atual apresenta a tela de prova por nove segundos; isso
+não mede entendimento da interação. Validar compreensão, primeiros resultados
+por início, retornos e, após autorização comercial, checkout e vendas líquidas.
+Manter público, oferta e preço controlados; as quatro sessões do #91 não
+comprovam causa de abandono nem justificam eleger uma variante vencedora.

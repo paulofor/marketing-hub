@@ -30,6 +30,15 @@ qualidade, sem limite artificial de duração. Ao final, solicita oportunidades 
 de aumento de vendas, receita e lucro, separando sugestões de resultados medidos.
 O modelo do prompt fica em Markdown versionado no frontend; não há chamada de IA para copiá-lo.
 
+**Valor, vendas e formato do PDE — decisão de 14/09/2026:** o prompt compartilhado deve
+colocar como objetivo principal gerar VENDAS e receitas com produtos incríveis e comunicação
+eficaz que entreguem valor real ao cliente. PDE significa experiência de produto digital
+(Product Digital Experience); sua implementação depende do tipo e do resultado comprado,
+podendo ser um gerador de imagens personalizadas como no exemplo Quartzo, sem obrigatoriedade
+de webapp com IA. Seguir `product-types-canon.v1.md`, preservando classificações, contratos
+e aprovações existentes. A homologação deve corresponder à entrega do formato escolhido;
+sucesso técnico não comprova vendas ou receita.
+
 **Publicação — regra vigente de 14/09/2026:** a exigência de validação local completa e
 publicação pelo fluxo de Pull Request executado pelo usuário substitui a exceção anterior
 de publicação manual antes do PR. O prompt não concede autorização de publicação por SSH;

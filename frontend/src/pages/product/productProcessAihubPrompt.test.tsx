@@ -41,6 +41,14 @@ describe("Pedido de ajuda ao AIHUB pelo processo", () => {
     const prompt: string = writeText.mock.calls[0][0];
     for (const part of [
       "Não estou conseguindo executar esse processo da tela.",
+      "O objetivo principal e mais importante é gerar VENDAS e receitas.",
+      "Crie PRODUTOS INCRÍVEIS",
+      "COMUNICAÇÃO EFICAZ",
+      "Product Digital Experience",
+      "Não presuma que todo PDE deva ser um webapp com IA.",
+      "Exemplo: no tipo Quartzo",
+      "personalização, qualidade visual, acesso e entrega do resultado",
+      "não autoriza reclassificar produtos",
       "causa-raiz",
       "ambiente local da sandbox",
       "duas rodadas completas e consecutivas",

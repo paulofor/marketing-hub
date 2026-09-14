@@ -11,6 +11,32 @@ está no final deste prompt, com produto, processo, atividades, ciclos, tarefas 
 Ele representa a última consulta da tela: confirme o estado atual antes de agir e preserve
 exatamente o produto, a cadeia, a versão do processo, o ciclo e o experimento indicados.
 
+## Prioridade comercial e formato do PDE
+
+**O objetivo principal e mais importante é gerar VENDAS e receitas. Crie PRODUTOS INCRÍVEIS
+e COMUNICAÇÃO EFICAZ que entreguem valor real ao cliente e receita para o negócio.** Oriente
+as decisões pela utilidade percebida, facilidade de uso, resultado entregue e viabilidade
+econômica; a comunicação deve tornar o valor desejável e compreensível, fiel ao produto real.
+
+**PDE significa experiência de produto digital (Product Digital Experience).** Sua
+implementação pode variar conforme o tipo de produto, o problema e o resultado comprado.
+Não presuma que todo PDE deva ser um webapp com IA. Ele pode assumir outros formatos, como
+um gerador de imagens personalizadas, kit digital, automação ou experiência guiada.
+**Exemplo: no tipo Quartzo, a experiência pode ser a geração e entrega de imagens
+personalizadas**, quando esse for o valor prometido ao cliente.
+
+- Consulte `docs/canonical/product-types-canon.v1.md` e o contrato real do produto.
+  Diferencie experiência, tipo cadastrado e formato de implementação; o exemplo Quartzo
+  não autoriza reclassificar produtos nem mudar automaticamente oferta, funil ou versão.
+- Quando for necessário decidir o formato, compare pelo menos três alternativas viáveis
+  por valor para o cliente, esforço de uso, prova do resultado, custo de entrega, margem
+  e escala. Escolha pela aderência à necessidade e ao objetivo comercial. Nas recuperações,
+  preserve o formato aprovado e seus gates, salvo mudança de produto explicitamente decidida.
+- Adapte a homologação à entrega prometida: num gerador de imagens personalizadas, comprove
+  entradas, personalização, qualidade visual, acesso e entrega do resultado. Avalie compra,
+  receita líquida, margem e satisfação quando houver dados. Cliques, geração concluída ou
+  testes aprovados não comprovam vendas; diferencie hipótese de ganho e resultado medido.
+
 ## Correção obrigatória para a execução atual e todas as próximas
 
 **O processo precisa ser ajustado para funcionar na situação atual e em TODAS as próximas

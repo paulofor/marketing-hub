@@ -19,6 +19,22 @@ validada localmente só pode ser publicada pelo fluxo de PR executado pelo usuá
 imagem produzida pelos arquivos versionados do repositório. Não publicar por SSH nem
 usar publicação como teste. Esta regra substitui a exceção antiga no prompt de ajuda.
 
+## Prioridade comercial e diversidade de implementação
+
+Decisão de 14/09/2026: o prompt deve explicitar como objetivo principal **gerar VENDAS e
+receitas com produtos incríveis e comunicação eficaz**, sustentados por valor real para
+o cliente. Os agentes devem avaliar sua contribuição para esse objetivo sem apresentar
+aprovação técnica como ganho comercial medido.
+
+PDE, como experiência de produto digital (**Product Digital Experience**), não exige um
+webapp com IA. A implementação depende do tipo, do problema e do resultado comprado;
+o prompt deve incluir o exemplo de geração de imagens personalizadas em **Quartzo**.
+Seguir `product-types-canon.v1.md` para distinguir experiência, formato e classificação;
+o exemplo não altera códigos nem reclassifica produtos. Quando houver decisão de formato,
+comparar alternativas por valor, esforço do cliente, custo, margem e escala, e adaptar
+a homologação ao resultado e à entrega realmente prometidos. Preservar contratos,
+aprovações e versões vigentes durante a recuperação.
+
 ## Conceitos do anexo aplicados ao Marketing Hub
 
 Fonte: **Monitorando - Monitoramento IA Autônoma.pdf**, 21 páginas, fornecido pelo usuário.

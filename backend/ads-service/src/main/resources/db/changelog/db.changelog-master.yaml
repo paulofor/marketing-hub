@@ -2075,3 +2075,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-12-product-process-automation-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-14-product-execution-profiles-v1.yaml
+      relativeToChangelogFile: true

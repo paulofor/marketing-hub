@@ -86,6 +86,7 @@ export default function ProductProcessActivityExecutionsPage() {
   const params = useParams();
   const { hash } = useLocation();
   const [search] = useSearchParams();
+  const requestedReference = search.get("sourceReference")?.trim() || undefined;
   const cycleParam = Number(search.get("learningCycleId"));
   const learningCycleId =
     Number.isSafeInteger(cycleParam) && cycleParam > 0 ? cycleParam : undefined;
@@ -97,22 +98,30 @@ export default function ProductProcessActivityExecutionsPage() {
   const validProductId = Number.isSafeInteger(productId) && productId > 0;
   const validProcessId =
     Number.isSafeInteger(processDefinitionId) && processDefinitionId > 0;
+  const explicitWithoutCycle = Boolean(requestedReference && !learningCycleId);
   const cycleContext = useCycleProcessContext(
-    validProductId ? productId : undefined,
+    validProductId && !explicitWithoutCycle ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
     learningCycleId,
     chainId,
   );
-  const effectiveCycleId = cycleContext.data?.cycleId ?? learningCycleId;
-  const effectiveChainId = cycleContext.data?.chainDefinitionId ?? chainId;
+  const cycleData = explicitWithoutCycle ? null : cycleContext.data;
+  const effectiveCycleId = requestedReference
+    ? learningCycleId
+    : (cycleContext.data?.cycleId ?? learningCycleId);
+  const effectiveChainId = requestedReference
+    ? chainId
+    : (cycleContext.data?.chainDefinitionId ?? chainId);
   const cycleContextUnavailable =
-    cycleContext.isLoading ||
-    (cycleContext.isError && cycleContext.data === undefined);
+    !explicitWithoutCycle &&
+    (cycleContext.isLoading ||
+      (cycleContext.isError && cycleContext.data === undefined));
   const history = useProductProcessActivityExecutions(
     validProductId && !cycleContextUnavailable ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
     effectiveCycleId,
     effectiveChainId,
+    requestedReference,
   );
   const valueChainPosition = useProductValueChainPosition(
     validProductId && validProcessId ? productId : undefined,
@@ -121,12 +130,13 @@ export default function ProductProcessActivityExecutionsPage() {
     productId,
     processDefinitionId,
     effectiveCycleId,
+    requestedReference,
   );
   const [requestOrigin, setRequestOrigin] = useState<string>();
   useEffect(() => {
     setRequestOrigin(undefined);
     requestExecution.reset();
-  }, [productId, processDefinitionId, effectiveCycleId]);
+  }, [productId, processDefinitionId, effectiveCycleId, requestedReference]);
   const data = cycleContextUnavailable ? undefined : history.data;
   const loaded = Boolean(data);
   useEffect(() => {
@@ -198,13 +208,19 @@ export default function ProductProcessActivityExecutionsPage() {
             <Link
               className="btn btn-outline-primary mb-3"
               to={
-                cycleContext.data?.cycleUrl ??
+                cycleData?.cycleUrl ??
                 `/business-process-chains/learning-cycles?productId=${productId}&cycleId=${effectiveCycleId}`
               }
             >
               Voltar ao ciclo #{effectiveCycleId}
             </Link>
           ) : null}
+          <Link
+            className="btn btn-outline-primary mb-3"
+            to={`/products/${productId}/execution-profiles?${new URLSearchParams({ chainId: String(effectiveChainId ?? ""), sourceReference: data?.currentExecutionReference ?? "", ...(effectiveCycleId ? { learningCycleId: String(effectiveCycleId) } : {}) })}`}
+          >
+            Ficha de execução deste produto
+          </Link>
           <PageTitle>
             {data ? (
               <span className="product-process-activity-executions__title">
@@ -267,7 +283,7 @@ export default function ProductProcessActivityExecutionsPage() {
               copyContext={{
                 history: data,
                 processSequence: selectedProcessSequence,
-                cycle: cycleContext.data,
+                cycle: cycleData,
                 cycleId: effectiveCycleId,
                 chainId:
                   effectiveChainId ??
@@ -309,9 +325,7 @@ export default function ProductProcessActivityExecutionsPage() {
       {cycleContext.isLoading ? (
         <p role="status">Identificando o ciclo e o aprendizado anterior...</p>
       ) : null}
-      {cycleContext.data ? (
-        <ProductLearningCycleContext context={cycleContext.data} />
-      ) : null}
+      {cycleData ? <ProductLearningCycleContext context={cycleData} /> : null}
 
       {history.isLoading ? (
         <div
@@ -572,7 +586,7 @@ export default function ProductProcessActivityExecutionsPage() {
                         history={data}
                         activity={activity}
                         processSequence={selectedProcessSequence}
-                        cycle={cycleContext.data}
+                        cycle={cycleData}
                         cycleId={effectiveCycleId}
                         chainId={
                           effectiveChainId ??

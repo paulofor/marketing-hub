@@ -5380,3 +5380,17 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
 - **Prevenção:** testes do helper incluem CTA, negações, IDs, providers, evidência
   incompleta e reprovação real. A matriz local abre a tela em desktop/iPhone/Pixel e
   solicita somente acabamento simulado do bruto correto, sem provider externo.
+
+
+### Prevenção adicional — fichas de execução por entrega (14/09/2026)
+
+Relacionada a `LOOP-DESTINO-CONDICIONAL-LANDING-OBRIGATORIA`: a ficha versionada conserva a
+composição dos seis processos e especializa a entrega. Dispensa de audiovisual é gravada
+como instância `NOT_APPLICABLE`, reconhecida por `BusinessProcessOptionalActivity`; nunca
+comprova objetivo nem elimina gate humano. Uma dispensa só na projeção da tela não seria
+suficiente para liberar o consumo da fila, que exige evidência persistida.
+
+Os testes `ExecutionProfileOmissionsTest`, `ExecutionProfileContextTest` e a matriz
+`infra/testing/product-execution-profiles` protegem a mesma prova usada na tela e no worker,
+a composição versionada e a preservação de cadeia/ciclo/experimento. Regras e escopo em
+[product-execution-profiles-canon.v1.md](../canonical/product-execution-profiles-canon.v1.md).

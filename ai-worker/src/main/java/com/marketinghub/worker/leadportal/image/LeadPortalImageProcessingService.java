@@ -59,6 +59,7 @@ public class LeadPortalImageProcessingService {
         this.planService = planService;
     }
 
+    /** Consome pacotes autorizados pelo backend e conserva o motivo de bloqueio financeiro ou operacional. */
     public List<LeadPortalImagePackageClient.ImagePackage> process() {
         if (!imageClient.isEnabled()) {
             log.warn("OpenAI API key not configured; skipping lead-portal image processing");
@@ -83,12 +84,12 @@ public class LeadPortalImageProcessingService {
                 if (!startedProcessing) {
                     HttpStatusCode status = ex.getStatus();
                     if (status != null && status.value() == 409) {
-                        log.info("Skipping lead-portal image package {} because it was already claimed by another worker",
-                                imagePackage.id());
+                        log.info("Backend bloqueou o pacote de imagens {} antes da geração: {}",
+                                imagePackage.id(), ex.getMessage(), ex);
                     } else {
                         log.warn("Backend refused to start processing for lead-portal image package {}: {}",
                                 imagePackage.id(),
-                                ex.getMessage());
+                                ex.getMessage(), ex);
                     }
                     continue;
                 }

@@ -6,7 +6,10 @@ import type {
   GeneratedImageResult,
   GeneratedImageVariant,
 } from "../../api/ai/useGenerateImage";
-import { useGenerateImage } from "../../api/ai/useGenerateImage";
+import {
+  createImageOperationKey,
+  useGenerateImage,
+} from "../../api/ai/useGenerateImage";
 import { usePromoteGeneratedImage } from "../../api/ai/usePromoteGeneratedImage";
 import { usePromoteGeneratedLandingImage } from "../../api/ai/usePromoteGeneratedLandingImage";
 import {
@@ -159,6 +162,7 @@ export default function ImageGeneratorPage() {
       commercialPlanId: Number(commercialPlanId),
       experimentId: experimentId ? Number(experimentId) : undefined,
       prompt: normalizedPrompt,
+      operationKey: createImageOperationKey(),
     });
   }
 
@@ -540,7 +544,8 @@ export default function ImageGeneratorPage() {
                           onChange={(event) =>
                             setLandingSlotId(
                               event.target.value as
-                                "hero-media-img" | "prova-img",
+                                | "hero-media-img"
+                                | "prova-img",
                             )
                           }
                         >

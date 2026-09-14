@@ -44,7 +44,7 @@ public class BusinessProcessActivityExecutionController {
     return service.recentExecutions(processDefinitionId, activityId);
   }
 
-  /** Retorna atividades do ciclo e permite adiar a leitura dos prompts mantendo compatibilidade. */
+  /** Retorna atividades da referência e ciclo escolhidos, com auditoria de prompts sob demanda. */
   @Operation(summary = "Mostra a situação, as atividades e as tarefas do produto no processo")
   @GetMapping("/{processDefinitionId}/products/{productId}/activity-executions")
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
@@ -52,7 +52,16 @@ public class BusinessProcessActivityExecutionController {
       @PathVariable Long productId,
       @RequestParam(required = false) Long learningCycleId,
       @RequestParam(required = false) Long chainId,
-      @RequestParam(defaultValue = "true") boolean includePromptAudit) {
+      @RequestParam(defaultValue = "true") boolean includePromptAudit,
+      @RequestParam(required = false) String sourceReference) {
+    if (sourceReference != null && !sourceReference.isBlank())
+      return service.productProcessExecutions(
+          processDefinitionId,
+          productId,
+          learningCycleId,
+          chainId,
+          includePromptAudit,
+          sourceReference);
     if (!includePromptAudit)
       return service.productProcessExecutions(
           processDefinitionId, productId, learningCycleId, chainId, false);
@@ -85,7 +94,7 @@ public class BusinessProcessActivityExecutionController {
     return service.productExecutionProgress(processDefinitionId, productId, sourceReference);
   }
 
-  /** Executa a atividade no ciclo explícito, quando informado, preservando decisões humanas. */
+  /** Executa na referência e ciclo explícitos, quando informados, preservando decisões humanas. */
   @Operation(summary = "Inicia ou decide atomicamente a atividade do produto")
   @PostMapping(
       "/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests")
@@ -94,7 +103,11 @@ public class BusinessProcessActivityExecutionController {
       @PathVariable Long productId,
       @PathVariable String activityId,
       @RequestBody(required = false) ProductProcessActivityExecutionRequest request,
-      @RequestParam(required = false) Long learningCycleId) {
+      @RequestParam(required = false) Long learningCycleId,
+      @RequestParam(required = false) String sourceReference) {
+    if (sourceReference != null && !sourceReference.isBlank())
+      return service.requestProductActivityExecution(
+          processDefinitionId, productId, activityId, request, learningCycleId, sourceReference);
     if (learningCycleId != null)
       return service.requestProductActivityExecution(
           processDefinitionId, productId, activityId, request, learningCycleId);

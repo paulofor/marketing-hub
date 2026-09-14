@@ -21,6 +21,9 @@ public interface ProcessRunRepository extends JpaRepository<ProcessRun, Long> {
   /** Localiza a execução idempotente do contexto congelado. */
   Optional<ProcessRun> findByScopeKey(String scopeKey);
 
+  /** Impede trocar a ficha de uma referência que já iniciou processo, inclusive histórico. */
+  boolean existsByProductIdAndSourceReference(Long productId, String sourceReference);
+
   /** Distribui a conciliação pela execução menos observada, excluindo contextos encerrados. */
   @Query(
       "select r.id from ProcessRun r where r.status not in ('PAUSED', 'COMPLETED', 'ERROR', 'CLOSED') order by r.lastReconciledAt, r.id")

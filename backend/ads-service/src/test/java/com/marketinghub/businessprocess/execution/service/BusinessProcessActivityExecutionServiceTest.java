@@ -254,7 +254,7 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(execution.finishedAt()).isEqualTo("2026-08-27T03:35:14Z");
   }
 
-  /** Preserva tarefas, estados e custos; a leitura leve omite somente os prompts extensos. */
+  /** Preserva tarefas, custos e referência histórica explícita; a leitura leve omite os prompts. */
   @Test
   void returnsProductActivitiesAndUniqueTasksWithoutCrossProcessLeakage() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -432,6 +432,19 @@ class BusinessProcessActivityExecutionServiceTest {
             });
     assertThat(result.activities().getFirst().tasks().getFirst().promptSent())
         .hasSizeGreaterThan(4_000_000);
+    when(commercialPlans.findIdsByProductId(9L)).thenReturn(List.of(4L, 5L));
+    var historical =
+        productService.productProcessExecutions(
+            18L, 9L, null, null, false, "commercial-plan:4@v2:journey");
+    assertThat(historical.currentExecutionReference()).isEqualTo("commercial-plan:4@v2:journey");
+    assertThat(
+            historical.activities().stream().flatMap(a -> a.tasks().stream()).map(t -> t.taskId()))
+        .containsExactly(242L);
+    assertThatThrownBy(
+            () ->
+                productService.productProcessExecutions(
+                    18L, 9L, null, null, false, "commercial-plan:99@v2:journey"))
+        .hasMessageContaining("Referência não encontrada");
   }
 
   /** Expõe o comando backend bloqueado sem quebrar a tela de produto ainda sem experimento. */
@@ -798,7 +811,7 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(request.getValue().sourceReference()).isEqualTo("experiment:" + expectedId);
   }
 
-  /** Inicia a construção privada pelo próprio produto antes de existir experimento comercial. */
+  /** Inicia a construção privada e preserva sua referência explícita antes do experimento. */
   @Test
   void requestsPrivateConstructionWithProductContextBeforeExperiment() {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
@@ -868,6 +881,20 @@ class BusinessProcessActivityExecutionServiceTest {
     verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
     assertThat(request.getValue().assignedAgentKey()).isEqualTo("landing-generator");
     assertThat(request.getValue().sourceReference()).isEqualTo("product:901@private-validation-v1");
+    clearInvocations(agentTasks);
+    String exact = "product:901@private-validation-v1-profile-2";
+    assertThat(
+            executionService
+                .productProcessExecutions(66L, 901L, null, null, false, exact)
+                .currentExecutionReference())
+        .isEqualTo(exact);
+    assertThat(
+            executionService
+                .requestProductActivityExecution(66L, 901L, "journey", null, null, exact)
+                .sourceReference())
+        .isEqualTo(exact);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(request.capture());
+    assertThat(request.getValue().sourceReference()).isEqualTo(exact);
   }
 
   /** Reconhece a referência privada aprovada tanto na consulta quanto no comando de comunicação. */

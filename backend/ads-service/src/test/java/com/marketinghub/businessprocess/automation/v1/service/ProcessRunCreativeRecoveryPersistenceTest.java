@@ -57,7 +57,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
   private long nextTask = 941410;
   private final String root = "/api/business-processes/94164/products/94110/automation/v1";
 
-  /** Usa o controller real; somente o executor de atividades e o catálogo são substituídos. */
+  /** Usa controller e persistência reais; o executor simulado exige a referência congelada. */
   @BeforeEach
   void setup() throws Exception {
     var product =
@@ -70,6 +70,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     when(products.findById(94110L)).thenReturn(Optional.of(product));
     when(products.findLockedById(94110L)).thenReturn(Optional.of(product));
     var context = mock(ProcessRunContext.class);
+    when(context.usesExecutionProfile(94110L, reference)).thenReturn(true);
     String diagram =
         """
         {"nodes":[{"id":"route","type":"TASK"},{"id":"nonAudiovisual","type":"TASK"},
@@ -117,7 +118,7 @@ class ProcessRunCreativeRecoveryPersistenceTest {
     state("audiovisual", "NOT_APPLICABLE", false);
     var activities = mock(BusinessProcessActivityExecutionService.class);
     when(activities.requestProductActivityExecution(
-            eq(94164L), eq(94110L), anyString(), isNull(), isNull()))
+            eq(94164L), eq(94110L), anyString(), isNull(), isNull(), eq(reference)))
         .thenAnswer(
             inv -> {
               String id = inv.getArgument(2);

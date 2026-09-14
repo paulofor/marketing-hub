@@ -118,13 +118,18 @@ paths:
   /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions:
     get:
       summary: Lista as atividades e tarefas do produto no processo canônico
-      description: Com learningCycleId, usa o ciclo explícito validado e preserva o contrato privado da construção. Sem esse parâmetro, prioriza o experimento já operado do próprio produto selecionado no plano vigente, inclusive pausado. Sucessor PLANNED e plano encerrado não substituem o fallback operacional; o comando usa a mesma referência.
+      description: Com sourceReference, consulta a referência exata do produto e valida o ciclo e a ficha vinculados. Sem referência explícita, conserva a seleção legada pelo ciclo ou experimento operado. O comando pode receber a mesma referência; sucessor PLANNED não substitui o contexto histórico solicitado.
       parameters:
         - name: includePromptAudit
           in: query
           required: false
           description: Quando false, omite os prompts persistidos da resposta para acompanhamento compacto. A auditoria integral permanece disponível pela tarefa; o padrão true preserva os consumidores existentes.
           schema: { type: boolean, default: true }
+        - name: sourceReference
+          in: query
+          required: false
+          description: Referência exata de produto, plano ou experimento; divergência de propriedade, ciclo ou ficha bloqueia a consulta.
+          schema: { type: string, maxLength: 200 }
         - name: chainId
           in: query
           required: false
@@ -226,6 +231,11 @@ paths:
           required: false
           description: Identidade do ciclo que fixa o experimento sem alterar a seleção legada; produto e composição são conferidos pelo backend.
           schema: { type: integer, format: int64 }
+        - name: sourceReference
+          in: query
+          required: false
+          description: Executa na referência exibida, sem substituir pelo experimento mais recente. Preserva todos os gates.
+          schema: { type: string, maxLength: 200 }
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId
           in: path

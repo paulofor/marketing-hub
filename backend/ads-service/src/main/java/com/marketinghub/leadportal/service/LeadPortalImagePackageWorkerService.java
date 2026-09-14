@@ -72,6 +72,10 @@ public class LeadPortalImagePackageWorkerService {
   private final ImageGenerationPricingService pricingService;
   private final LeadPortalImagePackageStatusHistoryService statusHistoryService;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private LeadPortalExecutionProfileBudget executionProfileBudget;
+
+  /** Inicializa persistência, preços e histórico do contrato de pacotes do worker. */
   public LeadPortalImagePackageWorkerService(
       JdbcTemplate jdbcTemplate,
       AssetRepository assetRepository,
@@ -117,9 +121,10 @@ public class LeadPortalImagePackageWorkerService {
     return jdbcTemplate.query(sql, RECENT_PACKAGE_MAPPER);
   }
 
-  /** Marca um pacote como em processamento. */
+  /** Reserva o custo máximo da ficha e marca o pacote como em processamento atomicamente. */
   @Transactional
   public void markProcessing(long packageId) {
+    if (executionProfileBudget != null) executionProfileBudget.reserve(packageId);
     Instant now = Instant.now();
     int updated =
         jdbcTemplate.update(
@@ -142,7 +147,7 @@ public class LeadPortalImagePackageWorkerService {
     }
   }
 
-  /** Marca um pacote como falho, registrando o motivo informado pelo worker. */
+  /** Registra falha do worker e mantém o custo desconhecido pendente de conciliação. */
   @Transactional
   public void markFailed(long packageId, String reason) {
     if (!StringUtils.hasText(reason)) {
@@ -170,10 +175,13 @@ public class LeadPortalImagePackageWorkerService {
     } else {
       statusHistoryService.recordStatusChange(
           packageId, FlowSubmissionImagePackageStatus.FAILED, trimmedReason, now);
+      if (executionProfileBudget != null) executionProfileBudget.settle(packageId, true);
     }
   }
 
-  /** Reabre um pacote para reprocessamento quando o erro é potencialmente temporário. */
+  /**
+   * Reabre o pacote, conservando a reserva anterior para bloquear repetição paga sem conciliação.
+   */
   @Transactional
   public void retry(long packageId, String reason) {
     String normalizedReason = StringUtils.hasText(reason) ? reason.trim() : null;
@@ -197,10 +205,11 @@ public class LeadPortalImagePackageWorkerService {
     } else {
       statusHistoryService.recordStatusChange(
           packageId, FlowSubmissionImagePackageStatus.RECEIVED, normalizedReason, now);
+      if (executionProfileBudget != null) executionProfileBudget.settle(packageId, true);
     }
   }
 
-  /** Conclui o processamento de um pacote, persistindo as imagens geradas e metadados. */
+  /** Confere a quantidade contratada e persiste resultados e pendência financeira do pacote. */
   @Transactional
   public void submitResults(long packageId, LeadPortalWorkerImageResultRequest request) {
     PackageSnapshot snapshot = findPackage(packageId).orElseThrow(() -> notFound(packageId));
@@ -223,6 +232,8 @@ public class LeadPortalImagePackageWorkerService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "É necessário informar ao menos uma imagem gerada");
     }
+    if (executionProfileBudget != null)
+      executionProfileBudget.requireComplete(packageId, request.images().size());
 
     // Limpa resultados anteriores caso existam
     jdbcTemplate.update("DELETE FROM flow_submission_image_item WHERE package_id = ?", packageId);
@@ -308,6 +319,7 @@ public class LeadPortalImagePackageWorkerService {
     } else {
       statusHistoryService.recordStatusChange(
           packageId, FlowSubmissionImagePackageStatus.WATERMARK_PENDING, null, now);
+      if (executionProfileBudget != null) executionProfileBudget.settle(packageId, false);
     }
   }
 

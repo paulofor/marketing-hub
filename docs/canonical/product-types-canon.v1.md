@@ -33,6 +33,10 @@ Esta diretriz não modifica por si só ofertas, funis, versões aprovadas ou gat
 
 ## Catálogo extensível e apelidos
 
+O percurso operacional é definido pela ficha versionada em
+`product-execution-profiles-canon.v1.md`, combinando capacidade, formato, entrega e receita.
+O tipo do catálogo não determina sozinho as atividades e não obriga implementação em webapp.
+
 Os tipos não são um `enum` fechado. O Marketing Hub deve manter um cadastro operacional com:
 
 - `code`: identidade estável usada por integrações e agentes;

@@ -24,4 +24,11 @@ aceitação independente do protótipo. Caso contrário, retorne `BLOCKED` com a
 
 ## Contexto da tarefa
 
+Quando existir `processContextJson.productExecutionProfile`, respeite a ficha e o percurso fixados.
+Para imagens personalizadas, acesso significa receber e usar o pacote correto, com recuperação da
+entrega e segregação entre clientes. Para jornada guiada, comprove primeiro valor e continuidade;
+para ferramenta IA, entradas, saída útil, falhas e limites; para kit, completude e uso. Não imponha
+webapp a toda entrega nem confunda arquivo gerado com entrega aproveitável ou venda. Preserve
+evidências, custo real e limitações sem incluir dados de teste nas métricas comerciais.
+
 {{TASK_CONTEXT}}

@@ -29,7 +29,27 @@ public class ProcessRunContext {
   private final ProductRepository products;
   private final ObjectMapper json;
 
-  /** Valida identidade e BPM; permite consulta da navegação sem referência, mas nunca execução. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
+      executionProfileContext;
+
+  /** Reconhece a versão publicada ou congelada previamente por esta execução do produto. */
+  public boolean executableVersion(
+      Long productId, Long processId, ProcessRunCommand command, String status) {
+    if ("PUBLISHED".equals(status)) return true;
+    return "RETIRED".equals(status)
+        && executionProfileContext != null
+        && executionProfileContext.bound(productId, command.sourceReference()).isPresent()
+        && executionProfileContext.pins(command.sourceReference(), processId);
+  }
+
+  /** Identifica a adoção da ficha para transportar sua referência exata aos comandos canônicos. */
+  public boolean usesExecutionProfile(Long productId, String reference) {
+    return executionProfileContext != null
+        && executionProfileContext.bound(productId, reference).isPresent();
+  }
+
+  /** Valida identidade, ficha e BPM; permite navegação sem referência, mas nunca execução. */
   public ProductProcessActivityExecutionHistoryResponse read(
       Long productId, Long processId, ProcessRunCommand command, boolean execution) {
     if (command == null
@@ -39,6 +59,9 @@ public class ProcessRunContext {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Informe cadeia e referência operacional do processo.");
     var process = process(processId);
+    if (executionProfileContext != null && command.sourceReference() != null)
+      executionProfileContext.requireScope(
+          productId, command.sourceReference(), command.chainId(), command.learningCycleId());
     if (!"PRODUCT".equals(process.getExecutionScope()))
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Este controle exige um processo vinculado a produto.");
@@ -67,8 +90,16 @@ public class ProcessRunContext {
             HttpStatus.CONFLICT, "O ciclo está encerrado; o histórico foi preservado.");
     }
     var result =
-        activities.productProcessExecutions(
-            processId, productId, command.learningCycleId(), command.chainId(), false);
+        usesExecutionProfile(productId, command.sourceReference())
+            ? activities.productProcessExecutions(
+                processId,
+                productId,
+                command.learningCycleId(),
+                command.chainId(),
+                false,
+                command.sourceReference())
+            : activities.productProcessExecutions(
+                processId, productId, command.learningCycleId(), command.chainId(), false);
     if (command.sourceReference() != null
         && !command.sourceReference().isBlank()
         && !Objects.equals(command.sourceReference(), result.currentExecutionReference()))

@@ -44,6 +44,11 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: coordenar a caixa de entrada e o ciclo de vida das tarefas dos agentes. */
 @Service
 public class AgentTaskService {
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileContext
+      executionProfileContext;
+
   private static final Logger log = LoggerFactory.getLogger(AgentTaskService.class);
   private static final Set<String> ALLOWED_TRANSITIONS =
       Set.of(
@@ -1376,7 +1381,7 @@ public class AgentTaskService {
     return value == null || value.isBlank() ? null : value.trim();
   }
 
-  /** Valida a atividade publicada ou a justificativa obrigatória da tarefa excepcional. */
+  /** Valida atividade publicada ou congelada na ficha, seus gates e a justificativa excepcional. */
   private ProcessBinding validateProcessBinding(CreateAgentTaskRequest request, Agent assignee) {
     if (request.exceptional()) {
       String reason = trimToNull(request.exceptionReason());
@@ -1402,9 +1407,22 @@ public class AgentTaskService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Processo não encontrado."));
-    if (!"PUBLISHED".equals(definition.getStatus())) {
+    if (!"PUBLISHED".equals(definition.getStatus())
+        && !("RETIRED".equals(definition.getStatus())
+            && executionProfileContext != null
+            && executionProfileContext.pins(request.sourceReference(), definition.getId()))) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "A tarefa só pode usar uma versão publicada do processo.");
+    }
+    if (executionProfileContext != null) {
+      String profileBlocker =
+          executionProfileContext.taskBlocker(
+              definition.getId(),
+              definition.getProcessCode(),
+              request.processActivityId(),
+              request.sourceReference());
+      if (profileBlocker != null)
+        throw new ResponseStatusException(HttpStatus.CONFLICT, profileBlocker);
     }
     try {
       JsonNode nodes = objectMapper.readTree(definition.getDiagramJson()).path("nodes");
@@ -1822,8 +1840,8 @@ public class AgentTaskService {
   }
 
   /**
-   * Consolida histórico e contratos do ciclo para os agentes, preservando a entrada privada de
-   * Íris.
+   * Consolida histórico, ficha congelada e contratos do ciclo para os agentes, preservando a
+   * entrada privada de Íris.
    */
   private String processContext(AgentTask task) {
     try {
@@ -1865,6 +1883,11 @@ public class AgentTaskService {
       context.put("completedActivities", completedActivities);
       context.put("completedHumanActivities", completedHumanActivities);
       context.put("blockedActivities", blockedActivities);
+      if (executionProfileContext != null) {
+        executionProfileContext
+            .taskContext(task.getSourceReference())
+            .ifPresent(profile -> context.put("productExecutionProfile", profile));
+      }
       if ("pde-construction-approval".equals(task.getProcessDefinition().getProcessCode())
           && task.getProcessDefinition().getVersionNumber() != null
           && task.getProcessDefinition().getVersionNumber() >= 7) {
@@ -2744,11 +2767,17 @@ public class AgentTaskService {
   }
 
   /**
-   * Valida a passagem comercial atual e as predecessoras antes de disponibilizar trabalho ao
+   * Valida ficha financeira, passagem comercial e predecessoras antes de disponibilizar trabalho ao
    * agente.
    */
   private boolean predecessorsCompleted(AgentTask candidate) {
     try {
+      if (executionProfileContext != null
+          && executionProfileContext.taskBlocker(
+                  candidate.getProcessDefinition().getId(),
+                      candidate.getProcessDefinition().getProcessCode(),
+                  candidate.getProcessActivityId(), candidate.getSourceReference())
+              != null) return false;
       if (salesFlowResolver != null
           && salesFlowResolver.executionBlocker(
                   candidate.getProcessDefinition(), candidate.getSourceReference())

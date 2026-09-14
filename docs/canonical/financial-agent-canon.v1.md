@@ -147,3 +147,28 @@ A autonomia somente poderá ser ampliada após pelo menos 30 dias de conciliaç�
 O changelog mestre deve criar `studio_cost_ledger_entry`, permitir `commercial_plan_id` nulo e somente depois executar o backfill completo de mídias. Essa ordem é parte do contrato financeiro: consumos sem atribuição precisam ser preservados como pendentes, nunca descartados nem atribuídos artificialmente a outro plano.
 
 O validador `scripts/validate-liquibase-mysql57.sh` deve bloquear ausência, duplicidade ou inversão desses três includes.
+
+
+## Fichas de execução e checkpoints — decisão de 14/09/2026
+
+A [ficha versionada do produto](product-execution-profiles-canon.v1.md) adota quatro
+checkpoints financeiros explícitos: oferta, desenho da entrega, homologação e operação.
+Cada decisão exige parecer concluído de Plutus para a mesma ficha e versão de plano,
+identificação humana e justificativa. Reutilizar o parecer quando a entrada não mudou.
+
+Reservas atômicas cobrem o pacote completo e as chamadas extras permitidas pelo executor.
+A geração administrativa e os pacotes de imagem do Lead Portal adotam esse controle quando
+vinculados à ficha. Consumo desconhecido ou acima da reserva impede novos pacotes da mesma
+execução e do mesmo escopo; teste e operação são separados. Uma conciliação humana exige
+comprovante do provedor, valor, câmbio quando houver e responsável. Não substitui comprovante
+por estimativa nem libera tentativas já reservadas.
+
+Produção privada tem orçamento total próprio por execução, separado do custo variável de
+cada entrega vendida e podendo usar outro modelo. Uma entrega sem chamadas de IA exige
+declaração explícita de custo variável zero; continuam sendo avaliados produção amortizada,
+aquisição, taxas, suporte e entrega. Essa declaração não autoriza consumo pago sem orçamento.
+
+A conciliação de resultados e o aprendizado permanecem consultáveis mesmo com a operação
+bloqueada, para localizar a perda e decidir a correção. Mudança de plano/modelo invalida novas
+chamadas; a revisão de tarifa exige conferência da fonte identificada na ficha, sem alegar
+monitoramento automático de tabelas externas de preços.

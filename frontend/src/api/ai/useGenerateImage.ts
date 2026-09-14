@@ -38,7 +38,15 @@ type ImageGenerationPayload = {
   commercialPlanId: number;
   experimentId?: number;
   prompt: string;
+  operationKey?: string;
 };
+
+/** Cria correlação aleatória também no HTTP usado pelo ambiente administrativo. */
+export function createImageOperationKey() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
 
 export function useGenerateImage() {
   return useMutation({

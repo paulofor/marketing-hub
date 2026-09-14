@@ -31,6 +31,9 @@ import org.springframework.http.MediaType;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.List;
+import com.marketinghub.videomanagement.service.provider.AuditedVideoProviderException;
+import com.marketinghub.videomanagement.service.provider.VideoProviderException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -127,6 +130,96 @@ class VideoJobProcessorTest {
         order.verify(videoProvider).validateInput(any(), any());
         order.verify(apolloStoryboardPlanner).planAndApprove(any(), any(), any());
         verify(backendClient, never()).failJob(any(), any());
+    }
+
+    /** Mantém áudio já consumido no backend antes de registrar a reprovação temporal. */
+    @Test
+    void shouldPersistAudioBeforeReportingProviderFailure() {
+        var job = prepareAuditJob();
+        var artifacts = audioAudit();
+        when(videoProvider.render(any(), any(), any())).thenThrow(AuditedVideoProviderException.preserve(job.id(),
+                new VideoProviderException("APOLLO_NARRATION_DURATION_EXCEEDED", "15.552s > 15s"), artifacts.auditFiles(), List.of(Map.of("status", "RECEIVED"))));
+        when(assetUploader.uploadAuditAssets(any(), any())).thenReturn(List.of(Map.of("asset_id", 91001L)));
+        processor.process(job);
+        var order = org.mockito.Mockito.inOrder(assetUploader, backendClient);
+        order.verify(assetUploader).uploadAuditAssets(any(), any());
+        order.verify(backendClient).reportProgress(any(), any());
+        order.verify(backendClient).failJob(any(), failureCaptor.capture());
+        assertThat(failureCaptor.getValue().failureCode()).isEqualTo("APOLLO_NARRATION_DURATION_EXCEEDED");
+        assertThat(failureCaptor.getValue().retryable()).isFalse();
+        verify(assetUploader, never()).uploadAssets(any(), any());
+        verify(backendClient, never()).completeJob(any(), any());
+    }
+
+    /** Falha de armazenamento bloqueia e exige conciliação, sem render aprovado nem nova tentativa. */
+    @Test
+    void shouldStopWhenFailedProviderAuditCannotBePersisted() {
+        var job = prepareAuditJob(); var artifacts = audioAudit();
+        when(videoProvider.render(any(), any(), any())).thenThrow(AuditedVideoProviderException.preserve(job.id(),
+                new VideoProviderException("APOLLO_NARRATION_DURATION_EXCEEDED", "excedeu"), artifacts.auditFiles(), List.of()));
+        when(assetUploader.uploadAuditAssets(any(), any())).thenThrow(new BackendIntegrationException("fixture unavailable"));
+        processor.process(job);
+        verify(backendClient).failJob(any(), failureCaptor.capture());
+        assertThat(failureCaptor.getValue().failureCode()).isEqualTo("AUDIT_PERSISTENCE_FAILED");
+        assertThat(failureCaptor.getValue().retryable()).isFalse();
+        verify(backendClient, never()).completeJob(any(), any());
+        verify(assetUploader, never()).uploadAssets(any(), any());
+    }
+
+    /** Uma reprovação técnica posterior ao provider conserva a voz, mas não publica o vídeo. */
+    @Test
+    void shouldPreserveAuditBeforeTechnicalGateRejection() {
+        var job = prepareAuditJob(); var artifacts = audioAudit();
+        when(videoProvider.render(any(), any(), any())).thenReturn(artifacts);
+        when(assetUploader.uploadAuditAssets(any(), any())).thenReturn(List.of(Map.of("asset_id", 91001L)));
+        var gate = org.mockito.Mockito.mock(ApolloTechnicalVideoQualityGate.class);
+        when(gate.validate(any(), any())).thenThrow(new VideoProviderException("APOLLO_VIDEO_STABILITY_REJECTED", "fixture"));
+        processorWithGate(gate).process(job);
+        var order = org.mockito.Mockito.inOrder(assetUploader, gate, backendClient);
+        order.verify(assetUploader).uploadAuditAssets(any(), any());
+        order.verify(gate).validate(any(), any());
+        order.verify(backendClient).failJob(any(), failureCaptor.capture());
+        assertThat(failureCaptor.getValue().failureCode()).isEqualTo("APOLLO_VIDEO_STABILITY_REJECTED");
+        verify(assetUploader, never()).uploadAssets(any(), any());
+    }
+
+    /** No sucesso, os recibos entram no resultado e os mesmos binários não são enviados novamente. */
+    @Test
+    void shouldUploadAuditOnlyOnceOnSuccess() {
+        var job = prepareAuditJob(); var artifacts = audioAudit();
+        when(videoProvider.render(any(), any(), any())).thenReturn(artifacts);
+        when(assetUploader.uploadAuditAssets(any(), any())).thenReturn(List.of(Map.of("asset_id", 91001L)));
+        when(assetUploader.uploadAssets(any(), any())).thenReturn(new UploadedAssets(91002L, null, null));
+        processor.process(job);
+        var captured = ArgumentCaptor.forClass(ProviderArtifacts.class);
+        verify(assetUploader).uploadAssets(any(), captured.capture());
+        assertThat(captured.getValue().auditFiles()).isEmpty();
+        assertThat(captured.getValue().metadata()).containsKey("persisted_audit_assets");
+        verify(assetUploader).uploadAuditAssets(any(), any());
+        verify(backendClient).completeJob(any(), completionCaptor.capture());
+        assertThat(completionCaptor.getValue().metadataJson()).contains("91001", "persisted_audit_assets");
+    }
+
+    /** Prepara somente execução local com provider e planejamento simulados. */
+    private SalesVideoJob prepareAuditJob() {
+        var job = job();
+        when(apolloStoryboardPlanner.planAndApprove(any(), any(), any())).thenReturn(job);
+        when(backendClient.fetchProfile(2L)).thenReturn(profile());
+        when(providerRegistry.resolve(job)).thenReturn(Optional.of(videoProvider));
+        return job;
+    }
+
+    /** Representa áudio pago recebido e vídeo ainda sujeito à validação técnica. */
+    private ProviderArtifacts audioAudit() {
+        return new ProviderArtifacts("fixture", new ProviderFile("video.mp4", MediaType.valueOf("video/mp4"), AssetType.VIDEO,
+                ProviderAssetRole.VIDEO, new byte[]{1}), null, null, Map.of("tts_interactions", List.of()),
+                List.of(new ProviderFile("tts.wav", MediaType.valueOf("audio/wav"), AssetType.AUDIO, ProviderAssetRole.AUDIO_AUDIT, new byte[]{2,3})));
+    }
+
+    /** Injeta a reprovação do gate sem executar FFmpeg sobre bytes sintéticos. */
+    private VideoJobProcessor processorWithGate(ApolloTechnicalVideoQualityGate gate) {
+        return new VideoJobProcessor(backendClient, providerRegistry, assetUploader, observabilityService,
+                new VideoManagementProperties(), new ObjectMapper(), apolloStoryboardPlanner, learningReporter, gate, productUgcContractResolver);
     }
 
     /** Registra falha funcional quando nenhum provider atende ao contrato do job. */

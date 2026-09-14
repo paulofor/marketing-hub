@@ -85,6 +85,31 @@ class VideoAssetUploaderTest {
                         "\"sha256\":\"e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71\"");
     }
 
+    /** Persiste a auditoria de um job bloqueado sem fabricar vídeo principal ou preparar HLS. */
+    @Test
+    void shouldUploadOnlyAuditAssetsWithReceipts() {
+        var audio = new ProviderFile("tts.mp3", MediaType.valueOf("audio/mpeg"), AssetType.AUDIO,
+                ProviderAssetRole.AUDIO_AUDIT, new byte[] {4});
+        var artifacts = new ProviderArtifacts("failed", null, null, null,
+                Map.of("audit_outcome", "BLOCKED"), List.of(audio));
+        when(assetClient.uploadAsset(any(), any())).thenReturn(new AssetResponse(91001L, AssetType.AUDIO, null, null, null, null, null));
+        var result = uploader.uploadAuditAssets(sampleJob(), artifacts);
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst()).containsEntry("asset_id", 91001L).containsEntry("role", "AUDIO_AUDIT");
+        verify(assetClient).uploadAsset(org.mockito.ArgumentMatchers.eq(audio), metadataCaptor.capture());
+        assertThat(metadataCaptor.getValue()).contains("BLOCKED", "job_id", "size_bytes", "sha256");
+    }
+
+    /** Upload sem identificador persistido não conta como auditoria preservada. */
+    @Test
+    void shouldRejectAuditUploadWithoutReceipt() {
+        var audio = new ProviderFile("tts.mp3", MediaType.valueOf("audio/mpeg"), AssetType.AUDIO,
+                ProviderAssetRole.AUDIO_AUDIT, new byte[] {4});
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> uploader.uploadAuditAssets(sampleJob(),
+                new ProviderArtifacts("failed", null, null, null, Map.of(), List.of(audio))))
+                .isInstanceOf(com.marketinghub.videomanagement.exception.BackendIntegrationException.class);
+    }
+
     /** Monta um job mínimo para os cenários de upload de artefatos. */
     private SalesVideoJob sampleJob() {
         return new SalesVideoJob(

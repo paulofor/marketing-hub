@@ -88,6 +88,10 @@ public interface SalesVideoJobRepository
   /** Recupera o encaminhamento já criado para impedir pós-produção duplicada. */
   Optional<SalesVideoJob> findFirstByRetryOfJob_IdOrderByRequestedAtDesc(Long jobId);
 
+  /** Lê o filho atual após o lock da fonte, sem usar snapshot anterior do MySQL REPEATABLE READ. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  Optional<SalesVideoJob> findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(Long jobId);
+
   /** Localiza recusas recentes de crédito emitidas por uma família de provedor. */
   @Query(
       "select j from SalesVideoJob j where upper(j.providerName) like concat('%', upper(:provider), '%') and (lower(j.failureDetail) like '%credit%' or lower(j.failureDetail) like '%saldo%') order by j.finishedAt desc, j.updatedAt desc")

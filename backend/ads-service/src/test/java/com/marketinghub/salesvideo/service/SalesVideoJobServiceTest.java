@@ -48,6 +48,105 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
+  /** Retoma só o filho falho da fonte atual e rejeita fontes de tentativas posteriores. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"FAILED_SAME", "FAILED_OTHER", "READY_SAME"})
+  void shouldCorrelateFinalizationRecoveryWithoutOverwritingNewerWork(String scenario) {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.setJobType(SalesVideoJobType.RENDER);
+    source.setProviderName("RUNWAY_ROUTER");
+    source.setMetadataJson(
+        "{\"videoProductionCycleId\":91022,\"videoProjectId\":91004,\"experimentId\":91001,\"targetDurationSeconds\":15}");
+    var current =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .tenantId("default")
+            .profile(source.getProfile())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .status(
+                scenario.equals("READY_SAME")
+                    ? SalesVideoStatus.VIDEO_READY
+                    : SalesVideoStatus.VIDEO_FAILED)
+            .retryOfJob(
+                scenario.equals("FAILED_OTHER")
+                    ? SalesVideoJob.builder().id(91999L).build()
+                    : source)
+            .build();
+    var cycle = new com.marketinghub.salesvideo.VideoProductionCycle();
+    cycle.setId(91022L);
+    cycle.setVideoProjectId(91004L);
+    cycle.setExperimentId(91001L);
+    cycle.setSalesVideoJobId(current.getId());
+    cycle.setStatus("APOLLO_BLOCKED");
+    var cycles =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
+    service.setProductionCycleRepository(cycles);
+    given(cycles.findById(91022L)).willReturn(Optional.of(cycle));
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findById(current.getId())).willReturn(Optional.of(current));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("fixture@sandbox.local");
+    request.setCaptionText("Copy menor");
+    request.setVoiceOverScript("Copy menor");
+    if (scenario.equals("FAILED_SAME")) {
+      given(jobRepository.save(any()))
+          .willAnswer(
+              i -> {
+                SalesVideoJob j = i.getArgument(0);
+                if (j.getId() == null) j.setId(91011L);
+                return j;
+              });
+      var result = service.requestPostProduction(source.getId(), request);
+      assertThat(result.getId()).isEqualTo(91011L);
+      assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
+      assertThat(result.getMetadataJson()).contains("91022", "91004", "91001", "Copy menor");
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(91011L);
+      assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
+      assertThat(current.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+      verify(cycles).save(cycle);
+    } else {
+      assertThrows(
+          VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(current.getId());
+      verify(jobRepository, never()).save(any());
+      verify(cycles, never()).save(any());
+    }
+  }
+
+  /** Reutiliza a chamada ativa igual e bloqueia edição concorrente sem enfileirar outro consumo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+  void shouldPreventConcurrentFinalizationRequests(boolean sameText) {
+    var source = VideoFinalDeliveryContractTest.source();
+    var child =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .tenantId("default")
+            .profile(source.getProfile())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .metadataJson(
+                "{\"captionText\":\"Copy menor\",\"voiceOverScript\":\"Copy menor\",\"sourceVideoUrl\":\"https://cdn.test/final.mp4\"}")
+            .build();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(source.getId()))
+        .willReturn(Optional.of(child));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setCaptionText(sameText ? "Copy menor" : "Outra copy");
+    request.setVoiceOverScript("Copy menor");
+    if (sameText)
+      assertThat(service.requestPostProduction(source.getId(), request).getId())
+          .isEqualTo(child.getId());
+    else
+      assertThrows(
+          VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
+    verify(jobRepository, never()).save(any());
+  }
+
   /** Expõe disponibilidade e bloqueia nova preparação quando já existe filho em execução. */
   @Test
   void shouldExposeBackendDeliveryAvailability() {
@@ -98,7 +197,7 @@ class SalesVideoJobServiceTest {
             .build();
     given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
     given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
-    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(source.getId()))
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(source.getId()))
         .willReturn(Optional.of(child));
     assertThat(
             service
@@ -565,6 +664,7 @@ class SalesVideoJobServiceTest {
     Asset sourceAsset =
         Asset.builder().id(903L).url("https://cdn.example.com/vega-91-ugc.mp4").build();
     given(jobRepository.findById(20522L)).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(20522L)).willReturn(Optional.of(source));
     given(assetRepository.findById(903L)).willReturn(Optional.of(sourceAsset));
     given(jobRepository.save(any(SalesVideoJob.class)))
         .willAnswer(
@@ -964,6 +1064,7 @@ class SalesVideoJobServiceTest {
     request.setRequestedBy("operator@tenant.io");
     request.setCaptionText("Faça o diagnóstico gratuito.");
     given(jobRepository.findById(21232L)).willReturn(Optional.of(sourceJob));
+    given(jobRepository.findByIdForUpdate(21232L)).willReturn(Optional.of(sourceJob));
     given(jobRepository.save(any(SalesVideoJob.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
     given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
@@ -1124,6 +1225,7 @@ class SalesVideoJobServiceTest {
     request.setCaptionText("Veja seu plano MUSA de 7 dias.");
 
     given(jobRepository.findById(20432L)).willReturn(Optional.of(sourceJob));
+    given(jobRepository.findByIdForUpdate(20432L)).willReturn(Optional.of(sourceJob));
     given(jobRepository.save(any(SalesVideoJob.class)))
         .willAnswer(
             invocation -> {

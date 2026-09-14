@@ -54,12 +54,14 @@ run backend-ci-contract python3 scripts/test-backend-ci-workflow.py
 run package mvn -B -ntp -f backend/ads-service/pom.xml package -DskipTests
 run package-contract python3 scripts/test-backend-packaged-resources.py
 run package-integrity python3 scripts/verify-backend-packaged-resources.py
-run frontend npm --prefix frontend test -- --run src/pages/financial src/pages/learningCycle src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx src/api/salesVideo src/pages/product/ProductProcessAutomationPanel.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/product/productProcessContext.test.tsx
+run frontend npm --prefix frontend test -- --run src/pages/salesVideo/ProductSalesVideoPage.helpers.test.ts src/pages/financial src/pages/learningCycle src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx src/api/salesVideo src/pages/product/ProductProcessAutomationPanel.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/product/productProcessContext.test.tsx
 run application-contract python3 infra/testing/vega-process6-recovery/test-application.py
 run cors-contract python3 scripts/test-video-read-cors.py
 run typecheck npm --prefix frontend run typecheck
 run build env VITE_API_URL=http://127.0.0.1:15173 npm --prefix frontend run build
 run classpath mvn -q -f backend/ads-service/pom.xml dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=target/video-finance-classpath
+run finalization-lock-compile javac --class-path "backend/ads-service/target/classes:$(cat backend/ads-service/target/video-finance-classpath)" -d "$output/lock-classes" infra/testing/video-finance/VerifyFinalizationLock.java
+run finalization-lock java --class-path "$output/lock-classes:backend/ads-service/target/classes:$(cat backend/ads-service/target/video-finance-classpath)" VerifyFinalizationLock
 run worker-classpath mvn -q -f video-management-service/pom.xml dependency:build-classpath -Dmdep.outputFile=target/runway-classpath
 run worker-contract java --class-path "video-management-service/target/classes:$(cat video-management-service/target/runway-classpath)" infra/testing/runway-clip-plan/VerifyWorker.java backend/ads-service/target/runway-clip-contract.json "$output/worker-requests.json"
 run proof-compile javac --class-path "video-management-service/target/classes:$(cat video-management-service/target/runway-classpath)" -d "$output/proof-classes" infra/testing/video-finance/VerifyPrivateProof.java
@@ -79,6 +81,7 @@ node frontend/node_modules/vite/bin/vite.js preview frontend --config frontend/v
 ui_pid=$!
 wait_http http://127.0.0.1:15173
 run browser env VIDEO_PREFLIGHT_FIXTURE_RESULT="$output/preflight-rest.log" VIDEO_PREFLIGHT_EVIDENCE_DIR="$output/browser" node frontend/e2e/video-preflight-guidance-responsive.mjs
+run finalization-browser node infra/testing/video-finance/verify-finalization-responsive.cjs "$output/media"
 run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*(ProcessRunVideoGuidance|SalesVideoJobDto|DeliveryPreparation|VideoFinalDeliveryContract|VideoProjectFunnelRole|SalesVideoJobRepository|ExperimentVideoAssetJobSyncService|RequestSalesVideoPostProductionRequest|VideoProductionCycleService|SalesVideoController|SalesVideoAssetControllerTest|SalesVideoService|SalesVideoJobService|VideoProjectService|VideoProductProof.*|AgentTaskVideoProductProofSource).*java'
 run diff git diff --check
 python3 - "$output" <<'PY'

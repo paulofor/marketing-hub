@@ -338,6 +338,12 @@ paths:
         O backend congela os artefatos e o executor prepara HLS sem nova geração
         de vídeo ou voz. Repetições retornam a entrega existente; conteúdo, custo
         anterior, tenant e decisões humanas são preservados. HLS não aprova uso.
+        As solicitações são serializadas por fonte. Acabamento ativo com os mesmos
+        textos e URL é reutilizado; entradas diferentes aguardam sua conclusão.
+        Após falha de acabamento, o bruto pronto pode originar novo filho, mantendo
+        o histórico e atualizando o ciclo somente quando este ainda acompanha a
+        fonte ou seu filho falho correspondente. Fonte de tentativa anterior não
+        sobrescreve trabalho posterior nem um acabamento pronto.
       parameters:
         - $ref: '#/components/parameters/JobId'
       requestBody:
@@ -354,7 +360,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SalesVideoJobDto'
         '400':
-          description: Job fonte não está pronto ou não possui URL/asset de vídeo
+          description: Fonte indisponível, ciclo já avançado ou tentativa de alterar entradas de acabamento ativo
         '409':
           description: Recuperação sem artefatos íntegros ou com tentativa de alterar o conteúdo final
         '404':

@@ -90,6 +90,29 @@ ID quando existir e SHA-256. Como o endpoint de Speech não devolve uso por requ
 exibe de forma legível que a voz foi gerada por IA. O endpoint não aceita `service_tier`, e essa
 exceção funcional deve constar na auditoria em vez de enviar campo não suportado.
 
+Os binários e interações já recebidos devem ser preservados também quando a medição,
+a montagem ou o QA final bloquearem o vídeo. A persistência dessas respostas antecede
+o callback de falha ou sucesso e não aprova o artefato. Cada recibo registra asset,
+papel, tamanho e hash; falha de armazenamento interrompe o fluxo sem repetição paga
+automática. Custo de voz ainda não conciliado permanece pendente, inclusive em falhas.
+Quando a narração exceder a duração, simplificar palavras redundantes sob a mesma
+mensagem é uma alternativa; contagem de palavras não substitui a medição física.
+Não acelerar a voz, estender o vídeo ou relaxar o gate implicitamente.
+
+A recuperação do acabamento usa o bruto pronto e uma nova tentativa auditável,
+sem regenerar clipes. O ciclo acompanha o novo filho somente se ainda apontar para
+a fonte ou para o filho falho dessa mesma fonte, projeto e experimento. Fonte antiga
+não sobrescreve finalização aprovada ou tentativa posterior. Solicitações concorrentes
+são serializadas pela fonte e consultam o filho sob lock de leitura atual do MySQL;
+entradas idênticas reutilizam trabalho ativo e entradas alteradas aguardam sua conclusão.
+
+A tela apresenta inspeções registradas pelo backend. Termos do roteiro como CTA,
+listas de problemas a evitar, IDs de ativos e nome do fornecedor não são evidência
+de defeito ou aprovação. Na ausência de inspeção conclusiva, a revisão visual fica
+pendente. Estabilidade medida e aprovada é um resultado técnico parcial; não substitui
+a revisão visual, a escuta ou a decisão humana de uso. Reprovações técnicas reais
+continuam visíveis com seu motivo persistido.
+
 O limite genérico de dez segundos das rotas Runway de clipe não se aplica à receita fixada
 `RUNWAY_PRODUCT_UGC`, cujo contrato aceita até quinze segundos. A validação de duração do backend
 deve resolver primeiro a identidade da receita e somente depois aplicar o fallback genérico do

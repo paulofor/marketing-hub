@@ -103,8 +103,10 @@ class VerifyPrivateProof {
       properties.getProviders().getPostProduction().setOpenAiApiKey("fixture-only");
       properties.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(base + "/v1"));
       metadata.put("sourceVideoUrl", base + "/source.mp4");
-      metadata.put("captionText", metadata.at("/premiumFinalization/captionText").asText());
-      metadata.put("voiceOverScript", metadata.at("/premiumFinalization/voiceOverScript").asText());
+      String candidateText = "Escolha ocasião e combinação. | Veja seu ajuste. Aplique e avalie. | Salve para retomar. | Experimente o primeiro ajuste MUSA. | Sem compra ou cobrança.";
+      metadata.put("captionText", candidateText);
+      metadata.put("voiceOverScript", candidateText);
+      metadata.put("syntheticTestOnly", true);
       var job = mapper.createObjectNode().put("id",91009).put("profileId",91001).put("jobType","POST_PRODUCTION")
           .put("tenantId",metadata.path("tenantId").asText()).put("providerName","MUSA_POST_PRODUCTION").put("metadataJson", metadata.toString());
       var profile = mapper.createObjectNode().put("id",91001).put("targetDurationSeconds",15);
@@ -116,7 +118,7 @@ class VerifyPrivateProof {
       if (!"APPLIED".equals(report.at("/product_reference_overlay/status").asText())
           || !"APPROVED".equals(report.at("/caption_narration_sync/timing_status").asText())
           || !report.at("/captions/burned_in").asBoolean() || !report.path("has_audio").asBoolean()
-          || calls.get() != 2 || proofs.get() != 2) throw new IllegalStateException("Contrato integrado incompleto: " + report);
+          || calls.get() != 5 || proofs.get() != 2) throw new IllegalStateException("Contrato integrado incompleto: " + report);
       Files.write(output.resolve("final-fixture.mp4"),result.videoFile().content());
       Files.write(output.resolve("final-fixture.vtt"),result.captionFile().content());
       Files.writeString(output.resolve("worker-result.json"),report.toPrettyString());
@@ -153,7 +155,7 @@ class VerifyPrivateProof {
           .put("captionSha256",HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(result.captionFile().content())));
       var recoveryJob = mapper.treeToValue(job.deepCopy().put("id",91010).put("metadataJson",recoveryMetadata.toString()),SalesVideoJob.class);
       var recovered = provider.render(recoveryJob,mapper.treeToValue(profile,SalesVideoProfile.class),(p,s,m)->{});
-      if (!java.util.Arrays.equals(recovered.videoFile().content(),result.videoFile().content()) || calls.get()!=2
+      if (!java.util.Arrays.equals(recovered.videoFile().content(),result.videoFile().content()) || calls.get()!=5
           || !java.math.BigDecimal.ZERO.equals(recovered.metadata().get("cost_usd"))) throw new IllegalStateException("Recuperação alterou bytes ou chamou TTS");
       var recoveredUpload = new VideoAssetUploader(new VideoAssetClient(WebClient.builder(),properties),mapper,properties).uploadAssets(recoveryJob,recovered);
       if (recoveredUpload.streamPlaybackUrl()==null) throw new IllegalStateException("Recuperação não entregou HLS");

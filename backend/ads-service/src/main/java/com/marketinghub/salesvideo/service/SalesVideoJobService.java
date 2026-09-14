@@ -712,7 +712,10 @@ public class SalesVideoJobService {
     this.productionCycleRepository = repository;
   }
 
-  /** Acompanha o filho de acabamento sem sobrescrever uma tentativa posterior do mesmo ciclo. */
+  /**
+   * Acompanha acabamento inicial ou correção do filho falho da mesma fonte, preservando tentativas
+   * posteriores.
+   */
   private void trackGovernedFinalization(SalesVideoJob source, SalesVideoJob child) {
     if (productionCycleRepository == null) return;
     JsonNode metadata = readJobMetadata(source);
@@ -720,7 +723,7 @@ public class SalesVideoJobService {
     if (cycleId <= 0) return;
     productionCycleRepository
         .findById(cycleId)
-        .filter(cycle -> java.util.Objects.equals(cycle.getSalesVideoJobId(), source.getId()))
+        .filter(cycle -> canTrackFinalization(cycle.getSalesVideoJobId(), source))
         .filter(
             cycle ->
                 java.util.Objects.equals(
@@ -738,16 +741,33 @@ public class SalesVideoJobService {
             });
   }
 
-  /** Cria acabamento ou recupera somente HLS, preservando a fonte e impedindo entrega duplicada. */
+  /** Só substitui o filho falho cuja origem é exatamente o bruto reaproveitado. */
+  private boolean canTrackFinalization(Long currentJobId, SalesVideoJob source) {
+    if (java.util.Objects.equals(currentJobId, source.getId())) return true;
+    if (currentJobId == null) return false;
+    return jobRepository
+        .findById(currentJobId)
+        .filter(current -> current.getJobType() == SalesVideoJobType.POST_PRODUCTION)
+        .filter(current -> current.getStatus() == SalesVideoStatus.VIDEO_FAILED)
+        .filter(current -> current.getRetryOfJob() != null)
+        .filter(
+            current -> java.util.Objects.equals(current.getRetryOfJob().getId(), source.getId()))
+        .isPresent();
+  }
+
+  /**
+   * Serializa a finalização por fonte, preserva o bruto e impede processamento simultâneo
+   * duplicado.
+   */
   @Transactional
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
     SalesVideoJob sourceJob = loadJob(sourceJobId);
+    sourceJob = jobRepository.findByIdForUpdate(sourceJobId).orElseThrow();
+    Optional<SalesVideoJob> existing =
+        jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(sourceJobId);
     if (request.isDeliveryOnly()) {
-      sourceJob = jobRepository.findByIdForUpdate(sourceJobId).orElseThrow();
       if (StringUtils.hasText(sourceJob.getStreamPlaybackUrl())) return toDto(sourceJob);
-      Optional<SalesVideoJob> existing =
-          jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(sourceJobId);
       if (existing.isPresent()
           && readJobMetadata(existing.get()).path("deliveryOnly").asBoolean()
           && existing.get().getStatus() != SalesVideoStatus.VIDEO_FAILED)
@@ -760,6 +780,23 @@ public class SalesVideoJobService {
           "Pós-produção exige vídeo pronto ou render curto com arquivo preservado.");
     }
     String sourceVideoUrl = resolveSourceVideoUrl(sourceJob, request.getSourceVideoUrl());
+    if (!request.isDeliveryOnly()
+        && existing.isPresent()
+        && existing.get().getJobType() == SalesVideoJobType.POST_PRODUCTION
+        && (existing.get().getStatus() == SalesVideoStatus.VIDEO_REQUESTED
+            || existing.get().getStatus() == SalesVideoStatus.VIDEO_PROCESSING)) {
+      JsonNode previous = readJobMetadata(existing.get());
+      if (java.util.Objects.equals(
+              previous.path("captionText").asText(null), request.getCaptionText())
+          && java.util.Objects.equals(
+              previous.path("voiceOverScript").asText(null), request.getVoiceOverScript())
+          && java.util.Objects.equals(previous.path("sourceVideoUrl").asText(null), sourceVideoUrl))
+        return toDto(existing.get());
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Esta fonte já possui finalização em execução. Aguarde o resultado antes de alterar o texto.");
+    }
+    validateFinalizationRecovery(sourceJob);
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
     SalesVideoJob postProductionJob =
         createJob(
@@ -792,6 +829,24 @@ public class SalesVideoJobService {
             + requestedBy,
         "Job de pós-produção #" + postProductionJob.getId());
     return toDto(postProductionJob);
+  }
+
+  /** Impede recuperação paga de uma fonte cujo ciclo já avançou para outra tentativa. */
+  private void validateFinalizationRecovery(SalesVideoJob source) {
+    if (productionCycleRepository == null) return;
+    JsonNode metadata = readJobMetadata(source);
+    long cycleId = metadata.path("videoProductionCycleId").asLong();
+    if (cycleId <= 0) return;
+    var cycle = productionCycleRepository.findById(cycleId).orElse(null);
+    if (cycle == null
+        || !java.util.Objects.equals(
+            cycle.getVideoProjectId(), metadata.path("videoProjectId").asLong())
+        || !java.util.Objects.equals(
+            cycle.getExperimentId(), metadata.path("experimentId").asLong())
+        || !canTrackFinalization(cycle.getSalesVideoJobId(), source))
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "A fonte não corresponde à tentativa atual do ciclo. Consulte a finalização existente antes de solicitar outra.");
   }
 
   /** Permite reaproveitar montagem tecnicamente produzida que falhou apenas no gate de duração. */

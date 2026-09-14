@@ -1863,177 +1863,49 @@ type VideoAudioQualityAssessment = {
   voiceQuality: string;
 };
 
-function assessVideoVisualQuality(
-  profile: SalesVideoProfile | undefined,
+/** Exibe somente inspeção persistida; briefing, provider e identificadores não comprovam qualidade. */
+export function assessVideoVisualQuality(
+  _profile: SalesVideoProfile | undefined,
   job: SalesVideoJob,
 ): VideoVisualQualityAssessment {
-  const searchableText = [
-    profile?.title,
-    profile?.videoKind,
-    profile?.personaStyle,
-    profile?.voiceStyle,
-    job.providerName,
-    job.providerJobId,
-    job.metadataJson,
-    job.auditSnapshotJson,
-    job.assetId ? `asset ${job.assetId}` : "",
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  const knownMusaIssue = assessKnownMusaVisualIssue(searchableText, job);
-  if (knownMusaIssue) {
-    return knownMusaIssue;
-  }
-
-  if (
-    containsAny(searchableText, [
-      "haze",
-      "fog",
-      "mist",
-      "nevoa",
-      "névoa",
-      "white cloud",
-      "low contrast",
-      "flicker",
-      "exposure shift",
-      "lighting oscillation",
-      "oscilacao",
-      "oscilação",
-    ])
-  ) {
+  const rejected = [
+    "APOLLO_VIDEO_STABILITY_REJECTED",
+    "APOLLO_VIDEO_CONTINUITY_REJECTED",
+    "APOLLO_VIDEO_SCENE_CUTS_REJECTED",
+  ].includes(job.failureCode ?? "");
+  if (job.status === "VIDEO_FAILED" && rejected) {
     return {
       status: "blocked",
-      label: "Bloqueado para hero",
+      label: "Reprovado na inspeção técnica",
       issues: [
-        "Metadados indicam névoa, contraste baixo ou oscilação de iluminação.",
-        "A primeira dobra pode parecer menos premium e reduzir confiança.",
+        job.failureDetail ||
+          "A inspeção técnica registrada bloqueou este vídeo.",
       ],
       recommendation:
-        "Não usar como hero principal. Regenerar com prompt exigindo imagem limpa, sem haze/fumaça/blur e iluminação estável.",
+        "Consultar a evidência da falha e corrigir sua causa antes de nova avaliação.",
     };
   }
-
-  if (isLumaJob(job)) {
-    return {
-      status: "warning",
-      label: "Revisão visual necessária",
-      issues: [
-        "Provider visual premium sem garantia de fala ou áudio nativo.",
-        "Verificar manualmente névoa, nitidez e estabilidade de luz antes de aprovar.",
-      ],
-      recommendation:
-        "Usar somente após revisão humana. Para hero, prefira imagem nítida nos 3 primeiros segundos e pós-produção com voz/legenda.",
-    };
-  }
-
-  if (isVeoJob(job)) {
-    return {
-      status: "approved",
-      label: "Apto para teste",
-      issues: [
-        "Vídeo curto falado é mais forte para hook e tráfego frio.",
-        "Ainda precisa de revisão humana antes de virar peça final de campanha.",
-      ],
-      recommendation:
-        "Usar como criativo curto ou referência de tom. Para vídeo maior, montar sequência de blocos falados.",
-    };
-  }
-
+  const metadata = parseJsonObject(job.metadataJson);
+  const technical = readJsonObject(metadata?.apollo_technical_quality);
+  const stabilityMeasured =
+    job.status === "VIDEO_READY" &&
+    technical?.stability_status === "APPROVED" &&
+    technical?.method === "FFMPEG_SCENE_AWARE_VIDSTAB_GLOBAL_MOTION_DELTA" &&
+    typeof technical.measured_frames === "number" &&
+    technical.measured_frames > 0;
   return {
     status: "warning",
-    label: "Revisar antes de aprovar",
-    issues: [
-      "Sem diagnóstico visual específico salvo para este vídeo.",
-      "Validar nitidez, contraste, estabilidade de iluminação e coerência com o objetivo comercial.",
-    ],
+    label: stabilityMeasured
+      ? "Estabilidade medida; revisão visual pendente"
+      : "Revisão visual pendente",
+    issues: stabilityMeasured
+      ? [
+          "A medição de estabilidade passou; ela não comprova a qualidade visual completa.",
+        ]
+      : ["Sem inspeção visual conclusiva registrada para este vídeo."],
     recommendation:
-      "Assistir no player antes de escolher como hero ou anúncio. Se houver névoa/oscilação, regenerar.",
+      "Inspecionar o vídeo real quanto a nitidez, luz, continuidade e fidelidade ao produto antes de aprovar seu uso.",
   };
-}
-
-function assessKnownMusaVisualIssue(
-  searchableText: string,
-  job: SalesVideoJob,
-): VideoVisualQualityAssessment | null {
-  if (containsAny(searchableText, ["#5", "asset 5", "dor do espelho"])) {
-    return {
-      status: "blocked",
-      label: "Bloqueado: névoa branca",
-      issues: [
-        "Névoa branca forte reduz nitidez da personagem e do espelho.",
-        "Contraste baixo enfraquece o impacto inicial da dor.",
-      ],
-      recommendation:
-        "Não aprovar como hero. Regenerar o mesmo ângulo com imagem limpa, iluminação natural clara, sem haze, fumaça, blur ou filtro leitoso.",
-    };
-  }
-
-  if (
-    containsAny(searchableText, ["#8", "asset 8", "cta", "plano personalizado"])
-  ) {
-    return {
-      status: "blocked",
-      label: "Bloqueado: luz oscilando",
-      issues: [
-        "Oscilação de iluminação entre cenas passa sensação de inconsistência.",
-        "CTA perde força quando a imagem parece instável ou artificial.",
-      ],
-      recommendation:
-        "Não usar como vídeo final de CTA. Regenerar com exposição travada, luz contínua e transições visuais discretas.",
-    };
-  }
-
-  if (
-    containsAny(searchableText, [
-      "#6",
-      "asset 6",
-      "presença sem luxo",
-      "presenca sem luxo",
-    ])
-  ) {
-    return {
-      status: "warning",
-      label: "Atenção: névoa parcial",
-      issues: [
-        "Execução visual melhor que o asset 5, mas ainda pode ter filtro/neblina em parte da cena.",
-        "Serve como variação aspiracional apenas se a revisão humana confirmar nitidez.",
-      ],
-      recommendation:
-        "Não escolher automaticamente como hero. Revisar no player e usar no máximo como variação até regenerar versão mais limpa.",
-    };
-  }
-
-  if (
-    containsAny(searchableText, ["#7", "asset 7", "microações", "microacoes"])
-  ) {
-    return {
-      status: "warning",
-      label: "Atenção: contraste baixo",
-      issues: [
-        "Imagem tende a ficar lavada, com baixa saturação e pouco contraste.",
-        "Pode enfraquecer a explicação do mecanismo se usada sem legenda/voz forte.",
-      ],
-      recommendation:
-        "Usar apenas como apoio de mecanismo com pós-produção. Para anúncio ou hero, regenerar com contraste e nitidez maiores.",
-    };
-  }
-
-  if (containsAny(searchableText, ["#9", "asset 9"]) || isVeoJob(job)) {
-    return {
-      status: "approved",
-      label: "Apto para criativo curto",
-      issues: [
-        "Comunicação falada favorece hook rápido e entendimento imediato.",
-        "Duração curta não substitui sozinha um hero explicativo maior.",
-      ],
-      recommendation:
-        "Usar como referência e criativo de anúncio. Para vídeo de landing, montar blocos falados ou pós-produzir um hero maior.",
-    };
-  }
-
-  return null;
 }
 
 function assessVideoAudioQuality(

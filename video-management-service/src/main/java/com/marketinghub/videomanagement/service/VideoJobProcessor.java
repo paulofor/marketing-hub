@@ -15,6 +15,7 @@ import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
 import com.marketinghub.videomanagement.service.VideoAssetUploader.UploadedAssets;
 import com.marketinghub.videomanagement.service.provider.ProviderArtifacts;
+import com.marketinghub.videomanagement.service.provider.AuditedVideoProviderException;
 import com.marketinghub.videomanagement.service.provider.VideoProvider;
 import com.marketinghub.videomanagement.service.provider.VideoProviderException;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.List;
 
 /** Responsabilidade: executar um job de vídeo com claim, preflight, provider e callback auditável. */
 @Service
@@ -66,7 +68,7 @@ public class VideoJobProcessor {
         this.productUgcContractResolver = productUgcContractResolver;
     }
 
-    /** Valida entradas antes de planejar e impede qualquer gasto após falha de contexto ou prova. */
+    /** Executa o contrato e preserva respostas consumidas antes de concluir ou reportar um bloqueio. */
     public void process(SalesVideoJob job) {
         try (AutoCloseable ignored = putMdc(job)) {
             log.info("Processando job {} para profile {}", job.id(), job.profileId());
@@ -87,6 +89,7 @@ public class VideoJobProcessor {
             learningReporter.observe(originalJob, job);
             ProviderArtifacts artifacts = provider.render(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));
+            artifacts = preserveAudit(job, artifacts, 95);
             artifacts = technicalVideoQualityGate.validate(job, artifacts);
             if (artifacts.videoFile() == null) {
                 throw new VideoProviderException("Provider não retornou o asset principal de vídeo");
@@ -113,6 +116,17 @@ public class VideoJobProcessor {
         } catch (VideoProviderException ex) {
             log.warn("Falha ao processar job {}; code={}", job.id(), ex.getCode(), ex);
             observabilityService.incrementJobsFailed(job.providerName(), ex.getCode());
+            if (ex instanceof AuditedVideoProviderException audited) {
+                try {
+                    preserveAudit(job, audited.auditArtifacts(), 15);
+                } catch (Exception auditFailure) {
+                    log.error("Falha ao preservar respostas do job bloqueado; jobId={} originalCode={}", job.id(), ex.getCode(), auditFailure);
+                    safeFailJob(job.id(), "AUDIT_PERSISTENCE_FAILED",
+                            "Falha original: " + ex.getCode() + "; auditoria sem confirmação integral. Não repetir consumo antes de conciliar.",
+                            "A finalização e sua auditoria exigem recuperação.");
+                    return;
+                }
+            }
             if (isExpiredFailure(ex)) {
                 observabilityService.incrementAssetExpired(job.providerName());
                 backendClient.expireJob(job.id(), new JobExpirationPayload(
@@ -144,6 +158,18 @@ public class VideoJobProcessor {
             log.error("Erro inesperado ao processar job {}", job.id(), ex);
             safeFailJob(job.id(), "VIDEO_MODULE_ERROR", ex.getMessage(), "Falha inesperada ao processar job");
         }
+    }
+
+    /** Registra os binários recebidos e seus recibos sem aprovar o vídeo nem duplicar uploads. */
+    private ProviderArtifacts preserveAudit(SalesVideoJob job, ProviderArtifacts artifacts, int progress) {
+        if (artifacts.auditFiles().isEmpty()) return artifacts;
+        var receipts = assetUploader.uploadAuditAssets(job, artifacts);
+        Map<String, Object> metadata = new LinkedHashMap<>(artifacts.metadata() == null ? Map.of() : artifacts.metadata());
+        metadata.put("persisted_audit_assets", receipts);
+        new VideoJobProgressReporter(backendClient, job.id()).onProgress(progress, SalesVideoStatus.VIDEO_PROCESSING,
+                "Respostas brutas do fornecedor preservadas; aprovação do vídeo ainda depende dos gates.", serializeMetadata(metadata));
+        return new ProviderArtifacts(artifacts.providerJobId(), artifacts.videoFile(), artifacts.posterFile(),
+                artifacts.captionFile(), metadata, List.of());
     }
 
     /** Tenta assumir o job e diferencia conflito esperado de falha real de integração. */

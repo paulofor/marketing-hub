@@ -289,6 +289,51 @@ class PostProductionVideoProviderTest {
                 .hasMessageContaining("24.000s");
     }
 
+    /** Preserva ambas as respostas pagas quando a soma da locução ultrapassa o vídeo. */
+    @Test
+    void shouldPreservePaidAudioWhenNarrationExceedsDuration() throws Exception {
+        narrationSegmentDurationSeconds = 13.0;
+        server.enqueue(mp4Response());
+        server.enqueue(new MockResponse().setHeader("Content-Type", "audio/mpeg")
+                .setBody(new Buffer().write(new byte[] {1, 2, 3, 4})));
+        server.enqueue(new MockResponse().setHeader("Content-Type", "audio/mpeg")
+                .setBody(new Buffer().write(new byte[] {5, 6, 7, 8})));
+        var settings = properties();
+        settings.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        settings.getProviders().getPostProduction().setOpenAiApiKey("synthetic-key");
+        settings.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
+        var provider = new PostProductionVideoProvider(settings, new ObjectMapper(), WebClient.builder());
+        assertThatThrownBy(() -> provider.render(governedTextJob(true), profile(), (p, st, m) -> { }))
+                .isInstanceOfSatisfying(AuditedVideoProviderException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("APOLLO_NARRATION_DURATION_EXCEEDED");
+                    assertThat(ex.auditArtifacts().videoFile()).isNull();
+                    assertThat(ex.auditArtifacts().auditFiles()).hasSize(2);
+                    assertThat(ex.auditArtifacts().auditFiles().getFirst().content()).containsExactly(1, 2, 3, 4);
+                    assertThat(ex.auditArtifacts().metadata().toString()).contains("output_duration_seconds=13.0", "BLOCKED");
+                });
+        assertThat(server.getRequestCount()).isEqualTo(3);
+    }
+
+    /** Falha de medição preserva o trecho já recebido e impede a chamada do trecho seguinte. */
+    @Test
+    void shouldPreserveReceivedAudioBeforeDurationProbeFailure() throws Exception {
+        narrationSegmentDurationSeconds = 0.0;
+        server.enqueue(mp4Response());
+        server.enqueue(new MockResponse().setHeader("Content-Type", "audio/mpeg")
+                .setBody(new Buffer().write(new byte[] {1, 2, 3, 4})));
+        var settings = properties();
+        settings.getProviders().getPostProduction().setOpenAiTtsEnabled(true);
+        settings.getProviders().getPostProduction().setOpenAiApiKey("synthetic-key");
+        settings.getProviders().getPostProduction().setOpenAiBaseUrl(URI.create(server.url("/").toString()));
+        var provider = new PostProductionVideoProvider(settings, new ObjectMapper(), WebClient.builder());
+        assertThatThrownBy(() -> provider.render(governedTextJob(true), profile(), (p, st, m) -> { }))
+                .isInstanceOfSatisfying(AuditedVideoProviderException.class, ex -> {
+                    assertThat(ex.auditArtifacts().auditFiles()).hasSize(1);
+                    assertThat(ex.auditArtifacts().metadata().toString()).contains("PENDING_PROVIDER_RECONCILIATION");
+                });
+        assertThat(server.getRequestCount()).isEqualTo(2);
+    }
+
     /** Cria uma resposta MP4 mínima para o download fonte. */
     private MockResponse mp4Response() {
         return new MockResponse()

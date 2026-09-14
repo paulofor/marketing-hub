@@ -615,3 +615,103 @@ dos dados, ausência de novas migrações e manutenção de todos os gates.
 O Compose exclusivo encerrou containers, volumes e órfãos após cada rodada.
 O MCP confirmou zero jobs de vídeo em execução antes da aplicação; o coordenador
 permaneceu `ACTIVE`, sem publicador habilitado ou execução em drenagem.
+
+## Aplicação do contrato HTTP e nova tentativa governada
+
+Revisão produtiva `71c6d621b65b5538c33034680ff215993d0ba314`, construída pelos
+Dockerfiles versionados, sem push ou PR. Backend e executor foram aplicados
+sequencialmente por `execute` na intervenção existente. Configuração preservada,
+recibos de aplicação e tags `-rollback` registrados. Os conteúdos portáveis
+locais/remotos coincidiram e ambos os serviços chegaram a `UP`.
+
+O JAR do backend na imagem tem SHA-256
+`b7ee356415e21ab6d56806ecc24f97eede57fb183c5026ab88275c21bd3d6a1c`, idêntico
+ao pacote testado. As camadas do executor são idênticas às da imagem candidata
+exercitada em JVM, com JAR `a2a7b747a2d8123eee875d3e4305c5c1108eefaf72a87e10f67259dd6a81aa32`.
+Uma consulta feita durante a inicialização do backend recebeu conexão recusada;
+depois de `UP`, a verificação completa publicada passou nos três dispositivos.
+O processo 75 mostra `RESOLVE_VIDEO_PRODUCTION`, aponta o projeto 5 e mantém
+zero objetivos comerciais comprovados. Nenhuma escrita ocorreu nessa conferência.
+
+Pela tela, o comando registrou uma única solicitação: ciclo audiovisual 22,
+preflight 15, orçamento de USD 8 sob o teto humano conjunto de USD 20.
+O preflight passou, Plutus 421 aprovou e o backend criou o job 21242. O primeiro
+evento `APOLLO_PLANNING_HTTP` persistiu o request, modelo `gpt-5.6-sol`, modo
+`flex` e tentativa 1. O histórico dos ciclos 19/20/21 e o anúncio 41 foram
+preservados. A nova solicitação referencia as causas corrigidas e os custos
+anteriores; não altera oferta, canal, público, preço ou aprovação comercial.
+
+Recibos locais: `http-images-verified.json`, `http-apply-backend.log`,
+`http-apply-worker.log`, `http-*-image-comparison.json`,
+`http-guidance-results.json`, `demo-http-request.json` e eventos do job 21242,
+sob `.sandbox/vega-recuperacao/`.
+
+## Narração excedente — causa, decisão e matriz antes dos testes
+
+OpenAI respondeu HTTP 200 na primeira tentativa do job 21242; nenhuma mudança
+de modelo ou modalidade foi necessária. Os dois clipes Runway concluíram,
+com 180 créditos/USD 1,80 registrados. O backend criou automaticamente a
+finalização 21243. Ela bloqueou corretamente: a locução de 26 palavras somou
+15,552 s para um vídeo de 15 s (`APOLLO_NARRATION_DURATION_EXCEEDED`). O bruto
+2810 ficou preservado; esse bloqueio não exige outra geração de clipes.
+
+Alternativas: ampliar o vídeo (esforço médio e mudança da duração contratada),
+acelerar a voz (esforço médio e risco de perder naturalidade) ou retirar quatro
+palavras redundantes da locução (esforço baixo, mantém duração, mensagem e voz).
+Escolhida a terceira: `Escolha ocasião e combinação. | Veja seu ajuste. Aplique
+e avalie. | Salve para retomar. | Experimente o primeiro ajuste MUSA. | Sem compra
+ou cobrança.` São 22 palavras nos mesmos cinco trechos, mantendo ocasião,
+combinação, aplicação, autoavaliação, retomada, primeiro ajuste e ausência de
+cobrança. O gate físico de duração permanece obrigatório e inalterado.
+
+A investigação do código identificou duas falhas adicionais: os binários TTS
+só eram persistidos depois do sucesso completo, e uma nova finalização do
+mesmo bruto não atualizava o ciclo que apontava para o filho anterior falho.
+Os áudios da tentativa 21243 foram descartados pelo código anterior; só há
+metadados e hashes em log. Não afirmar que esses binários foram recuperados.
+
+Matriz adicional antes de testar: falha temporal preserva as respostas TTS e
+interações já recebidas; falha de QA posterior ao render também preserva auditoria;
+falha de persistência não vira sucesso nem repetição paga automática; sucesso
+não duplica upload de auditoria; finalização reutiliza bruto e mantém identidade,
+histórico e custo, acompanha apenas o filho falho correspondente e não sobrescreve
+trabalho ativo ou uma tentativa posterior; chamadas simultâneas não criam filhos
+duplicados. A copy menor mantém narração/legendas idênticas e deve passar pelo
+mesmo FFmpeg/ffprobe e pela reprodução em desktop/iPhone/Pixel. As duas rodadas
+integrais recomeçam após essas correções. Nenhuma nova geração foi solicitada.
+
+Os testes focados passaram: 20 no executor, 42 no service do backend e contrato
+concorrente no MySQL 5.7. O teste de banco reproduz a semântica transacional e
+confere a anotação de lock do repositório; não é um teste concorrente HTTP completo.
+A prova local com cinco trechos de voz sintética passou pela montagem real.
+
+Durante a rodada diagnóstica `final20`, a inspeção somente leitura da tela de
+acabamento encontrou um falso diagnóstico adicional: `cta` nos metadados fazia
+qualquer vídeo receber “luz oscilando”. Não havia reprovação visual persistida
+nos jobs 21242/21239. O registro histórico de 20454 relatava o mesmo rótulo,
+mas não comprova sua causa física. Comparadas três opções: tratar negações por
+regex (baixo esforço, mantém inferência frágil), cadastrar exceções por ID (baixo
+esforço, risco alto de recorrência) ou apresentar somente inspeções persistidas
+(esforço moderado, aderência alta à evidência). Escolhida a terceira. Nenhum vídeo
+recebe aprovação por provider; sem inspeção completa, permanece revisão pendente.
+Os 11 testes focados da tela passaram. A matriz adicional cobre a página de
+acabamento em três dispositivos, CTA/negações sem falso bloqueio, reprovação real
+preservada e um único POST simulado do bruto correto com voz e legenda idênticas.
+`final20` não será contada como rodada final, pois houve essa correção durante ela.
+
+`final21` encerrou sem falhas: **3.353 testes executados** (backend 2.947,
+executor 222, financeiro 38 e interface 146; oito testes opcionais fora do total).
+Passaram também os contratos REST, MySQL 5.7, snapshot concorrente, pacote,
+FFmpeg/ffprobe, MP4/HLS, processo e finalização em desktop/iPhone/Pixel. A matriz
+do acabamento enviou somente um POST simulado por dispositivo, sem chamada externa
+ou métrica comercial. O manifesto final tem 69 arquivos de código/configuração/testes,
+SHA-256 `6dbb5576c59a74eb03ec4af37c57a5a274437e34e8573e7040080857afb2b3cb`;
+conferido novamente antes de `final22`, sem alteração. A topologia de `final21`
+foi removida antes de iniciar a segunda rodada.
+
+`final22` concluiu a mesma matriz, consecutivamente e sem falhas, com **3.353
+testes executados** e os mesmos oito opcionais fora do total. Os 69 hashes
+permaneceram iguais. A revisão do diff confirmou preservação de gates, histórico,
+identidades e custos; não há nova migração. A descrição OpenAPI de recuperação
+e idempotência foi conferida pelo parser SnakeYAML já disponível no backend.
+O Compose exclusivo encerrou a topologia e os volumes ao final da rodada.

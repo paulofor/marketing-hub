@@ -5338,3 +5338,38 @@ Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
   leitura HLS por JavaScript mesmo com MP4 público. A matriz deve reproduzir
   aplicativo e mídia em origens diferentes; configuração de leitura é incremental,
   somente para origens operacionais/aprovadas, com conferência e rollback.
+
+## LOOP-VIDEO-NARRACAO-FALHA-SEM-AUDITORIA-E-RETORNO — 2026-09-14
+
+- **Confirmado:** Vega/#92, bruto 21242 concluído e acabamento 21243 bloqueado por
+  15,552 s de voz em um vídeo de 15 s. O gate temporal funcionou; as cinco respostas
+  de voz ficaram apenas em arquivos temporários apagados na falha. A montagem do
+  anúncio 21238 havia passado pelo mesmo gate, portanto não cabe removê-lo.
+- **Causa adicional:** o ciclo só acompanhava o primeiro filho; uma recuperação do
+  bruto não substituía a referência ao filho falho. Sem lock de leitura atual, o
+  snapshot REPEATABLE READ também pode esconder um filho recém-criado concorrente.
+- **Correção:** persistir respostas TTS antes dos gates finais e no caminho de falha,
+  impedir sucesso sem recibo, reutilizar o bruto e acompanhar somente o filho falho
+  correspondente. Serializar solicitações e deduplicar trabalho ativo sem alterar gates.
+- **Prevenção:** PostProductionVideoProviderTest, VideoJobProcessorTest,
+  VideoAssetUploaderTest, SalesVideoJobServiceTest e VerifyFinalizationLock em
+  MySQL 5.7 segregado. A matriz inclui cinco trechos, prova, voz sintética, FFmpeg,
+  MP4/HLS e três dispositivos; voz sintética não comprova naturalidade da voz real.
+- **Evidências:** `docs/homologacao/vega-producao-apos-preflight-v1.md`. Os binários
+  históricos descartados não são declarados recuperados e o custo não vira zero.
+
+## LOOP-VIDEO-CTA-COMO-DEFEITO-VISUAL — 2026-09-14
+
+- **Confirmado na recuperação de Vega:** a página de acabamento classificava os jobs
+  21242 e 21239 como luz oscilando porque qualquer ocorrência de `cta` acionava uma
+  regra fixa. Prompts com `sem flicker` e IDs semelhantes a #5/#8 também geravam
+  diagnósticos; o nome VEO podia gerar aprovação sem inspeção.
+- **Histórico comparado:** `docs/registros/sales-video.md` já relatava esse rótulo no
+  job 20454. O relato do rótulo na tela não é prova de medição de oscilação. Os jobs
+  atuais não contêm uma reprovação visual persistida que sustente esse aviso.
+- **Correção:** remover inferência visual por texto/ID/provider, exibir falhas técnicas
+  registradas e distinguir estabilidade medida de revisão visual completa. Ausência
+  de evidência permanece pendente, sem recomendar nova geração paga por palavra-chave.
+- **Prevenção:** testes do helper incluem CTA, negações, IDs, providers, evidência
+  incompleta e reprovação real. A matriz local abre a tela em desktop/iPhone/Pixel e
+  solicita somente acabamento simulado do bruto correto, sem provider externo.

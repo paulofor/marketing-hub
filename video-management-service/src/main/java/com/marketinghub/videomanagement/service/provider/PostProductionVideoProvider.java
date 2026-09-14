@@ -88,7 +88,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Reaproveita acabamento íntegro ou compõe prova, legenda e voz conforme o contrato recebido. */
+    /** Compõe o acabamento contratado e preserva respostas TTS mesmo quando um gate bloqueia. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -193,15 +193,14 @@ public class PostProductionVideoProvider implements VideoProvider {
                     "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
         } catch (IOException ex) {
             log.error("Falha de arquivo na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
-            throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "Falha de arquivo na pós-produção", ex);
+            throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } catch (VideoProviderException ex) {
             log.error("Falha operacional na pós-produção; jobId={} profileId={} code={}",
                     job.id(), profile.id(), ex.getCode(), ex);
-            throw ex;
+            throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } catch (RuntimeException ex) {
             log.error("Falha inesperada na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
-            throw new VideoProviderException(
-                    "VIDEO_POST_PRODUCTION_FAILED", "Falha inesperada na pós-produção", ex);
+            throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } finally {
             deleteIfExists(source);
             if (preparedSource != null && !preparedSource.equals(source)) {
@@ -256,7 +255,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 null);
     }
 
-    /** Gera cada trecho exatamente como exibido e usa a duração física do áudio como relógio da legenda. */
+    /** Mede os trechos exatos e conserva as respostas recebidas em caso de falha temporal. */
     private SynchronizedNarration generateSynchronizedNarration(
             String captionText, double videoDurationSeconds, Long jobId) throws IOException {
         List<String> segments = captionSegments(captionText);
@@ -266,9 +265,10 @@ public class PostProductionVideoProvider implements VideoProvider {
             List<Double> durations = new ArrayList<>();
             for (int index = 0; index < segments.size(); index++) {
                 VoiceOverAudio audio = generateVoiceOver(segments.get(index), jobId, index + 1);
+                segmentAudios.add(audio);
                 double duration = probeNarrationDurationSeconds(audio.file(), jobId, index + 1);
                 audio = audio.withMeasuredDuration(duration);
-                segmentAudios.add(audio);
+                segmentAudios.set(index, audio);
                 durations.add(duration);
             }
             double narrationDuration = durations.stream().mapToDouble(Double::doubleValue).sum();
@@ -317,10 +317,14 @@ public class PostProductionVideoProvider implements VideoProvider {
                         jobId,
                         providerException.getCode(),
                         providerException);
-                throw providerException;
+                throw AuditedVideoProviderException.preserve(jobId, providerException,
+                        segmentAudios.stream().map(VoiceOverAudio::rawResponseFile).filter(java.util.Objects::nonNull).toList(),
+                        segmentAudios.stream().map(VoiceOverAudio::interaction).toList());
             }
             log.error("Falha ao sincronizar narração segmentada; jobId={}", jobId, ex);
-            throw ex;
+            throw AuditedVideoProviderException.preserve(jobId, ex,
+                    segmentAudios.stream().map(VoiceOverAudio::rawResponseFile).filter(java.util.Objects::nonNull).toList(),
+                    segmentAudios.stream().map(VoiceOverAudio::interaction).toList());
         }
     }
 

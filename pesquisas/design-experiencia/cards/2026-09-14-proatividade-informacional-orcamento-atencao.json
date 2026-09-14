@@ -1,0 +1,18 @@
+{
+  "cardKey": "proatividade-informacional-orcamento-atencao",
+  "collection": "neuromarketing",
+  "title": "Proatividade precisa de timing e orçamento de atenção",
+  "finding": "Uma evidência correlacional com 566 universitários associou encontros informacionais inesperados durante uso de IA a maior burnout digital, enquanto um ensaio microrandomizado com 160 mulheres mostrou que prompts adaptativos enviados em pontos de decisão elegíveis aumentaram passos nos 30 minutos seguintes e a interrupção do sedentarismo.",
+  "mechanism": "A hipótese é que proatividade consome um recurso escasso de atenção: quando chega fora de hora, acrescenta processamento não solicitado; quando é disparada em uma janela de ação plausível, pode reduzir o esforço para iniciar um comportamento relevante.",
+  "commercialApplication": "No Marketing Hub, limitar sugestões espontâneas e usar regras de elegibilidade como bloqueio detectado, próxima ação clara, benefício esperado alto e baixo custo de interrupção. Recomendações secundárias ficam recolhidas ou sob demanda.",
+  "evidenceStrength": "Evidência moderada para efeito comportamental de prompts bem temporizados no contexto de atividade física, apoiada por estudo microrandomizado peer-reviewed; evidência apenas associativa para risco de excesso informacional. A transferência para jornadas comerciais ainda precisa de teste.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2027-03-14",
+  "experimentHypothesis": "Uma política de proatividade limitada a pontos de decisão elegíveis reduzirá abandono e aumentará conclusão de tarefa em comparação com proatividade contínua, sem perder descoberta de recomendações realmente relevantes.",
+  "risks": "Regras agressivas podem interromper demais, manipular atenção ou ocultar informação útil. O usuário deve poder recusar prompts, e alertas críticos não devem depender de limites pensados para recomendações opcionais.",
+  "limits": "Os estudos vêm de educação e atividade física, não de comércio; um é transversal e o outro inclui somente mulheres adultas. Nenhum deles mede CTA, checkout, pagamento ou satisfação no Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-14-proatividade-informacional-orcamento-atencao.md",
+  "sourceTitle": "Fonte revisada — Proatividade útil depende de timing e orçamento de atenção",
+  "sourceSha256": "418954521d85381af5cbd3fb81e64cb0a1a3d8a838a0280f612324bd2517734d"
+}

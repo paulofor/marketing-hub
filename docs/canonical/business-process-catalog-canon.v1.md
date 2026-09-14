@@ -35,6 +35,20 @@ repositório e o coordenador de intervenções. Não altera o fluxo normal de pu
 autoriza campanhas, cobranças ou aprovação automática de gates humanos. Copiar ou visualizar
 o prompt não o envia ao AIHUB, não executa comandos e não publica; o usuário o revisa e envia.
 
+**Correção válida para execuções futuras — decisão de 14/09/2026:** todo pedido gerado por
+**Prompt para AIHUB** deve exigir que o processo funcione na situação atual e em **todas as
+próximas execuções que utilizem o mesmo fluxo**, respeitando seus contratos e gates. A recuperação
+do registro atual deve vir acompanhada da correção da causa-raiz nas fontes versionadas
+compartilhadas do processo e dos agentes/workers envolvidos. Ajustes manuais de estado,
+exceções por ID ou reexecuções isoladas não substituem essa correção.
+A homologação deve cobrir o caso original, novas execuções com outros identificadores e
+entradas válidas, retomadas e falhas pertinentes, preservando isolamento, histórico, custos
+e aprovações. Registrar testes de regressão e aprendizados reutilizáveis; antes de concluir,
+revisar se a mesma causa ainda pode afetar outra execução. O relatório deve distinguir
+recuperação atual, prevenção de recorrência comprovada e limitações reais da validação.
+Essa exigência não permite prometer ausência de qualquer falha futura nem dispensar gates
+para entradas inválidas ou decisões humanas pendentes.
+
 Comandos repetidos não duplicam trabalho. Processos de produtos distintos podem avançar em
 paralelo; execuções que compartilham o mesmo contexto são coordenadas para evitar conflitos.
 A qualidade prevalece sobre duração: tempo decorrido não comprova conclusão nem autoriza

@@ -8,6 +8,25 @@ está no final deste prompt, com produto, processo, atividades, ciclos, tarefas 
 Ele representa a última consulta da tela: confirme o estado atual antes de agir e preserve
 exatamente o produto, a cadeia, a versão do processo, o ciclo e o experimento indicados.
 
+## Correção obrigatória para a execução atual e todas as próximas
+
+**O processo precisa ser ajustado para funcionar na situação atual e em TODAS as próximas
+execuções que utilizem esse fluxo, respeitando seus contratos e gates.** Recuperar somente
+o caso apresentado não basta: elimine a causa-raiz e previna sua recorrência.
+
+- Corrija as fontes versionadas compartilhadas do processo e dos agentes/workers envolvidos,
+  para que novas execuções recebam a solução sem repetir a mesma intervenção manual.
+  Ajustar apenas o estado atual, criar exceções por ID de produto/ciclo/experimento/tarefa
+  ou reexecutar até passar não substitui a correção sistêmica.
+- Inclua na matriz local o caso original, novas execuções com outros identificadores e
+  entradas válidas diferentes, retomadas e falhas pertinentes ao impedimento. Comprove
+  isolamento entre execuções, preservação do histórico e dos custos e respeito às aprovações.
+  Registre testes de regressão e aprendizados reutilizáveis no cânone.
+- Antes de concluir, revise se a mesma causa ainda pode afetar outra execução desse fluxo.
+  Se puder, continue a correção dentro do escopo autorizado. Diferencie a recuperação atual
+  da prevenção de recorrência comprovada, com evidências e limitações reais da validação;
+  não prometa ausência de qualquer falha futura nem enfraqueça gates para obter sucesso.
+
 ## Execução e correção completa
 
 - Tente executar ou retomar o processo pela tela do Marketing Hub, seguindo o link do

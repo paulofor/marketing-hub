@@ -56,7 +56,7 @@ class ApolloStoryboardPlannerTest {
                 null, null, null, "pt-BR", 30, SalesVideoStatus.VIDEO_REQUESTED,
                 null, null, script, null);
         JsonNode approvedPlan = plan(false);
-        when(aiClient.plan(eq(1L), any())).thenAnswer(invocation -> {
+        when(aiClient.plan(eq(1L), any(), any())).thenAnswer(invocation -> {
             JsonNode request = invocation.getArgument(1);
             assertThat(request.at("/reasoning/effort").asText()).isEqualTo("max");
             assertThat(request.path("service_tier").asText()).isEqualTo("flex");
@@ -71,6 +71,35 @@ class ApolloStoryboardPlannerTest {
         JsonNode persisted = objectMapper.readTree(result.metadataJson());
         assertThat(persisted.at("/apollo_planner_request/reasoning/effort").asText()).isEqualTo("max");
         assertThat(persisted.path("apollo_planner_status").asText()).isEqualTo("APPROVED");
+    }
+
+    /** Encaminha o erro HTTP auditado ao backend antes de bloquear o storyboard e o render. */
+    @Test
+    void shouldPersistHttpFailureWithoutCallingItStoryboardRejection() throws Exception {
+        var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
+        metadata.put("videoProductionCycleId", 91001);
+        SalesVideoJob job = mock(SalesVideoJob.class);
+        when(job.id()).thenReturn(91001L);
+        when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
+        when(job.providerName()).thenReturn("RUNWAY_SEEDANCE_2_5");
+        when(job.metadataJson()).thenReturn(metadata.toString());
+        SalesVideoScript script = new SalesVideoScript(91001L, 1, "Roteiro", "Gancho", "CTA", null,
+                null, null, null, null, SalesVideoScriptStatus.APPROVED, null, null, null);
+        SalesVideoProfile profile = new SalesVideoProfile(91001L, 91001L, null, "TEST", "Teste local",
+                null, null, null, "pt-BR", 30, SalesVideoStatus.VIDEO_REQUESTED,
+                null, null, script, null);
+        var audit = objectMapper.readTree("{\"status\":\"REJECTED\",\"httpStatus\":429,\"rawResponse\":\"quota sintética\"}");
+        when(aiClient.plan(eq(91001L), any(), any())).thenAnswer(invocation -> {
+            java.util.function.Consumer<JsonNode> sink = invocation.getArgument(2);
+            sink.accept(audit);
+            throw new com.marketinghub.videomanagement.service.provider.VideoProviderException(
+                    "APOLLO_PLANNING_ACCOUNT_BLOCKED", "Quota sintética");
+        });
+        var callback = mock(ProgressCallback.class);
+        assertThatThrownBy(() -> planner.planAndApprove(job, profile, callback))
+                .isInstanceOfSatisfying(com.marketinghub.videomanagement.service.provider.VideoProviderException.class,
+                        ex -> assertThat(ex.getCode()).isEqualTo("APOLLO_PLANNING_ACCOUNT_BLOCKED"));
+        org.mockito.Mockito.verify(callback).onProgress(eq(5), eq(SalesVideoStatus.VIDEO_PROCESSING), any(), eq(audit.toString()));
     }
 
     /** Aprova um storyboard distinto cujo custo previsto permanece dentro do teto. */
@@ -142,7 +171,7 @@ class ApolloStoryboardPlannerTest {
         var response = objectMapper.createObjectNode();
         response.putArray("output").addObject().putArray("content").addObject()
                 .put("type", "output_text").put("text", savedPlan.toString());
-        when(aiClient.plan(eq(91001L), any())).thenReturn(response);
+        when(aiClient.plan(eq(91001L), any(), any())).thenReturn(response);
 
         SalesVideoJob approved = planner.planAndApprove(job, profile, mock(ProgressCallback.class));
 

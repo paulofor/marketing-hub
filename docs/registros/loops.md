@@ -5140,6 +5140,31 @@ REST/MySQL em `infra/testing/video-finance/validate-video-preflight.py` e navega
 cobrem segregação, persistência, pausa e ausência de consumo. A configuração externa
 continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
 
+### Recorrência após planejamento de Apolo — 14/09/2026
+
+No mesmo Vega/#92/ciclo 2, o MCP confirmou produção 19/job 21240 interrompida por
+`APOLLO_STORYBOARD_BLOCKED`, enquanto o pai 75/run 4 mostrava `WAITING_ACTIVITY`
+sem ação. A projeção tratava somente estados de preflight e descartava
+`APOLLO_BLOCKED`. Agora a falha persistida aparece com projeto e referência de
+job, independentemente do snapshot anterior. Sucesso ou tentativa nova ativa
+suprime o bloqueio histórico; leitura não repete trabalho. Contratos de backend,
+REST/MySQL, card e contexto/navegação em três dispositivos previnem recorrência.
+Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
+
+## LOOP-APOLO-HTTP-COMO-STORYBOARD — diagnóstico em 14/09/2026
+
+- Vega/ciclo audiovisual 21/job 21241 recebeu HTTP 429 antes de chamar Runway.
+  MCP preservou o stack trace, mas o cliente perdeu o corpo e informou rejeição
+  do storyboard. Os sucessos 21237/21240 contradizem incompatibilidade permanente
+  do modelo. Sem corpo, não classificar o 429 histórico como quota ou Flex.
+- Correção: auditoria por tentativa antes/depois da chamada, códigos de integração
+  separados, no máximo três envios para rejeição temporária explicitamente
+  identificada, Retry-After respeitado e nenhum retry implícito de transporte.
+  Quota, autenticação, códigos desconhecidos ou resposta ambígua continuam bloqueados.
+- Prevenção: `ApolloPlanningAiClientTest` com HTTP local, replay do callback no
+  `ApolloStoryboardPlannerTest`, teste do pai e matriz completa. Modelo, Flex,
+  gates e orçamento não são alterados para obter sucesso.
+
 ## LOOP-IRIS-PRODUTO-VALIDADO-SEM-EXPERIMENTO — continuidade privada ausente
 
 - **Confirmado em 13/09/2026:** Mira/produto 10, processo 63/v7, cadeia 14. A tela

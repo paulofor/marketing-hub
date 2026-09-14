@@ -247,3 +247,38 @@ Quando houver falso bloqueio, reproduzir localmente a resposta persistida,
 comparar sucessos e falhas e adicionar regressão antes de nova tarefa paga.
 As fixtures dos jobs 21237 e 21240 preservam esse aprendizado; a aprovação do
 gate técnico não equivale à aprovação humana do vídeo resultante.
+
+## Interrupção de Apolo no processo pai
+
+Quando a produção da peça vigente estiver `APOLLO_BLOCKED`, o processo pai deve
+expor a interrupção, o responsável, o projeto e a referência persistida do ciclo/job.
+Preflight vencido ou ausente não esconde uma falha de produção. Não expor payload
+bruto, repetir geração nem conferir aprovação pela leitura. O responsável financeiro
+continua explícito quando o monitor tiver bloqueado o consumo. Uma tentativa nova
+ativa ou concluída prevalece sobre a falha histórica da mesma peça, preservando
+segregação por produto, experimento, versão, papel e marco temporal do ciclo.
+Parecer `FINANCIAL_BLOCKED` também é intervenção financeira, nunca produção em curso.
+Ao chegar a `VIDEO_APPROVAL`, o pai orienta revisão independente, decisão humana
+e integração pelo ciclo exato. Não representar essa etapa manual como geração
+automática nem considerar a produção técnica uma aprovação de uso.
+
+## Falhas HTTP do planejador de Apolo
+
+Antes de cada envio, persistir o evento `APOLLO_PLANNING_HTTP` com job, tentativa,
+endpoint, modelo, tier e request estruturado. Depois do retorno, persistir status
+HTTP, request-id e `rawResponse` como string do corpo recebido, com remoção de
+credenciais eventualmente ecoadas. O corpo bruto é campo de auditoria explícito,
+separado do plano funcional validado. A falta dessa auditoria bloqueia o avanço.
+
+O executor mantém modelo e Flex. Somente HTTP 429 com código explícito
+`resource_unavailable`, `rate_limit_exceeded` ou `slow_down` permite até três
+envios, backoff exponencial com jitter e respeito a Retry-After. Espera superior
+a 60 segundos, cabeçalho inválido, quota, saldo, autenticação, código desconhecido
+e falha de transporte encerram a tentativa com diagnóstico auditado. Não trocar
+para standard, aumentar limites ou repetir POST de transporte ambíguo automaticamente.
+O retry implícito de conexão do cliente HTTP fica desabilitado.
+
+Uma falha de integração usa `APOLLO_PLANNING_*`; `APOLLO_STORYBOARD_BLOCKED` fica
+reservado às regras do plano. O job não inicia vídeo sem resposta e gate aprovados.
+Fontes oficiais: [Flex](https://developers.openai.com/api/docs/guides/flex-processing)
+e [erros HTTP](https://developers.openai.com/api/docs/guides/error-codes).

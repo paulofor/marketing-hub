@@ -53,7 +53,7 @@ public class ApolloStoryboardPlanner {
         this.aiClient = aiClient;
     }
 
-    /** Planeja somente jobs autônomos de Apolo e bloqueia o provider se o gate não for aprovado. */
+    /** Audita o planejamento de jobs autônomos e bloqueia o provider diante de falha ou gate reprovado. */
     public SalesVideoJob planAndApprove(SalesVideoJob job,
                                         SalesVideoProfile profile,
                                         ProgressCallback progressCallback) {
@@ -71,7 +71,9 @@ public class ApolloStoryboardPlanner {
         progressCallback.onProgress(5, SalesVideoStatus.VIDEO_PROCESSING,
                 "Apolo está planejando o storyboard antes do gate de orçamento");
         ObjectNode request = buildRequest(job, profile, metadata);
-        JsonNode response = aiClient.plan(job.id(), request);
+        JsonNode response = aiClient.plan(job.id(), request, audit ->
+                progressCallback.onProgress(5, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Interação do planejador registrada: " + audit.path("status").asText(), audit.toString()));
         JsonNode plan = extractPlan(response);
         progressCallback.onProgress(8, SalesVideoStatus.VIDEO_PROCESSING,
                 "Apolo concluiu o planejamento criativo; gate determinístico pendente",

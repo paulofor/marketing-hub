@@ -101,6 +101,37 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("orienta a interrupção de Apolo sem repetir geração ou usar o preflight antigo", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...running,
+        status: "WAITING_HUMAN",
+        userAction: {
+          ...financeAction,
+          code: "RESOLVE_VIDEO_PRODUCTION",
+          title: "Produção da demonstração interrompida",
+          reason: "Apolo interrompeu o planejamento do vídeo.",
+          responsible: "Responsável pela produção de vídeo · Apolo",
+          actionLabel: "Ver impedimento do vídeo",
+          actionUrl: "/audio-video-studio/projects/91005",
+          evidenceReference:
+            "internal://sales-videos/autonomy/v1/cycles/91019/jobs/91240",
+        },
+      },
+    });
+    setup();
+    expect(
+      await screen.findByText("Produção da demonstração interrompida"),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Ver impedimento do vídeo" }),
+    ).toHaveAttribute("href", "/audio-video-studio/projects/91005");
+    expect(
+      document.querySelector(".product-process-situation__running-icon"),
+    ).toBeNull();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("mostra o bloqueio do vídeo e o projeto correto sem anunciar execução ou conclusão", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

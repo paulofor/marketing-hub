@@ -173,6 +173,22 @@ class ProcessRunGuidanceTest {
     verifyNoInteractions(events);
   }
 
+  /** A revisão explícita após produção não volta a ser espera automática sem próximo passo. */
+  @Test
+  void completedProductionDirectsToReviewAndIntegrationWithoutApprovingIt() {
+    cycle.setStage("VIDEO_APPROVAL");
+    var action = guidance.resolve(run);
+    assertThat(action.code()).isEqualTo("REVIEW_AND_INTEGRATE_VIDEOS");
+    assertThat(action.actionUrl())
+        .isEqualTo("/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2");
+    assertThat(action.reason()).contains("revisões independentes", "decisão humana", "integração");
+    assertThat(action.afterAction()).contains("não autorizam campanha");
+    assertThat(guidance.awaitingInput(run)).isTrue();
+    assertThat(cycle.getStage()).isEqualTo("VIDEO_APPROVAL");
+    verify(cycles, never()).save(any());
+    verifyNoInteractions(videoGuidance, events);
+  }
+
   /** Outro processo ou atividade de agente em execução não recebe decisão do ciclo. */
   @Test
   void doesNotReplaceAgentExecutionOrAnotherProcess() {

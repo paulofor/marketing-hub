@@ -509,3 +509,109 @@ e à preservação de pontuação na chamada do planejador; fixtures, regressõe
 documentação correspondentes. Nenhuma mudança nova no backend, frontend,
 prompt, schema, orçamento aprovado ou gate humano. A revisão anterior da
 entrega HLS permanece válida; a nova imagem altera somente o executor.
+
+## Falha de produção invisível no processo pai — matriz antes dos testes
+
+Depois da recuperação do detector, o MCP confirmou ciclo audiovisual 19 em
+`APOLLO_BLOCKED`, job 21240 e falha `APOLLO_STORYBOARD_BLOCKED`. O anúncio/ciclo
+18 continuava `VIDEO_READY_FOR_REVIEW`. A API e a tela do processo 75/run 4,
+porém, retornavam `WAITING_ACTIVITY` sem ação: `ProcessRunVideoGuidance` tratava
+somente os estados de preflight. Esse é um novo caso do loop de espera enganosa.
+
+Alternativas: orientar a navegação manual até a lista de projetos (esforço baixo,
+não evita recorrência), repetir automaticamente a produção (reduz intervenção,
+mas aumenta custo sem resolver a causa) ou projetar a interrupção persistida no
+processo pai (esforço pequeno, ação clara sem alterar gates). Escolhida a terceira.
+
+A matriz adicional cobre, antes da execução: bloqueio do planejamento com
+preflight vencido ou ausente; bloqueio sem job e bloqueio financeiro; projeto,
+papel, versão e experimento corretos; ausência de payload bruto na orientação;
+nova tentativa ativa ou concluída substituindo a falha histórica; persistência
+do estado/motivo, pausa/retomada, contexto copiado e navegação nos três dispositivos.
+Nenhuma leitura pode criar tarefas, aprovar ou consumir. Os dados continuam
+sintéticos no MySQL 5.7 local. A suíte integral, mídia, HLS, custos e integrações
+anteriores será repetida nas rodadas finais 16/17 após a última correção.
+
+O ciclo audiovisual 20 foi bloqueado corretamente por Plutus 419: o teto
+incremental reduzido de USD 6 era inferior à soma dos dois tetos configurados
+(USD 8). Não houve job nem reserva. A autorização humana vigente continua em
+USD 20 conjuntos. O ciclo 21 restabeleceu os USD 8 originalmente previstos para
+a demonstração, preservando custo anterior e margem para revisão. Plutus 420
+aprovou; o job 21241 recebeu HTTP 429 da Responses API antes da Runway.
+
+O MCP confirma `WebClientResponseException$TooManyRequests`; o conector perdia
+o corpo do erro e convertia qualquer falha em `APOLLO_STORYBOARD_BLOCKED`.
+Não é possível afirmar se esse 429 foi capacidade Flex, limite de taxa ou quota
+financeira, pois o corpo não foi preservado. Os sucessos 21237/21240 comprovam
+que o mesmo modelo/contrato já funcionou; não há evidência para trocá-los.
+
+Alternativas: repetir todo o ciclo (novos pareceres e diagnóstico perdido),
+trocar para processamento standard (possível custo maior sem tratar quota) ou
+auditar cada resposta e tratar somente rejeições temporárias explícitas no
+executor (preserva custo, modelo, Flex e causalidade). Escolhida a terceira.
+[Flex](https://developers.openai.com/api/docs/guides/flex-processing) documenta
+backoff para indisponibilidade; [erros da API](https://developers.openai.com/api/docs/guides/error-codes)
+distinguem taxa de quota/saldo e exigem respeito a Retry-After.
+
+Matriz adicional definida antes de testar: 429 temporário seguido de sucesso,
+três rejeições consecutivas, Retry-After numérico/data/maior que a janela local,
+429 de quota ou código desconhecido, 400/401/403/500, transporte ambíguo,
+resposta inválida, persistência de request/response/status/request-id por tentativa,
+mesmo modelo/Flex e nenhum render após falha. O pai também deve expor
+`FINANCIAL_BLOCKED`. Depois dessas correções as duas rodadas integrais recomeçam;
+a rodada 16 em andamento não vale como rodada final desse escopo ampliado.
+
+A rodada 16 terminou sem falhas (3.307 testes), antes da ampliação HTTP.
+Na revisão do caminho completo, o contrato canônico também revelou que
+`VIDEO_APPROVAL` exige intervenção explícita e era excluído da orientação do pai.
+A matriz passa a conferir a chegada nessa etapa sem fingir trabalho automático,
+aprovar vídeo, integrar contrato ou publicar por simples mudança de status.
+
+Os testes focados da integração HTTP e do planejador passaram (31 testes).
+A imagem candidata foi exercitada em JVM real, sem rede externa, com servidor
+HTTP local: rejeição temporária, sucesso e quota permanente; auditoria, Flex
+e limite de tentativas comprovados. As **140 classes** empacotadas são idênticas
+às compiladas para os testes, assim como prompt e schema; JAR SHA-256
+`a2a7b747a2d8123eee875d3e4305c5c1108eefaf72a87e10f67259dd6a81aa32`.
+O manifesto final de 62 arquivos de código/configuração/testes tem SHA-256
+`3c555f2c8bfdf979169bfe0ebaa9debfd9a25d123df7bdb4603795c71e0979f6`.
+As rodadas completas deste escopo são `final17` e `final18`.
+
+A rodada `final17` revelou uma incompatibilidade na fixture de integração:
+`VerifyWorker` ainda sobrescrevia a assinatura anterior do cliente, sem o
+callback de auditoria. A fixture foi atualizada e seu contrato focado passou.
+Nenhuma publicação foi feita com esse problema pendente. A contagem recomeçou;
+as rodadas finais passam a ser `final18` e `final19`. O manifesto dos mesmos
+62 arquivos, incluindo a fixture corrigida, tem SHA-256
+`5c8b1958998b27f7963e2e6f3c2fca6eed1ccfad82064fb8cedfeb8db3a5733a`.
+Os bytes produtivos da imagem candidata permaneceram inalterados.
+
+Consulta MCP em 2026-09-14 03:43 UTC confirmou que nenhuma tentativa posterior
+ao ciclo 21 foi criada. Plutus 417/418/419/420 soma USD 0,436976 estimados;
+o anúncio consumiu USD 1,80 de Runway e o planejamento histórico tem estimativa
+conservadora de USD 0,646416. Esses valores não são uma fatura consolidada:
+há custo de voz ainda não conciliado. As falhas 21240/21241 não criaram tarefas
+Runway e não autorizam omitir os custos anteriores.
+
+`final18` concluiu a matriz sem falhas: 2.942 testes executados no backend,
+214 no executor de vídeo, 38 no financeiro e 135 na interface, totalizando
+3.329. Oito testes opcionais do backend ficaram fora do total executado.
+Também passaram os 24 cenários REST de preflight/orientação, MySQL 5.7,
+empacotamento, contratos de imagens, prova privada, voz simulada, FFmpeg/ffprobe,
+MP4/HLS e navegação em desktop, iPhone 15 Pro e Pixel 7. O manifesto foi
+conferido novamente antes de iniciar `final19`, sem mudanças nos arquivos.
+
+A releitura dos subprocessos 66/v5, 62/v4 e 76/v4 confirmou a referência
+`experiment:92` e a preservação dos vínculos. Operação e entrega continuam
+aguardando seus gates; o subprocesso de aprendizado registra cinco atividades
+concluídas e aguarda `PDE_ENTRY_VIDEO`. Essa contagem do subprocesso não equivale
+a comprovar os quatro objetivos do processo pai de venda, entrega e aprendizado.
+
+`final19` concluiu a mesma matriz, também com **3.329 testes executados sem
+falhas**, consecutivamente a `final18`. O manifesto de 62 arquivos permaneceu
+idêntico. As duas execuções passaram pelos contratos REST, mídia e pelos três
+dispositivos. O diff final foi revisado, incluindo comentários Java, isolamento
+dos dados, ausência de novas migrações e manutenção de todos os gates.
+O Compose exclusivo encerrou containers, volumes e órfãos após cada rodada.
+O MCP confirmou zero jobs de vídeo em execução antes da aplicação; o coordenador
+permaneceu `ACTIVE`, sem publicador habilitado ou execução em drenagem.

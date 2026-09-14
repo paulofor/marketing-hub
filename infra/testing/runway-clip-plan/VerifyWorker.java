@@ -48,9 +48,9 @@ class VerifyWorker {
     var properties = new VideoManagementProperties();
     properties.getApolloPlanner().setEnabled(true);
     var client = new ApolloPlanningAiClient(properties, WebClient.builder()) {
-      /** Devolve cinco funções distintas e durações reais sem acessar provedor ou credencial. */
+      /** Simula a resposta e sua auditoria com cinco funções, sem acessar provedor ou credencial. */
       @Override
-      public JsonNode plan(Long jobId, JsonNode request) {
+      public JsonNode plan(Long jobId, JsonNode request, java.util.function.Consumer<JsonNode> audit) {
         var plan = mapper.createObjectNode();
         var cuts = plan.putArray("cuts");
         for (JsonNode original : metadata.path("cut_plan")) {
@@ -67,6 +67,11 @@ class VerifyWorker {
         var response = mapper.createObjectNode();
         response.putArray("output").addObject().putArray("content").addObject()
             .put("type", "output_text").put("text", plan.toString());
+        var interaction = mapper.createObjectNode().put("eventType", "APOLLO_PLANNING_HTTP")
+            .put("status", "RECEIVED").put("httpStatus", 200);
+        interaction.set("request", request);
+        interaction.put("rawResponse", response.toString());
+        audit.accept(interaction);
         return response;
       }
     };

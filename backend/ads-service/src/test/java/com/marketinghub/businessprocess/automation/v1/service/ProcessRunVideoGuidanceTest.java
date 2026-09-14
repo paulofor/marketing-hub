@@ -75,6 +75,73 @@ class ProcessRunVideoGuidanceTest {
     verifyNoInteractions(preflights);
   }
 
+  /** A interrupção de Apolo independe do snapshot vencido e mantém o job como evidência. */
+  @Test
+  void productionFailureIsVisibleWithoutReusingPreflightFailure() {
+    cycle.setStage("PDE_ENTRY_VIDEO");
+    production.setVideoProjectId(5L);
+    production.setStatus("APOLLO_BLOCKED");
+    production.setLastFailedJobId(21240L);
+    production.setLastApolloFailureCode("APOLLO_STORYBOARD_BLOCKED");
+    production.setLastApolloFailureDetail("Payload bruto privado não deve aparecer no card");
+    preflight.setStatus("EXPIRED");
+    when(productions.findLatestForLearningCycle(
+            4L, 92L, "musa-v12", "PDE_HERO_CONVERSION", changedAt))
+        .thenReturn(Optional.of(production));
+    var action = guidance.resolve(cycle);
+    assertThat(action.code()).isEqualTo("RESOLVE_VIDEO_PRODUCTION");
+    assertThat(action.title()).contains("demonstração", "interrompida");
+    assertThat(action.reason()).contains("planejamento", "corrigir").doesNotContain("Payload");
+    assertThat(action.actionUrl()).isEqualTo("/audio-video-studio/projects/5");
+    assertThat(action.evidenceReference()).endsWith("/cycles/12/jobs/21240");
+    assertThat(action.afterAction()).contains("reaproveite", "Plutus", "aprovação humana");
+    verifyNoInteractions(preflights);
+    verify(productions, never()).save(any());
+  }
+
+  /** Bloqueio anterior ao job usa somente a evidência de ciclo existente. */
+  @Test
+  void productionBlockBeforeJobDoesNotInventAnExecution() {
+    production.setStatus("APOLLO_BLOCKED");
+    var action = guidance.resolve(cycle);
+    assertThat(action.evidenceReference()).endsWith("/cycles/12");
+    assertThat(action.reason()).contains("falha registrada");
+    verifyNoInteractions(preflights);
+  }
+
+  /** O monitor financeiro define o responsável sem oferecer recarga ou consumo automáticos. */
+  @Test
+  void financialProductionBlockKeepsItsOwnerAndKnownJob() {
+    production.setStatus("APOLLO_BLOCKED");
+    production.setBudgetMonitorStatus("BLOCKED");
+    production.setSalesVideoJobId(900L);
+    var action = guidance.resolve(cycle);
+    assertThat(action.responsible()).contains("financeiro", "Plutus");
+    assertThat(action.reason()).contains("saldo", "consumo", "teto");
+    assertThat(action.evidenceReference()).endsWith("/jobs/900");
+    verifyNoInteractions(preflights);
+  }
+
+  /** Parecer financeiro reprovado não pode parecer produção em andamento. */
+  @Test
+  void rejectedFinancialReviewIsVisibleBeforeAnyJob() {
+    production.setStatus("FINANCIAL_BLOCKED");
+    var action = guidance.resolve(cycle);
+    assertThat(action.responsible()).contains("Plutus");
+    assertThat(action.reason()).contains("controle financeiro");
+    assertThat(action.evidenceReference()).endsWith("/cycles/12");
+    verifyNoInteractions(preflights);
+  }
+
+  /** Falha da integração de IA preserva seu diagnóstico sem culpabilizar o storyboard. */
+  @Test
+  void planningIntegrationFailureHasActionableGuidance() {
+    production.setStatus("APOLLO_BLOCKED");
+    production.setLastApolloFailureCode("APOLLO_PLANNING_ACCOUNT_BLOCKED");
+    assertThat(guidance.resolve(cycle).reason()).contains("resposta auditada", "quota");
+    verifyNoInteractions(preflights);
+  }
+
   /** A tentativa nova em curso ou com vídeo prevalece sobre o bloqueio histórico. */
   @ParameterizedTest
   @ValueSource(
@@ -82,10 +149,14 @@ class ProcessRunVideoGuidanceTest {
         "PENDING_PROVIDER_PREFLIGHT_ONLY",
         "PENDING_FINANCIAL_REVIEW",
         "APOLLO_QUEUED",
+        "QUEUED_FOR_APOLLO",
+        "REUSING_APOLLO_MATERIAL",
         "VIDEO_READY_FOR_REVIEW"
       })
   void doesNotCallActiveOrFinishedWorkAHumanBlocker(String status) {
     production.setStatus(status);
+    production.setLastFailedJobId(21240L);
+    production.setLastApolloFailureCode("APOLLO_STORYBOARD_BLOCKED");
     assertThat(guidance.resolve(cycle)).isNull();
     verifyNoInteractions(preflights);
   }

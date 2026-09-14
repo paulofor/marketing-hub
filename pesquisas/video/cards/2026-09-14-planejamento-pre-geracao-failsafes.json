@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-planejamento-pre-geracao-failsafes",
+  "collection": "video",
+  "title": "Planejar e validar antes de gerar vídeo",
+  "finding": "O Catalyst da Socialive entra em early access propondo uma etapa conversacional de planejamento antes da geração, reunindo assets, requisitos de marca e direção criativa e aplicando lógica de decisão e failsafes baseados em regras.",
+  "mechanism": "Explicitar objetivo, referências, invariantes de marca, claims, formato e restrições antes da primeira chamada ao modelo pode reduzir caminhos inviáveis e regenerações causadas por requisitos descobertos tarde.",
+  "commercialApplication": "Adicionar ao videomaker do Marketing Hub um preflight obrigatório que consolide briefing, assets, regras de marca/compliance, formato, orçamento e plano de cenas antes de escolher e chamar o modelo de vídeo.",
+  "evidenceStrength": "Moderada para a existência e o desenho declarado do mecanismo, com base em anúncio oficial do fornecedor; baixa para efeito em custo, produtividade ou resultado comercial porque não há benchmark independente publicado.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2026-10-29",
+  "experimentHypothesis": "Comparado à geração direta a partir do briefing inicial, um preflight estruturado reduzirá regenerações, custo total e tempo até uma versão aprovada sem reduzir de forma relevante a diversidade criativa.",
+  "risks": "Regras excessivas podem limitar exploração criativa; requisitos incorretos ou desatualizados podem ser propagados; o planejamento não elimina a necessidade de revisão humana nem garante aderência perfeita do modelo.",
+  "limits": "Catalyst está em early access para clientes selecionados; não há API pública específica, preço público específico ou métricas independentes que comprovem ganhos de eficiência ou impacto em conversão e vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-14-planejamento-pre-geracao-failsafes.md",
+  "sourceTitle": "Fonte revisada — planejamento pré-geração e failsafes no vídeo",
+  "sourceSha256": "dfe6e8b89a40703d75d974761146b5bd7cd79078b065185f0a64bf021a54b7f1"
+}

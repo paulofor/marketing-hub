@@ -1,0 +1,18 @@
+{
+  "cardKey": "congruencia-dinamica-audiovisual-fluencia",
+  "collection": "prazer-audio-visual",
+  "title": "Alinhar dinâmica visual à evolução acústica",
+  "finding": "Em dois experimentos com piano clássico e espectrogramas dinâmicos, visualizações congruentes com características acústicas elevaram julgamentos iniciais de beleza; o efeito foi mais forte para música de valência negativa.",
+  "mechanism": "A evidência é compatível com congruência percebida aumentando fluência de processamento e agradabilidade, que por sua vez se associam a maior julgamento estético.",
+  "commercialApplication": "Comparar uma versão audiovisual em que movimento, transições e mudanças visuais acompanham propriedades acústicas relevantes contra uma versão visualmente atraente, porém dinamicamente incongruente.",
+  "evidenceStrength": "Média-alta para beleza inicial no paradigma testado: dois experimentos com manipulação de congruência; mecanismo de mediação e generalização para vídeo comercial ainda exigem validação.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2027-03-14",
+  "experimentHypothesis": "Correspondência dinâmica perceptível entre som e visual aumentará fluência percebida, agradabilidade e estética sem piorar compreensão; retenção e CTA devem ser avaliados separadamente.",
+  "risks": "Sincronização excessiva pode tornar a peça mecânica ou distrativa; não confundir estética inicial com retenção, persuasão ou venda.",
+  "limits": "Estímulos de piano clássico e espectrogramas; não houve medida de memória, CTA, conversão ou receita, e o efeito dependeu de a congruência ser percebida.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-14-congruencia-dinamica-audiovisual-fluencia.md",
+  "sourceTitle": "Fonte revisada — congruência dinâmica audiovisual e fluência perceptiva",
+  "sourceSha256": "87760f526831d4d0be79f28cc41bdfe2bb9f542b34217204404ad966aedd098d"
+}

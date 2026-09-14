@@ -3,7 +3,7 @@ package com.marketinghub.salesvideo.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-/** Solicitação para finalizar um render bruto com áudio, legenda e trilha. */
+/** Solicita acabamento ou somente HLS preservando um MP4 final já produzido. */
 @Data
 public class RequestSalesVideoPostProductionRequest {
   @NotBlank private String requestedBy;
@@ -13,4 +13,6 @@ public class RequestSalesVideoPostProductionRequest {
   private String voiceOverScript;
 
   @NotBlank private String captionText;
+
+  private boolean deliveryOnly;
 }

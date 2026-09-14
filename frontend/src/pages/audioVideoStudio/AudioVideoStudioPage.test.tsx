@@ -444,6 +444,104 @@ describe("AudioVideoStudioPage", () => {
     (axios.patch as any).mockResolvedValue({ data: {} });
   });
 
+  it.each([
+    { hls: null, state: "AVAILABLE" },
+    { hls: "https://cdn.test/final.m3u8", state: "READY" },
+    { hls: null, state: "UNAVAILABLE" },
+    { hls: null, state: "PROCESSING" },
+  ])(
+    "preserva MP4 e respeita a disponibilidade do backend: %s",
+    async ({ hls, state }) => {
+      (axios.get as any).mockImplementation((url: string) => {
+        if (url === "/api/sales-videos/studio/catalog")
+          return Promise.resolve({ data: studioCatalog });
+        if (url === "/api/sales-videos/projects/1")
+          return Promise.resolve({
+            data: {
+              id: 1,
+              productId: 4,
+              experimentId: 92,
+              salesVideoProfileId: 55,
+              title: "Anúncio privado preservado",
+              objective: "Primeiro ajuste aplicável",
+              targetChannel: "SOCIAL_REELS_STORIES",
+              status: "READY_FOR_REVIEW",
+            },
+          });
+        if (url === "/api/sales-videos/profiles/55/jobs")
+          return Promise.resolve({
+            data: [
+              {
+                id: 91009,
+                profileId: 55,
+                providerName: "MUSA_POST_PRODUCTION",
+                status: "VIDEO_READY",
+                assetId: 92001,
+                streamPlaybackUrl: hls,
+                deliveryPreparation: {
+                  status: state,
+                  jobId: 91009,
+                  captionText: state === "AVAILABLE" ? "Copy preservada" : null,
+                  reason:
+                    state === "UNAVAILABLE"
+                      ? "Arquivo sem hash auditável."
+                      : null,
+                },
+                metadataJson: JSON.stringify({
+                  captionText: "Copy preservada",
+                }),
+              },
+            ],
+          });
+        if (url === "/api/media/92001")
+          return Promise.resolve({
+            data: { id: 92001, url: "https://cdn.test/final.mp4" },
+          });
+        return Promise.resolve({ data: [] });
+      });
+      setupProject();
+      const link = await screen.findByRole("link", { name: "Abrir MP4" });
+      expect(link.getAttribute("href")).toBe("https://cdn.test/final.mp4");
+      if (hls) {
+        expect(
+          screen
+            .getByRole("link", { name: "HLS preparado para reprodução" })
+            .getAttribute("href"),
+        ).toBe(hls);
+        expect(
+          screen.queryByRole("button", { name: "Preparar reprodução HLS" }),
+        ).toBeNull();
+      } else if (state === "AVAILABLE") {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Preparar reprodução HLS" }),
+        );
+        await waitFor(() =>
+          expect(axios.post).toHaveBeenCalledWith(
+            "/api/sales-videos/jobs/91009/request-post-production",
+            expect.objectContaining({
+              deliveryOnly: true,
+              captionText: "Copy preservada",
+            }),
+          ),
+        );
+        expect(axios.post).toHaveBeenCalledTimes(1);
+      } else if (state === "PROCESSING") {
+        expect(
+          screen.getByRole("button", { name: "Preparando reprodução…" }),
+        ).toBeDisabled();
+        expect(axios.post).not.toHaveBeenCalled();
+      } else {
+        expect(
+          screen.queryByRole("button", { name: "Preparar reprodução HLS" }),
+        ).toBeNull();
+        expect(
+          screen.getByText("Arquivo sem hash auditável."),
+        ).toBeInTheDocument();
+        expect(axios.post).not.toHaveBeenCalled();
+      }
+    },
+  );
+
   it("aplica a receita sem inventar produto, oferta ou CTA", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/studio/catalog") {

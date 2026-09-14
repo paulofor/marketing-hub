@@ -233,3 +233,147 @@ e solicitar o ciclo governado por POST simulado, preservando copy e identidade.
 O diff adicional contém somente o controle de cenas, seus testes e registros.
 Não houve alteração adicional em Java, configuração publicada ou imagem do
 backend/executor. Os Compose temporários foram encerrados com volumes e órfãos.
+
+## Produção solicitada pelo processo
+
+Frontend final `69d86c98e693a1d7e9a9416a2cf31517a4a0c03f` aplicado por `execute`,
+com rollback para a imagem anterior; hash portátil local/remoto idêntico
+`sha256:adf8089e1c3d86f0685d9a463453d3171d3700441aebe91e26ab3c0cf365c923`.
+A imagem também passou na navegação local dos três dispositivos antes da aplicação.
+
+Pelo processo 75/ciclo 2, o projeto 4 recebeu cinco cenas, a captura homologada 118
+e legendas segmentadas, preservando as palavras aprovadas, IDs e duração. O PATCH
+e o GET privado da prova retornaram 200. O primeiro pedido criou o ciclo audiovisual
+17/preflight 10; a validação recusou a direção visual com 1.035 caracteres, acima
+do limite 1.000, sem tarefa de agente, reserva ou geração. O montador real reproduziu
+o bloqueio localmente. Nenhum limite foi ampliado nem texto truncado.
+
+Alternativas editoriais: retirar restrições (reduz tamanho com risco de falsidade),
+alterar roteiro/oferta (muda a variável do teste) ou condensar somente a direção
+visual (preserva intenção e copy). Escolhida a última. Os dois projetos passaram
+duas vezes pelo montador real na sandbox, com clipes de **966/977 caracteres**
+e durações **10/5 s**. O roteiro, a captura e a finalização permaneceram iguais.
+
+O segundo pedido pela tela criou o ciclo **18**, preflight **11**, projeto **4**,
+produto **4**, plano **3**, experimento **92**, teto individual **USD 8**. O preflight
+ficou **READY**, cotou **USD 1,80** e confirmou saldo de **1.372 créditos**. O backend
+criou automaticamente a tarefa financeira **417** e passou a `PENDING_FINANCIAL_REVIEW`.
+Os ciclos 17 e anteriores permanecem no histórico, sem nova geração paga até esse ponto.
+
+Plutus concluiu a tarefa **417** com `APPROVED`, `NO_PURCHASE`, estimativa de
+USD 1,80 e justificativa de teste privado com ledger incremental segregado.
+O backend reservou 800 créditos sob o teto individual e criou o job **21237**
+(`RUNWAY_ROUTER`, perfil **59**, modo **TEST**). Apolo validou a captura 118 pelo
+controller de vídeo com tenant `default`, antes do planejamento e da geração.
+O planejamento usou `gpt-5.6-sol`, `service_tier: flex`, prompt/schema versionados
+e cinco cortes. O fornecedor iniciou a tarefa
+`45a8f0e1-0530-4375-9e6f-b32cb0c24e57` para o primeiro clipe.
+
+A conferência publicada do processo em desktop/iPhone/Pixel preservou ciclo 2,
+experimento 92 e links dos subprocessos 66/62/76, com 0/4 objetivos comerciais
+comprovados. Logs do financeiro não retornaram linhas na janela consultada;
+a decisão, a tarefa e o encaminhamento foram confirmados pelo banco via MCP.
+
+## Verificação do material real e correção da entrega
+
+O render 21237 concluiu as duas tarefas Runway, com custo conhecido de USD 1,80.
+O backend enfileirou o acabamento 21238, gerando MP4 2796, pôster 2797 e VTT 2798.
+A captura 118 foi aplicada com hash idêntico, cinco legendas sincronizadas e áudio
+pt-BR. FFprobe confirmou 15 s, 1080×1920, H.264/AAC. A reprodução humana/escuta
+final continua pendente; a ferramenta desta sessão não recebe áudio como entrada.
+
+A inspeção real revelou duas lacunas que a matriz anterior não cobria: o uploader
+não produzia HLS (o teste de mídia terminava no MP4/VTT), e o canal canônico
+`SOCIAL_REELS_STORIES` caía no fallback `LANDING_HERO`. O ativo 41 foi cadastrado
+nesse papel apesar de o projeto 4 ser o anúncio. O canal/objetivo persistidos,
+o callback, o código e o histórico confirmam as causas; não se trata de falta
+de credencial. O MP4 responde 200 com user-agent de navegador; o primeiro 403
+isolado da consulta Python não comprova indisponibilidade do storage.
+
+Alternativas para entrega: cadastrar uma playlist externa manualmente (esforço
+baixo, rastreabilidade fraca); contratar outra transcodificação (integração/gasto
+adicionais); gerar e armazenar HLS pelo executor e API de assets existentes
+(esforço moderado, sem nova geração IA, mesma governança). Escolhida a terceira.
+Para o papel, editar apenas o ativo corrigiria o efeito; inferir pelo título é
+frágil; mapear os canais canônicos e rejeitar os desconhecidos elimina o fallback
+indevido. A recuperação deve reaproveitar os bytes do MP4/voz/VTT, preservando
+IDs comerciais, tentativas, custos e decisões humanas.
+
+Matriz ampliada antes dos novos testes: acabamento real → upload de segmentos e
+playlist → callback com URL HLS → ativo correto → reprodução com manifesto e
+segmentos HTTP; recuperação de MP4 final sem chamada de IA/TTS/render; hash
+obrigatório; idempotência, tenant, falha de upload/FFmpeg, canal social e PDE,
+canal desconhecido bloqueado, preservação de custo/aprovação. Tela desktop,
+iPhone e Pixel deve solicitar somente preparação da reprodução, mantendo MP4
+como fallback. Duas novas rodadas locais completas serão executadas após a
+última correção; nenhuma nova geração paga é necessária para validar a entrega.
+
+A rodada `final6` passou com 3.275 testes executados e entrega HLS local, mas a
+conferência preventiva no navegador publicado identificou ausência de CORS no
+bucket. A API S3 confirmou `NoSuchCORSConfiguration`; o navegador da origem
+`http://191.252.181.168:5173` recusou leitura mesmo com MP4 íntegro. A documentação
+[oficial do R2](https://developers.cloudflare.com/r2/buckets/cors/) confirma que a
+política deve permitir a origem do aplicativo; disponibilizar o objeto por URL
+não basta para leitura por JavaScript.
+
+Alternativas: proxy de todos os segmentos pelo backend (custo operacional e
+acoplamento maiores); liberar qualquer origem (escopo desnecessário); acrescentar
+somente leitura para as duas origens operacionais conhecidas do Hub (menor
+exposição e esforço). Escolhida a terceira, preservando quaisquer regras
+existentes e uma cópia de retorno. Não foi criada origem para uma versão PDE
+ainda não publicada. A integração futura deve cadastrar seu domínio aprovado.
+
+O script versionado `scripts/configure-video-read-cors.py` confere o hash do estado
+anterior antes de aplicar; a preparação local não altera o bucket. A origem do
+storage no teste HLS agora usa outra porta, exigindo CORS real no navegador. As
+rodadas finais serão `final7` e `final8`, incluindo esse contrato. Snapshot anterior
+sem regras: SHA-256 `9edcb11e5d84ed338440e19f54db62a34ac92640f9b691079f59ed93625d85be`.
+Candidata somente GET/HEAD nas origens `http://191.252.181.168:5173` e
+`http://191.252.181.168`: SHA-256
+`ddd939571f79f4c79a0c9dab3faca62974a6139d9bfc4465fd59561346d84cf1`.
+
+As rodadas `final7` e `final8` passaram com 3.275 testes cada, incluindo CORS entre
+origens diferentes. Na revisão arquitetural do diff, a disponibilidade do novo
+botão ainda era deduzida na tela a partir de provider/status/filho. Alternativas:
+sempre oferecer o botão e recusar no POST (baixo esforço, experiência confusa),
+manter inferência local (baixo esforço, divergência de responsabilidade) ou expor
+comando elegível/pendente/indisponível no backend (esforço pequeno, contrato único).
+Escolhida a terceira, conforme regra de verdade da tela. O job agora informa
+`deliveryPreparation`, incluindo texto congelado e a execução já em curso.
+A matriz foi ampliada para negar recuperação de arquivo sem hash e para garantir
+que o frontend não oferece o comando quando o backend o declara indisponível.
+As novas rodadas finais são `final9` e `final10`; nenhuma alteração adicional foi
+aplicada em runtime durante essas verificações.
+
+A rodada `final9` identificou uma violação ArchUnit: o DTO legado do job não pode
+depender de classes em `service`. A decisão de entrega foi mantida como `record`
+no próprio contrato existente `SalesVideoJobDto`, sem afrouxar a regra nem criar
+outro controller. O backend continua sendo responsável por calcular a decisão.
+A falha ocorreu somente na sandbox. A contagem reinicia nas rodadas `final11` e
+`final12`, após teste focado incluindo as regras de arquitetura completas.
+
+## Homologação final da recuperação de entrega
+
+As rodadas completas consecutivas **`final11` e `final12` passaram** com **3.279
+testes executados por rodada**: 2.934 backend, 173 executor de vídeo, 38 financeiro
+e 134 frontend. Oito testes opcionais do backend não entram nessa contagem.
+Também passaram MySQL 5.7, contratos de CI e pacote, CORS, integrações HTTP de
+preflight/financeiro, FFmpeg, recuperação de bytes e reprodução em desktop,
+iPhone 15 Pro e Pixel 7 simulados, incluindo origens diferentes para HLS.
+Os mesmos 31 arquivos de implementação/testes foram conferidos por SHA-256;
+manifesto de fontes `894e2c5c3e543c14e3bea285fac0c7f0c2594ea48f038f135343c0c3236a7cdb`.
+
+Antes do commit, a imagem candidata do Dockerfile do executor também passou por
+`pending → claim → download de MP4/VTT por hash → HLS → seis uploads → callback`,
+com um único claim, um callback, nenhum erro e nenhuma geração externa.
+O contrato de preflight da imagem passou nos dry runs de 10/5 segundos.
+As **138 classes** empacotadas conferem byte a byte com as classes testadas;
+JAR SHA-256 `67b5c5baf4ca218bf0811c55d6f3da38e4607198c3595745abf841492597b243`.
+A imagem da tela, construída com a configuração de API da publicação, passou
+nos três dispositivos: preservação da prova, quinta cena e comando HLS informado
+pelo backend, com uma requisição simulada por dispositivo e zero escritas externas.
+
+Relatórios por rodada ficam em `artifacts/video-production-continuity/final11`
+e `final12`, com contagens, logs, capturas e mídia sintética. Os XMLs foram
+compactados com conferência dos hashes individuais, sem descarte de evidência.
+A aprovação técnica da recuperação não é aprovação dos vídeos para uso comercial.

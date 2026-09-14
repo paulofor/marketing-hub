@@ -88,12 +88,15 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Compõe a prova íntegra do produto e aplica legenda e voz somente depois de validá-la. */
+    /** Reaproveita acabamento íntegro ou compõe prova, legenda e voz conforme o contrato recebido. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
                                     ProgressCallback progressCallback) {
         JsonNode metadata = readMetadata(job);
+        if (metadata.path("deliveryOnly").asBoolean(false)) {
+            return new FinalVideoReuse(downloadWebClient, objectMapper).restore(job, metadata);
+        }
         String sourceVideoUrl = requiredText(metadata, "sourceVideoUrl");
         String captionText = requiredText(metadata, "captionText");
         String voiceOverScript = optionalText(metadata, "voiceOverScript");

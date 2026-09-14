@@ -47,7 +47,7 @@ public class VideoAssetUploader {
         this(assetClient, objectMapper, new VideoManagementProperties());
     }
 
-    /** Envia vídeo, quadro final e legenda, criando a ponte visual quando o provider não a entrega. */
+    /** Envia os artefatos e exige HLS persistido para concluir o acabamento final. */
     public UploadedAssets uploadAssets(SalesVideoJob job, ProviderArtifacts artifacts) {
         Long videoAssetId = upload(job, artifacts, artifacts.videoFile());
         ProviderFile continuityFrame = isCinematicScene(job)
@@ -58,7 +58,12 @@ public class VideoAssetUploader {
         Long posterAssetId = upload(job, artifacts, continuityFrame);
         Long captionAssetId = upload(job, artifacts, artifacts.captionFile());
         artifacts.auditFiles().forEach(file -> upload(job, artifacts, file));
-        return new UploadedAssets(videoAssetId, posterAssetId, captionAssetId);
+        HlsVideoDelivery.Delivery delivery = "MUSA_POST_PRODUCTION".equalsIgnoreCase(job.providerName())
+                ? new HlsVideoDelivery(assetClient, properties, objectMapper).deliver(job, artifacts.videoFile())
+                : null;
+        return new UploadedAssets(videoAssetId, posterAssetId, captionAssetId,
+                delivery == null ? null : delivery.playbackUrl(),
+                delivery == null ? Map.of() : Map.of("hls_delivery", delivery.audit()));
     }
 
     /** Identifica cenas que exigem que o poster seja exatamente o último quadro renderizado. */
@@ -169,6 +174,12 @@ public class VideoAssetUploader {
     /** Identifica os ativos persistidos pelo backend para concluir o job. */
     public record UploadedAssets(Long videoAssetId,
                                  Long posterAssetId,
-                                 Long captionAssetId) {
+                                 Long captionAssetId,
+                                 String streamPlaybackUrl,
+                                 Map<String, Object> deliveryMetadata) {
+        /** Preserva os providers que não produzem um acabamento final. */
+        public UploadedAssets(Long videoAssetId, Long posterAssetId, Long captionAssetId) {
+            this(videoAssetId, posterAssetId, captionAssetId, null, Map.of());
+        }
     }
 }

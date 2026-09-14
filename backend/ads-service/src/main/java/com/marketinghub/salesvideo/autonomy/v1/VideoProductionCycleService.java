@@ -120,6 +120,9 @@ public class VideoProductionCycleService {
     VideoProject project = project(request.videoProjectId());
     validateProviderPlan(project);
     productProof(project);
+    if (project.getExperimentId() != null) {
+      com.marketinghub.salesvideo.service.VideoProjectFunnelRole.resolve(project);
+    }
     if (project.getSalesVideoProfileId() == null) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O projeto precisa de um perfil de vídeo antes do ciclo autônomo.");

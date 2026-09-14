@@ -56,6 +56,7 @@ run package-contract python3 scripts/test-backend-packaged-resources.py
 run package-integrity python3 scripts/verify-backend-packaged-resources.py
 run frontend npm --prefix frontend test -- --run src/pages/financial src/pages/learningCycle src/pages/audioVideoStudio/AudioVideoStudioPage.test.tsx src/api/salesVideo src/pages/product/ProductProcessAutomationPanel.test.tsx src/pages/product/ProductProcessActivityExecutionsPage.test.tsx src/pages/product/productProcessContext.test.tsx
 run application-contract python3 infra/testing/vega-process6-recovery/test-application.py
+run cors-contract python3 scripts/test-video-read-cors.py
 run typecheck npm --prefix frontend run typecheck
 run build env VITE_API_URL=http://127.0.0.1:15173 npm --prefix frontend run build
 run classpath mvn -q -f backend/ads-service/pom.xml dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=target/video-finance-classpath
@@ -66,6 +67,7 @@ run proof-integration java --class-path "$output/proof-classes:video-management-
 run media-probe ffprobe -v error -show_streams -show_format -of json "$output/media/final-fixture.mp4"
 run media-player sandbox-media-player "$output/media/final-fixture.mp4" "$output/media/player.html"
 run media-browser node infra/testing/video-finance/verify-media-responsive.cjs "$output/media"
+run hls-browser node infra/testing/video-finance/verify-hls-responsive.cjs "$output/media"
 LEARNING_CYCLES_DB_HOST=sandbox-docker java -Xmx768m \
   -cp "backend/ads-service/target/test-classes:backend/ads-service/target/classes:$(cat backend/ads-service/target/video-finance-classpath)" \
   com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication > "$output/api.log" 2>&1 &
@@ -77,7 +79,7 @@ node frontend/node_modules/vite/bin/vite.js preview frontend --config frontend/v
 ui_pid=$!
 wait_http http://127.0.0.1:15173
 run browser env VIDEO_PREFLIGHT_FIXTURE_RESULT="$output/preflight-rest.log" VIDEO_PREFLIGHT_EVIDENCE_DIR="$output/browser" node frontend/e2e/video-preflight-guidance-responsive.mjs
-run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*(ProcessRunVideoGuidance|VideoProductionCycleService|SalesVideoController|SalesVideoAssetControllerTest|SalesVideoService|SalesVideoJobService|VideoProjectService|VideoProductProof.*|AgentTaskVideoProductProofSource).*java'
+run spotless mvn -q -f backend/ads-service/pom.xml spotless:check '-DspotlessFiles=.*(ProcessRunVideoGuidance|SalesVideoJobDto|DeliveryPreparation|VideoFinalDeliveryContract|VideoProjectFunnelRole|SalesVideoJobRepository|ExperimentVideoAssetJobSyncService|RequestSalesVideoPostProductionRequest|VideoProductionCycleService|SalesVideoController|SalesVideoAssetControllerTest|SalesVideoService|SalesVideoJobService|VideoProjectService|VideoProductProof.*|AgentTaskVideoProductProofSource).*java'
 run diff git diff --check
 python3 - "$output" <<'PY'
 import pathlib, json, sys, xml.etree.ElementTree as E

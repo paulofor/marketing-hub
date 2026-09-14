@@ -48,6 +48,125 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
+  /** Expõe disponibilidade e bloqueia nova preparação quando já existe filho em execução. */
+  @Test
+  void shouldExposeBackendDeliveryAvailability() {
+    var source = VideoFinalDeliveryContractTest.source();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    var available = service.getJob(source.getId()).getDeliveryPreparation();
+    assertThat(available.status()).isEqualTo("AVAILABLE");
+    assertThat(available.captionText()).isEqualTo("Copy preservada");
+    var child =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .metadataJson("{\"deliveryOnly\":true}")
+            .build();
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(source.getId()))
+        .willReturn(Optional.of(child));
+    var pending = service.getJob(source.getId()).getDeliveryPreparation();
+    assertThat(pending.status()).isEqualTo("PROCESSING");
+    assertThat(pending.jobId()).isEqualTo(91010L);
+    assertThat(pending.captionText()).isNull();
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Arquivo sem identidade não pode disponibilizar recuperação apenas por estar VIDEO_READY. */
+  @Test
+  void shouldRejectDeliveryAvailabilityWithoutPersistedHash() {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.getAsset().setPayload("{}");
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    var state = service.getJob(source.getId()).getDeliveryPreparation();
+    assertThat(state.status()).isEqualTo("UNAVAILABLE");
+    assertThat(state.reason()).contains("hashes");
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Serializa a recuperação e devolve o filho existente sem duplicar processamento. */
+  @Test
+  void shouldReuseExistingDeliveryJob() {
+    var source = VideoFinalDeliveryContractTest.source();
+    var child =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .tenantId("default")
+            .profile(source.getProfile())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .metadataJson("{\"deliveryOnly\":true}")
+            .build();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(source.getId()))
+        .willReturn(Optional.of(child));
+    assertThat(
+            service
+                .requestPostProduction(source.getId(), VideoFinalDeliveryContractTest.request())
+                .getId())
+        .isEqualTo(child.getId());
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Bloqueia recuperação de outro tenant antes de reservar ou criar um filho. */
+  @Test
+  void shouldRejectCrossTenantDelivery() {
+    var source = VideoFinalDeliveryContractTest.source();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    TenantContextHolder.set(new TenantContext("tenant-b", "fixture@sandbox.local", false));
+    try {
+      assertThrows(
+          VideoModuleException.class,
+          () ->
+              service.requestPostProduction(
+                  source.getId(), VideoFinalDeliveryContractTest.request()));
+      verify(jobRepository, never()).findByIdForUpdate(any());
+      verify(jobRepository, never()).save(any());
+    } finally {
+      TenantContextHolder.clear();
+    }
+  }
+
+  /** Cria um filho de entrega e persiste o HLS do callback mantendo modo de teste e custo zero. */
+  @Test
+  void shouldCreateAndCompleteDeliveryWithHls() {
+    var source = VideoFinalDeliveryContractTest.source();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.save(any()))
+        .willAnswer(
+            invocation -> {
+              SalesVideoJob value = invocation.getArgument(0);
+              if (value.getId() == null) value.setId(91010L);
+              return value;
+            });
+    var result =
+        service.requestPostProduction(source.getId(), VideoFinalDeliveryContractTest.request());
+    assertThat(result.getId()).isEqualTo(91010L);
+    assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
+    assertThat(result.getMetadataJson()).contains("VIDEO_FINAL_REUSE_V1", "deliveryOnly");
+    var captor = org.mockito.ArgumentCaptor.forClass(SalesVideoJob.class);
+    verify(jobRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+    var child = captor.getValue();
+    given(jobRepository.findById(91010L)).willReturn(Optional.of(child));
+    given(assetRepository.findById(92001L)).willReturn(Optional.of(source.getAsset()));
+    given(assetRepository.findById(92002L)).willReturn(Optional.of(source.getVttAsset()));
+    var callback = new JobCompletionRequest();
+    callback.setAssetId(92001L);
+    callback.setVttAssetId(92002L);
+    callback.setStatus(SalesVideoStatus.VIDEO_READY);
+    callback.setStreamPlaybackUrl("https://cdn.test/final.m3u8");
+    callback.setCostUsd(BigDecimal.ZERO);
+    callback.setMetadataJson(
+        "{\"duration_seconds\":15,\"deliveryOnly\":true,\"hls_delivery\":{\"status\":\"READY\"}}");
+    var completed = service.complete(91010L, callback);
+    assertThat(completed.getStreamPlaybackUrl()).isEqualTo("https://cdn.test/final.m3u8");
+    assertThat(completed.getMetadataJson()).contains("hls_delivery", "VIDEO_FINAL_REUSE_V1");
+    assertThat(completed.getCommercialReadinessBlockers())
+        .doesNotContain("A playlist HLS publicável não foi registrada.");
+    assertThat(source.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+  }
+
   @Mock private SalesVideoJobRepository jobRepository;
 
   @Mock private SalesVideoJobEventRepository eventRepository;

@@ -109,7 +109,8 @@ class VideoJobProcessorTest {
         when(backendClient.fetchProfile(2L)).thenReturn(profile);
         when(providerRegistry.resolve(job)).thenReturn(Optional.of(videoProvider));
         when(videoProvider.render(any(), any(), any())).thenReturn(artifacts);
-        when(assetUploader.uploadAssets(job, artifacts)).thenReturn(new UploadedAssets(20L, null, null));
+        when(assetUploader.uploadAssets(job, artifacts)).thenReturn(new UploadedAssets(20L, null, null,
+                "https://cdn.test/final.m3u8", Map.of("hls_delivery", Map.of("status", "READY"))));
 
         processor.process(job);
 
@@ -118,6 +119,8 @@ class VideoJobProcessorTest {
         verify(backendClient).completeJob(org.mockito.Mockito.eq(job.id()), completionCaptor.capture());
         JobCompletionPayload payload = completionCaptor.getValue();
         assertThat(payload.assetId()).isEqualTo(20L);
+        assertThat(payload.streamPlaybackUrl()).isEqualTo("https://cdn.test/final.m3u8");
+        assertThat(payload.metadataJson()).contains("hls_delivery");
         assertThat(payload.status()).isEqualTo(SalesVideoStatus.VIDEO_READY);
         verify(learningReporter).observe(job, job);
         var order = org.mockito.Mockito.inOrder(videoProvider, apolloStoryboardPlanner);

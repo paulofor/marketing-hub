@@ -26,6 +26,7 @@ try {
       errors = [],
       writes = [],
       external = [];
+    let deliveryJob;
     let project = {
       id: 91004,
       productId: 91001,
@@ -77,6 +78,7 @@ try {
         request.method() === "POST"
       ) {
         const requestBody = request.postDataJSON();
+        project.salesVideoProfileId = 91001;
         assert.equal(requestBody.videoProjectId, project.id);
         assert.equal(requestBody.budgetLimitUsd, 8);
         assert.equal(requestBody.productionProfile, "FINAL_CAMPAIGN");
@@ -89,6 +91,52 @@ try {
             status: "WAITING_PROVIDER_PREFLIGHT",
           },
         });
+      }
+      if (url.pathname === "/api/sales-videos/profiles/91001/jobs")
+        return route.fulfill({
+          json: [
+            {
+              id: 91009,
+              profileId: 91001,
+              status: "VIDEO_READY",
+              jobType: "POST_PRODUCTION",
+              providerName: "MUSA_POST_PRODUCTION",
+              assetId: 92001,
+              deliveryPreparation: {
+                status: deliveryJob ? "PROCESSING" : "AVAILABLE",
+                jobId: deliveryJob?.id ?? 91009,
+                captionText: deliveryJob ? null : "Aplicar, avaliar e retomar.",
+              },
+              metadataJson: JSON.stringify({
+                captionText: "Aplicar, avaliar e retomar.",
+              }),
+            },
+            ...(deliveryJob ? [deliveryJob] : []),
+          ],
+        });
+      if (url.pathname === "/api/media/92001")
+        return route.fulfill({
+          json: { id: 92001, url: base + "/fixture-final.mp4" },
+        });
+      if (url.pathname === "/fixture-final.mp4")
+        return route.fulfill({ status: 204, body: "" });
+      if (
+        url.pathname === "/api/sales-videos/jobs/91009/request-post-production"
+      ) {
+        const body = request.postDataJSON();
+        assert.equal(body.deliveryOnly, true);
+        assert.equal(body.captionText, "Aplicar, avaliar e retomar.");
+        assert.equal(body.voiceOverScript, undefined);
+        assert.equal(body.sourceVideoUrl, undefined);
+        deliveryJob = {
+          id: 91010,
+          profileId: 91001,
+          retryOfJobId: 91009,
+          status: "VIDEO_REQUESTED",
+          jobType: "POST_PRODUCTION",
+          providerName: "MUSA_POST_PRODUCTION",
+        };
+        return route.fulfill({ json: deliveryJob });
       }
       if (
         url.pathname.startsWith("/api/") &&
@@ -204,6 +252,17 @@ try {
       })
       .click();
     assert.equal((await requested).status(), 201);
+    await page.reload();
+    await expect(
+      page.getByRole("link", { name: "Abrir MP4", exact: true }),
+    ).toHaveAttribute("href", base + "/fixture-final.mp4");
+    await page
+      .getByRole("button", { name: "Preparar reprodução HLS", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Preparando reprodução…", exact: true }),
+    ).toBeDisabled();
+    await page.screenshot({ path: `${output}/${name}-hls-delivery.png` });
     await page.goBack();
     await expect(
       panel.getByText(data.action.title, { exact: true }),
@@ -212,6 +271,7 @@ try {
     assert.deepEqual(writes, [
       "/api/sales-videos/projects/91004",
       "/api/sales-videos/autonomy/v1/cycles",
+      "/api/sales-videos/jobs/91009/request-post-production",
     ]);
     assert.deepEqual(external, []);
     results.push({
@@ -223,6 +283,7 @@ try {
       externalCalls: 0,
       legacyFourToFiveScenesPersisted: true,
       governedProductionRequested: true,
+      hlsRecoveryWithoutGeneration: true,
     });
     await context.close();
   }

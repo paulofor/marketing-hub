@@ -744,8 +744,31 @@ class VideoProductionCycleServiceTest {
         .experimentId(88L)
         .salesVideoProfileId(13L)
         .title("MUSA v7")
+        .targetChannel("SOCIAL_REELS_STORIES")
         .targetDurationSeconds(15)
         .build();
+  }
+
+  /** Rejeita canal ambíguo antes de qualquer preflight ou tarefa paga. */
+  @Test
+  void shouldRejectUnknownChannelBeforeSpending() {
+    VideoProject project = project();
+    project.setTargetChannel("PDE_AND_SOCIAL");
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.create(
+                    new VideoProductionCycleContracts.CreateRequest(
+                        7L,
+                        new BigDecimal("8"),
+                        "FINAL_CAMPAIGN",
+                        "Teste",
+                        "Validar",
+                        "fixture@sandbox.local")))
+        .hasMessageContaining("canal único");
+    verify(providerPreflightService, never()).open(any(), any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(repository, never()).save(any());
   }
 
   /** Cria um projeto premium reutilizável com as duas referências governadas. */

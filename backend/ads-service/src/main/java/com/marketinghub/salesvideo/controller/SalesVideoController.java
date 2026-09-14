@@ -322,7 +322,11 @@ public class SalesVideoController {
     return salesVideoService.retry(jobId, request);
   }
 
-  /** Solicita pós-produção de um vídeo bruto já renderizado. */
+  /** Solicita acabamento ou HLS sem regeneração quando deliveryOnly preserva uma fonte final. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Finaliza vídeo ou prepara HLS de um MP4 final",
+      description =
+          "deliveryOnly=true preserva MP4, voz e VTT por hash, sem nova chamada de IA; não aprova uso comercial.")
   @PostMapping("/api/sales-videos/jobs/{jobId}/request-post-production")
   public SalesVideoJobDto requestPostProduction(
       @PathVariable Long jobId,

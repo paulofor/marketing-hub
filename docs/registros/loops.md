@@ -5286,3 +5286,22 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
   `frontend/e2e/video-preflight-guidance-responsive.mjs` devem partir de quatro
   cenas, salvar a quinta e reabrir em desktop e celulares, sem chamada paga.
 - **Registro:** `docs/homologacao/vega-producao-apos-preflight-v1.md`.
+
+## LOOP-VIDEO-ACABAMENTO-SEM-HLS-E-PAPEL-INCORRETO — 2026-09-14
+
+- **Sintoma:** MP4 final pronto, processo não avança: HLS ausente e anúncio social
+  cadastrado como demonstração. Vega, produto 4, experimento 92, ciclo 2, job 21238.
+- **Causa confirmada:** uploader terminava em MP4/VTT sem produzir manifesto;
+  sincronização reconhecia INSTAGRAM/FACEBOOK mas não SOCIAL_REELS_STORIES,
+  usando LANDING_HERO como fallback. Teste anterior terminava antes do upload.
+- **Correção sistêmica:** HLS obrigatório na entrega final e callback; mapeamento
+  único antes do preflight e na sincronização. Recuperação com hashes dos bytes
+  existentes, sem repetir render/TTS, preserva ativo e histórico financeiro.
+- **Prevenção:** contrato completo provider → uploader HTTP → segmentos/manifesto
+  → callback → papel e ativo; teste de recuperação sem IA, idempotência, tenant,
+  falha de empacotamento e reprodução HLS/MP4 desktop/iPhone/Pixel. Ver
+  `docs/homologacao/vega-producao-apos-preflight-v1.md` e cânone do Estúdio.
+- **Extensão confirmada:** bucket sem CORS (`NoSuchCORSConfiguration`) impede
+  leitura HLS por JavaScript mesmo com MP4 público. A matriz deve reproduzir
+  aplicativo e mídia em origens diferentes; configuração de leitura é incremental,
+  somente para origens operacionais/aprovadas, com conferência e rollback.

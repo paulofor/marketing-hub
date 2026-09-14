@@ -738,13 +738,22 @@ public class SalesVideoJobService {
             });
   }
 
-  /**
-   * Cria acabamento, preserva o bruto e aponta o ciclo para o filho que reportará sucesso ou falha.
-   */
+  /** Cria acabamento ou recupera somente HLS, preservando a fonte e impedindo entrega duplicada. */
   @Transactional
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
     SalesVideoJob sourceJob = loadJob(sourceJobId);
+    if (request.isDeliveryOnly()) {
+      sourceJob = jobRepository.findByIdForUpdate(sourceJobId).orElseThrow();
+      if (StringUtils.hasText(sourceJob.getStreamPlaybackUrl())) return toDto(sourceJob);
+      Optional<SalesVideoJob> existing =
+          jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(sourceJobId);
+      if (existing.isPresent()
+          && readJobMetadata(existing.get()).path("deliveryOnly").asBoolean()
+          && existing.get().getStatus() != SalesVideoStatus.VIDEO_FAILED)
+        return toDto(existing.get());
+      VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper);
+    }
     if (!isReusableRenderWithAsset(sourceJob)) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
@@ -764,7 +773,9 @@ public class SalesVideoJobService {
     postProductionJob.setRetryOfJob(sourceJob);
     postProductionJob.setRetryAttempt(sourceJob.getRetryAttempt() + 1);
     postProductionJob.setMetadataJson(
-        buildPostProductionMetadata(sourceJob, sourceVideoUrl, request));
+        request.isDeliveryOnly()
+            ? VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper)
+            : buildPostProductionMetadata(sourceJob, sourceVideoUrl, request));
     postProductionJob.setAuditSnapshotJson(
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
     jobRepository.save(postProductionJob);
@@ -775,7 +786,10 @@ public class SalesVideoJobService {
         SalesVideoJobEventType.RETRIED,
         sourceJob.getStatus(),
         sourceJob.getStatus(),
-        "Pós-produção solicitada por " + requestedBy,
+        (request.isDeliveryOnly()
+                ? "Preparação HLS sem nova geração solicitada por "
+                : "Pós-produção solicitada por ")
+            + requestedBy,
         "Job de pós-produção #" + postProductionJob.getId());
     return toDto(postProductionJob);
   }
@@ -880,13 +894,35 @@ public class SalesVideoJobService {
     }
   }
 
-  /** Converte job para DTO incluindo custo real ou estimado para a tela. */
+  /** Expõe custo, prontidão comercial e disponibilidade canônica do comando de entrega. */
   private SalesVideoJobDto toDto(SalesVideoJob job) {
     SalesVideoJobDto dto = jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
     CommercialReadiness readiness = assessCommercialReadiness(job);
     dto.setCommercialReadinessStatus(readiness.status());
     dto.setCommercialReadinessBlockers(readiness.blockers());
+    dto.setDeliveryPreparation(deliveryPreparation(job));
     return dto;
+  }
+
+  /** Informa a execução em curso para impedir que a tela ofereça uma preparação duplicada. */
+  private com.marketinghub.salesvideo.dto.SalesVideoJobDto.DeliveryPreparation deliveryPreparation(
+      SalesVideoJob job) {
+    var availability = VideoFinalDeliveryContract.inspect(job, readJobMetadata(job), objectMapper);
+    if (!"AVAILABLE".equals(availability.status())) return availability;
+    var child = jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(job.getId());
+    if (child.isPresent()
+        && readJobMetadata(child.get()).path("deliveryOnly").asBoolean()
+        && child.get().getStatus() != SalesVideoStatus.VIDEO_FAILED) {
+      boolean ready =
+          child.get().getStatus() == SalesVideoStatus.VIDEO_READY
+              && StringUtils.hasText(child.get().getStreamPlaybackUrl());
+      return new com.marketinghub.salesvideo.dto.SalesVideoJobDto.DeliveryPreparation(
+          ready ? "READY" : "PROCESSING",
+          child.get().getId(),
+          null,
+          ready ? "Reprodução HLS já preparada." : "A preparação da reprodução já está em curso.");
+    }
+    return availability;
   }
 
   /** Avalia no backend se o job representa uma peça comercial final e auditável. */
@@ -915,7 +951,7 @@ public class SalesVideoJobService {
     if (!hasCommercialCta(job, metadata)) {
       blockers.add("O CTA final não possui evidência persistida no roteiro ou na pós-produção.");
     }
-    SalesVideoJob sourceJob = job.getRetryOfJob();
+    SalesVideoJob sourceJob = narrativeSource(job);
     if (sourceJob == null
         || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())
             || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName())
@@ -937,6 +973,18 @@ public class SalesVideoJobService {
       blockers.add("A revisão humana final ainda não foi aprovada.");
     }
     return new CommercialReadiness(blockers.isEmpty() ? "READY" : "BLOCKED", List.copyOf(blockers));
+  }
+
+  /** Recupera a fonte narrativa original atravessando apenas filhos de entrega sem nova geração. */
+  private SalesVideoJob narrativeSource(SalesVideoJob job) {
+    SalesVideoJob source = job.getRetryOfJob();
+    for (int depth = 0;
+        depth < 12 && source != null && readJobMetadata(job).path("deliveryOnly").asBoolean();
+        depth++) {
+      job = source;
+      source = source.getRetryOfJob();
+    }
+    return source;
   }
 
   /** Reconhece a rota genérica somente quando a prova final confere com o hash solicitado. */

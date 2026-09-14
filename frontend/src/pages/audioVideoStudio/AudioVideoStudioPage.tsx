@@ -40,6 +40,7 @@ import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
+import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequestSalesVideoPostProduction";
 import {
   useCreateVideoProductionCycle,
   useCreateVideoProviderPreflight,
@@ -1624,11 +1625,16 @@ export default function AudioVideoStudioPage() {
     [linkedJobsQuery.data],
   );
   const renderedAssetQuery = useAsset(renderedJob?.assetId);
+  const [deliveryFailure, setDeliveryFailure] = useState(false);
+  const prepareDelivery = useRequestSalesVideoPostProduction(
+    renderedJob?.id,
+    briefing.productId,
+    renderedJob?.profileId,
+  );
+  const delivery = renderedJob?.deliveryPreparation;
+  const deliveryPending = delivery?.status === "PROCESSING";
   const renderedAssetUrl =
-    renderedJob?.streamPlaybackUrl?.trim() ||
-    renderedAssetQuery.data?.publicUrl ||
-    renderedAssetQuery.data?.url ||
-    "";
+    renderedAssetQuery.data?.publicUrl || renderedAssetQuery.data?.url || "";
 
   return (
     <div className="audio-video-studio-page">
@@ -2729,8 +2735,7 @@ export default function AudioVideoStudioPage() {
                         onChange={(event) =>
                           setCycleProductionProfile(
                             event.target.value as
-                              | "DRAFT_INSTAGRAM"
-                              | "FINAL_CAMPAIGN",
+                              "DRAFT_INSTAGRAM" | "FINAL_CAMPAIGN",
                           )
                         }
                       >
@@ -3688,6 +3693,52 @@ export default function AudioVideoStudioPage() {
                 >
                   Abrir MP4
                 </a>
+                {renderedJob.streamPlaybackUrl ? (
+                  <a
+                    href={renderedJob.streamPlaybackUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    HLS preparado para reprodução
+                  </a>
+                ) : delivery?.status === "AVAILABLE" || deliveryPending ? (
+                  <>
+                    <button
+                      type="button"
+                      className="audio-video-studio-page__secondary-action"
+                      disabled={prepareDelivery.isPending || deliveryPending}
+                      onClick={async () => {
+                        setDeliveryFailure(false);
+                        try {
+                          await prepareDelivery.mutateAsync({
+                            requestedBy: tenantContext.userEmail,
+                            deliveryOnly: true,
+                            captionText: delivery?.captionText || "",
+                          });
+                          await linkedJobsQuery.refetch();
+                        } catch {
+                          setDeliveryFailure(true);
+                        }
+                      }}
+                    >
+                      {prepareDelivery.isPending || deliveryPending
+                        ? "Preparando reprodução…"
+                        : "Preparar reprodução HLS"}
+                    </button>
+                    <p>
+                      Preserva este vídeo e sua voz. A preparação não inicia
+                      nova geração por IA nem aprova o uso.
+                    </p>
+                    {prepareDelivery.isError || deliveryFailure ? (
+                      <p role="alert">
+                        Não foi possível preparar a reprodução. Confira a
+                        integridade do arquivo e tente novamente.
+                      </p>
+                    ) : null}
+                  </>
+                ) : delivery?.reason ? (
+                  <p>{delivery.reason}</p>
+                ) : null}
               </div>
             </article>
           ) : (

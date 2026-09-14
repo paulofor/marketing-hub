@@ -42,8 +42,14 @@ class ExperimentVideoAssetJobSyncServiceTest {
   @Mock private VideoProjectRepository projectRepository;
 
   /** Vincula o acabamento ao experimento e move ciclo e projeto para revisão sem autoaprovação. */
-  @Test
-  void shouldCreateExperimentAssetFromGovernedPostProductionLineage() {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "INSTAGRAM_REELS_STORIES,AD",
+    "SOCIAL_REELS_STORIES,AD",
+    "PDE_HERO_DIAGNOSTIC,LANDING_HERO"
+  })
+  void shouldCreateExperimentAssetFromGovernedPostProductionLineage(
+      String channel, ExperimentVideoSlot expectedSlot) {
     VideoProductionCycle cycle = new VideoProductionCycle();
     cycle.setId(7L);
     cycle.setVideoProjectId(3L);
@@ -54,7 +60,7 @@ class ExperimentVideoAssetJobSyncServiceTest {
             .id(3L)
             .tenantId("default")
             .experimentId(91L)
-            .targetChannel("INSTAGRAM_REELS_STORIES")
+            .targetChannel(channel)
             .format("VERTICAL_9_16")
             .title("Vega #91")
             .objective("Transformar reconhecimento no espelho em clique qualificado.")
@@ -108,7 +114,7 @@ class ExperimentVideoAssetJobSyncServiceTest {
     verify(repository).saveAll(captor.capture());
     ExperimentVideoAsset created = captor.getValue().get(0);
     assertThat(created.getExperiment().getId()).isEqualTo(91L);
-    assertThat(created.getSlot()).isEqualTo(ExperimentVideoSlot.AD);
+    assertThat(created.getSlot()).isEqualTo(expectedSlot);
     assertThat(created.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
     assertThat(created.isRequiredForRelease()).isTrue();
     assertThat(created.getHasAudio()).isTrue();
@@ -120,5 +126,60 @@ class ExperimentVideoAssetJobSyncServiceTest {
     assertThat(project.getStatus()).isEqualTo(VideoProjectStatus.READY_FOR_REVIEW);
     verify(cycleRepository).save(cycle);
     verify(projectRepository).save(project);
+  }
+
+  /** Recupera o ativo original, corrige papel pendente e mantém custo e decisão humana. */
+  @Test
+  void shouldReconcileDeliveryWithoutDuplicatingCommercialAssetOrErasingCost() {
+    var project =
+        VideoProject.builder()
+            .id(3L)
+            .tenantId("default")
+            .experimentId(91L)
+            .targetChannel("SOCIAL_REELS_STORIES")
+            .build();
+    var cycle = new VideoProductionCycle();
+    cycle.setId(7L);
+    cycle.setVideoProjectId(3L);
+    cycle.setExperimentId(91L);
+    var source = SalesVideoJob.builder().id(91009L).tenantId("default").build();
+    var job =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .retryOfJob(source)
+            .tenantId("default")
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://cdn.test/final.m3u8")
+            .metadataJson(
+                "{\"deliveryOnly\":true,\"videoProductionCycleId\":7,\"videoProjectId\":3,\"experimentId\":91}")
+            .build();
+    var asset =
+        ExperimentVideoAsset.builder()
+            .id(41L)
+            .experiment(Experiment.builder().id(91L).build())
+            .slot(ExperimentVideoSlot.LANDING_HERO)
+            .cost(new BigDecimal("1.80"))
+            .reviewStatus(ExperimentVideoReviewStatus.PENDING)
+            .salesVideoJob(source)
+            .build();
+    given(repository.findBySalesVideoJobId(91010L)).willReturn(List.of());
+    given(repository.findBySalesVideoJobId(91009L)).willReturn(List.of(asset));
+    given(cycleRepository.findById(7L)).willReturn(Optional.of(cycle));
+    given(projectRepository.findById(3L)).willReturn(Optional.of(project));
+    var request = new JobCompletionRequest();
+    request.setCostUsd(BigDecimal.ZERO);
+    request.setMetadataJson("{\"deliveryOnly\":true,\"has_audio\":true}");
+    new ExperimentVideoAssetJobSyncService(
+            repository, costCalculator, experimentRepository, cycleRepository, projectRepository)
+        .syncCompletedRender(job, request, 15, "1080x1920");
+    assertThat(asset.getId()).isEqualTo(41L);
+    assertThat(asset.getSalesVideoJob().getId()).isEqualTo(91010L);
+    assertThat(asset.getSlot()).isEqualTo(ExperimentVideoSlot.AD);
+    assertThat(asset.getHlsPlaybackUrl()).isEqualTo("https://cdn.test/final.m3u8");
+    assertThat(asset.getCost()).isEqualByComparingTo("1.80");
+    assertThat(asset.getReviewStatus()).isEqualTo(ExperimentVideoReviewStatus.PENDING);
+    verify(repository).saveAll(List.of(asset));
   }
 }

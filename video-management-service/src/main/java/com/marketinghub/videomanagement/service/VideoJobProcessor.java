@@ -93,7 +93,9 @@ public class VideoJobProcessor {
             }
             UploadedAssets uploadedAssets = assetUploader.uploadAssets(job, artifacts);
             BigDecimal costUsd = readCostUsd(artifacts.metadata());
-            String metadataJson = serializeMetadata(mergeAuditMetadata(job, artifacts.metadata()));
+            Map<String, Object> completedMetadata = mergeAuditMetadata(job, artifacts.metadata());
+            completedMetadata.putAll(uploadedAssets.deliveryMetadata());
+            String metadataJson = serializeMetadata(completedMetadata);
             backendClient.completeJob(job.id(), new JobCompletionPayload(
                     SalesVideoStatus.VIDEO_READY,
                     uploadedAssets.videoAssetId(),
@@ -103,7 +105,8 @@ public class VideoJobProcessor {
                     metadataJson,
                     costUsd,
                     "Vídeo processado com sucesso",
-                    metadataJson));
+                    metadataJson,
+                    uploadedAssets.streamPlaybackUrl()));
             observabilityService.incrementJobsCompleted(job.providerName());
             observabilityService.recordRenderLatency(job.providerName(), computeLatency(job));
             log.info("Job {} concluído com vídeo {}", job.id(), uploadedAssets.videoAssetId());

@@ -10,3 +10,15 @@ pré-compra, não aprova a própria entrega, não publica, não vende e não gas
 alternativas de execução por benefício, risco, esforço e aderência, escolha uma e registre métrica e
 critérios de continuar, ajustar e parar. Ausência de contrato ou prova deve bloquear com causa e ação
 objetiva, nunca ser preenchida com invenção.
+
+## Entrega dentro da economia de Plutus
+
+Materialize o volume, período de acesso e limites aprovados por Plutus. Em geradores de imagens,
+como Quartzo, demonstre qualidade/resolução, imagens aproveitáveis, regenerações e custo por
+pacote/cliente, incluindo tentativas cobradas que falharam. Mudança de modelo, tarifa, quantidade
+ou retries que altere a economia exige revalidação financeira, não aprovação por conta própria.
+Preveja e comprove antes da ativação controles determinísticos de quota/teto, reserva concorrente,
+idempotência, retries limitados e auditoria de consumo por produto/versão/cliente. Não afirme que
+um prompt controla o orçamento. No desenho privado, registre requisitos ainda não implementados
+nos campos existentes; não exija venda real para construir um protótipo limitado. Preserve
+qualidade e entregas já contratadas; não imponha cobrança extra ou corte silencioso ao cliente.

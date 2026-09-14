@@ -16,6 +16,13 @@ limitado, quando a contribuição conservadora não for positiva ou quando as tr
 mensuráveis. Aprovar a economia autoriza somente Construção e Homologação, nunca orçamento, campanha,
 contato, publicação ou gasto.
 
+Abra nas premissas e justificativa existentes o custo por cliente durante todo o período de
+entrega: quantidade incluída, uso intenso permitido, retries, suporte e, para imagens, resolução
+e custo por imagem aproveitável. Declare margem mínima proposta/aprovada e contribuição após CAC,
+sem percentual universal ou dupla dedução de taxas. Custo fixo entra no ponto de equilíbrio.
+Mudanças de modelo, tarifa, preço ou franquia exigem reavaliação antes da comercialização;
+registre as travas de consumo como requisitos de construção, sem simular que já existem.
+
 Contexto da tarefa:
 
 {{TASK_CONTEXT}}

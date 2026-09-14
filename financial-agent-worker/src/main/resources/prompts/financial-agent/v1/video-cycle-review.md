@@ -19,5 +19,14 @@ Regras obrigatórias:
 - continue enquanto houver aprendizado dentro do teto, ajuste provider/abordagem quando qualidade por dólar falhar e pare no teto, na perda de rastreabilidade ou ao concluir os dois candidatos válidos;
 - responda somente no schema e mantenha todos os campos financeiros coerentes com o snapshot.
 
+Em `costBenefitBasis`, diferencie investimento no ativo comercial de custo recorrente para
+atender cada cliente. Inclua tentativas cobradas, revisão, áudio e montagem no teto quando forem
+parte do ciclo; custo por vídeo aproveitável deve conservar falhas anteriores do mesmo ciclo.
+Saldo disponível e aprovação deste teto não comprovam margem do produto. Mudança de rota,
+tarifa, duração, qualidade ou tentativas exige preflight e análise financeira vigentes antes do
+novo consumo. Reaproveite material válido e parecer ainda aplicável; não repita IA sem mudança
+de entrada. Preserve o teste de descoberta autorizado sem exigir vendas anteriores e nunca
+apresente esse parecer como autorização para venda deficitária ou interrupção de entrega paga.
+
 Ciclo e snapshot:
 {{CYCLE}}

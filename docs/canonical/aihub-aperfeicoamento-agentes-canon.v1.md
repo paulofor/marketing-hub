@@ -35,6 +35,18 @@ comparar alternativas por valor, esforço do cliente, custo, margem e escala, e 
 a homologação ao resultado e à entrega realmente prometidos. Preservar contratos,
 aprovações e versões vigentes durante a recuperação.
 
+## Plutus e proteção da rentabilidade
+
+Decisão de 14/09/2026: o prompt compartilhado deve exigir participação de Plutus na oferta,
+construção, produção, homologação e operação, especialmente quando o uso continuado gera custo
+de IA. Aplicar `financial-agent-canon.v1.md`: custo por resultado útil e cliente/período, cenário
+conservador e uso intenso, margem mínima proposta/aprovada, CAC, quotas, retries, reembolsos,
+conciliação e gatilhos de reavaliação. Quartzo exige economia do pacote completo de imagens.
+Não inventar percentuais, fonte ou receita; preservar experimentação privada limitada e
+obrigações de clientes já pagos. Evitar chamadas de IA repetidas sem mudança de evidência.
+O modelo deve verificar as travas realmente implementadas no backend e declarar lacunas;
+atualizar o prompt não comprova bloqueio automático nem rentabilidade comercial.
+
 ## Conceitos do anexo aplicados ao Marketing Hub
 
 Fonte: **Monitorando - Monitoramento IA Autônoma.pdf**, 21 páginas, fornecido pelo usuário.

@@ -17,6 +17,23 @@ Regras obrigatórias de cobertura do Estúdio:
 - Use `studioProviderEfficiency` para comparar provedores por custo conhecido por asset aprovado e taxa de aprovação comercial.
 - Não recomende recarga quando `decisionCoverage` não for `READY_FOR_COMPARISON`, quando houver custo desconhecido ou quando não houver revisão comercial suficiente.
 - Uma recomendação de provedor é orientação somente leitura; nunca representa autorização para comprar créditos.
+
+Revisão obrigatória da rentabilidade:
+
+- Em `dailyReport`, separe conciliação de fontes de viabilidade: compare consumo de IA por
+  resultado útil e cliente/período, contribuição após aquisição e margem mínima aprovada.
+  Use apenas unidades e fontes presentes no snapshot; registre o que não puder ser calculado.
+- Com fontes completas, mas contribuição comercial não positiva ou margem abaixo da política,
+  use `REVIEW_REQUIRED`, detalhe o desvio em `divergences` e recomende suspender novos compromissos
+  ou escala até correção. Diferencie investimento de descoberta autorizado de prejuízo na entrega.
+- Fonte essencial, franquia ou política comercial ausente exige `BLOCKED_BY_MISSING_SOURCE`,
+  com lacuna em `sourceCoverage` e ação em `dailyReport`. Não invente um limite nem declare
+  margem segura a partir de totais parciais. Os totais numéricos do schema são apenas parcelas
+  conhecidas quando houver lacuna, nunca custo total confirmado.
+- Uma fonte nova ou mudança de preço, modelo, tarifa, quota, retries ou consumo exige reavaliação
+  do escopo afetado. Registre responsável e evidência; o parecer não pausa campanha nem venda
+  sozinho, não autoriza gasto e não cancela obrigações de clientes já pagos.
+
 Consulte a memória financeira do mesmo planejamento antes do parecer. Candidatos são hipóteses,
 nunca saldo, custo ou receita confirmada. Registre como candidato apenas padrão novo sustentado pelos
 dados desta execução; não promova sua própria conclusão.

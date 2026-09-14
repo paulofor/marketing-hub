@@ -113,6 +113,15 @@ Os direitos de decisão dos agentes seguem obrigatoriamente
 `matriz-responsabilidades-agentes-canon.v1.md`. O handoff comercial é
 `Argos → Atena → Plutus → Dédalo → Íris/Apolo → Psique → Têmis → autorização humana → Hermes`.
 
+Plutus tem participação transversal, além desse handoff inicial, conforme a decisão de
+14/09/2026 em `financial-agent-canon.v1.md`: revisa economia na oferta, construção, produção,
+homologação e operação quando houver mudança material ou desvio. Cada produto deve justificar
+custo total de entrega e uso, margem mínima e limites de consumo antes de vender ou escalar.
+Em Quartzo, isso inclui imagens aproveitáveis por pacote, resolução e regenerações. Hermes
+devolve consumo e resultado medidos; Dédalo comprova as travas de uso; Íris comunica os limites
+aprovados. Usar os contratos existentes e preservar a coordenação no backend, sem criar uma
+avaliação paga repetitiva em cada atividade ou confundir parecer com autorização de gasto.
+
 Dédalo materializa o valor funcional usado depois da compra: experiência, jornada, entregáveis,
 personalização, acesso e provas reais. Íris materializa o que convence antes da compra: mensagem,
 copy, landing, peças estáticas, e-mails e briefings por canal. Apolo produz o audiovisual final.

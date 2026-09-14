@@ -35,6 +35,15 @@ contribuição positiva e as travas acima estiverem explícitas. Use `ADJUST` ou
 o contrato de Atena, a segurança, o mecanismo ou os próprios números não permitirem nem um teste
 privado limitado. Em qualquer decisão, preserve fatos, hipóteses, lacunas, fontes e ações exigidas.
 
+Abra em `assumptions`, `scenarios[].risk` e `rationale` o envelope de uso por cliente/período:
+unidade de entrega, quantidade incluída, resolução quando houver imagens, limite de tentativas,
+custo por resultado aproveitável e cenário de uso intenso. As tarifas, volumes e a margem mínima
+ainda não medidos são hipóteses identificadas; não invente comprovação. Dédalo deve receber os
+requisitos de quota, auditoria e teste de estouro antes da ativação comercial. A falta dessas
+travas implementadas nesta fase de desenho não bloqueia sozinha um protótipo privado limitado.
+Se nem uma hipótese de consumo finito preservar contribuição positiva, use `ADJUST` ou `REJECT`.
+Mantenha CAC, vendas e gasto comercial zerados pelos significados privados definidos acima.
+
 Contexto da tarefa:
 
 {{TASK_CONTEXT}}

@@ -2048,6 +2048,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   O job noturno continuava verde, mas ignorava `gpt-5.6-sol`, `terra`, `luna` e outros modelos nesse
   formato. O parser passou a reconhecer ambas as representações, a cobertura Standard/Batch virou
   contrato bloqueante e `gpt-5.6-sol` recebeu seed oficial para disponibilização imediata no deploy.
+- **Evolução fechada localmente em 2026-09-14:** a chegada do GPT Image 2.5 encontrou o modelo visual
+  repetido em configurações, catálogo e executores, enquanto alguns payloads não enviavam qualidade e
+  uma variação da tela deixava o modelo da ferramenta implícito. O cânone, o catálogo incremental,
+  os defaults, os normalizadores e os payloads passam a usar `gpt-image-2.5-sunburst` com `high` por
+  padrão; modelos anteriores ficam somente no histórico. Testes por consumidor verificam a promoção
+  de configurações antigas e a presença explícita de modelo e qualidade antes da chamada externa.
 
 ## LOOP-EXPERIMENT-COST-RECONCILIATION — Total de custo sem origem auditável
 
@@ -2202,8 +2208,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 
 - **Sintoma:** a microamostra registra `gpt-image-1`, mas o worker chama outro modelo e recebe `Unknown parameter: response_format` em todas as tentativas.
 - **Causa-raiz:** pacotes legados sem `image_model_id` ignoravam o campo textual `model` já persistido e escolhiam o primeiro modelo do catálogo, cuja ordem não representa preferência operacional.
-- **Correção sistêmica:** o planejador agora resolve primeiro IDs explícitos, depois o modelo persistido por `apiModel` e somente então usa o fallback do catálogo.
-- **Prevenção:** teste de contrato mantém `gpt-image-1` mesmo quando `dall-e-2` aparece primeiro no catálogo e o pacote não possui IDs novos.
+- **Correção sistêmica original:** o planejador passou a resolver primeiro IDs explícitos, depois o modelo persistido por `apiModel` e somente então usar o fallback do catálogo.
+- **Evolução canônica em 2026-09-14:** como DALL-E, GPT Image 1 e GPT Image 2 foram aposentados para novas execuções, o histórico continua preservando o modelo solicitado, mas o plano efetivo promove qualquer configuração anterior para `gpt-image-2.5-sunburst` e qualidade compatível antes da chamada paga.
+- **Prevenção:** teste de contrato mantém modelos antigos como entrada histórica, exige Sunburst como saída efetiva e impede que a ordem do catálogo reative um modelo aposentado.
 
 ### LOOP-LEAD-PORTAL-AMOSTRA-USA-SLUG-COMO-SERVICO
 

@@ -23,6 +23,6 @@ class LeadPortalImagePromptControllerTest {
 
     LeadPortalImagePromptMetadataDto metadata = controller.metadata();
 
-    assertThat(metadata.defaultModel()).isEqualTo("gpt-image-2");
+    assertThat(metadata.defaultModel()).isEqualTo("gpt-image-2.5-sunburst");
   }
 }

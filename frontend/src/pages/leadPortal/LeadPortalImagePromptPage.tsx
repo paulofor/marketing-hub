@@ -115,7 +115,7 @@ export default function LeadPortalImagePromptPage() {
       });
     } catch (err) {
       const message = axios.isAxiosError(err)
-        ? err.response?.data?.message ?? "Não foi possível salvar o prompt."
+        ? (err.response?.data?.message ?? "Não foi possível salvar o prompt.")
         : "Não foi possível salvar o prompt.";
       setFeedback({ variant: "error", message });
     }
@@ -143,8 +143,8 @@ export default function LeadPortalImagePromptPage() {
         <div>
           <h1>Prompt de geração de imagens</h1>
           <p>
-            Personalize o texto enviado ao worker de IA e acompanhe o modelo e
-            o tamanho do lote definidos em cada fluxo publicado no Lead Portal.
+            Personalize o texto enviado ao worker de IA e acompanhe o modelo e o
+            tamanho do lote definidos em cada fluxo publicado no Lead Portal.
           </p>
         </div>
         <div className="lp-image-prompt-search">
@@ -186,7 +186,8 @@ export default function LeadPortalImagePromptPage() {
                       <span className="lp-flow-name">{flow.name}</span>
                       <span className="lp-flow-meta">{flow.slug}</span>
                       <span className="lp-flow-meta">
-                        Prompt {flow.imagePromptTemplate ? "customizado" : "padrão"}
+                        Prompt{" "}
+                        {flow.imagePromptTemplate ? "customizado" : "padrão"}
                       </span>
                     </button>
                   </li>
@@ -221,10 +222,14 @@ export default function LeadPortalImagePromptPage() {
                   <span>Modelo de imagem</span>
                   <div className="lp-readonly-value">
                     <strong>
-                      {resolvedModel || metadata?.defaultModel || "gpt-image-2"}
+                      {resolvedModel ||
+                        metadata?.defaultModel ||
+                        "gpt-image-2.5-sunburst"}
                     </strong>
                     {isExperimentManaged ? (
-                      <span className="lp-badge">Controlado pelo experimento</span>
+                      <span className="lp-badge">
+                        Controlado pelo experimento
+                      </span>
                     ) : (
                       <small>
                         Defina o modelo diretamente na tela do experimento.
@@ -255,8 +260,8 @@ export default function LeadPortalImagePromptPage() {
                     <small>O experimento controla o número de variações.</small>
                   ) : (
                     <small>
-                      Mantemos o modo batch para reduzir custo. Valores entre 1 e
-                      20 imagens.
+                      Mantemos o modo batch para reduzir custo. Valores entre 1
+                      e 20 imagens.
                     </small>
                   )}
                 </label>
@@ -335,9 +340,7 @@ export default function LeadPortalImagePromptPage() {
                   <li key={item.token}>
                     <code>{item.token}</code>
                     <p>{item.description}</p>
-                    {item.example ? (
-                      <small>Ex.: {item.example}</small>
-                    ) : null}
+                    {item.example ? <small>Ex.: {item.example}</small> : null}
                   </li>
                 ))}
               </ul>

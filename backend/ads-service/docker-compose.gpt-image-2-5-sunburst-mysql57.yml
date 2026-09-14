@@ -1,0 +1,29 @@
+services:
+  mysql57-gpt-image-sunburst:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql57-gpt-image-2-5-sunburst
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: marketinghub_local
+      MYSQL_USER: marketinghub
+      MYSQL_PASSWORD: marketinghub-local
+      MYSQL_ROOT_PASSWORD: marketinghub-root-local
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "marketinghub", "-pmarketinghub-local"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  liquibase-gpt-image-sunburst:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-gpt-image-sunburst:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2030-09-19-add-gpt-image-2-5-sunburst.yaml
+    depends_on:
+      mysql57-gpt-image-sunburst:
+        condition: service_healthy

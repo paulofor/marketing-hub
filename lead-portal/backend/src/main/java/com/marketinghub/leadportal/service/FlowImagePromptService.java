@@ -32,7 +32,7 @@ public class FlowImagePromptService {
     private static final String GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL =
             "AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE";
     private static final int DEFAULT_BATCH_SIZE = 6;
-    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-2";
+    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-2.5-sunburst";
     private static final int DEFAULT_REFERENCE_IMAGE_FREE_IMAGES = 1;
     private static final String DEFAULT_TEMPLATE = String.join("\n",
             "Gere materiais de divulgação premium em português para {{profissional}}, um(a) {{atividade}} que atua em {{local}}.",
@@ -134,13 +134,9 @@ public class FlowImagePromptService {
                 || GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL.equals(model);
     }
 
-    /** Impede que configurações legadas reativem modelos Image 1 em novas gerações. */
+    /** Impede que configurações legadas reativem qualquer modelo visual aposentado. */
     private String resolveImageModel(String requestedModel) {
-        if (!StringUtils.hasText(requestedModel)
-                || requestedModel.trim().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
-            return DEFAULT_IMAGE_MODEL;
-        }
-        return requestedModel.trim();
+        return DEFAULT_IMAGE_MODEL;
     }
 
     /** Carrega do classpath o prompt versionado usado na geração da amostra personalizada. */

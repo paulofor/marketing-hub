@@ -241,7 +241,7 @@ components:
           description: Prompt da imagem da personagem gerada pela OpenAI.
         characterImageModel:
           type: string
-          example: gpt-image-2
+          example: gpt-image-2.5-sunburst
         characterImageJobId:
           type: string
         characterImageAssetId:

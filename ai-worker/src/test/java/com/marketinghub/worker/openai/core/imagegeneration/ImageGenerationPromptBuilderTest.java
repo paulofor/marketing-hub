@@ -44,7 +44,8 @@ class ImageGenerationPromptBuilderTest {
 
         Map<String, Object> body = objectMapper.readValue(request.requestBodyJson(), new TypeReference<>() {});
         assertThat(body)
-                .containsEntry("model", "gpt-image-2")
+                .containsEntry("model", "gpt-image-2.5-sunburst")
+                .containsEntry("quality", "high")
                 .containsEntry("responseFormat", "default");
         assertThat((List<Map<String, Object>>) body.get("images"))
                 .singleElement()

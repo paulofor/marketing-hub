@@ -21,6 +21,7 @@ import org.springframework.web.client.RestClient;
 /** Integra o pipeline Agenda Cheia à geração fotográfica versionada da OpenAI. */
 public class OpenAiAgendaCheiaPhotoGenerator implements AgendaCheiaPhotoGenerator {
     private static final Logger log = LoggerFactory.getLogger(OpenAiAgendaCheiaPhotoGenerator.class);
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
     private static final List<String> STYLES = List.of(
             "clean girl leitoso", "french moderno", "cat-eye vinho", "chrome rosé", "jelly nude",
             "micro french dourado", "baby boomer sofisticado", "vermelho cereja glossy", "nude mocha", "azul profundo minimalista");
@@ -38,10 +39,10 @@ public class OpenAiAgendaCheiaPhotoGenerator implements AgendaCheiaPhotoGenerato
     /** Configura cliente, modelo e prompt versionado da geração fotográfica. */
     public OpenAiAgendaCheiaPhotoGenerator(@Value("${agenda-cheia.production.openai-api-key:${OPENAI_API_KEY:}}") String apiKey,
                                            @Value("${agenda-cheia.production.openai-base-url:https://api.openai.com/v1}") String baseUrl,
-                                           @Value("${agenda-cheia.production.image-model:gpt-image-2-2026-04-21}") String model,
+                                           @Value("${agenda-cheia.production.image-model:gpt-image-2.5-sunburst}") String model,
                                            ObjectMapper mapper) throws IOException {
         this.mapper = mapper;
-        this.model = model;
+        this.model = canonicalModel(model);
         this.client = RestClient.builder().baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey).build();
         this.promptTemplate = new ClassPathResource("prompts/agenda-cheia/nail-photo.md")
@@ -68,5 +69,10 @@ public class OpenAiAgendaCheiaPhotoGenerator implements AgendaCheiaPhotoGenerato
             log.error("Falha na geração fotográfica Agenda Cheia. executionId={}, variant={}, endpoint=/images/generations", executionId, variant, ex);
             throw new IllegalStateException("Não foi possível gerar a fotografia premium", ex);
         }
+    }
+
+    /** Normaliza configurações antigas para o modelo homologado para novas fotografias. */
+    private String canonicalModel(String configuredModel) {
+        return CANONICAL_IMAGE_MODEL;
     }
 }

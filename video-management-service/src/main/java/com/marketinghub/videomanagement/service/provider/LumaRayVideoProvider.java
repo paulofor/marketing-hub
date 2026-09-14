@@ -290,6 +290,7 @@ public class LumaRayVideoProvider implements VideoProvider {
                         "type", "image_generation",
                         "action", "generate",
                         "model", config.getOpenAiImageToolModel(),
+                        "quality", "high",
                         "output_format", "png")));
         JsonNode response = openAiWebClient.post()
                 .uri("/responses")

@@ -35,12 +35,14 @@ class OpenAiAgendaCheiaPhotoGeneratorTest {
         try {
             OpenAiAgendaCheiaPhotoGenerator generator = new OpenAiAgendaCheiaPhotoGenerator(
                     "test-key", "http://localhost:" + server.getAddress().getPort(),
-                    "gpt-image-2-2026-04-21", new ObjectMapper());
+                    "gpt-image-2", new ObjectMapper());
 
             BufferedImage image = generator.generate("test-execution", 0);
 
             assertThat(image.getWidth()).isEqualTo(2);
-            assertThat(requestBody.get()).contains("\"model\":\"gpt-image-2-2026-04-21\"");
+            assertThat(requestBody.get())
+                    .contains("\"model\":\"gpt-image-2.5-sunburst\"")
+                    .contains("\"quality\":\"high\"");
             assertThat(requestBody.get()).contains("\"quality\":\"high\"");
             assertThat(requestBody.get()).contains("\"size\":\"1024x1024\"");
         } finally {

@@ -20,6 +20,7 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
@@ -284,10 +285,9 @@ public class ExperimentService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "imageModelId not found: " + imageModelId));
-    if (model.getApiModel() != null
-        && model.getApiModel().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
+    if (!OpenAiImageGenerationPolicy.isCanonicalModel(model.getApiModel())) {
       throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "Modelos GPT Image 1 foram desativados; selecione gpt-image-2");
+          HttpStatus.BAD_REQUEST, "Modelo visual não homologado; selecione gpt-image-2.5-sunburst");
     }
     return model;
   }

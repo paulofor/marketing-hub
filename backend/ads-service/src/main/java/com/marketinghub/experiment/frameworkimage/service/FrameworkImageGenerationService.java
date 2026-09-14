@@ -15,6 +15,7 @@ import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGen
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageGenerationJobDto;
 import com.marketinghub.experiment.frameworkimage.dto.internal.FrameworkImageWebnizationPendingAssetDto;
 import com.marketinghub.geralanding.imageplanning.service.BackendImagePlanningService.ImagePromptRegenerationStartedEvent;
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.frameworkimage.FrameworkImageGenerationJobRepository;
 import java.time.Instant;
@@ -100,6 +101,7 @@ public class FrameworkImageGenerationService {
         .toList();
   }
 
+  /** Reserva um job pendente e congela nele o modelo visual canônico. */
   @Transactional
   public FrameworkImageGenerationJobDto claimJob(UUID jobId, String workerId) {
     FrameworkImageGenerationJob job = findJob(jobId);
@@ -108,6 +110,7 @@ public class FrameworkImageGenerationService {
     }
     job.setStatus(FrameworkImageGenerationJobStatus.PROCESSING);
     job.setStage(FrameworkImageGenerationJobStage.CLAIMED);
+    job.setModel(OpenAiImageGenerationPolicy.CANONICAL_MODEL);
     job.setWorkerId(StringUtils.hasText(workerId) ? workerId.trim() : "unknown-worker");
     job.setStartedAt(Instant.now());
     log.info(
@@ -140,13 +143,14 @@ public class FrameworkImageGenerationService {
         && job.getStatus() != FrameworkImageGenerationJobStatus.PENDING) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Job não pode ser finalizado");
     }
+    String canonicalModel = requireCanonicalModel(request.model());
 
     job.setStatus(FrameworkImageGenerationJobStatus.COMPLETED);
     job.setStage(
         request.stage() != null
             ? request.stage()
             : FrameworkImageGenerationJobStage.NOTIFIED_BACKEND);
-    job.setModel(normalize(request.model()));
+    job.setModel(canonicalModel);
     job.setPrompt(normalize(request.prompt()));
     job.setBatchId(normalize(request.batchId()));
     job.setAssetId(request.assetId());
@@ -230,6 +234,7 @@ public class FrameworkImageGenerationService {
     refreshLandingPageImageAssets(job.getExperiment());
   }
 
+  /** Enfileira uma nova imagem usando o modelo visual canônico, mesmo diante de entrada legada. */
   @Transactional
   public FrameworkImageGenerationJobDto enqueueJob(
       Long experimentId, String planningItemKey, String model, String prompt) {
@@ -246,6 +251,9 @@ public class FrameworkImageGenerationService {
                     FrameworkImageGenerationJobStatus.PROCESSING))
             .orElse(null);
     if (existing != null) {
+      if (existing.getStatus() == FrameworkImageGenerationJobStatus.PENDING) {
+        existing.setModel(OpenAiImageGenerationPolicy.CANONICAL_MODEL);
+      }
       return toDto(existing);
     }
 
@@ -262,12 +270,21 @@ public class FrameworkImageGenerationService {
             FrameworkImageGenerationJob.builder()
                 .experiment(experiment)
                 .planningItemKey(normalizedPlanningItemKey)
-                .model(normalize(model))
+                .model(OpenAiImageGenerationPolicy.CANONICAL_MODEL)
                 .prompt(normalize(prompt))
                 .status(FrameworkImageGenerationJobStatus.PENDING)
                 .stage(FrameworkImageGenerationJobStage.WAITING_AI_WORKER)
                 .build());
     return toDto(saved);
+  }
+
+  /** Rejeita retorno de executor antigo para impedir que um asset obsoleto avance no pipeline. */
+  private String requireCanonicalModel(String model) {
+    if (!OpenAiImageGenerationPolicy.isCanonicalModel(model)) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "O resultado precisa usar gpt-image-2.5-sunburst");
+    }
+    return OpenAiImageGenerationPolicy.CANONICAL_MODEL;
   }
 
   @Transactional

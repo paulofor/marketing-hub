@@ -796,7 +796,7 @@ public class CreativeService {
     visual.setLabel("Peça comercial premium para o criativo #" + id);
     visual.setPurpose("ADS");
     visual.setPurposesJson("[\"ADS\",\"LANDING\",\"SOCIAL\"]");
-    visual.setOrigin("Íris / recurso técnico GPT Image 2");
+    visual.setOrigin("Íris / recurso técnico GPT Image 2.5 Sunburst");
     visual.setRightsStatement(
         "Gerado por Íris para comunicação comercial a partir de prova aprovada do produto");
     visual.setVersionNumber(

@@ -7,14 +7,12 @@ import java.util.Locale;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-/**
- * Builds final image generation payloads for ad variants using the structured
- * campaign angle, ad copy and visual briefing outputs.
- */
+/** Responsabilidade: montar payloads visuais finais a partir dos contratos de campanha. */
 @Component
 public class AdImagePayloadBuilder {
-    private static final String DEFAULT_MODEL = "gpt-image-2";
+    private static final String DEFAULT_MODEL = "gpt-image-2.5-sunburst";
 
+    /** Monta um payload de imagem coerente para cada variante publicitária. */
     public ImageBuildPayloadsOutput buildAdImagePayloads(BuildAdImagePayloadsInput input) {
         if (input == null) {
             throw new IllegalArgumentException("Input de build de imagem é obrigatório");
@@ -62,6 +60,7 @@ public class AdImagePayloadBuilder {
         return new ImageBuildPayloadsOutput(payloads);
     }
 
+    /** Exige o ângulo de campanha necessário para construir as peças. */
     CampaignAngle requireCampaignAngle(CampaignAngle campaignAngle) {
         if (campaignAngle == null) {
             throw new IllegalArgumentException("campaignAngle é obrigatório");
@@ -69,12 +68,14 @@ public class AdImagePayloadBuilder {
         return campaignAngle;
     }
 
+    /** Valida que promessa, CTA e público estejam presentes no ângulo. */
     void validateCampaignConsistency(CampaignAngle campaignAngle) {
         requireText(campaignAngle.singleMindedPromise(), "singleMindedPromise é obrigatório");
         requireText(campaignAngle.primaryCTA(), "primaryCTA é obrigatório");
         requireText(campaignAngle.audienceFilterLine(), "audienceFilterLine é obrigatório");
     }
 
+    /** Converte o placement textual no formato operacional de feed ou stories. */
     String choosePlacement(VisualVariant variant) {
         String raw = normalize(variant.placement());
         if (raw.contains("story") || raw.contains("stories") || raw.contains("reel")) {
@@ -83,6 +84,7 @@ public class AdImagePayloadBuilder {
         return "feed";
     }
 
+    /** Localiza a copy vinculada à variante visual. */
     AdCopyVariant chooseCopyForVariant(AdCopy adCopy, String mustMatchAdVariant) {
         if (adCopy == null || adCopy.variants() == null) {
             return null;
@@ -94,6 +96,7 @@ public class AdImagePayloadBuilder {
                 .orElse(null);
     }
 
+    /** Limita o CTA ao tamanho aceito na composição visual. */
     String normalizeCta(String cta) {
         String normalized = StringUtils.hasText(cta) ? cta.trim() : "";
         if (!StringUtils.hasText(normalized)) {
@@ -102,6 +105,7 @@ public class AdImagePayloadBuilder {
         return normalized.length() > 28 ? normalized.substring(0, 28).trim() : normalized;
     }
 
+    /** Reduz o texto sobreposto aos limites de legibilidade comercial. */
     OverlayCopy limitOverlayText(OnImageCopy onImageCopy, String primaryCta) {
         OnImageCopy safeCopy = onImageCopy != null ? onImageCopy : new OnImageCopy(null, null, null, null);
         String headline = limitWords(safeCopy.headline(), 8);
@@ -111,6 +115,7 @@ public class AdImagePayloadBuilder {
         return new OverlayCopy(headline, subhead, badge, cta);
     }
 
+    /** Constrói o prompt visual final preservando promessa, público e correspondência da landing. */
     String toFinalImagePrompt(CampaignAngle angle,
                               VisualVariant variant,
                               OverlayCopy overlay,
@@ -149,6 +154,7 @@ public class AdImagePayloadBuilder {
                 + "Evitar aparência de dashboard, software genérico, apresentação corporativa ou infográfico confuso.";
     }
 
+    /** Confirma que o prompt contém contexto reconhecível do público. */
     void validatePromptSpecificity(String prompt, String audienceFilterLine) {
         if (!StringUtils.hasText(prompt)) {
             throw new IllegalArgumentException("imagePrompt final não pode ser vazio");
@@ -159,6 +165,7 @@ public class AdImagePayloadBuilder {
         }
     }
 
+    /** Bloqueia direções que introduzam múltiplos focos visuais. */
     void validateSingleVisualFocus(String prompt) {
         String normalized = normalize(prompt);
         if (mentionsForbiddenStyleWithoutNegation(normalized, "infografico")
@@ -168,6 +175,7 @@ public class AdImagePayloadBuilder {
         }
     }
 
+    /** Distingue uma proibição explícita de um pedido acidental do estilo vetado. */
     private boolean mentionsForbiddenStyleWithoutNegation(String normalizedPrompt, String token) {
         int index = normalizedPrompt.indexOf(token);
         while (index >= 0) {
@@ -190,6 +198,7 @@ public class AdImagePayloadBuilder {
         return false;
     }
 
+    /** Valida a quantidade de texto e a orientação de leitura em telas móveis. */
     void validatePromptReadability(String prompt, OverlayCopy overlay) {
         int overlayWords = countWords(overlay.headline()) + countWords(overlay.subhead())
                 + countWords(overlay.badge()) + countWords(overlay.cta());
@@ -201,11 +210,13 @@ public class AdImagePayloadBuilder {
         }
     }
 
+    /** Resolve tamanho, modelo e qualidade canônicos para o placement. */
     ImageParams imageParamsForPlacement(String placement) {
         String size = "stories".equals(placement) ? "1024x1792" : "1024x1536";
-        return new ImageParams("image_api", DEFAULT_MODEL, size, "medium", "opaque", "png");
+        return new ImageParams("image_api", DEFAULT_MODEL, size, "high", "opaque", "png");
     }
 
+    /** Combina os metadados originais com a identidade da variante materializada. */
     private ExperimentMetadata mergeExperimentMetadata(ExperimentMetadata metadata, String variantId) {
         ExperimentMetadata source = metadata != null
                 ? metadata
@@ -218,6 +229,7 @@ public class AdImagePayloadBuilder {
                 "ad-image-build");
     }
 
+    /** Escolhe a identidade explícita da variante ou aplica a versão inicial. */
     private String chooseVariantId(ExperimentMetadata metadata, VisualVariant variant) {
         if (StringUtils.hasText(variant.variantId())) {
             return variant.variantId().trim();
@@ -228,6 +240,7 @@ public class AdImagePayloadBuilder {
         return "V1";
     }
 
+    /** Gera um identificador estável para o asset do experimento. */
     private String buildAssetId(ExperimentMetadata metadata, String variantId, String placement) {
         String variable = metadata != null && StringUtils.hasText(metadata.primaryVariable())
                 ? metadata.primaryVariable().trim()
@@ -235,6 +248,7 @@ public class AdImagePayloadBuilder {
         return "AD-" + variable + "-" + variantId + "-" + placement;
     }
 
+    /** Limita um texto pelo número máximo de palavras permitido. */
     private String limitWords(String text, int maxWords) {
         if (!StringUtils.hasText(text)) {
             return "";
@@ -253,6 +267,7 @@ public class AdImagePayloadBuilder {
         return builder.toString();
     }
 
+    /** Extrai um token útil para validar a presença do nicho no prompt. */
     private String firstMeaningfulToken(String text) {
         if (!StringUtils.hasText(text)) {
             return null;
@@ -266,6 +281,7 @@ public class AdImagePayloadBuilder {
         return words.length > 0 ? words[0] : null;
     }
 
+    /** Conta palavras de um trecho opcional. */
     private int countWords(String text) {
         if (!StringUtils.hasText(text)) {
             return 0;
@@ -273,6 +289,7 @@ public class AdImagePayloadBuilder {
         return text.trim().split("\\s+").length;
     }
 
+    /** Exige conteúdo textual e devolve o valor normalizado. */
     private String requireText(String text, String errorMessage) {
         if (!StringUtils.hasText(text)) {
             throw new IllegalArgumentException(errorMessage);
@@ -280,6 +297,7 @@ public class AdImagePayloadBuilder {
         return text.trim();
     }
 
+    /** Normaliza texto para comparações sem acentos e sem diferença de caixa. */
     private String normalize(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
@@ -290,6 +308,7 @@ public class AdImagePayloadBuilder {
                 .trim();
     }
 
+    /** Retorna o primeiro candidato textual preenchido. */
     private String firstNonBlank(String... candidates) {
         for (String candidate : candidates) {
             if (StringUtils.hasText(candidate)) {
@@ -299,10 +318,12 @@ public class AdImagePayloadBuilder {
         return null;
     }
 
+    /** Converte texto ausente em valor seguro para o prompt. */
     private String safe(String value) {
         return StringUtils.hasText(value) ? value.trim() : "";
     }
 
+    /** Responsabilidade: transportar os insumos estruturados da montagem visual. */
     public record BuildAdImagePayloadsInput(
             ExperimentMetadata experimentMetadata,
             CampaignAngle campaignAngle,
@@ -310,6 +331,7 @@ public class AdImagePayloadBuilder {
             AdImageBriefing adImageBriefing) {
     }
 
+    /** Responsabilidade: preservar a linhagem da variante dentro do experimento. */
     public record ExperimentMetadata(
             String primaryVariable,
             String variantId,
@@ -318,6 +340,7 @@ public class AdImagePayloadBuilder {
             String assetRole) {
     }
 
+    /** Responsabilidade: transportar a decisão estratégica do anúncio. */
     public record CampaignAngle(
             String singleMindedPromise,
             String primaryCTA,
@@ -325,9 +348,11 @@ public class AdImagePayloadBuilder {
             String audienceFilterLine) {
     }
 
+    /** Responsabilidade: agrupar as variantes de copy disponíveis. */
     public record AdCopy(List<AdCopyVariant> variants) {
     }
 
+    /** Responsabilidade: representar uma variante textual do anúncio. */
     public record AdCopyVariant(
             String label,
             String headline,
@@ -335,14 +360,17 @@ public class AdImagePayloadBuilder {
             String ctaText) {
     }
 
+    /** Responsabilidade: transportar briefing e variantes visuais aprovadas. */
     public record AdImageBriefing(
             GlobalDesignSystem globalDesignSystem,
             List<VisualVariant> variants) {
     }
 
+    /** Responsabilidade: representar a direção estética compartilhada pelas peças. */
     public record GlobalDesignSystem(String style) {
     }
 
+    /** Responsabilidade: representar a direção visual de uma variante. */
     public record VisualVariant(
             String variantId,
             String mustMatchAdVariant,
@@ -355,9 +383,11 @@ public class AdImagePayloadBuilder {
             List<String> visualDirections) {
     }
 
+    /** Responsabilidade: transportar a ideia central de uma peça. */
     public record Concept(String idea) {
     }
 
+    /** Responsabilidade: representar a copy sobreposta na imagem. */
     public record OnImageCopy(
             String headline,
             String subhead,
@@ -365,9 +395,11 @@ public class AdImagePayloadBuilder {
             String cta) {
     }
 
+    /** Responsabilidade: agrupar os payloads visuais prontos para geração. */
     public record ImageBuildPayloadsOutput(List<ImageBuildPayload> imageBuildPayloads) {
     }
 
+    /** Responsabilidade: transportar o contrato completo de uma imagem publicitária. */
     public record ImageBuildPayload(
             String assetId,
             String variantId,
@@ -380,6 +412,7 @@ public class AdImagePayloadBuilder {
             ExperimentMetadata experimentMetadata) {
     }
 
+    /** Responsabilidade: representar os parâmetros técnicos da geração. */
     public record ImageParams(
             String apiMode,
             String model,
@@ -389,6 +422,7 @@ public class AdImagePayloadBuilder {
             String format) {
     }
 
+    /** Responsabilidade: transportar o texto sobreposto já limitado. */
     public record OverlayCopy(
             String headline,
             String subhead,
@@ -396,6 +430,7 @@ public class AdImagePayloadBuilder {
             String cta) {
     }
 
+    /** Responsabilidade: preservar a coerência da peça com campanha e landing. */
     public record Consistency(
             String singleMindedPromise,
             String audienceFilterLine,

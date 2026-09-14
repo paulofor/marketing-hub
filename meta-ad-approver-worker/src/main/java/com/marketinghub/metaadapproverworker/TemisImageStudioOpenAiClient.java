@@ -45,7 +45,8 @@ public class TemisImageStudioOpenAiClient {
   private static final BigDecimal IMAGE_INPUT_USD_PER_MILLION = BigDecimal.valueOf(8);
   private static final BigDecimal TEXT_INPUT_USD_PER_MILLION = BigDecimal.valueOf(5);
   private static final BigDecimal IMAGE_OUTPUT_USD_PER_MILLION = BigDecimal.valueOf(30);
-  private static final BigDecimal TEXT_OUTPUT_USD_PER_MILLION = BigDecimal.valueOf(10);
+  private static final BigDecimal TEXT_OUTPUT_USD_PER_MILLION = BigDecimal.ZERO;
+  private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2.5-sunburst";
   private static final Set<String> COMMERCIAL_PURPOSES = Set.of("LANDING", "ADS", "SOCIAL");
   private final MetaAdApproverProperties properties;
   private final ObjectMapper objectMapper;
@@ -92,7 +93,7 @@ public class TemisImageStudioOpenAiClient {
       JsonNode response = objectMapper.readTree(raw);
       String encoded = response.path("data").path(0).path("b64_json").asText();
       if (!StringUtils.hasText(encoded)) {
-        throw new IllegalStateException("GPT Image 2 não retornou a imagem em base64");
+        throw new IllegalStateException("GPT Image 2.5 Sunburst não retornou a imagem em base64");
       }
       byte[] image = Base64.getDecoder().decode(encoded);
       String usage = response.has("usage") ? response.path("usage").toString() : null;
@@ -106,7 +107,7 @@ public class TemisImageStudioOpenAiClient {
           responseAudit);
       return new Result(image, model, requestJson, responseAudit, usage, costUsd);
     } catch (IOException | IllegalArgumentException ex) {
-      throw new IllegalStateException("Resposta do GPT Image 2 inválida", ex);
+      throw new IllegalStateException("Resposta do GPT Image 2.5 Sunburst inválida", ex);
     }
   }
 
@@ -261,7 +262,7 @@ public class TemisImageStudioOpenAiClient {
               .toList());
       return objectMapper.writeValueAsString(value);
     } catch (IOException ex) {
-      throw new IllegalStateException("Não foi possível auditar request do GPT Image 2", ex);
+      throw new IllegalStateException("Não foi possível auditar request do GPT Image 2.5", ex);
     }
   }
 
@@ -277,7 +278,7 @@ public class TemisImageStudioOpenAiClient {
     return objectMapper.writeValueAsString(audit);
   }
 
-  /** Calcula o custo auditável pelas modalidades detalhadas retornadas pelo GPT Image 2. */
+  /** Calcula o custo auditável pelas modalidades detalhadas retornadas pelo GPT Image 2.5. */
   private BigDecimal calculateCost(JsonNode usage) {
     JsonNode input = usage.path("input_tokens_details");
     JsonNode output = usage.path("output_tokens_details");
@@ -323,10 +324,11 @@ public class TemisImageStudioOpenAiClient {
 
   /** Impede downgrade silencioso do modelo visual aprovado. */
   private String canonicalModel(String value) {
-    if (!"gpt-image-2".equals(StringUtils.hasText(value) ? value.trim() : "")) {
-      throw new IllegalArgumentException("O recurso visual de Íris exige o modelo gpt-image-2");
+    if (!CANONICAL_IMAGE_MODEL.equals(StringUtils.hasText(value) ? value.trim() : "")) {
+      throw new IllegalArgumentException(
+          "O recurso visual de Íris exige o modelo gpt-image-2.5-sunburst");
     }
-    return "gpt-image-2";
+    return CANONICAL_IMAGE_MODEL;
   }
 
   /** Normaliza a base sem barra final para registrar a URL exata. */

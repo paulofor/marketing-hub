@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+/** Responsabilidade: validar fila, auditoria e contratos dos jobs de imagem do framework. */
 @ExtendWith(MockitoExtension.class)
 class FrameworkImageGenerationServiceTest {
 
@@ -52,6 +53,7 @@ class FrameworkImageGenerationServiceTest {
             jobRepository, experimentRepository, new ObjectMapper(), true, 100);
   }
 
+  /** Reaproveita pendência equivalente e atualiza seu modelo antes do consumo. */
   @Test
   void enqueueJobReturnsExistingActiveJobForSamePlanningItem() {
     FrameworkImageGenerationJob existing =
@@ -70,9 +72,11 @@ class FrameworkImageGenerationServiceTest {
     FrameworkImageGenerationJobDto dto = service.enqueueJob(10L, "hero-1", "gpt-image-1", "prompt");
 
     assertThat(dto.id()).isEqualTo(existing.getId());
+    assertThat(dto.model()).isEqualTo("gpt-image-2.5-sunburst");
     verify(jobRepository, never()).save(any(FrameworkImageGenerationJob.class));
   }
 
+  /** Cria uma nova pendência promovendo qualquer entrada antiga ao modelo canônico. */
   @Test
   void enqueueJobCreatesPendingJobWhenNoActiveJobExists() {
     Experiment experiment = Experiment.builder().id(15L).build();
@@ -93,11 +97,12 @@ class FrameworkImageGenerationServiceTest {
     assertThat(saved.getPlanningItemKey()).isEqualTo("hero-1");
     assertThat(saved.getStatus()).isEqualTo(FrameworkImageGenerationJobStatus.PENDING);
     assertThat(saved.getStage()).isEqualTo(FrameworkImageGenerationJobStage.WAITING_AI_WORKER);
-    assertThat(saved.getModel()).isEqualTo("gpt-image-1");
+    assertThat(saved.getModel()).isEqualTo("gpt-image-2.5-sunburst");
     assertThat(saved.getPrompt()).isEqualTo("prompt");
     assertThat(dto.planningItemKey()).isEqualTo("hero-1");
   }
 
+  /** Conclui o job somente quando o executor confirma o modelo canônico. */
   @Test
   void completeJobFinalizesAndStoresMetadata() {
     UUID jobId = UUID.randomUUID();
@@ -115,7 +120,7 @@ class FrameworkImageGenerationServiceTest {
         jobId,
         new FrameworkImageGenerationJobCompletionRequest(
             FrameworkImageGenerationJobStage.UPLOADED_TO_CLOUDFLARE,
-            "gpt-image-1",
+            "gpt-image-2.5-sunburst",
             "prompt final",
             "batch_1",
             99L,
@@ -129,6 +134,7 @@ class FrameworkImageGenerationServiceTest {
     assertThat(job.getErrorMessage()).isNull();
   }
 
+  /** Persiste o manifesto visual usando o retorno canônico do executor. */
   @Test
   void completeJobPersistsLandingPageImageAssetsManifest() {
     UUID jobId = UUID.randomUUID();
@@ -157,7 +163,7 @@ class FrameworkImageGenerationServiceTest {
         jobId,
         new FrameworkImageGenerationJobCompletionRequest(
             FrameworkImageGenerationJobStage.NOTIFIED_BACKEND,
-            "gpt-image-1",
+            "gpt-image-2.5-sunburst",
             "Prompt Hero final",
             "batch_1",
             99L,
@@ -169,6 +175,36 @@ class FrameworkImageGenerationServiceTest {
     assertThat(experiment.getLandingPageImageAssets())
         .contains("\"resolvedUrl\":\"https://cdn/web.jpg\"");
     verify(experimentRepository).save(experiment);
+  }
+
+  /** Bloqueia callback de executor antigo antes de alterar o estado do job. */
+  @Test
+  void completeJobRejectsRetiredImageModel() {
+    UUID jobId = UUID.randomUUID();
+    FrameworkImageGenerationJob job =
+        FrameworkImageGenerationJob.builder()
+            .id(jobId)
+            .experiment(Experiment.builder().id(57L).build())
+            .status(FrameworkImageGenerationJobStatus.PROCESSING)
+            .stage(FrameworkImageGenerationJobStage.WAITING_OPENAI_BATCH)
+            .build();
+    when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+    assertThatThrownBy(
+            () ->
+                service.completeJob(
+                    jobId,
+                    new FrameworkImageGenerationJobCompletionRequest(
+                        FrameworkImageGenerationJobStage.NOTIFIED_BACKEND,
+                        "gpt-image-1",
+                        "Prompt",
+                        "batch-old",
+                        100L,
+                        "https://cdn/source.jpg",
+                        "https://cdn/web.jpg")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("gpt-image-2.5-sunburst");
+    assertThat(job.getStatus()).isEqualTo(FrameworkImageGenerationJobStatus.PROCESSING);
   }
 
   @Test

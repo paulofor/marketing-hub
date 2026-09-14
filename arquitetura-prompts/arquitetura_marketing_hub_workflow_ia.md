@@ -251,7 +251,7 @@ Em resumo:
 - **R12. OpenAI API - Text to speech:** endpoint de fala com vozes embutidas.  
   https://developers.openai.com/api/docs/guides/text-to-speech/
 
-- **R13. OpenAI API - Image generation:** Image API e suporte ao gpt-image-1.5.  
+- **R13. OpenAI API - Image generation:** Image API e suporte canônico ao `gpt-image-2.5-sunburst`.
   https://developers.openai.com/api/docs/guides/image-generation/
 
 - **R14. OpenAI API - Production best practices:** melhores práticas para transição de protótipo para produção.  

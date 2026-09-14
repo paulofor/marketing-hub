@@ -180,7 +180,7 @@ sem alterar antes este cânone e os testes de contrato.
 | Estrategista | `experiment-strategist-worker` | `experiment-strategist.mjs` | obrigatórios | browser e pesquisa de mercado auditável |
 | Integridade Comercial | `meta-ad-approver-worker` | `meta-ad-approver.mjs` | obrigatórios | Têmis usa Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile somente para revisão independente |
 | Construção PDE / Gerador de Landing histórico | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Dédalo constrói o PDE e preserva execuções históricas de landing; Codex `gpt-5.6-sol` e browser ficam restritos ao produto e à prova real |
-| Comunicação | `communication-agent-worker` + `iris-image-studio` | `communication-agent.mjs` | obrigatórios | Íris usa Codex `gpt-5.6-sol` para contratos, copy e landing e `gpt-image-2` isolado para `LANDING`, `ADS` e `SOCIAL` com prova aprovada |
+| Comunicação | `communication-agent-worker` + `iris-image-studio` | `communication-agent.mjs` | obrigatórios | Íris usa Codex `gpt-5.6-sol` para contratos, copy e landing e `gpt-image-2.5-sunburst` isolado para `LANDING`, `ADS` e `SOCIAL` com prova aprovada |
 
 O executor técnico visual passa a se chamar `iris-image-studio`. Os códigos persistidos
 `themis-image-studio` e `pde-visual-materialization` são aliases de compatibilidade, sem identidade de

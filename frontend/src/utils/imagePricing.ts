@@ -2,11 +2,41 @@ import type { LeadPortalImagePackage } from "../api/leadPortal/useLeadPortalSubm
 
 type ResolutionKey = `${number}x${number}`;
 
-type PricingTable = Record<string, Record<string, Partial<Record<ResolutionKey, number>>>>;
+type PricingTable = Record<
+  string,
+  Record<string, Partial<Record<ResolutionKey, number>>>
+>;
 
 type Orientation = "SQUARE" | "PORTRAIT" | "LANDSCAPE";
 
 const IMAGE_GENERATION_PRICING_USD: PricingTable = {
+  "GPT IMAGE 2 5 SUNBURST": {
+    LOW: {
+      "1024x1024": 0.00588,
+      "1024x1536": 0.00474,
+      "1536x1024": 0.00474,
+    },
+    MEDIUM: {
+      "1024x1024": 0.01317,
+      "1024x1536": 0.01029,
+      "1536x1024": 0.01029,
+    },
+    HIGH: {
+      "1024x1024": 0.05268,
+      "1024x1536": 0.04116,
+      "1536x1024": 0.04116,
+    },
+    XHIGH: {
+      "1024x1024": 0.09366,
+      "1024x1536": 0.07377,
+      "1536x1024": 0.07377,
+    },
+    MAX: {
+      "1024x1024": 0.21072,
+      "1024x1536": 0.16464,
+      "1536x1024": 0.16464,
+    },
+  },
   "GPT IMAGE 1.5": {
     LOW: {
       "1024x1024": 0.01,
@@ -79,7 +109,15 @@ const IMAGE_GENERATION_PRICING_USD: PricingTable = {
   },
 };
 
-const DEFAULT_RESOLUTION_BY_ORIENTATION: Record<string, Partial<Record<Orientation, ResolutionKey>>> = {
+const DEFAULT_RESOLUTION_BY_ORIENTATION: Record<
+  string,
+  Partial<Record<Orientation, ResolutionKey>>
+> = {
+  "GPT IMAGE 2 5 SUNBURST": {
+    SQUARE: "1024x1024",
+    PORTRAIT: "1024x1536",
+    LANDSCAPE: "1536x1024",
+  },
   "GPT IMAGE 1.5": {
     SQUARE: "1024x1024",
     PORTRAIT: "1024x1536",
@@ -106,39 +144,41 @@ const DEFAULT_RESOLUTION_BY_ORIENTATION: Record<string, Partial<Record<Orientati
 };
 
 const MODEL_ALIASES: Record<string, string> = {
+  "GPT IMAGE 2 5 SUNBURST": "GPT IMAGE 2 5 SUNBURST",
+  "GPTIMAGE2 5SUNBURST": "GPT IMAGE 2 5 SUNBURST",
   "GPT IMAGE 1.5": "GPT IMAGE 1.5",
   "GPT-IMAGE-1.5": "GPT IMAGE 1.5",
-  "GPT_IMAGE_1_5": "GPT IMAGE 1.5",
+  GPT_IMAGE_1_5: "GPT IMAGE 1.5",
   "GPTIMAGE1.5": "GPT IMAGE 1.5",
   "GPT IMAGE 1 5": "GPT IMAGE 1.5",
   "GPT IMAGE 1": "GPT IMAGE 1",
   "GPT-IMAGE-1": "GPT IMAGE 1",
-  "GPT_IMAGE_1": "GPT IMAGE 1",
-  "GPTIMAGE1": "GPT IMAGE 1",
+  GPT_IMAGE_1: "GPT IMAGE 1",
+  GPTIMAGE1: "GPT IMAGE 1",
   "GPT IMAGE 1 MINI": "GPT IMAGE 1 MINI",
   "GPT-IMAGE-1 MINI": "GPT IMAGE 1 MINI",
-  "GPT_IMAGE_1_MINI": "GPT IMAGE 1 MINI",
-  "GPTIMAGE1MINI": "GPT IMAGE 1 MINI",
+  GPT_IMAGE_1_MINI: "GPT IMAGE 1 MINI",
+  GPTIMAGE1MINI: "GPT IMAGE 1 MINI",
   "DALL E 3": "DALL E 3",
   "DALLE 3": "DALL E 3",
   "DALLE-3": "DALL E 3",
-  "DALLE_3": "DALL E 3",
+  DALLE_3: "DALL E 3",
   "DALL·E 3": "DALL E 3",
   "DALL.E 3": "DALL E 3",
-  "DALLE3": "DALL E 3",
+  DALLE3: "DALL E 3",
   "DALL E3": "DALL E 3",
   "DALL-E 3": "DALL E 3",
-  "DALL_E_3": "DALL E 3",
+  DALL_E_3: "DALL E 3",
   "DALL E 2": "DALL E 2",
   "DALLE 2": "DALL E 2",
   "DALLE-2": "DALL E 2",
-  "DALLE_2": "DALL E 2",
+  DALLE_2: "DALL E 2",
   "DALL·E 2": "DALL E 2",
   "DALL.E 2": "DALL E 2",
-  "DALLE2": "DALL E 2",
+  DALLE2: "DALL E 2",
   "DALL E2": "DALL E 2",
   "DALL-E 2": "DALL E 2",
-  "DALL_E_2": "DALL E 2",
+  DALL_E_2: "DALL E 2",
 };
 
 function sanitizeKey(value?: string | null) {
@@ -163,7 +203,10 @@ function normalizeQualityName(qualityName?: string | null) {
   return sanitized;
 }
 
-function buildResolutionKey(width?: number | null, height?: number | null): ResolutionKey | null {
+function buildResolutionKey(
+  width?: number | null,
+  height?: number | null,
+): ResolutionKey | null {
   if (typeof width !== "number" || typeof height !== "number") {
     return null;
   }
@@ -176,7 +219,10 @@ function buildResolutionKey(width?: number | null, height?: number | null): Reso
   return `${width}x${height}` as ResolutionKey;
 }
 
-function resolveOrientationFallback(modelKey: string, orientation?: string | null): ResolutionKey | null {
+function resolveOrientationFallback(
+  modelKey: string,
+  orientation?: string | null,
+): ResolutionKey | null {
   if (!orientation) return null;
   const orientationKey = sanitizeKey(orientation) as Orientation | null;
   if (!orientationKey) return null;
@@ -204,7 +250,9 @@ export interface ImagePricingLookupInput {
   orientation?: string | null;
 }
 
-export function estimateImageUnitPriceUsd(input: ImagePricingLookupInput): number | null {
+export function estimateImageUnitPriceUsd(
+  input: ImagePricingLookupInput,
+): number | null {
   const modelKey = normalizeModelName(input.modelName);
   if (!modelKey) return null;
 
@@ -217,12 +265,17 @@ export function estimateImageUnitPriceUsd(input: ImagePricingLookupInput): numbe
     : Object.keys(modelPricing);
 
   const resolutionKey = buildResolutionKey(input.width, input.height);
-  const fallbackOrientation = resolveOrientationFallback(modelKey, input.orientation);
+  const fallbackOrientation = resolveOrientationFallback(
+    modelKey,
+    input.orientation,
+  );
 
   const resolutionCandidates = unique([
     resolutionKey,
     resolutionKey
-      ? (resolutionKey.split("x") as [string, string]).reverse().join("x") as ResolutionKey
+      ? ((resolutionKey.split("x") as [string, string])
+          .reverse()
+          .join("x") as ResolutionKey)
       : null,
     fallbackOrientation,
   ]);

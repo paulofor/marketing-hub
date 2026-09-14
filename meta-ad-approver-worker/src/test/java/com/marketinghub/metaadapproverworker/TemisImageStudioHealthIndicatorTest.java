@@ -49,7 +49,7 @@ class TemisImageStudioHealthIndicatorTest {
     Path keyFile = Files.writeString(temporaryDirectory.resolve("openai-key"), "test-key");
     MetaAdApproverProperties properties = new MetaAdApproverProperties();
     properties.setOpenAiApiKeyFile(keyFile.toString());
-    properties.setImageModel("gpt-image-1");
+    properties.setImageModel("gpt-image-2");
 
     assertThat(new TemisImageStudioHealthIndicator(properties).health().getStatus())
         .isEqualTo(Status.DOWN);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.imagegeneration.ImageGenerationPrice;
 import com.marketinghub.imagegeneration.ImageOrientation;
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.imagegeneration.service.ImageGenerationPricingService;
 import com.marketinghub.leadportal.FlowSubmissionImagePackageStatus;
 import com.marketinghub.leadportal.dto.LeadPortalWorkerImagePackageDto;
@@ -230,6 +231,9 @@ public class LeadPortalImagePackageWorkerService {
     insertImageItems(packageId, assets, snapshot.freeImages());
 
     String finalModel = resolveModelFromAssets(request.model(), snapshot.model(), assets);
+    if (assets.stream().anyMatch(asset -> asset.getProvider() == MediaProvider.OPENAI)) {
+      finalModel = requireCanonicalOpenAiModel(finalModel);
+    }
     String finalPrompt = resolvePrompt(request.prompt(), snapshot.prompt());
 
     GenerationMetadata generationMetadata = resolveGenerationMetadata(request);
@@ -315,6 +319,7 @@ public class LeadPortalImagePackageWorkerService {
     return statusHistoryService.hasProcessingAttempt(packageId);
   }
 
+  /** Persiste os assets retornados e bloqueia modelo OpenAI aposentado no callback. */
   private List<Asset> saveAssets(
       LeadPortalWorkerImageResultRequest request, PackageSnapshot snapshot) {
     List<Asset> assets = new ArrayList<>(request.images().size());
@@ -326,10 +331,14 @@ public class LeadPortalImagePackageWorkerService {
               StringUtils.hasText(image.prompt()) ? image.prompt() : request.prompt(),
               snapshot.prompt());
       String model = resolveModelValue(image.model(), request.model(), null);
+      MediaProvider provider = resolveProvider(image.source());
+      if (provider == MediaProvider.OPENAI) {
+        model = requireCanonicalOpenAiModel(model);
+      }
       Asset asset =
           Asset.builder()
               .type(AssetType.IMAGE)
-              .provider(resolveProvider(image.source()))
+              .provider(provider)
               .status(AssetStatus.READY)
               .url(storedName)
               .externalId(storedName)
@@ -340,6 +349,16 @@ public class LeadPortalImagePackageWorkerService {
       assets.add(asset);
     }
     return assetRepository.saveAll(assets);
+  }
+
+  /** Exige que callbacks OpenAI confirmem o modelo canônico efetivamente utilizado. */
+  private String requireCanonicalOpenAiModel(String model) {
+    if (!OpenAiImageGenerationPolicy.isCanonicalModel(model)) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "O resultado OpenAI precisa usar gpt-image-2.5-sunburst");
+    }
+    return OpenAiImageGenerationPolicy.CANONICAL_MODEL;
   }
 
   private void insertImageItems(long packageId, List<Asset> assets, Integer freeImages) {

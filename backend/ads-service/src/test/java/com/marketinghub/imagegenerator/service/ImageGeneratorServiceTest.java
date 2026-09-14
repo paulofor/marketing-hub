@@ -22,7 +22,7 @@ class ImageGeneratorServiceTest {
   void extractsImageGenerationResult() throws Exception {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
     String payload =
         """
                 {
@@ -42,7 +42,7 @@ class ImageGeneratorServiceTest {
   void rejectsResponseWithoutImage() throws Exception {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
     String payload =
         """
                 {"id": "resp_1", "output": [{"type": "message", "content": []}]}
@@ -60,7 +60,7 @@ class ImageGeneratorServiceTest {
   void buildsImageGenerationToolWithGenerateAction() {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
 
     Map<String, Object> requestBody = service.buildRequestBody("Gerar imagem de teste");
 
@@ -79,12 +79,12 @@ class ImageGeneratorServiceTest {
         .containsEntry("output_format", "png");
   }
 
-  /** Garante que a geração padrão não force modelo específico na ferramenta de imagem. */
+  /** Garante que a geração padrão explicite modelo e qualidade canônicos na ferramenta. */
   @Test
-  void doesNotInjectComparisonImageModelIntoDefaultTool() {
+  void injectsCanonicalImageContractIntoDefaultTool() {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
 
     Map<String, Object> requestBody = service.buildRequestBody("Gerar imagem de teste");
 
@@ -95,16 +95,18 @@ class ImageGeneratorServiceTest {
             org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
         .containsEntry("type", "image_generation")
         .containsEntry("action", "generate")
+        .containsEntry("model", "gpt-image-2.5-sunburst")
+        .containsEntry("quality", "high")
         .containsEntry("output_format", "png")
-        .doesNotContainKey("model");
+        .doesNotContainKey("response_format");
   }
 
-  /** Garante que a variação comparativa use o modelo image2 na ferramenta de imagem. */
+  /** Garante que configuração antiga seja promovida ao Sunburst na variação comparativa. */
   @Test
   void injectsComparisonImageModelIntoTool() {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
 
     Map<String, Object> requestBody =
         service.buildRequestBody("Gerar imagem de teste", "gpt-image-2");
@@ -116,7 +118,8 @@ class ImageGeneratorServiceTest {
             org.assertj.core.api.InstanceOfAssertFactories.map(String.class, Object.class))
         .containsEntry("type", "image_generation")
         .containsEntry("action", "generate")
-        .containsEntry("model", "gpt-image-2")
+        .containsEntry("model", "gpt-image-2.5-sunburst")
+        .containsEntry("quality", "high")
         .containsEntry("output_format", "png");
   }
 
@@ -125,7 +128,7 @@ class ImageGeneratorServiceTest {
   void keepsPartialImageWhenComparisonGenerationFails() {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
     ImageGeneratorResult generated =
         new ImageGeneratorResult(
             "img-ok",
@@ -142,7 +145,7 @@ class ImageGeneratorServiceTest {
                 new ImageGeneratorService.NamedGeneration(
                     "gpt-5.6", CompletableFuture.completedFuture(generated)),
                 new ImageGeneratorService.NamedGeneration(
-                    "gpt-image-2",
+                    "gpt-image-2.5-sunburst",
                     CompletableFuture.failedFuture(
                         new ResponseStatusException(
                             HttpStatus.BAD_GATEWAY,
@@ -150,7 +153,7 @@ class ImageGeneratorServiceTest {
 
     assertThat(result.images()).containsExactly(generated);
     assertThat(result.failures()).hasSize(1);
-    assertThat(result.failures().get(0).model()).isEqualTo("gpt-image-2");
+    assertThat(result.failures().get(0).model()).isEqualTo("gpt-image-2.5-sunburst");
     assertThat(result.failures().get(0).message()).contains("limite momentâneo");
   }
 
@@ -159,7 +162,7 @@ class ImageGeneratorServiceTest {
   void replacesOnlySelectedLandingImageSlot() {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
     String html =
         "<img id=\"hero-media-img\" src=\"old-hero.jpg\"><img id=\"prova-img\" src=\"old-proof.jpg\">";
 
@@ -175,9 +178,12 @@ class ImageGeneratorServiceTest {
   void recordsLandingPromotionInImageManifest() throws Exception {
     ImageGeneratorService service =
         new ImageGeneratorService(
-            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2.5-sunburst");
     ImageGenerationRequest audit =
-        ImageGenerationRequest.builder().jobId("img-premium").model("gpt-image-2").build();
+        ImageGenerationRequest.builder()
+            .jobId("img-premium")
+            .model("gpt-image-2.5-sunburst")
+            .build();
 
     String updated =
         service.updateLandingImageManifest(
@@ -186,6 +192,7 @@ class ImageGeneratorServiceTest {
             "https://cdn/premium.png",
             audit);
 
-    assertThat(updated).contains("https://cdn/premium.png", "img-premium", "gpt-image-2");
+    assertThat(updated)
+        .contains("https://cdn/premium.png", "img-premium", "gpt-image-2.5-sunburst");
   }
 }

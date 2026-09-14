@@ -1,0 +1,100 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2030-09-19-add-gpt-image-2-5-sunburst
+      author: ai-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO image_generation_model (code, display_name, provider, api_model, description)
+              SELECT 'gpt-image-2.5-sunburst', 'GPT Image 2.5 Sunburst', 'OPENAI',
+                     'gpt-image-2.5-sunburst',
+                     'Modelo OpenAI de maior capacidade para geração e edição de imagens comerciais.'
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM image_generation_model WHERE code = 'gpt-image-2.5-sunburst'
+              );
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO image_generation_quality
+                  (model_id, code, display_name, api_quality, is_default, position)
+              SELECT m.id, quality.code, quality.display_name, quality.api_quality,
+                     quality.is_default, quality.position
+              FROM image_generation_model m
+              JOIN (
+                  SELECT 'low' AS code, 'Low' AS display_name, 'low' AS api_quality,
+                         0 AS is_default, 10 AS position
+                  UNION ALL SELECT 'medium', 'Medium', 'medium', 0, 20
+                  UNION ALL SELECT 'high', 'High', 'high', 1, 30
+                  UNION ALL SELECT 'xhigh', 'Extra High', 'xhigh', 0, 40
+                  UNION ALL SELECT 'max', 'Maximum', 'max', 0, 50
+              ) quality
+              WHERE m.code = 'gpt-image-2.5-sunburst'
+              ON DUPLICATE KEY UPDATE
+                  display_name = VALUES(display_name),
+                  api_quality = VALUES(api_quality),
+                  is_default = VALUES(is_default),
+                  position = VALUES(position);
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO image_generation_price
+                  (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, price.orientation, price.width, price.height, price.size_label,
+                     price.unit_price_usd, price.preferred
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              JOIN (
+                  SELECT 'low' AS quality_code, 'SQUARE' AS orientation, 1024 AS width,
+                         1024 AS height, '1024x1024' AS size_label, 0.00588 AS unit_price_usd,
+                         1 AS preferred
+                  UNION ALL SELECT 'low', 'PORTRAIT', 1024, 1536, '1024x1536', 0.00474, 0
+                  UNION ALL SELECT 'low', 'LANDSCAPE', 1536, 1024, '1536x1024', 0.00474, 0
+                  UNION ALL SELECT 'medium', 'SQUARE', 1024, 1024, '1024x1024', 0.01317, 1
+                  UNION ALL SELECT 'medium', 'PORTRAIT', 1024, 1536, '1024x1536', 0.01029, 0
+                  UNION ALL SELECT 'medium', 'LANDSCAPE', 1536, 1024, '1536x1024', 0.01029, 0
+                  UNION ALL SELECT 'high', 'SQUARE', 1024, 1024, '1024x1024', 0.05268, 1
+                  UNION ALL SELECT 'high', 'PORTRAIT', 1024, 1536, '1024x1536', 0.04116, 0
+                  UNION ALL SELECT 'high', 'LANDSCAPE', 1536, 1024, '1536x1024', 0.04116, 0
+                  UNION ALL SELECT 'xhigh', 'SQUARE', 1024, 1024, '1024x1024', 0.09366, 1
+                  UNION ALL SELECT 'xhigh', 'PORTRAIT', 1024, 1536, '1024x1536', 0.07377, 0
+                  UNION ALL SELECT 'xhigh', 'LANDSCAPE', 1536, 1024, '1536x1024', 0.07377, 0
+                  UNION ALL SELECT 'max', 'SQUARE', 1024, 1024, '1024x1024', 0.21072, 1
+                  UNION ALL SELECT 'max', 'PORTRAIT', 1024, 1536, '1024x1536', 0.16464, 0
+                  UNION ALL SELECT 'max', 'LANDSCAPE', 1536, 1024, '1536x1024', 0.16464, 0
+              ) price ON price.quality_code = q.code
+              WHERE m.code = 'gpt-image-2.5-sunburst'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE price
+              FROM image_generation_price price
+              JOIN image_generation_quality quality ON quality.id = price.quality_id
+              JOIN image_generation_model model ON model.id = quality.model_id
+              WHERE model.code = 'gpt-image-2.5-sunburst';
+
+              DELETE quality
+              FROM image_generation_quality quality
+              JOIN image_generation_model model ON model.id = quality.model_id
+              WHERE model.code = 'gpt-image-2.5-sunburst';
+
+              DELETE FROM image_generation_model
+              WHERE code = 'gpt-image-2.5-sunburst';

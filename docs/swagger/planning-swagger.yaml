@@ -68,7 +68,7 @@ paths:
               properties:
                 producerExecutionId: { type: string }
                 file: { type: string, format: binary }
-                model: { type: string, enum: [gpt-image-2] }
+                model: { type: string, enum: [gpt-image-2.5-sunburst] }
                 requestJson: { type: string }
                 responseJson: { type: string }
                 usageJson: { type: string, nullable: true }

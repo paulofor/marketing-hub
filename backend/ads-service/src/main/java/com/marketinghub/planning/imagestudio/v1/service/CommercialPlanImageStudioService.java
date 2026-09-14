@@ -6,6 +6,7 @@ import com.marketinghub.agentlearning.v1.TemisVisualLearningService;
 import com.marketinghub.agentlearning.v1.TemisVisualPlaybookService;
 import com.marketinghub.creative.dto.CreativeImprovementResultRequest;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.imagegeneration.OpenAiImageGenerationPolicy;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
@@ -166,6 +167,7 @@ public class CommercialPlanImageStudioService {
       BigDecimal costUsd)
       throws IOException {
     CommercialPlanImageStudioJob job = processingJob(jobId, producerExecutionId);
+    String canonicalModel = requireCanonicalImageModel(model);
     if (file == null || file.isEmpty()) {
       throw new IllegalArgumentException("Imagem produzida não foi enviada");
     }
@@ -186,7 +188,7 @@ public class CommercialPlanImageStudioService {
             .status(AssetStatus.READY)
             .url(stored.publicUrl())
             .externalId(stored.storedFileName())
-            .model(clean(model))
+            .model(canonicalModel)
             .prompt(job.getPrompt())
             .payload(assetPayload(job, stored, requestJson, responseJson, usageJson))
             .build();
@@ -201,7 +203,7 @@ public class CommercialPlanImageStudioService {
     List<String> purposes = readStrings(job.getPurposesJson());
     visual.setPurpose(purposes.getFirst());
     visual.setPurposesJson(job.getPurposesJson());
-    visual.setOrigin("Íris / recurso técnico GPT Image 2");
+    visual.setOrigin("Íris / recurso técnico GPT Image 2.5 Sunburst");
     visual.setRightsStatement(
         "Gerado por Íris para comunicação comercial a partir de prova aprovada do produto");
     visual.setVersionNumber(nextVersion(job));
@@ -211,7 +213,7 @@ public class CommercialPlanImageStudioService {
 
     job.setResultVisualAsset(visual);
     job.setStatus(CommercialPlanImageStudioStatus.COMPLETED);
-    job.setModel(clean(model));
+    job.setModel(canonicalModel);
     job.setRequestJson(requestJson);
     job.setResponseJson(responseJson);
     job.setUsageJson(usageJson);
@@ -219,6 +221,15 @@ public class CommercialPlanImageStudioService {
     job.setError(null);
     job.setFinishedAt(Instant.now());
     return dto(jobRepository.save(job));
+  }
+
+  /** Rejeita callbacks produzidos por modelo visual aposentado antes de promover o ativo. */
+  private String requireCanonicalImageModel(String model) {
+    if (!OpenAiImageGenerationPolicy.isCanonicalModel(model)) {
+      throw new IllegalArgumentException(
+          "O resultado visual precisa ter sido gerado por gpt-image-2.5-sunburst");
+    }
+    return OpenAiImageGenerationPolicy.CANONICAL_MODEL;
   }
 
   /** Registra falha técnica sem apagar a origem nem promover um ativo visual incompleto. */

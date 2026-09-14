@@ -103,7 +103,7 @@ endpoints oficiais do backend por MCP próprio e reporta resultado ou falha pelo
 O backend decide qualquer avanço.
 
 Imagens bitmap geradas por IA usam o executor técnico isolado `iris-image-studio`, com
-`gpt-image-2`. Ele aceita somente `LANDING`, `ADS` e `SOCIAL`, exige prova real `PRODUCT_PROOF` ou
+`gpt-image-2.5-sunburst`. Ele aceita somente `LANDING`, `ADS` e `SOCIAL`, exige prova real `PRODUCT_PROOF` ou
 `DELIVERY` aprovada para criação e persiste o resultado como `DRAFT`. O código Java permanece
 temporariamente no módulo `meta-ad-approver-worker` por compatibilidade histórica, mas o container,
 o controle PLAY/STOP e os recursos BPM pertencem a `communication-director`. O processo revisor de

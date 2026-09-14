@@ -4,7 +4,7 @@ set -euo pipefail
 # Gera, revisa e promove lotes fotográficos do Agenda Cheia sem expor credenciais.
 command_name="${1:-}"
 library_root="${AGENDA_CHEIA_LIBRARY_ROOT:-/var/lib/marketinghub/agenda-cheia/photo-library}"
-model="${OPENAI_IMAGE_MODEL:-gpt-image-2-2026-04-21}"
+model="${OPENAI_IMAGE_MODEL:-gpt-image-2.5-sunburst}"
 batch_id="${2:-$(date -u +%Y%m%dT%H%M%SZ)}"
 candidate_dir="$library_root/candidates/$batch_id"
 approved_dir="$library_root/approved"

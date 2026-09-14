@@ -83,12 +83,14 @@ class CreativeImageClientTest {
 
         assertThat(result).isEqualTo("/uploads/img.jpg");
         Map<String, Object> request = lastRequestPayload.get();
-        assertThat(request).containsEntry("model", "gpt-image-2");
+        assertThat(request)
+                .containsEntry("model", "gpt-image-2.5-sunburst")
+                .containsEntry("quality", "high");
         assertThat(request).containsEntry("prompt", "prompt");
         assertThat(request).doesNotContainKey("response_format");
         verify(backendAssetClient).uploadImage(any(byte[].class),
                 argThat(name -> name.startsWith("creative-") && name.endsWith(".jpg")),
-                argThat(model -> model.equals("gpt-image-2")),
+                argThat(model -> model.equals("gpt-image-2.5-sunburst")),
                 argThat(prompt -> prompt.equals("prompt")),
                 isNull());
     }
@@ -133,10 +135,10 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Garante que modelos de imagem não GPT peçam resposta base64 explicitamente.
+     * Garante que uma configuração DALL-E aposentada seja promovida ao modelo canônico.
      */
     @Test
-    void requestsBase64PayloadExplicitlyForNonGptModels() {
+    void promotesRetiredDallEConfigurationToCanonicalModel() {
         String imagePayload;
         try {
             imagePayload = Base64.getEncoder().encodeToString(createSolidPng(64, 64));
@@ -155,7 +157,10 @@ class CreativeImageClientTest {
 
         assertThat(result).isEqualTo("/uploads/dalle.jpg");
         Map<String, Object> payload = requestPayload.get();
-        assertThat(payload).containsEntry("response_format", "b64_json");
+        assertThat(payload)
+                .containsEntry("model", "gpt-image-2.5-sunburst")
+                .containsEntry("quality", "high")
+                .doesNotContainKey("response_format");
     }
 
     /**
@@ -174,7 +179,7 @@ class CreativeImageClientTest {
         ExchangeFunction exchange = stubOpenAiApi(requestPayload, body, HttpStatus.OK, "/responses");
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageClient flexClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai",
-                "gpt-image-2", "gpt-5.5", "flex", 900);
+                "gpt-image-2.5-sunburst", "gpt-5.5", "flex", 900);
         when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/flex.jpg");
 
         String result = flexClient.generateImage("prompt");
@@ -189,15 +194,16 @@ class CreativeImageClientTest {
         assertThat(tools.get(0))
                 .containsEntry("type", "image_generation")
                 .containsEntry("action", "generate")
-                .containsEntry("model", "gpt-image-2");
+                .containsEntry("model", "gpt-image-2.5-sunburst")
+                .containsEntry("quality", "high");
         verify(backendAssetClient).uploadImage(any(byte[].class),
                 argThat(name -> name.endsWith(".jpg")),
-                argThat(model -> model.equals("gpt-image-2")),
+                argThat(model -> model.equals("gpt-image-2.5-sunburst")),
                 argThat(prompt -> prompt.equals("prompt")),
                 isNull());
     }
 
-    /** Envia exemplos reais como imagens de entrada e força edição de alta fidelidade no GPT Image 2. */
+    /** Envia exemplos reais como imagens de entrada e força edição de alta fidelidade no Sunburst. */
     @Test
     void sendsRealProductReferencesAsMultimodalInput() {
         String imagePayload;
@@ -214,7 +220,7 @@ class CreativeImageClientTest {
                 "/responses");
         CreativeImageClient referenceClient = new CreativeImageClient(
                 WebClient.builder().exchangeFunction(exchange), backendAssetClient, optimizer, "key", "http://openai",
-                "gpt-image-2", "gpt-5.5", "flex", 900);
+                "gpt-image-2.5-sunburst", "gpt-5.5", "flex", 900);
         when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/reference.jpg");
 
         String result = referenceClient.generateImage(

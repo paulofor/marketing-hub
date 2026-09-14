@@ -69,7 +69,7 @@ class TemisCreativeImprovementProcessor {
     }
   }
 
-  /** Adapta o contrato do gate de criativo ao mesmo estúdio GPT Image 2. */
+  /** Adapta o contrato do gate de criativo ao mesmo estúdio GPT Image 2.5 Sunburst. */
   private TemisImageStudioJob toImageJob(Map<String, Object> value, Long creativeId) {
     String prompt = text(value.get("revisedImagePrompt"));
     prompt += section("REQUISITOS OBRIGATÓRIOS", strings(value.get("mandatoryVisualRequirements")));

@@ -90,6 +90,29 @@ ID quando existir e SHA-256. Como o endpoint de Speech não devolve uso por requ
 exibe de forma legível que a voz foi gerada por IA. O endpoint não aceita `service_tier`, e essa
 exceção funcional deve constar na auditoria em vez de enviar campo não suportado.
 
+Os binários e interações já recebidos devem ser preservados também quando a medição,
+a montagem ou o QA final bloquearem o vídeo. A persistência dessas respostas antecede
+o callback de falha ou sucesso e não aprova o artefato. Cada recibo registra asset,
+papel, tamanho e hash; falha de armazenamento interrompe o fluxo sem repetição paga
+automática. Custo de voz ainda não conciliado permanece pendente, inclusive em falhas.
+Quando a narração exceder a duração, simplificar palavras redundantes sob a mesma
+mensagem é uma alternativa; contagem de palavras não substitui a medição física.
+Não acelerar a voz, estender o vídeo ou relaxar o gate implicitamente.
+
+A recuperação do acabamento usa o bruto pronto e uma nova tentativa auditável,
+sem regenerar clipes. O ciclo acompanha o novo filho somente se ainda apontar para
+a fonte ou para o filho falho dessa mesma fonte, projeto e experimento. Fonte antiga
+não sobrescreve finalização aprovada ou tentativa posterior. Solicitações concorrentes
+são serializadas pela fonte e consultam o filho sob lock de leitura atual do MySQL;
+entradas idênticas reutilizam trabalho ativo e entradas alteradas aguardam sua conclusão.
+
+A tela apresenta inspeções registradas pelo backend. Termos do roteiro como CTA,
+listas de problemas a evitar, IDs de ativos e nome do fornecedor não são evidência
+de defeito ou aprovação. Na ausência de inspeção conclusiva, a revisão visual fica
+pendente. Estabilidade medida e aprovada é um resultado técnico parcial; não substitui
+a revisão visual, a escuta ou a decisão humana de uso. Reprovações técnicas reais
+continuam visíveis com seu motivo persistido.
+
 O limite genérico de dez segundos das rotas Runway de clipe não se aplica à receita fixada
 `RUNWAY_PRODUCT_UGC`, cujo contrato aceita até quinze segundos. A validação de duração do backend
 deve resolver primeiro a identidade da receita e somente depois aplicar o fallback genérico do
@@ -106,6 +129,18 @@ comando consulta saldo e quota e executa o `dryRun`, mas encerra o ciclo sem cri
 Plutus ou job de Apolo, ainda que a conta possua saldo. O teto informado nesse modo é somente um
 limite analítico para avaliar o Router e não constitui autorização financeira. Produção e preflight
 isolado devem usar endpoints e estados distintos para impedir que uma verificação avance por engano.
+
+O processo pai deve apresentar o comando de solicitar produção quando a consulta isolada terminar
+sem tarefa financeira ou job. Um snapshot READY ou vencido não significa produção em andamento.
+A nova solicitação usa o comando governado do Estúdio, renova o preflight e preserva Plutus, teto,
+histórico e aprovações. Não converter a consulta isolada em geração automática.
+
+No contrato de storyboard narrativo, o backend deve fornecer pelo menos cinco cortes editoriais,
+incluindo gancho/dor, mecanismo, resultado, prova e CTA, antes de chamar o planejador de Apolo.
+Quinze segundos comportam cinco cortes de três segundos; isso não acrescenta clipes faturáveis.
+O teste de integração precisa consumir os metadados do backend no planejador real do executor,
+além de conferir duração no Router. A receita Product UGC mantém seu contrato próprio.
+Referência: [continuidade após preflight](../homologacao/vega-producao-apos-preflight-v1.md).
 
 O parecer de Plutus deve registrar prompt, resposta bruta, modelo e uso antes do callback funcional.
 Se o callback falhar, a próxima leitura reutiliza a resposta auditada e não consome uma segunda
@@ -202,3 +237,71 @@ existente, com Apolo, Plutus, Psique e Têmis nas responsabilidades canônicas. 
 ativos, criativo e contrato da mesma versão; o usuário recebe links para as telas oficiais.
 A execução assistida e os limites estão em [Ciclos de aprendizado e vendas](ciclos-aprendizado-vendas-canon.v1.md).
 Publicar o BPM não produz vídeo, não cria tarefa paga nem ativa campanha.
+
+## Prova privada de PDE na rota genérica
+
+Uma captura informada no projeto como `internal://agent-tasks/<taskId>/visual-evidence/<evidenceId>`
+(com `#crop=x,y,largura,altura` opcional) só pode ser usada quando o resultado técnico persistido
+for `PDE_AGENT_TECHNICAL_HOMOLOGATION_V1`, aprovado, do mesmo produto, experimento e versão do
+projeto. A captura precisa constar nos artefatos com hash idêntico e tráfego AGENT_VALIDATION.
+Ela demonstra funcionamento com dados de teste; nunca comprova resultado humano ou venda.
+
+O backend congela `PDE_PRIVATE_VIDEO_PROOF_V1` no contrato do job e expõe os bytes pelo módulo
+de vídeo em `GET /api/sales-videos/projects/{projectId}/product-proof`, com `Cache-Control: no-store`. A requisição do executor preserva `X-Tenant-ID` congelado no contrato; leitura sem tenant ou de outro proprietário é recusada.
+O executor confere identidade, hash e enquadramento antes do provider e novamente antes da voz.
+Ele insere os pixels nos cortes de mecanismo, resultado e prova, sem redesenhar ou gerar a tela.
+
+A rota Runway Router com prova explícita enfileira a finalização existente no backend. O filho
+de acabamento passa a ser o job acompanhado pelo ciclo; falha de voz/composição não exige
+gerar o bruto novamente. Voz e legenda têm a mesma fonte textual e gate temporal. Fonte sem
+prova aplicada, hash divergente, áudio ou sincronismo reprovados e ausência de aprovação humana
+continuam bloqueando elegibilidade comercial. Os gates independentes não são substituídos.
+
+## Gate de instruções visuais e negações
+
+O gate de Apolo deve avaliar cada ordem de texto no seu contexto, preservando
+pontuação e listas explícitas de verbos negados. “Sem apontar, celebrar, depor ou
+mostrar logo” é proibição; “não mostrar texto; inserir logo” mantém uma ordem
+positiva proibida. Não remover todas as palavras depois de uma negação nem
+transformar a ausência de um termo numa aprovação global do plano. Custo,
+duração, funções narrativas, fontes, prova e revisões continuam obrigatórios.
+
+Quando houver falso bloqueio, reproduzir localmente a resposta persistida,
+comparar sucessos e falhas e adicionar regressão antes de nova tarefa paga.
+As fixtures dos jobs 21237 e 21240 preservam esse aprendizado; a aprovação do
+gate técnico não equivale à aprovação humana do vídeo resultante.
+
+## Interrupção de Apolo no processo pai
+
+Quando a produção da peça vigente estiver `APOLLO_BLOCKED`, o processo pai deve
+expor a interrupção, o responsável, o projeto e a referência persistida do ciclo/job.
+Preflight vencido ou ausente não esconde uma falha de produção. Não expor payload
+bruto, repetir geração nem conferir aprovação pela leitura. O responsável financeiro
+continua explícito quando o monitor tiver bloqueado o consumo. Uma tentativa nova
+ativa ou concluída prevalece sobre a falha histórica da mesma peça, preservando
+segregação por produto, experimento, versão, papel e marco temporal do ciclo.
+Parecer `FINANCIAL_BLOCKED` também é intervenção financeira, nunca produção em curso.
+Ao chegar a `VIDEO_APPROVAL`, o pai orienta revisão independente, decisão humana
+e integração pelo ciclo exato. Não representar essa etapa manual como geração
+automática nem considerar a produção técnica uma aprovação de uso.
+
+## Falhas HTTP do planejador de Apolo
+
+Antes de cada envio, persistir o evento `APOLLO_PLANNING_HTTP` com job, tentativa,
+endpoint, modelo, tier e request estruturado. Depois do retorno, persistir status
+HTTP, request-id e `rawResponse` como string do corpo recebido, com remoção de
+credenciais eventualmente ecoadas. O corpo bruto é campo de auditoria explícito,
+separado do plano funcional validado. A falta dessa auditoria bloqueia o avanço.
+
+O executor mantém modelo e Flex. Somente HTTP 429 com código explícito
+`resource_unavailable`, `rate_limit_exceeded` ou `slow_down` permite até três
+envios, backoff exponencial com jitter e respeito a Retry-After. Espera superior
+a 60 segundos, cabeçalho inválido, quota, saldo, autenticação, código desconhecido
+e falha de transporte encerram a tentativa com diagnóstico auditado. Não trocar
+para standard, aumentar limites ou repetir POST de transporte ambíguo automaticamente.
+O retry implícito de conexão do cliente HTTP fica desabilitado.
+
+Uma falha de integração usa `APOLLO_PLANNING_*`; `APOLLO_STORYBOARD_BLOCKED` fica
+reservado às regras do plano. O job não inicia vídeo sem resposta e gate aprovados.
+Fontes oficiais: [Flex](https://developers.openai.com/api/docs/guides/flex-processing)
+e [erros HTTP](https://developers.openai.com/api/docs/guides/error-codes).

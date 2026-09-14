@@ -20,6 +20,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,6 +30,7 @@ import org.springframework.util.CollectionUtils;
 /** Prepara e envia os artefatos auditáveis produzidos por cada job de vídeo. */
 @Component
 public class VideoAssetUploader {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(VideoAssetUploader.class);
     private final VideoAssetClient assetClient;
     private final ObjectMapper objectMapper;
     private final VideoManagementProperties properties;
@@ -47,7 +50,7 @@ public class VideoAssetUploader {
         this(assetClient, objectMapper, new VideoManagementProperties());
     }
 
-    /** Envia vídeo, quadro final e legenda, criando a ponte visual quando o provider não a entrega. */
+    /** Envia os artefatos e exige HLS persistido para concluir o acabamento final. */
     public UploadedAssets uploadAssets(SalesVideoJob job, ProviderArtifacts artifacts) {
         Long videoAssetId = upload(job, artifacts, artifacts.videoFile());
         ProviderFile continuityFrame = isCinematicScene(job)
@@ -58,7 +61,26 @@ public class VideoAssetUploader {
         Long posterAssetId = upload(job, artifacts, continuityFrame);
         Long captionAssetId = upload(job, artifacts, artifacts.captionFile());
         artifacts.auditFiles().forEach(file -> upload(job, artifacts, file));
-        return new UploadedAssets(videoAssetId, posterAssetId, captionAssetId);
+        HlsVideoDelivery.Delivery delivery = "MUSA_POST_PRODUCTION".equalsIgnoreCase(job.providerName())
+                ? new HlsVideoDelivery(assetClient, properties, objectMapper).deliver(job, artifacts.videoFile())
+                : null;
+        return new UploadedAssets(videoAssetId, posterAssetId, captionAssetId,
+                delivery == null ? null : delivery.playbackUrl(),
+                delivery == null ? Map.of() : Map.of("hls_delivery", delivery.audit()));
+    }
+
+    /** Persiste respostas brutas antes do gate final, sem criar vídeo, pôster ou HLS. */
+    public List<Map<String, Object>> uploadAuditAssets(SalesVideoJob job, ProviderArtifacts artifacts) {
+        List<Map<String, Object>> receipts = new ArrayList<>();
+        for (ProviderFile file : artifacts.auditFiles()) {
+            Long assetId = upload(job, artifacts, file);
+            if (assetId == null || assetId <= 0) {
+                throw new BackendIntegrationException("Auditoria sem recibo; jobId=" + job.id() + "; arquivo=" + file.fileName());
+            }
+            receipts.add(Map.of("asset_id", assetId, "file_name", file.fileName(),
+                    "role", file.role().name(), "size_bytes", file.content().length, "sha256", sha256(file.content())));
+        }
+        return List.copyOf(receipts);
     }
 
     /** Identifica cenas que exigem que o poster seja exatamente o último quadro renderizado. */
@@ -98,6 +120,7 @@ public class VideoAssetUploader {
         try {
             return objectMapper.writeValueAsString(metadata);
         } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar auditoria do artefato; jobId={} arquivo={}", job.id(), file.fileName(), ex);
             throw new BackendIntegrationException("Não foi possível serializar metadata do asset", ex);
         }
     }
@@ -110,6 +133,7 @@ public class VideoAssetUploader {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
         } catch (NoSuchAlgorithmException ex) {
+            log.error("SHA-256 indisponível ao identificar artefato de vídeo", ex);
             throw new IllegalStateException("SHA-256 indisponível no runtime Java", ex);
         }
     }
@@ -142,9 +166,11 @@ public class VideoAssetUploader {
                     ProviderAssetRole.POSTER,
                     Files.readAllBytes(frame));
         } catch (IOException ex) {
+            log.error("Falha ao extrair quadro final; jobId={}", job.id(), ex);
             throw new VideoProviderException("VIDEO_CONTINUITY_FRAME_FAILED",
                     "Falha ao extrair quadro final do job " + job.id(), ex);
         } catch (InterruptedException ex) {
+            log.error("Extração do quadro final interrompida; jobId={}", job.id(), ex);
             Thread.currentThread().interrupt();
             throw new VideoProviderException("VIDEO_CONTINUITY_FRAME_FAILED",
                     "Extração do quadro final foi interrompida no job " + job.id(), ex);
@@ -161,14 +187,20 @@ public class VideoAssetUploader {
         }
         try {
             Files.deleteIfExists(path);
-        } catch (IOException ignored) {
-            // O diretório temporário do sistema fará a limpeza residual.
+        } catch (IOException ex) {
+            log.warn("Não foi possível remover arquivo temporário de vídeo; arquivo={}", path, ex);
         }
     }
 
     /** Identifica os ativos persistidos pelo backend para concluir o job. */
     public record UploadedAssets(Long videoAssetId,
                                  Long posterAssetId,
-                                 Long captionAssetId) {
+                                 Long captionAssetId,
+                                 String streamPlaybackUrl,
+                                 Map<String, Object> deliveryMetadata) {
+        /** Preserva os providers que não produzem um acabamento final. */
+        public UploadedAssets(Long videoAssetId, Long posterAssetId, Long captionAssetId) {
+            this(videoAssetId, posterAssetId, captionAssetId, null, Map.of());
+        }
     }
 }

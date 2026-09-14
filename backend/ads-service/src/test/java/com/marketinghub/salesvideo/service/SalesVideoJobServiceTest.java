@@ -48,6 +48,224 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SalesVideoJobServiceTest {
 
+  /** Retoma só o filho falho da fonte atual e rejeita fontes de tentativas posteriores. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"FAILED_SAME", "FAILED_OTHER", "READY_SAME"})
+  void shouldCorrelateFinalizationRecoveryWithoutOverwritingNewerWork(String scenario) {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.setJobType(SalesVideoJobType.RENDER);
+    source.setProviderName("RUNWAY_ROUTER");
+    source.setMetadataJson(
+        "{\"videoProductionCycleId\":91022,\"videoProjectId\":91004,\"experimentId\":91001,\"targetDurationSeconds\":15}");
+    var current =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .tenantId("default")
+            .profile(source.getProfile())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .status(
+                scenario.equals("READY_SAME")
+                    ? SalesVideoStatus.VIDEO_READY
+                    : SalesVideoStatus.VIDEO_FAILED)
+            .retryOfJob(
+                scenario.equals("FAILED_OTHER")
+                    ? SalesVideoJob.builder().id(91999L).build()
+                    : source)
+            .build();
+    var cycle = new com.marketinghub.salesvideo.VideoProductionCycle();
+    cycle.setId(91022L);
+    cycle.setVideoProjectId(91004L);
+    cycle.setExperimentId(91001L);
+    cycle.setSalesVideoJobId(current.getId());
+    cycle.setStatus("APOLLO_BLOCKED");
+    var cycles =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
+    service.setProductionCycleRepository(cycles);
+    given(cycles.findById(91022L)).willReturn(Optional.of(cycle));
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findById(current.getId())).willReturn(Optional.of(current));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("fixture@sandbox.local");
+    request.setCaptionText("Copy menor");
+    request.setVoiceOverScript("Copy menor");
+    if (scenario.equals("FAILED_SAME")) {
+      given(jobRepository.save(any()))
+          .willAnswer(
+              i -> {
+                SalesVideoJob j = i.getArgument(0);
+                if (j.getId() == null) j.setId(91011L);
+                return j;
+              });
+      var result = service.requestPostProduction(source.getId(), request);
+      assertThat(result.getId()).isEqualTo(91011L);
+      assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
+      assertThat(result.getMetadataJson()).contains("91022", "91004", "91001", "Copy menor");
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(91011L);
+      assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
+      assertThat(current.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_FAILED);
+      verify(cycles).save(cycle);
+    } else {
+      assertThrows(
+          VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(current.getId());
+      verify(jobRepository, never()).save(any());
+      verify(cycles, never()).save(any());
+    }
+  }
+
+  /** Reutiliza a chamada ativa igual e bloqueia edição concorrente sem enfileirar outro consumo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+  void shouldPreventConcurrentFinalizationRequests(boolean sameText) {
+    var source = VideoFinalDeliveryContractTest.source();
+    var child =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .tenantId("default")
+            .profile(source.getProfile())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .metadataJson(
+                "{\"captionText\":\"Copy menor\",\"voiceOverScript\":\"Copy menor\",\"sourceVideoUrl\":\"https://cdn.test/final.mp4\"}")
+            .build();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(source.getId()))
+        .willReturn(Optional.of(child));
+    var request = new RequestSalesVideoPostProductionRequest();
+    request.setCaptionText(sameText ? "Copy menor" : "Outra copy");
+    request.setVoiceOverScript("Copy menor");
+    if (sameText)
+      assertThat(service.requestPostProduction(source.getId(), request).getId())
+          .isEqualTo(child.getId());
+    else
+      assertThrows(
+          VideoModuleException.class, () -> service.requestPostProduction(source.getId(), request));
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Expõe disponibilidade e bloqueia nova preparação quando já existe filho em execução. */
+  @Test
+  void shouldExposeBackendDeliveryAvailability() {
+    var source = VideoFinalDeliveryContractTest.source();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    var available = service.getJob(source.getId()).getDeliveryPreparation();
+    assertThat(available.status()).isEqualTo("AVAILABLE");
+    assertThat(available.captionText()).isEqualTo("Copy preservada");
+    var child =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .metadataJson("{\"deliveryOnly\":true}")
+            .build();
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(source.getId()))
+        .willReturn(Optional.of(child));
+    var pending = service.getJob(source.getId()).getDeliveryPreparation();
+    assertThat(pending.status()).isEqualTo("PROCESSING");
+    assertThat(pending.jobId()).isEqualTo(91010L);
+    assertThat(pending.captionText()).isNull();
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Arquivo sem identidade não pode disponibilizar recuperação apenas por estar VIDEO_READY. */
+  @Test
+  void shouldRejectDeliveryAvailabilityWithoutPersistedHash() {
+    var source = VideoFinalDeliveryContractTest.source();
+    source.getAsset().setPayload("{}");
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    var state = service.getJob(source.getId()).getDeliveryPreparation();
+    assertThat(state.status()).isEqualTo("UNAVAILABLE");
+    assertThat(state.reason()).contains("hashes");
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Serializa a recuperação e devolve o filho existente sem duplicar processamento. */
+  @Test
+  void shouldReuseExistingDeliveryJob() {
+    var source = VideoFinalDeliveryContractTest.source();
+    var child =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .tenantId("default")
+            .profile(source.getProfile())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .metadataJson("{\"deliveryOnly\":true}")
+            .build();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(source.getId()))
+        .willReturn(Optional.of(child));
+    assertThat(
+            service
+                .requestPostProduction(source.getId(), VideoFinalDeliveryContractTest.request())
+                .getId())
+        .isEqualTo(child.getId());
+    verify(jobRepository, never()).save(any());
+  }
+
+  /** Bloqueia recuperação de outro tenant antes de reservar ou criar um filho. */
+  @Test
+  void shouldRejectCrossTenantDelivery() {
+    var source = VideoFinalDeliveryContractTest.source();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    TenantContextHolder.set(new TenantContext("tenant-b", "fixture@sandbox.local", false));
+    try {
+      assertThrows(
+          VideoModuleException.class,
+          () ->
+              service.requestPostProduction(
+                  source.getId(), VideoFinalDeliveryContractTest.request()));
+      verify(jobRepository, never()).findByIdForUpdate(any());
+      verify(jobRepository, never()).save(any());
+    } finally {
+      TenantContextHolder.clear();
+    }
+  }
+
+  /** Cria um filho de entrega e persiste o HLS do callback mantendo modo de teste e custo zero. */
+  @Test
+  void shouldCreateAndCompleteDeliveryWithHls() {
+    var source = VideoFinalDeliveryContractTest.source();
+    given(jobRepository.findById(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(source.getId())).willReturn(Optional.of(source));
+    given(jobRepository.save(any()))
+        .willAnswer(
+            invocation -> {
+              SalesVideoJob value = invocation.getArgument(0);
+              if (value.getId() == null) value.setId(91010L);
+              return value;
+            });
+    var result =
+        service.requestPostProduction(source.getId(), VideoFinalDeliveryContractTest.request());
+    assertThat(result.getId()).isEqualTo(91010L);
+    assertThat(result.getExecutionMode()).isEqualTo(SalesVideoExecutionMode.TEST);
+    assertThat(result.getMetadataJson()).contains("VIDEO_FINAL_REUSE_V1", "deliveryOnly");
+    var captor = org.mockito.ArgumentCaptor.forClass(SalesVideoJob.class);
+    verify(jobRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+    var child = captor.getValue();
+    given(jobRepository.findById(91010L)).willReturn(Optional.of(child));
+    given(assetRepository.findById(92001L)).willReturn(Optional.of(source.getAsset()));
+    given(assetRepository.findById(92002L)).willReturn(Optional.of(source.getVttAsset()));
+    var callback = new JobCompletionRequest();
+    callback.setAssetId(92001L);
+    callback.setVttAssetId(92002L);
+    callback.setStatus(SalesVideoStatus.VIDEO_READY);
+    callback.setStreamPlaybackUrl("https://cdn.test/final.m3u8");
+    callback.setCostUsd(BigDecimal.ZERO);
+    callback.setMetadataJson(
+        "{\"duration_seconds\":15,\"deliveryOnly\":true,\"hls_delivery\":{\"status\":\"READY\"}}");
+    var completed = service.complete(91010L, callback);
+    assertThat(completed.getStreamPlaybackUrl()).isEqualTo("https://cdn.test/final.m3u8");
+    assertThat(completed.getMetadataJson()).contains("hls_delivery", "VIDEO_FINAL_REUSE_V1");
+    assertThat(completed.getCommercialReadinessBlockers())
+        .doesNotContain("A playlist HLS publicável não foi registrada.");
+    assertThat(source.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+  }
+
   @Mock private SalesVideoJobRepository jobRepository;
 
   @Mock private SalesVideoJobEventRepository eventRepository;
@@ -348,9 +566,62 @@ class SalesVideoJobServiceTest {
     assertThat(result.getCommercialReadinessBlockers()).isEmpty();
   }
 
-  /** Encadeia Product UGC aprovado na pós-produção preservando os gates técnicos de Apolo. */
-  @Test
-  void shouldEnqueuePremiumFinalizationForProductUgc() {
+  /** Exige prova íntegra, voz, sincronismo e decisão humana também na rota genérica. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"complete", "hash", "audio", "human"})
+  void shouldGatePrivatePdePostProduction(String scenario) throws Exception {
+    SalesVideoProfile profile = SalesVideoProfile.builder().id(10L).build();
+    if (!"human".equals(scenario))
+      profile.setHumanReviewApprovedAt(Instant.parse("2026-09-13T12:00:00Z"));
+    SalesVideoJob source =
+        SalesVideoJob.builder()
+            .id(91010L)
+            .providerName("RUNWAY_ROUTER")
+            .metadataJson(
+                "{\"post_production\":{\"product_proof\":{\"contractVersion\":\"PDE_PRIVATE_VIDEO_PROOF_V1\",\"sha256\":\"fixture-hash\"}}}")
+            .build();
+    var metadata =
+        new ObjectMapper()
+            .readTree(
+                """
+        {"audio":{"voice_over":true,"language":"pt-BR","review":{"status":"APPROVED_FOR_TEST"}},
+         "captions":{"burned_in":true,"vtt_asset":true},
+         "caption_narration_sync":{"status":"APPROVED","timing_status":"APPROVED"},
+         "product_reference_overlay":{"status":"APPLIED","sha256":"fixture-hash","commercialEvidenceClaimed":false}}
+        """);
+    if ("hash".equals(scenario))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) metadata.path("product_reference_overlay"))
+          .put("sha256", "different");
+    if ("audio".equals(scenario))
+      ((com.fasterxml.jackson.databind.node.ObjectNode) metadata.at("/audio/review"))
+          .put("status", "PENDING");
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(91011L)
+            .profile(profile)
+            .retryOfJob(source)
+            .script(SalesVideoScript.builder().ctaText("Ver primeiro ajuste").build())
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://fixture.invalid/video.m3u8")
+            .vttAsset(Asset.builder().id(91012L).build())
+            .metadataJson(metadata.toString())
+            .build();
+    given(profileRepository.findById(10L)).willReturn(Optional.of(profile));
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(10L)).willReturn(List.of(job));
+    var result = service.listJobsByProfile(10L).get(0);
+    assertThat(result.getCommercialReadinessStatus())
+        .isEqualTo("complete".equals(scenario) ? "READY" : "BLOCKED");
+    if (!"complete".equals(scenario))
+      assertThat(result.getCommercialReadinessBlockers()).hasSize(1);
+  }
+
+  /** Encadeia fontes governadas na pós-produção preservando os gates técnicos de Apolo. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"RUNWAY_PRODUCT_UGC", "RUNWAY_ROUTER"})
+  void shouldEnqueuePremiumFinalizationForGovernedSource(String sourceProvider) {
     TenantContextHolder.set(new TenantContext("tenant-a", "operator@tenant.io", false));
     SalesVideoProfile profile =
         SalesVideoProfile.builder()
@@ -366,13 +637,13 @@ class SalesVideoJobServiceTest {
             .profile(profile)
             .jobType(SalesVideoJobType.RENDER)
             .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
-            .providerName("RUNWAY_PRODUCT_UGC")
+            .providerName(sourceProvider)
             .status(SalesVideoStatus.VIDEO_PROCESSING)
             .executionMode(SalesVideoExecutionMode.TEST)
             .requestedBy("Apolo")
             .requestedAt(Instant.parse("2026-09-04T10:00:00Z"))
             .metadataJson(
-                "{\"videoProductionCycleId\":91,\"experimentId\":91,"
+                "{\"videoProductionCycleId\":91,\"videoProjectId\":91001,\"experimentId\":91,"
                     + "\"technicalQualityGate\":{\"continuousTakeRequired\":true,"
                     + "\"captionMustMatchNarration\":true},"
                     + "\"referenceGovernance\":{\"productIsDigitalExperience\":true},"
@@ -380,9 +651,20 @@ class SalesVideoJobServiceTest {
                     + "\"captionText\":\"Você se arruma | Faça o diagnóstico gratuito\","
                     + "\"voiceOverScript\":\"Você se arruma | Faça o diagnóstico gratuito\"}}")
             .build();
+    var cycles =
+        org.mockito.Mockito.mock(
+            com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository.class);
+    var cycle = new com.marketinghub.salesvideo.VideoProductionCycle();
+    cycle.setId(91L);
+    cycle.setVideoProjectId(91001L);
+    cycle.setExperimentId(91L);
+    cycle.setSalesVideoJobId(source.getId());
+    given(cycles.findById(91L)).willReturn(Optional.of(cycle));
+    service.setProductionCycleRepository(cycles);
     Asset sourceAsset =
         Asset.builder().id(903L).url("https://cdn.example.com/vega-91-ugc.mp4").build();
     given(jobRepository.findById(20522L)).willReturn(Optional.of(source));
+    given(jobRepository.findByIdForUpdate(20522L)).willReturn(Optional.of(source));
     given(assetRepository.findById(903L)).willReturn(Optional.of(sourceAsset));
     given(jobRepository.save(any(SalesVideoJob.class)))
         .willAnswer(
@@ -413,6 +695,9 @@ class SalesVideoJobServiceTest {
               .findFirst()
               .orElseThrow();
       assertThat(postProduction.getRetryOfJob()).isSameAs(source);
+      assertThat(cycle.getSalesVideoJobId()).isEqualTo(postProduction.getId());
+      assertThat(cycle.getStatus()).isEqualTo("QUEUED_FOR_APOLLO");
+      verify(cycles).save(cycle);
       assertThat(source.getMetadataJson()).contains("\"captionMustMatchNarration\":true");
       assertThat(postProduction.getMetadataJson())
           .contains(
@@ -779,6 +1064,7 @@ class SalesVideoJobServiceTest {
     request.setRequestedBy("operator@tenant.io");
     request.setCaptionText("Faça o diagnóstico gratuito.");
     given(jobRepository.findById(21232L)).willReturn(Optional.of(sourceJob));
+    given(jobRepository.findByIdForUpdate(21232L)).willReturn(Optional.of(sourceJob));
     given(jobRepository.save(any(SalesVideoJob.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
     given(eventRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
@@ -939,6 +1225,7 @@ class SalesVideoJobServiceTest {
     request.setCaptionText("Veja seu plano MUSA de 7 dias.");
 
     given(jobRepository.findById(20432L)).willReturn(Optional.of(sourceJob));
+    given(jobRepository.findByIdForUpdate(20432L)).willReturn(Optional.of(sourceJob));
     given(jobRepository.save(any(SalesVideoJob.class)))
         .willAnswer(
             invocation -> {

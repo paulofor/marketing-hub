@@ -247,6 +247,91 @@ afterEach(() => {
 });
 
 describe("AudioVideoStudioPage", () => {
+  it("adiciona a quinta cena ao briefing existente sem redefinir identidade ou produzir vídeo", async () => {
+    const originalScenes = ["Dor", "Mecanismo", "Resultado", "Prova"];
+    let project = {
+      id: 1,
+      productId: 91001,
+      experimentId: 91002,
+      campaignKey: "fixture-video-v1",
+      title: "Briefing local com quatro cenas",
+      videoCategory: "COMMERCIAL_SHORT",
+      targetDurationSeconds: 15,
+      hookText: "Gancho aprovado",
+      scriptText: "Roteiro aprovado",
+      captionPlan: "Legenda aprovada",
+      ctaText: "CTA aprovado",
+      scenePlan: originalScenes.join("\n"),
+      status: "DRAFT",
+    };
+    (axios.get as any).mockImplementation((url: string) =>
+      Promise.resolve({
+        data: url === "/api/sales-videos/projects/1" ? project : [],
+      }),
+    );
+    (axios.patch as any).mockImplementation((_url: string, payload: any) => {
+      project = { ...project, ...payload };
+      return Promise.resolve({ data: project });
+    });
+    setupProject();
+    await screen.findByDisplayValue(project.title);
+    expect(screen.getAllByLabelText(/Cena \d+ ·/)).toHaveLength(4);
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar cena" }));
+    fireEvent.change(screen.getByLabelText(/Cena 5 ·/), {
+      target: { value: "CTA: convite privado" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    );
+    await screen.findByText(`Projeto atualizado: #1 - ${project.title}`);
+    expect(project.scenePlan.split("\n")).toEqual([
+      ...originalScenes,
+      "CTA: convite privado",
+    ]);
+    expect(project).toMatchObject({
+      productId: 91001,
+      experimentId: 91002,
+      campaignKey: "fixture-video-v1",
+      hookText: "Gancho aprovado",
+      scriptText: "Roteiro aprovado",
+      captionPlan: "Legenda aprovada",
+      ctaText: "CTA aprovado",
+      targetDurationSeconds: 15,
+      status: "DRAFT",
+    });
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("preserva o limite de cenas ao ampliar um briefing", async () => {
+    (axios.get as any).mockImplementation((url: string) =>
+      Promise.resolve({
+        data:
+          url === "/api/sales-videos/projects/1"
+            ? {
+                id: 1,
+                productId: 91001,
+                title: "Briefing no limite",
+                objective: "Validar o limite local",
+                hookText: "Gancho",
+                scriptText: "Roteiro",
+                videoCategory: "COMMERCIAL_SHORT",
+                targetDurationSeconds: 15,
+                scenePlan: Array.from(
+                  { length: 48 },
+                  (_, index) => `Plano ${index + 1}`,
+                ).join("\n"),
+              }
+            : [],
+      }),
+    );
+    setupProject();
+    await screen.findByDisplayValue("Briefing no limite");
+    expect(screen.getAllByLabelText(/Cena \d+ ·/)).toHaveLength(48);
+    expect(
+      screen.getByRole("button", { name: "Adicionar cena" }),
+    ).toBeDisabled();
+  });
+
   it("preserva roteiro e gancho exatos ao salvar outra configuração do projeto", async () => {
     let project = {
       id: 1,
@@ -275,6 +360,15 @@ describe("AudioVideoStudioPage", () => {
     });
     setupProject();
     await screen.findByDisplayValue("Vega v12");
+    fireEvent.change(
+      screen.getByLabelText("Referência da captura homologada"),
+      {
+        target: {
+          value:
+            "internal://agent-tasks/395/visual-evidence/118#crop=10,20,300,400",
+        },
+      },
+    );
     for (const title of ["Vega v12 revisado", "Vega v12 pronto"]) {
       fireEvent.change(screen.getByLabelText(/titulo do projeto/i), {
         target: { value: title },
@@ -293,6 +387,9 @@ describe("AudioVideoStudioPage", () => {
         "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
       );
       expect(project.experimentId).toBe(92);
+      expect((project as any).referencePerformanceUri).toBe(
+        "internal://agent-tasks/395/visual-evidence/118#crop=10,20,300,400",
+      );
     }
   });
 
@@ -346,6 +443,104 @@ describe("AudioVideoStudioPage", () => {
     });
     (axios.patch as any).mockResolvedValue({ data: {} });
   });
+
+  it.each([
+    { hls: null, state: "AVAILABLE" },
+    { hls: "https://cdn.test/final.m3u8", state: "READY" },
+    { hls: null, state: "UNAVAILABLE" },
+    { hls: null, state: "PROCESSING" },
+  ])(
+    "preserva MP4 e respeita a disponibilidade do backend: %s",
+    async ({ hls, state }) => {
+      (axios.get as any).mockImplementation((url: string) => {
+        if (url === "/api/sales-videos/studio/catalog")
+          return Promise.resolve({ data: studioCatalog });
+        if (url === "/api/sales-videos/projects/1")
+          return Promise.resolve({
+            data: {
+              id: 1,
+              productId: 4,
+              experimentId: 92,
+              salesVideoProfileId: 55,
+              title: "Anúncio privado preservado",
+              objective: "Primeiro ajuste aplicável",
+              targetChannel: "SOCIAL_REELS_STORIES",
+              status: "READY_FOR_REVIEW",
+            },
+          });
+        if (url === "/api/sales-videos/profiles/55/jobs")
+          return Promise.resolve({
+            data: [
+              {
+                id: 91009,
+                profileId: 55,
+                providerName: "MUSA_POST_PRODUCTION",
+                status: "VIDEO_READY",
+                assetId: 92001,
+                streamPlaybackUrl: hls,
+                deliveryPreparation: {
+                  status: state,
+                  jobId: 91009,
+                  captionText: state === "AVAILABLE" ? "Copy preservada" : null,
+                  reason:
+                    state === "UNAVAILABLE"
+                      ? "Arquivo sem hash auditável."
+                      : null,
+                },
+                metadataJson: JSON.stringify({
+                  captionText: "Copy preservada",
+                }),
+              },
+            ],
+          });
+        if (url === "/api/media/92001")
+          return Promise.resolve({
+            data: { id: 92001, url: "https://cdn.test/final.mp4" },
+          });
+        return Promise.resolve({ data: [] });
+      });
+      setupProject();
+      const link = await screen.findByRole("link", { name: "Abrir MP4" });
+      expect(link.getAttribute("href")).toBe("https://cdn.test/final.mp4");
+      if (hls) {
+        expect(
+          screen
+            .getByRole("link", { name: "HLS preparado para reprodução" })
+            .getAttribute("href"),
+        ).toBe(hls);
+        expect(
+          screen.queryByRole("button", { name: "Preparar reprodução HLS" }),
+        ).toBeNull();
+      } else if (state === "AVAILABLE") {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Preparar reprodução HLS" }),
+        );
+        await waitFor(() =>
+          expect(axios.post).toHaveBeenCalledWith(
+            "/api/sales-videos/jobs/91009/request-post-production",
+            expect.objectContaining({
+              deliveryOnly: true,
+              captionText: "Copy preservada",
+            }),
+          ),
+        );
+        expect(axios.post).toHaveBeenCalledTimes(1);
+      } else if (state === "PROCESSING") {
+        expect(
+          screen.getByRole("button", { name: "Preparando reprodução…" }),
+        ).toBeDisabled();
+        expect(axios.post).not.toHaveBeenCalled();
+      } else {
+        expect(
+          screen.queryByRole("button", { name: "Preparar reprodução HLS" }),
+        ).toBeNull();
+        expect(
+          screen.getByText("Arquivo sem hash auditável."),
+        ).toBeInTheDocument();
+        expect(axios.post).not.toHaveBeenCalled();
+      }
+    },
+  );
 
   it("aplica a receita sem inventar produto, oferta ou CTA", async () => {
     (axios.get as any).mockImplementation((url: string) => {

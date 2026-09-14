@@ -527,3 +527,57 @@ redação não representam dados recuperados quando não possuem persistência p
 Campanhas aceitam identificador próprio, com os presets como sugestões. Produto,
 experimento, grupo e referências preservam a atribuição da versão em produção.
 Salvar narrativa não aprova qualidade do vídeo nem autoriza consumo ou publicação.
+
+## Ampliação de briefing persistido — 13/09/2026
+
+O Estúdio deve permitir adicionar cenas ao plano existente sem trocar o preset,
+recriar o projeto ou redefinir roteiro, oferta, experimento e referências. A adição
+é uma edição local do formulário, limitada à capacidade do editor, e só persiste
+por `PATCH /api/sales-videos/projects/{id}` ao salvar a continuidade. Não gera
+clipe, não altera o histórico de jobs e não autoriza gasto. O backend continua
+validando o contrato próprio da rota de produção ou montagem selecionada.
+
+A homologação de mudanças no número de cortes deve começar também por um projeto
+histórico com menos cenas: adicionar, editar, salvar, reabrir e conferir o plano
+completo em desktop e celular, preservando a identidade e os demais campos.
+
+### Entrega final e recuperação sem nova geração
+
+O executor deve empacotar todo acabamento `MUSA_POST_PRODUCTION` em HLS antes de
+concluir o job: segmentos MPEG-TS, manifesto VOD completo, hashes e IDs auditáveis,
+armazenados exclusivamente pela API de assets do backend. O callback deve informar
+`streamPlaybackUrl`; o backend reconcilia essa URL com o ativo do experimento.
+Falha de FFmpeg, upload ou manifesto impede declarar entrega HLS pronta. O MP4
+permanece como master e fallback de revisão, inclusive em navegadores sem HLS nativo.
+
+Para um acabamento histórico sem HLS, o comando de tela **Preparar reprodução HLS**
+usa `deliveryOnly=true` no contrato existente de pós-produção. O backend congela
+URLs e hashes do MP4/VTT; o executor confere os bytes e gera somente o pacote de
+reprodução, sem planejamento IA, render ou TTS. Um filho auditável preserva o job
+fonte, o ativo comercial, os custos anteriores e a aprovação humana. Pedidos
+concorrentes da mesma fonte retornam o filho existente; tenant divergente é recusado.
+O empacotamento registra custo incremental de provedor zero, sem declarar que
+custos anteriores desconhecidos foram reconciliados.
+
+O papel comercial deve ser validado antes do preflight e resolvido pela mesma
+regra no retorno: `SOCIAL_REELS_STORIES` e canais sociais específicos → `AD`;
+`PDE_HERO_DIAGNOSTIC`, `PDE` ou `LANDING_HERO` → `LANDING_HERO`;
+`PAYWALL_OFFER` → `PRE_CHECKOUT`. Canal ausente, desconhecido ou misto exige
+seleção explícita de um destino. Não deduzir o papel pelo título ou pela presença
+de letras em uma etapa do funil. A recuperação pode corrigir papel de ativo ainda
+pendente, preservando decisões já aprovadas. HLS pronto não constitui revisão
+humana nem autorização de campanha ou cobrança.
+
+A homologação HLS deve usar origem de aplicativo diferente da origem de mídia,
+validando CORS, manifesto e segmentos no navegador. A política de storage deve
+permitir somente as origens operacionais/aprovadas necessárias, com GET/HEAD;
+URL pública isolada não comprova leitura por JavaScript. Ajustes operacionais
+preservam regras existentes, snapshot de retorno e conferência da revisão antes
+de aplicar. Não usar liberação ampla de origens para contornar um domínio ainda
+sem aprovação de publicação.
+
+A disponibilidade de **Preparar reprodução HLS** vem do campo `deliveryPreparation`
+do job: `AVAILABLE`, `PROCESSING`, `READY` ou `UNAVAILABLE`, com job correlacionado,
+texto congelado e motivo quando aplicável. O frontend apenas apresenta essa decisão;
+não infere elegibilidade pelo nome do provider, por `VIDEO_READY` ou pelos filhos.
+O backend valida os hashes de MP4/VTT, voz e legenda e identifica entrega já em curso.

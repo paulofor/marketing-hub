@@ -330,8 +330,20 @@ paths:
   /api/sales-videos/jobs/{jobId}/request-post-production:
     post:
       tags: [PublicVideoProfiles]
-      summary: Solicita pós-produção de um vídeo bruto já renderizado
-      description: Cria um job `POST_PRODUCTION` para o `video-management-service` finalizar um vídeo pronto com voz off, legenda e trilha, preservando o job fonte no metadata/auditoria.
+      summary: Solicita acabamento ou prepara HLS de um vídeo final existente
+      description: |
+        Cria um job `POST_PRODUCTION` para o executor finalizar o vídeo, preservando
+        a fonte. Com `deliveryOnly=true`, exige fonte `MUSA_POST_PRODUCTION` em
+        `VIDEO_READY`, MP4/VTT com hashes persistidos, voz e legendas existentes.
+        O backend congela os artefatos e o executor prepara HLS sem nova geração
+        de vídeo ou voz. Repetições retornam a entrega existente; conteúdo, custo
+        anterior, tenant e decisões humanas são preservados. HLS não aprova uso.
+        As solicitações são serializadas por fonte. Acabamento ativo com os mesmos
+        textos e URL é reutilizado; entradas diferentes aguardam sua conclusão.
+        Após falha de acabamento, o bruto pronto pode originar novo filho, mantendo
+        o histórico e atualizando o ciclo somente quando este ainda acompanha a
+        fonte ou seu filho falho correspondente. Fonte de tentativa anterior não
+        sobrescreve trabalho posterior nem um acabamento pronto.
       parameters:
         - $ref: '#/components/parameters/JobId'
       requestBody:
@@ -342,13 +354,15 @@ paths:
               $ref: '#/components/schemas/RequestSalesVideoPostProductionRequest'
       responses:
         '200':
-          description: Job de pós-produção criado
+          description: Job criado ou entrega existente retornada de forma idempotente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SalesVideoJobDto'
         '400':
-          description: Job fonte não está pronto ou não possui URL/asset de vídeo
+          description: Fonte indisponível, ciclo já avançado ou tentativa de alterar entradas de acabamento ativo
+        '409':
+          description: Recuperação sem artefatos íntegros ou com tentativa de alterar o conteúdo final
         '404':
           description: Job fonte não encontrado
 
@@ -610,6 +624,14 @@ components:
         assetId: { type: integer, format: int64 }
         posterAssetId: { type: integer, format: int64 }
         vttAssetId: { type: integer, format: int64 }
+        deliveryPreparation:
+          type: object
+          description: Decisão canônica do backend; a tela não deduz disponibilidade pelo provider ou status do render.
+          properties:
+            status: { type: string, enum: [AVAILABLE, PROCESSING, READY, UNAVAILABLE] }
+            jobId: { type: integer, format: int64 }
+            captionText: { type: string, description: Texto congelado disponível somente para o comando elegível }
+            reason: { type: string }
         metadataJson: { type: string }
         auditSnapshotJson: { type: string }
         createdAt: { type: string, format: date-time }
@@ -708,7 +730,7 @@ components:
 
     RequestSalesVideoPostProductionRequest:
       type: object
-      required: [requestedBy, voiceOverScript, captionText]
+      required: [requestedBy, captionText]
       properties:
         requestedBy:
           type: string
@@ -717,10 +739,14 @@ components:
           description: URL opcional do vídeo bruto. Quando omitida, o backend usa `streamPlaybackUrl` ou URL do asset do job fonte.
         voiceOverScript:
           type: string
-          description: Narração que será sintetizada em português para conduzir dor, mecanismo, desejo e CTA.
+          description: Narração opcional para acabamento. Deve ser omitida quando deliveryOnly for true.
         captionText:
           type: string
-          description: Legenda principal queimada no vídeo final.
+          description: Legenda principal. Na recuperação, deve ser idêntica à legenda persistida no acabamento fonte.
+        deliveryOnly:
+          type: boolean
+          default: false
+          description: Reutiliza MP4, voz e VTT existentes para preparar HLS. Proíbe informar sourceVideoUrl ou voiceOverScript e não constitui aprovação humana.
 
     RequestSalesVideoMontageRequest:
       type: object

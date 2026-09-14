@@ -75,8 +75,56 @@ def run():
     http('/fixture/video-preflights', sample)
     blocked = reconcile(run)
     assert '/cycles/92013/' in blocked['userAction']['evidenceReference']
+    for status in ['READY', 'EXPIRED']:
+        sample.update(status='PROVIDER_PREFLIGHT_ONLY_COMPLETED', preflightStatus=status)
+        http('/fixture/video-preflights', sample)
+        waiting = reconcile(run)
+        assert waiting['status'] == 'WAITING_HUMAN' and waiting['completedActivities'] == 0
+        assert waiting['userAction']['code'] == 'REQUEST_VIDEO_PRODUCTION'
+        assert waiting['userAction']['actionUrl'] == '/audio-video-studio/projects/91004'
+        assert sql(f'SELECT status FROM product_process_run_v1 WHERE id={run["id"]}') == 'WAITING_HUMAN'
+        assert process_read(cycle)['userAction'] == waiting['userAction']
+    requested = waiting
+    for status in ['PENDING_PROVIDER_PREFLIGHT', 'PENDING_FINANCIAL_REVIEW', 'QUEUED_FOR_APOLLO']:
+        sample['status'] = status
+        http('/fixture/video-preflights', sample)
+        active = reconcile(run)
+        assert active['status'] == 'WAITING_ACTIVITY' and active['userAction'] is None
+    sample.update(status='APOLLO_BLOCKED', preflightStatus='EXPIRED',
+                  lastFailedJobId=91240, lastApolloFailureCode='APOLLO_STORYBOARD_BLOCKED')
+    http('/fixture/video-preflights', sample)
+    waiting = reconcile(run)
+    assert waiting['status'] == 'WAITING_HUMAN' and waiting['completedActivities'] == 0
+    assert waiting['userAction']['code'] == 'RESOLVE_VIDEO_PRODUCTION'
+    assert waiting['userAction']['evidenceReference'].endswith('/cycles/92013/jobs/91240')
+    assert 'planejamento' in waiting['userAction']['reason']
+    assert sql(f'SELECT message FROM product_process_run_event_v1 WHERE run_id={run["id"]} ORDER BY id DESC LIMIT 1') == waiting['userAction']['reason']
+    assert process_read(cycle)['userAction'] == waiting['userAction']
+    paused = reconcile(http(process_path(cycle) + f'/{run["id"]}/pause', {}))
+    assert paused['status'] == 'PAUSED' and paused['userAction'] is None
+    assert reconcile(http(process_path(cycle) + f'/{run["id"]}/resume', {}))['status'] == 'WAITING_HUMAN'
+    for status in ['QUEUED_FOR_APOLLO', 'REUSING_APOLLO_MATERIAL', 'VIDEO_READY_FOR_REVIEW']:
+        sample['status'] = status
+        http('/fixture/video-preflights', sample)
+        active = reconcile(run)
+        assert active['status'] == 'WAITING_ACTIVITY' and active['userAction'] is None
+    sample['status'] = 'FINANCIAL_BLOCKED'
+    http('/fixture/video-preflights', sample)
+    financial_block = reconcile(run)
+    assert financial_block['status'] == 'WAITING_HUMAN'
+    assert 'Plutus' in financial_block['userAction']['responsible']
+    sql(f"UPDATE learning_sales_cycle_v1 SET stage='VIDEO_APPROVAL' WHERE id={cycle['id']}")
+    review = reconcile(run)
+    assert review['status'] == 'WAITING_HUMAN' and review['completedActivities'] == 0
+    assert review['userAction']['code'] == 'REVIEW_AND_INTEGRATE_VIDEOS'
+    assert f"cycleId={cycle['id']}" in review['userAction']['actionUrl']
+    assert 'decisão humana' in review['userAction']['reason']
+    sql(f"UPDATE learning_sales_cycle_v1 SET stage='CAMPAIGN_VIDEO' WHERE id={cycle['id']}")
+    sample['status'] = 'APOLLO_BLOCKED'
+    http('/fixture/video-preflights', sample)
+    waiting = reconcile(run)
     assert http('/fixture/experiments/91001/state') == dict(status='PLANNED', runCount=0, campaignCount=0)
-    result = dict(sqlChecks=sql_checks,restChecks=8,externalCalls=0,cycle=cycle['id'],processUrl=process_path(cycle),action=blocked['userAction'])
+    result = dict(sqlChecks=sql_checks,restChecks=24,externalCalls=0,cycle=cycle['id'],processUrl=process_path(cycle),action=waiting['userAction'])
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

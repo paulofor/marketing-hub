@@ -79,6 +79,12 @@ export interface SalesVideoJob {
   auditSnapshotJson?: string | null;
   commercialReadinessStatus?: "READY" | "BLOCKED" | null;
   commercialReadinessBlockers?: string[];
+  deliveryPreparation?: {
+    status: "AVAILABLE" | "PROCESSING" | "READY" | "UNAVAILABLE";
+    jobId?: number | null;
+    captionText?: string | null;
+    reason?: string | null;
+  } | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -184,6 +190,7 @@ export interface RequestSalesVideoPostProductionPayload {
   sourceVideoUrl?: string;
   voiceOverScript?: string;
   captionText: string;
+  deliveryOnly?: boolean;
 }
 
 export interface RequestSalesVideoMontagePayload {

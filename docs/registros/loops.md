@@ -4049,6 +4049,14 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   mas o gate tratou “sem revelar interface legível” como ordem para inserir interface. O detector
   agora bloqueia somente verbos positivos de geração de texto e aceita proibições explícitas; teste
   protege simultaneamente os dois sentidos antes de qualquer chamada paga.
+- **Recorrência em 14/09/2026, Vega #92:** o job 21240 (ciclo audiovisual 19) foi bloqueado
+  antes de Runway por “sem apontar, celebrar, depor ou mostrar tela, logo…”. A remoção da
+  pontuação e a janela curta da negação deixavam “mostrar” fora da proibição. Evento 79184
+  preserva a resposta; o sucesso 21237/evento 79086 permite comparar o mesmo fluxo.
+  O classificador agora mantém pontuação, reconhece listas explicitamente negadas e
+  avalia separadamente outras ordens positivas. Replays dos dois planos e testes de
+  contraste/ponto/outra proibição impedem liberar “não mostrar texto; inserir logo”.
+  Matriz e evidências: [continuidade da produção](../homologacao/vega-producao-apos-preflight-v1.md).
 - **Recorrência operacional em 2026-09-03:** o deploy que introduziu o preflight Runway construiu a
   imagem do executor, mas parou antes da aplicação porque o diretório legado da credencial OpenAI
   continha dados e `rmdir` recusou removê-lo. Como somente a revisão global do APP era persistida, o
@@ -5132,6 +5140,31 @@ REST/MySQL em `infra/testing/video-finance/validate-video-preflight.py` e navega
 cobrem segregação, persistência, pausa e ausência de consumo. A configuração externa
 continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
 
+### Recorrência após planejamento de Apolo — 14/09/2026
+
+No mesmo Vega/#92/ciclo 2, o MCP confirmou produção 19/job 21240 interrompida por
+`APOLLO_STORYBOARD_BLOCKED`, enquanto o pai 75/run 4 mostrava `WAITING_ACTIVITY`
+sem ação. A projeção tratava somente estados de preflight e descartava
+`APOLLO_BLOCKED`. Agora a falha persistida aparece com projeto e referência de
+job, independentemente do snapshot anterior. Sucesso ou tentativa nova ativa
+suprime o bloqueio histórico; leitura não repete trabalho. Contratos de backend,
+REST/MySQL, card e contexto/navegação em três dispositivos previnem recorrência.
+Evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
+
+## LOOP-APOLO-HTTP-COMO-STORYBOARD — diagnóstico em 14/09/2026
+
+- Vega/ciclo audiovisual 21/job 21241 recebeu HTTP 429 antes de chamar Runway.
+  MCP preservou o stack trace, mas o cliente perdeu o corpo e informou rejeição
+  do storyboard. Os sucessos 21237/21240 contradizem incompatibilidade permanente
+  do modelo. Sem corpo, não classificar o 429 histórico como quota ou Flex.
+- Correção: auditoria por tentativa antes/depois da chamada, códigos de integração
+  separados, no máximo três envios para rejeição temporária explicitamente
+  identificada, Retry-After respeitado e nenhum retry implícito de transporte.
+  Quota, autenticação, códigos desconhecidos ou resposta ambígua continuam bloqueados.
+- Prevenção: `ApolloPlanningAiClientTest` com HTTP local, replay do callback no
+  `ApolloStoryboardPlannerTest`, teste do pai e matriz completa. Modelo, Flex,
+  gates e orçamento não são alterados para obter sucesso.
+
 ## LOOP-IRIS-PRODUTO-VALIDADO-SEM-EXPERIMENTO — continuidade privada ausente
 
 - **Confirmado em 13/09/2026:** Mira/produto 10, processo 63/v7, cadeia 14. A tela
@@ -5235,3 +5268,108 @@ continua dependente de acesso à conta; nenhuma aprovação foi fabricada.
   sucesso e bloqueio revisável no executor, com `models` dentro de objeto. A matriz
   passa a executar o callback exato da imagem no service real do backend, além
   dos doubles HTTP; não aceitar retorno 204 simulado como prova dessa integração.
+
+
+### Continuidade de LOOP-BPM-DECISAO-HUMANA-COMO-EXECUCAO — consulta de vídeo encerrada
+
+- Confirmado em 13/09/2026 por UI, MCP e código: Vega/#92, ciclos 15/16,
+  `PROVIDER_PREFLIGHT_ONLY_COMPLETED`, zero tarefas ou jobs. O processo pai
+  permanecia em `WAITING_ACTIVITY`, sem comando de solicitação de produção.
+- A consulta termina corretamente sem gerar nem reservar. A orientação do pai
+  deve explicar essa diferença e abrir o projeto exato para o comando governado,
+  inclusive após o snapshot vencer. Preflight/Plutus/Apolo ativos não oferecem
+  disparo duplicado. Nenhuma leitura cria gasto ou aprovação.
+- Prevenção: `ProcessRunVideoGuidanceTest`, API/MySQL com estado persistido,
+  contexto copiado e navegação em desktop/iPhone/Pixel.
+
+## LOOP-APOLO-QUATRO-CORTES-CONTRA-SCHEMA-CINCO
+
+- Identificado localmente em 13/09/2026 antes de nova geração: os projetos de
+  quinze segundos recebem quatro cortes do backend, mas o schema versionado e
+  `ApolloStoryboardPlanner.validatePrerequisites` exigem cinco. A produção
+  histórica bem-sucedida de Product UGC segue outra receita; não contradiz a falha.
+- Causa: o teste entre módulos conferia somente o request do preflight, sem
+  consumir os metadados de produção no planejador do executor. O backend agora
+  preserva cinco funções comerciais em quinze segundos e nos mesmos dois clipes.
+- Não reduzir o mínimo do schema nem remover prova/CTA para fazer o gate passar.
+  `VerifyWorker.java` executa o planejador real com os metadados exportados pelo
+  backend e resposta de IA simulada, sem chamadas externas.
+- Matriz e evidências: `docs/homologacao/vega-producao-apos-preflight-v1.md`.
+
+### LOOP-APOLO-ROUTER-SEM-FINALIZACAO-PDE
+
+- 13/09/2026, Vega, produto 4/ciclo 2/experimento 92: revisão local do caminho completo mostrou
+  que Router gerava clipes brutos sem compor a prova privada nem disparar acabamento; Product UGC
+  já tinha pós-produção própria. Ciclo ligado somente ao bruto também ocultava falha do filho.
+- Causa: o contrato de finalização e a elegibilidade reconheciam só Product UGC/montagem.
+- Correção: prova privada explícita validada contra homologação técnica da versão exata, hash
+  conferido antes de gasto e composição, acabamento canônico do Router e acompanhamento do filho.
+- Regressões: VideoProductProofServiceTest, PdeProductProofOverlayTest (FFmpeg real na homologação),
+  SalesVideoJobServiceTest, SalesVideoAssetControllerTest e persistência do campo no Estúdio.
+- Cânone: apollo-plutus-video-production-canon.v1.md. Nenhuma prova de teste libera campanha.
+
+## LOOP-ESTUDIO-BRIEFING-SEM-ADICAO-DE-CENA
+
+- **Causa confirmada (13/09/2026):** `updateScenePrompt` substitui quebras de linha
+  por espaços e o editor só renderizava as cenas já persistidas. Um plano revisado
+  de cinco cortes não podia ser salvo a partir do briefing histórico de quatro.
+- **Proteção:** controle explícito de adicionar cena, sem preset ou novo projeto;
+  PATCH oficial preserva campos e não inicia produção. Manter o limite do editor.
+- **Contrato de regressão:** `AudioVideoStudioPage.test.tsx` e
+  `frontend/e2e/video-preflight-guidance-responsive.mjs` devem partir de quatro
+  cenas, salvar a quinta e reabrir em desktop e celulares, sem chamada paga.
+- **Registro:** `docs/homologacao/vega-producao-apos-preflight-v1.md`.
+
+## LOOP-VIDEO-ACABAMENTO-SEM-HLS-E-PAPEL-INCORRETO — 2026-09-14
+
+- **Sintoma:** MP4 final pronto, processo não avança: HLS ausente e anúncio social
+  cadastrado como demonstração. Vega, produto 4, experimento 92, ciclo 2, job 21238.
+- **Causa confirmada:** uploader terminava em MP4/VTT sem produzir manifesto;
+  sincronização reconhecia INSTAGRAM/FACEBOOK mas não SOCIAL_REELS_STORIES,
+  usando LANDING_HERO como fallback. Teste anterior terminava antes do upload.
+- **Correção sistêmica:** HLS obrigatório na entrega final e callback; mapeamento
+  único antes do preflight e na sincronização. Recuperação com hashes dos bytes
+  existentes, sem repetir render/TTS, preserva ativo e histórico financeiro.
+- **Prevenção:** contrato completo provider → uploader HTTP → segmentos/manifesto
+  → callback → papel e ativo; teste de recuperação sem IA, idempotência, tenant,
+  falha de empacotamento e reprodução HLS/MP4 desktop/iPhone/Pixel. Ver
+  `docs/homologacao/vega-producao-apos-preflight-v1.md` e cânone do Estúdio.
+- **Extensão confirmada:** bucket sem CORS (`NoSuchCORSConfiguration`) impede
+  leitura HLS por JavaScript mesmo com MP4 público. A matriz deve reproduzir
+  aplicativo e mídia em origens diferentes; configuração de leitura é incremental,
+  somente para origens operacionais/aprovadas, com conferência e rollback.
+
+## LOOP-VIDEO-NARRACAO-FALHA-SEM-AUDITORIA-E-RETORNO — 2026-09-14
+
+- **Confirmado:** Vega/#92, bruto 21242 concluído e acabamento 21243 bloqueado por
+  15,552 s de voz em um vídeo de 15 s. O gate temporal funcionou; as cinco respostas
+  de voz ficaram apenas em arquivos temporários apagados na falha. A montagem do
+  anúncio 21238 havia passado pelo mesmo gate, portanto não cabe removê-lo.
+- **Causa adicional:** o ciclo só acompanhava o primeiro filho; uma recuperação do
+  bruto não substituía a referência ao filho falho. Sem lock de leitura atual, o
+  snapshot REPEATABLE READ também pode esconder um filho recém-criado concorrente.
+- **Correção:** persistir respostas TTS antes dos gates finais e no caminho de falha,
+  impedir sucesso sem recibo, reutilizar o bruto e acompanhar somente o filho falho
+  correspondente. Serializar solicitações e deduplicar trabalho ativo sem alterar gates.
+- **Prevenção:** PostProductionVideoProviderTest, VideoJobProcessorTest,
+  VideoAssetUploaderTest, SalesVideoJobServiceTest e VerifyFinalizationLock em
+  MySQL 5.7 segregado. A matriz inclui cinco trechos, prova, voz sintética, FFmpeg,
+  MP4/HLS e três dispositivos; voz sintética não comprova naturalidade da voz real.
+- **Evidências:** `docs/homologacao/vega-producao-apos-preflight-v1.md`. Os binários
+  históricos descartados não são declarados recuperados e o custo não vira zero.
+
+## LOOP-VIDEO-CTA-COMO-DEFEITO-VISUAL — 2026-09-14
+
+- **Confirmado na recuperação de Vega:** a página de acabamento classificava os jobs
+  21242 e 21239 como luz oscilando porque qualquer ocorrência de `cta` acionava uma
+  regra fixa. Prompts com `sem flicker` e IDs semelhantes a #5/#8 também geravam
+  diagnósticos; o nome VEO podia gerar aprovação sem inspeção.
+- **Histórico comparado:** `docs/registros/sales-video.md` já relatava esse rótulo no
+  job 20454. O relato do rótulo na tela não é prova de medição de oscilação. Os jobs
+  atuais não contêm uma reprovação visual persistida que sustente esse aviso.
+- **Correção:** remover inferência visual por texto/ID/provider, exibir falhas técnicas
+  registradas e distinguir estabilidade medida de revisão visual completa. Ausência
+  de evidência permanece pendente, sem recomendar nova geração paga por palavra-chave.
+- **Prevenção:** testes do helper incluem CTA, negações, IDs, providers, evidência
+  incompleta e reprovação real. A matriz local abre a tela em desktop/iPhone/Pixel e
+  solicita somente acabamento simulado do bruto correto, sem provider externo.

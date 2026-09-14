@@ -42,6 +42,10 @@ public class SalesVideoJobDto {
   private String auditSnapshotJson;
   private String commercialReadinessStatus;
   private List<String> commercialReadinessBlockers;
+  private DeliveryPreparation deliveryPreparation;
   private Instant createdAt;
   private Instant updatedAt;
+
+  /** Transporta a decisão do comando de entrega como parte do contrato existente do job. */
+  public record DeliveryPreparation(String status, Long jobId, String captionText, String reason) {}
 }

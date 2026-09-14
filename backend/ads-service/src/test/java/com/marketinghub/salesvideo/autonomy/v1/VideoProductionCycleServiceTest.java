@@ -344,6 +344,33 @@ class VideoProductionCycleServiceTest {
     project.setTargetChannel("INSTAGRAM");
     project.setFormat("VERTICAL_9_16");
     project.setProviderPlan("Provider escolhido no Estudio: Runway Gen-4.5 " + provider + ".");
+    if (provider.equals("(RUNWAY)")) {
+      project.setReferencePerformanceUri("internal://agent-tasks/91004/visual-evidence/91005");
+      project.setCaptionPlan("Exemplo local | Veja o ajuste");
+      var proofService =
+          org.mockito.Mockito.mock(
+              com.marketinghub.salesvideo.service.VideoProductProofService.class);
+      when(proofService.resolve(project))
+          .thenReturn(
+              java.util.Map.of(
+                  "contractVersion",
+                  "PDE_PRIVATE_VIDEO_PROOF_V1",
+                  "sha256",
+                  "proof-fixture-sha",
+                  "tenantId",
+                  "default",
+                  "projectId",
+                  7L,
+                  "productId",
+                  76L,
+                  "experimentId",
+                  88L,
+                  "commercialEvidenceClaimed",
+                  false,
+                  "contentPath",
+                  "/api/sales-videos/projects/7/product-proof"));
+      service.setProductProofService(proofService);
+    }
     SalesVideoJobDto job = new SalesVideoJobDto();
     job.setId(321L);
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
@@ -401,12 +428,28 @@ class VideoProductionCycleServiceTest {
     assertThat(metadata.path("providerClipDurationSeconds").asInt()).isEqualTo(10);
     assertThat(metadata.path("sceneCount").asInt()).isEqualTo(2);
     assertThat(metadata.path("targetDurationSeconds").asInt()).isEqualTo(15);
+    assertThat(metadata.path("cut_plan")).hasSize(5);
+    assertThat(result.editCutCount()).isEqualTo(5);
+    assertThat(metadata.path("cut_plan").findValuesAsText("role"))
+        .containsExactly("HOOK_DOR", "MECANISMO", "RESULTADO", "PROVA", "CTA");
+    assertThat(
+            metadata.path("cut_plan").findValues("duration_seconds").stream()
+                .mapToInt(com.fasterxml.jackson.databind.JsonNode::asInt)
+                .sum())
+        .isEqualTo(15);
     assertThat(metadata.path("assemblyRequired").asBoolean()).isTrue();
     assertThat(metadata.path("publicationAllowed").asBoolean()).isFalse();
     assertThat(result.knownCostUsd()).isEqualByComparingTo("0");
     assertThat(result.budgetLimitUsd()).isEqualByComparingTo("8");
     assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_ROUTER");
     if (provider.equals("(RUNWAY)")) {
+      assertThat(metadata.at("/post_production/product_proof/sha256").asText())
+          .isEqualTo("proof-fixture-sha");
+      assertThat(metadata.at("/premiumFinalization/enabled").asBoolean()).isTrue();
+      assertThat(metadata.at("/premiumFinalization/voiceOverScript").asText())
+          .isEqualTo("Exemplo local Veja o ajuste");
+      assertThat(metadata.at("/technicalQualityGate/captionMustMatchNarration").asBoolean())
+          .isTrue();
       var path = java.nio.file.Path.of("target/runway-clip-contract.json");
       java.nio.file.Files.createDirectories(path.getParent());
       mapper
@@ -701,8 +744,31 @@ class VideoProductionCycleServiceTest {
         .experimentId(88L)
         .salesVideoProfileId(13L)
         .title("MUSA v7")
+        .targetChannel("SOCIAL_REELS_STORIES")
         .targetDurationSeconds(15)
         .build();
+  }
+
+  /** Rejeita canal ambíguo antes de qualquer preflight ou tarefa paga. */
+  @Test
+  void shouldRejectUnknownChannelBeforeSpending() {
+    VideoProject project = project();
+    project.setTargetChannel("PDE_AND_SOCIAL");
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.create(
+                    new VideoProductionCycleContracts.CreateRequest(
+                        7L,
+                        new BigDecimal("8"),
+                        "FINAL_CAMPAIGN",
+                        "Teste",
+                        "Validar",
+                        "fixture@sandbox.local")))
+        .hasMessageContaining("canal único");
+    verify(providerPreflightService, never()).open(any(), any());
+    verify(taskService, never()).createGateByAgent(any(), any());
+    verify(repository, never()).save(any());
   }
 
   /** Cria um projeto premium reutilizável com as duas referências governadas. */

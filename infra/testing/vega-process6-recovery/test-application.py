@@ -57,6 +57,22 @@ class ApplicationContract(unittest.TestCase):
         result = application.plan(self.current, self.config, self.image)
         self.assertNotIn('BACKEND_SECRET', result['services']['backend']['environment'])
 
+    def test_video_executor_preserves_runtime_and_limits_scope(self):
+        """Preserva segredo e volume do executor sem selecionar serviço adjacente."""
+        self.current['Config']['Labels']['com.docker.compose.service'] = 'video-management'
+        self.config['services']['video-management'] = dict(self.config['services']['backend'], container_name='marketinghub-video-management')
+        result = application.plan(self.current, self.config, 'marketing-hub/video-management:vega-cycle6-012345abcdef', 'video-management')
+        self.assertEqual(['video-management'], list(result['services']))
+        self.assertEqual('fixture$value', result['services']['video-management']['environment']['TOKEN'])
+        self.assertEqual(['local:/data'], result['services']['video-management']['volumes'])
+
+    def test_allows_only_rollback_with_same_service_and_revision_format(self):
+        """Mantém o retorno operacional disponível dentro do mesmo escopo autorizado."""
+        result = application.plan(self.current, self.config, self.image + '-rollback')
+        self.assertEqual(self.image + '-rollback', result['services']['backend']['image'])
+        with self.assertRaises(ValueError):
+            application.plan(self.current, self.config, 'unrelated:rollback')
+
     def test_rejects_different_container(self):
         self.config['services']['backend']['container_name'] = 'different'
         with self.assertRaises(ValueError):

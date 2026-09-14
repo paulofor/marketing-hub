@@ -61,7 +61,9 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
     this.projectRepository = projectRepository;
   }
 
-  /** Propaga o asset final, poster, duracao, custo e metadata para os videos vinculados ao job. */
+  /**
+   * Propaga o acabamento ou recupera a entrega preservando o ativo comercial e o custo anterior.
+   */
   @Override
   public void syncCompletedRender(
       SalesVideoJob job, JobCompletionRequest request, Integer durationSeconds, String resolution) {
@@ -70,6 +72,17 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
     }
     List<ExperimentVideoAsset> videoAssets = repository.findBySalesVideoJobId(job.getId());
     GovernedStudioContext context = resolveGovernedStudioContext(job).orElse(null);
+    boolean deliveryOnly = readMetadata(job).path("deliveryOnly").asBoolean();
+    if (videoAssets.isEmpty() && deliveryOnly && job.getRetryOfJob() != null && context != null) {
+      videoAssets =
+          repository.findBySalesVideoJobId(job.getRetryOfJob().getId()).stream()
+              .filter(
+                  asset ->
+                      asset.getExperiment() != null
+                          && context.experimentId().equals(asset.getExperiment().getId()))
+              .toList();
+      videoAssets.forEach(asset -> asset.setSalesVideoJob(job));
+    }
     if (videoAssets.isEmpty()) {
       videoAssets =
           createFinalExperimentAsset(job, request, durationSeconds, context).stream().toList();
@@ -85,6 +98,12 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
                         job.getProviderName(), job.getProviderName(), durationSeconds, resolution));
     for (ExperimentVideoAsset videoAsset : videoAssets) {
       applyCompletedRender(videoAsset, job, request, durationSeconds, costUsd);
+      if (context != null && videoAsset.getReviewStatus() != ExperimentVideoReviewStatus.APPROVED) {
+        projectRepository
+            .findById(context.videoProjectId())
+            .filter(project -> sameTenant(project, job))
+            .ifPresent(project -> reconcileSlot(videoAsset, project, job));
+      }
     }
     repository.saveAll(videoAssets);
     concludeGovernedStudioCycle(job, context);
@@ -268,18 +287,41 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
     return project.getTenantId() != null && project.getTenantId().equals(job.getTenantId());
   }
 
-  /** Resolve o papel do vídeo pela intenção persistida no projeto, sem depender do ID do Vega. */
+  /** Aplica o mesmo mapeamento validado antes do preflight, incluindo o canal social do Estúdio. */
   private ExperimentVideoSlot resolveSlot(VideoProject project) {
-    String channel = Optional.ofNullable(project.getTargetChannel()).orElse("").toUpperCase();
-    String stage = Optional.ofNullable(project.getFunnelStage()).orElse("").toUpperCase();
-    if (channel.contains("INSTAGRAM")
-        || channel.contains("FACEBOOK")
-        || channel.contains("META")
-        || channel.contains("TIKTOK")
-        || stage.contains("AD")) {
-      return ExperimentVideoSlot.AD;
+    return ExperimentVideoSlot.valueOf(
+        com.marketinghub.salesvideo.service.VideoProjectFunnelRole.resolve(project).name());
+  }
+
+  /** Corrige papel ainda pendente e preserva no ativo a origem e o motivo da reconciliação. */
+  private void reconcileSlot(ExperimentVideoAsset asset, VideoProject project, SalesVideoJob job) {
+    ExperimentVideoSlot expected = resolveSlot(project);
+    if (asset.getSlot() == expected) return;
+    try {
+      var audit = OBJECT_MAPPER.createObjectNode();
+      audit.put("previousSlot", asset.getSlot() == null ? null : asset.getSlot().name());
+      audit.put("resolvedSlot", expected.name());
+      audit.put("projectId", project.getId());
+      audit.put("targetChannel", project.getTargetChannel());
+      audit.put("jobId", job.getId());
+      audit.put("reason", "CANONICAL_PROJECT_CHANNEL");
+      var response = OBJECT_MAPPER.readTree(asset.getResponseJson());
+      if (!(response instanceof com.fasterxml.jackson.databind.node.ObjectNode object)) {
+        throw new IllegalArgumentException("Resposta do acabamento não contém objeto auditável.");
+      }
+      object.set("commercial_role_reconciliation", audit);
+      asset.setResponseJson(OBJECT_MAPPER.writeValueAsString(object));
+      asset.setSlot(expected);
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao reconciliar papel do vídeo; assetId={} jobId={} projectId={}",
+          asset.getId(),
+          job.getId(),
+          project.getId(),
+          ex);
+      throw new IllegalStateException(
+          "Não foi possível preservar a auditoria do papel comercial.", ex);
     }
-    return ExperimentVideoSlot.LANDING_HERO;
   }
 
   /** Converte o formato editorial do projeto em proporção de mídia. */
@@ -352,7 +394,10 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
     repository.saveAll(videoAssets);
   }
 
-  /** Aplica os campos auditaveis do render concluido em um ativo de experimento. */
+  /**
+   * Aplica a entrega técnica sem apagar custos anteriores quando os bytes apenas são
+   * reaproveitados.
+   */
   private void applyCompletedRender(
       ExperimentVideoAsset videoAsset,
       SalesVideoJob job,
@@ -374,7 +419,7 @@ public class ExperimentVideoAssetJobSyncService implements SalesVideoCompletedRe
     if (hasAudio != null) {
       videoAsset.setHasAudio(hasAudio);
     }
-    if (costUsd != null) {
+    if (costUsd != null && !readMetadata(job).path("deliveryOnly").asBoolean()) {
       videoAsset.setCost(costUsd);
     }
     resolveAudioCost(job, request).ifPresent(videoAsset::setAudioCost);

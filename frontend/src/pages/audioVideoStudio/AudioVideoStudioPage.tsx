@@ -40,6 +40,7 @@ import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
+import { useRequestSalesVideoPostProduction } from "../../api/salesVideo/useRequestSalesVideoPostProduction";
 import {
   useCreateVideoProductionCycle,
   useCreateVideoProviderPreflight,
@@ -1289,6 +1290,14 @@ export default function AudioVideoStudioPage() {
     });
   };
 
+  const addScenePrompt = () => {
+    setBriefing((current) => {
+      const prompts = current.scenePlan.split("\n");
+      if (prompts.length >= MAX_CINEMATIC_SCENES) return current;
+      return { ...current, scenePlan: [...prompts, ""].join("\n") };
+    });
+  };
+
   const applyPreset = (preset: StudioPreset) => {
     setBriefing(preset.briefing);
     setSaveFeedback("");
@@ -1616,11 +1625,16 @@ export default function AudioVideoStudioPage() {
     [linkedJobsQuery.data],
   );
   const renderedAssetQuery = useAsset(renderedJob?.assetId);
+  const [deliveryFailure, setDeliveryFailure] = useState(false);
+  const prepareDelivery = useRequestSalesVideoPostProduction(
+    renderedJob?.id,
+    briefing.productId,
+    renderedJob?.profileId,
+  );
+  const delivery = renderedJob?.deliveryPreparation;
+  const deliveryPending = delivery?.status === "PROCESSING";
   const renderedAssetUrl =
-    renderedJob?.streamPlaybackUrl?.trim() ||
-    renderedAssetQuery.data?.publicUrl ||
-    renderedAssetQuery.data?.url ||
-    "";
+    renderedAssetQuery.data?.publicUrl || renderedAssetQuery.data?.url || "";
 
   return (
     <div className="audio-video-studio-page">
@@ -2362,6 +2376,20 @@ export default function AudioVideoStudioPage() {
                         />
                       </label>
                     ))}
+                    <button
+                      type="button"
+                      className="audio-video-studio-page__secondary-action"
+                      onClick={addScenePrompt}
+                      disabled={
+                        selectedScenePrompts.length >= MAX_CINEMATIC_SCENES ||
+                        isSavingProject
+                      }
+                    >
+                      Adicionar cena
+                    </button>
+                    <small>
+                      Salve o plano atualizado antes de solicitar a produção.
+                    </small>
                   </fieldset>
                 </div>
                 <div className="audio-video-studio-page__panel">
@@ -3115,6 +3143,30 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
+              {selectedProvider.providerName !== "RUNWAY_PRODUCT_UGC" &&
+              selectedProvider.providerName !== "RUNWAY_ACT_TWO" ? (
+                <article className="audio-video-studio-page__project-card">
+                  <strong>Prova real do PDE na finalização</strong>
+                  <p>
+                    Use uma captura homologada da mesma versão. Ela será
+                    inserida nos cortes de mecanismo, resultado e prova, com voz
+                    e legendas. A captura continua privada.
+                  </p>
+                  <label>
+                    Referência da captura homologada
+                    <input
+                      value={briefing.referencePerformanceUri}
+                      onChange={updateBriefing("referencePerformanceUri")}
+                      placeholder="Referência interna da captura aprovada"
+                    />
+                  </label>
+                  <small>
+                    Uma captura de teste demonstra o funcionamento; não comprova
+                    resultado de cliente ou venda. A finalização continua
+                    sujeita às revisões independentes.
+                  </small>
+                </article>
+              ) : null}
               {selectedProvider.providerName === "RUNWAY_ACT_TWO" ||
               selectedProvider.providerName === "RUNWAY_PRODUCT_UGC" ? (
                 <article className="audio-video-studio-page__project-card">
@@ -3641,6 +3693,52 @@ export default function AudioVideoStudioPage() {
                 >
                   Abrir MP4
                 </a>
+                {renderedJob.streamPlaybackUrl ? (
+                  <a
+                    href={renderedJob.streamPlaybackUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    HLS preparado para reprodução
+                  </a>
+                ) : delivery?.status === "AVAILABLE" || deliveryPending ? (
+                  <>
+                    <button
+                      type="button"
+                      className="audio-video-studio-page__secondary-action"
+                      disabled={prepareDelivery.isPending || deliveryPending}
+                      onClick={async () => {
+                        setDeliveryFailure(false);
+                        try {
+                          await prepareDelivery.mutateAsync({
+                            requestedBy: tenantContext.userEmail,
+                            deliveryOnly: true,
+                            captionText: delivery?.captionText || "",
+                          });
+                          await linkedJobsQuery.refetch();
+                        } catch {
+                          setDeliveryFailure(true);
+                        }
+                      }}
+                    >
+                      {prepareDelivery.isPending || deliveryPending
+                        ? "Preparando reprodução…"
+                        : "Preparar reprodução HLS"}
+                    </button>
+                    <p>
+                      Preserva este vídeo e sua voz. A preparação não inicia
+                      nova geração por IA nem aprova o uso.
+                    </p>
+                    {prepareDelivery.isError || deliveryFailure ? (
+                      <p role="alert">
+                        Não foi possível preparar a reprodução. Confira a
+                        integridade do arquivo e tente novamente.
+                      </p>
+                    ) : null}
+                  </>
+                ) : delivery?.reason ? (
+                  <p>{delivery.reason}</p>
+                ) : null}
               </div>
             </article>
           ) : (

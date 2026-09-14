@@ -26,6 +26,21 @@ public class ProcessRunGuidance {
       return null;
     var cycle = manualCycle(run);
     if (cycle == null) return null;
+    if ("VIDEO_APPROVAL".equals(cycle.getStage()))
+      return new ProcessRunUserAction(
+          "REVIEW_AND_INTEGRATE_VIDEOS",
+          "Revisar e integrar os dois vídeos",
+          "A produção foi registrada. Conclua as revisões independentes, a decisão humana de uso e a integração dos vídeos desta versão antes da homologação.",
+          "Operador do ciclo · Psique, Têmis e aprovação humana",
+          "Revisar vídeos e integração",
+          "/business-process-chains/learning-cycles?chainId="
+              + cycle.getChainDefinitionId()
+              + "&productId="
+              + cycle.getProductId()
+              + "&cycleId="
+              + cycle.getId(),
+          "Registre somente as evidências verificadas. A aprovação de uso e a integração não autorizam campanha, cobrança ou gasto de mídia.",
+          "internal://learning-cycles/" + cycle.getId());
     if (!"VIDEO_BRIEF".equals(cycle.getStage())) return videoGuidance.resolve(cycle);
     var authorization = videoBudget.current(cycle);
     if (authorization == null)
@@ -58,7 +73,8 @@ public class ProcessRunGuidance {
   public boolean awaitingInput(ProcessRun run) {
     var cycle = manualCycle(run);
     return cycle != null
-        && ("VIDEO_BRIEF".equals(cycle.getStage()) || videoGuidance.resolve(cycle) != null);
+        && (Set.of("VIDEO_BRIEF", "VIDEO_APPROVAL").contains(cycle.getStage())
+            || videoGuidance.resolve(cycle) != null);
   }
 
   /** Confere vínculo, versão e etapas elegíveis para orientar uma intervenção do operador. */
@@ -73,8 +89,8 @@ public class ProcessRunGuidance {
         || !Objects.equals(run.getSourceReference(), "experiment:" + cycle.getExperimentId()))
       throw new IllegalStateException("A pendência pertence a outro contexto de execução.");
     if (!"OPEN".equals(cycle.getStatus())
-        || !Set.of("VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO").contains(cycle.getStage()))
-      return null;
+        || !Set.of("VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "VIDEO_APPROVAL")
+            .contains(cycle.getStage())) return null;
     var definition = processes.findById(cycle.getProcessDefinitionId()).orElseThrow();
     return definition.getVersionNumber() >= 2 ? cycle : null;
   }

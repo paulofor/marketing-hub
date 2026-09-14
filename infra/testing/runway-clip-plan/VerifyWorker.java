@@ -2,6 +2,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.ProviderPreflightJob;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.service.provider.RunwayRouterRequestFactory;
+import com.marketinghub.videomanagement.client.ApolloPlanningAiClient;
+import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
+import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
+import com.marketinghub.videomanagement.service.ApolloStoryboardPlanner;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.web.reactive.function.client.WebClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -32,7 +38,60 @@ class VerifyWorker {
         || contract.path("metadata").path("publicationAllowed").asBoolean()) {
       throw new IllegalStateException("Duração final ou limite de publicação violados.");
     }
+    verifyPlanner(mapper, contract.path("metadata"));
     mapper.writerWithDefaultPrettyPrinter().writeValue(Path.of(args[1]).toFile(), requests);
     System.out.println("PASS: pending real → executor real → dois clipes de 10s/5s; nenhuma chamada externa.");
+  }
+
+  /** Consome os metadados exportados no planejador real, substituindo somente a resposta da IA. */
+  private static void verifyPlanner(ObjectMapper mapper, JsonNode metadata) throws Exception {
+    var properties = new VideoManagementProperties();
+    properties.getApolloPlanner().setEnabled(true);
+    var client = new ApolloPlanningAiClient(properties, WebClient.builder()) {
+      /** Simula a resposta e sua auditoria com cinco funções, sem acessar provedor ou credencial. */
+      @Override
+      public JsonNode plan(Long jobId, JsonNode request, java.util.function.Consumer<JsonNode> audit) {
+        var plan = mapper.createObjectNode();
+        var cuts = plan.putArray("cuts");
+        for (JsonNode original : metadata.path("cut_plan")) {
+          var cut = cuts.addObject();
+          cut.put("order", original.path("order").asInt());
+          cut.put("durationSeconds", original.path("duration_seconds").asInt());
+          cut.put("commercialRole", original.path("role").asText());
+          cut.put("narrativePhase", original.path("narrative_phase").asText());
+          cut.put("visualObjective", "Ação visual local " + original.path("order").asInt());
+          cut.put("continuityAnchor", "Mesma personagem e ambiente");
+          cut.put("reuseExistingMaterial", false);
+          cut.put("postProductionText", "Copy local aprovada");
+        }
+        var response = mapper.createObjectNode();
+        response.putArray("output").addObject().putArray("content").addObject()
+            .put("type", "output_text").put("text", plan.toString());
+        var interaction = mapper.createObjectNode().put("eventType", "APOLLO_PLANNING_HTTP")
+            .put("status", "RECEIVED").put("httpStatus", 200);
+        interaction.set("request", request);
+        interaction.put("rawResponse", response.toString());
+        audit.accept(interaction);
+        return response;
+      }
+    };
+    var jobNode = mapper.createObjectNode();
+    jobNode.put("id", 91001).put("profileId", 91001).put("jobType", "RENDER")
+        .put("providerName", "RUNWAY_ROUTER").put("metadataJson", metadata.toString());
+    var profileNode = mapper.createObjectNode();
+    profileNode.put("id", 91001).put("targetDurationSeconds", 15);
+    profileNode.putObject("latestScript").put("status", "APPROVED")
+        .put("scriptText", "Texto sintético aprovado").put("hookText", "Gancho local")
+        .put("ctaText", "Experimentar");
+    var job = mapper.treeToValue(jobNode, SalesVideoJob.class);
+    var profile = mapper.treeToValue(profileNode, SalesVideoProfile.class);
+    var result = new ApolloStoryboardPlanner(properties, mapper, client)
+        .planAndApprove(job, profile, (progress, status, message) -> {});
+    var audit = mapper.readTree(result.metadataJson());
+    if (!"APPROVED".equals(audit.path("apollo_planner_status").asText())
+        || audit.path("cut_plan").size() != 5 || audit.path("publicationAllowed").asBoolean()) {
+      throw new IllegalStateException("Contrato backend/planejador não habilita os cinco cortes seguros.");
+    }
+    System.out.println("PASS: metadados backend → planejador Apolo real → cinco cortes em quinze segundos.");
   }
 }

@@ -1,0 +1,61 @@
+{
+  "creativeRationale": "Storyboard vertical de 15 segundos, com cinco cortes de 3 segundos, para demonstração privada da v12 a uma participante adulta MUSA. A história parte da situação concreta de escolher peças, contextualiza ocasião e combinação, apresenta a descoberta do ajuste no artefato real, demonstra o meio-tuck da camisa branca na calça preta, confirma no próprio registro v12 a avaliação e o ajuste salvo e termina com o convite aprovado. Como há cinco cortes para sete beats, gancho e contexto convivem no corte 1, enquanto demonstração e transformação funcional convivem no corte 3; as fases dominantes avançam sem retrocesso de HOOK a CTA. A promessa permanece limitada a receber, aplicar, avaliar, salvar e retomar o primeiro ajuste, sem antes/depois, depoimento, satisfação atribuída, preço ou resultado humano. A captura homologada v12 é reutilizada entre 3 e 12 segundos; o apoio sintético serve apenas para enquadrar a abertura e o encerramento. Voz, legendas e o CTA “Ver meu primeiro ajuste MUSA” serão adicionados exclusivamente em pós-produção determinística, e a peça permanece privada e não autorizada para publicação.",
+  "researchApplicationRationale": "O cartão RI1-AF2ACDE03006 levou ao bloqueio explícito de personagem, peças, cenário, luz, eixo e estado da captura entre os cortes; por se referir a uma tecnologia em preview, não motivou troca de provider, mantendo-se a rota homologada Runway gen4.5. O RI1-AC85EF9A7C43 levou a manter a geração sem áudio e a separar, na pós-produção, voz, música e efeitos, priorizando a inteligibilidade da narração e sua correspondência com as legendas. O RI1-8EB0EABA1344 orientou cortes nas fronteiras das frases aprovadas e transições suaves de loudness, em vez de montagem guiada apenas por batida. Esses cartões são usados somente como orientação técnica e editorial, não como prova de demanda, venda, satisfação ou desempenho comercial.",
+  "appliedCardIds": [
+    "RI1-AF2ACDE03006",
+    "RI1-AC85EF9A7C43",
+    "RI1-8EB0EABA1344"
+  ],
+  "cuts": [
+    {
+      "order": 1,
+      "durationSeconds": 3,
+      "commercialRole": "HOOK_DOR",
+      "narrativePhase": "HOOK",
+      "visualObjective": "Em plano vertical médio e câmera fixa, a participante adulta sintética desliza a camisa branca e a calça preta para o centro entre outras peças e interrompe o movimento antes de combiná-las, estabelecendo a situação prática de escolha. Não gerar texto, interface, logo, depoimento ou reação de satisfação.",
+      "continuityAnchor": "Participante adulta sintética em roupa cotidiana, camisa branca e calça preta, cenário creme com acento vinho, luz difusa clara, câmera estável e movimento das peças da esquerda para a direita.",
+      "reuseExistingMaterial": false,
+      "postProductionText": "Narração e legenda determinísticas: “Escolha a ocasião e a combinação.” Nenhum texto será embutido no material gerado."
+    },
+    {
+      "order": 2,
+      "durationSeconds": 3,
+      "commercialRole": "MECANISMO",
+      "narrativePhase": "DISCOVERY",
+      "visualObjective": "Fazer um match cut no movimento lateral para a captura real homologada da v12, usando o recorte aprovado [370,20,700,880], e exibir somente o trecho existente em que ocasião e peças informadas conduzem ao ajuste. Preservar pixels e sequência originais, sem reconstruir interface ou inventar interação.",
+      "continuityAnchor": "A direção esquerda-direita e o eixo central do corte 1 continuam na entrada da captura; a mesma paleta envolve o enquadramento, e sessão, recorte e estado da v12 tornam-se a âncora até o corte 4.",
+      "reuseExistingMaterial": true,
+      "postProductionText": "Narração e legenda em pós, como início da frase aprovada: “Receba seu ajuste,”"
+    },
+    {
+      "order": 3,
+      "durationSeconds": 3,
+      "commercialRole": "RESULTADO",
+      "narrativePhase": "TRANSFORMATION",
+      "visualObjective": "Continuar a mesma captura real v12 até o trecho homologado que demonstra o meio-tuck da camisa branca na calça preta e encerrar com breve retenção no estado aplicado. A transformação é apenas funcional e visual, sem comparação antes/depois, gesto humano ou resultado adicional.",
+      "continuityAnchor": "Mesmo arquivo v12, recorte [370,20,700,880], eixo e estado temporal do corte 2; camisa branca e calça preta conectam a demonstração às peças apresentadas no hook.",
+      "reuseExistingMaterial": true,
+      "postProductionText": "Conclusão da narração e legenda em pós: “veja como aplicar e avalie.”"
+    },
+    {
+      "order": 4,
+      "durationSeconds": 3,
+      "commercialRole": "PROVA",
+      "narrativePhase": "PROOF",
+      "visualObjective": "Prosseguir sem salto na captura real v12 até o estado já registrado de avaliação de conforto e equilíbrio e do ajuste salvo, terminando com uma pausa de leitura de meio segundo. Não alterar o conteúdo, fabricar métrica ou atribuir satisfação à participante.",
+      "continuityAnchor": "Mesma sessão, recorte, pixels e progressão temporal da v12; o primeiro quadro parte exatamente do estado final do corte 3 e mantém o enquadramento neutro.",
+      "reuseExistingMaterial": true,
+      "postProductionText": "Narração e legenda determinísticas: “Salve para retomar.”"
+    },
+    {
+      "order": 5,
+      "durationSeconds": 3,
+      "commercialRole": "CTA",
+      "narrativePhase": "CTA",
+      "visualObjective": "Voltar por corte de correspondência ao mesmo ambiente sintético; a participante coloca a camisa branca e a calça preta juntas sobre o apoio e dá um passo lateral, deixando área negativa estável para a finalização. Encerrar sem apontar, celebrar, depor ou mostrar tela, logo, letras ou CTA gerados.",
+      "continuityAnchor": "Mesma participante, roupa cotidiana, peças, cenário creme e vinho, luz difusa, altura de câmera e sentido de movimento do corte 1; o gesto lateral conclui o arco sem sugerir satisfação.",
+      "reuseExistingMaterial": false,
+      "postProductionText": "Narração e legenda determinísticas: “Experimente o primeiro ajuste MUSA. Sem compra ou cobrança.” CTA inserido somente em overlay de pós-produção: “Ver meu primeiro ajuste MUSA”."
+    }
+  ]
+}

@@ -28,7 +28,7 @@ public class LearningCycleVideoPreflightFixtures {
     DATA.clear();
   }
 
-  /** Simula o resultado da consulta cuja segregação SQL tem teste de contrato separado. */
+  /** Simula consulta e produção interrompida cuja segregação SQL tem contrato separado. */
   @Bean
   VideoProductionCycleRepository videoProductions() {
     var repo = mock(VideoProductionCycleRepository.class);
@@ -55,6 +55,8 @@ public class LearningCycleVideoPreflightFixtures {
                           result.setId((Long) d.get("id"));
                           result.setVideoProjectId((Long) d.get("projectId"));
                           result.setStatus((String) d.get("status"));
+                          result.setLastFailedJobId((Long) d.get("lastFailedJobId"));
+                          result.setLastApolloFailureCode((String) d.get("lastApolloFailureCode"));
                           return result;
                         }));
     return repo;
@@ -90,6 +92,8 @@ public class LearningCycleVideoPreflightFixtures {
       var data = new HashMap<>(body);
       for (String key : List.of("id", "productId", "experimentId", "projectId"))
         data.put(key, ((Number) data.get(key)).longValue());
+      if (data.get("lastFailedJobId") instanceof Number jobId)
+        data.put("lastFailedJobId", jobId.longValue());
       if (!LearningCycleLocalApplication.EXPERIMENTS.containsKey(data.get("experimentId")))
         throw new IllegalArgumentException("Somente experimento local.");
       data.put("createdAt", Instant.parse((String) data.get("createdAt")));

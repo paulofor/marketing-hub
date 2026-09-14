@@ -14,5 +14,12 @@ public record JobCompletionPayload(SalesVideoStatus status,
                                    String metadataJson,
                                    BigDecimal costUsd,
                                    String message,
-                                   String detailsJson) {
+                                   String detailsJson,
+                                   String streamPlaybackUrl) {
+    /** Mantém compatibilidade com callbacks que não entregam streaming. */
+    public JobCompletionPayload(SalesVideoStatus status, Long assetId, Long posterAssetId, Long vttAssetId,
+                                String providerJobId, String metadataJson, BigDecimal costUsd,
+                                String message, String detailsJson) {
+        this(status, assetId, posterAssetId, vttAssetId, providerJobId, metadataJson, costUsd, message, detailsJson, null);
+    }
 }

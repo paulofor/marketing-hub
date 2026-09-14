@@ -23,9 +23,9 @@ def literal(value):
 
 def plan(current, config, image, service="backend"):
     """Seleciona o serviço existente e conserva os valores operacionais declarados no Compose."""
-    if service not in {'backend', 'frontend'}:
+    if service not in {'backend', 'frontend', 'video-management'}:
         raise ValueError('Serviço fora do escopo APP desta recuperação.')
-    if not re.fullmatch(rf'marketing-hub/{service}:vega-cycle6-[a-f0-9]{{12}}', image):
+    if not re.fullmatch(rf'marketing-hub/{service}:vega-cycle6-[a-f0-9]{{12}}(?:-rollback)?', image):
         raise ValueError('Imagem fora do escopo desta recuperação.')
     labels = current['Config']['Labels']
     if labels.get('com.docker.compose.service') != service:
@@ -63,7 +63,7 @@ def main():
     """Confere o Compose e a imagem antes de uma única recriação, ou executa apenas a pré-checagem."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', required=True)
-    parser.add_argument('--service', choices=['backend', 'frontend'], default='backend')
+    parser.add_argument('--service', choices=['backend', 'frontend', 'video-management'], default='backend')
     parser.add_argument('--compose-sha256', required=True)
     parser.add_argument('--check-only', action='store_true')
     args = parser.parse_args()
@@ -74,7 +74,7 @@ def main():
         raise ValueError('O Compose publicado não corresponde ao arquivo validado no repositório.')
     project = labels['com.docker.compose.project']
     workdir = labels['com.docker.compose.project.working_dir']
-    backend = current if args.service == 'backend' else read_json(['docker', 'inspect', 'marketinghub-backend'])[0]
+    backend = current if args.service in {'backend', 'video-management'} else read_json(['docker', 'inspect', 'marketinghub-backend'])[0]
     environment = runtime_environment(current, backend)
     config = read_json(['docker', 'compose', '-p', project, '-f', filenames[0], 'config', '--format', 'json'], cwd=workdir, env=environment)
     prepared = plan(current, config, args.image, args.service)
@@ -85,6 +85,9 @@ def main():
         print(json.dumps({'checked': True, 'services': list(prepared['services']), 'previousImageId': current['Image']}))
         return
     target = read_json(['docker', 'image', 'inspect', args.image])[0]
+    rollback_image = current['Config']['Image'] if args.image.endswith('-rollback') else args.image + '-rollback'
+    if not args.image.endswith('-rollback'):
+        subprocess.run(['docker', 'image', 'tag', current['Image'], rollback_image], check=True)
     subprocess.run(command + ['up', '-d', '--no-build', '--pull', 'never', '--no-deps', args.service], input=payload, env=environment, cwd=workdir, check=True)
     updated = read_json(['docker', 'inspect', 'marketinghub-' + args.service])[0]
     if updated['Image'] != target['Id']:
@@ -93,7 +96,7 @@ def main():
     for key, value in prepared['services'][args.service].get('environment', {}).items():
         if value is not None and after.get(key) != str(value):
             raise ValueError('A configuração operacional não foi preservada: ' + key)
-    print(json.dumps({'applied': True, 'image': args.image, 'imageId': updated['Image'], 'previousImageId': current['Image']}))
+    print(json.dumps({'applied': True, 'image': args.image, 'imageId': updated['Image'], 'previousImageId': current['Image'], 'rollbackImage': rollback_image}))
 
 
 if __name__ == '__main__':

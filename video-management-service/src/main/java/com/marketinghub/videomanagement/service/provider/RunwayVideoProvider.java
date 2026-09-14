@@ -126,7 +126,13 @@ public class RunwayVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Envia o prompt para Runway, aguarda conclusão, baixa o MP4 e devolve artefatos auditáveis. */
+    /** Confere a captura do PDE antes de consumir inclusive o planejador de IA. */
+    @Override
+    public void validateInput(SalesVideoJob job, SalesVideoProfile profile) {
+        new PdeProductProofOverlay(properties, WebClient.builder()).verify(readMetadata(job), job.id());
+    }
+
+    /** Confere a prova privada, gera clipes na Runway e devolve o MP4 bruto com auditoria. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
@@ -139,6 +145,7 @@ public class RunwayVideoProvider implements VideoProvider {
         if (RunwayProductUgcRequestFactory.PROVIDER_NAME.equals(normalize(job.providerName()))) {
             return renderProductUgc(job, jobMetadata, progressCallback);
         }
+        new PdeProductProofOverlay(properties, WebClient.builder()).verify(jobMetadata, job.id());
         List<Map<String, Object>> routerRequests = routerRequests(job, jobMetadata);
         boolean routed = !routerRequests.isEmpty();
         List<JsonNode> selectedRoutes = routed

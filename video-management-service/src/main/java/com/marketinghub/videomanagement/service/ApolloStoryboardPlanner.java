@@ -53,7 +53,7 @@ public class ApolloStoryboardPlanner {
         this.aiClient = aiClient;
     }
 
-    /** Planeja somente jobs autônomos de Apolo e bloqueia o provider se o gate não for aprovado. */
+    /** Audita o planejamento de jobs autônomos e bloqueia o provider diante de falha ou gate reprovado. */
     public SalesVideoJob planAndApprove(SalesVideoJob job,
                                         SalesVideoProfile profile,
                                         ProgressCallback progressCallback) {
@@ -71,7 +71,9 @@ public class ApolloStoryboardPlanner {
         progressCallback.onProgress(5, SalesVideoStatus.VIDEO_PROCESSING,
                 "Apolo está planejando o storyboard antes do gate de orçamento");
         ObjectNode request = buildRequest(job, profile, metadata);
-        JsonNode response = aiClient.plan(job.id(), request);
+        JsonNode response = aiClient.plan(job.id(), request, audit ->
+                progressCallback.onProgress(5, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Interação do planejador registrada: " + audit.path("status").asText(), audit.toString()));
         JsonNode plan = extractPlan(response);
         progressCallback.onProgress(8, SalesVideoStatus.VIDEO_PROCESSING,
                 "Apolo concluiu o planejamento criativo; gate determinístico pendente",
@@ -326,7 +328,7 @@ public class ApolloStoryboardPlanner {
                 return GateDecision.blocked("continuidade visual não definida");
             }
             if (!objectives.add(objective)) return GateDecision.blocked("cenas visualmente repetidas");
-            if (containsEmbeddedTextInstruction(objective)) {
+            if (containsEmbeddedTextInstruction(cut.path("visualObjective").asText())) {
                 return GateDecision.blocked("texto solicitado dentro do vídeo do provider");
             }
         }
@@ -436,17 +438,9 @@ public class ApolloStoryboardPlanner {
         return 12;
     }
 
-    /** Detecta ordens positivas de texto sem confundir proibições visuais com solicitação. */
+    /** Preserva a pontuação para distinguir ordens de texto e proibições coordenadas. */
     private boolean containsEmbeddedTextInstruction(String objective) {
-        String normalized = normalize(objective);
-        String withoutProhibitions = normalized.replaceAll(
-                "\\b(sem|nao|não|evitar)\\s+(?:[a-z0-9áàâãéêíóôõúç]+\\s+){0,3}"
-                        + "(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b",
-                " ");
-        return withoutProhibitions.matches(
-                ".*\\b(mostrar|exibir|incluir|aplicar|gerar|inserir|desenhar|revelar)\\b"
-                        + "(?:\\s+[a-z0-9áàâãéêíóôõúç]+){0,4}\\s+"
-                        + "\\b(texto|legenda|palavra|preco|logo|cta escrito|interface)\\b.*");
+        return EmbeddedTextInstructionGuard.isRequested(objective);
     }
 
     /** Normaliza texto para comparação de redundância e termos proibidos. */

@@ -12,6 +12,23 @@ tags:
   - name: ResearchIntelligence
     description: Catálogo global de cartões e roteamento contextual para os agentes do harness.
 paths:
+  /api/sales-videos/projects/{projectId}/product-proof:
+    get:
+      summary: Ler pixels da prova privada homologada para o projeto
+      description: Exige captura técnica aprovada do mesmo tenant, produto, experimento e versão. Não constitui evidência humana ou comercial.
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: PNG íntegro com Cache-Control no-store
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        '404': { description: Projeto ou captura indisponível para o tenant }
+        '409': { description: Contexto, versão ou homologação da captura inválidos }
   /api/research-intelligence/v1/catalog:
     get:
       tags: [ResearchIntelligence]

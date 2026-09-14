@@ -532,11 +532,14 @@ public class SalesVideoJobService {
     }
   }
 
-  /** Enfileira a finalização premium após a fonte visual governada concluir com sucesso. */
+  /**
+   * Enfileira voz, legenda e prova determinística quando a fonte governada solicita finalização.
+   */
   private void enqueuePremiumFinalization(SalesVideoJob job, String requestedJobMetadata) {
     if (job.getStatus() != SalesVideoStatus.VIDEO_READY
         || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(job.getProviderName())
-            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.getProviderName()))
+            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(job.getProviderName())
+            || "RUNWAY_ROUTER".equalsIgnoreCase(job.getProviderName()))
         || !StringUtils.hasText(requestedJobMetadata)) {
       return;
     }
@@ -699,17 +702,101 @@ public class SalesVideoJobService {
     return toDto(newJob);
   }
 
-  /** Cria um job de pós-produção a partir de um vídeo bruto já aprovado para visualização. */
+  private com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
+      productionCycleRepository;
+
+  /** Conecta a referência persistida do ciclo ao job que está realmente em acabamento. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  public void setProductionCycleRepository(
+      com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository repository) {
+    this.productionCycleRepository = repository;
+  }
+
+  /**
+   * Acompanha acabamento inicial ou correção do filho falho da mesma fonte, preservando tentativas
+   * posteriores.
+   */
+  private void trackGovernedFinalization(SalesVideoJob source, SalesVideoJob child) {
+    if (productionCycleRepository == null) return;
+    JsonNode metadata = readJobMetadata(source);
+    long cycleId = metadata.path("videoProductionCycleId").asLong();
+    if (cycleId <= 0) return;
+    productionCycleRepository
+        .findById(cycleId)
+        .filter(cycle -> canTrackFinalization(cycle.getSalesVideoJobId(), source))
+        .filter(
+            cycle ->
+                java.util.Objects.equals(
+                    cycle.getVideoProjectId(), metadata.path("videoProjectId").asLong()))
+        .filter(
+            cycle ->
+                java.util.Objects.equals(
+                    cycle.getExperimentId(), metadata.path("experimentId").asLong()))
+        .ifPresent(
+            cycle -> {
+              cycle.setSalesVideoJobId(child.getId());
+              cycle.setStatus("QUEUED_FOR_APOLLO");
+              cycle.setUpdatedAt(Instant.now());
+              productionCycleRepository.save(cycle);
+            });
+  }
+
+  /** Só substitui o filho falho cuja origem é exatamente o bruto reaproveitado. */
+  private boolean canTrackFinalization(Long currentJobId, SalesVideoJob source) {
+    if (java.util.Objects.equals(currentJobId, source.getId())) return true;
+    if (currentJobId == null) return false;
+    return jobRepository
+        .findById(currentJobId)
+        .filter(current -> current.getJobType() == SalesVideoJobType.POST_PRODUCTION)
+        .filter(current -> current.getStatus() == SalesVideoStatus.VIDEO_FAILED)
+        .filter(current -> current.getRetryOfJob() != null)
+        .filter(
+            current -> java.util.Objects.equals(current.getRetryOfJob().getId(), source.getId()))
+        .isPresent();
+  }
+
+  /**
+   * Serializa a finalização por fonte, preserva o bruto e impede processamento simultâneo
+   * duplicado.
+   */
   @Transactional
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
     SalesVideoJob sourceJob = loadJob(sourceJobId);
+    sourceJob = jobRepository.findByIdForUpdate(sourceJobId).orElseThrow();
+    Optional<SalesVideoJob> existing =
+        jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(sourceJobId);
+    if (request.isDeliveryOnly()) {
+      if (StringUtils.hasText(sourceJob.getStreamPlaybackUrl())) return toDto(sourceJob);
+      if (existing.isPresent()
+          && readJobMetadata(existing.get()).path("deliveryOnly").asBoolean()
+          && existing.get().getStatus() != SalesVideoStatus.VIDEO_FAILED)
+        return toDto(existing.get());
+      VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper);
+    }
     if (!isReusableRenderWithAsset(sourceJob)) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
           "Pós-produção exige vídeo pronto ou render curto com arquivo preservado.");
     }
     String sourceVideoUrl = resolveSourceVideoUrl(sourceJob, request.getSourceVideoUrl());
+    if (!request.isDeliveryOnly()
+        && existing.isPresent()
+        && existing.get().getJobType() == SalesVideoJobType.POST_PRODUCTION
+        && (existing.get().getStatus() == SalesVideoStatus.VIDEO_REQUESTED
+            || existing.get().getStatus() == SalesVideoStatus.VIDEO_PROCESSING)) {
+      JsonNode previous = readJobMetadata(existing.get());
+      if (java.util.Objects.equals(
+              previous.path("captionText").asText(null), request.getCaptionText())
+          && java.util.Objects.equals(
+              previous.path("voiceOverScript").asText(null), request.getVoiceOverScript())
+          && java.util.Objects.equals(previous.path("sourceVideoUrl").asText(null), sourceVideoUrl))
+        return toDto(existing.get());
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Esta fonte já possui finalização em execução. Aguarde o resultado antes de alterar o texto.");
+    }
+    validateFinalizationRecovery(sourceJob);
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
     SalesVideoJob postProductionJob =
         createJob(
@@ -723,19 +810,43 @@ public class SalesVideoJobService {
     postProductionJob.setRetryOfJob(sourceJob);
     postProductionJob.setRetryAttempt(sourceJob.getRetryAttempt() + 1);
     postProductionJob.setMetadataJson(
-        buildPostProductionMetadata(sourceJob, sourceVideoUrl, request));
+        request.isDeliveryOnly()
+            ? VideoFinalDeliveryContract.prepare(sourceJob, request, objectMapper)
+            : buildPostProductionMetadata(sourceJob, sourceVideoUrl, request));
     postProductionJob.setAuditSnapshotJson(
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
     jobRepository.save(postProductionJob);
     syncStudioCostLedger(postProductionJob, null, false);
+    trackGovernedFinalization(sourceJob, postProductionJob);
     registerEvent(
         sourceJob,
         SalesVideoJobEventType.RETRIED,
         sourceJob.getStatus(),
         sourceJob.getStatus(),
-        "Pós-produção solicitada por " + requestedBy,
+        (request.isDeliveryOnly()
+                ? "Preparação HLS sem nova geração solicitada por "
+                : "Pós-produção solicitada por ")
+            + requestedBy,
         "Job de pós-produção #" + postProductionJob.getId());
     return toDto(postProductionJob);
+  }
+
+  /** Impede recuperação paga de uma fonte cujo ciclo já avançou para outra tentativa. */
+  private void validateFinalizationRecovery(SalesVideoJob source) {
+    if (productionCycleRepository == null) return;
+    JsonNode metadata = readJobMetadata(source);
+    long cycleId = metadata.path("videoProductionCycleId").asLong();
+    if (cycleId <= 0) return;
+    var cycle = productionCycleRepository.findById(cycleId).orElse(null);
+    if (cycle == null
+        || !java.util.Objects.equals(
+            cycle.getVideoProjectId(), metadata.path("videoProjectId").asLong())
+        || !java.util.Objects.equals(
+            cycle.getExperimentId(), metadata.path("experimentId").asLong())
+        || !canTrackFinalization(cycle.getSalesVideoJobId(), source))
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "A fonte não corresponde à tentativa atual do ciclo. Consulte a finalização existente antes de solicitar outra.");
   }
 
   /** Permite reaproveitar montagem tecnicamente produzida que falhou apenas no gate de duração. */
@@ -838,13 +949,35 @@ public class SalesVideoJobService {
     }
   }
 
-  /** Converte job para DTO incluindo custo real ou estimado para a tela. */
+  /** Expõe custo, prontidão comercial e disponibilidade canônica do comando de entrega. */
   private SalesVideoJobDto toDto(SalesVideoJob job) {
     SalesVideoJobDto dto = jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
     CommercialReadiness readiness = assessCommercialReadiness(job);
     dto.setCommercialReadinessStatus(readiness.status());
     dto.setCommercialReadinessBlockers(readiness.blockers());
+    dto.setDeliveryPreparation(deliveryPreparation(job));
     return dto;
+  }
+
+  /** Informa a execução em curso para impedir que a tela ofereça uma preparação duplicada. */
+  private com.marketinghub.salesvideo.dto.SalesVideoJobDto.DeliveryPreparation deliveryPreparation(
+      SalesVideoJob job) {
+    var availability = VideoFinalDeliveryContract.inspect(job, readJobMetadata(job), objectMapper);
+    if (!"AVAILABLE".equals(availability.status())) return availability;
+    var child = jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(job.getId());
+    if (child.isPresent()
+        && readJobMetadata(child.get()).path("deliveryOnly").asBoolean()
+        && child.get().getStatus() != SalesVideoStatus.VIDEO_FAILED) {
+      boolean ready =
+          child.get().getStatus() == SalesVideoStatus.VIDEO_READY
+              && StringUtils.hasText(child.get().getStreamPlaybackUrl());
+      return new com.marketinghub.salesvideo.dto.SalesVideoJobDto.DeliveryPreparation(
+          ready ? "READY" : "PROCESSING",
+          child.get().getId(),
+          null,
+          ready ? "Reprodução HLS já preparada." : "A preparação da reprodução já está em curso.");
+    }
+    return availability;
   }
 
   /** Avalia no backend se o job representa uma peça comercial final e auditável. */
@@ -873,19 +1006,52 @@ public class SalesVideoJobService {
     if (!hasCommercialCta(job, metadata)) {
       blockers.add("O CTA final não possui evidência persistida no roteiro ou na pós-produção.");
     }
-    SalesVideoJob sourceJob = job.getRetryOfJob();
+    SalesVideoJob sourceJob = narrativeSource(job);
     if (sourceJob == null
         || !("MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())
-            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName()))) {
+            || "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName())
+            || isVerifiedPrivatePdeSource(sourceJob, metadata))) {
       blockers.add("A peça não deriva de uma fonte visual narrativa auditável.");
     }
     if (sourceJob != null && "RUNWAY_PRODUCT_UGC".equalsIgnoreCase(sourceJob.getProviderName())) {
       addProductUgcQualityBlockers(metadata, blockers);
     }
+    if (sourceJob != null && "RUNWAY_ROUTER".equalsIgnoreCase(sourceJob.getProviderName())) {
+      JsonNode sync = metadata.path("caption_narration_sync");
+      if (!"APPROVED".equals(sync.path("status").asText())
+          || !"APPROVED".equals(sync.path("timing_status").asText())
+          || !"APPROVED_FOR_TEST".equals(metadata.at("/audio/review/status").asText())) {
+        blockers.add("A prova do PDE exige narração natural e sincronismo técnico aprovados.");
+      }
+    }
     if (job.getProfile() == null || job.getProfile().getHumanReviewApprovedAt() == null) {
       blockers.add("A revisão humana final ainda não foi aprovada.");
     }
     return new CommercialReadiness(blockers.isEmpty() ? "READY" : "BLOCKED", List.copyOf(blockers));
+  }
+
+  /** Recupera a fonte narrativa original atravessando apenas filhos de entrega sem nova geração. */
+  private SalesVideoJob narrativeSource(SalesVideoJob job) {
+    SalesVideoJob source = job.getRetryOfJob();
+    for (int depth = 0;
+        depth < 12 && source != null && readJobMetadata(job).path("deliveryOnly").asBoolean();
+        depth++) {
+      job = source;
+      source = source.getRetryOfJob();
+    }
+    return source;
+  }
+
+  /** Reconhece a rota genérica somente quando a prova final confere com o hash solicitado. */
+  private boolean isVerifiedPrivatePdeSource(SalesVideoJob sourceJob, JsonNode metadata) {
+    JsonNode expected = readJobMetadata(sourceJob).at("/post_production/product_proof");
+    JsonNode actual = metadata.path("product_reference_overlay");
+    return "RUNWAY_ROUTER".equalsIgnoreCase(sourceJob.getProviderName())
+        && "PDE_PRIVATE_VIDEO_PROOF_V1".equals(expected.path("contractVersion").asText())
+        && "APPLIED".equals(actual.path("status").asText())
+        && !expected.path("sha256").asText().isBlank()
+        && expected.path("sha256").asText().equals(actual.path("sha256").asText())
+        && !actual.path("commercialEvidenceClaimed").asBoolean(true);
   }
 
   /** Lê os metadados persistidos sem transformar JSON inválido em aprovação comercial. */
@@ -1015,6 +1181,7 @@ public class SalesVideoJobService {
       JsonNode source = objectMapper.readTree(sourceJob.getMetadataJson());
       List.of(
               "videoProductionCycleId",
+              "tenantId",
               "videoProjectId",
               "studio_project_id",
               "productId",

@@ -29,11 +29,41 @@ completas primeiro na sandbox, melhoria dos agentes envolvidos e entrega orienta
 qualidade, sem limite artificial de duração. Ao final, solicita oportunidades fundamentadas
 de aumento de vendas, receita e lucro, separando sugestões de resultados medidos.
 O modelo do prompt fica em Markdown versionado no frontend; não há chamada de IA para copiá-lo.
-A autorização excepcional de imagens antes do PR, solicitada para esse texto de ajuda,
-fica restrita à recuperação descrita, após validação local completa, usando os arquivos do
-repositório e o coordenador de intervenções. Não altera o fluxo normal de publicação nem
-autoriza campanhas, cobranças ou aprovação automática de gates humanos. Copiar ou visualizar
-o prompt não o envia ao AIHUB, não executa comandos e não publica; o usuário o revisa e envia.
+
+**Publicação — regra vigente de 14/09/2026:** a exigência de validação local completa e
+publicação pelo fluxo de Pull Request executado pelo usuário substitui a exceção anterior
+de publicação manual antes do PR. O prompt não concede autorização de publicação por SSH;
+imagens produtivas devem vir dos arquivos versionados e do fluxo de publicação do repositório.
+O coordenador continua obrigatório nas intervenções autorizadas e não substitui o PR nem
+o consentimento. Copiar ou visualizar o prompt não o envia ao AIHUB, não executa comandos
+e não publica; o usuário o revisa e envia. Campanhas, cobranças e gates humanos preservam
+suas autorizações próprias.
+
+**Aperfeiçoamento dos agentes — decisão de 14/09/2026:** os pedidos compartilhados de ajuda
+devem aplicar o ciclo evidência → atribuição da causa → melhoria candidata → avaliação
+comparativa → aprovação ou rejeição, conforme
+`docs/canonical/aihub-aperfeicoamento-agentes-canon.v1.md`. O prompt orienta melhorias
+proporcionais em harness, skills, memória, ferramentas, recuperação de contexto e routing,
+com critérios verificáveis e regressão, dentro do escopo causal da recuperação. Inclui
+consulta seletiva a `/pesquisas/agentes-inteligentes`, relativo à raiz do repositório,
+com referências e distinção entre ideias e resultados comprovados. O texto organiza
+objetivo, instruções, critérios, fontes/contexto e entrega; leituras não concedem novas
+permissões. A cópia continua estática, sem chamada de modelo, treinamento ou evolução
+automática dos workers.
+
+**Correção válida para execuções futuras — decisão de 14/09/2026:** todo pedido gerado por
+**Prompt para AIHUB** deve exigir que o processo funcione na situação atual e em **todas as
+próximas execuções que utilizem o mesmo fluxo**, respeitando seus contratos e gates. A recuperação
+do registro atual deve vir acompanhada da correção da causa-raiz nas fontes versionadas
+compartilhadas do processo e dos agentes/workers envolvidos. Ajustes manuais de estado,
+exceções por ID ou reexecuções isoladas não substituem essa correção.
+A homologação deve cobrir o caso original, novas execuções com outros identificadores e
+entradas válidas, retomadas e falhas pertinentes, preservando isolamento, histórico, custos
+e aprovações. Registrar testes de regressão e aprendizados reutilizáveis; antes de concluir,
+revisar se a mesma causa ainda pode afetar outra execução. O relatório deve distinguir
+recuperação atual, prevenção de recorrência comprovada e limitações reais da validação.
+Essa exigência não permite prometer ausência de qualquer falha futura nem dispensar gates
+para entradas inválidas ou decisões humanas pendentes.
 
 Comandos repetidos não duplicam trabalho. Processos de produtos distintos podem avançar em
 paralelo; execuções que compartilham o mesmo contexto são coordenadas para evitar conflitos.

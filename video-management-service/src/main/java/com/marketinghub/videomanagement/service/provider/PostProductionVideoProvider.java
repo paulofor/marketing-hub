@@ -51,6 +51,7 @@ public class PostProductionVideoProvider implements VideoProvider {
     private final WebClient downloadWebClient;
     private final WebClient openAiWebClient;
     private final ProductUgcReferenceOverlay productReferenceOverlay;
+    private final PdeProductProofOverlay pdeProductProofOverlay;
 
     /** Inicializa o provider de pós-produção com configuração e cliente de download. */
     public PostProductionVideoProvider(VideoManagementProperties properties,
@@ -70,6 +71,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_VIDEO_DOWNLOAD_BYTES))
                         .build())
                 .build();
+        this.pdeProductProofOverlay = new PdeProductProofOverlay(properties, webClientBuilder);
         this.productReferenceOverlay =
                 new ProductUgcReferenceOverlay(properties, objectMapper, webClientBuilder);
     }
@@ -86,12 +88,15 @@ public class PostProductionVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Baixa a fonte, corrige cenas de produto e aplica legenda e voz quando houver roteiro. */
+    /** Compõe o acabamento contratado e preserva respostas TTS mesmo quando um gate bloqueia. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
                                     ProgressCallback progressCallback) {
         JsonNode metadata = readMetadata(job);
+        if (metadata.path("deliveryOnly").asBoolean(false)) {
+            return new FinalVideoReuse(downloadWebClient, objectMapper).restore(job, metadata);
+        }
         String sourceVideoUrl = requiredText(metadata, "sourceVideoUrl");
         String captionText = requiredText(metadata, "captionText");
         String voiceOverScript = optionalText(metadata, "voiceOverScript");
@@ -109,7 +114,9 @@ public class PostProductionVideoProvider implements VideoProvider {
             progressCallback.onProgress(15, SalesVideoStatus.VIDEO_PROCESSING, "Baixando vídeo bruto para pós-produção");
             source = downloadSourceVideo(job, sourceVideoUrl);
             ProductUgcReferenceOverlay.OverlayResult overlay =
-                    productReferenceOverlay.apply(source, metadata, job.id());
+                    metadata.at("/post_production/product_proof").isMissingNode()
+                            ? productReferenceOverlay.apply(source, metadata, job.id())
+                            : pdeProductProofOverlay.apply(source, metadata, job.id());
             preparedSource = overlay.videoFile();
             productReferenceAudit = overlay.audit();
             double durationSeconds = probeDurationSeconds(preparedSource, metadata, job.id());
@@ -186,15 +193,14 @@ public class PostProductionVideoProvider implements VideoProvider {
                     "post-production-" + job.id(), video, null, captions, resultMetadata, ttsAuditFiles);
         } catch (IOException ex) {
             log.error("Falha de arquivo na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
-            throw new VideoProviderException("VIDEO_POST_PRODUCTION_FAILED", "Falha de arquivo na pós-produção", ex);
+            throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } catch (VideoProviderException ex) {
             log.error("Falha operacional na pós-produção; jobId={} profileId={} code={}",
                     job.id(), profile.id(), ex.getCode(), ex);
-            throw ex;
+            throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } catch (RuntimeException ex) {
             log.error("Falha inesperada na pós-produção; jobId={} profileId={}", job.id(), profile.id(), ex);
-            throw new VideoProviderException(
-                    "VIDEO_POST_PRODUCTION_FAILED", "Falha inesperada na pós-produção", ex);
+            throw AuditedVideoProviderException.preserve(job.id(), ex, ttsAuditFiles, ttsInteractions);
         } finally {
             deleteIfExists(source);
             if (preparedSource != null && !preparedSource.equals(source)) {
@@ -249,7 +255,7 @@ public class PostProductionVideoProvider implements VideoProvider {
                 null);
     }
 
-    /** Gera cada trecho exatamente como exibido e usa a duração física do áudio como relógio da legenda. */
+    /** Mede os trechos exatos e conserva as respostas recebidas em caso de falha temporal. */
     private SynchronizedNarration generateSynchronizedNarration(
             String captionText, double videoDurationSeconds, Long jobId) throws IOException {
         List<String> segments = captionSegments(captionText);
@@ -259,9 +265,10 @@ public class PostProductionVideoProvider implements VideoProvider {
             List<Double> durations = new ArrayList<>();
             for (int index = 0; index < segments.size(); index++) {
                 VoiceOverAudio audio = generateVoiceOver(segments.get(index), jobId, index + 1);
+                segmentAudios.add(audio);
                 double duration = probeNarrationDurationSeconds(audio.file(), jobId, index + 1);
                 audio = audio.withMeasuredDuration(duration);
-                segmentAudios.add(audio);
+                segmentAudios.set(index, audio);
                 durations.add(duration);
             }
             double narrationDuration = durations.stream().mapToDouble(Double::doubleValue).sum();
@@ -310,10 +317,14 @@ public class PostProductionVideoProvider implements VideoProvider {
                         jobId,
                         providerException.getCode(),
                         providerException);
-                throw providerException;
+                throw AuditedVideoProviderException.preserve(jobId, providerException,
+                        segmentAudios.stream().map(VoiceOverAudio::rawResponseFile).filter(java.util.Objects::nonNull).toList(),
+                        segmentAudios.stream().map(VoiceOverAudio::interaction).toList());
             }
             log.error("Falha ao sincronizar narração segmentada; jobId={}", jobId, ex);
-            throw ex;
+            throw AuditedVideoProviderException.preserve(jobId, ex,
+                    segmentAudios.stream().map(VoiceOverAudio::rawResponseFile).filter(java.util.Objects::nonNull).toList(),
+                    segmentAudios.stream().map(VoiceOverAudio::interaction).toList());
         }
     }
 

@@ -17,6 +17,11 @@ import org.springframework.data.repository.query.Param;
 public interface SalesVideoJobRepository
     extends JpaRepository<SalesVideoJob, Long>, JpaSpecificationExecutor<SalesVideoJob> {
 
+  /** Serializa pedidos de recuperação do mesmo arquivo para impedir filhos duplicados. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @Query("select j from SalesVideoJob j where j.id = :jobId")
+  Optional<SalesVideoJob> findByIdForUpdate(@Param("jobId") Long jobId);
+
   /**
    * Reserva atomicamente um job novo ou uma execução órfã, impedindo dois workers de processarem o
    * mesmo vídeo.
@@ -82,6 +87,10 @@ public interface SalesVideoJobRepository
 
   /** Recupera o encaminhamento já criado para impedir pós-produção duplicada. */
   Optional<SalesVideoJob> findFirstByRetryOfJob_IdOrderByRequestedAtDesc(Long jobId);
+
+  /** Lê o filho atual após o lock da fonte, sem usar snapshot anterior do MySQL REPEATABLE READ. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  Optional<SalesVideoJob> findFirstByRetryOfJob_IdOrderByRequestedAtDescIdDesc(Long jobId);
 
   /** Localiza recusas recentes de crédito emitidas por uma família de provedor. */
   @Query(

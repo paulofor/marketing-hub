@@ -24,6 +24,8 @@ import com.marketinghub.videomanagement.service.provider.ProgressCallback;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Responsabilidade: comprovar o gate determinístico anterior ao consumo audiovisual de Apolo. */
 class ApolloStoryboardPlannerTest {
@@ -54,7 +56,7 @@ class ApolloStoryboardPlannerTest {
                 null, null, null, "pt-BR", 30, SalesVideoStatus.VIDEO_REQUESTED,
                 null, null, script, null);
         JsonNode approvedPlan = plan(false);
-        when(aiClient.plan(eq(1L), any())).thenAnswer(invocation -> {
+        when(aiClient.plan(eq(1L), any(), any())).thenAnswer(invocation -> {
             JsonNode request = invocation.getArgument(1);
             assertThat(request.at("/reasoning/effort").asText()).isEqualTo("max");
             assertThat(request.path("service_tier").asText()).isEqualTo("flex");
@@ -69,6 +71,35 @@ class ApolloStoryboardPlannerTest {
         JsonNode persisted = objectMapper.readTree(result.metadataJson());
         assertThat(persisted.at("/apollo_planner_request/reasoning/effort").asText()).isEqualTo("max");
         assertThat(persisted.path("apollo_planner_status").asText()).isEqualTo("APPROVED");
+    }
+
+    /** Encaminha o erro HTTP auditado ao backend antes de bloquear o storyboard e o render. */
+    @Test
+    void shouldPersistHttpFailureWithoutCallingItStoryboardRejection() throws Exception {
+        var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("20.00");
+        metadata.put("videoProductionCycleId", 91001);
+        SalesVideoJob job = mock(SalesVideoJob.class);
+        when(job.id()).thenReturn(91001L);
+        when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
+        when(job.providerName()).thenReturn("RUNWAY_SEEDANCE_2_5");
+        when(job.metadataJson()).thenReturn(metadata.toString());
+        SalesVideoScript script = new SalesVideoScript(91001L, 1, "Roteiro", "Gancho", "CTA", null,
+                null, null, null, null, SalesVideoScriptStatus.APPROVED, null, null, null);
+        SalesVideoProfile profile = new SalesVideoProfile(91001L, 91001L, null, "TEST", "Teste local",
+                null, null, null, "pt-BR", 30, SalesVideoStatus.VIDEO_REQUESTED,
+                null, null, script, null);
+        var audit = objectMapper.readTree("{\"status\":\"REJECTED\",\"httpStatus\":429,\"rawResponse\":\"quota sintética\"}");
+        when(aiClient.plan(eq(91001L), any(), any())).thenAnswer(invocation -> {
+            java.util.function.Consumer<JsonNode> sink = invocation.getArgument(2);
+            sink.accept(audit);
+            throw new com.marketinghub.videomanagement.service.provider.VideoProviderException(
+                    "APOLLO_PLANNING_ACCOUNT_BLOCKED", "Quota sintética");
+        });
+        var callback = mock(ProgressCallback.class);
+        assertThatThrownBy(() -> planner.planAndApprove(job, profile, callback))
+                .isInstanceOfSatisfying(com.marketinghub.videomanagement.service.provider.VideoProviderException.class,
+                        ex -> assertThat(ex.getCode()).isEqualTo("APOLLO_PLANNING_ACCOUNT_BLOCKED"));
+        org.mockito.Mockito.verify(callback).onProgress(eq(5), eq(SalesVideoStatus.VIDEO_PROCESSING), any(), eq(audit.toString()));
     }
 
     /** Aprova um storyboard distinto cujo custo previsto permanece dentro do teto. */
@@ -113,6 +144,42 @@ class ApolloStoryboardPlannerTest {
                 metadata("20.00"), safePlan, "RUNWAY_SEEDANCE_2_5");
 
         assertThat(decision.approved()).isTrue();
+    }
+
+    /** Reproduz respostas reais de sucesso e falso bloqueio, preservando o plano e sua auditoria. */
+    @ParameterizedTest
+    @ValueSource(strings = {"21237", "21240"})
+    void shouldReplayHistoricalPlanWithoutChangingItsInstructions(String historicalJob) throws Exception {
+        JsonNode savedPlan;
+        try (var input = getClass().getResourceAsStream("/fixtures/apollo/storyboard-" + historicalJob + ".json")) {
+            savedPlan = objectMapper.readTree(input);
+        }
+        var metadata = (com.fasterxml.jackson.databind.node.ObjectNode) metadata("8.00");
+        metadata.put("videoProductionCycleId", 91001);
+        metadata.put("targetDurationSeconds", 15);
+        metadata.put("providerClipDurationSeconds", 10);
+        SalesVideoJob job = mock(SalesVideoJob.class);
+        when(job.id()).thenReturn(91001L);
+        when(job.jobType()).thenReturn(SalesVideoJobType.RENDER);
+        when(job.providerName()).thenReturn("RUNWAY_ROUTER");
+        when(job.metadataJson()).thenReturn(metadata.toString());
+        SalesVideoScript script = new SalesVideoScript(91001L, 1, "Roteiro de teste", "Gancho", "CTA", null,
+                null, null, null, null, SalesVideoScriptStatus.APPROVED, null, null, null);
+        SalesVideoProfile profile = new SalesVideoProfile(91001L, 91001L, null, "TEST", "Replay local",
+                null, null, null, "pt-BR", 15, SalesVideoStatus.VIDEO_REQUESTED,
+                null, null, script, null);
+        var response = objectMapper.createObjectNode();
+        response.putArray("output").addObject().putArray("content").addObject()
+                .put("type", "output_text").put("text", savedPlan.toString());
+        when(aiClient.plan(eq(91001L), any(), any())).thenReturn(response);
+
+        SalesVideoJob approved = planner.planAndApprove(job, profile, mock(ProgressCallback.class));
+
+        JsonNode persisted = objectMapper.readTree(approved.metadataJson());
+        assertThat(persisted.path("apollo_planner_status").asText()).isEqualTo("APPROVED");
+        assertThat(persisted.path("apollo_ai_plan")).isEqualTo(savedPlan);
+        assertThat(persisted.path("apollo_planner_response")).isEqualTo(response);
+        assertThat(persisted.path("expectedCostUsd").decimalValue()).isLessThanOrEqualTo(new java.math.BigDecimal("8.00"));
     }
 
     /** Aprova o storyboard quando Apolo aplica ao menos um cartão de cada coleção entregue. */

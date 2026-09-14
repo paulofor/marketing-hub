@@ -79,6 +79,19 @@ public class SalesVideoController {
     this.assetMapper = assetMapper;
   }
 
+  /** Entrega pixels privados da prova técnica homologada para o projeto, sem publicar a captura. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Ler prova visual homologada do projeto de vídeo")
+  @GetMapping(
+      value = "/api/sales-videos/projects/{projectId}/product-proof",
+      produces = "image/png")
+  public org.springframework.http.ResponseEntity<byte[]> productProof(
+      @PathVariable Long projectId) {
+    return org.springframework.http.ResponseEntity.ok()
+        .cacheControl(org.springframework.http.CacheControl.noStore())
+        .body(salesVideoService.readProductProof(projectId));
+  }
+
   /** Consulta o catalogo operacional do estudio de audio e video. */
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {
@@ -309,7 +322,11 @@ public class SalesVideoController {
     return salesVideoService.retry(jobId, request);
   }
 
-  /** Solicita pós-produção de um vídeo bruto já renderizado. */
+  /** Solicita acabamento ou HLS sem regeneração quando deliveryOnly preserva uma fonte final. */
+  @io.swagger.v3.oas.annotations.Operation(
+      summary = "Finaliza vídeo ou prepara HLS de um MP4 final",
+      description =
+          "deliveryOnly=true preserva MP4, voz e VTT por hash, sem nova chamada de IA; não aprova uso comercial.")
   @PostMapping("/api/sales-videos/jobs/{jobId}/request-post-production")
   public SalesVideoJobDto requestPostProduction(
       @PathVariable Long jobId,

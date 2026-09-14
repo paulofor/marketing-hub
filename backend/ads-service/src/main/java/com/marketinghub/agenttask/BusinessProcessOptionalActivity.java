@@ -13,7 +13,7 @@ public final class BusinessProcessOptionalActivity {
   /** Impede instanciar o validador sem estado. */
   private BusinessProcessOptionalActivity() {}
 
-  /** Confere identidade e motivo da dispensa registrada pelo resolvedor backend de formatos. */
+  /** Confere dispensas de formato e da ficha congelada sem dispensar gates humanos ou qualidade. */
   public static boolean isOmitted(BusinessProcessActivityInstance instance) {
     if (instance == null
         || !"NOT_APPLICABLE".equals(instance.getStatus())
@@ -22,6 +22,20 @@ public final class BusinessProcessOptionalActivity {
         || instance.getObjectiveEvidenceJson() == null) return false;
     try {
       var evidence = JSON.readTree(instance.getObjectiveEvidenceJson());
+      if ("EXECUTION_PROFILE_OPTIONAL_ACTIVITY_V1".equals(evidence.path("evidenceType").asText())) {
+        return "audiovisual".equals(instance.getActivityDefinition().getActivityId())
+            && "pde-construction-approval"
+                .equals(instance.getActivityDefinition().getProcessDefinition().getProcessCode())
+            && "Apolo".equals(instance.getActivityDefinition().getOwnerName())
+            && "audiovisual".equals(evidence.path("activityId").asText())
+            && instance.getSourceReference().equals(evidence.path("sourceReference").asText())
+            && evidence.path("profileId").asLong() > 0
+            && evidence.path("profileRevision").asInt() > 0
+            && evidence.path("bindingId").asLong() > 0
+            && !evidence.path("reason").asText().isBlank()
+            && evidence.has("audiovisualRequired")
+            && !evidence.path("audiovisualRequired").asBoolean(true);
+      }
       return "OPTIONAL_ACTIVITY_NOT_REQUIRED_V1".equals(evidence.path("evidenceType").asText())
           && "audiovisual".equals(instance.getActivityDefinition().getActivityId())
           && "creative-production-approval"

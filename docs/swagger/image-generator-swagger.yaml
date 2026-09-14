@@ -18,6 +18,7 @@ paths:
                 commercialPlanId: {type: integer, format: int64}
                 experimentId: {type: integer, format: int64, nullable: true}
                 prompt: {type: string, maxLength: 4000}
+                operationKey: {type: string, maxLength: 100, description: 'Chave única da operação; obrigatória quando o experimento está vinculado à ficha de execução v1.'}
       responses:
         '200': {description: Lote comparativo gerado e auditado no ledger}
         '400': {description: Contexto comercial ausente ou inconsistente}

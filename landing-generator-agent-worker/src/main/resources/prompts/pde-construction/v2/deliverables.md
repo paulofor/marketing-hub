@@ -25,4 +25,13 @@ correção causal.
 
 ## Contexto da tarefa
 
+Quando `processContextJson.productExecutionProfile` estiver presente, materialize os entregáveis
+e critérios da ficha exata. PERSONALIZED_IMAGES inclui o pacote de imagens personalizadas,
+referências consentidas, revisão de qualidade e entrega acessível, sem impor webapp. Os componentes
+de entrada, processamento e resultado podem ser contratos e artefatos dessa entrega. Demonstre os
+limites de quantidade, tentativas e custo por pacote antes de qualquer consumo. Use as reservas do
+backend; uma falha cobrada não libera automaticamente orçamento. Não use a API de imagens sem
+correlação e autorização do fluxo. Ausência de contrato de execução do consumidor bloqueia e deve
+ser reportada como dependência, nunca contornada com chamada externa direta.
+
 {{TASK_CONTEXT}}

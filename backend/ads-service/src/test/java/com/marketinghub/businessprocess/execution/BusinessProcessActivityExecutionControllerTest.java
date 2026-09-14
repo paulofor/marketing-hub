@@ -27,6 +27,28 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 /** Responsabilidade: comprovar o contrato HTTP do histórico recente das atividades BPM. */
 class BusinessProcessActivityExecutionControllerTest {
 
+  /** Transporta a referência explícita da leitura ao comando sem selecionar uma execução atual. */
+  @Test
+  void preservesExplicitReferenceInReadAndCommand() throws Exception {
+    var service = mock(BusinessProcessActivityExecutionService.class);
+    var http =
+        MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(service))
+            .build();
+    String reference = "product:9@private-validation-v2";
+    http.perform(
+            get("/api/business-processes/37/products/9/activity-executions")
+                .param("chainId", "14")
+                .param("sourceReference", reference)
+                .param("includePromptAudit", "false"))
+        .andExpect(status().isOk());
+    verify(service).productProcessExecutions(37L, 9L, null, 14L, false, reference);
+    http.perform(
+            post("/api/business-processes/37/products/9/activities/evidence/execution-requests")
+                .param("sourceReference", reference))
+        .andExpect(status().isOk());
+    verify(service).requestProductActivityExecution(37L, 9L, "evidence", null, null, reference);
+  }
+
   /** Expõe processo, atividade e auditoria da tarefa mais recente em contrato estruturado. */
   @Test
   void getsRecentBusinessProcessActivityExecutions() throws Exception {

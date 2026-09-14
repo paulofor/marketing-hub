@@ -68,6 +68,10 @@ public class ImageGeneratorService {
   private final String comparisonImageModel;
   private final AssetStorageService assetStorageService;
 
+  @Autowired(required = false)
+  private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileBudget
+      executionProfileBudget;
+
   /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
   @Autowired
   public ImageGeneratorService(
@@ -227,16 +231,31 @@ public class ImageGeneratorService {
         HttpStatus.CONFLICT, "Slot não encontrado no manifesto de imagens da landing.");
   }
 
-  /** Gera duas variações comparativas com o mesmo modelo visual canônico usando a Responses API. */
+  /** Gera duas variações canônicas com reserva de consumo da ficha antes da chamada externa. */
   public ImageGeneratorResponse generate(ImageGeneratorRequest request) {
     if (!openAiProperties.isEnabled()) {
       throw new ResponseStatusException(
           HttpStatus.SERVICE_UNAVAILABLE, "OpenAI não está configurada no backend.");
     }
     validateCommercialContext(request);
+    String finalPrompt = buildPrompt(request.prompt());
+
+    String profileReference =
+        request.experimentId() == null ? null : "experiment:" + request.experimentId();
+    Long profileReservation =
+        executionProfileBudget == null
+            ? null
+            : executionProfileBudget.reserve(
+                request.productId(),
+                profileReference,
+                "administrative-prototype",
+                request.operationKey(),
+                request.prompt(),
+                comparisonImageModel,
+                2,
+                true);
 
     String batchJobId = "img-batch-" + UUID.randomUUID();
-    String finalPrompt = buildPrompt(request.prompt());
     CompletableFuture<ImageGeneratorResult> defaultModelGeneration =
         CompletableFuture.supplyAsync(
             () ->
@@ -253,6 +272,15 @@ public class ImageGeneratorService {
             List.of(
                 new NamedGeneration(comparisonImageModel, defaultModelGeneration),
                 new NamedGeneration(comparisonImageModel, comparisonModelGeneration)));
+
+    if (executionProfileBudget != null) {
+      executionProfileBudget.settle(
+          request.productId(),
+          profileReservation,
+          null,
+          "image_generation_batch:" + batchJobId,
+          !batchResult.failures().isEmpty());
+    }
 
     if (batchResult.images().isEmpty()) {
       ImageGeneratorFailure firstFailure =
@@ -277,6 +305,7 @@ public class ImageGeneratorService {
       try {
         images.add(generation.future().join());
       } catch (RuntimeException ex) {
+        log.error("Falha ao coletar resultado de geração. model={}", generation.model(), ex);
         failures.add(
             new ImageGeneratorFailure(
                 generation.model(), extractGenerationErrorMessage(ex), Instant.now()));
@@ -451,7 +480,7 @@ public class ImageGeneratorService {
     }
   }
 
-  /** Valida os vínculos comerciais antes de consumir crédito do provedor. */
+  /** Valida propriedade de plano e experimento antes de consumir crédito ou expor ativos. */
   private void validateCommercialContext(ImageGeneratorRequest request) {
     if (request.productId() == null || request.commercialPlanId() == null) {
       throw new ResponseStatusException(
@@ -467,10 +496,23 @@ public class ImageGeneratorService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Plano comercial não encontrado."));
+    if (!commercialPlanRepository
+        .findIdsByProductId(request.productId())
+        .contains(request.commercialPlanId()))
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O plano comercial não pertence ao produto.");
     if (request.experimentId() != null
         && !experimentRepository.existsById(request.experimentId())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Experimento não encontrado.");
     }
+    if (request.experimentId() != null
+        && experimentRepository
+            .findById(request.experimentId())
+            .filter(
+                e -> e.getProduct() != null && request.productId().equals(e.getProduct().getId()))
+            .isEmpty())
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O experimento não pertence ao produto.");
     if (plan.getExperiment() != null
         && request.experimentId() != null
         && !plan.getExperiment().getId().equals(request.experimentId())) {
@@ -486,6 +528,10 @@ public class ImageGeneratorService {
       String template = resource.getContentAsString(StandardCharsets.UTF_8);
       return template.replace("{{USER_PROMPT}}", userPrompt.trim());
     } catch (IOException ex) {
+      log.error(
+          "Falha ao carregar prompt de imagem antes da reserva. template={}",
+          PROMPT_TEMPLATE_PATH,
+          ex);
       throw new UncheckedIOException(
           "Não foi possível carregar o prompt operacional de geração de imagem.", ex);
     }

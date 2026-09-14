@@ -97,6 +97,11 @@ checkout, compra, receita e entrega. Sem amostra suficiente, o resultado é `EVI
 
 ## Decisão de simplicidade
 
+**Decisão de 14/09/2026:** a cadeia comum passa a suportar fichas de execução versionadas e
+percursos especializados pela entrega, conforme `product-execution-profiles-canon.v1.md`.
+Preservar tipo, formato, receita, versões e provas históricas; começar pelo percurso de
+imagens personalizadas aplicável a Quartzo sem restringi-lo a esse mineral.
+
 Foram consideradas três estruturas:
 
 1. Quatro processos amplos: menor operação, mas mistura construção, comunicação e homologação.

@@ -31,4 +31,12 @@ a menor correção causal necessária.
 
 ## Contexto da tarefa
 
+Quando `processContextJson.productExecutionProfile` estiver presente, use sua ficha congelada
+como contrato de execução. O mineral não determina a tecnologia. No percurso PERSONALIZED_IMAGES,
+a jornada é fornecer referências autorizadas, personalizar, produzir, revisar e acessar o pacote;
+não imponha um webapp com IA ou uma jornada de sete dias. Nos demais percursos, preserve o resultado
+comprado e os critérios próprios. Divergência com `taskTarget.pdeContext` bloqueia para conciliar
+o contrato; nunca resolva silenciosamente usando outra versão. Aponte quantidade, limites e a
+evidência esperada de cada atividade. Não dispense qualidade, privacidade ou aprovações humanas.
+
 {{TASK_CONTEXT}}

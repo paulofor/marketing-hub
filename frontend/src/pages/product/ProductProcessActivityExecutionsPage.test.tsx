@@ -394,6 +394,36 @@ describe("ProductProcessActivityExecutionsPage", () => {
     } as ReturnType<typeof useCycleProcessContext>);
   });
 
+  it("uses the reference in the link without adopting the latest cycle", async () => {
+    vi.mocked(useCycleProcessContext).mockReturnValue({
+      data: { cycleId: 99, chainDefinitionId: 99 },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useCycleProcessContext>);
+    vi.mocked(axios.get).mockImplementation(async (url) => ({
+      data: String(url).endsWith("execution-progress") ? [] : history,
+    }));
+    renderPage(
+      "/products/9/value-chain-history/processes/18/activities?chainId=14&sourceReference=commercial-plan%3A4%40v3%3Ajourney",
+    );
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith(
+        "/api/business-processes/18/products/9/activity-executions?chainId=14&sourceReference=commercial-plan%3A4%40v3%3Ajourney",
+        expect.anything(),
+      ),
+    );
+    expect(useCycleProcessContext).toHaveBeenCalledWith(
+      undefined,
+      18,
+      undefined,
+      14,
+    );
+    expect(axios.get).not.toHaveBeenCalledWith(
+      expect.stringContaining("learningCycleId=99"),
+      expect.anything(),
+    );
+  });
+
   it("identifies the second cycle and uses its official successor, memory and execution context", async () => {
     vi.mocked(useCycleProcessContext).mockReturnValue({
       data: {

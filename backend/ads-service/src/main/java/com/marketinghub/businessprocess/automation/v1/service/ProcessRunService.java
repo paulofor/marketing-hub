@@ -62,9 +62,7 @@ public class ProcessRunService {
     this.transaction = new TransactionTemplate(manager);
   }
 
-  /**
-   * Mostra progresso e confere objetivos concluídos para permitir revalidação sem apagar o diário.
-   */
+  /** Mostra progresso e prontidão da versão publicada ou fixada na ficha, preservando o diário. */
   public ProcessRunResponse status(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
         ignored -> {
@@ -88,7 +86,13 @@ public class ProcessRunService {
                   ? "UNAVAILABLE"
                   : history.objectiveAchieved()
                       ? "COMPLETED"
-                      : enabled && "PUBLISHED".equals(history.selectedProcessStatus())
+                      : enabled
+                              && ("PUBLISHED".equals(history.selectedProcessStatus())
+                                  || context.executableVersion(
+                                      productId,
+                                      processId,
+                                      command,
+                                      history.selectedProcessStatus()))
                           ? "READY"
                           : "UNAVAILABLE");
           preview.setReason(
@@ -99,13 +103,18 @@ public class ProcessRunService {
                       : !enabled
                           ? "O produto está em STOP."
                           : !"PUBLISHED".equals(history.selectedProcessStatus())
+                                  && !context.executableVersion(
+                                      productId,
+                                      processId,
+                                      command,
+                                      history.selectedProcessStatus())
                               ? "Esta versão não está publicada."
                               : "Execute o processo para iniciar as atividades em sequência. Você pode fechar esta tela.");
           return response(preview);
         });
   }
 
-  /** Registra uma única autorização durável por contexto, sem usar o navegador como executor. */
+  /** Registra autorização durável no contexto e na versão publicada ou fixada pela ficha. */
   public ProcessRunResponse start(Long productId, Long processId, ProcessRunCommand command) {
     return transaction.execute(
         ignored -> {
@@ -114,7 +123,9 @@ public class ProcessRunService {
           if (existing.isPresent()) return response(existing.get());
           var history = context.read(productId, processId, command, true);
           requirePlay(productId);
-          if (!"PUBLISHED".equals(history.selectedProcessStatus()))
+          if (!"PUBLISHED".equals(history.selectedProcessStatus())
+              && !context.executableVersion(
+                  productId, processId, command, history.selectedProcessStatus()))
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT, "Somente a versão publicada pode iniciar o processo.");
           context.graph(processId);
@@ -277,7 +288,7 @@ public class ProcessRunService {
         });
   }
 
-  /** Observa provas e decisões humanas antes dos novos disparos e aplica um comando canônico. */
+  /** Observa provas e decisões humanas e dispara o comando no contexto congelado da execução. */
   private ProcessRunResponse advance(ProcessRun run) {
     if (Set.of("PAUSED", "COMPLETED", "ERROR", "CLOSED").contains(run.getStatus()))
       return response(run);
@@ -492,12 +503,20 @@ public class ProcessRunService {
       return response(run);
     }
     var result =
-        activities.requestProductActivityExecution(
-            run.getProcessDefinitionId(),
-            run.getProductId(),
-            activity.activityId(),
-            null,
-            run.getLearningCycleId());
+        context.usesExecutionProfile(run.getProductId(), run.getSourceReference())
+            ? activities.requestProductActivityExecution(
+                run.getProcessDefinitionId(),
+                run.getProductId(),
+                activity.activityId(),
+                null,
+                run.getLearningCycleId(),
+                run.getSourceReference())
+            : activities.requestProductActivityExecution(
+                run.getProcessDefinitionId(),
+                run.getProductId(),
+                activity.activityId(),
+                null,
+                run.getLearningCycleId());
     if (!Objects.equals(run.getSourceReference(), result.sourceReference()))
       throw new IllegalStateException("O comando tentou executar em outra referência operacional.");
     transition(

@@ -110,6 +110,10 @@ public class BusinessProcessActivityExecutionService {
   private com.marketinghub.businessprocesschain.learningcycle.v1.service.SalesFlowResolver
       salesFlowResolver;
 
+  @Autowired(required = false)
+  private com.marketinghub.product.executionprofile.v1.service.ExecutionProfileActivityPolicy
+      executionProfilePolicy;
+
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
   @Autowired
   public BusinessProcessActivityExecutionService(
@@ -305,10 +309,26 @@ public class BusinessProcessActivityExecutionService {
       Long learningCycleId,
       Long chainId,
       boolean includePromptAudit) {
+    return productProcessExecutions(
+        processDefinitionId, productId, learningCycleId, chainId, includePromptAudit, null);
+  }
+
+  /** Consulta a referência explicitamente escolhida, preservando a seleção automática legada. */
+  @Transactional(readOnly = true)
+  public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
+      Long processDefinitionId,
+      Long productId,
+      Long learningCycleId,
+      Long chainId,
+      boolean includePromptAudit,
+      String requestedReference) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
+    String explicitReference =
+        exactReference(
+            product, selectedProcess, learningCycleId, chainId, requestedReference, false);
     var salesFlow =
-        salesFlowResolver == null
+        salesFlowResolver == null || explicitReference != null && learningCycleId == null
             ? null
             : salesFlowResolver.resolve(productId, selectedProcess, chainId, learningCycleId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
@@ -323,14 +343,24 @@ public class BusinessProcessActivityExecutionService {
         activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
 
     String currentExecutionReference =
-        salesFlow != null
-            ? "experiment:" + salesFlow.experimentId()
-            : learningCycleId == null
-                ? resolveExecutionReference(
-                    selectedProcess, product, productExperiments, productPlans, tasks, instances)
-                : cycleSource(learningCycleId, product, selectedProcess, false);
-    if (learningCycleId != null) {
-      var startedAt = learningCycleContext.startedAt(learningCycleId, productId);
+        explicitReference != null
+            ? explicitReference
+            : salesFlow != null
+                ? "experiment:" + salesFlow.experimentId()
+                : learningCycleId == null
+                    ? resolveExecutionReference(
+                        selectedProcess,
+                        product,
+                        productExperiments,
+                        productPlans,
+                        tasks,
+                        instances)
+                    : cycleSource(learningCycleId, product, selectedProcess, false);
+    if (learningCycleId != null || explicitReference != null) {
+      var startedAt =
+          learningCycleId == null
+              ? null
+              : learningCycleContext.startedAt(learningCycleId, productId);
       tasks =
           tasks.stream()
               .filter(task -> Objects.equals(currentExecutionReference, task.getSourceReference()))
@@ -558,6 +588,28 @@ public class BusinessProcessActivityExecutionService {
             .anyMatch(id -> String.valueOf(id).equals(plan.group(1)));
   }
 
+  /** Valida propriedade, ciclo e ficha antes de aceitar uma referência fornecida pela navegação. */
+  private String exactReference(
+      Product product,
+      BusinessProcessDefinition process,
+      Long cycleId,
+      Long chainId,
+      String requested,
+      boolean execution) {
+    if (requested == null || requested.isBlank()) return null;
+    String reference = requested.trim();
+    if (!progressReferenceBelongsToProduct(product.getId(), reference))
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "Referência não encontrada neste produto.");
+    if (cycleId != null && !reference.equals(cycleSource(cycleId, product, process, execution)))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A referência não corresponde ao ciclo informado.");
+    if (executionProfilePolicy != null)
+      executionProfilePolicy.requireReference(
+          product.getId(), reference, process, chainId, cycleId);
+    return reference;
+  }
+
   /** Mantém o contrato sem corpo usado por atividades de agente e comandos backend legados. */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
@@ -579,7 +631,9 @@ public class BusinessProcessActivityExecutionService {
         processDefinitionId, productId, activityId, request, null);
   }
 
-  /** Executa contratos gerais com revalidação das provas; decisões humanas conservam sua fila. */
+  /**
+   * Executa contratos gerais e a ficha congelada com revalidação das provas e dos gates humanos.
+   */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId,
@@ -587,20 +641,33 @@ public class BusinessProcessActivityExecutionService {
       String activityId,
       ProductProcessActivityExecutionRequest request,
       Long learningCycleId) {
+    return requestProductActivityExecution(
+        processDefinitionId, productId, activityId, request, learningCycleId, null);
+  }
+
+  /**
+   * Executa no contexto explicitamente selecionado, revalidando identidade e todas as aprovações.
+   */
+  @Transactional
+  public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
+      Long processDefinitionId,
+      Long productId,
+      String activityId,
+      ProductProcessActivityExecutionRequest request,
+      Long learningCycleId,
+      String requestedReference) {
     if (agentTaskService == null || experimentRepository == null) {
       throw new IllegalStateException("Execução de atividade não configurada neste ambiente.");
     }
     BusinessProcessDefinition process = requiredProcess(processDefinitionId);
-    if (!"PUBLISHED".equals(process.getStatus())) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Somente a versão publicada pode iniciar uma atividade.");
-    }
     if (LearningCycleRules.PROCESS_CODE.equals(process.getProcessCode())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Retome o subprocesso pela atividade 6.4. Atena prepara a proposta automaticamente e o usuário aprova no formulário do ciclo.");
     }
     Product product = requiredProduct(productId);
+    String explicitReference =
+        exactReference(product, process, learningCycleId, null, requestedReference, true);
     if (Boolean.FALSE.equals(product.getAutomaticExecutionEnabled())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O produto está em STOP e não pode iniciar novas atividades.");
@@ -632,10 +699,17 @@ public class BusinessProcessActivityExecutionService {
         productProcessActivityInstances(
             productPlans, productExperiments, productId, process.getProcessCode());
     String currentSourceReference =
-        learningCycleId == null
-            ? resolveExecutionReference(
-                process, product, productExperiments, productPlans, processTasks, processInstances)
-            : cycleSource(learningCycleId, product, process, true);
+        explicitReference != null
+            ? explicitReference
+            : learningCycleId == null
+                ? resolveExecutionReference(
+                    process,
+                    product,
+                    productExperiments,
+                    productPlans,
+                    processTasks,
+                    processInstances)
+                : cycleSource(learningCycleId, product, process, true);
     String sourceReference =
         currentSourceReference == null
             ? initialSourceReference(process, product, productExperiments, productPlans)
@@ -654,6 +728,15 @@ public class BusinessProcessActivityExecutionService {
                 .toList(),
             currentInstancesByActivityId(process.getId(), sourceReference, processInstances)
                 .getOrDefault(normalizedActivityId, List.of()));
+    if (executionProfilePolicy != null) {
+      executionProfilePolicy.require(productId, sourceReference, process, normalizedActivityId);
+    }
+    if (!"PUBLISHED".equals(process.getStatus())
+        && (executionProfilePolicy == null
+            || !executionProfilePolicy.pins(sourceReference, process)))
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "A atividade exige a versão publicada ou fixada na ficha desta execução.");
     List<AgentProductProcessActivityReadinessProvider> agentReadinessProviders =
         agentActivityReadinessProviders(process, activityDefinition);
     boolean freshExecutionRequired =
@@ -980,9 +1063,7 @@ public class BusinessProcessActivityExecutionService {
     }
   }
 
-  /**
-   * Explica a prontidão atual e a preservação de tentativas bloqueadas ou canceladas na auditoria.
-   */
+  /** Explica prontidão, versão publicada ou fixada e preservação das tentativas na auditoria. */
   private String executionRequestReason(
       BusinessProcessActivityDefinition definition,
       BusinessProcessDefinition process,
@@ -995,9 +1076,10 @@ public class BusinessProcessActivityExecutionService {
       boolean hasAgentReadinessProvider,
       AgentProductProcessActivityReadiness agentReadiness,
       boolean hasExecutionContext,
-      boolean productExecutionEnabled) {
+      boolean productExecutionEnabled,
+      boolean pinnedVersion) {
     if (definition == null) return "Atividade histórica sem comando operacional.";
-    if (!"PUBLISHED".equals(process.getStatus())) {
+    if (!"PUBLISHED".equals(process.getStatus()) && !pinnedVersion) {
       return "Somente a versão publicada pode receber novas execuções.";
     }
     if ("COMPLETED".equals(operationalState)) {
@@ -1458,7 +1540,10 @@ public class BusinessProcessActivityExecutionService {
     return activityIds;
   }
 
-  /** Projeta estado, comando e recuperação do bloqueio, preservando a auditoria histórica. */
+  /**
+   * Projeta estado, especialização da ficha, comando e recuperação preservando a auditoria
+   * histórica.
+   */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
       BusinessProcessDefinition selectedProcess,
       Map<String, List<AgentTask>> tasksByActivityId,
@@ -1541,9 +1626,12 @@ public class BusinessProcessActivityExecutionService {
           definition != null
               && conditionalActivitySelected(definition, situation, executions, agentReadiness);
       boolean stateAllowsRequest = requestableActivityState(situation.operationalState());
+      boolean pinnedVersion =
+          executionProfilePolicy != null
+              && executionProfilePolicy.pins(currentExecutionReference, selectedProcess);
       boolean executionRequestAvailable =
           definition != null
-              && "PUBLISHED".equals(selectedProcess.getStatus())
+              && ("PUBLISHED".equals(selectedProcess.getStatus()) || pinnedVersion)
               && hasExecutionContext
               && productExecutionEnabled
               && ((!responsibleAgents.isEmpty()
@@ -1570,7 +1658,8 @@ public class BusinessProcessActivityExecutionService {
               !agentReadinessProviders.isEmpty(),
               agentReadiness,
               hasExecutionContext,
-              productExecutionEnabled);
+              productExecutionEnabled,
+              pinnedVersion);
       ProductProcessActivityExecutionControlResponse executionControl =
           executionControl(
               definition,
@@ -1616,6 +1705,11 @@ public class BusinessProcessActivityExecutionService {
               executionRequestAvailable,
               executionRequestReason,
               executionControl));
+    }
+    if (executionProfilePolicy != null) {
+      groups =
+          executionProfilePolicy.decorate(
+              product.getId(), currentExecutionReference, selectedProcess, groups);
     }
     return ProductProcessActivityRecoveryResolver.resolve(
         groups,

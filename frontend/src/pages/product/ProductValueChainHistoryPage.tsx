@@ -170,6 +170,12 @@ export default function ProductValueChainHistoryPage() {
 
   return (
     <div className="product-value-chain-history">
+      <Link
+        className="btn btn-outline-primary mb-3"
+        to={`/products/${productId}/execution-profiles?chainId=${summary.chainDefinitionId}`}
+      >
+        Fichas de execução e percursos do produto
+      </Link>
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
           {summary.processDefinitionId ? (

@@ -12,16 +12,18 @@ export type ProductProcessActivityExecutionCommand = {
   decision?: ProductProcessActivityHumanDecision;
 };
 
-/** Lê a orientação oficial das atividades sem iniciar acompanhamento periódico de tarefas. */
+/** Lê a orientação da referência escolhida, sem iniciar acompanhamento periódico de tarefas. */
 export function useProductProcessActivityHistory(
   productId?: number,
   processDefinitionId?: number,
   learningCycleId?: number,
   chainId?: number,
+  requestedReference?: string,
 ) {
   const query = new URLSearchParams();
   if (learningCycleId) query.set("learningCycleId", String(learningCycleId));
   if (chainId) query.set("chainId", String(chainId));
+  if (requestedReference) query.set("sourceReference", requestedReference);
   const queryString = query.toString();
   return useQuery({
     queryKey: [
@@ -32,6 +34,7 @@ export function useProductProcessActivityHistory(
       "activity-executions",
       learningCycleId,
       chainId,
+      ...(requestedReference ? [requestedReference] : []),
     ],
     enabled: Boolean(productId && processDefinitionId),
     queryFn: async ({ signal }) =>
@@ -44,12 +47,13 @@ export function useProductProcessActivityHistory(
   });
 }
 
-/** Consulta as atividades auditáveis e acompanha revisões das tarefas do processo selecionado. */
+/** Consulta o contexto exato e acompanha revisões das tarefas do processo selecionado. */
 export function useProductProcessActivityExecutions(
   productId?: number,
   processDefinitionId?: number,
   learningCycleId?: number,
   chainId?: number,
+  requestedReference?: string,
 ) {
   const queryClient = useQueryClient();
   const previousProgress = useRef<string | undefined>(undefined);
@@ -59,6 +63,7 @@ export function useProductProcessActivityExecutions(
     processDefinitionId,
     learningCycleId,
     chainId,
+    requestedReference,
   );
   const sourceReference = history.data?.currentExecutionReference;
   const progress = useQuery({
@@ -112,6 +117,7 @@ export function useProductProcessActivityExecutions(
         "activity-executions",
         learningCycleId,
         chainId,
+        ...(requestedReference ? [requestedReference] : []),
       ],
     });
     void queryClient.invalidateQueries({
@@ -128,6 +134,7 @@ export function useProductProcessActivityExecutions(
     sourceReference,
     learningCycleId,
     chainId,
+    requestedReference,
   ]);
   useEffect(() => {
     if (!progress.dataUpdatedAt) return;
@@ -147,11 +154,12 @@ export function useProductProcessActivityExecutions(
   return { ...history, trackingError: progress.isError };
 }
 
-/** Solicita ao backend todas as tarefas responsáveis pela atividade do produto. */
+/** Solicita as tarefas da atividade no mesmo contexto exibido na tela. */
 export function useRequestProductProcessActivityExecution(
   productId: number,
   processDefinitionId: number,
   learningCycleId?: number,
+  requestedReference?: string,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -159,7 +167,12 @@ export function useRequestProductProcessActivityExecution(
       activityId,
       decision,
     }: ProductProcessActivityExecutionCommand) => {
-      const url = `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests${learningCycleId ? `?learningCycleId=${learningCycleId}` : ""}`;
+      const query = new URLSearchParams();
+      if (learningCycleId)
+        query.set("learningCycleId", String(learningCycleId));
+      if (requestedReference) query.set("sourceReference", requestedReference);
+      const queryString = query.toString();
+      const url = `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests${queryString ? `?${queryString}` : ""}`;
       return decision
         ? (
             await axios.post<ProductProcessActivityExecutionRequest>(

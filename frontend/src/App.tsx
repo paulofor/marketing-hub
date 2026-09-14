@@ -22,6 +22,7 @@ import NewProductPage from "./pages/product/NewProductPage";
 import EditProductPage from "./pages/product/EditProductPage";
 import ProductFinancialPage from "./pages/product/ProductFinancialPage";
 import ProductValueChainHistoryPage from "./pages/product/ProductValueChainHistoryPage";
+import ProductExecutionProfilesPage from "./pages/product/ProductExecutionProfilesPage";
 import ProductProcessActivityExecutionsPage from "./pages/product/ProductProcessActivityExecutionsPage";
 import ProductExperimentComparisonPage from "./pages/product/ProductExperimentComparisonPage";
 import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
@@ -291,6 +292,10 @@ export default function App() {
               <Route
                 path="/products/:productId/value-chain-history"
                 element={<ProductValueChainHistoryPage />}
+              />
+              <Route
+                path="/products/:productId/execution-profiles"
+                element={<ProductExecutionProfilesPage />}
               />
               <Route
                 path="/products/:productId/value-chain-history/processes/:processDefinitionId/activities"
@@ -594,10 +599,7 @@ export default function App() {
                 path="/videos/providers"
                 element={<VideoProviderManagementPage />}
               />
-              <Route
-                path="/financial/videos"
-                element={<VideoFinancePage />}
-              />
+              <Route path="/financial/videos" element={<VideoFinancePage />} />
               <Route
                 path="/financial/video-providers"
                 element={<VideoProviderFinancePage />}

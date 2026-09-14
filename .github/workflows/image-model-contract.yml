@@ -8,6 +8,7 @@ on:
       - ".github/workflows/image-model-contract.yml"
       - ".github/workflows/meta-ad-approver-worker-ci.yml"
       - "scripts/validate-canonical-image-model.sh"
+      - "scripts/test-canonical-image-model.py"
       - "ai-worker/**"
       - "backend/ads-service/src/main/**"
       - "deploy/**"
@@ -25,6 +26,7 @@ on:
       - ".github/workflows/image-model-contract.yml"
       - ".github/workflows/meta-ad-approver-worker-ci.yml"
       - "scripts/validate-canonical-image-model.sh"
+      - "scripts/test-canonical-image-model.py"
       - "ai-worker/**"
       - "backend/ads-service/src/main/**"
       - "deploy/**"
@@ -53,5 +55,11 @@ jobs:
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v7
+      - name: Instalar dependências do verificador e dos testes
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ripgrep python3
+      - name: Testar proteção e diagnóstico do contrato de imagens
+        run: python3 scripts/test-canonical-image-model.py -v
       - name: Impedir regressão para modelos visuais aposentados
         run: bash scripts/validate-canonical-image-model.sh

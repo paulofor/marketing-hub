@@ -5,6 +5,31 @@ set -euo pipefail
 CANONICAL_MODEL="gpt-image-2.5-sunburst"
 RETIRED_MODEL_PATTERN='gpt-image-(?:1(?:\.5)?|2(?!\.5))'
 
+if ! command -v rg >/dev/null 2>&1; then
+  echo "[IMAGEM] dependência obrigatória ausente: rg (ripgrep); instale ripgrep antes de validar" >&2
+  exit 2
+fi
+
+# Exige uma correspondência e distingue violação do contrato de falha técnica na leitura.
+require_match() {
+  local file="$1"
+  local violation="$2"
+  shift 2
+  local status=0
+  rg "$@" -- "$file" || status=$?
+  case "$status" in
+    0) return 0 ;;
+    1)
+      echo "[IMAGEM] ${violation}" >&2
+      exit 1
+      ;;
+    *)
+      echo "[IMAGEM] falha técnica ao verificar ${file} (rg: ${status}); contrato não validado" >&2
+      exit 2
+      ;;
+  esac
+}
+
 required_defaults=(
   ".env.example"
   "docker-compose.yml"
@@ -44,22 +69,28 @@ active_sources=(
 )
 
 for file in "${required_defaults[@]}"; do
-  if ! rg -q --fixed-strings "${CANONICAL_MODEL}" "${file}"; then
-    echo "[IMAGEM] padrão canônico ausente em ${file}" >&2
-    exit 1
-  fi
+  require_match "$file" "padrão canônico ausente em ${file}" \
+    -q --fixed-strings "$CANONICAL_MODEL"
 done
 
-if rg --pcre2 -n --glob '!**/*.test.*' --glob '!**/__tests__/**' \
-  "${RETIRED_MODEL_PATTERN}" "${active_sources[@]}"; then
-  echo "[IMAGEM] modelo aposentado encontrado em configuração ou código de produção" >&2
-  exit 1
-fi
+scan_status=0
+rg --pcre2 -n --glob '!**/*.test.*' --glob '!**/__tests__/**' \
+  "${RETIRED_MODEL_PATTERN}" "${active_sources[@]}" || scan_status=$?
+case "$scan_status" in
+  0)
+    echo "[IMAGEM] modelo aposentado encontrado em configuração ou código de produção" >&2
+    exit 1
+    ;;
+  1) ;; # Nenhuma ocorrência: pesquisa concluída sem modelo aposentado.
+  *)
+    echo "[IMAGEM] falha técnica ao pesquisar modelos aposentados (rg: ${scan_status}); contrato não validado" >&2
+    exit 2
+    ;;
+esac
 
-if ! rg -q --fixed-strings '"GPT IMAGE 2 5 SUNBURST"' frontend/src/utils/imagePricing.ts; then
-  echo "[IMAGEM] estimativa financeira do Sunburst ausente no frontend" >&2
-  exit 1
-fi
+require_match frontend/src/utils/imagePricing.ts \
+  "estimativa financeira do Sunburst ausente no frontend" \
+  -q --fixed-strings '"GPT IMAGE 2 5 SUNBURST"'
 
 video_contract_files=(
   "docker-compose.yml"
@@ -68,17 +99,13 @@ video_contract_files=(
   "video-management-service/src/main/resources/application.yml"
 )
 for file in "${video_contract_files[@]}"; do
-  if ! rg -q --fixed-strings "OPENAI_IMAGE_ORCHESTRATION_MODEL" "${file}"; then
-    echo "[IMAGEM] modelo orquestrador de vídeo não está isolado em ${file}" >&2
-    exit 1
-  fi
+  require_match "$file" "modelo orquestrador de vídeo não está isolado em ${file}" \
+    -q --fixed-strings "OPENAI_IMAGE_ORCHESTRATION_MODEL"
 done
 
-if ! rg -U -q --pcre2 \
-  'file: changesets/2030-09-19-add-gpt-image-2-5-sunburst\.yaml\s+relativeToChangelogFile: true' \
-  backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml; then
-  echo "[IMAGEM] include Liquibase canônico não é relativo ao changelog mestre" >&2
-  exit 1
-fi
+require_match backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml \
+  "include Liquibase canônico não é relativo ao changelog mestre" \
+  -U -q --pcre2 \
+  'file: changesets/2030-09-19-add-gpt-image-2-5-sunburst\.yaml\s+relativeToChangelogFile: true'
 
 echo "[IMAGEM] Contrato gpt-image-2.5-sunburst validado nos fluxos ativos."

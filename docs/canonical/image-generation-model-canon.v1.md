@@ -90,3 +90,11 @@ Um modelo inferior somente pode ser usado quando houver indisponibilidade compro
 ## Regra de prevenção de recorrência
 
 Testes de contrato ou arquitetura devem impedir que modelos visuais obsoletos voltem a ser definidos como padrão. Exemplos históricos e relatórios podem manter o identificador originalmente usado, mas não servem como recomendação operacional.
+
+O workflow `image-model-contract.yml` deve instalar explicitamente `ripgrep` e `python3`
+antes de executar o verificador e sua suíte de regressão. A presença dessas ferramentas na
+sandbox não comprova disponibilidade no runner do GitHub. O script distingue violação do
+contrato (saída 1) de ausência de ferramenta, falha de leitura ou erro de PCRE2 (saída 2);
+ambas bloqueiam o CI. Uma busca sem correspondências só comprova ausência de modelos
+aposentados quando terminou sem erro. A suíte `scripts/test-canonical-image-model.py`
+preserva essa distinção, os defaults e as exclusões de histórico e testes.

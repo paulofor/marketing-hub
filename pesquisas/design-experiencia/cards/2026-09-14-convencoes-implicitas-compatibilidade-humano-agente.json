@@ -1,0 +1,18 @@
+{
+  "cardKey": "convencoes-implicitas-compatibilidade-humano-agente",
+  "collection": "neuromarketing",
+  "title": "Compatibilidade com convenções reduz esforço na cooperação humano–IA",
+  "finding": "Em cerca de 101 mil ações de Hanabi, o sucesso de pares humanos e humano–IA excedeu o que seria esperado pela informação literal disponível, enquanto pares IA–IA ficaram próximos do baseline literal. Entre parceiros de IA, maior convention gap coincidiu com menos falhas humanas.",
+  "mechanism": "Cooperação humana usa convenções compartilhadas para comprimir comunicação. Um agente que preserva significados previamente confirmados pode exigir menos repetição; o risco inverso é inferir uma convenção inexistente e agir com confiança sobre um entendimento errado.",
+  "commercialApplication": "No customer-agent, registrar apenas abreviações, preferências operacionais e referências que o usuário confirmou ou repetiu, reutilizando-as para reduzir reexplicação. Em ações ambíguas ou de maior consequência, pedir confirmação antes de agir.",
+  "evidenceStrength": "Evidência preliminar porém quantitativamente ampla: preprint com aproximadamente 101 mil ações e uma checagem controlada com agentes Off-Belief Learning. O domínio é um jogo cooperativo formal e ainda não há validação em conversas comerciais abertas.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2027-03-14",
+  "experimentHypothesis": "Um customer-agent que reutiliza convenções previamente confirmadas reduzirá correções, repetição e tempo de tarefa em relação a um agente estritamente literal, sem elevar a taxa de interpretações erradas.",
+  "risks": "Memória incorreta ou excessiva pode criar falsa familiaridade, problemas de privacidade e ações baseadas em inferências erradas. Convenções devem ser corrigíveis, ter escopo limitado e não substituir confirmação em ações sensíveis.",
+  "limits": "Os resultados vêm de Hanabi e de replays de datasets públicos; não demonstram causalidade em linguagem natural aberta nem impacto em conversão, retenção ou satisfação comercial.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-14-convencoes-implicitas-compatibilidade-humano-agente.md",
+  "sourceTitle": "Fonte revisada — Compatibilidade de convenções implícitas em colaboração humano–IA",
+  "sourceSha256": "a1b208f6988a022db41ac6df4bf96d05bfd8d2ee2a5dfd101bc0c9a0e19db74e"
+}

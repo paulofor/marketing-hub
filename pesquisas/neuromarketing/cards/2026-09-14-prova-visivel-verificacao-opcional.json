@@ -1,0 +1,18 @@
+{
+  "cardKey": "prova-visivel-verificacao-opcional",
+  "collection": "neuromarketing",
+  "title": "Deixe a prova visível e a verificação aprofundada opcional",
+  "finding": "Em estudo peer-reviewed com 553 compradores de medicamentos no Iraque, o selo oficial visível foi relatado como muito mais usado que o aplicativo opcional de verificação; 77,6% associaram o selo a maior confiança na supervisão, enquanto o uso do aplicativo ficou em 12,7%.",
+  "mechanism": "Uma camada de prova visível pode reduzir custo de busca no ponto de decisão, enquanto uma verificação mais profunda e opcional preserva autonomia para usuários que desejam maior due diligence. Essa transferência para contextos comerciais é uma hipótese, não um efeito comprovado pelo estudo.",
+  "commercialApplication": "Testar em landing pages, checkout e Click-to-WhatsApp uma arquitetura de prova em duas camadas: evidência curta, verdadeira e verificável perto do CTA e acesso opcional em um toque a fonte, condições, demonstração, política ou documentação completa.",
+  "evidenceStrength": "Exploratória a moderada: estudo peer-reviewed mixed-methods com 15 entrevistas e survey de 553 participantes, mas transversal, por conveniência, em contexto farmacêutico iraquiano e com apenas 70 usuários do aplicativo.",
+  "publishedOn": "2026-09-13",
+  "validUntil": "2027-03-13",
+  "experimentHypothesis": "Uma prova curta e verificável visível junto ao CTA, com aprofundamento opcional, aumentará confiança percebida e CTA qualificado sem elevar abandono em comparação com prova escondida apenas em FAQ ou com verificação obrigatória.",
+  "risks": "Usar selos ou badges sem base real, insinuar certificação inexistente, esconder restrições materiais na camada opcional, aumentar poluição visual ou transformar confiança em dark pattern.",
+  "limits": "Confiança em selo oficial de saúde não equivale a confiança em prova comercial privada. O estudo não demonstra causalidade nem mede comportamento de landing page, CTR, CPL, vendas ou satisfação pós-compra; o subgrupo do aplicativo tem 70 pessoas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-14-prova-visivel-verificacao-opcional.md",
+  "sourceTitle": "Fonte revisada — Prova visível e verificação aprofundada opcional",
+  "sourceSha256": "f702f204d1986abd831fcfa5624bc0df789aeef04ce7d30e2d868853cea517dd"
+}

@@ -250,8 +250,8 @@ async function paste(page) {
           for (const part of [
             "Não estou conseguindo executar esse processo da tela.",
             "ambiente local da sandbox",
-            "Você tem acesso SSH",
-            "imagens Docker manualmente no host",
+            "Pull Request executado pelo usuário",
+            "Nunca use SSH",
             "aguarde `ACTIVE`",
             "Melhoria dos agentes",
             "A solicitação pode demorar",

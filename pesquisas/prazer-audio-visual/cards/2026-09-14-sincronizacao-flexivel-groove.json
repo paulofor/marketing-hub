@@ -1,0 +1,18 @@
+{
+  "cardKey": "sincronizacao-flexivel-groove",
+  "collection": "prazer-audio-visual",
+  "title": "Preservar flexibilidade em experiências rítmicas",
+  "finding": "Em 30 universitários, maior vontade de se mover se associou a sincronização no nível do beat, mas phase-locking mais forte não aumentou uniformemente o groove e apresentou relações negativas com groove em algumas condições de movimento.",
+  "mechanism": "Groove parece depender de um equilíbrio entre previsão temporal, engajamento corporal, sincronização e flexibilidade; estabilização temporal excessiva pode restringir ajuste e expressão.",
+  "commercialApplication": "Comparar edição ou animação rigidamente presa a cada beat contra uma versão com alinhamento global, múltiplas escalas temporais, microvariação e espaços de movimento visual mais flexível.",
+  "evidenceStrength": "Média: experimento combina medidas subjetivas e captura de movimento, mas usa amostra pequena e homogênea, padrões de bateria a 120 BPM e relações dependentes do contexto.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2027-03-14",
+  "experimentHypothesis": "Uma versão com alinhamento rítmico flexível e multiescala produzirá maior naturalidade, groove e prazer que uma versão rigidamente phase-locked, sem reduzir compreensão.",
+  "risks": "Flexibilidade excessiva pode parecer fora de sincronia; não extrapolar relações de movimento corporal diretamente para cortes de vídeo ou métricas comerciais.",
+  "limits": "Trinta universitários japoneses, estímulos de bateria de 16 segundos, movimento de cabeça e nenhuma medida de vídeo, narrativa, retenção, CTA ou venda.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-14-sincronizacao-flexivel-groove.md",
+  "sourceTitle": "Fonte revisada — sincronização flexível e experiência de groove",
+  "sourceSha256": "23f48964bbb0315173d0cbf86890a12ac8826b2916982def13c21782f41049b6"
+}

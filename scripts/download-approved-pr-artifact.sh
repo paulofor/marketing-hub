@@ -94,5 +94,23 @@ if [[ "${approved_tree}" != "${current_tree}" ]]; then
   exit 4
 fi
 
+# O backend precisa reutilizar exatamente o JAR executável e as classes que
+# passaram nos testes do PR. A verificação pós-merge compara essas classes com
+# BOOT-INF/classes do JAR antes de construir a imagem.
+if [[ "${artifact_name}" == "backend-approved-package" ]]; then
+  runtime_jar="$(find "${destination}" -type f -name app-exec.jar -print -quit)"
+  classes_dir="$(find "${destination}" -type d -name classes -print -quit)"
+  if [[ -z "${runtime_jar}" || -z "${classes_dir}" ]]; then
+    echo "Artefato backend aprovado não contém app-exec.jar e classes compiladas; rebuild será usado."
+    rm -rf "${destination}"
+    exit 3
+  fi
+
+  mkdir -p backend/ads-service/target
+  cp "${runtime_jar}" backend/ads-service/target/app-exec.jar
+  rm -rf backend/ads-service/target/classes
+  cp -a "${classes_dir}" backend/ads-service/target/classes
+fi
+
 printf 'Artefato %s do run %s reutilizável: PR head=%s tree=%s\n' \
   "${artifact_name}" "${run_id}" "${candidate_sha}" "${current_tree}"

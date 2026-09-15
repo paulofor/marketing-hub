@@ -81,6 +81,24 @@ class FreshnessTest(unittest.TestCase):
         repo = FakeRepo(times={CHANGE: NOW - timedelta(minutes=10), HEAD: NOW - timedelta(minutes=2)})
         self.assertEqual(self.evaluate(repo=repo)["status"], "GRACE")
 
+    def test_reverted_pending_interval_does_not_inherit_old_staleness_age(self):
+        revert = "d" * 40
+        repo = FakeRepo(
+            commits=[CHANGE, revert, HEAD],
+            times={CHANGE: NOW - timedelta(minutes=90), revert: NOW - timedelta(minutes=40), HEAD: NOW - timedelta(minutes=5)},
+        )
+
+        class SequenceDetector:
+            states = {CHANGE: True, revert: False, HEAD: True}
+
+            def changed(self, base, head, target):
+                return self.states.get(head, False)
+
+        result = self.evaluate(repo=repo, detector=SequenceDetector())
+        self.assertEqual(result["status"], "GRACE")
+        self.assertEqual(result["first_pending_commit"], HEAD)
+        self.assertEqual(result["stale_minutes"], 5.0)
+
     def test_live_deploy_covering_change_prevents_false_alarm(self):
         result = self.evaluate(deploys=[deploy(HEAD)])
         self.assertEqual(result["status"], "DEPLOYING")

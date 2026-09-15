@@ -276,9 +276,17 @@ describe("ProductListPage", () => {
     expect(pdeVideosLink).toHaveAttribute("href", "/products/1/pde-videos");
 
     const financialLink = screen.getByRole("link", {
-      name: /Financeiro/i,
+      name: /^Financeiro$/i,
     });
     expect(financialLink).toHaveAttribute("href", "/products/1/financial");
+
+    const financialPlanLink = screen.getByRole("link", {
+      name: /^Plano financeiro$/i,
+    });
+    expect(financialPlanLink).toHaveAttribute(
+      "href",
+      "/financial/plans?productId=1",
+    );
 
     const adsLink = screen.getByRole("link", {
       name: /Anúncios/i,

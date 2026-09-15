@@ -16,6 +16,18 @@ paths:
   /api/financial-agent/v1/commercial-plans/{planId}/revenue-projections:
     post:
       summary: Solicita projeção de receita somente leitura ligada à versão oficial do plano
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decisionContext:
+                  type: string
+                  nullable: true
+                  maxLength: 64000
+                  description: Contexto de decisão; também comporta o snapshot de premissas, fontes e cálculos de uma revisão financeira, sem truncamento.
       responses:
         '200': {description: Projeção enfileirada e tarefa aberta na mesa de Plutus}
     get:

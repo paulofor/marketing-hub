@@ -202,6 +202,7 @@ import PdeVideoProductionPage from "./pages/pdeVideoProduction/PdeVideoProductio
 import HomePage from "./pages/HomePage";
 import VideoProviderFinancePage from "./pages/financial/VideoProviderFinancePage";
 import VideoFinancePage from "./pages/financial/VideoFinancePage";
+import FinancialPlansPage from "./pages/financial/FinancialPlansPage";
 import DirectRecruitmentLandingPage from "./pages/public/DirectRecruitmentLandingPage";
 
 function LegacyNicheRedirect() {
@@ -600,6 +601,7 @@ export default function App() {
                 element={<VideoProviderManagementPage />}
               />
               <Route path="/financial/videos" element={<VideoFinancePage />} />
+              <Route path="/financial/plans" element={<FinancialPlansPage />} />
               <Route
                 path="/financial/video-providers"
                 element={<VideoProviderFinancePage />}

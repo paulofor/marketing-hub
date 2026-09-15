@@ -139,6 +139,12 @@ export default function ProductFinancialPage() {
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
           <PageTitle>Financeiro do produto</PageTitle>
+          <Link
+            className="btn btn-outline-primary my-2"
+            to={`/financial/plans?productId=${productId}`}
+          >
+            Planejar viabilidade e margem
+          </Link>
           <p className="text-muted mb-0">
             {summary.productName ||
               summary.productSlug ||

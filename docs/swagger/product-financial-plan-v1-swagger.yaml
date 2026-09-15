@@ -1,0 +1,272 @@
+openapi: 3.0.3
+info:
+  title: Planos financeiros por produto e modelos por tipo
+  version: 1.0.0
+  description: >-
+    Revisões imutáveis de projeções em BRL. Modelos por tipo são referências adotadas
+    explicitamente. Plutus revisa a versão financeira exata pelo contrato de projeções
+    existente; não aprova gasto, publicação, preço ou checkpoints de execução.
+servers:
+  - url: /
+paths:
+  /api/financial-plans/v1/catalog:
+    get:
+      summary: Referências de produtos, tipos e planos comerciais do produto
+      parameters:
+        - name: productId
+          in: query
+          schema: {type: integer, format: int64}
+      responses:
+        '200':
+          description: Catálogo canônico; comercialPlans somente do produto selecionado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: integer, format: int64}
+                        name: {type: string}
+                        productTypeId: {type: integer, format: int64, nullable: true}
+                  productTypes: {$ref: '#/components/schemas/Options'}
+                  commercialPlans: {$ref: '#/components/schemas/Options'}
+  /api/financial-plans/v1/products/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/Owner'}
+      - {$ref: '#/components/parameters/Environment'}
+    get:
+      summary: Histórico por produto, do mais recente ao mais antigo
+      responses:
+        '200': {$ref: '#/components/responses/History'}
+        '404': {$ref: '#/components/responses/Missing'}
+    post:
+      summary: Cria revisão ou reutiliza revisão de premissas idênticas
+      requestBody: {$ref: '#/components/requestBodies/Save'}
+      responses:
+        '200': {$ref: '#/components/responses/Plan'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/financial-plans/v1/product-types/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/Owner'}
+      - {$ref: '#/components/parameters/Environment'}
+    get:
+      summary: Histórico de modelos do tipo e ambiente
+      responses:
+        '200': {$ref: '#/components/responses/History'}
+        '404': {$ref: '#/components/responses/Missing'}
+    post:
+      summary: Cria modelo sem plano comercial nem autorização financeira herdada
+      requestBody: {$ref: '#/components/requestBodies/Save'}
+      responses:
+        '200': {$ref: '#/components/responses/Plan'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/financial-plans/v1/products/{id}/revisions/{revisionId}:
+    parameters:
+      - {$ref: '#/components/parameters/Owner'}
+      - {$ref: '#/components/parameters/Revision'}
+      - {$ref: '#/components/parameters/Environment'}
+    get:
+      summary: Recupera uma revisão exata, sem fallback para a mais recente
+      responses:
+        '200': {$ref: '#/components/responses/Plan'}
+        '404': {$ref: '#/components/responses/Missing'}
+  /api/financial-plans/v1/products/{id}/revisions/{revisionId}/analysis:
+    parameters:
+      - {$ref: '#/components/parameters/Owner'}
+      - {$ref: '#/components/parameters/Revision'}
+      - {$ref: '#/components/parameters/Environment'}
+    post:
+      summary: Solicita um parecer por revisão, reutilizado em concorrência e retentativa
+      description: >-
+        Exige premissas completas, contexto atual e ambiente LIVE. TEST não chama fila paga.
+        Uma falha ou parecer desfavorável não cria outra chamada com as mesmas premissas.
+        A integração reutiliza FinancialAgentService.startRevenueProjection; decisionContext
+        contém JSON explícito desta revisão por compatibilidade com o contrato legado.
+        Nenhum JSON é serializado em string na resposta pública deste novo módulo.
+      responses:
+        '200': {$ref: '#/components/responses/Plan'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '409': {$ref: '#/components/responses/Conflict'}
+components:
+  parameters:
+    Owner:
+      name: id
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    Revision:
+      name: revisionId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    Environment:
+      name: environment
+      in: query
+      schema: {type: string, enum: [LIVE, TEST], default: LIVE}
+  requestBodies:
+    Save:
+      required: true
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/SavePlan'}
+  responses:
+    Plan:
+      description: Revisão e avaliação determinística persistidas
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Plan'}
+    History:
+      description: Apenas revisões do proprietário e ambiente solicitados
+      content:
+        application/json:
+          schema: {type: array, items: {$ref: '#/components/schemas/Plan'}}
+    Missing:
+      description: Referência inexistente ou de outro produto/tipo/ambiente
+    Invalid:
+      description: Campo fora dos limites; quantidades fracionárias são rejeitadas
+    Conflict:
+      description: Revisão concorrente, plano de outro produto, modelo incompatível ou premissas vencidas/incompletas
+  schemas:
+    Options:
+      type: array
+      items:
+        type: object
+        properties:
+          id: {type: integer, format: int64}
+          name: {type: string}
+    Amount:
+      type: number
+      minimum: 0
+      nullable: true
+      description: Ausência permanece nula; zero é declaração explícita nas premissas
+    SavePlan:
+      type: object
+      required: [name, createdBy, expectedRevision, assumptions]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 200}
+        createdBy: {type: string, minLength: 1, maxLength: 100}
+        expectedRevision: {type: integer, minimum: 0}
+        commercialPlanId: {type: integer, format: int64, nullable: true, description: Obrigatório no produto; nulo no modelo}
+        templateId: {type: integer, format: int64, nullable: true, description: Modelo imutável do mesmo tipo e ambiente}
+        assumptions: {$ref: '#/components/schemas/Assumptions'}
+    Assumptions:
+      type: object
+      required: [validUntil, evidence, ai, costs, scenarios]
+      properties:
+        productVersion: {type: string, maxLength: 100, nullable: true, description: Obrigatório no plano do produto}
+        periodDays: {type: integer, minimum: 1, maximum: 3660, nullable: true}
+        validUntil: {type: string, format: date}
+        evidence: {type: string, minLength: 1, maxLength: 6000}
+        priceBrl: {type: number, minimum: 0.01, nullable: true}
+        minimumMarginPercent: {type: number, minimum: 0.01, maximum: 99.99, nullable: true}
+        maximumCacBrl: {$ref: '#/components/schemas/Amount'}
+        ai:
+          type: object
+          required: [currency]
+          properties:
+            currency: {type: string, enum: [BRL, USD]}
+            providerModel: {type: string, maxLength: 200, nullable: true}
+            perAttempt: {$ref: '#/components/schemas/Amount'}
+            pricingSource: {type: string, maxLength: 1000, nullable: true}
+            pricingCheckedOn: {type: string, format: date, nullable: true}
+            usdBrl: {type: number, minimum: 0.000001, nullable: true}
+            exchangeSource: {type: string, maxLength: 1000, nullable: true}
+            includedUnits: {type: integer, minimum: 1, maximum: 100000, nullable: true}
+            maximumAttempts: {type: integer, minimum: 0, maximum: 1000000, nullable: true}
+            maximumCostPerCustomerBrl: {$ref: '#/components/schemas/Amount'}
+        costs:
+          type: object
+          properties:
+            feePercent: {type: number, minimum: 0, maximum: 100, nullable: true}
+            taxPercent: {type: number, minimum: 0, maximum: 100, nullable: true}
+            commissionPercent: {type: number, minimum: 0, maximum: 100, nullable: true}
+            refundPercent: {type: number, minimum: 0, maximum: 100, nullable: true}
+            fixedFeeBrl: {$ref: '#/components/schemas/Amount'}
+            supportBrl: {$ref: '#/components/schemas/Amount'}
+            storageBrl: {$ref: '#/components/schemas/Amount'}
+            deliveryBrl: {$ref: '#/components/schemas/Amount'}
+            otherVariableBrl: {$ref: '#/components/schemas/Amount'}
+            initialAiBrl: {$ref: '#/components/schemas/Amount'}
+            initialOtherBrl: {$ref: '#/components/schemas/Amount'}
+            fixedPerPeriodBrl: {$ref: '#/components/schemas/Amount'}
+        scenarios:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            required: [code]
+            properties:
+              code: {type: string, enum: [CONSERVATIVE, BASE, OPTIMISTIC]}
+              customers: {type: integer, minimum: 0, maximum: 10000000, nullable: true}
+              attemptsPerCustomer: {type: integer, minimum: 0, maximum: 1000000, nullable: true}
+              cacBrl: {$ref: '#/components/schemas/Amount'}
+    Plan:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        scope: {type: string, enum: [PRODUCT, TYPE]}
+        scopeId: {type: integer, format: int64}
+        environment: {type: string, enum: [LIVE, TEST]}
+        name: {type: string}
+        revision: {type: integer}
+        templateId: {type: integer, format: int64, nullable: true}
+        commercialPlanId: {type: integer, format: int64, nullable: true}
+        commercialPlanVersion: {type: integer, nullable: true}
+        createdBy: {type: string}
+        createdAt: {type: string, format: date-time}
+        assumptions: {$ref: '#/components/schemas/Assumptions'}
+        evaluation:
+          type: object
+          properties:
+            status: {type: string, enum: [MISSING_INPUTS, REVIEW_REQUIRED, PROJECTED_VIABLE]}
+            label: {type: string}
+            blockers: {type: array, items: {type: string}}
+            scenarios:
+              type: array
+              items: {$ref: '#/components/schemas/ScenarioResult'}
+        stale: {type: boolean}
+        pendingActions: {type: array, items: {type: string}}
+        canRequestAnalysis: {type: boolean}
+        analysis:
+          type: object
+          nullable: true
+          properties:
+            executionId: {type: integer, format: int64}
+            status: {type: string}
+            report: {type: string, nullable: true}
+            result: {type: object, nullable: true, description: Resposta funcional do schema de projeção financeira existente}
+            error: {type: string, nullable: true}
+            model: {type: string, nullable: true}
+            costUsd: {$ref: '#/components/schemas/Amount'}
+            costCoverage: {type: string, enum: [NOT_REPORTED, REPORTED]}
+            finishedAt: {type: string, format: date-time, nullable: true}
+    ScenarioResult:
+      type: object
+      description: Valores projetados em BRL; nenhuma coluna representa receita realizada
+      properties:
+        code: {type: string, enum: [CONSERVATIVE, BASE, OPTIMISTIC, INTENSIVE]}
+        label: {type: string}
+        customers: {type: integer}
+        attemptsPerCustomer: {type: integer}
+        grossRevenueBrl: {type: number, nullable: true}
+        netRevenueBrl: {type: number, nullable: true}
+        aiCostPerCustomerBrl: {type: number, nullable: true}
+        aiCostPerUsefulUnitBrl: {type: number, nullable: true}
+        variableDeliveryPerCustomerBrl: {type: number, nullable: true}
+        contributionBeforeCacBrl: {type: number, nullable: true}
+        contributionAfterCacBrl: {type: number, nullable: true}
+        marginPercent: {type: number, nullable: true}
+        maximumAffordableCacBrl: {type: number, nullable: true}
+        operatingResultBrl: {type: number, nullable: true}
+        resultAfterInvestmentBrl: {type: number, nullable: true}
+        breakEvenCustomers: {type: number, nullable: true}
+        aiToNetRevenuePercent: {type: number, nullable: true}
+        viable: {type: boolean}
+        blockers: {type: array, items: {type: string}}

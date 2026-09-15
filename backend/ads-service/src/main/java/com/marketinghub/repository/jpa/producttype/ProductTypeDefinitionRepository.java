@@ -8,6 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Responsabilidade: persistir e listar as definições do catálogo de tipos de produto. */
 public interface ProductTypeDefinitionRepository
     extends JpaRepository<ProductTypeDefinition, Long> {
+  /** Serializa revisões de modelos financeiros para o mesmo tipo sem sobrescrever histórico. */
+  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  @org.springframework.data.jpa.repository.Query(
+      "SELECT t FROM ProductTypeDefinition t WHERE t.id=:id")
+  Optional<ProductTypeDefinition> findLockedById(
+      @org.springframework.data.repository.query.Param("id") Long id);
+
   /** Lista o catálogo em ordem estável e legível. */
   List<ProductTypeDefinition> findAllByOrderByNameAsc();
 

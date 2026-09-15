@@ -4,6 +4,10 @@
 
 O Agente Financeiro reconcilia diariamente custos e receitas do Marketing Hub por planejamento, identifica divergências e protege os gates econômicos. Sua conclusão é fiscalizatória e nunca representa autorização para gastar.
 
+O [plano financeiro de produto v1](product-financial-plan-canon.v1.md) organiza premissas e
+projeções por produto/versão, com modelos reutilizáveis por tipo. Plutus revisa cada plano
+específico; a avaliação do tipo nunca aprova automaticamente a economia dos produtos.
+
 ## Participação transversal e rentabilidade por produto
 
 Decisão de 14/09/2026: **gerar vendas e receitas com valor para o cliente e contribuição

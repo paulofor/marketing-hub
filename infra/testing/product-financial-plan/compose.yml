@@ -1,0 +1,14 @@
+services:
+  financial-plan-mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: financial_plans_local
+      MYSQL_ROOT_PASSWORD: financial-plans-local-only
+    ports:
+      - "18515:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-pfinancial-plans-local-only"]
+      interval: 2s
+      timeout: 2s
+      retries: 45

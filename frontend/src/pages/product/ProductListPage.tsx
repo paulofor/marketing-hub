@@ -609,6 +609,12 @@ export default function ProductListPage() {
                       </Link>
                       <Link
                         className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
+                        to={`/financial/plans?productId=${product.id}`}
+                      >
+                        Plano financeiro
+                      </Link>
+                      <Link
+                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
                         to={`/products/${product.id}/scientific-articles`}
                       >
                         <BookOpen size={16} aria-hidden="true" />

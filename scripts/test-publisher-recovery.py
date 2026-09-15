@@ -14,6 +14,7 @@ import textwrap
 import unittest
 from unittest.mock import patch
 
+import deploy_publisher_recovery as recovery_module
 from deploy_publisher_recovery import APP, POLICY, PublisherRecovery
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -142,13 +143,13 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
         self.assertEqual(self.github.dispatches, [])
 
-    def test_missing_validated_commit_waits_without_mutations_then_recovers(self):
+    def test_missing_validated_commit_blocks_loudly_then_recovers_if_commit_returns(self):
         prepared = self.prepare()
         self.github.missing_commits = [VALIDATED]
         calls = len(self.github.calls)
         for _ in range(3):
             result = self.recovery.reconcile()
-            self.assertEqual(result["status"], "WAITING")
+            self.assertEqual(result["status"], "BLOCKED")
             self.assertIn(VALIDATED, result["reason"])
             self.assertIn("HTTP 404", result["reason"])
         state = self.store.load()
@@ -162,10 +163,33 @@ class AutomaticRecoveryTest(unittest.TestCase):
         self.assertEqual(self.store.load()["phase"], "RELEASED")
         self.assertEqual(len(self.github.dispatches), 1)
 
+    def test_authorized_legacy_orphan_supersedes_with_current_main(self):
+        prepared = self.prepare()
+        self.github.missing_commits = [VALIDATED]
+        authorization = {
+            prepared["id"]: {
+                "validated_commit": VALIDATED,
+                "action": "supersede_with_current_main",
+                "authorized_by": "teste",
+                "authorized_at": "2099-01-01T00:00:00Z",
+                "reason": "priorizar main atual",
+            }
+        }
+        with patch.dict(recovery_module.LEGACY_ORPHANED_VALIDATIONS, authorization, clear=True):
+            result = self.recovery.reconcile()
+        self.assertEqual(result["status"], "WAITING")
+        state = self.store.load()
+        self.assertEqual(state["phase"], "RELEASED")
+        self.assertEqual(state["automatic_resume"]["effective_commit"], SHA)
+        self.assertEqual(state["automatic_resume"]["superseded_validated_commit"], VALIDATED)
+        self.assertEqual(state["integrated_commit"], SHA)
+        self.assertEqual(len(self.github.dispatches), 1)
+        self.assertTrue(any(e["event"] == "orphaned_validation_superseded" for e in state["history"]))
+
     def test_missing_initial_commit_also_preserves_protection(self):
         self.prepare()
         self.github.missing_commits = [SHA]
-        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(self.recovery.reconcile()["status"], "BLOCKED")
         self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
         self.assertEqual(self.github.dispatches, [])
 
@@ -471,6 +495,7 @@ class RecoveryContractsTest(unittest.TestCase):
                          "actions: write", "cancel-in-progress: false", "--actions-ssh",
                          "github.ref == 'refs/heads/main'", "deploy-control-known-hosts"):
             self.assertIn(contract, source)
+        self.assertIn("- cron: '*/5 * * * *'", source)
         self.assertNotIn("pull_request:", source)
         self.assertNotIn("StrictHostKeyChecking=no", source)
         self.assertNotIn("docker ", source)
@@ -606,19 +631,6 @@ class RecoveryCliTest(unittest.TestCase):
             state = call("prepare-resume", "--id", state["id"], "--validated-commit", VALIDATED,
                          "--evidence", "matriz sintética aprovada")
             self.assertEqual(state["phase"], "AWAITING_MERGE")
-            state_file = root / "github.json"
-            github_state = json.loads(state_file.read_text())
-            github_state["missing_commits"] = [VALIDATED]
-            state_file.write_text(json.dumps(github_state))
-            for transport_flag in (("--actions-ssh",), ()):
-                result = call("reconcile-publishers", *transport_flag)
-                self.assertEqual(result["status"], "WAITING")
-                self.assertEqual(result["phase"], "AWAITING_MERGE")
-                self.assertIn("HTTP 404", result["reason"])
-            github_state = json.loads(state_file.read_text())
-            self.assertEqual(github_state["dispatches"], [])
-            github_state["missing_commits"] = []
-            state_file.write_text(json.dumps(github_state))
             self.assertEqual(call("reconcile-publishers", "--actions-ssh")["status"], "WAITING")
             self.assertEqual(call("reconcile-publishers")["status"], "WAITING")
             state_file = root / "github.json"

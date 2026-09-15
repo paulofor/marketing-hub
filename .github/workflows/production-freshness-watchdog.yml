@@ -1,0 +1,172 @@
+name: Production Freshness Watchdog
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Build & Deploy containers
+      - Reconcile automatic publishers
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: production-freshness-watchdog
+  cancel-in-progress: true
+
+env:
+  APP_VPS_IP: 191.252.181.168
+  VPS_USER: root
+  DEPLOY_DIR: /opt/marketinghub/containers
+  FRESHNESS_GRACE_MINUTES: '30'
+  MAX_DEPLOY_RUNTIME_MINUTES: '75'
+
+jobs:
+  check-production-freshness:
+    name: Verify production freshness
+    if: github.repository == 'paulofor/marketing-hub'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout current main history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Add production SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_CHAVE }}
+
+      - name: Pin production host identity
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          install -m 600 scripts/deploy-control-known-hosts "$HOME/.ssh/known_hosts"
+
+      - id: production
+        name: Read deployed app and frontend revisions
+        env:
+          SSH_OPTS: -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=3
+        run: |
+          set -euo pipefail
+
+          app_revision="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+            "if test -f '${DEPLOY_DIR}/.deployed-app-revision'; then tr -d '\\r\\n' < '${DEPLOY_DIR}/.deployed-app-revision'; else printf MISSING; fi" \
+            2>/dev/null || printf MISSING)"
+
+          frontend_health="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+            "curl -fsS --max-time 10 http://localhost:5173/healthz" 2>/dev/null || true)"
+          frontend_revision="$(printf '%s\n' "${frontend_health}" \
+            | bash scripts/read-frontend-build-revision.sh 2>/dev/null || printf MISSING)"
+
+          printf 'app_revision=%s\n' "${app_revision}" >> "$GITHUB_OUTPUT"
+          printf 'frontend_revision=%s\n' "${frontend_revision}" >> "$GITHUB_OUTPUT"
+
+      - name: Read active deployment runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-containers.yml/runs?branch=main&per_page=100" \
+            > /tmp/deploy-runs.json
+
+      - id: freshness
+        name: Evaluate production freshness
+        run: |
+          set +e
+          python3 scripts/check-production-freshness.py \
+            --head main \
+            --app-revision '${{ steps.production.outputs.app_revision }}' \
+            --frontend-revision '${{ steps.production.outputs.frontend_revision }}' \
+            --runs-json /tmp/deploy-runs.json \
+            --grace-minutes "${FRESHNESS_GRACE_MINUTES}" \
+            --max-deploy-minutes "${MAX_DEPLOY_RUNTIME_MINUTES}" \
+            --output /tmp/production-freshness.json
+          exit_code=$?
+          set -e
+
+          status="$(python3 -c 'import json; print(json.load(open("/tmp/production-freshness.json"))["overall_status"])')"
+          printf 'exit_code=%s\n' "${exit_code}" >> "$GITHUB_OUTPUT"
+          printf 'status=%s\n' "${status}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish watchdog summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+
+          path = Path('/tmp/production-freshness.json')
+          print('## Production Freshness Watchdog')
+          if not path.exists():
+              print('\nResultado indisponível; a própria verificação falhou antes de produzir diagnóstico.')
+              raise SystemExit(0)
+          data = json.loads(path.read_text())
+          print(f"\n**Estado geral:** `{data.get('overall_status', 'UNKNOWN')}`")
+          print(f"\n**Main:** `{data.get('head', 'UNKNOWN')}`")
+          if data.get('targets'):
+              print('\n| Target | Estado | Revisão observada | Motivo |')
+              print('| --- | --- | --- | --- |')
+              for target in data['targets']:
+                  print(f"| {target['target']} | {target['status']} | `{target.get('observed_revision', '')}` | {target.get('reason', '')} |")
+          if data.get('error'):
+              print(f"\n**Erro:** {data['error']}")
+          PY
+
+      - name: Open freshness incident when stale or broken
+        if: steps.freshness.outputs.exit_code != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: '[Watchdog] Produção desatualizada'
+        run: |
+          set -euo pipefail
+          issue_number="$(gh issue list --state open --limit 100 --json number,title \
+            --jq '.[] | select(.title == "[Watchdog] Produção desatualizada") | .number' | head -n 1)"
+          if [[ -n "${issue_number}" ]]; then
+            echo "Incidente já aberto: #${issue_number}"
+            exit 0
+          fi
+
+          {
+            echo '## Production Freshness Watchdog'
+            echo
+            echo "A produção ficou fora da janela de atualização ou o watchdog não conseguiu comprovar sua revisão."
+            echo
+            echo "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo '```json'
+            cat /tmp/production-freshness.json
+            echo '```'
+          } > /tmp/freshness-issue.md
+
+          gh issue create --title "${ISSUE_TITLE}" --body-file /tmp/freshness-issue.md
+
+      - name: Close recovered freshness incident
+        if: steps.freshness.outputs.status == 'FRESH'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          issue_number="$(gh issue list --state open --limit 100 --json number,title \
+            --jq '.[] | select(.title == "[Watchdog] Produção desatualizada") | .number' | head -n 1)"
+          if [[ -z "${issue_number}" ]]; then
+            exit 0
+          fi
+          gh issue comment "${issue_number}" --body \
+            "Produção voltou a ficar atualizada. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh issue close "${issue_number}" --reason completed
+
+      - name: Fail when production freshness is unhealthy
+        if: steps.freshness.outputs.exit_code != '0'
+        run: exit '${{ steps.freshness.outputs.exit_code }}'

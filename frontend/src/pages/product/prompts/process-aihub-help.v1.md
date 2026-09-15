@@ -37,6 +37,33 @@ personalizadas**, quando esse for o valor prometido ao cliente.
   receita líquida, margem e satisfação quando houver dados. Cliques, geração concluída ou
   testes aprovados não comprovam vendas; diferencie hipótese de ganho e resultado medido.
 
+## Compatibilidade obrigatória com o tipo de produto
+
+**Ao tratar qualquer produto, considere sempre as definições macro do seu tipo cadastrado.
+O processo do produto deve permanecer integralmente compatível com essas definições em
+todas as etapas da cadeia de valor.** As particularidades do produto detalham a aplicação
+dessas regras; não podem contradizê-las nem substituí-las silenciosamente.
+
+- Antes de investigar, planejar, corrigir ou executar, confirme o tipo efetivamente vinculado
+  ao produto no backend. Consulte suas definições em `docs/canonical/product-types-canon.v1.md`,
+  o cadastro do tipo e os contratos e versões aplicáveis ao produto. Não deduza o tipo pelo
+  nome, por exemplos ou pela tecnologia utilizada.
+- Verifique a coerência dos processos, subprocessos, atividades e responsabilidades dos
+  agentes com o mecanismo de valor, experiência, oferta, funil de vendas, comunicação,
+  entrega, critérios de qualidade, métricas e modelo de receita definidos para o tipo.
+  Plutus deve considerar as diretrizes econômicas do tipo e avaliar custos, limites de
+  consumo e margem no plano financeiro específico do produto e da versão em análise.
+- Use a ficha de execução aprovada, conforme `docs/canonical/product-execution-profiles-canon.v1.md`,
+  para especializar o percurso por capacidade, formato, entrega e receita dentro dessas
+  diretrizes. Produtos do mesmo tipo podem ter particularidades compatíveis; o nome do
+  tipo, sozinho, não determina todas as atividades nem obriga um formato de implementação.
+- Se encontrar incompatibilidade, registre as definições e versões em conflito, o impacto
+  para o cliente e o negócio e a correção necessária. Corrija localmente os desvios técnicos
+  dentro do escopo autorizado; quando o alinhamento exigir decisão de produto, apresente
+  as alternativas para decisão explícita. Não reclassifique o produto, altere a definição
+  macro, a oferta ou o funil aprovados, migre execuções nem dispense gates silenciosamente.
+  Preserve contratos já vendidos, histórico, custos, evidências e aprovações.
+
 ## Plutus ativo e proteção da rentabilidade
 
 **Gerar vendas deve preservar margem: IA tem custo na criação e também durante o uso do

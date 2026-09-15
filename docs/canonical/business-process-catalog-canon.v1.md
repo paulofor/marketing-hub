@@ -39,6 +39,16 @@ de webapp com IA. Seguir `product-types-canon.v1.md`, preservando classificaçõ
 e aprovações existentes. A homologação deve corresponder à entrega do formato escolhido;
 sucesso técnico não comprova vendas ou receita.
 
+**Compatibilidade com o tipo de produto — decisão de 15/09/2026:** todo pedido gerado por
+**Prompt para AIHUB** deve exigir consulta às definições macro do tipo efetivamente vinculado
+ao produto e compatibilidade integral do processo com elas em toda a cadeia. Seguir a seção
+de compatibilidade de `product-types-canon.v1.md`, incluindo subprocessos, atividades,
+agentes, oferta, funil, entrega, métricas e economia específica com Plutus. A ficha de execução
+especializa o percurso dentro dessas diretrizes; não contradiz as regras do tipo. Divergências
+devem ser registradas e corrigidas no escopo autorizado, com decisão explícita quando exigirem
+mudança de produto, preservando versões, histórico e aprovações. Cópia, prévia e seleção manual
+usam o mesmo modelo compartilhado; essa orientação não reclassifica nem migra produtos.
+
 **Publicação — regra vigente de 14/09/2026:** a exigência de validação local completa e
 publicação pelo fluxo de Pull Request executado pelo usuário substitui a exceção anterior
 de publicação manual antes do PR. O prompt não concede autorização de publicação por SSH;

@@ -1,0 +1,18 @@
+{
+  "cardKey": "video-geracao-paralela-selecao-best-of-n",
+  "collection": "video",
+  "title": "Gerar vários candidatos baratos e selecionar o melhor",
+  "finding": "O Boreal tornou economicamente viável gerar pequenos lotes de vídeos curtos com áudio nativo a baixo custo marginal, abrindo espaço para uma estratégia best-of-N em tomadas importantes.",
+  "mechanism": "Como modelos generativos variam entre tentativas, reduzir custo e latência por render permite produzir vários candidatos sob o mesmo briefing e selecionar apenas os que melhor preservam produto, identidade, continuidade e intenção da cena.",
+  "commercialApplication": "No videomaker do Marketing Hub, gerar um lote pequeno de candidatos para hook, demonstração de produto e CTA, filtrar por invariantes e conformidade, e encaminhar somente os melhores para revisão ou acabamento.",
+  "evidenceStrength": "Moderada para custo, disponibilidade e uso comercial, verificados no endpoint da fal; baixa a moderada para qualidade relativa e velocidade, porque os benchmarks comparativos são divulgados pelo próprio fornecedor e precisam de validação independente.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2026-10-30",
+  "experimentHypothesis": "Com orçamento total fixo, gerar um pequeno best-of-N com um modelo de baixo custo reduzirá custo e tempo por tomada aprovada e número de regenerações, mantendo ou melhorando aderência ao briefing e avaliação humana em relação a uma única tentativa mais cara.",
+  "risks": "Gerar candidatos demais pode eliminar a economia; um avaliador automático pode escolher estética em detrimento de precisão comercial, segurança ou claims aprovados; variantes adicionais ampliam a superfície de revisão.",
+  "limits": "O Boreal é mais forte em clipes curtos e cenas simples; os benchmarks de qualidade e velocidade são do fornecedor; tempo de inferência não equivale a latência ponta a ponta; não há evidência de impacto em conversão ou vendas.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/video/cards/fontes/2026-09-15-boreal-best-of-n-geracao-paralela.md",
+  "sourceTitle": "Fonte revisada — Boreal e geração paralela de variantes",
+  "sourceSha256": "d4b3a9811a9239a8be8da69053f3d41a1260946d3260875530ca28c982c8817e"
+}

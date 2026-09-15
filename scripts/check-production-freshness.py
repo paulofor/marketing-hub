@@ -135,14 +135,16 @@ def find_first_relevant_change(
     if not commits or not detector.changed(base, head, target):
         return None
 
-    low, high = 0, len(commits) - 1
-    while low < high:
-        mid = (low + high) // 2
-        if detector.changed(base, commits[mid], target):
-            high = mid
-        else:
-            low = mid + 1
-    return commits[low]
+    # git diff base..commit pode voltar a ficar limpo após um revert. Por isso não usamos
+    # busca binária: acompanhamos as transições e medimos a idade do intervalo pendente atual.
+    pending_since = None
+    for commit in commits:
+        changed = detector.changed(base, commit, target)
+        if changed and pending_since is None:
+            pending_since = commit
+        elif not changed:
+            pending_since = None
+    return pending_since
 
 
 def covering_deploy(

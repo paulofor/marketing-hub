@@ -117,7 +117,7 @@ public class ExperimentReadinessService {
     this.integratedPdeJourneyEvidenceService = integratedPdeJourneyEvidenceService;
   }
 
-  /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
+  /** Resume a prontidão com dados canônicos e orientações compatíveis com o funil do experimento. */
   @Transactional(readOnly = true)
   public ExperimentReadinessSummaryDto summarize(Long experimentId) {
     Experiment experiment = experimentService.get(experimentId);
@@ -375,16 +375,24 @@ public class ExperimentReadinessService {
         List.of(
             runningRequirement(
                 "LANDING_APPROVED",
-                "Landing aprovada",
+                pdeMembershipFunnel
+                    ? "Entrada do PDE aprovada e pronta para receber visitantes"
+                    : "Landing aprovada",
                 landingReady,
                 directPdeReady
                     ? "O run produtivo homologado aprovou a superfície comercial em desktop e mobile."
                     : reusablePdeSuccessorDestinationReady
                         ? "O sucessor preserva produto, destino e checkout da superfície PDE homologada no experimento anterior."
-                        : landingReady
+                        : pdeMembershipFunnel
+                            ? landingReady
+                                ? "A experiência PDE está homologada para receber visitantes do anúncio."
+                                : "A entrada do PDE ainda precisa concluir a homologação e a aprovação necessárias."
+                            : landingReady
                             ? "A página e seu pipeline canônico estão concluídos."
                             : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
-                "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
+                pdeMembershipFunnel
+                    ? "Conclua a homologação e a aprovação da entrada do próprio PDE, destino do anúncio."
+                    : "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
             runningRequirement(
                 "CREATIVE_APPROVED",
                 integratedPdeReady && !requiresMetaTargeting

@@ -144,7 +144,7 @@ public class PdeProductionSlotService {
     return toProductionSlotDto(repository.save(slot));
   }
 
-  /** Publica o contrato comercial do slot para consumo da URL versionada do PDE. */
+  /** Publica o contrato da versão somente após conferir sua identidade comercial. */
   public PostDeployPdeProductionSlotDto publishProductionSlotContract(
       String productSlug, String slotCode, PublishPdeProductionSlotContractRequest request) {
     String resolvedProductSlug = resolveProductSlug(productSlug);
@@ -165,6 +165,7 @@ public class PdeProductionSlotService {
             "Informe o contrato JSON do PDE para publicar",
             slot.getExperienceVersion(),
             slot.getLayoutKey());
+    validatePublishedContractIdentity(slot, normalizedContract);
     slot.setDraftExperienceJson(normalizedContract);
     slot.setPublishedExperienceJson(normalizedContract);
     slot.setPublishedBy(
@@ -173,24 +174,73 @@ public class PdeProductionSlotService {
     return toProductionSlotDto(repository.save(slot));
   }
 
-  /** Retorna o contrato PDE publicado por slot ou versão, quando existir. */
+  /** Resolve a versão publicada e bloqueia fallback global quando um seletor foi informado. */
   public Optional<String> findPublishedExperienceJson(
       String productSlug, String slotCode, String experienceVersion) {
     String resolvedProductSlug = resolveProductSlug(productSlug);
-    Optional<PdeProductionSlot> slot = Optional.empty();
+    if (!StringUtils.hasText(slotCode) && !StringUtils.hasText(experienceVersion)) {
+      return Optional.empty();
+    }
+    Optional<PdeProductionSlot> selected;
     if (StringUtils.hasText(slotCode)) {
-      slot =
+      selected =
           repository.findByProductSlugAndSlotCode(
               resolvedProductSlug, slotCode.trim().toLowerCase(Locale.ROOT));
-    }
-    if (slot.isEmpty() && StringUtils.hasText(experienceVersion)) {
-      slot =
+    } else {
+      selected =
           repository.findFirstByProductSlugAndExperienceVersionOrderByPublishedAtDesc(
               resolvedProductSlug, experienceVersion.trim());
     }
-    return slot.map(PdeProductionSlot::getPublishedExperienceJson)
-        .filter(StringUtils::hasText)
-        .map(String::trim);
+    PdeProductionSlot slot =
+        selected.orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Versão PDE solicitada não encontrada"));
+    if (StringUtils.hasText(experienceVersion)
+        && !experienceVersion.trim().equals(slot.getExperienceVersion())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Seletores de versão PDE divergentes");
+    }
+    String json = slot.getPublishedExperienceJson();
+    if (!StringUtils.hasText(json)) {
+      log.warn(
+          "Contrato PDE não publicado; productSlug={}, slotCode={}, experienceVersion={}",
+          resolvedProductSlug,
+          slot.getSlotCode(),
+          slot.getExperienceVersion());
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Contrato da versão PDE não publicado");
+    }
+    validatePublishedContractIdentity(slot, json);
+    return Optional.of(json.trim());
+  }
+
+  /** Confere a identidade do snapshot persistido sem reescrever conteúdo comercial. */
+  private void validatePublishedContractIdentity(PdeProductionSlot slot, String json) {
+    JsonNode contract;
+    try {
+      contract = objectMapper.readTree(json);
+    } catch (IOException ex) {
+      log.warn(
+          "Contrato PDE inválido; productSlug={}, slotCode={}, experienceVersion={}",
+          slot.getProductSlug(),
+          slot.getSlotCode(),
+          slot.getExperienceVersion(),
+          ex);
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Contrato da versão PDE inválido");
+    }
+    if (contract == null
+        || !contract.isObject()
+        || !Objects.equals(slot.getProductSlug(), contract.path("slug").asText())
+        || !Objects.equals(
+            slot.getExperienceVersion(), contract.path("experienceVersion").asText())) {
+      log.warn(
+          "Identidade do contrato PDE divergente; productSlug={}, slotCode={}, experienceVersion={}",
+          slot.getProductSlug(),
+          slot.getSlotCode(),
+          slot.getExperienceVersion());
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Identidade do contrato PDE divergente");
+    }
   }
 
   /** Valida por HTTP se a URL produtiva entrega o contrato público declarado para o PDE. */

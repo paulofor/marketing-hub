@@ -10,6 +10,16 @@ Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativ
 
 A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs físicos usam bancos descartáveis e credenciais sintéticas, sem dados de produção, para conferir as migrações cobertas por suas fixtures antes da publicação.
 
+## Snapshots públicos PDE — reparo histórico da v5
+
+O job `validate-pde-version-contract` executa
+`infra/testing/pde-version-contract/run-mysql.sh`, com projeto Compose exclusivo.
+A fixture reconstitui os seis changelogs históricos do contrato v5 em MySQL 5.7,
+compara o resultado integral com a migração de reparo, valida os controllers públicos,
+preserva outras versões/rascunhos, reaplica e testa rollback por marcador e hash.
+Não consulta dados nem credenciais de produção. A matriz completa local está em
+`docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`.
+
 ## Execução automática de processos — fixture v1
 
 O job `validate-process-automation` deste workflow executa a matriz física da execução automática

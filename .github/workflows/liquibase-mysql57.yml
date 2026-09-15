@@ -5,6 +5,8 @@ on:
     paths:
       - "backend/ads-service/src/main/resources/db/changelog/**"
       - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
+      - "infra/testing/pde-version-contract/**"
+      - "backend/ads-service/src/test/java/com/marketinghub/pde/service/PdePublishedContractMysql57Test.java"
       - "backend/ads-service/Dockerfile.liquibase-mysql57"
       - "backend/ads-service/Dockerfile.mysql57-product-process"
       - "backend/ads-service/Dockerfile.mysql57-activity-instances"
@@ -78,6 +80,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-pde-version-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Validate historical PDE contract on MySQL 5.7
+        env:
+          PDE_CONTRACT_COMPOSE_PROJECT: aihub-pde-contract-${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash infra/testing/pde-version-contract/run-mysql.sh
+
   validate-process-automation:
     name: Processos automáticos com MySQL 5.7 e concorrência
     runs-on: ubuntu-latest

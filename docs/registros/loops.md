@@ -246,6 +246,17 @@
   real, com casos negativos. Gatilhos incluem o verificador e seu teste. Não há fallback silencioso
   para legado, remoção do smoke ou troca da imagem pública para contornar o erro.
 
+### Contrato ausente em versão legada — 15/09/2026
+
+O run `34916516103`, com alvo `all`, revelou v5 ACTIVE sem snapshot desde a criação das
+colunas de publicação. O backend devolvia o contrato global v7 com HTTP 200; v6/v7 tinham
+snapshots e o run verde anterior testara somente v7. Banco via MCP e GETs por slot/versão
+confirmaram a origem. O reparo restaura apenas o snapshot ausente de v5 pelos seis changelogs
+históricos, preserva rascunhos e publicações e recusa fallback global em consultas versionadas.
+O catálogo PDE preserva recusas canônicas. Regressões exercitam os controllers/services reais,
+o histórico Liquibase em MySQL 5.7, reaplicação, rollback e o diagnóstico pelo backend PDE.
+Evidências: `docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`.
+
 ## LOOP-PDE-PROXY-IP-ANTIGO — backend saudável e contrato público com 502
 
 - **Data:** 2026-09-10.

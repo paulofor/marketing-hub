@@ -4,6 +4,53 @@ info:
   version: 1.3.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
+  /api/products/public/{productCode}/pde-experience:
+    get:
+      summary: Retorna o contrato PDE global ou o snapshot publicado da versão solicitada.
+      operationId: getPublicPdeExperience
+      parameters:
+        - name: productCode
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotCode
+          in: query
+          schema: { type: string }
+        - name: experienceVersion
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Contrato solicitado; fallback global somente sem seletor de versão.
+          content:
+            application/json:
+              schema: { type: object }
+        "404":
+          description: Produto ou versão solicitada inexistente.
+        "409":
+          description: Snapshot ausente ou inválido, identidade divergente ou seletores contraditórios.
+  /api/pde/products/{productSlug}:
+    get:
+      summary: Alias do contrato PDE público, com o mesmo isolamento de versões.
+      operationId: getPublicPdeProduct
+      parameters:
+        - name: productSlug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slotCode
+          in: query
+          schema: { type: string }
+        - name: experienceVersion
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Snapshot solicitado ou contrato global quando não há seletor.
+        "404":
+          description: Produto ou versão solicitada inexistente.
+        "409":
+          description: Contrato da versão não publicado, inválido ou divergente.
   /api/products/value-chain-positions:
     get:
       tags:

@@ -21,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Mantém o catálogo configurável dos produtos experienciais disponíveis. */
 @Service
@@ -235,7 +237,7 @@ public class ProductCatalogService {
         return MUSA_VERSIONED_HOST_EXPERIENCES.getOrDefault(normalizedHost, "");
     }
 
-    /** Carrega o contrato PDE publicado pelo Marketing Hub quando a integração estiver configurada. */
+    /** Carrega o contrato publicado; recusas de versão do Hub nunca viram catálogo local. */
     private Optional<ProductExperienceResponse> loadMarketingHubProduct(
             String slug,
             String host,
@@ -264,6 +266,13 @@ public class ProductCatalogService {
                         .retrieve()
                         .body(ProductExperienceResponse.class);
                 return Optional.ofNullable(product);
+            } catch (HttpClientErrorException ex) {
+                log.warn("Contrato PDE recusado pelo Marketing Hub; slug={}, slotCode={}, experienceVersion={}, baseUrl={}, status={}",
+                        slug, slotCode, experienceVersion, baseUrl, ex.getStatusCode(), ex);
+                if (StringUtils.hasText(slotCode) || StringUtils.hasText(experienceVersion)) {
+                    throw new ResponseStatusException(ex.getStatusCode(),
+                            "Contrato PDE indisponível para a versão solicitada", ex);
+                }
             } catch (RuntimeException ex) {
                 log.warn("Falha ao carregar experiência PDE do Marketing Hub; tentando fallback: slug={}, baseUrl={}",
                         slug, baseUrl, ex);

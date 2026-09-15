@@ -112,6 +112,14 @@ respostas categoriais para deixar o Action verde.
 
 ### Isolamento obrigatório por versão pública
 
+Correção de contrato em 15/09/2026: quando `slotCode` ou `experienceVersion` for informado,
+o endpoint deve resolver exclusivamente o snapshot publicado dessa versão. Versão inexistente
+responde 404; snapshot ausente, inválido, com identidade divergente ou seletores contraditórios
+respondem 409. Não substituir pelo contrato global do produto. Nas consultas versionadas, o catálogo
+PDE preserva a recusa HTTP do Hub, sem convertê-la em conteúdo local. A leitura sem seletor continua consultando o
+contrato global. Reparos de snapshots legados usam fontes históricas versionadas, preservam
+rascunhos e publicações existentes e não equivalem a aprovação comercial ou ativação de campanha.
+
 Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.
 
 Regra obrigatória:

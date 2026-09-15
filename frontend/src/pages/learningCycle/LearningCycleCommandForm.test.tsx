@@ -120,6 +120,7 @@ const authorizationCycle = {
   windowStart: "2026-09-10T03:00:00Z",
   windowEnd: "2026-09-17T02:59:00Z",
   authorizationReview: {
+    dailyBudgetBrl: 50,
     summary: "Síntese da decisão preparada pelo backend",
     evidenceReference:
       "internal://learning-cycles/2; learning_sales_cycle_event_v1:16",
@@ -135,7 +136,7 @@ const authorizationCycle = {
   ],
 } as LearningCycle;
 
-it("confirma orçamento com autoria e aceite explícito sem redigitar os dados já persistidos", async () => {
+it("aprova somente diário e total sugeridos sem preencher metadados", async () => {
   render(
     <MemoryRouter>
       <LearningCycleCommandForm
@@ -148,43 +149,48 @@ it("confirma orçamento com autoria e aceite explícito sem redigitar os dados j
   const form = screen.getByRole("form", {
     name: "Decisão do ciclo",
   }) as HTMLFormElement;
-  expect(form.id).toBe("cycle-decision");
-  for (const field of [
-    "summary",
-    "evidenceReference",
-    "productVersion",
-    "budgetLimitBrl",
-  ])
-    expect(form.elements.namedItem(field)).toBeNull();
-  expect(
-    screen.getByRole("region", { name: "Limites da autorização" }),
-  ).toHaveTextContent("R$ 100,00");
-  expect(
-    screen.getByRole("region", { name: "Limites da autorização" }),
-  ).toHaveTextContent("16/09/2026, 23:59:00");
-  const checkbox = screen.getByRole("checkbox");
-  expect(checkbox).not.toBeChecked();
-  expect(form.checkValidity()).toBe(false);
+  expect(form.querySelectorAll("input")).toHaveLength(2);
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(screen.getByLabelText("Orçamento diário (R$)")).toHaveValue(50);
+  expect(screen.getByLabelText("Orçamento total (R$)")).toHaveValue(100);
   expect(mutateAsync).not.toHaveBeenCalled();
-  fireEvent.change(screen.getByLabelText(/Responsável pela decisão/), {
-    target: { value: "Operador local" },
+  fireEvent.change(screen.getByLabelText("Orçamento diário (R$)"), {
+    target: { value: "30.25" },
   });
-  fireEvent.click(checkbox);
+  fireEvent.change(screen.getByLabelText("Orçamento total (R$)"), {
+    target: { value: "120" },
+  });
   expect(form.checkValidity()).toBe(true);
   fireEvent.submit(form);
   await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
   expect(mutateAsync.mock.calls[0][0]).toMatchObject({
-    expectedRevision: authorizationCycle.revision,
-    operatorName: "Operador local",
-    summary: authorizationCycle.authorizationReview!.summary,
-    evidenceReference:
-      authorizationCycle.authorizationReview!.evidenceReference,
-    evidence: {
-      productVersion: authorizationCycle.productVersion,
-      budgetLimitBrl: 100,
-      confirmed: true,
-    },
+    budgetAuthorization: true,
+    expectedRevision: 3,
+    dailyBudgetBrl: 30.25,
+    budgetLimitBrl: 120,
   });
+  expect(mutateAsync.mock.calls[0][0]).not.toHaveProperty("operatorName");
+});
+
+it("rejeita diário acima do total antes de enviar", () => {
+  render(
+    <MemoryRouter>
+      <LearningCycleCommandForm
+        cycle={authorizationCycle}
+        catalog={catalog}
+        onUpdated={() => {}}
+      />
+    </MemoryRouter>,
+  );
+  fireEvent.change(screen.getByLabelText("Orçamento diário (R$)"), {
+    target: { value: "101" },
+  });
+  fireEvent.submit(screen.getByRole("form"));
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "diário não pode ultrapassar",
+  );
+  expect(mutateAsync).not.toHaveBeenCalled();
 });
 
 it("mostra insumos ausentes e respeita bloqueio do backend antes de uma autorização", () => {
@@ -222,14 +228,14 @@ it("mostra insumos ausentes e respeita bloqueio do backend antes de uma autoriza
       />
     </MemoryRouter>,
   );
-  expect(
-    screen.getByRole("region", { name: "Preparação comercial do experimento" }),
-  ).toHaveTextContent("Versão ainda privada");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Prepare a versão comercial",
+  );
   expect(
     screen.getByRole("link", { name: "Ver preparação do experimento" }),
   ).toHaveAttribute("href", "/experiments/92");
   expect(
-    screen.getByRole("button", { name: "Registrar autorização" }),
+    screen.getByRole("button", { name: "Aprovar orçamento" }),
   ).toBeDisabled();
   expect(mutateAsync).not.toHaveBeenCalled();
 });

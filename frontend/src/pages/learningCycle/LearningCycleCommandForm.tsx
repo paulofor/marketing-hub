@@ -1,3 +1,4 @@
+import CycleBudgetAuthorizationForm from "./CycleBudgetAuthorizationForm";
 import { createCycleRequestKey } from "../../api/learningCycle/createCycleRequestKey";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -225,6 +226,8 @@ export default function LearningCycleCommandForm({
     }
   }
   if (!cycle.commands.length) return null;
+  if (cycle.stage === "AUTHORIZATION" && action === "COMPLETE")
+    return <CycleBudgetAuthorizationForm cycle={cycle} onUpdated={onUpdated} />;
   return (
     <form
       id="cycle-decision"

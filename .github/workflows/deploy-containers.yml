@@ -240,6 +240,8 @@ jobs:
           --health-retries=5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Validate automatic publisher recovery
         if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
@@ -248,6 +250,30 @@ jobs:
           RECOVERY_SHA: ${{ inputs.recovery_sha }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/validate-publisher-recovery.py
+
+      - id: approved-package
+        name: Reuse approved backend package from merged PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "reused=false" >> "${GITHUB_OUTPUT}"
+          if ! bash scripts/download-approved-pr-artifact.sh \
+            backend-ci.yml backend-approved-package /tmp/approved-backend; then
+            echo "Pacote aprovado não reutilizável; executando validação completa do backend."
+            exit 0
+          fi
+
+          approved_jar="$(find /tmp/approved-backend -type f -name app.jar -print -quit)"
+          if [[ -z "${approved_jar}" ]]; then
+            echo "Artefato aprovado não contém app.jar; executando fallback completo."
+            exit 0
+          fi
+
+          mkdir -p backend/ads-service/target
+          cp "${approved_jar}" backend/ads-service/target/app.jar
+          echo "reused=true" >> "${GITHUB_OUTPUT}"
+          echo "Pacote backend já testado no PR será reutilizado."
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -264,6 +290,7 @@ jobs:
           restore-keys: maven-
 
       - name: Run unit tests
+        if: steps.approved-package.outputs.reused != 'true'
         working-directory: backend/ads-service
         run: |
           set -o pipefail
@@ -275,6 +302,7 @@ jobs:
           fi
 
       - name: Validate Liquibase changelog
+        if: steps.approved-package.outputs.reused != 'true'
         working-directory: backend/ads-service
         run: |
           mvn -B \
@@ -285,6 +313,7 @@ jobs:
             -Dliquibase.password=root
 
       - name: Package backend once
+        if: steps.approved-package.outputs.reused != 'true'
         working-directory: backend/ads-service
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -375,6 +404,8 @@ jobs:
     if: needs.detect-changes.outputs.frontend == 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Validate automatic publisher recovery
         if: github.event_name == 'workflow_dispatch' && inputs.recovery_sha != ''
@@ -385,35 +416,44 @@ jobs:
         run: python3 scripts/validate-publisher-recovery.py
 
       - id: approved-build
-        name: Reuse approved frontend bundle for this exact commit
+        name: Reuse approved frontend bundle from merged PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-
-          artifact_url="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "/repos/${GITHUB_REPOSITORY}/actions/workflows/frontend.yml/runs?head_sha=${GITHUB_SHA}&status=success&per_page=10" \
-            --jq '[.workflow_runs[] | select(.head_sha == env.GITHUB_SHA)] | first | .artifacts_url // empty')"
-
-          if [[ -z "${artifact_url}" ]]; then
-            echo "reused=false" >> "${GITHUB_OUTPUT}"
+          echo "reused=false" >> "${GITHUB_OUTPUT}"
+          if ! bash scripts/download-approved-pr-artifact.sh \
+            frontend.yml frontend-build /tmp/approved-frontend; then
+            echo "Bundle aprovado não reutilizável; executando build completo do frontend."
             exit 0
           fi
 
-          download_url="$(gh api -H 'Accept: application/vnd.github+json' "${artifact_url}" \
-            --jq '[.artifacts[] | select(.name == "frontend-build" and .expired == false)] | first | .archive_download_url // empty')"
-
-          if [[ -z "${download_url}" ]]; then
-            echo "reused=false" >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          gh api "${download_url}" > /tmp/frontend-build.zip
+          test -s /tmp/approved-frontend/index.html
+          rm -rf frontend/dist
           mkdir -p frontend/dist
-          unzip -q /tmp/frontend-build.zip -d frontend/dist
-          test -s frontend/dist/index.html
+          cp -a /tmp/approved-frontend/. frontend/dist/
+          rm -f frontend/dist/approved-tree.sha
+
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          path = Path("frontend/dist/healthz")
+          payload = json.loads(path.read_text()) if path.exists() else {}
+          payload.update(
+              status="ok",
+              service="marketinghub-frontend",
+              commit=os.environ["GITHUB_SHA"],
+              imageTag=os.environ["GITHUB_SHA"],
+              builtAt=datetime.now(timezone.utc).isoformat(),
+          )
+          path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+          PY
+
           echo "reused=true" >> "${GITHUB_OUTPUT}"
+          echo "Bundle frontend já validado no PR será reutilizado para a revisão ${GITHUB_SHA}."
 
       - uses: actions/setup-node@v4
         if: steps.approved-build.outputs.reused != 'true'

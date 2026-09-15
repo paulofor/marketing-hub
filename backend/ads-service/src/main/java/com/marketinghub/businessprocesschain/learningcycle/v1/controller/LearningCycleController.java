@@ -76,6 +76,24 @@ public class LearningCycleController {
     return service.command(productId, cycleId, request);
   }
 
+  /** Recebe somente os valores e registra o aceite no fluxo canônico de decisões. */
+  @io.swagger.v3.oas.annotations.Operation(summary = "Aprovar orçamento diário e total do ciclo")
+  @PostMapping("/products/{productId}/{cycleId}/budget-authorization")
+  public LearningCycleResponse authorizeBudget(
+      @PathVariable Long productId,
+      @PathVariable Long cycleId,
+      @Valid @RequestBody
+          com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                  .AuthorizeCycleBudgetRequest
+              request,
+      java.security.Principal principal) {
+    return service.authorizeBudget(
+        productId,
+        cycleId,
+        request,
+        principal == null ? "Operador administrativo · aceite pela tela" : principal.getName());
+  }
+
   /** Solicita nova leitura das fontes oficiais sem receber métricas digitadas pela tela. */
   @PostMapping("/products/{productId}/{cycleId}/measurement-reconciliation")
   public LearningCycleResponse reconcileMeasurement(

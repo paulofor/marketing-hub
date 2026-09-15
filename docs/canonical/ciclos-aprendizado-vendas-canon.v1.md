@@ -425,3 +425,14 @@ o processo deve orientar `REQUEST_VIDEO_PRODUCTION` para o projeto exato no Est�
 pode estar READY ou vencido; nenhum dos dois equivale a produção em andamento. A solicitação
 governada renova o preflight, passa por Plutus e mantém todas as aprovações. O endpoint de
 consulta continua sem reserva, tarefa ou geração automática.
+
+## Autorização simplificada de mídia — decisão de 15/09/2026
+
+A autorização inicial apresenta somente orçamento diário e total em reais, ambos sugeridos
+com base no teto e nos dias comerciais restantes. O operador pode editar os valores e
+confirmá-los em “Aprovar orçamento”. Não exigir nome, justificativa, referência, versão,
+seletor de decisão ou checkbox nesse formulário. O backend preserva versão e janela,
+registra a origem do aceite administrativo e os valores exatos, sincronizando ciclo e
+experimento na mesma transação. Sem identidade autenticada, não inventar nome pessoal.
+A janela expirada continua bloqueada; sugestões não são autorização e não liberam campanha.
+Mantêm-se prontidão comercial, homologação, idempotência e revisão concorrente.

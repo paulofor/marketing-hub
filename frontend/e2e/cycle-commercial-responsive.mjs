@@ -62,7 +62,10 @@ try {
         )
       )
         return route.fulfill({ json: [] });
-      if (request.method() === "POST" && url.pathname.endsWith("/commands")) {
+      if (
+        request.method() === "POST" &&
+        url.pathname.endsWith("/budget-authorization")
+      ) {
         commands.push(request.postDataJSON());
         await new Promise((resolve) => setTimeout(resolve, 500));
         if (rejectOnce) {
@@ -100,15 +103,12 @@ try {
       ),
     );
     const form = page.getByRole("form", { name: "Decisão do ciclo" });
-    const preparation = form.getByRole("region", {
-      name: "Preparação comercial do experimento",
-    });
-    await expect(preparation).toContainText("Checkout configurado: pendente");
+    await expect(form).toContainText("preparação");
     await expect(
-      preparation.getByRole("link", { name: /experimento/i }),
+      form.getByRole("link", { name: /experimento/i }),
     ).toHaveAttribute("href", "/experiments/91001");
     await expect(
-      form.getByRole("button", { name: "Registrar autorização" }),
+      form.getByRole("button", { name: "Aprovar orçamento" }),
     ).toBeDisabled();
     assert.equal(commands.length, 0);
     await page.screenshot({
@@ -117,40 +117,22 @@ try {
     });
     await post("/fixture/commercial-preparation/91001", []);
     await page.reload();
-    await expect(preparation).toContainText("prontos para revisão");
-    const limits = form.getByRole("region", { name: "Limites da autorização" });
-    await expect(limits).toContainText(cycle.productVersion);
-    await expect(limits).toContainText(/R\$\s*100,00/);
-    await expect(limits).toContainText("Brasília");
-    for (const field of [
-      "summary",
-      "evidenceReference",
-      "productVersion",
-      "budgetLimitBrl",
-    ])
-      await expect(form.locator(`[name="${field}"]`)).toHaveCount(0);
-    await expect(form.locator('[name="confirmed"]')).not.toBeChecked();
-    await form
-      .locator('[name="operatorName"]')
-      .fill("Homologação local segregada");
-    await form.getByRole("button", { name: "Registrar autorização" }).click();
-    assert.equal(
-      commands.length,
-      0,
-      "Checkbox continua exigido pelo formulário",
-    );
-    await form.locator('[name="confirmed"]').check();
-    rejectOnce = true;
-    await form.getByRole("button", { name: "Registrar autorização" }).click();
     await expect(
-      form.getByRole("button", { name: "Registrar autorização" }),
+      form.getByRole("button", { name: "Aprovar orçamento" }),
+    ).toBeEnabled();
+    await expect(form.locator("input")).toHaveCount(2);
+    await expect(form.locator('[name="budgetLimitBrl"]')).toHaveValue("100");
+    await form.locator('[name="dailyBudgetBrl"]').fill("25");
+    assert.equal(commands.length, 0, "Sugestão não autoriza orçamento");
+    rejectOnce = true;
+    await form.getByRole("button", { name: "Aprovar orçamento" }).click();
+    await expect(
+      form.getByRole("button", { name: "Aprovar orçamento" }),
     ).toBeDisabled();
     await expect(form.getByRole("alert")).toContainText(
       "temporariamente indisponível",
     );
-    await expect(form.locator('[name="operatorName"]')).toHaveValue(
-      "Homologação local segregada",
-    );
+    await expect(form.locator('[name="dailyBudgetBrl"]')).toHaveValue("25");
     await page.screenshot({
       path: `${output}/${name}-retry.png`,
       fullPage: true,
@@ -158,23 +140,20 @@ try {
     const response = page.waitForResponse(
       (r) =>
         r.request().method() === "POST" &&
-        r.url().endsWith("/commands") &&
+        r.url().endsWith("/budget-authorization") &&
         r.status() === 200,
     );
-    await form.getByRole("button", { name: "Registrar autorização" }).click();
+    await form.getByRole("button", { name: "Aprovar orçamento" }).click();
     const updated = await (await response).json();
     assert.equal(updated.stage, "PUBLICATION");
     assert.equal(commands.length, 2);
     assert.equal(commands[0].requestKey, commands[1].requestKey);
-    assert.deepEqual(commands[1].evidence, {
-      confirmed: true,
-      productVersion: cycle.productVersion,
-      budgetLimitBrl: 100,
-    });
-    assert.equal(commands[1].summary, cycle.authorizationReview.summary);
+    assert.equal(commands[1].dailyBudgetBrl, 25);
+    assert.equal(commands[1].budgetLimitBrl, 100);
+    assert.equal(updated.events.at(-1).evidence.confirmed, true);
     assert.equal(
-      commands[1].evidenceReference,
-      cycle.authorizationReview.evidenceReference,
+      updated.events.at(-1).evidence.productVersion,
+      cycle.productVersion,
     );
     await expect(form).toContainText("publicação");
     await page.screenshot({

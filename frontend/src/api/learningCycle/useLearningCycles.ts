@@ -74,6 +74,7 @@ export type CycleEvent = {
 };
 export type LearningCycle = {
   authorizationReview?: {
+    dailyBudgetBrl?: number | null;
     summary: string;
     evidenceReference: string;
     explanation: string;
@@ -92,8 +93,7 @@ export type LearningCycle = {
   } | null;
   automaticContinuation?: boolean;
   videoBudget?:
-    | import("../financial/useVideoBudget").VideoBudgetAuthorization
-    | null;
+    import("../financial/useVideoBudget").VideoBudgetAuthorization | null;
   id: number;
   productId: number;
   experimentId: number;
@@ -218,8 +218,14 @@ export function useCycleMutation(productId?: number, cycleId?: number) {
     mutationFn: async (body: Record<string, unknown>) =>
       (
         await axios.post<LearningCycle>(
-          `${cycleApi}/products/${productId}${cycleId ? `/${cycleId}/commands` : ""}`,
-          body,
+          `${cycleApi}/products/${productId}${cycleId ? `/${cycleId}/${body.budgetAuthorization ? "budget-authorization" : "commands"}` : ""}`,
+          body.budgetAuthorization
+            ? Object.fromEntries(
+                Object.entries(body).filter(
+                  ([key]) => key !== "budgetAuthorization",
+                ),
+              )
+            : body,
         )
       ).data,
     onSuccess: async () => {

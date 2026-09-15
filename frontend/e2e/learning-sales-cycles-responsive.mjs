@@ -105,17 +105,14 @@ try {
       button = "Concluir etapa com evidência",
       action = "COMPLETE",
     ) {
-      await form().locator('[name="action"]').selectOption(action);
-      if (action === "COMPLETE" && values.confirmed === true)
-        await expect(
-          form().getByRole("region", {
-            name: "Limites da autorização",
-            exact: true,
-          }),
-        ).toBeVisible();
-      const compactAuthorization = await form()
-        .getByRole("region", { name: "Limites da autorização", exact: true })
-        .isVisible();
+      const compactAuthorization =
+        action === "COMPLETE" && values.confirmed === true;
+      if (!compactAuthorization)
+        await form().locator('[name="action"]').selectOption(action);
+      else {
+        button = "Aprovar orçamento";
+        await form().locator('[name="dailyBudgetBrl"]').fill("25");
+      }
       for (const [key, value] of Object.entries({
         operatorName: "Operador local",
         summary: "Registro de evidência segregada",
@@ -129,14 +126,11 @@ try {
             "summary",
             "evidenceReference",
             "productVersion",
-            "budgetLimitBrl",
+            "operatorName",
+            "confirmed",
           ].includes(key)
         ) {
           await expect(field).toHaveCount(0);
-          if (key === "productVersion")
-            await expect(
-              form().getByRole("region", { name: "Limites da autorização" }),
-            ).toContainText(String(value));
           continue;
         }
         if (typeof value === "boolean") await field.setChecked(value);
@@ -155,7 +149,8 @@ try {
       );
       const response = page.waitForResponse(
         (response) =>
-          response.url().includes("/commands") &&
+          (response.url().includes("/commands") ||
+            response.url().includes("/budget-authorization")) &&
           response.request().method() === "POST",
       );
       await form()
@@ -172,10 +167,8 @@ try {
       assert.equal(result.status(), 200, await result.text());
       if (compactAuthorization) {
         const sent = result.request().postDataJSON();
-        assert.equal(sent.evidence.productVersion, values.productVersion);
-        assert.equal(sent.evidence.budgetLimitBrl, values.budgetLimitBrl);
-        assert.equal(sent.evidence.confirmed, true);
-        assert.match(sent.evidenceReference, /learning_sales_cycle_event_v1:/);
+        assert.equal(sent.dailyBudgetBrl, 25);
+        assert.equal(sent.budgetLimitBrl, values.budgetLimitBrl);
       }
       await page.waitForLoadState("networkidle");
       const updated = await result.json();

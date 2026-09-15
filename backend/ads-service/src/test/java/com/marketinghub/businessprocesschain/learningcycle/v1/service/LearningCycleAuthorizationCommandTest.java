@@ -184,6 +184,117 @@ class LearningCycleAuthorizationCommandTest {
             "/products/4/value-chain-history/processes/56/activities?learningCycleId=2&chainId=14");
   }
 
+  /** Deriva metadados do ciclo e encaminha o aceite ao comando protegido já existente. */
+  @Test
+  void mapsTwoAmountsToCanonicalCommandWithoutUserMetadata() {
+    var spy = org.mockito.Mockito.spy(service);
+    when(cycles.findLocked(4L, 2L)).thenReturn(Optional.of(cycle));
+    org.mockito.Mockito.doReturn(null)
+        .when(spy)
+        .command(
+            org.mockito.ArgumentMatchers.eq(4L),
+            org.mockito.ArgumentMatchers.eq(2L),
+            org.mockito.ArgumentMatchers.any());
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .AuthorizeCycleBudgetRequest(
+            java.util.UUID.randomUUID(), 13, new BigDecimal("25.00"), new BigDecimal("120.00"));
+    spy.authorizeBudget(4L, 2L, request, "Operador administrativo · aceite pela tela");
+    var captor =
+        org.mockito.ArgumentCaptor.forClass(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                .LearningCycleCommand.class);
+    org.mockito.Mockito.verify(spy)
+        .command(
+            org.mockito.ArgumentMatchers.eq(4L),
+            org.mockito.ArgumentMatchers.eq(2L),
+            captor.capture());
+    var command = captor.getValue();
+    assertThat(command.requestKey()).isEqualTo(request.requestKey());
+    assertThat(command.expectedRevision()).isEqualTo(13);
+    assertThat(command.evidence().path("dailyBudgetBrl").decimalValue()).isEqualByComparingTo("25");
+    assertThat(command.evidence().path("budgetLimitBrl").decimalValue())
+        .isEqualByComparingTo("120");
+    assertThat(command.evidence().path("productVersion").asText())
+        .isEqualTo(cycle.getProductVersion());
+    assertThat(command.evidence().path("confirmed").asBoolean()).isTrue();
+  }
+
+  /** O endpoint aceita dois montantes e rejeita valores incompletos antes do serviço. */
+  @Test
+  void validatesTwoAmountHttpContract() throws Exception {
+    var mocked = org.mockito.Mockito.mock(LearningCycleService.class);
+    var http =
+        org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(
+                new com.marketinghub.businessprocesschain.learningcycle.v1.controller
+                    .LearningCycleController(mocked))
+            .build();
+    String path =
+        "/api/business-process-chains/learning-cycles/v1/products/400/200/budget-authorization";
+    String body =
+        "{\"requestKey\":\"00000000-0000-0000-0000-000000000001\",\"expectedRevision\":3,\"dailyBudgetBrl\":25,\"budgetLimitBrl\":100}";
+    http.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path)
+                .contentType("application/json")
+                .content(body))
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    for (String invalid : List.of("null", "0", "-1", "1.001")) {
+      http.perform(
+              org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path)
+                  .contentType("application/json")
+                  .content(body.replace("\"dailyBudgetBrl\":25", "\"dailyBudgetBrl\":" + invalid)))
+          .andExpect(
+              org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                  .isBadRequest());
+    }
+    org.mockito.Mockito.verify(mocked, org.mockito.Mockito.times(1))
+        .authorizeBudget(
+            org.mockito.ArgumentMatchers.eq(400L),
+            org.mockito.ArgumentMatchers.eq(200L),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.eq("Operador administrativo · aceite pela tela"));
+  }
+
+  /** Integra os dois montantes ao experimento sem contornar o gate de homologação vigente. */
+  @Test
+  void appliesBothAmountsAndRejectsRevokedApproval() {
+    ReflectionTestUtils.setField(
+        service, "commercialAuthorization", new LearningCycleCommercialAuthorization(experiments));
+    experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
+    var data =
+        new ObjectMapper()
+            .createObjectNode()
+            .put("confirmed", true)
+            .put("productVersion", cycle.getProductVersion())
+            .put("dailyBudgetBrl", new BigDecimal("25.00"))
+            .put("budgetLimitBrl", new BigDecimal("120.00"));
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .LearningCycleCommand(
+            java.util.UUID.randomUUID(),
+            13,
+            com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+                .LearningCycleCommand.Action.COMPLETE,
+            "Operador de teste",
+            "Aceite sintético",
+            "internal://teste",
+            data);
+    ReflectionTestUtils.invokeMethod(service, "apply", cycle, experiment, request, Instant.now());
+    assertThat(cycle.getStage()).isEqualTo("PUBLICATION");
+    assertThat(cycle.getBudgetLimitBrl()).isEqualByComparingTo("120.00");
+    assertThat(experiment.getMediaSpendLimit()).isEqualByComparingTo("120.00");
+    assertThat(experiment.getDailyBudget()).isEqualByComparingTo("25.00");
+    cycle.setStage("AUTHORIZATION");
+    when(evidence.approvals(cycle)).thenReturn(List.of());
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                ReflectionTestUtils.invokeMethod(
+                    service, "apply", cycle, experiment, request, Instant.now()))
+        .hasMessageContaining("homologação utilizada");
+    org.mockito.Mockito.verify(experiments, org.mockito.Mockito.times(1)).save(experiment);
+  }
+
   /** Obtém a opção exibida pela API para concluir a etapa de autorização. */
   private LearningCycleResponse.CommandOption authorizationCommand() {
     return service.list(4L).getFirst().commands().stream()

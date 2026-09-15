@@ -146,6 +146,23 @@ public class LearningCycleEvidence {
     require(
         cycle.getProductVersion().equals(text(data, "productVersion")),
         "A autorização deve identificar a versão homologada.");
+    if (data.has("dailyBudgetBrl")) {
+      for (String key : java.util.List.of("dailyBudgetBrl", "budgetLimitBrl")) {
+        require(
+            data.path(key).isNumber()
+                && data.path(key).decimalValue().signum() > 0
+                && data.path(key).decimalValue().scale() <= 2
+                && data.path(key).decimalValue().precision() <= 12,
+            "Informe diário e total positivos, com no máximo duas casas decimais.");
+      }
+      require(
+          data.path("dailyBudgetBrl")
+                  .decimalValue()
+                  .compareTo(data.path("budgetLimitBrl").decimalValue())
+              <= 0,
+          "O orçamento diário não pode ultrapassar o total.");
+      return;
+    }
     require(
         data.path("budgetLimitBrl").isNumber()
             && data.path("budgetLimitBrl").decimalValue().compareTo(cycle.getBudgetLimitBrl()) == 0,

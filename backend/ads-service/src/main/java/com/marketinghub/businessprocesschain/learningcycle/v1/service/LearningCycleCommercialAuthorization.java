@@ -26,6 +26,34 @@ public class LearningCycleCommercialAuthorization {
    * autorização humana.
    */
   public void apply(LearningSalesCycle cycle, Experiment experiment, Instant authorizedAt) {
+    apply(cycle, experiment, authorizedAt, null);
+  }
+
+  /** Sugere distribuição do teto pelos dias restantes, sem registrar autorização. */
+  public static java.math.BigDecimal suggestDaily(LearningSalesCycle cycle, Instant now) {
+    if (cycle.getBudgetLimitBrl() == null
+        || cycle.getWindowStart() == null
+        || cycle.getWindowEnd() == null
+        || !now.isBefore(cycle.getWindowEnd())) return null;
+    Instant start = now.isAfter(cycle.getWindowStart()) ? now : cycle.getWindowStart();
+    long days =
+        ChronoUnit.DAYS.between(
+                start.atZone(COMMERCIAL_ZONE).toLocalDate(),
+                cycle.getWindowEnd().minusNanos(1).atZone(COMMERCIAL_ZONE).toLocalDate())
+            + 1;
+    return days > 0
+        ? cycle.getBudgetLimitBrl().divide(java.math.BigDecimal.valueOf(days), 2, RoundingMode.DOWN)
+        : null;
+  }
+
+  /**
+   * Persiste os limites escolhidos pelo operador, mantendo a janela e o teto total independentes.
+   */
+  public void apply(
+      LearningSalesCycle cycle,
+      Experiment experiment,
+      Instant authorizedAt,
+      java.math.BigDecimal requestedDaily) {
     if (experiment.getPlatform() != ExperimentPlatform.FACEBOOK) return;
     require(
         cycle.getBudgetLimitBrl() != null && cycle.getBudgetLimitBrl().signum() > 0,
@@ -46,6 +74,10 @@ public class LearningCycleCommercialAuthorization {
         cycle
             .getBudgetLimitBrl()
             .divide(java.math.BigDecimal.valueOf(inclusiveDays), 2, RoundingMode.DOWN);
+    if (requestedDaily != null) dailyBudget = requestedDaily;
+    require(
+        dailyBudget.compareTo(cycle.getBudgetLimitBrl()) <= 0,
+        "O diário não pode ultrapassar o total.");
     require(
         dailyBudget.signum() > 0,
         "O teto do ciclo é insuficiente para distribuir a mídia durante a janela restante.");

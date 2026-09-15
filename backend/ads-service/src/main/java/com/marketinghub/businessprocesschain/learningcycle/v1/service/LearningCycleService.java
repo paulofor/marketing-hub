@@ -642,6 +642,48 @@ public class LearningCycleService {
     return command(productId, cycleId, request, false);
   }
 
+  /**
+   * Reutiliza lock, revisão e replay canônicos; deriva a versão e a referência do próprio ciclo.
+   */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public LearningCycleResponse authorizeBudget(
+      Long productId,
+      Long cycleId,
+      com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+              .AuthorizeCycleBudgetRequest
+          request,
+      String operatorName) {
+    var cycle =
+        cycles
+            .findLocked(productId, cycleId)
+            .orElseThrow(() -> notFound("Ciclo não encontrado neste produto."));
+    require(
+        "AUTHORIZATION".equals(cycle.getStage())
+            || events
+                .findByCycleIdAndRequestKey(cycleId, request.requestKey().toString())
+                .isPresent(),
+        "O ciclo não está aguardando autorização de orçamento.");
+    var data = new com.fasterxml.jackson.databind.ObjectMapper().createObjectNode();
+    data.put("confirmed", true);
+    data.put("productVersion", cycle.getProductVersion());
+    data.put("dailyBudgetBrl", request.dailyBudgetBrl());
+    data.put("budgetLimitBrl", request.budgetLimitBrl());
+    return command(
+        productId,
+        cycleId,
+        new LearningCycleCommand(
+            request.requestKey(),
+            request.expectedRevision(),
+            Action.COMPLETE,
+            operatorName,
+            "Aceite pela tela: diário R$ "
+                + request.dailyBudgetBrl()
+                + "; total R$ "
+                + request.budgetLimitBrl(),
+            "internal://learning-cycles/" + cycleId + "/budget-authorization",
+            data));
+  }
+
   /** Conclui somente a homologação conferida pelo coordenador e registra a origem automática. */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse completeIntegratedVideoValidation(
@@ -936,7 +978,13 @@ public class LearningCycleService {
             require(
                 preparation == null || preparation.readyForReview(),
                 preparation == null ? null : preparation.guidance());
-            commercialAuthorization.apply(cycle, experiment, now);
+            if (data.has("dailyBudgetBrl")) {
+              cycle.setBudgetLimitBrl(data.path("budgetLimitBrl").decimalValue());
+              commercialAuthorization.apply(
+                  cycle, experiment, now, data.path("dailyBudgetBrl").decimalValue());
+            } else {
+              commercialAuthorization.apply(cycle, experiment, now);
+            }
           }
           case "PUBLICATION" -> evidence.publication(cycle, experiment, authorizationTime(cycle));
           default ->
@@ -1370,7 +1418,7 @@ public class LearningCycleService {
                         && "COMPLETE".equals(event.getAction()))
             .reduce((first, last) -> last)
             .orElse(null);
-    if (validation == null) return null;
+
     return new LearningCycleResponse.AuthorizationReview(
         "Autorização explícita do teto de R$ "
             + cycle.getBudgetLimitBrl()
@@ -1387,8 +1435,8 @@ public class LearningCycleService {
             + ". Ativação da campanha depende dos gates e da autorização final próprios.",
         "internal://learning-cycles/"
             + cycle.getId()
-            + "; learning_sales_cycle_event_v1:"
-            + validation.getId(),
+            + (validation == null ? "" : "; learning_sales_cycle_event_v1:" + validation.getId()),
+        LearningCycleCommercialAuthorization.suggestDaily(cycle, Instant.now(clock)),
         "Confira os limites abaixo e confirme sua decisão. As referências da homologação já registrada serão preservadas. Este aceite registra o orçamento; a campanha depende da preparação, da homologação comercial e da autorização final de ativação.");
   }
 

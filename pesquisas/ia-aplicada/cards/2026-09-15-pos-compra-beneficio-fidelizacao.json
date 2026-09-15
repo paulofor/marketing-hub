@@ -1,0 +1,18 @@
+{
+  "cardKey": "pos-compra-beneficio-fidelizacao",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Pós-compra pode ser uma janela para fidelização",
+  "finding": "No E-Consumidor 2026, programas de benefícios e descontos foram citados por 32% dos entrevistados cada um entre as promoções preferidas, e 59,9% dos consumidores online dizem querer participar de programas de benefícios após uma compra satisfatória.",
+  "mechanism": "Depois de uma compra bem-sucedida, confiança e atenção já foram conquistadas; uma vantagem clara de continuidade pode reduzir o esforço para uma futura decisão. A evidência disponível não prova esse mecanismo causal.",
+  "commercialApplication": "No Marketing Hub, testar no pós-pagamento uma oferta simples de fidelidade, cashback, indicação ou benefício de recompra contra grupo de controle sem oferta, acompanhando segunda compra e margem.",
+  "evidenceStrength": "Moderada para interesse declarado em benefícios no pós-compra; baixa para afirmar impacto causal em retenção, LTV ou recompra.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2026-12-14",
+  "experimentHypothesis": "Uma oferta relevante e de baixo atrito imediatamente após uma compra satisfatória aumentará adesão e segunda compra em até 60 dias sem deteriorar margem, satisfação ou cancelamento.",
+  "risks": "Incentivos podem reduzir margem, estimular compras desnecessárias, gerar adesão sem uso ou ser percebidos como pressão comercial.",
+  "limits": "A evidência é principalmente autorrelatada; adesão a um programa não equivale a recompra. O impacto comercial deve ser medido por comportamento observado e margem incremental.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-15-pos-compra-beneficio-fidelizacao.md",
+  "sourceTitle": "Fonte revisada — Pós-compra como momento de fidelização",
+  "sourceSha256": "ac8a85be69c80b5768ed9f6476607d70311b2c3d937049930e7b29386ddcd881"
+}

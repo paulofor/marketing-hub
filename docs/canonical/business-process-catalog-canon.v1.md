@@ -816,3 +816,13 @@ seus contratos; a automação não preenche provas nem autoriza publicação por
   autorização/conclusão, sem omitir silenciosamente uma obrigação do processo.
 - O acompanhamento do cabeçalho lê a projeção persistida e o diário paginado sob demanda; não
   retransmite prompts. A auditoria integral continua na tarefa e nos endpoints do módulo original.
+
+### Apresentação da espera de atividade
+
+`WAITING_ACTIVITY` deve aparecer como **Aguardando conclusão da atividade**, sem
+animação de execução contínua. Exibir o motivo oficial e, quando houver ação humana,
+o formulário indicado por `userAction.actionUrl`, com o rótulo informado pelo backend.
+Sem ação específica, usar `navigationUrl` para abrir a atividade pendente, preservando
+integralmente o contexto. Não inferir formulário ou autorização a partir de IDs ou texto.
+Sem destino, informar sua ausência; após falha de atualização, exigir nova consulta
+antes de oferecer o link de ação. Carregamento de consulta/comando mantém indicador próprio.

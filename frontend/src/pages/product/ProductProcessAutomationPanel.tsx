@@ -170,13 +170,6 @@ export default function ProductProcessAutomationPanel({
                 hash: `#activity-${data.currentActivityId}`,
               }}
             >
-              {data.status === "WAITING_ACTIVITY" && (
-                <Loader2
-                  size={17}
-                  className="product-process-situation__running-icon"
-                  aria-hidden="true"
-                />
-              )}
               <span>
                 Atividade {data.currentSequence} — {data.currentActivityName}
                 {data.currentOwnerName ? ` · ${data.currentOwnerName}` : ""}
@@ -206,6 +199,35 @@ export default function ProductProcessAutomationPanel({
                 </Link>
               )}
               <p className="small mt-2 mb-0">{data.userAction.afterAction}</p>
+            </div>
+          ) : data.status === "WAITING_ACTIVITY" ? (
+            <div
+              className="alert alert-info mt-2 mb-3"
+              aria-label="Atividade pendente"
+            >
+              <strong>Aguardando conclusão da atividade</strong>
+              <p className="mt-2 mb-2">{data.reason}</p>
+              <p className="small mb-2">
+                O processo aguarda a conclusão desta atividade para avançar.
+                Consulte a pendência e preencha as informações solicitadas,
+                quando houver.
+              </p>
+              {status.isError ? (
+                <p role="alert" className="mb-0">
+                  Atualize a execução para confirmar a próxima ação.
+                </p>
+              ) : data.navigationUrl ? (
+                <Link
+                  className="btn btn-primary text-wrap"
+                  to={data.navigationUrl}
+                >
+                  Abrir atividade pendente
+                </Link>
+              ) : (
+                <p className="small mb-0">
+                  O destino da pendência ainda não foi informado pelo processo.
+                </p>
+              )}
             </div>
           ) : (
             <p className="small mb-2">{data.reason}</p>
@@ -310,11 +332,17 @@ export default function ProductProcessAutomationPanel({
                 {showEvents ? "Fechar histórico" : "Histórico da execução"}
               </button>
             )}
-            {data.navigationUrl && !data.userAction && (
-              <Link className="btn btn-outline-primary" to={data.navigationUrl}>
-                Abrir pendência
-              </Link>
-            )}
+            {data.navigationUrl &&
+              !data.userAction &&
+              data.status !== "WAITING_ACTIVITY" &&
+              !status.isError && (
+                <Link
+                  className="btn btn-outline-primary"
+                  to={data.navigationUrl}
+                >
+                  Abrir pendência
+                </Link>
+              )}
           </div>
           {data.id && (
             <small className="text-body-secondary">

@@ -101,6 +101,74 @@ afterEach(() => {
 });
 
 describe("Controle de processo", () => {
+  it("distingue espera de execução e abre a pendência oficial do mesmo ciclo", async () => {
+    const navigationUrl =
+      "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2";
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, navigationUrl },
+    });
+    setup();
+    const link = await screen.findByRole("link", {
+      name: "Abrir atividade pendente",
+    });
+    expect(link).toHaveAttribute("href", navigationUrl);
+    expect(
+      screen.getAllByText("Aguardando conclusão da atividade"),
+    ).toHaveLength(2);
+    expect(screen.queryByText("Em execução")).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".product-process-situation__running-icon"),
+    ).toBeNull();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("prioriza o formulário oficial quando a espera tem ação específica", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, userAction: financeAction, navigationUrl: "/other" },
+    });
+    setup();
+    expect(
+      await screen.findByRole("link", { name: financeAction.actionLabel }),
+    ).toHaveAttribute("href", financeAction.actionUrl);
+    expect(
+      screen.queryByRole("link", { name: "Abrir atividade pendente" }),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector(".product-process-situation__running-icon"),
+    ).toBeNull();
+  });
+
+  it("não inventa formulário quando o backend não informou destino", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: running });
+    setup();
+    expect(
+      await screen.findByText(
+        "O destino da pendência ainda não foi informado pelo processo.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "Abrir atividade pendente" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("oculta o destino da espera após falha de atualização", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { ...running, navigationUrl: "/pending" },
+    });
+    const client = setup();
+    await screen.findByRole("link", { name: "Abrir atividade pendente" });
+    vi.mocked(axios.get).mockRejectedValue(new Error("Falha simulada"));
+    await client.invalidateQueries({ queryKey: ["process-automation", 92001] });
+    expect(
+      await screen.findByText(
+        "Atualize a execução para confirmar a próxima ação.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "Abrir atividade pendente" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("orienta a interrupção de Apolo sem repetir geração ou usar o preflight antigo", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {

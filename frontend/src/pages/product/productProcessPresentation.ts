@@ -31,7 +31,7 @@ export const automationStateLabels: Record<string, string> = {
   READY: "Pronto para executar",
   UNAVAILABLE: "Indisponível",
   QUEUED: "Na fila",
-  WAITING_ACTIVITY: "Em execução",
+  WAITING_ACTIVITY: "Aguardando conclusão da atividade",
   WAITING_INPUT: "Aguardando condições",
   WAITING_HUMAN: "Precisa da sua decisão",
   WAITING_SUBPROCESS: "Subprocesso em execução",

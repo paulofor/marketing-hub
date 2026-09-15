@@ -9,6 +9,19 @@ from deploy_coordination_errors import GitHubApiError
 POLICY = json.loads(Path(__file__).with_name("deploy-publisher-recovery.json").read_text())
 APP = "deploy-containers.yml"
 
+# Exceções legadas exigem alteração versionada no repositório. Elas nunca são inferidas por tempo.
+# Este registro específico autoriza substituir a revisão manual órfã pela main atual, conforme
+# decisão operacional de 2026-09-15 de priorizar a versão mais recente em produção.
+LEGACY_ORPHANED_VALIDATIONS = {
+    "983c827dbf6c477daab5006788d1d55b": {
+        "validated_commit": "12e2e35ab4db307990924062eba6e243cb054062",
+        "action": "supersede_with_current_main",
+        "authorized_by": "paulofor",
+        "authorized_at": "2026-09-15T22:04:18Z",
+        "reason": "Revisão manual não recuperável no GitHub; priorizar a main atual em produção.",
+    }
+}
+
 
 def matching_runs(github, workflow, sha, since):
     """Confere identidade, evento e data mesmo quando a API oferece os mesmos filtros."""
@@ -36,14 +49,44 @@ class PublisherRecovery:
 
     def outcome(self, state, status, reason):
         """Persiste mudança de diagnóstico sem inflar o histórico em consultas idênticas."""
+        prepared = state["automatic_resume"]
         result = {"status": status, "reason": reason, "intervention_id": state["id"],
-                  "phase": state["phase"], "validated_commit": state["automatic_resume"]["validated_commit"]}
+                  "phase": state["phase"], "validated_commit": prepared["validated_commit"],
+                  "effective_commit": prepared.get("effective_commit", prepared["validated_commit"])}
+        if prepared.get("superseded_validated_commit"):
+            result["superseded_validated_commit"] = prepared["superseded_validated_commit"]
         if state.get("recovery"):
             result.update(state["recovery"])
         if state.get("recovery_result") != result:
             state["recovery_result"] = result
             self.coordinator.checkpoint(state, "publishers_reconciled", result=result)
         return result
+
+    def authorized_supersession(self, state, missing_commit, current_sha):
+        """Permite superar revisão órfã somente por autorização explícita e versionada."""
+        authorization = LEGACY_ORPHANED_VALIDATIONS.get(state["id"])
+        if not authorization:
+            return None
+        if (authorization.get("validated_commit") != missing_commit
+                or authorization.get("action") != "supersede_with_current_main"):
+            return None
+        prepared = state["automatic_resume"]
+        if prepared.get("effective_commit") != current_sha:
+            prepared["superseded_validated_commit"] = missing_commit
+            prepared["effective_commit"] = current_sha
+            prepared["supersession"] = {
+                "authorized_by": authorization["authorized_by"],
+                "authorized_at": authorization["authorized_at"],
+                "reason": authorization["reason"],
+            }
+            self.coordinator.checkpoint(
+                state,
+                "orphaned_validation_superseded",
+                missing_commit=missing_commit,
+                replacement_commit=current_sha,
+                authorization=prepared["supersession"],
+            )
+        return current_sha
 
     def observe_receipts(self, state, workflows):
         """Lê recibos pelo ID exato, inclusive se main avançou entre a conferência e o dispatch."""
@@ -85,17 +128,32 @@ class PublisherRecovery:
             if state["phase"] != "ACTIVE":
                 return self.outcome(state, "WAITING", "Retomada parcial: aguardando a fila terminar com publicadores protegidos.")
         sha = self.github.api("git/ref/heads/main")["object"]["sha"]
-        for commit in (state["initial_sha"], prepared["validated_commit"]):
+        effective_commit = prepared.get("effective_commit", prepared["validated_commit"])
+        checks = (("base protegida", state["initial_sha"]), ("revisão validada", effective_commit))
+        for label, commit in checks:
             try:
                 comparison = self.github.api(f"compare/{commit}...{sha}")
             except GitHubApiError as error:
                 if error.status != 404:
                     raise
-                return self.outcome(
-                    state, "WAITING",
-                    f"Revisão {commit} indisponível para comparação no GitHub (HTTP 404); "
-                    "aguardando disponibilidade e integração comprovada à main. Pausa preservada.",
-                )
+                if label == "revisão validada" and commit == prepared["validated_commit"]:
+                    replacement = self.authorized_supersession(state, commit, sha)
+                    if replacement:
+                        effective_commit = replacement
+                        comparison = {"status": "identical"}
+                    else:
+                        return self.outcome(
+                            state, "BLOCKED",
+                            f"Revisão validada {commit} não existe mais no GitHub (HTTP 404). "
+                            "A homologação permanece protegida, mas esse estado exige correção explícita; "
+                            "novas preparações recusam commits não recuperáveis.",
+                        )
+                else:
+                    return self.outcome(
+                        state, "BLOCKED",
+                        f"{label.capitalize()} {commit} indisponível no GitHub (HTTP 404); "
+                        "não é seguro liberar publicadores automaticamente.",
+                    )
             if not isinstance(comparison, dict) or comparison.get("status") not in {
                 "ahead", "identical", "behind", "diverged"
             }:
@@ -109,7 +167,7 @@ class PublisherRecovery:
             if enabled:
                 return self.outcome(state, "BLOCKED", "Proteção alterada externamente antes da retomada.")
             # resume é a única autoridade que restaura estados anteriores e drena retomadas parciais.
-            state = self.coordinator.resume(state["id"], prepared["validated_commit"], prepared["evidence"])
+            state = self.coordinator.resume(state["id"], effective_commit, prepared["evidence"])
 
         workflows = {w["file"]: w for w in state["workflows"] if w["previous_state"] == "active"}
         selected = [name for name in POLICY if name in workflows]

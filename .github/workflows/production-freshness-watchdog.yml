@@ -169,4 +169,8 @@ jobs:
 
       - name: Fail when production freshness is unhealthy
         if: steps.freshness.outputs.exit_code != '0'
-        run: exit '${{ steps.freshness.outputs.exit_code }}'
+        run: |
+          if [[ '${{ steps.freshness.outputs.exit_code }}' == '2' ]]; then
+            exit 2
+          fi
+          exit 1

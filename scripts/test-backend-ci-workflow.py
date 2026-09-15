@@ -44,8 +44,13 @@ class BackendCiWorkflowTest(unittest.TestCase):
         self.assertIn("image: mysql:5.7", self.workflow)
         self.assertIn("liquibase-maven-plugin:4.26.0:validate", self.workflow)
         self.assertIn("name: backend-approved-package", self.workflow)
-        self.assertIn("backend/ads-service/target/app.jar", self.workflow)
-        self.assertIn("backend/ads-service/target/approved-tree.sha", self.workflow)
+        for path in [
+            "backend/ads-service/target/app.jar",
+            "backend/ads-service/target/app-exec.jar",
+            "backend/ads-service/target/classes/",
+            "backend/ads-service/target/approved-tree.sha",
+        ]:
+            self.assertIn(path, self.workflow)
         self.assertIn("git rev-parse 'HEAD^{tree}'", self.workflow)
 
         deployment = (REPO / ".github/workflows/deploy-containers.yml").read_text()
@@ -64,6 +69,8 @@ class BackendCiWorkflowTest(unittest.TestCase):
         self.assertIn("HEAD)", content)
         self.assertIn("event=pull_request&status=success", content)
         self.assertIn("approved-tree.sha", content)
+        self.assertIn("app-exec.jar", content)
+        self.assertIn("backend/ads-service/target/classes", content)
 
     def test_local_vega_matrix_covers_shared_agent_catalog(self):
         script = (REPO / "infra/testing/vega-integrity-cycle/run-round.sh").read_text()

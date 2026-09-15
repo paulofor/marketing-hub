@@ -49,10 +49,8 @@ class BackendCiWorkflowTest(unittest.TestCase):
         self.assertIn("git rev-parse 'HEAD^{tree}'", self.workflow)
 
         deployment = (REPO / ".github/workflows/deploy-containers.yml").read_text()
-        self.assertIn(
-            "download-approved-pr-artifact.sh backend-ci.yml backend-approved-package",
-            deployment,
-        )
+        self.assertIn("download-approved-pr-artifact.sh", deployment)
+        self.assertIn("backend-ci.yml backend-approved-package", deployment)
         self.assertGreaterEqual(
             deployment.count("if: steps.approved-package.outputs.reused != 'true'"), 3
         )

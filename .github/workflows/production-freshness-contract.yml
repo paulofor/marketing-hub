@@ -1,0 +1,38 @@
+name: Production Freshness Contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-freshness-watchdog.yml'
+      - '.github/workflows/production-freshness-contract.yml'
+      - 'scripts/check-production-freshness.py'
+      - 'scripts/test-production-freshness.py'
+      - 'scripts/detect-deployment-changes.sh'
+      - 'scripts/read-frontend-build-revision.sh'
+  pull_request:
+    paths:
+      - '.github/workflows/production-freshness-watchdog.yml'
+      - '.github/workflows/production-freshness-contract.yml'
+      - 'scripts/check-production-freshness.py'
+      - 'scripts/test-production-freshness.py'
+      - 'scripts/detect-deployment-changes.sh'
+      - 'scripts/read-frontend-build-revision.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-freshness-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate production freshness watchdog
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run watchdog unit and contract tests
+        run: python3 scripts/test-production-freshness.py

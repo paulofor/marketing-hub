@@ -1,0 +1,18 @@
+{
+  "cardKey": "conveniencia-digital-sem-surpresa-de-custo",
+  "collection": "neuromarketing",
+  "title": "Conveniência digital cresce, mas surpresa de custo continua derrubando decisões",
+  "finding": "Dados VisaNet mostram crescimento estrutural de pagamentos remotos no Brasil, enquanto uma pesquisa recente nos EUA indica forte uso de serviços de conveniência junto com abandono frequente quando o custo total aparece. O sinal conjunto é que baixo esforço e recorrência ganham valor, mas não anulam sensibilidade a preço e transparência.",
+  "mechanism": "A redução de esforço torna o comportamento digital mais fácil de repetir, enquanto custos adicionais salientes no momento da decisão podem aumentar percepção de perda e interromper a ação. Trata-se de mecanismo plausível, não de causalidade demonstrada pelas fontes.",
+  "commercialApplication": "Em Meta Ads, landing pages e Click-to-WhatsApp, testar conveniência concreta — rapidez, uso pelo celular, entrega imediata e menos etapas — mantendo preço total e condições visíveis antes do pagamento e eliminando repetição desnecessária de dados.",
+  "evidenceStrength": "Moderada: combina dados transacionais observacionais da VisaNet em seis mercados, incluindo Brasil, com survey recente de 2.000 adultos nos EUA. Há convergência comportamental, mas não teste causal de copy, funil ou preço no Marketing Hub.",
+  "publishedOn": "2026-09-14",
+  "validUntil": "2027-09-14",
+  "experimentHypothesis": "Uma versão da mesma oferta que explicite conveniência concreta e reduza passos, sem ocultar custo total, aumentará conclusão do funil e/ou recompra sem elevar reembolso ou reclamação em relação à versão atual.",
+  "risks": "Confundir conveniência com pressão para compra, esconder taxas, usar renovação pouco saliente, tornar cancelamento difícil ou interpretar crescimento de transações digitais como prova de que consumidores aceitarão qualquer preço pela redução de esforço.",
+  "limits": "A Visa cobre apenas transações de sua rede e não isola causas; o survey de taxas é dos EUA e focado em entrega. Os efeitos precisam ser validados no Brasil, no público, canal e oferta específicos do Marketing Hub.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/neuromarketing/cards/fontes/2026-09-15-conveniencia-digital-sem-surpresa.md",
+  "sourceTitle": "Fonte revisada — Conveniência digital cresce, mas surpresa de custo continua derrubando decisões",
+  "sourceSha256": "bf0ed329ad23e5c4c026dcc139b16ae6879a3dbf0fe0415aa060d1055bbb80c5"
+}

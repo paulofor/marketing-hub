@@ -1,0 +1,18 @@
+[
+  {
+    "assetId": 41,
+    "http": 206,
+    "redirected": false,
+    "sha256": "29fbb7ce12675bb323f32219e613f2f56beb07f11d825ae216ebe663ca6dfcb2",
+    "bytes": 2483162,
+    "review": "APPROVED"
+  },
+  {
+    "assetId": 42,
+    "http": 206,
+    "redirected": false,
+    "sha256": "f8b6e74a37c8c8a07a09a6df0e37fad0738e6ecf735bd4948227931cd5bf3be6",
+    "bytes": 2465538,
+    "review": "APPROVED"
+  }
+]

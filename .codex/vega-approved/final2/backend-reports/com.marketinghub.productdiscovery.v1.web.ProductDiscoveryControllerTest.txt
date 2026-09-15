@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.productdiscovery.v1.web.ProductDiscoveryControllerTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.529 s -- in com.marketinghub.productdiscovery.v1.web.ProductDiscoveryControllerTest

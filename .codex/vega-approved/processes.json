@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32603,
+    "message": "Failed to execute query: StatementCallback; bad SQL grammar [SELECT d.id,d.process_code,a.activity_id,a.owner_name,a.executor_type FROM business_process_chain_item i JOIN business_process_definition d ON d.id=i.process_definition_id JOIN business_process_activity_definition a ON a.process_definition_id=d.id WHERE i.chain_definition_id=14 ORDER BY i.sequence_number,a.sequence_number LIMIT 100]"
+  }
+}

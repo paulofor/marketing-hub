@@ -115,6 +115,8 @@ class LearningCycleFixtureResetTest {
           mock(LearningSalesCycleRepository.class),
           events,
           proposals,
+          mock(com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository.class),
+          mock(com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository.class),
           mock(com.marketinghub.repository.jpa.processautomation.ProcessRunRepository.class),
           mock(com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository.class));
     }

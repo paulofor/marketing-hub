@@ -1,0 +1,549 @@
+{
+  "schema": 1,
+  "repository": "paulofor/marketing-hub",
+  "id": "405517f219104aac8e0257aeada71410",
+  "phase": "RELEASED",
+  "created_at": "2026-09-13T22:44:03.951868+00:00",
+  "owner": "Codex MKT · recuperação Vega ciclo 2 / experimento 92",
+  "reason": "Corrigir espera após preflight e concluir produção audiovisual governada da versão v12, homologada localmente em duas rodadas completas.",
+  "authorization": "Solicitação atual do usuário autoriza excepcionalmente imagens Docker versionadas no host para recuperar Vega antes do PR; preservar aprovação humana e proibir gasto de mídia, cobrança e publicação comercial.",
+  "protected_version": "b8283442948497a181641b81ea0bbd09591415d6",
+  "scopes": [
+    "app"
+  ],
+  "initial_sha": "9a5d4361ff2a0fabde650201352dcf9145e138a7",
+  "workflows": [
+    {
+      "file": "product-discovery-worker-ci.yml",
+      "id": 320715245,
+      "previous_state": "active"
+    },
+    {
+      "file": "customer-agent-worker-ci.yml",
+      "id": 327457647,
+      "previous_state": "active"
+    },
+    {
+      "file": "meta-ad-approver-worker-ci.yml",
+      "id": 330382702,
+      "previous_state": "active"
+    },
+    {
+      "file": "deploy-containers.yml",
+      "id": 243638963,
+      "previous_state": "active"
+    }
+  ],
+  "pending_runs": [],
+  "history": [
+    {
+      "at": "2026-09-13T22:44:04.161951+00:00",
+      "event": "requested"
+    },
+    {
+      "at": "2026-09-13T22:44:04.490833+00:00",
+      "event": "protecting"
+    },
+    {
+      "at": "2026-09-13T22:44:05.131426+00:00",
+      "event": "workflow_paused",
+      "workflow": "product-discovery-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-13T22:44:05.762159+00:00",
+      "event": "workflow_paused",
+      "workflow": "customer-agent-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-13T22:44:06.323026+00:00",
+      "event": "workflow_paused",
+      "workflow": "meta-ad-approver-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-13T22:44:06.891663+00:00",
+      "event": "workflow_paused",
+      "workflow": "deploy-containers.yml"
+    },
+    {
+      "at": "2026-09-13T22:44:24.378771+00:00",
+      "event": "protection_checked",
+      "enabled": [],
+      "pending": []
+    },
+    {
+      "at": "2026-09-13T22:44:51.510608+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-13T22:46:33.687139+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-13T22:48:40.294367+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-13T23:08:59.410099+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-13T23:09:34.839987+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-13T23:10:07.426794+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-13T23:42:19.871137+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-13T23:43:03.390647+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T01:36:27.214232+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T01:36:29.209780+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T01:37:06.464706+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T01:38:55.116988+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T01:43:39.133938+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T01:51:06.318385+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T01:52:16.355936+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T01:52:47.971626+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T02:32:49.984447+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T02:39:19.558210+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T03:56:12.541830+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T03:57:33.106774+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T03:58:02.912141+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T04:06:19.973698+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T05:20:05.837866+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T05:21:37.011627+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T05:21:58.453759+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T05:22:21.957890+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T05:23:20.623956+00:00",
+      "event": "command_started",
+      "executable": "python3",
+      "scopes": [
+        "app"
+      ]
+    },
+    {
+      "at": "2026-09-14T05:29:26.888326+00:00",
+      "event": "command_finished",
+      "exit_code": 0
+    },
+    {
+      "at": "2026-09-14T05:48:10.482543+00:00",
+      "event": "automatic_resume_prepared"
+    },
+    {
+      "at": "2026-09-14T07:01:42.092442+00:00",
+      "event": "publishers_reconciled",
+      "result": {
+        "status": "WAITING",
+        "reason": "A revisão homologada ainda não está integrada à main.",
+        "intervention_id": "405517f219104aac8e0257aeada71410",
+        "phase": "AWAITING_MERGE",
+        "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53"
+      }
+    },
+    {
+      "at": "2026-09-14T09:40:45.275714+00:00",
+      "event": "resume_authorized"
+    },
+    {
+      "at": "2026-09-14T09:40:45.872981+00:00",
+      "event": "workflow_resumed",
+      "workflow": "product-discovery-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-14T09:40:46.483867+00:00",
+      "event": "workflow_resumed",
+      "workflow": "customer-agent-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-14T09:40:47.083091+00:00",
+      "event": "workflow_resumed",
+      "workflow": "meta-ad-approver-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-14T09:40:47.690110+00:00",
+      "event": "workflow_resumed",
+      "workflow": "deploy-containers.yml"
+    },
+    {
+      "at": "2026-09-14T09:40:49.067054+00:00",
+      "event": "released"
+    },
+    {
+      "at": "2026-09-14T09:40:56.704062+00:00",
+      "event": "recovery_planned"
+    },
+    {
+      "at": "2026-09-14T09:41:00.034978+00:00",
+      "event": "publisher_dispatch_requested",
+      "workflow": "deploy-containers.yml",
+      "sha": "5875703473dd15f628cf89667b8203b420ba68b3"
+    },
+    {
+      "at": "2026-09-14T09:41:01.638018+00:00",
+      "event": "publisher_dispatch_accepted",
+      "workflow": "deploy-containers.yml"
+    },
+    {
+      "at": "2026-09-14T09:41:11.032303+00:00",
+      "event": "publishers_reconciled",
+      "result": {
+        "status": "WAITING",
+        "reason": "Aguardando filas, resultados ou confirmação do dispatch.",
+        "intervention_id": "405517f219104aac8e0257aeada71410",
+        "phase": "RELEASED",
+        "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+        "sha": "5875703473dd15f628cf89667b8203b420ba68b3",
+        "publications": {
+          "deploy-containers.yml": {
+            "status": "REQUESTED",
+            "dispatch_requested_at": "2026-09-14T09:40:56.704062+00:00",
+            "dispatch_run_id": 34829264006,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34829264006"
+          },
+          "product-discovery-worker-ci.yml": {
+            "status": "WAITING_APP"
+          },
+          "customer-agent-worker-ci.yml": {
+            "status": "WAITING_APP"
+          },
+          "meta-ad-approver-worker-ci.yml": {
+            "status": "WAITING_APP"
+          }
+        },
+        "completed": false
+      }
+    },
+    {
+      "at": "2026-09-14T11:12:35.024146+00:00",
+      "event": "publishers_reconciled",
+      "result": {
+        "status": "WAITING",
+        "reason": "Aguardando publicações já iniciadas antes de recuperar a main.",
+        "intervention_id": "405517f219104aac8e0257aeada71410",
+        "phase": "RELEASED",
+        "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+        "sha": "5875703473dd15f628cf89667b8203b420ba68b3",
+        "publications": {
+          "deploy-containers.yml": {
+            "status": "REQUESTED",
+            "dispatch_requested_at": "2026-09-14T09:40:56.704062+00:00",
+            "dispatch_run_id": 34829264006,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34829264006",
+            "run_id": 34829264006
+          },
+          "product-discovery-worker-ci.yml": {
+            "status": "WAITING_APP"
+          },
+          "customer-agent-worker-ci.yml": {
+            "status": "WAITING_APP"
+          },
+          "meta-ad-approver-worker-ci.yml": {
+            "status": "WAITING_APP"
+          }
+        },
+        "completed": false
+      }
+    },
+    {
+      "at": "2026-09-14T15:34:26.829995+00:00",
+      "event": "recovery_revision_superseded",
+      "previous": {
+        "sha": "5875703473dd15f628cf89667b8203b420ba68b3",
+        "publications": {
+          "deploy-containers.yml": {
+            "status": "REQUESTED",
+            "dispatch_requested_at": "2026-09-14T09:40:56.704062+00:00",
+            "dispatch_run_id": 34829264006,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34829264006",
+            "run_id": 34829264006
+          },
+          "product-discovery-worker-ci.yml": {
+            "status": "WAITING_APP"
+          },
+          "customer-agent-worker-ci.yml": {
+            "status": "WAITING_APP"
+          },
+          "meta-ad-approver-worker-ci.yml": {
+            "status": "WAITING_APP"
+          }
+        },
+        "completed": false
+      }
+    },
+    {
+      "at": "2026-09-14T15:34:27.506606+00:00",
+      "event": "recovery_planned"
+    },
+    {
+      "at": "2026-09-14T15:34:30.872668+00:00",
+      "event": "publishers_reconciled",
+      "result": {
+        "status": "COMPLETE",
+        "reason": "Publicações recuperadas.",
+        "intervention_id": "405517f219104aac8e0257aeada71410",
+        "phase": "RELEASED",
+        "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+        "sha": "f0b47b084a1877d104015e668e8e687fb78dd917",
+        "publications": {
+          "deploy-containers.yml": {
+            "run_id": 34857099971,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34857099971",
+            "status": "COMPLETE"
+          },
+          "product-discovery-worker-ci.yml": {
+            "run_id": 34862071961,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862071961",
+            "status": "COMPLETE"
+          },
+          "customer-agent-worker-ci.yml": {
+            "run_id": 34862072100,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072100",
+            "status": "COMPLETE"
+          },
+          "meta-ad-approver-worker-ci.yml": {
+            "run_id": 34862072030,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072030",
+            "status": "COMPLETE"
+          }
+        },
+        "completed": true
+      }
+    },
+    {
+      "at": "2026-09-14T17:46:18.523210+00:00",
+      "event": "publishers_reconciled",
+      "result": {
+        "status": "COMPLETE",
+        "reason": "Publicações recuperadas; próximos merges seguem os gatilhos normais.",
+        "intervention_id": "405517f219104aac8e0257aeada71410",
+        "phase": "RELEASED",
+        "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+        "sha": "f0b47b084a1877d104015e668e8e687fb78dd917",
+        "publications": {
+          "deploy-containers.yml": {
+            "run_id": 34857099971,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34857099971",
+            "status": "COMPLETE"
+          },
+          "product-discovery-worker-ci.yml": {
+            "run_id": 34862071961,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862071961",
+            "status": "COMPLETE"
+          },
+          "customer-agent-worker-ci.yml": {
+            "run_id": 34862072100,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072100",
+            "status": "COMPLETE"
+          },
+          "meta-ad-approver-worker-ci.yml": {
+            "run_id": 34862072030,
+            "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072030",
+            "status": "COMPLETE"
+          }
+        },
+        "completed": true
+      }
+    }
+  ],
+  "updated_at": "2026-09-14T17:46:18.523210+00:00",
+  "automatic_resume": {
+    "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+    "evidence": "docs/homologacao/vega-producao-apos-preflight-v1.md; final21 e final22: 3353 testes por rodada sem falhas, MySQL 5.7, REST e FFmpeg/HLS; imagens da revisão 6f16c05ad229 conferidas e saudáveis nos três serviços; anúncio 41/job21239 e demonstração 42/job21244 READY, produção registrada pela tela, ciclo 2 em VIDEO_APPROVAL; navegação desktop/iPhone/Pixel sem escrita. Recuperação técnica homologada; decisão humana, integração e gates comerciais permanecem pendentes. Retomar publicadores somente após prova de integração da revisão na main.",
+    "prepared_at": "2026-09-14T05:48:10.482497+00:00"
+  },
+  "recovery_result": {
+    "status": "COMPLETE",
+    "reason": "Publicações recuperadas; próximos merges seguem os gatilhos normais.",
+    "intervention_id": "405517f219104aac8e0257aeada71410",
+    "phase": "RELEASED",
+    "validated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+    "sha": "f0b47b084a1877d104015e668e8e687fb78dd917",
+    "publications": {
+      "deploy-containers.yml": {
+        "run_id": 34857099971,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34857099971",
+        "status": "COMPLETE"
+      },
+      "product-discovery-worker-ci.yml": {
+        "run_id": 34862071961,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862071961",
+        "status": "COMPLETE"
+      },
+      "customer-agent-worker-ci.yml": {
+        "run_id": 34862072100,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072100",
+        "status": "COMPLETE"
+      },
+      "meta-ad-approver-worker-ci.yml": {
+        "run_id": 34862072030,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072030",
+        "status": "COMPLETE"
+      }
+    },
+    "completed": true
+  },
+  "integrated_commit": "6f16c05ad2295dfec680b1c8eec9e9e06bd82d53",
+  "resume_sha": "5875703473dd15f628cf89667b8203b420ba68b3",
+  "validation_evidence": "docs/homologacao/vega-producao-apos-preflight-v1.md; final21 e final22: 3353 testes por rodada sem falhas, MySQL 5.7, REST e FFmpeg/HLS; imagens da revisão 6f16c05ad229 conferidas e saudáveis nos três serviços; anúncio 41/job21239 e demonstração 42/job21244 READY, produção registrada pela tela, ciclo 2 em VIDEO_APPROVAL; navegação desktop/iPhone/Pixel sem escrita. Recuperação técnica homologada; decisão humana, integração e gates comerciais permanecem pendentes. Retomar publicadores somente após prova de integração da revisão na main.",
+  "recovery": {
+    "sha": "f0b47b084a1877d104015e668e8e687fb78dd917",
+    "publications": {
+      "deploy-containers.yml": {
+        "run_id": 34857099971,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34857099971",
+        "status": "COMPLETE"
+      },
+      "product-discovery-worker-ci.yml": {
+        "run_id": 34862071961,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862071961",
+        "status": "COMPLETE"
+      },
+      "customer-agent-worker-ci.yml": {
+        "run_id": 34862072100,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072100",
+        "status": "COMPLETE"
+      },
+      "meta-ad-approver-worker-ci.yml": {
+        "run_id": 34862072030,
+        "url": "https://github.com/paulofor/marketing-hub/actions/runs/34862072030",
+        "status": "COMPLETE"
+      }
+    },
+    "completed": true
+  },
+  "live_enabled": [
+    "product-discovery-worker-ci.yml",
+    "customer-agent-worker-ci.yml",
+    "meta-ad-approver-worker-ci.yml",
+    "deploy-containers.yml"
+  ],
+  "live_pending_runs": [],
+  "safe_to_intervene": false
+}

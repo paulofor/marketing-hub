@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceDiscoveryServiceTest
+-------------------------------------------------------------------------------
+Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.278 s -- in com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceDiscoveryServiceTest

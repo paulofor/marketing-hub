@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.aiprompt.AiPromptSchemaTemplateServiceTest
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.722 s -- in com.marketinghub.aiprompt.AiPromptSchemaTemplateServiceTest

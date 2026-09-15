@@ -1,0 +1,15 @@
+
+> marketing-hub-frontend@0.0.1 test
+> NODE_ENV=test vitest --run src/pages/learningCycle/LearningCyclesPage.test.tsx
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v1.6.1 /root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/frontend
+
+ ✓ src/pages/learningCycle/LearningCyclesPage.test.tsx  (17 tests) 1262ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  23:19:48
+   Duration  2.74s (transform 160ms, setup 150ms, collect 489ms, tests 1.26s, environment 496ms, prepare 94ms)
+

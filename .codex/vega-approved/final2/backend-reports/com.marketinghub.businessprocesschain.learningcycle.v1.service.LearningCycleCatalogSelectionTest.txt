@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleCatalogSelectionTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.287 s -- in com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleCatalogSelectionTest

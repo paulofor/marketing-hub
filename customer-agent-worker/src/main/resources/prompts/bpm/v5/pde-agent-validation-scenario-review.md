@@ -43,3 +43,14 @@ O backend, não Psique, decide o avanço.
 ## Contexto congelado
 
 {{TASK_CONTEXT}}
+
+## Conjunto com vídeos já aprovados
+
+Quando `taskTarget.pdeContext.videoIntegration` existir, a aprovação humana das duas
+peças já foi registrada. Avalie no cenário executado se a demonstração facilita
+compreender e aplicar o primeiro resultado, se é opcional e se sua falha preserva
+a jornada. Use a identidade e os testes em `agentScenarioExecution`; não peça
+que o usuário aprove novamente os mesmos vídeos, transcreva evidências ou faça
+a integração. A aprovação das peças não autoriza campanha, cobrança ou mídia.
+Se a evidência do conjunto estiver ausente, registre a falha para correção pelo
+executor; não reutilize o cenário anterior à integração como prova nova.

@@ -1,0 +1,707 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 172 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT table_name,column_name FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('pde_production_slot','creative','video_project','sales_video_job','learning_sales_cycle_v1') ORDER BY table_name,ordinal_position",
+      "appliedLimit": 500,
+      "returnedRows": 172,
+      "rows": [
+        {
+          "table_name": "creative",
+          "column_name": "id"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "source_creative_id"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "version_number"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "experiment_id"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "headline"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "primary_text"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "image_url"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "ad_format"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "description"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "call_to_action"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "destination_url"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "lead_gen_form_id"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "instagram_user_id"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "image_hash"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "video_id"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "video_url"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "cost_usd"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "status"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "rejection_reason"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "reviewed_at"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_status"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_json"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_request_json"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_response_json"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_model"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_reviewed_at"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_started_at"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_recovery_count"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_review_last_recovered_at"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_improvement_status"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_improvement_attempts"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_improvement_json"
+        },
+        {
+          "table_name": "creative",
+          "column_name": "agent_improvement_error"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "product_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "chain_definition_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "chain_code"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "process_definition_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "experiment_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "previous_cycle_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "request_key"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "creation_json"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "brief_json"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "inherited_learning_json"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "stage"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "status"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "product_version"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "budget_limit_brl"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "window_start"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "window_end"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "return_process_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "return_activity_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "current_instance_id"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "open_slot"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "revision"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "baseline"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "updated_at"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "version_changed_at"
+        },
+        {
+          "table_name": "learning_sales_cycle_v1",
+          "column_name": "closed_at"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "id"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "slot_code"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "product_slug"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "domain"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "public_url"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "backend_url"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "experience_version"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "layout_key"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "target_environment"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "status"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "source_experiment_id"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "notes"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_status"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_checked_at"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_http_status"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_summary"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_detail"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_contract_slug"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_contract_health_path"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "validation_resolved_url"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "updated_at"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "draft_experience_json"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "published_experience_json"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "published_by"
+        },
+        {
+          "table_name": "pde_production_slot",
+          "column_name": "published_at"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "profile_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "script_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "tenant_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "retry_of_job_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "retry_attempt"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "retry_reason"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "retry_notes"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "provider_family"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "execution_mode"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "provider_name"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "provider_job_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "stream_playback_url"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "job_type"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "status"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "progress_percent"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "failure_code"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "failure_detail"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "requested_by"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "requested_at"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "started_at"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "finished_at"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "expires_at"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "asset_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "poster_asset_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "vtt_asset_id"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "metadata_json"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "audit_snapshot_json"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "sales_video_job",
+          "column_name": "updated_at"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "id"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "tenant_id"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "product_id"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "experiment_id"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "sales_video_profile_id"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "campaign_key"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "video_category"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "context_type"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "production_mode"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "target_channel"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "format"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "title"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "objective"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "story_text"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "funnel_stage"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "primary_metric"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "strategy_group_key"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "strategy_role"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "commercial_hypothesis"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "persuasion_framework"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "scientific_basis"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "measurement_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "results_snapshot"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "learning_decision"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "confirmed_learning"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "next_version_recommendation"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "hook_text"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "script_text"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "scene_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "visual_references"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "character_bible"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "environment_bible"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "object_bible"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "visual_style_guide"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "image_generation_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "continuity_rules"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "voiceover_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "soundtrack_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "caption_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "cta_text"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "target_duration_seconds"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "provider_plan"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "character_performance_type"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "character_performance_uri"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "reference_performance_uri"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "reference_performance_duration_seconds"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "performance_consent_evidence"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "performance_rights_evidence"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "editing_notes"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "quality_gate"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "status"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "created_by"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "updated_by"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "updated_at"
+        },
+        {
+          "table_name": "video_project",
+          "column_name": "commercial_plan_id"
+        }
+      ]
+    }
+  }
+}

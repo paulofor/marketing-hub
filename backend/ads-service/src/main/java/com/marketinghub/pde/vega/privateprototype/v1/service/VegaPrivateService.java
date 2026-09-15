@@ -35,6 +35,10 @@ public class VegaPrivateService {
   private final ProductRepository products;
   private final ObjectMapper json;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+      videoBinding;
+
   @Value("${PDE_VEGA_PROTOTYPE_VERSION:musa-pde-entry-v12-primeiro-ajuste-aplicavel}")
   private String version;
 
@@ -368,7 +372,7 @@ public class VegaPrivateService {
         .find();
   }
 
-  /** Monta a visão funcional sem vazar convite, sessão, prompt ou resposta bruta. */
+  /** Monta a visão funcional e o vídeo opcional do mesmo ciclo sem expor convites ou prompts. */
   private ObjectNode view(VegaPrivateSession row) {
     var out = json.createObjectNode();
     out.put("id", row.getId());
@@ -388,6 +392,19 @@ public class VegaPrivateService {
       out.put("generationStatus", execution.getStatus());
       out.put("error", execution.getError());
       out.set("card", execution.getResultJson() == null ? null : read(execution.getResultJson()));
+    }
+    if (videoBinding != null) {
+      try {
+        videoBinding
+            .presentation(row.getCycleId(), row.getPrototypeVersion())
+            .ifPresent(v -> out.set("videoIntegration", v));
+      } catch (RuntimeException ex) {
+        log.warn(
+            "Vídeo opcional indisponível; experiência preservada cycleId={} sessionId={}",
+            row.getCycleId(),
+            row.getId(),
+            ex);
+      }
     }
     out.put("checkoutMode", "SIMULATED_NO_CHARGE");
     out.put("priceBrl", 67);

@@ -48,7 +48,8 @@ public record LearningCycleResponse(
     List<CommandOption> commands,
     boolean canCreateSuccessor,
     Instant createdAt,
-    Instant closedAt) {
+    Instant closedAt,
+    boolean automaticContinuation) {
   /** Orienta execução por telas oficiais sem gerar consumo ao navegar. */
   public record WorkLink(String label, String url) {}
 

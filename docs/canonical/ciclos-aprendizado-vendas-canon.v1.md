@@ -1,5 +1,32 @@
 # Ciclos de aprendizado e vendas da Cadeia de Valor — v1
 
+## Continuidade após aprovação dos vídeos — decisão de 14/09/2026
+
+A aprovação humana registrada em Vídeos é a fonte de verdade para o uso da peça
+exata. O processo ativo deve reutilizá-la e integrar automaticamente AD e
+LANDING_HERO do próprio ciclo, sem pedir outra aprovação, ids ou transcrição de
+evidências. A conciliação do backend recupera também aprovações anteriores à
+correção. Leituras de tela não executam trabalho.
+
+A integração deve respeitar o destino: uma experiência privada aceita recebe os
+vídeos no seu contrato privado; não exige slot publicado nem URL comercial do
+experimento. Uma versão de catálogo mantém seu contrato em rascunho. Não copiar
+destino, campanha ou aprovações de outro experimento.
+
+Um destino só participa da integração automática quando o frontend e o executor
+implementam o mesmo contrato. O primeiro adaptador é a experiência `/vega-private`;
+a presença de uma URL privada, sozinha, não habilita outros produtos automaticamente.
+
+Integrar não comprova homologação. O conjunto integrado deve voltar automaticamente
+à homologação técnica e aos pareceres independentes afetados, pela fila canônica,
+com identidade das mídias e novas provas. A aprovação humana das mesmas peças é
+preservada. Concluídos os gates reais, o backend registra as evidências e avança.
+Campanha, cobrança e gasto de mídia conservam suas autorizações próprias.
+
+Cada movimento deve ser idempotente, preservar versões e histórico, respeitar STOP
+e pausa, bloquear mídia revogada/substituída e evitar tarefas pagas repetidas sem
+mudança da entrada. Falhas devem aparecer com causa e tarefa no acompanhamento.
+
 Decisão do usuário em 08/09/2026: a cadeia passa a operar ciclos de aprendizado comercial, cada
 um vinculado a um experimento, com retorno dirigido pela evidência e memória do ciclo anterior.
 O objetivo é aumentar vendas líquidas e contribuição através de produtos úteis e comunicação eficaz.

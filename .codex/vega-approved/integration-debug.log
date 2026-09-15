@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/infra/testing/video-continuation/verify.py", line 16, in <module>
+    target=next(t for t in catalog['targets'] if t['processCode']=='pde-construction-approval')
+                           ~~~~~~~^^^^^^^^^^^
+KeyError: 'targets'

@@ -15,3 +15,5 @@
 *.log
 tmp
 artifacts
+.codex
+.sandbox

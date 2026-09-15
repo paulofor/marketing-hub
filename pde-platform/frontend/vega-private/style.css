@@ -215,3 +215,7 @@ footer {
     font-size: 17px;
   }
 }
+
+.video-demo { margin: 0 0 1rem; }
+.video-demo summary { cursor: pointer; padding: .6rem 0; }
+.video-demo video { display: block; width: 100%; max-height: 65vh; background: #171317; border-radius: 12px; }

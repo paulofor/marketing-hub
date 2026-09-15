@@ -1,0 +1,14 @@
+[
+  {
+    "host": "root@191.252.181.168",
+    "state": "/marketinghub-backend running healthy\n/marketinghub-frontend running healthy\n"
+  },
+  {
+    "host": "root@163.245.202.80",
+    "state": "/customer-agent-worker-customer-agent-worker-1 running healthy\n/meta-ad-approver-worker-meta-ad-approver-worker-1 running healthy\n"
+  },
+  {
+    "host": "root@163.245.200.7",
+    "state": "/pde-platform-frontend-vega-private running healthy\n"
+  }
+]

@@ -56,6 +56,35 @@ public class LearningCycleVideoEvidence {
     ((ObjectNode) data).put("assetFingerprint", fingerprint(video));
   }
 
+  /** Distingue uma decisão humana ainda pendente sem invalidar a mídia selecionada. */
+  public boolean awaitingApproval(LearningSalesCycle cycle) {
+    return selected(cycle, "CAMPAIGN_VIDEO", "campaignVideoAssetId", ExperimentVideoSlot.AD, false)
+                .getReviewStatus()
+            != ExperimentVideoReviewStatus.APPROVED
+        || selected(
+                    cycle,
+                    "PDE_ENTRY_VIDEO",
+                    "pdeVideoAssetId",
+                    ExperimentVideoSlot.LANDING_HERO,
+                    false)
+                .getReviewStatus()
+            != ExperimentVideoReviewStatus.APPROVED;
+  }
+
+  /** Reutiliza a aprovação da peça exata selecionada na etapa de produção do ciclo. */
+  public ExperimentVideoAsset approved(LearningSalesCycle cycle, ExperimentVideoSlot role) {
+    return selected(
+        cycle,
+        role == ExperimentVideoSlot.AD ? "CAMPAIGN_VIDEO" : "PDE_ENTRY_VIDEO",
+        role == ExperimentVideoSlot.AD ? "campaignVideoAssetId" : "pdeVideoAssetId",
+        role,
+        true);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  @org.springframework.context.annotation.Lazy
+  private LearningCycleVideoBinding automaticBinding;
+
   /** Confere revisão, anúncio e contrato em rascunho antes da homologação do conjunto. */
   public void integration(LearningSalesCycle cycle, JsonNode data) {
     for (String field : List.of("technicalEvidence", "customerReviewEvidence")) text(data, field);
@@ -72,6 +101,13 @@ public class LearningCycleVideoEvidence {
    * Revalida mídia e integração atuais, inclusive contra o contrato publicado quando necessário.
    */
   public void current(LearningSalesCycle cycle, boolean published) {
+    if (automaticBinding != null && automaticBinding.receipt(cycle).isPresent()) {
+      require(
+          !published,
+          "O conjunto foi integrado à experiência privada. A publicação comercial exige seu contrato e autorização próprios.");
+      automaticBinding.current(cycle);
+      return;
+    }
     JsonNode proof = completed(cycle, "VIDEO_APPROVAL");
     require(
         proof

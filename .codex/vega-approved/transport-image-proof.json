@@ -1,0 +1,87 @@
+[
+  {
+    "image": "marketing-hub/customer-agent-worker:vega-approved-ae63251932c2",
+    "host": "root@163.245.202.80",
+    "checks": {
+      "Architecture": true,
+      "Os": true,
+      "RootFS": true,
+      "Config.Entrypoint": true,
+      "Config.Cmd": true,
+      "Config.Env": true,
+      "Config.WorkingDir": true,
+      "Config.User": true,
+      "Config.Labels": true
+    },
+    "localId": "sha256:7ab0d487e7941a9dc9c991d7d4b26609d2e07afc1189179c84a0bd04d961e69d",
+    "remoteId": "sha256:e000fe23d94b572adcd0dcef9ec5e62f3e90509e09225416c812ea0885de0067"
+  },
+  {
+    "image": "marketing-hub/meta-ad-approver-worker:vega-approved-ae63251932c2",
+    "host": "root@163.245.202.80",
+    "checks": {
+      "Architecture": true,
+      "Os": true,
+      "RootFS": true,
+      "Config.Entrypoint": true,
+      "Config.Cmd": true,
+      "Config.Env": true,
+      "Config.WorkingDir": true,
+      "Config.User": true,
+      "Config.Labels": true
+    },
+    "localId": "sha256:79a4dd3f6321649db3dc96eeeee07b395a8a49bc3bb925037ac2c0b6184bdeb6",
+    "remoteId": "sha256:c3a0731573c1b5d43ec7a05540d54069f84f4d03bf8f705a5a49482fc17faad4"
+  },
+  {
+    "image": "marketing-hub/backend:vega-approved-ae63251932c2",
+    "host": "root@191.252.181.168",
+    "checks": {
+      "Architecture": true,
+      "Os": true,
+      "RootFS": true,
+      "Config.Entrypoint": true,
+      "Config.Cmd": true,
+      "Config.Env": true,
+      "Config.WorkingDir": true,
+      "Config.User": true,
+      "Config.Labels": true
+    },
+    "localId": "sha256:1ca4936bc34f4e9f323a4333acacab82fa079ef802694ddd072aed5f3a508833",
+    "remoteId": "sha256:d85eda9fe0fa00d6088a24319da8a02dd089ddf15ae852365225ac47e9c3aee0"
+  },
+  {
+    "image": "marketing-hub/frontend:vega-approved-ae63251932c2",
+    "host": "root@191.252.181.168",
+    "checks": {
+      "Architecture": true,
+      "Os": true,
+      "RootFS": true,
+      "Config.Entrypoint": true,
+      "Config.Cmd": true,
+      "Config.Env": true,
+      "Config.WorkingDir": true,
+      "Config.User": true,
+      "Config.Labels": true
+    },
+    "localId": "sha256:9041f6e4dd6ca5ee4be9866821a32a7bff7515a74bd58fc60591d61462ff558a",
+    "remoteId": "sha256:fea2614d3892a49e64bf7e1ead25a9958709888942b81084f2ff5ff1526ef828"
+  },
+  {
+    "image": "marketing-hub/pde-platform-frontend-vega:vega-approved-ae63251932c2",
+    "host": "root@163.245.200.7",
+    "checks": {
+      "Architecture": true,
+      "Os": true,
+      "RootFS": true,
+      "Config.Entrypoint": true,
+      "Config.Cmd": true,
+      "Config.Env": true,
+      "Config.WorkingDir": true,
+      "Config.User": true,
+      "Config.Labels": true
+    },
+    "localId": "sha256:193466864da3c093d6731504968d09cf043eebabd34fd6fad483e2b76c2ff5dc",
+    "remoteId": "sha256:8f6906653299a9d6b158994f0f4b2683e7320ce77fd023a5077124c2108bffd0"
+  }
+]

@@ -1,8 +1,14 @@
+# syntax=docker/dockerfile:1
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /build
 COPY pom.xml .
 COPY src src
 RUN mvn -q -DskipTests package
+# Extrai com o JDK da construção para dispensar ferramentas de instalação no runtime.
+ADD --checksum=sha256:167a098c4fdec156b58a9f678c90a84f9072d789f9c6e7b35496a6987b8b7ef8 https://storage.googleapis.com/chrome-for-testing-public/153.0.8010.36/linux64/chrome-linux64.zip /tmp/pde-chrome.zip
+RUN mkdir -p /opt/pde-chrome && cd /opt/pde-chrome \
+    && jar -xf /tmp/pde-chrome.zip \
+    && chmod +x chrome-linux64/chrome chrome-linux64/chrome_crashpad_handler chrome-linux64/chrome_sandbox
 
 FROM eclipse-temurin:21-jre-noble AS java-runtime
 
@@ -35,5 +41,11 @@ COPY --from=build /build/src/main/resources/prompts /app/prompts
 COPY --from=build /build/src/main/resources/browser /app/browser
 COPY --from=build /build/src/main/resources/mcp /app/mcp
 COPY review-evidence /app/commercial-evidence
+# O Chromium aberto não oferece todos os codecs do MP4 aprovado. O harness usa Chrome oficial fixado.
+COPY --from=build /opt/pde-chrome/chrome-linux64 /opt/chrome-linux64
+ENV PDE_VIDEO_BROWSER_EXECUTABLE=/opt/chrome-linux64/chrome
+# O Chrome precisa de diretórios explícitos graváveis para cache e diagnóstico como usuário sem root.
+ENV XDG_CONFIG_HOME=/tmp/pde-browser-config
+ENV XDG_CACHE_HOME=/tmp/pde-browser-cache
 USER operator
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

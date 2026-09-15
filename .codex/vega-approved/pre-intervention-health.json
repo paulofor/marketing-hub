@@ -1,0 +1,14 @@
+[
+  {
+    "host": "root@191.252.181.168",
+    "containers": "/marketinghub-backend sha256:3c3f4dd64e262dd4315ffb7378604eedde4ddd8005e0c06b0f44f5bf4d33f38e running healthy\n/marketinghub-frontend sha256:8192f2990208289ae73d40c6229ba814a5aa0a862cfebe044779792c8fba5d8c running healthy\n/containers-process-execution-worker-1 sha256:31bdefa24c0e648fdccc0adb0c64d67174588075551d8f8630be23a1ba9c48b2 running healthy\n"
+  },
+  {
+    "host": "root@163.245.202.80",
+    "containers": "/customer-agent-worker-customer-agent-worker-1 sha256:15e415dda35d5693b77d5c1b123c55d34eee99fcdf8fcae748b1ce0144bf938e running healthy\n/meta-ad-approver-worker-meta-ad-approver-worker-1 sha256:b95504bcb0e62096621eef26855f687fd626e92903afaa13da9b00958f949538 running healthy\n"
+  },
+  {
+    "host": "root@163.245.200.7",
+    "containers": "/pde-platform-frontend-vega-private sha256:945b166e0c68f843d0ad1442296dd591ed1e673604079a798eea4bfee4511c88 running healthy\n"
+  }
+]

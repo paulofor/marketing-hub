@@ -1,0 +1,41 @@
+[0m[0mOpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (/root/.m2/repository/net/bytebuddy/byte-buddy-agent/1.14.11/byte-buddy-agent-1.14.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+23:47:24.723 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.marketinghub.businessprocess.automation.v1.service.ProcessRunCreativeRecoveryPersistenceTest]: ProcessRunCreativeRecoveryPersistenceTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:47:24.920 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.marketinghub.TestBootApplication for test class com.marketinghub.businessprocess.automation.v1.service.ProcessRunCreativeRecoveryPersistenceTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2026-09-14T23:47:25.196Z  INFO 19235 --- [           main] rocessRunCreativeRecoveryPersistenceTest : Starting ProcessRunCreativeRecoveryPersistenceTest using Java 21.0.12.1 with PID 19235 (started by root in /root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/backend/ads-service)
+2026-09-14T23:47:25.197Z  INFO 19235 --- [           main] rocessRunCreativeRecoveryPersistenceTest : The following 1 profile is active: "test"
+2026-09-14T23:47:25.872Z  INFO 19235 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-14T23:47:26.472Z  INFO 19235 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 594 ms. Found 289 JPA repository interfaces.
+2026-09-14T23:47:26.911Z  INFO 19235 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-14T23:47:27.117Z  INFO 19235 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-09-14T23:47:27.196Z  INFO 19235 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-14T23:47:27.301Z  INFO 19235 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-14T23:47:27.328Z  INFO 19235 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-14T23:47:27.492Z  INFO 19235 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:com.marketinghub.businessprocess.automation.v1.service.ProcessRunCreativeRecoveryPersistenceTest-5c8a2baa-e505-4e07-af14-dce6923ad819 user=SA
+2026-09-14T23:47:27.493Z  INFO 19235 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-14T23:47:30.220Z  INFO 19235 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-14T23:47:30.521Z  INFO 19235 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-14T23:47:30.926Z  INFO 19235 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-14T23:47:34.115Z  INFO 19235 --- [           main] rocessRunCreativeRecoveryPersistenceTest : Started ProcessRunCreativeRecoveryPersistenceTest in 9.133 seconds (process running for 11.369)
+2026-09-14T23:47:34.468Z  INFO 19235 --- [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-09-14T23:47:34.468Z  INFO 19235 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-14T23:47:34.470Z  INFO 19235 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-09-14T23:47:34.904Z  INFO 19235 --- [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-09-14T23:47:34.904Z  INFO 19235 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-14T23:47:34.905Z  INFO 19235 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-09-14T23:47:35.017Z  INFO 19235 --- [           main] o.s.mock.web.MockServletContext          : Initializing Spring TestDispatcherServlet ''
+2026-09-14T23:47:35.017Z  INFO 19235 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-14T23:47:35.017Z  INFO 19235 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+[0m[0m

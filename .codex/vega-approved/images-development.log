@@ -1,0 +1,9 @@
+PASS imagem backend corresponde ao JAR verificado
+PASS prompt empacotado customer-agent-worker
+PASS prompt empacotado meta-ad-approver-worker
+PASS bundle empacotado frontend
+Traceback (most recent call last):
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/infra/testing/video-continuation/check-images.py", line 47, in <module>
+    assert run(name, 'cat', remote) == pathlib.Path(local).read_bytes(), name
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: pde-platform-frontend-vega

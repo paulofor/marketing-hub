@@ -1,0 +1,19 @@
+PASS backend
+PASS psique
+PASS temis
+PASS browser-contracts
+PASS private-worker
+PASS frontend
+PASS types
+PASS private-types
+PASS frontend-build
+PASS private-build
+PASS operational-contract
+PASS packaged-resources
+PASS images
+PASS api
+PASS harness
+PASS navigation
+PASS restart
+PASS diff
+RODADA COMPLETA APROVADA final3

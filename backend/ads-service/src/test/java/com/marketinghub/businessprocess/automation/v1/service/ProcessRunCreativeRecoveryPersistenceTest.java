@@ -164,6 +164,31 @@ class ProcessRunCreativeRecoveryPersistenceTest {
             .build();
   }
 
+  /** A continuidade interna vence a espera da atividade ativa, mas nunca a pausa do processo. */
+  @Test
+  void resumesApprovedVideoWorkBeforeWaitingOnActiveActivityAndRespectsPause() throws Exception {
+    var continuation =
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleVideoContinuation.class);
+    when(continuation.advance(any()))
+        .thenReturn(
+            new com.marketinghub.businessprocesschain.learningcycle.v1.service
+                .LearningCycleVideoContinuation.Progress(
+                "WAITING_ACTIVITY", "Integração audiovisual enfileirada"));
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        service, "videoContinuation", continuation);
+    var run = start();
+    state("nonAudiovisual", "PENDING", false);
+    assertThat(tick(run.id()).reason()).isEqualTo("Integração audiovisual enfileirada");
+    verify(continuation).advance(any());
+    assertThat(requested).isEmpty();
+    clearInvocations(continuation);
+    service.pause(94110L, 94164L, run.id());
+    tick(run.id());
+    verifyNoInteractions(continuation);
+  }
+
   /** ADJUST reabre produção uma vez e todas as revisões são refeitas antes da decisão humana. */
   @Test
   void returnsToProductionAndWaitsForExplicitHumanDecision() throws Exception {

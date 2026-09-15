@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/.codex/vega-approved/build-components.py", line 13, in <module>
+    with (root/('build-'+name+'.log')).open('w') as log:subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['docker', 'build', '--label', 'com.marketinghub.source-digest=986a13abd879df3d3f9a72c03ee0e975c21e1dc7686a6a564e5f2bf80e27b626', '--label', 'org.opencontainers.image.revision=5f77fcd6cc1c735d06cd852e03ba8c892ed617bb', '-f', 'customer-agent-worker/Dockerfile', '-t', 'marketing-hub/customer-agent-worker:vega-approved-986a13abd879', 'customer-agent-worker']' returned non-zero exit status 1.

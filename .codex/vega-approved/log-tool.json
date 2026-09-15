@@ -1,0 +1,87 @@
+[
+  {
+    "inputSchema": {
+      "required": [
+        "module"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "lines": {
+          "minimum": 1,
+          "description": "Quantidade de linhas retornadas por p\u00e1gina. Padr\u00e3o: 200.",
+          "type": "integer",
+          "maximum": 500
+        },
+        "contains": {
+          "type": "string",
+          "description": "Filtra linhas que contenham este texto literal."
+        },
+        "cursor": {
+          "type": "string",
+          "description": "Cursor retornado em nextCursor para pr\u00f3xima p\u00e1gina."
+        },
+        "offset": {
+          "description": "Offset para pagina\u00e7\u00e3o dentro do conjunto filtrado.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "to": {
+          "type": "string",
+          "description": "Data/hora final ISO-8601 UTC (ex: 2026-05-21T04:40:00Z)."
+        },
+        "from": {
+          "type": "string",
+          "description": "Data/hora inicial ISO-8601 UTC (ex: 2026-05-21T04:35:00Z)."
+        },
+        "requestId": {
+          "type": "string",
+          "description": "Filtra linhas pelo requestId/correlationId registrado no log."
+        },
+        "httpStatus": {
+          "minimum": 100,
+          "description": "Filtra linhas de erro HTTP pelo status registrado no log, ex.: 500.",
+          "type": "integer",
+          "maximum": 599
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Filtra linhas pelo endpoint/URI registrado no log, ex.: /api/creatives."
+        },
+        "module": {
+          "enum": [
+            "backend",
+            "ai-worker",
+            "lead-portal",
+            "facebook-ads",
+            "email-service",
+            "lead-portal-payment",
+            "mds",
+            "mois",
+            "mois-sales-library-worker",
+            "mois-hotmart",
+            "clickbank-coletor-mois",
+            "oprm-coletor-receita",
+            "ops-monitor-worker",
+            "pde-platform-backend",
+            "video-management-service",
+            "customer-agent-worker",
+            "financial-agent-worker",
+            "experiment-strategist-worker",
+            "meta-ad-approver-worker",
+            "iris-image-studio",
+            "themis-image-studio",
+            "landing-generator-agent-worker",
+            "product-discovery-worker",
+            "growth-operator-worker",
+            "communication-agent-worker"
+          ],
+          "description": "M\u00f3dulo Java para consultar logs.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "java_module_logs",
+    "description": "Retorna as \u00faltimas linhas de logs operacionais dos m\u00f3dulos, incluindo product-discovery-worker."
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 2 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT id,product_id,experiment_id,chain_definition_id,process_definition_id,stage,status,revision,product_version FROM learning_sales_cycle_v1 WHERE id IN (1,2)",
+      "appliedLimit": 500,
+      "returnedRows": 2,
+      "rows": [
+        {
+          "id": 1,
+          "product_id": 4,
+          "experiment_id": 91,
+          "chain_definition_id": 13,
+          "process_definition_id": 72,
+          "stage": "DECISION",
+          "status": "ADJUSTED",
+          "revision": 2,
+          "product_version": "musa-pde-entry-v7-espelho-antes-de-sair"
+        },
+        {
+          "id": 2,
+          "product_id": 4,
+          "experiment_id": 92,
+          "chain_definition_id": 14,
+          "process_definition_id": 76,
+          "stage": "VIDEO_APPROVAL",
+          "status": "OPEN",
+          "revision": 11,
+          "product_version": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"
+        }
+      ]
+    }
+  }
+}

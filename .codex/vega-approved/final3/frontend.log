@@ -1,0 +1,19 @@
+
+> marketing-hub-frontend@0.0.1 test
+> NODE_ENV=test vitest --run src/pages/learningCycle src/api/learningCycle src/pages/product/ProductProcessTaskTracking.test.tsx
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v1.6.1 /root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/frontend
+
+ ✓ src/pages/learningCycle/LearningCycleCommandForm.test.tsx  (1 test) 80ms
+ ✓ src/pages/product/ProductProcessTaskTracking.test.tsx  (4 tests) 87ms
+ ✓ src/pages/learningCycle/LearningCycleProcessEntry.test.tsx  (4 tests) 107ms
+ ✓ src/pages/learningCycle/LearningCycleDecisionPanel.test.tsx  (6 tests) 341ms
+ ✓ src/pages/learningCycle/LearningCyclesPage.test.tsx  (17 tests) 1340ms
+
+ Test Files  5 passed (5)
+      Tests  32 passed (32)
+   Start at  00:29:41
+   Duration  4.05s (transform 504ms, setup 3.66s, collect 2.89s, tests 1.96s, environment 5.05s, prepare 439ms)
+

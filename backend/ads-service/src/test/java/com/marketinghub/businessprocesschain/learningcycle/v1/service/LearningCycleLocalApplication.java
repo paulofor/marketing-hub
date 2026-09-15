@@ -90,6 +90,7 @@ import org.springframework.web.bind.annotation.*;
   LearningCycleVideoPreflightFixtures.class,
   com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController.class,
   LearningCycleVideoFixtures.class,
+  LearningCycleVideoContinuationFixtures.class,
   LearningCycleBpmLedger.class,
   LearningCycleController.class
 })
@@ -132,6 +133,7 @@ public class LearningCycleLocalApplication {
             "optional:classpath:learningcycle/no-production-config.properties"),
         Map.entry("spring.profiles.active", "learning-cycles-fixture"),
         Map.entry("process-execution.worker-token", "cycles-process-fixture-only"),
+        Map.entry("integrations.pde-platform.internal-token", "vega-local-internal-only"),
         Map.entry(
             "spring.datasource.url",
             "jdbc:mysql://"
@@ -194,6 +196,8 @@ public class LearningCycleLocalApplication {
     factory.setDataSource(source);
     factory.setManagedTypes(
         PersistenceManagedTypes.of(
+            com.marketinghub.pde.vega.privateprototype.v1.VegaPrivateSession.class.getName(),
+            com.marketinghub.pde.vega.privateprototype.v1.VegaAdjustmentExecution.class.getName(),
             LearningSalesCycle.class.getName(),
             com.marketinghub.businessprocess.automation.v1.ProcessRun.class.getName(),
             com.marketinghub.businessprocess.automation.v1.ProcessRunEvent.class.getName(),
@@ -441,7 +445,10 @@ public class LearningCycleLocalApplication {
     return repository;
   }
 
-  /** Gera somente produtos de teste identificáveis e sem parâmetros comerciais reais. */
+  /**
+   * Gera produtos identificáveis e permite o contrato privado somente no cenário explícito de
+   * vídeo.
+   */
   static Product product(Long id) {
     if (!Set.of(91001L, 91002L).contains(id)) return null;
     var product = new Product();
@@ -449,6 +456,8 @@ public class LearningCycleLocalApplication {
     product.setInternalName(id == 91001L ? "Vega · fixture local" : "Mira · fixture local");
     product.setName(product.getInternalName());
     product.setSlug("fixture-" + id);
+    if (id == 91001L && LearningCycleVideoContinuationFixtures.vegaEnabled)
+      product.setSlug("metodo-musa-7-dias");
     product.setAutomaticExecutionEnabled(true);
     product.setCommercialStatus("ACTIVE");
     return product;
@@ -620,6 +629,9 @@ public class LearningCycleLocalApplication {
     private final LearningSalesCycleRepository cycles;
     private final LearningSalesCycleEventRepository events;
     private final LearningCycleDecisionProposalRepository decisionProposals;
+    private final com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository vegaSessions;
+    private final com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository
+        vegaExecutions;
     private final com.marketinghub.repository.jpa.processautomation.ProcessRunRepository
         processRuns;
     private final com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
@@ -634,10 +646,14 @@ public class LearningCycleLocalApplication {
         LearningSalesCycleRepository cycles,
         LearningSalesCycleEventRepository events,
         LearningCycleDecisionProposalRepository decisionProposals,
+        com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository vegaSessions,
+        com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository vegaExecutions,
         com.marketinghub.repository.jpa.processautomation.ProcessRunRepository processRuns,
         com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
             processRunEvents) {
       this.processRuns = processRuns;
+      this.vegaSessions = vegaSessions;
+      this.vegaExecutions = vegaExecutions;
       this.processRunEvents = processRunEvents;
       this.decisionProposals = decisionProposals;
       this.cycles = cycles;
@@ -664,6 +680,9 @@ public class LearningCycleLocalApplication {
     @PostMapping("/fixture/reset")
     @Transactional(isolation = Isolation.READ_COMMITTED)
     Map<String, Object> reset() {
+      vegaExecutions.deleteAllInBatch();
+      vegaSessions.deleteAllInBatch();
+      LearningCycleVideoContinuationFixtures.vegaEnabled = false;
       processRunEvents.deleteAllInBatch();
       processRuns.deleteAllInBatch();
       var existing =

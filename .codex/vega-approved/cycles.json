@@ -1,0 +1,1183 @@
+[
+  {
+    "id": 2,
+    "productId": 4,
+    "experimentId": 92,
+    "previousCycleId": 1,
+    "successorCycleId": null,
+    "chainDefinitionId": 14,
+    "processDefinitionId": 76,
+    "revision": 11,
+    "stage": "VIDEO_APPROVAL",
+    "stageLabel": "Revisar e integrar os dois vídeos",
+    "status": "OPEN",
+    "baseline": false,
+    "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+    "budgetLimitBrl": 100.0,
+    "windowStart": "2026-09-10T03:00:00Z",
+    "windowEnd": "2026-09-17T02:59:00Z",
+    "nextAction": "Aprove os ativos nos gates oficiais. No experimento, crie e aprove o criativo a partir do AD. Em Versões PDE, inclua o LANDING_HERO no rascunho da versão deste ciclo. Registre reprodução, legendas, fallback, CTA sem assistir e mobile com testes segregados. Concluir não publica nem autoriza campanha.",
+    "responsible": "Psique e Têmis · revisão; operador · integração",
+    "returnProcessId": 70,
+    "returnActivityId": "prototypeCorrection",
+    "workUrl": "/products/4/pde-versions",
+    "diagram": {
+      "flows": [
+        {
+          "to": "LEARNING",
+          "from": "start"
+        },
+        {
+          "to": "PLANNING",
+          "from": "LEARNING"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "PLANNING"
+        },
+        {
+          "to": "VIDEO_BRIEF",
+          "from": "ADJUSTMENT"
+        },
+        {
+          "to": "CAMPAIGN_VIDEO",
+          "from": "VIDEO_BRIEF"
+        },
+        {
+          "to": "PDE_ENTRY_VIDEO",
+          "from": "CAMPAIGN_VIDEO"
+        },
+        {
+          "to": "VIDEO_APPROVAL",
+          "from": "PDE_ENTRY_VIDEO"
+        },
+        {
+          "to": "VALIDATION",
+          "from": "VIDEO_APPROVAL"
+        },
+        {
+          "to": "qualityDecision",
+          "from": "VALIDATION"
+        },
+        {
+          "to": "PUBLICATION",
+          "from": "AUTHORIZATION"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "PUBLICATION"
+        },
+        {
+          "to": "DECISION",
+          "from": "MEASUREMENT"
+        },
+        {
+          "to": "commercialDecision",
+          "from": "DECISION"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "qualityDecision",
+          "kind": "REWORK",
+          "label": "Reprovado: corrigir a mesma iteração"
+        },
+        {
+          "to": "AUTHORIZATION",
+          "from": "qualityDecision",
+          "label": "Aprovado: mesma versão"
+        },
+        {
+          "to": "LEARNING",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Ajustar: novo experimento com memória"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Correção técnica: pausar e revalidar o mesmo experimento"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "commercialDecision",
+          "kind": "REWORK",
+          "label": "Continuar dentro dos limites / corrigir medição"
+        },
+        {
+          "to": "SCALE_AUTHORIZATION",
+          "from": "commercialDecision",
+          "label": "Vendas, contribuição e valor comprovados"
+        },
+        {
+          "to": "MEASUREMENT",
+          "from": "SCALE_AUTHORIZATION",
+          "kind": "REWORK",
+          "label": "Nova autorização explícita"
+        },
+        {
+          "to": "end",
+          "from": "commercialDecision",
+          "label": "Encerrar / inconclusivo"
+        },
+        {
+          "to": "ADJUSTMENT",
+          "from": "VIDEO_APPROVAL",
+          "kind": "REWORK",
+          "label": "Reprovado: corrigir causa e renovar evidências"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Aprendizado anterior ou primeira hipótese"
+        },
+        {
+          "id": "LEARNING",
+          "type": "TASK",
+          "label": "Aprendizado e hipótese",
+          "owner": "Hermes · síntese; operador · registro",
+          "description": "Concilie o experimento anterior. Registre o aprendizado, as limitações e uma hipótese verificável, incluindo explicação concorrente.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PLANNING",
+          "type": "TASK",
+          "label": "Planejar o experimento",
+          "owner": "Atena e Plutus · pareceres separados; operador · registro",
+          "description": "Defina uma variável principal, oferta, canal, público, amostra, janela, teto total e regras de parada. Preserve as demais condições para tornar a comparação clara.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "ADJUSTMENT",
+          "type": "TASK",
+          "label": "Ajustar produto e comunicação",
+          "owner": "Dédalo · produto; Íris e Apolo · comunicação",
+          "description": "Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VIDEO_BRIEF",
+          "type": "TASK",
+          "label": "Definir os dois vídeos",
+          "owner": "Íris · briefing; Plutus · limite de produção",
+          "description": "Defina objetivo, CTA e métrica próprios do vídeo AD e da entrada LANDING_HERO. Demonstre o produto real e registre a hipótese principal, as variáveis mantidas e a referência do teto de produção. Consumo exige autorização e preflight no Estúdio.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "CAMPAIGN_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo do criativo de campanha",
+          "owner": "Apolo · produção no Estúdio",
+          "description": "No Estúdio, use o produto e o experimento deste ciclo para produzir um vídeo AD com gancho, prova fiel, áudio, legendas e CTA para a experiência. Passe por preflight e Plutus antes de consumir. Selecione aqui o ativo pronto; ausência ou falha exige correção.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "PDE_ENTRY_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo de entrada do PDE",
+          "owner": "Apolo · demonstração da experiência real",
+          "description": "Produza um LANDING_HERO distinto do mesmo experimento: mostre o que a pessoa faz, o primeiro resultado útil e a continuidade paga. Use a versão ajustada e legendas. Assistir deve ser opcional, com CTA acessível e fallback.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "VIDEO_APPROVAL",
+          "type": "TASK",
+          "label": "Revisar e integrar os dois vídeos",
+          "owner": "Psique e Têmis · revisão; operador · integração",
+          "description": "Aprove os ativos nos gates oficiais. No experimento, crie e aprove o criativo a partir do AD. Em Versões PDE, inclua o LANDING_HERO no rascunho da versão deste ciclo. Registre reprodução, legendas, fallback, CTA sem assistir e mobile com testes segregados. Concluir não publica nem autoriza campanha.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VALIDATION",
+          "type": "TASK",
+          "label": "Homologar a mesma versão",
+          "owner": "Harness técnico, Psique e Têmis · gates independentes",
+          "description": "Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada e, se realizada, a observação humana consentida. Reprovação volta ao ajuste.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "qualityDecision",
+          "type": "GATEWAY",
+          "label": "Versão homologada?",
+          "description": "Reprovação exige correção e nova evidência para a versão afetada."
+        },
+        {
+          "id": "AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar orçamento e janela",
+          "owner": "Operador responsável pela autorização",
+          "description": "Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PUBLICATION",
+          "type": "TASK",
+          "label": "Conferir publicação",
+          "owner": "Operador · fluxo oficial do experimento",
+          "description": "Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "MEASUREMENT",
+          "type": "TASK",
+          "label": "Medir vendas e valor entregue",
+          "owner": "Marketing Hub · conciliação automática; Hermes e Plutus · interpretação",
+          "description": "O backend lê automaticamente o funil atribuído, métricas do canal, vendas, reembolsos, custos, entrega, uso e satisfação. Persiste fonte, período e segregação. Fonte ausente ou inconsistente bloqueia sem virar zero e orienta a correção; a tela não recebe digitação de resultados.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "DECISION",
+          "type": "TASK",
+          "label": "Revisar e aprovar proposta comercial de Atena",
+          "owner": "Atena · proposta; usuário · edição e aprovação",
+          "description": "Atena compara três alternativas com a conciliação oficial, preenche justificativa, evidência, aprendizado, hipótese e destino. O usuário pode editar e aprovar. Proposta pendente, inválida ou desatualizada bloqueia o losango; só a aprovação registra a decisão e o retorno. Nenhum gasto ou publicação é autorizado por este parecer.",
+          "runtimePath": "/business-process-chains/learning-cycles",
+          "executionContract": "LEARNING_CYCLE_DECISION_PROPOSAL_V1",
+          "responsibilityDomain": "MARKET_STRATEGY",
+          "responsibleAgentKeys": [
+            "experiment-strategist"
+          ],
+          "humanApprovalRequired": true
+        },
+        {
+          "id": "commercialDecision",
+          "type": "GATEWAY",
+          "label": "O que os resultados autorizam?",
+          "description": "Ajustar, continuar, corrigir dados, solicitar escala ou encerrar."
+        },
+        {
+          "id": "SCALE_AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar expansão",
+          "owner": "Operador responsável pela autorização",
+          "description": "Reavalie contribuição, vendas e valor entregue. Defina uma nova autorização explícita e atualize os limites pelo fluxo oficial antes de continuar o acompanhamento.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Preservar resultados e aprendizado"
+        }
+      ],
+      "schemaVersion": "LEARNING_SALES_CYCLE_V4",
+      "decisionPreparation": {
+        "pending": "/api/internal/business-process-chains/learning-cycles/v1/decision/stage-executions/pending",
+        "agentKey": "experiment-strategist",
+        "sequence": [
+          "ATENA_PROPOSAL",
+          "HUMAN_REVIEW",
+          "EXPLICIT_APPROVAL",
+          "COMMERCIAL_GATEWAY"
+        ],
+        "activityId": "DECISION"
+      }
+    },
+    "brief": {
+      "requestKey": "6863f8d6-d5ba-4fb3-9eeb-a4166f0eec2d",
+      "chainDefinitionId": 14,
+      "experimentId": 92,
+      "previousCycleId": 1,
+      "baseline": false,
+      "productVersion": "musa-pde-entry-v8-primeiro-ajuste-aplicavel",
+      "hypothesis": "Tornar o primeiro ajuste imediatamente aplicável com itens que a cliente já possui pode aumentar primeiros resultados por início e a continuidade até checkout e compra. Hipótese do sucessor, sem causa de abandono comprovada pelas quatro sessões do #91.",
+      "mainChange": "Utilidade do primeiro resultado: explicar o que fazer, como aplicar, ocasião e critério de autoavaliação; permitir salvar e retomar. Preservar público, canal, preço e oferta durante este teste; toda comunicação deve refletir a versão real homologada.",
+      "successCriterion": "Diagnóstico: primeiro resultado por início e retomada. Critério comercial proposto: 5 vendas líquidas conciliadas e entregues em 100 sessões humanas, com contribuição positiva, uso e satisfação. Sem amostra suficiente, concluir como inconclusivo. Não interpretar comparação histórica como A/B causal.",
+      "audience": "Mulheres adultas no Brasil que procuram um ajuste claro ao se arrumar, usando principalmente o que já possuem. Preservar a hipótese de público do #91, sem declarar segmento vencedor; manter o piloto direto #90 separado.",
+      "offer": "MUSA: primeiro ajuste e Dia 1 gratuitos; Dias 2 a 7 por R$ 67, pagamento único e acesso individual por 90 dias. Sem promessa de transformação garantida; a versão v8 indicada é o alvo de melhoria ainda a implementar e homologar.",
+      "acquisition": "Instagram Ads como canal planejado, preservando a referência do #91. Novo criativo e destino somente após ajuste e revisão. Teto de R$ 100 e janela são proposta de planejamento, não autorização de gasto; publicação exige Plutus, homologação e aprovação próprias.",
+      "budgetLimitBrl": 100,
+      "windowStart": "2026-09-10T03:00:00Z",
+      "windowEnd": "2026-09-17T02:59:00Z",
+      "sampleTarget": 100,
+      "minimumNetSales": 5,
+      "operatorName": "Codex — execução solicitada pelo usuário"
+    },
+    "inheritedLearning": {
+      "experimentId": 91,
+      "brief": {
+        "requestKey": "e2eec955-e233-4955-aac8-bb75956b842e",
+        "chainDefinitionId": 13,
+        "experimentId": 91,
+        "previousCycleId": null,
+        "baseline": true,
+        "productVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+        "hypothesis": "Hipótese histórica do #91 (MUSA-H003): apresentar um primeiro ajuste prático, usando o que a cliente já possui, pode levar visitantes do Instagram à degustação e à compra do MUSA por R$ 67. Adoção para aprendizado e preparação do sucessor; quatro sessões não comprovam conversão nem causa de abandono.",
+        "mainChange": "Variável testada no #91: enquadramento da transformação prática sem compra impulsiva. Preservar o experimento interrompido. Melhorias de utilidade, entrada mobile e vídeos serão hipóteses do sucessor, com métricas e homologação próprias; nenhuma alteração comercial é aplicada retroativamente ao #91.",
+        "successCriterion": "Critério original: 5 vendas líquidas reconciliadas e entregues em 100 visitantes humanos, com contribuição positiva e uso acompanhado. Amostra não atingida: 4 sessões, 86 eventos, nenhuma compra registrada (monitor de 09/09/2026 00:53 UTC). Conciliar gasto: Hub R$ 27,25 (07/09) versus consulta Meta histórica R$ 27,45 (08/09). Teto e janela são os originais, sem reativação; 5 vendas não comprovam escala. Adoção não é aprovação retroativa.",
+        "audience": "Público pretendido: mulheres adultas no Brasil que querem um ajuste claro ao se arrumar, usando principalmente o que já têm. Configuração histórica: Brasil, 18 a 65+, interesse Estilista, Instagram. A amostra reduzida não valida público vencedor; resultados do piloto direto #90 permanecem separados.",
+        "offer": "MUSA: primeiro ajuste e Dia 1 gratuitos; continuidade guiada dos Dias 2 a 7 por R$ 67 em pagamento único, com acesso individual por 90 dias. Microações práticas com o que a cliente possui, sem promessa de transformação garantida. Preservar a oferta histórica como referência para o sucessor.",
+        "acquisition": "Instagram Ads via Meta; campanha histórica 120251556536430326, experimento #91, criativo de vídeo #38. Destino v7.clubemusa.com.br; CTA: Ver meu primeiro ajuste MUSA. Campanha pausada. Separar sessões humanas atribuídas ao #91 de QA, bots e #90. Evidências: tarefa Hermes #357 e docs/registros/experimentos.md, registro de 09/09/2026.",
+        "budgetLimitBrl": 100,
+        "windowStart": "2026-09-07T03:00:00Z",
+        "windowEnd": "2026-09-12T02:59:00Z",
+        "sampleTarget": 100,
+        "minimumNetSales": 5,
+        "operatorName": "Codex — registro solicitado pelo usuário"
+      },
+      "events": [
+        {
+          "id": 1,
+          "revision": 0,
+          "fromStage": "MEASUREMENT",
+          "toStage": "MEASUREMENT",
+          "action": "ADOPT_BASELINE",
+          "operatorName": "Codex — registro solicitado pelo usuário",
+          "summary": "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias.",
+          "evidenceReference": "facebook_ads_campaign:120251556536430326",
+          "evidence": {
+            "source": "LEGACY_META_CAMPAIGN",
+            "experimentId": 91,
+            "reference": "facebook_ads_campaign:120251556536430326",
+            "recordedAt": "2026-09-07T03:12:34Z",
+            "preflightRecorded": false,
+            "summary": "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias."
+          },
+          "createdAt": "2026-09-09T00:56:05.742108Z"
+        },
+        {
+          "id": 2,
+          "revision": 1,
+          "fromStage": "MEASUREMENT",
+          "toStage": "DECISION",
+          "action": "MEASURE",
+          "operatorName": "Marketing Hub · backend",
+          "summary": "Conciliação automática: 4 sessões, 1 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -27.30 de contribuição.",
+          "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+          "evidence": {
+            "contractVersion": "LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V1",
+            "automatic": true,
+            "sourceFingerprint": "1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+            "experimentId": 91,
+            "currency": "BRL",
+            "source": "PDE Analytics atribuído ao experimento + métricas oficiais do canal + ledger de custos auditáveis",
+            "periodStart": "2026-09-07T03:00:00Z",
+            "periodEnd": "2026-09-09T06:03:36.030895Z",
+            "observedAt": "2026-09-09T06:03:36.030895Z",
+            "sessions": 4,
+            "starts": 2,
+            "firstResults": 1,
+            "checkouts": 0,
+            "netSales": 0,
+            "refunds": 0,
+            "spendBrl": 27.25,
+            "revenueBrl": 0.0,
+            "contributionBrl": -27.3,
+            "dataValid": true,
+            "testDataExcluded": true,
+            "deliveryVerified": false,
+            "useVerified": false,
+            "satisfactionVerified": false,
+            "sources": {
+              "pdeAnalytics": {
+                "productSlug": "metodo-musa-7-dias",
+                "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+                "attribution": "EXPERIMENT_ID_OR_LINKED_CAMPAIGN_IDENTIFIERS",
+                "trafficQualityIncluded": "HUMAN",
+                "humanEvents": 86,
+                "rawEvents": 86,
+                "humanSessions": 4,
+                "rawSessions": 4,
+                "lastEventAt": "2026-09-07T19:18:32Z"
+              },
+              "acquisition": {
+                "platform": "FACEBOOK",
+                "mode": "META_INSIGHTS",
+                "spendBrl": 27.25,
+                "observedAt": "2026-09-07T22:24:14Z",
+                "finalSnapshot": true,
+                "impressions": 120,
+                "clicks": 5
+              },
+              "financialOutcomes": {
+                "purchaseEvents": 0,
+                "refundEvents": 0,
+                "grossRevenueBrl": 0.0,
+                "refundedRevenueBrl": 0.0,
+                "referencesComplete": true,
+                "amountsComplete": true,
+                "refundsMatchPurchases": true
+              },
+              "costLedger": {
+                "auditableTotalBrl": 27.3,
+                "legacyTotalBrl": 27.3,
+                "unreconciledLegacyBrl": 0.0
+              },
+              "valueDelivery": {
+                "accessReleasedNetSales": 0,
+                "deliveries": 0,
+                "firstUses": 0,
+                "referencesComplete": true,
+                "satisfactionResponses": 0,
+                "positiveSatisfactionResponses": 0
+              }
+            }
+          },
+          "createdAt": "2026-09-09T06:03:36.030895Z"
+        },
+        {
+          "id": 3,
+          "revision": 2,
+          "fromStage": "DECISION",
+          "toStage": "DECISION",
+          "action": "ADJUST",
+          "operatorName": "Codex — registro solicitado pelo usuário",
+          "summary": "Rascunho para aprovação humana: encerrar o ciclo do experimento 91 e preparar um sucessor, preservando o produto MUSA, a versão musa-pde-entry-v7-espelho-antes-de-sair, o período e as fontes conciliadas. A medição oficial registrou 4 sessões humanas, 2 inícios, 1 primeiro resultado, 0 checkouts, 0 vendas líquidas, R$ 0,00 de receita e R$ -27,30 de contribuição. A amostra é insuficiente para concluir conversão, causa de abandono ou público vencedor.",
+          "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+          "evidence": {
+            "decisionProposalId": 1,
+            "humanApproved": true,
+            "rootCause": "Não há causa comprovada. A hipótese prioritária é que a utilidade do primeiro ajuste não tenha ficado suficientemente clara ou imediata para sustentar o avanço após o início; explicações concorrentes incluem inadequação do público, comunicação ou criativo, fricção de entrada e simples variação causada pela amostra de apenas 4 sessões. O sucessor deve isolar a utilidade inicial como uma variável e medir seu efeito.",
+            "learning": "O fluxo conseguiu gerar 2 inícios e 1 primeiro resultado em 4 sessões, mostrando uso parcial, mas não validação humana ou comercial. Não houve checkout, compra, entrega, primeiro uso pós-venda nem resposta de satisfação. Cliques, sessões, inícios e primeiro resultado não equivalem a vendas. O experimento interrompido deve permanecer como referência histórica, sem alterações ou homologação retroativas.",
+            "nextHypothesis": "Em um sucessor com gates, métricas e autorização próprios, tornar o primeiro ajuste mais imediatamente aplicável com itens que a cliente já possui aumentará a proporção de primeiros resultados por início e, como efeito comercial a testar, poderá aumentar checkouts e vendas líquidas reconciliadas em comparação com esta referência; a hipótese deve ser testada sem alterar simultaneamente público, comunicação ou outras variáveis materiais.",
+            "returnProcessId": 67,
+            "returnActivityId": "productArchitecture"
+          },
+          "createdAt": "2026-09-09T18:27:02.022879Z"
+        }
+      ],
+      "productVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+      "cycleId": 1,
+      "priorCycleReference": ""
+    },
+    "events": [
+      {
+        "id": 4,
+        "revision": 1,
+        "fromStage": "LEARNING",
+        "toStage": "PLANNING",
+        "action": "COMPLETE",
+        "operatorName": "Codex — execução solicitada pelo usuário",
+        "summary": "Aprendizado aprovado do ciclo #1 transmitido ao sucessor: melhorar a aplicabilidade do primeiro ajuste e testar continuidade até compra, preservando a limitação da amostra.",
+        "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+        "evidence": {
+          "learning": "O #91 teve 4 sessões humanas, 86 eventos, 2 inícios, 1 primeiro resultado e nenhuma venda. R$ 27,30 de custo auditável e contribuição de -R$ 27,30. A amostra é insuficiente para concluir conversão ou causa de abandono. O sucessor deve produzir uma microação executável, manter oferta/público e ter métricas, homologação e autorização próprias.",
+          "competingExplanation": "A falta de compra também pode decorrer da amostra de quatro sessões, do público, do criativo ou da fricção de entrada/retomada. A hipótese de utilidade inicial precisa de teste; não é causa comprovada."
+        },
+        "createdAt": "2026-09-09T19:04:24.447919Z"
+      },
+      {
+        "id": 5,
+        "revision": 2,
+        "fromStage": "PLANNING",
+        "toStage": "ADJUSTMENT",
+        "action": "COMPLETE",
+        "operatorName": "Codex — continuidade solicitada pelo usuário",
+        "summary": "Processo 2 concluído no segundo ciclo do Vega, experimento #92: Atena #359 aprovou MARKET_STRATEGY_V3; Plutus #361 aprovou PDE_PRIVATE_ECONOMICS_V1; Dédalo #362 aprovou a arquitetura do cartão de microação. O aprendizado do #91 foi preservado: 4 sessões humanas, 2 inícios, 1 primeiro resultado, nenhuma venda; não há causa de abandono comprovada. Concluir planejamento e seguir dentro da mesma cadeia para Processo 3, atividade 3.1 — Construir jornada privada de valor, Dédalo. A v8 ainda precisa ser construída e homologada; a v7 histórica permanece referência.",
+        "evidenceReference": "agent-task:359; agent-task:361; agent-task:362; learning-cycle:2; learning-cycle:1/event:3",
+        "evidence": {
+          "planReference": "Ciclo #2 / experimento #92 / plano #3; MARKET_STRATEGY_V3 tarefa #359 + PDE_PRIVATE_ECONOMICS_V1 tarefa #361 + arquitetura tarefa #362. Versão alvo musa-pde-entry-v8-primeiro-ajuste-aplicavel. Preço R$ 67 como referência, checkout simulado sem cobrança; público, canal e oferta preservados.",
+          "stopRule": "Parar diante de cobrança real, publicação, campanha, contato externo, gasto comercial, necessidade de montagem manual ou conhecimento de IA, compra de itens, contrato inválido ou bloqueio independente. Custo variável R$ 12 e teto técnico R$ 300 são hipóteses, não autorização de gasto. Duas leituras humanas consentidas são validação futura, separada do QA técnico. Conservar experimento #92 PLANNED e #91 interrompido."
+        },
+        "createdAt": "2026-09-10T05:15:27.871507Z"
+      },
+      {
+        "id": 6,
+        "revision": 3,
+        "fromStage": "ADJUSTMENT",
+        "toStage": "ADJUSTMENT",
+        "action": "REWORK",
+        "operatorName": "Codex — execução autorizada pelo usuário",
+        "summary": "Implementado e testado o protótipo privado v9 do segundo ciclo do Vega. Encaminhar a Dédalo para revisão da correção e nova homologação técnica por Psique.",
+        "evidenceReference": "repo://docs/homologacao/vega-tarefa-380-prototipo-v1.md",
+        "evidence": {
+          "rootCause": "As tarefas #378–#380 receberam especificações sem URL executável aceita do ciclo #2. Foi implementado o contrato aprovado: primeiro ajuste aplicável com itens disponíveis, salvar/retomar e sinais persistidos, com isolamento dos testes. A amostra do #91 não prova a causa do abandono.",
+          "productVersion": "musa-pde-entry-v9-primeiro-ajuste-aplicavel",
+          "technicalOnly": true,
+          "privatePrototype": {
+            "prototypeVersion": "musa-pde-entry-v9-primeiro-ajuste-aplicavel",
+            "privateAccessUrl": "https://v7.clubemusa.com.br/vega-private",
+            "image": "marketing-hub/pde-platform-frontend-vega:vega380-v9; config sha256:57438785b99f53b2f4d71cacf739f1e198ebcb7597ff4d7da5506583d0bde81c",
+            "evidenceReference": "repo://docs/homologacao/vega-tarefa-380-prototipo-v1.md — Duas rodadas locais completas publication1/publication2: 445 testes unitários, 27 controles de API e 13 percursos de navegador por rodada; MySQL 5.7, imagens reais, desktop, iPhone e Pixel. Modelo externo simulado. URL e diagnóstico da v9 conferidos após publicação. Dados QA/AGENT_VALIDATION segregados; sem leitura humana ou comprovação comercial. Hipótese do primeiro resultado útil, oferta, preço e aquisição preservados.",
+            "observedAt": "2026-09-11T02:33:00.000Z",
+            "desktopValidated": true,
+            "mobileValidated": true,
+            "firstResultValidated": true,
+            "resumeValidated": true,
+            "failuresValidated": true,
+            "testDataExcluded": true,
+            "noExternalSideEffects": true
+          },
+          "returnProcessId": 70,
+          "returnActivityId": "prototypeCorrection"
+        },
+        "createdAt": "2026-09-11T02:32:25.166592Z"
+      },
+      {
+        "id": 7,
+        "revision": 4,
+        "fromStage": "ADJUSTMENT",
+        "toStage": "ADJUSTMENT",
+        "action": "REWORK",
+        "operatorName": "Codex — execução solicitada pelo usuário",
+        "summary": "Correção implementada e validada para concluir 3.6 e 3.7 do Vega no ciclo #2: entrada privada com recuperação de convite e avaliação sintética vinculada à sessão, versão e aprendizado corretos.",
+        "evidenceReference": "docs/homologacao/vega-ciclo2-validacao-correta-v1.md; artifacts/vega386/final1 e final2: 14/14 grupos em duas rodadas locais consecutivas; imagens versionadas vega386-v10.",
+        "evidence": {
+          "rootCause": "Psique selecionava o parecer humano legado para experiment:92 e capturava a entrada sem sessão; Dédalo herdou um bloqueio incompatível com a política vigente. Corrigidos seleção, isolamento de dados e capturas vinculadas ao ciclo, com recuperação acionável de convite privado. Impacto: remover retrabalho e permitir avaliar o primeiro ajuste útil antes de investir em aquisição, sem alegar venda ou leitura humana.",
+          "productVersion": "musa-pde-entry-v10-primeiro-ajuste-aplicavel",
+          "technicalOnly": true,
+          "privatePrototype": {
+            "prototypeVersion": "musa-pde-entry-v10-primeiro-ajuste-aplicavel",
+            "privateAccessUrl": "https://v7.clubemusa.com.br/vega-private",
+            "image": "marketing-hub/pde-platform-frontend-vega:vega386-v10; config sha256:dad7f93d599102471023543431a69220180003f0f82444a859993d6c428afdb1",
+            "evidenceReference": "Implementação real em pde-platform/frontend/vega-private/main.tsx; imagens construídas pelos Dockerfiles versionados e publicadas nos hosts autorizados. Duas rodadas locais completas passaram: backend e MySQL 5.7 reais, worker real com provedor simulado, consumidor Psique nos três cenários, cinco cenários do harness, entrada e retomada em desktop/iPhone/Pixel, falhas e segurança, Docker e isolamento. Preservados aprendizado do #91 (amostra pequena, sem prova de causa do abandono), experimento #92 PLANNED e métricas de teste segregadas. Nova homologação independente e Psique serão executadas nas atividades oficiais. Evidências: docs/homologacao/vega-ciclo2-validacao-correta-v1.md e artifacts/vega386/final1,final2.",
+            "observedAt": "2026-09-11T11:21:00.000Z",
+            "desktopValidated": true,
+            "mobileValidated": true,
+            "firstResultValidated": true,
+            "resumeValidated": true,
+            "failuresValidated": true,
+            "testDataExcluded": true,
+            "noExternalSideEffects": true
+          },
+          "returnProcessId": 70,
+          "returnActivityId": "prototypeCorrection"
+        },
+        "createdAt": "2026-09-11T11:20:18.217405Z"
+      },
+      {
+        "id": 8,
+        "revision": 5,
+        "fromStage": "ADJUSTMENT",
+        "toStage": "ADJUSTMENT",
+        "action": "REWORK",
+        "operatorName": "Codex — execução solicitada pelo usuário",
+        "summary": "Correção implementada e validada para concluir 3.6 e 3.7 do Vega no ciclo #2: entrada privada com recuperação de convite, sem consulta de sessão anônima e avaliação sintética vinculada à sessão, versão e aprendizado corretos.",
+        "evidenceReference": "docs/homologacao/vega-ciclo2-validacao-correta-v1.md; artifacts/vega386/final5 e final6: 14/14 grupos em duas rodadas locais consecutivas; imagens versionadas vega386-v11.",
+        "evidence": {
+          "rootCause": "Corrigida também a consulta anônima de sessão antes do convite; a v11 consolida a implementação com regressão explícita para ausência de HTTP 5xx. Psique selecionava o parecer humano legado para experiment:92 e capturava a entrada sem sessão; Dédalo herdou um bloqueio incompatível com a política vigente. Corrigidos seleção, isolamento de dados e capturas vinculadas ao ciclo, com recuperação acionável de convite privado. Impacto: remover retrabalho e permitir avaliar o primeiro ajuste útil antes de investir em aquisição, sem alegar venda ou leitura humana.",
+          "productVersion": "musa-pde-entry-v11-primeiro-ajuste-aplicavel",
+          "technicalOnly": true,
+          "privatePrototype": {
+            "prototypeVersion": "musa-pde-entry-v11-primeiro-ajuste-aplicavel",
+            "privateAccessUrl": "https://v7.clubemusa.com.br/vega-private",
+            "image": "marketing-hub/pde-platform-frontend-vega:vega386-v11",
+            "evidenceReference": "Implementação real em pde-platform/frontend/vega-private/main.tsx; imagens construídas pelos Dockerfiles versionados e publicadas nos hosts autorizados. Duas rodadas locais completas passaram: backend e MySQL 5.7 reais, worker real com provedor simulado, consumidor Psique nos três cenários, cinco cenários do harness, entrada e retomada em desktop/iPhone/Pixel, falhas e segurança, Docker e isolamento. Preservados aprendizado do #91 (amostra pequena, sem prova de causa do abandono), experimento #92 PLANNED e métricas de teste segregadas. Nova homologação independente e Psique serão executadas nas atividades oficiais. Evidências: docs/homologacao/vega-ciclo2-validacao-correta-v1.md e artifacts/vega386/final5,final6.",
+            "observedAt": "2026-09-11T11:33:00.000Z",
+            "desktopValidated": true,
+            "mobileValidated": true,
+            "firstResultValidated": true,
+            "resumeValidated": true,
+            "failuresValidated": true,
+            "testDataExcluded": true,
+            "noExternalSideEffects": true
+          },
+          "returnProcessId": 70,
+          "returnActivityId": "prototypeCorrection"
+        },
+        "createdAt": "2026-09-11T11:32:15.877800Z"
+      },
+      {
+        "id": 9,
+        "revision": 6,
+        "fromStage": "ADJUSTMENT",
+        "toStage": "ADJUSTMENT",
+        "action": "REWORK",
+        "operatorName": "Codex — correção e execução autorizadas pelo usuário",
+        "summary": "Correção técnica v12 do ciclo 2: Têmis passa a selecionar a política AGENT_VALIDATION para experiment:92 e restringir as provas à linhagem do Vega. O gate usa a mesma identidade e preserva a operação comercial. Psique aceita versões posteriores da família executável sem depender de lista fixa. A microação e a hipótese comercial permanecem iguais. Duas rodadas locais completas consecutivas aprovadas, com protótipo real, MySQL 5.7, executores, integrações simuladas e desktop/iPhone/Pixel. Nova revisão por Dédalo e homologação real obrigatórias antes do gate.",
+        "evidenceReference": "docs/homologacao/vega-integridade-gate-ciclo-v1.md; imagens vega393-gate-v12",
+        "evidence": {
+          "rootCause": "As tarefas #392 e #393 herdaram seleção de contrato humano e evidências globais de outro produto. A origem experiment:92 não era reconhecida por Têmis nem pelo gate; Psique também fixava versões v9/v10/v11. Corrigidos os contratos do ciclo e a validação da família executável, sem declarar que o protótipo tinha defeito de utilidade.",
+          "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "technicalOnly": true,
+          "privatePrototype": {
+            "prototypeVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+            "privateAccessUrl": "https://v7.clubemusa.com.br/vega-private",
+            "image": "marketing-hub/pde-platform-frontend-vega:vega393-gate-v12",
+            "evidenceReference": "Duas rodadas locais completas aprovadas (approved1 e approved2): backend e MySQL 5.7, geração e recuperação do protótipo, cinco cenários técnicos, três pareceres de Psique, Têmis e gate com suas saídas encadeadas, Dédalo, imagens e navegação desktop/iPhone15Pro/Pixel7. Modelos locais simulados; não constituem evidência humana ou comercial. Imagens publicadas sob coordenação e versão conferida pela URL privada. Aprendizado do #91 preservado: 4 sessões e zero vendas não comprovam causa de abandono; testar utilidade do primeiro ajuste e continuidade até compra no #92, ainda PLANNED.",
+            "observedAt": "2026-09-11T20:21:00.000Z",
+            "desktopValidated": true,
+            "mobileValidated": true,
+            "firstResultValidated": true,
+            "resumeValidated": true,
+            "failuresValidated": true,
+            "testDataExcluded": true,
+            "noExternalSideEffects": true
+          },
+          "returnProcessId": 70,
+          "returnActivityId": "prototypeCorrection"
+        },
+        "createdAt": "2026-09-11T20:20:44.306453Z"
+      },
+      {
+        "id": 10,
+        "revision": 7,
+        "fromStage": "ADJUSTMENT",
+        "toStage": "VIDEO_BRIEF",
+        "action": "COMPLETE",
+        "operatorName": "AIHUB — registro solicitado pelo usuário",
+        "summary": "Conclusão do ajuste privado já comprovado: construção #70 e comunicação #63 concluídas no experimento 92. Gate multiagente #258 e integração #270 aprovam a versão v12 com checkout simulado e dados de teste segregados. Registro das provas existentes, sem nova homologação humana, autorização de vídeos pagos, campanha, cobrança ou publicação comercial. Os requisitos audiovisuais e comerciais continuam pendentes no próprio ciclo.",
+        "evidenceReference": "business_process_activity_instance:258; business_process_activity_instance:270; docs/homologacao/vega-integridade-gate-ciclo-v1.md; docs/homologacao/vega-destino-aprovado-ciclo-v1.md",
+        "evidence": {
+          "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "changeEvidence": "Protótipo v12: tarefa 394 e gate 258, com avaliações 395–399. Comunicação: tarefa 402; criativo 406 e evidência visual 126, avaliações 407/408 e decisão privada 266. Integração 270: PDE_COMMUNICATION_PRIVATE_INTEGRATION_V1, ciclo 2, experimento 92, checkout SIMULATED, tráfego AGENT_VALIDATION. Provas já persistidas e objetivos confirmados antes deste registro."
+        },
+        "createdAt": "2026-09-12T21:18:45.250816Z"
+      },
+      {
+        "id": 11,
+        "revision": 8,
+        "fromStage": "VIDEO_BRIEF",
+        "toStage": "VIDEO_BRIEF",
+        "action": "AUTHORIZE_VIDEO_BUDGET",
+        "operatorName": "Paulo",
+        "summary": "Teto total de USD 20 registrado para produção e revisão do anúncio e da demonstração na entrada.",
+        "evidenceReference": "internal://learning-cycles/2/video-budget/bbf0ae00-bba4-4ed9-a67a-5c39ca1c0181",
+        "evidence": {
+          "requestKey": "bbf0ae00-bba4-4ed9-a67a-5c39ca1c0181",
+          "expectedRevision": 7,
+          "chainDefinitionId": 14,
+          "experimentId": 92,
+          "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+          "budgetLimitUsd": 20,
+          "operatorName": "Paulo",
+          "justification": "Criar um video atraente para realizar vendas.",
+          "confirmed": true,
+          "scope": "TWO_VIDEOS_PRODUCTION_AND_REVIEW",
+          "currency": "USD",
+          "productId": 4,
+          "financialReviewApproved": false,
+          "mediaAuthorized": false,
+          "billingAuthorized": false,
+          "commercialPublicationAuthorized": false,
+          "videoRoles": [
+            "AD",
+            "LANDING_HERO"
+          ]
+        },
+        "createdAt": "2026-09-13T00:21:01.100003Z"
+      },
+      {
+        "id": 12,
+        "revision": 9,
+        "fromStage": "VIDEO_BRIEF",
+        "toStage": "CAMPAIGN_VIDEO",
+        "action": "COMPLETE",
+        "operatorName": "AIHUB — execução solicitada por Paulo",
+        "summary": "Briefing operacional dos dois vídeos derivado do contrato de Íris #402 para a versão v12. A mensagem, público, oferta e hipótese permanecem iguais; as peças demonstrarão aplicação e retomada do primeiro ajuste. Teto total de USD 20 registrado por Paulo no evento 11, incluindo produção e revisão. Este registro não é parecer financeiro nem autoriza mídia, cobrança ou publicação comercial.",
+        "evidenceReference": "agent_task:402; learning_sales_cycle_event_v1:11; business_process_activity_instance:258; business_process_activity_instance:270",
+        "evidence": {
+          "briefReference": "Íris tarefa #402, contrato IRIS_COMMUNICATION_V1, experiment:92, processo 63 v7; versão musa-pde-entry-v12-primeiro-ajuste-aplicavel. Adaptação audiovisual por AIHUB a partir da mensagem e do briefing de canal persistidos.",
+          "campaignGoal": "Qualificar o interesse mostrando uma conclusão única: primeiro ajuste claro e aplicável com o que a participante já possui. Usar somente imagens/capturas rastreáveis da v12 e CTA de experimentação privada, sem prometer transformação, preferência ou venda comprovada.",
+          "campaignCta": "Ver meu primeiro ajuste MUSA — acesso privado governado, sem compra ou cobrança.",
+          "campaignMetric": "Primeiros resultados por início atribuídos ao experimento 92; apoio: retenção e clique qualificado. QA segregado. Sessões, cliques e checkout simulado não equivalem a vendas.",
+          "pdeGoal": "Demonstrar a versão real v12: selecionar ocasião e combinação por toque, receber cartão com ação, como aplicar, ocasião e autoavaliação, salvar e retomar. Provar funcionamento observado; nenhuma tela reconstruída nem resultado humano inventado.",
+          "pdeCta": "Ver meu primeiro ajuste MUSA. Assistir é opcional; a entrada deve continuar acessível sem reproduzir o vídeo.",
+          "pdeMetric": "Primeiros resultados por início, uso do ajuste e retomada do cartão. Sinais de checkout simulado separados de vendas líquidas; nenhuma cobrança no protótipo privado.",
+          "controlledVariables": "Hipótese: utilidade imediata do primeiro ajuste com peças já disponíveis. Preservar público, canal, preço e oferta; demonstrar a versão v12 real. Amostra histórica de 4 sessões sem causa de abandono comprovada.",
+          "productionBudgetReference": "internal://learning-cycles/2/video-budget/bbf0ae00-bba4-4ed9-a67a-5c39ca1c0181",
+          "productionBudget": {
+            "reference": "internal://learning-cycles/2/video-budget/bbf0ae00-bba4-4ed9-a67a-5c39ca1c0181",
+            "budgetLimitUsd": 20,
+            "scope": "TWO_VIDEOS_PRODUCTION_AND_REVIEW",
+            "currency": "USD",
+            "financialReviewApproved": false
+          }
+        },
+        "createdAt": "2026-09-13T00:33:12.941928Z"
+      },
+      {
+        "id": 13,
+        "revision": 10,
+        "fromStage": "CAMPAIGN_VIDEO",
+        "toStage": "PDE_ENTRY_VIDEO",
+        "action": "COMPLETE",
+        "operatorName": "Codex · recuperação técnica autorizada por Paulo",
+        "summary": "Produção técnica do anúncio concluída, preservando Vega, cadeia 14, ciclo 2, experimento 92 e versão musa-pde-entry-v12-primeiro-ajuste-aplicavel. Encaminhar às próximas etapas pelo backend. Aprovações humanas/comerciais permanecem pendentes.",
+        "evidenceReference": "sales_video_job:21239; experiment_video_asset:41; learning_cycle:2; experiment:92",
+        "evidence": {
+          "campaignVideoAssetId": 41,
+          "productionEvidence": "Produção privada TEST concluída pelo Estúdio, job 21239, ativo 41, perfil 59. MP4, voz pt-BR, legendas e HLS conferidos tecnicamente em desktop/iPhone/Pixel; captura homologada 118 da versão v12. Hashes e auditoria persistidos no job. https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/dd1ad33f25bf-sales-video-21239-index.m3u8. Revisão independente, escuta e decisão humana continuam pendentes; este registro não autoriza campanha, cobrança ou mídia.",
+          "assetFingerprint": "29588988c94aecfe62607685f5afd930d9b7263e45cec4fac5d65ab131c45bbb"
+        },
+        "createdAt": "2026-09-14T01:55:45.640443Z"
+      },
+      {
+        "id": 14,
+        "revision": 11,
+        "fromStage": "PDE_ENTRY_VIDEO",
+        "toStage": "VIDEO_APPROVAL",
+        "action": "COMPLETE",
+        "operatorName": "Codex · recuperação técnica autorizada por Paulo",
+        "summary": "Produção técnica do vídeo de demonstração concluída, preservando Vega, cadeia 14, ciclo 2, experimento 92 e versão musa-pde-entry-v12-primeiro-ajuste-aplicavel. Encaminhar às próximas etapas pelo backend. Aprovações humanas/comerciais permanecem pendentes.",
+        "evidenceReference": "sales_video_job:21244; experiment_video_asset:42; learning_cycle:2; experiment:92",
+        "evidence": {
+          "pdeVideoAssetId": 42,
+          "productionEvidence": "Produção privada TEST concluída pelo Estúdio, job 21244, ativo 42, perfil 60. MP4, voz pt-BR, legendas e HLS conferidos tecnicamente em desktop/iPhone/Pixel; captura homologada 118 da versão v12. Hashes e auditoria persistidos no job. https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/d7f289435b15-sales-video-21244-index.m3u8. Revisão independente, escuta e decisão humana continuam pendentes; este registro não autoriza campanha, cobrança ou mídia.",
+          "assetFingerprint": "bace2ec6fb7013e9712dc4087aba34703e78de7ede30ac7e996a663c07554cfd"
+        },
+        "createdAt": "2026-09-14T05:38:37.109962Z"
+      }
+    ],
+    "approvalOptions": [],
+    "evidenceOptions": {
+      "pdeSlotId": [],
+      "creativeId": []
+    },
+    "workLinks": [
+      {
+        "label": "Financeiro dos vídeos",
+        "url": "/financial/videos?productId=4&chainId=14&cycleId=2"
+      },
+      {
+        "label": "Produzir no Estúdio",
+        "url": "/audio-video-studio"
+      },
+      {
+        "label": "Vídeos e criativos do experimento #92",
+        "url": "/experiments/92"
+      },
+      {
+        "label": "Integrar na versão PDE",
+        "url": "/products/4/pde-versions"
+      },
+      {
+        "label": "Conferir vídeos do produto",
+        "url": "/products/4/pde-videos"
+      }
+    ],
+    "videoBudget": {
+      "eventId": 11,
+      "reference": "internal://learning-cycles/2/video-budget/bbf0ae00-bba4-4ed9-a67a-5c39ca1c0181",
+      "budgetLimitUsd": 20,
+      "operatorName": "Paulo",
+      "justification": "Criar um video atraente para realizar vendas.",
+      "createdAt": "2026-09-13T00:21:01.100003Z",
+      "productVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+      "current": true
+    },
+    "commands": [
+      {
+        "action": "COMPLETE",
+        "label": "Concluir etapa com evidência",
+        "available": true,
+        "reason": "O backend conferirá os requisitos e preservará a decisão."
+      },
+      {
+        "action": "REWORK",
+        "label": "Devolver para correção",
+        "available": true,
+        "reason": "O backend conferirá os requisitos e preservará a decisão."
+      },
+      {
+        "action": "STOP",
+        "label": "Encerrar ciclo",
+        "available": true,
+        "reason": "O backend conferirá os requisitos e preservará a decisão."
+      }
+    ],
+    "canCreateSuccessor": false,
+    "createdAt": "2026-09-09T19:02:00.119166Z",
+    "closedAt": null
+  },
+  {
+    "id": 1,
+    "productId": 4,
+    "experimentId": 91,
+    "previousCycleId": null,
+    "successorCycleId": 2,
+    "chainDefinitionId": 13,
+    "processDefinitionId": 72,
+    "revision": 2,
+    "stage": "DECISION",
+    "stageLabel": "Decisão comercial",
+    "status": "ADJUSTED",
+    "baseline": true,
+    "productVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+    "budgetLimitBrl": 100.0,
+    "windowStart": "2026-09-07T03:00:00Z",
+    "windowEnd": "2026-09-12T02:59:00Z",
+    "nextAction": "Ajuste aprovado. Continue no ciclo #2 · experimento #92, que recebeu o aprendizado e o retorno registrado no BPM.",
+    "responsible": "Operador do ciclo · preparação do sucessor",
+    "returnProcessId": 67,
+    "returnActivityId": "productArchitecture",
+    "workUrl": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+    "diagram": {
+      "schemaVersion": "LEARNING_SALES_CYCLE_V2",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "START",
+          "label": "Aprendizado anterior ou primeira hipótese"
+        },
+        {
+          "id": "LEARNING",
+          "type": "TASK",
+          "label": "Aprendizado e hipótese",
+          "owner": "Hermes · síntese; operador · registro",
+          "description": "Concilie o experimento anterior. Registre o aprendizado, as limitações e uma hipótese verificável, incluindo explicação concorrente.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PLANNING",
+          "type": "TASK",
+          "label": "Planejar o experimento",
+          "owner": "Atena e Plutus · pareceres separados; operador · registro",
+          "description": "Defina uma variável principal, oferta, canal, público, amostra, janela, teto total e regras de parada. Preserve as demais condições para tornar a comparação clara.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "ADJUSTMENT",
+          "type": "TASK",
+          "label": "Ajustar produto e comunicação",
+          "owner": "Dédalo · produto; Íris e Apolo · comunicação",
+          "description": "Execute a atividade indicada pela causa. Entregue uma ação útil para a cliente e uma comunicação fiel. Registre a versão e as provas do ajuste.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VIDEO_BRIEF",
+          "type": "TASK",
+          "label": "Definir os dois vídeos",
+          "owner": "Íris · briefing; Plutus · limite de produção",
+          "description": "Defina objetivo, CTA e métrica próprios do vídeo AD e da entrada LANDING_HERO. Demonstre o produto real e registre a hipótese principal, as variáveis mantidas e a referência do teto de produção. Consumo exige autorização e preflight no Estúdio.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "CAMPAIGN_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo do criativo de campanha",
+          "owner": "Apolo · produção no Estúdio",
+          "description": "No Estúdio, use o produto e o experimento deste ciclo para produzir um vídeo AD com gancho, prova fiel, áudio, legendas e CTA para a experiência. Passe por preflight e Plutus antes de consumir. Selecione aqui o ativo pronto; ausência ou falha exige correção.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "PDE_ENTRY_VIDEO",
+          "type": "TASK",
+          "label": "Produzir vídeo de entrada do PDE",
+          "owner": "Apolo · demonstração da experiência real",
+          "description": "Produza um LANDING_HERO distinto do mesmo experimento: mostre o que a pessoa faz, o primeiro resultado útil e a continuidade paga. Use a versão ajustada e legendas. Assistir deve ser opcional, com CTA acessível e fallback.",
+          "runtimePath": "/audio-video-studio"
+        },
+        {
+          "id": "VIDEO_APPROVAL",
+          "type": "TASK",
+          "label": "Revisar e integrar os dois vídeos",
+          "owner": "Psique e Têmis · revisão; operador · integração",
+          "description": "Aprove os ativos nos gates oficiais. No experimento, crie e aprove o criativo a partir do AD. Em Versões PDE, inclua o LANDING_HERO no rascunho da versão deste ciclo. Registre reprodução, legendas, fallback, CTA sem assistir e mobile com testes segregados. Concluir não publica nem autoriza campanha.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "VALIDATION",
+          "type": "TASK",
+          "label": "Homologar a mesma versão",
+          "owner": "Harness técnico, Psique e Têmis · gates independentes",
+          "description": "Execute homologação técnica e avaliações independentes da mesma versão. Informe a instância real do gate multiagente aprovado, a prova da jornada e, se realizada, a observação humana consentida. Reprovação volta ao ajuste.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "qualityDecision",
+          "type": "GATEWAY",
+          "label": "Versão homologada?",
+          "description": "Reprovação exige correção e nova evidência para a versão afetada."
+        },
+        {
+          "id": "AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar orçamento e janela",
+          "owner": "Operador responsável pela autorização",
+          "description": "Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "PUBLICATION",
+          "type": "TASK",
+          "label": "Conferir publicação",
+          "owner": "Operador · fluxo oficial do experimento",
+          "description": "Abra o experimento e solicite sua publicação pelo fluxo oficial. Depois confira aqui o run produtivo, o preflight, a data e o teto aprovados.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "MEASUREMENT",
+          "type": "TASK",
+          "label": "Medir vendas e valor entregue",
+          "owner": "Hermes e Plutus · conciliação; operador · registro",
+          "description": "Registre uma fotografia cumulativa e datada deste experimento: funil, vendas líquidas, receita, contribuição, entrega, uso e satisfação. Declare fonte e segregação de dados de teste. Separe AD e entrada por ativo. Reprodução é auxiliar; priorize primeiro resultado, compra, receita por visitante e contribuição.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "DECISION",
+          "type": "TASK",
+          "label": "Registrar decisão comercial",
+          "owner": "Operador responsável pela decisão",
+          "description": "Use as evidências para ajustar, continuar coleta, corrigir medição, solicitar escala ou encerrar. Dados insuficientes não provam rejeição. Cada decisão preserva causa e próxima ação.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "commercialDecision",
+          "type": "GATEWAY",
+          "label": "O que os resultados autorizam?",
+          "description": "Ajustar, continuar, corrigir dados, solicitar escala ou encerrar."
+        },
+        {
+          "id": "SCALE_AUTHORIZATION",
+          "type": "TASK",
+          "label": "Autorizar expansão",
+          "owner": "Operador responsável pela autorização",
+          "description": "Reavalie contribuição, vendas e valor entregue. Defina uma nova autorização explícita e atualize os limites pelo fluxo oficial antes de continuar o acompanhamento.",
+          "runtimePath": "/business-process-chains/learning-cycles"
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "label": "Preservar resultados e aprendizado"
+        }
+      ],
+      "flows": [
+        {
+          "from": "start",
+          "to": "LEARNING"
+        },
+        {
+          "from": "LEARNING",
+          "to": "PLANNING"
+        },
+        {
+          "from": "PLANNING",
+          "to": "ADJUSTMENT"
+        },
+        {
+          "from": "ADJUSTMENT",
+          "to": "VIDEO_BRIEF"
+        },
+        {
+          "from": "VIDEO_BRIEF",
+          "to": "CAMPAIGN_VIDEO"
+        },
+        {
+          "from": "CAMPAIGN_VIDEO",
+          "to": "PDE_ENTRY_VIDEO"
+        },
+        {
+          "from": "PDE_ENTRY_VIDEO",
+          "to": "VIDEO_APPROVAL"
+        },
+        {
+          "from": "VIDEO_APPROVAL",
+          "to": "VALIDATION"
+        },
+        {
+          "from": "VALIDATION",
+          "to": "qualityDecision"
+        },
+        {
+          "from": "AUTHORIZATION",
+          "to": "PUBLICATION"
+        },
+        {
+          "from": "PUBLICATION",
+          "to": "MEASUREMENT"
+        },
+        {
+          "from": "MEASUREMENT",
+          "to": "DECISION"
+        },
+        {
+          "from": "DECISION",
+          "to": "commercialDecision"
+        },
+        {
+          "from": "qualityDecision",
+          "to": "ADJUSTMENT",
+          "label": "Reprovado: corrigir a mesma iteração",
+          "kind": "REWORK"
+        },
+        {
+          "from": "qualityDecision",
+          "to": "AUTHORIZATION",
+          "label": "Aprovado: mesma versão"
+        },
+        {
+          "from": "commercialDecision",
+          "to": "LEARNING",
+          "label": "Ajustar: novo experimento com memória",
+          "kind": "REWORK"
+        },
+        {
+          "from": "commercialDecision",
+          "to": "ADJUSTMENT",
+          "label": "Correção técnica: pausar e revalidar o mesmo experimento",
+          "kind": "REWORK"
+        },
+        {
+          "from": "commercialDecision",
+          "to": "MEASUREMENT",
+          "label": "Continuar dentro dos limites / corrigir medição",
+          "kind": "REWORK"
+        },
+        {
+          "from": "commercialDecision",
+          "to": "SCALE_AUTHORIZATION",
+          "label": "Vendas, contribuição e valor comprovados"
+        },
+        {
+          "from": "SCALE_AUTHORIZATION",
+          "to": "MEASUREMENT",
+          "label": "Nova autorização explícita",
+          "kind": "REWORK"
+        },
+        {
+          "from": "commercialDecision",
+          "to": "end",
+          "label": "Encerrar / inconclusivo"
+        },
+        {
+          "from": "VIDEO_APPROVAL",
+          "to": "ADJUSTMENT",
+          "label": "Reprovado: corrigir causa e renovar evidências",
+          "kind": "REWORK"
+        }
+      ]
+    },
+    "brief": {
+      "requestKey": "e2eec955-e233-4955-aac8-bb75956b842e",
+      "chainDefinitionId": 13,
+      "experimentId": 91,
+      "previousCycleId": null,
+      "baseline": true,
+      "productVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+      "hypothesis": "Hipótese histórica do #91 (MUSA-H003): apresentar um primeiro ajuste prático, usando o que a cliente já possui, pode levar visitantes do Instagram à degustação e à compra do MUSA por R$ 67. Adoção para aprendizado e preparação do sucessor; quatro sessões não comprovam conversão nem causa de abandono.",
+      "mainChange": "Variável testada no #91: enquadramento da transformação prática sem compra impulsiva. Preservar o experimento interrompido. Melhorias de utilidade, entrada mobile e vídeos serão hipóteses do sucessor, com métricas e homologação próprias; nenhuma alteração comercial é aplicada retroativamente ao #91.",
+      "successCriterion": "Critério original: 5 vendas líquidas reconciliadas e entregues em 100 visitantes humanos, com contribuição positiva e uso acompanhado. Amostra não atingida: 4 sessões, 86 eventos, nenhuma compra registrada (monitor de 09/09/2026 00:53 UTC). Conciliar gasto: Hub R$ 27,25 (07/09) versus consulta Meta histórica R$ 27,45 (08/09). Teto e janela são os originais, sem reativação; 5 vendas não comprovam escala. Adoção não é aprovação retroativa.",
+      "audience": "Público pretendido: mulheres adultas no Brasil que querem um ajuste claro ao se arrumar, usando principalmente o que já têm. Configuração histórica: Brasil, 18 a 65+, interesse Estilista, Instagram. A amostra reduzida não valida público vencedor; resultados do piloto direto #90 permanecem separados.",
+      "offer": "MUSA: primeiro ajuste e Dia 1 gratuitos; continuidade guiada dos Dias 2 a 7 por R$ 67 em pagamento único, com acesso individual por 90 dias. Microações práticas com o que a cliente possui, sem promessa de transformação garantida. Preservar a oferta histórica como referência para o sucessor.",
+      "acquisition": "Instagram Ads via Meta; campanha histórica 120251556536430326, experimento #91, criativo de vídeo #38. Destino v7.clubemusa.com.br; CTA: Ver meu primeiro ajuste MUSA. Campanha pausada. Separar sessões humanas atribuídas ao #91 de QA, bots e #90. Evidências: tarefa Hermes #357 e docs/registros/experimentos.md, registro de 09/09/2026.",
+      "budgetLimitBrl": 100,
+      "windowStart": "2026-09-07T03:00:00Z",
+      "windowEnd": "2026-09-12T02:59:00Z",
+      "sampleTarget": 100,
+      "minimumNetSales": 5,
+      "operatorName": "Codex — registro solicitado pelo usuário"
+    },
+    "inheritedLearning": {},
+    "events": [
+      {
+        "id": 1,
+        "revision": 0,
+        "fromStage": "MEASUREMENT",
+        "toStage": "MEASUREMENT",
+        "action": "ADOPT_BASELINE",
+        "operatorName": "Codex — registro solicitado pelo usuário",
+        "summary": "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias.",
+        "evidenceReference": "facebook_ads_campaign:120251556536430326",
+        "evidence": {
+          "source": "LEGACY_META_CAMPAIGN",
+          "experimentId": 91,
+          "reference": "facebook_ads_campaign:120251556536430326",
+          "recordedAt": "2026-09-07T03:12:34Z",
+          "preflightRecorded": false,
+          "summary": "Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias."
+        },
+        "createdAt": "2026-09-09T00:56:05.742108Z"
+      },
+      {
+        "id": 2,
+        "revision": 1,
+        "fromStage": "MEASUREMENT",
+        "toStage": "DECISION",
+        "action": "MEASURE",
+        "operatorName": "Marketing Hub · backend",
+        "summary": "Conciliação automática: 4 sessões, 1 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -27.30 de contribuição.",
+        "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+        "evidence": {
+          "contractVersion": "LEARNING_CYCLE_AUTOMATIC_MEASUREMENT_V1",
+          "automatic": true,
+          "sourceFingerprint": "1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+          "experimentId": 91,
+          "currency": "BRL",
+          "source": "PDE Analytics atribuído ao experimento + métricas oficiais do canal + ledger de custos auditáveis",
+          "periodStart": "2026-09-07T03:00:00Z",
+          "periodEnd": "2026-09-09T06:03:36.030895Z",
+          "observedAt": "2026-09-09T06:03:36.030895Z",
+          "sessions": 4,
+          "starts": 2,
+          "firstResults": 1,
+          "checkouts": 0,
+          "netSales": 0,
+          "refunds": 0,
+          "spendBrl": 27.25,
+          "revenueBrl": 0.0,
+          "contributionBrl": -27.3,
+          "dataValid": true,
+          "testDataExcluded": true,
+          "deliveryVerified": false,
+          "useVerified": false,
+          "satisfactionVerified": false,
+          "sources": {
+            "pdeAnalytics": {
+              "productSlug": "metodo-musa-7-dias",
+              "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+              "attribution": "EXPERIMENT_ID_OR_LINKED_CAMPAIGN_IDENTIFIERS",
+              "trafficQualityIncluded": "HUMAN",
+              "humanEvents": 86,
+              "rawEvents": 86,
+              "humanSessions": 4,
+              "rawSessions": 4,
+              "lastEventAt": "2026-09-07T19:18:32Z"
+            },
+            "acquisition": {
+              "platform": "FACEBOOK",
+              "mode": "META_INSIGHTS",
+              "spendBrl": 27.25,
+              "observedAt": "2026-09-07T22:24:14Z",
+              "finalSnapshot": true,
+              "impressions": 120,
+              "clicks": 5
+            },
+            "financialOutcomes": {
+              "purchaseEvents": 0,
+              "refundEvents": 0,
+              "grossRevenueBrl": 0.0,
+              "refundedRevenueBrl": 0.0,
+              "referencesComplete": true,
+              "amountsComplete": true,
+              "refundsMatchPurchases": true
+            },
+            "costLedger": {
+              "auditableTotalBrl": 27.3,
+              "legacyTotalBrl": 27.3,
+              "unreconciledLegacyBrl": 0.0
+            },
+            "valueDelivery": {
+              "accessReleasedNetSales": 0,
+              "deliveries": 0,
+              "firstUses": 0,
+              "referencesComplete": true,
+              "satisfactionResponses": 0,
+              "positiveSatisfactionResponses": 0
+            }
+          }
+        },
+        "createdAt": "2026-09-09T06:03:36.030895Z"
+      },
+      {
+        "id": 3,
+        "revision": 2,
+        "fromStage": "DECISION",
+        "toStage": "DECISION",
+        "action": "ADJUST",
+        "operatorName": "Codex — registro solicitado pelo usuário",
+        "summary": "Rascunho para aprovação humana: encerrar o ciclo do experimento 91 e preparar um sucessor, preservando o produto MUSA, a versão musa-pde-entry-v7-espelho-antes-de-sair, o período e as fontes conciliadas. A medição oficial registrou 4 sessões humanas, 2 inícios, 1 primeiro resultado, 0 checkouts, 0 vendas líquidas, R$ 0,00 de receita e R$ -27,30 de contribuição. A amostra é insuficiente para concluir conversão, causa de abandono ou público vencedor.",
+        "evidenceReference": "internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768",
+        "evidence": {
+          "decisionProposalId": 1,
+          "humanApproved": true,
+          "rootCause": "Não há causa comprovada. A hipótese prioritária é que a utilidade do primeiro ajuste não tenha ficado suficientemente clara ou imediata para sustentar o avanço após o início; explicações concorrentes incluem inadequação do público, comunicação ou criativo, fricção de entrada e simples variação causada pela amostra de apenas 4 sessões. O sucessor deve isolar a utilidade inicial como uma variável e medir seu efeito.",
+          "learning": "O fluxo conseguiu gerar 2 inícios e 1 primeiro resultado em 4 sessões, mostrando uso parcial, mas não validação humana ou comercial. Não houve checkout, compra, entrega, primeiro uso pós-venda nem resposta de satisfação. Cliques, sessões, inícios e primeiro resultado não equivalem a vendas. O experimento interrompido deve permanecer como referência histórica, sem alterações ou homologação retroativas.",
+          "nextHypothesis": "Em um sucessor com gates, métricas e autorização próprios, tornar o primeiro ajuste mais imediatamente aplicável com itens que a cliente já possui aumentará a proporção de primeiros resultados por início e, como efeito comercial a testar, poderá aumentar checkouts e vendas líquidas reconciliadas em comparação com esta referência; a hipótese deve ser testada sem alterar simultaneamente público, comunicação ou outras variáveis materiais.",
+          "returnProcessId": 67,
+          "returnActivityId": "productArchitecture"
+        },
+        "createdAt": "2026-09-09T18:27:02.022879Z"
+      }
+    ],
+    "approvalOptions": [],
+    "evidenceOptions": {},
+    "workLinks": [],
+    "videoBudget": null,
+    "commands": [],
+    "canCreateSuccessor": false,
+    "createdAt": "2026-09-09T00:56:05.742108Z",
+    "closedAt": "2026-09-09T18:27:02.022879Z"
+  }
+]

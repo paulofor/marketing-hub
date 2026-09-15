@@ -1,0 +1,8 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "error": {
+    "code": -32603,
+    "message": "Failed to execute query: StatementCallback; bad SQL grammar [SELECT id,agent_id,status FROM agent_task WHERE id BETWEEN 394 AND 408 ORDER BY id LIMIT 500]"
+  }
+}

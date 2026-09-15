@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.creative.convergence.v1.CreativeConvergenceServiceTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.456 s -- in com.marketinghub.creative.convergence.v1.CreativeConvergenceServiceTest

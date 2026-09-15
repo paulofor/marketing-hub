@@ -10,7 +10,9 @@ type Card = {
   selfAssessmentPrompt: string;
   cardId: string;
 };
+type Video = { assetUrl: string; thumbnailUrl?: string; vttUrl?: string; captions: string };
 type Session = {
+  videoIntegration?: { heroVideo: Video; integrationFingerprint: string };
   id: string;
   state: string;
   generationStatus?: string;
@@ -38,6 +40,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [consent, setConsent] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
   function recoverInvitation(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     try {
@@ -174,6 +177,20 @@ function App() {
           precisar de nada novo.
         </p>
       </div>
+      {session?.videoIntegration?.heroVideo ? (
+        <details className="video-demo">
+          <summary>Veja como funciona (opcional)</summary>
+          {!videoFailed ? (
+            <video aria-label="Como funciona seu primeiro ajuste" controls playsInline preload="none"
+              poster={session.videoIntegration.heroVideo.thumbnailUrl}
+              onError={() => setVideoFailed(true)} src={session.videoIntegration.heroVideo.assetUrl}>
+              {session.videoIntegration.heroVideo.vttUrl ? <track kind="captions" srcLang="pt-BR" label="Português" src={session.videoIntegration.heroVideo.vttUrl} /> : null}
+            </video>
+          ) : <p role="status">O vídeo não abriu. Você pode continuar e criar seu ajuste normalmente.</p>}
+          <p>Você pode começar sem assistir.</p>
+          <details><summary>Ler a explicação</summary><p>{session.videoIntegration.heroVideo.captions.replace(/\|/g, " ")}</p></details>
+        </details>
+      ) : null}
       {error && (
         <div role="alert" className="notice error">
           {error}

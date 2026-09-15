@@ -102,6 +102,7 @@ export default function LearningCyclesPage() {
     requestedChainId || (!explicitCycle ? chains.data?.[0]?.id : undefined);
   const cycles = useLearningCycles(productId, queryChainId);
   const [creating, setCreating] = useState(false);
+  const [showAutomaticCorrection, setShowAutomaticCorrection] = useState(false);
   const [predecessor, setPredecessor] = useState<LearningCycle>();
   const cycle = explicitCycle
     ? cycles.data?.find((item) => item.id === selectedId)
@@ -425,7 +426,55 @@ export default function LearningCyclesPage() {
               onUpdated={updated}
             />
           ) : null}
+          {cycle.automaticContinuation ? (
+            <section
+              className="card card-body mb-3"
+              aria-label="Continuidade automática"
+            >
+              <h2 className="h5">Próximas etapas automáticas</h2>
+              <p>{cycle.nextAction}</p>
+              <p className="mb-2">Responsável: {cycle.responsible}</p>
+              <div className="d-flex flex-wrap gap-2">
+                <Link to="/videos" className="btn btn-outline-primary">
+                  Ver aprovações dos vídeos
+                </Link>
+                {cycle.workUrl ? (
+                  <Link to={cycle.workUrl} className="btn btn-primary">
+                    Acompanhar atividade
+                  </Link>
+                ) : null}
+              </div>
+              <p className="small text-muted mt-2 mb-0">
+                As autorizações comerciais permanecem nas etapas próprias do
+                processo.
+              </p>
+              {catalog.data ? (
+                <details
+                  className="mt-3"
+                  onToggle={(event) =>
+                    setShowAutomaticCorrection(event.currentTarget.open)
+                  }
+                >
+                  <summary>Correção ou encerramento excepcional</summary>
+                  {showAutomaticCorrection ? (
+                    <LearningCycleCommandForm
+                      key={`${cycle.id}-${cycle.revision}-correction`}
+                      cycle={{
+                        ...cycle,
+                        commands: cycle.commands.filter((command) =>
+                          ["REWORK", "STOP"].includes(command.action),
+                        ),
+                      }}
+                      catalog={catalog.data}
+                      onUpdated={updated}
+                    />
+                  ) : null}
+                </details>
+              ) : null}
+            </section>
+          ) : null}
           {catalog.data &&
+          !cycle.automaticContinuation &&
           cycle.stage !== "DECISION" &&
           (cycle.stage !== "MEASUREMENT" ||
             cycle.events[cycle.events.length - 1]?.action ===

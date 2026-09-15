@@ -1,0 +1,34 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 5 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND (table_name LIKE '%private%' OR table_name LIKE '%communication%' OR table_name LIKE '%prototype%' OR table_name LIKE '%agent_task%')",
+      "appliedLimit": 100,
+      "returnedRows": 5,
+      "rows": [
+        {
+          "table_name": "agent_task"
+        },
+        {
+          "table_name": "agent_task_activity_coverage"
+        },
+        {
+          "table_name": "agent_task_audit_link"
+        },
+        {
+          "table_name": "agent_task_visual_evidence"
+        },
+        {
+          "table_name": "vega_private_session_v1"
+        }
+      ]
+    }
+  }
+}

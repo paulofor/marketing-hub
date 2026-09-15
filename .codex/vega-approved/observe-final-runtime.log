@@ -1,0 +1,2 @@
+{"name":"cycle","id":2,"status":"OPEN","stage":"AUTHORIZATION","nextAction":"Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.","automaticContinuation":false}
+{"name":"run","id":4,"status":"WAITING_ACTIVITY","reason":"Ciclo #2 · experimento #92 · Autorizar orçamento e janela. Retorno registrado: Protótipo, validação multiagente e aprovação do PDE · atividade prototypeCorrection."}

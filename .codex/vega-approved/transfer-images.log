@@ -1,0 +1,11 @@
+{"host": "root@163.245.202.80", "state": "TRANSFERRING", "images": ["marketing-hub/customer-agent-worker:vega-approved-ae63251932c2", "marketing-hub/meta-ad-approver-worker:vega-approved-ae63251932c2"]}
+Loaded image: marketing-hub/customer-agent-worker:vega-approved-ae63251932c2
+Loaded image: marketing-hub/meta-ad-approver-worker:vega-approved-ae63251932c2
+{"host": "root@163.245.202.80", "state": "LOADED", "images": ["marketing-hub/customer-agent-worker:vega-approved-ae63251932c2", "marketing-hub/meta-ad-approver-worker:vega-approved-ae63251932c2"]}
+{"host": "root@191.252.181.168", "state": "TRANSFERRING", "images": ["marketing-hub/backend:vega-approved-ae63251932c2", "marketing-hub/frontend:vega-approved-ae63251932c2"]}
+Loaded image: marketing-hub/backend:vega-approved-ae63251932c2
+Loaded image: marketing-hub/frontend:vega-approved-ae63251932c2
+{"host": "root@191.252.181.168", "state": "LOADED", "images": ["marketing-hub/backend:vega-approved-ae63251932c2", "marketing-hub/frontend:vega-approved-ae63251932c2"]}
+{"host": "root@163.245.200.7", "state": "TRANSFERRING", "images": ["marketing-hub/pde-platform-frontend-vega:vega-approved-ae63251932c2"]}
+Loaded image: marketing-hub/pde-platform-frontend-vega:vega-approved-ae63251932c2
+{"host": "root@163.245.200.7", "state": "LOADED", "images": ["marketing-hub/pde-platform-frontend-vega:vega-approved-ae63251932c2"]}

@@ -78,6 +78,7 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.businessprocesscomposition.controller.BusinessProcessCompositionController.class,
   LearningCycleJson.class,
   LearningCycleEvidence.class,
+  LearningCycleCommercialAuthorization.class,
   LearningCyclePublicationHistory.class,
   LearningCycleVideoEvidence.class,
   LearningCycleVideoBudget.class,
@@ -507,7 +508,6 @@ public class LearningCycleLocalApplication {
       experiment.setName("Experimento segregado #" + id);
       experiment.setStatus(ExperimentStatus.PLANNED);
       experiment.setPlatform(ExperimentPlatform.FACEBOOK);
-      experiment.setMediaSpendLimit(new java.math.BigDecimal("100.00"));
       experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
       EXPERIMENTS.put(id, experiment);
     }
@@ -748,6 +748,18 @@ public class LearningCycleLocalApplication {
           "status", EXPERIMENTS.get(id).getStatus(),
           "runCount", RUNS.containsKey(id) ? 1 : 0,
           "campaignCount", CAMPAIGNS.containsKey(id) ? 1 : 0);
+    }
+
+    /** Expõe apenas os limites financeiros simulados usados na autorização atômica local. */
+    @GetMapping("/fixture/experiments/{id}/budget-state")
+    Map<String, Object> budgetState(@PathVariable Long id) {
+      var experiment = EXPERIMENTS.get(id);
+      Map<String, Object> result = new LinkedHashMap<>();
+      result.put("mediaSpendLimit", experiment.getMediaSpendLimit());
+      result.put("dailyBudget", experiment.getDailyBudget());
+      result.put("startDate", experiment.getStartDate());
+      result.put("endDate", experiment.getEndDate());
+      return result;
     }
 
     /** Simula o encerramento oficial do experimento sem gerar tráfego comercial. */

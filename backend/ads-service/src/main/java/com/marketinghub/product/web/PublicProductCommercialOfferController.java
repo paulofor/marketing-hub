@@ -5,6 +5,7 @@ import com.marketinghub.product.service.commercialoffer.PublicProductCommercialO
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Expõe a oferta comercial pública que a experiência PDE usa antes da compra. */
@@ -20,7 +21,10 @@ public class PublicProductCommercialOfferController {
 
   /** Retorna o contrato de venda do produto sem expor configuração administrativa. */
   @GetMapping("/{productSlug}/commercial-offer")
-  public PublicProductCommercialOfferResponse getOffer(@PathVariable String productSlug) {
-    return service.getOffer(productSlug);
+  public PublicProductCommercialOfferResponse getOffer(
+      @PathVariable String productSlug,
+      @RequestParam(required = false) String slotCode,
+      @RequestParam(required = false) String experienceVersion) {
+    return service.getOffer(productSlug, slotCode, experienceVersion);
   }
 }

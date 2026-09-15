@@ -2155,6 +2155,45 @@ class AccessServiceTest {
                 .noneMatch(interaction -> "minha roupa favorita".equals(interaction.answerText()));
     }
 
+    /** Entrega o primeiro ajuste v12 por regras locais sem criar pendência ou custo de IA. */
+    @Test
+    void completesMusaV12FirstAdjustmentLocallyAtZeroAiCost() {
+        ProductCatalogService catalog = new ProductCatalogService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                catalog,
+                objectMapper,
+                tempDir.resolve("access-grants-v12-local.json").toString());
+        AiGuidanceService guidanceService = new AiGuidanceService(
+                accessService,
+                catalog,
+                objectMapper,
+                tempDir.resolve("ai-guidance-v12-local.json").toString(),
+                "",
+                "",
+                "",
+                new PdeDatabaseMigrationService("", "", ""));
+
+        var guidance = guidanceService.createPublicPresenceDiagnostic(
+                new PublicPresenceDiagnosticRequest(
+                        Map.of(
+                                "existingSelection", "Calça e camisa ou blusa",
+                                "occasion", "Trabalho ou reunião",
+                                "desiredSignal", "Segurança calma",
+                                "adjustmentResource", "Acrescentar uma terceira peça"),
+                        "musa-pde-entry-v12-primeiro-ajuste-aplicavel"));
+
+        assertThat(guidance.status()).isEqualTo("COMPLETED");
+        assertThat(guidance.model()).isEqualTo("MUSA_LOCAL_RULES_V1");
+        assertThat(guidance.inputTokens()).isZero();
+        assertThat(guidance.outputTokens()).isZero();
+        assertThat(guidance.costUsd()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(guidance.microActions())
+                .contains("Use calça e camisa ou blusa em trabalho ou reunião.")
+                .anyMatch(action -> action.contains("acrescentar uma terceira peça"));
+        assertThat(guidanceService.getPendingGuidance()).isEmpty();
+    }
+
     /** Confirma que a v7 bloqueia salto de dia no backend e preserva a versão de uma compra existente. */
     @Test
     void blocksMusaV7DayJumpAndFreezesPaidExperienceVersion() {

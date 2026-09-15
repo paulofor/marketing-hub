@@ -20,10 +20,11 @@ class CommercialOfferControllerTest {
     @Test
     void resolvesProductSlugFromPathWithoutCompilerParameterMetadata() throws Exception {
         CommercialOfferService service = mock(CommercialOfferService.class);
-        when(service.getOffer("kit-whatsapp-pronto")).thenReturn(offer());
+        when(service.getOffer("kit-whatsapp-pronto", "v8.clubemusa.com.br")).thenReturn(offer());
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new CommercialOfferController(service)).build();
 
-        mvc.perform(get("/api/pde/products/kit-whatsapp-pronto/commercial-offer"))
+        mvc.perform(get("/api/pde/products/kit-whatsapp-pronto/commercial-offer")
+                        .header("Host", "v8.clubemusa.com.br"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productSlug").value("kit-whatsapp-pronto"))
                 .andExpect(jsonPath("$.experimentId").value(89))

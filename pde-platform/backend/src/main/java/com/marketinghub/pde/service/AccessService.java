@@ -73,6 +73,8 @@ public class AccessService {
     private static final String DELIVERY_CREATED_AT_KEY = "operatorDeliveryCreatedAt";
     private static final String MUSA_PRODUCT_SLUG = "metodo-musa-7-dias";
     private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    private static final String MUSA_V12_EXPERIENCE_VERSION =
+            "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
     private static final long MUSA_PAID_ACCESS_DAYS = 90L;
     private static final long CUSTOMER_DATA_RETENTION_DAYS_AFTER_EXPIRY = 180L;
 
@@ -1412,8 +1414,7 @@ public class AccessService {
             ProductExperienceResponse.MissionDto mission) {
         String missionId = mission.id();
         Map<String, String> answers = grant.getMissionInteractions().getOrDefault(missionId, Map.of());
-        if (MUSA_PRODUCT_SLUG.equals(product.slug())
-                && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion())) {
+        if (usesMusaCategoricalJourney(product)) {
             MusaV7CategoricalContract.validateMission(mission, answers);
         }
         if ("entrada-guiada".equals(missionId)) {
@@ -1479,8 +1480,7 @@ public class AccessService {
         validateMissionRole(mission, "CUSTOMER");
         validateMissionOrder(product, grant, mission);
         Map<String, String> sanitizedAnswers = sanitizeInteractionAnswers(request.answers());
-        if (MUSA_PRODUCT_SLUG.equals(product.slug())
-                && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion())) {
+        if (usesMusaCategoricalJourney(product)) {
             MusaV7CategoricalContract.validateMission(mission, sanitizedAnswers);
         }
         grant.saveMissionInteraction(missionId, sanitizedAnswers);
@@ -1524,8 +1524,7 @@ public class AccessService {
             ProductExperienceResponse.MissionDto requestedMission) {
         boolean roleAwareJourney = product.missions().stream()
                 .anyMatch(mission -> mission.completionRole() != null && !mission.completionRole().isBlank());
-        boolean musaV7Journey = MUSA_PRODUCT_SLUG.equals(product.slug())
-                && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion());
+        boolean musaV7Journey = usesMusaCategoricalJourney(product);
         if (!roleAwareJourney && !musaV7Journey) {
             return;
         }
@@ -1539,6 +1538,14 @@ public class AccessService {
                         "Conclua a etapa anterior antes de avançar: " + mission.id());
             }
         }
+    }
+
+    /** Aplica o mesmo contrato categórico de baixo custo às experiências públicas v7 e v12. */
+    private boolean usesMusaCategoricalJourney(ProductExperienceResponse product) {
+        return product != null
+                && MUSA_PRODUCT_SLUG.equals(product.slug())
+                && Set.of(MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION)
+                        .contains(product.experienceVersion());
     }
 
     /** Normaliza respostas livres antes de salvar no perfil de personalização da missão. */

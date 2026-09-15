@@ -92,9 +92,10 @@ is_managed_repository() {
       | ghcr.io/*/pde-platform-frontend-v5 \
       | ghcr.io/*/pde-platform-frontend-v6 \
       | ghcr.io/*/pde-platform-frontend-v7 \
+      | ghcr.io/*/pde-platform-frontend-v8 \
       | ghcr.io/*/pde-platform-frontend-mira \
       | ghcr.io/*/pde-platform-frontend-kit-whatsapp)
-      [[ "$image_repository" =~ ^ghcr\.io/[a-z0-9][a-z0-9._-]*/(pde-ai-worker|pde-retention-worker|pde-platform-backend|pde-platform-frontend-v5|pde-platform-frontend-v6|pde-platform-frontend-v7|pde-platform-frontend-mira|pde-platform-frontend-kit-whatsapp)$ ]]
+      [[ "$image_repository" =~ ^ghcr\.io/[a-z0-9][a-z0-9._-]*/(pde-ai-worker|pde-retention-worker|pde-platform-backend|pde-platform-frontend-v5|pde-platform-frontend-v6|pde-platform-frontend-v7|pde-platform-frontend-v8|pde-platform-frontend-mira|pde-platform-frontend-kit-whatsapp)$ ]]
       return
       ;;
     *)

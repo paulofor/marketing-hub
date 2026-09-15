@@ -188,13 +188,11 @@ export const MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION =
   "musa-pde-entry-v6-video-motivacional";
 export const MUSA_V7_EXPERIENCE_VERSION =
   "musa-pde-entry-v7-espelho-antes-de-sair";
+export const MUSA_V12_EXPERIENCE_VERSION =
+  "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
 
 const MUSA_V5_LEGACY_HOSTS = ["v1.clubemusa.com.br", "v2.clubemusa.com.br"];
-const MUSA_V7_RESERVED_HOSTS = [
-  "v8.clubemusa.com.br",
-  "v9.clubemusa.com.br",
-  "v10.clubemusa.com.br",
-];
+const MUSA_V7_RESERVED_HOSTS = ["v9.clubemusa.com.br", "v10.clubemusa.com.br"];
 
 const MUSA_APPROVED_HERO_VIDEO_URL =
   "/assets/hls/musa-v6-microexperiencia-visivel/index.m3u8";
@@ -336,6 +334,77 @@ const musaV7PublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
   },
 ];
 
+const musaV12PublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
+  {
+    key: "existingSelection",
+    stageLabel: "Sua combinação",
+    question: "Qual combinação você já separou para usar?",
+    options: [
+      "Calça e camisa ou blusa",
+      "Vestido",
+      "Jeans e blusa",
+      "Saia e blusa",
+      "Outra combinação que já tenho",
+    ],
+    imageUrl: "/assets/musa-diagnostic-slide-1.png",
+    visualTitle: "Comece pela roupa que já está ao seu alcance.",
+    visualText:
+      "O primeiro ajuste parte de uma combinação real. Você não precisa comprar nada nem reconstruir todo o visual.",
+    journeyEventType: "PROBLEM_RECOGNIZED",
+  },
+  {
+    key: "occasion",
+    stageLabel: "A ocasião",
+    question: "Em qual ocasião você pretende usar essa combinação?",
+    options: [
+      "Trabalho ou reunião",
+      "Encontro ou saída",
+      "Rotina comum",
+      "Evento",
+      "Foto ou conteúdo",
+    ],
+    imageUrl: "/assets/musa-diagnostic-slide-2.png",
+    visualTitle: "A ocasião define o que precisa funcionar primeiro.",
+    visualText:
+      "O contexto ajuda a escolher um ajuste pequeno e aplicável, sem tentar prever a reação de outras pessoas.",
+    journeyEventType: "REAL_INPUT_SUBMITTED",
+  },
+  {
+    key: "desiredSignal",
+    stageLabel: "Sinal desejado",
+    question: "Qual sinal você quer reforçar nessa ocasião?",
+    options: [
+      "Elegância discreta",
+      "Segurança calma",
+      "Cuidado percebido",
+      "Leveza",
+      "Imagem mais marcante",
+    ],
+    imageUrl: "/assets/musa-diagnostic-slide-3.png",
+    visualTitle: "Escolha a intenção antes do detalhe.",
+    visualText:
+      "O MUSA conecta combinação, ocasião e intenção para evitar tentativa e erro sem direção.",
+    journeyEventType: "MECHANISM_VIEWED",
+  },
+  {
+    key: "adjustmentResource",
+    stageLabel: "Primeiro ajuste",
+    question: "Qual recurso que você já possui consegue aplicar agora?",
+    options: [
+      "Acrescentar uma terceira peça",
+      "Ajustar manga, barra ou caimento",
+      "Repetir uma cor em um detalhe",
+      "Trocar acessório, sapato ou bolsa",
+      "Organizar cabelo e acabamento",
+    ],
+    imageUrl: "/assets/musa-diagnostic-slide-4.png",
+    visualTitle: "Faça apenas um ajuste, observe e salve.",
+    visualText:
+      "Você recebe gratuitamente uma orientação local para aplicar agora. A continuação completa de sete dias permanece separada.",
+    journeyEventType: "CATEGORY_UNDERSTOOD",
+  },
+];
+
 const musaExperienceContracts: Record<string, MusaExperienceContract> = {
   "musa-pde-entry-v5-estrada-desejo": {
     experienceVersion: "musa-pde-entry-v5-estrada-desejo",
@@ -376,6 +445,22 @@ const musaExperienceContracts: Record<string, MusaExperienceContract> = {
     layoutKey: "espelho-antes-de-sair",
     primaryHost: "v7.clubemusa.com.br",
     publicDiagnosticQuestions: musaV7PublicDiagnosticQuestions,
+    usesDesireRoad: true,
+    supportsPublishedPublicDiagnosticVideoHero: false,
+    usesMotivationalTimelineVideo: true,
+    videoPlacements: [
+      "opening_mirror",
+      "visual_proof",
+      "mechanism_explainer",
+      "objection_breaker",
+      "cta_reinforcement",
+    ],
+  },
+  [MUSA_V12_EXPERIENCE_VERSION]: {
+    experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
+    layoutKey: "espelho-antes-de-sair",
+    primaryHost: "v8.clubemusa.com.br",
+    publicDiagnosticQuestions: musaV12PublicDiagnosticQuestions,
     usesDesireRoad: true,
     supportsPublishedPublicDiagnosticVideoHero: true,
     usesMotivationalTimelineVideo: true,
@@ -459,9 +544,9 @@ export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [
     host: "v8.clubemusa.com.br",
     url: "https://v8.clubemusa.com.br",
     observedAddress: "163.245.200.7",
-    label: "Reservado v7",
-    role: "reserved",
-    experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
+    label: "Domínio apontado v12",
+    role: "pointed",
+    experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
   },
   {
     host: "v9.clubemusa.com.br",
@@ -694,10 +779,63 @@ export const musaV7FallbackProduct: ProductExperience = {
     "Ao concluir os 7 dias, sua fórmula MUSA e os materiais permanecem disponíveis durante os 90 dias do acesso, sem assinatura ou renovação automática.",
 };
 
+export const musaV12FallbackProduct: ProductExperience = {
+  ...musaV7FallbackProduct,
+  experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
+  publicDiagnosticQuestions: musaV12PublicDiagnosticQuestions,
+  heroVideos: [
+    {
+      experienceVersion: MUSA_V12_EXPERIENCE_VERSION,
+      placement: "public_diagnostic_initial_explainer",
+      playbackUrl:
+        "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/d1ae4682b451-sales-video-21244-musa-final.mp4",
+      hlsPlaybackUrl:
+        "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/d7f289435b15-sales-video-21244-index.m3u8",
+      posterUrl:
+        "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/14/misc/42e2f15b3ea0-sales-video-21244-continuity-frame.png",
+      autoplay: false,
+      muted: false,
+      controls: true,
+      loop: false,
+      playsInline: true,
+      source: "MARKETING_HUB_APPROVED_EXPERIMENT_VIDEO",
+      assetId: 2817,
+      experimentVideoAssetId: 42,
+      salesVideoProfileId: 60,
+      salesVideoJobId: 21244,
+      reviewStatus: "APPROVED",
+      status: "READY",
+    },
+  ],
+  publicFirstFold: {
+    headline:
+      "Você já escolheu a roupa. Falta saber qual ajuste fazer primeiro.",
+    supportingText:
+      "Informe a ocasião e a combinação para receber um primeiro ajuste claro, gratuito e aplicável com o que você já possui.",
+    videoKicker: "Veja o primeiro ajuste em uso",
+    videoHeadline:
+      "Escolha, aplique, avalie e salve seu ajuste antes de decidir continuar.",
+    videoSupportingText:
+      "A demonstração mostra a experiência real. A continuação completa de 7 dias custa R$ 67, em pagamento único.",
+    videoExtraText:
+      "O primeiro ajuste é gratuito; o plano pago permanece separado e só começa após confirmação no checkout.",
+    videoCtaLabel: "Ver meu primeiro ajuste MUSA",
+  },
+};
+
 export function resolveMusaFallbackProduct(experienceVersion = "") {
+  if (experienceVersion === MUSA_V12_EXPERIENCE_VERSION) {
+    return musaV12FallbackProduct;
+  }
   return experienceVersion === MUSA_V7_EXPERIENCE_VERSION
     ? musaV7FallbackProduct
     : fallbackProduct;
+}
+
+export function isMusaPublicRulesExperience(experienceVersion: string) {
+  return [MUSA_V7_EXPERIENCE_VERSION, MUSA_V12_EXPERIENCE_VERSION].includes(
+    experienceVersion,
+  );
 }
 
 export function resolveMusaVersionedHostConfig(hostname: string) {
@@ -716,6 +854,10 @@ export function resolveMusaExperienceContract(
   experienceVersion: string,
   layoutKey = "",
 ) {
+  const versionContract = musaExperienceContracts[experienceVersion];
+  if (versionContract) {
+    return versionContract;
+  }
   const layoutContract = layoutKey
     ? musaExperienceContractsByLayout[layoutKey]
     : undefined;
@@ -725,17 +867,15 @@ export function resolveMusaExperienceContract(
       experienceVersion: experienceVersion || layoutContract.experienceVersion,
     };
   }
-  return (
-    musaExperienceContracts[experienceVersion] ?? {
-      experienceVersion,
-      layoutKey: "diagnostico-classico",
-      publicDiagnosticQuestions: basePublicDiagnosticQuestions,
-      usesDesireRoad: false,
-      supportsPublishedPublicDiagnosticVideoHero: false,
-      usesMotivationalTimelineVideo: false,
-      videoPlacements: [],
-    }
-  );
+  return {
+    experienceVersion,
+    layoutKey: "diagnostico-classico",
+    publicDiagnosticQuestions: basePublicDiagnosticQuestions,
+    usesDesireRoad: false,
+    supportsPublishedPublicDiagnosticVideoHero: false,
+    usesMotivationalTimelineVideo: false,
+    videoPlacements: [],
+  };
 }
 
 export function isMusaDesireRoadExperience(experienceVersion: string) {

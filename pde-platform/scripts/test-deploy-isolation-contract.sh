@@ -16,6 +16,11 @@ if grep -q 'docker compose -f docker-compose.deploy.yml up -d --no-deps proxy' "
   exit 1
 fi
 
+if grep -Eq '^[[:space:]]+queue:' "${workflow}"; then
+  echo '[ARQUITETURA] A concorrência do GitHub Actions não aceita a chave queue.' >&2
+  exit 1
+fi
+
 for required_contract in \
   'PROXY_CONTAINERS=' \
   'docker network connect ${PDE_PLATFORM_NETWORK}' \
@@ -27,6 +32,10 @@ for required_contract in \
   '/api/pde/mira/private/v1/internal/agent-validations/sessions' \
   "if [ \"\${MIRA_AGENT_VALIDATION_STATUS}\" != '403' ]; then" \
   'TARGETED_FRONTEND_VERSION=v7' \
+  "v8) FRONTEND_SERVICES='pde-platform-frontend-v8'" \
+  'PDE_PLATFORM_FRONTEND_V8_IMAGE=' \
+  'PDE_PLATFORM_FRONTEND_V8_PORT=' \
+  'FRONTEND_V8_IMAGE_NAME' \
   "mira) FRONTEND_SERVICES='pde-platform-frontend-mira'" \
   'PDE_PLATFORM_FRONTEND_MIRA_IMAGE=' \
   'PDE_PLATFORM_FRONTEND_MIRA_PORT=' \
@@ -51,6 +60,7 @@ for image_repository in \
   pde-platform-frontend-v5 \
   pde-platform-frontend-v6 \
   pde-platform-frontend-v7 \
+  pde-platform-frontend-v8 \
   pde-platform-frontend-mira \
   pde-platform-frontend-kit-whatsapp \
   pde-ai-worker \

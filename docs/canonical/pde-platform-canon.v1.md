@@ -120,6 +120,20 @@ PDE preserva a recusa HTTP do Hub, sem convertê-la em conteúdo local. A leitur
 contrato global. Reparos de snapshots legados usam fontes históricas versionadas, preservam
 rascunhos e publicações existentes e não equivalem a aprovação comercial ou ativação de campanha.
 
+Complemento canônico de 15/09/2026: oferta, contrato de integração, imagem pública e
+experiência entregue devem pertencer à mesma versão comercial. O hostname versionado encaminha
+`slotCode`/`experienceVersion`; o Marketing Hub confere produto e experimento do snapshot exato.
+É proibido escolher o slot somente por data de atualização ou usar um snapshot de outro produto
+como fallback. Evidência de jornada privada comprova somente construção e homologação; prontidão
+comercial exige uma evidência posterior com `journeyMode=COMMERCIAL`, URL pública e correlação sem
+token bruto. A correlação persistida usa apenas `accessReferenceHash`.
+
+Para Vega, a superfície v8 entrega a experiência
+`musa-pde-entry-v12-primeiro-ajuste-aplicavel`: vídeo de landing aprovado do experimento 92,
+primeiro ajuste determinístico e sem chamada de IA, e oferta completa por R$ 67. A versão v12
+não pode reutilizar silenciosamente o contrato visual ou comercial da v7 mesmo quando ambas
+compartilham o mesmo layout-base.
+
 A homologação local de mudanças na resolução versionada usa
 `infra/testing/pde-version-contract/run-round.sh`: suíte completa do backend principal,
 empacotamento, catálogo PDE, MySQL 5.7, jornadas e matriz dos revisores. Alteração no catálogo
@@ -135,7 +149,7 @@ Regra obrigatória:
 
 - cada versão pública de PDE que receba campanha, experimento, QA comercial ou tráfego real deve ter imagem Docker própria;
 - cada versão pública deve rodar em container próprio, com nome, porta, URL pública e `experienceVersion` explícitos;
-- `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br` ou equivalente não podem apontar para a mesma imagem genérica de frontend;
+- `v5.clubemusa.com.br`, `v6.clubemusa.com.br`, `v7.clubemusa.com.br`, `v8.clubemusa.com.br` ou equivalente não podem apontar para a mesma imagem genérica de frontend;
 - o deploy deve permitir publicar uma versão sem recriar as demais versões ativas;
 - rollback deve trocar somente a imagem/container da versão afetada;
 - o endpoint público de diagnóstico canônico é `GET /version-diagnostics.json`;

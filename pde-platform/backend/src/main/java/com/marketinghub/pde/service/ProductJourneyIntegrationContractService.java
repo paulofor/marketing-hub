@@ -16,7 +16,12 @@ public class ProductJourneyIntegrationContractService {
 
     /** Expõe somente rotas e eventos existentes, sem executar pagamento, acesso ou publicação. */
     public ProductJourneyIntegrationContractResponse get(String productSlug) {
-        ProductExperienceResponse product = productCatalogService.getProduct(productSlug);
+        return get(productSlug, "");
+    }
+
+    /** Usa a versão servida no host para que eventos e oferta compartilhem a mesma identidade. */
+    public ProductJourneyIntegrationContractResponse get(String productSlug, String host) {
+        ProductExperienceResponse product = productCatalogService.getProductForHost(productSlug, host);
         if (!FunnelEventCatalog.supportsRequiredCommercialJourney()) {
             throw new IllegalStateException("Catálogo PDE não suporta a jornada comercial obrigatória");
         }

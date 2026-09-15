@@ -7254,3 +7254,19 @@ Apolo voltou ao PLAY anterior. O monitor #92 ainda exige slot próprio de analyt
 resposta indisponível não comprova zero vendas. Revisão operacional validada:
 `ad982590c5ca3eeeebf9e47f104f1e7fe9035ea1`; retomada de publicadores após integração.
 [Diagnóstico, decisões e evidências](../homologacao/vega-runway-contrato-gen45-v1.md).
+
+## 2026-09-15 — Vega/#92: superfície comercial própria para a v12
+
+- A execução real da autorização pela tela confirmou HTTP 409: ciclo com R$ 100,00 e experimento
+  sem teto operacional. A tela oferecia uma ação que o mesmo backend recusaria.
+- A investigação encontrou bloqueios anteriores ao gasto: #92 não possuía superfície produtiva,
+  oferta, checkout, criativo nem segmentação próprios. A integração concluída era privada e não
+  autorizava campanha. O contrato global também podia selecionar slot de outro experimento.
+- Escolhida a superfície v8 isolada para
+  `musa-pde-entry-v12-primeiro-ajuste-aplicavel`, preservando #91/v7. A v12 utiliza o vídeo de
+  landing #42 aprovado, entrega o primeiro ajuste por regras locais sem custo de IA e apresenta a
+  oferta de R$ 67; eventos continuam segregados por versão e experimento.
+- A correção não libera Meta, não cria cobrança e não inventa vendas. Autorização do teto e
+  liberação da campanha permanecem decisões humanas; medição e aprendizado dependem de tráfego e
+  resultados reais.
+- Matriz, rodadas e evidências: `docs/homologacao/vega-ciclo2-ativacao-comercial-v12.md`.

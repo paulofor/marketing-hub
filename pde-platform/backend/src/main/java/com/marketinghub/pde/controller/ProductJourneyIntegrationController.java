@@ -4,6 +4,7 @@ import com.marketinghub.pde.dto.ProductJourneyIntegrationContractResponse;
 import com.marketinghub.pde.service.ProductJourneyIntegrationContractService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,7 +22,8 @@ public class ProductJourneyIntegrationController {
     /** Retorna rotas, correlações e eventos sem executar qualquer ação comercial. */
     @GetMapping("/{productSlug}/integration-contract")
     public ProductJourneyIntegrationContractResponse get(
-            @PathVariable("productSlug") String productSlug) {
-        return service.get(productSlug);
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader(value = "Host", required = false) String host) {
+        return service.get(productSlug, host);
     }
 }

@@ -380,7 +380,7 @@ class PdeProductionSlotServiceTest {
     HttpResponse<String> integrationResponse =
         response(
             200,
-            "{\"productSlug\":\"kit-whatsapp-pronto\",\"experienceVersion\":\"kit-whatsapp-pronto-pde-v1\",\"contractVersion\":\"PDE_COMMERCIAL_JOURNEY_EVENTS_V1\",\"eventsPath\":\"/api/pde/access/events\",\"analyticsSummaryPath\":\"/api/pde/access/analytics/{productSlug}/summary\",\"loginPath\":\"/api/pde/access/login-link\",\"workspacePathTemplate\":\"/api/pde/access/{token}/workspace\",\"missionCompletionPathTemplate\":\"/api/pde/access/{token}/missions/{missionId}/complete\",\"requiredEventTypes\":[\"PAGE_VIEW\",\"VALUE_MOMENT\",\"CTA_VIEWED\",\"CHECKOUT_STARTED\",\"PURCHASE_COMPLETED\",\"ACCESS_RELEASED\",\"MISSION_COMPLETED\",\"FIRST_USE\",\"REFUND_CONFIRMED\"],\"correlationKeys\":[\"eventId\",\"productSlug\",\"experienceVersion\",\"sessionId\",\"visitorId\",\"accessToken\"],\"sourceOfTruth\":\"pde_funnel_event\",\"testTrafficPolicy\":\"trafficQuality=INTERNAL_QA\"}");
+            "{\"productSlug\":\"kit-whatsapp-pronto\",\"experienceVersion\":\"kit-whatsapp-pronto-pde-v1\",\"contractVersion\":\"PDE_COMMERCIAL_JOURNEY_EVENTS_V1\",\"eventsPath\":\"/api/pde/access/events\",\"analyticsSummaryPath\":\"/api/pde/access/analytics/{productSlug}/summary\",\"loginPath\":\"/api/pde/access/login-link\",\"workspacePathTemplate\":\"/api/pde/access/workspace\",\"missionCompletionPathTemplate\":\"/api/pde/access/missions/{missionId}/complete\",\"requiredEventTypes\":[\"PAGE_VIEW\",\"VALUE_MOMENT\",\"CTA_VIEWED\",\"CHECKOUT_STARTED\",\"PURCHASE_COMPLETED\",\"ACCESS_RELEASED\",\"MISSION_COMPLETED\",\"FIRST_USE\",\"REFUND_CONFIRMED\"],\"correlationKeys\":[\"eventId\",\"productSlug\",\"experienceVersion\",\"sessionId\",\"visitorId\",\"accessReferenceHash\"],\"sourceOfTruth\":\"pde_funnel_event\",\"testTrafficPolicy\":\"trafficQuality=INTERNAL_QA\"}");
     HttpResponse<String> pageResponse =
         response(
             200,
@@ -408,6 +408,61 @@ class PdeProductionSlotServiceTest {
         .send(
             org.mockito.ArgumentMatchers.any(HttpRequest.class),
             org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Deve rejeitar contrato público que exponha token bruto como chave de correlação. */
+  @Test
+  void rejectsCommercialPdeThatDeclaresRawAccessToken() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(8L)
+            .slotCode("v8")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v8.clubemusa.com.br")
+            .publicUrl("https://v8.clubemusa.com.br")
+            .backendUrl("https://v8.clubemusa.com.br/api")
+            .experienceVersion("musa-pde-entry-v12-primeiro-ajuste-aplicavel")
+            .targetEnvironment("production-v8")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .sourceExperimentId(92L)
+            .createdAt(Instant.parse("2026-09-15T10:00:00Z"))
+            .updatedAt(Instant.parse("2026-09-15T10:00:00Z"))
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("metodo-musa-7-dias", "v8"))
+        .thenReturn(Optional.of(slot));
+    HttpResponse<String> healthResponse = response(200, "{\"status\":\"UP\"}");
+    HttpResponse<String> contractResponse =
+        response(
+            200,
+            "{\"slug\":\"metodo-musa-7-dias\",\"healthPath\":\"/\",\"commercialOfferPath\":\"/api/pde/products/metodo-musa-7-dias/commercial-offer\",\"integrationContractPath\":\"/api/pde/products/metodo-musa-7-dias/integration-contract\",\"requiredTexts\":[\"Quero continuar\"]}");
+    HttpResponse<String> offerResponse =
+        response(
+            200,
+            "{\"productSlug\":\"metodo-musa-7-dias\",\"experimentId\":92,\"priceBrl\":67,\"promise\":\"Primeiro ajuste aplicável\",\"primaryCta\":\"Quero continuar\",\"checkoutUrl\":\"https://pay.example/musa\",\"supplierDisplayName\":\"Digicom Digital\",\"supplierRegistrationNumber\":\"00.000.000/0001-00\",\"supportEmail\":\"teste@sandbox.local\",\"termsUrl\":\"https://v8.clubemusa.com.br/terms\",\"privacyUrl\":\"https://v8.clubemusa.com.br/privacy\",\"refundPolicyUrl\":\"https://v8.clubemusa.com.br/refund-policy\"}");
+    HttpResponse<String> integrationResponse =
+        response(
+            200,
+            "{\"productSlug\":\"metodo-musa-7-dias\",\"experienceVersion\":\"musa-pde-entry-v12-primeiro-ajuste-aplicavel\",\"contractVersion\":\"PDE_COMMERCIAL_JOURNEY_EVENTS_V1\",\"eventsPath\":\"/api/pde/access/events\",\"analyticsSummaryPath\":\"/api/pde/access/analytics/{productSlug}/summary\",\"loginPath\":\"/api/pde/access/login-link\",\"workspacePathTemplate\":\"/api/pde/access/workspace\",\"missionCompletionPathTemplate\":\"/api/pde/access/missions/{missionId}/complete\",\"requiredEventTypes\":[\"PAGE_VIEW\",\"VALUE_MOMENT\",\"CTA_VIEWED\",\"CHECKOUT_STARTED\",\"PURCHASE_COMPLETED\",\"ACCESS_RELEASED\",\"MISSION_COMPLETED\",\"FIRST_USE\",\"REFUND_CONFIRMED\"],\"correlationKeys\":[\"eventId\",\"productSlug\",\"experienceVersion\",\"sessionId\",\"visitorId\",\"accessReferenceHash\",\"accessToken\"],\"sourceOfTruth\":\"pde_funnel_event\",\"testTrafficPolicy\":\"trafficQuality=INTERNAL_QA\"}");
+    org.mockito.Mockito.doReturn(healthResponse)
+        .doReturn(contractResponse)
+        .doReturn(offerResponse)
+        .doReturn(integrationResponse)
+        .when(httpClient)
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.validateProductionSlot("metodo-musa-7-dias", "v8");
+
+    assertThat(response.validationStatus()).isEqualTo("FAILED");
+    assertThat(response.validationSummary())
+        .isEqualTo("Contrato de integração da jornada está incompleto");
+    assertThat(response.validationDetail()).contains("correlação");
   }
 
   /**

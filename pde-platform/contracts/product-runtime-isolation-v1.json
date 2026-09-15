@@ -50,6 +50,16 @@
           "portVariable": "PDE_PLATFORM_FRONTEND_V7_PORT",
           "hostPort": 5178,
           "publicUrl": "https://v7.clubemusa.com.br"
+        },
+        {
+          "versionId": "v8",
+          "serviceName": "pde-platform-frontend-v8",
+          "containerName": "pde-platform-frontend-v8",
+          "imageName": "pde-platform-frontend-v8",
+          "imageVariable": "PDE_PLATFORM_FRONTEND_V8_IMAGE",
+          "portVariable": "PDE_PLATFORM_FRONTEND_V8_PORT",
+          "hostPort": 5181,
+          "publicUrl": "https://v8.clubemusa.com.br"
         }
       ]
     },

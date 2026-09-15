@@ -136,9 +136,8 @@ public class LearningCycleEvidence {
             || !source.startsWith("experiment:") && !proof.has("sourceReference"));
   }
 
-  /** Confere autorização explícita sem escrever limites de mídia no experimento. */
-  public void authorization(
-      LearningSalesCycle cycle, Experiment experiment, JsonNode data, Instant now) {
+  /** Confere a decisão explícita antes que o backend materialize seus limites operacionais. */
+  public void authorization(LearningSalesCycle cycle, JsonNode data, Instant now) {
     require(
         data.path("confirmed").asBoolean(false),
         "Confirme explicitamente orçamento e janela desta versão.");
@@ -150,11 +149,6 @@ public class LearningCycleEvidence {
             && data.path("budgetLimitBrl").decimalValue().compareTo(cycle.getBudgetLimitBrl()) == 0,
         "A autorização precisa confirmar o teto total exato do ciclo.");
     require(now.isBefore(cycle.getWindowEnd()), "A janela terminou; planeje outro experimento.");
-    require(
-        experiment.getPlatform() != ExperimentPlatform.FACEBOOK
-            || (experiment.getMediaSpendLimit() != null
-                && experiment.getMediaSpendLimit().compareTo(cycle.getBudgetLimitBrl()) == 0),
-        "O teto total do experimento deve coincidir com o ciclo antes da autorização.");
   }
 
   /** Confere o resultado do fluxo oficial, incluindo run produtivo e preflight persistido. */

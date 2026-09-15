@@ -30,13 +30,25 @@ public class CommercialOfferService {
 
     /** Obtém uma oferta completa ou falha fechado para não renderizar venda sem contrato. */
     public CommercialOfferResponse getOffer(String productSlug) {
+        return getOffer(productSlug, "");
+    }
+
+    /** Encaminha o slot derivado do host para manter a oferta atribuída à versão exibida. */
+    public CommercialOfferResponse getOffer(String productSlug, String host) {
+        String slotCode = resolveSlotCode(host);
         for (String baseUrl : marketingHubBaseUrls) {
             try {
                 CommercialOfferResponse offer = restClientBuilder.clone()
                         .baseUrl(baseUrl)
                         .build()
                         .get()
-                        .uri("/api/products/public/{slug}/commercial-offer", productSlug)
+                        .uri(uriBuilder -> {
+                            var uri = uriBuilder.path("/api/products/public/{slug}/commercial-offer");
+                            if (StringUtils.hasText(slotCode)) {
+                                uri.queryParam("slotCode", slotCode);
+                            }
+                            return uri.build(productSlug);
+                        })
                         .retrieve()
                         .body(CommercialOfferResponse.class);
                 if (offer != null) {
@@ -53,6 +65,16 @@ public class CommercialOfferService {
         throw new ResponseStatusException(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "Oferta comercial indisponível no Marketing Hub.");
+    }
+
+    /** Extrai apenas subdomínios versionados válidos, ignorando portas e hosts não versionados. */
+    private String resolveSlotCode(String host) {
+        if (!StringUtils.hasText(host)) {
+            return "";
+        }
+        String normalizedHost = host.split(":", 2)[0].trim().toLowerCase();
+        String candidate = normalizedHost.split("\\.", 2)[0];
+        return candidate.matches("v\\d+") ? candidate : "";
     }
 
     /** Converte a configuração de URLs em lista limpa e ordenada de tentativas. */

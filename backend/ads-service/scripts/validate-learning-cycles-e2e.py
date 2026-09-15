@@ -234,7 +234,11 @@ cycle=command(cycle,evidence=validation_data(cycle))
 check('Reprovação retorna ao ajuste sem duplicar experimento; aprovação antiga ou de outro produto bloqueada')
 
 command(cycle,evidence=dict(authorization_data(cycle),confirmed=False),expected=409)
+assert http('/fixture/experiments/91001/budget-state')['mediaSpendLimit'] is None
 cycle=command(cycle,evidence=authorization_data(cycle))
+authorized=http('/fixture/experiments/91001/budget-state')
+assert authorized['mediaSpendLimit']==100 and authorized['dailyBudget']>0
+assert authorized['startDate'] and authorized['endDate']
 command(cycle,expected=409)
 http('/fixture/experiments/91001/publish',{})
 cycle=command(cycle)
@@ -292,12 +296,11 @@ cycle=command(cycle,'FIX_MEASUREMENT',dict(rootCause='Fotografia anterior não t
 assert cycle['stage']=='DECISION'
 
 cycle=command(cycle,'SCALE',dict(scaleHypothesis='Ampliar após vendas úteis'))
-command(cycle,'AUTHORIZE_SCALE',dict(confirmed=True,productVersion=cycle['productVersion'],budgetLimitBrl=150,windowEnd=iso(now()+dt.timedelta(days=2))),expected=409)
-http('/fixture/experiments/91001/budget',dict(budgetLimitBrl=150))
 configure_measurement(snapshot='scale-v5',netSales=5,checkouts=6,spendBrl=110,revenueBrl=335,
     contributionBrl=190,deliveryVerified=True,useVerified=True,satisfactionVerified=True)
 cycle=command(cycle,'AUTHORIZE_SCALE',dict(confirmed=True,productVersion=cycle['productVersion'],budgetLimitBrl=150,windowEnd=iso(now()+dt.timedelta(days=2))))
 assert cycle['stage']=='DECISION' and cycle['budgetLimitBrl']==150
+assert http('/fixture/experiments/91001/budget-state')['mediaSpendLimit']==150
 assert cycle['events'][-1]['action']=='MEASURE' and cycle['events'][-1]['evidence']['sourceFingerprint'].endswith('scale-v5')
 check('Escala exige nova autorização, limite oficial e nova fotografia, sem alterar mídia pelo ciclo')
 

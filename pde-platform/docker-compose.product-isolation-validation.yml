@@ -35,6 +35,34 @@ services:
       timeout: 2s
       retries: 20
 
+  pde-platform-frontend-v8:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        PDE_FRONTEND_VERSION_ID: v8
+    environment:
+      VITE_PDE_PRODUCT_SLUG: metodo-musa-7-dias
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v12-primeiro-ajuste-aplicavel
+      PDE_FRONTEND_VERSION: v8
+      PDE_FRONTEND_PUBLIC_URL: https://v8.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: pde-platform-frontend-v8:validation
+      PDE_FRONTEND_VERSION_ID: v8
+      PDE_DEPLOY_IMAGE_TAG: local-product-isolation
+      PDE_BACKEND_UPSTREAM: pde-platform-backend:80
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/version-diagnostics.json | grep -q 'musa-pde-entry-v12-primeiro-ajuste-aplicavel'",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
   pde-platform-frontend-mira:
     build:
       context: ./frontend
@@ -80,6 +108,8 @@ services:
       lead-portal-payments-service:
         condition: service_healthy
       pde-platform-frontend-v7:
+        condition: service_healthy
+      pde-platform-frontend-v8:
         condition: service_healthy
       pde-platform-frontend-mira:
         condition: service_healthy

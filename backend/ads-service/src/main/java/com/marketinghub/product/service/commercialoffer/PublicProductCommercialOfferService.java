@@ -15,6 +15,8 @@ import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,12 +65,19 @@ public class PublicProductCommercialOfferService {
   /** Retorna somente oferta completa, vendável e vinculada a um slot publicado. */
   @Transactional(readOnly = true)
   public PublicProductCommercialOfferResponse getOffer(String productSlug) {
+    return getOffer(productSlug, null, null);
+  }
+
+  /** Retorna a oferta do slot ou da versão pedidos sem misturar experimentos paralelos. */
+  @Transactional(readOnly = true)
+  public PublicProductCommercialOfferResponse getOffer(
+      String productSlug, String slotCode, String experienceVersion) {
     Product product =
         productRepository
             .findBySlug(normalizeRequired(productSlug, "Produto obrigatório"))
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
-    PdeProductionSlot slot = findSaleableSlot(product.getSlug());
+    PdeProductionSlot slot = findSaleableSlot(product, slotCode, experienceVersion);
     Experiment experiment =
         experimentRepository
             .findById(slot.getSourceExperimentId())
@@ -171,13 +180,49 @@ public class PublicProductCommercialOfferService {
   /**
    * Seleciona o slot mais recente que pode ser homologado ou vender sem expor versões aposentadas.
    */
-  private PdeProductionSlot findSaleableSlot(String productSlug) {
-    return slotRepository.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
-        .filter(slot -> slot.getSourceExperimentId() != null)
-        .filter(
-            slot ->
-                slot.getStatus() == PdeProductionSlotStatus.READY
-                    || slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
+  private PdeProductionSlot findSaleableSlot(
+      Product product, String requestedSlotCode, String requestedExperienceVersion) {
+    String slotCode = normalizeOptional(requestedSlotCode);
+    String experienceVersion = normalizeOptional(requestedExperienceVersion);
+    List<PdeProductionSlot> candidates =
+        slotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()).stream()
+            .filter(slot -> slot.getSourceExperimentId() != null)
+            .filter(
+                slot ->
+                    slot.getStatus() == PdeProductionSlotStatus.READY
+                        || slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
+            .toList();
+    if (StringUtils.hasText(slotCode)) {
+      PdeProductionSlot selected =
+          candidates.stream()
+              .filter(slot -> slotCode.equalsIgnoreCase(slot.getSlotCode()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(
+                          HttpStatus.NOT_FOUND, "Slot PDE solicitado não encontrado."));
+      if (StringUtils.hasText(experienceVersion)
+          && !experienceVersion.equals(selected.getExperienceVersion())) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT, "Seletores de versão PDE divergentes.");
+      }
+      return selected;
+    }
+    var stream = candidates.stream();
+    if (StringUtils.hasText(experienceVersion)) {
+      stream = stream.filter(slot -> experienceVersion.equals(slot.getExperienceVersion()));
+    } else {
+      stream =
+          stream.filter(
+              slot ->
+                  experimentRepository
+                      .findById(slot.getSourceExperimentId())
+                      .map(Experiment::getProduct)
+                      .map(Product::getId)
+                      .filter(id -> Objects.equals(id, product.getId()))
+                      .isPresent());
+    }
+    return stream
         .max(
             Comparator.comparing(
                 PdeProductionSlot::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
@@ -230,6 +275,11 @@ public class PublicProductCommercialOfferService {
       throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, message);
     }
     return value.trim();
+  }
+
+  /** Normaliza um seletor opcional preservando ausência para compatibilidade pública. */
+  private String normalizeOptional(String value) {
+    return StringUtils.hasText(value) ? value.trim() : null;
   }
 
   /** Usa o primeiro texto disponível preservando o cadastro do experimento como prioridade. */

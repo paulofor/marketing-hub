@@ -6,7 +6,8 @@ info:
   version: 1.0.0
   description: >-
     O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
-    Nenhuma rota ativa campanha, altera orçamento de mídia ou cria venda.
+    Nenhuma rota ativa campanha ou cria venda. COMPLETE em AUTHORIZATION, após confirmação explícita,
+    valida versão, janela vigente e preparação comercial e materializa o teto de mídia atomicamente.
     Ao entrar em MEASUREMENT, o backend concilia automaticamente analytics atribuído,
     canal, desfechos financeiros, custos e valor entregue. A tela não envia métricas.
     Fonte indisponível ou inconsistente persiste MEASUREMENT_BLOCKED e nunca vira zero.
@@ -426,6 +427,32 @@ components:
           allOf: [{$ref: '#/components/schemas/VideoBudgetAuthorization'}]
           nullable: true
         workLinks: {type: array, items: {type: object, properties: {label: {type: string}, url: {type: string}}}}
+        authorizationReview:
+          type: object
+          nullable: true
+          description: Resumo e referência da homologação vigente em AUTHORIZATION. A tela exibe versão, teto e janela de Brasília; exige autor e confirmação desmarcada. Leitura não autoriza.
+          properties:
+            summary: {type: string}
+            evidenceReference: {type: string}
+            explanation: {type: string}
+        commercialPreparation:
+          type: object
+          nullable: true
+          description: Insumos canônicos do ciclo Meta em AUTHORIZATION/PUBLICATION. Prontidão para revisão não equivale a preflight, margem aprovada ou liberação comercial. O mesmo contrato bloqueia revisores antes de criar tarefas pagas.
+          properties:
+            readyForReview: {type: boolean}
+            guidance: {type: string}
+            experimentUrl: {type: string}
+            requirements:
+              type: array
+              items:
+                type: object
+                properties:
+                  code: {type: string}
+                  title: {type: string}
+                  ready: {type: boolean}
+                  detail: {type: string}
+                  recommendation: {type: string}
         brief: {type: object}
         inheritedLearning: {type: object, description: Snapshot do predecessor; memória mais antiga permanece acessível por referência ao ciclo anterior}
         approvalOptions: {type: array, items: {type: object, properties: {id: {type: integer}, label: {type: string}}}}

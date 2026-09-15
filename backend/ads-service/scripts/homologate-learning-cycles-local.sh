@@ -115,6 +115,8 @@ run chain-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/chain-browser"
 run legacy-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/legacy-browser" node frontend/e2e/learning-cycle-legacy-entry-responsive.mjs
 run decision-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/decision-browser" node frontend/e2e/learning-cycle-decision-responsive.mjs
 run sales-flow-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/sales-flow-browser" node frontend/e2e/sales-process-flow-responsive.mjs
+run commercial-rest python3 infra/testing/cycle-commercial/validate.py
+run commercial-browser env "LEARNING_CYCLES_EVIDENCE_DIR=$cycle_output/commercial-browser" node frontend/e2e/cycle-commercial-responsive.mjs
 fi
 kill "$cycle_atena_pid"
 wait "$cycle_atena_pid" || true

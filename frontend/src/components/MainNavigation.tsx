@@ -108,6 +108,11 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Produtos e Mercado",
     items: [
       {
+        to: "/financial/plans",
+        label: "Plano financeiro",
+        icon: CircleDollarSign,
+      },
+      {
         to: "/financial/videos",
         label: "Financeiro de vídeos",
         icon: CircleDollarSign,

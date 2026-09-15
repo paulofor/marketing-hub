@@ -92,6 +92,8 @@ import org.springframework.web.bind.annotation.*;
   com.marketinghub.businessprocess.automation.v1.controller.ProcessRunController.class,
   LearningCycleVideoFixtures.class,
   LearningCycleVideoContinuationFixtures.class,
+  LearningCycleCommercialFixtures.class,
+  LearningCycleCommercialTaskFixtures.class,
   LearningCycleBpmLedger.class,
   LearningCycleController.class
 })
@@ -265,12 +267,6 @@ public class LearningCycleLocalApplication {
         factory, com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository.class);
   }
 
-  /** Simula somente o ledger de tarefas externas, que não executam durante a homologação. */
-  @Bean
-  com.marketinghub.repository.jpa.agenttask.AgentTaskRepository agentTasks() {
-    return mock(com.marketinghub.repository.jpa.agenttask.AgentTaskRepository.class);
-  }
-
   /** Simula apenas vínculos de tarefas externas; as atividades e os ciclos usam MySQL real. */
   @Bean
   com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository activityCoverage() {
@@ -289,12 +285,6 @@ public class LearningCycleLocalApplication {
   com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository landings() {
     return mock(
         com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository.class);
-  }
-
-  /** Impede execução de agentes reais; a matriz verifica que navegar não solicita tarefas. */
-  @Bean
-  com.marketinghub.agenttask.AgentTaskService taskService() {
-    return mock(com.marketinghub.agenttask.AgentTaskService.class);
   }
 
   /** Isola o catálogo de integrações sem carregar executores ou credenciais reais. */
@@ -497,6 +487,8 @@ public class LearningCycleLocalApplication {
 
   /** Reinicia exclusivamente os test doubles de experimentos entre cenários. */
   static void resetExperiments() {
+    LearningCycleCommercialFixtures.reset();
+    LearningCycleCommercialTaskFixtures.reset();
     EXPERIMENTS.clear();
     RUNS.clear();
     CAMPAIGNS.clear();

@@ -60,6 +60,19 @@ public final class LearningCycleRules {
     return LABELS.getOrDefault(stage, VIDEO_LABELS.getOrDefault(stage, stage));
   }
 
+  /** Expõe os mesmos limites temporais e financeiros na leitura e no comando de autorização. */
+  public static String authorizationBlocker(LearningSalesCycle cycle, Instant now) {
+    if (cycle.getBudgetLimitBrl() == null || cycle.getBudgetLimitBrl().signum() < 0)
+      return "O ciclo precisa possuir teto financeiro válido antes da autorização.";
+    if (cycle.getWindowStart() == null
+        || cycle.getWindowEnd() == null
+        || !cycle.getWindowStart().isBefore(cycle.getWindowEnd()))
+      return "O ciclo precisa de uma janela comercial válida antes da autorização.";
+    if (!now.isBefore(cycle.getWindowEnd()))
+      return "A janela terminou; planeje outro experimento. Nenhuma autorização foi registrada.";
+    return null;
+  }
+
   /** Expõe somente movimentos compatíveis com a etapa, antes das validações de evidência. */
   public static List<Action> actions(String stage) {
     return switch (stage) {

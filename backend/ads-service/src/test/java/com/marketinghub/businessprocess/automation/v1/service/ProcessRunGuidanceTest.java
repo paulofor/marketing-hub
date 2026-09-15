@@ -26,12 +26,15 @@ class ProcessRunGuidanceTest {
   private final LearningSalesCycleEventRepository events =
       mock(LearningSalesCycleEventRepository.class);
   private final ProcessRunVideoGuidance videoGuidance = mock(ProcessRunVideoGuidance.class);
+  private final LearningCycleCommercialReadiness commercialReadiness =
+      mock(LearningCycleCommercialReadiness.class);
   private final ProcessRunGuidance guidance =
       new ProcessRunGuidance(
           cycles,
           processes,
           new LearningCycleVideoBudget(events, new LearningCycleJson(new ObjectMapper())),
-          videoGuidance);
+          videoGuidance,
+          commercialReadiness);
   private final LearningSalesCycle cycle = new LearningSalesCycle();
   private final ProcessRun run = new ProcessRun();
   private final BusinessProcessDefinition parent = new BusinessProcessDefinition();
@@ -77,6 +80,100 @@ class ProcessRunGuidanceTest {
     assertThat(cycle.getStage()).isEqualTo("VIDEO_BRIEF");
     verify(cycles, never()).save(any());
     verify(events, never()).saveAndFlush(any());
+  }
+
+  /** Distingue autorização e publicação pendentes sem exigir repetir vídeos ou concluir vendas. */
+  @ParameterizedTest
+  @ValueSource(strings = {"AUTHORIZATION", "PUBLICATION"})
+  void commercialStageExplainsRequiredInputAndAllowsPause(String stage) {
+    cycle.setStage(stage);
+    var action = guidance.resolve(run);
+    assertThat(action.actionUrl())
+        .isEqualTo(
+            "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2#cycle-decision");
+    assertThat(action.code())
+        .isEqualTo(
+            "AUTHORIZATION".equals(stage)
+                ? "AUTHORIZE_CYCLE_MEDIA"
+                : "COMPLETE_COMMERCIAL_PREPARATION");
+    assertThat(guidance.awaitingInput(run)).isTrue();
+    run.setStatus("PAUSING");
+    assertThat(guidance.awaitingInput(run)).isTrue();
+    assertThat(guidance.resolve(run)).isNull();
+    verifyNoInteractions(events, videoGuidance);
+    verify(cycles, never()).save(any());
+  }
+
+  /** IDs novos e ciclo sem etapas de vídeo recebem a mesma orientação comercial. */
+  @Test
+  void commercialGuidanceWorksForAnotherProductAndLegacyCycle() {
+    cycle.setStage("AUTHORIZATION");
+    cycle.setId(302L);
+    cycle.setProductId(104L);
+    cycle.setExperimentId(192L);
+    cycle.setChainDefinitionId(114L);
+    run.setLearningCycleId(302L);
+    run.setProductId(104L);
+    run.setChainDefinitionId(114L);
+    run.setSourceReference("experiment:192");
+    when(cycles.findById(302L)).thenReturn(Optional.of(cycle));
+    var legacy = new BusinessProcessDefinition();
+    legacy.setVersionNumber(1);
+    when(processes.findById(76L)).thenReturn(Optional.of(legacy));
+    assertThat(guidance.resolve(run).actionUrl()).contains("chainId=114&productId=104&cycleId=302");
+    assertThat(guidance.resolve(run).reason()).contains("#192").doesNotContain("#92");
+  }
+
+  /** Expõe pendência operacional antes da decisão, sem ocultar erro técnico nem repetir IA. */
+  @Test
+  void missingCommercialInputsRemainConditionsUntilPrepared() {
+    var readiness = commercialReadiness;
+    cycle.setStage("AUTHORIZATION");
+    run.setStatus("WAITING_INPUT");
+    when(readiness.inspect(cycle))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .getCycles
+                .LearningCycleCommercialPreparation(
+                false,
+                "Prepare a jornada do experimento #92: checkout ausente.",
+                "/experiments/92",
+                List.of()));
+    var action = guidance.resolve(run);
+    assertThat(action.code()).isEqualTo("PREPARE_CYCLE_COMMERCIAL");
+    assertThat(action.waitingStatus()).isEqualTo("WAITING_INPUT");
+    assertThat(action.reason()).contains("#92", "checkout");
+    when(readiness.inspect(cycle))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .getCycles
+                .LearningCycleCommercialPreparation(
+                true, "Pronto para revisão", "/experiments/92", List.of()));
+    assertThat(guidance.resolve(run).waitingStatus()).isEqualTo("WAITING_HUMAN");
+    assertThat(guidance.resolve(run).code()).isEqualTo("AUTHORIZE_CYCLE_MEDIA");
+    run.setFailureCount(1);
+    assertThat(guidance.resolve(run)).isNull();
+    verify(cycles, never()).save(any());
+  }
+
+  /** A montagem isolada do coordenador continua podendo substituir a orientação por um double. */
+  @Test
+  void isolatedCoordinatorCanMockGuidanceWithoutLoadingCommercialDomain() {
+    try (var context =
+        new org.springframework.context.annotation.AnnotationConfigApplicationContext()) {
+      context.registerBean(
+          "guidance", ProcessRunGuidance.class, () -> mock(ProcessRunGuidance.class));
+      assertThatCode(context::refresh).doesNotThrowAnyException();
+      assertThat(context.getBean(ProcessRunGuidance.class)).isNotNull();
+    }
   }
 
   /** Usa o ledger financeiro real para mudar a orientação depois da autorização desta versão. */

@@ -10,6 +10,15 @@ Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativ
 
 A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs físicos usam bancos descartáveis e credenciais sintéticas, sem dados de produção, para conferir as migrações cobertas por suas fixtures antes da publicação.
 
+## Planos financeiros por produto — v1
+
+O job `validate-product-financial-plan` executa a fixture física com MySQL 5.7, JPA em
+`validate`, API real, referências comerciais e Plutus simulados. Confere histórico,
+concorrência, isolamento, deduplicação, reinício, migração, reaplicação e rollback.
+O comando `python3 infra/testing/product-financial-plan/run-local.py --persistence-only`
+é limitado a esses contratos; a execução sem essa opção inclui testes unitários, frontend
+e navegação desktop/iPhone/Pixel. Ver [matriz](../homologacao/product-financial-plan-v1.md).
+
 ## Snapshots públicos PDE — reparo histórico da v5
 
 O job `validate-pde-version-contract` executa

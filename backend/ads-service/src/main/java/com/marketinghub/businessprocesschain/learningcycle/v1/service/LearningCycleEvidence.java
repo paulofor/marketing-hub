@@ -138,6 +138,8 @@ public class LearningCycleEvidence {
 
   /** Confere a decisão explícita antes que o backend materialize seus limites operacionais. */
   public void authorization(LearningSalesCycle cycle, JsonNode data, Instant now) {
+    String blocker = LearningCycleRules.authorizationBlocker(cycle, now);
+    require(blocker == null, blocker);
     require(
         data.path("confirmed").asBoolean(false),
         "Confirme explicitamente orçamento e janela desta versão.");
@@ -148,7 +150,6 @@ public class LearningCycleEvidence {
         data.path("budgetLimitBrl").isNumber()
             && data.path("budgetLimitBrl").decimalValue().compareTo(cycle.getBudgetLimitBrl()) == 0,
         "A autorização precisa confirmar o teto total exato do ciclo.");
-    require(now.isBefore(cycle.getWindowEnd()), "A janela terminou; planeje outro experimento.");
   }
 
   /** Confere o resultado do fluxo oficial, incluindo run produtivo e preflight persistido. */

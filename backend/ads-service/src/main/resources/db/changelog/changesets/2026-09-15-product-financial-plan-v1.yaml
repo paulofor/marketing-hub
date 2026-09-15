@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-15-product-financial-plan-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS product_financial_plan_v1 (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                scope_kind VARCHAR(20) NOT NULL,
+                scope_id BIGINT NOT NULL,
+                product_id BIGINT NULL,
+                product_type_id BIGINT NULL,
+                environment VARCHAR(10) NOT NULL,
+                revision_number INT NOT NULL,
+                name VARCHAR(200) NOT NULL,
+                template_id BIGINT NULL,
+                commercial_plan_id BIGINT NULL,
+                commercial_plan_version INT NULL,
+                assumptions_json LONGTEXT NOT NULL,
+                evaluation_json LONGTEXT NOT NULL,
+                financial_execution_id BIGINT NULL,
+                created_by VARCHAR(100) NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_product_finance_scope (scope_kind, scope_id, environment, revision_number),
+                CONSTRAINT fk_product_finance_product FOREIGN KEY (product_id) REFERENCES product(id),
+                CONSTRAINT fk_product_finance_type FOREIGN KEY (product_type_id) REFERENCES product_type_definition(id),
+                CONSTRAINT fk_product_finance_template FOREIGN KEY (template_id) REFERENCES product_financial_plan_v1(id),
+                CONSTRAINT fk_product_finance_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_product_finance_analysis FOREIGN KEY (financial_execution_id) REFERENCES financial_agent_execution(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE IF EXISTS product_financial_plan_v1;

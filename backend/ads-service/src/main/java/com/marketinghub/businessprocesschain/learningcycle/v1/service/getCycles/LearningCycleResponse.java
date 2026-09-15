@@ -49,7 +49,14 @@ public record LearningCycleResponse(
     boolean canCreateSuccessor,
     Instant createdAt,
     Instant closedAt,
-    boolean automaticContinuation) {
+    boolean automaticContinuation,
+    AuthorizationReview authorizationReview,
+    LearningCycleCommercialPreparation commercialPreparation) {
+  /**
+   * Evita redigitação de evidências existentes; o envio ainda exige confirmação humana explícita.
+   */
+  public record AuthorizationReview(String summary, String evidenceReference, String explanation) {}
+
   /** Orienta execução por telas oficiais sem gerar consumo ao navegar. */
   public record WorkLink(String label, String url) {}
 

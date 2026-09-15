@@ -318,9 +318,7 @@ public class ProcessRunService {
         && !"PAUSING".equals(run.getStatus())
         && context.dispatchBlockReason(run) == null
         && !ancestorPaused(run)) {
-      var eligibleRoots = runs.activeRoots(run.getProductId());
-      if (eligibleRoots.isEmpty()
-          || Objects.equals(eligibleRoots.getFirst().getId(), rootId(run))) {
+      if (hasTurn(run)) {
         var videoProgress = videoContinuation.advance(run);
         if (videoProgress != null) {
           transition(run, videoProgress.status(), videoProgress.reason(), "VIDEO_CONTINUATION");
@@ -336,7 +334,7 @@ public class ProcessRunService {
       if (userAction != null) run.setCurrentOwnerName(userAction.responsible());
       transition(
           run,
-          userAction == null ? "WAITING_ACTIVITY" : "WAITING_HUMAN",
+          userAction == null ? "WAITING_ACTIVITY" : userAction.waitingStatus(),
           userAction == null
               ? (active.get().stateReason() == null || active.get().stateReason().isBlank()
                   ? "Aguardando a conclusão validada da atividade."
@@ -374,9 +372,8 @@ public class ProcessRunService {
           "PRODUCT_STOPPED");
       return response(run);
     }
-    var roots = runs.activeRoots(run.getProductId());
     Long rootId = rootId(run);
-    if (!roots.isEmpty() && !Objects.equals(roots.getFirst().getId(), rootId)) {
+    if (!hasTurn(run)) {
       transition(
           run,
           "QUEUED",
@@ -562,6 +559,20 @@ public class ProcessRunService {
             "correctionInputHash",
             correctionInputs.isEmpty() ? "" : hash(correctionInputs.toString())));
     return response(run);
+  }
+
+  /** Libera dependência comercial exata sem ultrapassar tarefa real, pausa ou outra ocorrência. */
+  private boolean hasTurn(ProcessRun run) {
+    var roots = runs.activeRoots(run.getProductId());
+    Long currentRootId = rootId(run);
+    if (roots.isEmpty() || Objects.equals(roots.getFirst().getId(), currentRootId)) return true;
+    var candidate = runs.findById(currentRootId).orElseThrow();
+    for (var waiting : roots) {
+      if (Objects.equals(waiting.getId(), currentRootId)) return true;
+      if (!context.permitsCommercialContinuation(waiting, candidate)
+          || inFlight(waiting, new HashSet<>())) return false;
+    }
+    return false;
   }
 
   /**
@@ -893,7 +904,9 @@ public class ProcessRunService {
     return response(run, null);
   }
 
-  /** Expõe provas e pendência humana atual sem gravar durante leitura nem disparar nova tarefa. */
+  /**
+   * Expõe provas, condições e decisão atual sem gravar durante leitura nem disparar nova tarefa.
+   */
   private ProcessRunResponse response(
       ProcessRun run, ProductProcessActivityExecutionHistoryResponse readiness) {
     boolean persisted = run.getId() != null;
@@ -917,7 +930,7 @@ public class ProcessRunService {
         run.getSourceReference(),
         revalidation
             ? "REVALIDATION_REQUIRED"
-            : userAction != null ? "WAITING_HUMAN" : run.getStatus(),
+            : userAction != null ? userAction.waitingStatus() : run.getStatus(),
         revalidation
             ? "As provas atuais já não comprovam todos os objetivos. Retome o processo para revalidar; as conclusões anteriores permanecem no histórico."
             : userAction != null ? userAction.reason() : run.getReason(),

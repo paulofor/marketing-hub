@@ -139,6 +139,26 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
   ter oferta, versão pública, checkout, medição e jornada comercial da versão atual. Em Facebook,
   também exige criativo aprovado e segmentação próprios do experimento; ativos do predecessor não
   podem ser herdados silenciosamente. A liberação de mídia continua uma decisão humana explícita.
+- A espera comercial precisa ser legível no processo pai: `WAITING_INPUT` com os insumos
+  faltantes; `WAITING_HUMAN` quando a decisão de orçamento/janela estiver disponível. O mesmo
+  verificador canônico de destino, criativo, checkout, instrumentação e público deve impedir
+  tarefas pagas de Psique/Têmis antes de haver jornada para revisar. Nos funis de assinatura PDE,
+  conferir também slot publicado/validado do próprio produto, experimento e versão. Outros
+  formatos mantêm seus contratos de entrega e não recebem obrigatoriedade de webapp ou slot.
+- A confirmação reutiliza resumo e referência da homologação persistida; exibe teto, versão e
+  janela em horário de Brasília, exigindo autor e aceite desmarcado. Teto ausente, janela inválida
+  ou expirada e versão/aprovação divergentes bloqueiam tanto a disponibilidade quanto o comando.
+  Orçamento operacional ainda vazio não exige redigitação: continua materializado atomicamente
+  pelo comando confirmado. Os gates financeiros, técnicos e comerciais finais são preservados.
+- O resumo da autorização final deve explicar o efeito do canal: em Facebook, o aceite libera
+  a publicação da campanha e o gasto de mídia dentro dos limites aprovados. Não pode prometer
+  "sem criar campanha paga" quando o comando envia a campanha à Meta. O canal direto mantém
+  sua operação sem mídia; somente a confirmação externa permite `RUNNING` no canal Facebook.
+- A serialização dos processos não pode criar espera circular: quando o processo de vendas
+  aguarda `AUTHORIZATION`/`PUBLICATION`, o processo comercial canônico já iniciado para o **mesmo
+  produto, cadeia, ciclo e experimento** pode executar. Isso exige ausência de tarefa real na
+  execução que espera e em seus filhos. Outros processos/contextos, pausas em andamento e falhas
+  continuam protegidos. Não há autorização, criação de tarefa ou conclusão implícita por navegar.
 - Cada comando possui chave idempotente e revisão esperada; concorrência, replay divergente e
   comando de tela desatualizada não podem duplicar ciclos ou apagar decisões.
 - A cronologia usa `DATETIME(6)` e instantes normalizados a microssegundos, compatíveis com o run

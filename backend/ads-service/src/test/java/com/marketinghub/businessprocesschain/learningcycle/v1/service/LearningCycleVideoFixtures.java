@@ -66,6 +66,12 @@ public class LearningCycleVideoFixtures {
     var repo = mock(PdeProductionSlotRepository.class);
     when(repo.findById(anyLong()))
         .thenAnswer(c -> Optional.ofNullable(SLOTS.get(c.getArgument(0))));
+    when(repo.findFirstBySourceExperimentIdOrderByUpdatedAtDesc(anyLong()))
+        .thenAnswer(
+            c ->
+                SLOTS.values().stream()
+                    .filter(s -> s.getSourceExperimentId().equals(c.getArgument(0)))
+                    .findFirst());
     when(repo.findByProductSlugOrderBySlotCodeAsc(anyString()))
         .thenAnswer(
             c ->
@@ -141,6 +147,9 @@ public class LearningCycleVideoFixtures {
                           "reviewStatus",
                           "APPROVED")))));
       slot.setPublishedExperienceJson(slot.getDraftExperienceJson());
+      slot.setStatus(com.marketinghub.pde.PdeProductionSlotStatus.READY);
+      slot.setValidationStatus("OK");
+      slot.setPublishedAt(java.time.Instant.now());
       SLOTS.put(heroId, slot);
       return Map.of(
           "campaignVideoAssetId",

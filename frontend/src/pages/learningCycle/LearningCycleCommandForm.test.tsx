@@ -111,3 +111,125 @@ it("mantém handoff opcional e exige as confirmações quando a versão está ex
     },
   });
 });
+
+const authorizationCycle = {
+  ...cycle,
+  stage: "AUTHORIZATION",
+  productVersion: "musa-pde-entry-v12-primeiro-ajuste-aplicavel",
+  budgetLimitBrl: 100,
+  windowStart: "2026-09-10T03:00:00Z",
+  windowEnd: "2026-09-17T02:59:00Z",
+  authorizationReview: {
+    summary: "Síntese da decisão preparada pelo backend",
+    evidenceReference:
+      "internal://learning-cycles/2; learning_sales_cycle_event_v1:16",
+    explanation: "A campanha depende da preparação e da autorização final.",
+  },
+  commands: [
+    {
+      action: "COMPLETE",
+      label: "Registrar autorização",
+      available: true,
+      reason: "",
+    },
+  ],
+} as LearningCycle;
+
+it("confirma orçamento com autoria e aceite explícito sem redigitar os dados já persistidos", async () => {
+  render(
+    <MemoryRouter>
+      <LearningCycleCommandForm
+        cycle={authorizationCycle}
+        catalog={catalog}
+        onUpdated={() => {}}
+      />
+    </MemoryRouter>,
+  );
+  const form = screen.getByRole("form", {
+    name: "Decisão do ciclo",
+  }) as HTMLFormElement;
+  expect(form.id).toBe("cycle-decision");
+  for (const field of [
+    "summary",
+    "evidenceReference",
+    "productVersion",
+    "budgetLimitBrl",
+  ])
+    expect(form.elements.namedItem(field)).toBeNull();
+  expect(
+    screen.getByRole("region", { name: "Limites da autorização" }),
+  ).toHaveTextContent("R$ 100,00");
+  expect(
+    screen.getByRole("region", { name: "Limites da autorização" }),
+  ).toHaveTextContent("16/09/2026, 23:59:00");
+  const checkbox = screen.getByRole("checkbox");
+  expect(checkbox).not.toBeChecked();
+  expect(form.checkValidity()).toBe(false);
+  expect(mutateAsync).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText(/Responsável pela decisão/), {
+    target: { value: "Operador local" },
+  });
+  fireEvent.click(checkbox);
+  expect(form.checkValidity()).toBe(true);
+  fireEvent.submit(form);
+  await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+  expect(mutateAsync.mock.calls[0][0]).toMatchObject({
+    expectedRevision: authorizationCycle.revision,
+    operatorName: "Operador local",
+    summary: authorizationCycle.authorizationReview!.summary,
+    evidenceReference:
+      authorizationCycle.authorizationReview!.evidenceReference,
+    evidence: {
+      productVersion: authorizationCycle.productVersion,
+      budgetLimitBrl: 100,
+      confirmed: true,
+    },
+  });
+});
+
+it("mostra insumos ausentes e respeita bloqueio do backend antes de uma autorização", () => {
+  const blocked = {
+    ...authorizationCycle,
+    commands: [
+      {
+        action: "COMPLETE",
+        label: "Registrar autorização",
+        available: false,
+        reason: "Prepare a versão comercial",
+      },
+    ],
+    commercialPreparation: {
+      readyForReview: false,
+      guidance: "Não iniciar revisão paga sem destino",
+      experimentUrl: "/experiments/92",
+      requirements: [
+        {
+          code: "CURRENT_VERSION_READY",
+          title: "Versão comercial",
+          ready: false,
+          detail: "Versão ainda privada",
+          recommendation: "Publicar pelo fluxo oficial",
+        },
+      ],
+    },
+  };
+  render(
+    <MemoryRouter>
+      <LearningCycleCommandForm
+        cycle={blocked}
+        catalog={catalog}
+        onUpdated={() => {}}
+      />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("region", { name: "Preparação comercial do experimento" }),
+  ).toHaveTextContent("Versão ainda privada");
+  expect(
+    screen.getByRole("link", { name: "Ver preparação do experimento" }),
+  ).toHaveAttribute("href", "/experiments/92");
+  expect(
+    screen.getByRole("button", { name: "Registrar autorização" }),
+  ).toBeDisabled();
+  expect(mutateAsync).not.toHaveBeenCalled();
+});

@@ -763,6 +763,12 @@ export default function ProductTypeCatalogPage() {
                     <Pencil className="me-2" size={14} aria-hidden="true" />
                     Editar tipo
                   </button>
+                  <Link
+                    className="btn btn-sm btn-outline-secondary ms-2"
+                    to={`/financial/plans?typeId=${type.id}`}
+                  >
+                    Modelo financeiro
+                  </Link>
                 </div>
               </article>
             ))}

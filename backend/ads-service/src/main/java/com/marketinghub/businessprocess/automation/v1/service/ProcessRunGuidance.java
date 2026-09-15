@@ -20,16 +20,58 @@ public class ProcessRunGuidance {
   private final LearningCycleVideoBudget videoBudget;
   private final ProcessRunVideoGuidance videoGuidance;
 
+  private final com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleCommercialReadiness
+      commercialReadiness;
+
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
       videoBinding;
 
   /** Resolve a próxima ação pela ocorrência exata, sem autorizar consumo ou alterar estado. */
   public ProcessRunUserAction resolve(ProcessRun run) {
-    if (!Set.of("QUEUED", "WAITING_ACTIVITY", "WAITING_HUMAN").contains(run.getStatus()))
-      return null;
+    if (!Set.of("QUEUED", "WAITING_ACTIVITY", "WAITING_HUMAN", "WAITING_INPUT")
+            .contains(run.getStatus())
+        || run.getFailureCount() > 0) return null;
     var cycle = manualCycle(run);
     if (cycle == null) return null;
+    if (Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage())) {
+      var preparation = commercialReadiness.inspect(cycle);
+      if (preparation != null && !preparation.readyForReview())
+        return new ProcessRunUserAction(
+            "PREPARE_CYCLE_COMMERCIAL",
+            "A jornada comercial precisa ser preparada",
+            preparation.guidance(),
+            "Preparação comercial · responsáveis pelas pendências do experimento",
+            "Ver pendências do ciclo",
+            cycleUrl(cycle),
+            "Conclua os vínculos desta versão pelo fluxo oficial. Os vídeos aprovados e o histórico permanecem preservados; autorização de mídia continua sendo uma decisão explícita.",
+            "internal://learning-cycles/" + cycle.getId());
+    }
+    if ("AUTHORIZATION".equals(cycle.getStage()))
+      return new ProcessRunUserAction(
+          "AUTHORIZE_CYCLE_MEDIA",
+          "Falta sua decisão sobre o teto de mídia",
+          "O ciclo #"
+              + cycle.getId()
+              + " · experimento #"
+              + cycle.getExperimentId()
+              + " aguarda a confirmação do orçamento e da janela. A homologação já registrada não autoriza mídia. Aguardar nesta tela não registra essa decisão.",
+          "Você · responsável pelo orçamento de mídia",
+          "Revisar orçamento e pendências",
+          cycleUrl(cycle),
+          "O aceite registra os limites no experimento. A preparação, a homologação comercial e a autorização final de ativação continuam obrigatórias antes da campanha.",
+          "internal://learning-cycles/" + cycle.getId());
+    if ("PUBLICATION".equals(cycle.getStage()))
+      return new ProcessRunUserAction(
+          "COMPLETE_COMMERCIAL_PREPARATION",
+          "Continuar a preparação e conferir a publicação",
+          "O teto do ciclo foi registrado. Conclua as pendências e a homologação comercial pelo processo indicado no ciclo; depois confira a publicação do mesmo experimento.",
+          "Operador do ciclo · preparação e autorização final",
+          "Continuar no ciclo",
+          cycleUrl(cycle),
+          "Somente a confirmação da campanha pelo fluxo oficial permite avançar para medição. Venda, entrega e aprendizado exigem suas próprias evidências.",
+          "internal://learning-cycles/" + cycle.getId());
     if ("VIDEO_APPROVAL".equals(cycle.getStage())
         && videoBinding != null
         && videoBinding.supports(cycle)) {
@@ -95,7 +137,8 @@ public class ProcessRunGuidance {
         && videoBinding != null
         && videoBinding.supports(cycle)) return videoBinding.awaitingApproval(cycle);
     return cycle != null
-        && (Set.of("VIDEO_BRIEF", "VIDEO_APPROVAL").contains(cycle.getStage())
+        && (Set.of("VIDEO_BRIEF", "VIDEO_APPROVAL", "AUTHORIZATION", "PUBLICATION")
+                .contains(cycle.getStage())
             || videoGuidance.resolve(cycle) != null);
   }
 
@@ -111,9 +154,29 @@ public class ProcessRunGuidance {
         || !Objects.equals(run.getSourceReference(), "experiment:" + cycle.getExperimentId()))
       throw new IllegalStateException("A pendência pertence a outro contexto de execução.");
     if (!"OPEN".equals(cycle.getStatus())
-        || !Set.of("VIDEO_BRIEF", "CAMPAIGN_VIDEO", "PDE_ENTRY_VIDEO", "VIDEO_APPROVAL")
+        || !Set.of(
+                "VIDEO_BRIEF",
+                "CAMPAIGN_VIDEO",
+                "PDE_ENTRY_VIDEO",
+                "VIDEO_APPROVAL",
+                "AUTHORIZATION",
+                "PUBLICATION")
             .contains(cycle.getStage())) return null;
     var definition = processes.findById(cycle.getProcessDefinitionId()).orElseThrow();
-    return definition.getVersionNumber() >= 2 ? cycle : null;
+    return definition.getVersionNumber()
+            >= (Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage()) ? 1 : 2)
+        ? cycle
+        : null;
+  }
+
+  /** Preserva as três identidades na navegação de ida e retorno à decisão comercial. */
+  private String cycleUrl(LearningSalesCycle cycle) {
+    return "/business-process-chains/learning-cycles?chainId="
+        + cycle.getChainDefinitionId()
+        + "&productId="
+        + cycle.getProductId()
+        + "&cycleId="
+        + cycle.getId()
+        + "#cycle-decision";
   }
 }

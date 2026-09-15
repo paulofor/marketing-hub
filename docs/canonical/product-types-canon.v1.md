@@ -31,6 +31,38 @@ comprovar seu resultado funcional. Compra, receita líquida, margem e satisfaç�
 medidas quando disponíveis; clique, imagem gerada ou teste aprovado não comprovam venda.
 Esta diretriz não modifica por si só ofertas, funis, versões aprovadas ou gates humanos.
 
+## Compatibilidade entre produto e tipo — decisão de 15/09/2026
+
+Ao tratar qualquer produto, as definições macro do seu tipo cadastrado são referência
+obrigatória. O processo do produto deve permanecer integralmente compatível com elas em
+toda a cadeia de valor. As particularidades do produto detalham sua aplicação, sem
+contradizer ou substituir silenciosamente as regras do tipo.
+
+Antes de investigar, planejar, corrigir ou executar, confirmar o vínculo oficial no backend
+e consultar este cânone, o cadastro do tipo e os contratos e versões aplicáveis ao produto.
+Nome, exemplo de uso ou tecnologia não permitem inferir ou mudar sua classificação.
+
+A compatibilidade abrange processos, subprocessos, atividades, responsabilidades dos
+agentes, mecanismo de valor, experiência, oferta, funil, comunicação, entrega, qualidade,
+métricas e modelo de receita. Plutus considera as diretrizes econômicas do tipo e avalia
+custos, limites de consumo e margem no plano financeiro específico do produto/versão;
+um modelo financeiro reutilizável por tipo não aprova a viabilidade de cada produto.
+
+A ficha versionada de `product-execution-profiles-canon.v1.md` especializa o percurso por
+capacidade, formato, entrega e receita dentro dessas diretrizes. Compatibilidade não exige
+atividades idênticas para todos os produtos do mesmo tipo nem define sozinha a implementação.
+
+Em caso de divergência, registrar as definições e versões em conflito, o impacto para o
+cliente e o negócio e a correção necessária. Desvios técnicos seguem o escopo local autorizado;
+mudanças de produto exigem decisão explícita. Não reclassificar, alterar regras macro,
+oferta ou funil aprovados, migrar execuções nem dispensar gates silenciosamente. Preservar
+contratos já vendidos, histórico, custos, evidências e aprovações. Uma revisão macro nova
+não reescreve vínculos ou comprovações históricas.
+
+O modelo compartilhado do botão **Prompt para AIHUB** deve incluir esta orientação para
+todos os produtos e processos, mantendo as definições do tipo como referência ao longo do
+trabalho. A instrução no prompt não comprova implementação automática desses controles.
+
 ## Catálogo extensível e apelidos
 
 O percurso operacional é definido pela ficha versionada em

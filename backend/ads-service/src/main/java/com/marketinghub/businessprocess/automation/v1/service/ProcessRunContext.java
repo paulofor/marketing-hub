@@ -128,6 +128,30 @@ public class ProcessRunContext {
         : "O ciclo está encerrado. Resultados preservados; nenhuma nova atividade será iniciada neste ciclo.";
   }
 
+  /** Reconhece a preparação comercial da mesma ocorrência aguardada pelo processo de vendas. */
+  public boolean permitsCommercialContinuation(ProcessRun waiting, ProcessRun candidate) {
+    if (waiting.getLearningCycleId() == null
+        || !"learningCycle".equals(waiting.getCurrentActivityId())
+        || waiting.getFailureCount() > 0
+        || !Set.of("WAITING_ACTIVITY", "WAITING_HUMAN", "WAITING_INPUT")
+            .contains(waiting.getStatus())
+        || !Objects.equals(waiting.getProductId(), candidate.getProductId())
+        || !Objects.equals(waiting.getChainDefinitionId(), candidate.getChainDefinitionId())
+        || !Objects.equals(waiting.getLearningCycleId(), candidate.getLearningCycleId())
+        || !Objects.equals(waiting.getSourceReference(), candidate.getSourceReference()))
+      return false;
+    var cycle = cycles.findById(waiting.getLearningCycleId()).orElseThrow();
+    return "OPEN".equals(cycle.getStatus())
+        && Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage())
+        && Objects.equals(cycle.getProductId(), waiting.getProductId())
+        && Objects.equals(cycle.getChainDefinitionId(), waiting.getChainDefinitionId())
+        && Objects.equals("experiment:" + cycle.getExperimentId(), waiting.getSourceReference())
+        && "pde-sales-delivery-learning"
+            .equals(process(waiting.getProcessDefinitionId()).getProcessCode())
+        && "pde-commercial-homologation-activation"
+            .equals(process(candidate.getProcessDefinitionId()).getProcessCode());
+  }
+
   /** Reconstrói somente os identificadores imutáveis da solicitação original. */
   public ProcessRunCommand command(ProcessRun run) {
     return new ProcessRunCommand(

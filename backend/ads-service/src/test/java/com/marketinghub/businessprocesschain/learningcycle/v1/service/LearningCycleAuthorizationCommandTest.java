@@ -78,6 +78,8 @@ class LearningCycleAuthorizationCommandTest {
     cycle.setBriefJson("{}");
     cycle.setInheritedLearningJson("{}");
     cycle.setVersionChangedAt(now.minusSeconds(60));
+    cycle.setWindowStart(Instant.now().minusSeconds(3600));
+    cycle.setWindowEnd(Instant.now().plusSeconds(86400));
 
     experiment = Experiment.builder().id(92L).build();
     BusinessProcessDefinition process = new BusinessProcessDefinition();
@@ -130,6 +132,38 @@ class LearningCycleAuthorizationCommandTest {
     LearningCycleResponse.CommandOption command = authorizationCommand();
 
     assertThat(command.available()).isTrue();
+  }
+
+  /** Janela expirada é bloqueada antes do formulário, sem pedir uma confirmação impossível. */
+  @Test
+  void expiredWindowDisablesAuthorizationWithoutDiscardingEvidence() {
+    cycle.setWindowEnd(Instant.now().minusSeconds(1));
+    var response = service.list(4L).getFirst();
+    assertThat(authorizationCommand().available()).isFalse();
+    assertThat(authorizationCommand().reason()).contains("janela terminou");
+    assertThat(response.events()).hasSize(1);
+    assertThat(response.authorizationReview().evidenceReference())
+        .contains("learning_sales_cycle_event_v1:16");
+    assertThat(cycle.getStage()).isEqualTo("AUTHORIZATION");
+  }
+
+  /** A síntese usa os dados persistidos e deixa a decisão humana no comando existente. */
+  @Test
+  void providesAuditableReviewWithoutRedundantInputOrMutation() {
+    var response = service.list(4L).getFirst();
+    assertThat(response.authorizationReview().summary())
+        .contains("100.00", "#92", cycle.getProductVersion());
+    assertThat(response.authorizationReview().explanation()).contains("autorização final");
+    org.mockito.Mockito.verify(cycles, org.mockito.Mockito.never())
+        .save(org.mockito.ArgumentMatchers.any());
+  }
+
+  /** Teto ausente nunca equivale a zero autorizado nem pede edição duplicada do experimento. */
+  @Test
+  void missingCycleBudgetDisablesAuthorization() {
+    cycle.setBudgetLimitBrl(null);
+    assertThat(authorizationCommand().available()).isFalse();
+    assertThat(authorizationCommand().reason()).contains("teto financeiro válido");
   }
 
   /** Mantém a publicação orientada ao processo comercial em vez de abandonar o ciclo no detalhe. */

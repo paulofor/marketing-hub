@@ -1,0 +1,55 @@
+{
+  "productVersion": "fixture-product-v1",
+  "periodDays": 30,
+  "validUntil": "2026-10-15",
+  "evidence": "Hipótese sintética de homologação. Pacote de 4 imagens 1024px personalizadas; tarifas locais fictícias, sem chamadas externas. Investimento inicial inclui IA, testes e Plutus; custos declarados com fonte de teste.",
+  "priceBrl": 100,
+  "minimumMarginPercent": 20,
+  "maximumCacBrl": 25,
+  "ai": {
+    "currency": "USD",
+    "providerModel": "fixture-image-model",
+    "perAttempt": 0.2,
+    "pricingSource": "internal://fixture/pricing-v1",
+    "pricingCheckedOn": "2026-09-15",
+    "usdBrl": 5,
+    "exchangeSource": "internal://fixture/exchange/2026-09-15",
+    "includedUnits": 4,
+    "maximumAttempts": 8,
+    "maximumCostPerCustomerBrl": 8
+  },
+  "costs": {
+    "feePercent": 5,
+    "taxPercent": 5,
+    "commissionPercent": 5,
+    "refundPercent": 5,
+    "fixedFeeBrl": 0,
+    "supportBrl": 2,
+    "storageBrl": 1,
+    "deliveryBrl": 1,
+    "otherVariableBrl": 0,
+    "initialAiBrl": 60,
+    "initialOtherBrl": 40,
+    "fixedPerPeriodBrl": 100
+  },
+  "scenarios": [
+    {
+      "code": "CONSERVATIVE",
+      "customers": 10,
+      "attemptsPerCustomer": 6,
+      "cacBrl": 20
+    },
+    {
+      "code": "BASE",
+      "customers": 20,
+      "attemptsPerCustomer": 5,
+      "cacBrl": 15
+    },
+    {
+      "code": "OPTIMISTIC",
+      "customers": 30,
+      "attemptsPerCustomer": 4,
+      "cacBrl": 10
+    }
+  ]
+}

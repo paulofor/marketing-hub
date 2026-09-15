@@ -2081,3 +2081,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-15-musa-v5-published-contract-repair.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-09-15-product-financial-plan-v1.yaml
+      relativeToChangelogFile: true

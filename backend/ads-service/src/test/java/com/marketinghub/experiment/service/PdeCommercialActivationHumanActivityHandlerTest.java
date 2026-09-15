@@ -66,6 +66,31 @@ class PdeCommercialActivationHumanActivityHandlerTest {
         .contains("PREFLIGHT_APPROVED", "BUDGET_LIMIT_DEFINED");
   }
 
+  /** Distingue o consentimento para mídia Meta da operação direta sem disparar a autorização. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.EnumSource(
+      com.marketinghub.experiment.ExperimentPlatform.class)
+  void explainsAuthorizationEffectForSelectedChannel(
+      com.marketinghub.experiment.ExperimentPlatform platform) {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    experiment.setPlatform(platform);
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(readinessService.summarize(89L)).thenReturn(readiness(false));
+    var result = handler.readiness(process(), activity(), product, "experiment:89");
+    if (platform == com.marketinghub.experiment.ExperimentPlatform.FACEBOOK) {
+      assertThat(result.description())
+          .contains("publicação da campanha na Meta", "gasto de mídia", "janela aprovada")
+          .doesNotContain("sem criar campanha paga");
+      assertThat(result.confirmationMessage()).contains("autoriza a publicação na Meta");
+    } else {
+      assertThat(result.description()).contains("sem criar campanha paga");
+      assertThat(result.confirmationMessage()).doesNotContain("autoriza a publicação na Meta");
+    }
+    org.mockito.Mockito.verifyNoInteractions(experimentService);
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
+  }
+
   /** Mantém a ativação bloqueada quando o plano não limita o gasto. */
   @Test
   void blocksActivationWithoutPositiveBudgetLimit() {

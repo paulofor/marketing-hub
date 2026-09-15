@@ -113,6 +113,18 @@ class LearningCycleAuthorizationCommandTest {
     when(evidence.approvals(cycle))
         .thenReturn(List.of(new LearningCycleResponse.ApprovalOption(289L, "Gate #289")));
     ReflectionTestUtils.setField(service, "videoBudget", videoBudget);
+    var readiness = mock(LearningCycleCommercialReadiness.class);
+    when(readiness.inspect(cycle))
+        .thenReturn(
+            new com.marketinghub
+                .businessprocesschain
+                .learningcycle
+                .v1
+                .service
+                .getCycles
+                .LearningCycleCommercialPreparation(
+                false, "Checkout e versão comercial pendentes", "/experiments/92", List.of()));
+    ReflectionTestUtils.setField(service, "commercialReadiness", readiness);
   }
 
   /** Permite confirmar o teto na própria ação sem exigir edição duplicada do experimento. */
@@ -122,6 +134,7 @@ class LearningCycleAuthorizationCommandTest {
 
     assertThat(command.available()).isTrue();
     assertThat(command.reason()).contains("backend conferirá");
+    assertThat(service.list(4L).getFirst().commercialPreparation().readyForReview()).isFalse();
   }
 
   /** Libera o comando quando o teto operacional coincide exatamente com a decisão do ciclo. */
@@ -262,6 +275,7 @@ class LearningCycleAuthorizationCommandTest {
     ReflectionTestUtils.setField(
         service, "commercialAuthorization", new LearningCycleCommercialAuthorization(experiments));
     experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
     var data =
         new ObjectMapper()
             .createObjectNode()
@@ -285,6 +299,8 @@ class LearningCycleAuthorizationCommandTest {
     assertThat(cycle.getBudgetLimitBrl()).isEqualByComparingTo("120.00");
     assertThat(experiment.getMediaSpendLimit()).isEqualByComparingTo("120.00");
     assertThat(experiment.getDailyBudget()).isEqualByComparingTo("25.00");
+    assertThat(experiment.getStatus())
+        .isEqualTo(com.marketinghub.experiment.ExperimentStatus.PLANNED);
     cycle.setStage("AUTHORIZATION");
     when(evidence.approvals(cycle)).thenReturn(List.of());
     org.assertj.core.api.Assertions.assertThatThrownBy(
@@ -293,6 +309,76 @@ class LearningCycleAuthorizationCommandTest {
                     service, "apply", cycle, experiment, request, Instant.now()))
         .hasMessageContaining("homologação utilizada");
     org.mockito.Mockito.verify(experiments, org.mockito.Mockito.times(1)).save(experiment);
+  }
+
+  /** Persiste e repete o aceite com preparação ausente em ciclos distintos sem ativar mídia. */
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"4,2,92,20,100", "400,200,920,30.25,120"})
+  void persistsBudgetBeforePreparation(
+      long productId, long cycleId, long experimentId, String daily, String total) {
+    var history = events.findByCycleIdOrderByRevisionAsc(2L);
+    cycle.setProductId(productId);
+    cycle.setId(cycleId);
+    cycle.setExperimentId(experimentId);
+    experiment.setId(experimentId);
+    experiment.setProduct(Product.builder().id(productId).build());
+    experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
+    experiment.setStatus(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    when(products.findLockedById(productId)).thenReturn(Optional.of(experiment.getProduct()));
+    when(cycles.findLocked(productId, cycleId)).thenReturn(Optional.of(cycle));
+    when(experiments.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(events.findByCycleIdOrderByRevisionAsc(cycleId)).thenReturn(history);
+    ReflectionTestUtils.setField(service, "ledger", mock(LearningCycleBpmLedger.class));
+    ReflectionTestUtils.setField(
+        service,
+        "decisionApproval",
+        mock(
+            com.marketinghub.businessprocesschain.learningcycle.v1.decision.service
+                .LearningCycleDecisionApproval.class));
+    ReflectionTestUtils.setField(
+        service, "commercialAuthorization", new LearningCycleCommercialAuthorization(experiments));
+    var saved = new java.util.ArrayList<LearningSalesCycleEvent>();
+    when(events.saveAndFlush(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(
+            invocation -> {
+              LearningSalesCycleEvent event = invocation.getArgument(0);
+              saved.add(event);
+              return event;
+            });
+    when(events.findByCycleIdAndRequestKey(
+            org.mockito.ArgumentMatchers.eq(cycleId), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(
+            invocation ->
+                saved.stream()
+                    .filter(event -> event.getRequestKey().equals(invocation.getArgument(1)))
+                    .findFirst());
+    var request =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .AuthorizeCycleBudgetRequest(
+            java.util.UUID.randomUUID(), 13, new BigDecimal(daily), new BigDecimal(total));
+    for (int attempt = 0; attempt < 2; attempt++) {
+      var result = service.authorizeBudget(productId, cycleId, request, "Operador sintético");
+      assertThat(result.stage()).isEqualTo("PUBLICATION");
+      assertThat(result.commercialPreparation().readyForReview()).isFalse();
+    }
+    assertThat(saved).hasSize(1);
+    assertThat(saved.getFirst().getFromStage()).isEqualTo("AUTHORIZATION");
+    assertThat(saved.getFirst().getToStage()).isEqualTo("PUBLICATION");
+    assertThat(saved.getFirst().getCycleId()).isEqualTo(cycleId);
+    assertThat(experiment.getDailyBudget()).isEqualByComparingTo(daily);
+    assertThat(experiment.getMediaSpendLimit()).isEqualByComparingTo(total);
+    assertThat(experiment.getStatus())
+        .isEqualTo(com.marketinghub.experiment.ExperimentStatus.PLANNED);
+    assertThat(cycle.getRevision()).isEqualTo(14);
+    org.mockito.Mockito.verify(experiments).save(experiment);
+    var conflicting =
+        new com.marketinghub.businessprocesschain.learningcycle.v1.service.command
+            .AuthorizeCycleBudgetRequest(
+            request.requestKey(), 13, BigDecimal.ONE, new BigDecimal(total));
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.authorizeBudget(productId, cycleId, conflicting, "Operador sintético"))
+        .hasMessageContaining("conteúdo diferente");
+    assertThat(saved).hasSize(1);
   }
 
   /** Obtém a opção exibida pela API para concluir a etapa de autorização. */

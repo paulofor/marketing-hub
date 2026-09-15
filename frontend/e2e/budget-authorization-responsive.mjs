@@ -17,7 +17,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'; import './src/pages/learningCycle
 import Form from './src/pages/learningCycle/LearningCycleCommandForm';
 const blocked = new URLSearchParams(location.search).has('blocked');
 const cycle = {id:200,productId:400,experimentId:920,revision:3,stage:'AUTHORIZATION',productVersion:'synthetic-v12',budgetLimitBrl:100,
- authorizationReview:{dailyBudgetBrl:50}, commands:[{action:'COMPLETE',available:!blocked,reason:'Janela encerrada'}]};
+ commercialPreparation:{readyForReview:false,guidance:'Checkout pendente',experimentUrl:'/experiments/920',requirements:[]}, authorizationReview:{dailyBudgetBrl:50}, commands:[{action:'COMPLETE',available:!blocked,reason:'Janela encerrada'}]};
 createRoot(document.getElementById('root')).render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><main style={{maxWidth:900,margin:'20px auto',padding:16}}><Form cycle={cycle as any} catalog={{returnTargets:[]} as any} onUpdated={()=>document.body.dataset.approved='true'}/></main></MemoryRouter></QueryClientProvider>);`,
 );
 const server = spawn(
@@ -71,6 +71,12 @@ try {
     });
     await page.goto("http://127.0.0.1:15273/budget-test.html");
     await expect(page.locator("input")).toHaveCount(2);
+    await expect(
+      page.getByText(/O orçamento pode ser aprovado agora/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Aprovar orçamento" }),
+    ).toBeEnabled();
     const daily = page.getByLabel("Orçamento diário (R$)"),
       total = page.getByLabel("Orçamento total (R$)");
     await expect(daily).toHaveValue("50");

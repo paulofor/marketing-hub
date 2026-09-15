@@ -152,13 +152,13 @@ it("aprova somente diário e total sugeridos sem preencher metadados", async () 
   expect(form.querySelectorAll("input")).toHaveLength(2);
   expect(screen.queryByRole("checkbox")).toBeNull();
   expect(screen.queryByRole("combobox")).toBeNull();
-  expect(screen.getByLabelText("Orçamento diário (R$)")).toHaveValue(50);
-  expect(screen.getByLabelText("Orçamento total (R$)")).toHaveValue(100);
+  expect(screen.getByLabelText("Orçamento diário (R$) *")).toHaveValue(50);
+  expect(screen.getByLabelText("Orçamento total (R$) *")).toHaveValue(100);
   expect(mutateAsync).not.toHaveBeenCalled();
-  fireEvent.change(screen.getByLabelText("Orçamento diário (R$)"), {
+  fireEvent.change(screen.getByLabelText("Orçamento diário (R$) *"), {
     target: { value: "30.25" },
   });
-  fireEvent.change(screen.getByLabelText("Orçamento total (R$)"), {
+  fireEvent.change(screen.getByLabelText("Orçamento total (R$) *"), {
     target: { value: "120" },
   });
   expect(form.checkValidity()).toBe(true);
@@ -183,7 +183,7 @@ it("rejeita diário acima do total antes de enviar", () => {
       />
     </MemoryRouter>,
   );
-  fireEvent.change(screen.getByLabelText("Orçamento diário (R$)"), {
+  fireEvent.change(screen.getByLabelText("Orçamento diário (R$) *"), {
     target: { value: "101" },
   });
   fireEvent.submit(screen.getByRole("form"));
@@ -193,15 +193,15 @@ it("rejeita diário acima do total antes de enviar", () => {
   expect(mutateAsync).not.toHaveBeenCalled();
 });
 
-it("mostra insumos ausentes e respeita bloqueio do backend antes de uma autorização", () => {
+it("mostra insumos ausentes sem bloquear o aceite disponível no backend", () => {
   const blocked = {
     ...authorizationCycle,
     commands: [
       {
         action: "COMPLETE",
         label: "Registrar autorização",
-        available: false,
-        reason: "Prepare a versão comercial",
+        available: true,
+        reason: "O backend conferirá os requisitos",
       },
     ],
     commercialPreparation: {
@@ -228,14 +228,14 @@ it("mostra insumos ausentes e respeita bloqueio do backend antes de uma autoriza
       />
     </MemoryRouter>,
   );
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "Prepare a versão comercial",
-  );
+  expect(
+    screen.getByText(/O orçamento pode ser aprovado agora/),
+  ).toBeInTheDocument();
   expect(
     screen.getByRole("link", { name: "Ver preparação do experimento" }),
   ).toHaveAttribute("href", "/experiments/92");
   expect(
     screen.getByRole("button", { name: "Aprovar orçamento" }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   expect(mutateAsync).not.toHaveBeenCalled();
 });

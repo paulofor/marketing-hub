@@ -22,16 +22,16 @@ assert f'cycleId={cycle["id"]}' in parent['userAction']['actionUrl']
 stored_run = sql(f'SELECT revision,reason FROM product_process_run_v1 WHERE id={parent["id"]}')
 assert fixture.process_read(cycle)['userAction'] == parent['userAction']
 assert sql(f'SELECT revision,reason FROM product_process_run_v1 WHERE id={parent["id"]}') == stored_run
-assert not next(c for c in cycle['commands'] if c['action'] == 'COMPLETE')['available']
+assert next(c for c in cycle['commands'] if c['action'] == 'COMPLETE')['available']
 assert cycle['nextAction'] == cycle['commercialPreparation']['guidance']
 budget_before = http('/fixture/experiments/91001/budget-state')
-command(cycle, body=authorize(cycle), expected=409)
+command(cycle, body=dict(authorize(cycle), expectedRevision=cycle['revision']-1), expected=409)
 assert read(cycle)['events'] == original_events
 assert http('/fixture/experiments/91001/budget-state') == budget_before
 activation = start(cycle, 'pde-commercial-homologation-activation')
 assert activation['status'] == 'WAITING_INPUT' and 'Checkout' in activation['reason'], activation
 assert http('/fixture/commercial-tasks') == []
-check('Pendências canônicas impedem autorização e revisores; GET não grava e custo ausente não vira zero completo')
+check('Pendências canônicas impedem revisores, mas permitem aceite financeiro; GET não grava e custo ausente não vira zero completo')
 
 paused = fixture.reconcile(http(process_path(cycle) + f'/{parent["id"]}/pause', {}))
 assert paused['status'] == 'PAUSED' and paused['userAction'] is None, paused

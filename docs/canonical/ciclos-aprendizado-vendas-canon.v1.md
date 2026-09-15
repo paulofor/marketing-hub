@@ -435,4 +435,7 @@ seletor de decisão ou checkbox nesse formulário. O backend preserva versão e 
 registra a origem do aceite administrativo e os valores exatos, sincronizando ciclo e
 experimento na mesma transação. Sem identidade autenticada, não inventar nome pessoal.
 A janela expirada continua bloqueada; sugestões não são autorização e não liberam campanha.
-Mantêm-se prontidão comercial, homologação, idempotência e revisão concorrente.
+Mantêm-se homologação vigente, idempotência e revisão concorrente. A prontidão comercial
+não bloqueia o aceite inicial dos dois valores: ela bloqueia revisões comerciais pagas e
+ativação. O aceite materializa os limites e avança para PUBLICATION, sem criar campanha
+nem tornar o experimento RUNNING. A tela mantém as pendências e o link de preparação.

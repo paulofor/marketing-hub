@@ -109,7 +109,7 @@ try {
     ).toHaveAttribute("href", "/experiments/91001");
     await expect(
       form.getByRole("button", { name: "Aprovar orçamento" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     assert.equal(commands.length, 0);
     await page.screenshot({
       path: `${output}/${name}-pending.png`,

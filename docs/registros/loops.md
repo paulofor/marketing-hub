@@ -5552,3 +5552,15 @@ a composição versionada e a preservação de cadeia/ciclo/experimento. Regras 
 - **Prevenção:** testes de oferta versionada, correlação sem token bruto, prontidão Facebook,
   jornada privada/comercial, teto do ciclo, isolamento Docker e navegação desktop/mobile. A
   matriz fica em `docs/homologacao/vega-ciclo2-ativacao-comercial-v12.md`.
+
+### Recorrência no aceite simplificado — 15/09/2026
+
+O formulário de dois valores ainda recebia COMPLETE indisponível quando faltavam insumos
+comerciais. Tela pública e MCP confirmaram ciclo 2/experimento 92 em AUTHORIZATION revisão
+13; não houve envio registrado. O bloqueio do LOOP-CICLO-AUTORIZACAO-SEM-SUPERFICIE-COMERCIAL
+foi aplicado também ao aceite inicial, embora este apenas materialize limites.
+A correção separa essa decisão no GET e no comando compartilhado: preparação incompleta
+continua visível e bloqueia revisões/ativação, mas não o aceite financeiro homologado.
+Regressão injeta preparação ausente (antes omitida nos testes de autorização), cobre
+produto/ciclo original e outros identificadores, evento único, replay e manutenção de PLANNED.
+Ver `docs/homologacao/orcamento-botao-bloqueado.md`. Não há alteração de mídia em produção.

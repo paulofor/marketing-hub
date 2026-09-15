@@ -922,7 +922,7 @@ public class LearningCycleService {
   }
 
   /**
-   * Valida movimento e prova privada da versão antes de registrar o retorno e invalidar aprovações.
+   * Valida movimento e prova da versão; o aceite financeiro não substitui a preparação comercial.
    */
   private void apply(
       LearningSalesCycle cycle, Experiment experiment, LearningCycleCommand request, Instant now) {
@@ -973,11 +973,6 @@ public class LearningCycleService {
           }
           case "AUTHORIZATION" -> {
             evidence.authorization(cycle, data, now);
-            var preparation =
-                commercialReadiness == null ? null : commercialReadiness.inspect(cycle);
-            require(
-                preparation == null || preparation.readyForReview(),
-                preparation == null ? null : preparation.guidance());
             if (data.has("dailyBudgetBrl")) {
               cycle.setBudgetLimitBrl(data.path("budgetLimitBrl").decimalValue());
               commercialAuthorization.apply(
@@ -1222,7 +1217,7 @@ public class LearningCycleService {
         : "A homologação utilizada deixou de ser vigente. Retorne para correção e homologue novamente antes de publicar ou expandir.";
   }
 
-  /** Monta uma leitura exclusivamente a partir do estado e dos eventos persistidos. */
+  /** Expõe comandos pelo estado persistido, separando aceite financeiro e prontidão comercial. */
   private LearningCycleResponse response(LearningSalesCycle cycle) {
     var commercialPreparation =
         commercialReadiness != null
@@ -1262,12 +1257,6 @@ public class LearningCycleService {
                           && action == Action.COMPLETE
                           && "AUTHORIZATION".equals(cycle.getStage()))
                         blocker = authorizationBlocker(cycle, Instant.now(clock));
-                      if (blocker == null
-                          && action == Action.COMPLETE
-                          && "AUTHORIZATION".equals(cycle.getStage())
-                          && commercialPreparation != null
-                          && !commercialPreparation.readyForReview())
-                        blocker = commercialPreparation.guidance();
                       if (blocker == null
                           && Set.of(
                                   Action.ADJUST,

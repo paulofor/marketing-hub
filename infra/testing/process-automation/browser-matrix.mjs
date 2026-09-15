@@ -168,17 +168,12 @@ try {
       () => document.documentElement.scrollWidth > innerWidth + 1,
     );
     assert.equal(overflow, false, name);
-    const rotation = await panel
-      .locator(".product-process-situation__running-icon")
-      .evaluate((e) => getComputedStyle(e).animationName);
-    assert.equal(rotation, "none");
-    await page.emulateMedia({ reducedMotion: "no-preference" });
-    assert.notEqual(
-      await panel
-        .locator(".product-process-situation__running-icon")
-        .evaluate((e) => getComputedStyle(e).animationName),
-      "none",
-    );
+    await expect(
+      panel.getByText("Aguardando conclusão da atividade", { exact: true }),
+    ).toHaveCount(2);
+    await expect(
+      panel.locator(".product-process-situation__running-icon"),
+    ).toHaveCount(0);
     await panel.getByRole("button", { name: "Histórico da execução" }).click();
     await expect(panel.getByText(/Atividade solicitada;/)).toBeVisible();
     await page.reload();

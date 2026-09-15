@@ -1,0 +1,18 @@
+{
+  "cardKey": "congruencia-dinamica-audiovisual-fluencia",
+  "collection": "prazer-audio-visual",
+  "title": "Congruência audiovisual funciona melhor dentro de estrutura temporal acompanhável",
+  "finding": "Evidência convergente indica que correspondência dinâmica entre som e imagem pode aumentar beleza percebida, reduzir tempo de reação e reforçar processamento visual; no estudo com EEG, os efeitos desapareceram quando a estrutura temporal audiovisual era arrítmica.",
+  "mechanism": "A correspondência temporal perceptível pode aumentar fluência e fornecer previsões crossmodais que orientam o processamento visual. O benefício parece depender de uma organização temporal que o sistema perceptivo consiga acompanhar, e não de sincronização pontual isolada.",
+  "commercialApplication": "Em vídeos e interfaces gerados por IA, testar transições e mudanças visuais alinhadas a mudanças acústicas relevantes dentro de uma estrutura rítmica contra versões desalinhadas ou arrítmicas, sem sincronizar mecanicamente cada elemento ao beat.",
+  "evidenceStrength": "Média-alta para mecanismos perceptuais: dois experimentos de estética e um estudo EEG com manipulação direta convergem sobre congruência dinâmica. A generalização para narrativas, retenção e resultados comerciais permanece não demonstrada.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2027-03-15",
+  "experimentHypothesis": "Uma versão com mudanças visuais semanticamente relevantes alinhadas à dinâmica acústica em uma estrutura temporal regular aumentará fluência percebida, detecção e retenção em relação a versões desalinhadas ou arrítmicas, sem reduzir compreensão ou CTA.",
+  "risks": "Sincronização excessiva pode tornar a experiência previsível, artificial ou distrativa; elementos visualmente irrelevantes podem capturar atenção mesmo quando sincronizados.",
+  "limits": "Os estudos usaram piano com espectrogramas e estímulos visuais artificiais com mudanças de pitch e forma. Não mediram vendas, memória de marca nem eficácia de anúncios.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-15-congruencia-dinamica-audiovisual-fluencia.md",
+  "sourceTitle": "Fonte revisada — congruência dinâmica audiovisual e fluência perceptiva",
+  "sourceSha256": "997108efa1d74c0d28d4ab61746c3b01ee0305b58c45ae288972e7784a507cb6"
+}

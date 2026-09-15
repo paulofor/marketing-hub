@@ -85,6 +85,8 @@ jobs:
           name: backend-approved-package
           path: |
             backend/ads-service/target/app.jar
+            backend/ads-service/target/app-exec.jar
+            backend/ads-service/target/classes/
             backend/ads-service/target/approved-tree.sha
           if-no-files-found: error
           retention-days: 1

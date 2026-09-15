@@ -3223,6 +3223,29 @@ divergente` antes de alcançar os testes funcionais. Os manifestos v3 permanecem
   reais no filesystem somente leitura. O contrato do Dockerfile rejeita a volta do bind mount e
   exige explicitamente o transporte por stdin.
 
+- **Recorrência de integração em 15/09/2026:** a correção do contrato público v5 alterou
+  o catálogo compartilhado sem reatestar o Rigel. Psique `34920452331` e Têmis
+  `34920452353` bloquearam o mesmo hash; Backend CI `34919979733` encontrou uma
+  fixture de publicação sem slug, fora da seleção de testes anterior. A atestação
+  v8 preserva v5/v6/v7 e revalida o catálogo; a fixture passa a identificar o produto.
+  A matriz local de versões agora executa a suíte completa do backend, confere o JAR
+  e chama a matriz dos dois revisores. Teste de contrato impede retorno à cobertura
+  parcial. Evidências: `docs/homologacao/actions-pde-revisores-integracao-2026-09-15.md`.
+
+## LOOP-ACTIONS-PROXY-PRONTIDAO-PARCIAL — API pronta antes da autorização de materiais
+
+- **Confirmado em 15/09/2026:** PDE `34919979706` respondeu 500 em vez de 403 no
+  teste de troca do backend; `34920452262` passou com o mesmo código. A reprodução
+  local mantendo conexão no worker com DNS anterior recebeu 500 na autorização
+  enquanto outra conexão já chegava ao backend novo.
+- **Causa:** o teste inferia prontidão de todas as rotas a partir de uma resposta da
+  API, apesar de o cache DNS do proxy ainda poder apontar outro worker para o IP antigo.
+- **Correção e prevenção:** conexão aquecida preservada durante a troca, autorização
+  positiva/negativa antes e depois, espera limitada apenas para erros transitórios,
+  rejeição imediata de acesso indevido e logs dos containers antes da limpeza na falha.
+  Nenhum sleep fixo substitui a prova nem a configuração produtiva foi afrouxada.
+- **Evidência:** `docs/homologacao/actions-pde-revisores-integracao-2026-09-15.md`.
+
 ## LOOP-PSIQUE-ESTETICA-EM-TEXTO-LIVRE — aprovação não comprova equilíbrio visual
 
 - **Data:** 2026-08-30.

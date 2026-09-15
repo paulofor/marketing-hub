@@ -15,6 +15,7 @@ on:
       - "infra/testing/vega-integrity-cycle/run-round.sh"
       - "infra/testing/runway-clip-plan/run-round.sh"
       - "infra/testing/runway-gen45/run-round.sh"
+      - "infra/testing/pde-version-contract/**"
       - "**/src/main/resources/prompts/**"
       - "experiment-strategist-worker/src/main/resources/behavioral-science/**"
       - "product-discovery-worker/prompts/**"

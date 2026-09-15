@@ -59,7 +59,7 @@ workflows() {
 
 for round_name in "$@"; do
   [[ "$round_name" =~ ^[a-z0-9-]+$ ]] || exit 2
-  round="$repository_root/artifacts/actions-evidence-2026-09-10/$round_name"
+  round="${EVIDENCE_OUTPUT_ROOT:-$repository_root/artifacts/actions-evidence-2026-09-10}/$round_name"
   mkdir -p "$round"
   : > "$round/results.tsv"
   step 01-bundle-contract node --test scripts/build-commercial-review-evidence.test.mjs

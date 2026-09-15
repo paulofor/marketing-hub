@@ -281,14 +281,15 @@ class LearningCycleVideoEvidenceTest {
     assertEquals("VALIDATION", LearningCycleRules.next("VIDEO_APPROVAL", true));
   }
 
-  /**
-   * A publicação canônica completa identidade e layout sem alterar o conteúdo comercial revisado.
-   */
+  /** Completa versão e layout de um contrato identificado, preservando os vídeos revisados. */
   @Test
   void acceptsCanonicalPublicationNormalization() {
     produced();
     slot.setSlotCode("v8");
     slot.setLayoutKey("video-explicativo");
+    var draft = (ObjectNode) json.read(slot.getDraftExperienceJson());
+    draft.put("slug", slot.getProductSlug());
+    slot.setDraftExperienceJson(json.write(draft));
     var data = integration();
     service.integration(cycle, data);
     event("VIDEO_APPROVAL", data);
@@ -302,6 +303,11 @@ class LearningCycleVideoEvidenceTest {
         "v8",
         new com.marketinghub.pde.service.publishslotcontract
             .PublishPdeProductionSlotContractRequest(null, "Homologação local"));
+    var published = json.read(slot.getPublishedExperienceJson());
+    assertEquals("musa", published.path("slug").asText());
+    assertEquals("v8", published.path("experienceVersion").asText());
+    assertEquals("video-explicativo", published.path("layoutKey").asText());
+    assertEquals(draft.path("heroVideos"), published.path("heroVideos"));
     assertDoesNotThrow(() -> service.current(cycle, true));
   }
 }

@@ -10,7 +10,16 @@ export PROXY_PUBLIC_IMAGE="aihub-homologation/$AIHUB_HOMOLOGATION_SESSION/proxy-
 export PROXY_MIRA_IMAGE="aihub-homologation/$AIHUB_HOMOLOGATION_SESSION/proxy-mira:latest"
 export PROXY_LEGACY_IMAGE="aihub-homologation/$AIHUB_HOMOLOGATION_SESSION/proxy-legacy:latest"
 compose=(docker compose -p "$EVIDENCE_COMPOSE_PROJECT" -f "$fixture/compose.yml")
-trap '"${compose[@]}" down --volumes --remove-orphans' EXIT
+# Preserva o erro do proxy e da API simulada antes de remover a topologia de teste.
+cleanup() {
+  local status=$?
+  if ((status != 0)); then
+    "${compose[@]}" logs --no-color --tail=100 >&2 || true
+  fi
+  "${compose[@]}" down --volumes --remove-orphans
+  return "$status"
+}
+trap cleanup EXIT
 bash scripts/docker-build-temporary-image.sh proxy-backend -f "$fixture/Dockerfile.backend" .
 bash scripts/docker-build-temporary-image.sh proxy-public -f "$fixture/Dockerfile.proxy" .
 bash scripts/docker-build-temporary-image.sh proxy-mira -f "$fixture/Dockerfile.proxy" \

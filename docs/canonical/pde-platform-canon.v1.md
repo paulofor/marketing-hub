@@ -120,6 +120,15 @@ PDE preserva a recusa HTTP do Hub, sem convertê-la em conteúdo local. A leitur
 contrato global. Reparos de snapshots legados usam fontes históricas versionadas, preservam
 rascunhos e publicações existentes e não equivalem a aprovação comercial ou ativação de campanha.
 
+A homologação local de mudanças na resolução versionada usa
+`infra/testing/pde-version-contract/run-round.sh`: suíte completa do backend principal,
+empacotamento, catálogo PDE, MySQL 5.7, jornadas e matriz dos revisores. Alteração no catálogo
+compartilhado exige revalidar a compatibilidade dos produtos afetados e criar nova atestação,
+preservando os manifestos anteriores. O teste de troca do backend deve comprovar tanto a API
+quanto a autorização de materiais; uma resposta correta em uma conexão não comprova a
+atualização do DNS em todos os workers do proxy. Erro transitório pode aguardar recuperação
+limitada no teste; acesso indevido ou falha persistente continuam reprovando a homologação.
+
 Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.
 
 Regra obrigatória:

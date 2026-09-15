@@ -1,0 +1,18 @@
+{
+  "cardKey": "vibrotatil-fala-ruido-compreensao",
+  "collection": "prazer-audio-visual",
+  "title": "Vibração sincronizada com fala pode apoiar compreensão em ambiente ruidoso",
+  "finding": "Em fala com múltiplos competidores, vibração sincronizada ao envelope da fala atendida melhorou compreensão e aumentou o tracking cortical silábico no córtex auditivo direito; a magnitude do aumento neural se associou ao desempenho de compreensão.",
+  "mechanism": "Uma pista tátil temporalmente coerente pode fornecer informação redundante sobre a estrutura silábica da fala e reforçar o alinhamento entre o sinal relevante e o processamento auditivo, além de modular conectividade com regiões extra-auditivas.",
+  "commercialApplication": "Em experiências com hardware háptico, acessibilidade, wearables ou ambientes imersivos, testar vibração derivada da fala quando houver ruído ou competição sonora, comparando condição síncrona, assíncrona e sem vibração.",
+  "evidenceStrength": "Média-alta para compreensão de fala em ruído: estudo peer-reviewed com MEG, manipulação de sincronização e desfecho comportamental. A aplicação fora de fala em ruído e em contextos comerciais ainda é incerta.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2027-03-15",
+  "experimentHypothesis": "Sob competição sonora, vibração sincronizada ao envelope da fala reduzirá erros e esforço percebido e aumentará compreensão em relação a condições sem vibração ou com vibração assíncrona, sem elevar desconforto ou abandono.",
+  "risks": "Haptics excessivos ou mal sincronizados podem distrair, incomodar ou aumentar carga sensorial; diferenças de hardware e sensibilidade individual podem alterar o efeito.",
+  "limits": "O estudo avaliou compreensão de fala e tracking cortical, não prazer, persuasão, retenção de marca ou vendas. O recurso exige hardware háptico e não se aplica a todos os canais digitais.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-15-vibrotatil-fala-ruido-compreensao.md",
+  "sourceTitle": "Fonte revisada — vibração sincronizada com fala em ambiente ruidoso",
+  "sourceSha256": "d1bff036dc20ff2436cd7226b00522a8c17f669e88daa35703e8c2a0b6f3b6ed"
+}

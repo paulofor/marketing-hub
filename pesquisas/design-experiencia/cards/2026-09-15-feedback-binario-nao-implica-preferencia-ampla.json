@@ -1,0 +1,18 @@
+{
+  "cardKey": "feedback-binario-nao-implica-preferencia-ampla",
+  "collection": "neuromarketing",
+  "title": "Feedback binário não autoriza preferência ampla",
+  "finding": "Em aprendizagem de preferência para colaboração humano-robô, regras fixas que extrapolavam feedback positivo/negativo para ações não escolhidas divergiram com frequência das implicações fornecidas por humanos; modelos que aprenderam essas implicações representaram melhor as preferências.",
+  "mechanism": "Um feedback explícito é evidência local sobre uma interação, não uma regra universal sobre o usuário. Manter incerteza sobre o escopo da preferência e revisar implicações com novos sinais reduz generalizações indevidas.",
+  "commercialApplication": "No customer-agent, tratar curtidas, rejeições, correções e recusas como evidência localizada com escopo e confiança, evitando transformar um único evento em preferência permanente de mensagem, canal, tom ou oferta.",
+  "evidenceStrength": "Evidência promissora aceita na CoRL 2026, com estudos em dois ambientes colaborativos simulados, trajetórias gravadas e validação física com robô. O resumo público não informa o tamanho da amostra humana e o domínio original não é comércio digital.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2026-10-30",
+  "experimentHypothesis": "Uma política que atualiza preferências de forma local e revisável reduzirá correções posteriores e recomendações rejeitadas em comparação com uma política que generaliza imediatamente cada feedback binário.",
+  "risks": "Inferências erradas podem cristalizar perfis incorretos, reduzir diversidade de opções e produzir sensação de manipulação. Não inferir atributos sensíveis nem tratar preferência probabilística como fato permanente.",
+  "limits": "O achado vem de colaboração humano-robô e aprendizagem de recompensa; sua aplicação a agentes digitais é uma hipótese de transferência. Faltam métricas comerciais e tamanho de amostra no resumo público acessível.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-15-feedback-binario-nao-implica-preferencia-ampla.md",
+  "sourceTitle": "Fonte revisada — Feedback binário não autoriza generalização ampla de preferência",
+  "sourceSha256": "717a7ec21203f1163263588d7e75982c74ca92420908acf8a8640c4da2941b91"
+}

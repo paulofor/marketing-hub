@@ -5,11 +5,17 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
+import liquibase.ChecksumVersion;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
+import liquibase.change.core.RawSQLChange;
+import liquibase.changelog.ChangeLogParameters;
+import liquibase.changelog.DatabaseChangeLog;
 import liquibase.changelog.RanChangeSet;
 import liquibase.database.Database;
+import liquibase.parser.ChangeLogParserFactory;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: impedir reversão posicional ou sem marco inequívoco na fixture dos ciclos. */
@@ -48,6 +54,47 @@ class LearningCycleMigrationVerifierTest {
         IllegalStateException.class,
         () -> LearningCycleMigrationVerifier.rollbackThrough(migration, "bpm-v4"));
     verify(migration, never()).rollback(anyInt(), any(Contexts.class), any(LabelExpression.class));
+  }
+
+  /** Impede que um SQL sem inverso interrompa o rollback físico da fixture dos ciclos. */
+  @Test
+  void requiresExplicitRollbackForEveryRawSqlChangeInFixture() throws Exception {
+    var missingRollbackIds =
+        fixture().getChangeSets().stream()
+            .filter(
+                changeSet ->
+                    changeSet.getChanges().stream().anyMatch(RawSQLChange.class::isInstance))
+            .filter(changeSet -> !changeSet.hasCustomRollbackChanges())
+            .map(changeSet -> changeSet.getId())
+            .toList();
+
+    org.junit.jupiter.api.Assertions.assertEquals(
+        java.util.List.of(),
+        missingRollbackIds,
+        "Todo changeset SQL da fixture precisa declarar rollback explícito.");
+  }
+
+  /** Preserva o checksum da migração de Vega já aplicada antes de completar seu rollback. */
+  @Test
+  void preservesChecksumOfAppliedVegaMigration() throws Exception {
+    var vega =
+        fixture().getChangeSets().stream()
+            .filter(changeSet -> "2026-09-11-vega-private-prototype-v1".equals(changeSet.getId()))
+            .findFirst()
+            .orElseThrow();
+
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "9:31fe8d99dcb8790c102ee06a17f28258",
+        vega.generateCheckSum(ChecksumVersion.latest()).toString(),
+        "A migração já aplicada deve manter seu checksum histórico.");
+  }
+
+  /** Carrega a fixture real para validar contrato de rollback e compatibilidade histórica. */
+  private DatabaseChangeLog fixture() throws Exception {
+    var accessor = new ClassLoaderResourceAccessor();
+    return ChangeLogParserFactory.getInstance()
+        .getParser("learningcycle/changelog.yaml", accessor)
+        .parse("learningcycle/changelog.yaml", new ChangeLogParameters(), accessor);
   }
 
   /** Monta o histórico ordenado que o Liquibase fornece, sem banco ou SQL produtivo. */

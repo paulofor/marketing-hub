@@ -76,7 +76,7 @@ run typecheck npm --prefix frontend run typecheck
 run build env VITE_API_URL=http://127.0.0.1:15173 npm --prefix frontend run build
 else
 run compile mvn -q -f backend/ads-service/pom.xml -DskipTests test-compile
-run reset-transaction mvn -q -f backend/ads-service/pom.xml -Dtest=LearningCycleFixtureResetTest test
+run reset-transaction mvn -q -f backend/ads-service/pom.xml -Dtest=LearningCycleFixtureResetTest,LearningCycleMigrationVerifierTest test
 fi
 run atena-tests mvn -q -f experiment-strategist-worker/pom.xml test
 run atena-spotless mvn -q -f experiment-strategist-worker/pom.xml spotless:check

@@ -2,6 +2,7 @@
 """Protege a execução integral do backend antes do merge e a evidência das falhas."""
 
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -21,6 +22,7 @@ class BackendCiWorkflowTest(unittest.TestCase):
             "config/agents/codex-agent-health-compliance.json",
             ".github/workflows/backend-ci.yml",
             ".github/workflows/deploy-containers.yml",
+            "scripts/download-approved-pr-artifact.sh",
             "scripts/test-backend-ci-workflow.py",
             "infra/testing/vega-integrity-cycle/run-round.sh",
             "infra/testing/runway-clip-plan/run-round.sh",
@@ -37,6 +39,33 @@ class BackendCiWorkflowTest(unittest.TestCase):
         deployment = (REPO / ".github/workflows/deploy-containers.yml").read_text()
         self.assertIn("mvn -B -q test | tee", deployment)
         self.assertNotRegex(self.workflow, r"-Dtest=|testFailureIgnore|continue-on-error|\|\| true")
+
+    def test_pr_validates_liquibase_and_preserves_reusable_package(self):
+        self.assertIn("image: mysql:5.7", self.workflow)
+        self.assertIn("liquibase-maven-plugin:4.26.0:validate", self.workflow)
+        self.assertIn("name: backend-approved-package", self.workflow)
+        self.assertIn("backend/ads-service/target/app.jar", self.workflow)
+        self.assertIn("backend/ads-service/target/approved-tree.sha", self.workflow)
+        self.assertIn("git rev-parse 'HEAD^{tree}'", self.workflow)
+
+        deployment = (REPO / ".github/workflows/deploy-containers.yml").read_text()
+        self.assertIn(
+            "download-approved-pr-artifact.sh backend-ci.yml backend-approved-package",
+            deployment,
+        )
+        self.assertGreaterEqual(
+            deployment.count("if: steps.approved-package.outputs.reused != 'true'"), 3
+        )
+
+    def test_approved_artifact_helper_has_valid_shell_syntax(self):
+        helper = REPO / "scripts/download-approved-pr-artifact.sh"
+        result = subprocess.run(["bash", "-n", str(helper)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        content = helper.read_text()
+        self.assertIn("HEAD^{tree}", content)
+        self.assertIn("HEAD)", content)
+        self.assertIn("event=pull_request&status=success", content)
+        self.assertIn("approved-tree.sha", content)
 
     def test_local_vega_matrix_covers_shared_agent_catalog(self):
         script = (REPO / "infra/testing/vega-integrity-cycle/run-round.sh").read_text()
@@ -70,10 +99,14 @@ class BackendCiWorkflowTest(unittest.TestCase):
 
     def test_packages_only_after_full_suite(self):
         tests = self.workflow.index("run: mvn -B test")
+        liquibase = self.workflow.index("liquibase-maven-plugin:4.26.0:validate")
         package = self.workflow.index("run: mvn -B package -DskipTests")
         resources = self.workflow.index("python3 scripts/verify-backend-packaged-resources.py")
-        self.assertLess(tests, package)
+        artifact = self.workflow.index("name: backend-approved-package")
+        self.assertLess(tests, liquibase)
+        self.assertLess(liquibase, package)
         self.assertLess(package, resources)
+        self.assertLess(resources, artifact)
 
     def test_local_pde_matrix_covers_full_backend_packaging_and_reviewers(self):
         script = (REPO / "infra/testing/pde-version-contract/run-round.sh").read_text()

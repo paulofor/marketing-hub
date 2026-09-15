@@ -46,6 +46,7 @@ finalize_homologation() {
   flock -u 9
   AIHUB_DOCKER_CLEANUP_SESSION="$homologation_session" \
     AIHUB_DOCKER_CLEANUP_MIN_AGE_SECONDS=0 \
+    AIHUB_DOCKER_CLEANUP_LOCK_WAIT_SECONDS=30 \
     "$cleanup_script" once
   final_cleanup_status="$?"
 

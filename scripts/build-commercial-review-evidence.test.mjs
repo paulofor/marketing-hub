@@ -13,6 +13,35 @@ const proofPath = "pde-platform/backend/catalogo-compartilhado.java";
 const currentContent = "catálogo com Mira v3 e contrato do Rigel preservado";
 const hash = (content) => createHash("sha256").update(content).digest("hex");
 
+test("CI do catálogo confere as provas compartilhadas após os testes do PDE", async () => {
+  const workflow = await fs.readFile(
+    new URL(
+      "../.github/workflows/pde-platform-metodo-musa-ci.yml",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const backend = workflow.split("  backend:\n")[1].split("  frontend:\n")[0];
+  const tests = backend.indexOf("run: mvn -B test");
+  const evidence = backend.indexOf(
+    "node scripts/build-commercial-review-evidence.mjs . artifacts/pde-commercial-evidence",
+  );
+  assert.ok(tests >= 0 && evidence > tests);
+  assert.ok(
+    backend.includes(
+      "node --test scripts/build-commercial-review-evidence.test.mjs",
+    ),
+  );
+  assert.ok(backend.includes("node-version: 22"));
+  assert.doesNotMatch(backend, /continue-on-error|\|\| true/);
+  for (const source of [
+    "scripts/build-commercial-review-evidence.mjs",
+    "scripts/build-commercial-review-evidence.test.mjs",
+  ]) {
+    assert.equal(workflow.split(`      - "${source}"`).length - 1, 2);
+  }
+});
+
 async function fixture(t) {
   const root = await fs.mkdtemp(
     path.join(os.tmpdir(), "commercial-evidence-test-"),

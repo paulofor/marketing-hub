@@ -9,6 +9,8 @@ on:
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/check-musa-pde-public-consistency.sh"
       - "scripts/test-musa-pde-public-consistency.py"
+      - "scripts/build-commercial-review-evidence.mjs"
+      - "scripts/build-commercial-review-evidence.test.mjs"
   pull_request:
     paths:
       - "pde-platform/**"
@@ -16,6 +18,8 @@ on:
       - "scripts/ensure-agent-vps-disk-space.sh"
       - "scripts/check-musa-pde-public-consistency.sh"
       - "scripts/test-musa-pde-public-consistency.py"
+      - "scripts/build-commercial-review-evidence.mjs"
+      - "scripts/build-commercial-review-evidence.test.mjs"
   workflow_dispatch:
     inputs:
       recovery_sha:
@@ -94,6 +98,16 @@ jobs:
         run: bash scripts/test-maven-build-with-transient-retry.sh
       - name: Run tests
         run: mvn -B test
+
+      - name: Set up Node for shared commercial evidence
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Validate shared commercial evidence against tested catalog
+        working-directory: .
+        run: |
+          node --test scripts/build-commercial-review-evidence.test.mjs
+          node scripts/build-commercial-review-evidence.mjs . artifacts/pde-commercial-evidence
 
   frontend:
     name: Frontend
@@ -384,6 +398,7 @@ jobs:
       packages: read
     concurrency:
       group: deploy-vps-163-245-200-7
+      queue: max
       cancel-in-progress: false
     env:
       DEPLOY_HOST: 163.245.200.7

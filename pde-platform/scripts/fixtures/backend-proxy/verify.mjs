@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { Agent, get } from "node:http";
+import { Agent } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
+import { httpProbe } from "./http-probe.mjs";
 
 const project = process.env.EVIDENCE_COMPOSE_PROJECT;
 assert.match(project, /^aihub-[a-z0-9-]+$/);
@@ -19,10 +20,9 @@ const url = (port, resource) => `http://${host}:${port}${resource}`;
 
 // Usa conexão nova para medir o upstream após reload, sem reutilizar socket HTTP já encerrado.
 const freshRequest = (address, options = {}) =>
-  fetch(address, {
+  httpProbe(address, {
     ...options,
     headers: { ...options.headers, connection: "close" },
-    signal: options.signal ?? AbortSignal.timeout(10000),
   });
 
 async function eventually(operation) {
@@ -41,10 +41,10 @@ async function eventually(operation) {
 async function version(port, resource, expected, options = {}) {
   const response = await freshRequest(url(port, resource), {
     ...options,
-    signal: AbortSignal.timeout(3000),
+    timeoutMs: 3000,
   });
   assert.equal(response.status, 200, `${port} ${resource}`);
-  const body = await response.json();
+  const body = JSON.parse(response.body);
   assert.equal(body.generation, expected);
   assert.equal(body.url, resource);
   return body;
@@ -52,20 +52,12 @@ async function version(port, resource, expected, options = {}) {
 
 // Mantém uma conexão no worker que resolveu o IP antigo, expondo seu cache DNS independente.
 const authAgent = new Agent({ keepAlive: true, maxSockets: 1 });
+process.on("exit", () => authAgent.destroy());
 const cachedRequest = (resource, headers = {}) =>
-  new Promise((resolve, reject) => {
-    const request = get(url(18280, resource), { agent: authAgent, headers }, (response) => {
-      const chunks = [];
-      response.on("data", (chunk) => chunks.push(chunk));
-      response.on("error", reject);
-      response.on("end", () => resolve({
-        status: response.statusCode,
-        headers: response.headers,
-        body: Buffer.concat(chunks).toString(),
-      }));
-    });
-    request.setTimeout(3000, () => request.destroy(new Error("Timeout no proxy de materiais")));
-    request.on("error", reject);
+  httpProbe(url(18280, resource), {
+    agent: authAgent,
+    headers,
+    timeoutMs: 3000,
   });
 
 // Aguarda apenas erros transitórios; acesso indevido e falhas permanentes nunca viram sucesso.
@@ -78,11 +70,15 @@ async function materialAccess(recovering = false) {
   for (let attempt = 0; attempt < (recovering ? 25 : 1); attempt++) {
     const statuses = [];
     for (const check of checks) {
-      const response = await cachedRequest("/materials/proof.txt", check.headers);
+      const response = await cachedRequest(
+        "/materials/proof.txt",
+        check.headers,
+      );
       statuses.push(response.status);
       if (response.status === check.expected) {
         assert.match(response.headers["cache-control"], /private, no-store/);
-        if (check.expected === 200) assert.equal(response.body, "material local autorizado");
+        if (check.expected === 200)
+          assert.equal(response.body, "material local autorizado");
       } else {
         assert.ok(
           recovering && [500, 502, 503, 504].includes(response.status),
@@ -90,16 +86,22 @@ async function materialAccess(recovering = false) {
         );
       }
     }
-    if (statuses.every((status, index) => status === checks[index].expected)) return;
-    console.log(`Autorização em recuperação DNS: tentativa=${attempt + 1}, status=${statuses.join(",")}`);
+    if (statuses.every((status, index) => status === checks[index].expected))
+      return;
+    console.log(
+      `Autorização em recuperação DNS: tentativa=${attempt + 1}, status=${statuses.join(",")}`,
+    );
     await delay(1000);
   }
-  assert.fail("Autorização de materiais não recuperou após a troca de IP do backend");
+  assert.fail(
+    "Autorização de materiais não recuperou após a troca de IP do backend",
+  );
 }
 
 const publicPath =
   "/api/pde/products/metodo-musa-7-dias?experienceVersion=v7%20teste&mh_test=1";
 const miraPath = "/api/pde/mira/private/v1/contract?scenario=SAFETY&mh_test=1";
+console.log("Cenário: conferir API e autorização antes da troca de IP.");
 await eventually(async () => {
   for (const port of [18280, 18282, 18283])
     await version(port, publicPath, "old");
@@ -121,6 +123,9 @@ const oldIp = inspect(oldId).NetworkSettings.Networks[network].IPAddress;
 assert.notEqual(newIp, oldIp);
 await materialAccess();
 assert.equal((await cachedRequest(publicPath)).status, 200);
+console.log(
+  "Cenário: trocar o IP e conferir recuperação, isolamento e autorização.",
+);
 docker("kill", "--signal", "USR2", oldId);
 docker("network", "disconnect", network, oldId);
 docker("network", "connect", "--ip", oldIp, network, oldId);
@@ -164,6 +169,9 @@ assert.equal(
   404,
 );
 
+console.log(
+  "Cenário: recuperar proxy legado preservando imagens e containers.",
+);
 execFileSync(
   "bash",
   ["pde-platform/scripts/reload-published-frontend-proxies.sh"],

@@ -143,6 +143,13 @@ quanto a autorização de materiais; uma resposta correta em uma conexão não c
 atualização do DNS em todos os workers do proxy. Erro transitório pode aguardar recuperação
 limitada no teste; acesso indevido ou falha persistente continuam reprovando a homologação.
 
+O CI do próprio catálogo valida também a integridade do pacote comercial após seus testes,
+para detectar evidências compartilhadas desatualizadas antes de empacotar os revisores.
+As sondas HTTP da homologação do proxy mantêm um prazo ativo até consumir a resposta completa,
+inclusive em conexões reutilizadas, e recusam conexão abortada ou corpo incompleto com diagnóstico.
+O isolamento de produtos deve reutilizar o contrato central de fila do host público:
+`queue: max` e `cancel-in-progress: false`, sem impor regras locais contraditórias.
+
 Decisão canônica de 2026-07-31: o modelo operacional de “slot” compartilhado para PDE público fica substituído por **versão pública isolada por imagem e container Docker**.
 
 Regra obrigatória:

@@ -30,6 +30,9 @@ public class LearningCycleConstructionContext {
   @org.springframework.beans.factory.annotation.Autowired
   private LearningCyclePrototypeContext prototypeContext;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private LearningCycleVideoBinding videoBinding;
+
   /**
    * Entrega construção, comunicação e criativos do ciclo sem substituir a experiência histórica.
    */
@@ -150,6 +153,8 @@ public class LearningCycleConstructionContext {
       context.set("privateValidationPlan", strategy.path("privateValidationPlan"));
       context.set("inheritedLearning", mapper.readTree(cycle.getInheritedLearningJson()));
       context.set("cycleBrief", mapper.readTree(cycle.getBriefJson()));
+      if (videoBinding != null && videoBinding.receipt(cycle).isPresent())
+        context.set("videoIntegration", videoBinding.current(cycle));
       context.put(
           "publicationBoundary",
           "Construção privada do sucessor. Sem autorização de contato, publicação, campanha, cobrança ou gasto comercial; preservar a versão histórica.");

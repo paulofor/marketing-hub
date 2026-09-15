@@ -54,6 +54,9 @@ public class LearningCycleService {
   @Autowired private LearningCycleVideoBudget videoBudget;
 
   @Autowired(required = false)
+  private LearningCycleVideoBinding videoBinding;
+
+  @Autowired(required = false)
   private LearningCyclePrototypeContext prototypeContext;
 
   @Autowired private LearningCycleExecutionContext executionContext;
@@ -578,9 +581,81 @@ public class LearningCycleService {
     events.saveAndFlush(event);
   }
 
+  /** Integra as aprovações existentes sem pedir transcrição humana nem concluir homologação. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public void integrateApprovedVideos(Long productId, Long cycleId) {
+    requireProduct(productId, true);
+    var cycle =
+        cycles.findLocked(productId, cycleId).orElseThrow(() -> notFound("Ciclo não encontrado."));
+    if (!"OPEN".equals(cycle.getStatus()) || !"VIDEO_APPROVAL".equals(cycle.getStage())) return;
+    require(
+        videoBinding != null && videoBinding.supports(cycle),
+        "O destino não possui integração automática privada.");
+    var proof = videoBinding.prepare(cycle);
+    Instant now = Instant.now(clock).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+    String summary =
+        "Aprovações dos dois vídeos reutilizadas; conjunto integrado à experiência privada. Homologação técnica e revisões independentes serão executadas automaticamente.";
+    var event = new LearningSalesCycleEvent();
+    event.setCycleId(cycleId);
+    event.setRequestKey(
+        UUID.nameUUIDFromBytes(
+                ("video-integration:" + cycleId + ":" + cycle.getRevision())
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            .toString());
+    event.setRequestJson(json.write(proof));
+    event.setRevision(cycle.getRevision() + 1);
+    event.setFromStage("VIDEO_APPROVAL");
+    event.setToStage("VALIDATION");
+    event.setAction("COMPLETE");
+    event.setOperatorName("Marketing Hub · continuidade automática");
+    event.setSummary(summary);
+    event.setEvidenceReference(
+        "experiment_video_asset:"
+            + proof.path("campaignVideo").path("assetId").asLong()
+            + "; experiment_video_asset:"
+            + proof.path("heroVideo").path("assetId").asLong());
+    event.setEvidenceJson(json.write(proof));
+    event.setCreatedAt(now);
+    events.saveAndFlush(event);
+    ledger.finishAutomaticMeasurement(cycle, json.write(proof), "COMPLETED", summary, now);
+    cycle.setRevision(event.getRevision());
+    cycle.setStage("VALIDATION");
+    cycle.setUpdatedAt(now);
+    ledger.open(cycle, now);
+    cycles.saveAndFlush(cycle);
+    log.info(
+        "Vídeos integrados automaticamente productId={} cycleId={} experimentId={} eventId={} fingerprint={}",
+        productId,
+        cycleId,
+        cycle.getExperimentId(),
+        event.getId(),
+        proof.path("integrationFingerprint").asText());
+  }
+
   /** Aplica sob lock e lê commits recentes para reconhecer aprovações concorrentes idênticas. */
   @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
   public LearningCycleResponse command(Long productId, Long cycleId, LearningCycleCommand request) {
+    return command(productId, cycleId, request, false);
+  }
+
+  /** Conclui somente a homologação conferida pelo coordenador e registra a origem automática. */
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+  public LearningCycleResponse completeIntegratedVideoValidation(
+      Long productId, Long cycleId, LearningCycleCommand request) {
+    var cycle =
+        cycles.findLocked(productId, cycleId).orElseThrow(() -> notFound("Ciclo não encontrado."));
+    require(
+        "VALIDATION".equals(cycle.getStage())
+            && request.action() == Action.COMPLETE
+            && videoBinding != null
+            && videoBinding.receipt(cycle).isPresent(),
+        "Conclusão automática restrita à homologação audiovisual atual.");
+    return command(productId, cycleId, request, true);
+  }
+
+  /** Aplica o mesmo contrato de conclusão preservando a origem interna ou humana do comando. */
+  private LearningCycleResponse command(
+      Long productId, Long cycleId, LearningCycleCommand request, boolean automatic) {
     requireProduct(productId, true);
     var cycle =
         cycles
@@ -634,7 +709,9 @@ public class LearningCycleService {
             : request.action() == Action.STOP || request.action() == Action.INCONCLUSIVE
                 ? "CANCELLED"
                 : "COMPLETED";
-    ledger.finish(cycle, input, completion, request.summary(), now);
+    if (automatic)
+      ledger.finishAutomaticMeasurement(cycle, input, completion, request.summary(), now);
+    else ledger.finish(cycle, input, completion, request.summary(), now);
     if ("OPEN".equals(cycle.getStatus())) ledger.open(cycle, now);
     cycles.saveAndFlush(cycle);
     reconcileAutomatically(cycle, experiment, now, "STAGE_ENTERED");
@@ -840,6 +917,13 @@ public class LearningCycleService {
           case "VALIDATION" -> {
             if (videoWorkflow(cycle)) videoEvidence.current(cycle, false);
             evidence.validation(cycle, data);
+            if (videoBinding != null && videoBinding.receipt(cycle).isPresent()) {
+              var gateId = data.path("approvalInstanceId").asLong();
+              require(
+                  evidence.approvalAfter(
+                      cycle, gateId, videoBinding.receipt(cycle).orElseThrow().getCreatedAt()),
+                  "A homologação precisa avaliar o conjunto depois da integração dos vídeos.");
+            }
           }
           case "AUTHORIZATION" -> evidence.authorization(cycle, experiment, data, now);
           case "PUBLICATION" -> evidence.publication(cycle, experiment, authorizationTime(cycle));
@@ -1195,6 +1279,14 @@ public class LearningCycleService {
         workUrl = null;
       }
     }
+    if (automaticVideoContinuation(cycle)) {
+      if ("VIDEO_APPROVAL".equals(cycle.getStage())) workUrl = "/videos";
+      nextAction =
+          "VIDEO_APPROVAL".equals(cycle.getStage())
+              ? "A aprovação dos dois vídeos na biblioteca é reutilizada pelo processo. O backend integra as peças à experiência privada e encaminha a homologação, sem novo formulário de aprovação."
+              : "O processo coordena a homologação técnica e as revisões do conjunto com os vídeos. As evidências serão registradas automaticamente; acompanhe as tarefas na atividade orientada.";
+      responsible = "Marketing Hub · continuidade automática";
+    }
     return new LearningCycleResponse(
         cycle.getId(),
         cycle.getProductId(),
@@ -1228,7 +1320,18 @@ public class LearningCycleService {
         commands,
         "ADJUSTED".equals(cycle.getStatus()) && successor.isEmpty(),
         cycle.getCreatedAt(),
-        cycle.getClosedAt());
+        cycle.getClosedAt(),
+        automaticVideoContinuation(cycle));
+  }
+
+  /**
+   * Expõe o controle automático somente para o contrato privado implementado e seu conjunto atual.
+   */
+  private boolean automaticVideoContinuation(LearningSalesCycle cycle) {
+    return videoBinding != null
+        && "OPEN".equals(cycle.getStatus())
+        && ("VIDEO_APPROVAL".equals(cycle.getStage()) && videoBinding.supports(cycle)
+            || "VALIDATION".equals(cycle.getStage()) && videoBinding.receipt(cycle).isPresent());
   }
 
   /** Direciona cada etapa ao BPM responsável sem substituir a seleção do experimento no plano. */

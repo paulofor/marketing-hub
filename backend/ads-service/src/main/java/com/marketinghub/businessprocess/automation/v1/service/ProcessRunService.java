@@ -38,6 +38,11 @@ public class ProcessRunService {
   private final ObjectMapper json;
   private final TransactionTemplate transaction;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service
+          .LearningCycleVideoContinuation
+      videoContinuation;
+
   /** Configura transações curtas e os contratos responsáveis pela execução real das atividades. */
   public ProcessRunService(
       ProcessRunRepository runs,
@@ -307,6 +312,20 @@ public class ProcessRunService {
             "Pausado. Resultados preservados; retome quando desejar continuar.",
             "PAUSED");
         return response(run);
+      }
+    }
+    if (videoContinuation != null
+        && !"PAUSING".equals(run.getStatus())
+        && context.dispatchBlockReason(run) == null
+        && !ancestorPaused(run)) {
+      var eligibleRoots = runs.activeRoots(run.getProductId());
+      if (eligibleRoots.isEmpty()
+          || Objects.equals(eligibleRoots.getFirst().getId(), rootId(run))) {
+        var videoProgress = videoContinuation.advance(run);
+        if (videoProgress != null) {
+          transition(run, videoProgress.status(), videoProgress.reason(), "VIDEO_CONTINUATION");
+          return response(run, snapshot);
+        }
       }
     }
     var active =

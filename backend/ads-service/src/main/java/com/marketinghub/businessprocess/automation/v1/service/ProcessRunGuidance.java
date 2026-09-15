@@ -20,12 +20,30 @@ public class ProcessRunGuidance {
   private final LearningCycleVideoBudget videoBudget;
   private final ProcessRunVideoGuidance videoGuidance;
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+      videoBinding;
+
   /** Resolve a próxima ação pela ocorrência exata, sem autorizar consumo ou alterar estado. */
   public ProcessRunUserAction resolve(ProcessRun run) {
     if (!Set.of("QUEUED", "WAITING_ACTIVITY", "WAITING_HUMAN").contains(run.getStatus()))
       return null;
     var cycle = manualCycle(run);
     if (cycle == null) return null;
+    if ("VIDEO_APPROVAL".equals(cycle.getStage())
+        && videoBinding != null
+        && videoBinding.supports(cycle)) {
+      if (!videoBinding.awaitingApproval(cycle)) return null;
+      return new ProcessRunUserAction(
+          "APPROVE_CYCLE_VIDEOS",
+          "Aprovar os vídeos do ciclo",
+          "Aprove as peças na biblioteca. As aprovações existentes são reutilizadas e a integração privada segue automaticamente pelo processo.",
+          "Você · aprovação das peças",
+          "Ver vídeos e aprovações",
+          "/videos",
+          "A aprovação de uso não autoriza campanha, cobrança ou gasto de mídia.",
+          "internal://learning-cycles/" + cycle.getId());
+    }
     if ("VIDEO_APPROVAL".equals(cycle.getStage()))
       return new ProcessRunUserAction(
           "REVIEW_AND_INTEGRATE_VIDEOS",
@@ -72,6 +90,10 @@ public class ProcessRunGuidance {
   /** Reconhece entrada ou correção pendente durante a pausa, sem confundir com preflight ativo. */
   public boolean awaitingInput(ProcessRun run) {
     var cycle = manualCycle(run);
+    if (cycle != null
+        && "VIDEO_APPROVAL".equals(cycle.getStage())
+        && videoBinding != null
+        && videoBinding.supports(cycle)) return videoBinding.awaitingApproval(cycle);
     return cycle != null
         && (Set.of("VIDEO_BRIEF", "VIDEO_APPROVAL").contains(cycle.getStage())
             || videoGuidance.resolve(cycle) != null);

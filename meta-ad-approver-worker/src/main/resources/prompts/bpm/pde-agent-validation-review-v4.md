@@ -55,3 +55,13 @@ comprovada de abandono. A aprovação libera preparação da comunicação, sem 
 ## Contexto congelado
 
 {{TASK_CONTEXT}}
+
+## Revisão após integração automática dos vídeos
+
+Quando `taskTarget.pdeContext.videoIntegration` existir, confira que a homologação
+técnica contém o mesmo `videoIntegrationFingerprint`, os checks `videoIdentity`,
+`videoPlayback`, `videoOptional` e `videoFailureRecovery` aprovados, e que os três
+cenários de Psique examinam o conjunto atual. A aprovação humana persistida das
+peças é reutilizável; não exija outra aprovação dos mesmos arquivos nem registro
+manual da integração. Destino privado aceito não exige slot comercial publicado.
+Preserve todas as restrições de publicação, cobrança, campanha e gasto.

@@ -81,7 +81,9 @@ class PdeAgentValidationHarnessRunnerTest {
         .isTrue();
   }
 
-  /** Vincula o executável do sucessor ao experimento e despacha os cenários próprios de Vega. */
+  /**
+   * Vincula o sucessor e os vídeos atuais ao experimento e despacha os cenários próprios de Vega.
+   */
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.ValueSource(strings = {"9", "10", "11", "12", "20", "100"})
   void acceptsVegaCycleWithOwnHarnessAndExplicitLineage(String version) throws Exception {
@@ -94,7 +96,13 @@ class PdeAgentValidationHarnessRunnerTest {
             .replace("\"productId\":10", "\"productId\":4")
             .replace("orientacao-digital-rotina-pele-madura", "metodo-musa-7-dias")
             .replace("mira-private-v1", "musa-pde-entry-v" + version + "-primeiro-ajuste-aplicavel")
-            .replace("/mira-private", "/vega-private"));
+            .replace("/mira-private", "/vega-private")
+            .replace(
+                "\"contractVersion\":",
+                "\"videoIntegrationFingerprint\":\"" + "a".repeat(64) + "\",\"contractVersion\":")
+            .replace(
+                "\"checks\":{",
+                "\"checks\":{\"videoIdentity\":true,\"videoPlayback\":true,\"videoOptional\":true,\"videoFailureRecovery\":true,"));
     var target = new HashMap<String, Object>();
     target.put("productId", 4L);
     target.put("experimentId", 92L);
@@ -103,7 +111,11 @@ class PdeAgentValidationHarnessRunnerTest {
     target.put("publicUrl", "http://127.0.0.1:5176/vega-private");
     target.put(
         "pdeContext",
-        Map.of("lineage", Map.of("productId", 4L, "experimentId", 92L, "learningCycleId", 2L)));
+        Map.of(
+            "lineage",
+            Map.of("productId", 4L, "experimentId", 92L, "learningCycleId", 2L),
+            "videoIntegration",
+            Map.of("integrationFingerprint", "a".repeat(64))));
     var runner =
         new PdeAgentValidationHarnessRunner(json, "/bin/sh", mira.toString(), "synthetic", true);
     var execution =
@@ -114,6 +126,23 @@ class PdeAgentValidationHarnessRunnerTest {
             temporaryDirectory.resolve("vega"));
     assertThat(execution.result().path("decision").asText()).isEqualTo("APPROVED");
     assertThat(json.readTree(execution.serializedInput()).path("cycleId").asLong()).isEqualTo(2L);
+    assertThat(
+            json.readTree(execution.serializedInput())
+                .path("videoIntegration")
+                .path("integrationFingerprint")
+                .asText())
+        .isEqualTo("a".repeat(64));
+    Files.writeString(
+        vega, Files.readString(vega).replace("\"videoPlayback\":true", "\"videoPlayback\":false"));
+    assertThatThrownBy(
+            () ->
+                runner.run(
+                    Map.of(
+                        "taskId", 902L, "sourceReference", "experiment:92", "taskTarget", target),
+                    "TECHNICAL",
+                    null,
+                    temporaryDirectory.resolve("invalid-video")))
+        .hasMessageContaining("conjunto audiovisual atual");
     assertThat(execution.visualEvidence().capture().artifacts())
         .allMatch(a -> "FULL_PAGE".equals(a.evidenceType()));
   }

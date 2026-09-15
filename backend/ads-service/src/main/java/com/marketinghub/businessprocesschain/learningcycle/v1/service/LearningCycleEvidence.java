@@ -16,6 +16,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -100,6 +101,14 @@ public class LearningCycleEvidence {
                         + " · "
                         + gate.getExitedAt()))
         .toList();
+  }
+
+  /** Confere que o gate corrente ocorreu depois da alteração audiovisual do mesmo ciclo. */
+  public boolean approvalAfter(LearningSalesCycle cycle, Long gateId, Instant boundary) {
+    return latestGate(cycle)
+        .filter(g -> Objects.equals(gateId, g.getId()))
+        .filter(g -> g.getExitedAt() != null && !g.getExitedAt().isBefore(boundary))
+        .isPresent();
   }
 
   /** Consulta a fonte canônica exata; uma reprovação posterior invalida o gate dessa fonte. */

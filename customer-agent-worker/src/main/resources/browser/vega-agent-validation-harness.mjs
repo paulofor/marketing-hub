@@ -1,3 +1,4 @@
+import { verifyVideoIdentity, verifyIntegratedPage, videoBrowserOptions } from './learning-cycle-video-checks.mjs';
 import {chromium,devices} from 'playwright-core';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -13,11 +14,13 @@ const api=async(path,body)=>{
 };
 const profiles={DESKTOP_1440:{viewport:{width:1440,height:900}},IPHONE_15_PRO:{...devices['iPhone 15 Pro'],defaultBrowserType:'chromium'},PIXEL_7:{...devices['Pixel 7']}};
 const plans=input.mode==='TECHNICAL'?[['ADHERENT','DESKTOP_1440'],['ADHERENT','IPHONE_15_PRO'],['ADHERENT','PIXEL_7'],['RECOVERY','IPHONE_15_PRO'],['SAFETY','PIXEL_7']]:[[input.scenarioCode,input.scenarioCode==='SAFETY'?'PIXEL_7':input.scenarioCode==='RECOVERY'?'IPHONE_15_PRO':'DESKTOP_1440']];
-const executablePath=process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||process.env.CHROMIUM_BIN||process.env.CHROME_BIN;
-const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{}),args:['--no-sandbox']});
+const browser=await chromium.launch(videoBrowserOptions());
 await mkdir(evidenceDirectory,{recursive:true});
 const startedAt=new Date();const scenarios=[],artifacts=[];
+let videoIdentity=null;
+const videoResults=[];
 try {
+videoIdentity=input.videoIntegration?await verifyVideoIdentity(input.videoIntegration):null;
 for(const [scenarioCode,deviceProfile] of plans){
  const session=await api('/internal/sessions',{cycleId:input.cycleId,prototypeVersion:input.prototypeVersion,origin:'AGENT_VALIDATION'});
  assert.equal(session.prototypeVersion,input.prototypeVersion);assert.equal(session.productId,input.productId);assert.equal(session.experimentId,Number(input.sourceReference.split(':')[1]));
@@ -25,6 +28,7 @@ for(const [scenarioCode,deviceProfile] of plans){
  page.on('pageerror',error=>failures.push(error.message));
  await context.addInitScript(token=>localStorage.setItem('vega-private-session-v1',token),session.sessionToken);
  await page.goto(input.sourceUrl,{waitUntil:'domcontentloaded'});
+ if(input.videoIntegration)videoResults.push(await verifyIntegratedPage(page,input.videoIntegration,session));
  const start=page.getByRole('button',{name:'Começar',exact:true});
  await start.focus();
  const accessibilityBasic=(await page.locator('html').getAttribute('lang'))==='pt-BR' && await start.evaluate(element=>document.activeElement===element);
@@ -81,5 +85,6 @@ for(const [scenarioCode,deviceProfile] of plans){
 }finally{await browser.close();}
 const deviceResults=[...new Set(plans.map(p=>p[1]))].map(deviceProfile=>({deviceProfile,viewportWidth:profiles[deviceProfile].viewport.width,viewportHeight:profiles[deviceProfile].viewport.height,status:'PASS',screenshotEvidenceKeys:artifacts.filter(a=>a.deviceProfile===deviceProfile).map(a=>a.evidenceKey)}));
 const checks={sameVersion:scenarios.every(s=>s.prototypeVersion===input.prototypeVersion),desktopAndMobile:input.mode!=='TECHNICAL'||deviceResults.length===3,happyResultWithinTenMinutes:scenarios.filter(s=>s.scenarioCode==='ADHERENT').every(s=>s.resultReadySeconds<=600),recoveryPreserved:input.mode!=='TECHNICAL'||scenarios.some(s=>s.recovered&&s.resumed),safetyBlocked:input.mode!=='TECHNICAL'||scenarios.some(s=>s.safetyBlocked),accessibilityBasic:scenarios.every(s=>s.accessibilityBasic),responsiveLayout:scenarios.every(s=>s.noHorizontalOverflow),privacyPreserved:scenarios.every(s=>s.privacyPreserved),internalTrafficSegregated:scenarios.every(s=>s.trafficClass==='AGENT_VALIDATION'),paymentDisabled:true,publicationDisabled:true,campaignDisabled:true,zeroMediaSpend:true};
+if(input.videoIntegration)Object.assign(checks,{videoIdentity:videoIdentity.length===2,videoPlayback:videoResults.length===plans.length,videoOptional:videoResults.every(r=>r.optional),videoFailureRecovery:videoResults.every(r=>r.failureRecovery)});
 const finishedAt=new Date();
-await writeFile(outputPath,JSON.stringify({contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));
+await writeFile(outputPath,JSON.stringify({...(input.videoIntegration?{videoIntegrationFingerprint:input.videoIntegration.integrationFingerprint,videoIdentity,videoResults}:{}),contractVersion:'PDE_AGENT_TECHNICAL_HOMOLOGATION_V1',mode:input.mode,decision:Object.values(checks).every(Boolean)?'APPROVED':'BLOCKED',sourceReference:input.sourceReference,productId:input.productId,productSlug:input.productSlug,publicUrl:input.sourceUrl,prototypeVersion:input.prototypeVersion,trafficClass:'AGENT_VALIDATION',internalMarker:'mh_internal_test',startedAt:startedAt.toISOString(),finishedAt:finishedAt.toISOString(),durationSeconds:Math.ceil((finishedAt-startedAt)/1000),devices:deviceResults,scenarios,checks,artifacts,sideEffects:{paymentEnabled:false,published:false,campaignCreated:false,mediaSpendBrl:0},humanEvidenceClaimed:false,commercialEvidenceClaimed:false,evidence:scenarios.map(s=>s.evidenceId)}));

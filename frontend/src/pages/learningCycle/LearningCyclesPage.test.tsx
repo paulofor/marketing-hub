@@ -179,6 +179,44 @@ beforeEach(() => {
   });
 });
 describe("Ciclos de aprendizado e vendas", () => {
+  it("acompanha a continuidade do backend sem pedir outra aprovação nem gravar ao abrir a tela", async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, ...args) =>
+      url === `${cycleApi}/products/4`
+        ? {
+            data: [
+              {
+                ...cycle,
+                stage: "VALIDATION",
+                automaticContinuation: true,
+                nextAction:
+                  "Os vídeos aprovados seguem para homologação automática.",
+                responsible: "Marketing Hub",
+                workUrl:
+                  "/products/4/value-chain-history/processes/70/activities?learningCycleId=2&chainId=14",
+              },
+            ],
+          }
+        : original(url, ...args),
+    );
+    wrapper(<LearningCyclesPage />);
+    expect(
+      await screen.findByRole("heading", {
+        name: "Próximas etapas automáticas",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Responsável pela decisão/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Criativo de campanha aprovado/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver aprovações dos vídeos" }),
+    ).toHaveAttribute("href", "/videos");
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("orienta ajuste aprovado para sucessor do produto, sem repetir a decisão", async () => {
     const original = vi.mocked(axios.get).getMockImplementation()!;
     vi.mocked(axios.get).mockImplementation(async (url, ...args) =>

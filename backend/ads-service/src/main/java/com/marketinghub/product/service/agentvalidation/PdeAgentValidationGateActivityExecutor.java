@@ -98,6 +98,10 @@ public class PdeAgentValidationGateActivityExecutor
           "noHumanOrCommercialClaim",
           "strategyFidelity");
 
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleVideoBinding
+      videoBinding;
+
   private final AgentTaskRepository tasks;
   private final BusinessProcessActivityInstanceRepository instances;
   private final ProductRepository products;
@@ -268,6 +272,14 @@ public class PdeAgentValidationGateActivityExecutor
     if (technical != null) evidenceTasks.add(technical);
     psique.values().stream().filter(java.util.Objects::nonNull).forEach(evidenceTasks::add);
     if (temis != null) evidenceTasks.add(temis);
+    if (videoBinding != null) {
+      try {
+        videoBinding.validateReviews(sourceReference, evidenceTasks);
+      } catch (RuntimeException ex) {
+        log.warn("Gate audiovisual bloqueado sourceReference={}", sourceReference, ex);
+        issues.add(ex.getMessage());
+      }
+    }
     return new GateEvaluation(
         issues.isEmpty(),
         contract,

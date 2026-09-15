@@ -73,9 +73,9 @@ export type CycleEvent = {
   createdAt: string;
 };
 export type LearningCycle = {
+  automaticContinuation?: boolean;
   videoBudget?:
-    | import("../financial/useVideoBudget").VideoBudgetAuthorization
-    | null;
+    import("../financial/useVideoBudget").VideoBudgetAuthorization | null;
   id: number;
   productId: number;
   experimentId: number;
@@ -179,6 +179,12 @@ export function useCycleCatalog(
 export function useLearningCycles(productId?: number, chainId?: number) {
   return useQuery({
     queryKey: ["learning-cycles", productId, chainId],
+    refetchInterval: (query) =>
+      query.state.data?.some(
+        (cycle) => cycle.status === "OPEN" && cycle.automaticContinuation,
+      )
+        ? 5000
+        : false,
     enabled: !!productId,
     queryFn: async () =>
       (

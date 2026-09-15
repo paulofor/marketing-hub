@@ -135,7 +135,11 @@ public class PdeAgentValidationHarnessRunner {
                 productSlug,
                 "prototypeVersion",
                 prototypeVersion));
-    if (vega) input.put("cycleId", lineage.path("learningCycleId").asLong());
+    if (vega) {
+      input.put("cycleId", lineage.path("learningCycleId").asLong());
+      var videoIntegration = target.path("pdeContext").path("videoIntegration");
+      if (videoIntegration.isObject()) input.put("videoIntegration", videoIntegration);
+    }
     String executionScript =
         vega
             ? Path.of(scriptPath).resolveSibling("vega-agent-validation-harness.mjs").toString()
@@ -176,7 +180,10 @@ public class PdeAgentValidationHarnessRunner {
         sourceUrl);
   }
 
-  /** Exige contrato, cenários, dispositivos, efeitos nulos e páginas PNG completas da execução. */
+  /**
+   * Exige contrato, mídias integradas, cenários, dispositivos, efeitos nulos e capturas da
+   * execução.
+   */
   private List<BpmVisualEvidenceRunner.VisualArtifact> validateOutput(
       JsonNode result,
       String captureSessionId,
@@ -200,6 +207,15 @@ public class PdeAgentValidationHarnessRunner {
         || result.path("humanEvidenceClaimed").asBoolean(true)
         || result.path("commercialEvidenceClaimed").asBoolean(true)) {
       throw new HarnessException("Contrato funcional do harness multiagente foi reprovado.");
+    }
+    if (expected.containsKey("videoIntegration")) {
+      JsonNode binding = json.valueToTree(expected.get("videoIntegration"));
+      if (!binding.path("integrationFingerprint").equals(result.path("videoIntegrationFingerprint"))
+          || java.util.List.of(
+                  "videoIdentity", "videoPlayback", "videoOptional", "videoFailureRecovery")
+              .stream()
+              .anyMatch(key -> !result.path("checks").path(key).asBoolean(false)))
+        throw new HarnessException("A homologação não comprovou o conjunto audiovisual atual.");
     }
     JsonNode checks = result.path("checks");
     if (!checks.isObject()

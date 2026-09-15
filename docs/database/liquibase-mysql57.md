@@ -154,5 +154,11 @@ conferir uma versão que ainda não foi revertida. A fixture confere separadamen
 remoções da automação, do BPM e das tabelas de ciclos, mantendo as provas de histórico,
 chaves estrangeiras, precisão temporal, reaplicação e idempotência.
 
+Todo changeset com `sql` incluído nessa fixture precisa declarar rollback explícito. A
+resolução por marco elimina erro de contagem, mas não permite ao Liquibase inverter um
+`RawSQLChange` sem esse contrato. Se a migração já estiver aplicada, a correção de
+rollback deve preservar o checksum registrado em `DATABASECHANGELOG` e ganhar teste de
+regressão antes de seguir para PR.
+
 A regressão de setembro está registrada em
 [homologação local do CI](../homologacao/actions-mira-ciclos-2026-09-13.md).

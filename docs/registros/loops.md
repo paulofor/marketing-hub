@@ -5447,3 +5447,22 @@ a composição versionada e a preservação de cadeia/ciclo/experimento. Regras 
 - **Evidências e alternativas:**
   [homologação local](../homologacao/actions-image-model-dependencies-2026-09-14.md).
   Correção na sandbox, sem reexecução de Actions para testar e sem publicação.
+
+## LOOP-ACTIONS-CICLOS-RAW-SQL-SEM-ROLLBACK — migração posterior impede reversão por marco
+
+- **Confirmado em 15/09/2026:** a execução Liquibase `34922782388` falhou ao reverter o
+  marco `2026-09-12-product-process-automation-v1`. O artefato do Actions identifica
+  `2026-09-11-vega-private-prototype-v1` como o primeiro changeset revertido e o
+  Liquibase retornou `RollbackImpossibleException` para `RawSQLChange`.
+- **Histórico que confirma a causa:** a migração de Vega já estava registrada no banco
+  com checksum `9:31fe8d99dcb8790c102ee06a17f28258`. O verificador por IDs corrigiu a
+  contagem posicional anterior, mas toda migração posterior ao marco ainda precisa ser
+  reversível; reordenar a fixture apenas transferiria a falha para o próximo marco.
+- **Correção:** o changeset histórico ganhou rollback em ordem segura
+  (`vega_adjustment_execution_v1` antes de `vega_private_session_v1`), sem mudar seu
+  checksum calculado. O runner passa a executar o contrato do verificador antes da
+  matriz física.
+- **Prevenção:** `LearningCycleMigrationVerifierTest` exige rollback explícito para
+  todos os `RawSQLChange` da fixture e fixa o checksum histórico de Vega. Duas rodadas
+  consecutivas em MySQL 5.7 aprovaram aplicação, rollback, reaplicação e idempotência.
+  Evidências em `docs/homologacao/actions-learning-cycles-rollback-raw-sql-2026-09-15.md`.

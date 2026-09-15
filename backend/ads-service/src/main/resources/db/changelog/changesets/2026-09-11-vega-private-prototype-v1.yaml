@@ -57,3 +57,10 @@ databaseChangeLog:
                 KEY ix_vega_execution_session (session_id, id),
                 CONSTRAINT fk_vega_execution_session FOREIGN KEY (session_id) REFERENCES vega_private_session_v1(id)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE IF EXISTS vega_adjustment_execution_v1;
+              DROP TABLE IF EXISTS vega_private_session_v1;

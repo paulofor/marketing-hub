@@ -64,7 +64,7 @@ export default function CycleBudgetAuthorizationForm({
       </p>
       <div className="cycle-form-grid" key={cycle.revision}>
         <label className="form-label">
-          Orçamento diário (R$)
+          Orçamento diário (R$) *
           <input
             name="dailyBudgetBrl"
             className="form-control"
@@ -76,7 +76,7 @@ export default function CycleBudgetAuthorizationForm({
           />
         </label>
         <label className="form-label">
-          Orçamento total (R$)
+          Orçamento total (R$) *
           <input
             name="budgetLimitBrl"
             className="form-control"
@@ -96,7 +96,9 @@ export default function CycleBudgetAuthorizationForm({
       {cycle.commercialPreparation &&
         !cycle.commercialPreparation.readyForReview && (
           <p>
-            {cycle.commercialPreparation.guidance}{" "}
+            {command?.available && "O orçamento pode ser aprovado agora. "}Para
+            ativar a campanha, ainda é necessário concluir a preparação
+            comercial. {cycle.commercialPreparation.guidance}{" "}
             <Link to={cycle.commercialPreparation.experimentUrl}>
               Ver preparação do experimento
             </Link>
@@ -112,6 +114,12 @@ export default function CycleBudgetAuthorizationForm({
         className="btn btn-primary align-self-start"
         disabled={mutation.isPending || !command?.available}
       >
+        {mutation.isPending && (
+          <span
+            className="spinner-border spinner-border-sm me-2"
+            aria-hidden="true"
+          />
+        )}
         {mutation.isPending ? "Registrando…" : "Aprovar orçamento"}
       </button>
     </form>

@@ -6,8 +6,8 @@ info:
   version: 1.0.0
   description: >-
     O backend governa etapas, memória, autoria, idempotência e decisões por experimento.
-    Nenhuma rota ativa campanha ou cria venda. COMPLETE em AUTHORIZATION, após confirmação explícita,
-    valida versão, janela vigente e preparação comercial e materializa o teto de mídia atomicamente.
+    A preparação comercial incompleta não bloqueia o aceite inicial do orçamento; revisões pagas e ativação mantêm seus gates. Nenhuma rota ativa campanha ou cria venda. COMPLETE em AUTHORIZATION, após confirmação explícita,
+    valida versão, janela e homologação vigentes e materializa os limites de mídia atomicamente.
     Ao entrar em MEASUREMENT, o backend concilia automaticamente analytics atribuído,
     canal, desfechos financeiros, custos e valor entregue. A tela não envia métricas.
     Fonte indisponível ou inconsistente persiste MEASUREMENT_BLOCKED e nunca vira zero.
@@ -17,6 +17,30 @@ info:
 servers:
   - url: /api/business-process-chains/learning-cycles/v1
 paths:
+  /products/{productId}/{cycleId}/budget-authorization:
+    parameters:
+      - {$ref: '#/components/parameters/ProductId'}
+      - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+    post:
+      summary: Aprovar orçamento diário e total do ciclo
+      description: Registra aceite e limites atomicamente, com homologação vigente, sem exigir preparação comercial completa. Não ativa campanha. Preserva janela, versão, revisão e idempotência.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestKey, expectedRevision, dailyBudgetBrl, budgetLimitBrl]
+              properties:
+                requestKey: {type: string, format: uuid}
+                expectedRevision: {type: integer, format: int64}
+                dailyBudgetBrl: {type: number, minimum: 0.01, multipleOf: 0.01}
+                budgetLimitBrl: {type: number, minimum: 0.01, multipleOf: 0.01}
+      responses:
+        '200': {description: Ciclo atualizado ou replay do aceite}
+        '400': {description: Montantes inválidos ou entrada incompleta}
+        '404': {description: Produto ou ciclo não encontrado no escopo}
+        '409': {description: Janela ou homologação inválida, revisão desatualizada ou replay conflitante}
   /products/{productId}/{cycleId}/video-budget:
     parameters:
       - {$ref: '#/components/parameters/ProductId'}
@@ -430,7 +454,7 @@ components:
         authorizationReview:
           type: object
           nullable: true
-          description: Resumo e referência da homologação vigente em AUTHORIZATION. A tela exibe versão, teto e janela de Brasília; exige autor e confirmação desmarcada. Leitura não autoriza.
+          description: Resumo e referência da homologação vigente em AUTHORIZATION. A tela solicita somente diário e total; versão, janela e referência são derivadas pelo backend. Leitura não autoriza.
           properties:
             summary: {type: string}
             evidenceReference: {type: string}

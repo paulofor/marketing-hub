@@ -1,0 +1,18 @@
+{
+  "cardKey": "adocao-nao-equivale-compreensao-ai",
+  "collection": "neuromarketing",
+  "title": "Adoção de conteúdo de IA não prova compreensão",
+  "finding": "Em co-geração com LLM, uma informação pode aparecer no artefato final sem ter sido adequadamente processada pelo usuário; sinais de interação ao longo do tempo ajudaram a prever reconhecimento posterior de unidades de informação.",
+  "mechanism": "Uptake cognitivo se forma ao longo da interação. Engajamento ativo sustentado oferece sinais adicionais em relação a eventos isolados, enquanto simples presença da informação no resultado final é um proxy insuficiente de processamento.",
+  "commercialApplication": "Separar exposição/adoção de compreensão em customer-agent e jornadas assistidas por IA. Para informações críticas, usar sinais de interação como gatilho para resumir, confirmar entendimento ou permitir revisão antes de avançar.",
+  "evidenceStrength": "Evidência experimental inicial de HCI: preprint com 62 participantes, três tarefas e 1.187 rótulos de uptake. O modelo superou baselines em múltiplas métricas, mas o desfecho foi reconhecimento, não conversão ou compreensão profunda.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2026-10-30",
+  "experimentHypothesis": "Quando uma informação crítica apresentar baixo sinal de uptake, uma confirmação ou resumo contextual antes da próxima ação reduzirá erros e retrabalho sem aumentar abandono de forma relevante.",
+  "risks": "Não tratar traços comportamentais como leitura mental nem inferir compreensão individual com certeza. Evitar vigilância excessiva e coletar apenas sinais necessários e proporcionais.",
+  "limits": "O estudo não mediu vendas, satisfação ou decisões comerciais; reconhecimento pós-tarefa é apenas uma aproximação de uptake. A transferência para funis e atendimento exige experimento próprio.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/design-experiencia/cards/fontes/2026-09-15-adocao-nao-equivale-compreensao-ai.md",
+  "sourceTitle": "Fonte revisada — Adoção de conteúdo de IA não equivale a compreensão",
+  "sourceSha256": "c35a8766b067fa3de6e04974685bf28462cf8dfe2670bd56bf30f0ebc1c5f170"
+}

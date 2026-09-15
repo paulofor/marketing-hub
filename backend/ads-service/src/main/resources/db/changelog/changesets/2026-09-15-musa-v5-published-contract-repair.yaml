@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-15-musa-v5-published-contract-repair-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+      changes:
+        - sqlFile:
+            path: 2026-09-15-musa-v5-published-contract-repair.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pde_production_slot
+                 SET published_experience_json = NULL,
+                     published_by = NULL,
+                     published_at = NULL
+               WHERE product_slug = 'metodo-musa-7-dias'
+                 AND slot_code = 'v5'
+                 AND published_by = 'migration:2026-09-15-v5-snapshot'
+                 AND SHA2(published_experience_json, 256) = 'c24391e13ee25e395cfa6983c055761aabf174a2481813c658d3b27e9e701439';

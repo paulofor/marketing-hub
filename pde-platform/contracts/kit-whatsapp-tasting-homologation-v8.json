@@ -1,0 +1,61 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v8",
+  "product": {
+    "id": 9,
+    "slug": "kit-whatsapp-pronto",
+    "experienceVersion": "kit-whatsapp-pronto-pde-v2"
+  },
+  "experimentId": 89,
+  "verifiedAt": "2026-09-15T02:25:44Z",
+  "status": "PASSED",
+  "revalidationReason": "Compatibilidade do Rigel após o catálogo passar a preservar recusas de contratos versionados do Marketing Hub. A suíte completa do backend PDE passou localmente, incluindo catálogo, política comercial e bloqueio de fallback entre versões.",
+  "scope": "Delta de resolução de contrato versionado no catálogo compartilhado. Preserva identidade, oferta, entrega, política comercial e atestações históricas do Rigel; não reaprova campanhas nem resultados comerciais.",
+  "boundary": "Esta atestação não cria contato, venda, pagamento, gasto, publicação ou autorização comercial.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
+      "sha256": "a33483b8ebd628f1e43fa99adca0180c8a2d450d6cd4eb6e343f3236d5863f25",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Baseline comercial v5 preservada. Esta revisão confirma a compatibilidade do Rigel com a identidade privada de Mira v3."
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
+      "sha256": "82bd96f2923115d70ff3e8dd8bb179223e7f36ed0a1a25844ee81f6ff53a8f89",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Delta v6 preservado como histórico; seu hash anterior do catálogo não é atestação da candidata atual."
+    },
+    {
+      "path": "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
+      "sha256": "404b81a61efc6c9ba972a4029a334e3779f0ee8b0d752bbdec9db32b76a88e53",
+      "promptMode": "ATTESTED_REFERENCE",
+      "reviewSummary": "Atestação v7 preservada como baseline imutável; a v8 verifica a compatibilidade do Rigel com o controle de identidade dos contratos versionados."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/dto/ProductExperienceResponse.java",
+      "sha256": "5a74ccbbb24d325b0172858e6b6d65f509eaa441aba491d2562145c25a0b1a84"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "5587e679dcc921b2376c9e3ddba4a12b891eb4e133790ce8cef63be0927ab174"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/RigelCommercialContractPolicy.java",
+      "sha256": "b18c3ea018936b4f315a0ba141b884e4cc424b2cab4e6c50ab96c6379119345d"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
+      "sha256": "6d5e086d3bd30c629fd122e6011fdf5df2a18915ffa740bd9e777177b7609787"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/RigelCommercialContractPolicyTest.java",
+      "sha256": "58685985b1e4d50ac67f8db017a683d55d6afb5abcf79d0422b2405edfbf6821"
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogVersionRejectionTest.java",
+      "sha256": "1bdb62dd16e9e32225714035fc97d55055c08912439c0af4beee5a138e52e940"
+    }
+  ],
+  "validationReport": "docs/homologacao/actions-pde-revisores-integracao-2026-09-15.md"
+}

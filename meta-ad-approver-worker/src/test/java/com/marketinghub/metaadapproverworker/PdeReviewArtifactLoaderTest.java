@@ -155,7 +155,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/produto-homologation-v2.json");
   }
 
-  /** Confirma que a fonte ou o pacote carrega as revisões comerciais vigentes de Rigel e MUSA. */
+  /** Confirma que fonte e pacote preservam o histórico e a revalidação vigente de Rigel e MUSA. */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {
     Path repository = evidenceRepository();
@@ -170,6 +170,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v4.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v8.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v5.json");
   }
@@ -431,7 +432,9 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v3.json");
   }
 
-  /** Resolve a fonte local ou o pacote explícito para repetir os mesmos contratos após empacotar. */
+  /**
+   * Resolve a fonte local ou o pacote explícito para repetir os mesmos contratos após empacotar.
+   */
   private Path evidenceRepository() {
     String configured = System.getProperty("review.evidence.root");
     if (configured != null && !configured.isBlank()) {

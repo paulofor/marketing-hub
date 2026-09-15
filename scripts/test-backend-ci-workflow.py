@@ -25,6 +25,7 @@ class BackendCiWorkflowTest(unittest.TestCase):
             "infra/testing/vega-integrity-cycle/run-round.sh",
             "infra/testing/runway-clip-plan/run-round.sh",
             "infra/testing/runway-gen45/run-round.sh",
+            "infra/testing/pde-version-contract/**",
             "**/src/main/resources/prompts/**",
             "product-discovery-worker/prompts/**",
             "pesquisas/**",
@@ -73,6 +74,21 @@ class BackendCiWorkflowTest(unittest.TestCase):
         resources = self.workflow.index("python3 scripts/verify-backend-packaged-resources.py")
         self.assertLess(tests, package)
         self.assertLess(package, resources)
+
+    def test_local_pde_matrix_covers_full_backend_packaging_and_reviewers(self):
+        script = (REPO / "infra/testing/pde-version-contract/run-round.sh").read_text()
+        steps = [
+            "gate backend-ci-contract python3 scripts/test-backend-ci-workflow.py",
+            "gate backend mvn -B -f backend/ads-service/pom.xml test",
+            "gate backend-package mvn -B -f backend/ads-service/pom.xml package -DskipTests",
+            "gate backend-package-integrity python3 scripts/verify-backend-packaged-resources.py",
+            "gate journeys python3 infra/testing/pde-version-contract/run-journies.py",
+            "gate commercial-evidence env EVIDENCE_COMPOSE_PROJECT=",
+            "bash infra/testing/commercial-evidence/run-local.sh validation",
+        ]
+        positions = [script.index(step) for step in steps]
+        self.assertEqual(positions, sorted(positions))
+        self.assertNotRegex(script, r"-Dtest=|testFailureIgnore|continue-on-error|\|\| true")
 
     def test_reports_survive_failure_and_ci_cannot_publish(self):
         self.assertRegex(self.workflow, r"if: always\(\)\s+uses: actions/upload-artifact@v4")

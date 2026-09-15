@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { Agent, get } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 
 const project = process.env.EVIDENCE_COMPOSE_PROJECT;
@@ -49,6 +50,53 @@ async function version(port, resource, expected, options = {}) {
   return body;
 }
 
+// Mantém uma conexão no worker que resolveu o IP antigo, expondo seu cache DNS independente.
+const authAgent = new Agent({ keepAlive: true, maxSockets: 1 });
+const cachedRequest = (resource, headers = {}) =>
+  new Promise((resolve, reject) => {
+    const request = get(url(18280, resource), { agent: authAgent, headers }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("error", reject);
+      response.on("end", () => resolve({
+        status: response.statusCode,
+        headers: response.headers,
+        body: Buffer.concat(chunks).toString(),
+      }));
+    });
+    request.setTimeout(3000, () => request.destroy(new Error("Timeout no proxy de materiais")));
+    request.on("error", reject);
+  });
+
+// Aguarda apenas erros transitórios; acesso indevido e falhas permanentes nunca viram sucesso.
+async function materialAccess(recovering = false) {
+  const checks = [
+    { headers: {}, expected: 403 },
+    { headers: { "X-PDE-Access-Token": "invalid-local-token" }, expected: 403 },
+    { headers: { "X-PDE-Access-Token": "local-evidence" }, expected: 200 },
+  ];
+  for (let attempt = 0; attempt < (recovering ? 25 : 1); attempt++) {
+    const statuses = [];
+    for (const check of checks) {
+      const response = await cachedRequest("/materials/proof.txt", check.headers);
+      statuses.push(response.status);
+      if (response.status === check.expected) {
+        assert.match(response.headers["cache-control"], /private, no-store/);
+        if (check.expected === 200) assert.equal(response.body, "material local autorizado");
+      } else {
+        assert.ok(
+          recovering && [500, 502, 503, 504].includes(response.status),
+          `Autorização incorreta: esperado=${check.expected}, recebido=${response.status}`,
+        );
+      }
+    }
+    if (statuses.every((status, index) => status === checks[index].expected)) return;
+    console.log(`Autorização em recuperação DNS: tentativa=${attempt + 1}, status=${statuses.join(",")}`);
+    await delay(1000);
+  }
+  assert.fail("Autorização de materiais não recuperou após a troca de IP do backend");
+}
+
 const publicPath =
   "/api/pde/products/metodo-musa-7-dias?experienceVersion=v7%20teste&mh_test=1";
 const miraPath = "/api/pde/mira/private/v1/contract?scenario=SAFETY&mh_test=1";
@@ -71,6 +119,8 @@ const network = `${project}_default`;
 const newIp = inspect(newId).NetworkSettings.Networks[network].IPAddress;
 const oldIp = inspect(oldId).NetworkSettings.Networks[network].IPAddress;
 assert.notEqual(newIp, oldIp);
+await materialAccess();
+assert.equal((await cachedRequest(publicPath)).status, 200);
 docker("kill", "--signal", "USR2", oldId);
 docker("network", "disconnect", network, oldId);
 docker("network", "connect", "--ip", oldIp, network, oldId);
@@ -102,18 +152,8 @@ const posted = await version(18281, miraPath, "new", {
 });
 assert.equal(posted.method, "POST");
 assert.equal(posted.body, '{"trafficClass":"QA_INTERNAL"}');
-assert.equal(
-  (await freshRequest(url(18280, "/materials/proof.txt"))).status,
-  403,
-);
-assert.equal(
-  (
-    await freshRequest(url(18280, "/materials/proof.txt"), {
-      headers: { "X-PDE-Access-Token": "local-evidence" },
-    })
-  ).status,
-  200,
-);
+await materialAccess(true);
+authAgent.destroy();
 assert.equal(
   (await freshRequest(url(18280, "/api/pde/mira/private/v1/contract"))).status,
   404,
@@ -159,5 +199,5 @@ assert.ok(
   workflow.includes("bash pde-platform/scripts/test-backend-proxy-recovery.sh"),
 );
 console.log(
-  "PASS: troca real de IP; legado 502 recuperado; URI, query, POST, auth e isolamento preservados; mesmas imagens e containers.",
+  "PASS: troca real de IP; legado 502 recuperado; URI, query, POST e autorização antes/depois do DNS preservados; mesmas imagens e containers e isolamento entre produtos.",
 );

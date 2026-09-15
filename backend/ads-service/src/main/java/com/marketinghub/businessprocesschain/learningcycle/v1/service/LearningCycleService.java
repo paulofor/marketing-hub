@@ -55,6 +55,8 @@ public class LearningCycleService {
 
   @Autowired private LearningCycleCommercialAuthorization commercialAuthorization;
 
+  @Autowired private LearningCycleCommercialReadiness commercialReadiness;
+
   @Autowired(required = false)
   private LearningCycleVideoBinding videoBinding;
 
@@ -929,6 +931,11 @@ public class LearningCycleService {
           }
           case "AUTHORIZATION" -> {
             evidence.authorization(cycle, data, now);
+            var preparation =
+                commercialReadiness == null ? null : commercialReadiness.inspect(cycle);
+            require(
+                preparation == null || preparation.readyForReview(),
+                preparation == null ? null : preparation.guidance());
             commercialAuthorization.apply(cycle, experiment, now);
           }
           case "PUBLICATION" -> evidence.publication(cycle, experiment, authorizationTime(cycle));
@@ -1169,6 +1176,12 @@ public class LearningCycleService {
 
   /** Monta uma leitura exclusivamente a partir do estado e dos eventos persistidos. */
   private LearningCycleResponse response(LearningSalesCycle cycle) {
+    var commercialPreparation =
+        commercialReadiness != null
+                && "OPEN".equals(cycle.getStatus())
+                && Set.of("AUTHORIZATION", "PUBLICATION").contains(cycle.getStage())
+            ? commercialReadiness.inspect(cycle)
+            : null;
     var successor = cycles.findByPreviousCycleId(cycle.getId());
     JsonNode metrics = latestMetrics(cycle), brief = json.read(cycle.getBriefJson());
     var process = processes.findById(cycle.getProcessDefinitionId()).orElseThrow();
@@ -1198,6 +1211,16 @@ public class LearningCycleService {
                       if (blocker == null && requiresCurrentApproval(action, cycle.getStage()))
                         blocker = approvalBlocker(cycle);
                       if (blocker == null
+                          && action == Action.COMPLETE
+                          && "AUTHORIZATION".equals(cycle.getStage()))
+                        blocker = authorizationBlocker(cycle, Instant.now(clock));
+                      if (blocker == null
+                          && action == Action.COMPLETE
+                          && "AUTHORIZATION".equals(cycle.getStage())
+                          && commercialPreparation != null
+                          && !commercialPreparation.readyForReview())
+                        blocker = commercialPreparation.guidance();
+                      if (blocker == null
                           && Set.of(
                                   Action.ADJUST,
                                   Action.CONTINUE,
@@ -1219,6 +1242,10 @@ public class LearningCycleService {
     String nextAction =
         stageNode == null ? label(cycle.getStage()) : stageNode.path("description").asText();
     String responsible = stageNode == null ? "Operador do ciclo" : stageNode.path("owner").asText();
+    if (commercialPreparation != null && !commercialPreparation.readyForReview()) {
+      nextAction = commercialPreparation.guidance();
+      responsible = "Preparação comercial · responsáveis pelas pendências do experimento";
+    }
     if ("DECISION".equals(cycle.getStage())) {
       nextAction =
           "Atena prepara a proposta com as evidências conciliadas. Revise, edite e aprove para registrar a decisão e o retorno no BPM.";
@@ -1327,7 +1354,42 @@ public class LearningCycleService {
         "ADJUSTED".equals(cycle.getStatus()) && successor.isEmpty(),
         cycle.getCreatedAt(),
         cycle.getClosedAt(),
-        automaticVideoContinuation(cycle));
+        automaticVideoContinuation(cycle),
+        authorizationReview(cycle),
+        commercialPreparation);
+  }
+
+  /** Prepara a síntese com a prova registrada sem transformar a leitura em uma autorização. */
+  private LearningCycleResponse.AuthorizationReview authorizationReview(LearningSalesCycle cycle) {
+    if (!"OPEN".equals(cycle.getStatus()) || !"AUTHORIZATION".equals(cycle.getStage())) return null;
+    var validation =
+        events.findByCycleIdOrderByRevisionAsc(cycle.getId()).stream()
+            .filter(
+                event ->
+                    "VALIDATION".equals(event.getFromStage())
+                        && "COMPLETE".equals(event.getAction()))
+            .reduce((first, last) -> last)
+            .orElse(null);
+    if (validation == null) return null;
+    return new LearningCycleResponse.AuthorizationReview(
+        "Autorização explícita do teto de R$ "
+            + cycle.getBudgetLimitBrl()
+            + " para o ciclo #"
+            + cycle.getId()
+            + ", experimento #"
+            + cycle.getExperimentId()
+            + ", versão "
+            + cycle.getProductVersion()
+            + ", janela "
+            + cycle.getWindowStart()
+            + " a "
+            + cycle.getWindowEnd()
+            + ". Ativação da campanha depende dos gates e da autorização final próprios.",
+        "internal://learning-cycles/"
+            + cycle.getId()
+            + "; learning_sales_cycle_event_v1:"
+            + validation.getId(),
+        "Confira os limites abaixo e confirme sua decisão. As referências da homologação já registrada serão preservadas. Este aceite registra o orçamento; a campanha depende da preparação, da homologação comercial e da autorização final de ativação.");
   }
 
   /**

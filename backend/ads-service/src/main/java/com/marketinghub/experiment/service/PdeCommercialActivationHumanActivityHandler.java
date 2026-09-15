@@ -73,7 +73,7 @@ public class PdeCommercialActivationHumanActivityHandler
         && ACTIVITY_ID.equals(activityDefinition.getActivityId());
   }
 
-  /** Consolida os gates do experimento e exige um teto financeiro persistido. */
+  /** Consolida os gates e o teto persistido, explicando o efeito da autorização em cada canal. */
   @Override
   @Transactional(readOnly = true)
   public HumanProductProcessActivityReadiness readiness(
@@ -176,7 +176,9 @@ public class PdeCommercialActivationHumanActivityHandler
         ready,
         reason,
         "Li, entendi e autorizo",
-        "Revise o resumo abaixo e autorize com um único comando. O sistema registra as evidências e inicia a janela comercial, sem criar campanha paga.",
+        experiment.getPlatform() == ExperimentPlatform.FACEBOOK
+            ? "A confirmação autoriza a publicação da campanha na Meta e o gasto de mídia até o teto informado, dentro da janela aprovada. O experimento só entra em execução após a confirmação da plataforma."
+            : "Revise o resumo abaixo e autorize com um único comando. O sistema registra as evidências e inicia a janela comercial, sem criar campanha paga.",
         "Revise e autorize",
         "O experimento "
             + experiment.getName()
@@ -184,7 +186,10 @@ public class PdeCommercialActivationHumanActivityHandler
             + sample
             + " e teto total de "
             + budget
-            + ".",
+            + "."
+            + (experiment.getPlatform() == ExperimentPlatform.FACEBOOK
+                ? " Ao confirmar, você autoriza a publicação na Meta e o gasto de mídia dentro desses limites."
+                : ""),
         CONFIRMATION_TOKEN,
         "EXPERIMENT_ACTIVATION",
         experiment.getId(),

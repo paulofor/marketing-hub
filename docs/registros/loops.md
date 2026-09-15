@@ -5510,6 +5510,29 @@ a composição versionada e a preservação de cadeia/ciclo/experimento. Regras 
 
 ## LOOP-CICLO-AUTORIZACAO-SEM-SUPERFICIE-COMERCIAL — 2026-09-15
 
+### Recorrência confirmada no processo 75, execução 4 — 15/09/2026
+
+- A tela ainda projetava `WAITING_ACTIVITY` sem ação, apesar de ciclo em `AUTHORIZATION`.
+  O resolvedor não incluía autorização/publicação, e a entrada de Psique/Têmis não consumia
+  os requisitos comerciais já conhecidos pelo gate final. A confirmação repetia dados existentes.
+- Reprodução em MySQL local revelou uma segunda dependência circular: P6 ativo aguardava P5,
+  mas a fila por produto mantinha P5 `QUEUED` atrás de P6, sem tarefa real em andamento.
+- Correção compartilhada: requisitos canônicos antes da autorização/revisores, resumo da decisão
+  montado pelo backend, espera por condição/decisão explícita e admissão do preparador do mesmo
+  produto/cadeia/ciclo/experimento quando não existir trabalho real na raiz que espera ou em filhos.
+  Não se alteram IDs produtivos, oferta, formato, versão, aprovações ou condições de margem.
+- A confirmação final ainda prometia ausência de campanha paga depois de o handler passar a
+  liberar Facebook. A descrição agora corresponde ao canal e ao comando real, coberta por
+  `PdeCommercialActivationHumanActivityHandlerTest` e pela navegação dos três perfis. A matriz
+  também limpa as execuções sintéticas na ordem das FKs antes do rollback, sem desabilitar
+  integridade referencial nem alterar a migração produtiva.
+- Regressões: `LearningCycleCommercialReadinessTest`, `ProcessRunCommercialContinuationTest`,
+  `ProcessRunGuidanceTest`, matriz REST `infra/testing/cycle-commercial/validate.py` e navegação
+  `frontend/e2e/cycle-commercial-responsive.mjs`, integradas à rodada completa dos ciclos.
+  Evidência e limites: `docs/homologacao/vega-ciclo2-espera-comercial-v1.md`.
+
+### Diagnóstico anterior preservado
+
 - **Confirmado em Vega, ciclo 2 / experimento 92:** a tela oferecia concluir a autorização com
   teto de R$ 100,00, mas o experimento não tinha teto operacional. O envio retornava HTTP 409.
   Mesmo copiando esse valor, ainda faltavam versão pública própria, oferta, checkout, criativo,

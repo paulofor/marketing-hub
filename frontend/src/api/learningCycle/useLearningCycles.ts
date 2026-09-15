@@ -73,9 +73,27 @@ export type CycleEvent = {
   createdAt: string;
 };
 export type LearningCycle = {
+  authorizationReview?: {
+    summary: string;
+    evidenceReference: string;
+    explanation: string;
+  } | null;
+  commercialPreparation?: {
+    readyForReview: boolean;
+    guidance: string;
+    experimentUrl: string;
+    requirements: {
+      code: string;
+      title: string;
+      ready: boolean;
+      detail: string;
+      recommendation: string;
+    }[];
+  } | null;
   automaticContinuation?: boolean;
   videoBudget?:
-    import("../financial/useVideoBudget").VideoBudgetAuthorization | null;
+    | import("../financial/useVideoBudget").VideoBudgetAuthorization
+    | null;
   id: number;
   productId: number;
   experimentId: number;

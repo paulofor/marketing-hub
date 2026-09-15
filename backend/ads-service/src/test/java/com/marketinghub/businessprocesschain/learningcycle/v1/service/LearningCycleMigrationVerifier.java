@@ -42,6 +42,10 @@ public final class LearningCycleMigrationVerifier {
         return;
       }
       try (var statement = connection.createStatement()) {
+        // Remove primeiro os registros sintéticos do coordenador, preservando a ordem das FKs.
+        statement.executeUpdate("DELETE FROM product_process_run_event_v1");
+        statement.executeUpdate("UPDATE product_process_run_v1 SET parent_run_id=NULL");
+        statement.executeUpdate("DELETE FROM product_process_run_v1");
         statement.executeUpdate("UPDATE learning_sales_cycle_v1 SET current_instance_id=NULL");
         statement.executeUpdate("DELETE FROM learning_cycle_decision_proposal_v1");
         statement.executeUpdate("DELETE FROM learning_sales_cycle_event_v1");

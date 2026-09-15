@@ -124,6 +124,8 @@ export default function LearningCycleCommandForm({
   );
   const [requestKey, setRequestKey] = useState(() => createCycleRequestKey());
   const command = cycle.commands.find((item) => item.action === action);
+  const authorizationReview =
+    action === "COMPLETE" ? cycle.authorizationReview : null;
   const returnRequired = action === "ADJUST" || action === "REWORK";
   let fields: Field[] =
     action === "COMPLETE" ? (byStage[cycle.stage] ?? []) : [];
@@ -156,6 +158,8 @@ export default function LearningCycleCommandForm({
       ...byStage.AUTHORIZATION,
       ["windowEnd", "Novo fim da janela", "datetime-local"],
     ];
+  if (authorizationReview)
+    fields = byStage.AUTHORIZATION.filter(([key]) => key === "confirmed");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -173,6 +177,10 @@ export default function LearningCycleCommandForm({
               ? new Date(String(value)).toISOString()
               : String(value ?? "");
     });
+    if (authorizationReview) {
+      evidence.productVersion = cycle.productVersion;
+      evidence.budgetLimitBrl = cycle.budgetLimitBrl;
+    }
     if (action === "REWORK" && registerPrototype) {
       evidence.privatePrototype = {
         prototypeVersion: evidence.productVersion,
@@ -205,8 +213,10 @@ export default function LearningCycleCommandForm({
           expectedRevision: cycle.revision,
           action,
           operatorName: form.get("operatorName"),
-          summary: form.get("summary"),
-          evidenceReference: form.get("evidenceReference"),
+          summary: authorizationReview?.summary ?? form.get("summary"),
+          evidenceReference:
+            authorizationReview?.evidenceReference ??
+            form.get("evidenceReference"),
           evidence,
         }),
       );
@@ -217,6 +227,7 @@ export default function LearningCycleCommandForm({
   if (!cycle.commands.length) return null;
   return (
     <form
+      id="cycle-decision"
       className="card card-body mb-3"
       onSubmit={submit}
       aria-label="Decisão do ciclo"
@@ -224,6 +235,34 @@ export default function LearningCycleCommandForm({
       <h3 className="h5">Próxima ação</h3>
       <p>{cycle.nextAction}</p>
       <p className="small">Responsável: {cycle.responsible}</p>
+      {cycle.commercialPreparation && (
+        <section
+          className="border rounded p-3 mb-3"
+          aria-label="Preparação comercial do experimento"
+        >
+          <h4 className="h6">Preparação para a revisão comercial</h4>
+          <p>{cycle.commercialPreparation.guidance}</p>
+          <ul>
+            {cycle.commercialPreparation.requirements.map((item) => (
+              <li key={item.code}>
+                <strong>
+                  {item.title}: {item.ready ? "pronto" : "pendente"}.
+                </strong>{" "}
+                {item.detail} {!item.ready && item.recommendation}
+              </li>
+            ))}
+          </ul>
+          <Link to={cycle.commercialPreparation.experimentUrl}>
+            Ver preparação do experimento
+          </Link>
+          {cycle.workUrl && (
+            <>
+              {" "}
+              · <Link to={cycle.workUrl}>Abrir homologação comercial</Link>
+            </>
+          )}
+        </section>
+      )}
       {cycle.workLinks?.length ? (
         <div className="mb-3">
           <p>
@@ -294,27 +333,63 @@ export default function LearningCycleCommandForm({
             maxLength={160}
           />
         </label>
-        <label className="form-label">
-          Síntese e justificativa *
-          <textarea
-            required
-            name="summary"
-            defaultValue={decisionProposal?.proposal?.summary}
-            className="form-control"
-            maxLength={4000}
-          />
-        </label>
-        <label className="form-label">
-          Referência da evidência *
-          <input
-            required
-            name="evidenceReference"
-            defaultValue={decisionProposal?.proposal?.evidenceReference}
-            className="form-control"
-            maxLength={1200}
-            placeholder="Link do relatório, tarefa ou documento"
-          />
-        </label>
+        {authorizationReview ? (
+          <section
+            aria-label="Limites da autorização"
+            className="border rounded p-3"
+          >
+            <p>{authorizationReview.explanation}</p>
+            <p>
+              <strong>Teto total de mídia:</strong>{" "}
+              {new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              }).format(cycle.budgetLimitBrl)}
+            </p>
+            <p>
+              <strong>Versão homologada:</strong> {cycle.productVersion}
+            </p>
+            <p>
+              <strong>Janela (horário de Brasília):</strong>{" "}
+              {new Date(cycle.windowStart).toLocaleString("pt-BR", {
+                timeZone: "America/Sao_Paulo",
+              })}
+              {" a "}
+              {new Date(cycle.windowEnd).toLocaleString("pt-BR", {
+                timeZone: "America/Sao_Paulo",
+              })}
+            </p>
+            <details>
+              <summary>Evidências que serão registradas</summary>
+              <p>{authorizationReview.summary}</p>
+              <p>{authorizationReview.evidenceReference}</p>
+            </details>
+          </section>
+        ) : (
+          <>
+            <label className="form-label">
+              Síntese e justificativa *
+              <textarea
+                required
+                name="summary"
+                defaultValue={decisionProposal?.proposal?.summary}
+                className="form-control"
+                maxLength={4000}
+              />
+            </label>
+            <label className="form-label">
+              Referência da evidência *
+              <input
+                required
+                name="evidenceReference"
+                defaultValue={decisionProposal?.proposal?.evidenceReference}
+                className="form-control"
+                maxLength={1200}
+                placeholder="Link do relatório, tarefa ou documento"
+              />
+            </label>
+          </>
+        )}
         {returnRequired ? (
           <label className="form-label">
             Atividade que corrigirá a causa *

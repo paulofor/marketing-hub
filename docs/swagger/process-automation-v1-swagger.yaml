@@ -148,9 +148,9 @@ components:
               userAction:
                 type: object
                 nullable: true
-                description: Próxima intervenção humana comprovada pelo contexto persistido. A leitura não altera estado; o conciliador registra WAITING_HUMAN e o motivo no diário. Autorização financeira não conclui objetivos nem libera consumo.
+                description: Próxima condição ou decisão comprovada pelo contexto persistido. A leitura não altera estado; o conciliador registra WAITING_INPUT para preparação comercial ou WAITING_HUMAN para decisão. Aprovação de vídeo não autoriza mídia. O processo preparador do mesmo ciclo pode seguir sem ficar preso atrás da espera do processo de vendas; tarefas reais, pausas em andamento e outros contextos permanecem protegidos.
                 properties:
-                  code: {type: string, enum: [AUTHORIZE_VIDEO_BUDGET, COMPLETE_VIDEO_BRIEF, RESOLVE_VIDEO_PREFLIGHT, REQUEST_VIDEO_PRODUCTION]}
+                  code: {type: string, enum: [AUTHORIZE_VIDEO_BUDGET, COMPLETE_VIDEO_BRIEF, RESOLVE_VIDEO_PREFLIGHT, REQUEST_VIDEO_PRODUCTION, APPROVE_CYCLE_VIDEOS, REVIEW_AND_INTEGRATE_VIDEOS, PREPARE_CYCLE_COMMERCIAL, AUTHORIZE_CYCLE_MEDIA, COMPLETE_COMMERCIAL_PREPARATION]}
                   title: {type: string}
                   reason: {type: string}
                   responsible: {type: string}

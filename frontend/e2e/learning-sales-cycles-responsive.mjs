@@ -106,6 +106,16 @@ try {
       action = "COMPLETE",
     ) {
       await form().locator('[name="action"]').selectOption(action);
+      if (action === "COMPLETE" && values.confirmed === true)
+        await expect(
+          form().getByRole("region", {
+            name: "Limites da autorização",
+            exact: true,
+          }),
+        ).toBeVisible();
+      const compactAuthorization = await form()
+        .getByRole("region", { name: "Limites da autorização", exact: true })
+        .isVisible();
       for (const [key, value] of Object.entries({
         operatorName: "Operador local",
         summary: "Registro de evidência segregada",
@@ -113,11 +123,36 @@ try {
         ...values,
       })) {
         const field = form().locator(`[name="${key}"]`);
+        if (
+          compactAuthorization &&
+          [
+            "summary",
+            "evidenceReference",
+            "productVersion",
+            "budgetLimitBrl",
+          ].includes(key)
+        ) {
+          await expect(field).toHaveCount(0);
+          if (key === "productVersion")
+            await expect(
+              form().getByRole("region", { name: "Limites da autorização" }),
+            ).toContainText(String(value));
+          continue;
+        }
         if (typeof value === "boolean") await field.setChecked(value);
         else if (await field.evaluate((node) => node.tagName === "SELECT"))
           await field.selectOption(String(value));
         else await field.fill(String(value));
       }
+      assert.deepEqual(
+        await form()
+          .locator("input:invalid, textarea:invalid, select:invalid")
+          .evaluateAll((inputs) =>
+            inputs.map((input) => input.getAttribute("name")),
+          ),
+        [],
+        "O formulário da etapa atual precisa estar completo antes do envio",
+      );
       const response = page.waitForResponse(
         (response) =>
           response.url().includes("/commands") &&
@@ -135,8 +170,19 @@ try {
         .click();
       const result = await response;
       assert.equal(result.status(), 200, await result.text());
+      if (compactAuthorization) {
+        const sent = result.request().postDataJSON();
+        assert.equal(sent.evidence.productVersion, values.productVersion);
+        assert.equal(sent.evidence.budgetLimitBrl, values.budgetLimitBrl);
+        assert.equal(sent.evidence.confirmed, true);
+        assert.match(sent.evidenceReference, /learning_sales_cycle_event_v1:/);
+      }
       await page.waitForLoadState("networkidle");
-      return result.json();
+      const updated = await result.json();
+      await expect(
+        page.getByText(updated.stageLabel, { exact: true }).first(),
+      ).toBeVisible();
+      return updated;
     }
     await submit({
       learning: "Microação vaga dificulta uso",

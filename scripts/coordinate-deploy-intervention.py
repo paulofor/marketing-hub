@@ -322,14 +322,34 @@ class Coordinator:
         return state
 
     def prepare_resume(self, identifier, validated_commit, evidence):
-        """Encerra a homologação e registra a revisão validada para retomada automática após merge."""
+        """Encerra a homologação somente com revisão recuperável no GitHub e derivada da base protegida."""
         if not re.fullmatch(r"[a-f0-9]{40}", validated_commit or "") or not evidence.strip():
             raise CoordinationError("Informe commit completo validado e evidência da homologação concluída.")
         state = self.check(identifier)
-        state["automatic_resume"] = {"validated_commit": validated_commit, "evidence": evidence,
-                                     "prepared_at": now()}
+        try:
+            commit = self.github.api(f"commits/{validated_commit}")
+        except GitHubApiError as error:
+            if error.status == 404:
+                raise CoordinationError(
+                    "A revisão validada não está disponível no GitHub; publique o commit/branch antes de encerrar "
+                    "a homologação. Os publicadores permanecem protegidos e a retomada não será armada."
+                ) from error
+            raise
+        if not isinstance(commit, dict) or commit.get("sha") != validated_commit:
+            raise CoordinationError("GitHub não confirmou a identidade da revisão validada; retomada não armada.")
+        lineage = self.github.api(f"compare/{state['initial_sha']}...{validated_commit}")
+        if not isinstance(lineage, dict) or lineage.get("status") not in {"ahead", "identical"}:
+            raise CoordinationError("A revisão validada não deriva da base protegida; retomada não armada.")
+        tree = commit.get("commit", {}).get("tree", {}).get("sha")
+        state["automatic_resume"] = {
+            "validated_commit": validated_commit,
+            "validated_tree": tree,
+            "verified_at": now(),
+            "evidence": evidence,
+            "prepared_at": now(),
+        }
         state["phase"] = "AWAITING_MERGE"
-        self.checkpoint(state, "automatic_resume_prepared")
+        self.checkpoint(state, "automatic_resume_prepared", validated_commit=validated_commit, validated_tree=tree)
         return state
 
     def resume(self, identifier, integrated_commit, evidence):

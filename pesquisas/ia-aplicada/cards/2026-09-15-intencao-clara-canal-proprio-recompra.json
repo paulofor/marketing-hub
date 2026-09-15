@@ -1,0 +1,18 @@
+{
+  "cardKey": "intencao-clara-canal-proprio-recompra",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Descoberta social pode converter melhor em canal próprio",
+  "finding": "Na divulgação mais recente do E-Consumidor 2026, 40% dos entrevistados preferem concluir no site da marca após descobrir um produto nas redes sociais, enquanto 28% se dizem confortáveis em comprar diretamente em Instagram ou TikTok.",
+  "mechanism": "A rede social pode reduzir o custo de descoberta, enquanto o canal próprio pode oferecer mais confiança, informação, identidade da marca e continuidade quando a intenção já amadureceu. A pesquisa não demonstra causalidade.",
+  "commercialApplication": "No Marketing Hub, testar roteamento por estágio: usar social para descoberta e levar usuários engajados a uma jornada própria de fechamento, comparando com compra direta dentro da rede social.",
+  "evidenceStrength": "Moderada como evidência de preferência declarada de consumidores brasileiros; baixa para afirmar aumento causal de conversão, CAC, recompra ou LTV.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2026-12-14",
+  "experimentHypothesis": "Entre usuários que já demonstraram interesse após descoberta em social, uma jornada própria de fechamento aumentará pagamento e recompra sem elevar abandono ou custo total versus compra direta na plataforma social.",
+  "risks": "A troca de canal pode criar atrito, perder atribuição ou reduzir conversão; vantagens do canal próprio podem variar muito por categoria e confiança na marca.",
+  "limits": "Os dados são autorrelatados e a divulgação pública antecede a apresentação integral do estudo. O efeito deve ser validado por pagamento reconciliado, custo e recompra em público e oferta comparáveis.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/ia-aplicada/cards/fontes/2026-09-15-intencao-clara-canal-proprio-recompra.md",
+  "sourceTitle": "Fonte revisada — Descoberta social e fechamento em canal próprio",
+  "sourceSha256": "307a6e39c34dd0a95c0424d9bb5182919beb09cadd6376bc84709760ee821d64"
+}

@@ -1,0 +1,18 @@
+{
+  "cardKey": "oferta-legivel-acionavel-por-agentes",
+  "collection": "momentos-de-compra-b2c",
+  "title": "Prepare a oferta para compras mediadas por agentes",
+  "finding": "A Gartner prevê que, até 2030, 20% das transações de comércio digital serão executadas por plataformas de IA, via AI checkout ou agentes, e recomenda tornar produtos, serviços e processos legíveis, acessíveis e acionáveis por agentes.",
+  "mechanism": "Agentes reduzem o custo de pesquisar, comparar e executar ações. Quando preço, disponibilidade, regras, diferenciais, restrições e próximos passos estão estruturados e acionáveis, o agente pode interpretar a oferta com menos ambiguidade e avançar no processo de compra.",
+  "commercialApplication": "No Marketing Hub, testar uma representação estruturada da oferta e do checkout para agentes, em paralelo à experiência humana, medindo descoberta, CTA, início de checkout e pagamento em jornadas mediadas por IA.",
+  "evidenceStrength": "Previsão prospectiva oficial da Gartner e orientação de mercado; forte como sinal estratégico, mas não demonstra causalidade nem ganho de conversão para o Marketing Hub.",
+  "publishedOn": "2026-09-15",
+  "validUntil": "2027-09-15",
+  "experimentHypothesis": "Ofertas com dados estruturados e próximos passos acionáveis por agentes terão maior taxa de progressão até checkout em jornadas originadas ou mediadas por IA do que ofertas equivalentes disponíveis apenas em páginas orientadas a humanos.",
+  "risks": "Antecipar demais uma mudança ainda em formação; expor dados incorretos ou desatualizados a agentes; criar automação de compra sem consentimento suficiente; confundir recomendação do agente com intenção real do consumidor.",
+  "limits": "O número de 20% é uma previsão para 2030, não uma medição atual. A fonte não prova que tornar uma oferta agent-readable aumenta vendas; impacto comercial precisa ser validado por eventos reais do funil.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/gartner/cards/fontes/2026-09-15-oferta-legivel-acionavel-por-agentes.md",
+  "sourceTitle": "Fonte revisada — Ofertas legíveis e acionáveis por agentes",
+  "sourceSha256": "ab74822c11cdd77423faac40b0da1a1365727fe16630c57412090fd6cb83f66b"
+}

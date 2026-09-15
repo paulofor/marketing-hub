@@ -38,7 +38,8 @@ if [[ "$(grep -Fc 'npm run build' "${deploy_workflow}")" -ne 1 ]]; then
   exit 1
 fi
 
-if ! grep -Fq 'download-approved-pr-artifact.sh frontend.yml frontend-build' "${deploy_workflow}" \
+if ! grep -Fq 'download-approved-pr-artifact.sh' "${deploy_workflow}" \
+  || ! grep -Fq 'frontend.yml frontend-build' "${deploy_workflow}" \
   || ! grep -Fq "steps.approved-build.outputs.reused != 'true'" "${deploy_workflow}"; then
   echo "O deploy deve reutilizar bundle de PR com árvore idêntica e manter fallback local." >&2
   exit 1

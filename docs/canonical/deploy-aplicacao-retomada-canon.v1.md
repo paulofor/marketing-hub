@@ -35,6 +35,13 @@ de integração à `main`, usa `resume` e recupera os eventos de publicação pe
 workflows versionados. A decisão do usuário de 12/09/2026 torna essa retomada automática;
 não é necessário outro pedido para reativar cada publicador após o merge.
 
+Uma revisão ainda indisponível na comparação do GitHub (HTTP 404) permanece em `WAITING`,
+com o SHA e o motivo persistidos, sem liberar a pausa nem alterar a revisão homologada.
+O reconciliador tenta comprovar a integração nas passagens posteriores. Esse tratamento
+vale somente para a comparação de commits; erros de autenticação, indisponibilidade da
+API, ausência da main e respostas inválidas continuam sendo falhas de consulta. Nunca
+presumir equivalência com outro commit ou substituir a evidência para obter retomada.
+
 Para homologação ainda em curso, manter a pausa. Registros antigos sem preparação de retomada
 continuam protegidos. Restaurar somente workflows anteriormente ativos; não reativar os que já
 estavam desativados. Falta de evidência, comando interrompido, erro de consulta ou passagem do

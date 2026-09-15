@@ -17,6 +17,7 @@ import time
 import uuid
 from urllib.parse import urlencode
 
+from deploy_coordination_errors import CoordinationError, GitHubApiError
 from deploy_publisher_recovery import PublisherRecovery
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,10 +32,6 @@ DISABLED_STATES = {"disabled_manually", "disabled_inactivity", "disabled_fork"}
 def now():
     """Retorna um horário UTC para auditoria; o tempo não autoriza expiração automática."""
     return datetime.now(timezone.utc).isoformat()
-
-
-class CoordinationError(RuntimeError):
-    """Representa uma condição que impede operar ou liberar a proteção."""
 
 
 class GitHub:
@@ -57,7 +54,10 @@ class GitHub:
             # Não reproduzir stderr de ferramentas autenticadas.
             status = re.search(r"HTTP (\d{3})", result.stderr)
             detail = f"HTTP {status[1]}" if status else f"exit {result.returncode}"
-            raise CoordinationError(f"GitHub recusou {method} {path} ({detail}); operação não confirmada.")
+            raise GitHubApiError(
+                f"GitHub recusou {method} {path} ({detail}); operação não confirmada.",
+                status=int(status[1]) if status else None,
+            )
         try:
             return json.loads(result.stdout) if result.stdout.strip() else None
         except ValueError as error:

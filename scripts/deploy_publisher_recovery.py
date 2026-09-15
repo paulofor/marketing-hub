@@ -4,6 +4,8 @@ from datetime import datetime
 import json
 from pathlib import Path
 
+from deploy_coordination_errors import GitHubApiError
+
 POLICY = json.loads(Path(__file__).with_name("deploy-publisher-recovery.json").read_text())
 APP = "deploy-containers.yml"
 
@@ -84,8 +86,21 @@ class PublisherRecovery:
                 return self.outcome(state, "WAITING", "Retomada parcial: aguardando a fila terminar com publicadores protegidos.")
         sha = self.github.api("git/ref/heads/main")["object"]["sha"]
         for commit in (state["initial_sha"], prepared["validated_commit"]):
-            comparison = self.github.api(f"compare/{commit}...{sha}")
-            if comparison.get("status") not in {"ahead", "identical"}:
+            try:
+                comparison = self.github.api(f"compare/{commit}...{sha}")
+            except GitHubApiError as error:
+                if error.status != 404:
+                    raise
+                return self.outcome(
+                    state, "WAITING",
+                    f"Revisão {commit} indisponível para comparação no GitHub (HTTP 404); "
+                    "aguardando disponibilidade e integração comprovada à main. Pausa preservada.",
+                )
+            if not isinstance(comparison, dict) or comparison.get("status") not in {
+                "ahead", "identical", "behind", "diverged"
+            }:
+                raise ValueError("Comparação de revisões inválida; integração não comprovada e pausa preservada.")
+            if comparison["status"] not in {"ahead", "identical"}:
                 return self.outcome(state, "WAITING", "A revisão homologada ainda não está integrada à main.")
         if state["phase"] != "RELEASED":
             enabled, pending = self.coordinator.inspect(state)

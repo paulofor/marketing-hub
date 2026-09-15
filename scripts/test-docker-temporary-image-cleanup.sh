@@ -75,7 +75,7 @@ if [[ "$1 $2" == "ps --all" ]]; then
 fi
 
 if [[ "$1 $2" == "image rm" ]]; then
-  exit 0
+  exit "${DOCKER_DOUBLE_RM_STATUS:-0}"
 fi
 
 echo "Chamada Docker inesperada: $*" >&2
@@ -160,6 +160,58 @@ flock -u 7
 grep -F 'já está em execução' <<<"$contended_output" >/dev/null
 test ! -s "$calls_file"
 
+# Espera final esgotada é uma falha observável, sem consultar ou alterar imagens.
+flock 7
+if PATH="$test_tmp_dir/bin:$PATH" \
+  DOCKER_DOUBLE_CALLS="$calls_file" \
+  AIHUB_DOCKER_CLEANUP_LOCK_FILE="$test_tmp_dir/contended-cleanup.lock" \
+  AIHUB_DOCKER_CLEANUP_LOCK_WAIT_SECONDS=1 \
+  bash "$test_root/scripts/cleanup-temporary-docker-images.sh" once \
+    >"$test_tmp_dir/lock-timeout.log" 2>&1; then
+  echo "A coleta final aceitou lock indisponível como sucesso." >&2
+  exit 1
+fi
+flock -u 7
+grep -Fq 'Timeout aguardando o lock' "$test_tmp_dir/lock-timeout.log"
+test ! -s "$calls_file"
+
+# Reproduz coleta ainda em curso quando o comando homologado termina com falha.
+cat >"$test_tmp_dir/finish-with-lock.sh" <<'LOCK_HOLDER'
+#!/usr/bin/env bash
+set -euo pipefail
+(
+  exec 7>"$1"
+  flock 7
+  touch "$2"
+  sleep 1
+) &
+for ((attempt=0; attempt<200; attempt++)); do
+  if [[ -e "$2" ]]; then exit 23; fi
+  sleep 0.01
+done
+exit 2
+LOCK_HOLDER
+: >"$calls_file"
+if PATH="$test_tmp_dir/bin:$PATH" \
+  DOCKER_DOUBLE_CALLS="$calls_file" \
+  AIHUB_HOMOLOGATION_SESSION=stale \
+  AIHUB_HOMOLOGATION_SESSION_DIR="$test_tmp_dir/sessions" \
+  AIHUB_DOCKER_CLEANUP_SESSION=stale \
+  AIHUB_DOCKER_CLEANUP_LOCK_FILE="$test_tmp_dir/final-cleanup.lock" \
+  bash "$test_root/scripts/run-docker-homologation.sh" \
+    bash "$test_tmp_dir/finish-with-lock.sh" "$test_tmp_dir/final-cleanup.lock" \
+      "$test_tmp_dir/holder-ready" >"$test_tmp_dir/final-cleanup.log"; then
+  echo "O wrapper perdeu o erro original da homologação." >&2
+  exit 1
+else
+  test "$?" -eq 23
+fi
+if ! grep -Fq 'image rm aihub-homologation/stale/backend:r1' "$calls_file"; then
+  cat "$test_tmp_dir/final-cleanup.log" >&2
+  echo "A limpeza final foi dispensada pela disputa de lock." >&2
+  exit 1
+fi
+
 : >"$calls_file"
 dry_run_output="$(
   PATH="$test_tmp_dir/bin:$PATH" \
@@ -176,6 +228,18 @@ if grep -Fq 'image rm ' "$calls_file"; then
   echo "O modo dry-run alterou uma imagem." >&2
   exit 1
 fi
+
+if PATH="$test_tmp_dir/bin:$PATH" DOCKER_DOUBLE_CALLS="$calls_file" \
+  DOCKER_DOUBLE_RM_STATUS=1 \
+  AIHUB_HOMOLOGATION_SESSION_DIR="$test_tmp_dir/sessions" \
+  AIHUB_DOCKER_CLEANUP_SESSION=stale \
+  AIHUB_DOCKER_CLEANUP_LOCK_FILE="$test_tmp_dir/refused-removal.lock" \
+  bash "$test_root/scripts/cleanup-temporary-docker-images.sh" once \
+    >"$test_tmp_dir/refused-removal.log" 2>&1; then
+  echo "A coleta declarou sucesso apesar de o Docker recusar a remoção." >&2
+  exit 1
+fi
+grep -Fq 'falhasRemoção=2' "$test_tmp_dir/refused-removal.log"
 
 if AIHUB_DOCKER_CLEANUP_MIN_AGE_SECONDS=-1 \
   bash "$test_root/scripts/cleanup-temporary-docker-images.sh" once \

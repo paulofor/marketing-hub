@@ -5,6 +5,7 @@ cleanup_mode="${1:-once}"
 cleanup_interval_seconds="${AIHUB_DOCKER_CLEANUP_INTERVAL_SECONDS:-600}"
 cleanup_min_age_seconds="${AIHUB_DOCKER_CLEANUP_MIN_AGE_SECONDS:-3600}"
 cleanup_docker_timeout_seconds="${AIHUB_DOCKER_CLEANUP_DOCKER_TIMEOUT_SECONDS:-20}"
+cleanup_lock_wait_seconds="${AIHUB_DOCKER_CLEANUP_LOCK_WAIT_SECONDS:-0}"
 cleanup_dry_run="${AIHUB_DOCKER_CLEANUP_DRY_RUN:-false}"
 cleanup_target_session="${AIHUB_DOCKER_CLEANUP_SESSION:-}"
 session_directory="${AIHUB_HOMOLOGATION_SESSION_DIR:-${TMPDIR:-/tmp}/marketinghub-docker-homologation-sessions}"
@@ -28,6 +29,11 @@ if ! [[ "$cleanup_min_age_seconds" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
+if ! [[ "$cleanup_lock_wait_seconds" =~ ^[0-9]+$ ]]; then
+  echo "AIHUB_DOCKER_CLEANUP_LOCK_WAIT_SECONDS deve ser um inteiro não negativo." >&2
+  exit 2
+fi
+
 if [[ "$cleanup_dry_run" != "true" && "$cleanup_dry_run" != "false" ]]; then
   echo "AIHUB_DOCKER_CLEANUP_DRY_RUN deve ser true ou false." >&2
   exit 2
@@ -43,7 +49,13 @@ mkdir -p "$session_directory" "$(dirname "$cleanup_lock_file")"
 exec 8>"$cleanup_lock_file"
 
 cleanup_once() {
-  if ! flock -n 8; then
+  # A coleta periódica pode ceder; a coleta final deve comprovar sua própria execução.
+  if [[ "$cleanup_lock_wait_seconds" -gt 0 ]]; then
+    if ! flock -w "$cleanup_lock_wait_seconds" 8; then
+      echo "Timeout aguardando o lock da limpeza Docker; coleta não executada." >&2
+      return 1
+    fi
+  elif ! flock -n 8; then
     echo "Limpeza Docker já está em execução; esta passagem foi ignorada."
     return 0
   fi
@@ -155,6 +167,9 @@ cleanup_once() {
   printf '%s\n' \
     "Limpeza Docker concluída: candidatas=${candidates} referênciasRemovidas=${removed_references} sessõesAtivas=${active_sessions} recentes=${recent_images} emUso=${images_in_use} referênciasProtegidas=${protected_references} inválidas=${invalid_images} falhasRemoção=${removal_failures} dryRun=${cleanup_dry_run}."
   flock -u 8
+  if [[ "$removal_failures" -gt 0 ]]; then
+    return 1
+  fi
 }
 
 if [[ "$cleanup_mode" == "once" ]]; then

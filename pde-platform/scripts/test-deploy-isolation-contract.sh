@@ -16,10 +16,8 @@ if grep -q 'docker compose -f docker-compose.deploy.yml up -d --no-deps proxy' "
   exit 1
 fi
 
-if grep -Eq '^[[:space:]]+queue:' "${workflow}"; then
-  echo '[ARQUITETURA] A concorrência do GitHub Actions não aceita a chave queue.' >&2
-  exit 1
-fi
+# Reutiliza o contrato comum da fila para impedir regras contraditórias entre módulos.
+bash "${repository_root}/scripts/test-shared-vps-deploy-queue.sh"
 
 for required_contract in \
   'PROXY_CONTAINERS=' \

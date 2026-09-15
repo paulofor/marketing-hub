@@ -21,7 +21,11 @@ artefato de outra execução ativa ou evidência necessária ao diagnóstico.
    sem metadados íntegros são preservadas.
 4. A passagem periódica padrão ocorre a cada dez minutos e alcança somente sessões encerradas com
    imagens de ao menos uma hora. A coleta final da própria sessão não espera essa janela.
-5. Coletores concorrentes usam um lock único. Uma segunda passagem deve sair sem erro e sem mutação.
+5. Coletores concorrentes usam um lock único. Uma segunda passagem periódica cede
+   sem erro e sem mutação. A coleta final da sessão aguarda esse lock por até 30 segundos,
+   pois uma passagem ignorada não comprova a limpeza final. Prazo esgotado ou remoção
+   recusada pelo Docker retornam erro; o wrapper preserva o erro original da homologação
+   quando já houver falha. Nenhuma espera autoriza remoção forçada ou ampliação de escopo.
 6. O modo `AIHUB_DOCKER_CLEANUP_DRY_RUN=true` deve listar decisões sem remover referências.
 7. Cada passagem relata candidatas, referências removidas, sessões ativas, imagens recentes, imagens em
    uso, referências protegidas, metadados inválidos e recusas de remoção.

@@ -5,6 +5,7 @@ cd "$(dirname "$0")/../.."
 : "${AIHUB_HOMOLOGATION_SESSION:?Execute pelo wrapper de homologação Docker}"
 [[ "$EVIDENCE_COMPOSE_PROJECT" =~ ^aihub-[a-z0-9-]+$ ]] || exit 2
 fixture=pde-platform/scripts/fixtures/backend-proxy
+node --test "$fixture/http-probe.test.mjs"
 export PROXY_BACKEND_IMAGE="aihub-homologation/$AIHUB_HOMOLOGATION_SESSION/proxy-backend:latest"
 export PROXY_PUBLIC_IMAGE="aihub-homologation/$AIHUB_HOMOLOGATION_SESSION/proxy-public:latest"
 export PROXY_MIRA_IMAGE="aihub-homologation/$AIHUB_HOMOLOGATION_SESSION/proxy-mira:latest"

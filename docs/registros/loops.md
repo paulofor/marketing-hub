@@ -29,6 +29,13 @@
   concorrência real de processos, queda da sessão, filas, escopo, falhas parciais, retomada e
   publicação indevida após comando interrompido. Uso obrigatório em `AGENTS.md`.
 - Matriz, procedimento e evidências: `docs/homologacao/deploy-intervencao-coordenada-v1.md`.
+- Complemento local em 15/09/2026: `34957581245` encontrou HTTP 404 na comparação
+  da revisão homologada, ainda indisponível no GitHub. A intervenção real permanecia
+  `AWAITING_MERGE`. O reconciliador distingue essa espera de falhas de autenticação/API,
+  persiste o diagnóstico e mantém a pausa, sem substituir o SHA nem presumir integração.
+  Testes com estado/lock reais e CLI exercitam 404 repetido, disponibilização posterior,
+  uma única retomada, erros HTTP e respostas inválidas. Registro:
+  `docs/homologacao/actions-fila-retomada-proxy-2026-09-15.md`.
 - Complemento em 12/09/2026: a pausa protegeu as intervenções, mas sua saída manual e os
   eventos de push perdidos causaram recorrência de telas desatualizadas, inclusive Prompt para AIHUB.
   A retomada agora é preparada após homologação e conciliada automaticamente após integração,
@@ -258,6 +265,16 @@ o histórico Liquibase em MySQL 5.7, reaplicação, rollback e o diagnóstico pe
 Evidências: `docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`.
 
 ## LOOP-PDE-PROXY-IP-ANTIGO — backend saudável e contrato público com 502
+
+- **Lacuna da fixture em 15/09/2026:** `34957581216` encerrou com código 13 no
+  Node 20.20.2, sem diagnóstico da operação pendente. O mesmo código passou
+  localmente; uma conexão HTTP reutilizada sem referência ativa reproduziu exatamente
+  o encerramento silencioso, pois o timeout do socket não mantinha o prazo ativo.
+  A sonda agora possui prazo próprio até consumir todo o corpo, trata interrupções
+  e informa o cenário/rota em falha. Teste em subprocesso reproduz a condição de
+  ausência de referência e exige timeout explícito; Nginx real mantém os critérios
+  de DNS, autorização, isolamento e preservação de imagens. A configuração produtiva
+  do proxy não foi alterada. Registro: `docs/homologacao/actions-fila-retomada-proxy-2026-09-15.md`.
 
 - **Data:** 2026-09-10.
 - **Evidência:** run PDE `34466059383`; backend novo saudável em `172.18.0.4`, acesso direto 200,
@@ -3147,6 +3164,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 
 ## LOOP-PDE-REVISAO-MANIFESTO-GLOBAL-MUTAVEL — um produto bloqueia a revisão de outro
 
+- **Recorrência em 15/09/2026 após Vega v12:** Psique `34937653059` e Têmis
+  `34937653079` encontraram o hash do catálogo anterior na atestação v8 do Rigel.
+  O empacotador reproduziu a falha; a revalidação local do catálogo permitiu uma
+  atestação v9, preservando as anteriores. O CI do próprio PDE passa a conferir as
+  provas compartilhadas depois dos testes, com contrato que protege essa ordem.
+  Matriz dos revisores, pacotes, navegação e proxy documentada em
+  `docs/homologacao/actions-fila-retomada-proxy-2026-09-15.md`.
+
 - **Data:** 2026-08-28.
 - **Sintoma:** as tarefas #254 do Rigel e #256 da Vega foram bloqueadas antes do parecer de Psique
   com `SHA-256 divergente` em `pde-platform/frontend/src/App.tsx`, embora esse arquivo não pertença
@@ -3528,6 +3553,13 @@ run` também herdava o stdin do heredoc SSH, consumia silenciosamente os comando
   na conclusão, sem transportar credenciais.
 
 ## LOOP-ACTIONS-DEPLOY-HOST-COMPARTILHADO-CANCELADO — serviços válidos somem da fila
+
+- **Recorrência local em 15/09/2026:** `b0306ac9` removeu `queue: max` do PDE e criou
+  um contrato de isolamento que proibia essa opção suportada. O Actions `34957581209`
+  e a reprodução local rejeitaram a divergência. A fila foi restaurada; o isolamento
+  PDE reutiliza o validador central, e o CI executa os dois contratos juntos. Actionlint
+  mantém os controles negativos para valores inválidos e cancelamento incompatível.
+  Registro: `docs/homologacao/actions-fila-retomada-proxy-2026-09-15.md`.
 
 - **Data:** 2026-09-01.
 - **Sintoma confirmado no histórico:** as últimas execuções de OPRM Coletor MEI, Ops Monitor,
@@ -4535,6 +4567,15 @@ LACUNAS`, retirou a retentativa técnica e preservou `RESEARCH_MORE` como gate c
   seus gatilhos no CI central. Nenhuma nova chave SSH corrige essa falha anterior à conexão.
 
 ## LOOP-SANDBOX-IMAGENS-HOMOLOGACAO-SEM-CICLO-DE-VIDA — disco cresce entre matrizes locais
+
+- **Complemento em 15/09/2026:** a suíte integral do Actions, reproduzida localmente,
+  encontrou imagem não removida após falha do comando. Um teste com lock real confirmou
+  que a coleta final era ignorada como se fosse uma passagem periódica concorrente.
+  O wrapper agora exige a coleta final, aguardando o lock por até 30 segundos; timeout
+  e remoção recusada retornam erro sem perder a falha original nem forçar exclusões.
+  A passagem periódica continua cedendo sem mutações. Regressões cobrem concorrência,
+  recusa, timeout, imagens ativas e engine real; registro em
+  `docs/homologacao/actions-fila-retomada-proxy-2026-09-15.md`.
 
 - **Data:** 2026-09-05.
 - **Sintoma confirmado:** a engine Docker isolada chegou a 216 imagens e 33,8 GB durante homologações

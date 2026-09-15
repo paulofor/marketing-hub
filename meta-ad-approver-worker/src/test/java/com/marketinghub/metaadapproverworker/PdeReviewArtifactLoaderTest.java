@@ -155,7 +155,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/produto-homologation-v2.json");
   }
 
-  /** Confirma que fonte e pacote preservam o histórico e a revalidação vigente de Rigel e MUSA. */
+  /** Confirma o histórico e a revalidação do Rigel após a inclusão do MUSA v12 no catálogo. */
   @Test
   void validatesCurrentRepositoryHomologationManifest() throws Exception {
     Path repository = evidenceRepository();
@@ -171,6 +171,7 @@ class PdeReviewArtifactLoaderTest {
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v8.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v9.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
             "pde-platform/contracts/musa-v7-commercial-homologation-v5.json");
   }
@@ -377,7 +378,7 @@ class PdeReviewArtifactLoaderTest {
         .hasMessageContaining("App.tsx");
   }
 
-  /** Confirma na fonte ou no pacote que Têmis não mistura provas comerciais entre PDEs. */
+  /** Confirma a atestação vigente na fonte e no pacote, sem misturar provas entre PDEs. */
   @Test
   void segregatesCurrentRepositoryEvidenceByProduct() throws Exception {
     Path repository = evidenceRepository();
@@ -409,6 +410,8 @@ class PdeReviewArtifactLoaderTest {
     assertThat(rigel)
         .extracting(item -> item.get("path"))
         .contains(
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v9.json",
+            "pde-platform/contracts/kit-whatsapp-tasting-homologation-v8.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v7.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v6.json",
             "pde-platform/contracts/kit-whatsapp-tasting-homologation-v5.json",

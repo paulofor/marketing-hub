@@ -43,8 +43,11 @@ class RecoveryGitHub(base.FakeGitHub):
         self.jobs = {}
         self.dispatches = []
         self.lose_receipt = False
+        self.missing_commits = []
 
     def api(self, path, method="GET", payload=None):
+        if path.startswith("compare/") and path.split("/", 1)[1].split("...")[0] in self.missing_commits:
+            raise module.GitHubApiError("Comparação indisponível (HTTP 404).", status=404)
         if path == "git/ref/heads/main":
             return {"object": {"sha": self.sha}}
         if re.fullmatch(r"actions/runs/\d+", path):
@@ -137,6 +140,67 @@ class AutomaticRecoveryTest(unittest.TestCase):
         for _ in range(3):
             self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
         self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_missing_validated_commit_waits_without_mutations_then_recovers(self):
+        prepared = self.prepare()
+        self.github.missing_commits = [VALIDATED]
+        calls = len(self.github.calls)
+        for _ in range(3):
+            result = self.recovery.reconcile()
+            self.assertEqual(result["status"], "WAITING")
+            self.assertIn(VALIDATED, result["reason"])
+            self.assertIn("HTTP 404", result["reason"])
+        state = self.store.load()
+        self.assertEqual(state["phase"], "AWAITING_MERGE")
+        self.assertEqual(state["automatic_resume"], prepared["automatic_resume"])
+        self.assertEqual(self.github.dispatches, [])
+        self.assertTrue(all(method == "GET" for method, _ in self.github.calls[calls:]))
+        self.assertEqual(sum(e["event"] == "publishers_reconciled" for e in state["history"]), 1)
+        self.github.missing_commits = []
+        self.recovery.reconcile()
+        self.assertEqual(self.store.load()["phase"], "RELEASED")
+        self.assertEqual(len(self.github.dispatches), 1)
+
+    def test_missing_initial_commit_also_preserves_protection(self):
+        self.prepare()
+        self.github.missing_commits = [SHA]
+        self.assertEqual(self.recovery.reconcile()["status"], "WAITING")
+        self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_other_http_errors_are_not_mistaken_for_unmerged_revision(self):
+        self.prepare()
+        original = self.github.api
+        for status in (401, 403, 422, 429, 500, 503):
+            def failing_comparison(path, method="GET", payload=None):
+                if path.startswith("compare/"):
+                    raise module.GitHubApiError("Erro simulado.", status=status)
+                return original(path, method, payload)
+            with self.subTest(status=status), patch.object(self.github, "api", side_effect=failing_comparison):
+                with self.assertRaises(module.GitHubApiError):
+                    self.recovery.reconcile()
+            self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_not_found_outside_comparison_remains_an_error(self):
+        self.prepare()
+        with patch.object(self.github, "api", side_effect=module.GitHubApiError("Main indisponível.", status=404)):
+            with self.assertRaises(module.GitHubApiError):
+                self.recovery.reconcile()
+        self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
+        self.assertEqual(self.github.dispatches, [])
+
+    def test_malformed_comparison_never_authorizes_resume(self):
+        self.prepare()
+        original = self.github.api
+        for response in (None, [], {}, {"status": "unknown"}):
+            def comparison(path, method="GET", payload=None):
+                return response if path.startswith("compare/") else original(path, method, payload)
+            with self.subTest(response=response), patch.object(self.github, "api", side_effect=comparison):
+                with self.assertRaisesRegex(ValueError, "Comparação de revisões inválida"):
+                    self.recovery.reconcile()
+            self.assertEqual(self.store.load()["phase"], "AWAITING_MERGE")
         self.assertEqual(self.github.dispatches, [])
 
     def test_preparation_requires_full_commit_evidence_and_idle_operation(self):
@@ -427,6 +491,15 @@ class RecoveryContractsTest(unittest.TestCase):
         self.assertEqual(json.loads(run.call_args.kwargs["input"]), {"ref": "main"})
         self.assertIn("X-GitHub-Api-Version: 2026-03-10", run.call_args.args[0])
 
+    def test_github_errors_preserve_http_status_without_echoing_credentials(self):
+        for status in (401, 403, 404, 422, 429, 503):
+            result = subprocess.CompletedProcess([], 1, "sensitive response", f"sensitive header (HTTP {status})")
+            with self.subTest(status=status), patch.object(module.subprocess, "run", return_value=result):
+                with self.assertRaises(module.GitHubApiError) as caught:
+                    module.GitHub().api(f"compare/{VALIDATED}...{SHA}")
+                self.assertEqual(caught.exception.status, status)
+                self.assertNotIn("sensitive", str(caught.exception))
+
     def test_pagination_and_malformed_queries_fail_closed(self):
         api = module.GitHub()
         for response in ({}, {"total_count": 1000, "workflow_runs": []}, {"total_count": 2, "workflow_runs": [{}]}):
@@ -442,7 +515,7 @@ class RecoveryContractsTest(unittest.TestCase):
 
     def test_ci_runs_and_triggers_on_all_recovery_contracts(self):
         source = (ROOT / ".github/workflows/github-actions-contracts.yml").read_text()
-        for file in ("deploy_publisher_recovery.py", "deploy-publisher-recovery.json", "validate-publisher-recovery.py",
+        for file in ("deploy_publisher_recovery.py", "deploy_coordination_errors.py", "deploy-publisher-recovery.json", "validate-publisher-recovery.py",
                      "test-publisher-recovery.py", "deploy-control-known-hosts"):
             self.assertEqual(source.count(f'      - "scripts/{file}"'), 2)
         self.assertIn("python3 scripts/test-publisher-recovery.py", source)
@@ -493,8 +566,12 @@ class RecoveryCliTest(unittest.TestCase):
                         runs = [r for r in runs if r["status"] == query["status"][0]]
                     response = {"total_count": len(runs), "workflow_runs": runs}
                 else:
-                    response = client.api(path, method, payload)
-                fields = ("workflows", "sha", "completed_runs", "jobs", "dispatches")
+                    try:
+                        response = client.api(path, method, payload)
+                    except tests.module.GitHubApiError as error:
+                        print(f"gh: Not Found (HTTP {error.status})", file=sys.stderr)
+                        sys.exit(1)
+                fields = ("workflows", "sha", "completed_runs", "jobs", "dispatches", "missing_commits")
                 state_file.write_text(json.dumps({key: getattr(client, key) for key in fields}))
                 if response is not None:
                     print(json.dumps(response))
@@ -529,6 +606,19 @@ class RecoveryCliTest(unittest.TestCase):
             state = call("prepare-resume", "--id", state["id"], "--validated-commit", VALIDATED,
                          "--evidence", "matriz sintética aprovada")
             self.assertEqual(state["phase"], "AWAITING_MERGE")
+            state_file = root / "github.json"
+            github_state = json.loads(state_file.read_text())
+            github_state["missing_commits"] = [VALIDATED]
+            state_file.write_text(json.dumps(github_state))
+            for transport_flag in (("--actions-ssh",), ()):
+                result = call("reconcile-publishers", *transport_flag)
+                self.assertEqual(result["status"], "WAITING")
+                self.assertEqual(result["phase"], "AWAITING_MERGE")
+                self.assertIn("HTTP 404", result["reason"])
+            github_state = json.loads(state_file.read_text())
+            self.assertEqual(github_state["dispatches"], [])
+            github_state["missing_commits"] = []
+            state_file.write_text(json.dumps(github_state))
             self.assertEqual(call("reconcile-publishers", "--actions-ssh")["status"], "WAITING")
             self.assertEqual(call("reconcile-publishers")["status"], "WAITING")
             state_file = root / "github.json"

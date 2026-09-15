@@ -33,14 +33,17 @@ public class ProductCatalogService {
     private static final String MUSA_V5_EXPERIENCE_VERSION = "musa-pde-entry-v5-video-explicativo";
     private static final String MUSA_V6_EXPERIENCE_VERSION = "musa-pde-entry-v6-video-motivacional";
     private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    private static final String MUSA_V12_EXPERIENCE_VERSION =
+            "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
     private static final String MUSA_V7_CONTRACT_RESOURCE = "/contracts/musa-v7-product-v1.json";
+    private static final String MUSA_V12_CONTRACT_RESOURCE = "/contracts/musa-v12-product-v1.json";
     private static final Map<String, String> MUSA_VERSIONED_HOST_EXPERIENCES = Map.of(
             "v1.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
             "v2.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
             "v5.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
             "v6.clubemusa.com.br", MUSA_V6_EXPERIENCE_VERSION,
             "v7.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
-            "v8.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
+            "v8.clubemusa.com.br", MUSA_V12_EXPERIENCE_VERSION,
             "v9.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION,
             "v10.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION);
 
@@ -154,6 +157,8 @@ public class ProductCatalogService {
         }
         if (MUSA_V7_EXPERIENCE_VERSION.equals(selectedExperienceVersion.trim())) {
             product = createMusaV7Product();
+        } else if (MUSA_V12_EXPERIENCE_VERSION.equals(selectedExperienceVersion.trim())) {
+            product = createMusaV12Product();
         }
         return new ProductExperienceResponse(
                 product.slug(),
@@ -220,6 +225,9 @@ public class ProductCatalogService {
             return "video-motivacional";
         }
         if (normalized.contains("espelho-antes-de-sair")) {
+            return "espelho-antes-de-sair";
+        }
+        if (normalized.contains("primeiro-ajuste-aplicavel")) {
             return "espelho-antes-de-sair";
         }
         if (normalized.contains("estrada-desejo")) {
@@ -477,14 +485,25 @@ public class ProductCatalogService {
 
     /** Carrega o contrato canônico da v7 usado tanto para paridade quanto para fallback seguro. */
     private static ProductExperienceResponse createMusaV7Product() {
-        try (InputStream input = ProductCatalogService.class.getResourceAsStream(MUSA_V7_CONTRACT_RESOURCE)) {
+        return readVersionedMusaContract(MUSA_V7_CONTRACT_RESOURCE, "v7");
+    }
+
+    /** Carrega o contrato próprio da v12 para não misturar a hipótese do ciclo com a v7. */
+    private static ProductExperienceResponse createMusaV12Product() {
+        return readVersionedMusaContract(MUSA_V12_CONTRACT_RESOURCE, "v12");
+    }
+
+    /** Desserializa um contrato versionado do MUSA com erro fechado e contexto operacional. */
+    private static ProductExperienceResponse readVersionedMusaContract(
+            String resource, String versionLabel) {
+        try (InputStream input = ProductCatalogService.class.getResourceAsStream(resource)) {
             if (input == null) {
-                throw new IOException("Contrato canônico MUSA v7 não encontrado no classpath");
+                throw new IOException("Contrato canônico MUSA " + versionLabel + " não encontrado no classpath");
             }
             return new ObjectMapper().readValue(input, ProductExperienceResponse.class);
         } catch (IOException ex) {
-            log.error("Falha ao carregar contrato canônico MUSA v7; resource={}", MUSA_V7_CONTRACT_RESOURCE, ex);
-            throw new IllegalStateException("Contrato canônico MUSA v7 inválido", ex);
+            log.error("Falha ao carregar contrato canônico MUSA {}; resource={}", versionLabel, resource, ex);
+            throw new IllegalStateException("Contrato canônico MUSA " + versionLabel + " inválido", ex);
         }
     }
 

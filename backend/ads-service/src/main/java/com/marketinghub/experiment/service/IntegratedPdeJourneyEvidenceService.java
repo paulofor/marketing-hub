@@ -109,6 +109,7 @@ public class IntegratedPdeJourneyEvidenceService {
     try {
       JsonNode evidence = objectMapper.readTree(instance.getObjectiveEvidenceJson());
       return "PDE_SALES_JOURNEY_INTEGRATION_V1".equals(evidence.path("evidenceType").asText())
+          && "COMMERCIAL".equals(evidence.path("journeyMode").asText())
           && Objects.equals(experiment.getId(), evidence.path("experimentId").longValue())
           && Objects.equals(experiment.getProduct().getId(), evidence.path("productId").longValue())
           && Objects.equals(slot.getId(), evidence.path("slotId").longValue())

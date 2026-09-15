@@ -61,4 +61,26 @@ class CommercialOfferServiceTest {
         assertThat(offer.supplierRegistrationNumber()).isEqualTo("00.000.000/0001-00");
         server.verify();
     }
+
+    /** Encaminha o slot do host versionado para impedir seleção por data de atualização. */
+    @Test
+    void forwardsVersionedHostSlotToMarketingHub() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        CommercialOfferService service = new CommercialOfferService(builder, "http://marketing-hub");
+        server.expect(requestTo(
+                        "http://marketing-hub/api/products/public/metodo-musa-7-dias/commercial-offer?slotCode=v8"))
+                .andRespond(withSuccess(
+                        """
+                        {"productSlug":"metodo-musa-7-dias","experienceVersion":"musa-pde-entry-v12-primeiro-ajuste-aplicavel","layoutKey":"espelho-antes-de-sair","experimentId":92,"experimentStatus":"PLANNED","acquisitionChannel":"FACEBOOK","pain":"Dúvida no primeiro ajuste","proof":"Primeiro ajuste aplicável","promise":"Seu primeiro ajuste pronto para aplicar","primaryCta":"Ver meu primeiro ajuste MUSA","priceBrl":67,"checkoutUrl":"https://go.pepper.com.br/owm6x","salesPageUrl":"https://v8.clubemusa.com.br","supplierDisplayName":"Digicom Digital","supplierRegistrationNumber":"00.000.000/0001-00","supportEmail":"teste@sandbox.local","termsUrl":"https://v8.clubemusa.com.br/terms","privacyUrl":"https://v8.clubemusa.com.br/privacy","refundPolicyUrl":"https://v8.clubemusa.com.br/refund-policy"}
+                        """,
+                        MediaType.APPLICATION_JSON));
+
+        var offer = service.getOffer("metodo-musa-7-dias", "v8.clubemusa.com.br");
+
+        assertThat(offer.experimentId()).isEqualTo(92L);
+        assertThat(offer.experienceVersion())
+                .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+        server.verify();
+    }
 }

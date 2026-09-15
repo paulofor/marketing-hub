@@ -168,7 +168,8 @@ public class ExperimentReadinessService {
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
     boolean mediaBudgetReady = hasReadyMediaBudget(experiment);
-    boolean commercialMaterialReady = hasCreatives || pdeOperationalEvidenceReady;
+    boolean commercialMaterialReady =
+        requiresMetaTargeting ? hasCreatives : hasCreatives || pdeOperationalEvidenceReady;
     boolean landingAssetLineageReady =
         pdeOperationalEvidenceReady
             || reusablePdeSuccessorDestinationReady
@@ -386,11 +387,11 @@ public class ExperimentReadinessService {
                 "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
             runningRequirement(
                 "CREATIVE_APPROVED",
-                integratedPdeReady
+                integratedPdeReady && !requiresMetaTargeting
                     ? "Jornada PDE integrada"
                     : directPdeReady ? "Material da abordagem pronto" : "Criativo aprovado",
                 commercialMaterialReady,
-                integratedPdeReady
+                integratedPdeReady && !requiresMetaTargeting
                     ? "O processo comercial comprovou comunicação, criativos e destino na jornada PDE integrada."
                     : directPdeReady
                         ? "O run produtivo homologou a microexperiência e os materiais da abordagem individual."
@@ -598,7 +599,8 @@ public class ExperimentReadinessService {
     boolean pdeOperationalEvidenceReady = directPdeReady || integratedPdeReady;
     boolean reusablePdeSuccessorDestinationReady =
         hasReusablePdeSuccessorDestinationEvidence(experiment);
-    if (!pdeOperationalEvidenceReady && !hasApprovedCreative(experiment)) {
+    if ((!pdeOperationalEvidenceReady || requiresMetaTargeting(experiment))
+        && !hasApprovedCreative(experiment)) {
       missing.add("creativeApproval");
       if (!publicationCopyViolations(experiment).isEmpty()) {
         missing.add("creativeCopy");

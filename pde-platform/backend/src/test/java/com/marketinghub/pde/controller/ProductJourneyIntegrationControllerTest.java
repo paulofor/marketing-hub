@@ -21,7 +21,7 @@ class ProductJourneyIntegrationControllerTest {
     void exposesJourneyIntegrationByProductSlug() throws Exception {
         ProductJourneyIntegrationContractService service =
                 mock(ProductJourneyIntegrationContractService.class);
-        when(service.get("kit-whatsapp-pronto"))
+        when(service.get("kit-whatsapp-pronto", "v8.clubemusa.com.br"))
                 .thenReturn(
                         new ProductJourneyIntegrationContractResponse(
                                 "kit-whatsapp-pronto",
@@ -39,7 +39,8 @@ class ProductJourneyIntegrationControllerTest {
         MockMvc mvc =
                 MockMvcBuilders.standaloneSetup(new ProductJourneyIntegrationController(service)).build();
 
-        mvc.perform(get("/api/pde/products/kit-whatsapp-pronto/integration-contract"))
+        mvc.perform(get("/api/pde/products/kit-whatsapp-pronto/integration-contract")
+                        .header("Host", "v8.clubemusa.com.br"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productSlug").value("kit-whatsapp-pronto"))
                 .andExpect(jsonPath("$.contractVersion").value("PDE_COMMERCIAL_JOURNEY_EVENTS_V1"))

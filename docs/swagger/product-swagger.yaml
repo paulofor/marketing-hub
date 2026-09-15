@@ -750,9 +750,19 @@ paths:
           schema:
             type: string
           example: kit-whatsapp-pronto
+        - name: slotCode
+          in: query
+          description: Seleciona a oferta vinculada ao slot público exato.
+          schema: { type: string }
+          example: v8
+        - name: experienceVersion
+          in: query
+          description: Seleciona a oferta vinculada à versão exata da experiência.
+          schema: { type: string }
+          example: musa-pde-entry-v12-primeiro-ajuste-aplicavel
       responses:
         "200":
-          description: Oferta vendável vinculada ao produto, experimento e slot ativos.
+          description: Oferta vendável vinculada ao produto, experimento e slot ativos; seletores informados precisam convergir para o mesmo slot.
           content:
             application/json:
               schema:

@@ -902,6 +902,35 @@ class ExperimentReadinessServiceTest {
     assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
   }
 
+  /** Mantém o criativo obrigatório no Facebook mesmo com toda a jornada PDE integrada. */
+  @Test
+  void shouldRequireOwnApprovedCreativeForIntegratedFacebookPde() {
+    Long experimentId = 92L;
+    Experiment experiment = buildExperiment(experimentId, 79L);
+    experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setFollowUpActionUrl("https://v8.clubemusa.com.br");
+    experiment.setProduct(Product.builder().id(4L).slug("metodo-musa-7-dias").build());
+    completeCommercialContract(experiment);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(0L);
+    when(integratedPdeJourneyEvidenceService.appliesTo(experiment)).thenReturn(true);
+    when(integratedPdeJourneyEvidenceService.isReady(experiment)).thenReturn(true);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.eligibleForRunning()).isFalse();
+    assertThat(summary.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .contains(ExperimentReadinessIssueType.CREATIVE);
+    assertThat(service.computeMissingConfiguration(experiment)).contains("creativeApproval");
+  }
+
   /** Libera o formulário do Rigel quando o run produtivo já auditou a jornada completa. */
   @Test
   void shouldUseAuditedDirectPreflightForLowTicketPdeReadiness() {

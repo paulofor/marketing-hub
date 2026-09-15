@@ -49,6 +49,7 @@ services:
       PDE_PLATFORM_FRONTEND_V5_IMAGE: ${PDE_PLATFORM_FRONTEND_V5_IMAGE:-}
       PDE_PLATFORM_FRONTEND_V6_IMAGE: ${PDE_PLATFORM_FRONTEND_V6_IMAGE:-}
       PDE_PLATFORM_FRONTEND_V7_IMAGE: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:-}
+      PDE_PLATFORM_FRONTEND_V8_IMAGE: ${PDE_PLATFORM_FRONTEND_V8_IMAGE:-}
       PDE_AI_WORKER_IMAGE: ${PDE_AI_WORKER_IMAGE:-}
     volumes:
       - pde-platform-data:/data/pde
@@ -157,6 +158,41 @@ services:
       PDE_FRONTEND_PUBLIC_URL: https://v7.clubemusa.com.br
       PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V7_IMAGE:-}
       PDE_FRONTEND_VERSION_ID: v7
+      PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
+      PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
+      PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    networks:
+      - pde-platform-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  pde-platform-frontend-v8:
+    image: ${PDE_PLATFORM_FRONTEND_V8_IMAGE:?PDE_PLATFORM_FRONTEND_V8_IMAGE is required}
+    container_name: pde-platform-frontend-v8
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      com.marketinghub.pde.product-id: "4"
+      com.marketinghub.pde.product-slug: metodo-musa-7-dias
+    ports:
+      - "${PDE_PLATFORM_FRONTEND_V8_PORT:-5181}:80"
+    environment:
+      VITE_MUSA_CHECKOUT_URL: ${VITE_MUSA_CHECKOUT_URL:-https://go.pepper.com.br/owm6x}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v12-primeiro-ajuste-aplicavel
+      VITE_MUSA_HERO_STREAM_URL: ${VITE_MUSA_V12_HERO_STREAM_URL:-}
+      VITE_MUSA_HERO_VIDEO_URL: ${VITE_MUSA_V12_HERO_VIDEO_URL:-}
+      PDE_FRONTEND_VERSION: v8
+      PDE_FRONTEND_PUBLIC_URL: https://v8.clubemusa.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_V8_IMAGE:-}
+      PDE_FRONTEND_VERSION_ID: v8
       PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
       PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
       PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}

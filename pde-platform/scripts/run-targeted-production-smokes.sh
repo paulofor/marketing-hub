@@ -83,6 +83,17 @@ validate_v7() {
     musa-pde-entry-v7-espelho-antes-de-sair
 }
 
+validate_v8() {
+  run_public_health https://v8.clubemusa.com.br
+  run_public_diagnostic \
+    https://v8.clubemusa.com.br \
+    musa-pde-entry-v12-primeiro-ajuste-aplicavel
+  run_musa_consistency \
+    https://v8.clubemusa.com.br \
+    musa-pde-entry-v12-primeiro-ajuste-aplicavel \
+    "Você já escolheu a roupa. Falta saber qual ajuste fazer primeiro."
+}
+
 validate_mira() {
   run_mira_private "${MIRA_PUBLIC_BASE_URL:-https://v7.clubemusa.com.br}"
 }
@@ -103,6 +114,9 @@ case "${target_frontend}" in
   v7)
     validate_v7
     ;;
+  v8)
+    validate_v8
+    ;;
   mira)
     validate_mira
     ;;
@@ -113,6 +127,7 @@ case "${target_frontend}" in
     validate_v5
     validate_v6
     validate_v7
+    validate_v8
     validate_mira
     validate_kit_whatsapp
     ;;

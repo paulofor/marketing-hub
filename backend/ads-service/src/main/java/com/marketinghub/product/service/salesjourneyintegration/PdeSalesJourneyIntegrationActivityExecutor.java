@@ -162,20 +162,21 @@ public class PdeSalesJourneyIntegrationActivityExecutor
           false, "Não existe executor backend para esta atividade.");
     }
     try {
-      boolean scopedCycle = scopedCycle(product, sourceReference).isPresent();
-      if (!scopedCycle && !ELIGIBLE_COMMERCIAL_STATUSES.contains(product.getCommercialStatus())) {
+      var cycle = scopedCycle(product, sourceReference);
+      if (cycle.isEmpty()
+          && !ELIGIBLE_COMMERCIAL_STATUSES.contains(product.getCommercialStatus())) {
         return new BackendProductProcessActivityReadiness(
             false,
             "O produto não está no processo de comunicação e jornada; a execução por uma rota histórica foi bloqueada.");
       }
       Optional<String> predecessorIssue =
-          scopedCycle
+          cycle.isPresent()
               ? cyclePredecessorIssue(process, sourceReference)
               : predecessorIssue(process, product);
       if (predecessorIssue.isPresent()) {
         return new BackendProductProcessActivityReadiness(false, predecessorIssue.get());
       }
-      if (scopedCycle) {
+      if (cycle.filter(this::requiresPrivatePreparation).isPresent()) {
         return privateJourney.readiness(process, activityDefinition, product, sourceReference);
       }
     } catch (RuntimeException ex) {
@@ -207,7 +208,7 @@ public class PdeSalesJourneyIntegrationActivityExecutor
       throw new IllegalStateException(readiness.reason());
     }
     var cycle = scopedCycle(product, sourceReference);
-    if (cycle.isPresent()) {
+    if (cycle.filter(this::requiresPrivatePreparation).isPresent()) {
       return privateJourney.complete(process, activityDefinition, product, sourceReference);
     }
     Experiment experiment = sourceExperiment(product, sourceReference);
@@ -223,7 +224,9 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         activityInstanceRepository
             .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
                 activityDefinition.getId(), resolvedReference);
-    if (latest.isPresent() && "COMPLETED".equals(latest.get().getStatus())) {
+    if (latest.isPresent()
+        && "COMPLETED".equals(latest.get().getStatus())
+        && isCommercialIntegrationEvidence(latest.get())) {
       if (cycle.isEmpty()) advanceProductIfNeeded(product);
       return new BackendProductProcessActivityExecutionResult(
           resolvedReference,
@@ -286,6 +289,40 @@ public class PdeSalesJourneyIntegrationActivityExecutor
         || !"OPEN".equals(cycle.get().getStatus()))
       throw new IllegalStateException("O ciclo não está aberto para este produto.");
     return cycle;
+  }
+
+  /** Mantém o destino privado apenas até a homologação; autorização exige superfície comercial. */
+  private boolean requiresPrivatePreparation(
+      com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle cycle) {
+    return cycle.getStage() == null
+        || Set.of(
+                "LEARNING",
+                "PLANNING",
+                "ADJUSTMENT",
+                "VIDEO_BRIEF",
+                "CAMPAIGN_VIDEO",
+                "PDE_ENTRY_VIDEO",
+                "VIDEO_APPROVAL",
+                "VALIDATION")
+            .contains(cycle.getStage());
+  }
+
+  /** Reutiliza somente conclusão pública do slot, nunca a integração privada arquivada do ciclo. */
+  private boolean isCommercialIntegrationEvidence(BusinessProcessActivityInstance instance) {
+    if (!StringUtils.hasText(instance.getObjectiveEvidenceJson())) {
+      return false;
+    }
+    try {
+      JsonNode evidence = objectMapper.readTree(instance.getObjectiveEvidenceJson());
+      return "PDE_SALES_JOURNEY_INTEGRATION_V1".equals(evidence.path("evidenceType").asText())
+          && "COMMERCIAL".equals(evidence.path("journeyMode").asText());
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao identificar o modo da integração PDE. activityInstanceId={}",
+          instance.getId(),
+          ex);
+      return false;
+    }
   }
 
   /**
@@ -585,6 +622,7 @@ public class PdeSalesJourneyIntegrationActivityExecutor
       List<String> blockers) {
     ObjectNode evidence = objectMapper.createObjectNode();
     evidence.put("evidenceType", "PDE_SALES_JOURNEY_INTEGRATION_V1");
+    evidence.put("journeyMode", "COMMERCIAL");
     evidence.put("productId", product.getId());
     evidence.put("productSlug", product.getSlug());
     evidence.put("commercialPlanId", plan.getId());

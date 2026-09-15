@@ -125,6 +125,20 @@ predecessoras obrigatórias que bloqueiem a primeira passagem pelo BPM.
   reprovação invalida a aprovação anterior também antes da publicação ou expansão.
 - Publicação exige os gates canônicos e autorização explícita de orçamento e janela. Registrar um
   ciclo, aprovar uma etapa ou solicitar escala não ativa campanhas nem autoriza gastos externos.
+- A confirmação de orçamento e janela do ciclo materializa atomicamente no experimento Facebook o
+  teto exato, o período restante e um orçamento diário que não pode ultrapassar esse teto. Não se
+  exige que o operador repita os mesmos valores na tela do experimento. Se a confirmação ou algum
+  gate falhar, a transação inteira é revertida. Planos históricos maiores não ampliam o teto atual.
+- A autorização comercial final de um experimento Facebook solicita a liberação ao worker e mantém
+  o experimento em `PLANNED` até a campanha ser registrada. Somente a confirmação externa da
+  campanha pode marcar `RUNNING`; a tela não pode antecipar esse estado.
+- Depois da confirmação do teto, tanto `AUTHORIZATION` quanto `PUBLICATION` orientam o operador ao
+  Processo 5 canônico. O ciclo não pode abandonar a passagem no detalhe genérico do experimento nem
+  exigir que o usuário descubra manualmente onde concluir integração, preflight e liberação.
+- Homologação privada não comprova destino comercial. Antes da autorização, o experimento precisa
+  ter oferta, versão pública, checkout, medição e jornada comercial da versão atual. Em Facebook,
+  também exige criativo aprovado e segmentação próprios do experimento; ativos do predecessor não
+  podem ser herdados silenciosamente. A liberação de mídia continua uma decisão humana explícita.
 - Cada comando possui chave idempotente e revisão esperada; concorrência, replay divergente e
   comando de tela desatualizada não podem duplicar ciclos ou apagar decisões.
 - A cronologia usa `DATETIME(6)` e instantes normalizados a microssegundos, compatíveis com o run

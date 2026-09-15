@@ -79,6 +79,7 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
     cycle.setProductId(rigel.getId());
     cycle.setExperimentId(92L);
     cycle.setStatus("OPEN");
+    cycle.setStage("VALIDATION");
     cycle.setBaseline(false);
     when(cycles.findByExperimentId(92L)).thenReturn(Optional.of(cycle));
     rigel.setCommercialStatus("EM_OPERACAO");
@@ -121,6 +122,56 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
     cycle.setStatus("CLOSED");
     assertThat(executor.readiness(process, integration, rigel, "experiment:92").ready()).isFalse();
     verifyNoInteractions(slotService, products, periods);
+  }
+
+  /** Na autorização, ignora a antiga conclusão privada e comprova o slot comercial do ciclo. */
+  @Test
+  void replacesPrivatePreparationWithCommercialIntegrationAtAuthorization() {
+    var cycles =
+        mock(com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(executor, "learningCycles", cycles);
+    var privateJourney = mock(com.marketinghub.communication.v1.PrivateCommunicationJourney.class);
+    org.springframework.test.util.ReflectionTestUtils.setField(
+        executor, "privateJourney", privateJourney);
+    var cycle = new com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle();
+    cycle.setId(2L);
+    cycle.setProductId(rigel.getId());
+    cycle.setExperimentId(89L);
+    cycle.setStatus("OPEN");
+    cycle.setStage("AUTHORIZATION");
+    cycle.setProductVersion(slot.getExperienceVersion());
+    when(cycles.findByExperimentId(89L)).thenReturn(Optional.of(cycle));
+    when(experiments.findById(89L)).thenReturn(Optional.of(experiment));
+    var creatives = completedCycleActivity(173L, "creatives");
+    var destination = completedCycleActivity(174L, "destination");
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
+                process.getId(), "experiment:89"))
+        .thenReturn(List.of(creatives, destination));
+    var privateCompletion = completedCycleActivity(175L, "integration");
+    privateCompletion.setObjectiveEvidenceJson(
+        "{\"evidenceType\":\"PDE_PRIVATE_COMMUNICATION_JOURNEY_V1\",\"journeyMode\":\"PRIVATE\"}");
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            integration.getId(), "experiment:89"))
+        .thenReturn(Optional.of(privateCompletion));
+    when(slotService.validateProductionSlot("kit-whatsapp-pronto", "v1"))
+        .thenReturn(validatedSlot("OK", "Jornada íntegra"));
+
+    var result = executor.execute(process, integration, rigel, "experiment:89");
+
+    assertThat(result.operationalState()).isEqualTo("COMPLETED");
+    assertThat(result.objectiveAchieved()).isTrue();
+    verifyNoInteractions(privateJourney);
+    verify(slotService).validateProductionSlot("kit-whatsapp-pronto", "v1");
+    ArgumentCaptor<BusinessProcessActivityInstance> persisted =
+        ArgumentCaptor.forClass(BusinessProcessActivityInstance.class);
+    verify(instances, org.mockito.Mockito.atLeastOnce()).save(persisted.capture());
+    assertThat(persisted.getAllValues())
+        .anySatisfy(
+            value ->
+                assertThat(value.getObjectiveEvidenceJson())
+                    .contains("PDE_SALES_JOURNEY_INTEGRATION_V1")
+                    .contains("\"journeyMode\":\"COMMERCIAL\""));
   }
 
   /** Monta o processo 4 completo com as fontes persistidas do Rigel. */
@@ -313,6 +364,17 @@ class PdeSalesJourneyIntegrationActivityExecutorTest {
     definition.setName(activityId);
     definition.setDefinitionJson("{}");
     return definition;
+  }
+
+  /** Cria uma conclusão do próprio ciclo para liberar o próximo predecessor determinístico. */
+  private BusinessProcessActivityInstance completedCycleActivity(long id, String activityId) {
+    BusinessProcessActivityInstance instance = new BusinessProcessActivityInstance();
+    instance.setId(id);
+    instance.setActivityDefinition(activity(id, process, activityId));
+    instance.setStatus("COMPLETED");
+    instance.setObjectiveAchieved(true);
+    instance.setOccurrenceNumber(1);
+    return instance;
   }
 
   /** Monta o retorno atual da validação pública do slot. */

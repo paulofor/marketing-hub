@@ -5466,3 +5466,25 @@ a composição versionada e a preservação de cadeia/ciclo/experimento. Regras 
   todos os `RawSQLChange` da fixture e fixa o checksum histórico de Vega. Duas rodadas
   consecutivas em MySQL 5.7 aprovaram aplicação, rollback, reaplicação e idempotência.
   Evidências em `docs/homologacao/actions-learning-cycles-rollback-raw-sql-2026-09-15.md`.
+
+## LOOP-CICLO-AUTORIZACAO-SEM-SUPERFICIE-COMERCIAL — 2026-09-15
+
+- **Confirmado em Vega, ciclo 2 / experimento 92:** a tela oferecia concluir a autorização com
+  teto de R$ 100,00, mas o experimento não tinha teto operacional. O envio retornava HTTP 409.
+  Mesmo copiando esse valor, ainda faltavam versão pública própria, oferta, checkout, criativo,
+  segmentação e medição; a evidência existente era somente da jornada privada.
+- **Histórico comparado:** o experimento 91 possui superfície v7 e ativos comerciais completos,
+  mas pertence ao ciclo e à hipótese anteriores. O endpoint público sem seletor escolhia o slot
+  atualizado mais recentemente e chegou a combinar o produto Vega com um snapshot legado sem
+  produto, retornando 412. Reutilizar #91 resolveria sintomas e contaminaria a atribuição de #92.
+- **Causa-raiz:** prontidão, autorização e resolução da oferta usavam contratos diferentes. A
+  interface verificava o estágio do ciclo; o comando conferia o teto; a jornada pública escolhia
+  um slot global por recência. Não havia uma identidade comercial única por versão e experimento.
+- **Correção:** tornar seletor de slot/versão estrito, separar evidência privada da comercial,
+  exigir criativo próprio para Facebook, persistir teto/período diário no mesmo aceite financeiro
+  do ciclo e criar a superfície v8 isolada para a experiência v12 de Vega, com primeiro ajuste sem
+  custo de IA. A autorização final enfileira Facebook e só muda para `RUNNING` após a campanha
+  existir, eliminando a dependência circular que tentava ativar o experimento antes do worker.
+- **Prevenção:** testes de oferta versionada, correlação sem token bruto, prontidão Facebook,
+  jornada privada/comercial, teto do ciclo, isolamento Docker e navegação desktop/mobile. A
+  matriz fica em `docs/homologacao/vega-ciclo2-ativacao-comercial-v12.md`.

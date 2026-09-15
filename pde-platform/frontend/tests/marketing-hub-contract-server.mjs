@@ -13,6 +13,15 @@ const canonicalV7ContractPath =
 const canonicalV7Product = JSON.parse(
   readFileSync(canonicalV7ContractPath, "utf8"),
 );
+const canonicalV12ContractPath =
+  process.env.PDE_MUSA_V12_CONTRACT_PATH ??
+  path.resolve(
+    currentDirectory,
+    "../../backend/src/main/resources/contracts/musa-v12-product-v1.json",
+  );
+const canonicalV12Product = JSON.parse(
+  readFileSync(canonicalV12ContractPath, "utf8"),
+);
 const kitWhatsAppV1 = JSON.parse(
   readFileSync(
     process.env.PDE_KIT_WHATSAPP_V1_CONTRACT_PATH ??
@@ -40,6 +49,7 @@ const productSlug = "metodo-musa-7-dias";
 const v5ExperienceVersion = "musa-pde-entry-v5-video-explicativo";
 const v6ExperienceVersion = "musa-pde-entry-v6-video-motivacional";
 const v7ExperienceVersion = "musa-pde-entry-v7-espelho-antes-de-sair";
+const v12ExperienceVersion = "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
 const pepperTransactions = new Map();
 const kitWhatsAppOffer = {
   productSlug: "kit-whatsapp-pronto",
@@ -159,6 +169,9 @@ const slots = {
   },
   v7: {
     ...canonicalV7Product,
+  },
+  v8: {
+    ...canonicalV12Product,
   },
 };
 

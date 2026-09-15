@@ -4,6 +4,7 @@ const productSlug = "metodo-musa-7-dias";
 const v5ExperienceVersion = "musa-pde-entry-v5-video-explicativo";
 const v6ExperienceVersion = "musa-pde-entry-v6-video-motivacional";
 const v7ExperienceVersion = "musa-pde-entry-v7-espelho-antes-de-sair";
+const v12ExperienceVersion = "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
 const backendBaseUrl =
   process.env.PDE_TEST_BACKEND_URL ?? "http://127.0.0.1:8096";
 const frontendBaseUrl =
@@ -84,7 +85,7 @@ test.beforeEach(async ({ request }) => {
   expect(response.ok()).toBeTruthy();
 });
 
-test("v5, v6 e v7 usam backend PDE local real sem misturar contratos versionados", async ({
+test("v5, v6, v7 e v12 usam backend PDE local real sem misturar contratos versionados", async ({
   page,
   request,
 }) => {
@@ -216,6 +217,88 @@ test("v5, v6 e v7 usam backend PDE local real sem misturar contratos versionados
       );
     })
     .toBeTruthy();
+
+  await request.post(
+    `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/reset-campaign-start`,
+    { headers: internalHeaders },
+  );
+
+  await page.goto(
+    versionedFrontendUrl(
+      v12ExperienceVersion,
+      "/?utm_source=local&utm_campaign=v12_local_validation",
+    ),
+  );
+  await expect(
+    page.getByRole("heading", {
+      name: "Você já escolheu a roupa. Falta saber qual ajuste fazer primeiro.",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Qual combinação você já separou para usar?"),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Se sua imagem falasse antes de você hoje, qual mensagem ela passaria sem intenção?",
+    ),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Vídeo curto Método MUSA" }),
+  ).toBeVisible();
+  await expect(page.locator("video.public-hero-video")).toHaveAttribute(
+    "poster",
+    /42e2f15b3ea0-sales-video-21244-continuity-frame\.png/,
+  );
+  await expect
+    .poll(async () => {
+      const response = await request.get(
+        `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/summary?experienceVersion=${encodeURIComponent(v12ExperienceVersion)}`,
+      );
+      const summary = await response.json();
+      return (
+        summary.currentExperienceVersion === v12ExperienceVersion &&
+        summary.rawTotalEvents > 0
+      );
+    })
+    .toBeTruthy();
+});
+
+test("v12 entrega o primeiro ajuste gratuito sem IA antes do checkout", async ({
+  page,
+  request,
+}) => {
+  await page.goto(
+    versionedFrontendUrl(
+      v12ExperienceVersion,
+      "/?utm_source=local&utm_campaign=v12_first_adjustment_e2e",
+    ),
+  );
+  for (const option of [
+    "Calça e camisa ou blusa",
+    "Trabalho ou reunião",
+    "Segurança calma",
+    "Acrescentar uma terceira peça",
+  ]) {
+    await page.getByRole("button", { name: option }).click();
+  }
+  await page
+    .getByRole("button", { name: "Descobrir meu primeiro ajuste" })
+    .click();
+
+  await expect(
+    page.getByRole("region", { name: "Primeiro ajuste e prévia dos 7 dias" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Use calça e camisa ou blusa em trabalho ou reunião/i),
+  ).toBeVisible();
+  await expect(page.getByText(/acrescentar uma terceira peça/i)).toBeVisible();
+  await expect(page.locator(".public-email-capture")).toContainText("R$ 67");
+
+  const pendingResponse = await request.get(
+    `${backendBaseUrl}/api/internal/pde/ai-guidance/stage-executions/pending`,
+    { headers: internalHeaders },
+  );
+  expect(await pendingResponse.json()).toEqual([]);
 });
 
 test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", async ({
@@ -499,10 +582,9 @@ test("v7 entrega degustação local e acesso único de 90 dias sem fila de IA", 
   ).toBeVisible();
   expect(
     (
-      await request.get(
-        `${backendBaseUrl}/api/pde/access/workspace`,
-        { headers: accessHeaders(access.token) },
-      )
+      await request.get(`${backendBaseUrl}/api/pde/access/workspace`, {
+        headers: accessHeaders(access.token),
+      })
     ).status(),
   ).toBe(404);
   expect(

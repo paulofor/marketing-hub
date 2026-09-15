@@ -26,7 +26,7 @@ import { ConsultantSdkQaPreview } from "./consultant-sdk/v1/ConsultantSdkQaPrevi
 import { pdeAccessHeaders } from "./pdeAccessAuthorization";
 import {
   fallbackProduct,
-  MUSA_V7_EXPERIENCE_VERSION,
+  isMusaPublicRulesExperience,
   type ProductExperience,
   type MissionInteractionContract,
   type SupportMaterial,
@@ -894,7 +894,7 @@ function App() {
   );
   const currentProduct = workspace?.product ?? product;
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
-  const isMusaV7 = currentExperienceVersion === MUSA_V7_EXPERIENCE_VERSION;
+  const isMusaV7 = isMusaPublicRulesExperience(currentExperienceVersion);
   const currentMusaExperience = resolveMusaExperienceContract(
     currentExperienceVersion,
     currentProduct.layoutKey,
@@ -2043,14 +2043,11 @@ function App() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const response = await fetch(
-        "/api/pde/access/support-requests",
-        {
-          method: "POST",
-          headers: pdeAccessHeaders(accessToken, { json: true }),
-          body: JSON.stringify({ message: supportMessage.trim() }),
-        },
-      );
+      const response = await fetch("/api/pde/access/support-requests", {
+        method: "POST",
+        headers: pdeAccessHeaders(accessToken, { json: true }),
+        body: JSON.stringify({ message: supportMessage.trim() }),
+      });
       if (!response.ok) {
         throw new Error("Não foi possível registrar o suporte.");
       }
@@ -2090,18 +2087,15 @@ function App() {
     setErrorMessage("");
     setSuccessMessage("");
     try {
-      const response = await fetch(
-        "/api/pde/access/privacy-requests",
-        {
-          method: "POST",
-          headers: pdeAccessHeaders(accessToken, { json: true }),
-          body: JSON.stringify({
-            action,
-            correctedEmail:
-              action === "CORRECTION" ? correctedEmail.trim() : undefined,
-          }),
-        },
-      );
+      const response = await fetch("/api/pde/access/privacy-requests", {
+        method: "POST",
+        headers: pdeAccessHeaders(accessToken, { json: true }),
+        body: JSON.stringify({
+          action,
+          correctedEmail:
+            action === "CORRECTION" ? correctedEmail.trim() : undefined,
+        }),
+      });
       if (!response.ok) {
         throw new Error("Não foi possível executar o direito solicitado.");
       }
@@ -2464,7 +2458,6 @@ function App() {
     currentMusaExperience.usesMotivationalTimelineVideo;
   const showPublishedPublicDiagnosticVideoHero =
     !workspace &&
-    !isMusaV7 &&
     Boolean(heroPlaybackUrl) &&
     ((currentMusaExperience.supportsPublishedPublicDiagnosticVideoHero &&
       publicDiagnosticVideoVariant !== "control") ||

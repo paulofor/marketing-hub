@@ -62,7 +62,7 @@ class IntegratedPdeJourneyEvidenceServiceTest {
             "COMPLETED",
             true,
             """
-            {"evidenceType":"PDE_SALES_JOURNEY_INTEGRATION_V1","experimentId":89,
+            {"evidenceType":"PDE_SALES_JOURNEY_INTEGRATION_V1","journeyMode":"COMMERCIAL","experimentId":89,
              "productId":9,"slotId":7,"publicationAuthorized":false,
              "mediaSpendAuthorized":false}
             """);
@@ -87,9 +87,29 @@ class IntegratedPdeJourneyEvidenceServiceTest {
             "COMPLETED",
             true,
             """
-            {"evidenceType":"PDE_SALES_JOURNEY_INTEGRATION_V1","experimentId":89,
+            {"evidenceType":"PDE_SALES_JOURNEY_INTEGRATION_V1","journeyMode":"COMMERCIAL","experimentId":89,
              "productId":9,"slotId":8,"publicationAuthorized":true,
              "mediaSpendAuthorized":false}
+            """);
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-communication-sales-journey", "experiment:89"))
+        .thenReturn(List.of(instance));
+
+    assertThat(service.isReady(experiment)).isFalse();
+  }
+
+  /** Rejeita a homologação privada mesmo quando seus identificadores coincidem com o ciclo. */
+  @Test
+  void rejectsPrivateJourneyAsCommercialReadinessEvidence() {
+    BusinessProcessActivityInstance instance =
+        integrationInstance(
+            "COMPLETED",
+            true,
+            """
+            {"evidenceType":"PDE_SALES_JOURNEY_INTEGRATION_V1","journeyMode":"PRIVATE",
+             "experimentId":89,"productId":9,"slotId":7,
+             "publicationAuthorized":false,"mediaSpendAuthorized":false}
             """);
     when(instances
             .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(

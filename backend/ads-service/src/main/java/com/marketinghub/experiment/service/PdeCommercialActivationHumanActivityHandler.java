@@ -7,6 +7,7 @@ import com.marketinghub.businessprocess.execution.service.humanactivity.HumanPro
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityRequirement;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.run.ExperimentRun;
@@ -15,6 +16,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -41,6 +43,7 @@ public class PdeCommercialActivationHumanActivityHandler
   private final ExperimentRepository experimentRepository;
   private final ExperimentRunRepository experimentRunRepository;
   private final CommercialPlanRepository commercialPlanRepository;
+  private final LearningSalesCycleRepository learningCycleRepository;
   private final ExperimentReadinessService readinessService;
   private final ExperimentService experimentService;
 
@@ -49,11 +52,13 @@ public class PdeCommercialActivationHumanActivityHandler
       ExperimentRepository experimentRepository,
       ExperimentRunRepository experimentRunRepository,
       CommercialPlanRepository commercialPlanRepository,
+      LearningSalesCycleRepository learningCycleRepository,
       ExperimentReadinessService readinessService,
       ExperimentService experimentService) {
     this.experimentRepository = experimentRepository;
     this.experimentRunRepository = experimentRunRepository;
     this.commercialPlanRepository = commercialPlanRepository;
+    this.learningCycleRepository = learningCycleRepository;
     this.readinessService = readinessService;
     this.experimentService = experimentService;
   }
@@ -80,8 +85,14 @@ public class PdeCommercialActivationHumanActivityHandler
     ExperimentReadinessSummaryDto readiness = readinessService.summarize(experiment.getId());
     CommercialPlan plan = currentPlan(product.getId(), experiment.getId());
     ExperimentRun productionRun = latestProductionRun(experiment.getId());
-    BigDecimal budgetLimit = plan == null ? null : plan.getMaxBudget();
+    BigDecimal cycleBudget = currentCycleBudget(experiment.getId());
+    BigDecimal budgetLimit =
+        cycleBudget != null ? cycleBudget : plan == null ? null : plan.getMaxBudget();
     boolean budgetDefined = budgetLimit != null && budgetLimit.compareTo(BigDecimal.ZERO) > 0;
+    boolean budgetAligned =
+        cycleBudget == null
+            || (experiment.getMediaSpendLimit() != null
+                && experiment.getMediaSpendLimit().compareTo(cycleBudget) == 0);
     boolean auditContextReady =
         plan != null
             && plan.getId() != null
@@ -104,13 +115,22 @@ public class PdeCommercialActivationHumanActivityHandler
         new HumanProductProcessActivityRequirement(
             "BUDGET_LIMIT_DEFINED",
             "Teto financeiro definido",
-            budgetDefined,
-            budgetDefined
-                ? "O plano limita a operação a " + brl(budgetLimit) + "."
-                : "O plano comercial ainda não possui teto financeiro positivo.",
-            budgetDefined
+            budgetDefined && budgetAligned,
+            budgetDefined && budgetAligned
+                ? (cycleBudget == null ? "O plano" : "O ciclo")
+                    + " limita a operação a "
+                    + brl(budgetLimit)
+                    + "."
+                : budgetDefined
+                    ? "O teto do experimento diverge do ciclo, que limita a operação a "
+                        + brl(budgetLimit)
+                        + "."
+                    : "O plano comercial ainda não possui teto financeiro positivo.",
+            budgetDefined && budgetAligned
                 ? "Não ultrapasse o teto persistido sem uma nova decisão humana."
-                : "Defina o teto no plano comercial antes de autorizar a ativação."));
+                : budgetDefined
+                    ? "Ajuste o teto operacional do experimento ao valor exato do ciclo antes de autorizar."
+                    : "Defina o teto no plano comercial antes de autorizar a ativação."));
     requirements.add(
         new HumanProductProcessActivityRequirement(
             "AUDIT_CONTEXT_READY",
@@ -126,7 +146,8 @@ public class PdeCommercialActivationHumanActivityHandler
             auditContextReady
                 ? "A tela registrará essas referências sem exigir digitação."
                 : "Reconcilie o run produtivo e o plano comercial antes da decisão."));
-    boolean ready = readiness.eligibleForRunning() && budgetDefined && auditContextReady;
+    boolean ready =
+        readiness.eligibleForRunning() && budgetDefined && budgetAligned && auditContextReady;
     String reason =
         ready
             ? "Preflight, requisitos comerciais e teto financeiro estão prontos para decisão."
@@ -172,7 +193,7 @@ public class PdeCommercialActivationHumanActivityHandler
         auditEvidenceReference);
   }
 
-  /** Ativa ou reconcilia os estados comerciais pelo serviço canônico após a confirmação humana. */
+  /** Libera o canal canônico sem antecipar RUNNING antes da confirmação externa da campanha. */
   @Override
   @Transactional
   public void approve(
@@ -182,6 +203,11 @@ public class PdeCommercialActivationHumanActivityHandler
       String sourceReference,
       ProductProcessActivityExecutionRequest request) {
     Experiment experiment = referencedExperiment(product, sourceReference);
+    if (experiment.getStatus() == ExperimentStatus.RUNNING) return;
+    if (experiment.getPlatform() == ExperimentPlatform.FACEBOOK) {
+      experimentService.releaseForFacebook(experiment.getId());
+      return;
+    }
     experimentService.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
   }
 
@@ -222,6 +248,15 @@ public class PdeCommercialActivationHumanActivityHandler
     return experimentRunRepository
         .findTopByExperimentIdAndModeOrderByRunNumberDesc(
             experimentId, ExperimentRunMode.PRODUCTION)
+        .orElse(null);
+  }
+
+  /** Prefere o teto do ciclo aberto exato para impedir que um plano histórico amplie a verba. */
+  private BigDecimal currentCycleBudget(Long experimentId) {
+    return learningCycleRepository
+        .findByExperimentId(experimentId)
+        .filter(cycle -> "OPEN".equals(cycle.getStatus()))
+        .map(cycle -> cycle.getBudgetLimitBrl())
         .orElse(null);
   }
 

@@ -17,11 +17,12 @@ class ProductJourneyIntegrationContractServiceTest {
         ProductExperienceResponse product = mock(ProductExperienceResponse.class);
         when(product.slug()).thenReturn("kit-whatsapp-pronto");
         when(product.experienceVersion()).thenReturn("kit-whatsapp-pronto-pde-v2");
-        when(catalog.getProduct("kit-whatsapp-pronto")).thenReturn(product);
+        when(catalog.getProductForHost("kit-whatsapp-pronto", "v8.clubemusa.com.br"))
+                .thenReturn(product);
         ProductJourneyIntegrationContractService service =
                 new ProductJourneyIntegrationContractService(catalog);
 
-        var contract = service.get("kit-whatsapp-pronto");
+        var contract = service.get("kit-whatsapp-pronto", "v8.clubemusa.com.br");
 
         assertThat(contract.productSlug()).isEqualTo("kit-whatsapp-pronto");
         assertThat(contract.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");

@@ -768,13 +768,14 @@ public class PdeProductionSlotService {
     boolean validEvents = requiredEvents.containsAll(REQUIRED_JOURNEY_EVENTS);
     boolean validCorrelation =
         correlationKeys.containsAll(
-            Set.of(
-                "eventId",
-                "productSlug",
-                "experienceVersion",
-                "sessionId",
-                "visitorId",
-                "accessToken"));
+                Set.of(
+                    "eventId",
+                    "productSlug",
+                    "experienceVersion",
+                    "sessionId",
+                    "visitorId",
+                    "accessReferenceHash"))
+            && !correlationKeys.contains("accessToken");
     boolean validAudit =
         "pde_funnel_event".equals(text(integration, "sourceOfTruth"))
             && StringUtils.hasText(text(integration, "testTrafficPolicy"));

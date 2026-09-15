@@ -42,6 +42,10 @@ test("a homologacao executa toda a jornada dentro da rede Compose isolada", asyn
     new URL("../docker-compose.local-validation.yml", import.meta.url),
     "utf8",
   );
+  const contractServerDockerfile = await readFile(
+    new URL("../frontend/Dockerfile.contract-server", import.meta.url),
+    "utf8",
+  );
   const publicDiagnosticSmoke = await readFile(
     new URL(
       "../frontend/tests/public-presence-diagnostic.smoke.spec.ts",
@@ -65,6 +69,14 @@ test("a homologacao executa toda a jornada dentro da rede Compose isolada", asyn
     "O smoke que bloqueia o deploy deve executar também contra o backend local.",
   );
   assert.match(playwrightDockerfile, /COPY src\/musaExperiences\.ts/);
+  assert.match(
+    contractServerDockerfile,
+    /COPY backend\/src\/main\/resources\/contracts\/musa-v12-product-v1\.json/,
+  );
+  assert.match(
+    contractServerDockerfile,
+    /PDE_MUSA_V12_CONTRACT_PATH=\/app\/musa-v12-product-v1\.json/,
+  );
   assert.match(
     validationCompose,
     /PDE_EXPECTED_EXPERIENCE_VERSION: musa-pde-entry-v7-espelho-antes-de-sair/,

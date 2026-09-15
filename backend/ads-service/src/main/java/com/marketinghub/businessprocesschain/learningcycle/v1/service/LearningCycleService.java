@@ -53,6 +53,8 @@ public class LearningCycleService {
 
   @Autowired private LearningCycleVideoBudget videoBudget;
 
+  @Autowired private LearningCycleCommercialAuthorization commercialAuthorization;
+
   @Autowired(required = false)
   private LearningCycleVideoBinding videoBinding;
 
@@ -925,7 +927,10 @@ public class LearningCycleService {
                   "A homologação precisa avaliar o conjunto depois da integração dos vídeos.");
             }
           }
-          case "AUTHORIZATION" -> evidence.authorization(cycle, experiment, data, now);
+          case "AUTHORIZATION" -> {
+            evidence.authorization(cycle, data, now);
+            commercialAuthorization.apply(cycle, experiment, now);
+          }
           case "PUBLICATION" -> evidence.publication(cycle, experiment, authorizationTime(cycle));
           default ->
               throw new ResponseStatusException(
@@ -1013,7 +1018,8 @@ public class LearningCycleService {
             "A janela ampliada precisa cobrir a janela anterior e ter saldo de tempo.");
         cycle.setBudgetLimitBrl(data.path("budgetLimitBrl").decimalValue());
         cycle.setWindowEnd(end);
-        evidence.authorization(cycle, experiment, data, now);
+        evidence.authorization(cycle, data, now);
+        commercialAuthorization.apply(cycle, experiment, now);
         cycle.setStage("MEASUREMENT");
       }
       case STOP, INCONCLUSIVE -> {
@@ -1345,7 +1351,7 @@ public class LearningCycleService {
           case "LEARNING" -> "pde-sales-delivery-learning";
           case "PLANNING" -> "pde-commercial-plan-offer";
           case "ADJUSTMENT", "VALIDATION" -> "pde-construction-approval";
-          case "AUTHORIZATION" -> "pde-commercial-homologation-activation";
+          case "AUTHORIZATION", "PUBLICATION" -> "pde-commercial-homologation-activation";
           default -> null;
         };
     Long processId = "ADJUSTMENT".equals(cycle.getStage()) ? cycle.getReturnProcessId() : null;

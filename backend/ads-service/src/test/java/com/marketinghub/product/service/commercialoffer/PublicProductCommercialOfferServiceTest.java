@@ -76,6 +76,63 @@ class PublicProductCommercialOfferServiceTest {
     assertThat(offer.checkoutUrl()).isEqualTo("https://go.pepper.com.br/owm6x");
   }
 
+  /** Seleciona o slot pedido pelo host mesmo quando outra versão foi atualizada depois. */
+  @Test
+  void returnsOfferForRequestedSlotWithoutUsingLatestUpdatedVersion() {
+    Product product = product();
+    PdeProductionSlot requested = slot();
+    PdeProductionSlot newer = slot();
+    newer.setSlotCode("v3");
+    newer.setExperienceVersion("kit-whatsapp-pronto-pde-v3");
+    newer.setSourceExperimentId(90L);
+    newer.setUpdatedAt(Instant.parse("2026-09-15T20:00:00Z"));
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(requested, newer));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment(product)));
+
+    var offer = service().getOffer("kit-whatsapp-pronto", "v2", "kit-whatsapp-pronto-pde-v2");
+
+    assertThat(offer.experimentId()).isEqualTo(89L);
+    assertThat(offer.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+  }
+
+  /** Recusa seletores incompatíveis em vez de combinar slot e contrato de versões distintas. */
+  @Test
+  void rejectsDivergentSlotAndExperienceVersionSelectors() {
+    Product product = product();
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(slot()));
+
+    assertThatThrownBy(
+            () -> service().getOffer("kit-whatsapp-pronto", "v2", "kit-whatsapp-pronto-pde-v3"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Seletores de versão PDE divergentes");
+  }
+
+  /** Ignora o slot mais recente quando seu experimento pertence a outro produto. */
+  @Test
+  void defaultSelectionDoesNotMixAnotherProductsExperiment() {
+    Product product = product();
+    PdeProductionSlot correct = slot();
+    PdeProductionSlot contaminated = slot();
+    contaminated.setSlotCode("v1");
+    contaminated.setSourceExperimentId(74L);
+    contaminated.setUpdatedAt(Instant.parse("2026-09-15T20:00:00Z"));
+    Product anotherProduct = Product.builder().id(4L).slug("outro-produto").build();
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(correct, contaminated));
+    when(experimentRepository.findById(74L)).thenReturn(Optional.of(experiment(anotherProduct)));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment(product)));
+
+    var offer = service().getOffer("kit-whatsapp-pronto");
+
+    assertThat(offer.experimentId()).isEqualTo(89L);
+    assertThat(offer.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+  }
+
   /** Impede que a resposta pública volte a expor razão social ou endereço do fornecedor. */
   @Test
   void minimizesPublicSupplierIdentity() throws Exception {

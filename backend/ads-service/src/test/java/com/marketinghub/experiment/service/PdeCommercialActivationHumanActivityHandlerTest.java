@@ -10,6 +10,7 @@ import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.humanactivity.HumanProductProcessActivityReadiness;
 import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequest;
+import com.marketinghub.businessprocesschain.learningcycle.v1.LearningSalesCycle;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -20,6 +21,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
+import com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,12 +32,13 @@ class PdeCommercialActivationHumanActivityHandlerTest {
   private final ExperimentRepository experiments = mock(ExperimentRepository.class);
   private final ExperimentRunRepository runs = mock(ExperimentRunRepository.class);
   private final CommercialPlanRepository plans = mock(CommercialPlanRepository.class);
+  private final LearningSalesCycleRepository cycles = mock(LearningSalesCycleRepository.class);
   private final ExperimentReadinessService readinessService =
       mock(ExperimentReadinessService.class);
   private final ExperimentService experimentService = mock(ExperimentService.class);
   private final PdeCommercialActivationHumanActivityHandler handler =
       new PdeCommercialActivationHumanActivityHandler(
-          experiments, runs, plans, readinessService, experimentService);
+          experiments, runs, plans, cycles, readinessService, experimentService);
 
   /** Libera a decisão somente com gates verdes e teto financeiro positivo. */
   @Test
@@ -83,6 +86,38 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 
+  /** Usa o teto do ciclo aberto e bloqueia divergência com o experimento operacional. */
+  @Test
+  void usesOpenCycleBudgetInsteadOfLargerHistoricalPlan() {
+    Product product = Product.builder().id(9L).build();
+    Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    experiment.setMediaSpendLimit(new BigDecimal("200.00"));
+    LearningSalesCycle cycle = new LearningSalesCycle();
+    cycle.setStatus("OPEN");
+    cycle.setBudgetLimitBrl(new BigDecimal("100.00"));
+    when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
+    when(cycles.findByExperimentId(89L)).thenReturn(java.util.Optional.of(cycle));
+    when(readinessService.summarize(89L)).thenReturn(readiness(true));
+    when(plans.findByExperimentReference(89L))
+        .thenReturn(
+            List.of(CommercialPlan.builder().id(4L).maxBudget(new BigDecimal("400.00")).build()));
+    when(runs.findTopByExperimentIdAndModeOrderByRunNumberDesc(89L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(java.util.Optional.of(ExperimentRun.builder().id(9L).runNumber(2).build()));
+
+    HumanProductProcessActivityReadiness result =
+        handler.readiness(process(), activity(), product, "experiment:89");
+
+    assertThat(result.ready()).isFalse();
+    assertThat(result.confirmationMessage().replace('\u00a0', ' ')).contains("R$ 100,00");
+    assertThat(result.requirements())
+        .anySatisfy(
+            requirement -> {
+              assertThat(requirement.code()).isEqualTo("BUDGET_LIMIT_DEFINED");
+              assertThat(requirement.satisfied()).isFalse();
+              assertThat(requirement.detail()).contains("diverge do ciclo");
+            });
+  }
+
   /** Bloqueia o aceite simples quando o run ainda não possui referência auditável. */
   @Test
   void blocksReviewAndAcceptWithoutAuditableProductionRun() {
@@ -108,11 +143,12 @@ class PdeCommercialActivationHumanActivityHandlerTest {
     verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 
-  /** Aplica RUNNING pelo serviço canônico depois da confirmação humana. */
+  /** Libera o Facebook pelo contrato canônico sem antecipar RUNNING à campanha. */
   @Test
-  void activatesExperimentThroughCanonicalService() {
+  void releasesFacebookExperimentThroughCanonicalService() {
     Product product = Product.builder().id(9L).build();
     Experiment experiment = experiment(product, ExperimentStatus.PLANNED);
+    experiment.setPlatform(com.marketinghub.experiment.ExperimentPlatform.FACEBOOK);
     when(experiments.findById(89L)).thenReturn(java.util.Optional.of(experiment));
 
     handler.approve(
@@ -127,7 +163,8 @@ class PdeCommercialActivationHumanActivityHandlerTest {
             "experiment-run:12",
             "CONFIRM:pde-commercial-homologation-activation:authorization"));
 
-    verify(experimentService).updateStatus(89L, ExperimentStatus.RUNNING);
+    verify(experimentService).releaseForFacebook(89L);
+    verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
   }
 
   /** Reconcilia run e produto mesmo quando um estado legado já deixou o experimento em RUNNING. */
@@ -149,7 +186,8 @@ class PdeCommercialActivationHumanActivityHandlerTest {
             "experiment-run:9",
             "CONFIRM:pde-commercial-homologation-activation:authorization"));
 
-    verify(experimentService).updateStatus(89L, ExperimentStatus.RUNNING);
+    verify(experimentService, never()).updateStatus(89L, ExperimentStatus.RUNNING);
+    verify(experimentService, never()).releaseForFacebook(89L);
   }
 
   /** Impede que uma decisão do produto atual ative experimento pertencente a outro produto. */

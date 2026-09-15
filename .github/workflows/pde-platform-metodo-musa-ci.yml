@@ -39,6 +39,7 @@ on:
           - v5
           - v6
           - v7
+          - v8
           - mira
           - kit-whatsapp
           - all
@@ -58,6 +59,7 @@ env:
   FRONTEND_V5_IMAGE_NAME: pde-platform-frontend-v5
   FRONTEND_V6_IMAGE_NAME: pde-platform-frontend-v6
   FRONTEND_V7_IMAGE_NAME: pde-platform-frontend-v7
+  FRONTEND_V8_IMAGE_NAME: pde-platform-frontend-v8
   FRONTEND_MIRA_IMAGE_NAME: pde-platform-frontend-mira
   FRONTEND_KIT_WHATSAPP_IMAGE_NAME: pde-platform-frontend-kit-whatsapp
   AI_WORKER_IMAGE_NAME: pde-ai-worker
@@ -215,6 +217,10 @@ jobs:
             echo "${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${GITHUB_SHA}"
             echo "EOF"
+            echo "frontend_v8_tags<<EOF"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:latest"
+            echo "${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${GITHUB_SHA}"
+            echo "EOF"
             echo "frontend_mira_tags<<EOF"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:latest"
             echo "${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${GITHUB_SHA}"
@@ -292,6 +298,21 @@ jobs:
             PDE_FRONTEND_VERSION_ID=v7
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V7_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V7_IMAGE_NAME }}:buildcache,mode=max
+      - name: Build and push frontend v8 image
+        uses: docker/build-push-action@v6
+        with:
+          context: pde-platform/frontend
+          file: pde-platform/frontend/Dockerfile
+          push: true
+          tags: ${{ steps.image_metadata.outputs.frontend_v8_tags }}
+          labels: |
+            ${{ steps.image_metadata.outputs.labels }}
+            com.marketinghub.pde.product-id=4
+            com.marketinghub.pde.product-slug=metodo-musa-7-dias
+          build-args: |
+            PDE_FRONTEND_VERSION_ID=v8
+          cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V8_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_V8_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push Mira frontend image
         uses: docker/build-push-action@v6
         with:
@@ -363,7 +384,6 @@ jobs:
       packages: read
     concurrency:
       group: deploy-vps-163-245-200-7
-      queue: max
       cancel-in-progress: false
     env:
       DEPLOY_HOST: 163.245.200.7
@@ -378,6 +398,7 @@ jobs:
       PDE_PLATFORM_FRONTEND_V5_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V5_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V5_PORT || secrets.PDE_PLATFORM_FRONTEND_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_PORT || '5176' }}
       PDE_PLATFORM_FRONTEND_V6_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V6_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V6_PORT || '5177' }}
       PDE_PLATFORM_FRONTEND_V7_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V7_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V7_PORT || '5178' }}
+      PDE_PLATFORM_FRONTEND_V8_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V8_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V8_PORT || '5181' }}
       PDE_PLATFORM_FRONTEND_MIRA_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_MIRA_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_MIRA_PORT || '5180' }}
       PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT || '5179' }}
       PDE_PLATFORM_BACKEND_PORT: ${{ secrets.PDE_PLATFORM_BACKEND_PORT != '' && secrets.PDE_PLATFORM_BACKEND_PORT || '8096' }}
@@ -480,6 +501,7 @@ jobs:
             && export PDE_PLATFORM_FRONTEND_V5_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V5_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_V6_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V6_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_V7_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V7_IMAGE_NAME}:${IMAGE_TAG}' \
+            && export PDE_PLATFORM_FRONTEND_V8_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_V8_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_MIRA_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE='${IMAGE_NAMESPACE}/${FRONTEND_KIT_WHATSAPP_IMAGE_NAME}:${IMAGE_TAG}' \
             && export PDE_AI_WORKER_IMAGE='${IMAGE_NAMESPACE}/${AI_WORKER_IMAGE_NAME}:${IMAGE_TAG}' \
@@ -488,6 +510,7 @@ jobs:
             && export PDE_PLATFORM_FRONTEND_V5_PORT='${PDE_PLATFORM_FRONTEND_V5_PORT}' \
             && export PDE_PLATFORM_FRONTEND_V6_PORT='${PDE_PLATFORM_FRONTEND_V6_PORT}' \
             && export PDE_PLATFORM_FRONTEND_V7_PORT='${PDE_PLATFORM_FRONTEND_V7_PORT}' \
+            && export PDE_PLATFORM_FRONTEND_V8_PORT='${PDE_PLATFORM_FRONTEND_V8_PORT}' \
             && export PDE_PLATFORM_FRONTEND_MIRA_PORT='${PDE_PLATFORM_FRONTEND_MIRA_PORT}' \
             && export PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT='${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}' \
             && export PDE_PLATFORM_BACKEND_PORT='${PDE_PLATFORM_BACKEND_PORT}' \
@@ -522,9 +545,10 @@ jobs:
               v5) FRONTEND_SERVICES='pde-platform-frontend-v5' ;; \
               v6) FRONTEND_SERVICES='pde-platform-frontend-v6' ;; \
               v7) FRONTEND_SERVICES='pde-platform-frontend-v7' ;; \
+              v8) FRONTEND_SERVICES='pde-platform-frontend-v8' ;; \
               mira) FRONTEND_SERVICES='pde-platform-frontend-mira' ;; \
               kit-whatsapp) FRONTEND_SERVICES='pde-platform-frontend-kit-whatsapp' ;; \
-              all) FRONTEND_SERVICES='pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7 pde-platform-frontend-mira pde-platform-frontend-kit-whatsapp' ;; \
+              all) FRONTEND_SERVICES='pde-platform-frontend-v5 pde-platform-frontend-v6 pde-platform-frontend-v7 pde-platform-frontend-v8 pde-platform-frontend-mira pde-platform-frontend-kit-whatsapp' ;; \
               none) FRONTEND_SERVICES='' ;; \
               *) echo 'Versao frontend PDE invalida: ${PDE_DEPLOY_FRONTEND_VERSION}' >&2; exit 1 ;; \
             esac \
@@ -533,11 +557,13 @@ jobs:
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V5_PORT}'; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V6_PORT}'; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V7_PORT}'; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v8' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_V8_PORT}'; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'mira' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_MIRA_PORT}'; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'kit-whatsapp' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then cleanup_published_port '${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}'; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v5' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend pde-platform-frontend-v5 >/dev/null 2>&1 || true; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v6' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v6 >/dev/null 2>&1 || true; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v7' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v7 >/dev/null 2>&1 || true; fi \
+            && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'v8' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-v8 >/dev/null 2>&1 || true; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'mira' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-mira >/dev/null 2>&1 || true; fi \
             && if [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'kit-whatsapp' ] || [ '${PDE_DEPLOY_FRONTEND_VERSION}' = 'all' ]; then docker rm -f pde-platform-frontend-kit-whatsapp >/dev/null 2>&1 || true; fi \
             && (docker rm -f pde-platform-backend pde-ai-worker pde-retention-worker >/dev/null 2>&1 || true) \
@@ -599,6 +625,12 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v7"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V7_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair"'
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v8" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/" > /dev/null
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/healthz"
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "v8"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_V8_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "musa-pde-entry-v12-primeiro-ajuste-aplicavel"'
           fi
           if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_MIRA_PORT}/mira-private" > /dev/null
@@ -694,6 +726,9 @@ jobs:
             validate_public_version v7
           else
             validate_public_health v7
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v8" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+            validate_public_version v8
           fi
           if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "mira" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
             validate_dns_points_to_deploy_host v7.clubemusa.com.br

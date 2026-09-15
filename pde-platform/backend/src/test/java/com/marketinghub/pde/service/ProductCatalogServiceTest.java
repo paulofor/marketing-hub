@@ -326,7 +326,7 @@ class ProductCatalogServiceTest {
         assertThat(product.funnelVersion()).isEqualTo("musa-membership-funnel-v1");
     }
 
-    /** Confirma que slots futuros reservados usam a experiência estável até terem contrato próprio. */
+    /** Confirma que v8 possui identidade v12 e os slots seguintes continuam reservados na v7. */
     @Test
     void appliesStableExperienceForReservedFutureHosts() {
         ProductCatalogService service = new ProductCatalogService(
@@ -335,7 +335,7 @@ class ProductCatalogServiceTest {
                 "musa-pde-entry-v5-video-explicativo");
 
         assertThat(service.getProductForHost("metodo-musa-7-dias", "v8.clubemusa.com.br").experienceVersion())
-                .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+                .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
         assertThat(service.getProductForHost("metodo-musa-7-dias", "v9.clubemusa.com.br").experienceVersion())
                 .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
         assertThat(service.getProductForHost("metodo-musa-7-dias", "v10.clubemusa.com.br").experienceVersion())
@@ -391,6 +391,29 @@ class ProductCatalogServiceTest {
         assertThat(product.missions().get(4).interaction().title()).contains("duas cores");
         assertThat(product.missions().get(5).interaction().title()).contains("três sinais repetíveis");
         assertThat(product.missions().get(6).interaction().title()).contains("fórmula MUSA");
+    }
+
+    /** Mantém a v12 como contrato próprio com primeiro ajuste, vídeo e oferta paga separados. */
+    @Test
+    void appliesCanonicalFirstAdjustmentContractForV12Host() {
+        ProductCatalogService service = new ProductCatalogService();
+
+        var product = service.getProductForHost("metodo-musa-7-dias", "v8.clubemusa.com.br");
+
+        assertThat(product.experienceVersion())
+                .isEqualTo("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+        assertThat(product.publicFirstFold().headline()).contains("qual ajuste fazer primeiro");
+        assertThat(product.publicFirstFold().supportingText()).contains("gratuito", "aplicável");
+        assertThat(product.publicFirstFold().videoSupportingText()).contains("R$ 67", "pagamento único");
+        assertThat(product.publicDiagnosticQuestions())
+                .extracting(ProductExperienceResponse.PublicDiagnosticQuestionDto::key)
+                .containsExactly("existingSelection", "occasion", "desiredSignal", "adjustmentResource");
+        assertThat(product.heroVideos()).singleElement().satisfies(video -> {
+            assertThat(video.experimentVideoAssetId()).isEqualTo(42L);
+            assertThat(video.status()).isEqualTo("READY");
+            assertThat(video.reviewStatus()).isEqualTo("APPROVED");
+            assertThat(video.hlsPlaybackUrl()).contains("21244-index.m3u8");
+        });
     }
 
     /** Confirma que slots legados continuam funcionais na experiência estável de entrada. */

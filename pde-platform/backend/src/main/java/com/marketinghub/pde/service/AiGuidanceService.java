@@ -46,6 +46,8 @@ public class AiGuidanceService {
     private static final String PUBLIC_DIAGNOSTIC_MISSION_ID = "diagnostico-presenca-publico";
     private static final String PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE = "MUSA_PUBLIC_PRESENCE_DIAGNOSTIC";
     private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    private static final String MUSA_V12_EXPERIENCE_VERSION =
+            "musa-pde-entry-v12-primeiro-ajuste-aplicavel";
     private static final String LOCAL_RULES_MODEL = "MUSA_LOCAL_RULES_V1";
     private static final String MUSA_NEUTRAL_CHOICE = "Manter como está por enquanto";
     private static final Set<String> ALLOWED_GUIDANCE_TYPES = Set.of(
@@ -101,7 +103,7 @@ public class AiGuidanceService {
         validateGuidanceType(request.guidanceType());
         WorkspaceResponse workspace = accessService.getWorkspace(token);
         MissionDto mission = validateMissionBelongsToWorkspace(workspace, missionId);
-        boolean useLocalRules = usesMusaV7LocalRules(
+        boolean useLocalRules = usesMusaLocalRules(
                 request.experienceVersion(), workspace.product().experienceVersion());
         if (useLocalRules) {
             if (mission.interaction() == null
@@ -143,9 +145,13 @@ public class AiGuidanceService {
     /** Cria um diagnóstico público de presença sem exigir e-mail antes da entrega. */
     public AiGuidanceResponse createPublicPresenceDiagnostic(PublicPresenceDiagnosticRequest request) {
         validateGuidanceType(PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE);
+        boolean v12 = MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(request.experienceVersion()));
         ProductExperienceResponse product = productCatalogService.getProductForRequest(
-                MUSA_PRODUCT_SLUG, "v7.clubemusa.com.br", "v7", request.experienceVersion());
-        if (usesMusaV7LocalRules(request.experienceVersion(), product.experienceVersion())) {
+                MUSA_PRODUCT_SLUG,
+                v12 ? "v8.clubemusa.com.br" : "v7.clubemusa.com.br",
+                v12 ? "v8" : "v7",
+                request.experienceVersion());
+        if (usesMusaLocalRules(request.experienceVersion(), product.experienceVersion())) {
             MusaV7CategoricalContract.validatePublicDiagnostic(product.publicDiagnosticQuestions(), request.answers());
         }
         String requestId = UUID.randomUUID().toString();
@@ -159,7 +165,7 @@ public class AiGuidanceService {
                 sanitizeAnswers(request.answers()),
                 Map.of(),
                 Instant.now().toString());
-        if (usesMusaV7LocalRules(request.experienceVersion(), null)) {
+        if (usesMusaLocalRules(request.experienceVersion(), null)) {
             stored = completeWithLocalRules(stored);
         }
         requestsById.put(requestId, stored);
@@ -237,9 +243,11 @@ public class AiGuidanceService {
     }
 
     /** Confirma quando a versão aprovada exige regras locais e proíbe envio ao worker de IA. */
-    private boolean usesMusaV7LocalRules(String requestedVersion, String workspaceVersion) {
+    private boolean usesMusaLocalRules(String requestedVersion, String workspaceVersion) {
         return MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(requestedVersion))
-                || MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion));
+                || MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion))
+                || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(requestedVersion))
+                || MUSA_V12_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion));
     }
 
     /** Conclui a orientação por regras determinísticas, sem fila, tokens ou chamada externa. */
@@ -290,12 +298,8 @@ public class AiGuidanceService {
     /** Produz microações determinísticas aderentes ao propósito comercial de cada dia da v7. */
     private List<String> localActionsForMission(String missionId, Map<String, String> answers) {
         return switch (missionId) {
-            case PUBLIC_DIAGNOSTIC_MISSION_ID, "dia-1-ruido-visual" -> List.of(
-                    "Observe a mensagem " + lowerAnswer(answers, "mainObstacle") + " em "
-                            + lowerAnswer(answers, "presenceFocus") + ".",
-                    "Use " + lowerAnswer(answers, "startingResource") + " para aproximar o sinal de "
-                            + lowerAnswer(answers, "desiredSignal") + ".",
-                    "Registre a mensagem percebida antes e depois do ajuste.");
+            case PUBLIC_DIAGNOSTIC_MISSION_ID, "dia-1-ruido-visual" ->
+                    firstAdjustmentActions(answers);
             case "dia-2-assinatura" -> List.of(
                     "Use " + lowerAnswer(answers, "pieceSignal") + " em " + lowerAnswer(answers, "realScene") + ".",
                     "Observe se a peça reforça " + lowerAnswer(answers, "personalMeaning") + " para você.",
@@ -327,6 +331,24 @@ public class AiGuidanceService {
                             + " e repita a fórmula por 30 dias.");
             default -> throw new IllegalArgumentException("Missão MUSA v7 sem regra local: " + missionId);
         };
+    }
+
+    /** Monta o primeiro ajuste tanto para o contrato v7 quanto para a entrada comercial v12. */
+    private List<String> firstAdjustmentActions(Map<String, String> answers) {
+        if (answers.containsKey("existingSelection")) {
+            return List.of(
+                    "Use " + lowerAnswer(answers, "existingSelection") + " em "
+                            + lowerAnswer(answers, "occasion") + ".",
+                    "Aplique primeiro " + lowerAnswer(answers, "adjustmentResource")
+                            + " para reforçar " + lowerAnswer(answers, "desiredSignal") + ".",
+                    "Compare o conjunto antes e depois e salve apenas o ajuste que funcionou para você.");
+        }
+        return List.of(
+                "Observe a mensagem " + lowerAnswer(answers, "mainObstacle") + " em "
+                        + lowerAnswer(answers, "presenceFocus") + ".",
+                "Use " + lowerAnswer(answers, "startingResource") + " para aproximar o sinal de "
+                        + lowerAnswer(answers, "desiredSignal") + ".",
+                "Registre a mensagem percebida antes e depois do ajuste.");
     }
 
     /** Identifica de forma clara qual resultado funcional a orientação local entrega. */

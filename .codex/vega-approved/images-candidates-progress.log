@@ -1,0 +1,11 @@
+BUILT customer-agent-worker
+BUILT meta-ad-approver-worker
+BUILT pde-platform-frontend-vega
+BUILT backend
+Traceback (most recent call last):
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/.codex/vega-approved/build-components.py", line 13, in <module>
+    with (root/('build-'+name+'.log')).open('w') as log:subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,check=True)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['docker', 'build', '--label', 'com.marketinghub.source-digest=ae63251932c2086e08d6c93dc9bbd6997469a2cd58a32e6323032847b6911579', '--label', 'org.opencontainers.image.revision=5f77fcd6cc1c735d06cd852e03ba8c892ed617bb', '-f', 'frontend/Dockerfile', '-t', 'marketing-hub/frontend:vega-approved-ae63251932c2', '.']' returned non-zero exit status 1.

@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "repository": "paulofor/marketing-hub",
+  "id": "0161d37ffc2344bda4b409ebd9f9bfda",
+  "phase": "ACTIVE",
+  "created_at": "2026-09-15T00:32:46.587576+00:00",
+  "owner": "Codex MKT · continuidade de Vega ciclo 2",
+  "reason": "Eliminar a espera humana duplicada após os vídeos 41 e 42 aprovados, integrar a experiência privada e continuar as revisões canônicas. Duas rodadas locais completas aprovadas.",
+  "authorization": "Autorização excepcional do usuário para publicar imagens construídas pelo repositório na recuperação de Vega, antes do PR. Preservar decisões humanas, cobrança, campanha e gasto de mídia.",
+  "protected_version": "source-sha256:ae63251932c2086e08d6c93dc9bbd6997469a2cd58a32e6323032847b6911579",
+  "scopes": [
+    "app",
+    "pde"
+  ],
+  "initial_sha": "5f77fcd6cc1c735d06cd852e03ba8c892ed617bb",
+  "workflows": [
+    {
+      "file": "product-discovery-worker-ci.yml",
+      "id": 320715245,
+      "previous_state": "active"
+    },
+    {
+      "file": "customer-agent-worker-ci.yml",
+      "id": 327457647,
+      "previous_state": "active"
+    },
+    {
+      "file": "meta-ad-approver-worker-ci.yml",
+      "id": 330382702,
+      "previous_state": "active"
+    },
+    {
+      "file": "deploy-containers.yml",
+      "id": 243638963,
+      "previous_state": "active"
+    },
+    {
+      "file": "recover-public-proxy.yml",
+      "id": 345539496,
+      "previous_state": "active"
+    },
+    {
+      "file": "pde-platform-metodo-musa-ci.yml",
+      "id": 314171213,
+      "previous_state": "active"
+    }
+  ],
+  "pending_runs": [],
+  "history": [
+    {
+      "at": "2026-09-15T00:32:46.811399+00:00",
+      "event": "requested"
+    },
+    {
+      "at": "2026-09-15T00:32:47.822149+00:00",
+      "event": "protecting"
+    },
+    {
+      "at": "2026-09-15T00:32:48.365296+00:00",
+      "event": "workflow_paused",
+      "workflow": "product-discovery-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-15T00:32:48.957338+00:00",
+      "event": "workflow_paused",
+      "workflow": "customer-agent-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-15T00:32:49.584830+00:00",
+      "event": "workflow_paused",
+      "workflow": "meta-ad-approver-worker-ci.yml"
+    },
+    {
+      "at": "2026-09-15T00:32:50.087111+00:00",
+      "event": "workflow_paused",
+      "workflow": "deploy-containers.yml"
+    },
+    {
+      "at": "2026-09-15T00:32:50.616393+00:00",
+      "event": "workflow_paused",
+      "workflow": "recover-public-proxy.yml"
+    },
+    {
+      "at": "2026-09-15T00:32:51.188982+00:00",
+      "event": "workflow_paused",
+      "workflow": "pde-platform-metodo-musa-ci.yml"
+    },
+    {
+      "at": "2026-09-15T00:33:15.099143+00:00",
+      "event": "protection_checked",
+      "enabled": [],
+      "pending": []
+    }
+  ],
+  "updated_at": "2026-09-15T00:33:15.099143+00:00"
+}

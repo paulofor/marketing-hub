@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.product.web.ProductControllerTest
+-------------------------------------------------------------------------------
+Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.619 s -- in com.marketinghub.product.web.ProductControllerTest

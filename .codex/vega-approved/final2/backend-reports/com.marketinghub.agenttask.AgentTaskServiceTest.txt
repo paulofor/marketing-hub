@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.agenttask.AgentTaskServiceTest
+-------------------------------------------------------------------------------
+Tests run: 88, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.741 s -- in com.marketinghub.agenttask.AgentTaskServiceTest

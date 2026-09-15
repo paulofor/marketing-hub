@@ -1,0 +1,2 @@
+{"name":"cycle","id":2,"status":"OPEN","stage":"VALIDATION","nextAction":"O processo coordena a homologação técnica e as revisões do conjunto com os vídeos. As evidências serão registradas automaticamente; acompanhe as tarefas na atividade orientada.","automaticContinuation":true}
+{"name":"run","id":4,"status":"WAITING_ACTIVITY","reason":"Vídeos aprovados e integrados. Aguardando Homologar tecnicamente a versão real · tarefa #423."}

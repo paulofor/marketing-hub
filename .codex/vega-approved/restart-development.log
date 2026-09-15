@@ -1,0 +1,7 @@
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-learning-cycles-mysql-1 Restarting 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-learning-cycles-mysql-1 Started 
+Traceback (most recent call last):
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/infra/testing/video-continuation/restart-check.py", line 28, in <module>
+    assert resumed['sessionToken'] == session['sessionToken'] and resumed['videoIntegration'] == session['videoIntegration']
+           ~~~~~~~^^^^^^^^^^^^^^^^
+KeyError: 'sessionToken'

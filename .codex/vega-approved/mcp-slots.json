@@ -1,0 +1,18 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 0 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT id,slot_code,product_slug,public_url,experience_version,source_experiment_id,status,LEFT(draft_experience_json,400) AS draft FROM pde_production_slot WHERE source_experiment_id IN (91,92)",
+      "appliedLimit": 100,
+      "returnedRows": 0,
+      "rows": []
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"jsonrpc": "2.0", "id": 1, "result": {"content": [{"type": "text", "text": "Query executed with 1 rows returned"}], "structuredContent": {"query": "SELECT id, automatic_execution_enabled FROM product WHERE id=4", "appliedLimit": 100, "returnedRows": 1, "rows": [{"id": 4, "automatic_execution_enabled": true}]}}}

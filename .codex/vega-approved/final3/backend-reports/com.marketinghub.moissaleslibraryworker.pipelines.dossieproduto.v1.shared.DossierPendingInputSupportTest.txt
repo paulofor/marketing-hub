@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierPendingInputSupportTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierPendingInputSupportTest

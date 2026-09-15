@@ -1,0 +1,75 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 4 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT id,experiment_id,headline,primary_text,description,call_to_action,destination_url,video_url,status,agent_review_status,reviewed_at,agent_reviewed_at FROM creative WHERE experiment_id IN (91,92) ORDER BY id DESC",
+      "appliedLimit": 100,
+      "returnedRows": 4,
+      "rows": [
+        {
+          "id": 527,
+          "experiment_id": 91,
+          "headline": "Seu 1º ajuste sem comprar tudo",
+          "primary_text": "Ruído visual ao se arrumar? Descubra seu 1º ajuste MUSA com o que já tem. Comece agora.",
+          "description": "Comece pelo 1º ajuste.",
+          "call_to_action": "LEARN_MORE",
+          "destination_url": "https://v7.clubemusa.com.br",
+          "video_url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/06/misc/629a566c0a34-sales-video-21236-musa-final.mp4",
+          "status": "READY",
+          "agent_review_status": "APPROVED",
+          "reviewed_at": "2026-09-06T22:17:37",
+          "agent_reviewed_at": "2026-09-06T22:15:14"
+        },
+        {
+          "id": 526,
+          "experiment_id": 91,
+          "headline": "Seu 1º ajuste sem comprar tudo",
+          "primary_text": "Ruído visual na hora de se arrumar?\nIdentifique a categoria do ruído e aplique seu 1º ajuste (usando principalmente o que já tem). Depois, organize suas escolhas em 7 dias.\n\nVer meu primeiro ajuste MUSA",
+          "description": "Comece pelo 1º ajuste.",
+          "call_to_action": "LEARN_MORE",
+          "destination_url": "https://v7.clubemusa.com.br",
+          "video_url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/06/misc/629a566c0a34-sales-video-21236-musa-final.mp4",
+          "status": "REJECTED",
+          "agent_review_status": "APPROVED",
+          "reviewed_at": "2026-09-06T22:18:19",
+          "agent_reviewed_at": "2026-09-06T04:02:54"
+        },
+        {
+          "id": 525,
+          "experiment_id": 91,
+          "headline": "Seu 1º ajuste sem comprar tudo",
+          "primary_text": "Ruído visual na hora de se arrumar?\nIdentifique a categoria do ruído e aplique seu 1º ajuste (usando principalmente o que já tem). Depois, organize suas escolhas em 7 dias.\n\nVer meu primeiro ajuste MUSA",
+          "description": "Comece pelo 1º ajuste.",
+          "call_to_action": "LEARN_MORE",
+          "destination_url": "https://v7.clubemusa.com.br",
+          "video_url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/06/misc/6d374c05411c-sales-video-21235-musa-final.mp4",
+          "status": "REJECTED",
+          "agent_review_status": "FAILED",
+          "reviewed_at": "2026-09-06T04:06:43",
+          "agent_reviewed_at": "2026-09-06T03:47:00"
+        },
+        {
+          "id": 524,
+          "experiment_id": 91,
+          "headline": "Seu 1º ajuste sem comprar tudo",
+          "primary_text": "Ruído visual na hora de se arrumar?\nIdentifique a categoria do ruído e aplique seu 1º ajuste (usando principalmente o que já tem). Depois, organize suas escolhas em 7 dias.\n\nVer meu primeiro ajuste MUSA",
+          "description": "Comece pelo 1º ajuste.",
+          "call_to_action": "LEARN_MORE",
+          "destination_url": "https://v7.clubemusa.com.br",
+          "video_url": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/sales-videos/2026/09/05/misc/33af508a12ee-vega91-product-ugc-premium-final.mp4",
+          "status": "REJECTED",
+          "agent_review_status": "ADJUST",
+          "reviewed_at": "2026-09-06T04:06:43",
+          "agent_reviewed_at": "2026-09-06T03:11:51"
+        }
+      ]
+    }
+  }
+}

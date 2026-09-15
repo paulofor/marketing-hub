@@ -1,0 +1,70 @@
+[
+  {
+    "url": "http://191.252.181.168/api/facebook/configuration-status",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/products",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/creatives/video-review?status=DRAFT",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/experiments/video-assets",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/sales-videos/projects",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/ops-monitor/v1/modules/availability",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/products/4/sales-videos/profiles",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/sales-videos/profiles/60/jobs",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/media/2817",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/experiments",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/facebook/configuration-status",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/products",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/creatives/video-review?status=DRAFT",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/business-process-chains/learning-cycles/v1/products/4?chainId=14",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/ops-monitor/v1/modules/availability",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/business-process-chains",
+    "status": 200
+  },
+  {
+    "url": "http://191.252.181.168/api/business-process-chains/learning-cycles/v1/catalog?chainId=14&productId=4&cycleId=2",
+    "status": 200
+  }
+]

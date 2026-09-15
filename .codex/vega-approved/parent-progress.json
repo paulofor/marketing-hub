@@ -1,0 +1,60 @@
+{
+  "id": 4,
+  "productId": 4,
+  "processDefinitionId": 75,
+  "chainId": 14,
+  "learningCycleId": 2,
+  "sourceReference": "experiment:92",
+  "status": "WAITING_ACTIVITY",
+  "reason": "V\u00eddeos aprovados e integrados. Aguardando Psique \u00b7 fric\u00e7\u00e3o e recupera\u00e7\u00e3o \u00b7 tarefa #425.",
+  "currentActivityId": "learningCycle",
+  "currentActivityName": "Conduzir o ciclo de aprendizado e vendas",
+  "currentOwnerName": "Operador do ciclo \u00b7 Psique, T\u00eamis e aprova\u00e7\u00e3o humana",
+  "currentSequence": 4,
+  "totalActivities": 4,
+  "completedActivities": 0,
+  "remainingActivities": 4,
+  "omittedActivities": 0,
+  "completionPercentage": 0,
+  "knownCostUsd": null,
+  "costCoverage": "NO_EXECUTIONS",
+  "canStart": false,
+  "canPause": true,
+  "canResume": false,
+  "automaticExecution": true,
+  "childRunId": null,
+  "navigationUrl": "/business-process-chains/learning-cycles?chainId=14&productId=4&cycleId=2",
+  "createdAt": "2026-09-12T19:37:41.427447Z",
+  "updatedAt": "2026-09-15T00:49:07.334841Z",
+  "lastReconciledAt": "2026-09-15T00:49:56.872700Z",
+  "finishedAt": null,
+  "revision": 27398,
+  "parentProcesses": [],
+  "subprocesses": [
+    {
+      "processDefinitionId": 66,
+      "processName": "Opera\u00e7\u00e3o e otimiza\u00e7\u00e3o de experimento",
+      "processVersion": 5,
+      "activityId": "optimization",
+      "activityName": "Operar e otimizar o experimento",
+      "navigationUrl": "/products/4/value-chain-history/processes/66/activities?chainId=14&learningCycleId=2"
+    },
+    {
+      "processDefinitionId": 62,
+      "processName": "Venda, entrega e satisfa\u00e7\u00e3o da cliente",
+      "processVersion": 4,
+      "activityId": "delivery",
+      "activityName": "Entregar cada venda e acompanhar satisfa\u00e7\u00e3o",
+      "navigationUrl": "/products/4/value-chain-history/processes/62/activities?chainId=14&learningCycleId=2"
+    },
+    {
+      "processDefinitionId": 76,
+      "processName": "Ciclos de aprendizado e vendas",
+      "processVersion": 4,
+      "activityId": "learningCycle",
+      "activityName": "Conduzir o ciclo de aprendizado e vendas",
+      "navigationUrl": "/products/4/value-chain-history/processes/76/activities?chainId=14&learningCycleId=2"
+    }
+  ],
+  "userAction": null
+}

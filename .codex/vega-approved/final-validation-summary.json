@@ -1,0 +1,56 @@
+[
+  {
+    "round": "final2",
+    "java": {
+      "backend": {
+        "tests": 3014,
+        "skipped": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "psique": {
+        "tests": 107,
+        "skipped": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "temis": {
+        "tests": 92,
+        "skipped": 1,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "js": 22,
+    "frontend": 32,
+    "operational": 2,
+    "executed": 3259
+  },
+  {
+    "round": "final3",
+    "java": {
+      "backend": {
+        "tests": 3014,
+        "skipped": 8,
+        "failures": 0,
+        "errors": 0
+      },
+      "psique": {
+        "tests": 107,
+        "skipped": 1,
+        "failures": 0,
+        "errors": 0
+      },
+      "temis": {
+        "tests": 92,
+        "skipped": 1,
+        "failures": 0,
+        "errors": 0
+      }
+    },
+    "js": 22,
+    "frontend": 32,
+    "operational": 2,
+    "executed": 3259
+  }
+]

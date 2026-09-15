@@ -1,0 +1,70 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.vega-private
+#1 transferring dockerfile: 603B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/nginx:1.27-alpine
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/node:22-alpine
+#3 DONE 0.0s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 99B done
+#4 DONE 0.0s
+
+#5 [build 1/7] FROM docker.io/library/node:22-alpine
+#5 DONE 0.0s
+
+#6 [stage-1 1/4] FROM docker.io/library/nginx:1.27-alpine
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 20.19kB done
+#7 DONE 0.0s
+
+#8 [build 2/7] WORKDIR /build
+#8 CACHED
+
+#9 [build 3/7] COPY package.json package-lock.json ./
+#9 CACHED
+
+#10 [build 4/7] RUN npm ci
+#10 CACHED
+
+#11 [build 5/7] COPY vega-private ./vega-private
+#11 DONE 0.3s
+
+#12 [build 6/7] COPY vite.vega.config.ts ./
+#12 DONE 0.2s
+
+#13 [build 7/7] RUN npx vite build --config vite.vega.config.ts
+#13 3.120 vite v8.1.4 building client environment for production...
+#13 3.131 [2Ktransforming...✓ 14 modules transformed.
+#13 3.244 rendering chunks...
+#13 3.267 computing gzip size...
+#13 3.274 dist-vega/index.html                   0.49 kB │ gzip:  0.32 kB
+#13 3.274 dist-vega/assets/index-QeJ5bteO.css    2.84 kB │ gzip:  1.13 kB
+#13 3.274 dist-vega/assets/index-o4kETPXH.js   152.51 kB │ gzip: 49.85 kB
+#13 3.274 
+#13 3.274 ✓ built in 153ms
+#13 DONE 3.3s
+
+#6 [stage-1 1/4] FROM docker.io/library/nginx:1.27-alpine
+#6 CACHED
+
+#14 [stage-1 2/4] COPY --from=build /build/dist-vega /usr/share/nginx/html/vega-private
+#14 DONE 0.1s
+
+#15 [stage-1 3/4] COPY vega-private/nginx.conf.template /etc/nginx/templates/default.conf.template
+#15 DONE 0.2s
+
+#16 [stage-1 4/4] COPY vega-private/version-diagnostics.json /usr/share/nginx/html/vega-private/version-diagnostics.json
+#16 DONE 0.2s
+
+#17 exporting to image
+#17 exporting layers 0.1s done
+#17 writing image sha256:193466864da3c093d6731504968d09cf043eebabd34fd6fad483e2b76c2ff5dc done
+#17 naming to docker.io/marketing-hub/pde-platform-frontend-vega:vega-approved-ae63251932c2 0.0s done
+#17 DONE 0.2s

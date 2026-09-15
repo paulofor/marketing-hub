@@ -1,0 +1,101 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.68kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.1s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 CACHED
+
+#4 [internal] load metadata for mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
+#4 DONE 0.0s
+
+#5 [internal] load metadata for docker.io/library/eclipse-temurin:21-jre-noble
+#5 DONE 0.0s
+
+#6 [internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21
+#6 DONE 0.0s
+
+#7 [internal] load .dockerignore
+#7 transferring context:
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [build 6/7] ADD --checksum=sha256:167a098c4fdec156b58a9f678c90a84f9072d789f9c6e7b35496a6987b8b7ef8 https://storage.googleapis.com/chrome-for-testing-public/153.0.8010.36/linux64/chrome-linux64.zip /tmp/pde-chrome.zip
+#8 DONE 0.0s
+
+#9 [stage-2  1/13] FROM mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
+#9 DONE 0.0s
+
+#10 [java-runtime 1/1] FROM docker.io/library/eclipse-temurin:21-jre-noble
+#10 DONE 0.0s
+
+#11 [build 1/7] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21
+#11 DONE 0.0s
+
+#12 [internal] load build context
+#12 transferring context: 35.55kB 0.0s done
+#12 DONE 0.0s
+
+#13 [build 4/7] COPY src src
+#13 CACHED
+
+#14 [build 7/7] RUN mkdir -p /opt/pde-chrome && cd /opt/pde-chrome     && jar -xf /tmp/pde-chrome.zip     && chmod +x chrome-linux64/chrome chrome-linux64/chrome_crashpad_handler chrome-linux64/chrome_sandbox
+#14 CACHED
+
+#15 [stage-2  2/13] RUN test -s /etc/ssl/certs/ca-certificates.crt     && node --version | grep -Eq '^v2[0-9]\.'     && npm install -g @openai/codex@0.146.0     && npm cache clean --force
+#15 CACHED
+
+#16 [build 5/7] RUN mvn -q -DskipTests package
+#16 CACHED
+
+#17 [build 6/7] ADD --checksum=sha256:167a098c4fdec156b58a9f678c90a84f9072d789f9c6e7b35496a6987b8b7ef8 https://storage.googleapis.com/chrome-for-testing-public/153.0.8010.36/linux64/chrome-linux64.zip /tmp/pde-chrome.zip
+#17 CACHED
+
+#18 [stage-2  5/13] COPY package.json package-lock.json /app/
+#18 CACHED
+
+#19 [build 2/7] WORKDIR /build
+#19 CACHED
+
+#20 [stage-2  7/13] COPY --from=build /build/target/app.jar /app/app.jar
+#20 CACHED
+
+#21 [stage-2 12/13] COPY review-evidence /app/commercial-evidence
+#21 CACHED
+
+#22 [build 3/7] COPY pom.xml .
+#22 CACHED
+
+#23 [stage-2  8/13] COPY agent-health-report.mjs /app/agent-health-report.mjs
+#23 CACHED
+
+#24 [stage-2 10/13] COPY --from=build /build/src/main/resources/browser /app/browser
+#24 CACHED
+
+#25 [stage-2  6/13] RUN test -s /etc/ssl/certs/ca-certificates.crt     && node --version | grep -Eq '^v2[0-9]\.'     && java -version     && git --version     && npm ci --omit=dev     && npm cache clean --force     && (getent group operator >/dev/null || groupadd --gid 10001 operator)     && (id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator)
+#25 CACHED
+
+#26 [stage-2  9/13] COPY --from=build /build/src/main/resources/prompts /app/prompts
+#26 CACHED
+
+#27 [stage-2  4/13] COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk
+#27 CACHED
+
+#28 [stage-2 11/13] COPY --from=build /build/src/main/resources/mcp /app/mcp
+#28 CACHED
+
+#29 [stage-2  3/13] WORKDIR /app
+#29 CACHED
+
+#30 [stage-2 13/13] COPY --from=build /opt/pde-chrome/chrome-linux64 /opt/chrome-linux64
+#30 CACHED
+
+#31 exporting to image
+#31 exporting layers done
+#31 writing image sha256:7ab0d487e7941a9dc9c991d7d4b26609d2e07afc1189179c84a0bd04d961e69d done
+#31 naming to docker.io/marketing-hub/customer-agent-worker:vega-approved-ae63251932c2 0.0s done
+#31 DONE 0.1s

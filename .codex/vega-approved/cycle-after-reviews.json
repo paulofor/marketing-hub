@@ -1,0 +1,1 @@
+{"jsonrpc": "2.0", "id": 1, "result": {"content": [{"type": "text", "text": "Query executed with 1 rows returned"}], "structuredContent": {"query": "SELECT id,stage,status,revision FROM learning_sales_cycle_v1 WHERE id=2", "appliedLimit": 100, "returnedRows": 1, "rows": [{"id": 2, "stage": "AUTHORIZATION", "status": "OPEN", "revision": 13}]}}}

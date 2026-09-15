@@ -1,0 +1,100 @@
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-1 Stopping 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Stopping 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-1 Stopped 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Stopped 
+Going to remove aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1, aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-1
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-1 Removing 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Removing 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Removed 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-1 Removed 
+Untagged: marketing-hub/pde-platform-frontend-vega:vega-approved-092a91a01a81
+Deleted: sha256:b5939bffda81d694a93779f131654df6703a306c861039cb24dafda7d2e10077
+Untagged: marketing-hub/meta-ad-approver-worker:vega-approved-092a91a01a81
+Deleted: sha256:b335a7dbf4a20edfda00e82ec96d9e2f261be028b0284dadd2d7871933dc603c
+Untagged: marketing-hub/customer-agent-worker:vega-approved-092a91a01a81
+Deleted: sha256:8fe2451cde6034a9a8a1ef3cca9ca47deeeea1117284383b5537a333488e91ee
+Untagged: marketing-hub/customer-agent-worker:vega-approved-986a13abd879
+Deleted: sha256:182f79178a073b0a9de459ebe62d52707a92f1652f44b37e78f3b60a34d5296c
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+onpwnpbdowh5ekatnhl6zpek3*              	true 		0B        	About a minute ago
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+wc1tf9vihvzhkkffu3j05sr9u*              	true 		0B        	About a minute ago
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+8j0zulg04fc3x8sdpyzn9m3s2*              	true 		59B       	About a minute ago
+Total:	59B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+t8a50or80nqyym9dtvrzdg8ot*              	true 		237B      	About a minute ago
+Total:	237B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+qrmbursbxdra7wd4hexsvk03n               	true 		378B      	17 minutes ago
+Total:	378B
+Total:	0B
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+a34tn73bg3y7f0vyrtfxtsanx*              	true 		551B      	About a minute ago
+Total:	551B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+mgiwdzvnjr4s94v2q1je5vnfs               	true 		610B      	17 minutes ago
+Total:	610B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+0daictax2arjf7l1btmlgit8n*              	true 		718B      	About a minute ago
+Total:	718B
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+upe2k5aeqzoaph38ye4cn7fse*              	true 		1.335kB   	About a minute ago
+Total:	1.335kB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+46bp5b7qwnlb3m7vy6b4tww9l*              	true 		1.728kB   	About a minute ago
+Total:	1.728kB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+u3ljwwn363iv7tsr8dqfh09di*              	true 		2.639kB   	About a minute ago
+Total:	2.639kB
+Total:	0B
+Total:	0B
+Total:	0B
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+tbe68m5lzsbqd1966p0rpsyt3*              	true 		62.26kB   	About a minute ago
+Total:	62.26kB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+l596vcm28l4qigy15xswmzdbh               	true 		155.8kB   	17 minutes ago
+Total:	155.8kB
+Total:	0B
+Total:	0B
+Total:	0B
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+qblyc1tg159edo5qh1l67w3va*              	true 		958.2kB   	17 minutes ago
+Total:	958.2kB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+871hw22k0qldj3hbb7noyx647*              	true 		958.3kB   	About a minute ago
+Total:	958.3kB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+a21lmedy3inp5btbbck4f544m               	true 		2.523MB   	17 minutes ago
+Total:	2.523MB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+9uegksvxgv24zoce1kgm4v4k1*              	true 		2.978MB   	About a minute ago
+Total:	2.978MB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+e9yzmcby5u0fvqgkoy7vo4gh7*              	true 		3.233MB   	About a minute ago
+Total:	3.233MB
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+ih9wf94mqckan5q5r2gu3z7yb*              	true 		79.41MB   	17 minutes ago
+Total:	79.41MB
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+ddnqwo8byn3owz6smrem8ndlx*              	true 		83.67MB   	17 minutes ago
+Total:	83.67MB
+Total:	0B
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+ow23eivgchj41erom3a4mp9dw*              	true 		195.7MB   	4 minutes ago
+Total:	195.7MB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+sgvad70xsjchqxjxy65cc0l0p               	true 		195.7MB   	9 minutes ago
+Total:	195.7MB
+ID						RECLAIMABLE	SIZE		LAST ACCESSED
+byrosw3t2f5jjcp9bbzn0c9j9*              	true 		410.1MB   	4 minutes ago
+Total:	410.1MB

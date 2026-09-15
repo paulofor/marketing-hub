@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/infra/testing/video-continuation/verify.py", line 55, in <module>
+    v.http('/fixture/video-continuation/restore-approval',dict(assetId=assets['pdeVideoAssetId']))
+  File "/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/infra/testing/video-finance/validate.py", line 26, in http
+    assert status == expected, (path, expected, status, result)
+           ^^^^^^^^^^^^^^^^^^
+AssertionError: ('/fixture/video-continuation/restore-approval', 200, 404, {'type': 'about:blank', 'title': 'Not Found', 'status': 404, 'detail': 'No static resource fixture/video-continuation/restore-approval.', 'instance': '/fixture/video-continuation/restore-approval'})

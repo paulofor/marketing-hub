@@ -1,0 +1,27 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 2 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT id,objective_evidence_json FROM business_process_activity_instance WHERE id IN (258,270)",
+      "appliedLimit": 100,
+      "returnedRows": 2,
+      "rows": [
+        {
+          "id": 258,
+          "objective_evidence_json": "{\"evidenceType\":\"PDE_AGENT_VALIDATION_GATE_V1\",\"productId\":4,\"productSlug\":\"metodo-musa-7-dias\",\"sourceReference\":\"experiment:92\",\"prototypeVersion\":\"musa-pde-entry-v12-primeiro-ajuste-aplicavel\",\"publicUrl\":\"https://v7.clubemusa.com.br/vega-private\",\"trafficClass\":\"AGENT_VALIDATION\",\"internalMarker\":\"mh_internal_test\",\"completedAt\":\"2026-09-11T21:59:37.272262079Z\",\"nextProcessCode\":\"pde-communication-sales-journey\",\"productExecutionState\":\"PLAY\",\"humanEvidenceClaimed\":false,\"commercialEvidenceClaimed\":false,\"paymentEnabled\":false,\"publicationAuthorized\":false,\"campaignAuthorized\":false,\"mediaSpendAuthorizedBrl\":0,\"taskEvidence\":[{\"taskId\":395,\"activityId\":\"technicalHomologation\",\"agentKey\":\"customer-agent\",\"executionMode\":\"DETERMINISTIC\",\"deliveredAt\":\"2026-09-11T20:30:01Z\",\"resultSha256\":\"a29dd13e2d78319b00a451dda9cfbde058dd62c80cc479ea7eb472fd603d95c1\"},{\"taskId\":396,\"activityId\":\"psiqueAdherent\",\"agentKey\":\"customer-agent\",\"executionMode\":\"MODEL\",\"deliveredAt\":\"2026-09-11T20:37:39Z\",\"resultSha256\":\"5e13ecf66653aa91676e3a5ce9a3bd6f14c5e33a89572219f2a090727be4988f\",\"estimatedCostUsd\":0.53470800},{\"taskId\":397,\"activityId\":\"psiqueRecovery\",\"agentKey\":\"customer-agent\",\"executionMode\":\"MODEL\",\"deliveredAt\":\"2026-09-11T21:54:10Z\",\"resultSha256\":\"5939c27f77691cc148049fc41485fdee32b183218652726ff8cf57f9bebf8b9c\",\"estimatedCostUsd\":0.55002400},{\"taskId\":398,\"activityId\":\"psiqueSafety\",\"agentKey\":\"customer-agent\",\"executionMode\":\"MODEL\",\"deliveredAt\":\"2026-09-11T21:56:42Z\",\"resultSha256\":\"7ea507fe3ce5d3b9f585b08506a274c3b4c8c49ffab296d890f6db8647a4b697\",\"estimatedCostUsd\":0.53151600},{\"taskId\":399,\"activityId\":\"commercialIntegrityReview\",\"agentKey\":\"meta-ad-approver\",\"executionMode\":\"MODEL\",\"deliveredAt\":\"2026-09-11T21:58:35Z\",\"resultSha256\":\"a7c4b9b17c0cdb88dc4538c2220f0dc432a76c4e5708945b8b645bd40f7e0c7f\",\"estimatedCostUsd\":0.48166400}],\"knownCostUsd\":2.09791200,\"costCoverage\":\"PARTIAL\"}"
+        },
+        {
+          "id": 270,
+          "objective_evidence_json": "{\"evidenceType\":\"PDE_COMMUNICATION_PRIVATE_INTEGRATION_V1\",\"mode\":\"LEARNING_CYCLE_PRIVATE\",\"productId\":4,\"sourceReference\":\"experiment:92\",\"cycleId\":2,\"chainDefinitionId\":14,\"prototypeVersion\":\"musa-pde-entry-v12-primeiro-ajuste-aplicavel\",\"destinationUrl\":\"https://v7.clubemusa.com.br/vega-private\",\"requiresLandingGeneration\":false,\"gateInstanceId\":258,\"gateSha256\":\"7010b06dc4df9db5fd8981d3cd07b9df915afda57f55254110321b8cb193de73\",\"communicationTaskId\":402,\"communicationSha256\":\"c189598a886c66ff8891df16545086f4986f9fb6b83d1f4d272433b4b02094e8\",\"technicalTaskId\":395,\"technicalResultSha256\":\"a29dd13e2d78319b00a451dda9cfbde058dd62c80cc479ea7eb472fd603d95c1\",\"validatedChecks\":{\"sameVersion\":true,\"desktopAndMobile\":true,\"happyResultWithinTenMinutes\":true,\"recoveryPreserved\":true,\"safetyBlocked\":true,\"accessibilityBasic\":true,\"responsiveLayout\":true,\"privacyPreserved\":true,\"internalTrafficSegregated\":true,\"paymentDisabled\":true,\"publicationDisabled\":true,\"campaignDisabled\":true,\"zeroMediaSpend\":true},\"trafficClass\":\"AGENT_VALIDATION\",\"internalMarker\":\"mh_internal_test\",\"checkoutMode\":\"SIMULATED\",\"paymentEnabled\":false,\"publicationAuthorized\":false,\"campaignAuthorized\":false,\"mediaSpendAuthorized\":false,\"humanEvidenceClaimed\":false,\"commercialEvidenceClaimed\":false,\"predecessors\":[{\"activityId\":\"communicationContract\",\"instanceId\":259,\"evidenceSha256\":\"9112e679646230ad8213bb68409470c8aa1020b1060d8e20cd6370d0e201ada8\"},{\"activityId\":\"creatives\",\"instanceId\":267,\"evidenceSha256\":\"8cb54d47e63e985c988e61bcd8bbc8fd63ad089e4321af1b4ddc047d46d59254\"},{\"activityId\":\"destination\",\"instanceId\":269,\"evidenceSha256\":\"a06e4d2dbadbd543b0fb37b48de8b21d66b9284f55ff1123ec33d00c48520c21\"}],\"creativeApproval\":{\"processDefinitionId\":64,\"producerTaskId\":406,\"reviews\":[{\"taskId\":407,\"activityId\":\"customer\",\"resultSha256\":\"ad62d319eb1d0753c9bace60173490601bda1ee2fe8fa7bcaa19965cb5acf9d3\"},{\"taskId\":408,\"activityId\":\"commercial\",\"resultSha256\":\"f1df54af078e17ab30784a12f3de7977c7310c62b4e3fc0971d6c69892da148a\"}],\"humanDecisionInstanceId\":266,\"humanDecisionSha256\":\"67353acafa9e40b2ed157d2f967c713cb37b8e9d91979704e084ac82c1e7b084\",\"renderedAssets\":[{\"artifactId\":126,\"contentUrl\":\"/api/agent-tasks/406/visual-evidence/126/content\",\"sha256\":\"b5c09c56a4eb22306ca429341e879319ae83aed74f3aa129b69fbca122fabb19\",\"width\":1080,\"height\":1350,\"templateVersion\":\"PROOF_CARD_V1\",\"sourceTaskId\":395,\"sourceArtifactId\":118,\"sourceSha256\":\"58320a0f1f7205d78a4e5f9d771d6eea6ca9ef8b6edaf9584a17cd74a770b339\",\"prototypeVersion\":\"musa-pde-entry-v12-primeiro-ajuste-aplicavel\",\"crop\":{\"x\":270,\"y\":333,\"width\":900,\"height\":520},\"privateValidation\":true}]}}"
+        }
+      ]
+    }
+  }
+}

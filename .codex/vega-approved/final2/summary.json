@@ -1,0 +1,33 @@
+{
+  "backend": {
+    "tests": 3014,
+    "skipped": 8,
+    "failures": 0,
+    "errors": 0
+  },
+  "psique": {
+    "tests": 107,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  "temis": {
+    "tests": 92,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0
+  },
+  "browser-contracts": {
+    "tests": 17,
+    "pass": 17,
+    "fail": 0,
+    "skipped": 0
+  },
+  "private-worker": {
+    "tests": 5,
+    "pass": 5,
+    "fail": 0,
+    "skipped": 0
+  },
+  "frontend": "precated for more details.\u001b[39m\n\n RUN  v1.6.1 /root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/frontend\n\n \u2713 src/pages/learningCycle/LearningCycleCommandForm.test.tsx  (1 test) 91ms\n \u2713 src/pages/product/ProductProcessTaskTracking.test.tsx  (4 tests) 80ms\n \u2713 src/pages/learningCycle/LearningCycleProcessEntry.test.tsx  (4 tests) 94ms\n \u2713 src/pages/learningCycle/LearningCycleDecisionPanel.test.tsx  (6 tests) 328ms\n \u2713 src/pages/learningCycle/LearningCyclesPage.test.tsx  (17 tests) 1326ms\n\n Test Files  5 passed (5)\n      Tests  32 passed (32)\n   Start at  00:20:57\n   Duration  4.18s (transform 550ms, setup 3.69s, collect 2.78s, tests 1.92s, environment 5.65s, prepare 521ms)\n\n"
+}

@@ -1,0 +1,5 @@
+time="2026-09-14T23:57:44Z" level=warning msg="Found orphan containers (aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-learning-cycles-mysql-1, aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-mysql-1) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Creating 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Created 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Starting 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-private-image-1 Started 

@@ -1,0 +1,49 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.54kB done
+#1 DONE 0.1s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.1s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/eclipse-temurin:21-jre
+#4 DONE 0.0s
+
+#5 [internal] load .dockerignore
+#5 transferring context:
+#5 transferring context: 279B done
+#5 DONE 0.1s
+
+#6 [stage-0 1/5] FROM docker.io/library/eclipse-temurin:21-jre
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 305.63MB 5.0s
+#7 transferring context: 329.66MB 5.9s done
+#7 DONE 6.2s
+
+#8 [stage-0 2/5] WORKDIR /app
+#8 CACHED
+
+#9 [stage-0 3/5] RUN --mount=type=tmpfs,target=/var/cache/apt --mount=type=tmpfs,target=/var/lib/apt/lists     apt-get update     && apt-get install -y --no-install-recommends curl socat     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [stage-0 4/5] RUN mkdir -p uploads logs
+#10 CACHED
+
+#11 [stage-0 5/5] COPY backend/ads-service/target/app-exec.jar /app/app.jar
+#11 DONE 9.2s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 0.2s done
+#12 writing image sha256:1ca4936bc34f4e9f323a4333acacab82fa079ef802694ddd072aed5f3a508833 done
+#12 naming to docker.io/marketing-hub/backend:vega-approved-ae63251932c2 0.0s done
+#12 DONE 0.2s
+
+ [33m1 warning found (use docker --debug to expand):
+[0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 7)

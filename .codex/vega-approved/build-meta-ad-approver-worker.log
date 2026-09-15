@@ -1,0 +1,94 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.77kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/eclipse-temurin:21-jre-noble
+#4 DONE 0.0s
+
+#5 [internal] load metadata for docker.io/mwader/static-ffmpeg:7.1.1@sha256:6769881cc02c80d33e387750a8e144d162adfab2775e934dd97899261dda3a0c
+#5 DONE 0.0s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [ffmpeg-runtime 1/1] FROM docker.io/mwader/static-ffmpeg:7.1.1@sha256:6769881cc02c80d33e387750a8e144d162adfab2775e934dd97899261dda3a0c
+#7 DONE 0.0s
+
+#8 [build 1/5] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21
+#8 DONE 0.0s
+
+#9 [java-runtime 1/1] FROM docker.io/library/eclipse-temurin:21-jre-noble
+#9 DONE 0.0s
+
+#10 [stage-3  1/14] FROM mcr.microsoft.com/playwright:v1.54.2-noble@sha256:18b4bcff4f8ba0ac8c44b09f09def6a4f6cb8579e5f26381c21f38b50935d5d8
+#10 DONE 0.0s
+
+#11 [internal] load build context
+#11 transferring context: 33.31kB 0.1s done
+#11 DONE 0.1s
+
+#12 [stage-3  8/14] RUN node --version | grep -Eq '^v2[0-9]\.'     && java -version     && npm ci --omit=dev     && npm cache clean --force     && groupadd --gid 10001 approver     && useradd --create-home --uid 10001 --gid approver approver
+#12 CACHED
+
+#13 [stage-3  4/14] COPY --from=java-runtime /opt/java/openjdk /opt/java/openjdk
+#13 CACHED
+
+#14 [stage-3  6/14] COPY --from=ffmpeg-runtime /ffprobe /usr/local/bin/ffprobe
+#14 CACHED
+
+#15 [build 2/5] WORKDIR /build
+#15 CACHED
+
+#16 [stage-3  9/14] COPY --from=build /build/target/app.jar /app/app.jar
+#16 CACHED
+
+#17 [stage-3  2/14] RUN test -s /etc/ssl/certs/ca-certificates.crt     && node --version | grep -Eq '^v2[0-9]\.'     && npm install -g @openai/codex@0.146.0     && npm cache clean --force
+#17 CACHED
+
+#18 [stage-3 10/14] COPY agent-health-report.mjs /app/agent-health-report.mjs
+#18 CACHED
+
+#19 [stage-3 12/14] COPY src/main/resources/mcp/video-frame-extractor.mjs /app/video-frame-extractor.mjs
+#19 CACHED
+
+#20 [build 3/5] COPY pom.xml .
+#20 CACHED
+
+#21 [stage-3  5/14] COPY --from=ffmpeg-runtime /ffmpeg /usr/local/bin/ffmpeg
+#21 CACHED
+
+#22 [stage-3 11/14] COPY browser-runtime-check.mjs /app/browser-runtime-check.mjs
+#22 CACHED
+
+#23 [stage-3  7/14] COPY package.json package-lock.json /app/
+#23 CACHED
+
+#24 [build 4/5] COPY src src
+#24 CACHED
+
+#25 [build 5/5] RUN mvn -q -DskipTests package
+#25 CACHED
+
+#26 [stage-3 13/14] COPY src/main/resources/mcp/landing-evidence.mjs /app/landing-evidence.mjs
+#26 CACHED
+
+#27 [stage-3  3/14] WORKDIR /app
+#27 CACHED
+
+#28 [stage-3 14/14] COPY review-evidence /app/commercial-evidence
+#28 CACHED
+
+#29 exporting to image
+#29 exporting layers done
+#29 writing image sha256:79a4dd3f6321649db3dc96eeeee07b395a8a49bc3bb925037ac2c0b6184bdeb6 done
+#29 naming to docker.io/marketing-hub/meta-ad-approver-worker:vega-approved-ae63251932c2 done
+#29 DONE 0.0s

@@ -1,0 +1,1352 @@
+Gestão de Produto
+Gestão de Agentes
+Todos os produtos
+Tipos de produto
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 35 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Vídeos
+
+Produção e rastreabilidade de vídeos comerciais pelo Marketing Hub. O primeiro fluxo cria vídeos explicativos para entrada do PDE, sem publicação manual de artefato.
+
+PDE entrada
+Tenant ativo
+Usuário atual
+Aplicar contexto
+Os valores são enviados automaticamente em cada chamada da API de vídeos.
+BIBLIOTECA
+Vídeos dos experimentos
+
+Visão de campanha para acompanhar vídeos planejados, em geração, prontos e bloqueando liberação de tráfego.
+
+Todos
+Planejados
+Gerando
+Prontos
+Falharam
+Vídeos
+42
+Planejados
+1
+Gerando
+0
+Prontos aprovados
+9
+Bloqueios
+5
+LANDING_HERO
+APPROVED
+MUSA-H003-E003
+
+Demonstrar como escolher ocasião e combinação, aplicar e avaliar uma microação e salvar/retomar. LANDING_HERO privado da v12, ciclo 2, experimento 92, cadeia 14, processo 75 v6. Fontes Íris #402, prova #118/#126, briefing evento12 e teto evento11. Não condicionar uso a assistir o vídeo. Nenhuma publicação, compra ou cobrança autorizada.
+
+HLS PDE
+Pronto para PDE
+Status
+READY
+Métrica
+DIAGNOSTIC_START
+Provider
+MUSA_POST_PRODUCTION · gpt-4o-mini-tts-2025-12-15
+Duração
+15s
+Playlist HLS
+Abrir HLS
+Revisão
+APPROVED · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+APPROVED
+MUSA-H003-E003
+
+Qualificar interesse para o primeiro ajuste aplicável com itens já disponíveis. Vídeo AD da versão privada v12, ciclo de aprendizado 2, cadeia 14, processo pai 75 v6. Fonte: Íris #402; briefing do ciclo evento 12; teto evento 11. Não publicar campanha ou cobrar.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+DIAGNOSTIC_START
+Provider
+MUSA_POST_PRODUCTION · gpt-4o-mini-tts-2025-12-15
+Duração
+15s
+Playlist HLS
+Abrir HLS
+Revisão
+APPROVED · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+APPROVED
+MUSA-H003-E002
+
+Transformar o reconhecimento íntimo diante do espelho em clique qualificado para o diagnóstico MUSA, com um criativo vertical orientado por pesquisa e medido até a venda.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE
+Provider
+MUSA_POST_PRODUCTION · gpt-4o-mini-tts-2025-12-15
+Duração
+15s
+Revisão
+APPROVED · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+REJECTED
+MUSA-H003-E002
+
+Transformar o reconhecimento íntimo diante do espelho em clique qualificado para o diagnóstico MUSA, com um criativo vertical orientado por pesquisa e medido até a venda.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE
+Provider
+MUSA_POST_PRODUCTION · gpt-4o-mini-tts-2025-12-15
+Duração
+15s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Substituído pelo vídeo #40, que preserva a mesma geração Runway e corrige a identidade imutável do artefato final com SHA-256 persistido e conferível.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+REJECTED
+MUSA-H003-E002
+
+Transformar o reconhecimento íntimo diante do espelho em clique qualificado para o diagnóstico MUSA, com um criativo vertical orientado por pesquisa e medido até a venda.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE
+Provider
+MUSA_POST_PRODUCTION · gpt-4o-mini-tts-2025-12-15
+Duração
+15s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Substituído pelo vídeo #39, que preserva a mesma geração Runway e corrige a locução, a divulgação completa de apresentadora e voz sintéticas e as evidências auditáveis exigidas por Têmis.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+REJECTED
+MUSA-H003-E002
+
+Transformar o reconhecimento íntimo diante do espelho em clique qualificado para o diagnóstico MUSA, com um criativo vertical orientado por pesquisa e medido até a venda.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE
+Provider
+MUSA_POST_PRODUCTION · gpt-4o-mini-tts + FFmpeg
+Duração
+24s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+1- Texto da tela diferente da locução 2- Imagem tremida em alguns pontos 3- Imagem no espelho com celular na mão fica irreal.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+Bloqueia liberação
+Experimento 80 - MUSA PDE v6
+
+Filtrar trafego frio para atrair apenas mulheres que se reconhecem na dor de se arrumar e sentir que ainda falta presenca antes de sair, levando ao diagnostico gratuito do Clube MUSA.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Inicio do diagnostico MUSA por sessao paga apos clique no criativo de video; leitura secundaria de paywall visto, checkout iniciado e compra aprovada.
+Provider
+VEO · LUMA_RAY_3_2
+Duração
+30s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+APPROVED
+Metodo MUSA - Peca Sinal antes do Login-E004
+
+Usar o vídeo HeyGen MUSA aprovado como criativo vertical principal do experimento 75, conduzindo a dor do espelho para o diagnóstico gratuito no Clube MUSA v6.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Início do diagnóstico MUSA v6 por sessão paga, com leitura secundária de paywall, checkout e compra aprovada.
+Provider
+HEYGEN · avatar_iv_captioned
+Duração
+19s
+Revisão
+APPROVED
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+AD
+APPROVED
+MUSA-H001-E009-video-diagnostico-v5
+
+Usar o vídeo HeyGen MUSA-H001-E008 como criativo vertical principal do próximo experimento, conduzindo dor do espelho para diagnóstico gratuito na v5.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Inicio do diagnostico MUSA v5 e avanco para paywall/checkout por sessao paga
+Provider
+HEYGEN · avatar_iv_captioned
+Duração
+19s
+Revisão
+APPROVED
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Sem arquivo renderizado
+AD
+PENDING
+Metodo MUSA - Presenca Elegante em 7 Dias-E002
+
+Refazer o vídeo do anúncio do experimento 72 com promessa natural, específica e voltada ao diagnóstico do Plano MUSA de 7 dias.
+
+HLS PDE
+Pendente
+Status
+PLANNED
+Métrica
+diagnostico_iniciado
+Provider
+HEYGEN · avatar-v
+Duração
+22s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Aumentar desejo de continuar mostrando a microexperiencia concreta que a usuaria recebe depois do diagnostico.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+plan_view_rate
+Provider
+HEYGEN · avatar_iv
+Duração
+25s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Reduzir incerteza explicando o mecanismo MUSA de forma simples antes da usuaria abandonar a jornada.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+diagnostic_completion_rate
+Provider
+HEYGEN · avatar_iv
+Duração
+24s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Motivar a visitante a continuar no PDE ao reconhecer a dor de se arrumar e ainda sentir falta de presenca.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+diagnostic_start_rate
+Provider
+HEYGEN · avatar_iv
+Duração
+22s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Aumentar desejo de continuar mostrando a microexperiencia concreta que a usuaria recebe depois do diagnostico.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+plan_view_rate
+Provider
+HEYGEN · avatar_iv
+Duração
+25s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Reduzir incerteza explicando o mecanismo MUSA de forma simples antes da usuaria abandonar a jornada.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+diagnostic_completion_rate
+Provider
+HEYGEN · avatar_iv
+Duração
+24s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Motivar a visitante a continuar no PDE ao reconhecer a dor de se arrumar e ainda sentir falta de presenca.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+diagnostic_start_rate
+Provider
+HEYGEN · avatar_iv
+Duração
+22s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Reduzir incerteza explicando o mecanismo MUSA de forma simples antes da usuaria abandonar a jornada.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+diagnostic_completion_rate
+Provider
+VEO · HEYGEN
+Duração
+24s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Aumentar desejo de continuar mostrando a microexperiencia concreta que a usuaria recebe depois do diagnostico.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+plan_view_rate
+Provider
+VEO · HEYGEN
+Duração
+25s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Motivar a visitante a continuar no PDE ao reconhecer a dor de se arrumar e ainda sentir falta de presenca.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+diagnostic_start_rate
+Provider
+VEO · HEYGEN
+Duração
+22s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+LANDING_HERO
+APPROVED
+MUSA-H001-E006
+
+Direcionar o experimento 68 para a entrada PDE v5 estrada do desejo com video hero explicativo aprovado, reduzindo incerteza antes do diagnostico.
+
+HLS PDE
+Pronto para PDE
+Status
+READY
+Métrica
+Inicio do diagnostico e avanco para paywall apos exposicao ao video hero v5
+Provider
+HEYGEN · avatar_iv
+Duração
+46s
+Playlist HLS
+Abrir HLS
+Revisão
+APPROVED
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+APPROVED
+MUSA-H001-E007
+
+Explicar a entrada PDE v5 estrada do desejo antes do diagnóstico, reduzindo incerteza e aumentando avanço para o Plano MUSA de 7 dias.
+
+HLS PDE
+Pronto para PDE
+Status
+READY
+Métrica
+Início do diagnóstico e avanço para paywall após exposição ao vídeo hero
+Provider
+HEYGEN · avatar_iv
+Duração
+46s
+Playlist HLS
+Abrir HLS
+Revisão
+APPROVED · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+APPROVED
+MUSA-H001-E008
+
+Substituir o criativo rejeitado por áudio em inglês com vídeo avatar MUSA em português claro para Meta Reels e Stories.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Início do diagnóstico por sessão paga
+Provider
+HEYGEN · avatar_iv
+Duração
+20s
+Revisão
+APPROVED · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+AD
+Bloqueia liberação
+Metodo MUSA - Presenca Elegante em 7 Dias-E001
+
+Substituir o criativo rejeitado por legenda/copy confusa com vídeo avatar MUSA de peça-sinal e assinatura visual em português claro.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Início do diagnóstico MUSA vindo do criativo de vídeo
+Provider
+HEYGEN · avatar_iv
+Duração
+19s
+Revisão
+REJECTED · Codex MKT
+Motivo da reprovação
+Erro tecnico e comercial: criativo reportado sem som na validacao visual do usuario e copy desalinhada/confusa. Nao deveria ter passado pela aprovacao tecnica inicial nem por aprovacao comercial.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Sem arquivo renderizado
+AD
+PENDING
+MUSA-H001-E008
+
+Gerar novo criativo vertical obrigatório com áudio em português para Meta Reels e Stories, substituindo a versão em inglês e a pós-produção falha.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+Início do diagnóstico por sessão paga
+Provider
+VEO · VEO
+Duração
+8s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+REJECTED
+MUSA-H001-E006
+
+Gerar novo vídeo hero obrigatório para o Método MUSA, com áudio em português, sem sensualização, sem névoa e com conexão explícita com diagnóstico, microações e Plano MUSA de 7 dias.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+Clique no diagnóstico e início do diagnóstico após visualização da primeira dobra
+Provider
+VEO · VEO
+Duração
+8s
+Revisão
+REJECTED · Codex MKT
+Motivo da reprovação
+Substituido pelo video explicativo v5 aprovado em HeyGen; o render VEO antigo falhou por duracao curta e nao deve bloquear release do experimento 68.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+Sem arquivo renderizado
+LANDING_HERO
+PENDING
+MUSA-H001-E007
+
+Substituir o hero silencioso por vídeo com áudio em português para vender a primeira dobra do Clube MUSA e levar ao diagnóstico gratuito.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+Início do diagnóstico após visualização da primeira dobra
+Provider
+VEO · VEO
+Duração
+8s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Ver produção
+AD
+REJECTED
+Metodo MUSA - Presenca Elegante em 7 Dias-E002
+
+Usar vídeo falado aprovado do Método MUSA como criativo inicial para levar mulheres urbanas ao diagnóstico gratuito e testar interesse pela promessa de peça-sinal e presença mais coerente em 7 dias.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+CTR e início do diagnóstico no Clube MUSA
+Provider
+HEYGEN · avatar-v
+Duração
+22s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Esta indo bem mas o texto deixar a imagem mais coerente por sete dias não ficou bom.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+AD
+REJECTED
+Metodo MUSA - Presenca Elegante em 7 Dias-E001
+
+Gerar curiosidade segura para a Hipótese 2, levando mulheres urbanas ao diagnóstico do Clube MUSA pela promessa de descobrir uma peça-sinal clara.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+CTR e início do diagnóstico no PDE
+Provider
+HEYGEN · avatar-v
+Duração
+22s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+" deixar sua imagem mais coerente por sete dias. " Essa parte não ficou boa, confusa.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+AD
+REJECTED
+MUSA-H001-E008
+
+Criativo de video vertical para testar trafego qualificado ao diagnostico gratuito do Clube MUSA sem apelo sensual.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Inicio do diagnostico por sessao paga
+Provider
+HEYGEN · cinematic_avatar
+Duração
+10s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+esta em inglês o audio
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+REJECTED
+Metodo MUSA - Presenca Elegante em 7 Dias-E001
+
+Testar criativo de video vertical sobre assinatura visual para aumentar inicio do diagnostico MUSA e trafego qualificado para o Clube MUSA.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+diagnostico_iniciado_por_sessao
+Provider
+LUMA · ray-3.2
+Duração
+30s
+Revisão
+REJECTED
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+PENDING
+MUSA-H001-E008
+
+Testar se criativo em video vertical gera trafego mais qualificado para iniciar o diagnostico do Clube MUSA.
+
+HLS PDE
+Pendente
+Status
+FAILED
+Métrica
+Inicio do diagnostico por sessao paga
+Provider
+MUSA_POST_PRODUCTION · MUSA_POST_PRODUCTION
+Duração
+30s
+Revisão
+PENDING
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+REJECTED
+MUSA-H001-E007
+
+Reduzir abandono da primeira dobra e aumentar inicio do diagnostico gratuito do Clube MUSA.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Inicio do diagnostico apos visualizacao da primeira dobra
+Provider
+LUMA · luma-dream-machine
+Duração
+30s
+Revisão
+REJECTED
+Motivo da reprovação
+Sem trilha de áudio confirmada por ffprobe; vídeo não pode liberar experimento.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+REJECTED
+MUSA-H001-E006
+
+Testar video hero MUSA com direcao funcional anti-sensualizacao para substituir criativos que pareciam ensaio sensual.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Clique no diagnostico, inicio do diagnostico e retencao da primeira dobra mobile.
+Provider
+LUMA_RAY_3_2 · luma-ray-3.2
+Duração
+30s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Sem áudio e com névoa.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+AD
+REJECTED
+MUSA-H001-E006
+
+Recuperar o criativo VEO com personagem falando como referência de comunicação e variação curta para tráfego frio do Método MUSA.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Retenção dos primeiros 8 segundos, clique no diagnóstico e comparação de engajamento contra os vídeos Luma mudos.
+Provider
+VEO · veo-3.1-generate-preview
+Duração
+8s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Interrompido, não concluiu
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+REJECTED
+MUSA-H001-E006
+
+Mostrar o resultado desejado como aspiracional possivel, sem promessa absoluta.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Retencao do video e clique no diagnostico.
+Provider
+LUMA_RAY_3_2 · luma-ray-3.2
+Duração
+30s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Sem audio, algumas cenas parece mais video sensual
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+REJECTED
+MUSA-H001-E006
+
+Tornar o mecanismo MUSA simples e plausivel para reduzir incerteza.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Avanco do video para CTA e clique no diagnostico.
+Provider
+LUMA_RAY_3_2 · luma-ray-3.2
+Duração
+30s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Sem audio
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+REJECTED
+MUSA-H001-E006
+
+Converter curiosidade em acao imediata no diagnostico gratuito.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Clique no diagnostico, diagnostico iniciado e login iniciado.
+Provider
+LUMA_RAY_3_2 · luma-ray-3.2
+Duração
+30s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+Sem som, sem relação direta com o produto.
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+REJECTED
+MUSA-H001-E006
+
+Fazer a visitante reconhecer a dor na primeira dobra e clicar para iniciar o diagnostico.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+Clique no diagnostico e saida imediata da primeira dobra.
+Provider
+LUMA_RAY_3_2 · luma-ray-3.2
+Duração
+30s
+Revisão
+REJECTED · Marketing Hub
+Motivo da reprovação
+névoa, sem audio
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+Bloqueia liberação
+MUSA-H001-E001
+
+Video humano curto para explicar o checklist de elegancia acessivel, aumentar confianca na pagina com video e levar ao clique no CTA sem alterar a promessa da variante tradicional.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+video_50_percent
+Provider
+USER_UPLOAD · manual-mp4-codex
+Duração
+45s
+Revisão
+PENDING · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+LANDING_HERO
+APPROVED
+MPAE-H001-E001
+
+Aumentar confianca e clique no checkout da pagina de venda do experimento 63 com uma pessoa explicando os scripts de negociacao de forma direta, concreta e segura.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+checkout_click_rate
+Provider
+REAL · external-video-module
+Duração
+8s
+Revisão
+APPROVED
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+LANDING_HERO
+Bloqueia liberação
+Hipotese01-manicure-E006
+
+Aumentar confianca e clareza antes do CTA da pagina de venda do Kit Agenda Fechada 7D, testando video humano contra pagina tradicional sem alterar oferta, preco, checkout, publico ou criativos.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+checkout_click_rate
+Provider
+MANUAL_OR_AI_VIDEO · human-video-v1
+Duração
+47s
+Revisão
+PENDING · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+LANDING_HERO
+Bloqueia liberação
+Venda direta com video - Kit Manutencao Guiada
+
+Aumentar a intencao de compra mostrando em 15 segundos o antes/depois da agenda vulneravel para o kit de manutencao guiada.
+
+HLS PDE
+Pendente
+Status
+READY
+Métrica
+checkout_click_rate
+Provider
+USER_UPLOAD · ffmpeg-text-video
+Duração
+15s
+Revisão
+PENDING · Marketing Hub
+Playlist HLS do PDE
+Salvar HLS
+Motivo para reprovar
+Aprovar
+Reprovar
+Abrir experimento
+Abrir arquivo
+Ver produção
+Novo projeto de vídeo
+Briefing completo para produto, campanha, orgânico, PDE, avatar, cenas de IA, montagem e pós-produção.
+Template cinematico 3 min
+Preenche roteiro, cenas, narração, trilha, legendas e QA para vídeo com imagem de referência.
+PROJETOS SALVOS
+Vega #92 v12 — Aplicar, avaliar e retomar — demonstração
+PDE · PDE_HERO_DIAGNOSTIC · Pronto para revisão
+Vega #92 v12 — Primeiro ajuste pronto — anúncio
+PDE · SOCIAL_REELS_STORIES · Pronto para revisão
+Vega #91 - O espelho antes de sair
+PDE · INSTAGRAM_REELS_STORIES · Pronto para revisão
+MUSA v7 - Como seus 7 dias transformam pequenos sinais
+PDE · PDE_AND_SOCIAL · Pronto para roteiro
+MUSA v7 - O espelho antes de sair
+PDE · PDE_HERO_DIAGNOSTIC · Pronto para revisão
+Produto
+Sem produto vinculado
+Produto #1
+Produto #2
+Produto #3
+Método MUSA - Presença Elegante em 7 Dias
+Nexo — Clareza, Sentido e Ação
+PDE Anti-Invisibilidade Profissional
+Agenda Cheia Nail Design
+Especialista no WhatsApp
+Kit WhatsApp Pronto
+Orientação digital individualizada de rotina para pele madura · PDE planejado #36
+Perfil de vídeo
+#60 · Vega #92 v12 — Aplicar, avaliar e retomar — demonstração
+#59 · Vega #92 v12 — Primeiro ajuste pronto — anúncio
+#57 · MUSA v7 - Criativo filtro Espelho antes de sair
+#56 · MUSA v7 - hero cinematografico do espelho
+#55 · MUSA PDE v7 Hero 02 - Cinematico sem avatar HeyGen
+#52 · MUSA PDE v7 Hero 01 - Espelho antes de sair
+#51 · MUSA Orgânico 03 - Ruído visual
+#50 · MUSA Orgânico 02 - Look certo sem graça
+#49 · MUSA Orgânico 01 - Troca de roupa no espelho
+#48 · MUSA Kling resultado elegante - Clara MUSA
+#47 · MUSA Runway resultado elegante - Clara MUSA
+#46 · MUSA Kling dor do espelho - Livia Antes
+#44 · PDE v5 continuidade 03 - microexperiencia do plano - avatar e voz
+#43 · PDE v5 continuidade 02 - mecanismo MUSA simples - avatar e voz
+#42 · PDE v5 continuidade 01 - reconhecer dor no espelho - avatar e voz
+#41 · PDE v5 continuidade 03 - microexperiencia do plano - com avatar Sofia
+#40 · PDE v5 continuidade 02 - mecanismo MUSA simples - com avatar Sofia
+#39 · PDE v5 continuidade 01 - reconhecer dor no espelho - com avatar Sofia
+#38 · PDE v5 continuidade 03 - microexperiencia do plano
+#37 · PDE v5 continuidade 02 - mecanismo MUSA simples
+#36 · PDE v5 continuidade 01 - reconhecer dor no espelho
+#35 · Vídeo explicativo PDE v5 - Estrada do Desejo MUSA
+#27 · Vídeo planejado #12 - experimento 70
+#26 · Vídeo planejado #14 - experimento 70
+#24 · Vídeo planejado #13 - experimento 71
+#23 · Vídeo planejado #11 - experimento 69
+#22 · Vídeo planejado #12 - experimento 70
+#21 · MUSA experimento 68 - Luma anti-sensualizacao funcional
+#20 · Teste Luma nitidez e luz constante - Experimento 68
+#19 · Vídeo planejado #5 - experimento 68
+#18 · Vídeo planejado #8 - experimento 68
+#17 · Vídeo planejado #7 - experimento 68
+#16 · Vídeo planejado #6 - experimento 68
+#15 · Vídeo planejado #5 - experimento 68
+#14 · Vídeo planejado #8 - experimento 68
+#13 · Vídeo planejado #7 - experimento 68
+#12 · Vídeo planejado #6 - experimento 68
+#10 · Vídeo planejado #5 - experimento 68
+#9 · Vídeo planejado #8 - experimento 68
+#8 · Vídeo planejado #7 - experimento 68
+#7 · Vídeo planejado #6 - experimento 68
+#6 · Vídeo hero PDE v4 - Método MUSA
+Provider de render
+Luma Ray 3.2
+Movimento editorial local
+Kling 3.0
+Runway Gen-4.5
+Runway Act-Two
+Runway Product UGC Premium
+Seedance 2.0 via Runway
+Hailuo 3 via Runway
+Runway Gen-4 Turbo
+Veo 3.1 Fast via Runway
+Veo 3.1 via Runway
+Veo
+HeyGen
+Luma Ray 3.2
+Hero premium do PDE, com cena mais longa e visual editorial. Limite direto: 30s.
+Criar perfil de render
+Produto
+Método MUSA - Presença Elegante em 7 Dias
+Projeto
+#5
+Status
+Pronto para revisão
+Provider
+Luma Ray 3.2
+Definição criativa salva no backend antes do render: contexto, roteiro, cenas, narração, legenda, trilha, CTA e gate de qualidade ficam auditáveis para uso em produto, campanha e orgânicos.
+Vídeo principal
+Briefing completo para narrativas mais longas e comerciais.
+Cortes orgânicos
+Mesmo projeto pode orientar variações curtas por dor, prova e objeção.
+Produção híbrida
+Avatar, cenas de IA, montagem, voz, legenda e pós-produção no mesmo plano.
+ASSISTIR
+Vega #92 v12 — Aplicar, avaliar e retomar — demonstração
+
+Quando o stream estiver processado, o player usa HLS adaptativo. O MP4 fica como fallback para revisão e contingência, evitando download pesado como experiência principal.
+
+Título *
+Status
+Rascunho
+Pronto para roteiro
+Pronto para render
+Em produção
+Pronto para revisão
+Aprovado
+Arquivado
+Contexto *
+Modo de produção *
+Canal *
+Formato *
+Campanha/versão
+Etapa do funil
+Duração alvo
+Objetivo comercial *
+Métrica primária
+Gancho
+Roteiro
+Plano de cenas
+Referências visuais
+Narração/voz
+Trilha e áudio
+Legendas
+CTA
+Plano de providers
+Notas de edição
+Gate de qualidade
+Novo projeto
+Salvar projeto
+Salvar roteiro no Hub
+Solicitar criação
+Último job
+#21244 · POST_PRODUCTION · VIDEO_READY
+Asset #2817
+Stream HLS pronto

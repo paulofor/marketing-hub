@@ -1,0 +1,99 @@
+
+> customer-agent-browser-observer@1.0.0 test
+> node --test src/test/js/*.test.mjs
+
+TAP version 13
+# Subtest: captura página completa e todas as dobras mobile com pixels reais
+ok 1 - captura página completa e todas as dobras mobile com pixels reais
+  ---
+  duration_ms: 5450.607829
+  ...
+# Subtest: recusa rede privada por padrão antes de abrir o navegador
+ok 2 - recusa rede privada por padrão antes de abrir o navegador
+  ---
+  duration_ms: 204.83181
+  ...
+# Subtest: usa o navegador com codecs sem ignorar a configuração explícita da sandbox
+ok 3 - usa o navegador com codecs sem ignorar a configuração explícita da sandbox
+  ---
+  duration_ms: 0.898606
+  ...
+# Subtest: confere os bytes das peças distintas sem assumir sucesso pelo cadastro
+ok 4 - confere os bytes das peças distintas sem assumir sucesso pelo cadastro
+  ---
+  duration_ms: 17.334078
+  ...
+# Subtest: recusa divergência de sha256
+ok 5 - recusa divergência de sha256
+  ---
+  duration_ms: 1.475558
+  ...
+# Subtest: recusa divergência de role
+ok 6 - recusa divergência de role
+  ---
+  duration_ms: 0.493973
+  ...
+# Subtest: recusa divergência de reviewStatus
+ok 7 - recusa divergência de reviewStatus
+  ---
+  duration_ms: 0.468931
+  ...
+# Subtest: recusa divergência de captions
+ok 8 - recusa divergência de captions
+  ---
+  duration_ms: 7.271431
+  ...
+# Subtest: recusa divergência de captionsBurnedIn
+ok 9 - recusa divergência de captionsBurnedIn
+  ---
+  duration_ms: 0.596952
+  ...
+# Subtest: recusa divergência de assetUrl
+ok 10 - recusa divergência de assetUrl
+  ---
+  duration_ms: 0.935534
+  ...
+# Subtest: recusa resposta sem arquivo, falha HTTP e redirecionamento
+ok 11 - recusa resposta sem arquivo, falha HTTP e redirecionamento
+  ---
+  duration_ms: 2.322593
+  ...
+# Subtest: respeita o limite antes de baixar conteúdo sem tamanho confiável
+ok 12 - respeita o limite antes de baixar conteúdo sem tamanho confiável
+  ---
+  duration_ms: 1.566189
+  ...
+# Subtest: aguarda uso persistido antes de confirmar recuperação nos cinco cenários
+ok 13 - aguarda uso persistido antes de confirmar recuperação nos cinco cenários
+  ---
+  duration_ms: 4721.499688
+  ...
+# Subtest: rejeita segurança quando a conclusão perde a causa e o próximo passo
+ok 14 - rejeita segurança quando a conclusão perde a causa e o próximo passo
+  ---
+  duration_ms: 5833.939116
+  ...
+# Subtest: bloqueia http no registro de uso sem disparar a recuperação
+ok 15 - bloqueia http no registro de uso sem disparar a recuperação
+  ---
+  duration_ms: 1421.213348
+  ...
+# Subtest: bloqueia missing no registro de uso sem disparar a recuperação
+ok 16 - bloqueia missing no registro de uso sem disparar a recuperação
+  ---
+  duration_ms: 1468.647984
+  ...
+# Subtest: bloqueia json no registro de uso sem disparar a recuperação
+ok 17 - bloqueia json no registro de uso sem disparar a recuperação
+  ---
+  duration_ms: 1460.271888
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14959.343225

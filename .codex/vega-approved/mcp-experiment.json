@@ -1,0 +1,31 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Query executed with 2 rows returned"
+      }
+    ],
+    "structuredContent": {
+      "query": "SELECT id,product_id,status,follow_up_action_url FROM experiment WHERE id IN (91,92)",
+      "appliedLimit": 100,
+      "returnedRows": 2,
+      "rows": [
+        {
+          "id": 91,
+          "product_id": 4,
+          "status": "USER_STOPPED",
+          "follow_up_action_url": "https://v7.clubemusa.com.br"
+        },
+        {
+          "id": 92,
+          "product_id": 4,
+          "status": "PLANNED",
+          "follow_up_action_url": null
+        }
+      ]
+    }
+  }
+}

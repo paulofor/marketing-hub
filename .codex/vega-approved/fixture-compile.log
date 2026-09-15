@@ -1,0 +1,75 @@
+[0m[0m[[1;31mERROR[m] COMPILATION ERROR : 
+[[1;31mERROR[m] /root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleFixtureResetTest.java:[110,14] constructor FixtureController in class com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication.FixtureController cannot be applied to given types;
+  required: com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository,com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+  found:    com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+  reason: actual and formal argument lists differ in length
+[[1;31mERROR[m] Failed to execute goal [32morg.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile[m [1m(default-testCompile)[m on project [36mads-service[m: [1;31mCompilation failure[m
+[[1;31mERROR[m] [1;31m/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleFixtureResetTest.java:[110,14] constructor FixtureController in class com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication.FixtureController cannot be applied to given types;[m
+[[1;31mERROR[m] [1;31m  required: com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository,com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository[m
+[[1;31mERROR[m] [1;31m  found:    com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository[m
+[[1;31mERROR[m] [1;31m  reason: actual and formal argument lists differ in length[m
+[[1;31mERROR[m] [1;31m[m
+[[1;31mERROR[m] -> [1m[Help 1][m
+[1;31morg.apache.maven.lifecycle.LifecycleExecutionException[m: [1;31mFailed to execute goal [32morg.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile[m [1m(default-testCompile)[m on project [36mads-service[m: [1;31mCompilation failure
+/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleFixtureResetTest.java:[110,14] constructor FixtureController in class com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication.FixtureController cannot be applied to given types;
+  required: com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository,com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+  found:    com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+  reason: actual and formal argument lists differ in length
+[m[m
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 ([1mMojoExecutor.java:375[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.doExecute ([1mMojoExecutor.java:351[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.execute ([1mMojoExecutor.java:215[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.execute ([1mMojoExecutor.java:171[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.execute ([1mMojoExecutor.java:163[m)
+    [1mat[m org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject ([1mLifecycleModuleBuilder.java:117[m)
+    [1mat[m org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject ([1mLifecycleModuleBuilder.java:81[m)
+    [1mat[m org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build ([1mSingleThreadedBuilder.java:56[m)
+    [1mat[m org.apache.maven.lifecycle.internal.LifecycleStarter.execute ([1mLifecycleStarter.java:128[m)
+    [1mat[m org.apache.maven.DefaultMaven.doExecute ([1mDefaultMaven.java:298[m)
+    [1mat[m org.apache.maven.DefaultMaven.doExecute ([1mDefaultMaven.java:192[m)
+    [1mat[m org.apache.maven.DefaultMaven.execute ([1mDefaultMaven.java:105[m)
+    [1mat[m org.apache.maven.cli.MavenCli.execute ([1mMavenCli.java:960[m)
+    [1mat[m org.apache.maven.cli.MavenCli.doMain ([1mMavenCli.java:293[m)
+    [1mat[m org.apache.maven.cli.MavenCli.main ([1mMavenCli.java:196[m)
+    [1mat[m jdk.internal.reflect.DirectMethodHandleAccessor.invoke ([1mDirectMethodHandleAccessor.java:103[m)
+    [1mat[m java.lang.reflect.Method.invoke ([1mMethod.java:580[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced ([1mLauncher.java:283[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.launch ([1mLauncher.java:226[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode ([1mLauncher.java:407[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.main ([1mLauncher.java:348[m)
+[1mCaused by[m: org.apache.maven.plugin.compiler.CompilationFailureException: [1;31mCompilation failure
+/root/ai-hub/src/ai-hub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6Ip85f/repo/backend/ads-service/src/test/java/com/marketinghub/businessprocesschain/learningcycle/v1/service/LearningCycleFixtureResetTest.java:[110,14] constructor FixtureController in class com.marketinghub.businessprocesschain.learningcycle.v1.service.LearningCycleLocalApplication.FixtureController cannot be applied to given types;
+  required: com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.vega.VegaPrivateSessionRepository,com.marketinghub.repository.jpa.vega.VegaAdjustmentExecutionRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+  found:    com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository,com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository,com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository,com.fasterxml.jackson.databind.ObjectMapper,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleRepository,com.marketinghub.repository.jpa.learningcycle.LearningSalesCycleEventRepository,com.marketinghub.repository.jpa.learningcycle.LearningCycleDecisionProposalRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunRepository,com.marketinghub.repository.jpa.processautomation.ProcessRunEventRepository
+  reason: actual and formal argument lists differ in length
+[m
+    [1mat[m org.apache.maven.plugin.compiler.AbstractCompilerMojo.execute ([1mAbstractCompilerMojo.java:1212[m)
+    [1mat[m org.apache.maven.plugin.compiler.TestCompilerMojo.execute ([1mTestCompilerMojo.java:199[m)
+    [1mat[m org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo ([1mDefaultBuildPluginManager.java:137[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2 ([1mMojoExecutor.java:370[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.doExecute ([1mMojoExecutor.java:351[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.execute ([1mMojoExecutor.java:215[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.execute ([1mMojoExecutor.java:171[m)
+    [1mat[m org.apache.maven.lifecycle.internal.MojoExecutor.execute ([1mMojoExecutor.java:163[m)
+    [1mat[m org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject ([1mLifecycleModuleBuilder.java:117[m)
+    [1mat[m org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject ([1mLifecycleModuleBuilder.java:81[m)
+    [1mat[m org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build ([1mSingleThreadedBuilder.java:56[m)
+    [1mat[m org.apache.maven.lifecycle.internal.LifecycleStarter.execute ([1mLifecycleStarter.java:128[m)
+    [1mat[m org.apache.maven.DefaultMaven.doExecute ([1mDefaultMaven.java:298[m)
+    [1mat[m org.apache.maven.DefaultMaven.doExecute ([1mDefaultMaven.java:192[m)
+    [1mat[m org.apache.maven.DefaultMaven.execute ([1mDefaultMaven.java:105[m)
+    [1mat[m org.apache.maven.cli.MavenCli.execute ([1mMavenCli.java:960[m)
+    [1mat[m org.apache.maven.cli.MavenCli.doMain ([1mMavenCli.java:293[m)
+    [1mat[m org.apache.maven.cli.MavenCli.main ([1mMavenCli.java:196[m)
+    [1mat[m jdk.internal.reflect.DirectMethodHandleAccessor.invoke ([1mDirectMethodHandleAccessor.java:103[m)
+    [1mat[m java.lang.reflect.Method.invoke ([1mMethod.java:580[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced ([1mLauncher.java:283[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.launch ([1mLauncher.java:226[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode ([1mLauncher.java:407[m)
+    [1mat[m org.codehaus.plexus.classworlds.launcher.Launcher.main ([1mLauncher.java:348[m)
+[[1;31mERROR[m] 
+[[1;31mERROR[m] Re-run Maven using the [1m-X[m switch to enable full debug logging.
+[[1;31mERROR[m] 
+[[1;31mERROR[m] For more information about the errors and possible solutions, please read the following articles:
+[[1;31mERROR[m] [1m[Help 1][m http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[0m[0m

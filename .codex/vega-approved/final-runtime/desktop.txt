@@ -1,0 +1,146 @@
+Gestão de Produto
+Gestão de Agentes
+Todos os produtos
+Tipos de produto
+Contas do Facebook
+Contas do Instagram
+Contas TikTok Ads
+Financeiro de vídeos
+Saldo dos provedores de vídeo
+Planos comerciais
+Planejamentos mensais
+Dossiê de oportunidades
+Descoberta PDE
+Executar processos
+Radar de oportunidades
+Nichos
+Hipóteses
+Experimentos
+Experimento manual
+Experimentos para campanha
+MOIS
+OPRM
+CNAEs
+Públicos Gerais
+MDS
+Funil de Vendas
+Checkout de teste
+Vídeos
+Provedores
+Estudio de Audio e Video
+Lista de projetos
+Biblioteca do Harness
+Vídeos para análise
+Aprovar vídeos
+Anúncios Vencedores
+Produção de Vídeo PDE
+Distribuição orgânica
+Gerador de Imagens
+Copy PDE
+Experimentos prontos
+Analytics
+Operação / Saúde
+Saúde PDE 24/7
+Tarefas dos agentes
+Aprendizado dos agentes
+Melhorias do Sistema
+Cadeias de valor
+Processos
+WhatsApp
+Serviço de e-mail
+Validação Chat Moda
+Política de privacidade
+Microserviços
+Inventário VPS
+Tokens não serão renovados automaticamente
+Paulo Forestieri:
+Token válido por mais 35 dias. A renovação automática acontecerá quando estiver próximo do vencimento.
+Ajustar dados de renovação
+Voltar à atividade 4 do Processo 6Voltar à Cadeia de Valor
+Ciclos de aprendizado e vendas
+Criação e entrega de valor de Produtos Digitais Experienciais → 6. Venda, entrega e aprendizado do PDE → Atividade 4: Conduzir o ciclo de aprendizado e vendas → Subprocesso: Ciclos de aprendizado e vendas
+
+Este subprocesso é executado pela atividade “Conduzir o ciclo de aprendizado e vendas” do processo de venda. Cada ciclo corresponde a um experimento e conserva seu aprendizado, suas métricas e a próxima ação.
+
+Cadeia de Valor *
+Selecione
+Criação e entrega de valor de Produtos Digitais Experienciais · v14
+Produto *
+Selecione
+Antares
+Spica
+Regulus
+Vega
+Polaris
+Sirius
+Capella
+Altair
+Rigel
+Mira
+Abrir ciclo
+Atualizar leitura
+Atividades da cadeia do produto
+Histórico de ciclos
+Ciclo #2 · experimento #92 · Em andamento
+Ciclo #1 · experimento #91 · Encerrado para ajuste
+Ciclo #2 · experimento #92
+
+Autorizar orçamento e janela · Em andamento
+
+Versão: musa-pde-entry-v12-primeiro-ajuste-aplicavel · Teto total: R$ 100,00 · 10/09/2026, 03:00:00 a 17/09/2026, 02:59:00
+
+Hipótese: Tornar o primeiro ajuste imediatamente aplicável com itens que a cliente já possui pode aumentar primeiros resultados por início e a continuidade até checkout e compra. Hipótese do sucessor, sem causa de abandono comprovada pelas quatro sessões do #91.
+
+Variável: Utilidade do primeiro resultado: explicar o que fazer, como aplicar, ocasião e critério de autoavaliação; permitir salvar e retomar. Preservar público, canal, preço e oferta durante este teste; toda comunicação deve refletir a versão real homologada.
+
+Critério: Diagnóstico: primeiro resultado por início e retomada. Critério comercial proposto: 5 vendas líquidas conciliadas e entregues em 100 sessões humanas, com contribuição positiva, uso e satisfação. Sem amostra suficiente, concluir como inconclusivo. Não interpretar comparação histórica como A/B causal.
+
+Abrir experimento
+Abrir atividade orientada
+Ver ciclo anterior
+Aprendizado recebido do experimento #91
+
+Versão anterior: musa-pde-entry-v7-espelho-antes-de-sair. Evidência histórica preservada para orientar esta hipótese.
+
+Campanha Meta histórica comprovada por recibo externo, sem publicação registrada em run/preflight. Preservar a lacuna e iniciar pela conciliação; o sucessor exige homologação e autorização próprias.
+09/09/2026, 00:56:05 · Codex — registro solicitado pelo usuário
+Fonte: facebook_ads_campaign:120251556536430326
+Conciliação automática: 4 sessões, 1 primeiros resultados, 0 vendas líquidas, R$ 0.00 de receita e R$ -27.30 de contribuição.
+09/09/2026, 06:03:36 · Marketing Hub · backend
+Fonte: internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768
+
+Dados reconciliados automaticamente e segregados.
+
+Leitura automática das fontes oficiais: 4 sessões · 0 vendas líquidas · R$ 0,00 de receita · -R$ 27,30 de contribuição.
+
+Período: 2026-09-07T03:00:00Z a 2026-09-09T06:03:36.030895Z · fonte: PDE Analytics atribuído ao experimento + métricas oficiais do canal + ledger de custos auditáveis.
+
+Rascunho para aprovação humana: encerrar o ciclo do experimento 91 e preparar um sucessor, preservando o produto MUSA, a versão musa-pde-entry-v7-espelho-antes-de-sair, o período e as fontes conciliadas. A medição oficial registrou 4 sessões humanas, 2 inícios, 1 primeiro resultado, 0 checkouts, 0 vendas líquidas, R$ 0,00 de receita e R$ -27,30 de contribuição. A amostra é insuficiente para concluir conversão, causa de abandono ou público vencedor.
+09/09/2026, 18:27:02 · Codex — registro solicitado pelo usuário
+Fonte: internal://learning-cycles/1/experiments/91/measurements/1fc8c436ce6f2a4a34a2a4772e965c317512f1dfcfb4a921fd0e0483f617b768
+
+Aprendizado: O fluxo conseguiu gerar 2 inícios e 1 primeiro resultado em 4 sessões, mostrando uso parcial, mas não validação humana ou comercial. Não houve checkout, compra, entrega, primeiro uso pós-venda nem resposta de satisfação. Cliques, sessões, inícios e primeiro resultado não equivalem a vendas. O experimento interrompido deve permanecer como referência histórica, sem alterações ou homologação retroativas.
+
+Causa: Não há causa comprovada. A hipótese prioritária é que a utilidade do primeiro ajuste não tenha ficado suficientemente clara ou imediata para sustentar o avanço após o início; explicações concorrentes incluem inadequação do público, comunicação ou criativo, fricção de entrada e simples variação causada pela amostra de apenas 4 sessões. O sucessor deve isolar a utilidade inicial como uma variável e medir seu efeito.
+
+Próxima hipótese: Em um sucessor com gates, métricas e autorização próprios, tornar o primeiro ajuste mais imediatamente aplicável com itens que a cliente já possui aumentará a proporção de primeiros resultados por início e, como efeito comercial a testar, poderá aumentar checkouts e vendas líquidas reconciliadas em comparação com esta referência; a hipótese deve ser testada sem alterar simultaneamente público, comunicação ou outras variáveis materiais.
+
+Próxima ação
+
+Confira os gates, confirme a versão, o teto total de mídia e a janela. A autorização registrada no ciclo não aciona campanha: execute o fluxo oficial do experimento.
+
+Responsável: Operador responsável pela autorização
+
+Decisão *
+Registrar autorização
+Devolver para correção
+Encerrar ciclo
+Responsável pela decisão *
+Síntese e justificativa *
+Referência da evidência *
+Versão homologada *
+Teto total autorizado (R$) *
+Confirmo a autorização desta versão, orçamento e janela *
+Registrar autorização
+Histórico de decisões e evidências (13)
+BPM · decisões e retornos do ciclo

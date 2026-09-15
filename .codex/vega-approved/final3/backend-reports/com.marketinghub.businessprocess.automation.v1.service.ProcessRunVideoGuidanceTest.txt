@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.businessprocess.automation.v1.service.ProcessRunVideoGuidanceTest
+-------------------------------------------------------------------------------
+Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.228 s -- in com.marketinghub.businessprocess.automation.v1.service.ProcessRunVideoGuidanceTest

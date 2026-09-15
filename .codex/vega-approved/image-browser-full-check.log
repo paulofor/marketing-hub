@@ -1,0 +1,13 @@
+time="2026-09-14T23:59:36Z" level=warning msg="Found orphan containers (aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-learning-cycles-mysql-1, aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-mysql-1) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-run-1e17e63066c4 Creating 
+ Container aihub-36e8935e-c4cc-43ea-8bd1-8b9d6b1922ec-6ff58094f8-video-browser-image-run-1e17e63066c4 Created 
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+locator.evaluate: NotSupportedError: The element has no supported sources.
+    at verifyPlayback (/app/browser/learning-cycle-video-checks.mjs:45:15)
+    at /tmp/video-smoke.mjs:6:978221
+
+Node.js v22.18.0
+

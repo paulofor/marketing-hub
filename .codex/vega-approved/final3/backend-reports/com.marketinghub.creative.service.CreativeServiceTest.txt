@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.creative.service.CreativeServiceTest
+-------------------------------------------------------------------------------
+Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.012 s -- in com.marketinghub.creative.service.CreativeServiceTest

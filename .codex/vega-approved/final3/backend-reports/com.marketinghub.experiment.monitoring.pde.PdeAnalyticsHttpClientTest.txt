@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.marketinghub.experiment.monitoring.pde.PdeAnalyticsHttpClientTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.184 s -- in com.marketinghub.experiment.monitoring.pde.PdeAnalyticsHttpClientTest

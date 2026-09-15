@@ -1,0 +1,8 @@
+PASS imagem backend corresponde ao JAR verificado
+PASS prompt empacotado customer-agent-worker
+PASS prompt empacotado meta-ad-approver-worker
+PASS bundle empacotado frontend
+PASS bundle empacotado pde-platform-frontend-vega
+{"browser":"153.0.8010.36","playback":{"duration":3,"width":360,"height":640,"audioBytes":5436,"muted":false}}
+
+PASS cinco imagens e reprodução real com áudio

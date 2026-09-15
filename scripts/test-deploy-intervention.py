@@ -39,6 +39,9 @@ class FakeGitHub:
             raise module.CoordinationError("Falha GitHub simulada.")
         if path == "git/ref/heads/main":
             return {"object": {"sha": SHA}}
+        if path.startswith("commits/"):
+            commit = path.split("/", 1)[1]
+            return {"sha": commit, "commit": {"tree": {"sha": "d" * 40}}}
         if path.startswith("compare/"):
             return {"status": "ahead" if self.integrated else "diverged"}
         match = re.fullmatch(r"actions/workflows/([^/]+)(?:/(enable|disable))?", path)
@@ -176,6 +179,22 @@ class LocalCoordinationTest(unittest.TestCase):
             with self.subTest(commit=commit, evidence=evidence), self.assertRaises(module.CoordinationError):
                 self.coordinator.resume(state["id"], commit, evidence)
         self.assertEqual(self.store.load()["phase"], "ACTIVE")
+
+    def test_prepare_resume_rejects_unreachable_commit_before_arming_recovery(self):
+        state = self.begin()
+        original = self.github.api
+
+        def missing(path, method="GET"):
+            if path == f"commits/{INTEGRATED}":
+                raise module.GitHubApiError("Não encontrado.", status=404)
+            return original(path, method)
+
+        with patch.object(self.github, "api", side_effect=missing):
+            with self.assertRaisesRegex(module.CoordinationError, "não está disponível no GitHub"):
+                self.coordinator.prepare_resume(state["id"], INTEGRATED, "duas rodadas aprovadas")
+        saved = self.store.load()
+        self.assertEqual(saved["phase"], "ACTIVE")
+        self.assertNotIn("automatic_resume", saved)
 
     def test_unmerged_commit_keeps_hold(self):
         state = self.begin()

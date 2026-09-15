@@ -8,6 +8,8 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'
+      - '.github/workflows/deploy-containers.yml'
+      - 'scripts/download-approved-pr-artifact.sh'
       - 'scripts/test-frontend-workflow-efficiency.sh'
   workflow_dispatch:
 
@@ -34,6 +36,8 @@ jobs:
           FRONTEND_BUILD_COMMIT: ${{ github.sha }}
           FRONTEND_IMAGE_TAG: ${{ github.sha }}
         run: cd frontend && npm run build
+      - name: Registrar árvore Git aprovada
+        run: git rev-parse 'HEAD^{tree}' > frontend/dist/approved-tree.sha
       - uses: actions/upload-artifact@v7
         with:
           name: frontend-build

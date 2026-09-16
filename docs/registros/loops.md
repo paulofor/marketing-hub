@@ -5207,6 +5207,12 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   A leitura passa a usar a consulta sem lock já protegida pelo teste JPA/MySQL; regressão específica
   do roteamento exige o método de leitura e rejeita a reserva de escrita. O método bloqueante
   permanece exclusivo dos comandos que criam ou alteram ocorrências.
+- **Segunda causa exposta após o deploy em 16/09/2026:** removido o lock indevido, o mesmo GET
+  alcançou a leitura do slot v8 e revelou `No enum constant PdeProductionSlotStatus.`. O schema real
+  ainda limitava `status` ao `ENUM` legado, sem `CANDIDATE`; em modo MySQL não estrito, a migração
+  gravou string vazia e o Hibernate não conseguiu materializar a entidade. A correção restaura
+  `VARCHAR(32)`, conforme o changelog canônico inicial e o contrato JPA, repara somente a candidata
+  v8/experimento #92 ainda não publicada e acrescenta regressão física com o `ENUM` legado.
 
 
 ## LOOP-CICLO-GATE-FONTE-DIVERGENTE — homologação ignora o gate do experimento

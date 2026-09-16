@@ -1,0 +1,18 @@
+{
+  "cardKey": "musica-afeto-alem-distracao",
+  "collection": "prazer-audio-visual",
+  "title": "Priorizar agradabilidade percebida, não só propriedades da trilha",
+  "finding": "Em dois experimentos com 134 participantes, maior arousal musical aumentou a desagradabilidade da dor e maior depth reduziu esse desfecho, mas esses efeitos foram completamente mediados pela agradabilidade subjetiva; o benefício de depth foi replicado no segundo experimento.",
+  "mechanism": "A experiência subjetiva de recompensa e agradabilidade pode mediar parte dos efeitos afetivos da música. Descritores como arousal, valência ou depth não devem ser tratados como causas universais independentes da preferência do usuário; o estudo não mediu dopamina.",
+  "commercialApplication": "Ao usar música para conforto ou regulação emocional em experiências digitais, comparar uma trilha escolhida/personalizada por preferência com uma trilha selecionada apenas por propriedades afetivas e com controle sem música.",
+  "evidenceStrength": "Média-alta para mediação por agradabilidade no paradigma de dor: dois experimentos, 134 participantes e replicação do efeito de depth; generalização para UX, prazer audiovisual e marketing permanece indireta.",
+  "publishedOn": "2026-09-16",
+  "validUntil": "2027-03-16",
+  "experimentHypothesis": "Uma trilha percebida como agradável pelo usuário melhorará conforto e reduzirá abandono mais do que uma trilha escolhida apenas por perfil objetivo de arousal/depth, sem piorar compreensão ou desempenho.",
+  "risks": "Preferências musicais variam entre pessoas e contexto; personalização pode introduzir novidade, familiaridade ou preferência como confundidores; música pode competir com fala, leitura ou tarefas complexas.",
+  "limits": "Os estudos medem dor térmica e desagradabilidade, não retenção, CTA, compra ou prazer audiovisual direto; mediação estatística não prova o mecanismo biológico e não houve medida de dopamina.",
+  "sourceKind": "MARKDOWN",
+  "sourceUri": "repo:pesquisas/prazer-audio-visual/cards/fontes/2026-09-16-musica-afeto-alem-distracao.md",
+  "sourceTitle": "Fonte revisada — música agradável, afeto e atenção",
+  "sourceSha256": "686b96c1e8547bd6fc3afe93f0761ce1c8d6208e4cad325dd250cb9fdda391a4"
+}

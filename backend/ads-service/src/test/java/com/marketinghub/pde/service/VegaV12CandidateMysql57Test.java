@@ -2,6 +2,7 @@ package com.marketinghub.pde.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.marketinghub.pde.PdeProductionSlotStatus;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import liquibase.Liquibase;
@@ -15,16 +16,23 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 @EnabledIfEnvironmentVariable(named = "PDE_CONTRACT_MYSQL", matches = "local")
 class VegaV12CandidateMysql57Test {
 
-  private static final String CHANGELOG = "2026-09-16-vega-v12-commercial-candidate.yaml";
+  private static final String CANDIDATE_CHANGELOG = "2026-09-16-vega-v12-commercial-candidate.yaml";
+  private static final String STATUS_REPAIR_CHANGELOG =
+      "2026-09-16-pde-production-slot-status-repair.yaml";
 
   /** Valida criação, idempotência, isolamento da v7 e preservação de uma candidata já promovida. */
   @Test
   void createsV12CandidateWithoutPublishingOrOverwritingEvidence() throws Exception {
     createFixture();
 
-    migrate(false);
+    migrate(CANDIDATE_CHANGELOG, false);
+    try (var connection = connection()) {
+      assertThat(value(connection, "SELECT status FROM pde_production_slot WHERE slot_code='v8'"))
+          .isEmpty();
+    }
+    migrate(STATUS_REPAIR_CHANGELOG, false);
     assertCandidate();
-    migrate(false);
+    migrate(STATUS_REPAIR_CHANGELOG, false);
     assertCandidate();
 
     try (var connection = connection();
@@ -34,7 +42,8 @@ class VegaV12CandidateMysql57Test {
       statement.execute(
           "DELETE FROM DATABASECHANGELOG WHERE ID='2026-09-16-vega-v12-commercial-candidate-001'");
     }
-    migrate(false);
+    migrate(CANDIDATE_CHANGELOG, false);
+    migrate(STATUS_REPAIR_CHANGELOG, false);
     try (var connection = connection()) {
       assertThat(value(connection, "SELECT status FROM pde_production_slot WHERE slot_code='v8'"))
           .isEqualTo("READY");
@@ -57,12 +66,14 @@ class VegaV12CandidateMysql57Test {
         var statement = connection.createStatement()) {
       statement.execute(
           "DROP TABLE IF EXISTS DATABASECHANGELOGLOCK, DATABASECHANGELOG, pde_production_slot, experiment");
+      statement.execute("SET GLOBAL sql_mode=''");
+      statement.execute("SET SESSION sql_mode=''");
       statement.execute(
           "CREATE TABLE experiment (id BIGINT PRIMARY KEY, product_id BIGINT NOT NULL, status VARCHAR(32) NOT NULL, unit_price_brl DECIMAL(10,2), commercial_checkout_url VARCHAR(512), updated_at DATETIME NOT NULL)");
       statement.execute(
           "INSERT INTO experiment VALUES (92,4,'PLANNED',67.00,NULL,'2026-09-16 00:00:00')");
       statement.execute(
-          "CREATE TABLE pde_production_slot (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, slot_code VARCHAR(64) NOT NULL, product_slug VARCHAR(191) NOT NULL, domain VARCHAR(191) NOT NULL, public_url VARCHAR(512) NOT NULL, backend_url VARCHAR(512), experience_version VARCHAR(120) NOT NULL, layout_key VARCHAR(80) NOT NULL, target_environment VARCHAR(64) NOT NULL, status VARCHAR(32) NOT NULL, source_experiment_id BIGINT, notes LONGTEXT, draft_experience_json LONGTEXT, published_experience_json LONGTEXT, published_by VARCHAR(191), published_at DATETIME, validation_status VARCHAR(32), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, UNIQUE KEY uk_slot (product_slug,slot_code), UNIQUE KEY uk_domain (domain))");
+          "CREATE TABLE pde_production_slot (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, slot_code VARCHAR(64) NOT NULL, product_slug VARCHAR(191) NOT NULL, domain VARCHAR(191) NOT NULL, public_url VARCHAR(512) NOT NULL, backend_url VARCHAR(512), experience_version VARCHAR(120) NOT NULL, layout_key VARCHAR(80) NOT NULL, target_environment VARCHAR(64) NOT NULL, status ENUM('PLANNED','READY','ACTIVE','PAUSED','RETIRED') NOT NULL, source_experiment_id BIGINT, notes LONGTEXT, draft_experience_json LONGTEXT, published_experience_json LONGTEXT, published_by VARCHAR(191), published_at DATETIME, validation_status VARCHAR(32), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, UNIQUE KEY uk_slot (product_slug,slot_code), UNIQUE KEY uk_domain (domain))");
       statement.execute(
           "INSERT INTO pde_production_slot (slot_code,product_slug,domain,public_url,experience_version,layout_key,target_environment,status,source_experiment_id,notes,draft_experience_json,published_experience_json,published_by,published_at,validation_status,created_at,updated_at) VALUES ('v7','metodo-musa-7-dias','v7.clubemusa.com.br','https://v7.clubemusa.com.br','musa-pde-entry-v7-espelho-antes-de-sair','espelho-antes-de-sair','production-v7','ACTIVE',90,'histórico v7','v7-draft','v7-publicado','human','2026-07-31 00:00:00','OK','2026-07-31 00:00:00','2026-07-31 00:00:00')");
     }
@@ -73,6 +84,15 @@ class VegaV12CandidateMysql57Test {
     try (var connection = connection()) {
       assertThat(value(connection, "SELECT COUNT(*) FROM pde_production_slot WHERE slot_code='v8'"))
           .isEqualTo("1");
+      assertThat(
+              value(
+                  connection,
+                  "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pde_production_slot' AND COLUMN_NAME='status'"))
+          .isEqualTo("varchar(32)");
+      assertThat(
+              PdeProductionSlotStatus.valueOf(
+                  value(connection, "SELECT status FROM pde_production_slot WHERE slot_code='v8'")))
+          .isEqualTo(PdeProductionSlotStatus.CANDIDATE);
       assertThat(
               value(
                   connection,
@@ -119,13 +139,13 @@ class VegaV12CandidateMysql57Test {
   }
 
   /** Executa o changelog versionado no mesmo MySQL 5.7 isolado usado pelo contrato histórico. */
-  private void migrate(boolean rollback) throws Exception {
+  private void migrate(String changelog, boolean rollback) throws Exception {
     var database =
         DatabaseFactory.getInstance()
             .findCorrectDatabaseImplementation(new JdbcConnection(connection()));
     try (var migration =
         new Liquibase(
-            "db/changelog/changesets/" + CHANGELOG, new ClassLoaderResourceAccessor(), database)) {
+            "db/changelog/changesets/" + changelog, new ClassLoaderResourceAccessor(), database)) {
       if (rollback) migration.rollback(1, "");
       else migration.update("");
     }

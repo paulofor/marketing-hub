@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-09-16-pde-production-slot-status-repair.yaml
+  - changeSet:
+      id: 2026-09-16-pde-production-slot-status-repair-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pde_production_slot
+                MODIFY COLUMN status VARCHAR(32) NOT NULL;
+
+              UPDATE pde_production_slot
+              SET status = 'CANDIDATE',
+                  updated_at = UTC_TIMESTAMP()
+              WHERE product_slug = 'metodo-musa-7-dias'
+                AND slot_code = 'v8'
+                AND experience_version = 'musa-pde-entry-v12-primeiro-ajuste-aplicavel'
+                AND source_experiment_id = 92
+                AND status = ''
+                AND published_experience_json IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE FROM pde_production_slot
+              WHERE product_slug = 'metodo-musa-7-dias'
+                AND slot_code = 'v8'
+                AND experience_version = 'musa-pde-entry-v12-primeiro-ajuste-aplicavel'
+                AND source_experiment_id = 92
+                AND status = 'CANDIDATE'
+                AND published_experience_json IS NULL
+                AND validation_status IS NULL;
+
+              ALTER TABLE pde_production_slot
+                MODIFY COLUMN status ENUM(
+                  'PLANNED',
+                  'READY',
+                  'ACTIVE',
+                  'PAUSED',
+                  'RETIRED'
+                ) NOT NULL;

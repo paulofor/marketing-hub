@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.automation.v1.service.ProcessRunContext;
 import com.marketinghub.businessprocess.automation.v1.service.commands.ProcessRunCommand;
@@ -72,6 +73,61 @@ class OpalaAdoptionRoutingTest {
     verifyNoInteractions(chains);
     verify(processes, never())
         .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(anyString(), anyString());
+  }
+
+  /**
+   * Consulta a conclusão pela projeção sem lock para permanecer compatível com a tela somente
+   * leitura no MySQL.
+   */
+  @Test
+  void readsCompletionWithoutRequestingWriteLock() {
+    var processes = mock(BusinessProcessDefinitionRepository.class);
+    var chains = mock(BusinessProcessChainDefinitionRepository.class);
+    var activities = mock(BusinessProcessActivityDefinitionRepository.class);
+    var instances =
+        mock(
+            com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository
+                .class);
+    var products = mock(ProductRepository.class);
+    var adoptions = mock(OpalaAdoptionRepository.class);
+    var routing =
+        new OpalaCommercialRouting(
+            processes, chains, activities, instances, products, mock(OpalaCommercialContext.class));
+    ReflectionTestUtils.setField(routing, "catalogAdoptions", adoptions);
+    var product = new Product();
+    product.setId(4L);
+    product.setProductTypeDefinition(ProductTypeDefinition.builder().code("PDE").build());
+    when(products.findById(4L)).thenReturn(Optional.of(product));
+    var cycle = new LearningSalesCycle();
+    cycle.setId(2L);
+    cycle.setProductId(4L);
+    cycle.setExperimentId(92L);
+    cycle.setChainDefinitionId(14L);
+    cycle.setProductVersion("musa-pde-entry-v12-primeiro-ajuste-aplicavel");
+    cycle.setStatus("OPEN");
+    cycle.setStage("PUBLICATION");
+    var process = new BusinessProcessDefinition();
+    process.setId(77L);
+    when(processes.findById(77L)).thenReturn(Optional.of(process));
+    when(adoptions.find(2L))
+        .thenReturn(
+            Optional.of(
+                new OpalaAdoption(2, 77, 4, 92, "v12", 14, "Operador", "Adesão", Instant.now())));
+    var ready = new BusinessProcessActivityDefinition();
+    ready.setId(501L);
+    when(activities.findByProcessDefinitionIdAndActivityId(77L, "ready"))
+        .thenReturn(Optional.of(ready));
+    when(instances.findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            501L, "experiment:92"))
+        .thenReturn(Optional.empty());
+
+    assertThat(routing.completed(cycle)).isFalse();
+    verify(instances)
+        .findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            501L, "experiment:92");
+    verify(instances, never())
+        .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            anyLong(), anyString());
   }
 
   /** O motor real recusa a cadeia antiga sem adesão e aceita a passagem exata após o registro. */

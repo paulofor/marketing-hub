@@ -83,7 +83,7 @@ public class OpalaCommercialRouting {
         .flatMap(
             a ->
                 instances
-                    .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+                    .findFirstByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
                         a.getId(), "experiment:" + cycle.getExperimentId()))
         .filter(i -> i.isObjectiveAchieved() && "COMPLETED".equals(i.getStatus()))
         .map(

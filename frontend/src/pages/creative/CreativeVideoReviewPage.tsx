@@ -540,6 +540,16 @@ export default function CreativeVideoReviewPage() {
                   ) : null}
 
                   <div className="creative-video-review-page__actions">
+                    {video.sourceType === "CREATIVE" &&
+                    video.status === "DRAFT" &&
+                    video.approvalBlockedReason ? (
+                      <Link
+                        className="btn btn-outline-primary btn-sm"
+                        to={`/experiments/${video.experimentId}?tab=creatives`}
+                      >
+                        Corrigir na aba Criativos
+                      </Link>
+                    ) : null}
                     {video.status !== "READY" ? (
                       <button
                         type="button"

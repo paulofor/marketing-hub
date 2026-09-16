@@ -198,6 +198,9 @@ describe("CreativeVideoReviewPage", () => {
     expect(
       screen.getByRole("button", { name: "Aprovar para portfólio" }),
     ).toBeDisabled();
+    expect(
+      screen.getByRole("link", { name: "Corrigir na aba Criativos" }),
+    ).toHaveAttribute("href", "/experiments/91?tab=creatives");
 
     await user.click(
       screen.getByRole("button", { name: "Reavaliar com Têmis" }),

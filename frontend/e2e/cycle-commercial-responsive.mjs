@@ -128,7 +128,7 @@ try {
     await form.getByRole("button", { name: "Aprovar orçamento" }).click();
     await expect(
       form.getByRole("button", { name: "Aprovar orçamento" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     await expect(form.getByRole("alert")).toContainText(
       "temporariamente indisponível",
     );

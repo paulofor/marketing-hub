@@ -173,19 +173,25 @@ public class PdeEconomicsBpmTaskConsumer {
     return command;
   }
 
-  /** Compõe identidade financeira estável e atividade resolvida pelo backend. */
+  /**
+   * Compõe identidade financeira e texto fixado pelo catálogo no Opala; preserva os demais fluxos.
+   */
   private PromptComposition prompt(Map<String, Object> task) throws IOException {
     String agent = read("prompts/financial-agent/v1/agent-core.md");
     String activity =
-        read(promptResource(task))
-            .replace("{{TASK_CONTEXT}}", objectMapper.writeValueAsString(task));
+        (CatalogPromptInput.migrated(task)
+                ? CatalogPromptInput.text(task, schemaResource(task))
+                : read(promptResource(task)))
+            .replace(
+                "{{TASK_CONTEXT}}",
+                objectMapper.writeValueAsString(CatalogPromptInput.context(task)));
     return new PromptComposition(agent + "\n\n" + activity, agent, activity);
   }
 
   /** Seleciona a atividade econômica compatível com a versão imutável do processo. */
   private String promptResource(Map<String, Object> task) {
     if ("opala-commercial-preparation-v1".equals(task.get("processCode")))
-      return "prompts/opala-commercial/v1/economics.md";
+      return "catalogo-vivo:opala/economics";
     return isPrivateValidationTask(task) ? PRIVATE_VALIDATION_PROMPT : LEGACY_PROMPT;
   }
 

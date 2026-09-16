@@ -617,7 +617,9 @@ public class CustomerBpmTaskConsumer {
     return promptComposition(task, visualEvidence).fullPrompt();
   }
 
-  /** Compõe o núcleo sensorial e estético de Psique com a missão e as provas da atividade. */
+  /**
+   * Compõe o núcleo de Psique, texto fixado pelo catálogo no Opala e provas da própria atividade.
+   */
   private PromptComposition promptComposition(
       Map<String, Object> task,
       List<BpmVisualEvidenceBackendClient.UploadedVisualEvidence> visualEvidence)
@@ -636,9 +638,13 @@ public class CustomerBpmTaskConsumer {
     }
     String agentPromptPart = behavioralCoreV4();
     String activityPromptPart =
-        read(promptResourceFor(task))
+        (CatalogPromptInput.migrated(task)
+                ? CatalogPromptInput.text(task, schemaResourceFor(task))
+                : read(promptResourceFor(task)))
             .replace("{{PSIQUE_BEHAVIORAL_CORE_V4}}", "")
-            .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
+            .replace(
+                "{{TASK_CONTEXT}}",
+                json.writeValueAsString(CatalogPromptInput.context(promptContext)));
     return new PromptComposition(
         agentPromptPart + "\n\n" + activityPromptPart, agentPromptPart, activityPromptPart);
   }

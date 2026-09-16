@@ -11,8 +11,46 @@ reduzindo inconsistências que interrompem a preparação e a operação comerci
 O catálogo de prompts armazena **texto**, identidade e versões; não é um repositório
 de arquivos ou anexos. Aproveitar cadastros existentes antes de criar novas estruturas.
 
-Estado inicial: decisão e plano documentados; migração de dados e runtime ainda não
-executada por este projeto. Este documento não ativa versões nem altera ciclos existentes.
+Estado em 16/09/2026: **Piloto Opala implementado e homologado na sandbox**,
+com migração executada em MySQL 5.7 segregado. Disponibilização em produção pendente
+do fluxo de publicação do usuário; nenhum ciclo de produção foi alterado.
+
+### Entrega autorizada: Catálogo Vivo — Piloto Opala
+
+Em 16/09/2026 foi autorizada a implementação local conjunta das etapas 1–4,
+limitada ao subprocesso `opala-commercial-preparation-v1`. Reutilizar agentes,
+atividades, processos, tipos e produtos existentes; acrescentar somente versões,
+vínculos e auditoria necessários aos sete textos de atividade. Os núcleos estáveis
+dos agentes e os schemas permanecem versionados nos executores nesta entrega.
+
+O ciclo antigo poderá aderir explicitamente pela tela, fixando a definição Opala
+sem trocar sua cadeia, orçamento, janela, aprovações ou histórico. O comando deve
+ser idempotente, validar produto/tipo/experimento/etapa e registrar a adesão antes
+de disponibilizar a execução aos agentes. Adesão não autoriza gasto ou publicação.
+Vega/#92 é a referência de diagnóstico; nenhum ID de produção deve virar regra
+de migração automática. Evidências e matriz: [Piloto Opala](../homologacao/catalogo-vivo-opala-v1.md).
+
+### Contrato efetivo do piloto
+
+- Gestão em `/catalogo-vivo/opala`: sete atividades, rascunhos sem sobrescrita,
+  revisão do hash exibido e ativação do conjunto completo com controle de concorrência.
+  Recuperação seleciona versões já revisadas. A autoridade é a fronteira administrativa
+  existente; responsável e parecer são declarados pelo operador e auditados. O piloto
+  não cria um sistema novo de login, papéis ou assinatura digital de revisão.
+- API administrativa `/api/catalogo-vivo/v1/opala`; o consumo permanece no `pending`
+  canônico de cada agente, que entrega `catalogPrompt` fixado na criação da tarefa.
+  Tentativas da mesma ocorrência conservam a versão anterior. O callback deve comprovar
+  instrução, contexto e referência da versão efetivamente enviados ao modelo.
+- Banco é a única fonte operacional dos sete textos. Ausência, hash divergente ou
+  schema incompatível bloqueiam a tarefa com orientação persistida. Não há retorno
+  silencioso ao arquivo nem preenchimento automático de texto para tarefas antigas.
+- A tela do ciclo oferece **Integrar e iniciar preparação**, preservando cadeia,
+  experimento, versão, orçamento, janela e aprovações. O comando inicia o motor BPM
+  existente na mesma transação da adesão e é idempotente.
+- Ativação de textos serializa decisões no processo; fixação e revisão usam leituras
+  com lock para não reutilizar um snapshot antigo do MySQL. O catálogo exibe cobertura,
+  versões, utilizações e bloqueios de resolução; tempos, custos e resultados permanecem
+  nos relatórios de execução existentes, sem confundir preparação com vendas reais.
 
 ## Catálogos e responsabilidades
 
@@ -96,10 +134,10 @@ cumpridos antes de publicação. Não publicar correções parciais para descobr
 
 | Etapa | Entrega | Critério de conclusão | Estado |
 | --- | --- | --- | --- |
-| 1 — Inventário e vínculos | Mapear tabelas, APIs, telas, textos, consumidores e contratos dos seis catálogos; distinguir existente, duplicado e ausente | Matriz de origem/destino, dependências e escopo do piloto; conferir schema real via MCP | Pendente |
-| 2 — Base e integridade | Reutilizar estruturas existentes e implementar versões textuais, vínculos, ativação transacional e auditoria | Migração MySQL 5.7 local validada, rejeição de vínculos inválidos, concorrência e preservação histórica comprovadas | Pendente |
-| 3 — Gestão administrativa | Consultar, editar rascunhos, revisar e ativar pelo frontend; visualizar onde o prompt é usado | Jornada UI → backend → banco validada; erros e permissões claros; consulta ao histórico | Pendente |
-| 4 — Piloto Opala | Migrar o conjunto completo da preparação comercial Opala e seus consumidores; adequar harness e contratos de cobertura | Processo local ponta a ponta com prompts do catálogo, todas as atividades cobertas, auditoria e rollback comprovados | Pendente |
+| 1 — Inventário e vínculos | Mapear tabelas, APIs, telas, textos, consumidores e contratos dos seis catálogos; distinguir existente, duplicado e ausente | Matriz de origem/destino, dependências e escopo do piloto; conferir schema real via MCP | Concluída localmente para o Piloto Opala em 16/09/2026; demais fluxos pendentes |
+| 2 — Base e integridade | Reutilizar estruturas existentes e implementar versões textuais, vínculos, ativação transacional e auditoria | Migração MySQL 5.7 local validada, rejeição de vínculos inválidos, concorrência e preservação histórica comprovadas | Concluída localmente para o Piloto Opala em 16/09/2026; demais fluxos pendentes |
+| 3 — Gestão administrativa | Consultar, editar rascunhos, revisar e ativar pelo frontend; visualizar onde o prompt é usado | Jornada UI → backend → banco validada; erros e permissões claros; consulta ao histórico | Concluída localmente para o Piloto Opala em 16/09/2026; demais fluxos pendentes |
+| 4 — Piloto Opala | Migrar o conjunto completo da preparação comercial Opala e seus consumidores; adequar harness e contratos de cobertura | Processo local ponta a ponta com prompts do catálogo, todas as atividades cobertas, auditoria e rollback comprovados | Concluída localmente para o Piloto Opala em 16/09/2026; demais fluxos pendentes |
 | 5 — Expansão gradual | Migrar os demais fluxos por conjuntos completos de dependências | Mesmos critérios do piloto por lote; cobertura dos seis catálogos e ausência de duplicação operacional | Pendente |
 | 6 — Consolidação | Remover leitores e arquivos textuais operacionais substituídos após prova de desuso; manter schemas e histórico necessários | Nenhuma referência ativa órfã, testes globais aprovados e relatório final de cobertura | Pendente |
 

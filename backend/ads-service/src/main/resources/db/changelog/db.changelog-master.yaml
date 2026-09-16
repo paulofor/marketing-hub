@@ -2087,3 +2087,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-09-15-opala-commercial-preparation-v1.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-09-16-catalogo-vivo-opala-v1.yaml
+      relativeToChangelogFile: true

@@ -142,7 +142,7 @@ function BehaviorFile({ file }: { file: AgentBehaviorFile }) {
           <span
             className={`badge ${open ? "text-bg-secondary" : "text-bg-primary"}`}
           >
-            {open ? "Fechar arquivo" : "Abrir arquivo"}
+            {open ? "Fechar conteúdo" : "Abrir conteúdo"}
           </span>
           <span className="badge text-bg-light">
             {behaviorTypeLabels[file.behaviorType]}
@@ -156,9 +156,13 @@ function BehaviorFile({ file }: { file: AgentBehaviorFile }) {
             {file.description}
           </p>
           <dl className="small mb-3">
-            <dt className="text-body-secondary fw-normal">Arquivo de origem</dt>
+            <dt className="text-body-secondary fw-normal">Origem</dt>
             <dd>
-              <code className="text-break">{file.path}</code>
+              {file.path.startsWith("/catalogo-vivo/") ? (
+                <Link to={file.path}>Abrir no Catálogo Vivo</Link>
+              ) : (
+                <code className="text-break">{file.path}</code>
+              )}
             </dd>
             <dt className="text-body-secondary fw-normal">SHA-256</dt>
             <dd className="mb-0">
@@ -185,18 +189,18 @@ function BehaviorFiles({ files }: { files: AgentBehaviorFile[] }) {
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h3 id="agent-harness-behavior-files" className="h6 mb-1">
-            Arquivos que definem o comportamento
+            Fontes que definem o comportamento
           </h3>
           <p className="small text-body-secondary mb-0">
-            Prompts, núcleos, bibliotecas e schemas entregues diretamente pelos
-            módulos executores. Abra um arquivo para ler seu conteúdo integral.
+            Instruções do Catálogo Vivo e recursos dos módulos executores, com a
+            versão e a origem informadas pelo backend. Abra o conteúdo para ler.
           </p>
         </div>
         <span className="badge text-bg-light">{files.length}</span>
       </div>
       {files.length === 0 ? (
         <div className="alert alert-warning mb-0" role="alert">
-          Nenhum arquivo de comportamento foi registrado pelo backend para este
+          Nenhuma fonte de comportamento foi registrada pelo backend para este
           agente.
         </div>
       ) : (
@@ -245,7 +249,7 @@ function AgentHarnessView({ harness }: { harness: AgentHarness }) {
           <DetailField label="Fonte canônica" value={harness.sourceReference} />
           <DetailField
             label="Cobertura"
-            value={`${harness.sections.length} seções · ${behaviorFiles.length} arquivos de comportamento · ${harness.artifacts.length} artefatos`}
+            value={`${harness.sections.length} seções · ${behaviorFiles.length} fontes de comportamento · ${harness.artifacts.length} artefatos`}
           />
         </dl>
 

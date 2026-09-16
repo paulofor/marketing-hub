@@ -317,6 +317,21 @@ Evidências: `docs/homologacao/actions-pde-v5-contrato-versionado-2026-09-15.md`
   alterações nos dois runners. Evidências e resultados em
   `docs/homologacao/actions-vega-catalogo-apolo-2026-09-13.md`.
 
+- **Prevenção estrutural local em 16/09/2026 — Catálogo Vivo, Piloto Opala:** os sete
+  textos passaram a usar vínculos com as definições de atividade/agente/tipo existentes,
+  versões imutáveis, FKs e ativação transacional. O harness consulta a mesma fonte
+  ativa, eliminando cadastro paralelo de caminhos para esses textos. A cobertura de
+  arquivos remanescentes continua obrigatória; seu teste agora acumula todas as
+  divergências. Migração, quatro consumidores, harness e recursos do JAR foram
+  validados localmente. Produção permanece no estado anterior até publicação.
+- **Defeitos encontrados e resolvidos na homologação do piloto:** no MySQL 5.7,
+  leitura anterior ao lock conservava snapshot sob REPEATABLE READ e permitia duas
+  ativações; leituras com lock e isolamento adequado passaram a recusar a segunda
+  decisão desatualizada. O helper de Spotless passava uma lista com vírgulas para um
+  parâmetro que recebe regex, selecionando zero arquivos; agora monta uma expressão
+  escapada e possui teste para arquivos alterados/novos sem incluir arquivos alheios.
+  Evidências: `docs/homologacao/catalogo-vivo-opala-v1.md`.
+
 ## LOOP-BACKEND-VIDEO-RETRY-SEM-LIMITE — retry esgota o heap e derruba o painel
 
 - **Data:** 2026-09-01.

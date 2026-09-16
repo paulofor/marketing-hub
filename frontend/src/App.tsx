@@ -1,3 +1,4 @@
+import CatalogoVivoOpalaPage from "./pages/catalogoVivo/CatalogoVivoOpalaPage";
 import LearningCyclesPage from "./pages/learningCycle/LearningCyclesPage";
 import {
   Navigate,
@@ -472,6 +473,10 @@ export default function App() {
               <Route
                 path="/openai-models/:id/edit"
                 element={<EditOpenAiModelPage />}
+              />
+              <Route
+                path="/catalogo-vivo/opala"
+                element={<CatalogoVivoOpalaPage />}
               />
               <Route path="/agents" element={<AgentListPage />} />
               <Route path="/agent-tasks" element={<ActiveAgentTasksPage />} />

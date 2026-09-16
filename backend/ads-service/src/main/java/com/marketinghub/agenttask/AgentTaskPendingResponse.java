@@ -18,7 +18,42 @@ public record AgentTaskPendingResponse(
     AgentTaskExecutionResourceResponse executionResource,
     AgentTaskTargetResponse taskTarget,
     String processContextJson,
-    ResearchIntelligenceSelectionResponse researchIntelligence) {
+    ResearchIntelligenceSelectionResponse researchIntelligence,
+    com.marketinghub.catalogovivo.v1.service.pending.CatalogPromptResponse catalogPrompt) {
+
+  /** Preserva contratos anteriores ao catálogo textual, que não executam atividades migradas. */
+  public AgentTaskPendingResponse(
+      Long taskId,
+      String agentKey,
+      String processCode,
+      Integer processVersion,
+      String activityId,
+      String activityName,
+      String title,
+      String description,
+      String sourceReference,
+      Instant receivedAt,
+      AgentTaskExecutionResourceResponse executionResource,
+      AgentTaskTargetResponse taskTarget,
+      String processContextJson,
+      ResearchIntelligenceSelectionResponse researchIntelligence) {
+    this(
+        taskId,
+        agentKey,
+        processCode,
+        processVersion,
+        activityId,
+        activityName,
+        title,
+        description,
+        sourceReference,
+        receivedAt,
+        executionResource,
+        taskTarget,
+        processContextJson,
+        researchIntelligence,
+        null);
+  }
 
   /** Preserva integrações internas anteriores ao recurso opcional da atividade. */
   public AgentTaskPendingResponse(

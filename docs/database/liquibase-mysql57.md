@@ -10,6 +10,22 @@ Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativ
 
 A etapa estática não inicia MySQL nem executa `liquibase:update`. Os jobs físicos usam bancos descartáveis e credenciais sintéticas, sem dados de produção, para conferir as migrações cobertas por suas fixtures antes da publicação.
 
+## Catálogo Vivo — Piloto Opala
+
+O job `validate-catalogo-vivo-opala` executa
+`python3 infra/testing/catalogo-vivo/run-local.py --persistence-only` com Java 21,
+MySQL 5.7 e projeto Compose exclusivo. `CATALOGO_VIVO_COMPOSE_PROJECT` deve ser o
+projeto autorizado da sessão; `CATALOGO_VIVO_DB_HOST=sandbox-docker` na sandbox ou
+`127.0.0.1` no runner. A topologia é removida no encerramento.
+
+A fixture aplica a migração incremental `2026-09-16-catalogo-vivo-opala-v1.yaml`
+e confere API, FKs compostas, unicidade, versões fixadas, concorrência e adesão
+explícita de uma cadeia antiga. Usa somente identidades e credenciais sintéticas.
+Changelogs históricos permanecem intactos. Rollback operacional é a seleção de
+versões textuais já revisadas; o rollback destrutivo Liquibase é recusado explicitamente
+para preservar auditoria e referências de tarefas. Remoção de tabelas exigiria outra
+migração deliberada. [Matriz e resultados locais](../homologacao/catalogo-vivo-opala-v1.md).
+
 ## Preparação comercial Opala — v1
 
 O job `validate-opala-commercial-preparation` executa

@@ -13,7 +13,10 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: navegar pela chamada Opala da cadeia exata sem migrar ciclos históricos. */
+/**
+ * Responsabilidade: navegar pela chamada Opala ou adesão explícita sem substituir a cadeia
+ * histórica.
+ */
 @Component
 @RequiredArgsConstructor
 public class OpalaCommercialRouting {
@@ -23,6 +26,9 @@ public class OpalaCommercialRouting {
   private final BusinessProcessActivityInstanceRepository instances;
   private final ProductRepository products;
   private final OpalaCommercialContext context;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.marketinghub.repository.jdbc.catalogovivo.OpalaAdoptionRepository catalogAdoptions;
 
   /** Reconhece o tipo persistido, sem inferir o mineral pelo nome ou formato do produto. */
   public boolean isOpala(Long productId) {
@@ -35,9 +41,17 @@ public class OpalaCommercialRouting {
         .orElse(false);
   }
 
-  /** Localiza somente chamada explícita dentro da cadeia original do ciclo. */
+  /** Localiza a definição fixada na adesão explícita ou a chamada da cadeia original do ciclo. */
   public BusinessProcessDefinition target(LearningSalesCycle cycle) {
     if (!isOpala(cycle.getProductId())) return null;
+    if (catalogAdoptions != null) {
+      var adoption = catalogAdoptions.find(cycle.getId());
+      if (adoption.isPresent()
+          && adoption.get().productId() == cycle.getProductId()
+          && adoption.get().experimentId() == cycle.getExperimentId()) {
+        return processes.findById(adoption.get().processDefinitionId()).orElseThrow();
+      }
+    }
     var chain = chains.findById(cycle.getChainDefinitionId()).orElseThrow();
     boolean called =
         chain.getItems().stream()

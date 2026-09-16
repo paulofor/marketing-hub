@@ -129,6 +129,9 @@ public class AgentTaskService {
   private com.marketinghub.opala.commercial.v1.service.OpalaCommercialContext
       opalaCommercialContext;
 
+  @Autowired(required = false)
+  private com.marketinghub.catalogovivo.v1.service.CatalogoVivoService catalogoVivo;
+
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
   public AgentTaskService(
@@ -1076,7 +1079,7 @@ public class AgentTaskService {
     return response(saved);
   }
 
-  /** Persiste a tarefa normalizada com o primeiro estado auditável. */
+  /** Persiste a tarefa e fixa sua versão textual antes de disponibilizar o trabalho ao executor. */
   private AgentTaskResponse save(
       Agent assignee,
       Agent requester,
@@ -1109,6 +1112,7 @@ public class AgentTaskService {
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
+    if (catalogoVivo != null) catalogoVivo.pin(saved);
     synchronizeActivityInstance(saved, now);
     return response(saved);
   }
@@ -1752,7 +1756,7 @@ public class AgentTaskService {
     return pendingResponse(claimedBy(agentKey, taskId));
   }
 
-  /** Converte uma tarefa reservada e inclui somente a rota de pesquisa do executor responsável. */
+  /** Entrega tarefa, pesquisa do executor e versão textual fixada para atividades migradas. */
   private AgentTaskPendingResponse pendingResponse(AgentTask task) {
     BusinessProcessDefinition process = task.getProcessDefinition();
     AgentTaskTargetResponse taskTarget =
@@ -1784,7 +1788,8 @@ public class AgentTaskService {
                 task.getDescription(),
                 task.getSourceReference(),
                 processContextJson,
-                String.valueOf(taskTarget)));
+                String.valueOf(taskTarget)),
+        catalogoVivo == null ? null : catalogoVivo.prompt(task));
   }
 
   /** Resolve o recurso exigido pela atividade e entrega instruções oficiais ao executor correto. */
@@ -2315,9 +2320,10 @@ public class AgentTaskService {
     replaceAccessedUrls(task, audit.accessedUrls());
   }
 
-  /** Exige uma auditoria coerente sem transformar ausência em configuração inventada. */
+  /** Exige auditoria coerente e, no Opala, comprovação da instrução textual fixada na tarefa. */
   private void requireExecutionAuditShape(AgentTask task, boolean terminalCompletion) {
     String mode = trimToNull(task.getExecutionMode());
+    if (catalogoVivo != null) catalogoVivo.requireModelAudit(task, mode, terminalCompletion);
     if (mode == null || !EXECUTION_MODES.contains(mode)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "A tarefa exige modo de execução auditável.");
@@ -2332,7 +2338,11 @@ public class AgentTaskService {
           HttpStatus.BAD_REQUEST,
           "Execução de modelo exige modelo, tipo de raciocínio, parte do agente, parte da atividade e prompt integral.");
     }
-    if ("MODEL".equals(mode)) validatePromptComposition(task);
+    if ("MODEL".equals(mode)) {
+      validatePromptComposition(task);
+      if (catalogoVivo != null)
+        catalogoVivo.validateExecution(task, task.getExecutionActivityPrompt());
+    }
     if ("DETERMINISTIC".equals(mode)
         && (!"NOT_APPLICABLE".equals(task.getExecutionReasoningEffort())
             || trimToNull(task.getExecutionModelCode()) == null

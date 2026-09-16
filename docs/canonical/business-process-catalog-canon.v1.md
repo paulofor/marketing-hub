@@ -20,6 +20,16 @@ AUTHORIZATION/PUBLICATION, com identidade exata de produto, experimento e versã
 Cadeias anteriores mantêm seu histórico e seu percurso; não há migração automática
 do ciclo 2/experimento 92 nem aprovação retroativa.
 
+**Piloto Catálogo Vivo, 16/09/2026:** ciclos anteriores podem incorporar explicitamente
+esse subprocesso pelo comando **Integrar e iniciar preparação**, na tela do ciclo.
+A adesão fixa produto, ciclo, experimento e definição sem trocar a cadeia histórica;
+o backend valida o contexto e inicia seu motor de processos na mesma transação.
+Não é necessário mudar a cadeia inteira para executar as sete atividades. A operação
+é idempotente e não altera orçamento, janela ou aprovações. O link de acompanhamento
+continua usando a cadeia original. Os sete textos das atividades vêm de versões
+imutáveis do catálogo no banco; schemas e núcleos dos agentes continuam nos workers.
+A migração local não realizou adesão do ciclo 2 nem ativação do experimento 92.
+
 Dédalo prepara entrada do PDE, integração do vídeo aprovado, checkout canônico e
 público aprovado por Atena. Plutus revalida a economia. Psique e Têmis homologam a
 experiência e a integridade comercial. O backend consolida a prontidão e devolve o

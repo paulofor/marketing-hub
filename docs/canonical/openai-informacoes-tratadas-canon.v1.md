@@ -1,5 +1,14 @@
 # Cânone v1 — Modelo de Dados das Informações Tratadas por IA
 
+> **Decisão de 16/09/2026 — Catálogo Vivo:** a migração gradual dos seis catálogos
+> segue [o cânone do projeto](catalogo-vivo-canon.v1.md). Para vínculos migrados e
+> homologados, o prompt textual passa a ter versões imutáveis no banco, entregues
+> pelo backend; referências de prompt no harness passam a identificar catálogo,
+> versão e hash, em lugar do caminho de arquivo. Essa regra prevalece sobre a
+> exigência de texto em arquivo neste documento somente nesses vínculos. Schemas
+> mantêm sua governança vigente; fluxos não migrados preservam as regras atuais.
+> O plano documentado não significa que a migração já foi executada.
+
 ## 1. Objetivo do modelo de dados
 
 Este documento define exclusivamente o **modelo de dados** onde ficam persistidas as informações tratadas pelos modelos de IA no Marketing Hub.

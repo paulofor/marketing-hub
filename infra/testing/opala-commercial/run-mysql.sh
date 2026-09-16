@@ -14,5 +14,15 @@ docker buildx version
 docker compose version
 "${compose[@]}" up -d --wait learning-cycles-mysql
 "${compose[@]}" exec -T learning-cycles-mysql mysql -uroot -pcycles-root-local-only -e 'CREATE DATABASE IF NOT EXISTS opala_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+for attempt in $(seq 1 30); do
+  if timeout 1 bash -c "</dev/tcp/${opala_db_host}/18307" 2>/dev/null; then
+    break
+  fi
+  [[ "${attempt}" -lt 30 ]] || {
+    echo 'A porta publicada do MySQL 5.7 não ficou acessível à JVM de teste.' >&2
+    exit 1
+  }
+  sleep 1
+done
 OPALA_MYSQL_URL="jdbc:mysql://${opala_db_host}:18307/opala_test?useSSL=false&allowPublicKeyRetrieval=true" \
   mvn -B -f backend/ads-service/pom.xml '-Dtest=OpalaCommercial*Test' test

@@ -5148,6 +5148,29 @@ tarefas quando todas as predecessoras já possuem instância, inclusive quando b
   esse caminho; seis cenários no MySQL protegem a conclusão, a pausa e a liberação da fila.
   Matriz: `docs/homologacao/execucao-automatica-processos-v1.md`.
 
+## LOOP-OPALA-CANDIDATA-SEM-DESTINO-E-FILA-RESERVADA — correção em 16/09/2026
+
+- **Sintoma confirmado:** a execução Opala #8 do produto 4, ciclo 2 e experimento 92 ficou
+  em `QUEUED`, aguardando outro processo; a tarefa #428 já havia consumido USD 0,6152408 e
+  bloqueado porque `opalaCommercial.destinationUrl` estava ausente.
+- **Histórico e dados:** a execução raiz #4 permanecia em `ERROR` e era considerada ativa,
+  embora a própria consulta de pendências excluísse `ERROR`. O banco já possuía uma única
+  candidata v8 ligada ao experimento 92 e à versão v12, com URL e contrato de rascunho; o
+  produto publicado permanecia corretamente na v7 e o experimento ainda não tinha URL.
+- **Causas-raiz:** a consulta de reserva do produto não tratava `ERROR` como terminal; o
+  contexto Opala lia URL somente do experimento e contrato somente da versão publicada,
+  ignorando a candidata exata que ele próprio entregava na lista de versões.
+- **Correção sistêmica:** `ERROR` deixa de reservar a fila. O contexto resolve contrato e
+  destino somente pela chave produto + experimento + versão do ciclo quando existe uma única
+  candidata preparável; o backend persiste a URL no experimento apenas no callback aceito de
+  `entry`. URL explícita divergente, candidata ambígua, pausada ou retirada continuam
+  bloqueadas. A v7 publicada não é sobrescrita e nenhuma campanha ou publicação é autorizada.
+- **Prevenção:** testes JPA cobrem liberação por erro terminal; testes de contexto e
+  materialização cobrem candidata única, contrato publicado anterior, nova ocorrência,
+  ambiguidade e divergência explícita. A matriz local preserva histórico/custos e valida a
+  tela em desktop, iPhone e Android antes de qualquer retentativa paga.
+- **Evidências:** `docs/homologacao/opala-processo-77-recuperacao-2026-09-16.md`.
+
 ## LOOP-IRIS-PREPARACAO-EXIGE-PUBLICACAO — investigação de 12/09/2026
 
 - Evidência: Vega, ciclo 2, experimento 92, tarefas 400/401; MCP e callbacks de Íris

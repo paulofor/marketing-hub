@@ -38,8 +38,10 @@ A migração local não realizou adesão do ciclo 2 nem ativação do experiment
 Dédalo prepara entrada do PDE, integração do vídeo aprovado, checkout canônico e
 público aprovado por Atena. Plutus revalida a economia. Psique e Têmis homologam a
 experiência e a integridade comercial. O backend consolida a prontidão e devolve o
-controle ao pai. A entrada é a própria experiência com IA personalizada; preparação
-não é publicação, autorização de gasto, venda comprovada ou entrega ao comprador.
+controle ao pai. A entrada é a própria experiência digital contratada pela versão;
+no Vega v12, trata-se da jornada guiada determinística sem chamada de LLM durante o
+uso. Preparação não é publicação, autorização de gasto, venda comprovada ou entrega
+ao comprador.
 
 Usam-se as filas e callbacks BPM existentes, com `processCode` e `activityId`:
 `/api/internal/agent-tasks/{agent}/stage-executions/pending` e os callbacks
@@ -55,7 +57,25 @@ comprova vendas. A chamada pendente ao subprocesso aparece como trabalho a inici
 sem marcar o processo pai como atividade já em execução. O link de preparação no
 ciclo é retornado pelo backend com produto, ciclo e cadeia preservados.
 
-Matriz, escopo de simulação e evidências: `docs/homologacao/opala-preparacao-comercial-v1.md`.
+**Resolução da versão candidata, 16/09/2026:** durante a preparação, o contrato
+publicado do produto pode continuar representando a versão que recebe clientes,
+enquanto a candidata possui contrato próprio no registro de versão PDE. O contexto
+Opala deve selecionar somente o registro que coincida simultaneamente com produto,
+experimento e `productVersion` do ciclo. Se houver exatamente uma candidata em estado
+preparável, seu contrato de rascunho e sua URL pública são a fonte da atividade de
+entrada; o vínculo da URL é persistido no experimento apenas quando o resultado de
+Dédalo for aceito pelo backend. URL já explícita prevalece para que divergências sejam
+bloqueadas, nunca corrigidas silenciosamente. Ausência, versão retirada ou mais de uma
+candidata bloqueiam a atividade. É proibido escolher por data, maior número, histórico
+do predecessor ou nome do produto.
+
+Execuções raiz em estado terminal `ERROR` preservam diário, custo e evidências, mas não
+reservam a vez do produto e não voltam à fila de conciliação. Uma nova execução válida
+pode avançar sem apagar nem reclassificar a falha anterior.
+
+Matriz, recuperação e evidências complementares:
+`docs/homologacao/opala-preparacao-comercial-v1.md` e
+`docs/homologacao/opala-processo-77-recuperacao-2026-09-16.md`.
 
 ### Execução automática por processo — decisão de 12/09/2026
 

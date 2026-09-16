@@ -18,6 +18,7 @@ import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElementStatus;
 import java.net.URI;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,13 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class OpalaCommercialMaterialization {
+  private static final Set<PdeProductionSlotStatus> PREPARABLE_SLOT_STATUSES =
+      Set.of(
+          PdeProductionSlotStatus.PLANNED,
+          PdeProductionSlotStatus.CANDIDATE,
+          PdeProductionSlotStatus.READY,
+          PdeProductionSlotStatus.ACTIVE);
+
   private final OpalaCommercialContext context;
   private final PdeProductionSlotRepository slots;
   private final PdeProductionSlotService slotService;
@@ -122,11 +130,12 @@ public class OpalaCommercialMaterialization {
     var cycle = scope.cycle();
     var experiment = scope.experiment();
     var product = experiment.getProduct();
-    var contract = context.read(product.getPdeExperienceJson());
+    var candidate = context.candidate(scope);
+    var contract = candidate.productContract();
     require(
         cycle.getProductVersion().equals(contract.path("experienceVersion").asText()),
         "O contrato PDE precisa corresponder à versão exata do ciclo antes de preparar a entrada.");
-    String destination = experiment.getFollowUpActionUrl();
+    String destination = candidate.destinationUrl();
     URI uri = URI.create(destination == null ? "" : destination);
     require(
         "https".equals(uri.getScheme())
@@ -134,20 +143,22 @@ public class OpalaCommercialMaterialization {
             && uri.getUserInfo() == null
             && uri.getFragment() == null,
         "Configure o destino HTTPS aprovado do próprio PDE.");
-    var existing =
-        slots.findByProductSlugOrderBySlotCodeAsc(product.getSlug()).stream()
-            .filter(
-                s ->
-                    Objects.equals(s.getSourceExperimentId(), experiment.getId())
-                        && Objects.equals(s.getExperienceVersion(), cycle.getProductVersion()))
-            .toList();
+    var existing = candidate.slots();
     require(
         existing.size() <= 1,
         "Há mais de um slot para esta versão e experimento; resolva a ambiguidade.");
     if (!existing.isEmpty()) {
       require(
+          PREPARABLE_SLOT_STATUSES.contains(existing.getFirst().getStatus()),
+          "O slot exato está pausado ou retirado e não pode receber uma nova preparação.");
+      require(
           Objects.equals(destination, existing.getFirst().getPublicUrl()),
           "O destino do slot diverge do experimento.");
+      if (experiment.getFollowUpActionUrl() == null
+          || experiment.getFollowUpActionUrl().isBlank()) {
+        experiment.setFollowUpActionUrl(destination);
+        experiments.save(experiment);
+      }
       return;
     }
     String code = "opala-e" + experiment.getId() + "-c" + cycle.getId();
